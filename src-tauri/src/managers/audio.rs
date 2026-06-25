@@ -145,8 +145,8 @@ fn create_audio_recorder(
     // Register the streaming audio callback only if the TranscriptionManager
     // is available (it always is in normal operation). The callback captures
     // the `Arc<StreamRouter>` directly, so it never touches Tauri state on the
-    // hot path. The continuous flag is shared with the router, which toggles
-    // it at `start_stream` time based on the `live_preview_continuous` setting.
+    // hot path. The continuous flag is shared with the router, which toggles it
+    // at `start_stream` time based on the `streaming_audio_mode` + overlay style.
     if let Some(tm) = app_handle.try_state::<Arc<TranscriptionManager>>() {
         let router = tm.stream_router();
         let continuous = router.continuous_flag();

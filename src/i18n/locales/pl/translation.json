@@ -256,14 +256,6 @@
         "label": "Pozostaw mikrofon otwarty między transkrypcjami",
         "description": "Utrzymuje strumień mikrofonu otwarty przez 30 sekund po zatrzymaniu nagrywania, zmniejszając opóźnienie przy kolejnych transkrypcjach. Może pogorszyć jakość dźwięku Bluetooth."
       },
-      "livePreview": {
-        "label": "Podgląd na żywo",
-        "description": "Wyświetla transkrypcję w nakładce w czasie rzeczywistym podczas mówienia. Działa tylko z modelami obsługującymi streaming (szukaj odznaki Streaming w selektorze modeli)."
-      },
-      "livePreviewContinuous": {
-        "label": "Ciągły dźwięk podglądu na żywo",
-        "description": "Przekazuje cały dźwięk (w tym ciszę) do modelu streamingowego zamiast segmentów filtrowanych głosowo. Zwiększa zużycie zasobów, ale może poprawić dokładność czasową niektórych modeli streamingowych."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Akceleracja Whisper",
@@ -292,12 +284,22 @@
         "description": "Wyświetlaj ikonę Handy w zasobniku systemowym."
       },
       "overlay": {
-        "title": "Pozycja nakładki",
-        "description": "Wyświetlaj wizualną nakładkę podczas nagrywania i transkrypcji. Na Linuxie zalecane 'Brak'.",
-        "options": {
-          "none": "Brak",
-          "bottom": "Dół",
-          "top": "Góra"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Brak",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Pozycja nakładki",
+          "description": "Wyświetlaj wizualną nakładkę podczas nagrywania i transkrypcji. Na Linuxie zalecane 'Brak'.",
+          "options": {
+            "bottom": "Dół",
+            "top": "Góra"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Dodatkowy bufor nagrywania",
         "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

@@ -2,7 +2,8 @@ use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
-    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, TranscribeAcceleratorSetting,
+    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, StreamingAudioMode,
+    TranscribeAcceleratorSetting,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
@@ -705,7 +706,14 @@ impl TranscriptionManager {
             return;
         }
         let settings = get_settings(&self.app_handle);
-        let rx = self.router.open(settings.live_preview_continuous);
+        // Streaming-built models use silence for timing/punctuation, so feed all
+        // audio by default; the debug-only streaming_audio_mode can switch to
+        // VAD-gated speech (less compute).
+        let continuous = matches!(
+            settings.streaming_audio_mode,
+            StreamingAudioMode::Continuous
+        );
+        let rx = self.router.open(continuous);
         self.stream_active.store(false, Ordering::Relaxed);
 
         let manager = self.clone();

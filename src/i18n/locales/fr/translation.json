@@ -256,14 +256,6 @@
         "label": "Garder le micro ouvert entre les transcriptions",
         "description": "Maintient le flux du microphone ouvert pendant 30 secondes après l'arrêt de l'enregistrement, réduisant la latence pour les transcriptions consécutives. Peut dégrader la qualité audio Bluetooth."
       },
-      "livePreview": {
-        "label": "Aperçu en direct",
-        "description": "Affiche la transcription dans la superposition en temps réel pendant que vous parlez. Fonctionne uniquement avec les modèles compatibles avec le streaming (repérez le badge Streaming dans le sélecteur de modèles)."
-      },
-      "livePreviewContinuous": {
-        "label": "Audio d’aperçu en direct continu",
-        "description": "Transmet tout l’audio (y compris les silences) au modèle de streaming au lieu des segments filtrés par la voix. Augmente l’utilisation des ressources, mais peut améliorer la précision temporelle de certains modèles de streaming."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Accélération Whisper",
@@ -292,12 +284,22 @@
         "description": "Afficher l'icône de Handy dans la barre système."
       },
       "overlay": {
-        "title": "Position de la fenêtre d'enregistrement",
-        "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
-        "options": {
-          "none": "Aucune",
-          "bottom": "Bas",
-          "top": "Haut"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Aucune",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Position de la fenêtre d'enregistrement",
+          "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
+          "options": {
+            "bottom": "Bas",
+            "top": "Haut"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

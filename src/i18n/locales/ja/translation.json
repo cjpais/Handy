@@ -256,14 +256,6 @@
         "label": "文字起こし間でマイクを開いたままにする",
         "description": "録音停止後30秒間マイクストリームを開いたままにし、連続した文字起こしの遅延を軽減します。Bluetooth音声品質に影響する場合があります。"
       },
-      "livePreview": {
-        "label": "ライブプレビュー",
-        "description": "話している間、文字起こしをオーバーレイにリアルタイムで表示します。ストリーミング対応モデルでのみ動作します（モデル選択画面のストリーミングバッジを確認してください）。"
-      },
-      "livePreviewContinuous": {
-        "label": "連続ライブプレビュー音声",
-        "description": "音声で区切られたセグメントではなく、すべての音声（無音を含む）をストリーミングモデルに送信します。計算量は増えますが、一部のストリーミングモデルではタイミングの精度が向上する場合があります。"
-      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper アクセラレーション",
@@ -292,12 +284,22 @@
         "description": "システムトレイにHandyのアイコンを表示します。"
       },
       "overlay": {
-        "title": "オーバーレイ位置",
-        "description": "録音と文字起こし中に視覚的なフィードバックオーバーレイを表示。Linuxでは「なし」を推奨。",
-        "options": {
-          "none": "なし",
-          "bottom": "下",
-          "top": "上"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "なし",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "オーバーレイ位置",
+          "description": "録音と文字起こし中に視覚的なフィードバックオーバーレイを表示。Linuxでは「なし」を推奨。",
+          "options": {
+            "bottom": "下",
+            "top": "上"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間（ミリ秒）。末尾の音声を捕捉するため。0 = 追加バッファなし。"
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

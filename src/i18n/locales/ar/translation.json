@@ -234,14 +234,6 @@
         "label": "إبقاء الميكروفون مفتوحًا بين عمليات النسخ",
         "description": "يبقي بث الميكروفون مفتوحًا لمدة 30 ثانية بعد توقف التسجيل، مما يقلل التأخير عند النسخ المتتالي. قد يؤثر على جودة صوت البلوتوث أثناء التفعيل."
       },
-      "livePreview": {
-        "label": "معاينة مباشرة",
-        "description": "يعرض النسخ النصي في الطبقة العلوية في الوقت الفعلي أثناء تحدثك. يعمل فقط مع النماذج التي تدعم البث (ابحث عن شارة البث في محدد النماذج)."
-      },
-      "livePreviewContinuous": {
-        "label": "صوت المعاينة المباشرة المستمر",
-        "description": "يمرر كل الصوت (بما في ذلك الصمت) إلى نموذج البث بدلاً من المقاطع المُرشَّحة حسب الصوت. يزيد من استهلاك المعالجة لكنه قد يحسّن دقة التوقيت لبعض نماذج البث."
-      },
       "acceleration": {
         "transcribe": {
           "title": "تسريع Whisper",
@@ -270,12 +262,22 @@
         "description": ".عرض أيقونة Handy في شريط النظام"
       },
       "overlay": {
-        "title": "موقع التراكب",
-        "description": "عرض تراكب الملاحظات المرئية أثناء التسجيل والتفريغ. على نظام Linux يوصى بـ 'بلا'.",
-        "options": {
-          "none": "بلا",
-          "bottom": "أسفل",
-          "top": "أعلى"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "بلا",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "موقع التراكب",
+          "description": "عرض تراكب الملاحظات المرئية أثناء التسجيل والتفريغ. على نظام Linux يوصى بـ 'بلا'.",
+          "options": {
+            "bottom": "أسفل",
+            "top": "أعلى"
+          }
         }
       },
       "pasteMethod": {
@@ -505,6 +507,14 @@
       "recordingBuffer": {
         "title": "مخزن التسجيل الإضافي",
         "description": "وقت إضافي (بالمللي ثانية) للاستمرار في التسجيل بعد تحرير المفتاح، لالتقاط الصوت المتبقي. 0 = لا مخزن إضافي."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

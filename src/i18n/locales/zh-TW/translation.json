@@ -256,14 +256,6 @@
         "label": "在轉錄之間保持麥克風開啟",
         "description": "錄音停止後保持麥克風串流開啟30秒，減少連續轉錄時的延遲。啟用時可能會降低藍牙音訊品質。"
       },
-      "livePreview": {
-        "label": "即時預覽",
-        "description": "在您說話時，於懸浮視窗中即時顯示轉錄內容。僅適用於支援串流的模型（請在模型選擇器中尋找「串流」標記）。"
-      },
-      "livePreviewContinuous": {
-        "label": "持續即時預覽音訊",
-        "description": "將所有音訊（包括靜音）轉發給串流模型，而非依語音切分的片段。會增加運算負擔，但可能提升某些串流模型的時間精準度。"
-      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper 加速",
@@ -292,12 +284,22 @@
         "description": "在系統匣中顯示 Handy 圖示"
       },
       "overlay": {
-        "title": "懸浮窗位置",
-        "description": "在錄製和轉錄期間顯示視覺回饋懸浮窗。在 Linux 上建議選擇「無」",
-        "options": {
-          "none": "無",
-          "bottom": "底部",
-          "top": "頂部"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "無",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "懸浮窗位置",
+          "description": "在錄製和轉錄期間顯示視覺回饋懸浮窗。在 Linux 上建議選擇「無」",
+          "options": {
+            "bottom": "底部",
+            "top": "頂部"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "額外錄音緩衝",
         "description": "放開按鍵後繼續錄音的額外時間（毫秒），以捕捉尾音。0 = 無額外緩衝。"
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

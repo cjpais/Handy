@@ -256,14 +256,6 @@
         "label": "Giữ micro mở giữa các lần phiên âm",
         "description": "Giữ luồng micro mở trong 30 giây sau khi dừng ghi âm, giảm độ trễ khi phiên âm liên tiếp. Có thể làm giảm chất lượng âm thanh Bluetooth khi đang hoạt động."
       },
-      "livePreview": {
-        "label": "Xem trước trực tiếp",
-        "description": "Hiển thị bản phiên âm trên lớp phủ theo thời gian thực khi bạn nói. Chỉ hoạt động với các mô hình hỗ trợ truyền trực tiếp (tìm huy hiệu Truyền trực tiếp trong bộ chọn mô hình)."
-      },
-      "livePreviewContinuous": {
-        "label": "Âm thanh xem trước trực tiếp liên tục",
-        "description": "Chuyển tiếp toàn bộ âm thanh (kể cả khoảng lặng) đến mô hình truyền trực tiếp thay vì các đoạn được lọc theo giọng nói. Tăng mức sử dụng tài nguyên nhưng có thể cải thiện độ chính xác về thời gian cho một số mô hình truyền trực tiếp."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Tăng tốc Whisper",
@@ -292,12 +284,22 @@
         "description": "Hiển thị biểu tượng Handy trong khay hệ thống."
       },
       "overlay": {
-        "title": "Vị trí lớp phủ",
-        "description": "Hiển thị lớp phủ phản hồi trực quan trong quá trình ghi âm và chuyển đổi. Trên Linux, 'Không có' được khuyến nghị.",
-        "options": {
-          "none": "Không có",
-          "bottom": "Dưới",
-          "top": "Trên"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Không có",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Vị trí lớp phủ",
+          "description": "Hiển thị lớp phủ phản hồi trực quan trong quá trình ghi âm và chuyển đổi. Trên Linux, 'Không có' được khuyến nghị.",
+          "options": {
+            "bottom": "Dưới",
+            "top": "Trên"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Bộ đệm ghi âm thêm",
         "description": "Thời gian thêm (tính bằng mili giây) để tiếp tục ghi âm sau khi nhả phím, để thu âm thanh cuối. 0 = không có bộ đệm thêm."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

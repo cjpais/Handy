@@ -256,14 +256,6 @@
         "label": "在转录之间保持麦克风开启",
         "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
       },
-      "livePreview": {
-        "label": "实时预览",
-        "description": "在您说话时，于悬浮窗中实时显示转录内容。仅适用于支持流式的模型（请在模型选择器中查找“流式”标记）。"
-      },
-      "livePreviewContinuous": {
-        "label": "持续实时预览音频",
-        "description": "将所有音频（包括静音）转发给流式模型，而不是按语音切分的片段。会增加计算开销，但可能提高某些流式模型的时间精度。"
-      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper 加速",
@@ -292,12 +284,22 @@
         "description": "在系统托盘中显示 Handy 图标。"
       },
       "overlay": {
-        "title": "悬浮窗位置",
-        "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
-        "options": {
-          "none": "无",
-          "bottom": "底部",
-          "top": "顶部"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "无",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "悬浮窗位置",
+          "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
+          "options": {
+            "bottom": "底部",
+            "top": "顶部"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

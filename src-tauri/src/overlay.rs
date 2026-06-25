@@ -1,6 +1,6 @@
 use crate::input;
 use crate::settings;
-use crate::settings::OverlayPosition;
+use crate::settings::{OverlayPosition, OverlayStyle};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
@@ -32,8 +32,10 @@ tauri_panel! {
     })
 }
 
-const OVERLAY_WIDTH: f64 = 172.0;
-const OVERLAY_HEIGHT: f64 = 36.0;
+// Compact overlay window (Minimal / transcribing / processing). Sized to hold
+// the shared base pill (~40px tall, auto width ≥150px) plus its soft shadow.
+const OVERLAY_WIDTH: f64 = 200.0;
+const OVERLAY_HEIGHT: f64 = 52.0;
 
 // Overlay window used while live streaming transcription is active. Fixed for
 // the whole session — the card morphs (pill → panel) entirely in CSS inside
@@ -349,9 +351,10 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 }
 
 fn show_overlay_state(app_handle: &AppHandle, state: &str) {
-    // Check if overlay should be shown based on position setting
+    // Whether the overlay shows at all is governed by overlay_style; position
+    // only chooses Top vs Bottom placement.
     let settings = settings::get_settings(app_handle);
-    if settings.overlay_position == OverlayPosition::None {
+    if settings.overlay_style == OverlayStyle::None {
         return;
     }
 

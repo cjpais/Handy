@@ -23,8 +23,8 @@ use tauri_plugin_autostart::ManagerExt;
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, StreamingAudioMode,
+    TypingTool, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -550,11 +550,35 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
     settings.overlay_position = parsed;
     settings::write_settings(&app, settings);
 
-    // Keep the cached overlay-enabled flag in sync so emit_levels stops
-    // (or resumes) emitting on the next audio callback.
-    crate::overlay::update_overlay_enabled_cache(parsed != OverlayPosition::None);
-
+    // Whether the overlay shows at all is owned by overlay_style now; position
+    // only ever toggles Top/Bottom, so the enabled cache is untouched here.
     // Update overlay position without recreating window
+    crate::utils::update_overlay_position(&app);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match style.as_str() {
+        "none" => OverlayStyle::None,
+        "minimal" => OverlayStyle::Minimal,
+        "live" => OverlayStyle::Live,
+        other => {
+            warn!("Invalid overlay style '{}', defaulting to minimal", other);
+            OverlayStyle::Minimal
+        }
+    };
+    settings.overlay_style = parsed;
+    settings::write_settings(&app, settings);
+
+    // Keep the cached overlay-enabled flag in sync so emit_levels stops (or
+    // resumes) emitting on the next audio callback.
+    crate::overlay::update_overlay_enabled_cache(parsed != OverlayStyle::None);
+
+    // Reposition in case the window needs to re-center for the new style.
     crate::utils::update_overlay_position(&app);
 
     Ok(())
@@ -1079,18 +1103,19 @@ pub fn change_lazy_stream_close_setting(app: AppHandle, enabled: bool) -> Result
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_live_preview_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn change_streaming_audio_mode_setting(app: AppHandle, mode: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.live_preview = enabled;
-    settings::write_settings(&app, settings);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn change_live_preview_continuous_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.live_preview_continuous = enabled;
+    settings.streaming_audio_mode = match mode.as_str() {
+        "continuous" => StreamingAudioMode::Continuous,
+        "gated" => StreamingAudioMode::Gated,
+        other => {
+            warn!(
+                "Invalid streaming audio mode '{}', defaulting to continuous",
+                other
+            );
+            StreamingAudioMode::Continuous
+        }
+    };
     settings::write_settings(&app, settings);
     Ok(())
 }

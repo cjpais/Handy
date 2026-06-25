@@ -256,14 +256,6 @@
         "label": "전사 사이에 마이크 열어 두기",
         "description": "녹음 중지 후 30초 동안 마이크 스트림을 열어 두어 연속 전사 시 지연을 줄입니다. 활성화 중 블루투스 오디오 품질이 저하될 수 있습니다."
       },
-      "livePreview": {
-        "label": "실시간 미리보기",
-        "description": "말하는 동안 오버레이에 전사 내용을 실시간으로 표시합니다. 스트리밍을 지원하는 모델에서만 작동합니다(모델 선택기에서 스트리밍 배지를 확인하세요)."
-      },
-      "livePreviewContinuous": {
-        "label": "연속 실시간 미리보기 오디오",
-        "description": "음성으로 구분된 구간 대신 모든 오디오(무음 포함)를 스트리밍 모델로 전달합니다. 연산 사용량이 늘어나지만 일부 스트리밍 모델에서는 타이밍 정확도가 향상될 수 있습니다."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper 가속",
@@ -292,12 +284,22 @@
         "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
       },
       "overlay": {
-        "title": "오버레이 위치",
-        "description": "녹음 및 전사 중 시각적 피드백 오버레이를 표시합니다. Linux에서는 '없음'을 권장합니다.",
-        "options": {
-          "none": "없음",
-          "bottom": "하단",
-          "top": "상단"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "없음",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "오버레이 위치",
+          "description": "녹음 및 전사 중 시각적 피드백 오버레이를 표시합니다. Linux에서는 '없음'을 권장합니다.",
+          "options": {
+            "bottom": "하단",
+            "top": "상단"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
         "appData": "앱 데이터:",
         "models": "모델:",
         "settings": "설정:"
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

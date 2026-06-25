@@ -256,14 +256,6 @@
         "label": "Transkripsiyonlar arasında mikrofonu açık tut",
         "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
       },
-      "livePreview": {
-        "label": "Canlı Önizleme",
-        "description": "Siz konuşurken transkripsiyonu yer paylaşımında gerçek zamanlı olarak gösterir. Yalnızca akış destekli modellerle çalışır (model seçicide Akış rozetini arayın)."
-      },
-      "livePreviewContinuous": {
-        "label": "Sürekli Canlı Önizleme Sesi",
-        "description": "Sese göre filtrelenmiş bölümler yerine tüm sesi (sessizlik dahil) akış modeline iletir. İşlem yükünü artırır ancak bazı akış modellerinde zamanlama doğruluğunu iyileştirebilir."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper Hızlandırma",
@@ -292,12 +284,22 @@
         "description": "Handy simgesini sistem tepsisinde göster."
       },
       "overlay": {
-        "title": "Overlay Konumu",
-        "description": "Kayıt ve transkripsiyon sırasında görsel geri bildirim kaplamasını gösterir. Linux'ta 'Yok' önerilir.",
-        "options": {
-          "none": "Yok",
-          "bottom": "Alt",
-          "top": "Üst"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Yok",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Overlay Konumu",
+          "description": "Kayıt ve transkripsiyon sırasında görsel geri bildirim kaplamasını gösterir. Linux'ta 'Yok' önerilir.",
+          "options": {
+            "bottom": "Alt",
+            "top": "Üst"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Ekstra kayıt tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

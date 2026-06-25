@@ -256,14 +256,6 @@
         "label": "Mikrofon zwischen Transkriptionen offen halten",
         "description": "Hält den Mikrofon-Stream nach dem Aufnahmestopp 30 Sekunden lang offen, um die Latenz bei aufeinanderfolgenden Transkriptionen zu verringern. Kann die Bluetooth-Audioqualität beeinträchtigen."
       },
-      "livePreview": {
-        "label": "Live-Vorschau",
-        "description": "Zeigt die Transkription während des Sprechens in Echtzeit im Overlay an. Funktioniert nur mit streamingfähigen Modellen (achten Sie auf das Streaming-Abzeichen in der Modellauswahl)."
-      },
-      "livePreviewContinuous": {
-        "label": "Kontinuierliches Live-Vorschau-Audio",
-        "description": "Leitet das gesamte Audio (einschließlich Stille) an das Streaming-Modell weiter, anstatt nur sprachgesteuerter Segmente. Erhöht die Rechenlast, kann aber die zeitliche Genauigkeit einiger Streaming-Modelle verbessern."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper-Beschleunigung",
@@ -292,12 +284,22 @@
         "description": "Das Handy-Symbol in der Taskleiste anzeigen."
       },
       "overlay": {
-        "title": "Overlay-Position",
-        "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",
-        "options": {
-          "none": "Keine",
-          "bottom": "Unten",
-          "top": "Oben"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Keine",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Overlay-Position",
+          "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",
+          "options": {
+            "bottom": "Unten",
+            "top": "Oben"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

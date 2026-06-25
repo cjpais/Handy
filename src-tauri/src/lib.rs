@@ -498,6 +498,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,
+            shortcut::change_overlay_style_setting,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_extra_recording_buffer_setting,
@@ -526,8 +527,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_mute_while_recording_setting,
             shortcut::change_append_trailing_space_setting,
             shortcut::change_lazy_stream_close_setting,
-            shortcut::change_live_preview_setting,
-            shortcut::change_live_preview_continuous_setting,
+            shortcut::change_streaming_audio_mode_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,
             shortcut::change_keyboard_implementation_setting,
@@ -789,9 +789,9 @@ pub fn run(cli_args: CliArgs) {
             // Populate the overlay-enabled cache from initial settings so the
             // audio path (overlay::emit_levels, called ~24 Hz during recording)
             // can do a single atomic load instead of reading the Tauri store.
-            // Kept in sync by shortcut::change_overlay_position_setting.
+            // Kept in sync by shortcut::change_overlay_style_setting.
             overlay::update_overlay_enabled_cache(
-                settings.overlay_position != settings::OverlayPosition::None,
+                settings.overlay_style != settings::OverlayStyle::None,
             );
 
             // Pre-warm GPU/accelerator enumeration on a background thread.

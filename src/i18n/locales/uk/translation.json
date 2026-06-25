@@ -256,14 +256,6 @@
         "label": "Залишати мікрофон увімкненим між транскрипціями",
         "description": "Залишає потік мікрофона відкритим протягом 30 секунд після зупинки запису, зменшуючи затримку при послідовних транскрипціях. Може погіршити якість звуку Bluetooth."
       },
-      "livePreview": {
-        "label": "Перегляд у реальному часі",
-        "description": "Показує транскрипцію в накладці в реальному часі під час мовлення. Працює лише з моделями, що підтримують потокову передачу (шукайте значок «Потокове» у виборі моделей)."
-      },
-      "livePreviewContinuous": {
-        "label": "Безперервний звук перегляду в реальному часі",
-        "description": "Передає весь звук (включно з тишею) до потокової моделі замість сегментів, відфільтрованих за голосом. Збільшує навантаження, але може покращити точність синхронізації для деяких потокових моделей."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Прискорення Whisper",
@@ -292,12 +284,22 @@
         "description": "Відображати значок Handy у системному треї."
       },
       "overlay": {
-        "title": "Позиція оверлею",
-        "description": "Показувати візуальний оверлей під час запису та транскрипції. На Linux рекомендовано «Немає»",
-        "options": {
-          "none": "Немає",
-          "bottom": "Внизу",
-          "top": "Вгорі"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Немає",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Позиція оверлею",
+          "description": "Показувати візуальний оверлей під час запису та транскрипції. На Linux рекомендовано «Немає»",
+          "options": {
+            "bottom": "Внизу",
+            "top": "Вгорі"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Додатковий буфер запису",
         "description": "Додатковий час (у мілісекундах) для продовження запису після відпускання клавіші, щоб захопити завершальний звук. 0 = без додаткового буфера."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

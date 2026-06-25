@@ -256,14 +256,6 @@
         "label": "Държане на микрофона отворен между транскрипции",
         "description": "Държи потокът от микрофона отворен 30 секунди след спиране на записа, което намалява забавянето при поредни транскрипции. Може да влоши качеството на Bluetooth аудио, докато е активно."
       },
-      "livePreview": {
-        "label": "Преглед на живо",
-        "description": "Показва транскрипцията в наслагването в реално време, докато говорите. Работи само с модели, поддържащи стрийминг (потърсете значката „Стрийминг“ в избора на модели)."
-      },
-      "livePreviewContinuous": {
-        "label": "Непрекъснат звук за преглед на живо",
-        "description": "Препраща целия звук (включително тишината) към стрийминг модела вместо сегменти, филтрирани по глас. Увеличава натоварването, но може да подобри точността на синхронизацията при някои стрийминг модели."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Ускорение за Whisper",
@@ -292,12 +284,22 @@
         "description": "Показване на иконата на Handy в системната област."
       },
       "overlay": {
-        "title": "Позиция на наслагването",
-        "description": "Показване на визуална обратна връзка при запис и транскрипция. На Linux се препоръчва „Няма“.",
-        "options": {
-          "none": "Няма",
-          "bottom": "Долу",
-          "top": "Горе"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Няма",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Позиция на наслагването",
+          "description": "Показване на визуална обратна връзка при запис и транскрипция. На Linux се препоръчва „Няма“.",
+          "options": {
+            "bottom": "Долу",
+            "top": "Горе"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Допълнителен буфер на записа",
         "description": "Допълнително време (в милисекунди) за запис след пускане на клавиша, за да се улови краят на аудиото. 0 = без допълнителен буфер."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

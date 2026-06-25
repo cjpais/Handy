@@ -4,9 +4,10 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::managers::model::{EngineType, ModelManager};
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -426,18 +427,30 @@ impl ShortcutAction for TranscribeAction {
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
 
-        // When live preview is enabled, show the streaming overlay (the pill)
-        // and start a streaming worker. The worker authoritatively checks the
-        // loaded model's runtime capability (capabilities().supports_streaming):
-        // if it streams, the pill morphs into the panel when text arrives; if
-        // not, the normal batch path runs on stop and the pill simply never
-        // fills in. The worker waits for the (background) model load and queues
-        // audio frames meanwhile, so no early audio is lost.
-        if settings.live_preview {
+        // Streaming mode is decoupled from the overlay: any transcribe-cpp model
+        // runs in streaming mode for the latency win (transcription happens during
+        // recording, so release-to-result is near-instant), regardless of which
+        // overlay the user picked. We gate on the static engine_type rather than
+        // ModelInfo.supports_streaming — the latter is runtime-probed and resets
+        // each launch, so it's false on a model's first use. The stream worker
+        // still does the authoritative per-model GGUF probe and falls back to
+        // batch if a given transcribe-cpp model can't actually stream. It waits
+        // for the background model load and queues audio meanwhile, so no audio
+        // is lost.
+        let model_can_stream = app
+            .state::<Arc<ModelManager>>()
+            .get_model_info(&settings.selected_model)
+            .map(|m| matches!(m.engine_type, EngineType::TranscribeCpp))
+            .unwrap_or(false);
+        if model_can_stream {
             tm.start_stream();
-            utils::show_streaming_overlay(app);
-        } else {
-            show_recording_overlay(app);
+        }
+        // The overlay only governs display. Live shows the growing live-text card
+        // (only meaningful when the model streams); Minimal shows the compact pill.
+        match settings.overlay_style {
+            OverlayStyle::Live if model_can_stream => utils::show_streaming_overlay(app),
+            OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
+            OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
         }
         debug!("Microphone mode - always_on: {}", is_always_on);
 
@@ -530,20 +543,18 @@ impl ShortcutAction for TranscribeAction {
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
-        // Overlay handoff on stop:
-        // - Active stream → keep the live panel visible; finalize is near-instant.
-        // - Live preview on but no active stream (batch fallback) → swap the
-        //   streaming card to a working spinner.
-        // - Live preview off → the legacy "transcribing" pill.
-        let live_preview = get_settings(app).live_preview;
-        // An active stream keeps its live panel visible (finalize is near-instant);
-        // only swap UI when there's no active stream.
-        if !tm.is_streaming() {
-            if live_preview {
+        // Overlay handoff on stop, by overlay style:
+        // - Live + active stream → keep the live panel visible (finalize is near-instant).
+        // - Live + no active stream (model can't stream → batch fallback) → swap the
+        //   live card to a working spinner.
+        // - Minimal / None → the compact "transcribing" pill (None no-ops in show_*).
+        let style = get_settings(app).overlay_style;
+        match (style, tm.is_streaming()) {
+            (OverlayStyle::Live, true) => {}
+            (OverlayStyle::Live, false) => {
                 tm.emit_stream_working(StreamWorkKind::Transcribing);
-            } else {
-                show_transcribing_overlay(app);
             }
+            _ => show_transcribing_overlay(app),
         }
 
         // Unmute before playing audio feedback so the stop sound is audible
@@ -630,7 +641,7 @@ impl ShortcutAction for TranscribeAction {
                             );
 
                             if post_process {
-                                if live_preview {
+                                if style == OverlayStyle::Live {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
                                     show_processing_overlay(&ah);

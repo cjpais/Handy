@@ -256,14 +256,6 @@
         "label": "Håll mikrofonen öppen mellan transkriptioner",
         "description": "Håller mikrofonströmmen öppen i 30 sekunder efter att inspelningen avslutats, vilket minskar latensen för transkriptioner efter varandra. Kan försämra Bluetooth-ljudkvaliteten medan den är aktiv."
       },
-      "livePreview": {
-        "label": "Liveförhandsvisning",
-        "description": "Visar transkriberingen i överlägget i realtid medan du talar. Fungerar endast med modeller som stöder streaming (leta efter Streaming-märket i modellväljaren)."
-      },
-      "livePreviewContinuous": {
-        "label": "Kontinuerligt liveförhandsvisningsljud",
-        "description": "Vidarebefordrar allt ljud (inklusive tystnad) till streamingmodellen i stället för röststyrda segment. Ökar beräkningsanvändningen men kan förbättra tidsprecisionen för vissa streamingmodeller."
-      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper-acceleration",
@@ -292,12 +284,22 @@
         "description": "Visa Handy-ikonen i systemfältet."
       },
       "overlay": {
-        "title": "Överlagringsposition",
-        "description": "Visa visuell återkoppling under inspelning och transkription. På Linux rekommenderas 'Ingen'.",
-        "options": {
-          "none": "Ingen",
-          "bottom": "Nederst",
-          "top": "Överst"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Ingen",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Överlagringsposition",
+          "description": "Visa visuell återkoppling under inspelning och transkription. På Linux rekommenderas 'Ingen'.",
+          "options": {
+            "bottom": "Nederst",
+            "top": "Överst"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {

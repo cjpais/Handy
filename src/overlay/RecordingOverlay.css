@@ -1,6 +1,7 @@
 /* App-matched tokens (mirrors App.css), auto light/dark for the overlay window */
 :root {
-  --s-surface: rgba(251, 251, 251, 0.86);
+  /* Flat surface matching the app UI (App.css --color-background #fbfbfb), ~80% opaque */
+  --s-surface: rgba(251, 251, 251, 0.8);
   --s-text: #0f0f0f;
   --s-muted: #6e6e6e;
   --s-faint: #9a9a9a;
@@ -8,11 +9,11 @@
   --s-hair: rgba(128, 128, 128, 0.12);
   --s-accent: #da5893;
   --s-accent-soft: rgba(218, 88, 147, 0.16);
-  --s-shadow: 0 22px 50px -20px rgba(40, 20, 30, 0.42);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --s-surface: rgba(40, 39, 37, 0.82);
+    /* Flat surface matching the app UI (App.css --color-background #2c2b29), ~80% opaque */
+    --s-surface: rgba(44, 43, 41, 0.98);
     --s-text: #fbfbfb;
     --s-muted: #a3a09a;
     --s-faint: #6f6c66;
@@ -20,112 +21,28 @@
     --s-hair: rgba(255, 255, 255, 0.08);
     --s-accent: #f28cbb;
     --s-accent-soft: rgba(242, 140, 187, 0.2);
-    --s-shadow: 0 22px 56px -18px rgba(0, 0, 0, 0.66);
   }
 }
 
 /* ============================================================
-   Compact pill (batch flow: recording / transcribing / processing)
+   Containers: compact (Minimal / transcribing / processing) and
+   the Live stage (pill → panel). Both render the same `.scard` base.
    ============================================================ */
-.recording-overlay {
-  height: 36px;
-  width: 172px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+.overlay-compact {
+  position: fixed;
+  inset: 0;
+  display: flex;
   align-items: center;
-  padding: 6px;
-  background: #000000cc;
-  border-radius: 18px;
+  justify-content: center;
   opacity: 0;
-  transition: opacity 300ms ease-out;
-  box-sizing: border-box;
+  transition: opacity 200ms ease-out;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-
-.overlay-left {
-  display: flex;
-  align-items: center;
-}
-
-.overlay-middle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.overlay-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.bars-container {
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  gap: 3px;
-  padding-bottom: 0px;
-  height: 24px;
-  overflow: hidden;
-}
-
-.bar {
-  width: 6px;
-  background: #ffe5ee;
-  max-height: 20px;
-  border-radius: 2px;
-  transition: height 80ms linear;
-  min-height: 4px;
-}
-
-.recording-overlay.fade-in {
+.overlay-compact.show {
   opacity: 1;
 }
 
-.transcribing-text {
-  color: white;
-  font-size: 12px;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  animation: transcribing-pulse 1.5s infinite ease-in-out;
-}
-
-@keyframes transcribing-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.cancel-button {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    transform 100ms ease-out;
-  flex-shrink: 0;
-}
-
-.cancel-button:hover {
-  background: #faa2ca33;
-  transform: scale(1.05);
-}
-
-.cancel-button:active {
-  transform: scale(0.95);
-}
-
-/* ============================================================
-   Live preview: a pill that sculpts open into a panel
-   ============================================================ */
 .stream-stage {
   position: fixed;
   inset: 0;
@@ -137,18 +54,17 @@
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Shared base card. Lightly styled: theme surface, soft shadow, gentle blur. */
 .scard {
   width: 168px; /* pill width */
-  border-radius: 20px;
+  border-radius: 18px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transform-origin: bottom center;
   background: var(--s-surface);
   border: 1px solid var(--s-border);
-  box-shadow: var(--s-shadow);
-  backdrop-filter: blur(28px) saturate(155%);
-  -webkit-backdrop-filter: blur(28px) saturate(155%);
+  /* Flat: no drop shadow, no backdrop blur/saturate (was a glassy gradient look). */
   /* pop-in plays on mount; morph (width/radius) is a transition */
   animation: scard-pop 460ms cubic-bezier(0.22, 1, 0.36, 1);
   transition:
@@ -179,7 +95,15 @@
 }
 .scard.working {
   width: 210px;
-  border-radius: 20px;
+  border-radius: 18px;
+}
+
+/* Compact form: a resting pill, no pop-in / morph. */
+.scard.compact {
+  width: auto;
+  min-width: 150px;
+  animation: none;
+  transition: none;
 }
 
 /* text region — auto-height open via grid-rows trick; region fades as a whole */
@@ -293,18 +217,22 @@
 .scard.open .stimer {
   opacity: 1;
 }
+
+/* Waveform — simple reactive bars, themed; heights set inline from mic levels. */
 .swave {
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 16px;
+  gap: 3px;
+  height: 18px;
   flex: none;
 }
 .swave i {
-  width: 2.5px;
-  border-radius: 3px;
+  width: 4px;
+  min-height: 3px;
+  max-height: 18px;
+  border-radius: 2px;
   background: var(--s-accent);
-  height: 3px;
+  transition: height 80ms linear;
 }
 .sx {
   width: 22px;
@@ -340,7 +268,7 @@
   transform: scale(0.95);
 }
 
-/* working state (transcribing / polishing) — pill + spinner */
+/* working state (transcribing / polishing) — spinner + label */
 .sspinner {
   width: 13px;
   height: 13px;

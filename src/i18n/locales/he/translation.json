@@ -256,14 +256,6 @@
         "label": "השאר את המיקרופון פתוח בין תמלולים",
         "description": "משאיר את זרם המיקרופון פתוח למשך 30 שניות אחרי סיום ההקלטה, וכך מפחית השהיה בתמלולים רצופים. עשוי לפגוע באיכות שמע Bluetooth בזמן שהאפשרות פעילה."
       },
-      "livePreview": {
-        "label": "תצוגה מקדימה בזמן אמת",
-        "description": "מציג את התמלול בשכבת-העל בזמן אמת תוך כדי הדיבור. פועל רק עם מודלים התומכים בסטרימינג (חפשו את תג הסטרימינג בבורר המודלים)."
-      },
-      "livePreviewContinuous": {
-        "label": "אודיו רציף של תצוגה מקדימה בזמן אמת",
-        "description": "מעביר את כל האודיו (כולל שתיקה) למודל הסטרימינג במקום מקטעים מסוננים לפי קול. מגדיל את צריכת המשאבים אך עשוי לשפר את דיוק התזמון בחלק ממודלי הסטרימינג."
-      },
       "acceleration": {
         "transcribe": {
           "title": "האצת Whisper",
@@ -292,12 +284,22 @@
         "description": "הצג את האייקון של Handy במגש המערכת."
       },
       "overlay": {
-        "title": "מיקום שכבת המשוב",
-        "description": "הצג שכבת משוב חזותית בזמן הקלטה ותמלול. בלינוקס מומלץ לבחור 'ללא'.",
-        "options": {
-          "none": "ללא",
-          "bottom": "למטה",
-          "top": "למעלה"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "ללא",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "מיקום שכבת המשוב",
+          "description": "הצג שכבת משוב חזותית בזמן הקלטה ותמלול. בלינוקס מומלץ לבחור 'ללא'.",
+          "options": {
+            "bottom": "למטה",
+            "top": "למעלה"
+          }
         }
       },
       "pasteMethod": {
@@ -527,6 +529,14 @@
       "recordingBuffer": {
         "title": "באפר הקלטה נוסף",
         "description": "זמן נוסף (במילישניות) להמשך הקלטה אחרי שחרור המקש, כדי ללכוד סוף דיבור. 0 = בלי באפר נוסף."
+      },
+      "streamingAudioMode": {
+        "title": "Streaming Audio Mode",
+        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
+        "options": {
+          "continuous": "All Audio",
+          "gated": "VAD Gated"
+        }
       }
     },
     "about": {
