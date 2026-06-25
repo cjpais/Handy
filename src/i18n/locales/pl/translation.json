@@ -236,6 +236,11 @@
       "volume": {
         "title": "Głośność",
         "description": "Dostosuj głośność dźwięków informacyjnych"
+      },
+      "recordingVolume": {
+        "title": "Głośność podczas nagrywania",
+        "description": "Jak głośne pozostają inne aplikacje podczas nagrywania. Wyciszenie (0%) to pierwotne zachowanie; wyższe wartości przyciszają dźwięk i przywracają go po zakończeniu. Tylko macOS.",
+        "muted": "Wyciszono"
       }
     },
     "advanced": {

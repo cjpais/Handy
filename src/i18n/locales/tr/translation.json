@@ -236,6 +236,11 @@
       "volume": {
         "title": "Ses Seviyesi",
         "description": "Sesli geri bildirimlerin ses seviyesini ayarlayın"
+      },
+      "recordingVolume": {
+        "title": "Kayıt sırasında ses düzeyi",
+        "description": "Kayıt sırasında diğer uygulamaların ne kadar duyulacağı. Sessiz (0%) özgün davranıştır; daha yüksek değerler sesi kısar ve durdurduğunuzda geri yükler. Yalnızca macOS.",
+        "muted": "Sessiz"
       }
     },
     "advanced": {

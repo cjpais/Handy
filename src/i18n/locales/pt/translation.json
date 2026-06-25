@@ -236,6 +236,11 @@
       "volume": {
         "title": "Volume",
         "description": "Ajustar o volume dos sons de feedback de áudio"
+      },
+      "recordingVolume": {
+        "title": "Volume durante a gravação",
+        "description": "Quão alto os outros aplicativos permanecem enquanto você grava. Mudo (0%) é o comportamento original; valores mais altos reduzem o áudio e o restauram ao parar. Apenas macOS.",
+        "muted": "Mudo"
       }
     },
     "advanced": {

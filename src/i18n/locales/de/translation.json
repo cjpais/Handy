@@ -236,6 +236,11 @@
       "volume": {
         "title": "Lautstärke",
         "description": "Lautstärke der Audio-Feedback-Töne anpassen"
+      },
+      "recordingVolume": {
+        "title": "Lautstärke während Aufnahme",
+        "description": "Wie laut andere Apps während der Aufnahme bleiben. Stumm (0 %) ist das ursprüngliche Verhalten; höhere Werte senken die Lautstärke ab und stellen sie nach dem Stoppen wieder her. Nur macOS.",
+        "muted": "Stumm"
       }
     },
     "advanced": {

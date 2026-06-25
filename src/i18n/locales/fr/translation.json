@@ -236,6 +236,11 @@
       "volume": {
         "title": "Volume",
         "description": "Ajuster le volume du signal sonore"
+      },
+      "recordingVolume": {
+        "title": "Volume pendant l'enregistrement",
+        "description": "Volume des autres applications pendant l'enregistrement. Muet (0 %) correspond au comportement d'origine ; des valeurs plus élevées atténuent le son et le restaurent à l'arrêt. macOS uniquement.",
+        "muted": "Muet"
       }
     },
     "advanced": {

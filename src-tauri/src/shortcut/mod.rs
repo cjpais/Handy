@@ -1061,6 +1061,17 @@ pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_recording_duck_volume_setting(app: AppHandle, volume: u8) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    // 0 = mute (original behavior); cap below 100 so the setting always has
+    // an audible effect while recording
+    settings.recording_duck_volume = volume.min(90);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.append_trailing_space = enabled;

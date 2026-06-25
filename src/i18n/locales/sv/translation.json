@@ -236,6 +236,11 @@
       "volume": {
         "title": "Volym",
         "description": "Justera volymen för ljudåterkopplingsljud"
+      },
+      "recordingVolume": {
+        "title": "Volym under inspelning",
+        "description": "Hur högt andra appar förblir medan du spelar in. Tystad (0 %) är det ursprungliga beteendet; högre värden sänker ljudet och återställer det när du stoppar. Endast macOS.",
+        "muted": "Tystad"
       }
     },
     "advanced": {
