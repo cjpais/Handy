@@ -9,6 +9,8 @@ mod commands;
 mod helpers;
 mod input;
 mod llm_client;
+#[cfg(any(test, target_os = "macos"))]
+mod macos_audio;
 mod managers;
 mod overlay;
 pub mod portable;
