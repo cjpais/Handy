@@ -157,6 +157,11 @@
     },
     "general": {
       "title": "General",
+      "keyboardImplementation": {
+        "title": "Shortcut Method",
+        "description": "How Handy detects your shortcut. Handy Keys (the default) works for most setups and also supports modifier-only shortcuts. If you use a key remapper such as Hyperkey or Karabiner (for example, a Caps Lock hyper key), switch to Tauri Global Shortcut so Handy can detect the remapped keys.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "shortcut": {
         "title": "Handy Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
@@ -500,11 +505,6 @@
       "appendTrailingSpace": {
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
-      },
-      "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "App Data:",

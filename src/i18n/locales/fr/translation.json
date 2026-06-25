@@ -213,6 +213,11 @@
       "pushToTalk": {
         "label": "Appuyer pour parler",
         "description": "Maintenez pour enregistrer, relâchez pour arrêter"
+      },
+      "keyboardImplementation": {
+        "title": "Gestion du clavier",
+        "description": "Choisissez le système des raccourcis clavier.",
+        "bindingsReset": "Raccourcis clavier étaient incompatibles et ont été réinitialisés aux valeurs par défaut"
       }
     },
     "sound": {
@@ -500,11 +505,6 @@
       "appendTrailingSpace": {
         "label": "Ajouter une espace final",
         "description": "Ajouter une espace après la transcription collée"
-      },
-      "keyboardImplementation": {
-        "title": "Gestion du clavier",
-        "description": "Choisissez le système des raccourcis clavier.",
-        "bindingsReset": "Raccourcis clavier étaient incompatibles et ont été réinitialisés aux valeurs par défaut"
       },
       "paths": {
         "appData": "Données de l'application :",

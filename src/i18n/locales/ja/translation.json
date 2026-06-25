@@ -213,6 +213,11 @@
       "pushToTalk": {
         "label": "プッシュトゥトーク",
         "description": "押し続けて録音、離して停止"
+      },
+      "keyboardImplementation": {
+        "title": "キーボード実装",
+        "description": "キーボードショートカットのバックエンドを選択してください。",
+        "bindingsReset": "キーボードショートカットに互換性がなかったため、デフォルトにリセットされました"
       }
     },
     "sound": {
@@ -500,11 +505,6 @@
       "appendTrailingSpace": {
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
-      },
-      "keyboardImplementation": {
-        "title": "キーボード実装",
-        "description": "キーボードショートカットのバックエンドを選択してください。",
-        "bindingsReset": "キーボードショートカットに互換性がなかったため、デフォルトにリセットされました"
       },
       "paths": {
         "appData": "アプリデータ:",

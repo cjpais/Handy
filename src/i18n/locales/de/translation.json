@@ -213,6 +213,11 @@
       "pushToTalk": {
         "label": "Push-to-Talk",
         "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      },
+      "keyboardImplementation": {
+        "title": "Tastatur-Implementierung",
+        "description": "Wähle das Backend für Tastaturkürzel.",
+        "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
       }
     },
     "sound": {
@@ -500,11 +505,6 @@
       "appendTrailingSpace": {
         "label": "Leerzeichen anhängen",
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
-      },
-      "keyboardImplementation": {
-        "title": "Tastatur-Implementierung",
-        "description": "Wähle das Backend für Tastaturkürzel.",
-        "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
       },
       "paths": {
         "appData": "App-Daten:",

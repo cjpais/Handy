@@ -55,13 +55,42 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
       const rawKey = getKeyName(e, osType);
       const key = normalizeKey(rawKey);
 
-      if (!keyPressed.includes(key)) {
-        setKeyPressed((prev) => [...prev, key]);
-        // Also add to recorded keys if not already there
-        if (!recordedKeys.includes(key)) {
-          setRecordedKeys((prev) => [...prev, key]);
+      // Collect modifiers from the event's flag state, not just from discrete
+      // modifier keydown events. Remapping tools like Hyperkey/Karabiner apply
+      // modifiers (e.g. Ctrl+Option+Command) as event flags WITHOUT firing a
+      // separate keydown for each modifier, so relying on per-key keydowns alone
+      // silently drops them. The DOM modifier flags always reflect full state.
+      const flagModifiers: string[] = [];
+      if (e.ctrlKey) flagModifiers.push("ctrl");
+      if (e.altKey) flagModifiers.push(osType === "macos" ? "option" : "alt");
+      if (e.metaKey)
+        flagModifiers.push(
+          osType === "macos"
+            ? "command"
+            : osType === "windows"
+              ? "win"
+              : "super",
+        );
+      if (e.shiftKey) flagModifiers.push("shift");
+
+      const allModifierNames = [
+        "ctrl", "control", "shift", "alt", "option",
+        "meta", "command", "cmd", "super", "win", "windows",
+      ];
+      const keysToAdd = allModifierNames.includes(key.toLowerCase())
+        ? flagModifiers
+        : [...flagModifiers, key];
+
+      const mergeUnique = (prev: string[]) => {
+        const next = [...prev];
+        for (const k of keysToAdd) {
+          if (!next.includes(k)) next.push(k);
         }
-      }
+        return next;
+      };
+
+      setKeyPressed(mergeUnique);
+      setRecordedKeys(mergeUnique);
     };
 
     const handleKeyUp = async (e: KeyboardEvent) => {
@@ -75,25 +104,36 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
       // Remove from currently pressed keys
       setKeyPressed((prev) => prev.filter((k) => k !== key));
 
-      // If no keys are pressed anymore, commit the shortcut
+      const modifiers = [
+        "ctrl",
+        "control",
+        "shift",
+        "alt",
+        "option",
+        "meta",
+        "command",
+        "cmd",
+        "super",
+        "win",
+        "windows",
+      ];
+
       const updatedKeyPressed = keyPressed.filter((k) => k !== key);
-      if (updatedKeyPressed.length === 0 && recordedKeys.length > 0) {
+      const releasedNonModifier = !modifiers.includes(key.toLowerCase());
+      const hasRecordedNonModifier = recordedKeys.some(
+        (k) => !modifiers.includes(k.toLowerCase()),
+      );
+
+      // Commit when all keys released, or when a non-modifier key is released
+      // (the second case handles macOS Command key suppressing keyup for other keys)
+      const shouldCommit =
+        (updatedKeyPressed.length === 0 && recordedKeys.length > 0) ||
+        (releasedNonModifier && hasRecordedNonModifier);
+
+      if (shouldCommit) {
         // Create the shortcut string from all recorded keys
         // Sort keys so modifiers come first, then the main key
-        const modifiers = [
-          "ctrl",
-          "control",
-          "shift",
-          "alt",
-          "option",
-          "meta",
-          "command",
-          "cmd",
-          "super",
-          "win",
-          "windows",
-        ];
-        const sortedKeys = recordedKeys.sort((a, b) => {
+        const sortedKeys = [...recordedKeys].sort((a, b) => {
           const aIsModifier = modifiers.includes(a.toLowerCase());
           const bIsModifier = modifiers.includes(b.toLowerCase());
           if (aIsModifier && !bIsModifier) return -1;

@@ -213,6 +213,11 @@
       "pushToTalk": {
         "label": "Bas Konuş",
         "description": "Kaydetmek için basılı tutun, durdurmak için bırakın"
+      },
+      "keyboardImplementation": {
+        "title": "Klavye Uygulaması",
+        "description": "Klavye kısayolları için kullanılacak altyapıyı seçin.",
+        "bindingsReset": "Klavye kısayolları uyumsuzdu ve varsayılan ayarlara sıfırlandı"
       }
     },
     "sound": {
@@ -500,11 +505,6 @@
       "appendTrailingSpace": {
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
-      },
-      "keyboardImplementation": {
-        "title": "Klavye Uygulaması",
-        "description": "Klavye kısayolları için kullanılacak altyapıyı seçin.",
-        "bindingsReset": "Klavye kısayolları uyumsuzdu ve varsayılan ayarlara sıfırlandı"
       },
       "paths": {
         "appData": "Uygulama Verileri:",
