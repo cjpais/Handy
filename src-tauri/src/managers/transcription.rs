@@ -24,7 +24,7 @@ use transcribe_rs::{
         sense_voice::{SenseVoiceModel, SenseVoiceParams},
         Quantization,
     },
-    whisper_cpp::{WhisperEngine, WhisperInferenceParams},
+    whisper_cpp::{WhisperEngine, WhisperInferenceParams, WhisperLoadParams},
     SpeechModel, TranscribeOptions,
 };
 
@@ -251,6 +251,19 @@ impl TranscriptionManager {
     }
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
+        self.load_model_with_device(model_id, None)
+    }
+
+    /// Like [`load_model`](Self::load_model), but lets a caller hard-select the
+    /// compute device for this one load by its `--list-devices` index (0 = CPU,
+    /// 1.. = a specific GPU). `None` keeps the persisted accelerator setting
+    /// (which may be Auto). Only affects whisper.cpp models; the selection is
+    /// not persisted.
+    pub fn load_model_with_device(
+        &self,
+        model_id: &str,
+        device_index: Option<usize>,
+    ) -> Result<()> {
         let load_start = std::time::Instant::now();
         debug!("Starting to load model: {}", model_id);
 
@@ -301,7 +314,27 @@ impl TranscriptionManager {
 
         let loaded_engine = match model_info.engine_type {
             EngineType::Whisper => {
-                let engine = WhisperEngine::load(&model_path).map_err(|e| {
+                // With an explicit `device_index` (the --device-index flag),
+                // hard-select that device for this load via load_with_params;
+                // otherwise WhisperEngine::load reads the persisted accelerator
+                // preference from the global atomics (set by
+                // apply_accelerator_settings). The selection is not persisted.
+                let engine = match device_index {
+                    Some(idx) => {
+                        let (use_gpu, gpu_device) = resolve_device_index(idx)
+                            .inspect_err(|e| emit_loading_failed(&e.to_string()))?;
+                        WhisperEngine::load_with_params(
+                            &model_path,
+                            WhisperLoadParams {
+                                use_gpu,
+                                gpu_device,
+                                ..Default::default()
+                            },
+                        )
+                    }
+                    None => WhisperEngine::load(&model_path),
+                }
+                .map_err(|e| {
                     let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
                     emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
@@ -477,12 +510,19 @@ impl TranscriptionManager {
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.
+        // Validate against the model that's actually loaded (which can differ
+        // from settings.selected_model when a caller loaded a specific model —
+        // e.g. the --transcribe-file path's --model), not the persisted
+        // selection.
+        let active_model = self
+            .get_current_model()
+            .unwrap_or_else(|| settings.selected_model.clone());
         let validated_language = if settings.selected_language == "auto" {
             "auto".to_string()
         } else {
             let is_supported = self
                 .model_manager
-                .get_model_info(&settings.selected_model)
+                .get_model_info(&active_model)
                 .map(|info| {
                     info.supported_languages.is_empty()
                         || info
@@ -766,6 +806,68 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
     };
     accel::set_ort_accelerator(ort_pref);
     info!("ORT accelerator set to: {}", ort_pref);
+}
+
+/// Human-readable list of the whisper compute devices selectable via
+/// `--device-index`, for the `--list-devices` flag. Index 0 is always CPU;
+/// indices 1.. are the GPUs enumerated by transcribe-rs (whisper.cpp), in
+/// order. The reported `index` is the value to pass to `--device-index`.
+pub fn describe_compute_devices() -> Vec<String> {
+    let mut out = vec!["index=0 kind=cpu name=CPU".to_string()];
+    for (i, d) in cached_gpu_devices().iter().enumerate() {
+        out.push(format!(
+            "index={} kind=gpu name={} vram={}MB",
+            i + 1,
+            d.name,
+            d.total_vram_mb
+        ));
+    }
+    out
+}
+
+/// Resolve a `--list-devices` index to the (use_gpu, gpu_device) pair for a
+/// whisper.cpp model load (the `--device-index` flag). Index 0 selects the CPU
+/// (use_gpu = false); indices 1.. select the Nth GPU by its backend id. Errors
+/// if the index isn't a registered device.
+fn resolve_device_index(index: usize) -> Result<(bool, i32)> {
+    if index == 0 {
+        return Ok((false, 0));
+    }
+    let gpus = cached_gpu_devices();
+    let gpu = gpus.get(index - 1).ok_or_else(|| {
+        anyhow::anyhow!("No compute device with index {index} (see --list-devices)")
+    })?;
+    Ok((true, gpu.id))
+}
+
+/// Human-readable description of the whisper compute device that a load with the
+/// given `--device-index` will actually bind, for headless diagnostics (e.g.
+/// confirming `--device-index` bound a GPU rather than falling back to CPU).
+/// Mirrors transcribe-rs's resolution: an explicit index, else the persisted
+/// accelerator setting (whose Auto reports as "gpu:auto"). whisper.cpp only.
+pub fn describe_effective_whisper_device(device_index: Option<usize>) -> String {
+    use transcribe_rs::accel::{get_whisper_accelerator, get_whisper_gpu_device, GPU_DEVICE_AUTO};
+
+    let (use_gpu, gpu_device) = match device_index {
+        Some(idx) => match resolve_device_index(idx) {
+            Ok(pair) => pair,
+            Err(_) => return format!("index {idx} (invalid)"),
+        },
+        None => (
+            get_whisper_accelerator().use_gpu(),
+            get_whisper_gpu_device(),
+        ),
+    };
+    if !use_gpu {
+        return "cpu".to_string();
+    }
+    if gpu_device == GPU_DEVICE_AUTO {
+        return "gpu:auto".to_string();
+    }
+    match cached_gpu_devices().iter().find(|d| d.id == gpu_device) {
+        Some(d) => format!("gpu:{} ({})", gpu_device, d.name),
+        None => format!("gpu:{}", gpu_device),
+    }
 }
 
 #[derive(Serialize, Clone, Debug, Type)]
