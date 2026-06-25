@@ -529,8 +529,26 @@ pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Res
 #[specta::specta]
 pub fn change_selected_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.selected_language = language;
+    settings.selected_language = language.clone();
+
+    // Maintain recent languages MRU list
+    if language != "auto" {
+        settings.recent_languages.retain(|l| l != &language);
+        settings.recent_languages.insert(0, language.clone());
+        settings.recent_languages.truncate(5);
+    }
+
     settings::write_settings(&app, settings);
+
+    // Notify frontend so the settings UI stays in sync
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "selected_language",
+            "value": language
+        }),
+    );
+
     Ok(())
 }
 

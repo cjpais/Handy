@@ -6,7 +6,8 @@
     "unloadModel": "Modeli boşalt",
     "model": "Model",
     "quit": "Çıkış",
-    "cancel": "İptal"
+    "cancel": "İptal",
+    "language": "Dil"
   },
   "sidebar": {
     "general": "Genel",

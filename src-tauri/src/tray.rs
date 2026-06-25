@@ -93,6 +93,112 @@ fn version_label() -> String {
     }
 }
 
+/// Append a single language entry to the submenu, checked if it is active.
+fn append_language_item(
+    app: &AppHandle,
+    submenu: &Submenu<tauri::Wry>,
+    current_language: &str,
+    code: &str,
+) {
+    let item = CheckMenuItem::with_id(
+        app,
+        format!("language_select:{}", code),
+        crate::languages::language_name(code),
+        true,
+        current_language == code,
+        None::<&str>,
+    )
+    .expect("failed to create language item");
+    let _ = submenu.append(&item);
+}
+
+/// Build the language submenu for the tray menu.
+fn build_language_submenu(
+    app: &AppHandle,
+    settings: &settings::AppSettings,
+    model_manager: &ModelManager,
+    strings: &crate::tray_i18n::TrayStrings,
+) -> Submenu<tauri::Wry> {
+    let current_language = settings.selected_language.as_str();
+    let model_info = model_manager.get_model_info(&settings.selected_model);
+
+    let supports_selection = model_info
+        .as_ref()
+        .map(|m| m.supports_language_selection)
+        .unwrap_or(true);
+    let supported_languages: Vec<String> = model_info
+        .as_ref()
+        .map(|m| m.supported_languages.clone())
+        .unwrap_or_default();
+
+    // Walk the shared list in display (popularity-ish) order and keep entries
+    // the model supports — mirroring the frontend LanguageSelector. An empty
+    // supported list means "all languages" (e.g. Whisper). Iterating the shared
+    // list rather than the model's raw codes preserves the ordering and avoids
+    // surfacing codes with no display name (e.g. the bare "zh" used only for
+    // legacy-value validation).
+    let languages: Vec<&str> = crate::languages::LANGUAGES
+        .iter()
+        .map(|(code, _)| *code)
+        .filter(|code| {
+            supported_languages.is_empty()
+                || supported_languages.iter().any(|l| l.as_str() == *code)
+        })
+        .collect();
+
+    let active_label = if supports_selection {
+        crate::languages::language_name(current_language)
+    } else {
+        crate::languages::language_name("auto")
+    };
+    let language_label = format!("{} ({})", strings.language, active_label);
+
+    let submenu = Submenu::with_id(app, "language_submenu", &language_label, supports_selection)
+        .expect("failed to create language submenu");
+
+    if !supports_selection {
+        return submenu;
+    }
+
+    // Auto detect always first.
+    append_language_item(app, &submenu, current_language, "auto");
+
+    // Recent (most-recently-used) section, only worth showing for long lists.
+    let recent: Vec<&str> = if languages.len() > 10 {
+        settings
+            .recent_languages
+            .iter()
+            .map(String::as_str)
+            .filter(|code| languages.contains(code))
+            .take(5)
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    if !recent.is_empty() {
+        let separator = PredefinedMenuItem::separator(app).expect("failed to create separator");
+        let _ = submenu.append(&separator);
+        for &code in &recent {
+            append_language_item(app, &submenu, current_language, code);
+        }
+    }
+
+    // Full list in display order, skipping anything already shown above.
+    if !languages.is_empty() {
+        let separator = PredefinedMenuItem::separator(app).expect("failed to create separator");
+        let _ = submenu.append(&separator);
+        for &code in &languages {
+            if recent.contains(&code) {
+                continue;
+            }
+            append_language_item(app, &submenu, current_language, code);
+        }
+    }
+
+    submenu
+}
+
 pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
     let settings = settings::get_settings(app);
 
@@ -168,6 +274,8 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         submenu
     };
 
+    let language_submenu = build_language_submenu(app, &settings, &model_manager, &strings);
+
     let unload_model_i = MenuItem::with_id(
         app,
         "unload_model",
@@ -206,6 +314,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                 &copy_last_transcript_i,
                 &separator(),
                 &model_submenu,
+                &language_submenu,
                 &unload_model_i,
                 &separator(),
                 &settings_i,
