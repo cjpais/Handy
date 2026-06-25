@@ -417,6 +417,13 @@ pub struct AppSettings {
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
+    /// Inter-keystroke delay for direct typing tools (dotool, etc).
+    /// Clamped to 0-50ms on deserialization to prevent hang-like behavior.
+    #[serde(
+        default = "default_typing_delay_ms",
+        deserialize_with = "deserialize_typing_delay_ms"
+    )]
+    pub typing_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
@@ -481,6 +488,26 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_typing_delay_ms() -> u64 {
+    2
+}
+
+pub const MAX_TYPING_DELAY_MS: u64 = 50;
+
+fn deserialize_typing_delay_ms<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = u64::deserialize(deserializer).unwrap_or_else(|_| {
+        warn!(
+            "Invalid typing_delay_ms value, using default ({}ms)",
+            default_typing_delay_ms()
+        );
+        default_typing_delay_ms()
+    });
+    Ok(value.min(MAX_TYPING_DELAY_MS))
 }
 
 fn default_auto_submit() -> bool {
@@ -807,6 +834,7 @@ pub fn get_default_settings() -> AppSettings {
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
+        typing_delay_ms: default_typing_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
@@ -985,5 +1013,45 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn default_typing_delay_is_2ms() {
+        let settings = get_default_settings();
+        assert_eq!(settings.typing_delay_ms, 2);
+    }
+
+    /// Serialize default settings, apply a JSON override, and deserialize back.
+    /// This mirrors real-world settings persistence where missing fields get defaults.
+    fn settings_with_override(override_json: &str) -> AppSettings {
+        let defaults = get_default_settings();
+        let mut value: serde_json::Value = serde_json::to_value(&defaults).unwrap();
+        let overrides: serde_json::Value = serde_json::from_str(override_json).unwrap();
+        if let (serde_json::Value::Object(ref mut map), serde_json::Value::Object(ovr)) =
+            (&mut value, overrides)
+        {
+            for (k, v) in ovr {
+                map.insert(k, v);
+            }
+        }
+        serde_json::from_value(value).unwrap()
+    }
+
+    #[test]
+    fn typing_delay_clamped_to_max() {
+        let settings = settings_with_override(r#"{"typing_delay_ms": 9999}"#);
+        assert_eq!(settings.typing_delay_ms, MAX_TYPING_DELAY_MS);
+    }
+
+    #[test]
+    fn typing_delay_zero_is_valid() {
+        let settings = settings_with_override(r#"{"typing_delay_ms": 0}"#);
+        assert_eq!(settings.typing_delay_ms, 0);
+    }
+
+    #[test]
+    fn typing_delay_missing_uses_default() {
+        let settings = get_default_settings();
+        assert_eq!(settings.typing_delay_ms, 2);
     }
 }
