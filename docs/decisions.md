@@ -18,13 +18,13 @@ Record significant product and technical choices here so future-you (and agents)
 
 ## 2026-05-16 — Product fork, not rebrand
 
-**Status:** decided  
+**Status:** decided
 
-**Context:** Forked [cjpais/Handy](https://github.com/cjpais/Handy) into [felixbaileymurray/goldfish](https://github.com/felixbaileymurray/goldfish). Goal is a new app with extended functionality, not rewriting offline STT from scratch.  
+**Context:** Forked [cjpais/Handy](https://github.com/cjpais/Handy) into [felixbaileymurray/goldfish](https://github.com/felixbaileymurray/goldfish). Goal is a new app with extended functionality, not rewriting offline STT from scratch.
 
-**Decision:** Treat Handy as an **engine** (audio, VAD, local ASR, paste, models). Build Goldfish as a **separate product** on top with new code in isolated `goldfish/` modules and minimal hooks in upstream-owned files.  
+**Decision:** Treat Handy as an **engine** (audio, VAD, local ASR, paste, models). Build Goldfish as a **separate product** on top with new code in isolated `goldfish/` modules and minimal hooks in upstream-owned files.
 
-**Consequences:** No need for day-one find-replace of every “Handy” string. Need clear product boundary (bundle ID, updater, releases) before shipping to users.  
+**Consequences:** No need for day-one find-replace of every “Handy” string. Need clear product boundary (bundle ID, updater, releases) before shipping to users.
 
 **Alternatives considered:** Full rebrand via global rename (rejected: merge pain, little value); rewrite STT stack (rejected: redundant with Handy).
 
@@ -32,13 +32,13 @@ Record significant product and technical choices here so future-you (and agents)
 
 ## 2026-05-16 — Stay synced with upstream Handy
 
-**Status:** decided  
+**Status:** decided
 
-**Context:** Want bugfixes and engine improvements from Handy without maintaining a divergent copy of core audio/transcription code.  
+**Context:** Want bugfixes and engine improvements from Handy without maintaining a divergent copy of core audio/transcription code.
 
-**Decision:** Add `upstream` remote pointing at `cjpais/Handy`; use a documented merge workflow (see [fork-strategy.md](./fork-strategy.md)). Prefer **two-branch** model (`upstream-sync` + `goldfish`) as Goldfish diverges. Maintain `UPSTREAM.md` at repo root (to be created) with last merged SHA.  
+**Decision:** Add `upstream` remote pointing at `cjpais/Handy`; use a documented merge workflow (see [fork-strategy.md](./fork-strategy.md)). Prefer **two-branch** model (`upstream-sync` + `goldfish`) as Goldfish diverges. Maintain `UPSTREAM.md` at repo root (to be created) with last merged SHA.
 
-**Consequences:** Occasional merge conflicts in `tauri.conf.json`, `lib.rs`, `App.tsx`. Goldfish-only features stay in `src-tauri/src/goldfish/` and `src/goldfish/` to reduce conflict surface.  
+**Consequences:** Occasional merge conflicts in `tauri.conf.json`, `lib.rs`, `App.tsx`. Goldfish-only features stay in `src-tauri/src/goldfish/` and `src/goldfish/` to reduce conflict surface.
 
 **Alternatives considered:** Single `main` with direct upstream merges (acceptable early); vendoring core into a separate crate (deferred until merges are painful).
 
@@ -49,11 +49,11 @@ Record significant product and technical choices here so future-you (and agents)
 **Status:** decided / execution deferred  
 **Trigger to execute:** Before the first build is distributed to a second machine, or before re-enabling the updater. Until then the dev build can keep `com.pais.handy` because no one is installing it elsewhere.
 
-**Context:** Goldfish must be installable and identifiable as its own app, not an update channel for Handy.  
+**Context:** Goldfish must be installable and identifiable as its own app, not an update channel for Handy.
 
 **Decision:** Use a new Tauri bundle identifier (e.g. `com.felixbaileymurray.goldfish`), `productName` “Goldfish”, own icons, and **disable or replace** Handy’s updater endpoint. The updater disable is being executed early (see 2026-05-19 entry) even though the rest of the identity split is deferred, because the updater is the highest-blast-radius footgun.
 
-**Consequences:** When executed: new app data directory; users do not inherit Handy settings/models automatically; can run beside Handy.  
+**Consequences:** When executed: new app data directory; users do not inherit Handy settings/models automatically; can run beside Handy.
 
 **Alternatives considered:** Keep `com.pais.handy` to reuse data dir (rejected for a distinct product).
 
@@ -61,11 +61,11 @@ Record significant product and technical choices here so future-you (and agents)
 
 ## 2026-05-16 — Documentation in `docs/`
 
-**Status:** decided  
+**Status:** decided
 
-**Context:** Need transparent, local documentation to track analysis and decisions over time.  
+**Context:** Need transparent, local documentation to track analysis and decisions over time.
 
-**Decision:** Keep project-specific docs in `docs/` (`codebase-overview.md`, `fork-strategy.md`, `decisions.md`). Leave upstream docs at repo root (`README.md`, `AGENTS.md`, `BUILD.md`).  
+**Decision:** Keep project-specific docs in `docs/` (`codebase-overview.md`, `fork-strategy.md`, `decisions.md`). Leave upstream docs at repo root (`README.md`, `AGENTS.md`, `BUILD.md`).
 
 **Consequences:** Update this file when making non-obvious choices; refresh overview when architecture changes materially after upstream merges.
 
@@ -73,7 +73,7 @@ Record significant product and technical choices here so future-you (and agents)
 
 ## 2026-05-19 — Single `main` branch for now, two-branch when triggered
 
-**Status:** decided  
+**Status:** decided
 
 **Context:** [fork-strategy.md](./fork-strategy.md) originally recommended a two-branch model (`upstream-sync` + `goldfish`). On review, the value of that split is staging upstream merges and enabling clean cherry-picks back upstream — neither matters yet (no users, no releases, no plan to contribute fixes upstream). The branch model does not help with separating "what's ours vs. theirs"; directory layout does that.
 
@@ -104,7 +104,7 @@ Record significant product and technical choices here so future-you (and agents)
 
 ## 2026-05-19 — Defer post-transcription hook location
 
-**Status:** decided  
+**Status:** decided
 
 **Context:** The original fork-strategy.md named `process_transcription_output` as the canonical post-transcription hook. That function does not exist in the codebase — it was invented by an earlier doc-writing pass. The real pipeline runs through `transcription_coordinator.rs::stop()` and `managers/transcription.rs`.
 

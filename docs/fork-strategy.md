@@ -31,11 +31,11 @@ flowchart TB
   Identity -->|your commits only| goldfish
 ```
 
-| Layer | Treatment | Examples |
-|-------|-----------|----------|
-| **Engine** | Sync from upstream; minimize edits | `audio_toolkit/`, `managers/`, `transcription_coordinator.rs`, `transcribe-rs`, `blob.handy.computer` model URLs |
-| **Product** | Yours; edit freely | Features, navigation, onboarding, release pipeline, icons |
-| **Gray zone** | Touch lightly; few hook lines | `lib.rs`, `App.tsx`, sidebar composition, i18n overlays |
+| Layer         | Treatment                          | Examples                                                                                                         |
+| ------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Engine**    | Sync from upstream; minimize edits | `audio_toolkit/`, `managers/`, `transcription_coordinator.rs`, `transcribe-rs`, `blob.handy.computer` model URLs |
+| **Product**   | Yours; edit freely                 | Features, navigation, onboarding, release pipeline, icons                                                        |
+| **Gray zone** | Touch lightly; few hook lines      | `lib.rs`, `App.tsx`, sidebar composition, i18n overlays                                                          |
 
 ## Git remotes and branches
 
@@ -53,10 +53,10 @@ This is what the fork uses today. Workflow lives in [UPSTREAM.md](../UPSTREAM.md
 
 ### Switch to two-branch when either trigger fires
 
-| Branch | Purpose |
-|--------|---------|
+| Branch          | Purpose                                           |
+| --------------- | ------------------------------------------------- |
 | `upstream-sync` | Stays close to `upstream/main`; engine fixes only |
-| `goldfish` | Default dev: product identity + Goldfish features |
+| `goldfish`      | Default dev: product identity + Goldfish features |
 
 Switch when:
 
@@ -77,15 +77,15 @@ Created 2026-05-19. Documents remotes, merge workflow, conflict hot-spots, and t
 
 ## Product identity (minimum for “a new app”)
 
-| Item | Handy today | Goldfish direction |
-|------|-------------|-------------------|
-| Bundle ID | `com.pais.handy` in `src-tauri/tauri.conf.json` | e.g. `com.felixbaileymurray.goldfish` — new data dir; can run beside Handy |
-| `productName` | `Handy` | `Goldfish` |
-| Updater | cjpais releases + their signing key | Disable until own releases, or own `latest.json` + keys |
-| Windows signing | cjpais Azure config in tauri.conf | Remove/replace for local dev; own keys for release |
-| About / links | Handy URLs in `AboutSettings.tsx` | Goldfish repo + your links |
-| Icons | `src-tauri/icons/` | New set |
-| `package.json` name | `handy-app` | `goldfish` (tooling) |
+| Item                | Handy today                                     | Goldfish direction                                                         |
+| ------------------- | ----------------------------------------------- | -------------------------------------------------------------------------- |
+| Bundle ID           | `com.pais.handy` in `src-tauri/tauri.conf.json` | e.g. `com.felixbaileymurray.goldfish` — new data dir; can run beside Handy |
+| `productName`       | `Handy`                                         | `Goldfish`                                                                 |
+| Updater             | cjpais releases + their signing key             | Disable until own releases, or own `latest.json` + keys                    |
+| Windows signing     | cjpais Azure config in tauri.conf               | Remove/replace for local dev; own keys for release                         |
+| About / links       | Handy URLs in `AboutSettings.tsx`               | Goldfish repo + your links                                                 |
+| Icons               | `src-tauri/icons/`                              | New set                                                                    |
+| `package.json` name | `handy-app`                                     | `goldfish` (tooling)                                                       |
 
 **Keep unchanged (shared infrastructure):**
 
@@ -110,12 +110,12 @@ These are the source of truth for "what is ours." Concrete file layout and exact
 
 Registering Goldfish into [src-tauri/src/lib.rs](../src-tauri/src/lib.rs) is **not** a one-liner. There are four upstream-owned regions you have to touch, all of which upstream also edits — so the goal is to **minimize conflict shape**, not eliminate it:
 
-| Touchpoint | Where | Strategy |
-|------------|-------|----------|
-| `mod goldfish;` declaration | top of `lib.rs` | One line, low conflict risk |
-| `collect_commands![...]` macro | inside `pub fn run()` | Always append Goldfish commands at the **end** of the list, in a contiguous block preceded by a `// === Goldfish ===` marker. Conflicts become one-line trailing additions, trivial to resolve. |
-| `collect_events![...]` macro | same area | Same pattern as commands. |
-| State / setup registration | end of `initialize_core_logic()` | One call: `goldfish::register_state(app_handle);` |
+| Touchpoint                     | Where                            | Strategy                                                                                                                                                                                        |
+| ------------------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mod goldfish;` declaration    | top of `lib.rs`                  | One line, low conflict risk                                                                                                                                                                     |
+| `collect_commands![...]` macro | inside `pub fn run()`            | Always append Goldfish commands at the **end** of the list, in a contiguous block preceded by a `// === Goldfish ===` marker. Conflicts become one-line trailing additions, trivial to resolve. |
+| `collect_events![...]` macro   | same area                        | Same pattern as commands.                                                                                                                                                                       |
+| State / setup registration     | end of `initialize_core_logic()` | One call: `goldfish::register_state(app_handle);`                                                                                                                                               |
 
 The plugin registration block (`tauri_plugin_*`) is currently untouched by Goldfish; if it ever needs a Goldfish plugin, append at the end.
 
@@ -142,11 +142,11 @@ We have not yet picked a concrete hook location for post-transcription work. Rea
 
 Until then:
 
-| Need | Prefer | Avoid |
-|------|--------|-------|
-| New shortcut action | Goldfish-only command invoked from a binding | Copy-paste of `shortcut::handy_keys` |
-| New settings | Goldfish section behind its own route | Edit every Handy settings file |
-| New UI screen | New route in `src/goldfish/`, mounted from `App.tsx` via the [composition pattern](#5-frontend-composition-pattern) | Rewrite `App.tsx` wholesale |
+| Need                | Prefer                                                                                                              | Avoid                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| New shortcut action | Goldfish-only command invoked from a binding                                                                        | Copy-paste of `shortcut::handy_keys` |
+| New settings        | Goldfish section behind its own route                                                                               | Edit every Handy settings file       |
+| New UI screen       | New route in `src/goldfish/`, mounted from `App.tsx` via the [composition pattern](#5-frontend-composition-pattern) | Rewrite `App.tsx` wholesale          |
 
 ### 5. Frontend composition pattern
 
@@ -201,20 +201,20 @@ Plus Rust stable and platform deps in `BUILD.md`.
 
 ## Phased implementation
 
-| Phase | Scope |
-|-------|--------|
-| **1 — Product split** | Bundle ID, productName, icons, disable updater, Goldfish About/README, `UPSTREAM.md`, upstream remote |
-| **2 — Extension scaffold** | `goldfish/mod.rs`, `src/goldfish/`, trivial command + empty settings section |
-| **3 — First feature** | Real differentiator via coordinator / post-transcription hooks |
-| **4 — UI divergence** | Onboarding, sidebar, remove unused Handy UI |
-| **Ongoing** | Upstream merges; log SHA in `UPSTREAM.md` and [decisions.md](./decisions.md) |
+| Phase                      | Scope                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **1 — Product split**      | Bundle ID, productName, icons, disable updater, Goldfish About/README, `UPSTREAM.md`, upstream remote |
+| **2 — Extension scaffold** | `goldfish/mod.rs`, `src/goldfish/`, trivial command + empty settings section                          |
+| **3 — First feature**      | Real differentiator via coordinator / post-transcription hooks                                        |
+| **4 — UI divergence**      | Onboarding, sidebar, remove unused Handy UI                                                           |
+| **Ongoing**                | Upstream merges; log SHA in `UPSTREAM.md` and [decisions.md](./decisions.md)                          |
 
 ## Summary
 
-| Goal | Approach |
-|------|----------|
-| New app, not rewrite | Engine + product layer |
-| Avoid merge hell | New dirs + few hook lines |
-| Stay updated | `upstream` remote + documented merges |
-| Separate product | New bundle ID, own releases/updater |
+| Goal                 | Approach                                                       |
+| -------------------- | -------------------------------------------------------------- |
+| New app, not rewrite | Engine + product layer                                         |
+| Avoid merge hell     | New dirs + few hook lines                                      |
+| Stay updated         | `upstream` remote + documented merges                          |
+| Separate product     | New bundle ID, own releases/updater                            |
 | Not a string replace | Identity + hooks first; internal `handy` names later if needed |

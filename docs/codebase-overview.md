@@ -46,13 +46,13 @@ flowchart LR
 
 ### Technology stack
 
-| Layer | Technologies |
-|-------|----------------|
-| **Frontend** | React 18, TypeScript, Vite 6, Tailwind 4, Zustand (+ Immer), i18next (20 locales) |
-| **Shell** | Tauri 2.10 |
-| **IPC** | tauri-specta → auto-generated `src/bindings.ts` (~80 commands) |
-| **Inference** | `transcribe-rs` (Whisper via Metal/Vulkan; Parakeet/Moonshine/etc. via ONNX) |
-| **Audio** | `cpal` → `rubato` resample to 16 kHz → `vad-rs` Silero VAD |
+| Layer         | Technologies                                                                      |
+| ------------- | --------------------------------------------------------------------------------- |
+| **Frontend**  | React 18, TypeScript, Vite 6, Tailwind 4, Zustand (+ Immer), i18next (20 locales) |
+| **Shell**     | Tauri 2.10                                                                        |
+| **IPC**       | tauri-specta → auto-generated `src/bindings.ts` (~80 commands)                    |
+| **Inference** | `transcribe-rs` (Whisper via Metal/Vulkan; Parakeet/Moonshine/etc. via ONNX)      |
+| **Audio**     | `cpal` → `rubato` resample to 16 kHz → `vad-rs` Silero VAD                        |
 
 ## Runtime flow (core product loop)
 
@@ -65,19 +65,19 @@ flowchart LR
 
 ## Repository layout
 
-| Path | Purpose |
-|------|---------|
-| `src/` | React settings UI, onboarding, model selector, i18n |
-| `src/overlay/` | Second Vite entry — minimal recording overlay window |
-| `src-tauri/src/` | Rust application logic |
-| `src-tauri/src/managers/` | Audio, Model, Transcription, History |
-| `src-tauri/src/audio_toolkit/` | Low-level recorder, VAD, resampling |
-| `src-tauri/src/commands/` | Tauri command handlers |
-| `src-tauri/src/shortcut/` | Global shortcuts, bindings, post-process LLM settings |
-| `src/i18n/locales/` | 20 translation JSON files |
-| `.github/workflows/` | CI: build, test, Playwright, Nix, release |
-| `flake.nix` / `nix/` | Nix packaging |
-| `AGENTS.md` / `BUILD.md` | Upstream dev docs (root) |
+| Path                           | Purpose                                               |
+| ------------------------------ | ----------------------------------------------------- |
+| `src/`                         | React settings UI, onboarding, model selector, i18n   |
+| `src/overlay/`                 | Second Vite entry — minimal recording overlay window  |
+| `src-tauri/src/`               | Rust application logic                                |
+| `src-tauri/src/managers/`      | Audio, Model, Transcription, History                  |
+| `src-tauri/src/audio_toolkit/` | Low-level recorder, VAD, resampling                   |
+| `src-tauri/src/commands/`      | Tauri command handlers                                |
+| `src-tauri/src/shortcut/`      | Global shortcuts, bindings, post-process LLM settings |
+| `src/i18n/locales/`            | 20 translation JSON files                             |
+| `.github/workflows/`           | CI: build, test, Playwright, Nix, release             |
+| `flake.nix` / `nix/`           | Nix packaging                                         |
+| `AGENTS.md` / `BUILD.md`       | Upstream dev docs (root)                              |
 
 ## Frontend
 
@@ -102,12 +102,12 @@ flowchart LR
 
 **Boot** (`src-tauri/src/lib.rs`): Tauri plugins (store, clipboard, global-shortcut, updater, single-instance, macOS permissions, …) → four `Arc` managers in state → tray → deferred shortcut init until permissions/onboarding.
 
-| Manager | File | Role |
-|---------|------|------|
-| Audio | `managers/audio.rs` | cpal, VAD pipeline, devices, always-on mic, mute-while-recording |
-| Model | `managers/model.rs` | Catalog, download, verify, engine selection |
-| Transcription | `managers/transcription.rs` | Load/unload engines, GPU accelerators |
-| History | `managers/history.rs` | SQLite + WAV under app data dir |
+| Manager       | File                        | Role                                                             |
+| ------------- | --------------------------- | ---------------------------------------------------------------- |
+| Audio         | `managers/audio.rs`         | cpal, VAD pipeline, devices, always-on mic, mute-while-recording |
+| Model         | `managers/model.rs`         | Catalog, download, verify, engine selection                      |
+| Transcription | `managers/transcription.rs` | Load/unload engines, GPU accelerators                            |
+| History       | `managers/history.rs`       | SQLite + WAV under app data dir                                  |
 
 **App data directory (Handy today):**
 

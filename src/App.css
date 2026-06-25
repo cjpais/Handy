@@ -4,12 +4,12 @@
   /* Design tokens */
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-background-ui: #EA5C1F;
-  --color-logo-primary: #EE7744;
+  --color-background-ui: #ea5c1f;
+  --color-logo-primary: #ee7744;
   --color-logo-stroke: #231705;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
-  --color-floral-white: #FCF7ED;
+  --color-floral-white: #fcf7ed;
 }
 
 :root {
@@ -68,8 +68,8 @@
     /* Colors - Dark Theme */
     --color-text: #fbfbfb;
     --color-background: #2c2b29;
-    --color-logo-primary: #EA5C1F;
-    --color-logo-stroke: #FCF7ED;
+    --color-logo-primary: #ea5c1f;
+    --color-logo-stroke: #fcf7ed;
     --color-floral-white: #1a1918;
   }
 }
@@ -104,13 +104,23 @@
 }
 
 @keyframes transcribe-pulse {
-  0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
-  50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+  0%,
+  100% {
+    color: color-mix(in srgb, var(--color-text) 40%, transparent);
+  }
+  50% {
+    color: color-mix(in srgb, var(--color-text) 90%, transparent);
+  }
 }
 
 @keyframes summarize-pulse {
-  0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
-  50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+  0%,
+  100% {
+    color: color-mix(in srgb, var(--color-text) 40%, transparent);
+  }
+  50% {
+    color: color-mix(in srgb, var(--color-text) 90%, transparent);
+  }
 }
 
 @layer utilities {

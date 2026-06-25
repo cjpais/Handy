@@ -80,6 +80,6 @@ Review these when pulling from `upstream/main`.
 
 ## Merge log
 
-| Date       | Upstream SHA | Notes                                          |
-|------------|--------------|------------------------------------------------|
+| Date       | Upstream SHA | Notes                                                                                                                                          |
+| ---------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-19 | `e3206aa`    | Baseline. `upstream` remote added, fetched. No merge needed — `main` is at upstream HEAD plus 3 local commits (fork docs + macOS build fixes). |
