@@ -120,13 +120,15 @@ pub enum MicrophoneMode {
 fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
+    hands_free: Arc<crate::managers::hands_free::HandsFreeManager>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let silero = SileroVad::new(vad_path, 0.3)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
     let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
 
     // Recorder with VAD plus a spectrum-level callback that forwards updates to
-    // the frontend.
+    // the frontend, and a hands-free speech-frame tap used by the continuous
+    // capture loop. The tap is a no-op unless the hands-free loop is running.
     let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(Box::new(smoothed_vad))
@@ -135,6 +137,9 @@ fn create_audio_recorder(
             move |levels| {
                 utils::emit_levels(&app_handle, &levels);
             }
+        })
+        .with_speech_frame_callback(move |frame: Option<&[f32]>| {
+            hands_free.on_speech_frame(frame);
         });
 
     Ok(recorder)
@@ -153,6 +158,7 @@ pub struct AudioRecordingManager {
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
     close_generation: Arc<AtomicU64>,
+    hands_free: Arc<crate::managers::hands_free::HandsFreeManager>,
 }
 
 impl AudioRecordingManager {
@@ -176,11 +182,17 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
             close_generation: Arc::new(AtomicU64::new(0)),
+            hands_free: Arc::new(crate::managers::hands_free::HandsFreeManager::new()),
         };
 
         // Always-on?  Open immediately.
         if matches!(mode, MicrophoneMode::AlwaysOn) {
             manager.start_microphone_stream()?;
+        }
+
+        // If hands-free capture is enabled in settings, start the continuous loop.
+        if settings.hands_free_capture {
+            manager.start_hands_free();
         }
 
         Ok(manager)
@@ -277,6 +289,7 @@ impl AudioRecordingManager {
             *recorder_opt = Some(create_audio_recorder(
                 vad_path.to_str().unwrap(),
                 &self.app_handle,
+                self.hands_free.clone(),
             )?);
         }
         Ok(())
@@ -356,6 +369,57 @@ impl AudioRecordingManager {
 
         *open_flag = false;
         debug!("Microphone stream stopped");
+    }
+
+    /* ---------- hands-free continuous capture ------------------------------ */
+
+    /// Start the hands-free continuous capture loop. Ensures the microphone stream is
+    /// open (so VAD frames flow even with no shortcut press) and spins up the worker.
+    pub fn start_hands_free(&self) {
+        if self.hands_free.is_running() {
+            debug!("Hands-free: already running");
+            return;
+        }
+        // Keep the stream open for the duration of hands-free; cancel any pending
+        // lazy close so the mic isn't torn down under us.
+        self.close_generation.fetch_add(1, Ordering::SeqCst);
+        if let Err(e) = self.start_microphone_stream() {
+            error!("Hands-free: failed to open microphone stream: {}", e);
+            return;
+        }
+        self.hands_free.start(&self.app_handle);
+        info!("Hands-free capture started");
+    }
+
+    /// Stop the hands-free loop. In on-demand mode, also closes the microphone stream
+    /// (unless a manual recording is in progress).
+    pub fn stop_hands_free(&self) {
+        if !self.hands_free.is_running() {
+            return;
+        }
+        self.hands_free.stop();
+
+        // In on-demand mode, release the mic if nothing else needs it.
+        if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand)
+            && matches!(*self.state.lock().unwrap(), RecordingState::Idle)
+        {
+            self.close_generation.fetch_add(1, Ordering::SeqCst);
+            self.stop_microphone_stream();
+        }
+        info!("Hands-free capture stopped");
+    }
+
+    /// Toggle pause on the hands-free loop. Returns the new paused state.
+    pub fn toggle_hands_free_pause(&self) -> bool {
+        self.hands_free.toggle_pause()
+    }
+
+    pub fn is_hands_free_running(&self) -> bool {
+        self.hands_free.is_running()
+    }
+
+    pub fn is_hands_free_paused(&self) -> bool {
+        self.hands_free.is_paused()
     }
 
     /* ---------- mode switching --------------------------------------------- */
