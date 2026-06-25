@@ -115,6 +115,18 @@ pub enum MicrophoneMode {
     OnDemand,
 }
 
+/// Tracks whether we muted system audio, plus a generation counter that ties
+/// each (possibly delayed) `apply_mute` to the recording session that
+/// requested it. `remove_mute` bumps the generation, so an apply that lands
+/// after the session already ended (e.g. a very quick press/release racing
+/// the delayed audio-feedback thread) becomes a no-op instead of leaving
+/// system audio muted with nothing left to restore it.
+#[derive(Debug, Default)]
+struct MuteState {
+    generation: u64,
+    did_mute: bool,
+}
+
 /* ──────────────────────────────────────────────────────────────── */
 
 fn create_audio_recorder(
@@ -151,7 +163,7 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
-    did_mute: Arc<Mutex<bool>>,
+    mute_state: Arc<Mutex<MuteState>>,
     close_generation: Arc<AtomicU64>,
 }
 
@@ -174,7 +186,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
-            did_mute: Arc::new(Mutex::new(false)),
+            mute_state: Arc::new(Mutex::new(MuteState::default())),
             close_generation: Arc::new(AtomicU64::new(0)),
         };
 
@@ -241,24 +253,41 @@ impl AudioRecordingManager {
 
     /* ---------- microphone life-cycle -------------------------------------- */
 
-    /// Applies mute if mute_while_recording is enabled and stream is open
-    pub fn apply_mute(&self) {
-        let settings = get_settings(&self.app_handle);
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-
-        if settings.mute_while_recording && *self.is_open.lock().unwrap() {
-            set_mute(true);
-            *did_mute_guard = true;
-            debug!("Mute applied");
-        }
+    /// Snapshot of the current mute generation. Callers that defer
+    /// `apply_mute` (e.g. until after the start sound finished playing) must
+    /// take this before spawning the delayed work, so the apply is skipped if
+    /// the recording session ends first.
+    pub fn mute_generation(&self) -> u64 {
+        self.mute_state.lock().unwrap().generation
     }
 
-    /// Removes mute if it was applied
+    /// Applies mute if mute_while_recording is enabled, the stream is open and
+    /// the session identified by `generation` is still the active one
+    pub fn apply_mute(&self, generation: u64) {
+        let settings = get_settings(&self.app_handle);
+        if !settings.mute_while_recording {
+            return;
+        }
+
+        // Lock order: is_open before mute_state (same as stop_microphone_stream)
+        let is_open = self.is_open.lock().unwrap();
+        let mut mute_state = self.mute_state.lock().unwrap();
+        if !*is_open || mute_state.generation != generation {
+            debug!("Skipping mute: stream closed or session already ended");
+            return;
+        }
+        set_mute(true);
+        mute_state.did_mute = true;
+        debug!("Mute applied");
+    }
+
+    /// Removes mute if it was applied and invalidates any pending delayed apply
     pub fn remove_mute(&self) {
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
+        let mut mute_state = self.mute_state.lock().unwrap();
+        mute_state.generation += 1;
+        if mute_state.did_mute {
             set_mute(false);
-            *did_mute_guard = false;
+            mute_state.did_mute = false;
             debug!("Mute removed");
         }
     }
@@ -291,9 +320,17 @@ impl AudioRecordingManager {
 
         let start_time = Instant::now();
 
-        // Don't mute immediately - caller will handle muting after audio feedback
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        *did_mute_guard = false;
+        // Don't mute immediately - caller will handle muting after audio feedback.
+        // The previous stream restores audio on close, so did_mute should already
+        // be false here; if it somehow isn't, restore instead of just clearing the
+        // flag, which would strand system audio in the muted state.
+        {
+            let mut mute_state = self.mute_state.lock().unwrap();
+            if mute_state.did_mute {
+                set_mute(false);
+                mute_state.did_mute = false;
+            }
+        }
 
         // Get the selected device from settings, considering clamshell mode
         let settings = get_settings(&self.app_handle);
@@ -339,11 +376,15 @@ impl AudioRecordingManager {
             return;
         }
 
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
-            set_mute(false);
+        {
+            let mut mute_state = self.mute_state.lock().unwrap();
+            // Invalidate any pending delayed apply for the closing stream
+            mute_state.generation += 1;
+            if mute_state.did_mute {
+                set_mute(false);
+                mute_state.did_mute = false;
+            }
         }
-        *did_mute_guard = false;
 
         if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
             // If still recording, stop first.
@@ -496,6 +537,10 @@ impl AudioRecordingManager {
         if let RecordingState::Recording { .. } = *state {
             *state = RecordingState::Idle;
             drop(state);
+
+            // Restore system audio right away; in always-on mode (or with lazy
+            // stream close) nothing else would unmute after a cancellation
+            self.remove_mute();
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
                 let _ = rec.stop(); // Discard the result
