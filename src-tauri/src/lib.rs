@@ -786,6 +786,14 @@ pub fn run(cli_args: CliArgs) {
 
             initialize_core_logic(&app_handle);
 
+            // Populate the overlay-enabled cache from initial settings so the
+            // audio path (overlay::emit_levels, called ~24 Hz during recording)
+            // can do a single atomic load instead of reading the Tauri store.
+            // Kept in sync by shortcut::change_overlay_position_setting.
+            overlay::update_overlay_enabled_cache(
+                settings.overlay_position != settings::OverlayPosition::None,
+            );
+
             // Pre-warm GPU/accelerator enumeration on a background thread.
             // The first call into get_available_accelerators enumerates ORT
             // execution providers and transcribe-cpp compute devices, which can

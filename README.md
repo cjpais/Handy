@@ -497,6 +497,8 @@ The goal is to create both a useful tool and a foundation for others to build up
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
+Handy is open-source software, but the Handy name, logo, icon, and brand assets are not open-source. Unofficial forks, rewrites, and redistributions must use their own branding and must not imply endorsement or affiliation.
+
 ## Acknowledgments
 
 - **Whisper** by OpenAI for the speech recognition model
