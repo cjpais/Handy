@@ -553,7 +553,7 @@ async isWaylandActive() : Promise<boolean> {
     return await TAURI_INVOKE("is_wayland_active");
 },
 /**
- * Requests Remote Desktop portal authorization for direct typing on Wayland.
+ * Requests Remote Desktop portal authorization for keyboard input on Wayland.
  */
 async requestRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
     try {
@@ -844,10 +844,9 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
 }
 },
 /**
- * Checks if the Mac is a laptop by detecting battery presence
+ * Stub implementation for non-macOS platforms.
  * 
- * This uses pmset to check for battery information.
- * Returns true if a battery is detected (laptop), false otherwise (desktop)
+ * Returns false because laptop detection is macOS-specific in Handy.
  */
 async isLaptop() : Promise<Result<boolean, string>> {
     try {
