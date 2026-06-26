@@ -1,28 +1,11 @@
 import { platform } from "@tauri-apps/plugin-os";
 import { commands } from "@/bindings";
-import type { AppSettings } from "@/bindings";
+import { isRemoteDesktopAuthorizationRelevantForSettings } from "./remoteDesktopAuthorization";
 
 interface RemoteDesktopPermissionState {
   isRelevant: boolean;
   isAuthorized: boolean;
 }
-
-const DIRECT_PASTE_METHOD = "direct";
-const AUTO_TYPING_TOOL = "auto";
-const REMOTE_DESKTOP_TYPING_TOOL = "remote_desktop";
-
-const isRemoteDesktopAuthorizationRelevantSetting = (
-  settings: AppSettings,
-): boolean => {
-  const pasteMethod = settings.paste_method ?? DIRECT_PASTE_METHOD;
-  const typingTool = settings.typing_tool ?? AUTO_TYPING_TOOL;
-
-  return (
-    pasteMethod === DIRECT_PASTE_METHOD &&
-    (typingTool === AUTO_TYPING_TOOL ||
-      typingTool === REMOTE_DESKTOP_TYPING_TOOL)
-  );
-};
 
 async function readRemoteDesktopAuthorizationRelevantSetting(): Promise<boolean> {
   const result = await commands.getAppSettings();
@@ -31,7 +14,7 @@ async function readRemoteDesktopAuthorizationRelevantSetting(): Promise<boolean>
     return false;
   }
 
-  return isRemoteDesktopAuthorizationRelevantSetting(result.data);
+  return isRemoteDesktopAuthorizationRelevantForSettings(result.data);
 }
 
 /**

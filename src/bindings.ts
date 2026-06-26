@@ -714,7 +714,7 @@ async isWaylandActive() : Promise<boolean> {
     return await TAURI_INVOKE("is_wayland_active");
 },
 /**
- * Requests Remote Desktop portal authorization for direct typing on Wayland.
+ * Requests Remote Desktop portal authorization for keyboard input on Wayland.
  */
 async requestRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
     try {
