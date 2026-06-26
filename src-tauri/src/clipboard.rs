@@ -146,7 +146,28 @@ fn paste_via_clipboard(
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype (but not on KDE or GNOME), then dotool, then ydotool
+        // Wayland: prefer Remote Desktop portal (works with any layout/language),
+        // then compositor-compatible tools and the existing fallbacks.
+        if is_remote_desktop_available() {
+            info!("Using Remote Desktop portal for key combo");
+            let result = match paste_method {
+                PasteMethod::CtrlV => remote_desktop::send_ctrl_v(),
+                _ => remote_desktop::send_paste_key_combo(paste_method),
+            };
+            match result {
+                Ok(()) => return Ok(true),
+                Err(err) => warn!(
+                    "Remote Desktop key combo failed, trying next fallback: {}",
+                    err
+                ),
+            }
+        }
+        // KDE Wayland fallback: use kwtype for key combo if portal is unavailable
+        if is_kde_wayland() && is_kwtype_available() {
+            info!("Using kwtype for key combo on KDE Wayland");
+            send_key_combo_via_kwtype(paste_method)?;
+            return Ok(true);
+        }
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
         // or on GNOME/Mutter (same reason — Mutter deliberately does not implement
         // the virtual-keyboard-v1 protocol).
@@ -638,6 +659,26 @@ fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
         return Err("wl-copy failed".into());
     }
 
+    Ok(())
+}
+
+/// Sends a paste key combination through kwtype on KDE Wayland.
+#[cfg(target_os = "linux")]
+fn send_key_combo_via_kwtype(paste_method: &PasteMethod) -> Result<(), String> {
+    let args: Vec<&str> = match paste_method {
+        PasteMethod::CtrlV => vec!["--key", "ctrl+v"],
+        PasteMethod::ShiftInsert => vec!["--key", "shift+Insert"],
+        PasteMethod::CtrlShiftV => vec!["--key", "ctrl+shift+v"],
+        _ => return Err("Unsupported paste method for kwtype".into()),
+    };
+    let output = Command::new("kwtype")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute kwtype: {}", e))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("kwtype failed: {}", stderr));
+    }
     Ok(())
 }
 

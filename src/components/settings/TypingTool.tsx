@@ -56,12 +56,6 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
       return null;
     }
 
-    // Only show if paste method is "direct"
-    const currentPasteMethod = pasteMethod;
-    if (currentPasteMethod !== "direct") {
-      return null;
-    }
-
     const tools = availableTools ?? ["auto"];
     const typingToolOptions = tools.map((tool) =>
       tool === "auto"
@@ -71,6 +65,28 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
           }
         : { value: tool, label: typingToolLabels[tool] ?? tool },
     );
+    const showTypingToolSetting = pasteMethod === "direct";
+
+    const remoteDesktopAuthorizationControls = (
+      <>
+        <RemoteDesktopAuthorizationCard
+          pasteMethod={pasteMethod}
+          typingTool={selectedTool}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
+        />
+        <RemoteDesktopTypingDelay
+          pasteMethod={pasteMethod}
+          typingTool={selectedTool}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
+        />
+      </>
+    );
+
+    if (!showTypingToolSetting) {
+      return remoteDesktopAuthorizationControls;
+    }
 
     return (
       <div>
@@ -93,18 +109,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
             />
           </div>
         </SettingContainer>
-        <RemoteDesktopAuthorizationCard
-          pasteMethod={pasteMethod}
-          typingTool={selectedTool}
-          descriptionMode={descriptionMode}
-          grouped={grouped}
-        />
-        <RemoteDesktopTypingDelay
-          pasteMethod={pasteMethod}
-          typingTool={selectedTool}
-          descriptionMode={descriptionMode}
-          grouped={grouped}
-        />
+        {remoteDesktopAuthorizationControls}
       </div>
     );
   },

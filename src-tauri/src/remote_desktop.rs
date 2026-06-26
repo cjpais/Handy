@@ -1,4 +1,6 @@
 #[cfg(target_os = "linux")]
+use crate::settings::PasteMethod;
+#[cfg(target_os = "linux")]
 use ashpd::desktop::remote_desktop::{DeviceType, KeyState, RemoteDesktop};
 #[cfg(target_os = "linux")]
 use ashpd::desktop::PersistMode;
@@ -580,7 +582,7 @@ pub fn send_type_text(text: &str) -> Result<(), String> {
     block_on_portal(|| type_text_async(text))
 }
 
-/// Returns whether Remote Desktop direct typing can be used right now.
+/// Returns whether Remote Desktop portal keyboard input can be used right now.
 #[cfg(target_os = "linux")]
 pub fn is_available() -> bool {
     crate::utils::is_wayland() && get_authorized()
@@ -628,4 +630,149 @@ pub fn init_authorization(app: &AppHandle) {
     } else {
         debug!("remote_desktop: no REMOTE_DESKTOP_TOKEN in settings");
     }
+}
+
+/// Sends a Ctrl+V keystroke through the Remote Desktop portal.
+#[cfg(target_os = "linux")]
+pub fn send_ctrl_v() -> Result<(), String> {
+    send_paste_key_combo(&PasteMethod::CtrlV)
+}
+
+/// Sends the configured paste keystroke through the Remote Desktop portal.
+#[cfg(target_os = "linux")]
+pub fn send_paste_key_combo(paste_method: &PasteMethod) -> Result<(), String> {
+    if !crate::utils::is_wayland() {
+        return Err("not running on Wayland".into());
+    }
+    if !get_authorized() {
+        return Err("authorization not granted".into());
+    }
+
+    let key_combo = key_combo_for_paste_method(paste_method)?;
+
+    block_on_portal(|| async {
+        let settings = PORTAL_APP_HANDLE.get().map(crate::settings::get_settings);
+        let delay = settings
+            .as_ref()
+            .map(|s| s.remote_desktop_key_event_delay_ms)
+            .unwrap_or(crate::settings::DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS);
+
+        let (proxy, session) = open_session_async(false).await?;
+
+        send_key_combo_async(&proxy, &session, &key_combo, delay).await?;
+
+        let _ = close_session_async(&session).await;
+        Ok(())
+    })
+}
+
+#[cfg(target_os = "linux")]
+struct RemoteDesktopKeyCombo {
+    name: &'static str,
+    modifiers: &'static [i32],
+    key: i32,
+}
+
+#[cfg(target_os = "linux")]
+fn key_combo_for_paste_method(paste_method: &PasteMethod) -> Result<RemoteDesktopKeyCombo, String> {
+    const KEY_LEFTCTRL: i32 = 29;
+    const KEY_LEFTSHIFT: i32 = 42;
+    const KEY_V: i32 = 47;
+    const KEY_INSERT: i32 = 110;
+
+    match paste_method {
+        PasteMethod::CtrlV => Ok(RemoteDesktopKeyCombo {
+            name: "ctrl+v",
+            modifiers: &[KEY_LEFTCTRL],
+            key: KEY_V,
+        }),
+        PasteMethod::CtrlShiftV => Ok(RemoteDesktopKeyCombo {
+            name: "ctrl+shift+v",
+            modifiers: &[KEY_LEFTCTRL, KEY_LEFTSHIFT],
+            key: KEY_V,
+        }),
+        PasteMethod::ShiftInsert => Ok(RemoteDesktopKeyCombo {
+            name: "shift+insert",
+            modifiers: &[KEY_LEFTSHIFT],
+            key: KEY_INSERT,
+        }),
+        _ => Err(format!(
+            "unsupported paste method for Remote Desktop key combo: {:?}",
+            paste_method
+        )),
+    }
+}
+
+#[cfg(target_os = "linux")]
+async fn send_key_combo_async(
+    proxy: &RemoteDesktop<'static>,
+    session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
+    key_combo: &RemoteDesktopKeyCombo,
+    delay_ms: u64,
+) -> Result<(), String> {
+    for modifier in key_combo.modifiers {
+        notify_keycode(
+            proxy,
+            session,
+            *modifier,
+            KeyState::Pressed,
+            key_combo.name,
+            delay_ms,
+        )
+        .await?;
+    }
+
+    notify_keycode(
+        proxy,
+        session,
+        key_combo.key,
+        KeyState::Pressed,
+        key_combo.name,
+        delay_ms,
+    )
+    .await?;
+    notify_keycode(
+        proxy,
+        session,
+        key_combo.key,
+        KeyState::Released,
+        key_combo.name,
+        delay_ms,
+    )
+    .await?;
+
+    for modifier in key_combo.modifiers.iter().rev() {
+        notify_keycode(
+            proxy,
+            session,
+            *modifier,
+            KeyState::Released,
+            key_combo.name,
+            delay_ms,
+        )
+        .await?;
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+async fn notify_keycode(
+    proxy: &RemoteDesktop<'static>,
+    session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
+    keycode: i32,
+    state: KeyState,
+    combo_name: &str,
+    delay_ms: u64,
+) -> Result<(), String> {
+    proxy
+        .notify_keyboard_keycode(session, keycode, state)
+        .await
+        .map_err(|e| format!("{combo_name}: key event failed: {e}"))?;
+
+    if delay_ms > 0 {
+        tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+    }
+
+    Ok(())
 }

@@ -15,8 +15,8 @@ interface RemoteDesktopAuthorizationCardProps {
 }
 
 /**
- * Displays the Remote Desktop portal authorization control when direct Wayland
- * typing depends on it.
+ * Displays the Remote Desktop portal authorization control when Wayland output
+ * can use it.
  *
  * Inputs: current paste method, typing tool, and settings row display options.
  * Outputs: a settings row with authorization status and an enable/disable toggle.

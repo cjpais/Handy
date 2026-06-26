@@ -17,7 +17,7 @@ interface RemoteDesktopTypingDelayProps {
  * Controls the delay inserted after each Remote Desktop portal keyboard event.
  *
  * Inputs: current paste method, typing tool, and settings row display options.
- * Outputs: delay controls shown only when Remote Desktop typing authorization matters.
+ * Outputs: delay controls shown only when Remote Desktop authorization matters.
  * Side effects: persists the selected delay through Tauri settings commands.
  */
 export const RemoteDesktopTypingDelay: React.FC<RemoteDesktopTypingDelayProps> =
