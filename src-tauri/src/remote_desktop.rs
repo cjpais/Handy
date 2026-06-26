@@ -629,3 +629,42 @@ pub fn init_authorization(app: &AppHandle) {
         debug!("remote_desktop: no REMOTE_DESKTOP_TOKEN in settings");
     }
 }
+
+/// Sends a Ctrl+V keystroke through the Remote Desktop portal.
+#[cfg(target_os = "linux")]
+pub fn send_ctrl_v() -> Result<(), String> {
+    if !crate::utils::is_wayland() {
+        return Err("not running on Wayland".into());
+    }
+    if !get_authorized() {
+        return Err("authorization not granted".into());
+    }
+    block_on_portal(|| async {
+        let settings = PORTAL_APP_HANDLE.get().map(crate::settings::get_settings);
+        let delay = settings
+            .as_ref()
+            .map(|s| s.remote_desktop_key_event_delay_ms)
+            .unwrap_or(crate::settings::DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS);
+
+        let (proxy, session) = open_session_async(false).await?;
+
+        // KEY_LEFTCTRL=29, KEY_V=47
+        proxy.notify_keyboard_keycode(&session, 29, KeyState::Pressed).await
+            .map_err(|e| format!("ctrl_v: ctrl press failed: {}", e))?;
+        if delay > 0 { tokio::time::sleep(Duration::from_millis(delay)).await; }
+
+        proxy.notify_keyboard_keycode(&session, 47, KeyState::Pressed).await
+            .map_err(|e| format!("ctrl_v: v press failed: {}", e))?;
+        if delay > 0 { tokio::time::sleep(Duration::from_millis(delay)).await; }
+
+        proxy.notify_keyboard_keycode(&session, 47, KeyState::Released).await
+            .map_err(|e| format!("ctrl_v: v release failed: {}", e))?;
+        if delay > 0 { tokio::time::sleep(Duration::from_millis(delay)).await; }
+
+        proxy.notify_keyboard_keycode(&session, 29, KeyState::Released).await
+            .map_err(|e| format!("ctrl_v: ctrl release failed: {}", e))?;
+
+        let _ = close_session_async(&session).await;
+        Ok(())
+    })
+}
