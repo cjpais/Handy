@@ -200,7 +200,7 @@ pub fn is_wayland_active() -> bool {
     }
 }
 
-/// Requests Remote Desktop portal authorization for direct typing on Wayland.
+/// Requests Remote Desktop portal authorization for keyboard input on Wayland.
 #[specta::specta]
 #[tauri::command]
 pub async fn request_remote_desktop_authorization() -> Result<bool, String> {

@@ -476,7 +476,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
           </div>
         )}
 
-        {/* Direct typing permission card */}
+        {/* Remote Desktop portal permission card */}
         {showRemoteDesktopPermission && (
           <div className="w-full p-4 rounded-lg bg-white/5 border border-mid-gray/20">
             <div className="flex items-center gap-4">
