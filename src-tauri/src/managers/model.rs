@@ -260,6 +260,39 @@ impl ModelManager {
             },
         );
 
+        // Uzbek fine-tune of Whisper Medium (rubaiSTT v2). Latin script output.
+        // Source model: https://huggingface.co/islomov/rubaistt_v2_medium
+        available_models.insert(
+            "rubaistt-v2-medium".to_string(),
+            ModelInfo {
+                id: "rubaistt-v2-medium".to_string(),
+                name: "RubaiSTT Medium (Uzbek)".to_string(),
+                description: "Uzbek-only. Whisper Medium fine-tune, Latin script. ~17% WER."
+                    .to_string(),
+                filename: "ggml-rubaistt-v2-medium.bin".to_string(),
+                url: Some(
+                    "https://github.com/MuhammadMirrr/uzbek-dictation/releases/download/v1.0/ggml-rubaistt.bin"
+                        .to_string(),
+                ),
+                sha256: Some(
+                    "1b02df434902015e1464611a7748927e42fcb55c49791c85239cf713c8edc1a3".to_string(),
+                ),
+                size_mb: 785,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Whisper,
+                accuracy_score: 0.78,
+                speed_score: 0.60,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["uz".to_string()],
+                supports_language_selection: false,
+                is_custom: false,
+            },
+        );
+
         // Add NVIDIA Parakeet models (directory-based)
         available_models.insert(
             "parakeet-tdt-0.6b-v2".to_string(),
