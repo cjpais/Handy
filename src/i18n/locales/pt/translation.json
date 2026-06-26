@@ -109,6 +109,16 @@
         "title": "Acesso à Acessibilidade",
         "description": "Necessário para digitar o texto transcrito em seus aplicativos."
       },
+      "remoteDesktop": {
+        "title": "Autorização de digitação",
+        "description": "Permita que o Handy insira automaticamente o texto ditado no aplicativo ativo.",
+        "note": "Você pode desativar ou ativar esta permissão a qualquer momento nas configurações.",
+        "button": "Permitir digitação automática",
+        "skipButton": "Agora não",
+        "warningTooltip": "Autorização de digitação não configurada",
+        "configured": "Configurada",
+        "notConfigured": "A configurar"
+      },
       "grant": "Conceder Permissão",
       "granted": "Concedido",
       "waiting": "Aguardando...",
@@ -302,7 +312,14 @@
           "none": "Nenhum",
           "externalScript": "Script externo"
         },
-        "externalScriptPlaceholder": "/caminho/para/seu/script.sh"
+        "externalScriptPlaceholder": "/caminho/para/seu/script.sh",
+        "portal": {
+          "buttonRequesting": "Solicitando…",
+          "errors": {
+            "requestFailed": "Falha ao solicitar autorização.",
+            "revokeFailed": "Falha ao remover autorização."
+          }
+        }
       },
       "typingTool": {
         "title": "Ferramenta de digitação",
@@ -356,6 +373,11 @@
         "add": "Adicionar",
         "remove": "Remover {{word}}",
         "duplicate": "\"{{word}}\" já existe"
+      },
+      "typingDelay": {
+        "title": "Atraso de digitação",
+        "description": "Controla a velocidade usada para enviar eventos de digitação. Aumente este valor se os caracteres forem digitados fora de ordem.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

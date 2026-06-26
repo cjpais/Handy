@@ -2,17 +2,22 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
+import { RemoteDesktopAuthorizationCard } from "./RemoteDesktopAuthorizationCard";
+import { RemoteDesktopAuthorizationWarning } from "./RemoteDesktopAuthorizationWarning";
+import { RemoteDesktopTypingDelay } from "./RemoteDesktopTypingDelay";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
+import { useRemoteDesktopAuthorization } from "../../hooks/useRemoteDesktopAuthorization";
 import { commands } from "@/bindings";
-import type { TypingTool } from "@/bindings";
+import type { PasteMethod, TypingTool } from "@/bindings";
 
 interface TypingToolProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
-const allToolLabels: Record<string, string> = {
+const typingToolLabels: Record<string, string> = {
+  remote_desktop: "Remote Desktop (Portal)",
   wtype: "wtype",
   kwtype: "kwtype",
   dotool: "dotool",
@@ -37,14 +42,23 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
         });
     }, [osType]);
 
+    const pasteMethod = (getSetting("paste_method") || "ctrl_v") as PasteMethod;
+    const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
+    const {
+      isRelevant: isRemoteDesktopAuthorizationRelevant,
+      isAuthorized: isRemoteDesktopAuthorized,
+    } = useRemoteDesktopAuthorization(pasteMethod, selectedTool);
+    const showAuthorizationWarning =
+      isRemoteDesktopAuthorizationRelevant && !isRemoteDesktopAuthorized;
+
     // Only show this setting on Linux
     if (osType !== "linux") {
       return null;
     }
 
     // Only show if paste method is "direct"
-    const pasteMethod = getSetting("paste_method");
-    if (pasteMethod !== "direct") {
+    const currentPasteMethod = pasteMethod;
+    if (currentPasteMethod !== "direct") {
       return null;
     }
 
@@ -55,28 +69,43 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
             value: "auto",
             label: t("settings.advanced.typingTool.options.auto"),
           }
-        : { value: tool, label: allToolLabels[tool] ?? tool },
+        : { value: tool, label: typingToolLabels[tool] ?? tool },
     );
 
-    const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
-
     return (
-      <SettingContainer
-        title={t("settings.advanced.typingTool.title")}
-        description={t("settings.advanced.typingTool.description")}
-        descriptionMode={descriptionMode}
-        grouped={grouped}
-        tooltipPosition="bottom"
-      >
-        <Dropdown
-          options={typingToolOptions}
-          selectedValue={selectedTool}
-          onSelect={(value) =>
-            updateSetting("typing_tool", value as TypingTool)
-          }
-          disabled={isUpdating("typing_tool")}
+      <div>
+        <SettingContainer
+          title={t("settings.advanced.typingTool.title")}
+          description={t("settings.advanced.typingTool.description")}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
+          tooltipPosition="bottom"
+        >
+          <div className="flex items-center gap-2">
+            {showAuthorizationWarning && <RemoteDesktopAuthorizationWarning />}
+            <Dropdown
+              options={typingToolOptions}
+              selectedValue={selectedTool}
+              onSelect={(value) =>
+                updateSetting("typing_tool", value as TypingTool)
+              }
+              disabled={isUpdating("typing_tool")}
+            />
+          </div>
+        </SettingContainer>
+        <RemoteDesktopAuthorizationCard
+          pasteMethod={pasteMethod}
+          typingTool={selectedTool}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
         />
-      </SettingContainer>
+        <RemoteDesktopTypingDelay
+          pasteMethod={pasteMethod}
+          typingTool={selectedTool}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
+        />
+      </div>
     );
   },
 );
