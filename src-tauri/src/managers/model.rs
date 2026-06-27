@@ -32,14 +32,28 @@ pub enum EngineType {
     Cohere,
 }
 
+/// Where a model comes from and how Handy obtains it — the routing discriminant
+/// for downloading and on-disk resolution.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub enum ModelSource {
+    /// Direct HTTP download from a URL (current blob.handy.computer hosting).
+    Url {
+        url: String,
+        /// Expected SHA-256 for integrity verification; `None` skips it.
+        sha256: Option<String>,
+    },
+    /// Already present on disk — a user-provided custom model, or one discovered
+    /// in a shared cache. Nothing to download.
+    Local,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct ModelInfo {
     pub id: String,
     pub name: String,
     pub description: String,
     pub filename: String,
-    pub url: Option<String>,
-    pub sha256: Option<String>,
+    pub source: ModelSource,
     pub size_mb: u64,
     pub is_downloaded: bool,
     pub is_downloading: bool,
@@ -134,10 +148,13 @@ impl ModelManager {
                 name: "Whisper Small".to_string(),
                 description: "Fast and fairly accurate.".to_string(),
                 filename: "ggml-small.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-small.bin".to_string()),
-                sha256: Some(
-                    "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/ggml-small.bin".to_string(),
+                    sha256: Some(
+                        "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 465,
                 is_downloaded: false,
                 is_downloading: false,
@@ -163,10 +180,13 @@ impl ModelManager {
                 name: "Whisper Medium".to_string(),
                 description: "Good accuracy, medium speed".to_string(),
                 filename: "whisper-medium-q4_1.bin".to_string(),
-                url: Some("https://blob.handy.computer/whisper-medium-q4_1.bin".to_string()),
-                sha256: Some(
-                    "79283fc1f9fe12ca3248543fbd54b73292164d8df5a16e095e2bceeaaabddf57".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/whisper-medium-q4_1.bin".to_string(),
+                    sha256: Some(
+                        "79283fc1f9fe12ca3248543fbd54b73292164d8df5a16e095e2bceeaaabddf57"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 469,
                 is_downloaded: false,
                 is_downloading: false,
@@ -191,10 +211,13 @@ impl ModelManager {
                 name: "Whisper Turbo".to_string(),
                 description: "Balanced accuracy and speed.".to_string(),
                 filename: "ggml-large-v3-turbo.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-large-v3-turbo.bin".to_string()),
-                sha256: Some(
-                    "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/ggml-large-v3-turbo.bin".to_string(),
+                    sha256: Some(
+                        "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 1549,
                 is_downloaded: false,
                 is_downloading: false,
@@ -219,10 +242,13 @@ impl ModelManager {
                 name: "Whisper Large".to_string(),
                 description: "Good accuracy, but slow.".to_string(),
                 filename: "ggml-large-v3-q5_0.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-large-v3-q5_0.bin".to_string()),
-                sha256: Some(
-                    "d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/ggml-large-v3-q5_0.bin".to_string(),
+                    sha256: Some(
+                        "d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 1031,
                 is_downloaded: false,
                 is_downloading: false,
@@ -248,10 +274,13 @@ impl ModelManager {
                 description: "Optimized for Taiwanese Mandarin. Code-switching support."
                     .to_string(),
                 filename: "breeze-asr-q5_k.bin".to_string(),
-                url: Some("https://blob.handy.computer/breeze-asr-q5_k.bin".to_string()),
-                sha256: Some(
-                    "8efbf0ce8a3f50fe332b7617da787fb81354b358c288b008d3bdef8359df64c6".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/breeze-asr-q5_k.bin".to_string(),
+                    sha256: Some(
+                        "8efbf0ce8a3f50fe332b7617da787fb81354b358c288b008d3bdef8359df64c6"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 1030,
                 is_downloaded: false,
                 is_downloading: false,
@@ -277,10 +306,13 @@ impl ModelManager {
                 name: "Parakeet V2".to_string(),
                 description: "English only. The best model for English speakers.".to_string(),
                 filename: "parakeet-tdt-0.6b-v2-int8".to_string(), // Directory name
-                url: Some("https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string()),
-                sha256: Some(
-                    "ac9b9429984dd565b25097337a887bb7f0f8ac393573661c651f0e7d31563991".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string(),
+                    sha256: Some(
+                        "ac9b9429984dd565b25097337a887bb7f0f8ac393573661c651f0e7d31563991"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 451,
                 is_downloaded: false,
                 is_downloading: false,
@@ -315,10 +347,13 @@ impl ModelManager {
                 name: "Parakeet V3".to_string(),
                 description: "Fast and accurate. Supports 25 European languages.".to_string(),
                 filename: "parakeet-tdt-0.6b-v3-int8".to_string(), // Directory name
-                url: Some("https://blob.handy.computer/parakeet-v3-int8.tar.gz".to_string()),
-                sha256: Some(
-                    "43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/parakeet-v3-int8.tar.gz".to_string(),
+                    sha256: Some(
+                        "43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 456,
                 is_downloaded: false,
                 is_downloading: false,
@@ -343,10 +378,13 @@ impl ModelManager {
                 name: "Moonshine Base".to_string(),
                 description: "Very fast, English only. Handles accents well.".to_string(),
                 filename: "moonshine-base".to_string(),
-                url: Some("https://blob.handy.computer/moonshine-base.tar.gz".to_string()),
-                sha256: Some(
-                    "04bf6ab012cfceebd4ac7cf88c1b31d027bbdd3cd704649b692e2e935236b7e8".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/moonshine-base.tar.gz".to_string(),
+                    sha256: Some(
+                        "04bf6ab012cfceebd4ac7cf88c1b31d027bbdd3cd704649b692e2e935236b7e8"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 55,
                 is_downloaded: false,
                 is_downloading: false,
@@ -371,12 +409,14 @@ impl ModelManager {
                 name: "Moonshine V2 Tiny".to_string(),
                 description: "Ultra-fast, English only".to_string(),
                 filename: "moonshine-tiny-streaming-en".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/moonshine-tiny-streaming-en.tar.gz".to_string(),
-                ),
-                sha256: Some(
-                    "465addcfca9e86117415677dfdc98b21edc53537210333a3ecdb58509a80abaf".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/moonshine-tiny-streaming-en.tar.gz"
+                        .to_string(),
+                    sha256: Some(
+                        "465addcfca9e86117415677dfdc98b21edc53537210333a3ecdb58509a80abaf"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 31,
                 is_downloaded: false,
                 is_downloading: false,
@@ -401,12 +441,14 @@ impl ModelManager {
                 name: "Moonshine V2 Small".to_string(),
                 description: "Fast, English only. Good balance of speed and accuracy.".to_string(),
                 filename: "moonshine-small-streaming-en".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/moonshine-small-streaming-en.tar.gz".to_string(),
-                ),
-                sha256: Some(
-                    "dbb3e1c1832bd88a4ac712f7449a136cc2c9a18c5fe33a12ed1b7cb1cfe9cdd5".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/moonshine-small-streaming-en.tar.gz"
+                        .to_string(),
+                    sha256: Some(
+                        "dbb3e1c1832bd88a4ac712f7449a136cc2c9a18c5fe33a12ed1b7cb1cfe9cdd5"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 99,
                 is_downloaded: false,
                 is_downloading: false,
@@ -431,12 +473,14 @@ impl ModelManager {
                 name: "Moonshine V2 Medium".to_string(),
                 description: "English only. High quality.".to_string(),
                 filename: "moonshine-medium-streaming-en".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/moonshine-medium-streaming-en.tar.gz".to_string(),
-                ),
-                sha256: Some(
-                    "07a66f3bff1c77e75a2f637e5a263928a08baae3c29c4c053fc968a9a9373d13".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/moonshine-medium-streaming-en.tar.gz"
+                        .to_string(),
+                    sha256: Some(
+                        "07a66f3bff1c77e75a2f637e5a263928a08baae3c29c4c053fc968a9a9373d13"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 192,
                 is_downloaded: false,
                 is_downloading: false,
@@ -469,10 +513,13 @@ impl ModelManager {
                 description: "Very fast. Chinese, English, Japanese, Korean, Cantonese."
                     .to_string(),
                 filename: "sense-voice-int8".to_string(),
-                url: Some("https://blob.handy.computer/sense-voice-int8.tar.gz".to_string()),
-                sha256: Some(
-                    "171d611fe5d353a50bbb741b6f3ef42559b1565685684e9aa888ef563ba3e8a4".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/sense-voice-int8.tar.gz".to_string(),
+                    sha256: Some(
+                        "171d611fe5d353a50bbb741b6f3ef42559b1565685684e9aa888ef563ba3e8a4"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 152,
                 is_downloaded: false,
                 is_downloading: false,
@@ -500,10 +547,13 @@ impl ModelManager {
                 name: "GigaAM v3".to_string(),
                 description: "Russian speech recognition. Fast and accurate.".to_string(),
                 filename: "giga-am-v3-int8".to_string(),
-                url: Some("https://blob.handy.computer/giga-am-v3-int8.tar.gz".to_string()),
-                sha256: Some(
-                    "d872462268430db140b69b72e0fc4b787b194c1dbe51b58de39444d55b6da45b".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/giga-am-v3-int8.tar.gz".to_string(),
+                    sha256: Some(
+                        "d872462268430db140b69b72e0fc4b787b194c1dbe51b58de39444d55b6da45b"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 151,
                 is_downloaded: false,
                 is_downloading: false,
@@ -535,10 +585,13 @@ impl ModelManager {
                 description: "Very fast. English, German, Spanish, French. Supports translation."
                     .to_string(),
                 filename: "canary-180m-flash".to_string(),
-                url: Some("https://blob.handy.computer/canary-180m-flash.tar.gz".to_string()),
-                sha256: Some(
-                    "6d9cfca6118b296e196eaedc1c8fa9788305a7b0f1feafdb6dc91932ab6e53f7".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/canary-180m-flash.tar.gz".to_string(),
+                    sha256: Some(
+                        "6d9cfca6118b296e196eaedc1c8fa9788305a7b0f1feafdb6dc91932ab6e53f7"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 146,
                 is_downloaded: false,
                 is_downloading: false,
@@ -573,10 +626,13 @@ impl ModelManager {
                 description: "Accurate multilingual. 25 European languages. Supports translation."
                     .to_string(),
                 filename: "canary-1b-v2".to_string(),
-                url: Some("https://blob.handy.computer/canary-1b-v2.tar.gz".to_string()),
-                sha256: Some(
-                    "02305b2a25f9cf3e7deaffa7f94df00efa44f442cd55c101c2cb9c000f904666".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/canary-1b-v2.tar.gz".to_string(),
+                    sha256: Some(
+                        "02305b2a25f9cf3e7deaffa7f94df00efa44f442cd55c101c2cb9c000f904666"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 691,
                 is_downloaded: false,
                 is_downloading: false,
@@ -609,10 +665,13 @@ impl ModelManager {
                 name: "Cohere".to_string(),
                 description: "A large, slower, but very accurate multilingual model.".to_string(),
                 filename: "cohere-int8".to_string(),
-                url: Some("https://blob.handy.computer/cohere-int8.tar.gz".to_string()),
-                sha256: Some(
-                    "ea2257d52434f3644574f187dcdcf666e302cd11b92866116ab8e14cd9c887f0".to_string(),
-                ),
+                source: ModelSource::Url {
+                    url: "https://blob.handy.computer/cohere-int8.tar.gz".to_string(),
+                    sha256: Some(
+                        "ea2257d52434f3644574f187dcdcf666e302cd11b92866116ab8e14cd9c887f0"
+                            .to_string(),
+                    ),
+                },
                 size_mb: 1708,
                 is_downloaded: false,
                 is_downloading: false,
@@ -727,11 +786,13 @@ impl ModelManager {
                     name: name.to_string(),
                     description: description.to_string(),
                     filename: filename.to_string(),
-                    url: Some(format!(
-                        "https://blob.handy.computer/transcribe-cpp-models/{}",
-                        filename
-                    )),
-                    sha256: None,
+                    source: ModelSource::Url {
+                        url: format!(
+                            "https://blob.handy.computer/transcribe-cpp-models/{}",
+                            filename
+                        ),
+                        sha256: None,
+                    },
                     size_mb,
                     is_downloaded: false,
                     is_downloading: false,
@@ -1068,8 +1129,7 @@ impl ModelManager {
                     name: display_name,
                     description: "Not officially supported".to_string(),
                     filename,
-                    url: None,    // Custom models have no download URL
-                    sha256: None, // Custom models skip verification
+                    source: ModelSource::Local, // already on disk; nothing to download
                     size_mb,
                     is_downloaded: true, // Already present on disk
                     is_downloading: false,
@@ -1150,9 +1210,12 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        let url = model_info
-            .url
-            .ok_or_else(|| anyhow::anyhow!("No download URL for model"))?;
+        let (url, expected_sha256) = match &model_info.source {
+            ModelSource::Url { url, sha256 } => (url.clone(), sha256.clone()),
+            ModelSource::Local => {
+                return Err(anyhow::anyhow!("No download source for model"));
+            }
+        };
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
             .models_dir
@@ -1352,7 +1415,7 @@ impl ModelManager {
         let _ = self.app_handle.emit("model-verification-started", model_id);
         info!("Verifying SHA256 for model {}...", model_id);
         let verify_path = partial_path.clone();
-        let verify_expected = model_info.sha256.clone();
+        let verify_expected = expected_sha256.clone();
         let verify_model_id = model_id.to_string();
         let verify_result = tokio::task::spawn_blocking(move || {
             Self::verify_sha256(&verify_path, verify_expected.as_deref(), &verify_model_id)
@@ -1667,8 +1730,10 @@ mod tests {
                 name: "Whisper Small".to_string(),
                 description: "Test".to_string(),
                 filename: "ggml-small.bin".to_string(),
-                url: Some("https://example.com".to_string()),
-                sha256: None,
+                source: ModelSource::Url {
+                    url: "https://example.com".to_string(),
+                    sha256: None,
+                },
                 size_mb: 100,
                 is_downloaded: false,
                 is_downloading: false,
@@ -1697,7 +1762,7 @@ mod tests {
         let custom = models.get("my-custom-model").unwrap();
         assert_eq!(custom.name, "My Custom Model");
         assert_eq!(custom.filename, "my-custom-model.bin");
-        assert!(custom.url.is_none()); // Custom models have no URL
+        assert!(matches!(custom.source, ModelSource::Local)); // Custom models have no remote source
         assert!(custom.is_downloaded);
         assert!(custom.is_custom);
         assert_eq!(custom.accuracy_score, 0.0);

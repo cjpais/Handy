@@ -269,7 +269,9 @@ mod tests {
 
     #[test]
     fn header_probe_rejects_non_gguf_as_unsupported() {
-        let probe = GgufHeaderProber.probe_header(b"definitely not gguf").unwrap();
+        let probe = GgufHeaderProber
+            .probe_header(b"definitely not gguf")
+            .unwrap();
         assert_eq!(probe.verdict, Compatibility::Unsupported);
     }
 }

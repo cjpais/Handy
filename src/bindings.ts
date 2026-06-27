@@ -891,8 +891,26 @@ reset_bindings: string[] }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
-export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; sha256: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean }
+export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
+/**
+ * Where a model comes from and how Handy obtains it — the routing discriminant
+ * for downloading and on-disk resolution.
+ */
+export type ModelSource = 
+/**
+ * Direct HTTP download from a URL (current blob.handy.computer hosting).
+ */
+{ Url: { url: string; 
+/**
+ * Expected SHA-256 for integrity verification; `None` skips it.
+ */
+sha256: string | null } } | 
+/**
+ * Already present on disk — a user-provided custom model, or one discovered
+ * in a shared cache. Nothing to download.
+ */
+"Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "none" | "top" | "bottom"

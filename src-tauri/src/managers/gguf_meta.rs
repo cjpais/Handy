@@ -336,10 +336,7 @@ mod tests {
     #[test]
     fn parses_basic_kv() {
         let data = build_gguf(&[
-            (
-                "general.architecture",
-                GgufValue::String("whisper".into()),
-            ),
+            ("general.architecture", GgufValue::String("whisper".into())),
             ("stt.capability.translate", GgufValue::Bool(true)),
             (
                 "general.languages",
@@ -370,10 +367,7 @@ mod tests {
 
     #[test]
     fn reports_truncation_with_hint() {
-        let data = build_gguf(&[(
-            "general.architecture",
-            GgufValue::String("whisper".into()),
-        )]);
+        let data = build_gguf(&[("general.architecture", GgufValue::String("whisper".into()))]);
         let err = parse_header(&data[..data.len() - 3]).unwrap_err();
         match err {
             GgufError::Truncated { needed } => assert!(needed >= data.len() - 3),
