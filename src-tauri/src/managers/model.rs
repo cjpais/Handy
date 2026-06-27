@@ -1,3 +1,4 @@
+use super::model_capabilities::{CapabilityProber, Compatibility, GgufHeaderProber};
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
@@ -921,6 +922,9 @@ impl ModelManager {
             warn!("Failed to discover custom models: {}", e);
         }
 
+        // Auto-discover transcribe-cpp GGUF models already in the shared HF cache.
+        Self::discover_hf_cache_models(&mut available_models);
+
         let manager = Self {
             app_handle: app_handle.clone(),
             models_dir,
@@ -1258,6 +1262,138 @@ impl ModelManager {
         }
 
         Ok(())
+    }
+
+    /// Discover transcribe-cpp-compatible GGUF models already present in the
+    /// shared Hugging Face cache, so models downloaded by Handy (or any other
+    /// tool) appear in "Your Models" without re-downloading. Only architectures
+    /// transcribe-cpp recognises are surfaced; arbitrary (e.g. LLM) GGUFs that
+    /// share the cache are ignored.
+    fn discover_hf_cache_models(available_models: &mut HashMap<String, ModelInfo>) {
+        Self::discover_hf_cache_models_in(Cache::from_env().path(), available_models);
+    }
+
+    /// Scan a Hugging Face cache root (`<cache>/models--*`) for GGUF snapshots.
+    /// Split from [`Self::discover_hf_cache_models`] so it can be tested against
+    /// a synthetic cache directory.
+    fn discover_hf_cache_models_in(
+        cache_root: &Path,
+        available_models: &mut HashMap<String, ModelInfo>,
+    ) {
+        if !cache_root.is_dir() {
+            return;
+        }
+
+        // Repo+file pairs already represented (e.g. recommended/added models) so
+        // the same file is not listed twice.
+        let known_hf: HashSet<(String, String)> = available_models
+            .values()
+            .filter_map(|m| match &m.source {
+                ModelSource::HuggingFace { repo_id, .. } => {
+                    Some((repo_id.clone(), m.filename.clone()))
+                }
+                _ => None,
+            })
+            .collect();
+
+        let prober = GgufHeaderProber;
+
+        let entries = match fs::read_dir(cache_root) {
+            Ok(entries) => entries,
+            Err(_) => return,
+        };
+
+        for entry in entries.flatten() {
+            let folder = entry.file_name();
+            let folder = folder.to_string_lossy();
+            let Some(rest) = folder.strip_prefix("models--") else {
+                continue;
+            };
+            // Reverse hf-hub's `org/name` -> `models--org--name` folder naming.
+            let repo_id = rest.replace("--", "/");
+
+            let refs_dir = entry.path().join("refs");
+            let Some(revision) = Self::pick_hf_revision(&refs_dir) else {
+                continue;
+            };
+            let Ok(commit) = fs::read_to_string(refs_dir.join(&revision)) else {
+                continue;
+            };
+            let snapshot = entry.path().join("snapshots").join(commit.trim());
+            let Ok(files) = fs::read_dir(&snapshot) else {
+                continue;
+            };
+
+            for file in files.flatten() {
+                let fname = file.file_name().to_string_lossy().to_string();
+                if !fname.ends_with(".gguf") {
+                    continue;
+                }
+                if known_hf.contains(&(repo_id.clone(), fname.clone())) {
+                    continue;
+                }
+                let model_id = format!("{}/{}", repo_id, fname);
+                if available_models.contains_key(&model_id) {
+                    continue;
+                }
+
+                let path = snapshot.join(&fname);
+                let probe = prober.probe_file(&path);
+                // Only surface models transcribe-cpp recognises.
+                if probe.verdict != Compatibility::Compatible {
+                    continue;
+                }
+
+                let size_mb = path
+                    .metadata()
+                    .map(|m| m.len() / (1024 * 1024))
+                    .unwrap_or(0);
+                let display = fname.trim_end_matches(".gguf").to_string();
+
+                info!("Discovered HF cache model: {} ({})", model_id, repo_id);
+                available_models.insert(
+                    model_id.clone(),
+                    ModelInfo {
+                        id: model_id,
+                        name: display,
+                        description: format!("From Hugging Face cache: {}", repo_id),
+                        filename: fname,
+                        source: ModelSource::HuggingFace {
+                            repo_id: repo_id.clone(),
+                            revision: revision.clone(),
+                        },
+                        size_mb,
+                        is_downloaded: true,
+                        is_downloading: false,
+                        partial_size: 0,
+                        is_directory: false,
+                        engine_type: EngineType::TranscribeCpp,
+                        accuracy_score: 0.0,
+                        speed_score: 0.0,
+                        supports_translation: probe.supports_translation.unwrap_or(false),
+                        is_recommended: false,
+                        supported_languages: probe.languages.unwrap_or_default(),
+                        supports_language_selection: true,
+                        is_custom: false,
+                        supports_streaming: probe.supports_streaming.unwrap_or(false),
+                    },
+                );
+            }
+        }
+    }
+
+    /// Pick a cache ref to resolve a snapshot from, preferring `main`.
+    fn pick_hf_revision(refs_dir: &Path) -> Option<String> {
+        if refs_dir.join("main").is_file() {
+            return Some("main".to_string());
+        }
+        fs::read_dir(refs_dir).ok()?.flatten().find_map(|e| {
+            if e.path().is_file() {
+                e.file_name().to_str().map(str::to_string)
+            } else {
+                None
+            }
+        })
     }
 
     /// Verifies the SHA256 of `path` against `expected_sha256` (if provided).
@@ -2084,5 +2220,81 @@ mod tests {
             ModelManager::verify_sha256(&missing_path, Some("anyexpectedhash"), "missing_model");
 
         assert!(result.is_err(), "missing file must return an error");
+    }
+
+    fn push_gguf_str(out: &mut Vec<u8>, val: &str) {
+        out.extend_from_slice(&(val.len() as u64).to_le_bytes());
+        out.extend_from_slice(val.as_bytes());
+    }
+
+    fn write_synthetic_gguf(path: &Path, arch: &str, languages: &[&str]) {
+        let mut out: Vec<u8> = Vec::new();
+        out.extend_from_slice(&0x4655_4747u32.to_le_bytes()); // magic "GGUF"
+        out.extend_from_slice(&3u32.to_le_bytes()); // version
+        out.extend_from_slice(&0u64.to_le_bytes()); // tensor_count
+        out.extend_from_slice(&2u64.to_le_bytes()); // kv_count
+                                                    // general.architecture : string
+        push_gguf_str(&mut out, "general.architecture");
+        out.extend_from_slice(&8u32.to_le_bytes()); // STRING
+        push_gguf_str(&mut out, arch);
+        // general.languages : array<string>
+        push_gguf_str(&mut out, "general.languages");
+        out.extend_from_slice(&9u32.to_le_bytes()); // ARRAY
+        out.extend_from_slice(&8u32.to_le_bytes()); // elem STRING
+        out.extend_from_slice(&(languages.len() as u64).to_le_bytes());
+        for l in languages {
+            push_gguf_str(&mut out, l);
+        }
+        fs::write(path, out).unwrap();
+    }
+
+    #[test]
+    fn test_discover_hf_cache_models_filters_by_arch() {
+        let tmp = TempDir::new().unwrap();
+        let root = tmp.path();
+
+        // ASR repo: a whisper gguf -> should be discovered.
+        let repo = root.join("models--handy-computer--whisper-test");
+        fs::create_dir_all(repo.join("snapshots").join("abc123")).unwrap();
+        fs::create_dir_all(repo.join("refs")).unwrap();
+        fs::write(repo.join("refs").join("main"), "abc123").unwrap();
+        write_synthetic_gguf(
+            &repo
+                .join("snapshots")
+                .join("abc123")
+                .join("whisper-q8.gguf"),
+            "whisper",
+            &["en", "de"],
+        );
+
+        // Non-ASR (llama) gguf -> must be ignored.
+        let repo2 = root.join("models--someone--llama-7b");
+        fs::create_dir_all(repo2.join("snapshots").join("def456")).unwrap();
+        fs::create_dir_all(repo2.join("refs")).unwrap();
+        fs::write(repo2.join("refs").join("main"), "def456").unwrap();
+        write_synthetic_gguf(
+            &repo2.join("snapshots").join("def456").join("llama-q8.gguf"),
+            "llama",
+            &[],
+        );
+
+        let mut models = HashMap::new();
+        ModelManager::discover_hf_cache_models_in(root, &mut models);
+
+        let id = "handy-computer/whisper-test/whisper-q8.gguf";
+        let m = models.get(id).expect("whisper gguf should be discovered");
+        assert!(m.is_downloaded);
+        assert!(
+            matches!(&m.source, ModelSource::HuggingFace { repo_id, revision }
+            if repo_id == "handy-computer/whisper-test" && revision == "main")
+        );
+        assert_eq!(
+            m.supported_languages,
+            vec!["en".to_string(), "de".to_string()]
+        );
+        assert!(
+            !models.contains_key("someone/llama-7b/llama-q8.gguf"),
+            "non-ASR gguf must be ignored"
+        );
     }
 }
