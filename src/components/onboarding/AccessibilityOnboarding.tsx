@@ -9,20 +9,22 @@ import {
 } from "tauri-plugin-macos-permissions-api";
 import { toast } from "sonner";
 import { commands } from "@/bindings";
+import { getRemoteDesktopPermissionState } from "@/lib/remoteDesktopPermission";
 import { useSettingsStore } from "@/stores/settingsStore";
 import HandyTextLogo from "../icons/HandyTextLogo";
-import { Keyboard, Mic, Check, Loader2 } from "lucide-react";
+import { Keyboard, Mic, Check, Loader2, ScreenShare } from "lucide-react";
 
 interface AccessibilityOnboardingProps {
   onComplete: () => void;
 }
 
 type PermissionStatus = "checking" | "needed" | "waiting" | "granted";
-type PermissionPlatform = "macos" | "windows" | "other";
+type PermissionPlatform = "macos" | "windows" | "linux-wayland" | "other";
 
 interface PermissionsState {
   accessibility: PermissionStatus;
   microphone: PermissionStatus;
+  remoteDesktop: PermissionStatus;
 }
 
 const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
@@ -40,6 +42,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
   const [permissions, setPermissions] = useState<PermissionsState>({
     accessibility: "checking",
     microphone: "checking",
+    remoteDesktop: "checking",
   });
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,15 +51,19 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
 
   const isMacOS = permissionPlatform === "macos";
   const isWindows = permissionPlatform === "windows";
+  const isLinuxWayland = permissionPlatform === "linux-wayland";
   const showMicrophonePermission = isMacOS || isWindows;
   const showAccessibilityPermission = isMacOS;
+  const showRemoteDesktopPermission = isLinuxWayland;
 
   const allGranted = isMacOS
     ? permissions.accessibility === "granted" &&
       permissions.microphone === "granted"
     : isWindows
       ? permissions.microphone === "granted"
-      : true;
+      : isLinuxWayland
+        ? permissions.remoteDesktop === "granted"
+        : true;
 
   const completeOnboarding = useCallback(async () => {
     await Promise.all([refreshAudioDevices(), refreshOutputDevices()]);
@@ -84,15 +91,43 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
           ? "windows"
           : "other";
 
-    setPermissionPlatform(nextPlatform);
-
-    // Skip immediately on unsupported platforms
-    if (nextPlatform === "other") {
-      onComplete();
-      return;
+    if (nextPlatform !== "other") {
+      setPermissionPlatform(nextPlatform);
     }
 
     const checkInitial = async () => {
+      if (nextPlatform === "other") {
+        try {
+          const remoteDesktopPermission =
+            await getRemoteDesktopPermissionState();
+
+          if (!remoteDesktopPermission.isRelevant) {
+            setPermissionPlatform("other");
+            onComplete();
+            return;
+          }
+
+          setPermissionPlatform("linux-wayland");
+          setPermissions({
+            accessibility: "granted",
+            microphone: "granted",
+            remoteDesktop: remoteDesktopPermission.isAuthorized
+              ? "granted"
+              : "needed",
+          });
+
+          if (remoteDesktopPermission.isAuthorized) {
+            await completeOnboarding();
+          }
+        } catch (error) {
+          console.warn("Failed to check Remote Desktop permissions:", error);
+          setPermissionPlatform("other");
+          onComplete();
+        }
+
+        return;
+      }
+
       if (nextPlatform === "macos") {
         try {
           const [accessibilityGranted, microphoneGranted] = await Promise.all([
@@ -115,6 +150,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
           const newState: PermissionsState = {
             accessibility: accessibilityGranted ? "granted" : "needed",
             microphone: microphoneGranted ? "granted" : "needed",
+            remoteDesktop: "granted",
           };
 
           setPermissions(newState);
@@ -128,6 +164,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
           setPermissions({
             accessibility: "needed",
             microphone: "needed",
+            remoteDesktop: "granted",
           });
         }
 
@@ -140,6 +177,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
         setPermissions({
           accessibility: "granted",
           microphone: microphoneGranted ? "granted" : "needed",
+          remoteDesktop: "granted",
         });
 
         if (microphoneGranted) {
@@ -150,6 +188,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
         setPermissions({
           accessibility: "granted",
           microphone: "granted",
+          remoteDesktop: "granted",
         });
         await completeOnboarding();
       }
@@ -157,6 +196,45 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
 
     checkInitial();
   }, [completeOnboarding, hasWindowsMicrophoneAccess, onComplete, t]);
+
+  const handleGrantRemoteDesktop = async () => {
+    try {
+      setPermissions((prev) => ({ ...prev, remoteDesktop: "waiting" }));
+
+      const result = await commands.requestRemoteDesktopAuthorization();
+
+      if (result.status === "error" || !result.data) {
+        setPermissions((prev) => ({ ...prev, remoteDesktop: "needed" }));
+        toast.error(
+          t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
+        );
+        return;
+      }
+
+      const isAuthorized = await commands.getRemoteDesktopAuthorization();
+
+      if (!isAuthorized) {
+        setPermissions((prev) => ({ ...prev, remoteDesktop: "needed" }));
+        toast.error(
+          t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
+        );
+        return;
+      }
+
+      setPermissions((prev) => ({ ...prev, remoteDesktop: "granted" }));
+      await completeOnboarding();
+    } catch (error) {
+      console.error("Failed to request Remote Desktop permission:", error);
+      setPermissions((prev) => ({ ...prev, remoteDesktop: "needed" }));
+      toast.error(
+        t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
+      );
+    }
+  };
+
+  const handleSkipRemoteDesktop = async () => {
+    await completeOnboarding();
+  };
 
   // Polling for permissions after user clicks a button
   const startPolling = useCallback(() => {
@@ -279,7 +357,8 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
     (isMacOS &&
       permissions.accessibility === "checking" &&
       permissions.microphone === "checking") ||
-    (isWindows && permissions.microphone === "checking");
+    (isWindows && permissions.microphone === "checking") ||
+    (isLinuxWayland && permissions.remoteDesktop === "checking");
 
   // Still checking platform/initial permissions
   if (isChecking) {
@@ -391,6 +470,54 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
                   >
                     {t("onboarding.permissions.grant")}
                   </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Remote Desktop portal permission card */}
+        {showRemoteDesktopPermission && (
+          <div className="w-full p-4 rounded-lg bg-white/5 border border-mid-gray/20">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-logo-primary/20 shrink-0">
+                <ScreenShare className="w-6 h-6 text-logo-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-text">
+                  {t("onboarding.permissions.remoteDesktop.title")}
+                </h3>
+                <p className="text-sm text-text/60 mb-3">
+                  {t("onboarding.permissions.remoteDesktop.description")}
+                </p>
+                <p className="text-xs text-text/50 mb-3">
+                  {t("onboarding.permissions.remoteDesktop.note")}
+                </p>
+                {permissions.remoteDesktop === "granted" ? (
+                  <div className="flex items-center gap-2 text-emerald-400 text-sm">
+                    <Check className="w-4 h-4" />
+                    {t("onboarding.permissions.granted")}
+                  </div>
+                ) : permissions.remoteDesktop === "waiting" ? (
+                  <div className="flex items-center gap-2 text-text/50 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {t("settings.advanced.pasteMethod.portal.buttonRequesting")}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleGrantRemoteDesktop}
+                      className="px-4 py-2 rounded-lg bg-logo-primary hover:bg-logo-primary/90 text-white text-sm font-medium transition-colors"
+                    >
+                      {t("onboarding.permissions.remoteDesktop.button")}
+                    </button>
+                    <button
+                      onClick={handleSkipRemoteDesktop}
+                      className="px-4 py-2 rounded-lg bg-mid-gray/10 border border-mid-gray/20 hover:bg-background-ui/30 hover:border-logo-primary text-text text-sm font-medium transition-colors"
+                    >
+                      {t("onboarding.permissions.remoteDesktop.skipButton")}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

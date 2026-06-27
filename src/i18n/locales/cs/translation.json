@@ -109,6 +109,16 @@
         "title": "Přístup k usnadnění",
         "description": "Potřebný pro psaní přepsaného textu do vašich aplikací."
       },
+      "remoteDesktop": {
+        "title": "Oprávnění pro psaní",
+        "description": "Povolte Handy automaticky vkládat diktovaný text do aktivní aplikace.",
+        "note": "Toto oprávnění můžete kdykoli vypnout nebo zapnout v nastavení.",
+        "button": "Povolit automatické psaní",
+        "skipButton": "Teď ne",
+        "warningTooltip": "Oprávnění pro psaní není nastavené",
+        "configured": "Nastavené",
+        "notConfigured": "K nastavení"
+      },
       "grant": "Udělit oprávnění",
       "granted": "Uděleno",
       "waiting": "Čekání...",
@@ -302,7 +312,14 @@
           "none": "Žádné",
           "externalScript": "Externí skript"
         },
-        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh"
+        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh",
+        "portal": {
+          "buttonRequesting": "Probíhá žádost…",
+          "errors": {
+            "requestFailed": "Žádost o oprávnění se nezdařila.",
+            "revokeFailed": "Odebrání oprávnění se nezdařilo."
+          }
+        }
       },
       "typingTool": {
         "title": "Nástroj pro psaní",
@@ -356,6 +373,11 @@
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
+      },
+      "typingDelay": {
+        "title": "Zpoždění psaní",
+        "description": "Řídí rychlost odesílání událostí psaní. Zvyšte tuto hodnotu, pokud se znaky zapisují ve špatném pořadí.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

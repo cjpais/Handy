@@ -4,11 +4,15 @@ use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
+#[cfg(target_os = "linux")]
+use log::warn;
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
+#[cfg(target_os = "linux")]
+use crate::remote_desktop;
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
 
@@ -83,7 +87,28 @@ fn paste_via_clipboard(
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype (but not on KDE), then dotool, then ydotool
+        // Wayland: prefer Remote Desktop portal (works with any layout/language),
+        // then wtype (but not on KDE), then dotool, then ydotool
+        if is_remote_desktop_available() {
+            info!("Using Remote Desktop portal for key combo");
+            let result = match paste_method {
+                PasteMethod::CtrlV => remote_desktop::send_ctrl_v(),
+                _ => remote_desktop::send_paste_key_combo(paste_method),
+            };
+            match result {
+                Ok(()) => return Ok(true),
+                Err(err) => warn!(
+                    "Remote Desktop key combo failed, trying next fallback: {}",
+                    err
+                ),
+            }
+        }
+        // KDE Wayland fallback: use kwtype for key combo if portal is unavailable
+        if is_kde_wayland() && is_kwtype_available() {
+            info!("Using kwtype for key combo on KDE Wayland");
+            send_key_combo_via_kwtype(paste_method)?;
+            return Ok(true);
+        }
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
         if !is_kde_wayland() && is_wtype_available() {
             info!("Using wtype for key combo");
@@ -124,6 +149,11 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
     // If user specified a tool, try only that one
     if preferred_tool != TypingTool::Auto {
         return match preferred_tool {
+            TypingTool::RemoteDesktop if is_remote_desktop_supported() => {
+                info!("Using user-specified Remote Desktop portal");
+                type_text_via_remote_desktop(text)?;
+                Ok(true)
+            }
             TypingTool::Wtype if is_wtype_available() => {
                 info!("Using user-specified wtype");
                 type_text_via_wtype(text)?;
@@ -158,13 +188,18 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
 
     // Auto mode - existing fallback chain
     if is_wayland() {
+        // Wayland: prefer the authorized Remote Desktop portal, then existing tools.
+        if is_remote_desktop_available() {
+            info!("Using Remote Desktop portal for direct text input");
+            type_text_via_remote_desktop(text)?;
+            return Ok(true);
+        }
         // KDE Wayland: prefer kwtype (uses KDE Fake Input protocol, supports umlauts)
         if is_kde_wayland() && is_kwtype_available() {
             info!("Using kwtype for direct text input on KDE Wayland");
             type_text_via_kwtype(text)?;
             return Ok(true);
         }
-        // Wayland: prefer wtype, then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
         if !is_kde_wayland() && is_wtype_available() {
             info!("Using wtype for direct text input");
@@ -203,6 +238,9 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
 #[cfg(target_os = "linux")]
 pub fn get_available_typing_tools() -> Vec<String> {
     let mut tools = vec!["auto".to_string()];
+    if is_remote_desktop_supported() {
+        tools.push("remote_desktop".to_string());
+    }
     if is_wtype_available() {
         tools.push("wtype".to_string());
     }
@@ -278,6 +316,28 @@ fn is_wl_copy_available() -> bool {
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false)
+}
+
+#[cfg(target_os = "linux")]
+fn is_remote_desktop_available() -> bool {
+    remote_desktop::is_available()
+}
+
+#[cfg(target_os = "linux")]
+fn is_remote_desktop_supported() -> bool {
+    is_wayland()
+}
+
+/// Type text directly via the Remote Desktop portal.
+#[cfg(target_os = "linux")]
+fn type_text_via_remote_desktop(text: &str) -> Result<(), String> {
+    match remote_desktop::send_type_text(text) {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            warn!("Remote Desktop direct input failed: {}", err);
+            Err(format!("Remote Desktop portal failed: {}", err))
+        }
+    }
 }
 
 /// Type text directly via wtype on Wayland.
@@ -403,6 +463,24 @@ fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
 
 /// Send a key combination (e.g., Ctrl+V) via wtype on Wayland.
 #[cfg(target_os = "linux")]
+fn send_key_combo_via_kwtype(paste_method: &PasteMethod) -> Result<(), String> {
+    let args: Vec<&str> = match paste_method {
+        PasteMethod::CtrlV => vec!["--key", "ctrl+v"],
+        PasteMethod::ShiftInsert => vec!["--key", "shift+Insert"],
+        PasteMethod::CtrlShiftV => vec!["--key", "ctrl+shift+v"],
+        _ => return Err("Unsupported paste method for kwtype".into()),
+    };
+    let output = Command::new("kwtype")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute kwtype: {}", e))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("kwtype failed: {}", stderr));
+    }
+    Ok(())
+}
+
 fn send_key_combo_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
     let args: Vec<&str> = match paste_method {
         PasteMethod::CtrlV => vec!["-M", "ctrl", "-k", "v"],

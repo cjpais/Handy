@@ -52,8 +52,9 @@ pub fn is_clamshell() -> Result<bool, String> {
     Ok(false)
 }
 
-/// Stub implementation for non-macOS platforms
-/// Always returns false since laptop detection is macOS-specific
+/// Stub implementation for non-macOS platforms.
+///
+/// Returns false because laptop detection is macOS-specific in Handy.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
 #[specta::specta]
