@@ -642,6 +642,14 @@ async hasAnyModelsOrDownloads() : Promise<Result<boolean, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async refreshRecommendedModels() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("refresh_recommended_models") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async updateMicrophoneMode(alwaysOn: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_microphone_mode", { alwaysOn }) };

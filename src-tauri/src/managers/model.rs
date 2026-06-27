@@ -1,3 +1,4 @@
+use super::hf_api;
 use super::model_capabilities::{CapabilityProber, Compatibility, GgufHeaderProber};
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
@@ -84,6 +85,11 @@ pub struct DownloadProgress {
     pub total: u64,
     pub percentage: f64,
 }
+
+/// The Hugging Face collection whose models Handy treats as "recommended".
+/// Public collection, but its members are currently private (need a token).
+const RECOMMENDED_COLLECTION_SLUG: &str =
+    "handy-computer/recommended-asr-models-6a3f23d4a6ecabb49cc74b9b";
 
 /// Resolve a Hugging Face model file in the shared HF cache, if already present.
 /// Uses hf-hub's stock location (HF_HOME or ~/.cache/huggingface/hub) so
@@ -1444,6 +1450,88 @@ impl ModelManager {
             hasher.update(&buffer[..n]);
         }
         Ok(format!("{:x}", hasher.finalize()))
+    }
+
+    /// Fetch the recommended-models collection from Hugging Face and merge its
+    /// GGUF files into the model list. Best-effort: offline, or private members
+    /// without a token, simply yields nothing. Capabilities stay unknown until
+    /// the model is downloaded (or until the range-fetch probe lands).
+    pub async fn refresh_recommended_models(&self) -> Result<()> {
+        let repo_ids = match hf_api::fetch_collection_models(RECOMMENDED_COLLECTION_SLUG).await {
+            Ok(ids) => ids,
+            Err(e) => {
+                warn!("Could not fetch recommended collection: {}", e);
+                return Ok(());
+            }
+        };
+        if repo_ids.is_empty() {
+            debug!("Recommended collection returned no items (no token / empty)");
+            return Ok(());
+        }
+
+        for repo_id in repo_ids {
+            match hf_api::fetch_repo_gguf_files(&repo_id).await {
+                Ok(files) => {
+                    for file in files {
+                        self.add_recommended_model(&repo_id, &file.path, file.size);
+                    }
+                }
+                Err(e) => {
+                    warn!(
+                        "Could not list files for recommended repo {}: {}",
+                        repo_id, e
+                    )
+                }
+            }
+        }
+
+        self.update_download_status()?;
+        let _ = self.app_handle.emit("models-updated", ());
+        Ok(())
+    }
+
+    /// Insert (or flag) a recommended HF GGUF. If the file is already known
+    /// (e.g. discovered in the cache), it is just marked recommended.
+    fn add_recommended_model(&self, repo_id: &str, file_path: &str, size: u64) {
+        let model_id = format!("{}/{}", repo_id, file_path);
+        let mut models = self.available_models.lock().unwrap();
+        if let Some(existing) = models.get_mut(&model_id) {
+            existing.is_recommended = true;
+            return;
+        }
+        let display = file_path
+            .rsplit('/')
+            .next()
+            .unwrap_or(file_path)
+            .trim_end_matches(".gguf")
+            .to_string();
+        models.insert(
+            model_id.clone(),
+            ModelInfo {
+                id: model_id,
+                name: display,
+                description: format!("Recommended • {}", repo_id),
+                filename: file_path.to_string(),
+                source: ModelSource::HuggingFace {
+                    repo_id: repo_id.to_string(),
+                    revision: "main".to_string(),
+                },
+                size_mb: size / (1024 * 1024),
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::TranscribeCpp,
+                accuracy_score: 0.0,
+                speed_score: 0.0,
+                supports_translation: false,
+                is_recommended: true,
+                supported_languages: vec![],
+                supports_language_selection: true,
+                is_custom: false,
+                supports_streaming: false,
+            },
+        );
     }
 
     /// Download a Hugging Face-sourced model into the shared HF cache via

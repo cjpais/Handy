@@ -23,6 +23,17 @@ pub async fn get_model_info(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn refresh_recommended_models(
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<(), String> {
+    model_manager
+        .refresh_recommended_models()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn download_model(
     app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
