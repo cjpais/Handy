@@ -1,5 +1,5 @@
 import { listen } from "@tauri-apps/api/event";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
 import { commands, events } from "@/bindings";
@@ -35,6 +35,11 @@ const RecordingOverlay: React.FC = () => {
   const [session, setSession] = useState(0);
 
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
+  // Live-text scroll-back: the text region "sticks" to the newest line while the
+  // user is at the bottom; if they scroll up to read history, auto-follow pauses
+  // until they scroll back down.
+  const capRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef(true);
   const direction = getLanguageDirection(i18n.language);
 
   useEffect(() => {
@@ -99,6 +104,26 @@ const RecordingOverlay: React.FC = () => {
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
   }, [state, isVisible]);
+
+  // Stick to the bottom as text streams in — but only while pinned, so a user who
+  // has scrolled up to read history isn't yanked back down by the next chunk.
+  useLayoutEffect(() => {
+    if (!pinnedRef.current) return;
+    const el = capRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [streamText]);
+
+  // Each fresh streaming session starts pinned to the bottom.
+  useEffect(() => {
+    pinnedRef.current = true;
+  }, [session]);
+
+  // Re-pin when the user is within ~a line of the bottom; unpin otherwise.
+  const handleStreamScroll = () => {
+    const el = capRef.current;
+    if (!el) return;
+    pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight <= 16;
+  };
 
   const fmtTime = (s: number) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -174,7 +199,11 @@ const RecordingOverlay: React.FC = () => {
         >
           <div className="stext">
             <div className="stext-clip">
-              <div className="stext-cap">
+              <div
+                className="stext-cap"
+                ref={capRef}
+                onScroll={handleStreamScroll}
+              >
                 <p>
                   <span className="committed">
                     {streamText.committed ? streamText.committed + " " : ""}

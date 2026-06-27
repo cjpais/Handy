@@ -124,24 +124,33 @@
   min-height: 0;
 }
 .stext-cap {
-  max-height: 132px;
-  overflow: hidden;
+  max-height: 64px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding: 15px 18px 9px;
-  font-size: 16px;
-  line-height: 1.5;
+  padding-top: 12px;
+  padding-bottom: 0px;
+  padding-left: 14px;
+  padding-right: 14px;
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.35;
   letter-spacing: -0.003em;
-  color: var(--s-text);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+  color: color-mix(in srgb, var(--s-text) 90%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+/* Hide the scrollbar (WebKit/Chromium) — scroll-back is signalled by the fade. */
+.stext-cap::-webkit-scrollbar {
+  display: none;
 }
 .stext-cap p {
-  margin: 0;
-}
-.stext-cap .committed {
-  color: var(--s-text);
+  /* Bottom-anchor the text when it's shorter than the viewport, avoiding the
+     justify-content:flex-end overflow bug that makes the top unscrollable. */
+  margin: auto 0 0;
 }
 .stext-cap .tentative {
   color: var(--s-muted);
@@ -173,6 +182,7 @@
 }
 .sbase-l {
   display: flex;
+  padding-left: 5px;
   align-items: center;
   justify-self: start;
 }
