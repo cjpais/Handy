@@ -3,30 +3,30 @@ import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 
-interface PushToTalkProps {
+interface DoubleTapActivationProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
-export const PushToTalk: React.FC<PushToTalkProps> = React.memo(
+export const DoubleTapActivation: React.FC<DoubleTapActivationProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
-    const pttEnabled = getSetting("push_to_talk") || false;
+    const doubleTapEnabled = getSetting("double_tap_activation") || false;
 
     return (
       <ToggleSwitch
-        checked={pttEnabled}
+        checked={doubleTapEnabled}
         onChange={async (enabled) => {
-          await updateSetting("push_to_talk", enabled);
+          await updateSetting("double_tap_activation", enabled);
           if (enabled) {
-            await updateSetting("double_tap_activation", false);
+            await updateSetting("push_to_talk", false);
           }
         }}
-        isUpdating={isUpdating("push_to_talk")}
-        label={t("settings.general.pushToTalk.label")}
-        description={t("settings.general.pushToTalk.description")}
+        isUpdating={isUpdating("double_tap_activation")}
+        label={t("settings.general.doubleTapActivation.label")}
+        description={t("settings.general.doubleTapActivation.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       />

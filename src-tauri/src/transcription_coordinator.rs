@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
 const DEBOUNCE: Duration = Duration::from_millis(30);
+pub const DOUBLE_TAP_WINDOW: Duration = Duration::from_millis(400);
 
 /// Commands processed sequentially by the coordinator thread.
 enum Command {
@@ -16,6 +17,7 @@ enum Command {
         hotkey_string: String,
         is_pressed: bool,
         push_to_talk: bool,
+        double_tap_activation: bool,
     },
     Cancel {
         recording_was_active: bool,
@@ -28,6 +30,77 @@ enum Stage {
     Idle,
     Recording(String), // binding_id
     Processing,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum InputAction {
+    Ignore,
+    Start,
+    Stop,
+}
+
+/// Decide how a transcribe binding press/release should affect the pipeline.
+fn evaluate_input(
+    stage: &Stage,
+    binding_id: &str,
+    is_pressed: bool,
+    push_to_talk: bool,
+    double_tap_activation: bool,
+    pending_double_tap: &mut Option<Instant>,
+    now: Instant,
+) -> InputAction {
+    if push_to_talk {
+        if is_pressed && matches!(stage, Stage::Idle) {
+            return InputAction::Start;
+        }
+        if !is_pressed && matches!(stage, Stage::Recording(id) if id == binding_id) {
+            return InputAction::Stop;
+        }
+        return InputAction::Ignore;
+    }
+
+    if !is_pressed {
+        return InputAction::Ignore;
+    }
+
+    if double_tap_activation {
+        return evaluate_double_tap_press(stage, binding_id, pending_double_tap, now);
+    }
+
+    match stage {
+        Stage::Idle => InputAction::Start,
+        Stage::Recording(id) if id == binding_id => InputAction::Stop,
+        _ => InputAction::Ignore,
+    }
+}
+
+fn evaluate_double_tap_press(
+    stage: &Stage,
+    binding_id: &str,
+    pending_double_tap: &mut Option<Instant>,
+    now: Instant,
+) -> InputAction {
+    match stage {
+        Stage::Recording(id) if id == binding_id => {
+            *pending_double_tap = None;
+            InputAction::Stop
+        }
+        Stage::Idle => {
+            if let Some(first_tap) = *pending_double_tap {
+                if now.duration_since(first_tap) <= DOUBLE_TAP_WINDOW {
+                    *pending_double_tap = None;
+                    InputAction::Start
+                } else {
+                    *pending_double_tap = Some(now);
+                    InputAction::Ignore
+                }
+            } else {
+                *pending_double_tap = Some(now);
+                InputAction::Ignore
+            }
+        }
+        _ => InputAction::Ignore,
+    }
 }
 
 /// Serialises all transcription lifecycle events through a single thread
@@ -49,6 +122,7 @@ impl TranscriptionCoordinator {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let mut stage = Stage::Idle;
                 let mut last_press: Option<Instant> = None;
+                let mut pending_double_tap: Option<Instant> = None;
 
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
@@ -57,46 +131,48 @@ impl TranscriptionCoordinator {
                             hotkey_string,
                             is_pressed,
                             push_to_talk,
+                            double_tap_activation,
                         } => {
-                            // Debounce rapid-fire press events (key repeat / double-tap).
+                            // Debounce rapid-fire press events (key repeat).
                             // Releases always pass through for push-to-talk.
                             if is_pressed {
                                 let now = Instant::now();
-                                if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE) {
+                                if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE)
+                                {
                                     debug!("Debounced press for '{binding_id}'");
                                     continue;
                                 }
                                 last_press = Some(now);
                             }
 
-                            if push_to_talk {
-                                if is_pressed && matches!(stage, Stage::Idle) {
+                            let action = evaluate_input(
+                                &stage,
+                                &binding_id,
+                                is_pressed,
+                                push_to_talk,
+                                double_tap_activation,
+                                &mut pending_double_tap,
+                                Instant::now(),
+                            );
+
+                            match action {
+                                InputAction::Start => {
                                     start(&app, &mut stage, &binding_id, &hotkey_string);
-                                } else if !is_pressed
-                                    && matches!(&stage, Stage::Recording(id) if id == &binding_id)
-                                {
+                                }
+                                InputAction::Stop => {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
                                 }
-                            } else if is_pressed {
-                                match &stage {
-                                    Stage::Idle => {
-                                        start(&app, &mut stage, &binding_id, &hotkey_string);
-                                    }
-                                    Stage::Recording(id) if id == &binding_id => {
-                                        stop(&app, &mut stage, &binding_id, &hotkey_string);
-                                    }
-                                    _ => {
-                                        debug!("Ignoring press for '{binding_id}': pipeline busy")
-                                    }
-                                }
+                                InputAction::Ignore => {}
                             }
                         }
                         Command::Cancel {
                             recording_was_active,
                         } => {
+                            pending_double_tap = None;
                             // Don't reset during processing — wait for the pipeline to finish.
                             if !matches!(stage, Stage::Processing)
-                                && (recording_was_active || matches!(stage, Stage::Recording(_)))
+                                && (recording_was_active
+                                    || matches!(stage, Stage::Recording(_)))
                             {
                                 stage = Stage::Idle;
                             }
@@ -124,6 +200,7 @@ impl TranscriptionCoordinator {
         hotkey_string: &str,
         is_pressed: bool,
         push_to_talk: bool,
+        double_tap_activation: bool,
     ) {
         if self
             .tx
@@ -132,6 +209,7 @@ impl TranscriptionCoordinator {
                 hotkey_string: hotkey_string.to_string(),
                 is_pressed,
                 push_to_talk,
+                double_tap_activation,
             })
             .is_err()
         {
@@ -181,4 +259,128 @@ fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &st
     };
     action.stop(app, binding_id, hotkey_string);
     *stage = Stage::Processing;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn toggle_mode_starts_and_stops_on_press() {
+        let mut pending = None;
+        let idle = Stage::Idle;
+        let recording = Stage::Recording("transcribe".to_string());
+
+        assert_eq!(
+            evaluate_input(&idle, "transcribe", true, false, false, &mut pending, Instant::now()),
+            InputAction::Start
+        );
+        assert_eq!(
+            evaluate_input(
+                &recording,
+                "transcribe",
+                true,
+                false,
+                false,
+                &mut pending,
+                Instant::now()
+            ),
+            InputAction::Stop
+        );
+    }
+
+    #[test]
+    fn double_tap_requires_two_presses_within_window() {
+        let mut pending = None;
+        let idle = Stage::Idle;
+        let t0 = Instant::now();
+
+        assert_eq!(
+            evaluate_input(&idle, "transcribe", true, false, true, &mut pending, t0),
+            InputAction::Ignore
+        );
+        assert!(pending.is_some());
+
+        assert_eq!(
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                false,
+                true,
+                &mut pending,
+                t0 + Duration::from_millis(200)
+            ),
+            InputAction::Start
+        );
+        assert!(pending.is_none());
+    }
+
+    #[test]
+    fn double_tap_single_press_does_not_activate() {
+        let mut pending = None;
+        let idle = Stage::Idle;
+        let t0 = Instant::now();
+
+        assert_eq!(
+            evaluate_input(&idle, "transcribe", true, false, true, &mut pending, t0),
+            InputAction::Ignore
+        );
+        assert_eq!(
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                false,
+                true,
+                &mut pending,
+                t0 + DOUBLE_TAP_WINDOW + Duration::from_millis(50)
+            ),
+            InputAction::Ignore
+        );
+    }
+
+    #[test]
+    fn double_tap_stops_recording_with_single_press() {
+        let mut pending = None;
+        let recording = Stage::Recording("transcribe".to_string());
+
+        assert_eq!(
+            evaluate_input(
+                &recording,
+                "transcribe",
+                true,
+                false,
+                true,
+                &mut pending,
+                Instant::now()
+            ),
+            InputAction::Stop
+        );
+    }
+
+    #[test]
+    fn push_to_talk_uses_press_and_release() {
+        let mut pending = None;
+        let idle = Stage::Idle;
+        let recording = Stage::Recording("transcribe".to_string());
+        let now = Instant::now();
+
+        assert_eq!(
+            evaluate_input(&idle, "transcribe", true, true, false, &mut pending, now),
+            InputAction::Start
+        );
+        assert_eq!(
+            evaluate_input(
+                &recording,
+                "transcribe",
+                false,
+                true,
+                false,
+                &mut pending,
+                now
+            ),
+            InputAction::Stop
+        );
+    }
 }
