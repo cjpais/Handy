@@ -907,6 +907,12 @@ export type ModelSource =
  */
 sha256: string | null } } | 
 /**
+ * A file inside a Hugging Face Hub repo, fetched via hf-hub into the shared
+ * HF cache (so other tools reuse it). The file within the repo is
+ * [`ModelInfo::filename`].
+ */
+{ HuggingFace: { repo_id: string; revision: string } } | 
+/**
  * Already present on disk — a user-provided custom model, or one discovered
  * in a shared cache. Nothing to download.
  */

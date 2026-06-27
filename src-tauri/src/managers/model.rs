@@ -2,6 +2,8 @@ use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
+use hf_hub::api::tokio::{ApiBuilder, Progress};
+use hf_hub::{Cache, Repo, RepoType};
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -42,6 +44,10 @@ pub enum ModelSource {
         /// Expected SHA-256 for integrity verification; `None` skips it.
         sha256: Option<String>,
     },
+    /// A file inside a Hugging Face Hub repo, fetched via hf-hub into the shared
+    /// HF cache (so other tools reuse it). The file within the repo is
+    /// [`ModelInfo::filename`].
+    HuggingFace { repo_id: String, revision: String },
     /// Already present on disk — a user-provided custom model, or one discovered
     /// in a shared cache. Nothing to download.
     Local,
@@ -76,6 +82,103 @@ pub struct DownloadProgress {
     pub downloaded: u64,
     pub total: u64,
     pub percentage: f64,
+}
+
+/// Resolve a Hugging Face model file in the shared HF cache, if already present.
+/// Uses hf-hub's stock location (HF_HOME or ~/.cache/huggingface/hub) so
+/// downloads are shared with other tools.
+fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathBuf> {
+    Cache::from_env()
+        .repo(Repo::with_revision(
+            repo_id.to_string(),
+            RepoType::Model,
+            revision.to_string(),
+        ))
+        .get(filename)
+}
+
+/// Bridges hf-hub's async download progress to Handy's `model-download-progress`
+/// event. hf-hub clones the reporter, so shared state lives behind an `Arc`.
+#[derive(Clone)]
+struct HfDownloadProgress {
+    app_handle: AppHandle,
+    model_id: String,
+    state: Arc<Mutex<HfProgressState>>,
+}
+
+struct HfProgressState {
+    total: u64,
+    downloaded: u64,
+    last_emit: Instant,
+}
+
+impl HfDownloadProgress {
+    fn new(app_handle: AppHandle, model_id: String) -> Self {
+        Self {
+            app_handle,
+            model_id,
+            state: Arc::new(Mutex::new(HfProgressState {
+                total: 0,
+                downloaded: 0,
+                last_emit: Instant::now(),
+            })),
+        }
+    }
+
+    fn emit(&self, downloaded: u64, total: u64) {
+        let percentage = if total > 0 {
+            (downloaded as f64 / total as f64) * 100.0
+        } else {
+            0.0
+        };
+        let _ = self.app_handle.emit(
+            "model-download-progress",
+            &DownloadProgress {
+                model_id: self.model_id.clone(),
+                downloaded,
+                total,
+                percentage,
+            },
+        );
+    }
+}
+
+impl Progress for HfDownloadProgress {
+    async fn init(&mut self, size: usize, _filename: &str) {
+        {
+            let mut st = self.state.lock().unwrap();
+            st.total = size as u64;
+            st.downloaded = 0;
+            st.last_emit = Instant::now();
+        }
+        self.emit(0, size as u64);
+    }
+
+    async fn update(&mut self, size: usize) {
+        let (downloaded, total, emit) = {
+            let mut st = self.state.lock().unwrap();
+            st.downloaded = st.downloaded.saturating_add(size as u64);
+            let now = Instant::now();
+            // Throttle to ~10 updates/sec, but always emit the final byte.
+            let emit = now.duration_since(st.last_emit) >= Duration::from_millis(100)
+                || (st.total > 0 && st.downloaded >= st.total);
+            if emit {
+                st.last_emit = now;
+            }
+            (st.downloaded, st.total, emit)
+        };
+        if emit {
+            self.emit(downloaded, total);
+        }
+    }
+
+    async fn finish(&mut self) {
+        let total = {
+            let st = self.state.lock().unwrap();
+            st.total.max(st.downloaded)
+        };
+        self.emit(total, total);
+    }
 }
 
 /// RAII guard that cleans up download state (`is_downloading` flag and cancel flag)
@@ -936,6 +1039,12 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
+                model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some();
+                model.is_downloading = false;
+                model.partial_size = 0;
+                continue;
+            }
             if model.is_directory {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);
@@ -1201,6 +1310,62 @@ impl ModelManager {
         Ok(format!("{:x}", hasher.finalize()))
     }
 
+    /// Download a Hugging Face-sourced model into the shared HF cache via
+    /// hf-hub, reporting progress through the same `model-download-progress`
+    /// event the URL path uses. Relies on hf-hub's stock token + cache (no
+    /// custom environment wiring).
+    async fn download_hf_model(
+        &self,
+        model_info: &ModelInfo,
+        repo_id: String,
+        revision: String,
+    ) -> Result<()> {
+        let model_id = model_info.id.clone();
+        let filename = model_info.filename.clone();
+
+        // Already in the shared cache (possibly from another tool)? Done.
+        if hf_cached_path(&repo_id, &revision, &filename).is_some() {
+            self.update_download_status()?;
+            let _ = self.app_handle.emit("model-download-complete", &model_id);
+            return Ok(());
+        }
+
+        // Mark downloading; the guard resets the flag on any error path.
+        {
+            let mut models = self.available_models.lock().unwrap();
+            if let Some(model) = models.get_mut(&model_id) {
+                model.is_downloading = true;
+            }
+        }
+        let mut cleanup = DownloadCleanup {
+            available_models: &self.available_models,
+            cancel_flags: &self.cancel_flags,
+            model_id: model_id.clone(),
+            disarmed: false,
+        };
+
+        info!(
+            "Downloading HF model {} from {}@{} ({})",
+            model_id, repo_id, revision, filename
+        );
+
+        let api = ApiBuilder::from_env()
+            .with_progress(false)
+            .build()
+            .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
+        let repo = api.repo(Repo::with_revision(repo_id, RepoType::Model, revision));
+        let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
+        repo.download_with_progress(&filename, progress)
+            .await
+            .map_err(|e| anyhow::anyhow!("Hugging Face download failed: {}", e))?;
+
+        cleanup.disarmed = true;
+        self.update_download_status()?;
+        let _ = self.app_handle.emit("model-download-complete", &model_id);
+        info!("HF model {} downloaded", model_id);
+        Ok(())
+    }
+
     pub async fn download_model(&self, model_id: &str) -> Result<()> {
         let model_info = {
             let models = self.available_models.lock().unwrap();
@@ -1212,6 +1377,11 @@ impl ModelManager {
 
         let (url, expected_sha256) = match &model_info.source {
             ModelSource::Url { url, sha256 } => (url.clone(), sha256.clone()),
+            ModelSource::HuggingFace { repo_id, revision } => {
+                return self
+                    .download_hf_model(&model_info, repo_id.clone(), revision.clone())
+                    .await;
+            }
             ModelSource::Local => {
                 return Err(anyhow::anyhow!("No download source for model"));
             }
@@ -1557,6 +1727,32 @@ impl ModelManager {
 
         debug!("ModelManager: Found model info: {:?}", model_info);
 
+        if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
+            // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
+            // the whole repo dir (blobs + refs + snapshots). Per product decision,
+            // delete hard-removes from the shared HF cache.
+            let mut deleted = false;
+            if let Some(file) = hf_cached_path(repo_id, revision, &model_info.filename) {
+                if let Some(repo_dir) = file.ancestors().nth(3) {
+                    if repo_dir
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .is_some_and(|n| n.starts_with("models--"))
+                    {
+                        info!("Deleting HF cache repo at: {:?}", repo_dir);
+                        fs::remove_dir_all(repo_dir)?;
+                        deleted = true;
+                    }
+                }
+            }
+            if !deleted {
+                return Err(anyhow::anyhow!("No model files found to delete"));
+            }
+            self.update_download_status()?;
+            let _ = self.app_handle.emit("model-deleted", model_id);
+            return Ok(());
+        }
+
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
             .models_dir
@@ -1629,6 +1825,12 @@ impl ModelManager {
                 "Model is currently downloading: {}",
                 model_id
             ));
+        }
+
+        if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
+            return hf_cached_path(repo_id, revision, &model_info.filename).ok_or_else(|| {
+                anyhow::anyhow!("Complete model file not found in HF cache: {}", model_id)
+            });
         }
 
         let model_path = self.models_dir.join(&model_info.filename);
