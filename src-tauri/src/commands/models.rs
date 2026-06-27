@@ -34,6 +34,18 @@ pub async fn refresh_recommended_models(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn add_hf_model(
+    model_manager: State<'_, Arc<ModelManager>>,
+    repo_id: String,
+) -> Result<(), String> {
+    model_manager
+        .add_hf_model(&repo_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn download_model(
     app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,

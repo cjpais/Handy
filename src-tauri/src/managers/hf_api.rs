@@ -10,6 +10,8 @@
 use anyhow::Result;
 use serde::Deserialize;
 
+use super::model_capabilities::{CapabilityProbe, CapabilityProber, GgufHeaderProber};
+
 const HF_ENDPOINT: &str = "https://huggingface.co";
 
 /// A downloadable file within a repo.
@@ -100,6 +102,62 @@ pub async fn fetch_repo_gguf_files(repo_id: &str) -> Result<Vec<RepoFile>> {
     let url = format!("{HF_ENDPOINT}/api/models/{repo_id}/tree/main?recursive=true");
     let entries: Vec<TreeEntry> = authed_get(&url).await?.json().await?;
     Ok(entries.into_iter().filter_map(tree_entry_to_gguf).collect())
+}
+
+/// Range-fetch the leading `want` bytes of a repo file. The GGUF header lives at
+/// the front of the file; HF `resolve` URLs redirect to a CDN that honours Range.
+async fn fetch_file_prefix(
+    repo_id: &str,
+    revision: &str,
+    filename: &str,
+    want: usize,
+) -> Result<Vec<u8>> {
+    let url = format!("{HF_ENDPOINT}/{repo_id}/resolve/{revision}/{filename}");
+    let mut req = reqwest::Client::new().get(&url).header(
+        reqwest::header::RANGE,
+        format!("bytes=0-{}", want.saturating_sub(1)),
+    );
+    if let Some(token) = stock_token() {
+        req = req.bearer_auth(token);
+    }
+    Ok(req
+        .send()
+        .await?
+        .error_for_status()?
+        .bytes()
+        .await?
+        .to_vec())
+}
+
+/// Read a remote GGUF's capabilities from its header alone, without downloading
+/// the whole (multi-GB) file. Best-effort: any network/parse failure yields an
+/// unknown probe, which the UI renders honestly.
+pub async fn probe_hf_capabilities(
+    repo_id: &str,
+    revision: &str,
+    filename: &str,
+) -> CapabilityProbe {
+    const INITIAL: usize = 1 << 20; // 1 MiB
+    const MAX: usize = 16 << 20; // 16 MiB
+    let prober = GgufHeaderProber;
+    let mut want = INITIAL;
+    loop {
+        let bytes = match fetch_file_prefix(repo_id, revision, filename, want).await {
+            Ok(bytes) => bytes,
+            Err(_) => return CapabilityProbe::default(),
+        };
+        let got = bytes.len();
+        match prober.probe_header(&bytes) {
+            Ok(probe) => return probe,
+            Err(need_more) => {
+                // Fewer bytes than asked (whole file) or hit the cap: give up.
+                if got < want || want >= MAX {
+                    return CapabilityProbe::default();
+                }
+                want = need_more.needed.max(want * 2).min(MAX);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

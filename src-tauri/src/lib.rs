@@ -566,6 +566,7 @@ pub fn run(cli_args: CliArgs) {
             commands::models::has_any_models_available,
             commands::models::has_any_models_or_downloads,
             commands::models::refresh_recommended_models,
+            commands::models::add_hf_model,
             commands::audio::update_microphone_mode,
             commands::audio::get_microphone_mode,
             commands::audio::get_windows_microphone_permission_status,

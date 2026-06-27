@@ -1,5 +1,7 @@
 use super::hf_api;
-use super::model_capabilities::{CapabilityProber, Compatibility, GgufHeaderProber};
+use super::model_capabilities::{
+    CapabilityProbe, CapabilityProber, Compatibility, GgufHeaderProber,
+};
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
@@ -102,6 +104,52 @@ fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathB
             revision.to_string(),
         ))
         .get(filename)
+}
+
+/// Build a `ModelInfo` for a Hugging Face GGUF file from its capability probe.
+fn hf_model_info(
+    repo_id: &str,
+    file_path: &str,
+    size: u64,
+    probe: &CapabilityProbe,
+    is_recommended: bool,
+) -> ModelInfo {
+    let display = file_path
+        .rsplit('/')
+        .next()
+        .unwrap_or(file_path)
+        .trim_end_matches(".gguf")
+        .to_string();
+    let languages = probe.languages.clone().unwrap_or_default();
+    let description = if is_recommended {
+        format!("Recommended • {}", repo_id)
+    } else {
+        format!("From Hugging Face • {}", repo_id)
+    };
+    ModelInfo {
+        id: format!("{}/{}", repo_id, file_path),
+        name: display,
+        description,
+        filename: file_path.to_string(),
+        source: ModelSource::HuggingFace {
+            repo_id: repo_id.to_string(),
+            revision: "main".to_string(),
+        },
+        size_mb: size / (1024 * 1024),
+        is_downloaded: false,
+        is_downloading: false,
+        partial_size: 0,
+        is_directory: false,
+        engine_type: EngineType::TranscribeCpp,
+        accuracy_score: 0.0,
+        speed_score: 0.0,
+        supports_translation: probe.supports_translation.unwrap_or(false),
+        is_recommended,
+        supports_language_selection: languages.len() > 1,
+        supported_languages: languages,
+        is_custom: false,
+        supports_streaming: probe.supports_streaming.unwrap_or(false),
+    }
 }
 
 /// Bridges hf-hub's async download progress to Handy's `model-download-progress`
@@ -1473,7 +1521,11 @@ impl ModelManager {
             match hf_api::fetch_repo_gguf_files(&repo_id).await {
                 Ok(files) => {
                     for file in files {
-                        self.add_recommended_model(&repo_id, &file.path, file.size);
+                        let probe =
+                            hf_api::probe_hf_capabilities(&repo_id, "main", &file.path).await;
+                        self.merge_hf_model(hf_model_info(
+                            &repo_id, &file.path, file.size, &probe, true,
+                        ));
                     }
                 }
                 Err(e) => {
@@ -1490,48 +1542,58 @@ impl ModelManager {
         Ok(())
     }
 
-    /// Insert (or flag) a recommended HF GGUF. If the file is already known
-    /// (e.g. discovered in the cache), it is just marked recommended.
-    fn add_recommended_model(&self, repo_id: &str, file_path: &str, size: u64) {
-        let model_id = format!("{}/{}", repo_id, file_path);
+    /// Merge an HF model into the list: insert if new, otherwise adopt the
+    /// recommended flag and fill in any capabilities the existing entry lacks
+    /// (a cache-discovered entry already has authoritative capabilities).
+    fn merge_hf_model(&self, info: ModelInfo) {
         let mut models = self.available_models.lock().unwrap();
-        if let Some(existing) = models.get_mut(&model_id) {
-            existing.is_recommended = true;
-            return;
+        match models.get_mut(&info.id) {
+            Some(existing) => {
+                existing.is_recommended |= info.is_recommended;
+                if existing.supported_languages.is_empty() {
+                    existing.supported_languages = info.supported_languages;
+                    existing.supports_language_selection = info.supports_language_selection;
+                }
+                existing.supports_streaming |= info.supports_streaming;
+                existing.supports_translation |= info.supports_translation;
+            }
+            None => {
+                models.insert(info.id.clone(), info);
+            }
         }
-        let display = file_path
-            .rsplit('/')
-            .next()
-            .unwrap_or(file_path)
-            .trim_end_matches(".gguf")
-            .to_string();
-        models.insert(
-            model_id.clone(),
-            ModelInfo {
-                id: model_id,
-                name: display,
-                description: format!("Recommended • {}", repo_id),
-                filename: file_path.to_string(),
-                source: ModelSource::HuggingFace {
-                    repo_id: repo_id.to_string(),
-                    revision: "main".to_string(),
-                },
-                size_mb: size / (1024 * 1024),
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::TranscribeCpp,
-                accuracy_score: 0.0,
-                speed_score: 0.0,
-                supports_translation: false,
-                is_recommended: true,
-                supported_languages: vec![],
-                supports_language_selection: true,
-                is_custom: false,
-                supports_streaming: false,
-            },
-        );
+    }
+
+    /// Resolve a Hugging Face repo id to its GGUF models and add them to the
+    /// list, reading capabilities from each header via a range fetch so they
+    /// show before download. Accepts any accessible repo; `Unsupported` files
+    /// are skipped. Errors if the repo has no compatible GGUFs.
+    pub async fn add_hf_model(&self, repo_id: &str) -> Result<()> {
+        let files = hf_api::fetch_repo_gguf_files(repo_id)
+            .await
+            .map_err(|e| anyhow::anyhow!("Could not list files for {}: {}", repo_id, e))?;
+        if files.is_empty() {
+            return Err(anyhow::anyhow!("No GGUF files found in {}", repo_id));
+        }
+
+        let mut added = 0usize;
+        for file in files {
+            let probe = hf_api::probe_hf_capabilities(repo_id, "main", &file.path).await;
+            if probe.verdict == Compatibility::Unsupported {
+                continue;
+            }
+            self.merge_hf_model(hf_model_info(repo_id, &file.path, file.size, &probe, false));
+            added += 1;
+        }
+        if added == 0 {
+            return Err(anyhow::anyhow!(
+                "No compatible GGUF models found in {}",
+                repo_id
+            ));
+        }
+
+        self.update_download_status()?;
+        let _ = self.app_handle.emit("models-updated", ());
+        Ok(())
     }
 
     /// Download a Hugging Face-sourced model into the shared HF cache via
