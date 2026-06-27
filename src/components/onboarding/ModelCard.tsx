@@ -33,6 +33,14 @@ const getLanguageDisplayText = (
   return t("modelSelector.capabilities.multiLanguage");
 };
 
+// Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").
+const getQuantLabel = (filename: string): string | null => {
+  const match = filename.match(
+    /[._-](IQ\d+_\w+|Q\d+(?:_\w+)?|F16|BF16|F32)\.gguf$/i,
+  );
+  return match ? match[1].toUpperCase() : null;
+};
+
 export type ModelCardStatus =
   | "downloadable"
   | "downloading"
@@ -82,6 +90,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const showModelSize =
     status === "downloadable" || status === "available" || status === "active";
   const formattedModelSize = formatModelSize(Number(model.size_mb));
+  const quantLabel = getQuantLabel(model.filename);
 
   const baseClasses =
     "flex flex-col rounded-xl px-4 py-3 gap-2 text-left transition-all duration-200";
@@ -229,6 +238,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
               <HardDrive className="w-3.5 h-3.5" />
             )}
             <span>{formattedModelSize}</span>
+            {quantLabel && <span className="text-text/40">{quantLabel}</span>}
           </span>
         )}
         {onDelete && (status === "available" || status === "active") && (

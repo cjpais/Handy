@@ -650,14 +650,6 @@ async refreshRecommendedModels() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async addHfModel(repoId: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("add_hf_model", { repoId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async updateMicrophoneMode(alwaysOn: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_microphone_mode", { alwaysOn }) };

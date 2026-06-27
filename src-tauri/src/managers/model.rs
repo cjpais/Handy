@@ -106,6 +106,22 @@ fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathB
         .get(filename)
 }
 
+/// Whether a GGUF filename names the Q8_0 quantization.
+fn is_q8_0(path: &str) -> bool {
+    path.to_lowercase().contains("q8_0")
+}
+
+/// Pick which of a repo's GGUFs to surface. For now Handy standardises on Q8_0;
+/// if a repo has none, fall back to a single file so it still shows up. (A quant
+/// picker can replace this later.)
+fn select_quant(files: Vec<hf_api::RepoFile>) -> Vec<hf_api::RepoFile> {
+    if files.iter().any(|f| is_q8_0(&f.path)) {
+        files.into_iter().filter(|f| is_q8_0(&f.path)).collect()
+    } else {
+        files.into_iter().take(1).collect()
+    }
+}
+
 /// Build a `ModelInfo` for a Hugging Face GGUF file from its capability probe.
 fn hf_model_info(
     repo_id: &str,
@@ -114,12 +130,7 @@ fn hf_model_info(
     probe: &CapabilityProbe,
     is_recommended: bool,
 ) -> ModelInfo {
-    let display = file_path
-        .rsplit('/')
-        .next()
-        .unwrap_or(file_path)
-        .trim_end_matches(".gguf")
-        .to_string();
+    let display = repo_id.rsplit('/').next().unwrap_or(repo_id).to_string();
     let languages = probe.languages.clone().unwrap_or_default();
     let description = if is_recommended {
         format!("Recommended • {}", repo_id)
@@ -1520,7 +1531,7 @@ impl ModelManager {
         for repo_id in repo_ids {
             match hf_api::fetch_repo_gguf_files(&repo_id).await {
                 Ok(files) => {
-                    for file in files {
+                    for file in select_quant(files) {
                         let probe =
                             hf_api::probe_hf_capabilities(&repo_id, "main", &file.path).await;
                         self.merge_hf_model(hf_model_info(
@@ -1561,39 +1572,6 @@ impl ModelManager {
                 models.insert(info.id.clone(), info);
             }
         }
-    }
-
-    /// Resolve a Hugging Face repo id to its GGUF models and add them to the
-    /// list, reading capabilities from each header via a range fetch so they
-    /// show before download. Accepts any accessible repo; `Unsupported` files
-    /// are skipped. Errors if the repo has no compatible GGUFs.
-    pub async fn add_hf_model(&self, repo_id: &str) -> Result<()> {
-        let files = hf_api::fetch_repo_gguf_files(repo_id)
-            .await
-            .map_err(|e| anyhow::anyhow!("Could not list files for {}: {}", repo_id, e))?;
-        if files.is_empty() {
-            return Err(anyhow::anyhow!("No GGUF files found in {}", repo_id));
-        }
-
-        let mut added = 0usize;
-        for file in files {
-            let probe = hf_api::probe_hf_capabilities(repo_id, "main", &file.path).await;
-            if probe.verdict == Compatibility::Unsupported {
-                continue;
-            }
-            self.merge_hf_model(hf_model_info(repo_id, &file.path, file.size, &probe, false));
-            added += 1;
-        }
-        if added == 0 {
-            return Err(anyhow::anyhow!(
-                "No compatible GGUF models found in {}",
-                repo_id
-            ));
-        }
-
-        self.update_download_status()?;
-        let _ = self.app_handle.emit("models-updated", ());
-        Ok(())
     }
 
     /// Download a Hugging Face-sourced model into the shared HF cache via

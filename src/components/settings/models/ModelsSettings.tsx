@@ -6,12 +6,16 @@ import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
+import { commands } from "@/bindings";
 import type { ModelInfo } from "@/bindings";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
   return model.supported_languages.includes(langCode);
 };
+
+// Pull the recommended collection at most once per app session.
+let recommendedRefreshAttempted = false;
 
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -35,6 +39,16 @@ export const ModelsSettings: React.FC = () => {
     selectModel,
     deleteModel,
   } = useModelStore();
+
+  // Fetch the recommended collection once per session; the backend emits
+  // `models-updated` when done, which refreshes the list.
+  useEffect(() => {
+    if (recommendedRefreshAttempted) return;
+    recommendedRefreshAttempted = true;
+    commands.refreshRecommendedModels().catch((err) => {
+      console.error("Failed to refresh recommended models:", err);
+    });
+  }, []);
 
   // click outside handler for language dropdown
   useEffect(() => {
