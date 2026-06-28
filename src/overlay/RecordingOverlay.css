@@ -56,8 +56,8 @@
 
 /* Shared base card. Lightly styled: theme surface, soft shadow, gentle blur. */
 .scard {
-  width: 168px; /* pill width */
-  border-radius: 18px;
+  width: 180px; /* pill width */
+  border-radius: 24px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -100,8 +100,6 @@
 
 /* Compact form: a resting pill, no pop-in / morph. */
 .scard.compact {
-  width: auto;
-  min-width: 150px;
   animation: none;
   transition: none;
 }
@@ -233,6 +231,7 @@
   display: flex;
   align-items: center;
   gap: 3px;
+  padding-right: 8px;
   height: 18px;
   flex: none;
 }
