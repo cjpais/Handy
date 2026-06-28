@@ -210,9 +210,18 @@
         "noResults": "Žádné jazyky nenalezeny",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Stisk a mluv",
-        "description": "Podržte pro nahrávání, uvolněte pro zastavení"
+      "shortcutActivation": {
+        "label": "Aktivace zkratky",
+        "options": {
+          "tap": "Klepnutí",
+          "pushToTalk": "Stisk a mluv",
+          "doubleTap": "Dvojité klepnutí"
+        },
+        "descriptions": {
+          "tap": "Stiskněte zkratku jednou pro spuštění nahrávání a znovu pro zastavení",
+          "push_to_talk": "Podržte zkratku pro nahrávání, uvolněním zastavíte",
+          "double_tap": "Rychle stiskněte zkratku dvakrát pro spuštění nahrávání. Pomáhá zabránit náhodné aktivaci, když se klávesa používá jako modifikátor (např. Globe + Delete na Macu)"
+        }
       }
     },
     "sound": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Zpoždění vložení",
         "description": "Zpoždění před odesláním klávesy pro vložení (v milisekundách). Zvyšte, pokud se vkládá špatný text."
+      },
+      "doubleTapDelay": {
+        "title": "Zpoždění dvojitého klepnutí",
+        "description": "Maximální čas mezi stisky zkratky pro aktivaci dvojitým klepnutím (v milisekundách)."
       },
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",

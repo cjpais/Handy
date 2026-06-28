@@ -210,9 +210,18 @@
         "noResults": "Nie znaleziono języków",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Push To Talk",
-        "description": "Przytrzymaj, aby nagrywać, puść, aby zatrzymać"
+      "shortcutActivation": {
+        "label": "Aktywacja skrótu",
+        "options": {
+          "tap": "Stuknięcie",
+          "pushToTalk": "Naciśnij i mów",
+          "doubleTap": "Podwójne stuknięcie"
+        },
+        "descriptions": {
+          "tap": "Naciśnij skrót raz, aby rozpocząć nagrywanie, i ponownie, aby zatrzymać",
+          "push_to_talk": "Przytrzymaj skrót, aby nagrywać, puść, aby zatrzymać",
+          "double_tap": "Szybko naciśnij skrót dwa razy, aby rozpocząć nagrywanie. Pomaga uniknąć przypadkowej aktywacji, gdy klawisz jest używany jako modyfikator (np. Globe + Delete na Macu)"
+        }
       }
     },
     "sound": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Opóźnienie wklejania",
         "description": "Opóźnienie przed wysłaniem klawisza wklejania (w milisekundach). Zwiększ, jeśli wklejany jest nieprawidłowy tekst."
+      },
+      "doubleTapDelay": {
+        "title": "Opóźnienie podwójnego stuknięcia",
+        "description": "Maksymalny czas między naciśnięciami skrótu dla aktywacji podwójnym stuknięciem (w milisekundach)."
       },
       "recordingBuffer": {
         "title": "Dodatkowy bufor nagrywania",

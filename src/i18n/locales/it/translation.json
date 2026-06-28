@@ -210,9 +210,18 @@
         "noResults": "Nessuna lingua trovata",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Premi per Parlare",
-        "description": "Tieni premuto per parlare, rilascia per interrompere"
+      "shortcutActivation": {
+        "label": "Attivazione scorciatoia",
+        "options": {
+          "tap": "Tocco",
+          "pushToTalk": "Premi per parlare",
+          "doubleTap": "Doppio tocco"
+        },
+        "descriptions": {
+          "tap": "Premi la scorciatoia una volta per avviare la registrazione e di nuovo per fermarla",
+          "push_to_talk": "Tieni premuta la scorciatoia per registrare, rilasciala per fermare",
+          "double_tap": "Premi rapidamente due volte la scorciatoia per avviare la registrazione. Aiuta a evitare attivazioni accidentali quando il tasto è usato come modificatore (ad es. Globo + Canc su Mac)"
+        }
       }
     },
     "sound": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Ritardo incolla",
         "description": "Ritardo prima dell'invio del tasto incolla (in millisecondi). Aumentare se viene incollato il testo sbagliato."
+      },
+      "doubleTapDelay": {
+        "title": "Ritardo doppio tocco",
+        "description": "Tempo massimo tra le pressioni della scorciatoia per l'attivazione con doppio tocco (in millisecondi)."
       },
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",

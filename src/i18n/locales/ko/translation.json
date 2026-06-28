@@ -192,9 +192,18 @@
         "noResults": "언어를 찾을 수 없습니다",
         "auto": "자동"
       },
-      "pushToTalk": {
-        "label": "녹음 중 단축키 홀딩",
-        "description": "누르고 있으면 녹음, 놓으면 정지"
+      "shortcutActivation": {
+        "label": "단축키 활성화",
+        "options": {
+          "tap": "누르기",
+          "pushToTalk": "눌러서 말하기",
+          "doubleTap": "두 번 누르기"
+        },
+        "descriptions": {
+          "tap": "단축키를 한 번 누르면 녹음이 시작되고 다시 누르면 중지됩니다",
+          "push_to_talk": "단축키를 누르고 있는 동안 녹음하고, 놓으면 중지됩니다",
+          "double_tap": "단축키를 빠르게 두 번 눌러 녹음을 시작합니다. 키를 보조키로 사용할 때(예: Mac의 Globe + Delete) 실수로 활성화되는 것을 방지합니다"
+        }
       }
     },
     "sound": {
@@ -509,6 +518,10 @@
       "pasteDelay": {
         "title": "붙여넣기 지연",
         "description": "붙여넣기 키 입력을 보내기 전 지연 시간(밀리초). 잘못된 텍스트가 붙여넣어지면 늘리세요."
+      },
+      "doubleTapDelay": {
+        "title": "두 번 누르기 지연",
+        "description": "두 번 누르기 활성화로 인식할 단축키 입력 사이의 최대 시간(밀리초)."
       },
       "recordingBuffer": {
         "title": "추가 녹음 버퍼",

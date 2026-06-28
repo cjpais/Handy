@@ -210,9 +210,18 @@
         "noResults": "Keine Sprachen gefunden",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Push-to-Talk",
-        "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      "shortcutActivation": {
+        "label": "Tastenkürzel-Aktivierung",
+        "options": {
+          "tap": "Tippen",
+          "pushToTalk": "Push-to-Talk",
+          "doubleTap": "Doppeltippen"
+        },
+        "descriptions": {
+          "tap": "Drücke das Tastenkürzel einmal, um die Aufnahme zu starten, und erneut, um sie zu stoppen",
+          "push_to_talk": "Halte das Tastenkürzel gedrückt, um aufzunehmen, und lasse es zum Stoppen los",
+          "double_tap": "Drücke das Tastenkürzel zweimal schnell, um die Aufnahme zu starten. Verhindert versehentliche Aktivierung, wenn die Taste als Modifikator verwendet wird (z. B. Globus + Löschen auf dem Mac)"
+        }
       }
     },
     "sound": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Einfügeverzögerung",
         "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhe den Wert, wenn falscher Text eingefügt wird."
+      },
+      "doubleTapDelay": {
+        "title": "Doppeltipp-Verzögerung",
+        "description": "Maximale Zeit zwischen Tastenkürzel-Drücken für die Doppeltipp-Aktivierung (in Millisekunden)."
       },
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",

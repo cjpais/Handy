@@ -210,9 +210,18 @@
         "noResults": "言語が見つかりません",
         "auto": "自動"
       },
-      "pushToTalk": {
-        "label": "プッシュトゥトーク",
-        "description": "押し続けて録音、離して停止"
+      "shortcutActivation": {
+        "label": "ショートカットの起動方法",
+        "options": {
+          "tap": "タップ",
+          "pushToTalk": "プッシュトゥトーク",
+          "doubleTap": "ダブルタップ"
+        },
+        "descriptions": {
+          "tap": "ショートカットを1回押すと録音を開始し、もう一度押すと停止します",
+          "push_to_talk": "ショートカットを押している間だけ録音し、離すと停止します",
+          "double_tap": "ショートカットをすばやく2回押すと録音を開始します。キーを修飾キーとして使う場合（MacのGlobe + Deleteなど）の誤作動を防ぎます"
+        }
       }
     },
     "sound": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "貼り付け遅延",
         "description": "貼り付けキー送信前の遅延（ミリ秒）。間違ったテキストが貼り付けられる場合は増やしてください。"
+      },
+      "doubleTapDelay": {
+        "title": "ダブルタップの遅延",
+        "description": "ダブルタップ起動として認識するショートカット入力間の最大時間（ミリ秒）。"
       },
       "recordingBuffer": {
         "title": "追加録音バッファ",

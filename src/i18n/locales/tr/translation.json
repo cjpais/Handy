@@ -210,9 +210,18 @@
         "noResults": "Dil bulunamadı",
         "auto": "Otomatik"
       },
-      "pushToTalk": {
-        "label": "Bas Konuş",
-        "description": "Kaydetmek için basılı tutun, durdurmak için bırakın"
+      "shortcutActivation": {
+        "label": "Kısayol etkinleştirme",
+        "options": {
+          "tap": "Dokun",
+          "pushToTalk": "Bas konuş",
+          "doubleTap": "Çift dokun"
+        },
+        "descriptions": {
+          "tap": "Kaydı başlatmak için kısayola bir kez, durdurmak için tekrar basın",
+          "push_to_talk": "Kaydetmek için kısayolu basılı tutun, durdurmak için bırakın",
+          "double_tap": "Kaydı başlatmak için kısayola hızlıca iki kez basın. Tuş değiştirici olarak kullanıldığında yanlışlıkla etkinleşmeyi önlemeye yardımcı olur (örn. Mac'te Globe + Delete)"
+        }
       }
     },
     "sound": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Yapıştırma gecikmesi",
         "description": "Yapıştırma tuşu göndermeden önce gecikme (milisaniye cinsinden). Yanlış metin yapıştırılıyorsa artırın."
+      },
+      "doubleTapDelay": {
+        "title": "Çift dokunma gecikmesi",
+        "description": "Çift dokunma etkinleştirmesi için kısayol basışları arasındaki en uzun süre (milisaniye)."
       },
       "recordingBuffer": {
         "title": "Ekstra kayıt tamponu",

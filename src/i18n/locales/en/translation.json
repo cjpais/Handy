@@ -192,9 +192,18 @@
         "noResults": "No languages found",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Push To Talk",
-        "description": "Hold to record, release to stop"
+      "shortcutActivation": {
+        "label": "Shortcut Activation",
+        "options": {
+          "tap": "Tap",
+          "pushToTalk": "Push To Talk",
+          "doubleTap": "Double Tap"
+        },
+        "descriptions": {
+          "tap": "Press the shortcut once to start recording and again to stop",
+          "push_to_talk": "Hold the shortcut to record, release to stop",
+          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+        }
       }
     },
     "models": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Paste Delay",
         "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
+      },
+      "doubleTapDelay": {
+        "title": "Double Tap Delay",
+        "description": "Maximum time between shortcut presses for double tap activation (in milliseconds)."
       },
       "recordingBuffer": {
         "title": "Extra Recording Buffer",

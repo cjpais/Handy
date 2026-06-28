@@ -210,9 +210,18 @@
         "noResults": "Aucune langue trouvée",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Appuyer pour parler",
-        "description": "Maintenez pour enregistrer, relâchez pour arrêter"
+      "shortcutActivation": {
+        "label": "Activation du raccourci",
+        "options": {
+          "tap": "Appui",
+          "pushToTalk": "Appuyer pour parler",
+          "doubleTap": "Double appui"
+        },
+        "descriptions": {
+          "tap": "Appuyez une fois sur le raccourci pour démarrer l'enregistrement, puis à nouveau pour l'arrêter",
+          "push_to_talk": "Maintenez le raccourci pour enregistrer, relâchez pour arrêter",
+          "double_tap": "Appuyez deux fois rapidement sur le raccourci pour démarrer l'enregistrement. Cela évite les activations accidentelles lorsque la touche est utilisée comme modificateur (par ex. Globe + Suppr sur Mac)"
+        }
       }
     },
     "sound": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Délai de collage",
         "description": "Délai avant l'envoi de la touche de collage (en millisecondes). Augmentez si le mauvais texte est collé."
+      },
+      "doubleTapDelay": {
+        "title": "Délai du double appui",
+        "description": "Temps maximal entre deux pressions du raccourci pour l'activation par double appui (en millisecondes)."
       },
       "recordingBuffer": {
         "title": "Tampon d'enregistrement supplémentaire",

@@ -192,9 +192,18 @@
         "noResults": "Inga språk hittades",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Tryck för att tala",
-        "description": "Håll ned för att spela in, släpp för att stoppa"
+      "shortcutActivation": {
+        "label": "Genvägsaktivering",
+        "options": {
+          "tap": "Tryck",
+          "pushToTalk": "Tryck för att tala",
+          "doubleTap": "Dubbeltryck"
+        },
+        "descriptions": {
+          "tap": "Tryck på genvägen en gång för att börja spela in och igen för att stoppa",
+          "push_to_talk": "Håll genvägen nedtryckt för att spela in, släpp för att stoppa",
+          "double_tap": "Tryck snabbt två gånger på genvägen för att börja spela in. Hjälper till att undvika oavsiktlig aktivering när tangenten används som modifierare (t.ex. Globe + Delete på Mac)"
+        }
       }
     },
     "models": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Fördröjning vid klistra in",
         "description": "Fördröjning innan klistra in-tangenttryckning skickas (i millisekunder). Öka om fel text klistras in."
+      },
+      "doubleTapDelay": {
+        "title": "Dubbeltrycksfördröjning",
+        "description": "Maximal tid mellan genvägstryck för aktivering med dubbeltryck (i millisekunder)."
       },
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",

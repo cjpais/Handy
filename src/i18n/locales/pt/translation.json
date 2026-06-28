@@ -192,9 +192,18 @@
         "noResults": "Nenhum idioma encontrado",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Pressionar para Falar",
-        "description": "Segure para gravar, solte para parar"
+      "shortcutActivation": {
+        "label": "Ativação do atalho",
+        "options": {
+          "tap": "Toque",
+          "pushToTalk": "Pressionar para falar",
+          "doubleTap": "Toque duplo"
+        },
+        "descriptions": {
+          "tap": "Pressione o atalho uma vez para iniciar a gravação e novamente para parar",
+          "push_to_talk": "Mantenha o atalho pressionado para gravar e solte para parar",
+          "double_tap": "Pressione o atalho duas vezes rapidamente para iniciar a gravação. Ajuda a evitar ativações acidentais quando a tecla é usada como modificador (por exemplo, Globo + Delete no Mac)"
+        }
       }
     },
     "models": {
@@ -514,6 +523,10 @@
       "pasteDelay": {
         "title": "Atraso de colagem",
         "description": "Atraso antes de enviar a tecla de colar (em milissegundos). Aumente se o texto errado estiver sendo colado."
+      },
+      "doubleTapDelay": {
+        "title": "Atraso do toque duplo",
+        "description": "Tempo máximo entre pressionamentos do atalho para ativação por toque duplo (em milissegundos)."
       },
       "recordingBuffer": {
         "title": "Buffer de gravação extra",
