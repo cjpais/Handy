@@ -274,6 +274,10 @@
         "label": "非表示で起動",
         "description": "ウィンドウを開かずにシステムトレイに起動。"
       },
+      "menuBarMode": {
+        "label": "メニューバーに常駐",
+        "description": "Handyをメニューバーに表示し、Dockとアプリ切り替えから外して、グローバルショートカットでフォーカスがHandyに戻らないようにします。Handyの再起動後に有効になります。"
+      },
       "autostart": {
         "label": "起動時に実行",
         "description": "コンピューターにログインしたときにHandyを自動的に起動。"

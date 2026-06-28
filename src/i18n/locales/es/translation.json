@@ -274,6 +274,10 @@
         "label": "Iniciar Oculto",
         "description": "Lanzar en la bandeja del sistema sin abrir la ventana."
       },
+      "menuBarMode": {
+        "label": "Mantener en la Barra de Menús",
+        "description": "Mantiene Handy en la barra de menús y fuera del Dock y del selector de aplicaciones para que los atajos globales no roben el foco. Surte efecto después de reiniciar Handy."
+      },
       "autostart": {
         "label": "Iniciar al Arranque",
         "description": "Iniciar Handy automáticamente cuando inicies sesión en tu computadora."

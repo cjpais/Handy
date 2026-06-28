@@ -92,8 +92,57 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
+// Window/tray launch policy lives here because it combines persisted settings,
+// runtime CLI overrides, and macOS activation policy.
+fn is_tray_disabled_by_cli(app: &AppHandle) -> bool {
+    app.try_state::<CliArgs>()
+        .map(|args| args.no_tray)
+        .unwrap_or(false)
+}
+
+fn is_tray_enabled(app: &AppHandle, settings: &settings::AppSettings) -> bool {
+    (settings.menu_bar_mode || settings.show_tray_icon) && !is_tray_disabled_by_cli(app)
+}
+
+fn should_start_with_main_window_hidden(
+    settings: &settings::AppSettings,
+    cli_args: &CliArgs,
+) -> bool {
+    settings.menu_bar_mode || settings.start_hidden || cli_args.start_hidden
+}
+
+#[cfg(target_os = "macos")]
+fn should_use_accessory_activation_policy_on_start(
+    app: &AppHandle,
+    settings: &settings::AppSettings,
+) -> bool {
+    should_start_with_main_window_hidden(settings, &app.state::<CliArgs>())
+        && is_tray_enabled(app, settings)
+}
+
+#[cfg(target_os = "macos")]
+fn should_show_settings_as_accessory(app: &AppHandle, settings: &settings::AppSettings) -> bool {
+    settings.menu_bar_mode && is_tray_enabled(app, settings)
+}
+
+#[cfg(target_os = "macos")]
+fn apply_activation_policy_for_settings_window(app: &AppHandle, settings: &settings::AppSettings) {
+    if should_show_settings_as_accessory(app, settings) {
+        return;
+    }
+
+    if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
+        log::error!("Failed to set activation policy to Regular: {}", e);
+    }
+}
+
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
+        #[cfg(target_os = "macos")]
+        {
+            let settings = settings::get_settings(app);
+            apply_activation_policy_for_settings_window(app, &settings);
+        }
         if let Err(e) = main_window.unminimize() {
             log::error!("Failed to unminimize webview window: {}", e);
         }
@@ -102,12 +151,6 @@ fn show_main_window(app: &AppHandle) {
         }
         if let Err(e) = main_window.set_focus() {
             log::error!("Failed to focus webview window: {}", e);
-        }
-        #[cfg(target_os = "macos")]
-        {
-            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
-                log::error!("Failed to set activation policy to Regular: {}", e);
-            }
         }
         return;
     }
@@ -189,7 +232,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
         let settings = settings::get_settings(app_handle);
-        if settings.start_hidden && settings.show_tray_icon {
+        if should_use_accessory_activation_policy_on_start(app_handle, &settings) {
             let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
         }
     }
@@ -276,7 +319,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Apply show_tray_icon setting
     let settings = settings::get_settings(app_handle);
-    if !settings.show_tray_icon {
+    if !is_tray_enabled(app_handle, &settings) {
         tray::set_tray_visibility(app_handle, false);
     }
 
@@ -498,6 +541,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_audio_feedback_volume_setting,
             shortcut::change_sound_theme_setting,
             shortcut::change_start_hidden_setting,
+            shortcut::change_menu_bar_mode_setting,
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
@@ -810,12 +854,12 @@ pub fn run(cli_args: CliArgs) {
             // Show main window only if not starting hidden.
             // CLI --start-hidden flag overrides the setting.
             // But if permission onboarding is required, always show the window.
-            let should_hide = settings.start_hidden || cli_args.start_hidden;
+            let should_hide = should_start_with_main_window_hidden(&settings, &cli_args);
             let should_force_show = should_force_show_permissions_window(&app_handle);
 
             // If start_hidden but tray is disabled, we must show the window
             // anyway. Without a tray icon, the dock is the only way back in.
-            let tray_available = settings.show_tray_icon && !cli_args.no_tray;
+            let tray_available = is_tray_enabled(&app_handle, &settings);
             if should_force_show || !should_hide || !tray_available {
                 show_main_window(&app_handle);
             }
@@ -830,9 +874,7 @@ pub fn run(cli_args: CliArgs) {
                 #[cfg(target_os = "macos")]
                 {
                     let settings = get_settings(&window.app_handle());
-                    let tray_visible =
-                        settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
-                    if tray_visible {
+                    if is_tray_enabled(&window.app_handle(), &settings) {
                         // Tray is available: hide the dock icon, app lives in the tray
                         let res = window
                             .app_handle()

@@ -274,6 +274,10 @@
         "label": "Versteckt starten",
         "description": "In den Systembereich starten, ohne das Fenster zu öffnen."
       },
+      "menuBarMode": {
+        "label": "In der Menüleiste behalten",
+        "description": "Handy in der Menüleiste behalten und aus Dock und App-Umschalter ausblenden, damit globale Tastenkürzel den Fokus nicht auf Handy ziehen. Wird nach einem Neustart von Handy wirksam."
+      },
       "autostart": {
         "label": "Beim Start ausführen",
         "description": "Handy automatisch beim Anmelden starten."
