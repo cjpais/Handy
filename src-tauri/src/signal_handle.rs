@@ -1,3 +1,4 @@
+use crate::settings::get_settings;
 use crate::TranscriptionCoordinator;
 #[cfg(unix)]
 use log::debug;
@@ -14,8 +15,15 @@ use std::thread;
 /// Send a transcription input to the coordinator.
 /// Used by signal handlers, CLI flags, and any other external trigger.
 pub fn send_transcription_input(app: &AppHandle, binding_id: &str, source: &str) {
+    let settings = get_settings(app);
     if let Some(c) = app.try_state::<TranscriptionCoordinator>() {
-        c.send_input(binding_id, source, true, false);
+        c.send_input(
+            binding_id,
+            source,
+            true,
+            settings.push_to_talk,
+            settings.double_tap_activation,
+        );
     } else {
         warn!("TranscriptionCoordinator not initialized");
     }

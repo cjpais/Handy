@@ -210,13 +210,18 @@
         "noResults": "Nessuna lingua trovata",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Premi per Parlare",
-        "description": "Tieni premuto per parlare, rilascia per interrompere"
-      },
-      "doubleTapActivation": {
-        "label": "Double Tap Activation",
-        "description": "Quickly press the shortcut twice to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)."
+      "shortcutActivation": {
+        "label": "Shortcut Activation",
+        "options": {
+          "tap": "Tap",
+          "pushToTalk": "Push To Talk",
+          "doubleTap": "Double Tap"
+        },
+        "descriptions": {
+          "tap": "Press the shortcut once to start recording and again to stop",
+          "push_to_talk": "Hold the shortcut to record, release to stop",
+          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+        }
       }
     },
     "sound": {
