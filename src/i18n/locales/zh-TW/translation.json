@@ -291,6 +291,10 @@
           "top": "頂部"
         }
       },
+      "highlightTargetWindow": {
+        "label": "醒目標示目標視窗",
+        "description": "在 Handy 錄音與轉寫時，於作用中視窗周圍繪製邊框，讓你看到文字將貼到哪裡。僅限 Windows。"
+      },
       "pasteMethod": {
         "title": "貼上方式",
         "description": "選擇文字插入方式。直接：透過系統輸入模擬打字。無：跳過貼上，僅更新歷史紀錄/剪貼簿",

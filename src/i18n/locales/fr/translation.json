@@ -291,6 +291,10 @@
           "top": "Haut"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Surligner la fenêtre cible",
+        "description": "Trace un cadre autour de la fenêtre active pendant que Handy enregistre et transcrit, afin que vous voyiez où le texte sera collé. Windows uniquement."
+      },
       "pasteMethod": {
         "title": "Méthode de collage",
         "description": "Choisissez comment le texte est inséré. Direct : simule la frappe via l'entrée système. Aucun : ignore le collage, met uniquement à jour l'historique/presse-papiers.",

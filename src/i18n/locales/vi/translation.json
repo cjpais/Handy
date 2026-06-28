@@ -291,6 +291,10 @@
           "top": "Trên"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Tô sáng cửa sổ đích",
+        "description": "Vẽ khung quanh cửa sổ đang hoạt động khi Handy ghi âm và phiên âm, để bạn thấy văn bản sẽ được dán vào đâu. Chỉ Windows."
+      },
       "pasteMethod": {
         "title": "Phương thức dán",
         "description": "Chọn cách chèn văn bản. Trực tiếp: mô phỏng gõ phím qua đầu vào hệ thống. Không có: bỏ qua dán, chỉ cập nhật lịch sử/clipboard.",

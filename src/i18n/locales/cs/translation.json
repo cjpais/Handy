@@ -291,6 +291,10 @@
           "top": "Nahoře"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Zvýraznit cílové okno",
+        "description": "Během nahrávání a přepisu v Handy vykreslí rámeček kolem aktivního okna, abyste viděli, kam bude text vložen. Pouze Windows."
+      },
       "pasteMethod": {
         "title": "Způsob vložení",
         "description": "Vyberte, jak se text vkládá. Přímé: simuluje psaní přes systémový vstup. Žádné: přeskočí vložení a aktualizuje pouze historii/schránku.",

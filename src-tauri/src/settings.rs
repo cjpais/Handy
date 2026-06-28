@@ -430,6 +430,8 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default = "default_highlight_target_window")]
+    pub highlight_target_window: bool,
 }
 
 fn default_model() -> String {
@@ -481,6 +483,10 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_highlight_target_window() -> bool {
+    true
 }
 
 fn default_auto_submit() -> bool {
@@ -814,6 +820,7 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
+        highlight_target_window: default_highlight_target_window(),
     }
 }
 
@@ -985,5 +992,11 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn default_settings_enable_highlight_target_window() {
+        let settings = get_default_settings();
+        assert!(settings.highlight_target_window);
     }
 }

@@ -291,6 +291,10 @@
           "top": "In alto"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Evidenzia finestra di destinazione",
+        "description": "Disegna una cornice intorno alla finestra attiva mentre Handy registra e trascrive, così puoi vedere dove verrà incollato il testo. Solo Windows."
+      },
       "pasteMethod": {
         "title": "Metodo di Incolla",
         "description": "Scegli come viene inserito il testo. Diretto: simula l'input da tastiera. Nessuno: non incolla, aggiorna solo la cronologia/appunti.",

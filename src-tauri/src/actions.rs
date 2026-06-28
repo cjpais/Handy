@@ -421,6 +421,7 @@ impl ShortcutAction for TranscribeAction {
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
         show_recording_overlay(app);
+        utils::show_target_highlight(app);
 
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
@@ -478,6 +479,7 @@ impl ShortcutAction for TranscribeAction {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             utils::hide_recording_overlay(app);
+            utils::hide_target_highlight(app, false);
             change_tray_icon(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
                 let error_type = if is_microphone_access_denied(&err) {
@@ -545,6 +547,7 @@ impl ShortcutAction for TranscribeAction {
                 if samples.is_empty() {
                     debug!("Recording produced no audio samples; skipping persistence");
                     utils::hide_recording_overlay(&ah);
+                    utils::hide_target_highlight(&ah, false);
                     change_tray_icon(&ah, TrayIconState::Idle);
                 } else {
                     // Save WAV concurrently with transcription
@@ -615,13 +618,15 @@ impl ShortcutAction for TranscribeAction {
 
                             if processed.final_text.is_empty() {
                                 utils::hide_recording_overlay(&ah);
+                                utils::hide_target_highlight(&ah, false);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             } else {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
                                 ah.run_on_main_thread(move || {
-                                    match utils::paste(final_text, ah_clone.clone()) {
+                                    let paste_result = utils::paste(final_text, ah_clone.clone());
+                                    match &paste_result {
                                         Ok(()) => debug!(
                                             "Text pasted successfully in {:?}",
                                             paste_time.elapsed()
@@ -632,11 +637,15 @@ impl ShortcutAction for TranscribeAction {
                                         }
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
+                                    // Flash only if paste actually succeeded; a flash on a
+                                    // silent failure would be a lie.
+                                    utils::hide_target_highlight(&ah_clone, paste_result.is_ok());
                                     change_tray_icon(&ah_clone, TrayIconState::Idle);
                                 })
                                 .unwrap_or_else(|e| {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
+                                    utils::hide_target_highlight(&ah, false);
                                     change_tray_icon(&ah, TrayIconState::Idle);
                                 });
                             }
@@ -656,6 +665,7 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
                             utils::hide_recording_overlay(&ah);
+                            utils::hide_target_highlight(&ah, false);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
@@ -663,6 +673,7 @@ impl ShortcutAction for TranscribeAction {
             } else {
                 debug!("No samples retrieved from recording stop");
                 utils::hide_recording_overlay(&ah);
+                utils::hide_target_highlight(&ah, false);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
         });

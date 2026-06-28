@@ -10,6 +10,7 @@ use tauri::{AppHandle, Manager};
 // pub use crate::audio_feedback::*;
 pub use crate::clipboard::*;
 pub use crate::overlay::*;
+pub use crate::target_highlight::*;
 pub use crate::tray::*;
 
 /// Centralized cancellation function that can be called from anywhere in the app.
@@ -28,6 +29,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
+    hide_target_highlight(app, false);
 
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();

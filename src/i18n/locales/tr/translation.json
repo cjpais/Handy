@@ -291,6 +291,10 @@
           "top": "Üst"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Hedef pencereyi vurgula",
+        "description": "Handy kayıt ve yazıya dökme yaparken etkin pencerenin etrafına bir çerçeve çizer; böylece metninizin nereye yapıştırılacağını görebilirsiniz. Yalnızca Windows."
+      },
       "pasteMethod": {
         "title": "Yapıştırma Yöntemi",
         "description": "Metnin nasıl ekleneceğini seçin. Doğrudan: sistem girişiyle yazmayı simüle eder. Yok: yapıştırmayı atlar, sadece geçmişi/panoyu günceller.",
