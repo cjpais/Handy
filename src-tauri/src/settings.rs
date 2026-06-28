@@ -7,6 +7,8 @@ use std::fmt;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
+use crate::transcription_coordinator::DEFAULT_DOUBLE_TAP_DELAY_MS;
+
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
 
@@ -340,6 +342,8 @@ pub struct AppSettings {
     pub push_to_talk: bool,
     #[serde(default)]
     pub double_tap_activation: bool,
+    #[serde(default = "default_double_tap_delay_ms")]
+    pub double_tap_delay_ms: u64,
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
     pub audio_feedback_volume: f32,
@@ -475,6 +479,10 @@ fn default_debug_mode() -> bool {
 
 fn default_log_level() -> LogLevel {
     LogLevel::Debug
+}
+
+fn default_double_tap_delay_ms() -> u64 {
+    DEFAULT_DOUBLE_TAP_DELAY_MS
 }
 
 fn default_word_correction_threshold() -> f64 {
@@ -770,6 +778,7 @@ pub fn get_default_settings() -> AppSettings {
         bindings,
         push_to_talk: true,
         double_tap_activation: false,
+        double_tap_delay_ms: default_double_tap_delay_ms(),
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),

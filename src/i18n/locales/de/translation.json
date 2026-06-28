@@ -211,16 +211,16 @@
         "auto": "Auto"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "Tastenkürzel-Aktivierung",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "Tippen",
+          "pushToTalk": "Push-to-Talk",
+          "doubleTap": "Doppeltippen"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "Drücke das Tastenkürzel einmal, um die Aufnahme zu starten, und erneut, um sie zu stoppen",
+          "push_to_talk": "Halte das Tastenkürzel gedrückt, um aufzunehmen, und lasse es zum Stoppen los",
+          "double_tap": "Drücke das Tastenkürzel zweimal schnell, um die Aufnahme zu starten. Verhindert versehentliche Aktivierung, wenn die Taste als Modifikator verwendet wird (z. B. Globus + Löschen auf dem Mac)"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "Einfügeverzögerung",
         "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhe den Wert, wenn falscher Text eingefügt wird."
+      },
+      "doubleTapDelay": {
+        "title": "Doppeltipp-Verzögerung",
+        "description": "Maximale Zeit zwischen Tastenkürzel-Drücken für die Doppeltipp-Aktivierung (in Millisekunden)."
       },
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",

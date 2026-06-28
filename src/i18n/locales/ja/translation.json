@@ -211,16 +211,16 @@
         "auto": "自動"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "ショートカットの起動方法",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "タップ",
+          "pushToTalk": "プッシュトゥトーク",
+          "doubleTap": "ダブルタップ"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "ショートカットを1回押すと録音を開始し、もう一度押すと停止します",
+          "push_to_talk": "ショートカットを押している間だけ録音し、離すと停止します",
+          "double_tap": "ショートカットをすばやく2回押すと録音を開始します。キーを修飾キーとして使う場合（MacのGlobe + Deleteなど）の誤作動を防ぎます"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "貼り付け遅延",
         "description": "貼り付けキー送信前の遅延（ミリ秒）。間違ったテキストが貼り付けられる場合は増やしてください。"
+      },
+      "doubleTapDelay": {
+        "title": "ダブルタップの遅延",
+        "description": "ダブルタップ起動として認識するショートカット入力間の最大時間（ミリ秒）。"
       },
       "recordingBuffer": {
         "title": "追加録音バッファ",

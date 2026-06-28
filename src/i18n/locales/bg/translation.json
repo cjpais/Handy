@@ -193,16 +193,16 @@
         "auto": "Автоматично"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "Активиране на пряк път",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "Натискане",
+          "pushToTalk": "Натискане за говорене",
+          "doubleTap": "Двойно натискане"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "Натиснете прекия път веднъж, за да започнете запис, и отново, за да спрете",
+          "push_to_talk": "Задръжте прекия път, за да записвате, и отпуснете, за да спрете",
+          "double_tap": "Натиснете бързо прекия път два пъти, за да започнете запис. Помага да се избегне случайно активиране, когато клавишът се използва като модификатор (напр. Globe + Delete на Mac)"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "Забавяне при поставяне",
         "description": "Забавяне преди симулацията на поставяне (в милисекунди). Увеличете, ако се поставя грешен текст."
+      },
+      "doubleTapDelay": {
+        "title": "Забавяне при двойно натискане",
+        "description": "Максимално време между натисканията на прекия път за активиране с двойно натискане (в милисекунди)."
       },
       "recordingBuffer": {
         "title": "Допълнителен буфер на записа",

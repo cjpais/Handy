@@ -193,16 +193,16 @@
         "auto": "自動"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "快捷鍵啟用方式",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "點按",
+          "pushToTalk": "按住說話",
+          "doubleTap": "雙擊"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "按一次快捷鍵開始錄音，再按一次停止",
+          "push_to_talk": "按住快捷鍵錄音，放開停止",
+          "double_tap": "快速按兩次快捷鍵開始錄音。可避免按鍵作為修飾鍵使用時意外觸發（例如 Mac 上的 Globe + Delete）"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "貼上延遲",
         "description": "發送貼上按鍵前的延遲（毫秒）。如果貼上了錯誤的文字，請增加此值"
+      },
+      "doubleTapDelay": {
+        "title": "雙擊延遲",
+        "description": "雙擊啟用時兩次快捷鍵按下之間允許的最長時間（毫秒）。"
       },
       "recordingBuffer": {
         "title": "額外錄音緩衝",

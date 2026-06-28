@@ -211,16 +211,16 @@
         "auto": "自动"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "快捷键激活方式",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "点击",
+          "pushToTalk": "按住说话",
+          "doubleTap": "双击"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "按一次快捷键开始录制，再按一次停止",
+          "push_to_talk": "按住快捷键录制，松开停止",
+          "double_tap": "快速按两次快捷键开始录制。可避免按键作为修饰键使用时意外触发（例如 Mac 上的 Globe + Delete）"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "粘贴延迟",
         "description": "发送粘贴按键前的延迟（毫秒）。如果粘贴了错误的文本，请增加此值。"
+      },
+      "doubleTapDelay": {
+        "title": "双击延迟",
+        "description": "双击激活时两次快捷键按下之间允许的最长时间（毫秒）。"
       },
       "recordingBuffer": {
         "title": "额外录音缓冲",

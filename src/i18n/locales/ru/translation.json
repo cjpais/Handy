@@ -211,16 +211,16 @@
         "auto": "Авто"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "Активация сочетания клавиш",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "Нажатие",
+          "pushToTalk": "Нажми и говори",
+          "doubleTap": "Двойное нажатие"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "Нажмите сочетание один раз, чтобы начать запись, и еще раз, чтобы остановить",
+          "push_to_talk": "Удерживайте сочетание для записи, отпустите для остановки",
+          "double_tap": "Быстро нажмите сочетание дважды, чтобы начать запись. Это помогает избежать случайной активации, когда клавиша используется как модификатор (например, Globe + Delete на Mac)"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "Задержка вставки",
         "description": "Задержка перед отправкой нажатия клавиши вставки (в миллисекундах). Увеличьте, если вставляется неправильный текст."
+      },
+      "doubleTapDelay": {
+        "title": "Задержка двойного нажатия",
+        "description": "Максимальное время между нажатиями сочетания для активации двойным нажатием (в миллисекундах)."
       },
       "recordingBuffer": {
         "title": "Дополнительный буфер записи",

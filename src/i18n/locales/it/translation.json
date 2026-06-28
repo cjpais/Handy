@@ -211,16 +211,16 @@
         "auto": "Auto"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "Attivazione scorciatoia",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "Tocco",
+          "pushToTalk": "Premi per parlare",
+          "doubleTap": "Doppio tocco"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "Premi la scorciatoia una volta per avviare la registrazione e di nuovo per fermarla",
+          "push_to_talk": "Tieni premuta la scorciatoia per registrare, rilasciala per fermare",
+          "double_tap": "Premi rapidamente due volte la scorciatoia per avviare la registrazione. Aiuta a evitare attivazioni accidentali quando il tasto è usato come modificatore (ad es. Globo + Canc su Mac)"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "Ritardo incolla",
         "description": "Ritardo prima dell'invio del tasto incolla (in millisecondi). Aumentare se viene incollato il testo sbagliato."
+      },
+      "doubleTapDelay": {
+        "title": "Ritardo doppio tocco",
+        "description": "Tempo massimo tra le pressioni della scorciatoia per l'attivazione con doppio tocco (in millisecondi)."
       },
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",

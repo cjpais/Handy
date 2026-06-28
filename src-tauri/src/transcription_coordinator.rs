@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
 const DEBOUNCE: Duration = Duration::from_millis(30);
-pub const DOUBLE_TAP_WINDOW: Duration = Duration::from_millis(400);
+pub const DEFAULT_DOUBLE_TAP_DELAY_MS: u64 = 400;
 
 /// Commands processed sequentially by the coordinator thread.
 enum Command {
@@ -18,6 +18,7 @@ enum Command {
         is_pressed: bool,
         push_to_talk: bool,
         double_tap_activation: bool,
+        double_tap_delay_ms: u64,
     },
     Cancel {
         recording_was_active: bool,
@@ -46,6 +47,7 @@ fn evaluate_input(
     is_pressed: bool,
     push_to_talk: bool,
     double_tap_activation: bool,
+    double_tap_delay_ms: u64,
     pending_double_tap: &mut Option<Instant>,
     now: Instant,
 ) -> InputAction {
@@ -64,7 +66,13 @@ fn evaluate_input(
     }
 
     if double_tap_activation {
-        return evaluate_double_tap_press(stage, binding_id, pending_double_tap, now);
+        return evaluate_double_tap_press(
+            stage,
+            binding_id,
+            pending_double_tap,
+            now,
+            Duration::from_millis(double_tap_delay_ms),
+        );
     }
 
     match stage {
@@ -79,6 +87,7 @@ fn evaluate_double_tap_press(
     binding_id: &str,
     pending_double_tap: &mut Option<Instant>,
     now: Instant,
+    double_tap_window: Duration,
 ) -> InputAction {
     match stage {
         Stage::Recording(id) if id == binding_id => {
@@ -87,7 +96,7 @@ fn evaluate_double_tap_press(
         }
         Stage::Idle => {
             if let Some(first_tap) = *pending_double_tap {
-                if now.duration_since(first_tap) <= DOUBLE_TAP_WINDOW {
+                if now.duration_since(first_tap) <= double_tap_window {
                     *pending_double_tap = None;
                     InputAction::Start
                 } else {
@@ -132,13 +141,13 @@ impl TranscriptionCoordinator {
                             is_pressed,
                             push_to_talk,
                             double_tap_activation,
+                            double_tap_delay_ms,
                         } => {
                             // Debounce rapid-fire press events (key repeat).
                             // Releases always pass through for push-to-talk.
                             if is_pressed {
                                 let now = Instant::now();
-                                if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE)
-                                {
+                                if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE) {
                                     debug!("Debounced press for '{binding_id}'");
                                     continue;
                                 }
@@ -151,6 +160,7 @@ impl TranscriptionCoordinator {
                                 is_pressed,
                                 push_to_talk,
                                 double_tap_activation,
+                                double_tap_delay_ms,
                                 &mut pending_double_tap,
                                 Instant::now(),
                             );
@@ -171,8 +181,7 @@ impl TranscriptionCoordinator {
                             pending_double_tap = None;
                             // Don't reset during processing — wait for the pipeline to finish.
                             if !matches!(stage, Stage::Processing)
-                                && (recording_was_active
-                                    || matches!(stage, Stage::Recording(_)))
+                                && (recording_was_active || matches!(stage, Stage::Recording(_)))
                             {
                                 stage = Stage::Idle;
                             }
@@ -201,6 +210,7 @@ impl TranscriptionCoordinator {
         is_pressed: bool,
         push_to_talk: bool,
         double_tap_activation: bool,
+        double_tap_delay_ms: u64,
     ) {
         if self
             .tx
@@ -210,6 +220,7 @@ impl TranscriptionCoordinator {
                 is_pressed,
                 push_to_talk,
                 double_tap_activation,
+                double_tap_delay_ms,
             })
             .is_err()
         {
@@ -265,6 +276,8 @@ fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &st
 mod tests {
     use super::*;
 
+    const TEST_DOUBLE_TAP_DELAY_MS: u64 = 400;
+
     #[test]
     fn toggle_mode_starts_and_stops_on_press() {
         let mut pending = None;
@@ -272,7 +285,16 @@ mod tests {
         let recording = Stage::Recording("transcribe".to_string());
 
         assert_eq!(
-            evaluate_input(&idle, "transcribe", true, false, false, &mut pending, Instant::now()),
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                false,
+                false,
+                TEST_DOUBLE_TAP_DELAY_MS,
+                &mut pending,
+                Instant::now()
+            ),
             InputAction::Start
         );
         assert_eq!(
@@ -282,6 +304,7 @@ mod tests {
                 true,
                 false,
                 false,
+                TEST_DOUBLE_TAP_DELAY_MS,
                 &mut pending,
                 Instant::now()
             ),
@@ -296,7 +319,16 @@ mod tests {
         let t0 = Instant::now();
 
         assert_eq!(
-            evaluate_input(&idle, "transcribe", true, false, true, &mut pending, t0),
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                false,
+                true,
+                TEST_DOUBLE_TAP_DELAY_MS,
+                &mut pending,
+                t0
+            ),
             InputAction::Ignore
         );
         assert!(pending.is_some());
@@ -308,6 +340,7 @@ mod tests {
                 true,
                 false,
                 true,
+                TEST_DOUBLE_TAP_DELAY_MS,
                 &mut pending,
                 t0 + Duration::from_millis(200)
             ),
@@ -323,7 +356,16 @@ mod tests {
         let t0 = Instant::now();
 
         assert_eq!(
-            evaluate_input(&idle, "transcribe", true, false, true, &mut pending, t0),
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                false,
+                true,
+                TEST_DOUBLE_TAP_DELAY_MS,
+                &mut pending,
+                t0
+            ),
             InputAction::Ignore
         );
         assert_eq!(
@@ -333,8 +375,43 @@ mod tests {
                 true,
                 false,
                 true,
+                TEST_DOUBLE_TAP_DELAY_MS,
                 &mut pending,
-                t0 + DOUBLE_TAP_WINDOW + Duration::from_millis(50)
+                t0 + Duration::from_millis(TEST_DOUBLE_TAP_DELAY_MS + 50)
+            ),
+            InputAction::Ignore
+        );
+    }
+
+    #[test]
+    fn double_tap_uses_configured_delay() {
+        let mut pending = None;
+        let idle = Stage::Idle;
+        let t0 = Instant::now();
+
+        assert_eq!(
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                false,
+                true,
+                250,
+                &mut pending,
+                t0
+            ),
+            InputAction::Ignore
+        );
+        assert_eq!(
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                false,
+                true,
+                250,
+                &mut pending,
+                t0 + Duration::from_millis(300)
             ),
             InputAction::Ignore
         );
@@ -352,6 +429,7 @@ mod tests {
                 true,
                 false,
                 true,
+                TEST_DOUBLE_TAP_DELAY_MS,
                 &mut pending,
                 Instant::now()
             ),
@@ -367,7 +445,16 @@ mod tests {
         let now = Instant::now();
 
         assert_eq!(
-            evaluate_input(&idle, "transcribe", true, true, false, &mut pending, now),
+            evaluate_input(
+                &idle,
+                "transcribe",
+                true,
+                true,
+                false,
+                TEST_DOUBLE_TAP_DELAY_MS,
+                &mut pending,
+                now
+            ),
             InputAction::Start
         );
         assert_eq!(
@@ -377,6 +464,7 @@ mod tests {
                 false,
                 true,
                 false,
+                TEST_DOUBLE_TAP_DELAY_MS,
                 &mut pending,
                 now
             ),

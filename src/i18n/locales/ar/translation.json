@@ -189,16 +189,16 @@
         "auto": "تلقائي"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "تفعيل الاختصار",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "نقرة",
+          "pushToTalk": "اضغط للتحدث",
+          "doubleTap": "نقرة مزدوجة"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "اضغط على الاختصار مرة واحدة لبدء التسجيل ومرة أخرى للإيقاف",
+          "push_to_talk": "اضغط مطولاً على الاختصار للتسجيل، واتركه للإيقاف",
+          "double_tap": "اضغط على الاختصار مرتين بسرعة لبدء التسجيل. يساعد ذلك على تجنب التفعيل غير المقصود عند استخدام المفتاح كمفتاح تعديل (مثل Globe + Delete على Mac)"
         }
       }
     },
@@ -501,6 +501,10 @@
       "pasteDelay": {
         "title": "تأخير اللصق",
         "description": "التأخير قبل إرسال ضغطة مفتاح اللصق (بالمللي ثانية). قم بزيادتها إذا تم لصق نص خاطئ."
+      },
+      "doubleTapDelay": {
+        "title": "تأخير النقرة المزدوجة",
+        "description": "الوقت الأقصى بين ضغطات الاختصار لتفعيل النقرة المزدوجة (بالمللي ثانية)."
       },
       "recordingBuffer": {
         "title": "مخزن التسجيل الإضافي",

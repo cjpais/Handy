@@ -43,6 +43,7 @@ pub fn handle_shortcut_event(
                 is_pressed,
                 settings.push_to_talk,
                 settings.double_tap_activation,
+                settings.double_tap_delay_ms,
             );
         } else {
             warn!("TranscriptionCoordinator is not initialized");

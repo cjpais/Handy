@@ -211,16 +211,16 @@
         "auto": "Tự động"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "Kích hoạt phím tắt",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "Nhấn",
+          "pushToTalk": "Nhấn để nói",
+          "doubleTap": "Nhấn đúp"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "Nhấn phím tắt một lần để bắt đầu ghi âm và nhấn lại để dừng",
+          "push_to_talk": "Giữ phím tắt để ghi âm, thả ra để dừng",
+          "double_tap": "Nhấn nhanh phím tắt hai lần để bắt đầu ghi âm. Giúp tránh kích hoạt ngoài ý muốn khi phím được dùng làm phím bổ trợ (ví dụ: Globe + Delete trên Mac)"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "Độ trễ dán",
         "description": "Độ trễ trước khi gửi phím dán (tính bằng mili giây). Tăng nếu văn bản sai đang được dán."
+      },
+      "doubleTapDelay": {
+        "title": "Độ trễ nhấn đúp",
+        "description": "Thời gian tối đa giữa các lần nhấn phím tắt để kích hoạt bằng nhấn đúp (tính bằng mili giây)."
       },
       "recordingBuffer": {
         "title": "Bộ đệm ghi âm thêm",

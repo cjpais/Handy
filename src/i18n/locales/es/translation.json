@@ -211,16 +211,16 @@
         "auto": "Auto"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "Activación del atajo",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "Toque",
+          "pushToTalk": "Pulsar para hablar",
+          "doubleTap": "Doble toque"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "Pulse el atajo una vez para empezar a grabar y otra vez para detener",
+          "push_to_talk": "Mantenga pulsado el atajo para grabar y suéltelo para detener",
+          "double_tap": "Pulse el atajo dos veces rápidamente para empezar a grabar. Ayuda a evitar activaciones accidentales cuando la tecla se usa como modificador (por ejemplo, Globo + Suprimir en Mac)"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "Retraso de pegado",
         "description": "Retraso antes de enviar la pulsación de tecla de pegar (en milisegundos). Aumente si se está pegando texto incorrecto."
+      },
+      "doubleTapDelay": {
+        "title": "Retraso de doble toque",
+        "description": "Tiempo máximo entre pulsaciones del atajo para la activación por doble toque (en milisegundos)."
       },
       "recordingBuffer": {
         "title": "Búfer de grabación adicional",

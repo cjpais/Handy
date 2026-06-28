@@ -23,6 +23,7 @@ pub fn send_transcription_input(app: &AppHandle, binding_id: &str, source: &str)
             true,
             settings.push_to_talk,
             settings.double_tap_activation,
+            settings.double_tap_delay_ms,
         );
     } else {
         warn!("TranscriptionCoordinator not initialized");

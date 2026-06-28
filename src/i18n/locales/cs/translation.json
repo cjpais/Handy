@@ -211,16 +211,16 @@
         "auto": "Auto"
       },
       "shortcutActivation": {
-        "label": "Shortcut Activation",
+        "label": "Aktivace zkratky",
         "options": {
-          "tap": "Tap",
-          "pushToTalk": "Push To Talk",
-          "doubleTap": "Double Tap"
+          "tap": "Klepnutí",
+          "pushToTalk": "Stisk a mluv",
+          "doubleTap": "Dvojité klepnutí"
         },
         "descriptions": {
-          "tap": "Press the shortcut once to start recording and again to stop",
-          "push_to_talk": "Hold the shortcut to record, release to stop",
-          "double_tap": "Press the shortcut twice quickly to start recording. Helps avoid accidental activation when the key is used as a modifier (e.g. Globe + Delete on Mac)"
+          "tap": "Stiskněte zkratku jednou pro spuštění nahrávání a znovu pro zastavení",
+          "push_to_talk": "Podržte zkratku pro nahrávání, uvolněním zastavíte",
+          "double_tap": "Rychle stiskněte zkratku dvakrát pro spuštění nahrávání. Pomáhá zabránit náhodné aktivaci, když se klávesa používá jako modifikátor (např. Globe + Delete na Macu)"
         }
       }
     },
@@ -523,6 +523,10 @@
       "pasteDelay": {
         "title": "Zpoždění vložení",
         "description": "Zpoždění před odesláním klávesy pro vložení (v milisekundách). Zvyšte, pokud se vkládá špatný text."
+      },
+      "doubleTapDelay": {
+        "title": "Zpoždění dvojitého klepnutí",
+        "description": "Maximální čas mezi stisky zkratky pro aktivaci dvojitým klepnutím (v milisekundách)."
       },
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",

@@ -485,15 +485,21 @@ pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_double_tap_activation_setting(
-    app: AppHandle,
-    enabled: bool,
-) -> Result<(), String> {
+pub fn change_double_tap_activation_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.double_tap_activation = enabled;
     if enabled {
         settings.push_to_talk = false;
     }
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_double_tap_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.double_tap_delay_ms = ms;
     settings::write_settings(&app, settings);
     Ok(())
 }
