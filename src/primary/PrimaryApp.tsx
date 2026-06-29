@@ -9,7 +9,8 @@ import { Settings2 } from "lucide-react";
 import { Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
-import { HistorySettings, MeetingsSettings } from "@/components/settings";
+import { HistorySettings } from "@/components/settings";
+import { MeetingsView } from "./MeetingsView";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type PrimaryTab = "meetings" | "transcription";
@@ -54,7 +55,8 @@ function PrimaryApp() {
     void (async () => {
       try {
         const hasModelsResult = await commands.hasAnyModelsAvailable();
-        const hasModels = hasModelsResult.status === "ok" && hasModelsResult.data;
+        const hasModels =
+          hasModelsResult.status === "ok" && hasModelsResult.data;
 
         if (!hasModels) {
           await commands.showMainWindowCommand();
@@ -163,7 +165,7 @@ function PrimaryApp() {
 
         <main className="flex-1 overflow-y-auto px-6 py-6">
           <div className="mx-auto w-full max-w-6xl">
-            {activeTab === "meetings" ? <MeetingsSettings /> : <HistorySettings />}
+            {activeTab === "meetings" ? <MeetingsView /> : <HistorySettings />}
           </div>
         </main>
       </div>

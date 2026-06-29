@@ -3,6 +3,9 @@ import ReactDOM from "react-dom/client";
 import { platform } from "@tauri-apps/plugin-os";
 import PrimaryApp from "./PrimaryApp";
 
+// Load the shared stylesheet (Tailwind + theme variables + fonts)
+import "../App.css";
+
 document.documentElement.dataset.platform = platform();
 
 import "../i18n";

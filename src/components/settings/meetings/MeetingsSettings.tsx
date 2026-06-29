@@ -451,14 +451,14 @@ const GoogleFeatureCard: React.FC<GoogleFeatureCardProps> = ({
   </div>
 );
 
-interface MeetingEntryProps {
+export interface MeetingEntryProps {
   entry: HistoryEntry;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteMeeting: (id: number) => Promise<void>;
   isGoogleConnected: boolean;
 }
 
-const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
+export const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
   entry,
   getAudioUrl,
   deleteMeeting,

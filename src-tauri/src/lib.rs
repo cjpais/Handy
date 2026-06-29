@@ -116,6 +116,33 @@ fn show_main_window(app: &AppHandle) {
     );
 }
 
+fn show_primary_window(app: &AppHandle) {
+    if let Some(primary_window) = app.get_webview_window("primary") {
+        if let Err(e) = primary_window.unminimize() {
+            log::error!("Failed to unminimize primary window: {}", e);
+        }
+        if let Err(e) = primary_window.show() {
+            log::error!("Failed to show primary window: {}", e);
+        }
+        if let Err(e) = primary_window.set_focus() {
+            log::error!("Failed to focus primary window: {}", e);
+        }
+        #[cfg(target_os = "macos")]
+        {
+            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
+                log::error!("Failed to set activation policy to Regular: {}", e);
+            }
+        }
+        return;
+    }
+
+    let webview_labels = app.webview_windows().keys().cloned().collect::<Vec<_>>();
+    log::error!(
+        "Primary window not found. Webview labels: {:?}",
+        webview_labels
+    );
+}
+
 #[allow(unused_variables)]
 fn should_force_show_permissions_window(app: &AppHandle) -> bool {
     #[cfg(target_os = "windows")]
@@ -217,7 +244,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         .icon_as_template(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "settings" => {
-                show_main_window(app);
+                show_primary_window(app);
             }
             "check_updates" => {
                 let settings = settings::get_settings(app);
@@ -321,6 +348,13 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 #[specta::specta]
 fn show_main_window_command(app: AppHandle) -> Result<(), String> {
     show_main_window(&app);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+fn show_primary_window_command(app: AppHandle) -> Result<(), String> {
+    show_primary_window(&app);
     Ok(())
 }
 
@@ -446,6 +480,7 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             commands::history::ask_meeting_question,
+            show_primary_window_command,
             commands::google::connect_google_features,
             commands::google::get_google_integration_status,
             commands::google::disconnect_google_feature,
@@ -520,7 +555,7 @@ pub fn run(cli_args: CliArgs) {
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
             } else {
-                show_main_window(app);
+                show_primary_window(app);
             }
         }))
         .plugin(tauri_plugin_fs::init())
@@ -540,12 +575,13 @@ pub fn run(cli_args: CliArgs) {
         .setup(move |app| {
             specta_builder.mount_events(app);
 
-            // Create main window programmatically so we can set data_directory
-            // for portable mode (redirects WebView2 cache to portable Data dir)
+            // Create the settings window ("main") programmatically so we can set
+            // data_directory for portable mode. This window starts hidden and is
+            // shown when the user clicks Settings in the primary window.
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                     .title("Handy")
-                    .inner_size(680.0, 570.0)
+                    .inner_size(820.0, 660.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)
                     .maximizable(false)
@@ -556,6 +592,26 @@ pub fn run(cli_args: CliArgs) {
             }
 
             win_builder.build()?;
+
+            // Create the primary window – the default app surface shown on startup,
+            // tray re-open, and single-instance activation.
+            let mut primary_builder = tauri::WebviewWindowBuilder::new(
+                app,
+                "primary",
+                tauri::WebviewUrl::App("src/primary/index.html".into()),
+            )
+            .title("Handy")
+            .inner_size(1100.0, 720.0)
+            .min_inner_size(800.0, 600.0)
+            .resizable(true)
+            .maximizable(true)
+            .visible(false);
+
+            if let Some(data_dir) = portable::data_dir() {
+                primary_builder = primary_builder.data_directory(data_dir.join("webview"));
+            }
+
+            primary_builder.build()?;
 
             let mut settings = get_settings(&app.handle());
 
@@ -616,17 +672,17 @@ pub fn run(cli_args: CliArgs) {
                 tray::set_tray_visibility(&app_handle, false);
             }
 
-            // Show main window only if not starting hidden.
-            // CLI --start-hidden flag overrides the setting.
-            // But if permission onboarding is required, always show the window.
+            // Show the primary window on startup unless the user opted to start hidden.
+            // CLI --start-hidden overrides the setting.
+            // If permissions/onboarding are required, the primary window will detect
+            // this and open the settings window itself via showMainWindowCommand.
+            // If start_hidden but tray is disabled, we must show the window
+            // anyway – without a tray icon the primary window is the only way back in.
             let should_hide = settings.start_hidden || cli_args.start_hidden;
             let should_force_show = should_force_show_permissions_window(&app_handle);
-
-            // If start_hidden but tray is disabled, we must show the window
-            // anyway. Without a tray icon, the dock is the only way back in.
             let tray_available = settings.show_tray_icon && !cli_args.no_tray;
             if should_force_show || !should_hide || !tray_available {
-                show_main_window(&app_handle);
+                show_primary_window(&app_handle);
             }
 
             Ok(())
@@ -642,12 +698,28 @@ pub fn run(cli_args: CliArgs) {
                     let tray_visible =
                         settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
-                        // Tray is available: hide the dock icon, app lives in the tray
-                        let res = window
-                            .app_handle()
-                            .set_activation_policy(tauri::ActivationPolicy::Accessory);
-                        if let Err(e) = res {
-                            log::error!("Failed to set activation policy: {}", e);
+                        // Only hide the dock icon (Accessory policy) when all
+                        // regular app windows are now hidden. If the other main
+                        // window (primary or settings) is still visible, keep
+                        // the Regular policy so the dock icon stays.
+                        let closed_label = window.label().to_string();
+                        let any_app_window_visible = ["main", "primary"]
+                            .iter()
+                            .filter(|&&label| label != closed_label.as_str())
+                            .any(|&label| {
+                                window
+                                    .app_handle()
+                                    .get_webview_window(label)
+                                    .map(|w| w.is_visible().unwrap_or(false))
+                                    .unwrap_or(false)
+                            });
+                        if !any_app_window_visible {
+                            let res = window
+                                .app_handle()
+                                .set_activation_policy(tauri::ActivationPolicy::Accessory);
+                            if let Err(e) = res {
+                                log::error!("Failed to set activation policy: {}", e);
+                            }
                         }
                     }
                     // No tray: keep the dock icon visible so the user can reopen
@@ -666,7 +738,7 @@ pub fn run(cli_args: CliArgs) {
         .run(|app, event| {
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen { .. } = &event {
-                show_main_window(app);
+                show_primary_window(app);
             }
             let _ = (app, event); // suppress unused warnings on non-macOS
         });
@@ -800,6 +872,7 @@ mod test_bindings {
                 commands::google::close_meeting_prompt,
                 commands::google::set_meeting_calendar_prompts_enabled,
                 commands::google::send_meeting_follow_up,
+                show_primary_window_command,
                 helpers::clamshell::is_laptop,
             ])
             .events(tauri_specta::collect_events![

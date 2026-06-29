@@ -110,12 +110,16 @@ MASR is a cross-platform Tauri 2.x desktop app with a Rust backend and a React/T
 - `stores/settingsStore.ts` - Zustand settings store and frontend update helpers
 - `hooks/useSettings.ts` - settings fetch/update hook layer
 - `components/settings/` - main settings UI
-  - `meetings/MeetingsSettings.tsx` - meeting assistant toggles, Google integration cards, local-file upload, meeting history actions
+  - `meetings/MeetingsSettings.tsx` - meeting assistant toggles, Google integration cards, local-file upload, meeting history actions; also exports `MeetingEntryComponent` and `MeetingEntryProps` for reuse
   - `post-processing/` and `PostProcessingSettingsApi/` - provider/model/API-key/prompt configuration
   - `general/`, `advanced/`, `models/`, `history/`, `debug/`, `about/` - grouped settings sections
 - `components/LocalFileTranscriber.tsx` - batch audio-file transcription modal for meeting or plain transcription actions
 - `overlay/` - recording overlay frontend entry point
 - `meeting_prompt/` - dedicated prompt window entry point for detected/upcoming meetings
+- `primary/` - primary window frontend entry point (default app surface)
+  - `main.tsx` - React root; imports `../App.css` to pull in Tailwind + theme variables + fonts
+  - `PrimaryApp.tsx` - shell with Meetings / Transcription tab switcher and Settings button
+  - `MeetingsView.tsx` - date-grouped meeting recordings list + upload audio button (no config UI)
 - `i18n/` - translations and language metadata
 
 ## Current Feature Map
@@ -154,15 +158,62 @@ Relevant files:
 - `tests/meeting_assistant.spec.ts`
 - `tests/google_integration.spec.ts`
 
+### Primary window
+
+The app has **four** Vite/Tauri webview entry points:
+
+| HTML entry | Window label | Purpose |
+|---|---|---|
+| `index.html` | `main` | Settings shell (App.tsx) — onboarding, all settings sections |
+| `src/primary/index.html` | `primary` | Primary window — default app surface on startup/tray/reopen |
+| `src/overlay/index.html` | `recording_overlay` | Recording overlay |
+| `src/meeting_prompt/index.html` | `meeting_prompt` | Meeting prompt panel |
+
+All four are declared in `vite.config.ts` under `build.rollupOptions.input`.
+
+#### Window orchestration (`src-tauri/src/lib.rs`)
+
+- **`primary`** is created on startup (1100×720, resizable+maximizable, hidden initially) and shown as the default window on:
+  - App startup (unless `--start-hidden`)
+  - Tray "Settings…" menu item
+  - Single-instance activation (second launch without CLI flags)
+  - macOS Dock reopen event
+- **`main`** (settings) is created hidden (820×660) and shown only when:
+  - The user clicks **Settings** in the primary window (`show_main_window_command`)
+  - Onboarding or permission checks redirect from the primary window
+  - The tray "Check for Updates" item triggers an update check
+- Both `show_main_window` (internal) and `show_primary_window` (internal) set `ActivationPolicy::Regular` on macOS when called. The `CloseRequested` handler only switches to `ActivationPolicy::Accessory` when **both** `main` and `primary` are hidden.
+- `show_primary_window_command` is a registered Tauri/specta command (available in `bindings.ts` as `commands.showPrimaryWindowCommand()`).
+- `show_main_window_command` (existing) remains the correct command for the primary window to open the settings window.
+
+#### CSS requirement for every entry point
+
+Each entry's `main.tsx` must import `../App.css` (or a CSS file that does so) to get Tailwind utilities and the `@theme` custom tokens. Without this import the vite plugin generates no stylesheet for that window.
+
+- `overlay/RecordingOverlay.css` does `@import "../App.css"`
+- `primary/main.tsx` does `import "../App.css"` directly
+- `meeting_prompt/MeetingPrompt.css` is standalone (uses its own custom properties)
+
+#### Primary window content split
+
+The **primary window** (`PrimaryApp.tsx`) intentionally shows only:
+
+- **Meetings tab** → `MeetingsView` (date-grouped recording list + upload audio button)
+- **Transcription tab** → `HistorySettings`
+- **Settings button** → opens the `main` (settings) window
+
+The **settings window** (`App.tsx` / `MeetingsSettings.tsx`) retains the full configuration surface:
+Meeting Assistant toggles, Calendar Prompts, Google Services integration cards, and the full meeting history with all actions.
+
+Do not merge these two surfaces. The split is intentional: the primary window is the everyday view; settings is the configuration panel.
+
+#### Capabilities
+
+Both `main` and `primary` windows must appear in `src-tauri/capabilities/default.json` and `src-tauri/capabilities/desktop.json`. If you add a new regular app window, add its label to both files.
+
 ### Meeting prompt window
 
-This repo has multiple Vite/Tauri webview entry points:
-
-- `index.html` -> main app
-- `src/overlay/index.html` -> recording overlay
-- `src/meeting_prompt/index.html` -> meeting prompt window
-
-Do not collapse prompt-window work back into the main app or overlay unless the task explicitly requires that redesign. The multi-entry setup is intentional and configured in `vite.config.ts`.
+Do not collapse prompt-window work back into the main app, overlay, or primary window unless the task explicitly requires that redesign. The multi-entry setup is intentional and configured in `vite.config.ts`.
 
 ### Google integrations
 
@@ -218,7 +269,7 @@ Primary files:
 
 **Command-event architecture:** Frontend calls Tauri commands; backend emits events for history changes, recording state, prompt display, and navigation cues.
 
-**Multi-window architecture:** Main window, recording overlay, and meeting prompt are separate webviews with separate frontend entry points.
+**Multi-window architecture:** Four separate webviews with separate frontend entry points: primary window (default app surface), settings/main window (floating settings panel), recording overlay, and meeting prompt. The primary window is the startup default; the settings window is shown on demand.
 
 **Feature-scoped settings flow:** Zustand -> Tauri command -> Rust settings/store persistence.
 
@@ -318,7 +369,7 @@ CLI flags are runtime-only overrides and should not mutate persisted settings.
 - Start by reading the real implementation files, not just README-era docs.
 - When the task touches meetings or Google, inspect existing plumbing first instead of introducing parallel state or commands.
 - Preserve the split Gmail/Tasks vs Calendar auth model.
-- Preserve the multi-entry window architecture for overlay and meeting prompts.
+- Preserve the multi-entry window architecture for primary window, overlay, and meeting prompts.
 - Avoid accidental renames of Handy-branded runtime identifiers unless the task explicitly requests a product rename.
 - Regenerate/update bindings only through the existing Rust specta export path.
 
