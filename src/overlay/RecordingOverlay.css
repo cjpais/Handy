@@ -1,26 +1,39 @@
-/* App-matched tokens (mirrors App.css), auto light/dark for the overlay window */
+@import "../styles/theme.css";
+
 :root {
-  /* Flat surface matching the app UI (App.css --color-background #fbfbfb), ~80% opaque */
-  --s-surface: rgba(251, 251, 251, 0.8);
-  --s-text: #0f0f0f;
+  --s-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Translucent app surface (theme.css --color-background at ~80% opacity). */
+  --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
+  /* Accent: brand UI pink in light, lighter logo pink in dark (override below). */
+    --s-accent: var(--color-logo-primary);
+  --s-accent-soft: color-mix(
+    in srgb,
+    var(--color-background-ui) 16%,
+    transparent
+  );
+  /* Neutrals. Hairlines reuse the app's mid-gray at low opacity — same vocabulary
+     as the app's border-mid-gray/* utilities. muted/faint are overlay-specific
+     secondary/tertiary text grays (no theme equivalent). */
   --s-muted: #6e6e6e;
   --s-faint: #9a9a9a;
-  --s-border: rgba(128, 128, 128, 0.22);
-  --s-hair: rgba(128, 128, 128, 0.12);
-  --s-accent: #da5893;
-  --s-accent-soft: rgba(218, 88, 147, 0.16);
+  --s-border: color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
+  --s-hair: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Flat surface matching the app UI (App.css --color-background #2c2b29), ~80% opaque */
-    --s-surface: rgba(44, 43, 41, 0.98);
-    --s-text: #fbfbfb;
+    --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
+    /* Accent uses the lighter logo pink in dark — reads better on the dark
+       surface than the deeper UI pink. */
+    --s-accent-soft: color-mix(
+      in srgb,
+      var(--color-logo-primary) 20%,
+      transparent
+    );
     --s-muted: #a3a09a;
     --s-faint: #6f6c66;
-    --s-border: rgba(255, 255, 255, 0.12);
-    --s-hair: rgba(255, 255, 255, 0.08);
-    --s-accent: #f28cbb;
-    --s-accent-soft: rgba(242, 140, 187, 0.2);
+    /* Hairlines flip to the near-white text token for contrast on dark. */
+    --s-border: color-mix(in srgb, var(--color-text) 12%, transparent);
+    --s-hair: color-mix(in srgb, var(--color-text) 8%, transparent);
   }
 }
 
@@ -36,8 +49,7 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 200ms ease-out;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--s-font);
 }
 .overlay-compact.show {
   opacity: 1;
@@ -50,8 +62,7 @@
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 16px;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--s-font);
 }
 
 /* Shared base card. Lightly styled: theme surface, soft shadow, gentle blur. */
@@ -135,7 +146,7 @@
   font-style: italic;
   line-height: 1.35;
   letter-spacing: -0.003em;
-  color: color-mix(in srgb, var(--s-text) 90%, transparent);
+  color: color-mix(in srgb, var(--color-text) 90%, transparent);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   scrollbar-width: none; /* Firefox */
@@ -270,7 +281,7 @@
 }
 .sx:hover {
   background: var(--s-accent-soft);
-  color: var(--s-text);
+  color: var(--color-text);
   transform: scale(1.05);
 }
 .sx:active {

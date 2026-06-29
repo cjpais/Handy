@@ -1,14 +1,16 @@
 @import "tailwindcss";
+@import "./styles/theme.css";
 
-@theme {
-  /* Design tokens */
-  --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6;
-  --color-mid-gray: #808080;
+/* Register the shared color tokens (src/styles/theme.css) as Tailwind
+   utilities */
+@theme inline {
+  --color-text: var(--color-text);
+  --color-background: var(--color-background);
+  --color-background-ui: var(--color-background-ui);
+  --color-logo-primary: var(--color-logo-primary);
+  --color-logo-stroke: var(--color-logo-stroke);
+  --color-text-stroke: var(--color-text-stroke);
+  --color-mid-gray: var(--color-mid-gray);
 }
 
 :root {
@@ -16,13 +18,6 @@
   font-size: 15px;
   line-height: 24px;
   font-weight: 400;
-
-  /* Colors - Light Theme */
-  /* --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-logo-primary: #FAA2CA;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6; */
 
   /* Typography settings */
   font-synthesis: none;
@@ -59,11 +54,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Colors - Dark Theme */
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
     /* Just a bit darker than the (already dark) background, keeping its warm tint */
     --color-log-surface: color-mix(in srgb, var(--color-background), black 15%);
   }
