@@ -188,12 +188,13 @@ pub enum RecordingRetentionPeriod {
 pub enum KeyboardImplementation {
     Tauri,
     HandyKeys,
+    Portal,
 }
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
         #[cfg(target_os = "linux")]
-        return KeyboardImplementation::Tauri;
+        return KeyboardImplementation::Portal;
         #[cfg(not(target_os = "linux"))]
         return KeyboardImplementation::HandyKeys;
     }

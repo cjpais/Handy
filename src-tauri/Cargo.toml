@@ -140,7 +140,7 @@ tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.
 transcribe-cpp = { version = "0.1.1", default-features = false, features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-ashpd = "0.12.1"
+ashpd = { version = "0.13", features = ["remote_desktop", "screencast", "global_shortcuts"] }
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 transcribe-cpp = { version = "0.1.1", default-features = false, features = [

@@ -8,7 +8,6 @@ command: handy
 
 finish-args:
   - --socket=wayland
-  - --socket=fallback-x11
   - --share=ipc
 
   # GPU access for Vulkan (Whisper acceleration)
@@ -41,6 +40,15 @@ finish-args:
 
   # Required for prefers-color-scheme detection via xdg-desktop-portal
   - --talk-name=org.freedesktop.portal.Settings
+
+  # Global Shortcuts portal — required for Wayland keyboard shortcuts (portal_impl)
+  - --talk-name=org.freedesktop.portal.GlobalShortcuts
+
+  # Remote Desktop portal — required for wayland input pipeline (ashpd)
+  - --talk-name=org.freedesktop.portal.Desktop
+
+  # Portal PermissionStore — required for persisting remote-desktop auth tokens
+  - --talk-name=org.freedesktop.impl.portal.PermissionStore
 
   # WebKit rendering fix for sandboxed environments (fixes white screen when opening)
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
