@@ -38,6 +38,8 @@ CURATION = {  # desc = PLACEHOLDER taglines — CJ to rewrite
     "cohere-transcribe-03-2026":       {"rank": 4, "desc": "Highest accuracy, 14 languages."},
     "whisper-medium":                  {"rank": 5, "desc": "Broadest language coverage, with translation to English."},
     "Voxtral-Mini-4B-Realtime-2602":   {"rank": 6, "desc": "Live multilingual, excellent on Apple Silicon."},
+    # description-only (not recommended) — carried over from the legacy .bin entry
+    "Breeze-ASR-25":                   {"desc": "Optimized for Taiwanese Mandarin. Code-switching support."},
 }
 # temporary capability corrections pending a card re-push (remove once cards fixed)
 OVERRIDES = {
