@@ -350,6 +350,47 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
         }
     }
 
+    // --list-models: print the model registry (catalog + on-disk + custom) with
+    // their ids — the same ids `--model` accepts — then exit. `--json` emits the
+    // full ModelInfo array for scripting.
+    if args.list_models {
+        let model_manager = app.state::<Arc<ModelManager>>();
+        let models = model_manager.get_available_models();
+        if args.json {
+            match serde_json::to_string_pretty(&models) {
+                Ok(s) => println!("{}", s),
+                Err(e) => {
+                    eprintln!("error: failed to serialize models: {}", e);
+                    return 1;
+                }
+            }
+        } else if models.is_empty() {
+            println!("No models available.");
+        } else {
+            println!("Available models (✓ = installed):");
+            let width = models.iter().map(|m| m.id.len()).max().unwrap_or(0);
+            for m in &models {
+                let mark = if m.is_downloaded { "✓" } else { " " };
+                let rec = if m.is_recommended {
+                    "  [recommended]"
+                } else {
+                    ""
+                };
+                println!(
+                    "  {}  {:<width$}  {}{}",
+                    mark,
+                    m.id,
+                    m.name,
+                    rec,
+                    width = width
+                );
+            }
+        }
+        if args.transcribe_file.is_none() {
+            return 0;
+        }
+    }
+
     let Some(wav) = args.transcribe_file.clone() else {
         return 0;
     };
@@ -611,7 +652,8 @@ pub fn run(cli_args: CliArgs) {
 
     // The headless path must run as its own instance (see the single-instance
     // note below), not forward to an already-running app.
-    let headless_mode = cli_args.transcribe_file.is_some() || cli_args.list_devices;
+    let headless_mode =
+        cli_args.transcribe_file.is_some() || cli_args.list_devices || cli_args.list_models;
 
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
@@ -625,8 +667,8 @@ pub fn run(cli_args: CliArgs) {
                 .clear_targets()
                 .targets([
                     // Console output respects RUST_LOG environment variable. In
-                    // headless mode (--transcribe-file/--list-devices) stdout
-                    // carries only the result (JSON or plain), so send console
+                    // headless mode (--transcribe-file/--list-devices/--list-models)
+                    // stdout carries only the result (JSON or plain), so send console
                     // logs to stderr instead to keep stdout clean for CI parsing.
                     Target::new(if headless_mode {
                         TargetKind::Stderr
@@ -671,9 +713,10 @@ pub fn run(cli_args: CliArgs) {
     }
 
     // Single-instance forwards CLI args to an already-running Handy and exits.
-    // That would make the headless path (--transcribe-file/--list-devices) a
-    // silent no-op whenever the app is already open, so skip it in headless mode
-    // and run a standalone instance instead.
+    // That would make the headless path
+    // (--transcribe-file/--list-devices/--list-models) a silent no-op whenever the
+    // app is already open, so skip it in headless mode and run a standalone
+    // instance instead.
     if !headless_mode {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == "--toggle-transcription") {
@@ -706,7 +749,8 @@ pub fn run(cli_args: CliArgs) {
         .setup(move |app| {
             specta_builder.mount_events(app);
 
-            // Headless one-shot path (`--transcribe-file` / `--list-devices`):
+            // Headless one-shot path
+            // (`--transcribe-file` / `--list-devices` / `--list-models`):
             // initialize only what transcription needs — store/paths (via the
             // registered plugins), the model + transcription managers, and the
             // transcribe-cpp backend + accelerator settings — then run on a worker

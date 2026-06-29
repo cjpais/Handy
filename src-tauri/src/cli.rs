@@ -48,6 +48,11 @@ pub struct CliArgs {
     #[arg(long)]
     pub list_devices: bool,
 
+    /// List the available models (with ids) and exit. Pass an id to --model.
+    /// Honors --json for machine-readable output.
+    #[arg(long)]
+    pub list_models: bool,
+
     /// Repeat the transcription N times (best_ms reports the fastest run).
     #[arg(long, value_name = "N")]
     pub repeat: Option<usize>,
