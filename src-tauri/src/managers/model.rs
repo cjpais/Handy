@@ -1786,8 +1786,14 @@ impl ModelManager {
             model_id, repo_id, revision, filename
         );
 
+        // Download chunks in parallel (default is 1 = sequential). Throughput
+        // scales near-linearly with this count because each connection is capped
+        // (~8 MB/s observed per stream), so we stack several to approach the
+        // link's real bandwidth. 8 stays light on CPU/RAM (~80 MB peak buffers)
+        // even on older machines and is browser-like in connection count.
         let api = ApiBuilder::from_env()
             .with_progress(false)
+            .with_max_files(8)
             .build()
             .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
         let repo = api.repo(Repo::with_revision(repo_id, RepoType::Model, revision));
