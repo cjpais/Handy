@@ -15,6 +15,7 @@ pub mod portable;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod status;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
@@ -172,6 +173,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+
+    // Initialize optional status manager (publishes activity state over D-Bus on Linux)
+    let status_manager = status::StatusManager::new();
+    app_handle.manage(status_manager);
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
