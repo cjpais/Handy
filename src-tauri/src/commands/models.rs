@@ -32,6 +32,20 @@ pub async fn refresh_recommended_models(
         .map_err(|e| e.to_string())
 }
 
+/// Re-scan local sources (custom models dir + shared HF cache) for models added
+/// since launch
+#[tauri::command]
+#[specta::specta]
+pub async fn rescan_local_models(
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<(), String> {
+    let mm = model_manager.inner().clone();
+    tokio::task::spawn_blocking(move || mm.rescan_local_models())
+        .await
+        .map_err(|e| format!("rescan task panicked: {e}"))?
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn download_model(

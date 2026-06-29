@@ -163,6 +163,30 @@ fn hf_model_info(
     }
 }
 
+/// Capability fields for a locally-discovered on-disk model, derived from its
+/// GGUF header probe. Anything without readable GGUF metadata — a legacy `.bin`
+/// file, or a header that simply omits a key — collapses to "no advertised
+/// capability"; transcribe-cpp still reconciles the real values at load time.
+/// Shared by both local discovery paths (custom models dir + HF cache) so they
+/// surface capabilities identically.
+struct LocalCaps {
+    supports_streaming: bool,
+    supports_translation: bool,
+    supports_language_selection: bool,
+    supported_languages: Vec<String>,
+}
+
+fn local_caps(probe: &CapabilityProbe) -> LocalCaps {
+    let languages = probe.languages.clone().unwrap_or_default();
+    LocalCaps {
+        supports_streaming: probe.supports_streaming.unwrap_or(false),
+        supports_translation: probe.supports_translation.unwrap_or(false),
+        // Only offer a language picker when there's more than one to choose.
+        supports_language_selection: languages.len() > 1,
+        supported_languages: languages,
+    }
+}
+
 /// Bridges hf-hub's async download progress to Handy's `model-download-progress`
 /// event. hf-hub clones the reporter, so shared state lives behind an `Arc`.
 #[derive(Clone)]
@@ -247,6 +271,18 @@ impl Progress for HfDownloadProgress {
     }
 }
 
+/// RAII guard that clears the `is_rescanning` single-flight flag on drop, so the
+/// slot is released on every exit path (including early returns and `?`).
+struct RescanGuard {
+    flag: Arc<AtomicBool>,
+}
+
+impl Drop for RescanGuard {
+    fn drop(&mut self) {
+        self.flag.store(false, Ordering::SeqCst);
+    }
+}
+
 /// RAII guard that cleans up download state (`is_downloading` flag and cancel flag)
 /// when dropped, unless explicitly disarmed. This ensures consistent cleanup on
 /// every error path without requiring manual cleanup at each `?` or `return Err`.
@@ -278,6 +314,9 @@ pub struct ModelManager {
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
+    /// Single-flight guard for [`Self::rescan_local_models`] so concurrent
+    /// refresh requests coalesce instead of scanning the disk in parallel.
+    is_rescanning: Arc<AtomicBool>,
 }
 
 impl ModelManager {
@@ -996,6 +1035,7 @@ impl ModelManager {
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             extracting_models: Arc::new(Mutex::new(HashSet::new())),
+            is_rescanning: Arc::new(AtomicBool::new(false)),
         };
 
         // Migrate any bundled models to user directory
@@ -1016,6 +1056,68 @@ impl ModelManager {
     pub fn get_available_models(&self) -> Vec<ModelInfo> {
         let models = self.available_models.lock().unwrap();
         models.values().cloned().collect()
+    }
+
+    /// Claim the single rescan slot. Returns a guard that releases it on drop,
+    /// or `None` if a rescan is already running (callers should just skip).
+    fn try_start_rescan(&self) -> Option<RescanGuard> {
+        if self.is_rescanning.swap(true, Ordering::SeqCst) {
+            None
+        } else {
+            Some(RescanGuard {
+                flag: self.is_rescanning.clone(),
+            })
+        }
+    }
+
+    /// Re-run the local discovery scans (custom models dir + shared HF cache) so
+    /// models a user dropped in or downloaded outside Handy show up without a
+    /// restart. Additive by design: it inserts newly-found files and never
+    /// touches existing entries, so in-flight downloads and runtime-probed
+    /// capabilities are preserved untouched.
+    ///
+    /// The disk walk and 64 KiB GGUF header probes run against a cloned snapshot
+    /// *off-lock*, so audio/transcription readers never block on I/O; only the
+    /// brief merge of newly-discovered ids takes the registry lock. Concurrent
+    /// calls coalesce via [`Self::try_start_rescan`].
+    pub fn rescan_local_models(&self) -> Result<()> {
+        let _guard = match self.try_start_rescan() {
+            Some(g) => g,
+            None => {
+                debug!("Model rescan already in progress; skipping");
+                return Ok(());
+            }
+        };
+
+        // Snapshot the current registry and discover against the copy off-lock.
+        // The discover_* helpers are purely additive (they skip ids already in
+        // the map), so the snapshot ends up as {current} ∪ {newly-found}.
+        let mut snapshot = self.available_models.lock().unwrap().clone();
+        if let Err(e) = Self::discover_custom_transcribe_models(&self.models_dir, &mut snapshot) {
+            warn!("Rescan: failed to discover custom models: {}", e);
+        }
+        Self::discover_hf_cache_models(&mut snapshot);
+
+        // Merge only the genuinely-new ids back into the live registry. `or_insert`
+        // leaves every existing entry exactly as it was.
+        let mut added = 0usize;
+        {
+            let mut live = self.available_models.lock().unwrap();
+            for (id, info) in snapshot {
+                if !live.contains_key(&id) {
+                    live.insert(id, info);
+                    added += 1;
+                }
+            }
+        }
+
+        self.update_download_status()?;
+        self.auto_select_model_if_needed()?;
+        if added > 0 {
+            info!("Model rescan discovered {} new model(s)", added);
+        }
+        let _ = self.app_handle.emit("models-updated", ());
+        Ok(())
     }
 
     pub fn get_model_info(&self, model_id: &str) -> Option<ModelInfo> {
@@ -1254,10 +1356,10 @@ impl ModelManager {
             // including `.partial` downloads like "model.bin.partial" — is
             // skipped, since it ends in neither extension. The model ID is the
             // filename with its extension removed.
-            let model_id = if let Some(stem) = filename.strip_suffix(".bin") {
-                stem.to_string()
+            let (model_id, is_gguf) = if let Some(stem) = filename.strip_suffix(".bin") {
+                (stem.to_string(), false)
             } else if let Some(stem) = filename.strip_suffix(".gguf") {
-                stem.to_string()
+                (stem.to_string(), true)
             } else {
                 continue;
             };
@@ -1295,9 +1397,20 @@ impl ModelManager {
                 }
             };
 
+            // Probe GGUF headers for advertised capabilities so a dropped-in
+            // model surfaces streaming / translation / languages just like a
+            // Handy-downloaded one. Legacy `.bin` files have no GGUF header, so
+            // they stay "unknown" until transcribe-cpp reconciles them at load.
+            let probe = if is_gguf {
+                GgufHeaderProber.probe_file(&path)
+            } else {
+                CapabilityProbe::default()
+            };
+            let caps = local_caps(&probe);
+
             info!(
-                "Discovered custom transcribe-cpp model: {} ({}, {} MB)",
-                model_id, filename, size_mb
+                "Discovered custom transcribe-cpp model: {} ({}, {} MB, streaming={})",
+                model_id, filename, size_mb, caps.supports_streaming
             );
 
             available_models.insert(
@@ -1316,12 +1429,12 @@ impl ModelManager {
                     engine_type: EngineType::TranscribeCpp,
                     accuracy_score: 0.0, // Sentinel: UI hides score bars when both are 0
                     speed_score: 0.0,
-                    supports_translation: false,
+                    supports_translation: caps.supports_translation,
                     is_recommended: false,
-                    supported_languages: vec![],
-                    supports_language_selection: true,
+                    supported_languages: caps.supported_languages,
+                    supports_language_selection: caps.supports_language_selection,
                     is_custom: true,
-                    supports_streaming: false,
+                    supports_streaming: caps.supports_streaming,
                 },
             );
         }
@@ -1408,6 +1521,7 @@ impl ModelManager {
                 if probe.verdict != Compatibility::Compatible {
                     continue;
                 }
+                let caps = local_caps(&probe);
 
                 let size_mb = path
                     .metadata()
@@ -1435,12 +1549,12 @@ impl ModelManager {
                         engine_type: EngineType::TranscribeCpp,
                         accuracy_score: 0.0,
                         speed_score: 0.0,
-                        supports_translation: probe.supports_translation.unwrap_or(false),
+                        supports_translation: caps.supports_translation,
                         is_recommended: false,
-                        supported_languages: probe.languages.unwrap_or_default(),
-                        supports_language_selection: true,
+                        supported_languages: caps.supported_languages,
+                        supports_language_selection: caps.supports_language_selection,
                         is_custom: false,
-                        supports_streaming: probe.supports_streaming.unwrap_or(false),
+                        supports_streaming: caps.supports_streaming,
                     },
                 );
             }

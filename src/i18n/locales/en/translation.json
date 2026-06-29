@@ -148,7 +148,8 @@
       "multiLanguage": "Multi-language",
       "languageOnly": "{{language}} Only",
       "translation": "Can translate to English",
-      "translate": "Translate to English"
+      "translate": "Translate to English",
+      "streaming": "Shows live transcription as you speak"
     }
   },
   "settings": {
@@ -213,6 +214,10 @@
         "multiLanguage": "Multi-language",
         "translation": "Translation",
         "allLanguages": "All Languages"
+      },
+      "rescan": {
+        "label": "Rescan",
+        "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy"
       },
       "noModelsMatch": "No models match this filter."
     },

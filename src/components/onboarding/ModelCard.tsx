@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  AudioLines,
   Check,
   Download,
   Globe,
@@ -228,6 +229,15 @@ const ModelCard: React.FC<ModelCardProps> = ({
           >
             <Languages className="w-3.5 h-3.5" />
             <span>{t("modelSelector.capabilities.translate")}</span>
+          </div>
+        )}
+        {model.supports_streaming && (
+          <div
+            className="flex items-center gap-1 text-xs text-text/50"
+            title={t("modelSelector.capabilities.streaming")}
+          >
+            <AudioLines className="w-3.5 h-3.5" />
+            <span>{t("modelSelector.streaming")}</span>
           </div>
         )}
         {showModelSize && (

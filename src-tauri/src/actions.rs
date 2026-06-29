@@ -427,28 +427,42 @@ impl ShortcutAction for TranscribeAction {
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
 
-        // Streaming mode is decoupled from the overlay: any transcribe-cpp model
-        // runs in streaming mode for the latency win (transcription happens during
-        // recording, so release-to-result is near-instant), regardless of which
-        // overlay the user picked. We gate on the static engine_type rather than
-        // ModelInfo.supports_streaming — the latter is runtime-probed and resets
-        // each launch, so it's false on a model's first use. The stream worker
-        // still does the authoritative per-model GGUF probe and falls back to
-        // batch if a given transcribe-cpp model can't actually stream. It waits
-        // for the background model load and queues audio meanwhile, so no audio
-        // is lost.
-        let model_can_stream = app
+        let selected_model_info = app
             .state::<Arc<ModelManager>>()
-            .get_model_info(&settings.selected_model)
+            .get_model_info(&settings.selected_model);
+
+        // Start the streaming worker speculatively for ANY transcribe-cpp model:
+        // streaming wins latency (transcription happens during recording, so
+        // release-to-result is near-instant) regardless of which overlay the user
+        // picked. We gate this on the static engine_type, not on
+        // ModelInfo.supports_streaming — the latter can be false on a model's
+        // first use this launch (it's reconciled by the runtime probe). The
+        // worker does the authoritative per-model GGUF probe and falls back to
+        // batch if the model can't actually stream; it queues audio while the
+        // model loads, so nothing is lost.
+        let model_can_stream = selected_model_info
+            .as_ref()
             .map(|m| matches!(m.engine_type, EngineType::TranscribeCpp))
             .unwrap_or(false);
         if model_can_stream {
             tm.start_stream();
         }
-        // The overlay only governs display. Live shows the growing live-text card
-        // (only meaningful when the model streams); Minimal shows the compact pill.
+
+        // Sizing the overlay is a separate decision from starting the worker. The
+        // live panel's window is much larger (and transparent), so we only spawn
+        // it when the model actually advertises streaming — header-probed at
+        // discovery, so it's reliable pre-load for models that declare the
+        // capability. A model that doesn't stream (or whose capability isn't
+        // known yet) gets the compact pill instead of an oversized transparent
+        // window that would only ever render the pill. If a model turns out to
+        // stream after all (e.g. capability inferred only at load), the result is
+        // simply a compact overlay this once rather than the live card.
+        let model_advertises_streaming = selected_model_info
+            .as_ref()
+            .map(|m| m.supports_streaming)
+            .unwrap_or(false);
         match settings.overlay_style {
-            OverlayStyle::Live if model_can_stream => utils::show_streaming_overlay(app),
+            OverlayStyle::Live if model_advertises_streaming => utils::show_streaming_overlay(app),
             OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
             OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
         }

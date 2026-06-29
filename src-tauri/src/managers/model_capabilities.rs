@@ -173,9 +173,12 @@ impl CapabilityProber for GgufHeaderProber {
 /// loading the (potentially multi-GB) tensor data. Grows the prefix
 /// geometrically if a header is unusually large.
 fn read_header_metadata(path: &Path) -> Result<GgufMetadata, GgufError> {
-    // The KV metadata block precedes the tensor-info table, so on real ASR
-    // models a megabyte or two covers it; cap the growth regardless.
-    const INITIAL_PREFIX: usize = 1 << 20; // 1 MiB
+    // The KV metadata block precedes the tensor-info table. Shipping ASR models
+    // place all of it well within the first 64 KiB, so that's the common-case
+    // read. Older / community GGUFs may carry it deeper, so the loop grows the
+    // prefix geometrically (jumping straight to the size the parser reports it
+    // needs) up to a hard cap.
+    const INITIAL_PREFIX: usize = 64 << 10; // 64 KiB
     const MAX_PREFIX: usize = 16 << 20; // 16 MiB
 
     /// Read up to `size` bytes from the start of `path`, tolerating short reads.
