@@ -789,14 +789,16 @@ impl TranscriptionManager {
             other => Some(other.to_string()),
         };
         let language = requested_language.filter(|lang| languages.iter().any(|l| l == lang));
-        let task = if settings.translate_to_english && supports_translate {
-            Task::Translate
-        } else {
-            Task::Transcribe
-        };
+        // Same task/target decision as the offline path (see cpp_translation_task).
+        let (task, target_language) = cpp_translation_task(
+            settings.translate_to_english,
+            supports_translate,
+            language.as_deref(),
+        );
         let run_options = RunOptions {
             task,
             language,
+            target_language,
             ..Default::default()
         };
 
@@ -1117,15 +1119,16 @@ impl TranscriptionManager {
                                 }))
                             };
 
+                        let (task, target_language) = cpp_translation_task(
+                            settings.translate_to_english,
+                            model_supports_translate,
+                            language.as_deref(),
+                        );
+
                         let run_options = RunOptions {
-                            // Translate is only valid where the model supports it;
-                            // otherwise the dispatcher rejects it (UNSUPPORTED_TASK).
-                            task: if settings.translate_to_english && model_supports_translate {
-                                Task::Translate
-                            } else {
-                                Task::Transcribe
-                            },
+                            task,
                             language,
+                            target_language,
                             // Whisper-family long-form (>30s) decode degenerates into a
                             // repetition loop when an initial prompt is set AND timestamps
                             // are off — a shared whisper.cpp behavior (verified: whisper.cpp
@@ -1337,6 +1340,31 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+}
+
+/// Decide a transcribe-cpp run's task + translation target from settings.
+///
+/// "Translate to English" only fires where the model advertises translation.
+/// Unlike transcribe-rs (which forces the target to English itself when its
+/// `translate` flag is set), transcribe-cpp requires an explicit
+/// `target_language`: a null target defaults to the *source*, so a non-English
+/// source silently becomes e.g. es→es and Canary rejects the unadvertised pair.
+/// An English source is skipped entirely — en→en is not a real translation, and
+/// it's reachable by default since auto-detect-less models coerce intent to "en".
+///
+/// Returns `(task, target_language)` ready to drop into `RunOptions`.
+fn cpp_translation_task(
+    translate_to_english: bool,
+    model_supports_translate: bool,
+    source_language: Option<&str>,
+) -> (Task, Option<String>) {
+    let translate_to_en =
+        translate_to_english && model_supports_translate && source_language != Some("en");
+    if translate_to_en {
+        (Task::Translate, Some("en".to_string()))
+    } else {
+        (Task::Transcribe, None)
     }
 }
 
