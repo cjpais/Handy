@@ -221,7 +221,7 @@ impl ModelDescriptor {
 ///
 /// This is the canonical coercion used on every transcription path
 /// It is computed at the point of use and **never written back** to settings.
-/// The user's last explicit intent survives switching to an incompatible model and back. 
+/// The user's last explicit intent survives switching to an incompatible model and back.
 pub fn effective_language(
     intent: &str,
     supported_languages: &[String],

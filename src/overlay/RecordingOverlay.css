@@ -5,7 +5,7 @@
   /* Translucent app surface (theme.css --color-background at ~80% opacity). */
   --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
   /* Accent: brand UI pink in light, lighter logo pink in dark (override below). */
-    --s-accent: var(--color-logo-primary);
+  --s-accent: var(--color-logo-primary);
   --s-accent-soft: color-mix(
     in srgb,
     var(--color-background-ui) 16%,
@@ -63,6 +63,60 @@
   justify-content: center;
   padding-bottom: 16px;
   font-family: var(--s-font);
+}
+
+/* Top placement: anchor the pill to the top of the screen and let live text grow
+   downward in natural reading order (oldest under the pill, newest at the bottom) —
+   mirroring the bottom overlay's upward flow. Only the Live panel needs this; the
+   compact pill has no flowing text. The text region keeps the same top fade and
+   bottom scroll-pin as the bottom overlay, so older lines dissolve up under the
+   pill while the newest line stays visible. */
+.stream-stage.top {
+  align-items: flex-start;
+  padding-top: 16px;
+  padding-bottom: 0;
+}
+.stream-stage.top .scard {
+  /* column-reverse stacks the control pill above the text region, so the card
+     grows downward from its top edge. */
+  flex-direction: column-reverse;
+  transform-origin: top center;
+  animation-name: scard-pop-top;
+}
+.stream-stage.top .scard.leaving {
+  transform: translateY(-10px) scale(0.96);
+}
+@keyframes scard-pop-top {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.stream-stage.top .stext-cap {
+  /* Mirror of the bottom overlay (top: 12 / bottom: 0): the first line sits flush
+     under the pill and the breathing room moves below the text. The top fade is
+     off at rest — at zero top padding it would dim the resting first line — and
+     switches on (below) only once text overflows. */
+  padding-top: 0;
+  padding-bottom: 12px;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+/* Once live text overflows, fade older lines up under the pill, matching the
+   bottom overlay's top fade. Gated on `.overflowing` so a short resting line
+   (sitting at the very top) is never dimmed. */
+.stream-stage.top .stext-cap.overflowing {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
+}
+.stream-stage.top .stext-cap p {
+  /* Top-anchor short text just under the pill; on overflow the cap still pins to
+     the bottom (newest visible) and older lines fade off the top, same as bottom. */
+  margin: 0;
 }
 
 /* Shared base card. Lightly styled: theme surface, soft shadow, gentle blur. */

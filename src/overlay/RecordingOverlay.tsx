@@ -33,6 +33,12 @@ const RecordingOverlay: React.FC = () => {
   // Bumped on each new streaming session so the Live card remounts fresh (replays
   // the pop-in, and never animates in from the previous panel's open size).
   const [session, setSession] = useState(0);
+  // Overlay placement (top vs bottom of the screen). The Live panel grows downward
+  // from a top overlay (oldest line under the pill) and upward from a bottom one.
+  const [position, setPosition] = useState<"top" | "bottom">("bottom");
+  // True once live text overflows the cap. A top overlay fades its top edge only
+  // while overflowing, so the resting first line stays crisp flush under the pill.
+  const [overflowing, setOverflowing] = useState(false);
 
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   // Live-text scroll-back: the text region "sticks" to the newest line while the
@@ -46,6 +52,18 @@ const RecordingOverlay: React.FC = () => {
     const setupEventListeners = async () => {
       const unlistenShow = await listen("show-overlay", async (event) => {
         await syncLanguageFromSettings();
+        // The Live panel flows downward from a top overlay and upward from a
+        // bottom one; read the placement so the layout can flip to match.
+        try {
+          const settings = await commands.getAppSettings();
+          if (settings.status === "ok") {
+            setPosition(
+              settings.data.overlay_position === "top" ? "top" : "bottom",
+            );
+          }
+        } catch {
+          // Keep the previous/default placement if settings can't be read.
+        }
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
         if (overlayState === "recording" || overlayState === "streaming") {
@@ -108,14 +126,17 @@ const RecordingOverlay: React.FC = () => {
   // Stick to the bottom as text streams in — but only while pinned, so a user who
   // has scrolled up to read history isn't yanked back down by the next chunk.
   useLayoutEffect(() => {
-    if (!pinnedRef.current) return;
     const el = capRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    // Fade the top edge only once text actually overflows the cap.
+    setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    if (pinnedRef.current) el.scrollTop = el.scrollHeight;
   }, [streamText]);
 
-  // Each fresh streaming session starts pinned to the bottom.
+  // Each fresh streaming session starts pinned to the bottom, fade cleared.
   useEffect(() => {
     pinnedRef.current = true;
+    setOverflowing(false);
   }, [session]);
 
   // Re-pin when the user is within ~a line of the bottom; unpin otherwise.
@@ -190,7 +211,7 @@ const RecordingOverlay: React.FC = () => {
     const open = hasText && !working;
 
     return (
-      <div dir={direction} className="stream-stage">
+      <div dir={direction} className={`stream-stage ${position}`}>
         <div
           key={session}
           className={`scard ${open ? "open" : ""} ${working ? "working" : ""} ${
@@ -200,7 +221,7 @@ const RecordingOverlay: React.FC = () => {
           <div className="stext">
             <div className="stext-clip">
               <div
-                className="stext-cap"
+                className={`stext-cap ${overflowing ? "overflowing" : ""}`}
                 ref={capRef}
                 onScroll={handleStreamScroll}
               >
