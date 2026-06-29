@@ -773,7 +773,17 @@ impl TranscriptionManager {
         // Build run options mirroring the offline transcribe-cpp path: task +
         // language gated against what the model actually advertises.
         let settings = get_settings(&self.app_handle);
-        let requested_language = match settings.selected_language.as_str() {
+        // Resolve intent → effective language for this model (same capability-
+        // aware coercion as the offline path), then map to the engine's option.
+        let effective_language = match self.model_manager.get_model_info(&model_id) {
+            Some(info) => crate::managers::model::effective_language(
+                &settings.selected_language,
+                &info.supported_languages,
+                info.supports_language_detection,
+            ),
+            None => settings.selected_language.clone(),
+        };
+        let requested_language = match effective_language.as_str() {
             "auto" => None,
             "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
             other => Some(other.to_string()),
@@ -1007,30 +1017,24 @@ impl TranscriptionManager {
         let active_model = self
             .get_current_model()
             .unwrap_or_else(|| settings.selected_model.clone());
-        let validated_language = if settings.selected_language == "auto" {
-            "auto".to_string()
-        } else {
-            let is_supported = self
-                .model_manager
-                .get_model_info(&active_model)
-                .map(|info| {
-                    info.supported_languages.is_empty()
-                        || info
-                            .supported_languages
-                            .contains(&settings.selected_language)
-                })
-                .unwrap_or(true);
-
-            if is_supported {
-                settings.selected_language.clone()
-            } else {
-                warn!(
-                    "Language '{}' not supported by current model, falling back to auto-detect",
-                    settings.selected_language
-                );
-                "auto".to_string()
-            }
+        // Resolve the persisted language *intent* into the language this model
+        // will actually use. The coercion is capability-aware (a must-pick model
+        // never receives "auto") and computed fresh here — it is never written
+        // back to settings, so the intent survives switching models and back.
+        let validated_language = match self.model_manager.get_model_info(&active_model) {
+            Some(info) => crate::managers::model::effective_language(
+                &settings.selected_language,
+                &info.supported_languages,
+                info.supports_language_detection,
+            ),
+            None => settings.selected_language.clone(),
         };
+        if validated_language != settings.selected_language {
+            debug!(
+                "Language intent '{}' resolved to '{}' for model '{}'",
+                settings.selected_language, validated_language, active_model
+            );
+        }
 
         // Whether the loaded transcribe-cpp model accepts a decode prompt
         // (whisper family). Gates the whisper-only run extension below, and

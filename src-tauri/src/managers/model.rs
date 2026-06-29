@@ -78,6 +78,7 @@ pub struct ModelInfo {
     pub supports_language_selection: bool, // Whether the user can explicitly pick a language
     pub is_custom: bool,            // Whether this is a user-provided custom model
     pub supports_streaming: bool, // Whether this model supports live streaming preview (transcribe-cpp)
+    pub supports_language_detection: bool, // Whether the model can auto-detect language (gates the "Auto" option)
 }
 
 /// Where a descriptor's *metadata* entered the registry — provenance. Distinct
@@ -210,8 +211,40 @@ impl ModelDescriptor {
             supported_languages: languages,
             is_custom: self.origin == Origin::CustomDir,
             supports_streaming: self.caps.supports_streaming.unwrap_or(false),
+            supports_language_detection: self.caps.supports_language_detect.unwrap_or(false),
         }
     }
+}
+
+/// Resolve the user's persisted language *intent* (`"auto"` or a language code)
+/// into the language a given model will actually use.
+///
+/// This is the canonical coercion used on every transcription path
+/// It is computed at the point of use and **never written back** to settings.
+/// The user's last explicit intent survives switching to an incompatible model and back. 
+pub fn effective_language(
+    intent: &str,
+    supported_languages: &[String],
+    supports_language_detection: bool,
+) -> String {
+    if supported_languages.is_empty() {
+        return intent.to_string();
+    }
+
+    if intent != "auto" && supported_languages.iter().any(|l| l == intent) {
+        return intent.to_string();
+    }
+
+    if supports_language_detection {
+        return "auto".to_string();
+    }
+
+    // Model can't auto-detect and the intent isn't usable: fall back to a
+    // concrete language (prefer English) so we never hand the engine "auto".
+    if let Some(en) = supported_languages.iter().find(|l| l.as_str() == "en") {
+        return en.clone();
+    }
+    supported_languages[0].clone()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -312,6 +345,7 @@ struct LocalCaps {
     supports_streaming: bool,
     supports_translation: bool,
     supports_language_selection: bool,
+    supports_language_detection: bool,
     supported_languages: Vec<String>,
 }
 
@@ -322,6 +356,7 @@ fn local_caps(probe: &CapabilityProbe) -> LocalCaps {
         supports_translation: probe.supports_translation.unwrap_or(false),
         // Only offer a language picker when there's more than one to choose.
         supports_language_selection: languages.len() > 1,
+        supports_language_detection: probe.supports_language_detect.unwrap_or(false),
         supported_languages: languages,
     }
 }
@@ -487,7 +522,6 @@ impl ModelManager {
         .map(String::from)
         .collect();
 
-        // TODO this should be read from a JSON file or something..
         available_models.insert(
             "small".to_string(),
             ModelInfo {
@@ -516,6 +550,7 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -548,6 +583,7 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -579,6 +615,7 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -610,6 +647,7 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -642,6 +680,7 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -674,6 +713,7 @@ impl ModelManager {
                 supports_language_selection: false,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -715,6 +755,7 @@ impl ModelManager {
                 supports_language_selection: false,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -746,6 +787,7 @@ impl ModelManager {
                 supports_language_selection: false,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -778,6 +820,7 @@ impl ModelManager {
                 supports_language_selection: false,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -810,6 +853,7 @@ impl ModelManager {
                 supports_language_selection: false,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -842,6 +886,7 @@ impl ModelManager {
                 supports_language_selection: false,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -881,6 +926,7 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -915,6 +961,7 @@ impl ModelManager {
                 supports_language_selection: false,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -953,6 +1000,8 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                // Canary (NeMo) requires an explicit source language — no auto-detect.
+                supports_language_detection: false,
             },
         );
 
@@ -994,6 +1043,8 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                // Canary (NeMo) requires an explicit source language — no auto-detect.
+                supports_language_detection: false,
             },
         );
 
@@ -1033,6 +1084,7 @@ impl ModelManager {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                supports_language_detection: true,
             },
         );
 
@@ -1494,6 +1546,7 @@ impl ModelManager {
                     supports_language_selection: caps.supports_language_selection,
                     is_custom: true,
                     supports_streaming: caps.supports_streaming,
+                    supports_language_detection: caps.supports_language_detection,
                 },
             );
         }
@@ -1614,6 +1667,7 @@ impl ModelManager {
                         supports_language_selection: caps.supports_language_selection,
                         is_custom: false,
                         supports_streaming: caps.supports_streaming,
+                        supports_language_detection: caps.supports_language_detection,
                     },
                 );
             }
@@ -2393,6 +2447,9 @@ mod tests {
                 supports_language_selection: true,
                 is_custom: false,
                 supports_streaming: false,
+                // Legacy entry: preserve the historical "Auto offered" behavior.
+                // (Catalog GGUFs and on-disk probes derive this from metadata.)
+                supports_language_detection: true,
             },
         );
 
