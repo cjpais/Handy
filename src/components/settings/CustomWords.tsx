@@ -20,7 +20,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
 
     const handleAddWord = () => {
       const trimmedWord = newWord.trim();
-      const sanitizedWord = trimmedWord.replace(/[<>"'&]/g, "");
+      const sanitizedWord = trimmedWord.replace(/[<>"']/g, "");
       if (
         sanitizedWord &&
         !sanitizedWord.includes(" ") &&
