@@ -73,9 +73,26 @@ pub struct HistoryManager {
 
 impl HistoryManager {
     pub fn new(app_handle: &AppHandle) -> Result<Self> {
-        // Create recordings directory in app data dir
+        // Create recordings directory — prefer tmpfs (/tmp) if available to avoid
+        // unnecessary writes to slow HDD or flash storage wear.
         let app_data_dir = crate::portable::app_data_dir(app_handle)?;
-        let recordings_dir = app_data_dir.join("recordings");
+        let recordings_dir = {
+            let tmp_dir = std::path::Path::new("/tmp/handy-recordings");
+            // Check if /tmp is tmpfs by reading /proc/mounts
+            let is_tmpfs = std::fs::read_to_string("/proc/mounts")
+                .map(|mounts| mounts.lines().any(|line| {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    parts.len() >= 3 && parts[1] == "/tmp" && parts[2] == "tmpfs"
+                }))
+                .unwrap_or(false);
+            if is_tmpfs {
+                debug!("Using tmpfs for recordings: {:?}", tmp_dir);
+                std::path::PathBuf::from(tmp_dir)
+            } else {
+                debug!("tmpfs not available, using app data dir for recordings");
+                app_data_dir.join("recordings")
+            }
+        };
         let db_path = app_data_dir.join("history.db");
 
         // Ensure recordings directory exists
