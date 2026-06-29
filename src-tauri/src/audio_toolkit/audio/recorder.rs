@@ -20,7 +20,7 @@ use crate::audio_toolkit::{
 };
 
 enum Cmd {
-    Start,
+    Start(VadPolicy),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -30,22 +30,47 @@ enum AudioChunk {
     EndOfStream,
 }
 
-/// Callback invoked with each 16 kHz mono frame that passes VAD while
-/// recording. Used to feed a live streaming transcription as audio arrives.
+/// How 16 kHz mono frames should be filtered for one recording session.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VadPolicy {
+    /// Bypass VAD and forward every frame.
+    Disabled,
+    /// Current offline-tuned VAD profile.
+    Offline,
+    /// VAD profile with a longer post-speech tail for streaming-capable models.
+    Streaming,
+}
+
+#[derive(Clone)]
+struct VadProfiles {
+    offline: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
+    streaming: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
+}
+
+impl VadProfiles {
+    fn detector(
+        &self,
+        policy: VadPolicy,
+    ) -> Option<&Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>> {
+        match policy {
+            VadPolicy::Disabled => None,
+            VadPolicy::Offline => Some(&self.offline),
+            VadPolicy::Streaming => Some(&self.streaming),
+        }
+    }
+}
+
+/// Callback invoked with each 16 kHz mono frame that passes the active capture
+/// policy while recording. Used to feed a live streaming transcription as audio arrives.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 
 pub struct AudioRecorder {
     device: Option<Device>,
     cmd_tx: Option<mpsc::Sender<Cmd>>,
     worker_handle: Option<std::thread::JoinHandle<()>>,
-    vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+    vad_profiles: Option<VadProfiles>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
-    /// When present, the audio callback is active and this flag controls whether
-    /// frames are forwarded pre-VAD (continuous, `true`) or post-VAD (gated,
-    /// `false`). Shared with the streaming router so it can toggle at
-    /// `start_stream` time without recreating the recorder.
-    audio_continuous: Option<Arc<AtomicBool>>,
 }
 
 impl AudioRecorder {
@@ -54,15 +79,21 @@ impl AudioRecorder {
             device: None,
             cmd_tx: None,
             worker_handle: None,
-            vad: None,
+            vad_profiles: None,
             level_cb: None,
             audio_cb: None,
-            audio_continuous: None,
         })
     }
 
-    pub fn with_vad(mut self, vad: Box<dyn VoiceActivityDetector>) -> Self {
-        self.vad = Some(Arc::new(Mutex::new(vad)));
+    pub fn with_vad_profiles(
+        mut self,
+        offline: Box<dyn VoiceActivityDetector>,
+        streaming: Box<dyn VoiceActivityDetector>,
+    ) -> Self {
+        self.vad_profiles = Some(VadProfiles {
+            offline: Arc::new(Mutex::new(offline)),
+            streaming: Arc::new(Mutex::new(streaming)),
+        });
         self
     }
 
@@ -74,19 +105,15 @@ impl AudioRecorder {
         self
     }
 
-    /// Register a callback that receives real-time 16 kHz frames while
-    /// recording. `continuous` is a shared flag that selects whether the
-    /// callback gets every raw frame (pre-VAD, for streaming models that need
-    /// continuous audio) or only VAD-gated speech frames (matches the saved /
-    /// batch audio). Frames arrive in real time, in order, on the recorder's
-    /// consumer thread — keep the callback cheap (e.g. forward to a channel)
-    /// so it never stalls capture.
-    pub fn with_audio_callback<F>(mut self, cb: F, continuous: Arc<AtomicBool>) -> Self
+    /// Register a callback that receives real-time 16 kHz frames after the active
+    /// VAD policy has been applied. Frames arrive in real time, in order, on the
+    /// recorder's consumer thread — keep the callback cheap (e.g. forward to a
+    /// channel) so it never stalls capture.
+    pub fn with_audio_callback<F>(mut self, cb: F) -> Self
     where
         F: Fn(&[f32]) + Send + Sync + 'static,
     {
         self.audio_cb = Some(Arc::new(cb));
-        self.audio_continuous = Some(continuous);
         self
     }
 
@@ -108,12 +135,11 @@ impl AudioRecorder {
         };
 
         let thread_device = device.clone();
-        let vad = self.vad.clone();
+        let vad_profiles = self.vad_profiles.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
-        let audio_continuous = self.audio_continuous.clone();
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -192,12 +218,11 @@ impl AudioRecorder {
                     // Keep the stream alive while we process samples.
                     run_consumer(
                         sample_rate,
-                        vad,
+                        vad_profiles,
                         sample_rx,
                         cmd_rx,
                         level_cb,
                         audio_cb,
-                        audio_continuous,
                         stop_flag,
                     );
                     drop(stream);
@@ -235,9 +260,9 @@ impl AudioRecorder {
         }
     }
 
-    pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn start(&self, vad_policy: VadPolicy) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Start)?;
+            tx.send(Cmd::Start(vad_policy))?;
         }
         Ok(())
     }
@@ -435,12 +460,11 @@ mod tests {
 #[allow(clippy::too_many_arguments)]
 fn run_consumer(
     in_sample_rate: u32,
-    vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+    vad_profiles: Option<VadProfiles>,
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
-    audio_continuous: Option<Arc<AtomicBool>>,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -451,6 +475,7 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut vad_policy = VadPolicy::Offline;
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -476,40 +501,31 @@ fn run_consumer(
     fn handle_frame(
         samples: &[f32],
         recording: bool,
-        vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+        vad_policy: VadPolicy,
+        vad_profiles: &Option<VadProfiles>,
         audio_cb: &Option<AudioFrameCallback>,
-        audio_continuous: &Option<Arc<AtomicBool>>,
         out_buf: &mut Vec<f32>,
     ) {
         if !recording {
             return;
         }
 
-        // In continuous mode the streaming callback receives the raw frame
-        // BEFORE VAD so the streaming model sees uninterrupted audio (including
-        // silence) for correct timing calibration. The saved/batch buffer
-        // still receives only VAD-gated speech below.
-        let is_continuous = audio_continuous
-            .as_ref()
-            .is_some_and(|f| f.load(Ordering::Relaxed));
-        if is_continuous {
-            if let Some(cb) = audio_cb {
-                cb(samples);
-            }
-        }
-
-        // Accumulate VAD-gated speech into the save/batch buffer, and (when
-        // not continuous) forward the same gated frame to the streaming callback.
         let mut emit = |buf: &[f32]| {
             out_buf.extend_from_slice(buf);
-            if !is_continuous {
-                if let Some(cb) = audio_cb {
-                    cb(buf);
-                }
+            if let Some(cb) = audio_cb {
+                cb(buf);
             }
         };
 
-        if let Some(vad_arc) = vad {
+        if vad_policy == VadPolicy::Disabled {
+            emit(samples);
+            return;
+        }
+
+        if let Some(vad_arc) = vad_profiles
+            .as_ref()
+            .and_then(|profiles| profiles.detector(vad_policy))
+        {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
                 VadFrame::Speech(buf) => emit(buf),
@@ -543,9 +559,9 @@ fn run_consumer(
             handle_frame(
                 frame,
                 recording,
-                &vad,
+                vad_policy,
+                &vad_profiles,
                 &audio_cb,
-                &audio_continuous,
                 &mut processed_samples,
             )
         });
@@ -553,12 +569,16 @@ fn run_consumer(
         // non-blocking check for a command
         while let Ok(cmd) = cmd_rx.try_recv() {
             match cmd {
-                Cmd::Start => {
+                Cmd::Start(policy) => {
                     stop_flag.store(false, Ordering::Relaxed);
+                    vad_policy = policy;
                     processed_samples.clear();
                     recording = true;
                     visualizer.reset();
-                    if let Some(v) = &vad {
+                    if let Some(v) = vad_profiles
+                        .as_ref()
+                        .and_then(|profiles| profiles.detector(vad_policy))
+                    {
                         v.lock().unwrap().reset();
                     }
                 }
@@ -577,9 +597,9 @@ fn run_consumer(
                                     handle_frame(
                                         frame,
                                         true,
-                                        &vad,
+                                        vad_policy,
+                                        &vad_profiles,
                                         &audio_cb,
-                                        &audio_continuous,
                                         &mut processed_samples,
                                     )
                                 });
@@ -596,9 +616,9 @@ fn run_consumer(
                         handle_frame(
                             frame,
                             true,
-                            &vad,
+                            vad_policy,
+                            &vad_profiles,
                             &audio_cb,
-                            &audio_continuous,
                             &mut processed_samples,
                         )
                     });

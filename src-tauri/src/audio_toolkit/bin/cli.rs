@@ -3,8 +3,11 @@ use std::io::{self, Write};
 
 use handy_app_lib::audio_toolkit::{
     audio::{list_input_devices, CpalDeviceInfo},
-    vad::SmoothedVad,
-    AudioRecorder, SileroVad,
+    vad::{
+        SmoothedVad, VAD_OFFLINE_HANGOVER_FRAMES, VAD_ONSET_FRAMES, VAD_PREFILL_FRAMES,
+        VAD_STREAMING_HANGOVER_FRAMES,
+    },
+    AudioRecorder, SileroVad, VadPolicy,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,7 +113,7 @@ impl RecorderState {
                     self.current_device_index = device_index;
                     println!("Opened recorder in Always-On mode");
                 }
-                self.recorder.start()?;
+                self.recorder.start(VadPolicy::Offline)?;
             }
             RecorderMode::OnDemand => {
                 // In on-demand mode, open for each recording
@@ -120,7 +123,7 @@ impl RecorderState {
                 self.recorder.open(device)?;
                 self.is_open = true;
                 self.current_device_index = device_index;
-                self.recorder.start()?;
+                self.recorder.start(VadPolicy::Offline)?;
                 println!("Opened and started recorder in On-Demand mode");
             }
         }
@@ -175,9 +178,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=========================");
     print_help();
 
-    let silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15);
-    let recorder = AudioRecorder::new()?.with_vad(Box::new(smoothed_vad));
+    let offline_silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
+    let streaming_silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
+    let offline_vad = SmoothedVad::new(
+        Box::new(offline_silero),
+        VAD_PREFILL_FRAMES,
+        VAD_OFFLINE_HANGOVER_FRAMES,
+        VAD_ONSET_FRAMES,
+    );
+    let streaming_vad = SmoothedVad::new(
+        Box::new(streaming_silero),
+        VAD_PREFILL_FRAMES,
+        VAD_STREAMING_HANGOVER_FRAMES,
+        VAD_ONSET_FRAMES,
+    );
+    let recorder =
+        AudioRecorder::new()?.with_vad_profiles(Box::new(offline_vad), Box::new(streaming_vad));
     let mut state = RecorderState::new(recorder);
 
     let mut devices = list_input_devices()?;

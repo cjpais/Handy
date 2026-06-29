@@ -530,13 +530,9 @@
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
       },
-      "streamingAudioMode": {
-        "title": "Streaming Audio Mode",
-        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
-        "options": {
-          "continuous": "All Audio",
-          "gated": "VAD Gated"
-        }
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "about": {

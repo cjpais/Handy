@@ -530,13 +530,9 @@
         "title": "Bộ đệm ghi âm thêm",
         "description": "Thời gian thêm (tính bằng mili giây) để tiếp tục ghi âm sau khi nhả phím, để thu âm thanh cuối. 0 = không có bộ đệm thêm."
       },
-      "streamingAudioMode": {
-        "title": "Streaming Audio Mode",
-        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
-        "options": {
-          "continuous": "All Audio",
-          "gated": "VAD Gated"
-        }
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "about": {

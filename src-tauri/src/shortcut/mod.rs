@@ -23,8 +23,8 @@ use tauri_plugin_autostart::ManagerExt;
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, StreamingAudioMode,
-    TypingTool, APPLE_INTELLIGENCE_PROVIDER_ID,
+    OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -1103,19 +1103,9 @@ pub fn change_lazy_stream_close_setting(app: AppHandle, enabled: bool) -> Result
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_streaming_audio_mode_setting(app: AppHandle, mode: String) -> Result<(), String> {
+pub fn change_vad_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.streaming_audio_mode = match mode.as_str() {
-        "continuous" => StreamingAudioMode::Continuous,
-        "gated" => StreamingAudioMode::Gated,
-        other => {
-            warn!(
-                "Invalid streaming audio mode '{}', defaulting to continuous",
-                other
-            );
-            StreamingAudioMode::Continuous
-        }
-    };
+    settings.vad_enabled = enabled;
     settings::write_settings(&app, settings);
     Ok(())
 }

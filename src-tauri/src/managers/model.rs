@@ -80,6 +80,140 @@ pub struct ModelInfo {
     pub supports_streaming: bool, // Whether this model supports live streaming preview (transcribe-cpp)
 }
 
+/// Where a descriptor's *metadata* entered the registry — provenance. Distinct
+/// from [`ModelSource`] (how we fetch bytes) and from [`DiskStatus`] (whether
+/// it's on disk). When two producers yield the same id, [`Origin::rank`] decides
+/// which one's metadata wins; on-disk presence is layered on top as status, not
+/// a second entry. (Scaffolding for the descriptor migration — some variants are
+/// produced by later slices.)
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Origin {
+    /// Hardcoded in the binary (Url-hosted Whisper, legacy ONNX models).
+    Legacy,
+    /// The baked, bundled `catalog.json` — the offline default set.
+    Catalog,
+    /// A live Hugging Face fetch (recommended collection / search).
+    HfDiscovery,
+    /// Found on disk in the shared Hugging Face cache.
+    HfCache,
+    /// A file the user dropped into the custom models directory.
+    CustomDir,
+}
+
+#[allow(dead_code)]
+impl Origin {
+    /// Lower wins when two producers yield the same id: curated metadata
+    /// (Legacy/Catalog) outranks live discovery, which outranks on-disk scans.
+    /// Used by the registry upsert (later slice); on-disk presence is applied
+    /// separately as `DiskStatus`.
+    pub fn rank(self) -> u8 {
+        match self {
+            Origin::Legacy => 0,
+            Origin::Catalog => 1,
+            Origin::HfDiscovery => 2,
+            Origin::HfCache | Origin::CustomDir => 3,
+        }
+    }
+}
+
+/// One downloadable quantization of a model. Mirrors a `files[]` entry in
+/// `catalog.json`, so it deserializes straight from the catalog.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Deserialize)]
+pub struct QuantFile {
+    pub filename: String,
+    pub quant: String,
+    pub size_bytes: u64,
+}
+
+/// Live, on-disk status — the half of [`ModelInfo`] that isn't part of the
+/// static spec. Kept separate so a descriptor stays purely descriptive and
+/// status can be recomputed without rebuilding it.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Default)]
+pub struct DiskStatus {
+    pub is_downloaded: bool,
+    pub is_downloading: bool,
+    pub partial_size: u64,
+}
+
+/// The source-agnostic *spec* of a model. Every producer — catalog, HF
+/// discovery, on-disk scan, legacy table — yields one of these; [`ModelInfo`]
+/// is just this flattened together with a [`DiskStatus`] via
+/// [`ModelDescriptor::to_model_info`], the single construction site that
+/// replaces the ~20 hand-written `ModelInfo { .. }` literals as producers
+/// migrate over.
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ModelDescriptor {
+    pub id: String,
+    pub origin: Origin,
+    pub source: ModelSource,
+    pub name: String,
+    pub description: String,
+    pub parameters: Option<String>,
+    pub engine_type: EngineType,
+    pub caps: CapabilityProbe,
+    pub files: Vec<QuantFile>,
+    pub default_quant: Option<String>,
+    pub speed_score: f32,
+    pub accuracy_score: f32,
+    pub recommended_rank: Option<u32>,
+}
+
+#[allow(dead_code)]
+impl ModelDescriptor {
+    /// Catalog slug — the HF repo basename without the `-gguf` suffix — used to
+    /// match a descriptor against the hardcoded legacy ids. Empty for non-HF
+    /// descriptors.
+    pub fn slug(&self) -> &str {
+        let repo = match &self.source {
+            ModelSource::HuggingFace { repo_id, .. } => repo_id.as_str(),
+            _ => return "",
+        };
+        let base = repo.rsplit('/').next().unwrap_or(repo);
+        base.strip_suffix("-gguf").unwrap_or(base)
+    }
+
+    /// The quant we surface for download/size: the declared default, else the
+    /// first (smallest) file.
+    fn default_file(&self) -> Option<&QuantFile> {
+        self.files
+            .iter()
+            .find(|f| Some(&f.quant) == self.default_quant.as_ref())
+            .or_else(|| self.files.first())
+    }
+
+    /// Render the frontend-facing [`ModelInfo`] by combining this spec with live
+    /// disk `status`.
+    pub fn to_model_info(&self, status: &DiskStatus) -> ModelInfo {
+        let file = self.default_file();
+        let languages = self.caps.languages.clone().unwrap_or_default();
+        ModelInfo {
+            id: self.id.clone(),
+            name: self.name.clone(),
+            description: self.description.clone(),
+            filename: file.map(|f| f.filename.clone()).unwrap_or_default(),
+            source: self.source.clone(),
+            size_mb: file.map(|f| f.size_bytes / (1024 * 1024)).unwrap_or(0),
+            is_downloaded: status.is_downloaded,
+            is_downloading: status.is_downloading,
+            partial_size: status.partial_size,
+            is_directory: false,
+            engine_type: self.engine_type.clone(),
+            accuracy_score: self.accuracy_score,
+            speed_score: self.speed_score,
+            supports_translation: self.caps.supports_translation.unwrap_or(false),
+            is_recommended: self.recommended_rank.is_some(),
+            supports_language_selection: languages.len() > 1,
+            supported_languages: languages,
+            is_custom: self.origin == Origin::CustomDir,
+            supports_streaming: self.caps.supports_streaming.unwrap_or(false),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct DownloadProgress {
     pub model_id: String,
@@ -123,6 +257,13 @@ fn select_quant(files: Vec<hf_api::RepoFile>) -> Vec<hf_api::RepoFile> {
 }
 
 /// Build a `ModelInfo` for a Hugging Face GGUF file from its capability probe.
+///
+/// Routes through [`ModelDescriptor`] (origin [`Origin::HfDiscovery`]): the
+/// descriptor is the canonical spec every producer yields, and
+/// [`ModelDescriptor::to_model_info`] is the one render site. Behaviour is
+/// unchanged from the previous inline construction — a discovered HF file still
+/// surfaces with unknown scores and `is_downloaded` left for
+/// `update_download_status` to settle.
 fn hf_model_info(
     repo_id: &str,
     file_path: &str,
@@ -131,36 +272,34 @@ fn hf_model_info(
     is_recommended: bool,
 ) -> ModelInfo {
     let display = repo_id.rsplit('/').next().unwrap_or(repo_id).to_string();
-    let languages = probe.languages.clone().unwrap_or_default();
     let description = if is_recommended {
         format!("Recommended • {}", repo_id)
     } else {
         format!("From Hugging Face • {}", repo_id)
     };
-    ModelInfo {
+    let descriptor = ModelDescriptor {
         id: format!("{}/{}", repo_id, file_path),
-        name: display,
-        description,
-        filename: file_path.to_string(),
+        origin: Origin::HfDiscovery,
         source: ModelSource::HuggingFace {
             repo_id: repo_id.to_string(),
             revision: "main".to_string(),
         },
-        size_mb: size / (1024 * 1024),
-        is_downloaded: false,
-        is_downloading: false,
-        partial_size: 0,
-        is_directory: false,
+        name: display,
+        description,
+        parameters: None,
         engine_type: EngineType::TranscribeCpp,
-        accuracy_score: 0.0,
+        caps: probe.clone(),
+        files: vec![QuantFile {
+            filename: file_path.to_string(),
+            quant: String::new(),
+            size_bytes: size,
+        }],
+        default_quant: None,
         speed_score: 0.0,
-        supports_translation: probe.supports_translation.unwrap_or(false),
-        is_recommended,
-        supports_language_selection: languages.len() > 1,
-        supported_languages: languages,
-        is_custom: false,
-        supports_streaming: probe.supports_streaming.unwrap_or(false),
-    }
+        accuracy_score: 0.0,
+        recommended_rank: is_recommended.then_some(0),
+    };
+    descriptor.to_model_info(&DiskStatus::default())
 }
 
 /// Capability fields for a locally-discovered on-disk model, derived from its
@@ -897,128 +1036,11 @@ impl ModelManager {
             },
         );
 
-        // --- Experimental transcribe-cpp GGUF models (TEMPORARY) ---
-        // Hosted under blob.handy.computer/transcribe-cpp-models for testing.
-        // sha256 is omitted intentionally so downloads skip hash verification
-        // (these files may change). All run through the transcribe-cpp engine,
-        // which auto-detects the architecture from the GGUF.
-        // Tuple trailing bool = supports_streaming (live preview via transcribe-cpp).
-        // The runtime capability probe (capabilities().supports_streaming) is the
-        // source of truth; this flag is the picker hint and gates the streaming
-        // overlay so non-streaming models don't show an empty live-preview panel.
-        let transcribe_cpp_test_models = [
-            (
-                "parakeet-unified-en-0.6b",
-                "Parakeet Unified EN 0.6B",
-                "Experimental transcribe-cpp model. English only.",
-                "parakeet-unified-en-0.6b-Q8_0.gguf",
-                697u64,
-                vec!["en".to_string()],
-                0.80f32,
-                0.85f32,
-                false,
-            ),
-            (
-                "parakeet-tdt-0.6b-v3-gguf",
-                "Parakeet TDT 0.6B v3 (GGUF)",
-                "Experimental transcribe-cpp build of Parakeet v3. Multilingual.",
-                "parakeet-tdt-0.6b-v3-Q8_0.gguf",
-                705,
-                vec![],
-                0.80,
-                0.85,
-                false,
-            ),
-            (
-                "nemotron-3.5-asr-streaming-0.6b",
-                "Nemotron 3.5 ASR Streaming 0.6B",
-                "Experimental transcribe-cpp streaming ASR model.",
-                "nemotron-3.5-asr-streaming-0.6b-Q8_0.gguf",
-                716,
-                vec![],
-                0.78,
-                0.85,
-                false,
-            ),
-            (
-                "qwen3-asr-0.6b",
-                "Qwen3-ASR 0.6B",
-                "Experimental transcribe-cpp multilingual ASR model.",
-                "Qwen3-ASR-0.6B-Q8_0.gguf",
-                811,
-                vec![],
-                0.80,
-                0.70,
-                false,
-            ),
-            (
-                "qwen3-asr-1.7b",
-                "Qwen3-ASR 1.7B",
-                "Experimental transcribe-cpp multilingual ASR model. Larger, more accurate.",
-                "Qwen3-ASR-1.7B-Q8_0.gguf",
-                2083,
-                vec![],
-                0.85,
-                0.50,
-                false,
-            ),
-            (
-                "voxtral-mini-4b-realtime",
-                "Voxtral Mini 4B Realtime",
-                "Experimental transcribe-cpp realtime model. Large (~4.5 GB download).",
-                "Voxtral-Mini-4B-Realtime-2602-Q8_0.gguf",
-                4512,
-                vec![],
-                0.85,
-                0.30,
-                false,
-            ),
-        ];
-
-        for (
-            id,
-            name,
-            description,
-            filename,
-            size_mb,
-            languages,
-            accuracy,
-            speed,
-            supports_streaming,
-        ) in transcribe_cpp_test_models
-        {
-            available_models.insert(
-                id.to_string(),
-                ModelInfo {
-                    id: id.to_string(),
-                    name: name.to_string(),
-                    description: description.to_string(),
-                    filename: filename.to_string(),
-                    source: ModelSource::Url {
-                        url: format!(
-                            "https://blob.handy.computer/transcribe-cpp-models/{}",
-                            filename
-                        ),
-                        sha256: None,
-                    },
-                    size_mb,
-                    is_downloaded: false,
-                    is_downloading: false,
-                    partial_size: 0,
-                    is_directory: false,
-                    engine_type: EngineType::TranscribeCpp,
-                    accuracy_score: accuracy,
-                    speed_score: speed,
-                    supports_translation: false,
-                    is_recommended: false,
-                    supported_languages: languages,
-                    // Auto-detect only for these experimental test models.
-                    supports_language_selection: false,
-                    is_custom: false,
-                    supports_streaming,
-                },
-            );
-        }
+        // Seed the bundled offline catalog before the on-disk scans, so a model
+        // already in the HF cache dedups onto its richer catalog entry (the scans
+        // only insert ids not already present) instead of showing as a bare cache
+        // find. Additive — see `seed_catalog_models`.
+        Self::seed_catalog_models(&mut available_models);
 
         // Auto-discover custom transcribe-cpp models (.bin / .gguf) in the models directory
         if let Err(e) = Self::discover_custom_transcribe_models(&models_dir, &mut available_models)
@@ -1054,8 +1076,45 @@ impl ModelManager {
     }
 
     pub fn get_available_models(&self) -> Vec<ModelInfo> {
-        let models = self.available_models.lock().unwrap();
-        models.values().cloned().collect()
+        let mut list: Vec<ModelInfo> = {
+            let models = self.available_models.lock().unwrap();
+            models.values().cloned().collect()
+        };
+        // Stable, reasonable order: catalog editorial rank first (lower = higher
+        // priority), then any other recommended model, then by accuracy, speed,
+        // and name. `ModelInfo` doesn't carry rank, so resolve it by id from the
+        // catalog here.
+        list.sort_by(|a, b| {
+            crate::catalog::rank_of(&a.id)
+                .cmp(&crate::catalog::rank_of(&b.id))
+                .then((!a.is_recommended).cmp(&(!b.is_recommended)))
+                .then(b.accuracy_score.total_cmp(&a.accuracy_score))
+                .then(b.speed_score.total_cmp(&a.speed_score))
+                .then_with(|| a.name.cmp(&b.name))
+        });
+        list
+    }
+
+    /// Seed the bundled catalog ([`crate::catalog::CATALOG`]) into the registry.
+    /// Inserts each catalog model whose id isn't already present (additive).
+    ///
+    /// Catalog (`.gguf`, `HuggingFace`) and legacy (`.bin`/ONNX, `Url`) entries
+    /// are deliberately kept SEPARATE — different files, ids, and runtimes
+    /// (legacy ONNX runs on transcribe-rs; `.bin`/`.gguf` on transcribe-cpp).
+    /// Nothing is merged or removed here. The UI deprecates the legacy
+    /// *downloads* by hiding `Url` entries that aren't on disk, while
+    /// already-downloaded legacy models stay listed and runnable. Runs before the
+    /// on-disk scans so a cached model dedups onto its catalog entry.
+    fn seed_catalog_models(available_models: &mut HashMap<String, ModelInfo>) {
+        use std::collections::hash_map::Entry;
+        let mut added = 0usize;
+        for desc in crate::catalog::CATALOG.iter() {
+            if let Entry::Vacant(slot) = available_models.entry(desc.id.clone()) {
+                slot.insert(desc.to_model_info(&DiskStatus::default()));
+                added += 1;
+            }
+        }
+        info!("Seeded {} catalog model(s) into the registry", added);
     }
 
     /// Claim the single rescan slot. Returns a guard that releases it on drop,

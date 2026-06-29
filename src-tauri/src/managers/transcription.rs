@@ -2,8 +2,7 @@ use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
-    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, StreamingAudioMode,
-    TranscribeAcceleratorSetting,
+    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, TranscribeAcceleratorSetting,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
@@ -104,12 +103,6 @@ pub struct StreamRouter {
     /// True while a stream is pending or active (channel is open). The audio
     /// callback checks this first to avoid the mutex lock when no stream runs.
     open: Arc<AtomicBool>,
-    /// When true, forward every raw frame pre-VAD (continuous mode) so the
-    /// streaming model receives uninterrupted audio for timing calibration.
-    /// When false, forward only VAD-gated speech frames (matches batch audio).
-    /// Shared as `Arc<AtomicBool>` so the audio recorder can read it per-frame
-    /// without depending on `StreamRouter` (or `TranscriptionManager`).
-    continuous: Arc<AtomicBool>,
 }
 
 impl StreamRouter {
@@ -117,17 +110,15 @@ impl StreamRouter {
         Self {
             tx: Mutex::new(None),
             open: Arc::new(AtomicBool::new(false)),
-            continuous: Arc::new(AtomicBool::new(false)),
         }
     }
 
     /// Open a fresh command channel for a new streaming session, returning the
     /// receiver the worker should drain. Caller must ensure no prior channel is
     /// still open.
-    fn open(&self, continuous: bool) -> mpsc::Receiver<StreamCmd> {
+    fn open(&self) -> mpsc::Receiver<StreamCmd> {
         let (tx, rx) = mpsc::channel::<StreamCmd>();
         *self.tx.lock().unwrap() = Some(tx);
-        self.continuous.store(continuous, Ordering::Relaxed);
         self.open.store(true, Ordering::Relaxed);
         rx
     }
@@ -160,13 +151,6 @@ impl StreamRouter {
     /// Whether a stream is pending or active.
     pub fn is_open(&self) -> bool {
         self.open.load(Ordering::Relaxed)
-    }
-
-    /// Shared handle to the continuous-mode flag, so the audio recorder can
-    /// read it per-frame without going through Tauri state or depending on
-    /// `StreamRouter`/`TranscriptionManager`.
-    pub fn continuous_flag(&self) -> Arc<AtomicBool> {
-        Arc::clone(&self.continuous)
     }
 }
 
@@ -705,15 +689,7 @@ impl TranscriptionManager {
             warn!("start_stream called while a stream worker is already active");
             return;
         }
-        let settings = get_settings(&self.app_handle);
-        // Streaming-built models use silence for timing/punctuation, so feed all
-        // audio by default; the debug-only streaming_audio_mode can switch to
-        // VAD-gated speech (less compute).
-        let continuous = matches!(
-            settings.streaming_audio_mode,
-            StreamingAudioMode::Continuous
-        );
-        let rx = self.router.open(continuous);
+        let rx = self.router.open();
         self.stream_active.store(false, Ordering::Relaxed);
 
         let manager = self.clone();

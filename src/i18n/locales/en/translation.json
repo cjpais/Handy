@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Custom",
+    "legacy": "Legacy",
     "streaming": "Streaming",
     "active": "Active",
     "switching": "Switching...",
@@ -202,6 +203,7 @@
     "models": {
       "title": "Transcription Models",
       "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "searchPlaceholder": "Search models by name…",
       "yourModels": "Downloaded Models",
       "availableModels": "Available to Download",
       "downloaded": "Downloaded",
@@ -535,13 +537,9 @@
         "title": "Extra Recording Buffer",
         "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
       },
-      "streamingAudioMode": {
-        "title": "Streaming Audio Mode",
-        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
-        "options": {
-          "continuous": "All Audio",
-          "gated": "VAD Gated"
-        }
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "about": {

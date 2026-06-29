@@ -1,4 +1,11 @@
-use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
+use crate::audio_toolkit::{
+    list_input_devices,
+    vad::{
+        SmoothedVad, VAD_OFFLINE_HANGOVER_FRAMES, VAD_ONSET_FRAMES, VAD_PREFILL_FRAMES,
+        VAD_STREAMING_HANGOVER_FRAMES,
+    },
+    AudioRecorder, SileroVad, VadPolicy,
+};
 use crate::helpers::clamshell;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
@@ -10,6 +17,7 @@ use std::time::{Duration, Instant};
 use tauri::Manager;
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+const VAD_THRESHOLD: f32 = 0.3;
 
 fn set_mute(mute: bool) {
     // Expected behavior:
@@ -108,6 +116,7 @@ const WHISPER_SAMPLE_RATE: usize = 16000;
 pub enum RecordingState {
     Idle,
     Recording { binding_id: String },
+    Stopping,
 }
 
 #[derive(Clone, Debug)]
@@ -122,9 +131,22 @@ fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
 ) -> Result<AudioRecorder, anyhow::Error> {
-    let silero = SileroVad::new(vad_path, 0.3)
+    let offline_silero = SileroVad::new(vad_path, VAD_THRESHOLD)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+    let streaming_silero = SileroVad::new(vad_path, VAD_THRESHOLD)
+        .map_err(|e| anyhow::anyhow!("Failed to create streaming SileroVad: {}", e))?;
+    let offline_vad = SmoothedVad::new(
+        Box::new(offline_silero),
+        VAD_PREFILL_FRAMES,
+        VAD_OFFLINE_HANGOVER_FRAMES,
+        VAD_ONSET_FRAMES,
+    );
+    let streaming_vad = SmoothedVad::new(
+        Box::new(streaming_silero),
+        VAD_PREFILL_FRAMES,
+        VAD_STREAMING_HANGOVER_FRAMES,
+        VAD_ONSET_FRAMES,
+    );
 
     // Recorder with VAD, a spectrum-level callback that forwards updates to
     // the frontend, and an audio-frame callback that feeds live streaming
@@ -134,7 +156,7 @@ fn create_audio_recorder(
     // preview off.
     let mut recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
-        .with_vad(Box::new(smoothed_vad))
+        .with_vad_profiles(Box::new(offline_vad), Box::new(streaming_vad))
         .with_level_callback({
             let app_handle = app_handle.clone();
             move |levels| {
@@ -145,17 +167,13 @@ fn create_audio_recorder(
     // Register the streaming audio callback only if the TranscriptionManager
     // is available (it always is in normal operation). The callback captures
     // the `Arc<StreamRouter>` directly, so it never touches Tauri state on the
-    // hot path. The continuous flag is shared with the router, which toggles it
-    // at `start_stream` time based on the `streaming_audio_mode` + overlay style.
+    // hot path. The recorder's per-session VAD policy controls whether these
+    // frames are raw or VAD-gated.
     if let Some(tm) = app_handle.try_state::<Arc<TranscriptionManager>>() {
         let router = tm.stream_router();
-        let continuous = router.continuous_flag();
-        recorder = recorder.with_audio_callback(
-            move |frame| {
-                router.feed(frame);
-            },
-            continuous,
-        );
+        recorder = recorder.with_audio_callback(move |frame| {
+            router.feed(frame);
+        });
     }
 
     Ok(recorder)
@@ -404,7 +422,11 @@ impl AudioRecordingManager {
 
     /* ---------- recording --------------------------------------------------- */
 
-    pub fn try_start_recording(&self, binding_id: &str) -> Result<(), String> {
+    pub fn try_start_recording(
+        &self,
+        binding_id: &str,
+        vad_policy: VadPolicy,
+    ) -> Result<(), String> {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
@@ -420,7 +442,7 @@ impl AudioRecordingManager {
             }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                if rec.start().is_ok() {
+                if rec.start(vad_policy).is_ok() {
                     *self.is_recording.lock().unwrap() = true;
                     *state = RecordingState::Recording {
                         binding_id: binding_id.to_string(),
@@ -452,17 +474,20 @@ impl AudioRecordingManager {
             RecordingState::Recording {
                 binding_id: ref active,
             } if active == binding_id => {
-                *state = RecordingState::Idle;
+                *state = RecordingState::Stopping;
                 drop(state);
 
-                // Optionally keep recording for a bit longer to capture trailing audio
+                // Optionally keep recording for a bit longer to capture trailing audio.
+                // This is only the explicit user setting; streaming VAD must not add
+                // hidden post-release capture time.
                 let settings = get_settings(&self.app_handle);
-                if settings.extra_recording_buffer_ms > 0 {
+                let buffer_ms = settings.extra_recording_buffer_ms;
+                if buffer_ms > 0 {
                     debug!(
                         "Extra recording buffer: sleeping {}ms before stopping",
-                        settings.extra_recording_buffer_ms
+                        buffer_ms
                     );
-                    std::thread::sleep(Duration::from_millis(settings.extra_recording_buffer_ms));
+                    std::thread::sleep(Duration::from_millis(buffer_ms));
                 }
 
                 let samples = if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
@@ -479,6 +504,7 @@ impl AudioRecordingManager {
                 };
 
                 *self.is_recording.lock().unwrap() = false;
+                *self.state.lock().unwrap() = RecordingState::Idle;
 
                 // In on-demand mode, close the mic (lazily if the setting is enabled)
                 if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
@@ -506,7 +532,7 @@ impl AudioRecordingManager {
     pub fn is_recording(&self) -> bool {
         matches!(
             *self.state.lock().unwrap(),
-            RecordingState::Recording { .. }
+            RecordingState::Recording { .. } | RecordingState::Stopping { .. }
         )
     }
 

@@ -530,13 +530,9 @@
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間（ミリ秒）。末尾の音声を捕捉するため。0 = 追加バッファなし。"
       },
-      "streamingAudioMode": {
-        "title": "Streaming Audio Mode",
-        "description": "How audio is fed to streaming models. All Audio forwards everything including silence — streaming-built models use it for timing and punctuation. VAD Gated forwards only detected speech, using less compute.",
-        "options": {
-          "continuous": "All Audio",
-          "gated": "VAD Gated"
-        }
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "about": {

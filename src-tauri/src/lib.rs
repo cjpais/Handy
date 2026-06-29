@@ -3,6 +3,7 @@ mod actions;
 mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
+mod catalog;
 pub mod cli;
 mod clipboard;
 mod commands;
@@ -527,7 +528,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_mute_while_recording_setting,
             shortcut::change_append_trailing_space_setting,
             shortcut::change_lazy_stream_close_setting,
-            shortcut::change_streaming_audio_mode_setting,
+            shortcut::change_vad_enabled_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,
             shortcut::change_keyboard_implementation_setting,
@@ -859,11 +860,17 @@ pub fn run(cli_args: CliArgs) {
         .invoke_handler(invoke_handler)
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app, event| {
+        .run(|app, event| match &event {
             #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Reopen { .. } = &event {
+            tauri::RunEvent::Reopen { .. } => {
                 show_main_window(app);
             }
-            let _ = (app, event); // suppress unused warnings on non-macOS
+            // Teardown transcribe.cpp before exit
+            tauri::RunEvent::Exit => {
+                if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
+                    let _ = tm.unload_model();
+                }
+            }
+            _ => {}
         });
 }

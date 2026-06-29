@@ -34,6 +34,11 @@ const getLanguageDisplayText = (
   return t("modelSelector.capabilities.multiLanguage");
 };
 
+// Legacy = a blob (Url-sourced) .bin/ONNX model, kept runnable but no longer the
+// advertised download (catalog GGUFs supersede it).
+const isLegacySource = (model: ModelInfo): boolean =>
+  typeof model.source === "object" && "Url" in model.source;
+
 // Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").
 const getQuantLabel = (filename: string): string | null => {
   const match = filename.match(
@@ -163,6 +168,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
             )}
             {model.is_custom && (
               <Badge variant="secondary">{t("modelSelector.custom")}</Badge>
+            )}
+            {isLegacySource(model) && (
+              <Badge variant="secondary">{t("modelSelector.legacy")}</Badge>
             )}
             {status === "switching" && (
               <Badge variant="secondary">

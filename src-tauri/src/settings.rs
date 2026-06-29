@@ -126,18 +126,6 @@ pub enum OverlayStyle {
     Live,
 }
 
-/// How audio is fed to a streaming model. `Continuous` forwards all audio
-/// (pre-VAD, including silence) — streaming-built models use the silence for
-/// timing/punctuation. `Gated` forwards only VAD-detected speech (less compute).
-/// Debug-only; defaults to `Continuous`.
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum StreamingAudioMode {
-    #[default]
-    Continuous,
-    Gated,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
@@ -459,15 +447,13 @@ pub struct AppSettings {
     pub transcribe_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default = "default_vad_enabled")]
+    pub vad_enabled: bool,
     /// Which recording overlay to show: None / Minimal / Live. Replaces the old
     /// `live_preview` bool; streaming mode is no longer gated on this (it follows
     /// model capability). Migrated from `overlay_position` + `live_preview`.
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
-    /// How audio is fed to streaming models (Auto/Continuous/Gated). Debug-only.
-    /// Migrated from the old `live_preview_continuous` bool.
-    #[serde(default)]
-    pub streaming_audio_mode: StreamingAudioMode,
 }
 
 fn default_model() -> String {
@@ -512,6 +498,10 @@ fn default_overlay_style() -> OverlayStyle {
     return OverlayStyle::None;
     #[cfg(not(target_os = "linux"))]
     return OverlayStyle::Minimal;
+}
+
+fn default_vad_enabled() -> bool {
+    true
 }
 
 fn default_debug_mode() -> bool {
@@ -861,8 +851,8 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         transcribe_gpu_device: default_transcribe_gpu_device(),
         extra_recording_buffer_ms: 0,
+        vad_enabled: default_vad_enabled(),
         overlay_style: default_overlay_style(),
-        streaming_audio_mode: StreamingAudioMode::Continuous,
     }
 }
 
@@ -897,9 +887,8 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
         // Capture legacy keys from the raw JSON before deserialization so we can
-        // migrate the old overlay model (overlay_position + live_preview +
-        // live_preview_continuous) onto the new overlay_style / streaming_audio_mode
-        // fields. `settings_value` is consumed by `from_value` below.
+        // migrate the old overlay model (overlay_position + live_preview) onto
+        // overlay_style. `settings_value` is consumed by `from_value` below.
         let overlay_style_missing = settings_value.get("overlay_style").is_none();
         let legacy_live_preview = settings_value
             .get("live_preview")
@@ -916,9 +905,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
                 // One-time overlay migration (only while the new key is absent):
                 // overlay_position(none) → style None (and reset position to Bottom,
                 // since 'none' is retired from the position picker); otherwise
-                // style follows live_preview. streaming_audio_mode just takes its new
-                // default (Continuous) — the legacy live_preview_continuous bool is
-                // dropped, since streaming-built models want all audio by default.
+                // style follows live_preview.
                 if overlay_style_missing {
                     if settings.overlay_position == OverlayPosition::None {
                         settings.overlay_style = OverlayStyle::None;
