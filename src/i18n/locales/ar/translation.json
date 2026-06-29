@@ -148,8 +148,10 @@
       "multiLanguage": "متعدد اللغات",
       "languageOnly": "{{language}} فقط",
       "translation": "يدعم الترجمة",
-      "translate": "ترجمة"
-    }
+      "translate": "ترجمة",
+      "streaming": "يعرض النسخ المباشر أثناء التحدث"
+    },
+    "legacy": "قديم"
   },
   "settings": {
     "general": {
@@ -562,7 +564,12 @@
         "translation": "ترجمة",
         "allLanguages": "جميع اللغات"
       },
-      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
+      "searchPlaceholder": "ابحث عن النماذج بالاسم…",
+      "rescan": {
+        "label": "إعادة الفحص",
+        "tooltip": "إعادة الفحص بحثًا عن النماذج المضافة إلى مجلد النماذج أو ذاكرة Hugging Face التخزينية المؤقتة خارج Handy"
+      }
     }
   },
   "footer": {

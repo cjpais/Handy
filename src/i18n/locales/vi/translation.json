@@ -146,10 +146,12 @@
       "translation": "Có thể dịch sang tiếng Anh",
       "translate": "Dịch sang tiếng Anh",
       "singleLanguage": "Chỉ hỗ trợ ngôn ngữ này",
-      "languageOnly": "Chỉ {{language}}"
+      "languageOnly": "Chỉ {{language}}",
+      "streaming": "Hiển thị phiên âm trực tiếp khi bạn nói"
     },
     "cancel": "Hủy",
-    "cancelDownload": "Hủy tải xuống"
+    "cancelDownload": "Hủy tải xuống",
+    "legacy": "Cũ"
   },
   "settings": {
     "modelSettings": {
@@ -172,7 +174,12 @@
       },
       "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này.",
       "yourModels": "Mô hình đã tải",
-      "availableModels": "Có sẵn để tải xuống"
+      "availableModels": "Có sẵn để tải xuống",
+      "searchPlaceholder": "Tìm mô hình theo tên…",
+      "rescan": {
+        "label": "Quét lại",
+        "tooltip": "Quét lại các mô hình được thêm vào thư mục mô hình hoặc bộ nhớ đệm Hugging Face bên ngoài Handy"
+      }
     },
     "general": {
       "title": "Chung",

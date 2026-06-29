@@ -148,8 +148,10 @@
       "multiLanguage": "Многоезичен",
       "languageOnly": "Само {{language}}",
       "translation": "Може да превежда на английски",
-      "translate": "Превод на английски"
-    }
+      "translate": "Превод на английски",
+      "streaming": "Показва транскрипция на живо, докато говорите"
+    },
+    "legacy": "Наследен"
   },
   "settings": {
     "modelSettings": {
@@ -214,7 +216,12 @@
         "translation": "Превод",
         "allLanguages": "Всички езици"
       },
-      "noModelsMatch": "Няма модели, отговарящи на този филтър."
+      "noModelsMatch": "Няма модели, отговарящи на този филтър.",
+      "searchPlaceholder": "Търсене на модели по име…",
+      "rescan": {
+        "label": "Сканиране отново",
+        "tooltip": "Сканиране отново за модели, добавени в папката с модели или кеша на Hugging Face извън Handy"
+      }
     },
     "sound": {
       "title": "Звук",

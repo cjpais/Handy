@@ -146,10 +146,12 @@
       "translation": "Peut traduire en anglais",
       "translate": "Traduire en anglais",
       "singleLanguage": "Prend en charge uniquement cette langue",
-      "languageOnly": "{{language}} uniquement"
+      "languageOnly": "{{language}} uniquement",
+      "streaming": "Affiche la transcription en direct pendant que vous parlez"
     },
     "cancel": "Annuler",
-    "cancelDownload": "Annuler le téléchargement"
+    "cancelDownload": "Annuler le téléchargement",
+    "legacy": "Hérité"
   },
   "settings": {
     "modelSettings": {
@@ -172,7 +174,12 @@
       },
       "noModelsMatch": "Aucun modèle ne correspond à ce filtre.",
       "yourModels": "Modèles téléchargés",
-      "availableModels": "Disponibles au téléchargement"
+      "availableModels": "Disponibles au téléchargement",
+      "searchPlaceholder": "Rechercher des modèles par nom…",
+      "rescan": {
+        "label": "Réanalyser",
+        "tooltip": "Réanalyser pour détecter les modèles ajoutés au dossier des modèles ou au cache Hugging Face en dehors de Handy"
+      }
     },
     "general": {
       "title": "Général",

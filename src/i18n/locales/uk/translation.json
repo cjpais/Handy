@@ -146,10 +146,12 @@
       "translation": "Може перекладати на англійську",
       "translate": "Перекласти на англійську",
       "singleLanguage": "Підтримує лише цю мову",
-      "languageOnly": "Лише {{language}}"
+      "languageOnly": "Лише {{language}}",
+      "streaming": "Показує транскрипцію в реальному часі під час мовлення"
     },
     "cancel": "Скасувати",
-    "cancelDownload": "Скасувати завантаження"
+    "cancelDownload": "Скасувати завантаження",
+    "legacy": "Застаріле"
   },
   "settings": {
     "modelSettings": {
@@ -214,7 +216,12 @@
       },
       "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
       "yourModels": "Завантажені моделі",
-      "availableModels": "Доступні для завантаження"
+      "availableModels": "Доступні для завантаження",
+      "searchPlaceholder": "Пошук моделей за назвою…",
+      "rescan": {
+        "label": "Пересканувати",
+        "tooltip": "Пересканувати моделі, додані до папки моделей або кешу Hugging Face поза межами Handy"
+      }
     },
     "sound": {
       "title": "Звук",

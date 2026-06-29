@@ -146,10 +146,12 @@
       "translation": "Pode traduzir para inglês",
       "translate": "Traduzir para inglês",
       "singleLanguage": "Suporta apenas este idioma",
-      "languageOnly": "Apenas {{language}}"
+      "languageOnly": "Apenas {{language}}",
+      "streaming": "Mostra a transcrição ao vivo enquanto você fala"
     },
     "cancel": "Cancelar",
-    "cancelDownload": "Cancelar download"
+    "cancelDownload": "Cancelar download",
+    "legacy": "Legado"
   },
   "settings": {
     "modelSettings": {
@@ -214,7 +216,12 @@
       },
       "noModelsMatch": "Nenhum modelo corresponde a este filtro.",
       "yourModels": "Modelos baixados",
-      "availableModels": "Disponíveis para download"
+      "availableModels": "Disponíveis para download",
+      "searchPlaceholder": "Buscar modelos por nome…",
+      "rescan": {
+        "label": "Reescanear",
+        "tooltip": "Reescaneia em busca de modelos adicionados à pasta de modelos ou ao cache do Hugging Face fora do Handy"
+      }
     },
     "sound": {
       "title": "Som",

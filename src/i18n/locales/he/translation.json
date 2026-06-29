@@ -148,8 +148,10 @@
       "multiLanguage": "רב-לשוני",
       "languageOnly": "{{language}} בלבד",
       "translation": "יכול לתרגם לאנגלית",
-      "translate": "תרגם לאנגלית"
-    }
+      "translate": "תרגם לאנגלית",
+      "streaming": "מציג תמלול חי תוך כדי דיבור"
+    },
+    "legacy": "מדור קודם"
   },
   "settings": {
     "modelSettings": {
@@ -214,7 +216,12 @@
         "translation": "תרגום",
         "allLanguages": "כל השפות"
       },
-      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה."
+      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
+      "searchPlaceholder": "חיפוש מודלים לפי שם…",
+      "rescan": {
+        "label": "סריקה מחדש",
+        "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Handy"
+      }
     },
     "sound": {
       "title": "שמע",

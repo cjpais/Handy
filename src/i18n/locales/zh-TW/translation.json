@@ -148,8 +148,10 @@
       "multiLanguage": "多語言",
       "languageOnly": "僅 {{language}}",
       "translation": "可翻譯為英語",
-      "translate": "翻譯為英語"
-    }
+      "translate": "翻譯為英語",
+      "streaming": "在您說話時即時顯示轉錄"
+    },
+    "legacy": "舊版"
   },
   "settings": {
     "modelSettings": {
@@ -214,7 +216,12 @@
         "translation": "翻譯",
         "allLanguages": "所有語言"
       },
-      "noModelsMatch": "沒有符合此篩選條件的模型"
+      "noModelsMatch": "沒有符合此篩選條件的模型",
+      "searchPlaceholder": "依名稱搜尋模型…",
+      "rescan": {
+        "label": "重新掃描",
+        "tooltip": "重新掃描在 Handy 之外新增到模型資料夾或 Hugging Face 快取中的模型"
+      }
     },
     "sound": {
       "title": "聲音",

@@ -146,10 +146,12 @@
       "translation": "Può tradurre in inglese",
       "translate": "Traduci in inglese",
       "singleLanguage": "Supporta solo questa lingua",
-      "languageOnly": "Solo {{language}}"
+      "languageOnly": "Solo {{language}}",
+      "streaming": "Mostra la trascrizione in tempo reale mentre parli"
     },
     "cancel": "Annulla",
-    "cancelDownload": "Annulla download"
+    "cancelDownload": "Annulla download",
+    "legacy": "Obsoleto"
   },
   "settings": {
     "modelSettings": {
@@ -172,7 +174,12 @@
       },
       "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
       "yourModels": "Modelli scaricati",
-      "availableModels": "Disponibili per il Download"
+      "availableModels": "Disponibili per il Download",
+      "searchPlaceholder": "Cerca modelli per nome…",
+      "rescan": {
+        "label": "Riscansiona",
+        "tooltip": "Riscansiona per trovare modelli aggiunti alla cartella dei modelli o alla cache di Hugging Face al di fuori di Handy"
+      }
     },
     "general": {
       "title": "Generale",

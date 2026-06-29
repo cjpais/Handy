@@ -146,10 +146,12 @@
       "translation": "Может переводить на английский",
       "translate": "Перевод на английский",
       "singleLanguage": "Поддерживает только этот язык",
-      "languageOnly": "Только {{language}}"
+      "languageOnly": "Только {{language}}",
+      "streaming": "Показывает транскрипцию в реальном времени во время речи"
     },
     "cancel": "Отмена",
-    "cancelDownload": "Отменить загрузку"
+    "cancelDownload": "Отменить загрузку",
+    "legacy": "Устаревшее"
   },
   "settings": {
     "modelSettings": {
@@ -172,7 +174,12 @@
       },
       "noModelsMatch": "Нет моделей, соответствующих этому фильтру.",
       "yourModels": "Загруженные модели",
-      "availableModels": "Доступны для загрузки"
+      "availableModels": "Доступны для загрузки",
+      "searchPlaceholder": "Поиск моделей по имени…",
+      "rescan": {
+        "label": "Пересканировать",
+        "tooltip": "Пересканировать модели, добавленные в папку моделей или кэш Hugging Face вне Handy"
+      }
     },
     "general": {
       "title": "Общие",

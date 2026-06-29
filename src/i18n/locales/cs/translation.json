@@ -146,10 +146,12 @@
       "translation": "Umí překládat do angličtiny",
       "translate": "Přeložit do angličtiny",
       "singleLanguage": "Podporuje pouze tento jazyk",
-      "languageOnly": "Pouze {{language}}"
+      "languageOnly": "Pouze {{language}}",
+      "streaming": "Zobrazuje přepis živě, jak mluvíte"
     },
     "cancel": "Zrušit",
-    "cancelDownload": "Zrušit stahování"
+    "cancelDownload": "Zrušit stahování",
+    "legacy": "Zastaralé"
   },
   "settings": {
     "modelSettings": {
@@ -172,7 +174,12 @@
       },
       "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
       "yourModels": "Stažené modely",
-      "availableModels": "Dostupné ke stažení"
+      "availableModels": "Dostupné ke stažení",
+      "searchPlaceholder": "Hledat modely podle názvu…",
+      "rescan": {
+        "label": "Znovu prohledat",
+        "tooltip": "Znovu prohledat modely přidané do složky modelů nebo mezipaměti Hugging Face mimo Handy"
+      }
     },
     "general": {
       "title": "Obecné",

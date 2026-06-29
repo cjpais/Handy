@@ -148,8 +148,10 @@
       "multiLanguage": "다국어",
       "languageOnly": "{{language}} 전용",
       "translation": "영어로 번역 가능",
-      "translate": "영어로 번역"
-    }
+      "translate": "영어로 번역",
+      "streaming": "말하는 동안 실시간으로 음성 인식 결과를 표시"
+    },
+    "legacy": "레거시"
   },
   "settings": {
     "modelSettings": {
@@ -237,7 +239,12 @@
         "translation": "번역",
         "allLanguages": "모든 언어"
       },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
+      "searchPlaceholder": "이름으로 모델 검색…",
+      "rescan": {
+        "label": "다시 스캔",
+        "tooltip": "Handy 외부에서 모델 폴더 또는 Hugging Face 캐시에 추가된 모델을 다시 스캔합니다"
+      }
     },
     "advanced": {
       "title": "고급",
