@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import type { ModelCardStatus } from "./ModelCard";
-import ModelCard from "./ModelCard";
+import ModelCard, { isLegacySource } from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
 import { useModelStore } from "../../stores/modelStore";
 
@@ -24,9 +25,37 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     downloadStats,
   } = useModelStore();
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const hasStartedSelection = useRef(false);
 
   const isBusy = selectedModelId !== null;
+
+  // Curate the download list: legacy (.bin/ONNX) downloads are deprecated and
+  // never shown here (they still appear in the compatible section if already on
+  // disk). The catalog arrives rank-sorted, so the first two recommended models
+  // are the featured picks — currently Parakeet Unified (English) and Nemotron
+  // Streaming (multilingual). Everything else hides behind "Show all".
+  const { downloadable, topPicks, otherRecommended, rest } = useMemo(() => {
+    const downloadable = models.filter(
+      (m: ModelInfo) => !m.is_downloaded && !isLegacySource(m),
+    );
+    const recommended = downloadable.filter((m: ModelInfo) => m.is_recommended);
+    // `models` arrives in editorial rank order (the backend sorts by rank_of,
+    // then accuracy), so keep that order here: ranked-but-not-recommended models
+    // surface first, then the unranked tail by accuracy.
+    const rest = downloadable.filter((m: ModelInfo) => !m.is_recommended);
+    return {
+      downloadable,
+      topPicks: recommended.slice(0, 2),
+      otherRecommended: recommended.slice(2),
+      rest,
+    };
+  }, [models]);
+
+  const hasRecommended = topPicks.length > 0 || otherRecommended.length > 0;
+  // When nothing recommended remains to download (e.g. all already on disk),
+  // there is no curated subset to collapse, so just show the full list.
+  const showRest = showAll || !hasRecommended;
 
   // Watch for the selected model to finish downloading + verifying + extracting
   useEffect(() => {
@@ -142,7 +171,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
             </div>
           )}
 
-          {models.some((m: ModelInfo) => !m.is_downloaded) && (
+          {downloadable.length > 0 && (
             <>
               <div className="text-left">
                 <h2 className="text-sm font-medium text-text/80">
@@ -150,31 +179,56 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                 </h2>
               </div>
 
-              {models
-                .filter((m: ModelInfo) => !m.is_downloaded)
-                .filter((model: ModelInfo) => model.is_recommended)
-                .map((model: ModelInfo) => (
-                  <ModelCard
-                    key={model.id}
-                    model={model}
-                    variant="featured"
-                    status={getModelStatus(model.id)}
-                    disabled={isBusy}
-                    onSelect={handleDownloadModel}
-                    onDownload={handleDownloadModel}
-                    downloadProgress={getModelDownloadProgress(model.id)}
-                    downloadSpeed={getModelDownloadSpeed(model.id)}
-                  />
-                ))}
+              {topPicks.map((model: ModelInfo) => (
+                <ModelCard
+                  key={model.id}
+                  model={model}
+                  variant="featured"
+                  status={getModelStatus(model.id)}
+                  disabled={isBusy}
+                  onSelect={handleDownloadModel}
+                  onDownload={handleDownloadModel}
+                  downloadProgress={getModelDownloadProgress(model.id)}
+                  downloadSpeed={getModelDownloadSpeed(model.id)}
+                  showRecommended={false}
+                />
+              ))}
 
-              {models
-                .filter((m: ModelInfo) => !m.is_downloaded)
-                .filter((model: ModelInfo) => !model.is_recommended)
-                .sort(
-                  (a: ModelInfo, b: ModelInfo) =>
-                    Number(a.size_mb) - Number(b.size_mb),
-                )
-                .map((model: ModelInfo) => (
+              {otherRecommended.map((model: ModelInfo) => (
+                <ModelCard
+                  key={model.id}
+                  model={model}
+                  status={getModelStatus(model.id)}
+                  disabled={isBusy}
+                  onSelect={handleDownloadModel}
+                  onDownload={handleDownloadModel}
+                  downloadProgress={getModelDownloadProgress(model.id)}
+                  downloadSpeed={getModelDownloadSpeed(model.id)}
+                  showRecommended={false}
+                />
+              ))}
+
+              {hasRecommended && rest.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAll((v) => !v)}
+                  className="flex items-center justify-center gap-1.5 mx-auto py-1 text-sm font-medium text-text/60 hover:text-text transition-colors"
+                >
+                  {showAll
+                    ? t("onboarding.showFewerModels")
+                    : t("onboarding.showAllModels", {
+                        total: downloadable.length,
+                      })}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      showAll ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
+
+              {showRest &&
+                rest.map((model: ModelInfo) => (
                   <ModelCard
                     key={model.id}
                     model={model}
@@ -184,6 +238,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                     onDownload={handleDownloadModel}
                     downloadProgress={getModelDownloadProgress(model.id)}
                     downloadSpeed={getModelDownloadSpeed(model.id)}
+                    showRecommended={false}
                   />
                 ))}
             </>

@@ -44,6 +44,10 @@ struct CatalogModel {
     files: Vec<QuantFile>,
     default_quant: Option<String>,
     recommended_rank: Option<u32>,
+    /// Part of the small curated onboarding set (badged "Recommended"). Distinct
+    /// from `recommended_rank`, which only orders the full list.
+    #[serde(default)]
+    recommended: bool,
 }
 
 #[derive(Deserialize)]
@@ -94,6 +98,7 @@ impl From<CatalogModel> for ModelDescriptor {
             speed_score: m.speed_score.unwrap_or(0.0) / 100.0,
             accuracy_score: m.accuracy_score.unwrap_or(0.0) / 100.0,
             recommended_rank: m.recommended_rank,
+            recommended: m.recommended,
         }
     }
 }

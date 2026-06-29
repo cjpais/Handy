@@ -31,12 +31,14 @@ const getLanguageDisplayText = (
       LANGUAGES.find((l) => l.value === langCode)?.label || langCode;
     return t("modelSelector.capabilities.languageOnly", { language: langName });
   }
-  return t("modelSelector.capabilities.multiLanguage");
+  return t("modelSelector.capabilities.languageCount", {
+    total: supportedLanguages.length,
+  });
 };
 
 // Legacy = a blob (Url-sourced) .bin/ONNX model, kept runnable but no longer the
 // advertised download (catalog GGUFs supersede it).
-const isLegacySource = (model: ModelInfo): boolean =>
+export const isLegacySource = (model: ModelInfo): boolean =>
   typeof model.source === "object" && "Url" in model.source;
 
 // Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").

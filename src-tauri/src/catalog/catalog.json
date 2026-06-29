@@ -9,7 +9,7 @@
       "architecture": "parakeet",
       "family": "parakeet",
       "parameters": "0.6B",
-      "description": "Fast, accurate English with live transcription.",
+      "description": "Best overall for English speakers. Great accuracy and speed.",
       "base_model": "nvidia/parakeet-unified-en-0.6b",
       "license": "cc-by-4.0",
       "language_count": 1,
@@ -65,7 +65,7 @@
       "architecture": "parakeet",
       "family": "nemotron",
       "parameters": "0.6B",
-      "description": "Live multilingual transcription across 28 languages.",
+      "description": "Best overall for multilingual speakers. 28 languages, fast and accurate.",
       "base_model": "nvidia/nemotron-3.5-asr-streaming-0.6b",
       "license": "other",
       "language_count": 28,
@@ -150,7 +150,7 @@
       "architecture": "canary",
       "family": "canary",
       "parameters": "180M",
-      "description": "Tiny and instant — runs well on any hardware.",
+      "description": "Fast, accurate, multilingual, and runs on any computer.",
       "base_model": "nvidia/canary-180m-flash",
       "license": "cc-by-4.0",
       "language_count": 4,
@@ -206,7 +206,7 @@
       "architecture": "cohere_asr",
       "family": "cohere",
       "parameters": "2.0B",
-      "description": "Highest accuracy, 14 languages.",
+      "description": "Multilingual, very accurate, but can be slower.",
       "base_model": "CohereLabs/cohere-transcribe-03-2026",
       "license": "apache-2.0",
       "language_count": 14,
@@ -277,7 +277,7 @@
       "architecture": "whisper",
       "family": "whisper",
       "parameters": "764M",
-      "description": "Broadest language coverage, with translation to English.",
+      "description": "Good overall performer, with broad (99) languages covered.",
       "base_model": "openai/whisper-medium",
       "license": "apache-2.0",
       "language_count": 99,
@@ -433,7 +433,7 @@
       "architecture": "voxtral_realtime",
       "family": "voxtral",
       "parameters": "4.8B",
-      "description": "Live multilingual, excellent on Apple Silicon.",
+      "description": "Live multilingual transcription, best on high-end machines with a dedicated GPU or Apple Silicon.",
       "base_model": "mistralai/Voxtral-Mini-4B-Realtime-2602",
       "license": "apache-2.0",
       "language_count": 13,
@@ -493,8 +493,8 @@
         }
       ],
       "default_quant": "Q8_0",
-      "recommended": true,
-      "recommended_rank": 6
+      "recommended": false,
+      "recommended_rank": 14
     },
     {
       "id": "handy-computer/canary-1b-flash-gguf",
@@ -503,7 +503,7 @@
       "architecture": "canary",
       "family": "canary",
       "parameters": "1B",
-      "description": "4-language speech-to-text with translation.",
+      "description": "Very accurate and fast, covering 4 major languages.",
       "base_model": "nvidia/canary-1b-flash",
       "license": "cc-by-4.0",
       "language_count": 4,
@@ -550,7 +550,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 8
     },
     {
       "id": "handy-computer/canary-1b-v2-gguf",
@@ -559,7 +559,7 @@
       "architecture": "canary",
       "family": "canary",
       "parameters": "1B",
-      "description": "25-language speech-to-text with translation.",
+      "description": "Accurate transcription across 25 languages.",
       "base_model": "nvidia/canary-1b-v2",
       "license": "cc-by-4.0",
       "language_count": 25,
@@ -632,7 +632,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 9
     },
     {
       "id": "handy-computer/canary-1b-gguf",
@@ -809,7 +809,7 @@
       "architecture": "funasr_nano",
       "family": "fun",
       "parameters": "985M",
-      "description": "31-language speech-to-text.",
+      "description": "Accurate and fast across 31 languages.",
       "base_model": "FunAudioLLM/Fun-ASR-MLT-Nano-2512",
       "license": "other",
       "language_count": 31,
@@ -888,7 +888,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 18
     },
     {
       "id": "handy-computer/gigaam-v3-ctc-gguf",
@@ -2098,7 +2098,7 @@
       "architecture": "parakeet",
       "family": "nemotron",
       "parameters": "0.6B",
-      "description": "English speech-to-text with streaming, token-level timestamps.",
+      "description": "Live English transcription as you speak.",
       "base_model": "nvidia/nemotron-speech-streaming-en-0.6b",
       "license": "other",
       "language_count": 1,
@@ -2145,7 +2145,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 10
     },
     {
       "id": "handy-computer/parakeet-tdt_ctc-110m-gguf",
@@ -2266,7 +2266,7 @@
       "architecture": "parakeet",
       "family": "parakeet",
       "parameters": "0.6B",
-      "description": "English speech-to-text with token-level timestamps.",
+      "description": "Fast, very accurate English transcription.",
       "base_model": "nvidia/parakeet-tdt-0.6b-v2",
       "license": "cc-by-4.0",
       "language_count": 1,
@@ -2313,7 +2313,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 6
     },
     {
       "id": "handy-computer/parakeet-rnnt-0.6b-gguf",
@@ -2434,7 +2434,7 @@
       "architecture": "parakeet",
       "family": "parakeet",
       "parameters": "0.6B",
-      "description": "25-language speech-to-text with auto language detection, token-level timestamps.",
+      "description": "Fast and accurate across 25 languages.",
       "base_model": "nvidia/parakeet-tdt-0.6b-v3",
       "license": "cc-by-4.0",
       "language_count": 25,
@@ -2507,7 +2507,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 7
     },
     {
       "id": "handy-computer/parakeet-tdt-1.1b-gguf",
@@ -2684,7 +2684,7 @@
       "architecture": "qwen3_asr",
       "family": "qwen3",
       "parameters": "782M",
-      "description": "30-language speech-to-text with auto language detection.",
+      "description": "Accurate and well-balanced across 30 languages.",
       "base_model": "Qwen/Qwen3-ASR-0.6B",
       "license": "apache-2.0",
       "language_count": 30,
@@ -2762,7 +2762,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 13
     },
     {
       "id": "handy-computer/Qwen3-ASR-1.7B-gguf",
@@ -2858,7 +2858,7 @@
       "architecture": "sensevoice",
       "family": "sensevoice",
       "parameters": "234M",
-      "description": "5-language speech-to-text with auto language detection.",
+      "description": "Extremely fast, covering 5 languages.",
       "base_model": "FunAudioLLM/SenseVoiceSmall",
       "license": "other",
       "language_count": 5,
@@ -2905,7 +2905,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 15
     },
     {
       "id": "handy-computer/Voxtral-Mini-3B-2507-gguf",
@@ -3506,7 +3506,7 @@
       "architecture": "whisper",
       "family": "whisper",
       "parameters": "242M",
-      "description": "99-language speech-to-text with translation, auto language detection, segment-level timestamps.",
+      "description": "Lightweight Whisper with broad language coverage.",
       "base_model": "openai/whisper-small",
       "license": "apache-2.0",
       "language_count": 99,
@@ -3653,7 +3653,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 16
     },
     {
       "id": "handy-computer/whisper-medium.en-gguf",
@@ -3718,7 +3718,7 @@
       "architecture": "whisper",
       "family": "whisper",
       "parameters": "809M",
-      "description": "100-language speech-to-text with translation, auto language detection, segment-level timestamps.",
+      "description": "Nearly Large-level accuracy, noticeably faster.",
       "base_model": "openai/whisper-large-v3-turbo",
       "license": "apache-2.0",
       "language_count": 100,
@@ -3861,7 +3861,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 12
     },
     {
       "id": "handy-computer/whisper-large-v3-gguf",
@@ -3870,7 +3870,7 @@
       "architecture": "whisper",
       "family": "whisper",
       "parameters": "1.5B",
-      "description": "100-language speech-to-text with translation, auto language detection, segment-level timestamps.",
+      "description": "The most accurate Whisper, 100 languages, but slow.",
       "base_model": "openai/whisper-large-v3",
       "license": "apache-2.0",
       "language_count": 100,
@@ -4013,7 +4013,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 11
     },
     {
       "id": "handy-computer/whisper-large-v2-gguf",
@@ -4334,7 +4334,7 @@
       "architecture": "whisper",
       "family": "whisper",
       "parameters": "1.5B",
-      "description": "Optimized for Taiwanese Mandarin. Code-switching support.",
+      "description": "Tuned for Taiwanese Mandarin, with English code-switching.",
       "base_model": "MediaTek-Research/Breeze-ASR-25",
       "license": "apache-2.0",
       "language_count": 2,
@@ -4381,7 +4381,7 @@
       ],
       "default_quant": "Q8_0",
       "recommended": false,
-      "recommended_rank": null
+      "recommended_rank": 17
     }
   ]
 }

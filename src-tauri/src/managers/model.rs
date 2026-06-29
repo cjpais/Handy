@@ -160,7 +160,13 @@ pub struct ModelDescriptor {
     pub default_quant: Option<String>,
     pub speed_score: f32,
     pub accuracy_score: f32,
+    /// Editorial sort priority across the whole catalog (lower = higher). Drives
+    /// list ordering; independent of `recommended`.
     pub recommended_rank: Option<u32>,
+    /// Whether this is part of the small curated set shown to new users in
+    /// onboarding (and badged "Recommended"). A model can be ranked for ordering
+    /// without being in this set.
+    pub recommended: bool,
 }
 
 #[allow(dead_code)]
@@ -206,7 +212,7 @@ impl ModelDescriptor {
             accuracy_score: self.accuracy_score,
             speed_score: self.speed_score,
             supports_translation: self.caps.supports_translation.unwrap_or(false),
-            is_recommended: self.recommended_rank.is_some(),
+            is_recommended: self.recommended,
             supports_language_selection: languages.len() > 1,
             supported_languages: languages,
             is_custom: self.origin == Origin::CustomDir,
@@ -331,6 +337,7 @@ fn hf_model_info(
         speed_score: 0.0,
         accuracy_score: 0.0,
         recommended_rank: is_recommended.then_some(0),
+        recommended: is_recommended,
     };
     descriptor.to_model_info(&DiskStatus::default())
 }

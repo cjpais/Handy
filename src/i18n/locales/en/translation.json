@@ -22,6 +22,8 @@
     "existingModelsTitle": "Compatible models found",
     "existingModelsDescription": "Use a model already on this computer, or download a different one.",
     "downloadModelsTitle": "Download a model",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",
@@ -151,9 +153,10 @@
       "languageSelection": "Supports multiple input languages",
       "singleLanguage": "Supports this language only",
       "multiLanguage": "Multi-language",
-      "languageOnly": "{{language}} Only",
+      "languageCount": "{{total}} languages",
+      "languageOnly": "{{language}} only",
       "translation": "Can translate to English",
-      "translate": "Translate to English",
+      "translate": "Translate",
       "streaming": "Shows live transcription as you speak"
     }
   },

@@ -22,6 +22,8 @@
     "existingModelsTitle": "Compatible models found",
     "existingModelsDescription": "Use a model already on this computer, or download a different one.",
     "downloadModelsTitle": "Download a model",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "Recomendado",
     "download": "Descargar",
     "downloading": "Descargando...",
@@ -147,6 +149,7 @@
     "capabilities": {
       "languageSelection": "Soporta múltiples idiomas de entrada",
       "multiLanguage": "Multiidioma",
+      "languageCount": "{{total}} languages",
       "translation": "Puede traducir al inglés",
       "translate": "Traducir al inglés",
       "singleLanguage": "Solo admite este idioma",
