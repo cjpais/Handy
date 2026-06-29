@@ -30,8 +30,6 @@ interface ModelsStore {
   downloadStats: Record<string, DownloadStats>;
   loading: boolean;
   error: string | null;
-  hasAnyModels: boolean;
-  isFirstRun: boolean;
   initialized: boolean;
   isRescanning: boolean;
 
@@ -40,7 +38,6 @@ interface ModelsStore {
   loadModels: () => Promise<void>;
   loadCurrentModel: () => Promise<void>;
   rescanLocalModels: () => Promise<void>;
-  checkFirstRun: () => Promise<boolean>;
   selectModel: (modelId: string) => Promise<boolean>;
   downloadModel: (modelId: string) => Promise<boolean>;
   cancelDownload: (modelId: string) => Promise<boolean>;
@@ -69,8 +66,6 @@ export const useModelStore = create<ModelsStore>()(
     downloadStats: {},
     loading: true,
     error: null,
-    hasAnyModels: false,
-    isFirstRun: false,
     initialized: false,
     isRescanning: false,
 
@@ -147,31 +142,12 @@ export const useModelStore = create<ModelsStore>()(
       }
     },
 
-    checkFirstRun: async () => {
-      try {
-        const result = await commands.hasAnyModelsAvailable();
-        if (result.status === "ok") {
-          const hasModels = result.data;
-          set({ hasAnyModels: hasModels, isFirstRun: !hasModels });
-          return !hasModels;
-        }
-        return false;
-      } catch (err) {
-        console.error("Failed to check model availability:", err);
-        return false;
-      }
-    },
-
     selectModel: async (modelId: string) => {
       try {
         set({ error: null });
         const result = await commands.setActiveModel(modelId);
         if (result.status === "ok") {
-          set({
-            currentModel: modelId,
-            isFirstRun: false,
-            hasAnyModels: true,
-          });
+          set({ currentModel: modelId });
           return true;
         } else {
           set({ error: `Failed to switch to model: ${result.error}` });
@@ -292,10 +268,10 @@ export const useModelStore = create<ModelsStore>()(
     initialize: async () => {
       if (get().initialized) return;
 
-      const { loadModels, loadCurrentModel, checkFirstRun } = get();
+      const { loadModels, loadCurrentModel } = get();
 
       // Load initial data
-      await Promise.all([loadModels(), loadCurrentModel(), checkFirstRun()]);
+      await Promise.all([loadModels(), loadCurrentModel()]);
 
       // Set up event listeners
       listen<DownloadProgress>("model-download-progress", (event) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { ModelInfo } from "@/bindings";
@@ -24,12 +24,16 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     downloadStats,
   } = useModelStore();
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const hasStartedSelection = useRef(false);
 
-  const isDownloading = selectedModelId !== null;
+  const isBusy = selectedModelId !== null;
 
   // Watch for the selected model to finish downloading + verifying + extracting
   useEffect(() => {
-    if (!selectedModelId) return;
+    if (!selectedModelId) {
+      hasStartedSelection.current = false;
+      return;
+    }
 
     const model = models.find((m) => m.id === selectedModelId);
     const stillDownloading = selectedModelId in downloadingModels;
@@ -40,14 +44,18 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
       model?.is_downloaded &&
       !stillDownloading &&
       !stillVerifying &&
-      !stillExtracting
+      !stillExtracting &&
+      !hasStartedSelection.current
     ) {
+      hasStartedSelection.current = true;
+
       // Model is ready — select it and transition
       selectModel(selectedModelId).then((success) => {
         if (success) {
           onModelSelected();
         } else {
           toast.error(t("onboarding.errors.selectModel"));
+          hasStartedSelection.current = false;
           setSelectedModelId(null);
         }
       });
@@ -60,6 +68,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     extractingModels,
     selectModel,
     onModelSelected,
+    t,
   ]);
 
   const handleDownloadModel = async (modelId: string) => {
@@ -73,11 +82,20 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     }
   };
 
+  const handleSelectExistingModel = (modelId: string) => {
+    setSelectedModelId(modelId);
+  };
+
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) return "extracting";
     if (modelId in verifyingModels) return "verifying";
     if (modelId in downloadingModels) return "downloading";
     return "downloadable";
+  };
+
+  const getExistingModelStatus = (modelId: string): ModelCardStatus => {
+    if (selectedModelId === modelId) return "switching";
+    return "available";
   };
 
   const getModelDownloadProgress = (modelId: string): number | undefined => {
@@ -99,42 +117,77 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
         <div className="flex flex-col gap-4 pb-6">
-          {models
-            .filter((m: ModelInfo) => !m.is_downloaded)
-            .filter((model: ModelInfo) => model.is_recommended)
-            .map((model: ModelInfo) => (
-              <ModelCard
-                key={model.id}
-                model={model}
-                variant="featured"
-                status={getModelStatus(model.id)}
-                disabled={isDownloading}
-                onSelect={handleDownloadModel}
-                onDownload={handleDownloadModel}
-                downloadProgress={getModelDownloadProgress(model.id)}
-                downloadSpeed={getModelDownloadSpeed(model.id)}
-              />
-            ))}
+          {models.some((m: ModelInfo) => m.is_downloaded) && (
+            <div className="flex flex-col gap-3">
+              <div className="text-left">
+                <h2 className="text-sm font-medium text-text/80">
+                  {t("onboarding.existingModelsTitle")}
+                </h2>
+                <p className="text-xs text-text/50">
+                  {t("onboarding.existingModelsDescription")}
+                </p>
+              </div>
+              {models
+                .filter((m: ModelInfo) => m.is_downloaded)
+                .map((model: ModelInfo) => (
+                  <ModelCard
+                    key={model.id}
+                    model={model}
+                    status={getExistingModelStatus(model.id)}
+                    disabled={isBusy}
+                    onSelect={handleSelectExistingModel}
+                    showRecommended={false}
+                  />
+                ))}
+            </div>
+          )}
 
-          {models
-            .filter((m: ModelInfo) => !m.is_downloaded)
-            .filter((model: ModelInfo) => !model.is_recommended)
-            .sort(
-              (a: ModelInfo, b: ModelInfo) =>
-                Number(a.size_mb) - Number(b.size_mb),
-            )
-            .map((model: ModelInfo) => (
-              <ModelCard
-                key={model.id}
-                model={model}
-                status={getModelStatus(model.id)}
-                disabled={isDownloading}
-                onSelect={handleDownloadModel}
-                onDownload={handleDownloadModel}
-                downloadProgress={getModelDownloadProgress(model.id)}
-                downloadSpeed={getModelDownloadSpeed(model.id)}
-              />
-            ))}
+          {models.some((m: ModelInfo) => !m.is_downloaded) && (
+            <>
+              <div className="text-left">
+                <h2 className="text-sm font-medium text-text/80">
+                  {t("onboarding.downloadModelsTitle")}
+                </h2>
+              </div>
+
+              {models
+                .filter((m: ModelInfo) => !m.is_downloaded)
+                .filter((model: ModelInfo) => model.is_recommended)
+                .map((model: ModelInfo) => (
+                  <ModelCard
+                    key={model.id}
+                    model={model}
+                    variant="featured"
+                    status={getModelStatus(model.id)}
+                    disabled={isBusy}
+                    onSelect={handleDownloadModel}
+                    onDownload={handleDownloadModel}
+                    downloadProgress={getModelDownloadProgress(model.id)}
+                    downloadSpeed={getModelDownloadSpeed(model.id)}
+                  />
+                ))}
+
+              {models
+                .filter((m: ModelInfo) => !m.is_downloaded)
+                .filter((model: ModelInfo) => !model.is_recommended)
+                .sort(
+                  (a: ModelInfo, b: ModelInfo) =>
+                    Number(a.size_mb) - Number(b.size_mb),
+                )
+                .map((model: ModelInfo) => (
+                  <ModelCard
+                    key={model.id}
+                    model={model}
+                    status={getModelStatus(model.id)}
+                    disabled={isBusy}
+                    onSelect={handleDownloadModel}
+                    onDownload={handleDownloadModel}
+                    downloadProgress={getModelDownloadProgress(model.id)}
+                    downloadSpeed={getModelDownloadSpeed(model.id)}
+                  />
+                ))}
+            </>
+          )}
         </div>
       </div>
     </div>

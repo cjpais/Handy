@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "Polecane",
     "download": "Pobierz",
     "downloading": "Pobieranie...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "Nie udało się wczytać dostępnych modeli",
+      "selectModel": "Failed to select model",
       "downloadModel": "Nie udało się pobrać modelu: {{error}}"
     },
     "permissions": {

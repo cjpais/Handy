@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "おすすめ",
     "download": "ダウンロード",
     "downloading": "ダウンロード中...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "利用可能なモデルの読み込みに失敗しました",
+      "selectModel": "Failed to select model",
       "downloadModel": "モデルのダウンロードに失敗しました: {{error}}"
     },
     "permissions": {

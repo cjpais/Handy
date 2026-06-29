@@ -1395,6 +1395,14 @@ impl ModelManager {
             }
         }
 
+        // If onboarding is still pending, do not auto-select just because a
+        // compatible model exists on disk or in the shared HF cache. The
+        // onboarding model step should present that choice explicitly.
+        if !settings.onboarding_completed {
+            debug!("Skipping model auto-selection until onboarding is complete");
+            return Ok(());
+        }
+
         // If no model is selected, pick the first downloaded one
         if settings.selected_model.is_empty() {
             // Find the first available (downloaded) model

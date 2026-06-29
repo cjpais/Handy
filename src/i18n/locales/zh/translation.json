@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "推荐",
     "download": "下载",
     "downloading": "下载中...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "无法加载可用模型",
+      "selectModel": "Failed to select model",
       "downloadModel": "模型下载失败: {{error}}"
     },
     "permissions": {

@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "موصى به",
     "download": "تنزيل",
     "downloading": "...جاري التنزيل",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "فشل تحميل النماذج المتاحة",
+      "selectModel": "Failed to select model",
       "downloadModel": "فشل تنزيل النموذج: {{error}}"
     },
     "permissions": {

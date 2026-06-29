@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "Raccomandato",
     "download": "Scarica",
     "downloading": "Download in corso...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "Errore di caricamento dei modelli disponibili",
+      "selectModel": "Failed to select model",
       "downloadModel": "Errore nel download del modello: {{error}}"
     },
     "permissions": {

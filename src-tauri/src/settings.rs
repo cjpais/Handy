@@ -363,6 +363,8 @@ pub struct AppSettings {
     pub update_checks_enabled: bool,
     #[serde(default = "default_model")]
     pub selected_model: String,
+    #[serde(default)]
+    pub onboarding_completed: bool,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -811,6 +813,7 @@ pub fn get_default_settings() -> AppSettings {
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
+        onboarding_completed: false,
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,
@@ -886,39 +889,12 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         .expect("Failed to initialize store");
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
-        // Capture legacy keys from the raw JSON before deserialization so we can
-        // migrate the old overlay model (overlay_position + live_preview) onto
-        // overlay_style. `settings_value` is consumed by `from_value` below.
-        let overlay_style_missing = settings_value.get("overlay_style").is_none();
-        let legacy_live_preview = settings_value
-            .get("live_preview")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-
         // Parse the entire settings object
-        match serde_json::from_value::<AppSettings>(settings_value) {
+        match serde_json::from_value::<AppSettings>(settings_value.clone()) {
             Ok(mut settings) => {
                 debug!("Found existing settings: {:?}", settings);
                 let default_settings = get_default_settings();
-                let mut updated = false;
-
-                // One-time overlay migration (only while the new key is absent):
-                // overlay_position(none) → style None (and reset position to Bottom,
-                // since 'none' is retired from the position picker); otherwise
-                // style follows live_preview.
-                if overlay_style_missing {
-                    if settings.overlay_position == OverlayPosition::None {
-                        settings.overlay_style = OverlayStyle::None;
-                        settings.overlay_position = OverlayPosition::Bottom;
-                    } else {
-                        settings.overlay_style = if legacy_live_preview {
-                            OverlayStyle::Live
-                        } else {
-                            OverlayStyle::Minimal
-                        };
-                    }
-                    updated = true;
-                }
+                let mut updated = apply_settings_migrations(&mut settings, &settings_value);
 
                 // Merge default bindings into existing settings
                 for (key, value) in default_settings.bindings {
@@ -930,7 +906,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
                 }
 
                 if updated {
-                    debug!("Settings updated with new bindings");
+                    debug!("Settings updated with defaults/migrations");
                     store.set("settings", serde_json::to_value(&settings).unwrap());
                 }
 
@@ -962,12 +938,22 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
+    // Settings reads also persist one-time migrations. Migration helpers are
+    // idempotent, so this converges after the first read of an older store.
     let mut settings = if let Some(settings_value) = store.get("settings") {
-        serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
-            let default_settings = get_default_settings();
-            store.set("settings", serde_json::to_value(&default_settings).unwrap());
-            default_settings
-        })
+        match serde_json::from_value::<AppSettings>(settings_value.clone()) {
+            Ok(mut settings) => {
+                if apply_settings_migrations(&mut settings, &settings_value) {
+                    store.set("settings", serde_json::to_value(&settings).unwrap());
+                }
+                settings
+            }
+            Err(_) => {
+                let default_settings = get_default_settings();
+                store.set("settings", serde_json::to_value(&default_settings).unwrap());
+                default_settings
+            }
+        }
     } else {
         let default_settings = get_default_settings();
         store.set("settings", serde_json::to_value(&default_settings).unwrap());
@@ -979,6 +965,46 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     }
 
     settings
+}
+
+fn apply_settings_migrations(
+    settings: &mut AppSettings,
+    settings_value: &serde_json::Value,
+) -> bool {
+    let mut updated = false;
+
+    // One-time onboarding migration: users with an explicit selected model have
+    // already made it through model selection. Users who merely have compatible
+    // files on disk should still see onboarding.
+    if settings_value.get("onboarding_completed").is_none() {
+        settings.onboarding_completed = !settings.selected_model.is_empty();
+        updated = true;
+    }
+
+    // One-time overlay migration (only while the new key is absent):
+    // overlay_position(none) -> style None (and reset position to Bottom,
+    // since 'none' is retired from the position picker); otherwise style
+    // follows live_preview.
+    if settings_value.get("overlay_style").is_none() {
+        let legacy_live_preview = settings_value
+            .get("live_preview")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        if settings.overlay_position == OverlayPosition::None {
+            settings.overlay_style = OverlayStyle::None;
+            settings.overlay_position = OverlayPosition::Bottom;
+        } else {
+            settings.overlay_style = if legacy_live_preview {
+                OverlayStyle::Live
+            } else {
+                OverlayStyle::Minimal
+            };
+        }
+        updated = true;
+    }
+
+    updated
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {

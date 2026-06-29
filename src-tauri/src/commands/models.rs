@@ -122,11 +122,13 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let settings = get_settings(app);
     let unload_timeout = settings.model_unload_timeout;
     let old_model = settings.selected_model.clone();
+    let old_onboarding_completed = settings.onboarding_completed;
 
     // Persist the new selection early so the frontend sees the correct model
     // when it reacts to events emitted by load_model.
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
+    settings.onboarding_completed = true;
 
     write_settings(app, settings);
 
@@ -155,6 +157,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     if let Err(e) = transcription_manager.load_model(model_id) {
         let mut settings = get_settings(app);
         settings.selected_model = old_model;
+        settings.onboarding_completed = old_onboarding_completed;
         write_settings(app, settings);
         return Err(e.to_string());
     }
@@ -196,25 +199,6 @@ pub async fn is_model_loading(
     // Check if transcription manager has a loaded model
     let current_model = transcription_manager.get_current_model();
     Ok(current_model.is_none())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn has_any_models_available(
-    model_manager: State<'_, Arc<ModelManager>>,
-) -> Result<bool, String> {
-    let models = model_manager.get_available_models();
-    Ok(models.iter().any(|m| m.is_downloaded))
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn has_any_models_or_downloads(
-    model_manager: State<'_, Arc<ModelManager>>,
-) -> Result<bool, String> {
-    let models = model_manager.get_available_models();
-    // Return true if any models are downloaded OR if any downloads are in progress
-    Ok(models.iter().any(|m| m.is_downloaded))
 }
 
 #[tauri::command]

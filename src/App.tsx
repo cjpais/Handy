@@ -180,12 +180,13 @@ function App() {
 
   const checkOnboardingStatus = async () => {
     try {
-      // Check if they have any models available
-      const result = await commands.hasAnyModelsAvailable();
-      const hasModels = result.status === "ok" && result.data;
+      const settingsResult = await commands.getAppSettings();
+      const hasCompletedOnboarding =
+        settingsResult.status === "ok" &&
+        settingsResult.data.onboarding_completed === true;
       const currentPlatform = platform();
 
-      if (hasModels) {
+      if (hasCompletedOnboarding) {
         // Returning user - check if they need to grant permissions first
         setIsReturningUser(true);
 

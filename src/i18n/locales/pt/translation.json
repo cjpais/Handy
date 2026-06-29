@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "Para começar, escolha um modelo de transcrição",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "Recomendado",
     "download": "Baixar",
     "downloading": "Baixando...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "Falha ao carregar modelos disponíveis",
+      "selectModel": "Failed to select model",
       "downloadModel": "Falha ao baixar modelo: {{error}}"
     },
     "permissions": {

@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "Önerilen",
     "download": "İndir",
     "downloading": "İndiriliyor...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "Mevcut modeller yüklenemedi",
+      "selectModel": "Failed to select model",
       "downloadModel": "Model indirilemedi: {{error}}"
     },
     "permissions": {

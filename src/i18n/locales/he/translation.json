@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "כדי להתחיל, בחר מודל תמלול",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "מומלץ",
     "download": "הורדה",
     "downloading": "מוריד...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "טעינת המודלים הזמינים נכשלה",
+      "selectModel": "Failed to select model",
       "downloadModel": "הורדת המודל נכשלה: {{error}}"
     },
     "permissions": {

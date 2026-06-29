@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "Рекомендовано",
     "download": "Завантажити",
     "downloading": "Завантаження...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "Не вдалося завантажити доступні моделі",
+      "selectModel": "Failed to select model",
       "downloadModel": "Не вдалося завантажити модель: {{error}}"
     },
     "permissions": {

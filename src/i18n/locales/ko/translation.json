@@ -19,6 +19,9 @@
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
+    "existingModelsTitle": "Compatible models found",
+    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
+    "downloadModelsTitle": "Download a model",
     "recommended": "추천",
     "download": "다운로드",
     "downloading": "다운로드 중...",
@@ -96,6 +99,7 @@
     },
     "errors": {
       "loadModels": "사용 가능한 모델을 불러오는데 실패했습니다",
+      "selectModel": "Failed to select model",
       "downloadModel": "모델 다운로드 실패: {{error}}"
     },
     "permissions": {
