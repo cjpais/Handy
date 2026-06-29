@@ -394,6 +394,10 @@
           "placeholderWithOptions": "Vyhledejte nebo vyberte model",
           "placeholderNoOptions": "Zadejte název modelu",
           "refreshModels": "Obnovit modely"
+        },
+        "disableReasoning": {
+          "label": "Zakázat uvažování",
+          "description": "Přeskočí režim myšlení pro rychlejší odpovědi. Doporučeno pro post-zpracování, které zřídka těží z uvažování."
         }
       },
       "prompts": {

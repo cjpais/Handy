@@ -394,6 +394,10 @@
           "placeholderWithOptions": "Tìm kiếm hoặc chọn một mô hình",
           "placeholderNoOptions": "Nhập tên mô hình",
           "refreshModels": "Làm mới mô hình"
+        },
+        "disableReasoning": {
+          "label": "Tắt suy luận",
+          "description": "Bỏ qua chế độ suy nghĩ để phản hồi nhanh hơn. Được khuyến nghị cho xử lý hậu kỳ, hiếm khi được hưởng lợi từ suy luận."
         }
       },
       "prompts": {

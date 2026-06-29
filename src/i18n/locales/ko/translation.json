@@ -394,6 +394,10 @@
           "placeholderWithOptions": "모델 검색 또는 선택",
           "placeholderNoOptions": "모델 이름 입력",
           "refreshModels": "모델 새로고침"
+        },
+        "disableReasoning": {
+          "label": "추론 비활성화",
+          "description": "더 빠른 응답을 위해 사고 모드를 건너뜁니다. 추론의 이점이 거의 없는 후처리에 권장됩니다."
         }
       },
       "prompts": {

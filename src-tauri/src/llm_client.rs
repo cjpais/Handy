@@ -275,3 +275,49 @@ pub async fn fetch_models(
 
     Ok(models)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn empty_request() -> ChatCompletionRequest {
+        ChatCompletionRequest {
+            model: "test-model".to_string(),
+            messages: Vec::new(),
+            response_format: None,
+            reasoning_effort: None,
+            reasoning: None,
+        }
+    }
+
+    #[test]
+    fn omits_reasoning_fields_when_none() {
+        let json = serde_json::to_value(&empty_request()).unwrap();
+        assert!(json.get("reasoning_effort").is_none());
+        assert!(json.get("reasoning").is_none());
+    }
+
+    #[test]
+    fn serializes_top_level_reasoning_effort() {
+        let mut req = empty_request();
+        req.reasoning_effort = Some("none".to_string());
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(json["reasoning_effort"], "none");
+        assert!(json.get("reasoning").is_none());
+    }
+
+    #[test]
+    fn serializes_nested_reasoning_object() {
+        let mut req = empty_request();
+        req.reasoning = Some(ReasoningConfig {
+            effort: Some("none".to_string()),
+            exclude: Some(true),
+        });
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert!(json.get("reasoning_effort").is_none());
+        assert_eq!(json["reasoning"]["effort"], "none");
+        assert_eq!(json["reasoning"]["exclude"], true);
+    }
+}
