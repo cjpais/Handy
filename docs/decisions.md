@@ -253,7 +253,7 @@ Record significant product and technical choices here so future-you (and agents)
 
 ## 2026-06-01 — Two-pipeline product mental model
 
-**Status:** decided  
+**Status:** superseded (see [2026-06-28 — Dual-pipeline refined](#2026-06-28--dual-pipeline-refined-dictate--keep-always-on-cleanup-medallion-persistence); the Dictate/Keep model, always-on cleanup, and medallion persistence replace the framing below)  
 **Context:** Goldfish grew beyond Handy's single-loop model with the addition of summarisation. Two distinct output pipelines now exist sharing a common capture/transcription stage but diverging at the point of use.  
 **Decision:** The canonical mental model is: **Shared:** Capture → Transcribe → Post-process. **Pipeline A (immediate):** → Paste. **Pipeline B (deferred):** → Store → Review → Summarise. Post-processing is a shared enrichment step, not a paste-specific concern. The IA of settings, documentation, and future feature placement should reflect this split.  
 **Consequences:** Post-processing belongs neither in Output nor in Summarisation — it sits in the shared pipeline. Any future pipeline stage is evaluated against where it fits in this model, not which UI section it resembles.  
@@ -299,5 +299,35 @@ Record significant product and technical choices here so future-you (and agents)
 **Decision:** Add `.claude/commands/` to `.gitignore`. Personal slash commands live only in the local working tree. `.claude/settings.json` and hook definitions remain tracked because they describe project-level behaviour useful to contributors.  
 **Consequences:** Future personal commands are invisible to git by default. Contributors who fork the repo will not inherit personal workflow configuration.  
 **Alternatives considered:** Remove in a follow-up commit (rejected: URL would remain visible in public history); make the repo private (rejected: not possible for a GitHub fork without duplicating); scrub personal URLs from the command file (rejected: these are personal workflows, not project infrastructure).
+
+---
+
+## 2026-06-28 — Dual-pipeline refined: Dictate / Keep, always-on cleanup, medallion persistence
+
+**Status:** decided (extends and supersedes the 2026-06-01 "Two-pipeline product mental model")
+
+**Context:** Two research tickets — whether post-processing must be a shared step, and the usability of the dual-pipeline model — plus a review pass converged on a refined design. The earlier model framed post-processing as a shared enrichment step feeding both an immediate paste pipeline and a deferred store → summarise pipeline, with summarisation running eagerly on every capture. In use, quick dictations polluted the captured corpus and "strong" post-processing began overlapping with summarisation.
+
+**Decision:**
+
+- **One pipeline in code, two modes in UX.** A single `process_transcription_output()` parameterised by a `CaptureMode` flag, branching only at persistence + surface. "Dual-pipeline" is the mental model, not duplicated code.
+- **Modes renamed Output → Dictate, Store → Keep**, and made deliberately low-stakes. _Dictate_ (default): clean → clipboard → cursor-insert, lands in ephemeral history. _Keep_: clean → clipboard (no auto-insert), lands directly in kept entries.
+- **Post-processing reframed as always-on, meaning-preserving input hygiene** shared by both modes — grammar/punctuation/filler only, never words, tone, or meaning. Customisation is bounded to non-semantic knobs, not a free-text prompt. This diverges from the research's "post-process = output-only" option but keeps cleanup from drifting into summarisation. Summarisation consumes the cleaned text.
+- **Paste availability ≠ auto-paste.** Clipboard for everything (so a wrong mode choice never traps input); cursor-insert only in Dictate.
+- **Medallion persistence:** Bronze raw history (ephemeral, retention-swept) → Silver kept entries (Keep or promoted) → Gold surfaced summary/actions. Summarisation moves from "every capture" to "on promotion to keep", superseding the eager-summarise-after-save behaviour for the capture path.
+
+**Consequences:** Post-processing "levels" collapse to a single faithful pass (the levels ticket is reworked). History and entries become distinct areas (history recoverable + promotable; entries shows only kept). The capture-time mode decision is cheap because promotion is post-hoc. The meaning-preserving invariant is load-bearing — aggressive cleanup customisation would reintroduce the summarisation overlap, which is why customisation is constrained to non-semantic knobs. The exact "surface trigger" (when promotion fires summarisation) remains an open decision owned by Felix.
+
+**Alternatives considered:** Post-process as output-only, research option 2 (rejected: leaves capture text unclean and hard to promote/parse; one always-on faithful pass serves both paths); content-based auto-classification of modes (rejected: low ROI vs. explicit bindings); summarise eagerly on every capture (rejected: pollutes the corpus and inverts the medallion flow); free-text cleanup customisation (rejected: unenforceable contract that lets cleanup become summarisation).
+
+**Auto-save timing:** Save to history happens before the mode decision — at the clean stage, not from paste. Both modes persist to the DB as part of the shared spine. Mode only determines the `saved` flag value and whether to cursor-insert.
+
+**One table, two views:** History and Entries are not separate stores. Every capture lands in one history table. Entries is a filtered view (`saved=1`). Promote/demote flips the flag; no data is duplicated or moved. The existing `saved` boolean + retention sweep in `history.rs` is the foundation.
+
+**Surface trigger:** Summarise automatically when an item lands in entries, regardless of path (Keep mode or promoted from history). Entries is a high-confidence tier by construction — both paths require the user to have signalled value. Demoted items keep their summary in the DB; re-promotion skips re-summarising if `summary_status = done`. Demotion waste is acceptable: the default pipeline (Dictate) means most captures never reach entries, so demotion requires confident second-guessing of a prior keep decision and will be rare.
+
+**Surface output (insights / actions):** Deliberately kept as a single combined node — the distinction between long-term insights and short-term actions is real but the surface UX is not yet designed. Splitting prematurely would imply more design certainty than exists.
+
+**Tracked in:** Notion "Develop dual-pipeline behaviour" and its sub-tickets (Dictate/Keep modes; always-on cleanup; paste availability vs auto-paste; persistence tiers — backend; history/entries split — frontend).
 
 ---

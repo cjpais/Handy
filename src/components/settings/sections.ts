@@ -57,7 +57,7 @@ export const SETTINGS_SECTIONS = {
     enabled: () => true,
   },
   postprocessing: {
-    labelKey: "sidebar.postProcessing",
+    labelKey: "sidebar.clean",
     icon: Sparkles,
     component: PostProcessingSettings,
     enabled: () => true,

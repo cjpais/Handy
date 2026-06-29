@@ -1,4 +1,4 @@
-use crate::actions::process_transcription_output;
+use crate::actions::{maybe_spawn_summarization, process_transcription_output};
 use crate::managers::{
     history::{HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
@@ -23,14 +23,29 @@ pub async fn get_history_entries(
 #[tauri::command]
 #[specta::specta]
 pub async fn toggle_history_entry_saved(
-    _app: AppHandle,
+    app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
     id: i64,
 ) -> Result<(), String> {
-    history_manager
+    let new_saved = history_manager
         .toggle_saved_status(id)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    // Promotion path (Bronze → Silver): trigger summarisation if not already done.
+    // Re-promotion skips re-summarising when summary_status is already "completed".
+    if new_saved {
+        if let Ok(Some(entry)) = history_manager.get_entry_by_id(id).await {
+            if entry.summary_status.as_deref() != Some("completed") {
+                let summary_input = entry
+                    .post_processed_text
+                    .unwrap_or(entry.transcription_text);
+                maybe_spawn_summarization(&app, Arc::clone(&history_manager), id, summary_input);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -93,8 +108,7 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording contains no speech".to_string());
     }
 
-    let processed =
-        process_transcription_output(&app, &transcription, entry.post_process_requested).await;
+    let processed = process_transcription_output(&app, &transcription).await;
     history_manager
         .update_transcription(
             id,

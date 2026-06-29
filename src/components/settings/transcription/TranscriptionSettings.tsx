@@ -15,6 +15,7 @@ import { AppendTrailingSpace } from "../AppendTrailingSpace";
 export const TranscriptionSettings: React.FC = () => {
   const { t } = useTranslation();
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
+  const [availableExpanded, setAvailableExpanded] = useState(false);
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
@@ -292,23 +293,37 @@ export const TranscriptionSettings: React.FC = () => {
           </div>
           {availableModels.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-medium text-text/60">
-                {t("settings.models.availableModels")}
-              </h2>
-              {availableModels.map((model: ModelInfo) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  status={getModelStatus(model.id)}
-                  onSelect={handleModelSelect}
-                  onDownload={downloadModel}
-                  onDelete={handleModelDelete}
-                  onCancel={handleModelCancel}
-                  downloadProgress={getDownloadProgress(model.id)}
-                  downloadSpeed={getDownloadSpeed(model.id)}
-                  showRecommended={false}
+              <button
+                type="button"
+                onClick={() => setAvailableExpanded((prev) => !prev)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <h2 className="text-sm font-medium text-text/60">
+                  {t("settings.models.availableModelsCount", {
+                    count: availableModels.length,
+                  })}
+                </h2>
+                <ChevronDown
+                  className={`w-4 h-4 text-text/40 transition-transform duration-200 ${
+                    availableExpanded ? "rotate-180" : ""
+                  }`}
                 />
-              ))}
+              </button>
+              {availableExpanded &&
+                availableModels.map((model: ModelInfo) => (
+                  <ModelCard
+                    key={model.id}
+                    model={model}
+                    status={getModelStatus(model.id)}
+                    onSelect={handleModelSelect}
+                    onDownload={downloadModel}
+                    onDelete={handleModelDelete}
+                    onCancel={handleModelCancel}
+                    downloadProgress={getDownloadProgress(model.id)}
+                    downloadSpeed={getDownloadSpeed(model.id)}
+                    showRecommended={false}
+                  />
+                ))}
             </div>
           )}
         </div>

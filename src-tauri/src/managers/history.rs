@@ -265,17 +265,20 @@ impl HistoryManager {
     }
 
     /// Save a new history entry to the database.
+    /// `saved` controls the persistence tier: false = Bronze (ephemeral Dictate),
+    /// true = Silver (Keep mode or immediately promoted).
     /// The WAV file should already have been written to the recordings directory.
     pub fn save_entry(
         &self,
         file_name: String,
         transcription_text: String,
-        post_process_requested: bool,
+        saved: bool,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
     ) -> Result<HistoryEntry> {
         let timestamp = Utc::now().timestamp();
         let title = self.format_timestamp_title(timestamp);
+        let post_process_requested = post_processed_text.is_some();
 
         let conn = self.get_connection()?;
         conn.execute(
@@ -292,7 +295,7 @@ impl HistoryManager {
             params![
                 &file_name,
                 timestamp,
-                false,
+                saved,
                 &title,
                 &transcription_text,
                 &post_processed_text,
@@ -305,7 +308,7 @@ impl HistoryManager {
             id: conn.last_insert_rowid(),
             file_name,
             timestamp,
-            saved: false,
+            saved,
             title,
             transcription_text,
             post_processed_text,
@@ -672,7 +675,9 @@ impl HistoryManager {
         Ok(entry)
     }
 
-    pub async fn toggle_saved_status(&self, id: i64) -> Result<()> {
+    /// Toggle an entry between Bronze (saved=0) and Silver (saved=1).
+    /// Returns the new saved state so callers can trigger summarisation on promotion.
+    pub async fn toggle_saved_status(&self, id: i64) -> Result<bool> {
         let conn = self.get_connection()?;
 
         // Get current saved status
@@ -696,7 +701,7 @@ impl HistoryManager {
             error!("Failed to emit history-updated event: {}", e);
         }
 
-        Ok(())
+        Ok(new_saved)
     }
 
     pub fn get_audio_file_path(&self, file_name: &str) -> PathBuf {

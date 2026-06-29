@@ -399,7 +399,7 @@ pub struct AppSettings {
     pub post_process_models: HashMap<String, String>,
     #[serde(default = "default_post_process_prompts")]
     pub post_process_prompts: Vec<LLMPrompt>,
-    #[serde(default)]
+    #[serde(default = "default_post_process_selected_prompt_id")]
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default = "default_summarize_enabled")]
     pub summarize_enabled: bool,
@@ -668,6 +668,10 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
+fn default_post_process_selected_prompt_id() -> Option<String> {
+    Some("default_improve_transcriptions".to_string())
+}
+
 fn default_whisper_gpu_device() -> i32 {
     -1 // auto
 }
@@ -771,8 +775,9 @@ pub fn get_default_settings() -> AppSettings {
         "transcribe".to_string(),
         ShortcutBinding {
             id: "transcribe".to_string(),
-            name: "Transcribe".to_string(),
-            description: "Converts your speech into text.".to_string(),
+            name: "Dictate".to_string(),
+            description: "Record, clean up, and paste your speech into the active application."
+                .to_string(),
             default_binding: default_shortcut.to_string(),
             current_binding: default_shortcut.to_string(),
         },
@@ -790,8 +795,8 @@ pub fn get_default_settings() -> AppSettings {
         "transcribe_with_post_process".to_string(),
         ShortcutBinding {
             id: "transcribe_with_post_process".to_string(),
-            name: "Transcribe with Post-Processing".to_string(),
-            description: "Converts your speech into text and applies AI post-processing."
+            name: "Keep".to_string(),
+            description: "Record, clean up, and save your speech to entries without pasting."
                 .to_string(),
             default_binding: default_post_process_shortcut.to_string(),
             current_binding: default_post_process_shortcut.to_string(),
@@ -842,7 +847,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: None,
+        post_process_selected_prompt_id: default_post_process_selected_prompt_id(),
         summarize_enabled: default_summarize_enabled(),
         summarize_models: HashMap::new(),
         summarize_prompts: default_summarize_prompts(),

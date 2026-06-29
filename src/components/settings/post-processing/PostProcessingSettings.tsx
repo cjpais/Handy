@@ -19,8 +19,8 @@ import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
 import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
-import { PostProcessingToggle } from "../PostProcessingToggle";
 import { useSettings } from "../../../hooks/useSettings";
+import { ToggleSwitch } from "../../ui/ToggleSwitch";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
@@ -425,6 +425,9 @@ PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
 
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
+  const [removeFillers, setRemoveFillers] = useState(true);
+  const [fixPunctuation, setFixPunctuation] = useState(true);
+  const [fixCapitalisation, setFixCapitalisation] = useState(true);
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -436,16 +439,42 @@ export const PostProcessingSettings: React.FC = () => {
           {t("settings.postProcessing.description")}
         </p>
       </div>
-      <SettingsGroup>
-        <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
-      </SettingsGroup>
 
       <SettingsGroup title={t("settings.postProcessing.api.title")}>
         <PostProcessingSettingsApi />
       </SettingsGroup>
 
-      <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
-        <PostProcessingSettingsPrompts />
+      <SettingsGroup title={t("settings.postProcessing.cleanup.title")}>
+        <ToggleSwitch
+          checked={removeFillers}
+          onChange={setRemoveFillers}
+          label={t("settings.postProcessing.cleanup.removeFillers.label")}
+          description={t(
+            "settings.postProcessing.cleanup.removeFillers.description",
+          )}
+          descriptionMode="tooltip"
+          grouped={true}
+        />
+        <ToggleSwitch
+          checked={fixPunctuation}
+          onChange={setFixPunctuation}
+          label={t("settings.postProcessing.cleanup.fixPunctuation.label")}
+          description={t(
+            "settings.postProcessing.cleanup.fixPunctuation.description",
+          )}
+          descriptionMode="tooltip"
+          grouped={true}
+        />
+        <ToggleSwitch
+          checked={fixCapitalisation}
+          onChange={setFixCapitalisation}
+          label={t("settings.postProcessing.cleanup.fixCapitalisation.label")}
+          description={t(
+            "settings.postProcessing.cleanup.fixCapitalisation.description",
+          )}
+          descriptionMode="tooltip"
+          grouped={true}
+        />
       </SettingsGroup>
     </div>
   );

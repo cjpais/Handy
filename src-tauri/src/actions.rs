@@ -20,6 +20,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[derive(Clone, serde::Serialize)]
 struct RecordingErrorEvent {
@@ -44,9 +45,18 @@ pub trait ShortcutAction: Send + Sync {
     fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
 }
 
+/// Which pipeline mode the user triggered.
+/// - Dictate: record → clean → paste to active app; saved=0 in history.
+/// - Keep:    record → clean → clipboard only (no cursor-insert); saved=1 immediately.
+#[derive(Clone, Copy, Debug)]
+pub enum CaptureMode {
+    Dictate,
+    Keep,
+}
+
 // Transcribe Action
 struct TranscribeAction {
-    post_process: bool,
+    mode: CaptureMode,
 }
 
 /// Field name for structured output JSON schema
@@ -346,10 +356,11 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
-/// If summarisation is enabled, mark the entry pending and run summarisation in
-/// a detached background task so it never blocks the paste path. Updates the
+/// If summarisation is enabled and the entry is saved (Silver tier), mark it
+/// pending and run summarisation in a detached background task. Updates the
 /// entry with the result (or a "failed" status) when done.
-fn maybe_spawn_summarization(
+/// Only fires when `saved = 1`; Dictate captures (saved=0) are never summarised.
+pub(crate) fn maybe_spawn_summarization(
     app: &AppHandle,
     hm: Arc<HistoryManager>,
     entry_id: i64,
@@ -388,10 +399,14 @@ fn maybe_spawn_summarization(
     });
 }
 
+/// Process a raw transcription through the shared input-hygiene pipeline.
+/// Cleanup (post-processing) runs on every capture regardless of mode —
+/// it is bounded to meaning-preserving changes (grammar/punctuation/fillers).
+/// Mode-specific behaviour (paste vs clipboard-only, persistence tier) is
+/// handled by the caller.
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
-    post_process: bool,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
     let mut final_text = transcription.to_string();
@@ -402,7 +417,8 @@ pub(crate) async fn process_transcription_output(
         final_text = converted_text;
     }
 
-    if post_process {
+    // Always-on input hygiene — runs on both Dictate and Keep.
+    if settings.post_process_enabled {
         if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
@@ -416,6 +432,8 @@ pub(crate) async fn process_transcription_output(
                     post_process_prompt = Some(prompt.prompt.clone());
                 }
             }
+        } else if final_text != transcription {
+            post_processed_text = Some(final_text.clone());
         }
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
@@ -552,8 +570,8 @@ impl ShortcutAction for TranscribeAction {
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
 
-        let binding_id = binding_id.to_string(); // Clone binding_id for the async task
-        let post_process = self.post_process;
+        let binding_id = binding_id.to_string();
+        let mode = self.mode;
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
@@ -621,15 +639,16 @@ impl ShortcutAction for TranscribeAction {
                                 transcription
                             );
 
-                            if post_process {
+                            // Show processing overlay while cleanup runs (both modes)
+                            let cleanup_enabled = get_settings(&ah).post_process_enabled;
+                            if cleanup_enabled {
                                 show_processing_overlay(&ah);
                             }
-                            let processed =
-                                process_transcription_output(&ah, &transcription, post_process)
-                                    .await;
+                            let processed = process_transcription_output(&ah, &transcription).await;
 
-                            // Save to history if WAV was saved
+                            // Persist to history — Keep mode lands in entries immediately (saved=1)
                             if wav_saved {
+                                let saved = matches!(mode, CaptureMode::Keep);
                                 let summary_input = processed
                                     .post_processed_text
                                     .clone()
@@ -637,16 +656,21 @@ impl ShortcutAction for TranscribeAction {
                                 match hm.save_entry(
                                     file_name,
                                     transcription,
-                                    post_process,
+                                    saved,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
-                                    Ok(entry) => maybe_spawn_summarization(
-                                        &ah,
-                                        Arc::clone(&hm),
-                                        entry.id,
-                                        summary_input,
-                                    ),
+                                    Ok(entry) => {
+                                        // Summarise only on promotion to Silver (saved=1)
+                                        if entry.saved {
+                                            maybe_spawn_summarization(
+                                                &ah,
+                                                Arc::clone(&hm),
+                                                entry.id,
+                                                summary_input,
+                                            );
+                                        }
+                                    }
                                     Err(err) => {
                                         error!("Failed to save history entry: {}", err)
                                     }
@@ -657,41 +681,55 @@ impl ShortcutAction for TranscribeAction {
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             } else {
-                                let ah_clone = ah.clone();
-                                let paste_time = Instant::now();
                                 let final_text = processed.final_text;
-                                ah.run_on_main_thread(move || {
-                                    match utils::paste(final_text, ah_clone.clone()) {
-                                        Ok(()) => debug!(
-                                            "Text pasted successfully in {:?}",
-                                            paste_time.elapsed()
-                                        ),
-                                        Err(e) => {
-                                            error!("Failed to paste transcription: {}", e);
-                                            let _ = ah_clone.emit("paste-error", ());
-                                        }
+                                match mode {
+                                    CaptureMode::Dictate => {
+                                        // Auto-insert into the active application
+                                        let ah_clone = ah.clone();
+                                        let paste_time = Instant::now();
+                                        ah.run_on_main_thread(move || {
+                                            match utils::paste(final_text, ah_clone.clone()) {
+                                                Ok(()) => debug!(
+                                                    "Text pasted successfully in {:?}",
+                                                    paste_time.elapsed()
+                                                ),
+                                                Err(e) => {
+                                                    error!("Failed to paste transcription: {}", e);
+                                                    let _ = ah_clone.emit("paste-error", ());
+                                                }
+                                            }
+                                            utils::hide_recording_overlay(&ah_clone);
+                                            change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                        })
+                                        .unwrap_or_else(
+                                            |e| {
+                                                error!(
+                                                    "Failed to run paste on main thread: {:?}",
+                                                    e
+                                                );
+                                                utils::hide_recording_overlay(&ah);
+                                                change_tray_icon(&ah, TrayIconState::Idle);
+                                            },
+                                        );
                                     }
-                                    utils::hide_recording_overlay(&ah_clone);
-                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
-                                })
-                                .unwrap_or_else(|e| {
-                                    error!("Failed to run paste on main thread: {:?}", e);
-                                    utils::hide_recording_overlay(&ah);
-                                    change_tray_icon(&ah, TrayIconState::Idle);
-                                });
+                                    CaptureMode::Keep => {
+                                        // Clipboard only — no cursor-insert into active app
+                                        if let Err(e) = ah.clipboard().write_text(&final_text) {
+                                            error!("Failed to copy to clipboard: {}", e);
+                                        }
+                                        utils::hide_recording_overlay(&ah);
+                                        change_tray_icon(&ah, TrayIconState::Idle);
+                                    }
+                                }
                             }
                         }
                         Err(err) => {
                             debug!("Global Shortcut Transcription error: {}", err);
-                            // Save entry with empty text so user can retry
+                            // Save entry with empty text so user can retry (always Dictate tier)
                             if wav_saved {
-                                if let Err(save_err) = hm.save_entry(
-                                    file_name,
-                                    String::new(),
-                                    post_process,
-                                    None,
-                                    None,
-                                ) {
+                                if let Err(save_err) =
+                                    hm.save_entry(file_name, String::new(), false, None, None)
+                                {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
@@ -756,12 +794,14 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
-            post_process: false,
+            mode: CaptureMode::Dictate,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            mode: CaptureMode::Keep,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),

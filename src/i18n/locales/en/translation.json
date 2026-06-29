@@ -15,6 +15,7 @@
     "capture": "Capture",
     "transcription": "Transcription",
     "postProcessing": "Post Process",
+    "clean": "Clean",
     "output": "Output",
     "summarisation": "Summary",
     "app": "App",
@@ -185,7 +186,7 @@
     "back": "Back",
     "shortcuts": {
       "title": "Shortcuts",
-      "description": "Configure the keyboard shortcuts used to start, stop, and cancel recordings."
+      "description": "Configure keyboard shortcuts for Dictate mode (record and paste), Keep mode (record and save), and cancelling a recording."
     },
     "capture": {
       "title": "Capture",
@@ -242,16 +243,16 @@
         "pressKeys": "Press keys...",
         "bindings": {
           "transcribe": {
-            "name": "Transcribe Shortcut",
-            "description": "The keyboard shortcut to record and transcribe your voice."
+            "name": "Dictate",
+            "description": "Record, clean, and paste immediately. The default recording mode."
           },
           "cancel": {
             "name": "Cancel Shortcut",
             "description": "The keyboard shortcut to cancel the current recording."
           },
           "transcribe_with_post_process": {
-            "name": "Post-Processing Hotkey",
-            "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+            "name": "Keep",
+            "description": "Record and clean. Text goes to your clipboard and is saved as an entry for further review. No auto-paste."
           }
         },
         "errors": {
@@ -278,6 +279,7 @@
       "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
       "yourModels": "Downloaded Models",
       "availableModels": "Available to Download",
+      "availableModelsCount": "Available Models ({{count}})",
       "downloaded": "Downloaded",
       "available": "Available to Download",
       "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
@@ -436,13 +438,28 @@
       }
     },
     "postProcessing": {
-      "title": "Post-Processing",
-      "description": "Apply AI text refinement to clean up and transform transcriptions using custom prompts.",
+      "title": "Clean",
+      "description": "Always-on input hygiene: removes filler words, fixes punctuation and capitalisation. Never changes words, tone, or meaning.",
       "hotkey": {
         "title": "Hotkey"
       },
+      "cleanup": {
+        "title": "Cleanup options",
+        "removeFillers": {
+          "label": "Remove filler words",
+          "description": "Removes um, uh, like, you know, etc."
+        },
+        "fixPunctuation": {
+          "label": "Fix punctuation",
+          "description": "Adds sentence-ending punctuation and commas."
+        },
+        "fixCapitalisation": {
+          "label": "Fix capitalisation",
+          "description": "Capitalises sentence starts and proper nouns."
+        }
+      },
       "api": {
-        "title": "API (OpenAI Compatible)",
+        "title": "Provider",
         "provider": {
           "title": "Provider",
           "description": "Select an OpenAI-compatible provider."
@@ -523,12 +540,12 @@
       },
       "historyLimit": {
         "title": "History Limit",
-        "description": "Maximum number of history entries to keep",
+        "description": "Maximum number of unsaved Dictate-mode captures to keep before the oldest are removed. Kept entries are not affected.",
         "entries": "entries"
       },
       "recordingRetention": {
         "title": "Auto-Delete Recordings",
-        "description": "Automatically delete old recordings to save space",
+        "description": "How long unsaved Dictate-mode captures are retained. Kept entries are never removed by this setting.",
         "never": "Never",
         "preserveLimit": "Keep latest {{count}}",
         "days3": "After 3 days",
@@ -545,8 +562,8 @@
         "description": "Microphone to use when laptop lid is closed"
       },
       "postProcessingToggle": {
-        "label": "Post Processing",
-        "description": "Enable AI-powered text refinement after transcription"
+        "label": "Text Cleanup",
+        "description": "Clean up transcriptions using AI — fixes grammar, punctuation, and filler words. Applied to every capture."
       },
       "muteWhileRecording": {
         "label": "Mute While Recording",
@@ -606,10 +623,10 @@
     },
     "summarisation": {
       "title": "Summarisation",
-      "description": "Automatically generate summaries and extract action items from your transcriptions.",
+      "description": "Generate summaries and action items when a recording is kept as an entry.",
       "toggle": {
         "label": "Summarisation",
-        "description": "Generate a concise summary and extract action items after transcription. Shares the provider and API key configured for post-processing."
+        "description": "Enable cloud summarisation. Runs automatically when an item is promoted to entries — not on every capture."
       },
       "api": {
         "title": "Model"
