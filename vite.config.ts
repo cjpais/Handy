@@ -22,6 +22,7 @@ export default defineConfig(async () => ({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
+        primary: resolve(__dirname, "src/primary/index.html"),
         overlay: resolve(__dirname, "src/overlay/index.html"),
         meetingPrompt: resolve(__dirname, "src/meeting_prompt/index.html"),
       },

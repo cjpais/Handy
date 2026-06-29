@@ -890,6 +890,25 @@ async startMeetingRecordingFromPrompt() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async stopMeetingRecordingFromOverlay() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_meeting_recording_from_overlay") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async hideMeetingRecordingOverlay() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("hide_meeting_recording_overlay") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getMeetingOverlaySnapshot() : Promise<MeetingOverlaySnapshot> {
+    return await TAURI_INVOKE("get_meeting_overlay_snapshot");
+},
 async dismissMeetingPrompt(payload: MeetingPromptPayload) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("dismiss_meeting_prompt", { payload }) };
@@ -976,6 +995,9 @@ reset_bindings: string[] }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
+export type MeetingOverlayMode = "suggestion" | "recording" | "stopped" | "hidden"
+export type MeetingOverlayPrompt = { provider: string; title: string; source: MeetingPromptSource; start_time: string; join_url: string | null }
+export type MeetingOverlaySnapshot = { sequence: number; mode: MeetingOverlayMode; prompt: MeetingOverlayPrompt | null; recording_started_at: string | null }
 export type MeetingPromptPayload = { provider: string; title: string; source: MeetingPromptSource; start_time: string; join_url: string | null }
 export type MeetingPromptSource = "LocalDetection" | "GoogleCalendar"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; sha256: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean }

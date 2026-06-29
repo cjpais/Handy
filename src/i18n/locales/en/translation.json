@@ -481,7 +481,7 @@
       "empty": "No meetings recorded yet. Start a meeting to generate summaries!",
       "summary": "Meeting Summary",
       "summaryFailed": "Failed to generate meeting summary.",
-      "processing": "Generating summary...",
+      "processing": "Processing",
       "fullTranscript": "Full Transcript",
       "toastSuccess": "Meeting summary generated!",
       "activeIndicator": "Meeting Recording...",
@@ -531,7 +531,14 @@
         "promptBody": "Start meeting mode for this {{source}} prompt.",
         "openMeeting": "Open Meeting",
         "dismiss": "Dismiss",
-        "startRecording": "Start Recording"
+        "startRecording": "Start Recording",
+        "suggestionTitle": "Meeting detected",
+        "recordingTitle": "Meeting recording",
+        "capturedTitle": "Meeting captured",
+        "detectedMeeting": "Detected meeting",
+        "record": "Record",
+        "hide": "Hide",
+        "stopSave": "Stop/save"
       }
     },
     "debug": {

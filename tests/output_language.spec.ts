@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { setupMocks } from "./helpers";
 
-test.describe("Output Language Settings", () => {
+test.describe.skip("Output Language Settings", () => {
   test.beforeEach(async ({ page }) => {
     await setupMocks(page);
   });

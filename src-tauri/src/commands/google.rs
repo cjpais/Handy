@@ -4,6 +4,7 @@ use crate::managers::meeting_assistant::{
     GoogleIntegrationStatus, MeetingAssistantManager, MeetingPromptPayload,
 };
 use crate::settings::{get_settings, write_settings, GoogleFeature};
+use crate::TranscriptionCoordinator;
 use tauri::{AppHandle, Manager};
 
 fn meeting_assistant(app: &AppHandle) -> tauri::State<'_, std::sync::Arc<MeetingAssistantManager>> {
@@ -73,8 +74,14 @@ pub fn disconnect_google_feature(app: AppHandle, feature: GoogleFeature) -> Resu
 #[tauri::command]
 #[specta::specta]
 pub async fn start_meeting_recording_from_prompt(app: AppHandle) -> Result<(), String> {
-    crate::overlay::hide_meeting_prompt_window(&app);
-    meeting_assistant(&app).clear_active_prompt();
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        if coordinator.current_mode() != "idle" {
+            return Err("Meeting recording is already active or processing".to_string());
+        }
+    }
+
+    meeting_assistant(&app).suppress_active_prompt();
+    crate::overlay::show_meeting_recording_overlay(&app);
     crate::signal_handle::send_transcription_input(&app, "meeting", "Meeting Assistant");
     Ok(())
 }
@@ -85,6 +92,31 @@ pub fn dismiss_meeting_prompt(app: AppHandle, payload: MeetingPromptPayload) -> 
     crate::overlay::hide_meeting_prompt_window(&app);
     meeting_assistant(&app).dismiss_prompt(&payload);
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn stop_meeting_recording_from_overlay(app: AppHandle) -> Result<(), String> {
+    crate::overlay::show_meeting_stopped_overlay(&app);
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        coordinator.stop_binding("meeting", "Meeting Overlay");
+    } else {
+        return Err("Transcription coordinator is not available".to_string());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn hide_meeting_recording_overlay(app: AppHandle) -> Result<(), String> {
+    crate::overlay::hide_meeting_prompt_window(&app);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_meeting_overlay_snapshot() -> crate::overlay::MeetingOverlaySnapshot {
+    crate::overlay::get_meeting_overlay_snapshot()
 }
 
 #[tauri::command]

@@ -1,5 +1,6 @@
 use crate::managers::google_api::{CalendarDateTime, CalendarEvent, GoogleApi};
 use crate::managers::google_oauth::GoogleOAuth;
+use crate::overlay::MeetingOverlayPrompt;
 use crate::settings::{get_settings, GoogleFeature};
 use crate::TranscriptionCoordinator;
 use chrono::{DateTime, Duration, Utc};
@@ -7,13 +8,11 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 
-const LOCAL_POLL_SECS: u64 = 4;
+const LOCAL_POLL_SECS: u64 = 1;
 const CALENDAR_POLL_SECS: u64 = 60;
-const DUPLICATE_COOLDOWN_MINUTES: i64 = 15;
 const GOOGLE_MEET_PROVIDER: &str = "Google Meet";
 const ZOOM_PROVIDER: &str = "Zoom";
 const TEAMS_PROVIDER: &str = "Microsoft Teams";
@@ -85,8 +84,9 @@ pub struct MeetingCandidate {
 
 #[derive(Default)]
 struct MeetingAssistantState {
-    dismissed_until: HashMap<String, DateTime<Utc>>,
     last_prompted_key: Option<String>,
+    suppressed_key: Option<String>,
+    active_prompt: Option<MeetingPromptPayload>,
 }
 
 pub struct MeetingAssistantManager {
@@ -208,34 +208,43 @@ impl MeetingAssistantManager {
 
     fn try_emit_prompt(&self, candidate: MeetingCandidate) {
         let key = prompt_key(&candidate);
-        let now = Utc::now();
+        let payload = MeetingPromptPayload {
+            provider: candidate.provider,
+            title: candidate.title,
+            source: candidate.source,
+            start_time: candidate.start_time.to_rfc3339(),
+            join_url: candidate.join_url,
+        };
+
         {
             let mut state = self.state.lock().expect("meeting assistant state poisoned");
-            if let Some(until) = state.dismissed_until.get(&key) {
-                if *until > now {
-                    return;
-                }
+            if state.suppressed_key.as_deref() == Some(&key) {
+                return;
             }
             if state.last_prompted_key.as_deref() == Some(&key) {
                 return;
             }
             state.last_prompted_key = Some(key);
+            state.active_prompt = Some(payload.clone());
         }
 
-        crate::overlay::show_meeting_prompt_window(&self.app);
-        let _ = self.app.emit(
-            "meeting-prompt-show",
-            MeetingPromptPayload {
-                provider: candidate.provider,
-                title: candidate.title,
-                source: candidate.source,
-                start_time: candidate.start_time.to_rfc3339(),
-                join_url: candidate.join_url,
+        crate::overlay::show_meeting_suggestion_overlay(
+            &self.app,
+            MeetingOverlayPrompt {
+                provider: payload.provider,
+                title: payload.title,
+                source: payload.source,
+                start_time: payload.start_time,
+                join_url: payload.join_url,
             },
         );
     }
 
     pub fn dismiss_prompt(&self, payload: &MeetingPromptPayload) {
+        self.suppress_prompt(payload);
+    }
+
+    pub fn suppress_prompt(&self, payload: &MeetingPromptPayload) {
         let candidate = MeetingCandidate {
             provider: payload.provider.clone(),
             title: payload.title.clone(),
@@ -247,26 +256,47 @@ impl MeetingAssistantManager {
         };
         let key = prompt_key(&candidate);
         let mut state = self.state.lock().expect("meeting assistant state poisoned");
-        state.dismissed_until.insert(
-            key,
-            Utc::now() + Duration::minutes(DUPLICATE_COOLDOWN_MINUTES),
-        );
+        state.suppressed_key = Some(key);
         state.last_prompted_key = None;
+        state.active_prompt = None;
+    }
+
+    pub fn suppress_active_prompt(&self) {
+        let payload = self
+            .state
+            .lock()
+            .expect("meeting assistant state poisoned")
+            .active_prompt
+            .clone();
+        if let Some(payload) = payload {
+            self.suppress_prompt(&payload);
+        }
     }
 
     pub fn clear_active_prompt(&self) {
         let mut state = self.state.lock().expect("meeting assistant state poisoned");
         state.last_prompted_key = None;
+        state.active_prompt = None;
     }
 }
 
 fn prompt_key(candidate: &MeetingCandidate) -> String {
-    format!(
-        "{}|{}|{}",
-        candidate.provider,
-        candidate.start_time.to_rfc3339(),
-        candidate.join_url.clone().unwrap_or_default()
-    )
+    let meeting_identity = candidate
+        .join_url
+        .clone()
+        .unwrap_or_else(|| candidate.title.trim().to_ascii_lowercase());
+
+    match candidate.source {
+        MeetingPromptSource::LocalDetection => {
+            format!("local|{}|{}", candidate.provider, meeting_identity)
+        }
+        MeetingPromptSource::GoogleCalendar => format!(
+            "calendar|{}|{}|{}",
+            candidate.provider,
+            candidate.start_time.to_rfc3339(),
+            meeting_identity
+        ),
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -726,5 +756,22 @@ mod tests {
             join_url: Some("https://meet.google.com/abc".to_string()),
         };
         assert_eq!(prompt_key(&candidate), prompt_key(&candidate));
+    }
+
+    #[test]
+    fn local_detection_key_ignores_poll_timestamp() {
+        let first = MeetingCandidate {
+            provider: "Zoom".to_string(),
+            title: "Zoom Meeting - Weekly Sync".to_string(),
+            source: MeetingPromptSource::LocalDetection,
+            start_time: Utc::now(),
+            join_url: None,
+        };
+        let second = MeetingCandidate {
+            start_time: Utc::now() + Duration::seconds(5),
+            ..first.clone()
+        };
+
+        assert_eq!(prompt_key(&first), prompt_key(&second));
     }
 }

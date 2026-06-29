@@ -1,6 +1,13 @@
 use crate::input;
 use crate::settings;
 use crate::settings::OverlayPosition;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+use specta::Type;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Mutex,
+};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -33,8 +40,45 @@ tauri_panel! {
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
-const MEETING_PROMPT_WIDTH: f64 = 360.0;
-const MEETING_PROMPT_HEIGHT: f64 = 168.0;
+const MEETING_PROMPT_WIDTH: f64 = 304.0;
+const MEETING_PROMPT_HEIGHT: f64 = 88.0;
+const MEETING_STOPPED_AUTO_CLOSE_MS: u64 = 3500;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum MeetingOverlayMode {
+    Suggestion,
+    Recording,
+    Stopped,
+    Hidden,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
+pub struct MeetingOverlayPrompt {
+    pub provider: String,
+    pub title: String,
+    pub source: crate::managers::meeting_assistant::MeetingPromptSource,
+    pub start_time: String,
+    pub join_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
+pub struct MeetingOverlaySnapshot {
+    pub sequence: u64,
+    pub mode: MeetingOverlayMode,
+    pub prompt: Option<MeetingOverlayPrompt>,
+    pub recording_started_at: Option<String>,
+}
+
+static MEETING_OVERLAY_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+static MEETING_OVERLAY_SNAPSHOT: Lazy<Mutex<MeetingOverlaySnapshot>> = Lazy::new(|| {
+    Mutex::new(MeetingOverlaySnapshot {
+        sequence: 0,
+        mode: MeetingOverlayMode::Hidden,
+        prompt: None,
+        recording_started_at: None,
+    })
+});
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -311,7 +355,7 @@ pub fn create_meeting_prompt_window(app_handle: &AppHandle) {
     .title("Meeting Prompt")
     .resizable(false)
     .inner_size(MEETING_PROMPT_WIDTH, MEETING_PROMPT_HEIGHT)
-    .shadow(true)
+    .shadow(false)
     .maximizable(false)
     .minimizable(false)
     .closable(false)
@@ -386,10 +430,10 @@ pub fn create_meeting_prompt_window(app_handle: &AppHandle) {
                 width: MEETING_PROMPT_WIDTH,
                 height: MEETING_PROMPT_HEIGHT,
             }))
-            .has_shadow(true)
+            .has_shadow(false)
             .transparent(true)
             .no_activate(false)
-            .corner_radius(12.0)
+            .corner_radius(14.0)
             .with_window(|w| w.decorations(false).transparent(true))
             .collection_behavior(
                 CollectionBehavior::new()
@@ -469,7 +513,28 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
-pub fn show_meeting_prompt_window(app_handle: &AppHandle) {
+fn update_meeting_overlay_snapshot(mut snapshot: MeetingOverlaySnapshot) -> MeetingOverlaySnapshot {
+    snapshot.sequence = MEETING_OVERLAY_SEQUENCE.fetch_add(1, Ordering::Relaxed) + 1;
+    let mut state = MEETING_OVERLAY_SNAPSHOT
+        .lock()
+        .expect("meeting overlay snapshot poisoned");
+    *state = snapshot.clone();
+    snapshot
+}
+
+pub fn get_meeting_overlay_snapshot() -> MeetingOverlaySnapshot {
+    MEETING_OVERLAY_SNAPSHOT
+        .lock()
+        .expect("meeting overlay snapshot poisoned")
+        .clone()
+}
+
+fn emit_meeting_overlay_snapshot(
+    app_handle: &AppHandle,
+    snapshot: MeetingOverlaySnapshot,
+) -> MeetingOverlaySnapshot {
+    let snapshot = update_meeting_overlay_snapshot(snapshot);
+
     if app_handle.get_webview_window("meeting_prompt").is_none() {
         create_meeting_prompt_window(app_handle);
     }
@@ -481,10 +546,71 @@ pub fn show_meeting_prompt_window(app_handle: &AppHandle) {
         let _ = window.show();
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&window);
+        let _ = window.emit("meeting-overlay-show", snapshot.clone());
     }
+
+    snapshot
+}
+
+pub fn show_meeting_suggestion_overlay(app_handle: &AppHandle, prompt: MeetingOverlayPrompt) {
+    emit_meeting_overlay_snapshot(
+        app_handle,
+        MeetingOverlaySnapshot {
+            sequence: 0,
+            mode: MeetingOverlayMode::Suggestion,
+            prompt: Some(prompt),
+            recording_started_at: None,
+        },
+    );
+}
+
+pub fn show_meeting_recording_overlay(app_handle: &AppHandle) {
+    let prompt = get_meeting_overlay_snapshot().prompt;
+    emit_meeting_overlay_snapshot(
+        app_handle,
+        MeetingOverlaySnapshot {
+            sequence: 0,
+            mode: MeetingOverlayMode::Recording,
+            prompt,
+            recording_started_at: Some(chrono::Utc::now().to_rfc3339()),
+        },
+    );
+}
+
+pub fn show_meeting_stopped_overlay(app_handle: &AppHandle) {
+    let prompt = get_meeting_overlay_snapshot().prompt;
+    let stopped_snapshot = emit_meeting_overlay_snapshot(
+        app_handle,
+        MeetingOverlaySnapshot {
+            sequence: 0,
+            mode: MeetingOverlayMode::Stopped,
+            prompt,
+            recording_started_at: None,
+        },
+    );
+
+    let app_clone = app_handle.clone();
+    let stopped_sequence = stopped_snapshot.sequence;
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(
+            MEETING_STOPPED_AUTO_CLOSE_MS,
+        ));
+
+        let current = get_meeting_overlay_snapshot();
+        if current.sequence == stopped_sequence && current.mode == MeetingOverlayMode::Stopped {
+            hide_meeting_prompt_window(&app_clone);
+        }
+    });
 }
 
 pub fn hide_meeting_prompt_window(app_handle: &AppHandle) {
+    update_meeting_overlay_snapshot(MeetingOverlaySnapshot {
+        sequence: 0,
+        mode: MeetingOverlayMode::Hidden,
+        prompt: None,
+        recording_started_at: None,
+    });
+
     if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
         let _ = window.destroy();
     }

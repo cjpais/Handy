@@ -18,6 +18,10 @@ enum Command {
         is_pressed: bool,
         push_to_talk: bool,
     },
+    Stop {
+        binding_id: String,
+        source: String,
+    },
     Cancel {
         recording_was_active: bool,
     },
@@ -67,8 +71,13 @@ impl TranscriptionCoordinator {
                             if is_pressed {
                                 let now = Instant::now();
                                 if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE) {
-                                    debug!("Debounced press for '{binding_id}'");
-                                    continue;
+                                    if !matches!(
+                                        &stage,
+                                        Stage::Recording(id) if id == &binding_id
+                                    ) {
+                                        debug!("Debounced press for '{binding_id}'");
+                                        continue;
+                                    }
                                 }
                                 last_press = Some(now);
                             }
@@ -99,6 +108,24 @@ impl TranscriptionCoordinator {
                                 }
                             }
                         }
+                        Command::Stop { binding_id, source } => match &stage {
+                            Stage::Recording(id) if id == &binding_id => {
+                                stop(&app, &mut stage, &binding_id, &source);
+                                store_stage(&stage_flag_thread, &stage);
+                            }
+                            Stage::Idle
+                                if app
+                                    .try_state::<Arc<AudioRecordingManager>>()
+                                    .map_or(false, |a| a.is_recording()) =>
+                            {
+                                debug!(
+                                    "Explicit stop for '{binding_id}' found active recording while coordinator was idle"
+                                );
+                                stop(&app, &mut stage, &binding_id, &source);
+                                store_stage(&stage_flag_thread, &stage);
+                            }
+                            _ => debug!("Ignoring explicit stop for '{binding_id}': not recording"),
+                        },
                         Command::Cancel {
                             recording_was_active,
                         } => {
@@ -145,6 +172,19 @@ impl TranscriptionCoordinator {
                 hotkey_string: hotkey_string.to_string(),
                 is_pressed,
                 push_to_talk,
+            })
+            .is_err()
+        {
+            warn!("Transcription coordinator channel closed");
+        }
+    }
+
+    pub fn stop_binding(&self, binding_id: &str, source: &str) {
+        if self
+            .tx
+            .send(Command::Stop {
+                binding_id: binding_id.to_string(),
+                source: source.to_string(),
             })
             .is_err()
         {

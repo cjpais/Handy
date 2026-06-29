@@ -48,3 +48,4 @@ malayalam-indicconformer-ctc.tar.gz
 malayalam-indicconformer-ctc/
 .env
 .agents/
+.codex

@@ -1,8 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { locale } from "@tauri-apps/plugin-os";
 import { LANGUAGE_METADATA } from "./languages";
-import { commands } from "@/bindings";
 import {
   getLanguageDirection,
   updateDocumentDirection,
@@ -51,26 +49,6 @@ export const SUPPORTED_LANGUAGES = Object.keys(resources)
 
 export type SupportedLanguageCode = string;
 
-// Check if a language code is supported
-const getSupportedLanguage = (
-  langCode: string | null | undefined,
-): SupportedLanguageCode | null => {
-  if (!langCode) return null;
-  const normalized = langCode.toLowerCase();
-  // Try exact match first
-  let supported = SUPPORTED_LANGUAGES.find(
-    (lang) => lang.code.toLowerCase() === normalized,
-  );
-  if (!supported) {
-    // Fall back to prefix match (language only, without region)
-    const prefix = normalized.split("-")[0];
-    supported = SUPPORTED_LANGUAGES.find(
-      (lang) => lang.code.toLowerCase() === prefix,
-    );
-  }
-  return supported ? supported.code : null;
-};
-
 // Initialize i18n with English as default
 // Language will be synced from settings after init
 i18n.use(initReactI18next).init({
@@ -88,19 +66,9 @@ i18n.use(initReactI18next).init({
 // Sync language from app settings
 export const syncLanguageFromSettings = async () => {
   try {
-    const result = await commands.getAppSettings();
-    if (result.status === "ok" && result.data.app_language) {
-      const supported = getSupportedLanguage(result.data.app_language);
-      if (supported && supported !== i18n.language) {
-        await i18n.changeLanguage(supported);
-      }
-    } else {
-      // Fall back to system locale detection if no saved preference
-      const systemLocale = await locale();
-      const supported = getSupportedLanguage(systemLocale);
-      if (supported && supported !== i18n.language) {
-        await i18n.changeLanguage(supported);
-      }
+    // Keep the app in English even if older settings or system locale differ.
+    if (i18n.language !== "en") {
+      await i18n.changeLanguage("en");
     }
   } catch (e) {
     console.warn("Failed to sync language from settings:", e);

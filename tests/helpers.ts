@@ -11,9 +11,35 @@ export interface MockState {
   meetingPromptLeadMinutes: number;
   promptEvents: Array<
     | { action: "start" }
+    | { action: "stop" }
+    | { action: "hide" }
     | { action: "dismiss"; payload: unknown }
     | { action: "close" }
   >;
+  suppressedMeetingKey: string | null;
+  overlaySnapshot: {
+    sequence: number;
+    mode: "suggestion" | "recording" | "stopped" | "hidden";
+    prompt: {
+      provider: string;
+      title: string;
+      source: "LocalDetection" | "GoogleCalendar";
+      start_time: string;
+      join_url: string | null;
+    } | null;
+    recording_started_at: string | null;
+  };
+  historyEntries: Array<{
+    id: number;
+    file_name: string;
+    timestamp: number;
+    saved: boolean;
+    title: string;
+    transcription_text: string;
+    post_processed_text: string | null;
+    post_process_prompt: string | null;
+    post_process_requested: boolean;
+  }>;
   lastFollowUp: {
     recipients: string[];
     summary: string;
@@ -46,6 +72,29 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
           calendarPromptsEnabled: false,
           meetingPromptLeadMinutes: 5,
           promptEvents: [],
+          suppressedMeetingKey: null,
+          overlaySnapshot: {
+            sequence: 0,
+            mode: "hidden",
+            prompt: null,
+            recording_started_at: null,
+          },
+          historyEntries: [
+            {
+              id: 1,
+              file_name: "meeting_1.wav",
+              timestamp: Date.now() - 60000,
+              saved: true,
+              title: "Project Kickoff",
+              transcription_text: "We need to build a speech to text app.",
+              post_processed_text: JSON.stringify({
+                summary: "Project kickoff meeting to discuss architecture.",
+                action_items: ["Build tests first", "Verify and document"],
+              }),
+              post_process_prompt: "default_meeting_notes_with_actions",
+              post_process_requested: true,
+            },
+          ],
           lastFollowUp: null,
           outputLanguage: "malayalam",
         };
@@ -101,7 +150,41 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
     };
 
     // Helper to emit events in tests
+    const meetingKey = (payload: any) => {
+      const prompt = payload?.prompt ?? payload;
+      if (!prompt) return "";
+      const identity =
+        prompt.join_url || String(prompt.title || "").toLowerCase();
+      if (prompt.source === "LocalDetection") {
+        return ["local", prompt.provider ?? "", identity].join("|");
+      }
+      return [
+        "calendar",
+        prompt.provider ?? "",
+        prompt.start_time ?? "",
+        identity,
+      ].join("|");
+    };
+
     (window as any).__EMIT_EVENT__ = (event: string, payload: any) => {
+      if (event === "meeting-overlay-show") {
+        payload = {
+          ...payload,
+          sequence:
+            payload?.sequence ?? (state.overlaySnapshot?.sequence ?? 0) + 1,
+        };
+        const key = meetingKey(payload);
+        if (
+          payload?.mode === "suggestion" &&
+          key &&
+          state.suppressedMeetingKey === key
+        ) {
+          return;
+        }
+        state.overlaySnapshot = payload;
+        saveState();
+      }
+
       const listeners = (window as any).__TAURI_EVENT_LISTENERS__;
       if (listeners && listeners.has(event)) {
         const handlerIds = listeners.get(event);
@@ -337,22 +420,7 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
         // Mock history retrieval (pre-populated with a meeting entry)
         if (cmd === "get_history_entries") {
           return {
-            entries: [
-              {
-                id: 1,
-                file_name: "meeting_1.wav",
-                timestamp: Date.now() - 60000,
-                saved: true,
-                title: "Project Kickoff",
-                transcription_text: "We need to build a speech to text app.",
-                post_processed_text: JSON.stringify({
-                  summary: "Project kickoff meeting to discuss architecture.",
-                  action_items: ["Build tests first", "Verify and document"],
-                }),
-                post_process_prompt: "default_meeting_notes_with_actions",
-                post_process_requested: true,
-              },
-            ],
+            entries: state.historyEntries,
             has_more: false,
           };
         }
@@ -435,21 +503,96 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
 
         if (cmd === "start_meeting_recording_from_prompt") {
           state.promptEvents.push({ action: "start" });
+          if (state.overlaySnapshot.prompt) {
+            state.suppressedMeetingKey = meetingKey(state.overlaySnapshot);
+          }
+          state.overlaySnapshot = {
+            ...state.overlaySnapshot,
+            sequence: (state.overlaySnapshot?.sequence ?? 0) + 1,
+            mode: "recording",
+            recording_started_at: new Date().toISOString(),
+          };
+          saveState();
+          (window as any).__EMIT_EVENT__(
+            "meeting-overlay-show",
+            state.overlaySnapshot,
+          );
+          return null;
+        }
+
+        if (cmd === "stop_meeting_recording_from_overlay") {
+          state.promptEvents.push({ action: "stop" });
+          state.overlaySnapshot = {
+            ...state.overlaySnapshot,
+            sequence: (state.overlaySnapshot?.sequence ?? 0) + 1,
+            mode: "stopped",
+            recording_started_at: null,
+          };
+          saveState();
+          (window as any).__EMIT_EVENT__(
+            "meeting-overlay-show",
+            state.overlaySnapshot,
+          );
+          return null;
+        }
+
+        if (cmd === "hide_meeting_recording_overlay") {
+          state.promptEvents.push({ action: "hide" });
+          state.overlaySnapshot = {
+            sequence: (state.overlaySnapshot?.sequence ?? 0) + 1,
+            mode: "hidden",
+            prompt: null,
+            recording_started_at: null,
+          };
+          saveState();
+          return null;
+        }
+
+        if (cmd === "get_meeting_overlay_snapshot") {
+          return state.overlaySnapshot;
+        }
+
+        if (cmd === "update_mock_history_entry") {
+          const entry = state.historyEntries.find(
+            (item: any) => item.id === args?.id,
+          );
+          if (entry) {
+            Object.assign(entry, args?.entry ?? {});
+          }
           saveState();
           return null;
         }
 
         if (cmd === "dismiss_meeting_prompt") {
+          const payload = args?.payload;
+          const key = meetingKey(payload);
+          if (key) state.suppressedMeetingKey = key;
           state.promptEvents.push({
             action: "dismiss",
-            payload: args?.payload,
+            payload,
           });
+          state.overlaySnapshot = {
+            sequence: (state.overlaySnapshot?.sequence ?? 0) + 1,
+            mode: "hidden",
+            prompt: null,
+            recording_started_at: null,
+          };
           saveState();
+          (window as any).__EMIT_EVENT__(
+            "meeting-overlay-show",
+            state.overlaySnapshot,
+          );
           return null;
         }
 
         if (cmd === "close_meeting_prompt") {
           state.promptEvents.push({ action: "close" });
+          state.overlaySnapshot = {
+            sequence: (state.overlaySnapshot?.sequence ?? 0) + 1,
+            mode: "hidden",
+            prompt: null,
+            recording_started_at: null,
+          };
           saveState();
           return null;
         }

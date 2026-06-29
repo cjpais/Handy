@@ -1,5 +1,18 @@
 @import "../App.css";
 
+:root,
+html,
+body,
+#root {
+  background: transparent !important;
+}
+
+body,
+#root {
+  margin: 0;
+  overflow: hidden;
+}
+
 .recording-overlay {
   height: 36px;
   width: 172px;

@@ -1012,6 +1012,10 @@ impl ShortcutAction for CancelAction {
 // Meeting Action
 struct MeetingAction;
 
+const MEETING_MIN_RECORDING_SECONDS: usize = 10;
+const MEETING_SAMPLE_RATE: usize = 16_000;
+const MEETING_MIN_SAMPLE_COUNT: usize = MEETING_MIN_RECORDING_SECONDS * MEETING_SAMPLE_RATE;
+
 impl ShortcutAction for MeetingAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -1035,17 +1039,6 @@ impl ShortcutAction for MeetingAction {
                 debug!("Diarization models pre-load failed: {}", e);
             }
         });
-
-        change_tray_icon(app, TrayIconState::Recording);
-        show_recording_overlay(app);
-
-        // Emit recording state
-        let _ = app.emit(
-            "recording-state-changed",
-            RecordingStatePayload {
-                mode: "meeting".to_string(),
-            },
-        );
 
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
@@ -1084,6 +1077,17 @@ impl ShortcutAction for MeetingAction {
         }
 
         if recording_error.is_none() {
+            change_tray_icon(app, TrayIconState::Recording);
+            crate::overlay::show_meeting_recording_overlay(app);
+
+            // Emit recording state
+            let _ = app.emit(
+                "recording-state-changed",
+                RecordingStatePayload {
+                    mode: "meeting".to_string(),
+                },
+            );
+
             shortcut::register_cancel_shortcut(app);
         } else {
             let _ = app.emit(
@@ -1092,7 +1096,7 @@ impl ShortcutAction for MeetingAction {
                     mode: "idle".to_string(),
                 },
             );
-            utils::hide_recording_overlay(app);
+            crate::overlay::hide_meeting_prompt_window(app);
             change_tray_icon(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
                 let error_type = if is_microphone_access_denied(&err) {
@@ -1131,7 +1135,7 @@ impl ShortcutAction for MeetingAction {
         let dm = Arc::clone(&app.state::<Arc<DiarizationManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
-        show_transcribing_overlay(app);
+        crate::overlay::show_meeting_stopped_overlay(app);
 
         rm.remove_mute();
         play_feedback_sound(app, SoundType::Stop);
@@ -1152,9 +1156,12 @@ impl ShortcutAction for MeetingAction {
                     samples.len()
                 );
 
-                if samples.is_empty() {
-                    debug!("Recording produced no audio samples; skipping persistence");
-                    utils::hide_recording_overlay(&ah);
+                if samples.len() < MEETING_MIN_SAMPLE_COUNT {
+                    debug!(
+                        "Meeting recording shorter than {} seconds ({} samples); discarding",
+                        MEETING_MIN_RECORDING_SECONDS,
+                        samples.len()
+                    );
                     change_tray_icon(&ah, TrayIconState::Idle);
                 } else {
                     // Save WAV concurrently with transcription
@@ -1166,6 +1173,13 @@ impl ShortcutAction for MeetingAction {
                     let wav_handle = tauri::async_runtime::spawn_blocking(move || {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
+
+                    let settings = get_settings(&ah);
+                    let prompt_id = if settings.google_oauth_token.is_some() {
+                        "default_meeting_notes_with_actions"
+                    } else {
+                        "default_meeting_summary"
+                    };
 
                     // Transcribe and diarize concurrently with WAV save
                     let transcription_time = Instant::now();
@@ -1210,6 +1224,24 @@ impl ShortcutAction for MeetingAction {
                         }
                     };
 
+                    let history_entry_id = if wav_saved {
+                        match hm.save_entry(
+                            file_name.clone(),
+                            String::new(),
+                            true,
+                            None,
+                            Some(prompt_id.to_string()),
+                        ) {
+                            Ok(entry) => Some(entry.id),
+                            Err(err) => {
+                                error!("Failed to save pending meeting history entry: {}", err);
+                                None
+                            }
+                        }
+                    } else {
+                        None
+                    };
+
                     // Await transcription and diarization results
                     let diarization_res = match diarization_handle.await {
                         Ok(Ok(res)) => Some(res),
@@ -1247,15 +1279,6 @@ impl ShortcutAction for MeetingAction {
                                 transcription
                             );
 
-                            show_processing_overlay(&ah);
-
-                            let settings = get_settings(&ah);
-                            let prompt_id = if settings.google_oauth_token.is_some() {
-                                "default_meeting_notes_with_actions"
-                            } else {
-                                "default_meeting_summary"
-                            };
-
                             let summary_opt =
                                 run_specific_llm_prompt(&settings, prompt_id, &transcription).await;
 
@@ -1280,21 +1303,18 @@ impl ShortcutAction for MeetingAction {
                                 summary_opt.clone().unwrap_or_else(|| transcription.clone())
                             };
 
-                            // Save to history if WAV was saved
-                            if wav_saved {
-                                if let Err(err) = hm.save_entry(
-                                    file_name,
+                            if let Some(entry_id) = history_entry_id {
+                                if let Err(err) = hm.update_transcription(
+                                    entry_id,
                                     transcription.clone(),
-                                    true,
                                     summary_opt.clone(),
                                     Some(prompt_id.to_string()),
                                 ) {
-                                    error!("Failed to save history entry: {}", err);
+                                    error!("Failed to update meeting history entry: {}", err);
                                 }
                             }
 
                             if display_summary.is_empty() {
-                                utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             } else {
                                 let _ = ah.emit(
@@ -1304,28 +1324,20 @@ impl ShortcutAction for MeetingAction {
                                         transcript: transcription,
                                     },
                                 );
-                                utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             }
                         }
                         Err(err) => {
                             debug!("Global Shortcut Transcription error: {}", err);
-                            // Save entry with empty text so user can retry
-                            if wav_saved {
-                                if let Err(save_err) =
-                                    hm.save_entry(file_name, String::new(), true, None, None)
-                                {
-                                    error!("Failed to save failed history entry: {}", save_err);
-                                }
+                            if history_entry_id.is_none() && wav_saved {
+                                error!("Meeting WAV was saved but no history placeholder exists");
                             }
-                            utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
-                utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
         });

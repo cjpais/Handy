@@ -7,14 +7,131 @@ test.describe("Meeting Assistant", () => {
     await page.goto("/");
   });
 
-  test("local detected meeting prompt starts recording", async ({ page }) => {
-    await page.evaluate(async () => {
-      const mod = await import("/src/bindings.ts");
-      await mod.commands.startMeetingRecordingFromPrompt();
-    });
+  const promptPayload = {
+    mode: "suggestion",
+    prompt: {
+      provider: "Google Meet",
+      title: "Design Review",
+      source: "LocalDetection",
+      start_time: "2026-06-22T10:00:00Z",
+      join_url: "https://meet.google.com/abc-defg-hij",
+    },
+    recording_started_at: null,
+  };
+
+  test("prompt Record transitions to meeting recording command flow", async ({
+    page,
+  }) => {
+    await page.goto("/src/meeting_prompt/index.html");
+    await page.evaluate((payload) => {
+      (window as any).__EMIT_EVENT__("meeting-overlay-show", {
+        ...payload,
+        prompt: {
+          ...payload.prompt,
+          start_time: "2026-06-22T10:00:05Z",
+        },
+      });
+    }, promptPayload);
+
+    await expect(page.getByText("Meeting detected")).toBeVisible();
+    await page.getByRole("button", { name: "Record" }).click();
+    await expect(page.getByText("Meeting recording")).toBeVisible();
 
     const state = await getMockState(page);
     expect(state.promptEvents).toContainEqual({ action: "start" });
+  });
+
+  test("dismiss and timer suppress repeated prompts for the same meeting", async ({
+    page,
+  }) => {
+    await page.goto("/src/meeting_prompt/index.html");
+    await page.evaluate((payload) => {
+      (window as any).__EMIT_EVENT__("meeting-overlay-show", payload);
+    }, promptPayload);
+
+    await expect(page.getByText("Meeting detected")).toBeVisible();
+    await page.waitForFunction(
+      () =>
+        (window as any).__MOCK_STATE__.promptEvents.filter(
+          (event: any) => event.action === "dismiss",
+        ).length === 1,
+      undefined,
+      { timeout: 9500 },
+    );
+
+    let state = await getMockState(page);
+    expect(
+      state.promptEvents.filter((event) => event.action === "dismiss"),
+    ).toHaveLength(1);
+
+    await page.evaluate((payload) => {
+      (window as any).__EMIT_EVENT__("meeting-overlay-show", payload);
+    }, promptPayload);
+
+    state = await getMockState(page);
+    expect(
+      state.promptEvents.filter((event) => event.action === "dismiss"),
+    ).toHaveLength(1);
+  });
+
+  test("stop overlay command records a stop event rather than canceling", async ({
+    page,
+  }) => {
+    await page.evaluate(async () => {
+      const mod = await import("/src/bindings.ts");
+      await mod.commands.startMeetingRecordingFromPrompt();
+      await mod.commands.stopMeetingRecordingFromOverlay();
+    });
+
+    const state = await getMockState(page);
+    expect(state.promptEvents).toEqual([
+      { action: "start" },
+      { action: "stop" },
+    ]);
+  });
+
+  test("instant meeting placeholder appears as a meeting entry and later updates", async ({
+    page,
+  }) => {
+    await setMockState(page, {
+      historyEntries: [
+        {
+          id: 7,
+          file_name: "meeting_pending.wav",
+          timestamp: Math.floor(Date.now() / 1000),
+          saved: false,
+          title: "Jun 22, 2026, 10:00 AM",
+          transcription_text: "",
+          post_processed_text: null,
+          post_process_prompt: "default_meeting_notes_with_actions",
+          post_process_requested: true,
+        },
+      ],
+    });
+
+    await page.reload();
+    await page.getByText("Meetings").click();
+    await expect(page.getByText("Processing")).toBeVisible();
+
+    await setMockState(page, {
+      historyEntries: [
+        {
+          id: 7,
+          file_name: "meeting_pending.wav",
+          timestamp: Math.floor(Date.now() / 1000),
+          saved: false,
+          title: "Jun 22, 2026, 10:00 AM",
+          transcription_text: "Transcript is ready.",
+          post_processed_text: "Summary is ready.",
+          post_process_prompt: "default_meeting_notes_with_actions",
+          post_process_requested: true,
+        },
+      ],
+    });
+
+    await page.reload();
+    await page.getByText("Meetings").click();
+    await expect(page.getByText("Summary is ready.")).toBeVisible();
   });
 
   test("calendar prompt can be dismissed and calendar auth stays independent", async ({
