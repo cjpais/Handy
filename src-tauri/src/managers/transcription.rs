@@ -9,7 +9,7 @@ use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -73,6 +73,7 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    streaming_sessions: Arc<AtomicUsize>,
 }
 
 impl TranscriptionManager {
@@ -87,6 +88,7 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            streaming_sessions: Arc::new(AtomicUsize::new(0)),
         };
 
         // Start the idle watcher
@@ -111,6 +113,11 @@ impl TranscriptionManager {
                     // maybe_unload_immediately() after each transcription.
                     // Treating it as 0s here would unload the model mid-recording.
                     if timeout == ModelUnloadTimeout::Immediately {
+                        continue;
+                    }
+
+                    if manager_cloned.streaming_sessions.load(Ordering::Relaxed) > 0 {
+                        manager_cloned.touch_activity();
                         continue;
                     }
 
@@ -239,6 +246,11 @@ impl TranscriptionManager {
 
     /// Unloads the model immediately if the setting is enabled and the model is loaded
     pub fn maybe_unload_immediately(&self, context: &str) {
+        if self.streaming_sessions.load(Ordering::Relaxed) > 0 {
+            debug!("Skipping immediate model unload during active streaming session");
+            return;
+        }
+
         let settings = get_settings(&self.app_handle);
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
             && self.is_model_loaded()
@@ -248,6 +260,20 @@ impl TranscriptionManager {
                 warn!("Failed to immediately unload model: {}", e);
             }
         }
+    }
+
+    pub fn begin_streaming(&self) {
+        self.streaming_sessions.fetch_add(1, Ordering::Relaxed);
+        self.touch_activity();
+    }
+
+    pub fn end_streaming(&self) {
+        let _ =
+            self.streaming_sessions
+                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |count| {
+                    Some(count.saturating_sub(1))
+                });
+        self.touch_activity();
     }
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {

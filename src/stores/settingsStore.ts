@@ -120,6 +120,8 @@ const settingUpdaters: {
   paste_delay_ms: (value) =>
     commands.changePasteDelayMsSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
+  transcription_mode: (value) =>
+    commands.changeTranscriptionModeSetting(value as string),
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>
     commands.changeExternalScriptPathSetting(value as string | null),
@@ -155,6 +157,19 @@ const settingUpdaters: {
     commands.changeWhisperGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+};
+
+const throwIfCommandError = (result: unknown) => {
+  if (
+    result &&
+    typeof result === "object" &&
+    "status" in result &&
+    result.status === "error"
+  ) {
+    const error =
+      "error" in result ? String(result.error) : "Command returned an error";
+    throw new Error(error);
+  }
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -287,7 +302,8 @@ export const useSettingsStore = create<SettingsStore>()(
 
         const updater = settingUpdaters[key];
         if (updater) {
-          await updater(value);
+          const result = await updater(value);
+          throwIfCommandError(result);
         } else if (key !== "bindings" && key !== "selected_model") {
           console.warn(`No handler for setting: ${String(key)}`);
         }

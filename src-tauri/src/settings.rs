@@ -147,6 +147,13 @@ pub enum ClipboardHandling {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
+pub enum TranscriptionMode {
+    Standard,
+    VadChunked,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum AutoSubmitKey {
     Enter,
     CtrlEnter,
@@ -198,6 +205,12 @@ impl Default for PasteMethod {
 impl Default for ClipboardHandling {
     fn default() -> Self {
         ClipboardHandling::DontModify
+    }
+}
+
+impl Default for TranscriptionMode {
+    fn default() -> Self {
+        TranscriptionMode::Standard
     }
 }
 
@@ -383,6 +396,8 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
+    #[serde(default)]
+    pub transcription_mode: TranscriptionMode,
     #[serde(default = "default_auto_submit")]
     pub auto_submit: bool,
     #[serde(default)]
@@ -790,6 +805,7 @@ pub fn get_default_settings() -> AppSettings {
         recording_retention_period: default_recording_retention_period(),
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
+        transcription_mode: TranscriptionMode::default(),
         auto_submit: default_auto_submit(),
         auto_submit_key: AutoSubmitKey::default(),
         post_process_enabled: default_post_process_enabled(),

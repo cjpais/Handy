@@ -4,7 +4,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         mpsc, Arc, Mutex,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use cpal::{
@@ -21,6 +21,7 @@ use crate::audio_toolkit::{
 
 enum Cmd {
     Start,
+    StartStreaming(mpsc::Sender<Vec<f32>>),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -200,6 +201,14 @@ impl AudioRecorder {
             tx.send(Cmd::Start)?;
         }
         Ok(())
+    }
+
+    pub fn start_streaming(&self) -> Result<mpsc::Receiver<Vec<f32>>, Box<dyn std::error::Error>> {
+        let (stream_tx, stream_rx) = mpsc::channel();
+        if let Some(tx) = &self.cmd_tx {
+            tx.send(Cmd::StartStreaming(stream_tx))?;
+        }
+        Ok(stream_rx)
     }
 
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
@@ -408,6 +417,10 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut stream_tx: Option<mpsc::Sender<Vec<f32>>> = None;
+    let mut streaming_frames_sent = 0usize;
+    let mut streaming_samples_sent = 0usize;
+    let mut last_streaming_log = Instant::now();
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -471,7 +484,28 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            if !recording {
+                return;
+            }
+
+            if let Some(tx) = &stream_tx {
+                if tx.send(frame.to_vec()).is_err() {
+                    log::warn!("Streaming transcription channel closed");
+                } else {
+                    streaming_frames_sent += 1;
+                    streaming_samples_sent += frame.len();
+                    if last_streaming_log.elapsed() >= Duration::from_secs(3) {
+                        log::info!(
+                            "Audio recorder forwarded streaming frames: {} ({:.2}s audio)",
+                            streaming_frames_sent,
+                            streaming_samples_sent as f32 / constants::WHISPER_SAMPLE_RATE as f32
+                        );
+                        last_streaming_log = Instant::now();
+                    }
+                }
+            } else {
+                handle_frame(frame, recording, &vad, &mut processed_samples)
+            }
         });
 
         // non-blocking check for a command
@@ -480,13 +514,34 @@ fn run_consumer(
                 Cmd::Start => {
                     stop_flag.store(false, Ordering::Relaxed);
                     processed_samples.clear();
+                    stream_tx = None;
                     recording = true;
                     visualizer.reset();
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
                     }
                 }
+                Cmd::StartStreaming(tx) => {
+                    stop_flag.store(false, Ordering::Relaxed);
+                    processed_samples.clear();
+                    streaming_frames_sent = 0;
+                    streaming_samples_sent = 0;
+                    last_streaming_log = Instant::now();
+                    stream_tx = Some(tx);
+                    recording = true;
+                    visualizer.reset();
+                    if let Some(v) = &vad {
+                        v.lock().unwrap().reset();
+                    }
+                    log::info!("Audio recorder entered VAD chunked streaming mode");
+                }
                 Cmd::Stop(reply_tx) => {
+                    log::info!(
+                        "Audio recorder stopping recording (streaming: {}, forwarded_frames: {}, forwarded_audio: {:.2}s)",
+                        stream_tx.is_some(),
+                        streaming_frames_sent,
+                        streaming_samples_sent as f32 / constants::WHISPER_SAMPLE_RATE as f32
+                    );
                     recording = false;
                     stop_flag.store(true, Ordering::Relaxed);
 
@@ -498,7 +553,14 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    if let Some(tx) = &stream_tx {
+                                        if tx.send(frame.to_vec()).is_ok() {
+                                            streaming_frames_sent += 1;
+                                            streaming_samples_sent += frame.len();
+                                        }
+                                    } else {
+                                        handle_frame(frame, true, &vad, &mut processed_samples)
+                                    }
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -510,9 +572,24 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        if let Some(tx) = &stream_tx {
+                            if tx.send(frame.to_vec()).is_ok() {
+                                streaming_frames_sent += 1;
+                                streaming_samples_sent += frame.len();
+                            }
+                        } else {
+                            handle_frame(frame, true, &vad, &mut processed_samples)
+                        }
                     });
 
+                    if stream_tx.is_some() {
+                        log::info!(
+                            "Audio recorder closed VAD chunked stream after forwarding {} frames ({:.2}s audio)",
+                            streaming_frames_sent,
+                            streaming_samples_sent as f32 / constants::WHISPER_SAMPLE_RATE as f32
+                        );
+                    }
+                    stream_tx = None;
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
 
                     // Resume the audio callback so the consumer loop can continue
