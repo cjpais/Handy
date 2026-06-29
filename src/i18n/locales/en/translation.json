@@ -180,7 +180,12 @@
     "summarizing": "Summarising...",
     "summarizeError": "Failed to summarise. Please try again.",
     "summarizeFailed": "Summary failed — retry",
-    "summarizeRetry": "Retry summarisation"
+    "summarizeRetry": "Retry summarisation",
+    "import": "Import audio file",
+    "importing": "Importing...",
+    "importDialogTitle": "Select an audio file to import",
+    "importSuccess": "Audio imported. Transcribing in the background.",
+    "importError": "Failed to import audio file. Please try again."
   },
   "settings": {
     "back": "Back",

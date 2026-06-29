@@ -276,8 +276,30 @@ impl HistoryManager {
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
     ) -> Result<HistoryEntry> {
+        self.save_entry_with_title(
+            file_name,
+            None,
+            transcription_text,
+            saved,
+            post_processed_text,
+            post_process_prompt,
+        )
+    }
+
+    /// Like [`save_entry`](Self::save_entry) but with an optional `title`
+    /// override. Live captures pass `None` (a formatted timestamp is used);
+    /// audio imports pass the original filename as the entry's source label.
+    pub fn save_entry_with_title(
+        &self,
+        file_name: String,
+        title: Option<String>,
+        transcription_text: String,
+        saved: bool,
+        post_processed_text: Option<String>,
+        post_process_prompt: Option<String>,
+    ) -> Result<HistoryEntry> {
         let timestamp = Utc::now().timestamp();
-        let title = self.format_timestamp_title(timestamp);
+        let title = title.unwrap_or_else(|| self.format_timestamp_title(timestamp));
         let post_process_requested = post_processed_text.is_some();
 
         let conn = self.get_connection()?;

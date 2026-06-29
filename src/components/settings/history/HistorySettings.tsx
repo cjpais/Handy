@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { FolderOpen } from "lucide-react";
+import { open } from "@tauri-apps/plugin-dialog";
+import { FolderOpen, Import, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
   commands,
@@ -42,6 +44,7 @@ export const HistorySettings: React.FC = () => {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const [importing, setImporting] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const entriesRef = useRef<HistoryEntry[]>([]);
   const loadingRef = useRef(false);
@@ -207,6 +210,41 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const importAudioFile = async () => {
+    if (importing) return;
+    let selected: string | string[] | null;
+    try {
+      selected = await open({
+        multiple: false,
+        directory: false,
+        title: t("entries.importDialogTitle"),
+        filters: [{ name: "Audio", extensions: ["wav", "mp3", "m4a", "aac"] }],
+      });
+    } catch (error) {
+      console.error("Failed to open file picker:", error);
+      toast.error(t("entries.importError"));
+      return;
+    }
+
+    // Dialog cancelled — nothing selected.
+    if (typeof selected !== "string") return;
+
+    setImporting(true);
+    try {
+      const result = await commands.importAudioFile(selected);
+      if (result.status !== "ok") {
+        throw new Error(String(result.error));
+      }
+      // The new entry arrives via the historyUpdatePayload "added" event.
+      toast.success(t("entries.importSuccess"));
+    } catch (error) {
+      console.error("Failed to import audio file:", error);
+      toast.error(t("entries.importError"));
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const openRecordingsFolder = async () => {
     try {
       const result = await commands.openRecordingsFolder();
@@ -258,7 +296,24 @@ export const HistorySettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <div className="space-y-2">
-        <div className="px-4 flex items-center justify-end">
+        <div className="px-4 flex items-center justify-end gap-2">
+          <Button
+            onClick={importAudioFile}
+            variant="secondary"
+            size="sm"
+            disabled={importing}
+            className="flex items-center gap-2"
+            title={t("entries.import")}
+          >
+            {importing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Import className="w-4 h-4" />
+            )}
+            <span>
+              {importing ? t("entries.importing") : t("entries.import")}
+            </span>
+          </Button>
           <OpenRecordingsButton
             onClick={openRecordingsFolder}
             label={t("entries.openFolder")}

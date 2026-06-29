@@ -834,6 +834,27 @@ async retryHistoryEntryTranscription(id: number) : Promise<Result<null, string>>
 }
 },
 /**
+ * Import an audio file recorded elsewhere (iPhone Voice Memos, a dedicated
+ * recorder, etc.) and run it through the transcription pipeline as a kept
+ * entry. Decodes via symphonia, mixes to mono, resamples to 16 kHz, transcribes
+ * with the active ASR model, re-encodes a 16 kHz WAV into `recordings_dir`, and
+ * saves the result as a Silver-tier entry (`saved = true`) so summarisation
+ * fires automatically — mirroring a live Keep capture.
+ * 
+ * Unlike a live recording, nothing is pasted to the active application and the
+ * `TranscriptionCoordinator` / overlay are bypassed. Errors return `Err` so the
+ * caller can surface a toast; no orphan entry is written on failure because the
+ * entry is only persisted once decode + transcription succeed.
+ */
+async importAudioFile(path: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("import_audio_file", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Re-run summarisation for a single entry. Used for failure recovery and for
  * back-filling entries created before summarisation was enabled.
  */

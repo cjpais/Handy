@@ -331,3 +331,19 @@ Record significant product and technical choices here so future-you (and agents)
 **Tracked in:** Notion "Develop dual-pipeline behaviour" and its sub-tickets (Dictate/Keep modes; always-on cleanup; paste availability vs auto-paste; persistence tiers — backend; history/entries split — frontend).
 
 ---
+
+## 2026-06-29 — Audio import runs the shared cleanup pass and lands as a kept entry
+
+**Status:** decided
+
+**Context:** The "Import audio files" ticket (written 2026-06-24/25) scoped post-processing _out_ — "import uses transcription only, not the post-process shortcut flow." That predates the [2026-06-28 dual-pipeline refinement](#2026-06-28--dual-pipeline-refined-dictate--keep-always-on-cleanup-medallion-persistence), which reframed post-processing as **always-on, meaning-preserving input hygiene** shared by every capture path, not an output/Keep-mode concern. The ticket's acceptance criteria also require "same behaviour as a live recording entry," and `retry_history_entry_transcription` already runs the shared cleanup.
+
+**Decision:** `import_audio_file` runs the same `process_transcription_output()` cleanup pass as live captures and retry. Imports are saved as **Silver-tier entries** (`saved = true`) so they appear in Entries and trigger summarisation automatically — both paths into Entries (Keep, promotion, import) are high-confidence by construction. The original filename is stored as the entry title via a new `save_entry_with_title()` (no schema migration). Cleanup remains a no-op when post-processing is disabled in settings.
+
+**Consequences:** Imported audio yields entries indistinguishable from live Keep captures — cleaned text, populated `post_processed_text`, summary derived from cleaned text. The ticket's "transcription only" line is explicitly superseded by the always-on-cleanup invariant. No paste to the active application (import has no Dictate path); `TranscriptionCoordinator` and the overlay are bypassed.
+
+**Alternatives considered:** Skip cleanup to honour the ticket's literal scope (rejected: contradicts the always-on-cleanup decision and the "same as live recording" AC, and would leave imported text un-promotable/inconsistent with the corpus); save imports as Bronze/unsaved (rejected: import is a deliberate, high-confidence act — it belongs in Entries, and Bronze would suppress summarisation).
+
+**Tracked in:** Notion "Import audio files".
+
+---
