@@ -67,6 +67,11 @@ def pretty(s):
                     for p in s.split("-"))
 def quant_of(fn):
     m = re.search(r"-(F32|F16|BF16|Q\d[\w_]*?)\.gguf$", fn);  return m.group(1) if m else "?"
+def parse_params(size_label):
+    """`general.size_label` ("0.6B" / "1.7B" / "62M") -> count in billions, or None."""
+    m = re.match(r"([\d.]+)\s*([BM])", str(size_label or "").strip(), re.I)
+    if not m: return None
+    v = float(m.group(1));  return v if m.group(2).upper() == "B" else v / 1000
 def pick_wer(b):
     if "wer_librispeech_test_clean" in b: return "librispeech", b["wer_librispeech_test_clean"]
     if "wer_fleurs_en" in b: return "fleurs_en", b["wer_fleurs_en"]
@@ -146,13 +151,19 @@ def build(repo):
     ryz = b.get("rtf_ryzen_4750u") or {};  rtf = ryz.get("vulkan", ryz.get("cpu"))
     eval_set, werd = pick_wer(b);  hw, hwq = headline_wer(werd)
 
-    # Default to Q8_0 (best quality/size tradeoff that's broadly robust); a
-    # per-model CURATION `default_quant` can drop to Q5_K_M/Q4_K_M for models
-    # shown to tolerate it. Fall back through Q8 variants → Q5_K_M → smallest.
+    # Default-quant policy by model size (params from general.size_label):
+    #   >=1B  -> Q5_K_M   (large models tolerate it; ~30% less download/RAM)
+    #   <1B   -> Q8_0     (already small; keep reference quality)
+    # A per-model CURATION `default_quant` overrides the policy. If the policy
+    # quant is absent for a model, fall back: Q8_0 → any Q8 → Q5_K_M → smallest.
+    params = parse_params(gg.get("general.size_label"))
+    policy = "Q5_K_M" if (params is not None and params >= 1.0) else "Q8_0"
+    have = lambda q: next((f["quant"] for f in files if f["quant"] == q), None)
     default_quant = (cur.get("default_quant")
-                     or next((f["quant"] for f in files if f["quant"] == "Q8_0"), None)
+                     or have(policy)
+                     or have("Q8_0")
                      or next((f["quant"] for f in files if "Q8" in f["quant"]), None)
-                     or next((f["quant"] for f in files if f["quant"] == "Q5_K_M"), None)
+                     or have("Q5_K_M")
                      or (files[0]["quant"] if files else None))
 
     return {
