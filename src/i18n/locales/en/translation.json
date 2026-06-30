@@ -12,8 +12,8 @@
     "entries": "Entries",
     "settings": "Settings",
     "shortcuts": "Shortcuts",
-    "capture": "Capture",
-    "transcription": "Transcription",
+    "capture": "Record",
+    "transcription": "Transcribe",
     "postProcessing": "Post Process",
     "clean": "Clean",
     "output": "Output",
@@ -24,7 +24,14 @@
     "general": "General",
     "models": "Models",
     "advanced": "Advanced",
-    "history": "History"
+    "history": "History",
+    "retention": "History",
+    "groups": {
+      "capture": "Capture",
+      "dictate": "Dictate",
+      "keep": "Keep",
+      "app": "App"
+    }
   },
   "onboarding": {
     "subtitle": "To get started, choose a transcription model",
@@ -668,6 +675,10 @@
         "selectToEdit": "Select a prompt above to view and edit its details.",
         "createFirst": "Click 'Create New Prompt' above to create your first summarisation prompt."
       }
+    },
+    "retention": {
+      "title": "History",
+      "description": "Configure how long recordings and transcriptions are kept."
     }
   },
   "footer": {

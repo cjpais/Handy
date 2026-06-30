@@ -9,8 +9,6 @@ import { AudioFeedback } from "../AudioFeedback";
 import { SoundPicker } from "../SoundPicker";
 import { OutputDeviceSelector } from "../OutputDeviceSelector";
 import { VolumeSlider } from "../VolumeSlider";
-import { HistoryLimit } from "../HistoryLimit";
-import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { useSettings } from "../../../hooks/useSettings";
 
 export const CaptureSettings: React.FC = () => {
@@ -46,14 +44,6 @@ export const CaptureSettings: React.FC = () => {
           disabled={!audioFeedbackEnabled}
         />
         <VolumeSlider disabled={!audioFeedbackEnabled} />
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.capture.history.title")}>
-        <HistoryLimit descriptionMode="tooltip" grouped={true} />
-        <RecordingRetentionPeriodSelector
-          descriptionMode="tooltip"
-          grouped={true}
-        />
       </SettingsGroup>
     </div>
   );

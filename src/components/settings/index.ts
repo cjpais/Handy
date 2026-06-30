@@ -6,6 +6,7 @@ export { OutputSettings } from "./output/OutputSettings";
 export { AppSettings } from "./app/AppSettings";
 export { DebugSettings } from "./debug/DebugSettings";
 export { HistorySettings } from "./history/HistorySettings";
+export { RetentionSettings } from "./history/RetentionSettings";
 export { AboutSettings } from "./about/AboutSettings";
 export { PostProcessingSettings } from "./post-processing/PostProcessingSettings";
 export { SummarisationSettings } from "./summarisation/SummarisationSettings";
