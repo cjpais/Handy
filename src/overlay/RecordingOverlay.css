@@ -2,9 +2,10 @@
 
 :root {
   --s-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  /* Translucent app surface (theme.css --color-background at ~80% opacity). */
+  /* Near-opaque app surface (theme.css --color-background at 98%). Auto-flips
+     light/dark with --color-background, so no dark-mode override is needed. */
   --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
-  /* Accent: brand UI pink in light, lighter logo pink in dark (override below). */
+  /* Accent = logo pink; flips automatically via --color-logo-primary. */
   --s-accent: var(--color-logo-primary);
   --s-accent-soft: color-mix(
     in srgb,
@@ -18,10 +19,23 @@
   --s-faint: #9a9a9a;
   --s-border: color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
   --s-hair: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
+
+  /* Card geometry — single source of truth for the visible overlay sizes. The
+     native overlay window (overlay.rs) is sized from these: it must be at least
+     the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
+     since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
+     in sync when these change. */
+  --ov-rest-w: 172px; /* resting compact pill (minimal, recording) -- roomy enough
+                         for the English working label before the grow starts */
+  --ov-pill-w: 184px; /* base width / Live pill before it opens or collapses */
+  --ov-work-w: 216px; /* working pill (transcribing / polishing) -- wide enough to
+                         center longer labels; shared by Live (collapsed) + minimal */
+  --ov-open-w: 392px; /* Live panel, expanded */
+  --ov-base-h: 40px; /* control-row height (.sbase) */
+  --ov-cap-max-h: 64px; /* max height of the scrolling live-text region */
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
     /* Accent uses the lighter logo pink in dark — reads better on the dark
        surface than the deeper UI pink. */
     --s-accent-soft: color-mix(
@@ -38,65 +52,47 @@
 }
 
 /* ============================================================
-   Containers: compact (Minimal / transcribing / processing) and
-   the Live stage (pill → panel). Both render the same `.scard` base.
+   Unified overlay stage — one fixed, transparent container shared by the compact
+   pill and the Live panel (both render the same `.scard` base). The card is
+   anchored flush to the screen-edge side (bottom by default, top when placed up
+   top) and centered horizontally, so the visible card sits exactly
+   OVERLAY_*_OFFSET from the screen edge regardless of window height — only the
+   offsets in overlay.rs move it. Pops scale from that edge, so the card is never
+   drawn past it (matters for the 4px top offset on Windows/Linux).
    ============================================================ */
-.overlay-compact {
+.ov-stage {
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 200ms ease-out;
+  justify-content: center; /* horizontal centering, kept for both forms */
+  align-items: flex-end; /* bottom placement: flush to the bottom edge */
   font-family: var(--s-font);
 }
-.overlay-compact.show {
+.ov-stage.top {
+  align-items: flex-start; /* top placement: flush to the top edge */
+}
+
+/* Compact pill: fade the whole container in/out (the pill itself never pops or
+   morphs). */
+.ov-fade {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+.ov-fade.show {
   opacity: 1;
 }
 
-.stream-stage {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 16px;
-  font-family: var(--s-font);
-}
-
-/* Top placement: anchor the pill to the top of the screen and let live text grow
-   downward in natural reading order (oldest under the pill, newest at the bottom) —
-   mirroring the bottom overlay's upward flow. Only the Live panel needs this; the
-   compact pill has no flowing text. The text region keeps the same top fade and
-   bottom scroll-pin as the bottom overlay, so older lines dissolve up under the
-   pill while the newest line stays visible. */
-.stream-stage.top {
-  align-items: flex-start;
-  padding-top: 16px;
-  padding-bottom: 0;
-}
-.stream-stage.top .scard {
-  /* column-reverse stacks the control pill above the text region, so the card
-     grows downward from its top edge. */
+/* Top placement, Live panel: stack the control pill above the text region so the
+   card grows downward from its top edge (oldest line under the pill, newest at
+   the bottom) — mirroring the bottom overlay's upward flow. The compact pill has
+   no flowing text, so this only affects the Live panel. The text region keeps the
+   same fade + scroll-pin; older lines dissolve up under the pill. */
+.ov-stage.top .scard {
+  /* column-reverse stacks the control pill above the text region. */
   flex-direction: column-reverse;
   transform-origin: top center;
-  animation-name: scard-pop-top;
 }
-.stream-stage.top .scard.leaving {
-  transform: translateY(-10px) scale(0.96);
-}
-@keyframes scard-pop-top {
-  from {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.stream-stage.top .stext-cap {
+.ov-stage.top .stext-cap {
   /* Mirror of the bottom overlay (top: 12 / bottom: 0): the first line sits flush
      under the pill and the breathing room moves below the text. The top fade is
      off at rest — at zero top padding it would dim the resting first line — and
@@ -109,23 +105,24 @@
 /* Once live text overflows, fade older lines up under the pill, matching the
    bottom overlay's top fade. Gated on `.overflowing` so a short resting line
    (sitting at the very top) is never dimmed. */
-.stream-stage.top .stext-cap.overflowing {
+.ov-stage.top .stext-cap.overflowing {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 18px);
 }
-.stream-stage.top .stext-cap p {
+.ov-stage.top .stext-cap p {
   /* Top-anchor short text just under the pill; on overflow the cap still pins to
      the bottom (newest visible) and older lines fade off the top, same as bottom. */
   margin: 0;
 }
 
-/* Shared base card. Lightly styled: theme surface, soft shadow, gentle blur. */
+/* Shared base card. Flat: theme surface + hairline border, no shadow or blur. */
 .scard {
-  width: 180px; /* pill width */
+  width: var(--ov-pill-w);
   border-radius: 24px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  flex: none; /* hold our own width; never let the stage flex shrink the card */
   transform-origin: bottom center;
   background: var(--s-surface);
   border: 1px solid var(--s-border);
@@ -140,7 +137,8 @@
 @keyframes scard-pop {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.92);
+    /* Scale from the anchored edge (transform-origin) — never translate past it. */
+    transform: scale(0.92);
   }
   to {
     opacity: 1;
@@ -149,24 +147,31 @@
 }
 .scard.leaving {
   opacity: 0;
-  transform: translateY(10px) scale(0.96);
+  transform: scale(0.96);
   transition:
     opacity 240ms ease,
     transform 300ms ease;
 }
 .scard.open {
-  width: 392px;
+  width: var(--ov-open-w);
   border-radius: 16px;
 }
 .scard.working {
-  width: 210px;
+  width: var(--ov-work-w);
   border-radius: 18px;
 }
 
-/* Compact form: a resting pill, no pop-in / morph. */
+/* Compact form: two fixed widths so the recording→working change is an animatable
+   width transition (intrinsic max-content can't be transitioned, and every label
+   is short enough to fit the resting pill, so content-sizing produced no visible
+   grow). The resting pill hugs the waveform; the working pill is roomy enough to
+   center the longest label — the .swork-label ellipsis is only a safety net past it. */
 .scard.compact {
   animation: none;
-  transition: none;
+  width: var(--ov-rest-w);
+}
+.scard.compact.cworking {
+  width: var(--ov-work-w);
 }
 
 /* text region — auto-height open via grid-rows trick; region fades as a whole */
@@ -187,7 +192,7 @@
   min-height: 0;
 }
 .stext-cap {
-  max-height: 64px;
+  max-height: var(--ov-cap-max-h);
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -237,10 +242,13 @@
 /* base row — dot (left) | waveform (center) | timer + cancel (right).
    Same structure for pill & panel; the dot stays anchored left in both. */
 .sbase {
-  height: 40px;
+  height: var(--ov-base-h);
   padding: 0 10px;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* Equal side columns (min 22px to hold the cancel button) keep the center item
+     — waveform or label — centered whether the pill is at min width or content-
+     sized. */
+  grid-template-columns: minmax(22px, 1fr) auto minmax(22px, 1fr);
   align-items: center;
 }
 .sbase-l {
@@ -254,14 +262,6 @@
   align-items: center;
   gap: 10px;
   justify-self: end;
-}
-/* working state: simple flex row (spinner + label … cancel) */
-.sbase.sbase-working {
-  display: flex;
-  gap: 9px;
-}
-.sbase-working .sx {
-  margin-left: auto;
 }
 .sdot {
   width: 7px;
@@ -361,4 +361,9 @@
   font-size: 12px;
   color: var(--s-muted);
   white-space: nowrap;
+  padding: 0 8px; /* breathing room from the spinner / cancel when content-sized */
+  /* Safety net: ellipsize rather than clip if a label exceeds the max pill width. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

@@ -32,17 +32,29 @@ tauri_panel! {
     })
 }
 
-// Compact overlay window (Minimal / transcribing / processing). Sized to hold
-// the shared base pill (~40px tall, auto width ≥150px) plus its soft shadow.
-const OVERLAY_WIDTH: f64 = 200.0;
-const OVERLAY_HEIGHT: f64 = 52.0;
+// Native overlay window sizes (logical points). One window is reused for every
+// state and resized in `show_overlay_state`; each size only needs to be at least
+// as large as the visible card it hosts (the `--ov-*` vars in
+// RecordingOverlay.css). The card is anchored flush to the screen-edge side in
+// CSS, so window height does NOT shift where the card sits — only the
+// OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants below do. Keep these in
+// sync with the CSS card geometry.
+//
+// Compact overlay (Minimal / transcribing / processing). The pill is 40h and
+// animates width from 172 (--ov-rest-w, the resting waveform) up to 216
+// (--ov-work-w, the widest working label) in CSS; the window must fit that widest
+// state, plus a little slack for the centered grow. The pill expands from center,
+// so the extra width is shared.
+const OVERLAY_WIDTH: f64 = 256.0;
+const OVERLAY_HEIGHT: f64 = 46.0;
 
-// Overlay window used while live streaming transcription is active. Fixed for
-// the whole session — the card morphs (pill → panel) entirely in CSS inside
-// this transparent window, so the native window never resizes mid-session.
-// Sized to comfortably hold the expanded panel plus its shadow / pop-in.
-const OVERLAY_STREAM_WIDTH: f64 = 480.0;
-const OVERLAY_STREAM_HEIGHT: f64 = 280.0;
+// Live streaming window. Fixed for the whole session — the card morphs
+// (pill → panel) entirely in CSS inside this transparent window, so the native
+// window never resizes mid-session. The tallest card is the expanded panel:
+// 392w x ~118h (40 base + 64 text cap + 12 pad); this leaves a little room above
+// for the pop-in to scale into.
+const OVERLAY_STREAM_WIDTH: f64 = 432.0;
+const OVERLAY_STREAM_HEIGHT: f64 = 150.0;
 
 /// Overlay window size (logical) for a given UI state.
 fn overlay_dimensions(state: &str) -> (f64, f64) {

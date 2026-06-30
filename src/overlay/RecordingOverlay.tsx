@@ -195,11 +195,15 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
+  // spinner (left) | label (center) | cancel (right) — same 3-zone grid as the
+  // listening row, so the label is centered.
   const workingRow = (label: string, showCancel: boolean) => (
-    <div className="sbase sbase-working">
-      <span className="sspinner" />
+    <div className="sbase">
+      <div className="sbase-l">
+        <span className="sspinner" />
+      </div>
       <span className="swork-label">{label}</span>
-      {showCancel && cancelBtn}
+      <div className="sbase-r">{showCancel && cancelBtn}</div>
     </div>
   );
 
@@ -208,13 +212,18 @@ const RecordingOverlay: React.FC = () => {
     const hasText =
       streamText.committed.length > 0 || streamText.tentative.length > 0;
     const working = phase === "working";
-    const open = hasText && !working;
+    // Keep the panel open whenever there's text — even while finalizing — so the
+    // transcript stays put under a working spinner instead of collapsing and
+    // squishing the text mid-stream. Only fall back to the small working pill
+    // when there was no text to preserve.
+    const open = hasText;
+    const collapsed = working && !hasText;
 
     return (
-      <div dir={direction} className={`stream-stage ${position}`}>
+      <div dir={direction} className={`ov-stage ${position}`}>
         <div
           key={session}
-          className={`scard ${open ? "open" : ""} ${working ? "working" : ""} ${
+          className={`scard ${open ? "open" : ""} ${collapsed ? "working" : ""} ${
             isVisible ? "" : "leaving"
           }`}
         >
@@ -230,7 +239,9 @@ const RecordingOverlay: React.FC = () => {
                     {streamText.committed ? streamText.committed + " " : ""}
                   </span>
                   <span className="tentative">{streamText.tentative}</span>
-                  <span className="scaret" />
+                  {/* Drop the blinking caret once finalizing — it's no longer
+                      capturing, and a static spinner conveys the work. */}
+                  {!working && <span className="scaret" />}
                 </p>
               </div>
             </div>
@@ -248,21 +259,24 @@ const RecordingOverlay: React.FC = () => {
     );
   }
 
-  // ---- Minimal overlay: the same base as a compact pill (no grow) ----
+  // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
+  // spinner + label (transcribing / processing). Never both. The pill animates its
+  // width between them; the cancel button is in both rows so it stays put.
+  const working = state === "transcribing" || state === "processing";
+  const workLabel =
+    state === "processing"
+      ? t("overlay.processing")
+      : t("overlay.transcribing");
+
   return (
     <div
       dir={direction}
-      className={`overlay-compact ${isVisible ? "show" : ""}`}
+      className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
     >
-      <div className="scard compact">
-        {state === "recording"
-          ? listeningRow(false, true)
-          : workingRow(
-              state === "processing"
-                ? t("overlay.processing")
-                : t("overlay.transcribing"),
-              false,
-            )}
+      <div
+        className={`scard compact ${working && isVisible ? "cworking" : ""}`}
+      >
+        {working ? workingRow(workLabel, true) : listeningRow(false, true)}
       </div>
     </div>
   );
