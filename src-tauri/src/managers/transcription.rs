@@ -12,7 +12,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
@@ -31,6 +31,8 @@ use transcribe_rs::{
     },
     SpeechModel, TranscribeOptions,
 };
+
+const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -836,34 +838,100 @@ impl TranscriptionManager {
 
             let mut feed_count: u64 = 0;
             let mut emit_count: u64 = 0;
+            let mut streamed_samples: u64 = 0;
+            let mut stream_compute_elapsed = Duration::ZERO;
+            let mut last_perf_log = Instant::now();
+            let mut latest_revision: i32 = 0;
+            let mut latest_input_received_ms: i64 = 0;
+            let mut latest_audio_committed_ms: i64 = 0;
+            let mut latest_buffered_ms: i64 = 0;
             while let Ok(cmd) = rx.recv() {
                 match cmd {
                     StreamCmd::Feed(pcm) => {
                         self.touch_activity();
                         feed_count += 1;
+                        streamed_samples += pcm.len() as u64;
+                        let feed_start = Instant::now();
                         match stream.feed(&pcm) {
                             Ok(update) => {
+                                stream_compute_elapsed += feed_start.elapsed();
+                                latest_revision = update.revision;
+                                latest_input_received_ms = update.input_received_ms;
+                                latest_audio_committed_ms = update.audio_committed_ms;
+                                latest_buffered_ms = update.buffered_ms;
                                 if update.committed_changed || update.tentative_changed {
                                     let text = stream.text();
                                     emit_count += 1;
                                     self.emit_stream_text(&text.committed, &text.tentative);
                                 }
+                                if last_perf_log.elapsed() >= STREAM_PERF_LOG_INTERVAL {
+                                    let audio_secs = streamed_samples as f64 / 16_000.0;
+                                    let compute_secs = stream_compute_elapsed.as_secs_f64();
+                                    let speedup = if compute_secs > 0.0 {
+                                        audio_secs / compute_secs
+                                    } else {
+                                        0.0
+                                    };
+                                    debug!(
+                                        "Live preview perf: {:.2}s streamed audio, {:.2}s model compute ({:.2}x real-time), \
+                                         input_received={:.2}s, committed_audio={:.2}s, buffered={}ms, revision={}, \
+                                         {} frames fed, {} updates emitted",
+                                        audio_secs,
+                                        compute_secs,
+                                        speedup,
+                                        latest_input_received_ms as f64 / 1000.0,
+                                        latest_audio_committed_ms as f64 / 1000.0,
+                                        latest_buffered_ms,
+                                        latest_revision,
+                                        feed_count,
+                                        emit_count,
+                                    );
+                                    last_perf_log = Instant::now();
+                                }
                             }
-                            Err(e) => warn!("stream feed failed: {}", e),
+                            Err(e) => {
+                                stream_compute_elapsed += feed_start.elapsed();
+                                warn!("stream feed failed: {}", e);
+                            }
                         }
                     }
                     StreamCmd::Finalize(reply) => {
+                        let finalize_start = Instant::now();
                         let text = match stream.finalize() {
                             // After finalize the committed prefix holds the full
                             // text; display() = committed + tentative is the safe read.
-                            Ok(_) => stream.text().display(),
+                            Ok(update) => {
+                                stream_compute_elapsed += finalize_start.elapsed();
+                                latest_revision = update.revision;
+                                latest_input_received_ms = update.input_received_ms;
+                                latest_audio_committed_ms = update.audio_committed_ms;
+                                latest_buffered_ms = update.buffered_ms;
+                                stream.text().display()
+                            }
                             Err(e) => {
+                                stream_compute_elapsed += finalize_start.elapsed();
                                 error!("stream finalize failed: {}", e);
                                 String::new()
                             }
                         };
+                        let audio_secs = streamed_samples as f64 / 16_000.0;
+                        let compute_secs = stream_compute_elapsed.as_secs_f64();
+                        let speedup = if compute_secs > 0.0 {
+                            audio_secs / compute_secs
+                        } else {
+                            0.0
+                        };
                         info!(
-                            "Live preview finalized: {} frames fed, {} updates emitted, {} chars",
+                            "Live preview finalized in {:.2}s model compute for {:.2}s streamed audio ({:.2}x real-time): \
+                             input_received={:.2}s, committed_audio={:.2}s, buffered={}ms, revision={}, \
+                             {} frames fed, {} updates emitted, {} chars",
+                            compute_secs,
+                            audio_secs,
+                            speedup,
+                            latest_input_received_ms as f64 / 1000.0,
+                            latest_audio_committed_ms as f64 / 1000.0,
+                            latest_buffered_ms,
+                            latest_revision,
                             feed_count,
                             emit_count,
                             text.len()
