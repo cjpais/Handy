@@ -81,6 +81,29 @@ pub struct ModelInfo {
     pub supports_language_detection: bool, // Whether the model can auto-detect language (gates the "Auto" option)
 }
 
+const CHINESE_LANGUAGE_CODE: &str = "zh";
+
+fn recognition_language(language: &str) -> &str {
+    match language {
+        "zh-Hans" | "zh-Hant" => CHINESE_LANGUAGE_CODE,
+        other => other,
+    }
+}
+
+fn canonicalize_supported_languages(languages: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut canonical = Vec::with_capacity(languages.len());
+
+    for language in languages {
+        let language = recognition_language(&language).to_string();
+        if seen.insert(language.clone()) {
+            canonical.push(language);
+        }
+    }
+
+    canonical
+}
+
 /// Where a descriptor's *metadata* entered the registry — provenance. Distinct
 /// from [`ModelSource`] (how we fetch bytes) and from [`DiskStatus`] (whether
 /// it's on disk). When two producers yield the same id, [`Origin::rank`] decides
@@ -196,7 +219,8 @@ impl ModelDescriptor {
     /// disk `status`.
     pub fn to_model_info(&self, status: &DiskStatus) -> ModelInfo {
         let file = self.default_file();
-        let languages = self.caps.languages.clone().unwrap_or_default();
+        let languages =
+            canonicalize_supported_languages(self.caps.languages.clone().unwrap_or_default());
         ModelInfo {
             id: self.id.clone(),
             name: self.name.clone(),
@@ -237,7 +261,11 @@ pub fn effective_language(
         return intent.to_string();
     }
 
-    if intent != "auto" && supported_languages.iter().any(|l| l == intent) {
+    if intent != "auto"
+        && supported_languages
+            .iter()
+            .any(|language| recognition_language(language) == recognition_language(intent))
+    {
         return intent.to_string();
     }
 
@@ -250,7 +278,7 @@ pub fn effective_language(
     if let Some(en) = supported_languages.iter().find(|l| l.as_str() == "en") {
         return en.clone();
     }
-    supported_languages[0].clone()
+    recognition_language(&supported_languages[0]).to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -295,6 +323,17 @@ fn select_quant(files: Vec<hf_api::RepoFile>) -> Vec<hf_api::RepoFile> {
     }
 }
 
+/// Friendly name advertised by GGUF metadata, if present. Empty strings are not
+/// useful display names, so callers can keep their filename/repo fallback.
+fn probed_display_name(probe: &CapabilityProbe) -> Option<String> {
+    probe
+        .display_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(str::to_string)
+}
+
 /// Build a `ModelInfo` for a Hugging Face GGUF file from its capability probe.
 ///
 /// Routes through [`ModelDescriptor`] (origin [`Origin::HfDiscovery`]): the
@@ -310,7 +349,8 @@ fn hf_model_info(
     probe: &CapabilityProbe,
     is_recommended: bool,
 ) -> ModelInfo {
-    let display = repo_id.rsplit('/').next().unwrap_or(repo_id).to_string();
+    let display = probed_display_name(probe)
+        .unwrap_or_else(|| repo_id.rsplit('/').next().unwrap_or(repo_id).to_string());
     let description = if is_recommended {
         format!("Recommended • {}", repo_id)
     } else {
@@ -357,7 +397,7 @@ struct LocalCaps {
 }
 
 fn local_caps(probe: &CapabilityProbe) -> LocalCaps {
-    let languages = probe.languages.clone().unwrap_or_default();
+    let languages = canonicalize_supported_languages(probe.languages.clone().unwrap_or_default());
     LocalCaps {
         supports_streaming: probe.supports_streaming.unwrap_or(false),
         supports_translation: probe.supports_translation.unwrap_or(false),
@@ -514,16 +554,15 @@ impl ModelManager {
         let mut available_models = HashMap::new();
 
         // Whisper supported languages (99 languages from tokenizer)
-        // Including zh-Hans and zh-Hant variants to match frontend language codes
         let whisper_languages: Vec<String> = vec![
-            "en", "zh", "zh-Hans", "zh-Hant", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl",
-            "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs",
-            "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy",
-            "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is",
-            "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo",
-            "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht",
-            "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln",
-            "ha", "ba", "jw", "su", "yue",
+            "en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar",
+            "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs", "ro", "da", "hu",
+            "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa",
+            "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn",
+            "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc",
+            "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn",
+            "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw",
+            "su", "yue",
         ]
         .into_iter()
         .map(String::from)
@@ -898,11 +937,10 @@ impl ModelManager {
         );
 
         // SenseVoice supported languages
-        let sense_voice_languages: Vec<String> =
-            vec!["zh", "zh-Hans", "zh-Hant", "en", "yue", "ja", "ko"]
-                .into_iter()
-                .map(String::from)
-                .collect();
+        let sense_voice_languages: Vec<String> = vec!["zh", "en", "yue", "ja", "ko"]
+            .into_iter()
+            .map(String::from)
+            .collect();
 
         available_models.insert(
             "sense-voice-int8".to_string(),
@@ -1056,8 +1094,7 @@ impl ModelManager {
         );
 
         let cohere_languages: Vec<String> = vec![
-            "en", "fr", "de", "it", "es", "pt", "el", "nl", "pl", "zh", "zh-Hans", "zh-Hant", "ja",
-            "ko", "vi", "ar",
+            "en", "fr", "de", "it", "es", "pt", "el", "nl", "pl", "zh", "ja", "ko", "vi", "ar",
         ]
         .into_iter()
         .map(String::from)
@@ -1501,7 +1538,7 @@ impl ModelManager {
             }
 
             // Generate display name: replace - and _ with space, capitalize words
-            let display_name = model_id
+            let fallback_display_name = model_id
                 .replace(['-', '_'], " ")
                 .split_whitespace()
                 .map(|word| {
@@ -1533,6 +1570,7 @@ impl ModelManager {
                 CapabilityProbe::default()
             };
             let caps = local_caps(&probe);
+            let display_name = probed_display_name(&probe).unwrap_or(fallback_display_name);
 
             info!(
                 "Discovered custom transcribe-cpp model: {} ({}, {} MB, streaming={})",
@@ -1654,7 +1692,8 @@ impl ModelManager {
                     .metadata()
                     .map(|m| m.len() / (1024 * 1024))
                     .unwrap_or(0);
-                let display = fname.trim_end_matches(".gguf").to_string();
+                let display = probed_display_name(&probe)
+                    .unwrap_or_else(|| fname.trim_end_matches(".gguf").to_string());
 
                 info!("Discovered HF cache model: {} ({})", model_id, repo_id);
                 available_models.insert(
@@ -2413,6 +2452,47 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
+    fn test_effective_language_accepts_chinese_script_intent_for_zh_capability() {
+        let languages = vec!["zh".to_string()];
+
+        assert_eq!(effective_language("zh-Hans", &languages, false), "zh-Hans");
+        assert_eq!(effective_language("zh-Hant", &languages, false), "zh-Hant");
+    }
+
+    #[test]
+    fn test_effective_language_falls_back_to_canonical_chinese() {
+        let languages = vec!["zh-Hant".to_string()];
+
+        assert_eq!(effective_language("auto", &languages, false), "zh");
+    }
+
+    #[test]
+    fn test_canonicalize_supported_languages_collapses_chinese_scripts() {
+        let languages = canonicalize_supported_languages(
+            vec!["en", "zh", "zh-Hans", "zh-Hant", "yue"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        );
+
+        assert_eq!(languages, vec!["en", "zh", "yue"]);
+    }
+
+    fn build_test_gguf_string_metadata(kvs: &[(&str, &str)]) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend_from_slice(b"GGUF");
+        out.extend_from_slice(&3u32.to_le_bytes());
+        out.extend_from_slice(&0u64.to_le_bytes());
+        out.extend_from_slice(&(kvs.len() as u64).to_le_bytes());
+        for (key, value) in kvs {
+            push_gguf_str(&mut out, key);
+            out.extend_from_slice(&8u32.to_le_bytes()); // GGUF string value type.
+            push_gguf_str(&mut out, value);
+        }
+        out
+    }
+
+    #[test]
     fn test_discover_custom_transcribe_models() {
         let temp_dir = TempDir::new().unwrap();
         let models_dir = temp_dir.path().to_path_buf();
@@ -2426,7 +2506,12 @@ mod tests {
 
         // Custom GGUF model (also supported by transcribe-cpp)
         let mut gguf_file = File::create(models_dir.join("my-gguf-model.gguf")).unwrap();
-        gguf_file.write_all(b"fake gguf data").unwrap();
+        gguf_file
+            .write_all(&build_test_gguf_string_metadata(&[(
+                "general.name",
+                "Friendly GGUF Name",
+            )]))
+            .unwrap();
 
         // Create files that should be ignored
         File::create(models_dir.join(".hidden-model.bin")).unwrap(); // Hidden file
@@ -2494,7 +2579,7 @@ mod tests {
         assert!(models.contains_key("my-gguf-model"));
         let gguf = models.get("my-gguf-model").unwrap();
         assert_eq!(gguf.filename, "my-gguf-model.gguf");
-        assert_eq!(gguf.name, "My Gguf Model");
+        assert_eq!(gguf.name, "Friendly GGUF Name");
         assert!(gguf.is_custom);
         assert!(matches!(gguf.engine_type, EngineType::TranscribeCpp));
 

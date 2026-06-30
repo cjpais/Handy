@@ -3,11 +3,14 @@ export interface Language {
   label: string;
 }
 
+export const CHINESE_LANGUAGE_CODE = "zh";
+
 export const LANGUAGES: Language[] = [
   { value: "auto", label: "Auto Detect" },
   { value: "en", label: "English" },
-  { value: "zh-Hans", label: "Simplified Chinese" },
-  { value: "zh-Hant", label: "Traditional Chinese" },
+  { value: CHINESE_LANGUAGE_CODE, label: "Chinese" },
+  { value: "zh-Hans", label: "Chinese (Simplified output)" },
+  { value: "zh-Hant", label: "Chinese (Traditional output)" },
   { value: "yue", label: "Cantonese" },
   { value: "de", label: "German" },
   { value: "es", label: "Spanish" },
@@ -107,3 +110,44 @@ export const LANGUAGES: Language[] = [
   { value: "jw", label: "Javanese" },
   { value: "su", label: "Sundanese" },
 ];
+
+const CHINESE_OUTPUT_INTENTS = new Set(["zh-Hans", "zh-Hant"]);
+
+const LANGUAGE_LABELS = new Map(
+  LANGUAGES.map((language) => [language.value, language.label] as const),
+);
+
+export const MODEL_CAPABILITY_LANGUAGES: Language[] = LANGUAGES.filter(
+  (language) =>
+    language.value !== "auto" && !CHINESE_OUTPUT_INTENTS.has(language.value),
+);
+
+export const recognitionLanguage = (languageCode: string): string =>
+  CHINESE_OUTPUT_INTENTS.has(languageCode)
+    ? CHINESE_LANGUAGE_CODE
+    : languageCode;
+
+export const supportsLanguageCode = (
+  supportedLanguages: string[],
+  languageCode: string,
+): boolean => {
+  const recognitionCode = recognitionLanguage(languageCode);
+  return supportedLanguages.some(
+    (supportedLanguage) =>
+      recognitionLanguage(supportedLanguage) === recognitionCode,
+  );
+};
+
+export const getUniqueCapabilityLanguages = (
+  supportedLanguages: string[],
+): string[] => {
+  const seen = new Set<string>();
+  return supportedLanguages.map(recognitionLanguage).filter((languageCode) => {
+    if (seen.has(languageCode)) return false;
+    seen.add(languageCode);
+    return true;
+  });
+};
+
+export const getLanguageLabel = (languageCode: string): string | undefined =>
+  LANGUAGE_LABELS.get(languageCode);

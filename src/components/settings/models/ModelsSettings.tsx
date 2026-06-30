@@ -5,12 +5,16 @@ import { ChevronDown, Globe, RefreshCw, Search } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
-import { LANGUAGES } from "@/lib/constants/languages.ts";
+import {
+  getLanguageLabel,
+  MODEL_CAPABILITY_LANGUAGES,
+  supportsLanguageCode,
+} from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
-  return model.supported_languages.includes(langCode);
+  return supportsLanguageCode(model.supported_languages, langCode);
 };
 
 // Legacy models are the blob (Url-sourced) .bin/ONNX downloads, superseded by
@@ -69,10 +73,8 @@ export const ModelsSettings: React.FC = () => {
 
   // filtered languages for dropdown (exclude "auto")
   const filteredLanguages = useMemo(() => {
-    return LANGUAGES.filter(
-      (lang) =>
-        lang.value !== "auto" &&
-        lang.label.toLowerCase().includes(languageSearch.toLowerCase()),
+    return MODEL_CAPABILITY_LANGUAGES.filter((lang) =>
+      lang.label.toLowerCase().includes(languageSearch.toLowerCase()),
     );
   }, [languageSearch]);
 
@@ -81,7 +83,7 @@ export const ModelsSettings: React.FC = () => {
     if (languageFilter === "all") {
       return t("settings.models.filters.allLanguages");
     }
-    return LANGUAGES.find((lang) => lang.value === languageFilter)?.label || "";
+    return getLanguageLabel(languageFilter) || "";
   }, [languageFilter, t]);
 
   const getModelStatus = (modelId: string): ModelCardStatus => {

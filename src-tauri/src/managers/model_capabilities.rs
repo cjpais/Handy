@@ -50,6 +50,7 @@ pub const KNOWN_ARCHES: &[&str] = &[
 
 // GGUF metadata keys transcribe-cpp writes for ASR models.
 const KEY_ARCH: &str = "general.architecture";
+const KEY_NAME: &str = "general.name";
 const KEY_VARIANT: &str = "stt.variant";
 const KEY_LANGUAGES: &str = "general.languages";
 const KEY_CAP_STREAMING: &str = "stt.capability.streaming";
@@ -80,6 +81,8 @@ pub enum Compatibility {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Type)]
 pub struct CapabilityProbe {
     pub verdict: Compatibility,
+    /// `general.name`, when present.
+    pub display_name: Option<String>,
     /// `general.architecture`, when present.
     pub architecture: Option<String>,
     /// `stt.variant`, when present.
@@ -117,6 +120,7 @@ impl CapabilityProbe {
         };
         CapabilityProbe {
             verdict,
+            display_name: meta.get_str(KEY_NAME).map(str::to_string),
             architecture,
             variant: meta.get_str(KEY_VARIANT).map(str::to_string),
             languages: meta.get_string_array(KEY_LANGUAGES),
@@ -243,6 +247,10 @@ mod tests {
     fn known_arch_is_compatible_and_reads_caps() {
         let meta = meta_with(vec![
             ("general.architecture", GgufValue::String("parakeet".into())),
+            (
+                "general.name",
+                GgufValue::String("Parakeet Unified EN 0.6B".into()),
+            ),
             ("stt.capability.streaming", GgufValue::Bool(true)),
             (
                 "general.languages",
@@ -251,6 +259,10 @@ mod tests {
         ]);
         let probe = CapabilityProbe::from_metadata(&meta);
         assert_eq!(probe.verdict, Compatibility::Compatible);
+        assert_eq!(
+            probe.display_name.as_deref(),
+            Some("Parakeet Unified EN 0.6B")
+        );
         assert_eq!(probe.architecture.as_deref(), Some("parakeet"));
         assert_eq!(probe.supports_streaming, Some(true));
         assert_eq!(probe.languages, Some(vec!["en".to_string()]));

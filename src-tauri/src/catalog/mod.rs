@@ -85,6 +85,7 @@ impl From<CatalogModel> for ModelDescriptor {
             engine_type: EngineType::TranscribeCpp,
             caps: CapabilityProbe {
                 verdict: Compatibility::Compatible, // curated org models we ship support for
+                display_name: None,
                 architecture: m.architecture,
                 variant: None,
                 languages: Some(m.languages),
