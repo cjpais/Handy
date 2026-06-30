@@ -14,7 +14,7 @@ use tauri::WebviewWindowBuilder;
 use tauri::WebviewUrl;
 
 #[cfg(target_os = "macos")]
-use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
+use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel, StyleMask};
 
 #[cfg(target_os = "linux")]
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
@@ -48,13 +48,9 @@ tauri_panel! {
 const OVERLAY_WIDTH: f64 = 256.0;
 const OVERLAY_HEIGHT: f64 = 46.0;
 
-// Live streaming window. Fixed for the whole session — the card morphs
-// (pill → panel) entirely in CSS inside this transparent window, so the native
-// window never resizes mid-session. The tallest card is the expanded panel:
-// 392w x ~118h (40 base + 64 text cap + 12 pad); this leaves a little room above
-// for the pop-in to scale into.
-const OVERLAY_STREAM_WIDTH: f64 = 432.0;
-const OVERLAY_STREAM_HEIGHT: f64 = 150.0;
+// Actual is 394x118, just a little extra
+const OVERLAY_STREAM_WIDTH: f64 = 400.0;
+const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
 /// Overlay window size (logical) for a given UI state.
 fn overlay_dimensions(state: &str) -> (f64, f64) {
@@ -297,6 +293,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     .always_on_top(true)
     .skip_taskbar(true)
     .transparent(true)
+    .focusable(false)
     .focused(false)
     .visible(false);
 
@@ -344,7 +341,8 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
             .transparent(true)
             .no_activate(true)
             .corner_radius(0.0)
-            .with_window(|w| w.decorations(false).transparent(true))
+            .style_mask(StyleMask::empty().borderless().nonactivating_panel())
+            .with_window(|w| w.decorations(false).transparent(true).focusable(false))
             .collection_behavior(
                 CollectionBehavior::new()
                     .can_join_all_spaces()

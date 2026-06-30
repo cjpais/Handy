@@ -221,7 +221,7 @@
   margin: auto 0 0;
 }
 .stext-cap .tentative {
-  color: var(--s-muted);
+  color: inherit;
 }
 .scaret {
   display: inline-block;

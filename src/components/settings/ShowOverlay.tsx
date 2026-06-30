@@ -42,7 +42,7 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
     ];
 
     const selectedStyle = (getSetting("overlay_style") ||
-      "minimal") as OverlayStyle;
+      "live") as OverlayStyle;
     // The retired "none" position value falls back to "bottom" in the picker.
     const rawPosition = (getSetting("overlay_position") ||
       "bottom") as OverlayPosition;

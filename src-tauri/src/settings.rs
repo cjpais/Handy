@@ -507,11 +507,11 @@ fn default_overlay_position() -> OverlayPosition {
 
 fn default_overlay_style() -> OverlayStyle {
     // Mirror the overlay-position default: Linux hides the overlay by default,
-    // other platforms show the minimal pill.
+    // other platforms show the live overlay by default.
     #[cfg(target_os = "linux")]
     return OverlayStyle::None;
     #[cfg(not(target_os = "linux"))]
-    return OverlayStyle::Minimal;
+    return OverlayStyle::Live;
 }
 
 fn default_vad_enabled() -> bool {
@@ -997,23 +997,13 @@ fn apply_settings_migrations(
 
     // One-time overlay migration (only while the new key is absent):
     // overlay_position(none) -> style None (and reset position to Bottom,
-    // since 'none' is retired from the position picker); otherwise style
-    // follows live_preview.
+    // since 'none' is retired from the position picker); otherwise style Live.
     if settings_value.get("overlay_style").is_none() {
-        let legacy_live_preview = settings_value
-            .get("live_preview")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-
         if settings.overlay_position == OverlayPosition::None {
             settings.overlay_style = OverlayStyle::None;
             settings.overlay_position = OverlayPosition::Bottom;
         } else {
-            settings.overlay_style = if legacy_live_preview {
-                OverlayStyle::Live
-            } else {
-                OverlayStyle::Minimal
-            };
+            settings.overlay_style = OverlayStyle::Live;
         }
         updated = true;
     }
@@ -1062,6 +1052,44 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    #[test]
+    fn default_overlay_style_is_live_when_overlay_defaults_on() {
+        let settings = get_default_settings();
+        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+    }
+
+    #[test]
+    fn overlay_migration_keeps_disabled_overlay_off() {
+        let mut settings = get_default_settings();
+        settings.overlay_position = OverlayPosition::None;
+
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "overlay_position": "none"
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.overlay_style, OverlayStyle::None);
+        assert_eq!(settings.overlay_position, OverlayPosition::Bottom);
+    }
+
+    #[test]
+    fn overlay_migration_promotes_enabled_overlay_to_live() {
+        let mut settings = get_default_settings();
+        settings.overlay_position = OverlayPosition::Top;
+        settings.overlay_style = OverlayStyle::Minimal;
+
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "overlay_position": "top"
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert_eq!(settings.overlay_position, OverlayPosition::Top);
     }
 
     #[test]
