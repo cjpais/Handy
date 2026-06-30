@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
+      },
+      "whatsNewPreview": {
+        "title": "Förhandsvisa nyheter",
+        "description": "Öppna den senaste medföljande versionsinformationen utan att markera den som visad",
+        "button": "Förhandsvisa",
+        "noNotes": "Ingen medföljande versionsinformation hittades",
+        "error": "Det gick inte att förhandsvisa versionsinformationen"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "Högpresterande inferens av OpenAI:s Whisper-modell för automatisk taligenkänning",
           "details": "Handy använder ggml för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Visa nyheter",
+        "description": "Visa versionsinformation efter Handy-uppdateringar"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "Transkriberar...",
     "processing": "Bearbetar..."
+  },
+  "whatsNew": {
+    "title": "Nytt i Handy v{{version}}"
   }
 }

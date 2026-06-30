@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間（ミリ秒）。末尾の音声を捕捉するため。0 = 追加バッファなし。"
+      },
+      "whatsNewPreview": {
+        "title": "新機能をプレビュー",
+        "description": "最新の同梱リリースノートを既読にせずに開く",
+        "button": "プレビュー",
+        "noNotes": "同梱リリースノートが見つかりません",
+        "error": "リリースノートのプレビューに失敗しました"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
           "details": "Handyは高速でローカルな音声からテキストへの変換にggmlを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
+      },
+      "whatsNewUpdates": {
+        "label": "新機能を表示",
+        "description": "Handyのアップデート後にリリースノートを表示"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "文字起こし中...",
     "processing": "処理中..."
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}} の新機能"
   }
 }

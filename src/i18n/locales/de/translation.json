@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
+      },
+      "whatsNewPreview": {
+        "title": "Vorschau der Neuerungen",
+        "description": "Die neuesten gebündelten Versionshinweise öffnen, ohne sie als gesehen zu markieren",
+        "button": "Vorschau",
+        "noNotes": "Keine gebündelten Versionshinweise gefunden",
+        "error": "Versionshinweise konnten nicht angezeigt werden"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "Hochleistungs-Inferenz des Whisper-Spracherkennungsmodells von OpenAI",
           "details": "Handy verwendet ggml für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Neuerungen anzeigen",
+        "description": "Versionshinweise nach Handy-Updates anzeigen"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "Transkribiere...",
     "processing": "Verarbeite..."
+  },
+  "whatsNew": {
+    "title": "Neu in Handy v{{version}}"
   }
 }

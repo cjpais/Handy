@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",
         "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
+      },
+      "whatsNewPreview": {
+        "title": "Anteprima delle novità",
+        "description": "Apri le note di rilascio incluse più recenti senza segnarle come viste",
+        "button": "Anteprima",
+        "noNotes": "Nessuna nota di rilascio inclusa trovata",
+        "error": "Impossibile mostrare l'anteprima delle note di rilascio"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "Inferenza ad alte prestazioni del modello di riconoscimento vocale automatico Whisper di OpenAI",
           "details": "Handy usa ggml per il riconoscimento vocale veloce in locale. Grazie a Georgi Gerganov e collaboratori per il fantastico lavoro."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Mostra novità",
+        "description": "Mostra le note di rilascio dopo gli aggiornamenti di Handy"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "Trascrizione...",
     "processing": "Elaborazione..."
+  },
+  "whatsNew": {
+    "title": "Novità in Handy v{{version}}"
   }
 }

@@ -487,6 +487,13 @@
         "label": "Check for Updates",
         "description": "Automatically check for new versions of Handy"
       },
+      "whatsNewPreview": {
+        "title": "Preview What's New",
+        "description": "Open the latest bundled release note without marking it as seen",
+        "button": "Preview",
+        "noNotes": "No bundled release notes found",
+        "error": "Failed to preview release notes"
+      },
       "soundTheme": {
         "label": "Sound Theme",
         "description": "Choose a sound theme for recording start and stop feedback"
@@ -555,6 +562,10 @@
         "title": "Version",
         "description": "Current version of Handy"
       },
+      "whatsNewUpdates": {
+        "label": "Show What's New",
+        "description": "Show release notes after Handy updates"
+      },
       "appDataDirectory": {
         "title": "App Data Directory",
         "description": "Location where Handy stores its data"
@@ -595,6 +606,9 @@
     "portableUpdateTitle": "Manual update required",
     "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
     "portableUpdateButton": "Open GitHub Releases"
+  },
+  "whatsNew": {
+    "title": "New in Handy v{{version}}"
   },
   "common": {
     "loading": "Loading...",

@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "額外錄音緩衝",
         "description": "放開按鍵後繼續錄音的額外時間（毫秒），以捕捉尾音。0 = 無額外緩衝。"
+      },
+      "whatsNewPreview": {
+        "title": "預覽新功能",
+        "description": "開啟最新內建版本資訊，且不標記為已看過",
+        "button": "預覽",
+        "noNotes": "找不到內建版本資訊",
+        "error": "無法預覽版本資訊"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "針對 OpenAI Whisper 自動語音識別模型的高效能推理引擎",
           "details": "Handy 使用 ggml 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
+      },
+      "whatsNewUpdates": {
+        "label": "顯示新功能",
+        "description": "Handy 更新後顯示版本資訊"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "正在轉錄...",
     "processing": "處理中..."
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}} 新功能"
   }
 }

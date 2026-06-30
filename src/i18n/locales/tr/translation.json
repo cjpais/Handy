@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "Ekstra kayıt tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
+      },
+      "whatsNewPreview": {
+        "title": "Yenilikleri Önizle",
+        "description": "En son paketlenmiş sürüm notunu görüldü olarak işaretlemeden aç",
+        "button": "Önizle",
+        "noNotes": "Paketlenmiş sürüm notu bulunamadı",
+        "error": "Sürüm notları önizlenemedi"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
           "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için ggml kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Yenilikleri Göster",
+        "description": "Handy güncellemelerinden sonra sürüm notlarını göster"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
     "processing": "İşleniyor..."
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}} yenilikleri"
   }
 }

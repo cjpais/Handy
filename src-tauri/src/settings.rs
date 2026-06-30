@@ -361,6 +361,10 @@ pub struct AppSettings {
     pub autostart_enabled: bool,
     #[serde(default = "default_update_checks_enabled")]
     pub update_checks_enabled: bool,
+    #[serde(default = "default_show_whats_new_on_update")]
+    pub show_whats_new_on_update: bool,
+    #[serde(default)]
+    pub whats_new_last_seen_version: String,
     #[serde(default = "default_model")]
     pub selected_model: String,
     #[serde(default)]
@@ -480,6 +484,14 @@ fn default_autostart_enabled() -> bool {
 
 fn default_update_checks_enabled() -> bool {
     true
+}
+
+fn default_show_whats_new_on_update() -> bool {
+    true
+}
+
+fn default_whats_new_last_seen_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
 }
 
 fn default_selected_language() -> String {
@@ -812,6 +824,8 @@ pub fn get_default_settings() -> AppSettings {
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
+        show_whats_new_on_update: default_show_whats_new_on_update(),
+        whats_new_last_seen_version: default_whats_new_last_seen_version(),
         selected_model: "".to_string(),
         onboarding_completed: false,
         always_on_microphone: false,

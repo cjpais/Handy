@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
+      },
+      "whatsNewPreview": {
+        "title": "Náhled novinek",
+        "description": "Otevřít nejnovější přibalené poznámky k vydání bez označení jako zobrazené",
+        "button": "Náhled",
+        "noNotes": "Nebyly nalezeny žádné přibalené poznámky k vydání",
+        "error": "Nepodařilo se zobrazit náhled poznámek k vydání"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "Vysoce výkonné inferenční zpracování modelu automatického rozpoznávání řeči Whisper od OpenAI",
           "details": "Handy používá ggml pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Zobrazovat novinky",
+        "description": "Zobrazovat poznámky k vydání po aktualizacích Handy"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "Přepisuji...",
     "processing": "Zpracovávám..."
+  },
+  "whatsNew": {
+    "title": "Novinky v Handy v{{version}}"
   }
 }

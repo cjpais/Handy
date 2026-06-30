@@ -547,6 +547,13 @@
       "recordingBuffer": {
         "title": "Dodatkowy bufor nagrywania",
         "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."
+      },
+      "whatsNewPreview": {
+        "title": "Podgląd nowości",
+        "description": "Otwórz najnowsze dołączone informacje o wydaniu bez oznaczania ich jako wyświetlone",
+        "button": "Podgląd",
+        "noNotes": "Nie znaleziono dołączonych informacji o wydaniu",
+        "error": "Nie udało się wyświetlić podglądu informacji o wydaniu"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "Wydajne wykonywanie modelu rozpoznawania mowy Whisper od OpenAI",
           "details": "Handy używa ggml do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Pokaż nowości",
+        "description": "Pokazuj informacje o wydaniu po aktualizacjach Handy"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "Transkrypcja...",
     "processing": "Przetwarzanie..."
+  },
+  "whatsNew": {
+    "title": "Nowości w Handy v{{version}}"
   }
 }

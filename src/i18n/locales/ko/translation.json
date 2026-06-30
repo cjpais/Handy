@@ -547,6 +547,13 @@
         "appData": "앱 데이터:",
         "models": "모델:",
         "settings": "설정:"
+      },
+      "whatsNewPreview": {
+        "title": "새 소식 미리보기",
+        "description": "최신 내장 릴리스 노트를 본 것으로 표시하지 않고 엽니다",
+        "button": "미리보기",
+        "noNotes": "내장 릴리스 노트를 찾을 수 없습니다",
+        "error": "릴리스 노트를 미리 볼 수 없습니다"
       }
     },
     "about": {
@@ -576,6 +583,10 @@
           "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
           "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 ggml를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "새 소식 표시",
+        "description": "Handy 업데이트 후 릴리스 노트를 표시합니다"
       }
     }
   },
@@ -651,5 +662,8 @@
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}}의 새 소식"
   }
 }
