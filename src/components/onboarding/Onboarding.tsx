@@ -145,16 +145,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
       </div>
 
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
-        <div className="flex flex-col gap-4 pb-6">
+        <div className="space-y-6 pb-6">
           {models.some((m: ModelInfo) => m.is_downloaded) && (
-            <div className="flex flex-col gap-3">
+            <div className="space-y-3">
               <div className="text-left">
-                <h2 className="text-sm font-medium text-text/80">
+                <h2 className="text-sm font-medium text-text/60">
                   {t("onboarding.existingModelsTitle")}
                 </h2>
-                <p className="text-xs text-text/50">
-                  {t("onboarding.existingModelsDescription")}
-                </p>
               </div>
               {models
                 .filter((m: ModelInfo) => m.is_downloaded)
@@ -172,9 +169,9 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
           )}
 
           {downloadable.length > 0 && (
-            <>
+            <div className="space-y-3">
               <div className="text-left">
-                <h2 className="text-sm font-medium text-text/80">
+                <h2 className="text-sm font-medium text-text/60">
                   {t("onboarding.downloadModelsTitle")}
                 </h2>
               </div>
@@ -241,7 +238,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                     showRecommended={false}
                   />
                 ))}
-            </>
+            </div>
           )}
         </div>
       </div>

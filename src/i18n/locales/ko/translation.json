@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "추천",
-    "download": "다운로드",
-    "downloading": "다운로드 중...",
     "customModelDescription": "공식 지원되지 않음",
-    "downloadFailed": "다운로드에 실패했습니다. 다시 시도해주세요.",
     "modelCard": {
       "accuracy": "정확도",
       "speed": "속도"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "사용 가능한 모델을 불러오는데 실패했습니다",
-      "selectModel": "Failed to select model",
-      "downloadModel": "모델 다운로드 실패: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "권한 필요",
@@ -151,7 +145,6 @@
     "capabilities": {
       "languageSelection": "여러 입력 언어를 지원합니다",
       "singleLanguage": "이 언어만 지원합니다",
-      "multiLanguage": "다국어",
       "languageCount": "{{total}} languages",
       "languageOnly": "{{language}} 전용",
       "translation": "영어로 번역 가능",
@@ -162,8 +155,7 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} 설정",
-      "noSettingsNeeded": "이 모델은 별도의 설정 없이 자동으로 작동합니다."
+      "title": "{{model}} 설정"
     },
     "general": {
       "title": "일반",
@@ -197,7 +189,6 @@
       "language": {
         "title": "언어",
         "description": "음성 인식 언어를 선택하세요. 자동은 언어를 자동으로 감지하며, 특정 언어를 선택하면 해당 언어의 정확도가 향상될 수 있습니다.",
-        "descriptionUnsupported": "Parakeet 모델은 자동으로 언어를 감지합니다. 수동 선택이 필요하지 않습니다.",
         "searchPlaceholder": "언어 검색...",
         "noResults": "언어를 찾을 수 없습니다",
         "auto": "자동"
@@ -235,15 +226,10 @@
       "description": "음성 인식 모델을 선택하거나 추가 모델을 다운로드하세요. 모델마다 정확도와 속도가 다릅니다.",
       "yourModels": "다운로드된 모델",
       "availableModels": "다운로드 가능",
-      "downloaded": "다운로드됨",
-      "available": "다운로드 가능",
       "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
       "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
       "deleteTitle": "모델 삭제",
       "filters": {
-        "all": "전체",
-        "multiLanguage": "다국어",
-        "translation": "번역",
         "allLanguages": "모든 언어"
       },
       "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "고급",
       "groups": {
         "app": "앱",
         "output": "출력",
@@ -280,8 +265,6 @@
           "description": "ONNX 모델의 하드웨어 가속 (Parakeet, Canary, Moonshine 등). Windows의 DirectML은 실험적입니다. 모델이 전사에 실패할 수 있습니다."
         },
         "gpuDevice": {
-          "title": "GPU 장치",
-          "description": "Whisper 추론에 사용할 GPU를 선택합니다. 자동은 전용 GPU를 선택합니다.",
           "auto": "자동"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "영어로 번역",
-        "description": "텍스트로 변환시 다른 언어의 음성을 자동으로 영어로 번역합니다.",
-        "descriptionUnsupported": "번역은 {{model}} 모델에서 지원되지 않습니다."
+        "description": "텍스트로 변환시 다른 언어의 음성을 자동으로 영어로 번역합니다."
       },
       "modelUnload": {
         "title": "모델 언로드",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "후처리",
       "hotkey": {
         "title": "단축키"
       },
@@ -399,9 +380,6 @@
           "description": "OpenAI 호환 제공자를 선택하세요."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "완전히 기기에서 실행됩니다. API 키나 네트워크 접근이 필요하지 않습니다.",
-          "requirements": "macOS Tahoe (26.0) 이상을 실행하는 Apple Silicon Mac이 필요합니다. 시스템 설정에서 Apple Intelligence가 활성화되어 있어야 합니다.",
           "unavailable": "이 기기에서는 Apple Intelligence를 사용할 수 없습니다. macOS Tahoe (26.0) 이상을 실행하고 시스템 설정에서 Apple Intelligence가 활성화된 Apple Silicon Mac이 필요합니다."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "모델",
-          "descriptionApple": "선택적 숫자 토큰 제한을 제공하거나 기본 기기 내 프리셋을 유지하세요.",
           "descriptionCustom": "사용자 정의 엔드포인트에서 예상하는 모델 식별자를 제공하세요.",
           "descriptionDefault": "선택한 제공자가 제공하는 모델을 선택하세요.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "모델 검색 또는 선택",
           "placeholderNoOptions": "모델 이름 입력",
           "refreshModels": "모델 새로고침"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "{{model}} 다운로드 중...",
     "checkingUpdates": "업데이트 확인 중...",
-    "updateAvailable": "업데이트 사용 가능: {{version}}",
     "updateAvailableShort": "업데이트 사용 가능",
     "upToDate": "최신 상태",
-    "downloadUpdate": "업데이트 다운로드",
-    "restart": "재시작",
     "updateCheckingDisabled": "업데이트 확인 비활성화됨",
     "downloading": "다운로드 중... {{progress}}%",
     "installing": "설치 중...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "로딩 중...",
-    "save": "저장",
-    "cancel": "취소",
-    "reset": "재설정",
-    "add": "추가",
-    "remove": "제거",
     "delete": "삭제",
-    "edit": "편집",
-    "create": "만들기",
-    "update": "업데이트",
     "close": "닫기",
     "open": "열기",
     "copy": "복사",
     "clear": "지우기",
-    "default": "기본값",
-    "enabled": "활성화됨",
-    "disabled": "비활성화됨",
-    "on": "켜짐",
-    "off": "꺼짐",
-    "yes": "예",
-    "no": "아니오",
     "noOptionsFound": "옵션을 찾을 수 없습니다"
   },
   "accessibility": {
-    "permissionsRequired": "접근성 권한 필요",
     "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
-    "openSettings": "시스템 설정 열기",
-    "dismiss": "닫기"
+    "openSettings": "시스템 설정 열기"
   },
   "errors": {
     "loadDirectory": "디렉토리 로딩 오류: {{error}}",

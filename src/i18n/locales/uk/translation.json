@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "Рекомендовано",
-    "download": "Завантажити",
-    "downloading": "Завантаження...",
     "customModelDescription": "Офіційно не підтримується",
-    "downloadFailed": "Завантаження не вдалося. Будь ласка, спробуйте ще раз.",
     "modelCard": {
       "accuracy": "точність",
       "speed": "швидкість"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Не вдалося завантажити доступні моделі",
-      "selectModel": "Failed to select model",
-      "downloadModel": "Не вдалося завантажити модель: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Потрібні дозволи",
@@ -148,7 +142,6 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Підтримує кілька мов введення",
-      "multiLanguage": "Багатомовна",
       "languageCount": "{{total}} languages",
       "translation": "Може перекладати на англійську",
       "translate": "Перекласти на англійську",
@@ -162,8 +155,7 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "Налаштування {{model}}",
-      "noSettingsNeeded": "Ця модель працює автоматично без потреби в налаштуванні."
+      "title": "Налаштування {{model}}"
     },
     "general": {
       "title": "Загальні",
@@ -197,7 +189,6 @@
       "language": {
         "title": "Мова",
         "description": "Оберіть мову для розпізнавання мовлення. Режим «Авто» визначить мову автоматично, а вибір конкретної мови може покращити точність.",
-        "descriptionUnsupported": "Модель Parakeet автоматично визначає мову. Ручний вибір не потрібен.",
         "searchPlaceholder": "Пошук мов...",
         "noResults": "Мов не знайдено",
         "auto": "Авто"
@@ -210,15 +201,10 @@
     "models": {
       "title": "Моделі транскрипції",
       "description": "Виберіть модель транскрипції або завантажте додаткові моделі. Різні моделі пропонують різні рівні точності та швидкості.",
-      "downloaded": "Завантажено",
-      "available": "Доступні для завантаження",
       "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
       "deleteActiveConfirm": "{{modelName}} — ваша активна модель. Видалення зупинить транскрипцію, доки ви не оберете нову модель. Ви впевнені?",
       "deleteTitle": "Видалити модель",
       "filters": {
-        "all": "Усі",
-        "multiLanguage": "Багатомовні",
-        "translation": "Переклад",
         "allLanguages": "Усі мови"
       },
       "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Розширені",
       "groups": {
         "app": "Додаток",
         "output": "Вивід",
@@ -280,8 +265,6 @@
           "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). DirectML на Windows є експериментальним. Моделі можуть не виконувати транскрипцію."
         },
         "gpuDevice": {
-          "title": "Пристрій GPU",
-          "description": "Виберіть GPU для інференсу Whisper. Автоматично обирає виділений GPU.",
           "auto": "Авто"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Перекласти на англійську",
-        "description": "Автоматично перекладати мовлення з інших мов англійською під час транскрипції.",
-        "descriptionUnsupported": "Переклад не підтримується моделлю {{model}}."
+        "description": "Автоматично перекладати мовлення з інших мов англійською під час транскрипції."
       },
       "modelUnload": {
         "title": "Вивантаження моделі",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "Постобробка",
       "hotkey": {
         "title": "Гаряча клавіша"
       },
@@ -399,9 +380,6 @@
           "description": "Оберіть OpenAI-сумісного провайдера"
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Працює повністю на пристрої. API-ключ або доступ до мережі не потрібні.",
-          "requirements": "Потрібен Mac з Apple Silicon під управлінням macOS Tahoe (26.0) або новіше. Apple Intelligence має бути увімкнений у Системних налаштуваннях.",
           "unavailable": "Apple Intelligence недоступний на цьому пристрої. Потрібен Mac з Apple Silicon під управлінням macOS Tahoe (26.0) або новіше з увімкненим Apple Intelligence в Системних налаштуваннях."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "Модель",
-          "descriptionApple": "Вкажіть необов'язковий числовий ліміт токенів або залиште стандартний пресет на пристрої.",
           "descriptionCustom": "Вкажіть ідентифікатор моделі, який очікує ваш ендпоінт.",
           "descriptionDefault": "Оберіть модель, надану обраним провайдером",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Шукайте або оберіть модель",
           "placeholderNoOptions": "Введіть назву моделі",
           "refreshModels": "Оновити моделі"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "Завантаження {{model}}...",
     "checkingUpdates": "Перевірка оновлень...",
-    "updateAvailable": "Доступне оновлення: {{version}}",
     "updateAvailableShort": "Доступне оновлення",
     "upToDate": "Актуальна версія",
-    "downloadUpdate": "Завантажити оновлення",
-    "restart": "Перезапустити",
     "updateCheckingDisabled": "Перевірка оновлень вимкнена",
     "downloading": "Завантаження... {{progress}}%",
     "installing": "Встановлення...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "Завантаження...",
-    "save": "Зберегти",
-    "cancel": "Скасувати",
-    "reset": "Скинути",
-    "add": "Додати",
-    "remove": "Видалити",
     "delete": "Видалити",
-    "edit": "Редагувати",
-    "create": "Створити",
-    "update": "Оновити",
     "close": "Закрити",
     "open": "Відкрити",
     "copy": "Копіювати",
     "clear": "Очистити",
-    "default": "За замовчуванням",
-    "enabled": "Увімкнено",
-    "disabled": "Вимкнено",
-    "on": "Увімк.",
-    "off": "Вимк.",
-    "yes": "Так",
-    "no": "Ні",
     "noOptionsFound": "Опцій не знайдено"
   },
   "accessibility": {
-    "permissionsRequired": "Потрібні права доступу",
     "permissionsDescription": "Handy потребує дозволи доступності для введення транскрибованого тексту.",
-    "openSettings": "Відкрити Системні налаштування",
-    "dismiss": "Закрити"
+    "openSettings": "Відкрити Системні налаштування"
   },
   "errors": {
     "loadDirectory": "Помилка завантаження папки: {{error}}",

@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "För att komma igång, välj en transkriptionsmodell",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "Rekommenderat",
-    "download": "Ladda ner",
-    "downloading": "Laddar ner...",
     "customModelDescription": "Stöds inte officiellt",
-    "downloadFailed": "Nedladdningen misslyckades. Försök igen.",
     "modelCard": {
       "accuracy": "noggrannhet",
       "speed": "hastighet"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Misslyckades med att ladda tillgängliga modeller",
-      "selectModel": "Failed to select model",
-      "downloadModel": "Misslyckades med att ladda ner modell: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Behörigheter krävs",
@@ -151,7 +145,6 @@
     "capabilities": {
       "languageSelection": "Stöder flera indataspråk",
       "singleLanguage": "Stöder endast detta språk",
-      "multiLanguage": "Flerspråkig",
       "languageCount": "{{total}} languages",
       "languageOnly": "Endast {{language}}",
       "translation": "Kan översätta till engelska",
@@ -162,8 +155,7 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}}-inställningar",
-      "noSettingsNeeded": "Denna modell fungerar automatiskt utan att någon konfiguration krävs."
+      "title": "{{model}}-inställningar"
     },
     "general": {
       "title": "Allmänt",
@@ -197,7 +189,6 @@
       "language": {
         "title": "Språk",
         "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
-        "descriptionUnsupported": "Parakeet-modellen upptäcker automatiskt språket. Inget manuellt val behövs.",
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",
         "auto": "Auto"
@@ -212,15 +203,10 @@
       "description": "Välj en transkriptionsmodell eller ladda ner ytterligare modeller. Olika modeller erbjuder varierande nivåer av noggrannhet och hastighet.",
       "yourModels": "Nedladdade modeller",
       "availableModels": "Tillgängliga att ladda ner",
-      "downloaded": "Nedladdad",
-      "available": "Tillgänglig att ladda ner",
       "deleteConfirm": "Är du säker på att du vill ta bort {{modelName}}? Du måste ladda ner den igen för att använda den.",
       "deleteActiveConfirm": "{{modelName}} är din aktiva modell. Om du tar bort den avbryts transkriptioner tills du väljer en ny modell. Är du säker?",
       "deleteTitle": "Ta bort modell",
       "filters": {
-        "all": "Alla",
-        "multiLanguage": "Flerspråkig",
-        "translation": "Översättning",
         "allLanguages": "Alla språk"
       },
       "noModelsMatch": "Inga modeller matchar detta filter.",
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Avancerat",
       "groups": {
         "app": "App",
         "output": "Utmatning",
@@ -280,8 +265,6 @@
           "description": "Hårdvaruacceleration för ONNX-modeller (Parakeet, Canary, Moonshine, etc.). DirectML på Windows är experimentellt. Modeller kan misslyckas med att transkribera."
         },
         "gpuDevice": {
-          "title": "GPU-enhet",
-          "description": "Välj vilken GPU som ska användas för Whisper-inferens. Auto väljer den dedikerade GPU:n.",
           "auto": "Auto"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Översätt till engelska",
-        "description": "Översätt automatiskt tal från andra språk till engelska under transkription.",
-        "descriptionUnsupported": "Översättning stöds inte av {{model}}-modellen."
+        "description": "Översätt automatiskt tal från andra språk till engelska under transkription."
       },
       "modelUnload": {
         "title": "Avlasta modell",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "Efterbearbetning",
       "hotkey": {
         "title": "Snabbkommando"
       },
@@ -399,9 +380,6 @@
           "description": "Välj en OpenAI-kompatibel leverantör."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Körs helt lokalt på enheten. Ingen API-nyckel eller nätverksåtkomst krävs.",
-          "requirements": "Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare. Apple Intelligence måste vara aktiverat i systeminställningarna.",
           "unavailable": "Apple Intelligence är inte tillgängligt på den här enheten. Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare med Apple Intelligence aktiverat i systeminställningarna."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "Modell",
-          "descriptionApple": "Ange en valfri numerisk tokengräns eller behåll standardinställningen på enheten.",
           "descriptionCustom": "Ange den modellidentifierare som förväntas av din anpassade slutpunkt.",
           "descriptionDefault": "Välj en modell som exponeras av den valda leverantören.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Sök eller välj en modell",
           "placeholderNoOptions": "Ange ett modellnamn",
           "refreshModels": "Uppdatera modeller"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "Laddar ner {{model}}...",
     "checkingUpdates": "Söker efter uppdateringar...",
-    "updateAvailable": "Uppdatering tillgänglig: {{version}}",
     "updateAvailableShort": "Uppdatering tillgänglig",
     "upToDate": "Uppdaterad",
-    "downloadUpdate": "Ladda ner uppdatering",
-    "restart": "Starta om",
     "updateCheckingDisabled": "Uppdateringskontroll inaktiverad",
     "downloading": "Laddar ner... {{progress}}%",
     "installing": "Installerar...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "Laddar...",
-    "save": "Spara",
-    "cancel": "Avbryt",
-    "reset": "Återställ",
-    "add": "Lägg till",
-    "remove": "Ta bort",
     "delete": "Ta bort",
-    "edit": "Redigera",
-    "create": "Skapa",
-    "update": "Uppdatera",
     "close": "Stäng",
     "open": "Öppna",
     "copy": "Kopiera",
     "clear": "Rensa",
-    "default": "Standard",
-    "enabled": "Aktiverad",
-    "disabled": "Inaktiverad",
-    "on": "På",
-    "off": "Av",
-    "yes": "Ja",
-    "no": "Nej",
     "noOptionsFound": "Inga alternativ hittades"
   },
   "accessibility": {
-    "permissionsRequired": "Behörigheter för hjälpmedel krävs",
     "permissionsDescription": "Handy behöver behörighet för hjälpmedel för att kunna skriva transkriberad text.",
-    "openSettings": "Öppna systeminställningar",
-    "dismiss": "Avvisa"
+    "openSettings": "Öppna systeminställningar"
   },
   "errors": {
     "loadDirectory": "Fel vid laddning av mapp: {{error}}",

@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Para começar, escolha um modelo de transcrição",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "Recomendado",
-    "download": "Baixar",
-    "downloading": "Baixando...",
     "customModelDescription": "Não suportado oficialmente",
-    "downloadFailed": "Falha no download. Por favor, tente novamente.",
     "modelCard": {
       "accuracy": "precisão",
       "speed": "velocidade"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Falha ao carregar modelos disponíveis",
-      "selectModel": "Failed to select model",
-      "downloadModel": "Falha ao baixar modelo: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Permissões Necessárias",
@@ -148,7 +142,6 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Suporta vários idiomas de entrada",
-      "multiLanguage": "Multi-idioma",
       "languageCount": "{{total}} languages",
       "translation": "Pode traduzir para inglês",
       "translate": "Traduzir para inglês",
@@ -162,8 +155,7 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "Configurações de {{model}}",
-      "noSettingsNeeded": "Este modelo funciona automaticamente sem necessidade de configuração."
+      "title": "Configurações de {{model}}"
     },
     "general": {
       "title": "Geral",
@@ -197,7 +189,6 @@
       "language": {
         "title": "Idioma",
         "description": "Selecione o idioma para reconhecimento de fala. Auto detectará automaticamente o idioma, enquanto selecionar um idioma específico pode melhorar a precisão para esse idioma.",
-        "descriptionUnsupported": "O modelo Parakeet detecta automaticamente o idioma. Não é necessária seleção manual.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "Nenhum idioma encontrado",
         "auto": "Auto"
@@ -210,15 +201,10 @@
     "models": {
       "title": "Modelos de Transcrição",
       "description": "Selecione um modelo de transcrição ou baixe modelos adicionais. Diferentes modelos oferecem diferentes níveis de precisão e velocidade.",
-      "downloaded": "Baixados",
-      "available": "Disponíveis para Download",
       "deleteConfirm": "Tem certeza de que deseja excluir {{modelName}}? Você precisará baixá-lo novamente para usá-lo.",
       "deleteActiveConfirm": "{{modelName}} é o seu modelo ativo. Excluí-lo interromperá as transcrições até que você selecione um novo modelo. Tem certeza?",
       "deleteTitle": "Excluir Modelo",
       "filters": {
-        "all": "Todos",
-        "multiLanguage": "Multi-idioma",
-        "translation": "Tradução",
         "allLanguages": "Todos os Idiomas"
       },
       "noModelsMatch": "Nenhum modelo corresponde a este filtro.",
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Avançado",
       "groups": {
         "app": "Aplicativo",
         "output": "Saída",
@@ -280,8 +265,6 @@
           "description": "Aceleração por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML no Windows é experimental. Os modelos podem falhar na transcrição."
         },
         "gpuDevice": {
-          "title": "Dispositivo GPU",
-          "description": "Selecione qual GPU usar para inferência do Whisper. Auto escolhe a GPU dedicada.",
           "auto": "Auto"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Traduzir para Inglês",
-        "description": "Traduzir automaticamente fala de outros idiomas para inglês durante a transcrição.",
-        "descriptionUnsupported": "Tradução não é suportada pelo modelo {{model}}."
+        "description": "Traduzir automaticamente fala de outros idiomas para inglês durante a transcrição."
       },
       "modelUnload": {
         "title": "Descarregar Modelo",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "Pós-Processamento",
       "hotkey": {
         "title": "Tecla de atalho"
       },
@@ -399,9 +380,6 @@
           "description": "Selecione um provedor compatível com OpenAI."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Executa totalmente no dispositivo. Nenhuma chave de API ou acesso à rede é necessário.",
-          "requirements": "Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior. Apple Intelligence deve estar habilitado nas Configurações do Sistema.",
           "unavailable": "Apple Intelligence não está disponível neste dispositivo. Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior com Apple Intelligence habilitado nas Configurações do Sistema."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "Modelo",
-          "descriptionApple": "Forneça um limite numérico opcional de tokens ou mantenha a predefinição padrão no dispositivo.",
           "descriptionCustom": "Forneça o identificador do modelo esperado pelo seu endpoint personalizado.",
           "descriptionDefault": "Escolha um modelo exposto pelo provedor selecionado.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Buscar ou selecionar um modelo",
           "placeholderNoOptions": "Digite o nome de um modelo",
           "refreshModels": "Atualizar modelos"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "Baixando {{model}}...",
     "checkingUpdates": "Verificando atualizações...",
-    "updateAvailable": "Atualização disponível: {{version}}",
     "updateAvailableShort": "Atualização disponível",
     "upToDate": "Atualizado",
-    "downloadUpdate": "Baixar Atualização",
-    "restart": "Reiniciar",
     "updateCheckingDisabled": "Verificação de Atualização Desabilitada",
     "downloading": "Baixando... {{progress}}%",
     "installing": "Instalando...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "Carregando...",
-    "save": "Salvar",
-    "cancel": "Cancelar",
-    "reset": "Redefinir",
-    "add": "Adicionar",
-    "remove": "Remover",
     "delete": "Excluir",
-    "edit": "Editar",
-    "create": "Criar",
-    "update": "Atualizar",
     "close": "Fechar",
     "open": "Abrir",
     "copy": "Copiar",
     "clear": "Limpar",
-    "default": "Padrão",
-    "enabled": "Habilitado",
-    "disabled": "Desabilitado",
-    "on": "Ligado",
-    "off": "Desligado",
-    "yes": "Sim",
-    "no": "Não",
     "noOptionsFound": "Nenhuma opção encontrada"
   },
   "accessibility": {
-    "permissionsRequired": "Permissões de Acessibilidade Necessárias",
     "permissionsDescription": "O Handy precisa de permissões de acessibilidade para digitar o texto transcrito.",
-    "openSettings": "Abrir Configurações do Sistema",
-    "dismiss": "Dispensar"
+    "openSettings": "Abrir Configurações do Sistema"
   },
   "errors": {
     "loadDirectory": "Erro ao carregar diretório: {{error}}",

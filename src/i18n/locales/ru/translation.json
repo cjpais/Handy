@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Для начала выберите модель транскрипции",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "Рекомендуется",
-    "download": "Скачать",
-    "downloading": "Загрузка...",
     "customModelDescription": "Официально не поддерживается",
-    "downloadFailed": "Загрузка не удалась. Пожалуйста, попробуйте снова.",
     "modelCard": {
       "accuracy": "точность",
       "speed": "скорость"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Не удалось загрузить доступные модели.",
-      "selectModel": "Failed to select model",
-      "downloadModel": "Не удалось загрузить модель: {{error}}."
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Требуются разрешения",
@@ -148,7 +142,6 @@
     "downloadSpeed": "{{speed}} МБ/с",
     "capabilities": {
       "languageSelection": "Поддерживает несколько языков ввода",
-      "multiLanguage": "Многоязычная",
       "languageCount": "{{total}} languages",
       "translation": "Может переводить на английский",
       "translate": "Перевод на английский",
@@ -162,21 +155,15 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "Настройки {{model}}",
-      "noSettingsNeeded": "Эта модель работает автоматически без необходимости настройки."
+      "title": "Настройки {{model}}"
     },
     "models": {
       "title": "Модели транскрипции",
       "description": "Выберите модель транскрипции или загрузите дополнительные модели. Разные модели предлагают разные уровни точности и скорости.",
-      "downloaded": "Загружено",
-      "available": "Доступные для загрузки",
       "deleteConfirm": "Вы уверены, что хотите удалить {{modelName}}? Вам нужно будет загрузить её снова, чтобы использовать.",
       "deleteActiveConfirm": "{{modelName}} — ваша активная модель. Удаление остановит транскрипцию, пока вы не выберете новую модель. Вы уверены?",
       "deleteTitle": "Удалить модель",
       "filters": {
-        "all": "Все",
-        "multiLanguage": "Многоязычные",
-        "translation": "Перевод",
         "allLanguages": "Все языки"
       },
       "noModelsMatch": "Нет моделей, соответствующих этому фильтру.",
@@ -220,7 +207,6 @@
       "language": {
         "title": "Язык",
         "description": "Выберите язык для распознавания речи. «Авто» автоматически определит язык, а выбор конкретного языка может повысить точность определения этого языка.",
-        "descriptionUnsupported": "Модель Parakeet автоматически определяет язык. Ручной выбор не требуется.",
         "searchPlaceholder": "Поиск языков...",
         "noResults": "Языки не найдены",
         "auto": "Авто"
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Продвинутые",
       "groups": {
         "app": "Приложение",
         "output": "Вывод",
@@ -280,8 +265,6 @@
           "description": "Аппаратное ускорение для моделей ONNX (Parakeet, Canary, Moonshine и др.). DirectML на Windows является экспериментальным. Модели могут не выполнять транскрипцию."
         },
         "gpuDevice": {
-          "title": "Устройство GPU",
-          "description": "Выберите GPU для инференса Whisper. Авто выбирает выделенный GPU.",
           "auto": "Авто"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Перевести на английский",
-        "description": "Автоматически переводить речь с других языков на английский во время транскрипции.",
-        "descriptionUnsupported": "Перевод не поддерживается моделью {{model}}."
+        "description": "Автоматически переводить речь с других языков на английский во время транскрипции."
       },
       "modelUnload": {
         "title": "Выгрузить модель",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "Постобработка",
       "hotkey": {
         "title": "Горячая клавиша"
       },
@@ -399,9 +380,6 @@
           "description": "Выберите поставщика, совместимого с OpenAI."
         },
         "appleIntelligence": {
-          "title": "Apple Интеллект",
-          "description": "Полностью работает на устройстве. Никакой ключ API или доступ к сети не требуется.",
-          "requirements": "Требуется Apple Silicon Mac под управлением macOS Tahoe (26.0) или более поздней версии. Apple Intelligence должен быть включен в настройках системы.",
           "unavailable": "Apple Intelligence недоступен на этом устройстве. Требуется Apple Silicon Mac под управлением macOS Tahoe (26.0) или более поздней версии с включенным Apple Intelligence в настройках системы."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "Модель",
-          "descriptionApple": "Укажите дополнительный числовой лимит токенов или сохраните настройки по умолчанию, установленные на устройстве.",
           "descriptionCustom": "Укажите идентификатор модели, ожидаемый вашей пользовательской конечной точкой.",
           "descriptionDefault": "Выберите модель, предоставляемую выбранным поставщиком.",
-          "placeholderApple": "Apple Интеллект",
           "placeholderWithOptions": "Найдите или выберите модель",
           "placeholderNoOptions": "Введите название модели",
           "refreshModels": "Обновить модели"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "Загрузка {{model}}...",
     "checkingUpdates": "Проверяем наличие обновлений...",
-    "updateAvailable": "Доступно обновление: {{version}}",
     "updateAvailableShort": "Доступно обновление",
     "upToDate": "Не требует обновлений",
-    "downloadUpdate": "Скачать обновление",
-    "restart": "Перезапуск",
     "updateCheckingDisabled": "Проверка обновлений отключена",
     "downloading": "Загрузка... {{progress}} %",
     "installing": "Установка...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "Загрузка...",
-    "save": "Сохранять",
-    "cancel": "Отмена",
-    "reset": "Перезагрузить",
-    "add": "Добавлять",
-    "remove": "Удалять",
     "delete": "Удалить",
-    "edit": "Редактировать",
-    "create": "Создавать",
-    "update": "Обновлять",
     "close": "Закрывать",
     "open": "Открыть",
     "copy": "Копировать",
     "clear": "Очистить",
-    "default": "По умолчанию",
-    "enabled": "Включено",
-    "disabled": "Неполноценный",
-    "on": "На",
-    "off": "Выключенный",
-    "yes": "Да",
-    "no": "Нет",
     "noOptionsFound": "Вариантов не найдено"
   },
   "accessibility": {
-    "permissionsRequired": "Требуются разрешения на доступ",
     "permissionsDescription": "Handy необходимы разрешения на доступ для ввода расшифрованного текста.",
-    "openSettings": "Открыть настройки системы",
-    "dismiss": "Увольнять"
+    "openSettings": "Открыть настройки системы"
   },
   "errors": {
     "loadDirectory": "Ошибка загрузки каталога: {{error}}.",

@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "כדי להתחיל, בחר מודל תמלול",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "מומלץ",
-    "download": "הורדה",
-    "downloading": "מוריד...",
     "customModelDescription": "לא נתמך באופן רשמי",
-    "downloadFailed": "ההורדה נכשלה. נסה שוב.",
     "modelCard": {
       "accuracy": "דיוק",
       "speed": "מהירות"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "טעינת המודלים הזמינים נכשלה",
-      "selectModel": "Failed to select model",
-      "downloadModel": "הורדת המודל נכשלה: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "נדרשות הרשאות",
@@ -151,7 +145,6 @@
     "capabilities": {
       "languageSelection": "תומך בכמה שפות קלט",
       "singleLanguage": "תומך רק בשפה הזו",
-      "multiLanguage": "רב-לשוני",
       "languageCount": "{{total}} languages",
       "languageOnly": "{{language}} בלבד",
       "translation": "יכול לתרגם לאנגלית",
@@ -162,8 +155,7 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "הגדרות עבור {{model}}",
-      "noSettingsNeeded": "המודל הזה עובד אוטומטית ולא דורש הגדרה נוספת."
+      "title": "הגדרות עבור {{model}}"
     },
     "general": {
       "title": "כללי",
@@ -197,7 +189,6 @@
       "language": {
         "title": "שפה",
         "description": "בחר את שפת זיהוי הדיבור. מצב אוטומטי יזהה את השפה לבד, בעוד שבחירת שפה מסוימת יכולה לשפר את הדיוק עבורה.",
-        "descriptionUnsupported": "מודל Parakeet מזהה את השפה אוטומטית. אין צורך בבחירה ידנית.",
         "searchPlaceholder": "חפש שפות...",
         "noResults": "לא נמצאו שפות",
         "auto": "אוטומטי"
@@ -212,15 +203,10 @@
       "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
       "yourModels": "מודלים שהורדו",
       "availableModels": "זמינים להורדה",
-      "downloaded": "הורד",
-      "available": "זמין להורדה",
       "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
       "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
       "deleteTitle": "מחיקת מודל",
       "filters": {
-        "all": "הכול",
-        "multiLanguage": "רב-לשוני",
-        "translation": "תרגום",
         "allLanguages": "כל השפות"
       },
       "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "מתקדם",
       "groups": {
         "app": "אפליקציה",
         "output": "פלט",
@@ -280,8 +265,6 @@
           "description": "האצת חומרה למודלי ONNX (Parakeet, Canary, Moonshine ועוד). DirectML ב-Windows הוא ניסיוני. ייתכן שמודלים ייכשלו בתמלול."
         },
         "gpuDevice": {
-          "title": "התקן GPU",
-          "description": "בחר באיזה GPU להשתמש עבור הסקת Whisper. מצב אוטומטי בוחר את ה-GPU הייעודי.",
           "auto": "אוטומטי"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "תרגם לאנגלית",
-        "description": "תרגם אוטומטית דיבור משפות אחרות לאנגלית בזמן התמלול.",
-        "descriptionUnsupported": "המודל {{model}} לא תומך בתרגום."
+        "description": "תרגם אוטומטית דיבור משפות אחרות לאנגלית בזמן התמלול."
       },
       "modelUnload": {
         "title": "פרוק מודל",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "עיבוד משלים",
       "hotkey": {
         "title": "קיצור מקשים"
       },
@@ -399,9 +380,6 @@
           "description": "בחר ספק שתואם ל-OpenAI."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "רץ כולו על המכשיר. לא נדרש מפתח API או חיבור רשת.",
-          "requirements": "דורש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה. Apple Intelligence חייב להיות מופעל בהגדרות המערכת.",
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "מודל",
-          "descriptionApple": "ספק מגבלת טוקנים מספרית אופציונלית או השאר את ברירת המחדל שעל המכשיר.",
           "descriptionCustom": "ספק את מזהה המודל שה-endpoint המותאם שלך מצפה לו.",
           "descriptionDefault": "בחר מודל שהספק הנבחר חושף.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "חפש או בחר מודל",
           "placeholderNoOptions": "הקלד שם מודל",
           "refreshModels": "רענן מודלים"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "מוריד את {{model}}...",
     "checkingUpdates": "בודק עדכונים...",
-    "updateAvailable": "יש עדכון זמין: {{version}}",
     "updateAvailableShort": "יש עדכון זמין",
     "upToDate": "מעודכן",
-    "downloadUpdate": "הורד עדכון",
-    "restart": "הפעל מחדש",
     "updateCheckingDisabled": "בדיקת העדכונים כבויה",
     "downloading": "מוריד... {{progress}}%",
     "installing": "מתקין...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "טוען...",
-    "save": "שמור",
-    "cancel": "ביטול",
-    "reset": "איפוס",
-    "add": "הוסף",
-    "remove": "הסר",
     "delete": "מחק",
-    "edit": "ערוך",
-    "create": "צור",
-    "update": "עדכן",
     "close": "סגור",
     "open": "פתח",
     "copy": "העתק",
     "clear": "נקה",
-    "default": "ברירת מחדל",
-    "enabled": "פעיל",
-    "disabled": "כבוי",
-    "on": "פועל",
-    "off": "כבוי",
-    "yes": "כן",
-    "no": "לא",
     "noOptionsFound": "לא נמצאו אפשרויות"
   },
   "accessibility": {
-    "permissionsRequired": "נדרשות הרשאות נגישות",
     "permissionsDescription": "Handy צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
-    "openSettings": "פתח את הגדרות המערכת",
-    "dismiss": "סגור"
+    "openSettings": "פתח את הגדרות המערכת"
   },
   "errors": {
     "loadDirectory": "שגיאה בטעינת תיקייה: {{error}}",

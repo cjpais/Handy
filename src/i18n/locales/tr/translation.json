@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "Önerilen",
-    "download": "İndir",
-    "downloading": "İndiriliyor...",
     "customModelDescription": "Resmi olarak desteklenmiyor",
-    "downloadFailed": "İndirme başarısız oldu. Lütfen tekrar deneyin.",
     "modelCard": {
       "accuracy": "doğruluk",
       "speed": "hız"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Mevcut modeller yüklenemedi",
-      "selectModel": "Failed to select model",
-      "downloadModel": "Model indirilemedi: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "İzinler Gerekli",
@@ -148,7 +142,6 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Birden fazla giriş dilini destekler",
-      "multiLanguage": "Çok dilli",
       "languageCount": "{{total}} languages",
       "translation": "İngilizce'ye çevirebilir",
       "translate": "İngilizce'ye çevir",
@@ -162,21 +155,15 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} Ayarları",
-      "noSettingsNeeded": "Bu model yapılandırma gerektirmeden otomatik olarak çalışır."
+      "title": "{{model}} Ayarları"
     },
     "models": {
       "title": "Transkripsiyon Modelleri",
       "description": "Bir transkripsiyon modeli seçin veya ek modeller indirin. Farklı modeller değişen doğruluk ve hız seviyeleri sunar.",
-      "downloaded": "İndirildi",
-      "available": "İndirilebilir",
       "deleteConfirm": "{{modelName}} modelini silmek istediğinizden emin misiniz? Kullanmak için tekrar indirmeniz gerekecek.",
       "deleteActiveConfirm": "{{modelName}} aktif modelinizdir. Silmek, yeni bir model seçene kadar transkripsiyonları durduracaktır. Emin misiniz?",
       "deleteTitle": "Modeli Sil",
       "filters": {
-        "all": "Tümü",
-        "multiLanguage": "Çok dilli",
-        "translation": "Çeviri",
         "allLanguages": "Tüm Diller"
       },
       "noModelsMatch": "Bu filtreyle eşleşen model yok.",
@@ -220,7 +207,6 @@
       "language": {
         "title": "Dil",
         "description": "Konuşma tanıma dilini seçin. 'Otomatik' seçeneği dili kendisi belirler, ancak belirli bir dil seçmek o dildeki doğruluğu artırabilir.",
-        "descriptionUnsupported": "Parakeet modeli dili otomatik algılar. Manuel seçim gerekmez.",
         "searchPlaceholder": "Dil ara...",
         "noResults": "Dil bulunamadı",
         "auto": "Otomatik"
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Gelişmiş",
       "groups": {
         "app": "Uygulama",
         "output": "Çıktı",
@@ -280,8 +265,6 @@
           "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Windows'ta DirectML deneyseldir. Modeller transkripsiyon yapamayabilir."
         },
         "gpuDevice": {
-          "title": "GPU Aygıtı",
-          "description": "Whisper çıkarımı için hangi GPU'nun kullanılacağını seçin. Otomatik, özel GPU'yu seçer.",
           "auto": "Otomatik"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "İngilizceye Çevir",
-        "description": "Transkripsiyon sırasında diğer dillerden İngilizceye otomatik olarak çevirir.",
-        "descriptionUnsupported": "Çeviri {{model}} modeli tarafından desteklenmiyor."
+        "description": "Transkripsiyon sırasında diğer dillerden İngilizceye otomatik olarak çevirir."
       },
       "modelUnload": {
         "title": "Modeli Boşalt",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "Son İşlem",
       "hotkey": {
         "title": "Kısayol Tuşu"
       },
@@ -399,9 +380,6 @@
           "description": "OpenAI uyumlu bir sağlayıcı seçin."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Tamamen cihaz üzerinde çalışır. API anahtarı veya ağ erişimi gerekmez.",
-          "requirements": "macOS Tahoe (26.0) veya üzeri çalıştıran bir Apple Silicon Mac gerektirir. Sistem Ayarları'nda Apple Intelligence etkin olmalıdır.",
           "unavailable": "Apple Intelligence bu cihazda kullanılamıyor. macOS Tahoe (26.0) veya üzeri ve Sistem Ayarları'nda Apple Intelligence etkin olan bir Apple Silicon Mac gerektirir."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "Model",
-          "descriptionApple": "İsteğe bağlı bir sayısal token sınırı belirleyin veya varsayılan cihaz içi ön ayarı kullanın.",
           "descriptionCustom": "Özel uç noktanızın beklediği model tanımlayıcısını girin.",
           "descriptionDefault": "Seçili sağlayıcının sunduğu bir modeli seçin.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Model ara veya seç",
           "placeholderNoOptions": "Model adı yazın",
           "refreshModels": "Modelleri Yenile"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "{{model}} indiriliyor...",
     "checkingUpdates": "Güncellemeler kontrol ediliyor...",
-    "updateAvailable": "Güncelleme mevcut: {{version}}",
     "updateAvailableShort": "Güncelleme mevcut",
     "upToDate": "Güncel",
-    "downloadUpdate": "Güncellemeyi İndir",
-    "restart": "Yeniden Başlat",
     "updateCheckingDisabled": "Güncelleme Kontrolü Devre Dışı",
     "downloading": "İndiriliyor... %{{progress}}",
     "installing": "Yükleniyor...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "Yükleniyor...",
-    "save": "Kaydet",
-    "cancel": "İptal",
-    "reset": "Sıfırla",
-    "add": "Ekle",
-    "remove": "Kaldır",
     "delete": "Sil",
-    "edit": "Düzenle",
-    "create": "Oluştur",
-    "update": "Güncelle",
     "close": "Kapat",
     "open": "Aç",
     "copy": "Kopyala",
     "clear": "Temizle",
-    "default": "Varsayılan",
-    "enabled": "Etkin",
-    "disabled": "Devre Dışı",
-    "on": "Açık",
-    "off": "Kapalı",
-    "yes": "Evet",
-    "no": "Hayır",
     "noOptionsFound": "Seçenek bulunamadı"
   },
   "accessibility": {
-    "permissionsRequired": "Erişilebilirlik İzinleri Gerekli",
     "permissionsDescription": "Handy, transkribe edilen metni yazabilmek için erişilebilirlik izinlerine ihtiyaç duyar.",
-    "openSettings": "Sistem Ayarlarını Aç",
-    "dismiss": "Yoksay"
+    "openSettings": "Sistem Ayarlarını Aç"
   },
   "errors": {
     "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}",

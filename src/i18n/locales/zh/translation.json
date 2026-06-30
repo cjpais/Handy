@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "推荐",
-    "download": "下载",
-    "downloading": "下载中...",
     "customModelDescription": "非官方支持",
-    "downloadFailed": "下载失败。请重试。",
     "modelCard": {
       "accuracy": "准确度",
       "speed": "速度"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "无法加载可用模型",
-      "selectModel": "Failed to select model",
-      "downloadModel": "模型下载失败: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "需要权限",
@@ -148,7 +142,6 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "支持多种输入语言",
-      "multiLanguage": "多语言",
       "languageCount": "{{total}} languages",
       "translation": "可翻译为英语",
       "translate": "翻译为英语",
@@ -162,21 +155,15 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} 设置",
-      "noSettingsNeeded": "此模型自动运行，无需配置。"
+      "title": "{{model}} 设置"
     },
     "models": {
       "title": "转录模型",
       "description": "选择转录模型或下载其他模型。不同模型提供不同的准确度和速度。",
-      "downloaded": "已下载",
-      "available": "可下载",
       "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
       "deleteActiveConfirm": "{{modelName}} 是您当前使用的模型。删除后将停止转录，直到您选择新的模型。确定要删除吗？",
       "deleteTitle": "删除模型",
       "filters": {
-        "all": "全部",
-        "multiLanguage": "多语言",
-        "translation": "翻译",
         "allLanguages": "所有语言"
       },
       "noModelsMatch": "没有符合此筛选条件的模型。",
@@ -220,7 +207,6 @@
       "language": {
         "title": "语言",
         "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
-        "descriptionUnsupported": "Parakeet 模型会自动检测语言，无需手动选择。",
         "searchPlaceholder": "搜索语言...",
         "noResults": "未找到语言",
         "auto": "自动"
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "高级",
       "groups": {
         "app": "应用",
         "output": "输出",
@@ -280,8 +265,6 @@
           "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
         },
         "gpuDevice": {
-          "title": "GPU 设备",
-          "description": "选择用于 Whisper 推理的 GPU。自动选择独立 GPU。",
           "auto": "自动"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "翻译为英语",
-        "description": "在转录过程中自动将其他语言的语音翻译为英语。",
-        "descriptionUnsupported": "{{model}} 模型不支持翻译功能。"
+        "description": "在转录过程中自动将其他语言的语音翻译为英语。"
       },
       "modelUnload": {
         "title": "卸载模型",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "后处理",
       "hotkey": {
         "title": "快捷键"
       },
@@ -399,9 +380,6 @@
           "description": "选择一个兼容 OpenAI 的提供商。"
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "完全在设备上运行。无需 API 密钥或网络访问。",
-          "requirements": "需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac。必须在系统设置中启用 Apple Intelligence。",
           "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "模型",
-          "descriptionApple": "提供可选的数字令牌限制或保持默认的设备预设。",
           "descriptionCustom": "提供自定义端点期望的模型标识符。",
           "descriptionDefault": "选择所选提供商提供的模型。",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "搜索或选择模型",
           "placeholderNoOptions": "输入模型名称",
           "refreshModels": "刷新模型"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "正在下载 {{model}}...",
     "checkingUpdates": "检查更新中...",
-    "updateAvailable": "有可用更新: {{version}}",
     "updateAvailableShort": "有可用更新",
     "upToDate": "已是最新版本",
-    "downloadUpdate": "下载更新",
-    "restart": "重启",
     "updateCheckingDisabled": "更新检查已禁用",
     "downloading": "下载中... {{progress}}%",
     "installing": "安装中...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "加载中...",
-    "save": "保存",
-    "cancel": "取消",
-    "reset": "重置",
-    "add": "添加",
-    "remove": "移除",
     "delete": "删除",
-    "edit": "编辑",
-    "create": "创建",
-    "update": "更新",
     "close": "关闭",
     "open": "打开",
     "copy": "复制",
     "clear": "清除",
-    "default": "默认",
-    "enabled": "已启用",
-    "disabled": "已禁用",
-    "on": "开",
-    "off": "关",
-    "yes": "是",
-    "no": "否",
     "noOptionsFound": "未找到选项"
   },
   "accessibility": {
-    "permissionsRequired": "需要辅助功能权限",
     "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
-    "openSettings": "打开系统设置",
-    "dismiss": "关闭"
+    "openSettings": "打开系统设置"
   },
   "errors": {
     "loadDirectory": "加载目录时出错: {{error}}",

@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "Empfohlen",
-    "download": "Herunterladen",
-    "downloading": "Wird heruntergeladen...",
     "customModelDescription": "Nicht offiziell unterstützt",
-    "downloadFailed": "Download fehlgeschlagen. Bitte erneut versuchen.",
     "modelCard": {
       "accuracy": "Genauigkeit",
       "speed": "Geschwindigkeit"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Verfügbare Modelle konnten nicht geladen werden",
-      "selectModel": "Failed to select model",
-      "downloadModel": "Modell konnte nicht heruntergeladen werden: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Berechtigungen erforderlich",
@@ -148,7 +142,6 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Unterstützt mehrere Eingabesprachen",
-      "multiLanguage": "Mehrsprachig",
       "languageCount": "{{total}} languages",
       "translation": "Kann ins Englische übersetzen",
       "translate": "Ins Englische übersetzen",
@@ -162,21 +155,15 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}}-Einstellungen",
-      "noSettingsNeeded": "Dieses Modell funktioniert automatisch ohne Konfiguration."
+      "title": "{{model}}-Einstellungen"
     },
     "models": {
       "title": "Transkriptionsmodelle",
       "description": "Wähle ein Transkriptionsmodell aus oder lade zusätzliche Modelle herunter. Verschiedene Modelle bieten unterschiedliche Genauigkeits- und Geschwindigkeitsstufen.",
-      "downloaded": "Heruntergeladen",
-      "available": "Zum Download verfügbar",
       "deleteConfirm": "Bist du sicher, dass du {{modelName}} löschen möchtest? Du musst es erneut herunterladen, um es zu verwenden.",
       "deleteActiveConfirm": "{{modelName}} ist dein aktives Modell. Das Löschen stoppt Transkriptionen, bis du ein neues Modell auswählst. Bist du sicher?",
       "deleteTitle": "Modell löschen",
       "filters": {
-        "all": "Alle",
-        "multiLanguage": "Mehrsprachig",
-        "translation": "Übersetzung",
         "allLanguages": "Alle Sprachen"
       },
       "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
@@ -220,7 +207,6 @@
       "language": {
         "title": "Sprache",
         "description": "Wähle die Sprache für die Spracherkennung. Auto erkennt die Sprache automatisch, die Auswahl einer bestimmten Sprache kann die Genauigkeit verbessern.",
-        "descriptionUnsupported": "Das Parakeet-Modell erkennt die Sprache automatisch. Keine manuelle Auswahl erforderlich.",
         "searchPlaceholder": "Sprachen suchen...",
         "noResults": "Keine Sprachen gefunden",
         "auto": "Auto"
@@ -254,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Erweitert",
       "groups": {
         "app": "App",
         "output": "Ausgabe",
@@ -280,8 +265,6 @@
           "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
         },
         "gpuDevice": {
-          "title": "GPU-Gerät",
-          "description": "Wähle die GPU für die Whisper-Inferenz. Auto wählt die dedizierte GPU.",
           "auto": "Auto"
         }
       },
@@ -357,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Ins Englische übersetzen",
-        "description": "Sprache aus anderen Sprachen automatisch während der Transkription ins Englische übersetzen.",
-        "descriptionUnsupported": "Übersetzung wird vom {{model}}-Modell nicht unterstützt."
+        "description": "Sprache aus anderen Sprachen automatisch während der Transkription ins Englische übersetzen."
       },
       "modelUnload": {
         "title": "Modell entladen",
@@ -388,7 +370,6 @@
       }
     },
     "postProcessing": {
-      "title": "Nachbearbeitung",
       "hotkey": {
         "title": "Tastenkürzel"
       },
@@ -399,9 +380,6 @@
           "description": "Wähle einen OpenAI-kompatiblen Anbieter."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Läuft vollständig auf dem Gerät. Kein API-Schlüssel oder Netzwerkzugriff erforderlich.",
-          "requirements": "Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer. Apple Intelligence muss in den Systemeinstellungen aktiviert sein.",
           "unavailable": "Apple Intelligence ist auf diesem Gerät nicht verfügbar. Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer und aktiviertem Apple Intelligence in den Systemeinstellungen."
         },
         "baseUrl": {
@@ -416,10 +394,8 @@
         },
         "model": {
           "title": "Modell",
-          "descriptionApple": "Gib ein optionales numerisches Token-Limit an oder behalte die Standard-Gerätevorgabe.",
           "descriptionCustom": "Gib die Modellkennung an, die von deinem benutzerdefinierten Endpunkt erwartet wird.",
           "descriptionDefault": "Wähle ein Modell des ausgewählten Anbieters.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Modell suchen oder auswählen",
           "placeholderNoOptions": "Modellnamen eingeben",
           "refreshModels": "Modelle aktualisieren"
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "Lade {{model}} herunter...",
     "checkingUpdates": "Suche nach Updates...",
-    "updateAvailable": "Update verfügbar: {{version}}",
     "updateAvailableShort": "Update verfügbar",
     "upToDate": "Aktuell",
-    "downloadUpdate": "Update herunterladen",
-    "restart": "Neustart",
     "updateCheckingDisabled": "Update-Prüfung deaktiviert",
     "downloading": "Wird heruntergeladen... {{progress}}%",
     "installing": "Wird installiert...",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "Wird geladen...",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "reset": "Zurücksetzen",
-    "add": "Hinzufügen",
-    "remove": "Entfernen",
     "delete": "Löschen",
-    "edit": "Bearbeiten",
-    "create": "Erstellen",
-    "update": "Aktualisieren",
     "close": "Schließen",
     "open": "Öffnen",
     "copy": "Kopieren",
     "clear": "Leeren",
-    "default": "Standard",
-    "enabled": "Aktiviert",
-    "disabled": "Deaktiviert",
-    "on": "An",
-    "off": "Aus",
-    "yes": "Ja",
-    "no": "Nein",
     "noOptionsFound": "Keine Optionen gefunden"
   },
   "accessibility": {
-    "permissionsRequired": "Bedienungshilfen-Berechtigungen erforderlich",
     "permissionsDescription": "Handy benötigt Bedienungshilfen-Berechtigungen, um transkribierten Text einzugeben.",
-    "openSettings": "Systemeinstellungen öffnen",
-    "dismiss": "Schließen"
+    "openSettings": "Systemeinstellungen öffnen"
   },
   "errors": {
     "loadDirectory": "Fehler beim Laden des Verzeichnisses: {{error}}",

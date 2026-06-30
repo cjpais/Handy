@@ -19,16 +19,12 @@
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
-    "existingModelsTitle": "Compatible models found",
-    "existingModelsDescription": "Use a model already on this computer, or download a different one.",
-    "downloadModelsTitle": "Download a model",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
     "showAllModels": "Show all {{total}} models",
     "showFewerModels": "Show fewer models",
     "recommended": "موصى به",
-    "download": "تنزيل",
-    "downloading": "...جاري التنزيل",
     "customModelDescription": "غير مدعوم رسميًا",
-    "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
     "modelCard": {
       "accuracy": "الدقة",
       "speed": "السرعة"
@@ -100,9 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "فشل تحميل النماذج المتاحة",
-      "selectModel": "Failed to select model",
-      "downloadModel": "فشل تنزيل النموذج: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "الأذونات المطلوبة",
@@ -151,7 +145,6 @@
     "capabilities": {
       "languageSelection": "يدعم اختيار اللغة",
       "singleLanguage": "يدعم هذه اللغة فقط",
-      "multiLanguage": "متعدد اللغات",
       "languageCount": "{{total}} languages",
       "languageOnly": "{{language}} فقط",
       "translation": "يدعم الترجمة",
@@ -193,7 +186,6 @@
       "language": {
         "title": "اللغة",
         "description": ".اختر لغة التعرف على الكلام. سيحدد 'تلقائي' اللغة تلقائياً، بينما يؤدي اختيار لغة معينة إلى تحسين الدقة لتلك اللغة",
-        "descriptionUnsupported": ".يكتشف نموذج Parakeet اللغة تلقائياً. لا يلزم الاختيار اليدوي",
         "searchPlaceholder": "البحث عن اللغات...",
         "noResults": "لم يتم العثور على لغات",
         "auto": "تلقائي"
@@ -227,7 +219,6 @@
       }
     },
     "advanced": {
-      "title": "متقدم",
       "groups": {
         "app": "التطبيق",
         "output": "الإخراج",
@@ -253,8 +244,6 @@
           "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
         },
         "gpuDevice": {
-          "title": "جهاز GPU",
-          "description": "حدد وحدة معالجة الرسومات المستخدمة لاستدلال Whisper. يختار تلقائي وحدة GPU المخصصة.",
           "auto": "تلقائي"
         }
       },
@@ -330,8 +319,7 @@
       },
       "translateToEnglish": {
         "label": "الترجمة إلى الإنجليزية",
-        "description": ".ترجمة الكلام من اللغات الأخرى تلقائياً إلى الإنجليزية أثناء التفريغ",
-        "descriptionUnsupported": ".الترجمة غير مدعومة من قبل نموذج {{model}}"
+        "description": ".ترجمة الكلام من اللغات الأخرى تلقائياً إلى الإنجليزية أثناء التفريغ"
       },
       "modelUnload": {
         "title": "إلغاء تحميل النموذج",
@@ -361,7 +349,6 @@
       }
     },
     "postProcessing": {
-      "title": "معالجة لاحقة",
       "hotkey": {
         "title": "مفتاح الاختصار"
       },
@@ -372,9 +359,6 @@
           "description": "اختر مزوداً متوافقاً مع OpenAI."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "يعمل بالكامل على الجهاز. لا يلزم وجود مفتاح API أو وصول إلى الشبكة.",
-          "requirements": "يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث. يجب تمكين Apple Intelligence في إعدادات النظام.",
           "unavailable": "Apple Intelligence غير متاح على هذا الجهاز. يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث مع تمكين Apple Intelligence في إعدادات النظام."
         },
         "baseUrl": {
@@ -389,10 +373,8 @@
         },
         "model": {
           "title": "النموذج",
-          "descriptionApple": "قدم حداً اختيارياً للرموز الرقمية أو احتفظ بالإعداد المسبق الافتراضي على الجهاز.",
           "descriptionCustom": "قدم معرف النموذج المتوقع من قبل نقطة النهاية المخصصة الخاصة بك.",
           "descriptionDefault": "اختر نموذجاً يعرضه المزود المختار.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "ابحث عن نموذج أو اختره",
           "placeholderNoOptions": "اكتب اسم النموذج",
           "refreshModels": "تحديث النماذج"
@@ -563,23 +545,17 @@
       }
     },
     "modelSettings": {
-      "title": "إعدادات النموذج",
-      "noSettingsNeeded": "لا توجد إعدادات مطلوبة لهذا النموذج"
+      "title": "إعدادات النموذج"
     },
     "models": {
       "title": "نماذج النسخ",
       "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
       "yourModels": "النماذج المحمّلة",
       "availableModels": "متاح للتنزيل",
-      "downloaded": "تم التنزيل",
-      "available": "متاح للتنزيل",
       "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
       "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
       "deleteTitle": "حذف النموذج",
       "filters": {
-        "all": "الكل",
-        "multiLanguage": "متعدد اللغات",
-        "translation": "ترجمة",
         "allLanguages": "جميع اللغات"
       },
       "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
@@ -591,13 +567,9 @@
     }
   },
   "footer": {
-    "downloadingModel": "...جاري تنزيل {{model}}",
     "checkingUpdates": "...جاري التحقق من وجود تحديثات",
-    "updateAvailable": "تحديث متاح: {{version}}",
     "updateAvailableShort": "تحديث متاح",
     "upToDate": "محدث",
-    "downloadUpdate": "تنزيل التحديث",
-    "restart": "إعادة تشغيل",
     "updateCheckingDisabled": "تم تعطيل التحقق من التحديث",
     "downloading": "...جاري التنزيل {{progress}}%",
     "installing": "...جاري التثبيت",
@@ -609,33 +581,16 @@
   },
   "common": {
     "loading": "...جاري التحميل",
-    "save": "حفظ",
-    "cancel": "إلغاء",
-    "reset": "إعادة تعيين",
-    "add": "إضافة",
-    "remove": "إزالة",
     "delete": "حذف",
-    "edit": "تعديل",
-    "create": "إنشاء",
-    "update": "تحديث",
     "close": "إغلاق",
     "open": "فتح",
     "copy": "نسخ",
     "clear": "مسح",
-    "default": "افتراضي",
-    "enabled": "ممكن",
-    "disabled": "معطل",
-    "on": "تشغيل",
-    "off": "إيقاف",
-    "yes": "نعم",
-    "no": "لا",
     "noOptionsFound": "لم يتم العثور على خيارات"
   },
   "accessibility": {
-    "permissionsRequired": "أذونات إمكانية الوصول مطلوبة",
     "permissionsDescription": ".يحتاج Handy إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
-    "openSettings": "فتح إعدادات النظام",
-    "dismiss": "تجاهل"
+    "openSettings": "فتح إعدادات النظام"
   },
   "errors": {
     "loadDirectory": "خطأ في تحميل المجلد: {{error}}",
