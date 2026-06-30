@@ -502,6 +502,19 @@ impl TranscriptionManager {
             }
         };
 
+        // Resolved once here so it can be moved into the panic-guarded closure.
+        // Used by GigaAM to VAD-chunk long audio that would otherwise exceed the
+        // model's encoder limit.
+        let vad_path = self
+            .app_handle
+            .path()
+            .resolve(
+                "resources/models/silero_vad_v4.onnx",
+                tauri::path::BaseDirectory::Resource,
+            )
+            .ok();
+        let vad_path = vad_path.as_ref().and_then(|p| p.to_str());
+
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
@@ -593,9 +606,10 @@ impl TranscriptionManager {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
-                        LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
-                            .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
+                        LoadedEngine::GigaAM(gigaam_engine) => {
+                            transcribe_gigaam(gigaam_engine, &audio, vad_path)
+                                .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e))
+                        }
                         LoadedEngine::Canary(canary_engine) => {
                             let lang = if validated_language == "auto" {
                                 None
@@ -851,4 +865,57 @@ impl Drop for TranscriptionManager {
             }
         }
     }
+}
+
+// GigaAM's exported ONNX encoder caps positional encoding at 5000 frames
+// (~200 s); longer audio crashes outright, and quality degrades well before
+// that. The model is documented for <=25 s per pass, so audio above this
+// threshold is segmented at silence boundaries (mirroring GigaAM's official
+// transcribe_longform). Shorter audio fits in a single pass and is left
+// untouched — identical output, no chunking overhead.
+const GIGAAM_CHUNK_THRESHOLD_SECS: f32 = 40.0;
+
+fn transcribe_gigaam(
+    model: &mut GigaAMModel,
+    audio: &[f32],
+    vad_path: Option<&str>,
+) -> Result<transcribe_rs::TranscriptionResult> {
+    let duration_secs = audio.len() as f32 / 16_000.0;
+
+    match vad_path {
+        Some(path) if duration_secs > GIGAAM_CHUNK_THRESHOLD_SECS => {
+            info!(
+                "GigaAM: audio {:.0}s exceeds {:.0}s limit, using VAD-chunked transcription",
+                duration_secs, GIGAAM_CHUNK_THRESHOLD_SECS
+            );
+            transcribe_gigaam_chunked(model, audio, path)
+        }
+        _ => model
+            .transcribe(audio, &TranscribeOptions::default())
+            .map_err(|e| anyhow::anyhow!("{}", e)),
+    }
+}
+
+fn transcribe_gigaam_chunked(
+    model: &mut GigaAMModel,
+    audio: &[f32],
+    vad_path: &str,
+) -> Result<transcribe_rs::TranscriptionResult> {
+    use transcribe_rs::transcriber::{Transcriber, VadChunked, VadChunkedConfig};
+    use transcribe_rs::vad::{SileroVad, SmoothedVad};
+
+    let silero = SileroVad::new(vad_path, 0.3)
+        .map_err(|e| anyhow::anyhow!("failed to load Silero VAD for chunking: {}", e))?;
+    let vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+    let config = VadChunkedConfig {
+        min_chunk_secs: 10.0,
+        max_chunk_secs: 24.0,
+        padding_secs: 0.0,
+        smart_split_search_secs: Some(3.0),
+        merge_separator: " ".into(),
+    };
+    let mut chunker = VadChunked::new(Box::new(vad), config, TranscribeOptions::default());
+    chunker
+        .transcribe(model, audio)
+        .map_err(|e| anyhow::anyhow!("{}", e))
 }
