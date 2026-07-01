@@ -575,9 +575,9 @@
     "installing": "Installation...",
     "preparing": "Préparation...",
     "checkForUpdates": "Rechercher des mises à jour",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "portableUpdateTitle": "Mise à jour manuelle requise",
+    "portableUpdateMessage": "Les installations portables ne peuvent pas être mises à jour automatiquement. Pour mettre à jour : téléchargez le dernier installateur NSIS depuis GitHub Releases, installez-le dans le même dossier, puis copiez votre dossier Data/ (paramètres, modèles, enregistrements) de l’ancienne version vers la nouvelle.",
+    "portableUpdateButton": "Ouvrir GitHub Releases"
   },
   "common": {
     "loading": "Chargement...",

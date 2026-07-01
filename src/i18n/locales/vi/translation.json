@@ -575,9 +575,9 @@
     "installing": "Đang cài đặt...",
     "preparing": "Đang chuẩn bị...",
     "checkForUpdates": "Kiểm tra cập nhật",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "portableUpdateTitle": "Cần cập nhật thủ công",
+    "portableUpdateMessage": "Bản cài đặt di động không thể cập nhật tự động. Để cập nhật: tải trình cài đặt NSIS mới nhất từ GitHub Releases, cài đặt vào cùng thư mục, sau đó sao chép thư mục Data/ (cài đặt, mô hình, bản ghi) từ phiên bản cũ sang phiên bản mới.",
+    "portableUpdateButton": "Mở GitHub Releases"
   },
   "common": {
     "loading": "Đang tải...",

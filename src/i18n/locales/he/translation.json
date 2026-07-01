@@ -383,7 +383,7 @@
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
         },
         "baseUrl": {
-          "title": "Base URL",
+          "title": "כתובת URL בסיסית",
           "description": "כתובת ה-API הבסיסית עבור הספק הנבחר. רק ספק מותאם אישית ניתן לעריכה.",
           "placeholder": "https://api.openai.com/v1"
         },
