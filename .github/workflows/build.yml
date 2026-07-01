@@ -43,6 +43,10 @@ on:
         required: false
         type: boolean
         default: false
+      no-cache:
+        required: false
+        type: boolean
+        default: false
 
 env:
   TSC_VERSION: "0.9.0"
@@ -62,7 +66,7 @@ jobs:
           git config --system core.longpaths true
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ inputs.repository }}
           ref: ${{ inputs.ref }}
@@ -98,6 +102,10 @@ jobs:
           targets: ${{ contains(inputs.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
+        # Release builds skip the cache (no-cache: true) so the artifact is
+        # always compiled clean — no risk of a stale cached native lib being
+        # linked. PR/test builds keep caching for speed.
+        if: ${{ !inputs.no-cache }}
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
@@ -133,6 +141,9 @@ jobs:
           dpkg-query -W -f='${Status}\n' libgtk-layer-shell0 | grep -q "install ok installed"
           ldconfig -p | grep -q "libgtk-layer-shell.so.0"
 
+      # x86_64 only — Windows-on-ARM links transcribe-cpp statically CPU-only
+      # (no `vulkan` feature; see src-tauri/Cargo.toml), so ggml-vulkan is never
+      # built there and no Vulkan SDK, headers, or glslc are needed.
       - name: Install Vulkan SDK (Windows x64)
         if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
         uses: humbletim/install-vulkan-sdk@v1.2
@@ -140,51 +151,10 @@ jobs:
           version: 1.4.309.0
           cache: true
 
-      # humbletim/install-vulkan-sdk@v1.2 cannot target Windows ARM64 yet.
-      # Download prebuilt binaries (Bin) + build headers/libs from source.
-      # See https://github.com/humbletim/install-vulkan-sdk/pull/22 for prebuilt ARM64 support progress.
-      - name: Prepare Vulkan SDK env (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $sdkDir = Join-Path $env:GITHUB_WORKSPACE "VULKAN_SDK"
-          New-Item -ItemType Directory -Force -Path $sdkDir | Out-Null
-          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK=$sdkDir"
-
-      - name: Download Vulkan SDK binaries (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $url = "https://sdk.lunarg.com/sdk/download/1.4.309.0/warm/InstallVulkanARM64-1.4.309.0.exe"
-          $outFile = "vulkan_sdk_arm.exe"
-          Write-Host "Downloading Vulkan SDK binaries from $url"
-          Invoke-WebRequest -Uri $url -OutFile $outFile
-
-      - name: Extract Vulkan SDK binaries (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $sdkDir = $env:VULKAN_SDK
-          $sevenZip = (Get-Command 7z.exe -ErrorAction Stop).Source
-          Write-Host "Extracting binaries to $sdkDir"
-          & $sevenZip x "./vulkan_sdk_arm.exe" "-o$sdkDir" -aoa
-          $binPath = Join-Path $sdkDir "Bin"
-          Add-Content -Path $env:GITHUB_PATH -Value $binPath
-          Write-Host "Verifying glslc..."
-          & (Join-Path $binPath "glslc.exe") --version
-
-      - name: Build Vulkan SDK headers and libs (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
-        with:
-          vulkan-query-version: 1.4.309.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
-
       - name: Cache trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries
         id: cache-tsc
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cargo/bin/trusted-signing-cli*
           key: trusted-signing-cli-${{ env.TSC_VERSION }}-${{ runner.os }}-${{ runner.arch }}
@@ -273,7 +243,7 @@ jobs:
           fi
           echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
 
-      # whisper-rs-sys cmake builds create paths that exceed Windows MAX_PATH
+      # transcribe-cpp-sys cmake builds create paths that exceed Windows MAX_PATH
       # (260 chars). Shorten the target dir to keep paths under the limit.
       - name: Shorten build path (Windows)
         if: runner.os == 'Windows'
@@ -284,19 +254,63 @@ jobs:
           New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
           echo "CARGO_TARGET_DIR=$targetDir" >> $env:GITHUB_ENV
 
-      # ggml requires clang for ARM. The VS generator determines the compiler
-      # via the toolset (-T flag) which can't be overridden from env vars.
-      # Use Ninja + clang-cl instead, which respects CMAKE_C_COMPILER.
+      # ggml refuses to build its ARM CPU backend under MSVC (upstream check in
+      # ggml/src/ggml-cpu/CMakeLists.txt: "MSVC is not supported for ARM, use
+      # clang"), so the Windows-ARM build must use clang-cl. transcribe-cpp-sys
+      # drives CMake via the cmake crate, which resolves the compiler through the
+      # cc crate — i.e. the CC/CXX env vars, NOT CMAKE_C_COMPILER (which is why an
+      # earlier CMAKE_C_COMPILER-only attempt still configured with MSVC cl.exe).
+      # Ninja (honored by the cmake crate) sidesteps the VS generator's toolset.
       - name: Configure cmake for ARM64 (Windows)
         if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
         shell: pwsh
         run: |
           echo "CMAKE_GENERATOR=Ninja" >> $env:GITHUB_ENV
+          echo "CC=clang-cl" >> $env:GITHUB_ENV
+          echo "CXX=clang-cl" >> $env:GITHUB_ENV
           echo "CMAKE_C_COMPILER=clang-cl" >> $env:GITHUB_ENV
           echo "CMAKE_CXX_COMPILER=clang-cl" >> $env:GITHUB_ENV
           echo "CMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
           echo "CL=/EHsc" >> $env:GITHUB_ENV
+          # Link uses lld-link + llvm-mt; use llvm-rc for resources too. Microsoft's
+          # rc.exe fails the manifest with "RC2136" under this clang-cl/lld toolchain
+          # (seen in ggml-vulkan's vulkan-shaders-gen host sub-build). CMake honors
+          # the RC env var, and the ExternalProject sub-build inherits it.
+          echo "RC=llvm-rc" >> $env:GITHUB_ENV
+          # Two ARM-static CMake overrides, forwarded by src-tauri/build.rs to the
+          # transcribe-cpp-sys configure via TRANSCRIBE_CMAKE_ARGS (applied AFTER
+          # the crate's own -D's, so ours win):
+          #
+          #   GGML_NATIVE=OFF  — only the dynamic-backends path force-sets this; a
+          #     plain static build inherits ggml's default GGML_NATIVE=ON
+          #     (= -mcpu=native), tuning the binary to THIS runner's CPU — a
+          #     distribution hazard. Pin OFF for a portable ARM baseline.
+          #
+          #   GGML_OPENMP=OFF  — transcribe-cpp-sys force-sets GGML_OPENMP=ON on
+          #     Windows, assuming MSVC auto-links vcomp via the /openmp pragma. But
+          #     ARM builds with clang-cl, whose /openmp emits LLVM-OMP refs
+          #     (__kmpc_*/omp_*) with no auto-linked runtime, so the static final
+          #     link fails with LNK2019 unresolved externals. The crate's CENTRAL
+          #     POLICY notes ggml's non-OpenMP barrier only deadlocks under MSVC
+          #     *codegen* ("works on every other compiler"), and clang-cl is LLVM
+          #     codegen — so disabling OpenMP is safe here and avoids shipping or
+          #     statically linking libomp.
+          echo "TRANSCRIBE_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF" >> $env:GITHUB_ENV
+
+      # The static ARM build ships no transcribe-cpp DLLs, so build.rs stages
+      # nothing into src-tauri/transcribe-libs/ and that dir never gets created.
+      # tauri.windows.conf.json exists only to bundle that dir as a resource for
+      # the x86 dynamic-backends posture; on ARM it would point Tauri at a missing
+      # path and fail bundling. Removing it falls back to the base tauri.conf.json
+      # resources (the models) — exactly what the static ARM build wants. Gated to
+      # ARM, so the x86 Windows build keeps the file and still bundles its DLLs.
+      - name: Drop Windows DLL bundle config (Windows ARM64, static)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          Remove-Item "src-tauri/tauri.windows.conf.json"
+          Write-Host "Removed tauri.windows.conf.json (static ARM build ships no DLLs)"
 
       - name: Install ONNX Runtime (x86_64 macOS)
         if: inputs.target == 'x86_64-apple-darwin'
@@ -337,6 +351,99 @@ jobs:
             '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      # Windows x64 links a BASELINE ONNX Runtime dynamically instead of statically
+      # embedding pyke's default download-binaries build, which is compiled with a
+      # global /arch:AVX2 baseline and executes BMI2/AVX in a C++ static initializer
+      # — crashing at process startup on any pre-Haswell CPU (Sandy/Ivy Bridge, older
+      # AMD) before main() runs. Microsoft's official build uses an SSE2 baseline with
+      # MLAS runtime CPU dispatch, so it runs everywhere and dispatches to AVX2/AVX-512
+      # kernels when present (perf parity on capable CPUs). build.rs stages
+      # onnxruntime.dll into transcribe-libs/, which tauri.windows.conf.json bundles
+      # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static posture
+      # and drops tauri.windows.conf.json anyway).
+      # NOTE: sourced from Microsoft's GitHub release; can be re-hosted on
+      # blob.handy.computer to match the macOS/Linux steps.
+      - name: Install ONNX Runtime (Windows x64)
+        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ORT_VERSION = "1.24.2"
+          $url = "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/onnxruntime-win-x64-$ORT_VERSION.zip"
+          Invoke-WebRequest -Uri $url -OutFile ort.zip
+          Expand-Archive -Path ort.zip -DestinationPath ort-dist -Force
+          $ortLib = (Resolve-Path "ort-dist/onnxruntime-win-x64-$ORT_VERSION/lib").Path
+          Write-Host "ORT_LIB_LOCATION=$ortLib"
+          Add-Content -Path $env:GITHUB_ENV -Value "ORT_LIB_LOCATION=$ortLib"
+          Add-Content -Path $env:GITHUB_ENV -Value "ORT_PREFER_DYNAMIC_LINK=1"
+
+      # ggml-vulkan (built by transcribe-cpp-sys when the Vulkan backend is on)
+      # does `find_package(SPIRV-Headers CONFIG REQUIRED)` for <spirv-headers/
+      # spirv.hpp>. ggml's CMake appends $VULKAN_SDK to CMAKE_PREFIX_PATH first,
+      # but the CI Vulkan SDK install does not expose a findable
+      # SPIRV-HeadersConfig.cmake, so the configure fails. Provide the
+      # header-only package via vcpkg and put its prefix on CMAKE_PREFIX_PATH
+      # (the cmake crate forwards it as -DCMAKE_PREFIX_PATH). x86_64 only — the
+      # Windows ARM64 build is CPU-only, so ggml-vulkan is never built there.
+      # SPIRV-Headers is header-only, so the triplet is immaterial;
+      # SPIRV-HeadersConfig.cmake is a CONFIG package, so plain CMAKE_PREFIX_PATH
+      # resolves it with no vcpkg toolchain.
+      - name: Install SPIRV-Headers for transcribe-cpp Vulkan build (Windows x64)
+        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          vcpkg install spirv-headers:x64-windows
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install spirv-headers failed" }
+          $prefix = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows" -replace '\\','/'
+          $combined = if ($env:CMAKE_PREFIX_PATH) { "$prefix;$env:CMAKE_PREFIX_PATH" } else { $prefix }
+          Add-Content $env:GITHUB_ENV "CMAKE_PREFIX_PATH=$combined"
+          Write-Host "CMAKE_PREFIX_PATH=$combined"
+
+      # transcribe-cpp ships as a shared libtranscribe + loadable ggml backend
+      # modules on Linux (the `dynamic-backends` posture). They are produced by
+      # transcribe-cpp-sys's CMake install during the cargo build, but nothing
+      # ships them. Pre-build the app so that install dir exists, then expose it
+      # via LD_LIBRARY_PATH so the AppImage's linuxdeploy can resolve
+      # libtranscribe.so (a NEEDED of `handy`) while bundling. tauri-action
+      # reuses this compile incrementally. TRANSCRIBE_LIBDIR is consumed by the
+      # AppImage post-processing step to co-locate the dlopen'd ggml modules.
+      - name: Pre-build and locate transcribe-cpp backend libs (Linux)
+        if: contains(inputs.platform, 'ubuntu')
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROFILE="${{ steps.build-profile.outputs.profile }}"
+          # Frontend must exist for the app crate to compile (generate_context!).
+          bun run build
+          (
+            cd src-tauri
+            if [ "$PROFILE" = "release" ]; then cargo build --release; else cargo build; fi
+          )
+          # The install manifest sits next to libtranscribe in <crate-out>/lib.
+          # Pick the newest match in case a stale build dir lingers in the cache.
+          LIBDIR="$(find "src-tauri/target/$PROFILE/build" \
+            -type f -name transcribe-link.json -path '*transcribe-cpp-sys*/out/lib/*' \
+            -printf '%T@ %h\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)"
+          if [ -z "${LIBDIR:-}" ] || [ ! -d "$LIBDIR" ]; then
+            echo "ERROR: could not locate transcribe-cpp-sys install lib dir" >&2
+            find src-tauri/target \( -name 'libtranscribe*' -o -name 'libggml*' \) 2>/dev/null >&2 || true
+            exit 1
+          fi
+          LIBDIR="$(cd "$LIBDIR" && pwd)"
+          echo "Located transcribe-cpp libs in: $LIBDIR"
+          ls -la "$LIBDIR"
+          echo "TRANSCRIBE_LIBDIR=$LIBDIR" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          # linuxdeploy resolves `handy`'s NEEDED libs via `ldd` and HARD-FAILS
+          # on an unresolved one (it does not warn-and-skip). libtranscribe.so
+          # lives only in the cargo build tree, so also publish it (and the ggml
+          # libs it pulls in) to the system linker cache — belt-and-suspenders
+          # with LD_LIBRARY_PATH so resolution never hinges on env propagation
+          # into the bundler subprocess. (Only affects the CI host; the AppImage
+          # gets its own co-located copies.)
+          sudo cp -vL "$LIBDIR"/libtranscribe.so* "$LIBDIR"/libggml*.so* /usr/local/lib/ 2>/dev/null || true
+          sudo ldconfig
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
@@ -353,15 +460,6 @@ jobs:
           AZURE_TENANT_ID: ${{ inputs.sign-binaries && secrets.AZURE_TENANT_ID || '' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
-          # Disable -march=native and all SIMD instruction sets above SSE4.2 for
-          # x86_64 builds. Without this, CPUs lacking AVX/FMA (e.g. Celeron N2920,
-          # FX-8350) crash with SIGILL. The Vulkan backend handles heavy compute
-          # so disabling these has negligible performance impact.
-          GGML_NATIVE: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_AVX: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_AVX2: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_FMA: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_F16C: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
         with:
           tagName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
@@ -392,7 +490,7 @@ jobs:
 
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |
@@ -436,6 +534,20 @@ jobs:
               ls "$dir" | grep -E "(wayland|fuse)" || echo "  No wayland/fuse libraries found"
             done
 
+            # Co-locate transcribe-cpp's dynamic backends in the AppImage.
+            # linuxdeploy bundles the NEEDED libtranscribe.so (resolved at build
+            # time via LD_LIBRARY_PATH) but NOT the dlopen'd ggml backend modules
+            # that init_backends_default() loads at runtime from libtranscribe's
+            # own directory — stage those (and backfill the core libs) into
+            # usr/lib, next to libtranscribe. Fails loudly if libs are missing.
+            if [ -n "${TRANSCRIBE_LIBDIR:-}" ]; then
+              bash "$GITHUB_WORKSPACE/scripts/ci/stage-transcribe-libs.sh" \
+                "$TRANSCRIBE_LIBDIR" "squashfs-root/usr/lib"
+            else
+              echo "ERROR: TRANSCRIBE_LIBDIR not set; transcribe-cpp backends would be missing from the AppImage" >&2
+              exit 1
+            fi
+
             # Detect architecture and get appropriate appimagetool
             if [[ "$(uname -m)" == "aarch64" ]]; then
               APPIMAGETOOL_ARCH="aarch64"
@@ -457,9 +569,115 @@ jobs:
             echo "No AppImage found to process"
           fi
 
+      - name: Audit Linux package runtime contents
+        if: contains(inputs.platform, 'ubuntu')
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # The runtime smoke test launches the packaged handy binary, which links
+          # GTK (via tao) even for the headless --list-devices path and therefore
+          # needs a display to start. CI runners are headless, so provide a virtual
+          # X server via xvfb-run.
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
+          fi
+
+          PROFILE="${{ steps.build-profile.outputs.profile }}"
+          BUNDLE_DIR="src-tauri/target/${PROFILE}/bundle"
+
+          require_pattern() {
+            local listing="$1"
+            local pattern="$2"
+            local label="$3"
+            if ! grep -Eq "$pattern" "$listing"; then
+              echo "ERROR: missing ${label} (${pattern}) in ${listing}" >&2
+              cat "$listing" >&2
+              exit 1
+            fi
+          }
+
+          require_path() {
+            local path="$1"
+            local label="$2"
+            if [ ! -e "$path" ]; then
+              echo "ERROR: missing ${label}: ${path}" >&2
+              find "$(dirname "$path")" -maxdepth 2 -type f 2>/dev/null >&2 || true
+              exit 1
+            fi
+          }
+
+          smoke_binary() {
+            local root="$1"
+            local label="$2"
+            # Run under a virtual X server: handy initializes GTK on startup even
+            # on the headless --list-devices path, which fails without a display.
+            HANDY_NO_GTK_LAYER_SHELL=1 \
+            LD_LIBRARY_PATH="${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+              xvfb-run -a "${root}/usr/bin/handy" --list-devices >/tmp/handy-package-smoke.log
+            echo "${label} --list-devices smoke passed"
+          }
+
+          if compgen -G "${BUNDLE_DIR}/deb/*.deb" > /dev/null; then
+            for deb in "${BUNDLE_DIR}"/deb/*.deb; do
+              echo "Auditing deb package: ${deb}"
+              listing="$(mktemp)"
+              dpkg-deb -c "$deb" > "$listing"
+              require_pattern "$listing" 'usr/bin/handy$' "handy binary"
+              require_pattern "$listing" 'usr/lib/libtranscribe\.so' "transcribe runtime library"
+              require_pattern "$listing" 'usr/lib/libggml-cpu.*\.so' "ggml CPU backend module"
+              if [[ "${{ inputs.platform }}" == *"ubuntu-22.04"* && "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+                require_pattern "$listing" 'usr/lib/libonnxruntime\.so' "ONNX Runtime library"
+              fi
+              root="$(mktemp -d)"
+              dpkg-deb -x "$deb" "$root"
+              smoke_binary "$root" "deb"
+              rm -rf "$root" "$listing"
+            done
+          fi
+
+          if compgen -G "${BUNDLE_DIR}/rpm/*.rpm" > /dev/null; then
+            if ! command -v rpm >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y rpm
+            fi
+            for rpm_pkg in "${BUNDLE_DIR}"/rpm/*.rpm; do
+              echo "Auditing rpm package: ${rpm_pkg}"
+              listing="$(mktemp)"
+              rpm -qpl "$rpm_pkg" > "$listing"
+              require_pattern "$listing" '/usr/bin/handy$' "handy binary"
+              require_pattern "$listing" '/usr/lib/libtranscribe\.so' "transcribe runtime library"
+              require_pattern "$listing" '/usr/lib/libggml-cpu.*\.so' "ggml CPU backend module"
+              rm -f "$listing"
+            done
+          fi
+
+          if compgen -G "${BUNDLE_DIR}/appimage/*.AppImage" > /dev/null; then
+            for appimage in "${BUNDLE_DIR}"/appimage/*.AppImage; do
+              echo "Auditing AppImage package: ${appimage}"
+              workdir="$(mktemp -d)"
+              cp "$appimage" "${workdir}/Handy.AppImage"
+              chmod +x "${workdir}/Handy.AppImage"
+              (
+                cd "$workdir"
+                ./Handy.AppImage --appimage-extract >/dev/null
+                require_path "squashfs-root/usr/bin/handy" "AppImage handy binary"
+                require_path "squashfs-root/usr/lib/libtranscribe.so" "AppImage transcribe runtime library"
+                if ! find "squashfs-root/usr/lib" -name 'libggml-cpu*.so*' | grep -q .; then
+                  echo "ERROR: missing AppImage ggml CPU backend module" >&2
+                  find "squashfs-root/usr/lib" -maxdepth 1 -type f >&2
+                  exit 1
+                fi
+                smoke_binary "$(pwd)/squashfs-root" "AppImage"
+              )
+              rm -rf "$workdir"
+            done
+          fi
+
       - name: Upload artifacts (Linux)
         if: inputs.upload-artifacts && contains(inputs.platform, 'ubuntu')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.platform }}-${{ inputs.target }}
           path: |
@@ -476,9 +694,95 @@ jobs:
           $base = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { "src-tauri/target" }
           echo "base=$base" >> $env:GITHUB_OUTPUT
 
+      - name: Audit Windows package runtime contents
+        if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
+        shell: pwsh
+        run: |
+          $profile = "${{ steps.build-profile.outputs.profile }}"
+          $target = "${{ inputs.target }}"
+          $base = "${{ steps.win-artifact-path.outputs.base }}"
+          if ($target -and $target -ne "x86_64-pc-windows-msvc") {
+            $bundleBase = Join-Path $base (Join-Path $target (Join-Path $profile "bundle"))
+          } else {
+            $bundleBase = Join-Path $base (Join-Path $profile "bundle")
+          }
+
+          $stagedDlls = Get-ChildItem "src-tauri/transcribe-libs" -Filter "*.dll" -ErrorAction SilentlyContinue
+          if (-not $stagedDlls) {
+            Write-Host "No staged transcribe DLLs; skipping Windows runtime DLL package audit."
+            exit 0
+          }
+
+          # Assert an installed/extracted package layout ships the runtime DLLs
+          # and a launchable handy.exe. Shared by the NSIS and MSI audits below so
+          # both installers are held to the same bar.
+          function Assert-PackageContents {
+            param([string]$Root, [string]$Label)
+
+            $handy = Get-ChildItem $Root -Filter "handy.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $handy) {
+              throw "$Label package is missing handy.exe"
+            }
+            if (-not (Get-ChildItem $Root -Filter "*transcribe*.dll" -Recurse -ErrorAction SilentlyContinue)) {
+              throw "$Label package is missing transcribe runtime DLLs"
+            }
+            if (-not (Get-ChildItem $Root -Filter "*ggml*.dll" -Recurse -ErrorAction SilentlyContinue)) {
+              throw "$Label package is missing ggml runtime DLLs"
+            }
+
+            & $handy.FullName --list-devices | Out-Host
+            if ($LASTEXITCODE -ne 0) {
+              throw "$Label handy.exe --list-devices failed"
+            }
+          }
+
+          $nsisPackages = Get-ChildItem (Join-Path $bundleBase "nsis") -Filter "*.exe" -ErrorAction SilentlyContinue
+          if (-not $nsisPackages) {
+            throw "No NSIS packages found under $bundleBase for runtime DLL audit"
+          }
+
+          foreach ($pkg in $nsisPackages) {
+            Write-Host "Auditing NSIS package: $($pkg.FullName)"
+            $installDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $installDir | Out-Null
+            $proc = Start-Process -FilePath $pkg.FullName -ArgumentList @("/S", "/PORTABLE", "/D=$installDir") -Wait -PassThru
+            if ($proc.ExitCode -ne 0) {
+              throw "Silent portable install failed for $($pkg.FullName) with exit code $($proc.ExitCode)"
+            }
+            Assert-PackageContents -Root $installDir -Label "Installed NSIS"
+            Remove-Item -Recurse -Force $installDir
+          }
+
+          # WiX MSI: an administrative install (`/a`) lays out the packaged file
+          # tree into TARGETDIR without a real install — no elevation, no registry
+          # writes, no machine state to clean up — the MSI analog of NSIS's
+          # /S /PORTABLE. The same DLL + smoke checks then apply.
+          $msiPackages = Get-ChildItem (Join-Path $bundleBase "msi") -Filter "*.msi" -ErrorAction SilentlyContinue
+          if (-not $msiPackages) {
+            throw "No MSI packages found under $bundleBase for runtime DLL audit"
+          }
+
+          foreach ($pkg in $msiPackages) {
+            Write-Host "Auditing MSI package: $($pkg.FullName)"
+            $installDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $installDir | Out-Null
+            $logFile = Join-Path $installDir "msi-admin-install.log"
+            # Single-string ArgumentList so quoting of paths is explicit and not
+            # subject to Start-Process array-join quirks. Public properties
+            # (TARGETDIR) go last per msiexec convention.
+            $msiArgs = "/a `"$($pkg.FullName)`" /qn /L*v `"$logFile`" TARGETDIR=`"$installDir`""
+            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
+            if ($proc.ExitCode -ne 0) {
+              if (Test-Path $logFile) { Get-Content $logFile | Out-Host }
+              throw "Administrative install failed for $($pkg.FullName) with exit code $($proc.ExitCode)"
+            }
+            Assert-PackageContents -Root $installDir -Label "Installed MSI"
+            Remove-Item -Recurse -Force $installDir
+          }
+
       - name: Upload artifacts (Windows)
         if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |

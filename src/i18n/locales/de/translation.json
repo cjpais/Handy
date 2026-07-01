@@ -19,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "Empfohlen",
-    "download": "Herunterladen",
-    "downloading": "Wird heruntergeladen...",
     "customModelDescription": "Nicht offiziell unterstützt",
-    "downloadFailed": "Download fehlgeschlagen. Bitte erneut versuchen.",
     "modelCard": {
       "accuracy": "Genauigkeit",
       "speed": "Geschwindigkeit"
@@ -95,8 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Verfügbare Modelle konnten nicht geladen werden",
-      "downloadModel": "Modell konnte nicht heruntergeladen werden: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Berechtigungen erforderlich",
@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Benutzerdefiniert",
+    "streaming": "Streaming",
     "active": "Aktiv",
     "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",
@@ -141,37 +142,38 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Unterstützt mehrere Eingabesprachen",
-      "multiLanguage": "Mehrsprachig",
+      "languageCount": "{{total}} languages",
       "translation": "Kann ins Englische übersetzen",
       "translate": "Ins Englische übersetzen",
       "singleLanguage": "Unterstützt nur diese Sprache",
-      "languageOnly": "Nur {{language}}"
+      "languageOnly": "Nur {{language}}",
+      "streaming": "Zeigt die Transkription live während des Sprechens an"
     },
     "cancel": "Abbrechen",
-    "cancelDownload": "Download abbrechen"
+    "cancelDownload": "Download abbrechen",
+    "legacy": "Veraltet"
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}}-Einstellungen",
-      "noSettingsNeeded": "Dieses Modell funktioniert automatisch ohne Konfiguration."
+      "title": "{{model}}-Einstellungen"
     },
     "models": {
       "title": "Transkriptionsmodelle",
       "description": "Wähle ein Transkriptionsmodell aus oder lade zusätzliche Modelle herunter. Verschiedene Modelle bieten unterschiedliche Genauigkeits- und Geschwindigkeitsstufen.",
-      "downloaded": "Heruntergeladen",
-      "available": "Zum Download verfügbar",
       "deleteConfirm": "Bist du sicher, dass du {{modelName}} löschen möchtest? Du musst es erneut herunterladen, um es zu verwenden.",
       "deleteActiveConfirm": "{{modelName}} ist dein aktives Modell. Das Löschen stoppt Transkriptionen, bis du ein neues Modell auswählst. Bist du sicher?",
       "deleteTitle": "Modell löschen",
       "filters": {
-        "all": "Alle",
-        "multiLanguage": "Mehrsprachig",
-        "translation": "Übersetzung",
         "allLanguages": "Alle Sprachen"
       },
       "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
       "yourModels": "Heruntergeladene Modelle",
-      "availableModels": "Zum Download verfügbar"
+      "availableModels": "Zum Download verfügbar",
+      "searchPlaceholder": "Modelle nach Namen suchen…",
+      "rescan": {
+        "label": "Neu scannen",
+        "tooltip": "Erneut nach Modellen scannen, die außerhalb von Handy zum Modellordner oder Hugging-Face-Cache hinzugefügt wurden"
+      }
     },
     "general": {
       "title": "Allgemein",
@@ -205,7 +207,6 @@
       "language": {
         "title": "Sprache",
         "description": "Wähle die Sprache für die Spracherkennung. Auto erkennt die Sprache automatisch, die Auswahl einer bestimmten Sprache kann die Genauigkeit verbessern.",
-        "descriptionUnsupported": "Das Parakeet-Modell erkennt die Sprache automatisch. Keine manuelle Auswahl erforderlich.",
         "searchPlaceholder": "Sprachen suchen...",
         "noResults": "Keine Sprachen gefunden",
         "auto": "Auto"
@@ -239,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Erweitert",
       "groups": {
         "app": "App",
         "output": "Ausgabe",
@@ -256,7 +256,7 @@
         "description": "Hält den Mikrofon-Stream nach dem Aufnahmestopp 30 Sekunden lang offen, um die Latenz bei aufeinanderfolgenden Transkriptionen zu verringern. Kann die Bluetooth-Audioqualität beeinträchtigen."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper-Beschleunigung",
           "description": "Hardwarebeschleunigung für Whisper-Modelle. Automatisch nutzt GPU falls verfügbar (Metal auf macOS, Vulkan auf Windows/Linux)."
         },
@@ -265,8 +265,6 @@
           "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
         },
         "gpuDevice": {
-          "title": "GPU-Gerät",
-          "description": "Wähle die GPU für die Whisper-Inferenz. Auto wählt die dedizierte GPU.",
           "auto": "Auto"
         }
       },
@@ -283,12 +281,22 @@
         "description": "Das Handy-Symbol in der Taskleiste anzeigen."
       },
       "overlay": {
-        "title": "Overlay-Position",
-        "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",
-        "options": {
-          "none": "Keine",
-          "bottom": "Unten",
-          "top": "Oben"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Keine",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Overlay-Position",
+          "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",
+          "options": {
+            "bottom": "Unten",
+            "top": "Oben"
+          }
         }
       },
       "pasteMethod": {
@@ -332,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Ins Englische übersetzen",
-        "description": "Sprache aus anderen Sprachen automatisch während der Transkription ins Englische übersetzen.",
-        "descriptionUnsupported": "Übersetzung wird vom {{model}}-Modell nicht unterstützt."
+        "description": "Sprache aus anderen Sprachen automatisch während der Transkription ins Englische übersetzen."
       },
       "modelUnload": {
         "title": "Modell entladen",
@@ -356,10 +363,13 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "Nachbearbeitung",
       "hotkey": {
         "title": "Tastenkürzel"
       },
@@ -370,9 +380,6 @@
           "description": "Wähle einen OpenAI-kompatiblen Anbieter."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Läuft vollständig auf dem Gerät. Kein API-Schlüssel oder Netzwerkzugriff erforderlich.",
-          "requirements": "Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer. Apple Intelligence muss in den Systemeinstellungen aktiviert sein.",
           "unavailable": "Apple Intelligence ist auf diesem Gerät nicht verfügbar. Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer und aktiviertem Apple Intelligence in den Systemeinstellungen."
         },
         "baseUrl": {
@@ -387,10 +394,8 @@
         },
         "model": {
           "title": "Modell",
-          "descriptionApple": "Gib ein optionales numerisches Token-Limit an oder behalte die Standard-Gerätevorgabe.",
           "descriptionCustom": "Gib die Modellkennung an, die von deinem benutzerdefinierten Endpunkt erwartet wird.",
           "descriptionDefault": "Wähle ein Modell des ausgewählten Anbieters.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Modell suchen oder auswählen",
           "placeholderNoOptions": "Modellnamen eingeben",
           "refreshModels": "Modelle aktualisieren"
@@ -518,6 +523,13 @@
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
+      },
+      "whatsNewPreview": {
+        "title": "Vorschau der Neuerungen",
+        "description": "Die neuesten gebündelten Versionshinweise öffnen, ohne sie als gesehen zu markieren",
+        "button": "Vorschau",
+        "noNotes": "Keine gebündelten Versionshinweise gefunden",
+        "error": "Versionshinweise konnten nicht angezeigt werden"
       }
     },
     "about": {
@@ -542,22 +554,22 @@
       },
       "acknowledgments": {
         "title": "Danksagungen",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "Hochleistungs-Inferenz des Whisper-Spracherkennungsmodells von OpenAI",
-          "details": "Handy verwendet Whisper.cpp für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
+          "details": "Handy verwendet ggml für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Neuerungen anzeigen",
+        "description": "Versionshinweise nach Handy-Updates anzeigen"
       }
     }
   },
   "footer": {
-    "downloadingModel": "Lade {{model}} herunter...",
     "checkingUpdates": "Suche nach Updates...",
-    "updateAvailable": "Update verfügbar: {{version}}",
     "updateAvailableShort": "Update verfügbar",
     "upToDate": "Aktuell",
-    "downloadUpdate": "Update herunterladen",
-    "restart": "Neustart",
     "updateCheckingDisabled": "Update-Prüfung deaktiviert",
     "downloading": "Wird heruntergeladen... {{progress}}%",
     "installing": "Wird installiert...",
@@ -569,33 +581,16 @@
   },
   "common": {
     "loading": "Wird geladen...",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "reset": "Zurücksetzen",
-    "add": "Hinzufügen",
-    "remove": "Entfernen",
     "delete": "Löschen",
-    "edit": "Bearbeiten",
-    "create": "Erstellen",
-    "update": "Aktualisieren",
     "close": "Schließen",
     "open": "Öffnen",
     "copy": "Kopieren",
     "clear": "Leeren",
-    "default": "Standard",
-    "enabled": "Aktiviert",
-    "disabled": "Deaktiviert",
-    "on": "An",
-    "off": "Aus",
-    "yes": "Ja",
-    "no": "Nein",
     "noOptionsFound": "Keine Optionen gefunden"
   },
   "accessibility": {
-    "permissionsRequired": "Bedienungshilfen-Berechtigungen erforderlich",
     "permissionsDescription": "Handy benötigt Bedienungshilfen-Berechtigungen, um transkribierten Text einzugeben.",
-    "openSettings": "Systemeinstellungen öffnen",
-    "dismiss": "Schließen"
+    "openSettings": "Systemeinstellungen öffnen"
   },
   "errors": {
     "loadDirectory": "Fehler beim Laden des Verzeichnisses: {{error}}",
@@ -612,7 +607,8 @@
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
     "modelLoadFailedUnknown": "unbekanntes Modell",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
-    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden."
+    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },
   "appLanguage": {
     "title": "Anwendungssprache",
@@ -621,5 +617,8 @@
   "overlay": {
     "transcribing": "Transkribiere...",
     "processing": "Verarbeite..."
+  },
+  "whatsNew": {
+    "title": "Neu in Handy v{{version}}"
   }
 }

@@ -19,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Pour commencer, choisissez un modèle de transcription",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "Recommandé",
-    "download": "Télécharger",
-    "downloading": "Téléchargement...",
     "customModelDescription": "Non officiellement pris en charge",
-    "downloadFailed": "Échec du téléchargement. Veuillez réessayer.",
     "modelCard": {
       "accuracy": "précision",
       "speed": "vitesse"
@@ -95,8 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Échec du chargement des modèles disponibles",
-      "downloadModel": "Échec du téléchargement du modèle : {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Autorisations requises",
@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Personnalisé",
+    "streaming": "Streaming",
     "active": "Actif",
     "switching": "Changement...",
     "noModelsAvailable": "Aucun modèle disponible",
@@ -141,37 +142,38 @@
     "downloadSpeed": "{{speed}} Mo/s",
     "capabilities": {
       "languageSelection": "Prend en charge plusieurs langues d'entrée",
-      "multiLanguage": "Multilingue",
+      "languageCount": "{{total}} languages",
       "translation": "Peut traduire en anglais",
       "translate": "Traduire en anglais",
       "singleLanguage": "Prend en charge uniquement cette langue",
-      "languageOnly": "{{language}} uniquement"
+      "languageOnly": "{{language}} uniquement",
+      "streaming": "Affiche la transcription en direct pendant que vous parlez"
     },
     "cancel": "Annuler",
-    "cancelDownload": "Annuler le téléchargement"
+    "cancelDownload": "Annuler le téléchargement",
+    "legacy": "Hérité"
   },
   "settings": {
     "modelSettings": {
-      "title": "Paramètres de {{model}}",
-      "noSettingsNeeded": "Ce modèle fonctionne automatiquement sans configuration nécessaire."
+      "title": "Paramètres de {{model}}"
     },
     "models": {
       "title": "Modèles de Transcription",
       "description": "Sélectionnez un modèle de transcription ou téléchargez des modèles supplémentaires. Différents modèles offrent différents niveaux de précision et de vitesse.",
-      "downloaded": "Téléchargés",
-      "available": "Disponibles au Téléchargement",
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
       "deleteActiveConfirm": "{{modelName}} est votre modèle actif. Le supprimer arrêtera les transcriptions jusqu'à ce que vous sélectionniez un nouveau modèle. Êtes-vous sûr ?",
       "deleteTitle": "Supprimer le modèle",
       "filters": {
-        "all": "Tous",
-        "multiLanguage": "Multilingue",
-        "translation": "Traduction",
         "allLanguages": "Toutes les langues"
       },
       "noModelsMatch": "Aucun modèle ne correspond à ce filtre.",
       "yourModels": "Modèles téléchargés",
-      "availableModels": "Disponibles au téléchargement"
+      "availableModels": "Disponibles au téléchargement",
+      "searchPlaceholder": "Rechercher des modèles par nom…",
+      "rescan": {
+        "label": "Réanalyser",
+        "tooltip": "Réanalyser pour détecter les modèles ajoutés au dossier des modèles ou au cache Hugging Face en dehors de Handy"
+      }
     },
     "general": {
       "title": "Général",
@@ -205,7 +207,6 @@
       "language": {
         "title": "Langue",
         "description": "Sélectionnez la langue pour la reconnaissance vocale. Auto déterminera automatiquement la langue, tandis que sélectionner une langue spécifique peut améliorer la précision pour cette langue.",
-        "descriptionUnsupported": "Le modèle Parakeet détecte automatiquement la langue. Aucune sélection manuelle n'est nécessaire.",
         "searchPlaceholder": "Rechercher des langues...",
         "noResults": "Aucune langue trouvée",
         "auto": "Auto"
@@ -239,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Avancé",
       "groups": {
         "app": "Application",
         "output": "Sortie",
@@ -256,7 +256,7 @@
         "description": "Maintient le flux du microphone ouvert pendant 30 secondes après l'arrêt de l'enregistrement, réduisant la latence pour les transcriptions consécutives. Peut dégrader la qualité audio Bluetooth."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Accélération Whisper",
           "description": "Accélération matérielle pour les modèles Whisper. Auto utilise le GPU si disponible (Metal sur macOS, Vulkan sur Windows/Linux)."
         },
@@ -265,8 +265,6 @@
           "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
         },
         "gpuDevice": {
-          "title": "Appareil GPU",
-          "description": "Sélectionnez le GPU à utiliser pour l'inférence Whisper. Auto choisit le GPU dédié.",
           "auto": "Auto"
         }
       },
@@ -283,12 +281,22 @@
         "description": "Afficher l'icône de Handy dans la barre système."
       },
       "overlay": {
-        "title": "Position de la fenêtre d'enregistrement",
-        "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
-        "options": {
-          "none": "Aucune",
-          "bottom": "Bas",
-          "top": "Haut"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Aucune",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Position de la fenêtre d'enregistrement",
+          "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
+          "options": {
+            "bottom": "Bas",
+            "top": "Haut"
+          }
         }
       },
       "pasteMethod": {
@@ -332,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Traduire en anglais",
-        "description": "Traduire automatiquement la parole d'autres langues vers l'anglais pendant la transcription.",
-        "descriptionUnsupported": "La traduction n'est pas prise en charge par le modèle {{model}}."
+        "description": "Traduire automatiquement la parole d'autres langues vers l'anglais pendant la transcription."
       },
       "modelUnload": {
         "title": "Décharger le modèle",
@@ -356,10 +363,13 @@
         "add": "Ajouter",
         "remove": "Supprimer {{word}}",
         "duplicate": "\"{{word}}\" existe déjà"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "Post-traitement",
       "hotkey": {
         "title": "Raccourci clavier"
       },
@@ -370,9 +380,6 @@
           "description": "Sélectionnez un fournisseur compatible OpenAI."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Fonctionne entièrement sur l'appareil. Aucune clé API ni accès réseau n'est requis.",
-          "requirements": "Nécessite un Mac Apple Silicon exécutant macOS Tahoe (26.0) ou une version ultérieure. Apple Intelligence doit être activé dans les Préférences Système.",
           "unavailable": "Apple Intelligence n'est pas disponible sur cet appareil. Nécessite un Mac Apple Silicon exécutant macOS Tahoe (26.0) ou une version ultérieure avec Apple Intelligence activé dans les Préférences Système."
         },
         "baseUrl": {
@@ -387,10 +394,8 @@
         },
         "model": {
           "title": "Modèle",
-          "descriptionApple": "Fournissez une limite de tokens optionnelle ou conservez le préréglage par défaut sur l'appareil.",
           "descriptionCustom": "Fournissez l'identifiant du modèle attendu par votre point de terminaison personnalisé.",
           "descriptionDefault": "Choisissez un modèle exposé par le fournisseur sélectionné.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Rechercher ou sélectionner un modèle",
           "placeholderNoOptions": "Tapez un nom de modèle",
           "refreshModels": "Actualiser les modèles"
@@ -518,6 +523,13 @@
       "recordingBuffer": {
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
+      },
+      "whatsNewPreview": {
+        "title": "Aperçu des nouveautés",
+        "description": "Ouvrir la dernière note de version intégrée sans la marquer comme vue",
+        "button": "Aperçu",
+        "noNotes": "Aucune note de version intégrée trouvée",
+        "error": "Impossible d’afficher l’aperçu des notes de version"
       }
     },
     "about": {
@@ -542,60 +554,43 @@
       },
       "acknowledgments": {
         "title": "Remerciements",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "Inférence haute performance du modèle de reconnaissance vocale automatique Whisper d'OpenAI",
-          "details": "Handy utilise Whisper.cpp pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
+          "details": "Handy utilise ggml pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Afficher les nouveautés",
+        "description": "Afficher les notes de version après les mises à jour de Handy"
       }
     }
   },
   "footer": {
-    "downloadingModel": "Téléchargement de {{model}}...",
     "checkingUpdates": "Recherche de mises à jour...",
-    "updateAvailable": "Mise à jour disponible : {{version}}",
     "updateAvailableShort": "Mise à jour disponible",
     "upToDate": "À jour",
-    "downloadUpdate": "Télécharger la mise à jour",
-    "restart": "Redémarrer",
     "updateCheckingDisabled": "Vérification des mises à jour désactivée",
     "downloading": "Téléchargement... {{progress}}%",
     "installing": "Installation...",
     "preparing": "Préparation...",
     "checkForUpdates": "Rechercher des mises à jour",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "portableUpdateTitle": "Mise à jour manuelle requise",
+    "portableUpdateMessage": "Les installations portables ne peuvent pas être mises à jour automatiquement. Pour mettre à jour : téléchargez le dernier installateur NSIS depuis GitHub Releases, installez-le dans le même dossier, puis copiez votre dossier Data/ (paramètres, modèles, enregistrements) de l’ancienne version vers la nouvelle.",
+    "portableUpdateButton": "Ouvrir GitHub Releases"
   },
   "common": {
     "loading": "Chargement...",
-    "save": "Enregistrer",
-    "cancel": "Annuler",
-    "reset": "Réinitialiser",
-    "add": "Ajouter",
-    "remove": "Supprimer",
     "delete": "Supprimer",
-    "edit": "Modifier",
-    "create": "Créer",
-    "update": "Mettre à jour",
     "close": "Fermer",
     "open": "Ouvrir",
     "copy": "Copier",
     "clear": "Effacer",
-    "default": "Par défaut",
-    "enabled": "Activé",
-    "disabled": "Désactivé",
-    "on": "Activé",
-    "off": "Désactivé",
-    "yes": "Oui",
-    "no": "Non",
     "noOptionsFound": "Aucune option trouvée"
   },
   "accessibility": {
-    "permissionsRequired": "Autorisations d'accessibilité requises",
     "permissionsDescription": "Handy a besoin des autorisations d'accessibilité pour taper le texte transcrit.",
-    "openSettings": "Ouvrir les Préférences Système",
-    "dismiss": "Ignorer"
+    "openSettings": "Ouvrir les Préférences Système"
   },
   "errors": {
     "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}",
@@ -612,7 +607,8 @@
     "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
     "modelLoadFailedUnknown": "modèle inconnu",
     "pasteFailedTitle": "Échec du collage du texte",
-    "pasteFailed": "Le texte n'a pas pu être collé dans l'application active."
+    "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",
+    "transcriptionFailedTitle": "Échec de la transcription"
   },
   "appLanguage": {
     "title": "Langue de l'application",
@@ -621,5 +617,8 @@
   "overlay": {
     "transcribing": "Transcription...",
     "processing": "Traitement..."
+  },
+  "whatsNew": {
+    "title": "Nouveautés de Handy v{{version}}"
   }
 }

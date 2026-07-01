@@ -64,7 +64,7 @@ Handy is built as a Tauri application combining:
 - **Frontend**: React + TypeScript with Tailwind CSS for the settings UI
 - **Backend**: Rust for system integration, audio processing, and ML inference
 - **Core Libraries**:
-  - `whisper-rs`: Local speech recognition with Whisper models
+  - `transcribe-cpp`: Local speech recognition with Whisper-family models (GGML/GGUF)
   - `transcribe-rs`: CPU-optimized speech recognition with Parakeet models
   - `cpal`: Cross-platform audio I/O
   - `vad-rs`: Voice Activity Detection
@@ -502,7 +502,7 @@ Handy is open-source software, but the Handy name, logo, icon, and brand assets 
 ## Acknowledgments
 
 - **Whisper** by OpenAI for the speech recognition model
-- **whisper.cpp and ggml** for amazing cross-platform whisper inference/acceleration
+- **ggml and transcribe.cpp** for amazing cross-platform speech-to-text inference/acceleration
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
 - **Community contributors** helping make Handy better

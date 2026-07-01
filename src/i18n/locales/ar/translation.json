@@ -19,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "موصى به",
-    "download": "تنزيل",
-    "downloading": "...جاري التنزيل",
     "customModelDescription": "غير مدعوم رسميًا",
-    "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
     "modelCard": {
       "accuracy": "الدقة",
       "speed": "السرعة"
@@ -95,8 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "فشل تحميل النماذج المتاحة",
-      "downloadModel": "فشل تنزيل النموذج: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "الأذونات المطلوبة",
@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "مخصص",
+    "streaming": "البث",
     "active": "نشط",
     "noModelsAvailable": "لا توجد نماذج متاحة",
     "verifying": "جارٍ التحقق من {{modelName}}...",
@@ -144,11 +145,13 @@
     "capabilities": {
       "languageSelection": "يدعم اختيار اللغة",
       "singleLanguage": "يدعم هذه اللغة فقط",
-      "multiLanguage": "متعدد اللغات",
+      "languageCount": "{{total}} languages",
       "languageOnly": "{{language}} فقط",
       "translation": "يدعم الترجمة",
-      "translate": "ترجمة"
-    }
+      "translate": "ترجمة",
+      "streaming": "يعرض النسخ المباشر أثناء التحدث"
+    },
+    "legacy": "قديم"
   },
   "settings": {
     "general": {
@@ -183,7 +186,6 @@
       "language": {
         "title": "اللغة",
         "description": ".اختر لغة التعرف على الكلام. سيحدد 'تلقائي' اللغة تلقائياً، بينما يؤدي اختيار لغة معينة إلى تحسين الدقة لتلك اللغة",
-        "descriptionUnsupported": ".يكتشف نموذج Parakeet اللغة تلقائياً. لا يلزم الاختيار اليدوي",
         "searchPlaceholder": "البحث عن اللغات...",
         "noResults": "لم يتم العثور على لغات",
         "auto": "تلقائي"
@@ -217,7 +219,6 @@
       }
     },
     "advanced": {
-      "title": "متقدم",
       "groups": {
         "app": "التطبيق",
         "output": "الإخراج",
@@ -234,7 +235,7 @@
         "description": "يبقي بث الميكروفون مفتوحًا لمدة 30 ثانية بعد توقف التسجيل، مما يقلل التأخير عند النسخ المتتالي. قد يؤثر على جودة صوت البلوتوث أثناء التفعيل."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "تسريع Whisper",
           "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
         },
@@ -243,8 +244,6 @@
           "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
         },
         "gpuDevice": {
-          "title": "جهاز GPU",
-          "description": "حدد وحدة معالجة الرسومات المستخدمة لاستدلال Whisper. يختار تلقائي وحدة GPU المخصصة.",
           "auto": "تلقائي"
         }
       },
@@ -261,12 +260,22 @@
         "description": ".عرض أيقونة Handy في شريط النظام"
       },
       "overlay": {
-        "title": "موقع التراكب",
-        "description": "عرض تراكب الملاحظات المرئية أثناء التسجيل والتفريغ. على نظام Linux يوصى بـ 'بلا'.",
-        "options": {
-          "none": "بلا",
-          "bottom": "أسفل",
-          "top": "أعلى"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "بلا",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "موقع التراكب",
+          "description": "عرض تراكب الملاحظات المرئية أثناء التسجيل والتفريغ. على نظام Linux يوصى بـ 'بلا'.",
+          "options": {
+            "bottom": "أسفل",
+            "top": "أعلى"
+          }
         }
       },
       "pasteMethod": {
@@ -310,8 +319,7 @@
       },
       "translateToEnglish": {
         "label": "الترجمة إلى الإنجليزية",
-        "description": ".ترجمة الكلام من اللغات الأخرى تلقائياً إلى الإنجليزية أثناء التفريغ",
-        "descriptionUnsupported": ".الترجمة غير مدعومة من قبل نموذج {{model}}"
+        "description": ".ترجمة الكلام من اللغات الأخرى تلقائياً إلى الإنجليزية أثناء التفريغ"
       },
       "modelUnload": {
         "title": "إلغاء تحميل النموذج",
@@ -334,10 +342,13 @@
         "add": "إضافة",
         "remove": "إزالة {{word}}",
         "duplicate": "\"{{word}}\" موجود بالفعل"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "معالجة لاحقة",
       "hotkey": {
         "title": "مفتاح الاختصار"
       },
@@ -348,9 +359,6 @@
           "description": "اختر مزوداً متوافقاً مع OpenAI."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "يعمل بالكامل على الجهاز. لا يلزم وجود مفتاح API أو وصول إلى الشبكة.",
-          "requirements": "يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث. يجب تمكين Apple Intelligence في إعدادات النظام.",
           "unavailable": "Apple Intelligence غير متاح على هذا الجهاز. يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث مع تمكين Apple Intelligence في إعدادات النظام."
         },
         "baseUrl": {
@@ -365,10 +373,8 @@
         },
         "model": {
           "title": "النموذج",
-          "descriptionApple": "قدم حداً اختيارياً للرموز الرقمية أو احتفظ بالإعداد المسبق الافتراضي على الجهاز.",
           "descriptionCustom": "قدم معرف النموذج المتوقع من قبل نقطة النهاية المخصصة الخاصة بك.",
           "descriptionDefault": "اختر نموذجاً يعرضه المزود المختار.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "ابحث عن نموذج أو اختره",
           "placeholderNoOptions": "اكتب اسم النموذج",
           "refreshModels": "تحديث النماذج"
@@ -496,6 +502,13 @@
       "recordingBuffer": {
         "title": "مخزن التسجيل الإضافي",
         "description": "وقت إضافي (بالمللي ثانية) للاستمرار في التسجيل بعد تحرير المفتاح، لالتقاط الصوت المتبقي. 0 = لا مخزن إضافي."
+      },
+      "whatsNewPreview": {
+        "title": "معاينة الجديد",
+        "description": "افتح أحدث ملاحظات إصدار مضمنة دون وضع علامة عليها كمقروءة",
+        "button": "معاينة",
+        "noNotes": "لم يتم العثور على ملاحظات إصدار مضمنة",
+        "error": "تعذرت معاينة ملاحظات الإصدار"
       }
     },
     "about": {
@@ -520,82 +533,64 @@
       },
       "acknowledgments": {
         "title": "شكر وتقدير",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "استنتاج عالي الأداء لنموذج التعرف التلقائي على الكلام Whisper من OpenAI",
-          "details": ".يستخدم Handy برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
+          "details": ".يستخدم Handy برنامج ggml لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
         }
+      },
+      "whatsNewUpdates": {
+        "label": "إظهار الجديد",
+        "description": "إظهار ملاحظات الإصدار بعد تحديثات Handy"
       }
     },
     "modelSettings": {
-      "title": "إعدادات النموذج",
-      "noSettingsNeeded": "لا توجد إعدادات مطلوبة لهذا النموذج"
+      "title": "إعدادات النموذج"
     },
     "models": {
       "title": "نماذج النسخ",
       "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
       "yourModels": "النماذج المحمّلة",
       "availableModels": "متاح للتنزيل",
-      "downloaded": "تم التنزيل",
-      "available": "متاح للتنزيل",
       "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
       "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
       "deleteTitle": "حذف النموذج",
       "filters": {
-        "all": "الكل",
-        "multiLanguage": "متعدد اللغات",
-        "translation": "ترجمة",
         "allLanguages": "جميع اللغات"
       },
-      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
+      "searchPlaceholder": "ابحث عن النماذج بالاسم…",
+      "rescan": {
+        "label": "إعادة الفحص",
+        "tooltip": "إعادة الفحص بحثًا عن النماذج المضافة إلى مجلد النماذج أو ذاكرة Hugging Face التخزينية المؤقتة خارج Handy"
+      }
     }
   },
   "footer": {
-    "downloadingModel": "...جاري تنزيل {{model}}",
     "checkingUpdates": "...جاري التحقق من وجود تحديثات",
-    "updateAvailable": "تحديث متاح: {{version}}",
     "updateAvailableShort": "تحديث متاح",
     "upToDate": "محدث",
-    "downloadUpdate": "تنزيل التحديث",
-    "restart": "إعادة تشغيل",
     "updateCheckingDisabled": "تم تعطيل التحقق من التحديث",
     "downloading": "...جاري التنزيل {{progress}}%",
     "installing": "...جاري التثبيت",
     "preparing": "...جاري التحضير",
     "checkForUpdates": "التحقق من وجود تحديثات",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "portableUpdateTitle": "التحديث اليدوي مطلوب",
+    "portableUpdateMessage": "لا يمكن تحديث التثبيتات المحمولة تلقائيًا. للتحديث: نزّل أحدث مثبّت NSIS من GitHub Releases، وثبّته في المجلد نفسه، ثم انسخ مجلد Data/ (الإعدادات والنماذج والتسجيلات) من الإصدار القديم إلى الجديد.",
+    "portableUpdateButton": "فتح GitHub Releases"
   },
   "common": {
     "loading": "...جاري التحميل",
-    "save": "حفظ",
-    "cancel": "إلغاء",
-    "reset": "إعادة تعيين",
-    "add": "إضافة",
-    "remove": "إزالة",
     "delete": "حذف",
-    "edit": "تعديل",
-    "create": "إنشاء",
-    "update": "تحديث",
     "close": "إغلاق",
     "open": "فتح",
     "copy": "نسخ",
     "clear": "مسح",
-    "default": "افتراضي",
-    "enabled": "ممكن",
-    "disabled": "معطل",
-    "on": "تشغيل",
-    "off": "إيقاف",
-    "yes": "نعم",
-    "no": "لا",
     "noOptionsFound": "لم يتم العثور على خيارات"
   },
   "accessibility": {
-    "permissionsRequired": "أذونات إمكانية الوصول مطلوبة",
     "permissionsDescription": ".يحتاج Handy إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
-    "openSettings": "فتح إعدادات النظام",
-    "dismiss": "تجاهل"
+    "openSettings": "فتح إعدادات النظام"
   },
   "errors": {
     "loadDirectory": "خطأ في تحميل المجلد: {{error}}",
@@ -612,7 +607,8 @@
     "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
     "modelLoadFailedUnknown": "نموذج غير معروف",
     "pasteFailedTitle": "فشل لصق النص",
-    "pasteFailed": "تعذر لصق النص في التطبيق النشط."
+    "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
+    "transcriptionFailedTitle": "فشل التفريغ النصي"
   },
   "appLanguage": {
     "title": "لغة التطبيق",
@@ -621,5 +617,8 @@
   "overlay": {
     "transcribing": "...جاري التفريغ",
     "processing": "...جاري المعالجة"
+  },
+  "whatsNew": {
+    "title": "الجديد في Handy v{{version}}"
   }
 }

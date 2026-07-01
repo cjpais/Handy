@@ -109,17 +109,34 @@ pub struct PostProcessProvider {
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
-    None,
     Top,
+    // `none` is retired: overlay visibility is owned by `OverlayStyle` now. The
+    // alias keeps legacy stores (`"overlay_position": "none"`) deserializing
+    // instead of failing the whole load; the one-time overlay migration reads the
+    // raw stored string to recover the old "hidden" intent as `OverlayStyle::None`.
+    #[serde(alias = "none")]
     Bottom,
 }
 
+/// Which recording overlay to display. `Minimal` and `Live` share one base
+/// (the pill); `Live` grows into the panel that shows live transcription text.
+/// `None` hides the overlay entirely. Decoupled from whether the model runs in
+/// streaming mode (that is driven purely by model capability).
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum OverlayStyle {
+    None,
+    Minimal,
+    Live,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
     Immediately,
     Min2,
+    #[default]
     Min5,
     Min10,
     Min15,
@@ -138,16 +155,18 @@ pub enum PasteMethod {
     ExternalScript,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ClipboardHandling {
+    #[default]
     DontModify,
     CopyToClipboard,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AutoSubmitKey {
+    #[default]
     Enter,
     CtrlEnter,
     CmdEnter,
@@ -179,12 +198,6 @@ impl Default for KeyboardImplementation {
     }
 }
 
-impl Default for ModelUnloadTimeout {
-    fn default() -> Self {
-        ModelUnloadTimeout::Min5
-    }
-}
-
 impl Default for PasteMethod {
     fn default() -> Self {
         // Default to CtrlV for macOS and Windows, Direct for Linux
@@ -192,18 +205,6 @@ impl Default for PasteMethod {
         return PasteMethod::Direct;
         #[cfg(not(target_os = "linux"))]
         return PasteMethod::CtrlV;
-    }
-}
-
-impl Default for ClipboardHandling {
-    fn default() -> Self {
-        ClipboardHandling::DontModify
-    }
-}
-
-impl Default for AutoSubmitKey {
-    fn default() -> Self {
-        AutoSubmitKey::Enter
     }
 }
 
@@ -248,18 +249,19 @@ impl SoundTheme {
         }
     }
 
-    pub fn to_start_path(&self) -> String {
+    pub fn to_start_path(self) -> String {
         format!("resources/{}_start.wav", self.as_str())
     }
 
-    pub fn to_stop_path(&self) -> String {
+    pub fn to_stop_path(self) -> String {
         format!("resources/{}_stop.wav", self.as_str())
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum TypingTool {
+    #[default]
     Auto,
     Wtype,
     Kwtype,
@@ -268,41 +270,25 @@ pub enum TypingTool {
     Xdotool,
 }
 
-impl Default for TypingTool {
-    fn default() -> Self {
-        TypingTool::Auto
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
-pub enum WhisperAcceleratorSetting {
+pub enum TranscribeAcceleratorSetting {
+    #[default]
     Auto,
     Cpu,
     Gpu,
 }
 
-impl Default for WhisperAcceleratorSetting {
-    fn default() -> Self {
-        WhisperAcceleratorSetting::Auto
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum OrtAcceleratorSetting {
+    #[default]
     Auto,
     Cpu,
     Cuda,
     #[serde(rename = "directml")]
     DirectMl,
     Rocm,
-}
-
-impl Default for OrtAcceleratorSetting {
-    fn default() -> Self {
-        OrtAcceleratorSetting::Auto
-    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Type)]
@@ -336,6 +322,11 @@ impl std::ops::DerefMut for SecretMap {
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
+    /// Internal settings schema marker for one-time migrations. Fresh installs
+    /// start at the current version; existing stores missing this key are
+    /// treated as version 0 and migrated forward.
+    #[serde(default = "default_settings_schema_version")]
+    pub settings_schema_version: u32,
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
     pub audio_feedback: bool,
@@ -349,8 +340,18 @@ pub struct AppSettings {
     pub autostart_enabled: bool,
     #[serde(default = "default_update_checks_enabled")]
     pub update_checks_enabled: bool,
+    #[serde(default = "default_show_whats_new_on_update")]
+    pub show_whats_new_on_update: bool,
+    /// The app version whose What's New the user has already seen. Fresh installs
+    /// default to the current version (nothing is "new" to them). Existing users
+    /// upgrading from before this key existed are blanked by the migration so they
+    /// see the current release's notes — see `apply_settings_migrations`.
+    #[serde(default = "default_whats_new_last_seen_version")]
+    pub whats_new_last_seen_version: String,
     #[serde(default = "default_model")]
     pub selected_model: String,
+    #[serde(default)]
+    pub onboarding_completed: bool,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -423,17 +424,30 @@ pub struct AppSettings {
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
-    pub whisper_accelerator: WhisperAcceleratorSetting,
+    pub transcribe_accelerator: TranscribeAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
-    #[serde(default = "default_whisper_gpu_device")]
-    pub whisper_gpu_device: i32,
+    #[serde(default = "default_transcribe_gpu_device")]
+    pub transcribe_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default = "default_vad_enabled")]
+    pub vad_enabled: bool,
+    /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
+    /// not gated on this — that follows model capability. Migrated from the old
+    /// `overlay_position` (position `none` → style `None`).
+    #[serde(default = "default_overlay_style")]
+    pub overlay_style: OverlayStyle,
 }
 
 fn default_model() -> String {
     "".to_string()
+}
+
+const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 1;
+
+fn default_settings_schema_version() -> u32 {
+    CURRENT_SETTINGS_SCHEMA_VERSION
 }
 
 fn default_always_on_microphone() -> bool {
@@ -456,15 +470,35 @@ fn default_update_checks_enabled() -> bool {
     true
 }
 
+fn default_show_whats_new_on_update() -> bool {
+    true
+}
+
+fn default_whats_new_last_seen_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 fn default_selected_language() -> String {
     "auto".to_string()
 }
 
 fn default_overlay_position() -> OverlayPosition {
+    // Position only matters when the overlay is shown; whether it shows at all is
+    // `overlay_style` (Linux defaults that to None). So a single default suffices.
+    OverlayPosition::Bottom
+}
+
+fn default_overlay_style() -> OverlayStyle {
+    // Linux hides the overlay by default; other platforms show the live overlay.
+    // Position is independent and only selects top vs. bottom placement.
     #[cfg(target_os = "linux")]
-    return OverlayPosition::None;
+    return OverlayStyle::None;
     #[cfg(not(target_os = "linux"))]
-    return OverlayPosition::Bottom;
+    return OverlayStyle::Live;
+}
+
+fn default_vad_enabled() -> bool {
+    true
 }
 
 fn default_debug_mode() -> bool {
@@ -646,7 +680,7 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
-fn default_whisper_gpu_device() -> i32 {
+fn default_transcribe_gpu_device() -> i32 {
     -1 // auto
 }
 
@@ -765,6 +799,7 @@ pub fn get_default_settings() -> AppSettings {
     );
 
     AppSettings {
+        settings_schema_version: default_settings_schema_version(),
         bindings,
         push_to_talk: true,
         audio_feedback: false,
@@ -773,7 +808,10 @@ pub fn get_default_settings() -> AppSettings {
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
+        show_whats_new_on_update: default_show_whats_new_on_update(),
+        whats_new_last_seen_version: default_whats_new_last_seen_version(),
         selected_model: "".to_string(),
+        onboarding_completed: false,
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,
@@ -810,10 +848,12 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
-        whisper_accelerator: WhisperAcceleratorSetting::default(),
+        transcribe_accelerator: TranscribeAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
-        whisper_gpu_device: default_whisper_gpu_device(),
+        transcribe_gpu_device: default_transcribe_gpu_device(),
         extra_recording_buffer_ms: 0,
+        vad_enabled: default_vad_enabled(),
+        overlay_style: default_overlay_style(),
     }
 }
 
@@ -848,23 +888,25 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
-        match serde_json::from_value::<AppSettings>(settings_value) {
+        match serde_json::from_value::<AppSettings>(settings_value.clone()) {
             Ok(mut settings) => {
                 debug!("Found existing settings: {:?}", settings);
                 let default_settings = get_default_settings();
-                let mut updated = false;
+                let mut updated = apply_settings_migrations(&mut settings, &settings_value);
 
                 // Merge default bindings into existing settings
                 for (key, value) in default_settings.bindings {
-                    if !settings.bindings.contains_key(&key) {
-                        debug!("Adding missing binding: {}", key);
-                        settings.bindings.insert(key, value);
+                    if let std::collections::hash_map::Entry::Vacant(entry) =
+                        settings.bindings.entry(key)
+                    {
+                        debug!("Adding missing binding: {}", entry.key());
+                        entry.insert(value);
                         updated = true;
                     }
                 }
 
                 if updated {
-                    debug!("Settings updated with new bindings");
+                    debug!("Settings updated with defaults/migrations");
                     store.set("settings", serde_json::to_value(&settings).unwrap());
                 }
 
@@ -896,12 +938,22 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
+    // Settings reads also persist one-time migrations. Migration helpers are
+    // idempotent, so this converges after the first read of an older store.
     let mut settings = if let Some(settings_value) = store.get("settings") {
-        serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
-            let default_settings = get_default_settings();
-            store.set("settings", serde_json::to_value(&default_settings).unwrap());
-            default_settings
-        })
+        match serde_json::from_value::<AppSettings>(settings_value.clone()) {
+            Ok(mut settings) => {
+                if apply_settings_migrations(&mut settings, &settings_value) {
+                    store.set("settings", serde_json::to_value(&settings).unwrap());
+                }
+                settings
+            }
+            Err(_) => {
+                let default_settings = get_default_settings();
+                store.set("settings", serde_json::to_value(&default_settings).unwrap());
+                default_settings
+            }
+        }
     } else {
         let default_settings = get_default_settings();
         store.set("settings", serde_json::to_value(&default_settings).unwrap());
@@ -913,6 +965,68 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     }
 
     settings
+}
+
+fn apply_settings_migrations(
+    settings: &mut AppSettings,
+    settings_value: &serde_json::Value,
+) -> bool {
+    let mut updated = false;
+
+    // One-time onboarding migration: users with an explicit selected model have
+    // already made it through model selection. Users who merely have compatible
+    // files on disk should still see onboarding.
+    if settings_value.get("onboarding_completed").is_none() {
+        settings.onboarding_completed = !settings.selected_model.is_empty();
+        updated = true;
+    }
+
+    // One-time What's New migration: migrations only run on an existing store
+    // (fresh installs stamp the current version via get_default_settings). A
+    // missing key here means a user upgrading from before it existed — blank it
+    // so they see the current release's What's New, mirroring the onboarding
+    // migration's explicit first-run-vs-upgrade decision.
+    if settings_value.get("whats_new_last_seen_version").is_none() {
+        settings.whats_new_last_seen_version = String::new();
+        updated = true;
+    }
+
+    let stored_schema_version = settings_value
+        .get("settings_schema_version")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
+    if stored_schema_version < 1 {
+        // `transcribe_gpu_device` used to be a UI ordinal; it is now a
+        // transcribe.cpp registry index. A positive legacy value can point at a
+        // different GPU after CPU/accelerator/backend devices are included in
+        // the registry, so reset ambiguous explicit selections to Auto once.
+        if settings.transcribe_gpu_device > 0 {
+            settings.transcribe_accelerator = TranscribeAcceleratorSetting::Auto;
+            settings.transcribe_gpu_device = default_transcribe_gpu_device();
+        }
+        settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
+        updated = true;
+    }
+
+    // One-time overlay migration (only while the new key is absent): the retired
+    // overlay_position `none` meant "hide the overlay" → OverlayStyle::None; any
+    // other position had it visible → Live. The position enum no longer has a
+    // `none` variant (legacy "none" deserializes to Bottom via a serde alias), so
+    // read the raw stored string to recover the old intent.
+    if settings_value.get("overlay_style").is_none() {
+        let was_hidden = settings_value
+            .get("overlay_position")
+            .and_then(|v| v.as_str())
+            == Some("none");
+        settings.overlay_style = if was_hidden {
+            OverlayStyle::None
+        } else {
+            OverlayStyle::Live
+        };
+        updated = true;
+    }
+
+    updated
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
@@ -956,6 +1070,107 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+        assert_eq!(
+            settings.settings_schema_version,
+            CURRENT_SETTINGS_SCHEMA_VERSION
+        );
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    #[test]
+    fn default_overlay_style_is_live_when_overlay_defaults_on() {
+        let settings = get_default_settings();
+        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+    }
+
+    #[test]
+    fn overlay_migration_keeps_disabled_overlay_off() {
+        let mut settings = get_default_settings();
+
+        // Legacy store: overlay was hidden via the retired position "none".
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "overlay_position": "none"
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.overlay_style, OverlayStyle::None);
+    }
+
+    #[test]
+    fn legacy_none_overlay_position_deserializes_to_bottom() {
+        // A persisted "none" must not fail the whole settings load; the serde
+        // alias folds it onto Bottom (visibility is owned by overlay_style).
+        let raw = serde_json::json!({ "overlay_position": "none" });
+        let position: OverlayPosition =
+            serde_json::from_value(raw.get("overlay_position").unwrap().clone())
+                .expect("legacy \"none\" should deserialize, not error");
+        assert_eq!(position, OverlayPosition::Bottom);
+    }
+
+    #[test]
+    fn overlay_migration_promotes_enabled_overlay_to_live() {
+        let mut settings = get_default_settings();
+        settings.overlay_position = OverlayPosition::Top;
+        settings.overlay_style = OverlayStyle::Minimal;
+
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "overlay_position": "top"
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert_eq!(settings.overlay_position, OverlayPosition::Top);
+    }
+
+    #[test]
+    fn gpu_device_migration_resets_legacy_positive_selection_to_auto() {
+        let mut settings = get_default_settings();
+        settings.transcribe_accelerator = TranscribeAcceleratorSetting::Gpu;
+        settings.transcribe_gpu_device = 2;
+
+        let raw = serde_json::json!({
+            "transcribe_accelerator": "gpu",
+            "transcribe_gpu_device": 2
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Auto
+        );
+        assert_eq!(
+            settings.transcribe_gpu_device,
+            default_transcribe_gpu_device()
+        );
+        assert_eq!(
+            settings.settings_schema_version,
+            CURRENT_SETTINGS_SCHEMA_VERSION
+        );
+    }
+
+    #[test]
+    fn gpu_device_migration_keeps_current_schema_positive_selection() {
+        let mut settings = get_default_settings();
+        settings.transcribe_accelerator = TranscribeAcceleratorSetting::Gpu;
+        settings.transcribe_gpu_device = 2;
+
+        let raw = serde_json::json!({
+            "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
+            "onboarding_completed": false,
+            "whats_new_last_seen_version": default_whats_new_last_seen_version(),
+            "overlay_style": "live",
+            "transcribe_accelerator": "gpu",
+            "transcribe_gpu_device": 2
+        });
+
+        assert!(!apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Gpu
+        );
+        assert_eq!(settings.transcribe_gpu_device, 2);
     }
 
     #[test]

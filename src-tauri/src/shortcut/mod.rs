@@ -23,7 +23,7 @@ use tauri_plugin_autostart::ManagerExt;
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
     APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
@@ -283,14 +283,12 @@ pub fn change_keyboard_implementation_setting(
     settings::write_settings(&app, settings);
 
     // Initialize new implementation if needed (HandyKeys needs state)
-    if new_impl == KeyboardImplementation::HandyKeys {
-        if initialize_handy_keys_with_rollback(&app)? {
-            // Shortcuts already registered during init
-            return Ok(ImplementationChangeResult {
-                success: true,
-                reset_bindings: vec![],
-            });
-        }
+    if new_impl == KeyboardImplementation::HandyKeys && initialize_handy_keys_with_rollback(&app)? {
+        // Shortcuts already registered during init
+        return Ok(ImplementationChangeResult {
+            success: true,
+            reset_bindings: vec![],
+        });
     }
 
     // Register all shortcuts with new implementation, resetting invalid ones
@@ -539,9 +537,10 @@ pub fn change_selected_language_setting(app: AppHandle, language: String) -> Res
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {
-        "none" => OverlayPosition::None,
+        // "none" is retired (visibility is overlay_style now); fold legacy callers
+        // onto Bottom rather than warn.
+        "none" | "bottom" => OverlayPosition::Bottom,
         "top" => OverlayPosition::Top,
-        "bottom" => OverlayPosition::Bottom,
         other => {
             warn!("Invalid overlay position '{}', defaulting to bottom", other);
             OverlayPosition::Bottom
@@ -550,11 +549,35 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
     settings.overlay_position = parsed;
     settings::write_settings(&app, settings);
 
-    // Keep the cached overlay-enabled flag in sync so emit_levels stops
-    // (or resumes) emitting on the next audio callback.
-    crate::overlay::update_overlay_enabled_cache(parsed != OverlayPosition::None);
-
+    // Whether the overlay shows at all is owned by overlay_style now; position
+    // only ever toggles Top/Bottom, so the enabled cache is untouched here.
     // Update overlay position without recreating window
+    crate::utils::update_overlay_position(&app);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match style.as_str() {
+        "none" => OverlayStyle::None,
+        "minimal" => OverlayStyle::Minimal,
+        "live" => OverlayStyle::Live,
+        other => {
+            warn!("Invalid overlay style '{}', defaulting to minimal", other);
+            OverlayStyle::Minimal
+        }
+    };
+    settings.overlay_style = parsed;
+    settings::write_settings(&app, settings);
+
+    // Keep the cached overlay-enabled flag in sync so emit_levels stops (or
+    // resumes) emitting on the next audio callback.
+    crate::overlay::update_overlay_enabled_cache(parsed != OverlayStyle::None);
+
+    // Reposition in case the window needs to re-center for the new style.
     crate::utils::update_overlay_position(&app);
 
     Ok(())
@@ -641,6 +664,49 @@ pub fn change_update_checks_setting(app: AppHandle, enabled: bool) -> Result<(),
         serde_json::json!({
             "setting": "update_checks_enabled",
             "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_show_whats_new_on_update_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.show_whats_new_on_update = enabled;
+    settings::write_settings(&app, settings);
+
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "show_whats_new_on_update",
+            "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_whats_new_last_seen_version_setting(
+    app: AppHandle,
+    version: String,
+) -> Result<(), String> {
+    let version = version.trim().to_string();
+    let mut settings = settings::get_settings(&app);
+    settings.whats_new_last_seen_version = version.clone();
+    settings::write_settings(&app, settings);
+
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "whats_new_last_seen_version",
+            "value": version
         }),
     );
 
@@ -1079,6 +1145,15 @@ pub fn change_lazy_stream_close_setting(app: AppHandle, enabled: bool) -> Result
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_vad_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.vad_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.app_language = language.clone();
@@ -1103,29 +1178,24 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     Ok(())
 }
 
-/// Save accelerator settings, re-apply globals, and unload the model so it
-/// reloads with the new backend on next transcription.
-fn apply_and_reload_accelerator(app: &AppHandle, s: settings::AppSettings) {
+/// Save accelerator settings and make the next model use reload with them.
+/// The currently running transcription, if any, keeps its existing engine.
+fn save_accelerator_and_reload_next_use(app: &AppHandle, s: settings::AppSettings) {
     settings::write_settings(app, s);
-    crate::managers::transcription::apply_accelerator_settings(app);
 
     let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
-    if tm.is_model_loaded() {
-        if let Err(e) = tm.unload_model() {
-            log::warn!("Failed to unload model after accelerator change: {e}");
-        }
-    }
+    tm.reload_model_on_next_use();
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_whisper_accelerator_setting(
+pub fn change_transcribe_accelerator_setting(
     app: AppHandle,
-    accelerator: settings::WhisperAcceleratorSetting,
+    accelerator: settings::TranscribeAcceleratorSetting,
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
-    s.whisper_accelerator = accelerator;
-    apply_and_reload_accelerator(&app, s);
+    s.transcribe_accelerator = accelerator;
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
@@ -1137,23 +1207,23 @@ pub fn change_ort_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.ort_accelerator = accelerator;
-    apply_and_reload_accelerator(&app, s);
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
+pub fn change_transcribe_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
-    s.whisper_gpu_device = device;
-    apply_and_reload_accelerator(&app, s);
+    s.transcribe_gpu_device = device;
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
 /// Return which accelerators and GPU devices are available for this build.
 ///
 /// First-call cost is dominated by enumerating GPU devices through the
-/// whisper.cpp Metal/Vulkan backend, which loads dynamic libraries and
+/// transcribe.cpp Metal/Vulkan backend, which loads dynamic libraries and
 /// probes hardware. Run it on the blocking pool so the webview thread
 /// stays responsive — see also the startup pre-warm in `lib.rs`.
 #[tauri::command]

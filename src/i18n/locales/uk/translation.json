@@ -19,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "Рекомендовано",
-    "download": "Завантажити",
-    "downloading": "Завантаження...",
     "customModelDescription": "Офіційно не підтримується",
-    "downloadFailed": "Завантаження не вдалося. Будь ласка, спробуйте ще раз.",
     "modelCard": {
       "accuracy": "точність",
       "speed": "швидкість"
@@ -95,8 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "Не вдалося завантажити доступні моделі",
-      "downloadModel": "Не вдалося завантажити модель: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "Потрібні дозволи",
@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Користувацька",
+    "streaming": "Потокове",
     "active": "Активна",
     "noModelsAvailable": "Немає доступних моделей",
     "verifying": "Перевірка {{modelName}}...",
@@ -141,19 +142,20 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Підтримує кілька мов введення",
-      "multiLanguage": "Багатомовна",
+      "languageCount": "{{total}} languages",
       "translation": "Може перекладати на англійську",
       "translate": "Перекласти на англійську",
       "singleLanguage": "Підтримує лише цю мову",
-      "languageOnly": "Лише {{language}}"
+      "languageOnly": "Лише {{language}}",
+      "streaming": "Показує транскрипцію в реальному часі під час мовлення"
     },
     "cancel": "Скасувати",
-    "cancelDownload": "Скасувати завантаження"
+    "cancelDownload": "Скасувати завантаження",
+    "legacy": "Застаріле"
   },
   "settings": {
     "modelSettings": {
-      "title": "Налаштування {{model}}",
-      "noSettingsNeeded": "Ця модель працює автоматично без потреби в налаштуванні."
+      "title": "Налаштування {{model}}"
     },
     "general": {
       "title": "Загальні",
@@ -187,7 +189,6 @@
       "language": {
         "title": "Мова",
         "description": "Оберіть мову для розпізнавання мовлення. Режим «Авто» визначить мову автоматично, а вибір конкретної мови може покращити точність.",
-        "descriptionUnsupported": "Модель Parakeet автоматично визначає мову. Ручний вибір не потрібен.",
         "searchPlaceholder": "Пошук мов...",
         "noResults": "Мов не знайдено",
         "auto": "Авто"
@@ -200,20 +201,20 @@
     "models": {
       "title": "Моделі транскрипції",
       "description": "Виберіть модель транскрипції або завантажте додаткові моделі. Різні моделі пропонують різні рівні точності та швидкості.",
-      "downloaded": "Завантажено",
-      "available": "Доступні для завантаження",
       "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
       "deleteActiveConfirm": "{{modelName}} — ваша активна модель. Видалення зупинить транскрипцію, доки ви не оберете нову модель. Ви впевнені?",
       "deleteTitle": "Видалити модель",
       "filters": {
-        "all": "Усі",
-        "multiLanguage": "Багатомовні",
-        "translation": "Переклад",
         "allLanguages": "Усі мови"
       },
       "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
       "yourModels": "Завантажені моделі",
-      "availableModels": "Доступні для завантаження"
+      "availableModels": "Доступні для завантаження",
+      "searchPlaceholder": "Пошук моделей за назвою…",
+      "rescan": {
+        "label": "Пересканувати",
+        "tooltip": "Пересканувати моделі, додані до папки моделей або кешу Hugging Face поза межами Handy"
+      }
     },
     "sound": {
       "title": "Звук",
@@ -239,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "Розширені",
       "groups": {
         "app": "Додаток",
         "output": "Вивід",
@@ -256,7 +256,7 @@
         "description": "Залишає потік мікрофона відкритим протягом 30 секунд після зупинки запису, зменшуючи затримку при послідовних транскрипціях. Може погіршити якість звуку Bluetooth."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Прискорення Whisper",
           "description": "Апаратне прискорення для моделей Whisper. Автоматичний режим використовує GPU за наявності (Metal на macOS, Vulkan на Windows/Linux)."
         },
@@ -265,8 +265,6 @@
           "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). DirectML на Windows є експериментальним. Моделі можуть не виконувати транскрипцію."
         },
         "gpuDevice": {
-          "title": "Пристрій GPU",
-          "description": "Виберіть GPU для інференсу Whisper. Автоматично обирає виділений GPU.",
           "auto": "Авто"
         }
       },
@@ -283,12 +281,22 @@
         "description": "Відображати значок Handy у системному треї."
       },
       "overlay": {
-        "title": "Позиція оверлею",
-        "description": "Показувати візуальний оверлей під час запису та транскрипції. На Linux рекомендовано «Немає»",
-        "options": {
-          "none": "Немає",
-          "bottom": "Внизу",
-          "top": "Вгорі"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Немає",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Позиція оверлею",
+          "description": "Показувати візуальний оверлей під час запису та транскрипції. На Linux рекомендовано «Немає»",
+          "options": {
+            "bottom": "Внизу",
+            "top": "Вгорі"
+          }
         }
       },
       "pasteMethod": {
@@ -332,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "Перекласти на англійську",
-        "description": "Автоматично перекладати мовлення з інших мов англійською під час транскрипції.",
-        "descriptionUnsupported": "Переклад не підтримується моделлю {{model}}."
+        "description": "Автоматично перекладати мовлення з інших мов англійською під час транскрипції."
       },
       "modelUnload": {
         "title": "Вивантаження моделі",
@@ -356,10 +363,13 @@
         "add": "Додати",
         "remove": "Видалити {{word}}",
         "duplicate": "\"{{word}}\" вже існує"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "Постобробка",
       "hotkey": {
         "title": "Гаряча клавіша"
       },
@@ -370,9 +380,6 @@
           "description": "Оберіть OpenAI-сумісного провайдера"
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "Працює повністю на пристрої. API-ключ або доступ до мережі не потрібні.",
-          "requirements": "Потрібен Mac з Apple Silicon під управлінням macOS Tahoe (26.0) або новіше. Apple Intelligence має бути увімкнений у Системних налаштуваннях.",
           "unavailable": "Apple Intelligence недоступний на цьому пристрої. Потрібен Mac з Apple Silicon під управлінням macOS Tahoe (26.0) або новіше з увімкненим Apple Intelligence в Системних налаштуваннях."
         },
         "baseUrl": {
@@ -387,10 +394,8 @@
         },
         "model": {
           "title": "Модель",
-          "descriptionApple": "Вкажіть необов'язковий числовий ліміт токенів або залиште стандартний пресет на пристрої.",
           "descriptionCustom": "Вкажіть ідентифікатор моделі, який очікує ваш ендпоінт.",
           "descriptionDefault": "Оберіть модель, надану обраним провайдером",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Шукайте або оберіть модель",
           "placeholderNoOptions": "Введіть назву моделі",
           "refreshModels": "Оновити моделі"
@@ -518,6 +523,13 @@
       "recordingBuffer": {
         "title": "Додатковий буфер запису",
         "description": "Додатковий час (у мілісекундах) для продовження запису після відпускання клавіші, щоб захопити завершальний звук. 0 = без додаткового буфера."
+      },
+      "whatsNewPreview": {
+        "title": "Попередній перегляд новин",
+        "description": "Відкрити останні вбудовані примітки до випуску, не позначаючи їх як переглянуті",
+        "button": "Перегляд",
+        "noNotes": "Вбудовані примітки до випуску не знайдено",
+        "error": "Не вдалося переглянути примітки до випуску"
       }
     },
     "about": {
@@ -542,60 +554,43 @@
       },
       "acknowledgments": {
         "title": "Подяки",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "Високопродуктивний інференс моделі автоматичного розпізнавання мовлення Whisper від OpenAI",
-          "details": "Handy використовує Whisper.cpp для швидкої локальної обробки мовлення в текст. Дякуємо за чудову роботу Георгію Герганову та контриб'юторам."
+          "details": "Handy використовує ggml для швидкої локальної обробки мовлення в текст. Дякуємо за чудову роботу Георгію Герганову та контриб'юторам."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "Показувати новини",
+        "description": "Показувати примітки до випуску після оновлень Handy"
       }
     }
   },
   "footer": {
-    "downloadingModel": "Завантаження {{model}}...",
     "checkingUpdates": "Перевірка оновлень...",
-    "updateAvailable": "Доступне оновлення: {{version}}",
     "updateAvailableShort": "Доступне оновлення",
     "upToDate": "Актуальна версія",
-    "downloadUpdate": "Завантажити оновлення",
-    "restart": "Перезапустити",
     "updateCheckingDisabled": "Перевірка оновлень вимкнена",
     "downloading": "Завантаження... {{progress}}%",
     "installing": "Встановлення...",
     "preparing": "Підготовка...",
     "checkForUpdates": "Перевірити оновлення",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "portableUpdateTitle": "Потрібне ручне оновлення",
+    "portableUpdateMessage": "Портативні встановлення не можна оновити автоматично. Щоб оновити: завантажте найновіший інсталятор NSIS зі сторінки GitHub Releases, установіть його в ту саму теку, а потім скопіюйте теку Data/ (налаштування, моделі, записи) зі старої версії до нової.",
+    "portableUpdateButton": "Відкрити GitHub Releases"
   },
   "common": {
     "loading": "Завантаження...",
-    "save": "Зберегти",
-    "cancel": "Скасувати",
-    "reset": "Скинути",
-    "add": "Додати",
-    "remove": "Видалити",
     "delete": "Видалити",
-    "edit": "Редагувати",
-    "create": "Створити",
-    "update": "Оновити",
     "close": "Закрити",
     "open": "Відкрити",
     "copy": "Копіювати",
     "clear": "Очистити",
-    "default": "За замовчуванням",
-    "enabled": "Увімкнено",
-    "disabled": "Вимкнено",
-    "on": "Увімк.",
-    "off": "Вимк.",
-    "yes": "Так",
-    "no": "Ні",
     "noOptionsFound": "Опцій не знайдено"
   },
   "accessibility": {
-    "permissionsRequired": "Потрібні права доступу",
     "permissionsDescription": "Handy потребує дозволи доступності для введення транскрибованого тексту.",
-    "openSettings": "Відкрити Системні налаштування",
-    "dismiss": "Закрити"
+    "openSettings": "Відкрити Системні налаштування"
   },
   "errors": {
     "loadDirectory": "Помилка завантаження папки: {{error}}",
@@ -612,7 +607,8 @@
     "modelLoadFailed": "Не вдалося завантажити модель: {{model}}",
     "modelLoadFailedUnknown": "невідома модель",
     "pasteFailedTitle": "Не вдалося вставити текст",
-    "pasteFailed": "Не вдалося вставити текст до активної програми."
+    "pasteFailed": "Не вдалося вставити текст до активної програми.",
+    "transcriptionFailedTitle": "Помилка транскрипції"
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",
@@ -621,5 +617,8 @@
   "overlay": {
     "transcribing": "Обробка...",
     "processing": "Постобробка..."
+  },
+  "whatsNew": {
+    "title": "Нове в Handy v{{version}}"
   }
 }

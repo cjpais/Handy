@@ -19,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "כדי להתחיל, בחר מודל תמלול",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "מומלץ",
-    "download": "הורדה",
-    "downloading": "מוריד...",
     "customModelDescription": "לא נתמך באופן רשמי",
-    "downloadFailed": "ההורדה נכשלה. נסה שוב.",
     "modelCard": {
       "accuracy": "דיוק",
       "speed": "מהירות"
@@ -95,8 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "טעינת המודלים הזמינים נכשלה",
-      "downloadModel": "הורדת המודל נכשלה: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "נדרשות הרשאות",
@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "מותאם אישית",
+    "streaming": "סטרימינג",
     "active": "פעיל",
     "switching": "מחליף...",
     "noModelsAvailable": "אין מודלים זמינים",
@@ -144,16 +145,17 @@
     "capabilities": {
       "languageSelection": "תומך בכמה שפות קלט",
       "singleLanguage": "תומך רק בשפה הזו",
-      "multiLanguage": "רב-לשוני",
+      "languageCount": "{{total}} languages",
       "languageOnly": "{{language}} בלבד",
       "translation": "יכול לתרגם לאנגלית",
-      "translate": "תרגם לאנגלית"
-    }
+      "translate": "תרגם לאנגלית",
+      "streaming": "מציג תמלול חי תוך כדי דיבור"
+    },
+    "legacy": "מדור קודם"
   },
   "settings": {
     "modelSettings": {
-      "title": "הגדרות עבור {{model}}",
-      "noSettingsNeeded": "המודל הזה עובד אוטומטית ולא דורש הגדרה נוספת."
+      "title": "הגדרות עבור {{model}}"
     },
     "general": {
       "title": "כללי",
@@ -187,7 +189,6 @@
       "language": {
         "title": "שפה",
         "description": "בחר את שפת זיהוי הדיבור. מצב אוטומטי יזהה את השפה לבד, בעוד שבחירת שפה מסוימת יכולה לשפר את הדיוק עבורה.",
-        "descriptionUnsupported": "מודל Parakeet מזהה את השפה אוטומטית. אין צורך בבחירה ידנית.",
         "searchPlaceholder": "חפש שפות...",
         "noResults": "לא נמצאו שפות",
         "auto": "אוטומטי"
@@ -202,18 +203,18 @@
       "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
       "yourModels": "מודלים שהורדו",
       "availableModels": "זמינים להורדה",
-      "downloaded": "הורד",
-      "available": "זמין להורדה",
       "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
       "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
       "deleteTitle": "מחיקת מודל",
       "filters": {
-        "all": "הכול",
-        "multiLanguage": "רב-לשוני",
-        "translation": "תרגום",
         "allLanguages": "כל השפות"
       },
-      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה."
+      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
+      "searchPlaceholder": "חיפוש מודלים לפי שם…",
+      "rescan": {
+        "label": "סריקה מחדש",
+        "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Handy"
+      }
     },
     "sound": {
       "title": "שמע",
@@ -239,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "מתקדם",
       "groups": {
         "app": "אפליקציה",
         "output": "פלט",
@@ -256,7 +256,7 @@
         "description": "משאיר את זרם המיקרופון פתוח למשך 30 שניות אחרי סיום ההקלטה, וכך מפחית השהיה בתמלולים רצופים. עשוי לפגוע באיכות שמע Bluetooth בזמן שהאפשרות פעילה."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "האצת Whisper",
           "description": "האצת חומרה למודלי Whisper. מצב אוטומטי משתמש ב-GPU אם זמין (Metal ב-macOS, Vulkan ב-Windows/Linux)."
         },
@@ -265,8 +265,6 @@
           "description": "האצת חומרה למודלי ONNX (Parakeet, Canary, Moonshine ועוד). DirectML ב-Windows הוא ניסיוני. ייתכן שמודלים ייכשלו בתמלול."
         },
         "gpuDevice": {
-          "title": "התקן GPU",
-          "description": "בחר באיזה GPU להשתמש עבור הסקת Whisper. מצב אוטומטי בוחר את ה-GPU הייעודי.",
           "auto": "אוטומטי"
         }
       },
@@ -283,12 +281,22 @@
         "description": "הצג את האייקון של Handy במגש המערכת."
       },
       "overlay": {
-        "title": "מיקום שכבת המשוב",
-        "description": "הצג שכבת משוב חזותית בזמן הקלטה ותמלול. בלינוקס מומלץ לבחור 'ללא'.",
-        "options": {
-          "none": "ללא",
-          "bottom": "למטה",
-          "top": "למעלה"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "ללא",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "מיקום שכבת המשוב",
+          "description": "הצג שכבת משוב חזותית בזמן הקלטה ותמלול. בלינוקס מומלץ לבחור 'ללא'.",
+          "options": {
+            "bottom": "למטה",
+            "top": "למעלה"
+          }
         }
       },
       "pasteMethod": {
@@ -332,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "תרגם לאנגלית",
-        "description": "תרגם אוטומטית דיבור משפות אחרות לאנגלית בזמן התמלול.",
-        "descriptionUnsupported": "המודל {{model}} לא תומך בתרגום."
+        "description": "תרגם אוטומטית דיבור משפות אחרות לאנגלית בזמן התמלול."
       },
       "modelUnload": {
         "title": "פרוק מודל",
@@ -356,10 +363,13 @@
         "add": "הוסף",
         "remove": "הסר את {{word}}",
         "duplicate": "\"{{word}}\" כבר קיימת"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "עיבוד משלים",
       "hotkey": {
         "title": "קיצור מקשים"
       },
@@ -370,13 +380,10 @@
           "description": "בחר ספק שתואם ל-OpenAI."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "רץ כולו על המכשיר. לא נדרש מפתח API או חיבור רשת.",
-          "requirements": "דורש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה. Apple Intelligence חייב להיות מופעל בהגדרות המערכת.",
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
         },
         "baseUrl": {
-          "title": "Base URL",
+          "title": "כתובת URL בסיסית",
           "description": "כתובת ה-API הבסיסית עבור הספק הנבחר. רק ספק מותאם אישית ניתן לעריכה.",
           "placeholder": "https://api.openai.com/v1"
         },
@@ -387,10 +394,8 @@
         },
         "model": {
           "title": "מודל",
-          "descriptionApple": "ספק מגבלת טוקנים מספרית אופציונלית או השאר את ברירת המחדל שעל המכשיר.",
           "descriptionCustom": "ספק את מזהה המודל שה-endpoint המותאם שלך מצפה לו.",
           "descriptionDefault": "בחר מודל שהספק הנבחר חושף.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "חפש או בחר מודל",
           "placeholderNoOptions": "הקלד שם מודל",
           "refreshModels": "רענן מודלים"
@@ -518,6 +523,13 @@
       "recordingBuffer": {
         "title": "באפר הקלטה נוסף",
         "description": "זמן נוסף (במילישניות) להמשך הקלטה אחרי שחרור המקש, כדי ללכוד סוף דיבור. 0 = בלי באפר נוסף."
+      },
+      "whatsNewPreview": {
+        "title": "תצוגה מקדימה של מה חדש",
+        "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
+        "button": "תצוגה מקדימה",
+        "noNotes": "לא נמצאו הערות גרסה מצורפות",
+        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
       }
     },
     "about": {
@@ -542,22 +554,22 @@
       },
       "acknowledgments": {
         "title": "תודות",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
-          "details": "Handy משתמש ב-Whisper.cpp לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
+          "details": "Handy משתמש ב-ggml לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "הצג מה חדש",
+        "description": "הצג הערות גרסה לאחר עדכוני Handy"
       }
     }
   },
   "footer": {
-    "downloadingModel": "מוריד את {{model}}...",
     "checkingUpdates": "בודק עדכונים...",
-    "updateAvailable": "יש עדכון זמין: {{version}}",
     "updateAvailableShort": "יש עדכון זמין",
     "upToDate": "מעודכן",
-    "downloadUpdate": "הורד עדכון",
-    "restart": "הפעל מחדש",
     "updateCheckingDisabled": "בדיקת העדכונים כבויה",
     "downloading": "מוריד... {{progress}}%",
     "installing": "מתקין...",
@@ -569,33 +581,16 @@
   },
   "common": {
     "loading": "טוען...",
-    "save": "שמור",
-    "cancel": "ביטול",
-    "reset": "איפוס",
-    "add": "הוסף",
-    "remove": "הסר",
     "delete": "מחק",
-    "edit": "ערוך",
-    "create": "צור",
-    "update": "עדכן",
     "close": "סגור",
     "open": "פתח",
     "copy": "העתק",
     "clear": "נקה",
-    "default": "ברירת מחדל",
-    "enabled": "פעיל",
-    "disabled": "כבוי",
-    "on": "פועל",
-    "off": "כבוי",
-    "yes": "כן",
-    "no": "לא",
     "noOptionsFound": "לא נמצאו אפשרויות"
   },
   "accessibility": {
-    "permissionsRequired": "נדרשות הרשאות נגישות",
     "permissionsDescription": "Handy צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
-    "openSettings": "פתח את הגדרות המערכת",
-    "dismiss": "סגור"
+    "openSettings": "פתח את הגדרות המערכת"
   },
   "errors": {
     "loadDirectory": "שגיאה בטעינת תיקייה: {{error}}",
@@ -612,7 +607,8 @@
     "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
     "modelLoadFailedUnknown": "מודל לא ידוע",
     "pasteFailedTitle": "ההדבקה נכשלה",
-    "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל."
+    "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "transcriptionFailedTitle": "התמלול נכשל"
   },
   "appLanguage": {
     "title": "שפת האפליקציה",
@@ -621,5 +617,8 @@
   "overlay": {
     "transcribing": "מתמלל...",
     "processing": "מעבד..."
+  },
+  "whatsNew": {
+    "title": "חדש ב-Handy v{{version}}"
   }
 }

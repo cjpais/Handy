@@ -19,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "推荐",
-    "download": "下载",
-    "downloading": "下载中...",
     "customModelDescription": "非官方支持",
-    "downloadFailed": "下载失败。请重试。",
     "modelCard": {
       "accuracy": "准确度",
       "speed": "速度"
@@ -95,8 +96,7 @@
       }
     },
     "errors": {
-      "loadModels": "无法加载可用模型",
-      "downloadModel": "模型下载失败: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "需要权限",
@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "自定义",
+    "streaming": "流式",
     "active": "活跃",
     "switching": "切换中...",
     "noModelsAvailable": "没有可用的模型",
@@ -141,37 +142,38 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "支持多种输入语言",
-      "multiLanguage": "多语言",
+      "languageCount": "{{total}} languages",
       "translation": "可翻译为英语",
       "translate": "翻译为英语",
       "singleLanguage": "仅支持此语言",
-      "languageOnly": "仅 {{language}}"
+      "languageOnly": "仅 {{language}}",
+      "streaming": "在您说话时实时显示转录"
     },
     "cancel": "取消",
-    "cancelDownload": "取消下载"
+    "cancelDownload": "取消下载",
+    "legacy": "旧版"
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} 设置",
-      "noSettingsNeeded": "此模型自动运行，无需配置。"
+      "title": "{{model}} 设置"
     },
     "models": {
       "title": "转录模型",
       "description": "选择转录模型或下载其他模型。不同模型提供不同的准确度和速度。",
-      "downloaded": "已下载",
-      "available": "可下载",
       "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
       "deleteActiveConfirm": "{{modelName}} 是您当前使用的模型。删除后将停止转录，直到您选择新的模型。确定要删除吗？",
       "deleteTitle": "删除模型",
       "filters": {
-        "all": "全部",
-        "multiLanguage": "多语言",
-        "translation": "翻译",
         "allLanguages": "所有语言"
       },
       "noModelsMatch": "没有符合此筛选条件的模型。",
       "yourModels": "已下载的模型",
-      "availableModels": "可供下载"
+      "availableModels": "可供下载",
+      "searchPlaceholder": "按名称搜索模型…",
+      "rescan": {
+        "label": "重新扫描",
+        "tooltip": "重新扫描在 Handy 之外添加到模型文件夹或 Hugging Face 缓存中的模型"
+      }
     },
     "general": {
       "title": "通用",
@@ -205,7 +207,6 @@
       "language": {
         "title": "语言",
         "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
-        "descriptionUnsupported": "Parakeet 模型会自动检测语言，无需手动选择。",
         "searchPlaceholder": "搜索语言...",
         "noResults": "未找到语言",
         "auto": "自动"
@@ -239,7 +240,6 @@
       }
     },
     "advanced": {
-      "title": "高级",
       "groups": {
         "app": "应用",
         "output": "输出",
@@ -256,7 +256,7 @@
         "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper 加速",
           "description": "Whisper 模型的硬件加速。自动模式在可用时使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
         },
@@ -265,8 +265,6 @@
           "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
         },
         "gpuDevice": {
-          "title": "GPU 设备",
-          "description": "选择用于 Whisper 推理的 GPU。自动选择独立 GPU。",
           "auto": "自动"
         }
       },
@@ -283,12 +281,22 @@
         "description": "在系统托盘中显示 Handy 图标。"
       },
       "overlay": {
-        "title": "悬浮窗位置",
-        "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
-        "options": {
-          "none": "无",
-          "bottom": "底部",
-          "top": "顶部"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "无",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "悬浮窗位置",
+          "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
+          "options": {
+            "bottom": "底部",
+            "top": "顶部"
+          }
         }
       },
       "pasteMethod": {
@@ -332,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "翻译为英语",
-        "description": "在转录过程中自动将其他语言的语音翻译为英语。",
-        "descriptionUnsupported": "{{model}} 模型不支持翻译功能。"
+        "description": "在转录过程中自动将其他语言的语音翻译为英语。"
       },
       "modelUnload": {
         "title": "卸载模型",
@@ -356,10 +363,13 @@
         "add": "添加",
         "remove": "删除 {{word}}",
         "duplicate": "\"{{word}}\" 已存在"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "后处理",
       "hotkey": {
         "title": "快捷键"
       },
@@ -370,9 +380,6 @@
           "description": "选择一个兼容 OpenAI 的提供商。"
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "完全在设备上运行。无需 API 密钥或网络访问。",
-          "requirements": "需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac。必须在系统设置中启用 Apple Intelligence。",
           "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
         },
         "baseUrl": {
@@ -387,10 +394,8 @@
         },
         "model": {
           "title": "模型",
-          "descriptionApple": "提供可选的数字令牌限制或保持默认的设备预设。",
           "descriptionCustom": "提供自定义端点期望的模型标识符。",
           "descriptionDefault": "选择所选提供商提供的模型。",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "搜索或选择模型",
           "placeholderNoOptions": "输入模型名称",
           "refreshModels": "刷新模型"
@@ -518,6 +523,13 @@
       "recordingBuffer": {
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
+      },
+      "whatsNewPreview": {
+        "title": "预览新功能",
+        "description": "打开最新内置发行说明，且不标记为已查看",
+        "button": "预览",
+        "noNotes": "未找到内置发行说明",
+        "error": "无法预览发行说明"
       }
     },
     "about": {
@@ -542,60 +554,43 @@
       },
       "acknowledgments": {
         "title": "致谢",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
-          "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+          "details": "Handy 使用 ggml 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
+      },
+      "whatsNewUpdates": {
+        "label": "显示新功能",
+        "description": "Handy 更新后显示发行说明"
       }
     }
   },
   "footer": {
-    "downloadingModel": "正在下载 {{model}}...",
     "checkingUpdates": "检查更新中...",
-    "updateAvailable": "有可用更新: {{version}}",
     "updateAvailableShort": "有可用更新",
     "upToDate": "已是最新版本",
-    "downloadUpdate": "下载更新",
-    "restart": "重启",
     "updateCheckingDisabled": "更新检查已禁用",
     "downloading": "下载中... {{progress}}%",
     "installing": "安装中...",
     "preparing": "准备中...",
     "checkForUpdates": "检查更新",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "portableUpdateTitle": "需要手动更新",
+    "portableUpdateMessage": "便携版无法自动更新。更新方法：从 GitHub Releases 下载最新的 NSIS 安装程序，安装到同一文件夹，然后将旧版本的 Data/ 文件夹（设置、模型、录音）复制到新版本。",
+    "portableUpdateButton": "打开 GitHub Releases"
   },
   "common": {
     "loading": "加载中...",
-    "save": "保存",
-    "cancel": "取消",
-    "reset": "重置",
-    "add": "添加",
-    "remove": "移除",
     "delete": "删除",
-    "edit": "编辑",
-    "create": "创建",
-    "update": "更新",
     "close": "关闭",
     "open": "打开",
     "copy": "复制",
     "clear": "清除",
-    "default": "默认",
-    "enabled": "已启用",
-    "disabled": "已禁用",
-    "on": "开",
-    "off": "关",
-    "yes": "是",
-    "no": "否",
     "noOptionsFound": "未找到选项"
   },
   "accessibility": {
-    "permissionsRequired": "需要辅助功能权限",
     "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
-    "openSettings": "打开系统设置",
-    "dismiss": "关闭"
+    "openSettings": "打开系统设置"
   },
   "errors": {
     "loadDirectory": "加载目录时出错: {{error}}",
@@ -612,7 +607,8 @@
     "modelLoadFailed": "加载模型失败: {{model}}",
     "modelLoadFailedUnknown": "未知模型",
     "pasteFailedTitle": "粘贴文本失败",
-    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。"
+    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
+    "transcriptionFailedTitle": "转录失败"
   },
   "appLanguage": {
     "title": "应用语言",
@@ -621,5 +617,8 @@
   "overlay": {
     "transcribing": "正在转录...",
     "processing": "处理中..."
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}} 新功能"
   }
 }

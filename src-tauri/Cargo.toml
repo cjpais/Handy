@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.8.3"
+version = "0.9.0"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -69,7 +69,11 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
 sha2 = "0.10"
-transcribe-rs = { version = "0.3.8", features = ["whisper-cpp", "onnx"] }
+# Whisper-family models run through transcribe-cpp (GGUF/ggml, native backends);
+# transcribe-rs is now ONNX-only (Parakeet, Moonshine, SenseVoice, GigaAM,
+# Canary, Cohere). Per-platform backend features are added in the target tables.
+transcribe-rs = { version = "0.3.8", features = ["onnx"] }
+transcribe-cpp = { version = "0.1.0", default-features = false }
 handy-keys = "0.2.4"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
@@ -77,6 +81,9 @@ specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 tauri-plugin-dialog = "2.6"
+hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downloads", features = [
+  "tokio",
+] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
@@ -88,7 +95,14 @@ tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.10.0"
 
 [target.'cfg(windows)'.dependencies]
-transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan", "ort-directml"] }
+# ONNX Runtime on Windows is CPU-only (no ort-directml), matching macOS/Linux.
+# The DirectML EP was experimental and, more importantly, pulled in pyke's
+# prebuilt ONNX Runtime which is compiled with a global /arch:AVX2 baseline that
+# executes BMI2/AVX in a static initializer and crashes at process startup on any
+# pre-Haswell CPU (Sandy/Ivy Bridge, older AMD). Dropping the feature means we
+# link a baseline ONNX Runtime (dynamically, via ORT_LIB_LOCATION in build.yml)
+# with proper runtime CPU dispatch. Base `transcribe-rs` (features = ["onnx"])
+# is inherited here, so Parakeet/Moonshine/etc. still run on CPU.
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
@@ -98,14 +112,39 @@ windows = { version = "0.61.3", features = [
 ] }
 winreg = "0.55"
 
+# Whisper backend per Windows arch. x86_64 ships the Vulkan GPU backend and
+# keeps the dynamic-backends posture (loadable per-ISA CPU modules + Vulkan),
+# where runtime ISA scoring (GGML_CPU_ALL_VARIANTS) earns the extra shipped DLLs.
+#
+# Windows-on-ARM is CPU-only: its Adreno Vulkan drivers are immature, and
+# ggml-vulkan's shader generator (vulkan-shaders-gen) does not build under the
+# clang-cl/lld toolchain that ggml's ARM CPU backend requires. dynamic-backends
+# buys nothing on ARM — ALL_VARIANTS is an x86 concept, so a DL build there is
+# just a single portable CPU module shipped as a DLL. So ARM links transcribe-cpp
+# STATICALLY (no features = static CPU-only): the one CPU backend is compiled into
+# handy.exe and we ship zero DLLs, which sidesteps the installer's per-DLL
+# signtool verify entirely. CI pins -DGGML_NATIVE=OFF (see build.yml) so the
+# static build targets a portable ARM baseline, not the build runner's CPU.
+[target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
+transcribe-cpp = { version = "0.1.0", default-features = false, features = [
+  "dynamic-backends",
+  "vulkan",
+] }
+
+[target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
+transcribe-cpp = { version = "0.1.0", default-features = false }
+
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
-transcribe-rs = { version = "0.3.3", features = ["whisper-metal"] }
+transcribe-cpp = { version = "0.1.0", default-features = false, features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
-transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan"] }
+transcribe-cpp = { version = "0.1.0", default-features = false, features = [
+  "dynamic-backends",
+  "vulkan",
+] }
 
 [patch.crates-io]
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }

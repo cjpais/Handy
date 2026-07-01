@@ -38,15 +38,20 @@ pub struct CliArgs {
     #[arg(long)]
     pub model: Option<String>,
 
-    /// Hard-select the compute device for --transcribe-file by its --list-devices
-    /// index (0 = CPU, 1.. = a specific GPU). Omit to use the persisted
-    /// accelerator setting. whisper.cpp models only.
+    /// Hard-select the compute device for --transcribe-file by its registry
+    /// index (see --list-devices). Omit to use the persisted accelerator
+    /// setting. transcribe-cpp (whisper-family) models only.
     #[arg(long, value_name = "N")]
     pub device_index: Option<usize>,
 
-    /// List the selectable whisper compute devices (with indices) and exit.
+    /// List the transcribe-cpp compute devices (with indices) and exit.
     #[arg(long)]
     pub list_devices: bool,
+
+    /// List the available models (with ids) and exit. Pass an id to --model.
+    /// Honors --json for machine-readable output.
+    #[arg(long)]
+    pub list_models: bool,
 
     /// Repeat the transcription N times (best_ms reports the fastest run).
     #[arg(long, value_name = "N")]
