@@ -137,7 +137,9 @@ For reliable text input on Linux, install the appropriate tool for your display 
 | Display Server | Recommended Tool | Install Command                                    |
 | -------------- | ---------------- | -------------------------------------------------- |
 | X11            | `xdotool`        | `sudo apt install xdotool`                         |
-| Wayland        | `wtype`          | `sudo apt install wtype`                           |
+| Wayland (GNOME/Ubuntu) | `ydotool` + `wl-clipboard` | `sudo apt install ydotool wl-clipboard` then `sudo systemctl enable --now ydotoold` and `sudo usermod -aG input $USER` (log out/in) |
+| Wayland (Sway/Hyprland) | `wtype`          | `sudo apt install wtype`                           |
+| Wayland (KDE)        | `ydotool` or `dotool` | `sudo apt install ydotool`                          |
 | Both           | `dotool`         | `sudo apt install dotool` (requires `input` group) |
 
 - **X11**: Install `xdotool` for both direct typing and clipboard paste shortcuts
@@ -232,7 +234,7 @@ The following are recommendations for running Handy on your own machine. If you 
 - **macOS**: M series Mac, Intel Mac
 - **Windows**: Intel, AMD, or NVIDIA GPU
 - **Linux**: Intel, AMD, or NVIDIA GPU
-  - Ubuntu 22.04, 24.04
+  - Ubuntu 22.04, 24.04, 26.04
 
 **For Parakeet V3 Model:**
 

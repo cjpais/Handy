@@ -191,8 +191,19 @@ pub enum KeyboardImplementation {
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
+        // On Linux Wayland (GNOME/KDE/etc.), the Tauri global-shortcut plugin
+        // cannot capture system-wide hotkeys because the compositor does not
+        // expose a global key-grab API. The handy-keys implementation reads
+        // input via evdev (/dev/input), which works globally on Wayland as long
+        // as the user is in the `input` group. Default to it on Wayland so the
+        // shortcut works natively out of the box. X11 keeps the Tauri backend.
         #[cfg(target_os = "linux")]
-        return KeyboardImplementation::Tauri;
+        {
+            if crate::utils::is_wayland() {
+                return KeyboardImplementation::HandyKeys;
+            }
+            return KeyboardImplementation::Tauri;
+        }
         #[cfg(not(target_os = "linux"))]
         return KeyboardImplementation::HandyKeys;
     }
