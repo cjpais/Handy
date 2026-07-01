@@ -549,6 +549,15 @@ jobs:
         run: |
           set -euo pipefail
 
+          # The runtime smoke test launches the packaged handy binary, which links
+          # GTK (via tao) even for the headless --list-devices path and therefore
+          # needs a display to start. CI runners are headless, so provide a virtual
+          # X server via xvfb-run.
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
+          fi
+
           PROFILE="${{ steps.build-profile.outputs.profile }}"
           BUNDLE_DIR="src-tauri/target/${PROFILE}/bundle"
 
@@ -576,9 +585,11 @@ jobs:
           smoke_binary() {
             local root="$1"
             local label="$2"
+            # Run under a virtual X server: handy initializes GTK on startup even
+            # on the headless --list-devices path, which fails without a display.
             HANDY_NO_GTK_LAYER_SHELL=1 \
             LD_LIBRARY_PATH="${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
-              "${root}/usr/bin/handy" --list-devices >/tmp/handy-package-smoke.log
+              xvfb-run -a "${root}/usr/bin/handy" --list-devices >/tmp/handy-package-smoke.log
             echo "${label} --list-devices smoke passed"
           }
 
