@@ -608,8 +608,13 @@ impl ShortcutAction for TranscribeAction {
                     // fed to the stream); otherwise batch-transcribe the samples.
                     let transcription_time = Instant::now();
                     let transcription_result = match tm.finalize_stream() {
-                        Some(text) => Ok(text),
-                        None => tm.transcribe(samples),
+                        // A stream that finalized with usable text wins. An empty
+                        // result — finalize error, or a stream that produced
+                        // nothing — falls back to a full batch transcription of
+                        // the same audio rather than silently pasting/saving
+                        // nothing with no error surfaced.
+                        Some(text) if !text.trim().is_empty() => Ok(text),
+                        _ => tm.transcribe(samples),
                     };
 
                     // Await WAV save and verify

@@ -185,6 +185,24 @@ impl Drop for LoadingGuard {
     }
 }
 
+/// RAII guard that clears the streaming lease/active flags on any worker exit —
+/// normal return, early return, or a panic in an engine call that unwinds the
+/// detached worker thread. Without it a mid-stream panic would leave
+/// `engine_leased` stuck `true`, wedging `is_model_loaded()` so the model never
+/// reloads. Mirrors the batch path's panic-safety: a panicked engine is dropped
+/// by the unwind and never returned to the pool.
+struct StreamLeaseGuard {
+    engine_leased: Arc<AtomicBool>,
+    stream_active: Arc<AtomicBool>,
+}
+
+impl Drop for StreamLeaseGuard {
+    fn drop(&mut self) {
+        self.stream_active.store(false, Ordering::Relaxed);
+        self.engine_leased.store(false, Ordering::Relaxed);
+    }
+}
+
 #[derive(Clone)]
 pub struct TranscriptionManager {
     engine: Arc<Mutex<Option<LoadedEngine>>>,
@@ -717,10 +735,16 @@ impl TranscriptionManager {
         // rather than conventional. The engine is returned (or dropped if the
         // model was switched/unloaded mid-stream) when the worker exits.
         self.engine_leased.store(true, Ordering::Relaxed);
+        // Single reset point for the lease/active flags, fired on every worker
+        // exit including a panic in an engine call (feed/finalize/stream) that
+        // unwinds this detached thread past the cleanup below.
+        let _lease = StreamLeaseGuard {
+            engine_leased: Arc::clone(&self.engine_leased),
+            stream_active: Arc::clone(&self.stream_active),
+        };
         let mut engine = match self.lock_engine().take() {
             Some(e) => e,
             None => {
-                self.engine_leased.store(false, Ordering::Relaxed);
                 info!(
                     "Live preview: model '{}' was unloaded before streaming could begin; \
                      falling back to batch transcription",
@@ -766,7 +790,6 @@ impl TranscriptionManager {
 
         if !supports_streaming {
             self.return_engine(engine, &model_id);
-            self.engine_leased.store(false, Ordering::Relaxed);
             self.router.clear();
             drain_until_finalize(rx);
             return;
@@ -946,7 +969,6 @@ impl TranscriptionManager {
                 }
             }
 
-            self.stream_active.store(false, Ordering::Relaxed);
             true
         };
         // `stream` + the `&mut engine` borrow are released here.
@@ -959,7 +981,8 @@ impl TranscriptionManager {
         }
 
         self.return_engine(engine, &model_id);
-        self.engine_leased.store(false, Ordering::Relaxed);
+        // `_lease` drops here, clearing `engine_leased`/`stream_active` after the
+        // engine has been returned to the pool.
     }
 
     /// Return the leased engine to the mutex, unless the model was switched or
