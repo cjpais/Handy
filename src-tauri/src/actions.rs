@@ -366,12 +366,11 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
-/// Resolve the persisted language *intent* into the language the
-/// currently-loaded model will actually use — the same capability-aware
-/// coercion the transcription paths apply (see
-/// [`crate::managers::model::effective_language`] and `transcription.rs`).
-/// Post-processing resolves it independently so it agrees with the language the
-/// transcription ran in, without threading a value through the pipeline.
+/// Resolve the persisted language *intent* into the language the currently-loaded
+/// model will actually use — the same capability-aware coercion the transcription
+/// paths apply (see [`crate::managers::model::effective_language`]). Post-processing
+/// resolves it independently so it agrees with the language the transcription ran
+/// in, without threading a value through the pipeline.
 fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String {
     let tm = app.state::<Arc<TranscriptionManager>>();
     let model_manager = app.state::<Arc<ModelManager>>();
@@ -649,13 +648,12 @@ impl ShortcutAction for TranscribeAction {
                     // fed to the stream); otherwise batch-transcribe the samples.
                     let transcription_time = Instant::now();
                     let transcription_result = match tm.finalize_stream() {
-                        // A stream that finalized with usable text wins. An empty
-                        // result — no active stream, a stream that produced
-                        // nothing, or a stream finalize error after the engine
-                        // was returned — falls back to a full batch transcription
-                        // of the same audio. A finalize timeout is surfaced
-                        // because the worker may still hold the engine, so a
-                        // batch fallback would contend with it.
+                        // A finalized stream with usable text wins. An empty result
+                        // (no active stream, produced nothing, or a finalize error
+                        // after the engine was returned) falls back to a full batch
+                        // transcription of the same audio. A finalize timeout is
+                        // surfaced instead — the worker may still hold the engine,
+                        // so a batch fallback would contend with it.
                         Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
                         Ok(_) => tm.transcribe(samples),
                         Err(err) => Err(err),

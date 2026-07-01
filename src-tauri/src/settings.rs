@@ -982,11 +982,10 @@ fn apply_settings_migrations(
     }
 
     // One-time What's New migration: migrations only run on an existing store
-    // (fresh installs take get_default_settings, which stamps the current
-    // version). So a missing key here means a user upgrading from before it
-    // existed — blank it so they see the current release's What's New. Mirrors
-    // the onboarding migration above: an explicit first-run-vs-upgrade decision
-    // rather than relying on the serde default silently diverging.
+    // (fresh installs stamp the current version via get_default_settings). A
+    // missing key here means a user upgrading from before it existed — blank it
+    // so they see the current release's What's New, mirroring the onboarding
+    // migration's explicit first-run-vs-upgrade decision.
     if settings_value.get("whats_new_last_seen_version").is_none() {
         settings.whats_new_last_seen_version = String::new();
         updated = true;
@@ -1010,11 +1009,10 @@ fn apply_settings_migrations(
     }
 
     // One-time overlay migration (only while the new key is absent): the retired
-    // overlay_position `none` meant "hide the overlay", so map it to the new
-    // OverlayStyle::None; any other position had the overlay visible, so Live.
-    // The position enum no longer has a `none` variant (a legacy "none" in the
-    // store deserializes to Bottom via a serde alias), so read the raw stored
-    // string to recover the old intent.
+    // overlay_position `none` meant "hide the overlay" → OverlayStyle::None; any
+    // other position had it visible → Live. The position enum no longer has a
+    // `none` variant (legacy "none" deserializes to Bottom via a serde alias), so
+    // read the raw stored string to recover the old intent.
     if settings_value.get("overlay_style").is_none() {
         let was_hidden = settings_value
             .get("overlay_position")

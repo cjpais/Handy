@@ -26,27 +26,21 @@ fn main() {
 }
 
 /// Stage transcribe-cpp's shared runtime libraries into `transcribe-libs/` so the
-/// installer can ship them next to the executable. One code path covers every
-/// shared platform — Windows (`.dll`) and Linux (versioned `.so`) — because the
-/// staging dirs and the lib-naming rules are the only things that differ, and the
-/// match-by-name filter below handles both.
+/// installer can ship them next to the executable. One code path covers Windows
+/// (`.dll`) and Linux (versioned `.so`); the match-by-name filter below handles
+/// both naming schemes.
 ///
-/// The source directories are published by the `transcribe-cpp` wrapper as
-/// `DEP_TRANSCRIBE_CPP_*`: the sys crate sets `links = "transcribe"` and emits its
-/// install dirs, and the wrapper (`links = "transcribe_cpp"`) forwards them one
-/// hop to us — the only way that metadata crosses cargo's one-hop `links`
-/// boundary to reach Handy. The keys exist only in a shared / dynamic-backends
-/// posture; a static build (macOS `metal`) leaves them unset, so this is a no-op
-/// there. Since transcribe-cpp 0.0.6, Windows installs everything (core libs plus
-/// the dlopen'd ggml backend modules) into one `bin/` `RUNTIME_DIR`
-/// (`GGML_BACKEND_DIR=bin`), so `MODULE_DIR` is unset there; on Linux both keys
-/// point at the same `lib` dir. Either way the `BTreeSet` below dedups them.
+/// Source dirs arrive as `DEP_TRANSCRIBE_CPP_*`: the sys crate (`links =
+/// "transcribe"`) emits its install dirs and the wrapper (`links =
+/// "transcribe_cpp"`) forwards them one hop to us — the only way that metadata
+/// crosses cargo's one-hop `links` boundary. The keys exist only in a shared /
+/// dynamic-backends build; a static build (macOS `metal`) leaves them unset, so
+/// this is a no-op there. `RUNTIME_DIR` (core libs) and `MODULE_DIR` (dlopen'd
+/// ggml modules) may be the same dir — the `BTreeSet` below dedups them.
 ///
-/// Where the staged dir lands in each package:
-///   - Windows: `tauri.windows.conf.json` bundles it to the install root next to
-///     `handy.exe` (DLLs resolve from the exe directory).
-///   - Linux: `tauri.conf.json` maps it into `/usr/lib` for deb/rpm/appimage,
-///     which is on the binary's `$ORIGIN/../lib` rpath.
+/// Where the staged dir lands: Windows bundles it beside `handy.exe` (DLLs resolve
+/// from the exe dir); Linux maps it into `/usr/lib`, on the binary's
+/// `$ORIGIN/../lib` rpath.
 fn stage_transcribe_runtime_libs() {
     use std::collections::BTreeSet;
     use std::path::PathBuf;

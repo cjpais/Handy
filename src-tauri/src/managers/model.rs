@@ -205,9 +205,9 @@ impl ModelDescriptor {
 /// Resolve the user's persisted language *intent* (`"auto"` or a language code)
 /// into the language a given model will actually use.
 ///
-/// This is the canonical coercion used on every transcription path
-/// It is computed at the point of use and **never written back** to settings.
-/// The user's last explicit intent survives switching to an incompatible model and back.
+/// The canonical coercion used on every transcription path: computed at the
+/// point of use and **never written back** to settings, so the user's last
+/// explicit intent survives switching to an incompatible model and back.
 pub fn effective_language(
     intent: &str,
     supported_languages: &[String],
@@ -1078,15 +1078,13 @@ impl ModelManager {
         list
     }
 
-    /// Seed the bundled catalog ([`crate::catalog::CATALOG`]) into the registry.
-    /// Inserts each catalog model whose id isn't already present (additive).
+    /// Seed the bundled catalog ([`crate::catalog::CATALOG`]) into the registry,
+    /// inserting each model whose id isn't already present (additive).
     ///
     /// Catalog (`.gguf`, `HuggingFace`) and legacy (`.bin`/ONNX, `Url`) entries
-    /// are deliberately kept SEPARATE — different files, ids, and runtimes
-    /// (legacy ONNX runs on transcribe-rs; `.bin`/`.gguf` on transcribe-cpp).
-    /// Nothing is merged or removed here. The UI deprecates the legacy
-    /// *downloads* by hiding `Url` entries that aren't on disk, while
-    /// already-downloaded legacy models stay listed and runnable. Runs before the
+    /// stay SEPARATE — different files, ids, and runtimes. Nothing is merged or
+    /// removed; the UI just hides not-on-disk `Url` entries to deprecate legacy
+    /// downloads, while already-downloaded ones stay runnable. Runs before the
     /// on-disk scans so a cached model dedups onto its catalog entry.
     fn seed_catalog_models(available_models: &mut HashMap<String, ModelInfo>) {
         use std::collections::hash_map::Entry;
@@ -1113,20 +1111,17 @@ impl ModelManager {
     }
 
     /// Re-run the local discovery scans (custom models dir + shared HF cache) so
-    /// models a user dropped in or downloaded outside Handy show up without a
-    /// restart. The merge is additive: only genuinely-new ids are inserted, so
-    /// existing entries keep their values — including runtime-probed capabilities
-    /// set by [`Self::set_runtime_capabilities`]. It then runs a full
-    /// [`Self::update_download_status`], which recomputes the disk-derived flags
-    /// (`is_downloaded` / `is_downloading` / `partial_size`) for *every* entry;
-    /// a rescan that races an in-flight download can therefore briefly clear that
-    /// download's `is_downloading` flag, but the download continues and the
-    /// event-driven UI self-corrects.
+    /// models dropped in or downloaded outside Handy show up without a restart.
+    /// The merge is additive: only new ids are inserted, so existing entries keep
+    /// their values — including runtime-probed capabilities from
+    /// [`Self::set_runtime_capabilities`]. It then runs [`Self::update_download_status`],
+    /// which recomputes disk-derived flags for *every* entry; a rescan racing an
+    /// in-flight download can briefly clear its `is_downloading`, but the download
+    /// continues and the event-driven UI self-corrects.
     ///
-    /// The disk walk and 64 KiB GGUF header probes run against a cloned snapshot
-    /// *off-lock*, so audio/transcription readers never block on I/O; only the
-    /// brief merge of newly-discovered ids takes the registry lock. Concurrent
-    /// calls coalesce via [`Self::try_start_rescan`].
+    /// The disk walk and 64 KiB header probes run against a cloned snapshot
+    /// *off-lock* so readers never block on I/O; only the brief merge takes the
+    /// registry lock. Concurrent calls coalesce via [`Self::try_start_rescan`].
     pub fn rescan_local_models(&self) -> Result<()> {
         let _guard = match self.try_start_rescan() {
             Some(g) => g,
@@ -1172,22 +1167,19 @@ impl ModelManager {
         models.get(model_id).cloned()
     }
 
-    /// Reconcile a model's advertised capabilities with the ground truth read
-    /// from the loaded model (transcribe-cpp's GGUF-derived capabilities),
-    /// overwriting the pre-download view the registry was built from (catalog
-    /// metadata or a GGUF-header probe — see [`super::model_capabilities`]).
+    /// Reconcile a model's advertised capabilities with the ground truth from the
+    /// loaded model (transcribe-cpp's GGUF-derived capabilities), overwriting the
+    /// pre-download view (catalog metadata or a header probe — see
+    /// [`super::model_capabilities`]).
     ///
-    /// This is where the header probe's gaps get corrected. It matters most for:
-    /// - **streaming**, which transcribe-cpp *infers* at load for the
-    ///   parakeet/streaming families (the flat GGUF key can be absent) and which
-    ///   gates whether streaming is even attempted before a load (see
-    ///   `actions.rs`), with no fresh-read recovery in that direction;
-    /// - **language detection** and the **supported-language set**, both of
-    ///   which feed [`effective_language`], so a mislabeled header would
-    ///   otherwise coerce an "auto" intent to a forced language for good.
-    ///
-    /// Translate is reconciled too for badge accuracy, though the run paths
-    /// re-read it live from the loaded model regardless.
+    /// This corrects the header probe's gaps. It matters most for **streaming**
+    /// (transcribe-cpp infers it at load for parakeet/streaming families, where
+    /// the flat GGUF key can be absent, and it gates whether streaming is even
+    /// attempted — see `actions.rs`) and for **language detection** / the
+    /// **supported-language set**, which feed [`effective_language`]; a mislabeled
+    /// header would otherwise coerce an "auto" intent to a forced language for good.
+    /// Translate is reconciled too for badge accuracy, though run paths re-read it
+    /// live regardless.
     pub fn set_runtime_capabilities(
         &self,
         model_id: &str,

@@ -132,11 +132,9 @@ fn create_audio_recorder(
     app_handle: &tauri::AppHandle,
     stream_router: Arc<StreamRouter>,
 ) -> Result<AudioRecorder, anyhow::Error> {
-    // A single Silero engine covers both the offline and streaming policies.
-    // They're never active at the same time within a recording, so the recorder
-    // reconfigures this one detector's hangover tail per session instead of
-    // keeping two ONNX sessions resident. It starts on the offline tail; the
-    // recorder swaps in the streaming tail when that policy is selected.
+    // A single Silero engine covers both the offline and streaming policies (never
+    // active at once within a recording), so the recorder reconfigures its
+    // hangover tail per session rather than keeping two ONNX sessions resident.
     let silero = SileroVad::new(vad_path, VAD_THRESHOLD)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
     let smoothed_vad = SmoothedVad::new(
@@ -146,12 +144,9 @@ fn create_audio_recorder(
         VAD_ONSET_FRAMES,
     );
 
-    // Recorder with VAD, a spectrum-level callback that forwards updates to
-    // the frontend, and an audio-frame callback that feeds live streaming
-    // transcription via a shared `StreamRouter`. The router is captured
-    // directly (not via Tauri state) so the per-frame path is a single relaxed
-    // atomic load when no stream is pending — zero-cost for users with live
-    // preview off.
+    // Recorder with VAD, a spectrum-level callback that forwards level updates to
+    // the frontend, and an audio-frame callback that feeds live streaming via a
+    // shared `StreamRouter` (captured directly, not via Tauri state — see its docs).
     let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(

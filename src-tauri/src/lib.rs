@@ -753,15 +753,13 @@ pub fn run(cli_args: CliArgs) {
         .setup(move |app| {
             specta_builder.mount_events(app);
 
-            // Headless one-shot path
-            // (`--transcribe-file` / `--list-devices` / `--list-models`):
-            // initialize only what transcription needs — store/paths (via the
-            // registered plugins), the model + transcription managers, and the
+            // Headless one-shot path (`--transcribe-file` / `--list-devices` /
+            // `--list-models`): initialize only what transcription needs — the
+            // store/paths plugins, the model + transcription managers, and the
             // transcribe-cpp backend + accelerator settings — then run on a worker
-            // thread and exit. This deliberately skips the window, tray, overlay,
-            // audio recorder (so it never opens the mic, even with
-            // always_on_microphone set), signal handlers, and autostart that the
-            // normal UI path (initialize_core_logic) sets up.
+            // thread and exit. Deliberately skips the window, tray, overlay, audio
+            // recorder (so it never opens the mic, even with always_on_microphone),
+            // signal handlers, and autostart that initialize_core_logic sets up.
             if headless_mode {
                 let app_handle = app.handle().clone();
                 let model_manager = Arc::new(
@@ -843,13 +841,11 @@ pub fn run(cli_args: CliArgs) {
                 settings.overlay_style != settings::OverlayStyle::None,
             );
 
-            // Pre-warm GPU/accelerator enumeration on a background thread.
-            // The first call into get_available_accelerators enumerates ORT
-            // execution providers and transcribe-cpp compute devices, which can
-            // take a moment. Without this, that cost is paid synchronously the
-            // first time the user opens the Advanced settings page (which calls
-            // the get_available_accelerators command), causing a UI freeze.
-            // Result is cached in a OnceLock inside the transcription manager.
+            // Pre-warm GPU/accelerator enumeration on a background thread. The first
+            // get_available_accelerators call enumerates ORT execution providers and
+            // transcribe-cpp compute devices, which can take a moment; without this
+            // the cost is paid synchronously when the user first opens Advanced
+            // settings, freezing the UI. Result is cached in a OnceLock.
             std::thread::spawn(|| {
                 let _ = crate::managers::transcription::get_available_accelerators();
             });

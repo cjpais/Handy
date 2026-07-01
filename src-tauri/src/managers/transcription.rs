@@ -93,15 +93,11 @@ enum StreamCmd {
     Cancel,
 }
 
-/// Routes real-time audio frames to the active streaming worker. Shared
-/// between the [`TranscriptionManager`] (which opens/closes the route) and the
-/// audio recorder's per-frame callback (which feeds frames).
-///
-/// Designed so the per-frame cost when no stream is pending is a single
-/// relaxed atomic load — no Tauri state lookup, no mutex lock. The recorder
-/// callback captures an `Arc<StreamRouter>` directly (handed to it at recorder
-/// creation time) instead of going through `app_handle.try_state()` on every
-/// frame.
+/// Routes real-time audio frames to the active streaming worker. Shared between
+/// the [`TranscriptionManager`] (opens/closes the route) and the audio recorder's
+/// per-frame callback (feeds frames). The recorder holds an `Arc<StreamRouter>`
+/// directly, so a frame with no stream pending costs a single relaxed atomic
+/// load — no Tauri state lookup, no mutex lock.
 pub struct StreamRouter {
     /// Command channel to the active streaming worker, present from
     /// `start_stream` until `finalize_stream`/`cancel_stream`.
@@ -232,20 +228,18 @@ pub struct TranscriptionManager {
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
     reload_model_on_next_use: Arc<AtomicBool>,
-    /// Routes real-time audio frames to the active streaming worker. The audio
-    /// recorder captures an `Arc<StreamRouter>` directly (handed to it at
-    /// recorder creation time), so the per-frame path never goes through Tauri
-    /// state or locks the manager — a single relaxed atomic load when no stream
-    /// is pending.
+    /// Routes real-time audio frames to the active streaming worker; see
+    /// [`StreamRouter`]. Shared with the audio recorder so per-frame feeds skip
+    /// Tauri state and the manager lock.
     router: Arc<StreamRouter>,
     /// True only while a transcribe-cpp `Stream` is actually in flight (set by
     /// the worker once `stream()` succeeds). Used for overlay/UI decisions.
     stream_active: Arc<AtomicBool>,
-    /// Streaming state has four separate meanings:
-    /// router open = audio frames should be routed, worker active = no second
-    /// worker may start, engine lease = the loaded engine is out of the mutex,
-    /// stream active = live preview UI should show a streaming session.
-    /// Monotonic id source for stream workers. Zero means "no worker".
+    /// Streaming uses four independent flags: router open = frames should route,
+    /// worker active = no second worker may start, engine lease = engine is out
+    /// of the mutex, stream active = UI should show a live session.
+    ///
+    /// Monotonic id source for stream workers; zero means "no worker".
     next_stream_worker_id: Arc<AtomicU64>,
     /// Nonzero while a stream worker exists, even if it has not leased the engine
     /// yet. This prevents a second worker from starting after finalize/cancel
@@ -497,13 +491,10 @@ impl TranscriptionManager {
 
         let model_path = self.model_manager.get_model_path(model_id)?;
 
-        // Tear down any currently-loaded engine BEFORE creating the new one, so
-        // transcribe-cpp frees the previous model's native context (Metal/ggml)
-        // first. This avoids holding two models at once (peak memory on large
-        // GGUFs) and gives every switch a clean backend rather than building the
-        // new model alongside the old one. Clear the current id at the same time:
-        // if the replacement load fails, status should say "no loaded model"
-        // rather than pointing at the engine we just dropped.
+        // Drop the current engine BEFORE building the new one so transcribe-cpp
+        // frees the previous native context first — avoids holding two models at
+        // once (peak memory on large GGUFs). Clear the id too: if the new load
+        // fails, status should read "no loaded model", not the dropped engine.
         {
             let mut engine = self.lock_engine();
             *engine = None;
@@ -567,10 +558,9 @@ impl TranscriptionManager {
                     anyhow::anyhow!(error_msg)
                 })?;
                 // Reconcile the registry's advertised capabilities with the
-                // loaded model's real ones (from GGUF metadata) so badges and
-                // capability gating reflect runtime truth rather than the
-                // pre-download probe. The load-completed event below triggers a
-                // frontend model refresh that picks this up.
+                // loaded model's real ones (GGUF metadata) so badges/gating
+                // reflect runtime truth, not the pre-download probe. The
+                // load-completed event below triggers the frontend refresh.
                 let caps = session.model().capabilities();
                 self.model_manager.set_runtime_capabilities(
                     model_id,
@@ -807,12 +797,10 @@ impl TranscriptionManager {
 
         let model_id = self.get_current_model().unwrap_or_default();
 
-        // Take the engine out of the mutex so we own it during streaming. This
-        // prevents any concurrent batch transcription on a second session of
-        // the same model — transcribe-cpp's compute_lock would refuse it
-        // anyway, but taking the engine out makes the exclusion structural
-        // rather than conventional. The engine is returned (or dropped if the
-        // model was switched/unloaded mid-stream) when the worker exits.
+        // Take the engine out of the mutex so we own it during streaming,
+        // structurally excluding any concurrent batch transcription (which
+        // transcribe-cpp's compute_lock would refuse anyway). Returned when the
+        // worker exits, or dropped if the model was switched/unloaded mid-stream.
         if self
             .active_engine_lease
             .compare_exchange(0, worker_id, Ordering::AcqRel, Ordering::Acquire)
@@ -843,11 +831,9 @@ impl TranscriptionManager {
             }
         };
 
-        // Probe live session capabilities (immutable borrow, brief). The
-        // ModelManager copy is for UI/catalog state; run paths intentionally use
-        // the loaded session as the final source of truth.
-        // Only transcribe-cpp models expose streaming; ONNX engines fall back
-        // to batch.
+        // Only transcribe-cpp models expose streaming; ONNX engines fall back to
+        // batch. The loaded session (not the ModelManager copy) is the source of
+        // truth for run-path capabilities.
         let (supports_streaming, supports_translate, languages) = match &engine {
             LoadedEngine::TranscribeCpp(session) => {
                 let model = session.model();
@@ -1193,11 +1179,10 @@ impl TranscriptionManager {
             drop(engine_guard);
 
             // Probe live transcribe-cpp capabilities once (cheap GGUF-metadata
-            // reads). The ModelManager copy is for UI/catalog state; run paths
-            // intentionally use the loaded session as the final source of truth.
-            // The whisper run extension is kind-tagged, so non-whisper archs
-            // (parakeet, voxtral, …) reject it with INVALID_ARG; only attach it
-            // where supported. Translate is gated the same way.
+            // reads); the loaded session is the source of truth, not the
+            // ModelManager copy. The whisper run extension is kind-tagged, so
+            // non-whisper archs (parakeet, voxtral, …) reject it with
+            // INVALID_ARG; attach it — and translate — only where supported.
             let mut model_supports_translate = false;
             let mut model_languages: Vec<String> = Vec::new();
             if let LoadedEngine::TranscribeCpp(session) = &engine {
@@ -1790,13 +1775,12 @@ fn select_transcribe_backend(setting: TranscribeAcceleratorSetting) -> Backend {
 /// Resolve the user's stored GPU device choice into a [`ModelOptions::gpu_device`]
 /// registry index for the next model load.
 ///
-/// `gpu_device` in settings is a registry index into [`transcribe_cpp::devices`]
-/// (`-1` is the auto/CPU sentinel used by the UI). transcribe-cpp treats `0` as
-/// "auto / first matching device", and rejects an index that is out of range or
-/// points at a non-GPU device under a GPU backend. So an explicit selection is
-/// only honored when the user actually chose the GPU accelerator and the stored
-/// index still resolves to a registered GPU device; otherwise we fall back to
-/// `0` so a stale or no-longer-present selection can never fail the load.
+/// Settings store a registry index into [`transcribe_cpp::devices`] (`-1` is the
+/// UI's auto/CPU sentinel); transcribe-cpp treats `0` as "auto / first match" and
+/// rejects an out-of-range or non-GPU index. So an explicit selection is honored
+/// only when the user chose the GPU accelerator and the stored index still
+/// resolves to a registered GPU device — otherwise fall back to `0` so a stale
+/// selection can never fail the load.
 fn resolve_gpu_device(setting: TranscribeAcceleratorSetting, gpu_device: i32) -> i32 {
     if setting != TranscribeAcceleratorSetting::Gpu || gpu_device <= 0 {
         return 0;
@@ -1852,13 +1836,11 @@ pub struct GpuDeviceOption {
 static GPU_DEVICES: OnceLock<Vec<GpuDeviceOption>> = OnceLock::new();
 
 fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
-    // Reports the GPU compute devices transcribe-cpp registered at startup
-    // (see `init_transcribe_backend`). `id` is the device's registry index in
-    // `transcribe_cpp::devices()` — the exact value to feed back as
-    // `ModelOptions::gpu_device` to select it (see `resolve_gpu_device`), so it
-    // must be `Device::index` rather than a re-counted position. `total_vram_mb`
-    // is the backend-reported capacity (0 when the backend does not report it,
-    // e.g. some Metal/Vulkan drivers).
+    // GPU compute devices transcribe-cpp registered at startup. `id` is the
+    // device's registry index (`Device::index`, not a re-counted position) so it
+    // feeds straight back as `ModelOptions::gpu_device` (see `resolve_gpu_device`).
+    // `total_vram_mb` is the backend-reported capacity, 0 when unreported (some
+    // Metal/Vulkan drivers).
     GPU_DEVICES.get_or_init(|| {
         transcribe_cpp::devices()
             .into_iter()

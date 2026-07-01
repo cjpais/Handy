@@ -33,18 +33,15 @@ tauri_panel! {
 }
 
 // Native overlay window sizes (logical points). One window is reused for every
-// state and resized in `show_overlay_state`; each size only needs to be at least
-// as large as the visible card it hosts (the `--ov-*` vars in
-// RecordingOverlay.css). The card is anchored flush to the screen-edge side in
-// CSS, so window height does NOT shift where the card sits — only the
-// OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants below do. Keep these in
-// sync with the CSS card geometry.
+// state and resized in `show_overlay_state`; each size need only be at least as
+// large as the card it hosts (the `--ov-*` vars in RecordingOverlay.css). The
+// card is CSS-anchored flush to the screen edge, so window height doesn't move
+// where the card sits — only OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET do. Keep
+// these in sync with the CSS card geometry.
 //
-// Compact overlay (Minimal / transcribing / processing). The pill is 40h and
-// animates width from 172 (--ov-rest-w, the resting waveform) up to 216
-// (--ov-work-w, the widest working label) in CSS; the window must fit that widest
-// state, plus a little slack for the centered grow. The pill expands from center,
-// so the extra width is shared.
+// Compact overlay (Minimal / transcribing / processing): the 40h pill animates
+// width from 172 (--ov-rest-w) to 216 (--ov-work-w) and expands from center, so
+// the window must fit the widest state plus a little slack.
 const OVERLAY_WIDTH: f64 = 256.0;
 const OVERLAY_HEIGHT: f64 = 46.0;
 

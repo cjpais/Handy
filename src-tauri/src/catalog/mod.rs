@@ -1,17 +1,16 @@
 //! The bundled, offline model catalog.
 //!
-//! `catalog.json` is generated at build time by `scripts/gen_catalog.py` from
-//! the `handy-computer` Hugging Face org — card `transcribe_cpp` capabilities +
-//! benchmarks, a GGUF header probe for the friendly name/params, and local
-//! curation for the recommended set. It is compiled into the binary so Handy
-//! ships a complete model list with zero network access.
+//! `catalog.json` is generated at build time by `scripts/gen_catalog.py` from the
+//! `handy-computer` Hugging Face org (card `transcribe_cpp` capabilities +
+//! benchmarks, a GGUF header probe for name/params, and local curation for the
+//! recommended set). It is compiled into the binary so Handy ships a complete
+//! model list with zero network access.
 //!
-//! Each entry is normalised into a [`ModelDescriptor`] — the same source-
-//! agnostic shape every other producer (HF discovery, on-disk scans, the legacy
-//! table) yields — so the catalog is "just another producer" rather than a
-//! special case. The catalog's explicit `capabilities` map drops straight into a
-//! [`CapabilityProbe`] with confident `Some(..)` values; the runtime
-//! `GgufHeaderProber` is the same shape with `None` for anything a header omits,
+//! Each entry is normalised into a [`ModelDescriptor`] — the same source-agnostic
+//! shape every other producer (HF discovery, on-disk scans, the legacy table)
+//! yields — so the catalog is "just another producer". Its explicit `capabilities`
+//! map becomes a [`CapabilityProbe`] with confident `Some(..)` values; the runtime
+//! `GgufHeaderProber` is the same shape with `None` where a header omits a key,
 //! which is why the two are interchangeable (the catalog is a baked probe).
 
 use std::collections::HashMap;
