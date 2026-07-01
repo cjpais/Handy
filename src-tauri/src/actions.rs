@@ -641,11 +641,12 @@ impl ShortcutAction for TranscribeAction {
                     let transcription_time = Instant::now();
                     let transcription_result = match tm.finalize_stream() {
                         // A stream that finalized with usable text wins. An empty
-                        // result — no active stream, or a stream that produced
-                        // nothing — falls back to a full batch transcription of
-                        // the same audio. A finalize timeout/error is surfaced
-                        // instead because the stream worker may still hold the
-                        // engine, so a batch fallback would contend with it.
+                        // result — no active stream, a stream that produced
+                        // nothing, or a stream finalize error after the engine
+                        // was returned — falls back to a full batch transcription
+                        // of the same audio. A finalize timeout is surfaced
+                        // because the worker may still hold the engine, so a
+                        // batch fallback would contend with it.
                         Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
                         Ok(_) => tm.transcribe(samples),
                         Err(err) => Err(err),

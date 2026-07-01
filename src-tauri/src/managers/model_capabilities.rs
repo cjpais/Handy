@@ -33,6 +33,7 @@ pub const KNOWN_ARCHES: &[&str] = &[
     "voxtral",
     "voxtral_realtime",
     "cohere",
+    "cohere_asr",
     "canary",
     "canary_qwen",
     "moonshine",
@@ -40,7 +41,9 @@ pub const KNOWN_ARCHES: &[&str] = &[
     "sensevoice",
     "gigaam",
     "granite",
+    "granite_speech",
     "granite_nar",
+    "granite_speech_nar",
     "funasr_nano",
     "medasr",
 ];

@@ -57,7 +57,9 @@ pub struct StreamTextEvent {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum StreamPhase {
-    /// Receiving audio / live text (or waiting for the stream to begin).
+    /// Receiving audio / live text (or waiting for the stream to begin). Rust
+    /// does not emit this today; the frontend starts in this phase and Rust only
+    /// emits transitions away from it.
     Listening,
     /// Finalizing or post-processing — show a spinner.
     Working,
@@ -187,21 +189,34 @@ impl Drop for LoadingGuard {
     }
 }
 
-/// RAII guard that clears the streaming lease/active flags on any worker exit —
+/// RAII guard that clears the streaming worker/lease flags on any worker exit —
 /// normal return, early return, or a panic in an engine call that unwinds the
-/// detached worker thread. Without it a mid-stream panic would leave
-/// `engine_leased` stuck `true`, wedging `is_model_loaded()` so the model never
-/// reloads. Mirrors the batch path's panic-safety: a panicked engine is dropped
-/// by the unwind and never returned to the pool.
-struct StreamLeaseGuard {
-    engine_leased: Arc<AtomicBool>,
+/// detached worker thread. Tokens prevent an older worker from clearing a newer
+/// worker's state if a start/finalize race ever slips through.
+struct StreamWorkerGuard {
+    worker_id: u64,
+    active_stream_worker: Arc<AtomicU64>,
+    active_engine_lease: Arc<AtomicU64>,
     stream_active: Arc<AtomicBool>,
 }
 
-impl Drop for StreamLeaseGuard {
+impl Drop for StreamWorkerGuard {
     fn drop(&mut self) {
-        self.stream_active.store(false, Ordering::Relaxed);
-        self.engine_leased.store(false, Ordering::Relaxed);
+        if self.active_stream_worker.load(Ordering::Acquire) == self.worker_id {
+            self.stream_active.store(false, Ordering::Release);
+        }
+        let _ = self.active_engine_lease.compare_exchange(
+            self.worker_id,
+            0,
+            Ordering::AcqRel,
+            Ordering::Acquire,
+        );
+        let _ = self.active_stream_worker.compare_exchange(
+            self.worker_id,
+            0,
+            Ordering::AcqRel,
+            Ordering::Acquire,
+        );
     }
 }
 
@@ -225,13 +240,20 @@ pub struct TranscriptionManager {
     /// True only while a transcribe-cpp `Stream` is actually in flight (set by
     /// the worker once `stream()` succeeds). Used for overlay/UI decisions.
     stream_active: Arc<AtomicBool>,
-    /// True while the streaming worker has taken the engine out of `engine`
-    /// (from the moment it is leased until it is returned or dropped). Kept
-    /// distinct from `stream_active` — the engine is leased for the worker's
-    /// entire lifetime, but the stream may not start (model not loaded / not
-    /// streaming-capable / begin failed). `is_model_loaded()` consults this so
-    /// the model still reports "loaded" while the worker holds it.
-    engine_leased: Arc<AtomicBool>,
+    /// Streaming state has four separate meanings:
+    /// router open = audio frames should be routed, worker active = no second
+    /// worker may start, engine lease = the loaded engine is out of the mutex,
+    /// stream active = live preview UI should show a streaming session.
+    /// Monotonic id source for stream workers. Zero means "no worker".
+    next_stream_worker_id: Arc<AtomicU64>,
+    /// Nonzero while a stream worker exists, even if it has not leased the engine
+    /// yet. This prevents a second worker from starting after finalize/cancel
+    /// closes the router but before the first worker has fully exited.
+    active_stream_worker: Arc<AtomicU64>,
+    /// Nonzero while the streaming worker has taken the engine out of `engine`.
+    /// `is_model_loaded()` consults this so the model still reports "loaded"
+    /// while the worker holds it.
+    active_engine_lease: Arc<AtomicU64>,
 }
 
 impl TranscriptionManager {
@@ -248,7 +270,9 @@ impl TranscriptionManager {
             loading_condvar: Arc::new(Condvar::new()),
             router: Arc::new(StreamRouter::new()),
             stream_active: Arc::new(AtomicBool::new(false)),
-            engine_leased: Arc::new(AtomicBool::new(false)),
+            next_stream_worker_id: Arc::new(AtomicU64::new(1)),
+            active_stream_worker: Arc::new(AtomicU64::new(0)),
+            active_engine_lease: Arc::new(AtomicU64::new(0)),
         };
 
         // Start the idle watcher
@@ -336,7 +360,7 @@ impl TranscriptionManager {
     pub fn is_model_loaded(&self) -> bool {
         // The engine may be leased out to the streaming worker (taken out of
         // the mutex). It's still loaded — just in use — so report true.
-        self.lock_engine().is_some() || self.engine_leased.load(Ordering::Relaxed)
+        self.lock_engine().is_some() || self.active_engine_lease.load(Ordering::Acquire) != 0
     }
 
     /// Atomically check whether a model load is in progress and, if not, mark
@@ -466,10 +490,16 @@ impl TranscriptionManager {
         // transcribe-cpp frees the previous model's native context (Metal/ggml)
         // first. This avoids holding two models at once (peak memory on large
         // GGUFs) and gives every switch a clean backend rather than building the
-        // new model alongside the old one.
+        // new model alongside the old one. Clear the current id at the same time:
+        // if the replacement load fails, status should say "no loaded model"
+        // rather than pointing at the engine we just dropped.
         {
             let mut engine = self.lock_engine();
             *engine = None;
+        }
+        {
+            let mut current_model = self.current_model_id.lock().unwrap();
+            *current_model = None;
         }
 
         // Create appropriate engine based on model type
@@ -699,7 +729,7 @@ impl TranscriptionManager {
 
     /// Whether a live streaming run is currently in flight.
     pub fn is_streaming(&self) -> bool {
-        self.stream_active.load(Ordering::Relaxed)
+        self.stream_active.load(Ordering::Acquire)
     }
 
     /// Shared handle to the stream router, used by the audio recorder to feed
@@ -719,18 +749,34 @@ impl TranscriptionManager {
     /// `None` so the caller falls back to batch transcription. Frames sent
     /// before the stream begins queue on the channel and are not lost.
     pub fn start_stream(&self) {
-        if self.router.is_open() {
+        if self.router.is_open() || self.active_stream_worker.load(Ordering::Acquire) != 0 {
             warn!("start_stream called while a stream worker is already active");
             return;
         }
+        let worker_id = self.next_stream_worker_id.fetch_add(1, Ordering::Relaxed);
+        if self
+            .active_stream_worker
+            .compare_exchange(0, worker_id, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
+            warn!("start_stream lost a race with another stream worker");
+            return;
+        }
         let rx = self.router.open();
-        self.stream_active.store(false, Ordering::Relaxed);
+        self.stream_active.store(false, Ordering::Release);
 
         let manager = self.clone();
-        thread::spawn(move || manager.run_stream_worker(rx));
+        thread::spawn(move || manager.run_stream_worker(rx, worker_id));
     }
 
-    fn run_stream_worker(&self, rx: mpsc::Receiver<StreamCmd>) {
+    fn run_stream_worker(&self, rx: mpsc::Receiver<StreamCmd>, worker_id: u64) {
+        let _worker = StreamWorkerGuard {
+            worker_id,
+            active_stream_worker: Arc::clone(&self.active_stream_worker),
+            active_engine_lease: Arc::clone(&self.active_engine_lease),
+            stream_active: Arc::clone(&self.stream_active),
+        };
+
         // Wait for any in-progress model load to finish (start_stream races the
         // background load kicked off when recording starts).
         {
@@ -748,14 +794,16 @@ impl TranscriptionManager {
         // anyway, but taking the engine out makes the exclusion structural
         // rather than conventional. The engine is returned (or dropped if the
         // model was switched/unloaded mid-stream) when the worker exits.
-        self.engine_leased.store(true, Ordering::Relaxed);
-        // Single reset point for the lease/active flags, fired on every worker
-        // exit including a panic in an engine call (feed/finalize/stream) that
-        // unwinds this detached thread past the cleanup below.
-        let _lease = StreamLeaseGuard {
-            engine_leased: Arc::clone(&self.engine_leased),
-            stream_active: Arc::clone(&self.stream_active),
-        };
+        if self
+            .active_engine_lease
+            .compare_exchange(0, worker_id, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
+            warn!("Live preview: another worker already holds the transcription engine");
+            self.router.clear();
+            drain_until_finalize(rx);
+            return;
+        }
         let mut engine = match self.lock_engine().take() {
             Some(e) => e,
             None => {
@@ -764,14 +812,23 @@ impl TranscriptionManager {
                      falling back to batch transcription",
                     model_id
                 );
+                let _ = self.active_engine_lease.compare_exchange(
+                    worker_id,
+                    0,
+                    Ordering::AcqRel,
+                    Ordering::Acquire,
+                );
                 self.router.clear();
                 drain_until_finalize(rx);
                 return;
             }
         };
 
-        // Probe capabilities (immutable borrow, brief). Only transcribe-cpp
-        // models expose streaming; ONNX engines fall back to batch.
+        // Probe live session capabilities (immutable borrow, brief). The
+        // ModelManager copy is for UI/catalog state; run paths intentionally use
+        // the loaded session as the final source of truth.
+        // Only transcribe-cpp models expose streaming; ONNX engines fall back
+        // to batch.
         let (supports_streaming, supports_translate, languages) = match &engine {
             LoadedEngine::TranscribeCpp(session) => {
                 let model = session.model();
@@ -831,6 +888,8 @@ impl TranscriptionManager {
         // (and thus the engine) for its lifetime, so the feed/finalize loop
         // lives in a labeled block — when it exits, the borrow is released and
         // the engine can be moved into return_engine().
+        let mut finalize_reply: Option<mpsc::Sender<Option<String>>> = None;
+        let mut finalize_result: Option<Option<String>> = None;
         let stream_started = 'stream: {
             let session = match &mut engine {
                 LoadedEngine::TranscribeCpp(s) => s,
@@ -852,114 +911,73 @@ impl TranscriptionManager {
                 }
             };
 
-            self.stream_active.store(true, Ordering::Relaxed);
+            self.stream_active.store(true, Ordering::Release);
             self.touch_activity();
             info!(
                 "Live streaming transcription started (model '{}', backend '{}')",
                 model_id, backend
             );
 
-            let mut feed_count: u64 = 0;
-            let mut emit_count: u64 = 0;
-            let mut streamed_samples: u64 = 0;
-            let mut stream_compute_elapsed = Duration::ZERO;
-            let mut last_perf_log = Instant::now();
-            let mut latest_revision: i32 = 0;
-            let mut latest_input_received_ms: i64 = 0;
-            let mut latest_audio_committed_ms: i64 = 0;
-            let mut latest_buffered_ms: i64 = 0;
+            let mut perf = StreamPerf::new();
             while let Ok(cmd) = rx.recv() {
                 match cmd {
                     StreamCmd::Feed(pcm) => {
                         self.touch_activity();
-                        feed_count += 1;
-                        streamed_samples += pcm.len() as u64;
+                        perf.record_feed(pcm.len());
                         let feed_start = Instant::now();
                         match stream.feed(&pcm) {
                             Ok(update) => {
-                                stream_compute_elapsed += feed_start.elapsed();
-                                latest_revision = update.revision;
-                                latest_input_received_ms = update.input_received_ms;
-                                latest_audio_committed_ms = update.audio_committed_ms;
-                                latest_buffered_ms = update.buffered_ms;
+                                perf.record_compute(feed_start.elapsed());
+                                perf.record_update(
+                                    update.revision,
+                                    update.input_received_ms,
+                                    update.audio_committed_ms,
+                                    update.buffered_ms,
+                                );
                                 if update.committed_changed || update.tentative_changed {
                                     let text = stream.text();
-                                    emit_count += 1;
+                                    perf.record_emit();
                                     self.emit_stream_text(&text.committed, &text.tentative);
                                 }
-                                if last_perf_log.elapsed() >= STREAM_PERF_LOG_INTERVAL {
-                                    let audio_secs = streamed_samples as f64 / 16_000.0;
-                                    let compute_secs = stream_compute_elapsed.as_secs_f64();
-                                    let speedup = if compute_secs > 0.0 {
-                                        audio_secs / compute_secs
-                                    } else {
-                                        0.0
-                                    };
-                                    debug!(
-                                        "Live preview perf: {:.2}s streamed audio, {:.2}s model compute ({:.2}x real-time), \
-                                         input_received={:.2}s, committed_audio={:.2}s, buffered={}ms, revision={}, \
-                                         {} frames fed, {} updates emitted",
-                                        audio_secs,
-                                        compute_secs,
-                                        speedup,
-                                        latest_input_received_ms as f64 / 1000.0,
-                                        latest_audio_committed_ms as f64 / 1000.0,
-                                        latest_buffered_ms,
-                                        latest_revision,
-                                        feed_count,
-                                        emit_count,
-                                    );
-                                    last_perf_log = Instant::now();
-                                }
+                                perf.maybe_log();
                             }
                             Err(e) => {
-                                stream_compute_elapsed += feed_start.elapsed();
+                                perf.record_compute(feed_start.elapsed());
                                 warn!("stream feed failed: {}", e);
                             }
                         }
                     }
                     StreamCmd::Finalize(reply) => {
                         let finalize_start = Instant::now();
-                        let text = match stream.finalize() {
+                        let result = match stream.finalize() {
                             // After finalize the committed prefix holds the full
                             // text; display() = committed + tentative is the safe read.
                             Ok(update) => {
-                                stream_compute_elapsed += finalize_start.elapsed();
-                                latest_revision = update.revision;
-                                latest_input_received_ms = update.input_received_ms;
-                                latest_audio_committed_ms = update.audio_committed_ms;
-                                latest_buffered_ms = update.buffered_ms;
-                                stream.text().display()
+                                perf.record_compute(finalize_start.elapsed());
+                                perf.record_update(
+                                    update.revision,
+                                    update.input_received_ms,
+                                    update.audio_committed_ms,
+                                    update.buffered_ms,
+                                );
+                                Some(stream.text().display())
                             }
                             Err(e) => {
-                                stream_compute_elapsed += finalize_start.elapsed();
-                                error!("stream finalize failed: {}", e);
-                                String::new()
+                                perf.record_compute(finalize_start.elapsed());
+                                error!(
+                                    "stream finalize failed: {}; falling back to batch transcription",
+                                    e
+                                );
+                                None
                             }
                         };
-                        let audio_secs = streamed_samples as f64 / 16_000.0;
-                        let compute_secs = stream_compute_elapsed.as_secs_f64();
-                        let speedup = if compute_secs > 0.0 {
-                            audio_secs / compute_secs
-                        } else {
-                            0.0
+                        let chars = match &result {
+                            Some(text) => text.len(),
+                            _ => 0,
                         };
-                        info!(
-                            "Live preview finalized in {:.2}s model compute for {:.2}s streamed audio ({:.2}x real-time): \
-                             input_received={:.2}s, committed_audio={:.2}s, buffered={}ms, revision={}, \
-                             {} frames fed, {} updates emitted, {} chars",
-                            compute_secs,
-                            audio_secs,
-                            speedup,
-                            latest_input_received_ms as f64 / 1000.0,
-                            latest_audio_committed_ms as f64 / 1000.0,
-                            latest_buffered_ms,
-                            latest_revision,
-                            feed_count,
-                            emit_count,
-                            text.len()
-                        );
-                        let _ = reply.send(Some(text));
+                        perf.log_finalized(chars);
+                        finalize_reply = Some(reply);
+                        finalize_result = Some(result);
                         break;
                     }
                     StreamCmd::Cancel => {
@@ -976,13 +994,19 @@ impl TranscriptionManager {
         if !stream_started {
             // Stream never began (model doesn't support streaming or begin
             // failed); drain so the finalize handshake still completes and the
-            // caller falls back to batch transcription.
+            // caller falls back to batch transcription. Return the engine first
+            // so the fallback can immediately use it.
+            self.return_engine(engine, &model_id);
             drain_until_finalize(rx);
+            return;
         }
 
         self.return_engine(engine, &model_id);
-        // `_lease` drops here, clearing `engine_leased`/`stream_active` after the
-        // engine has been returned to the pool.
+        if let (Some(reply), Some(result)) = (finalize_reply, finalize_result) {
+            let _ = reply.send(result);
+        }
+        // `_worker` drops here, clearing this worker's active/lease flags after
+        // the engine has been returned to the pool.
     }
 
     /// Return the leased engine to the mutex, unless the model was switched or
@@ -1004,9 +1028,9 @@ impl TranscriptionManager {
     /// Flush the active stream and return its final, post-filtered text.
     ///
     /// `Ok(None)` means no usable stream was active and the caller may fall back
-    /// to batch transcription. `Err` means finalize itself failed or timed out;
-    /// the worker may still hold the engine, so callers should not immediately
-    /// start a batch transcription against the same manager.
+    /// to batch transcription. `Err` means finalize itself failed or timed out.
+    /// A timeout may still leave the worker holding the engine, so callers
+    /// should surface it instead of immediately starting a batch fallback.
     pub fn finalize_stream(&self) -> Result<Option<String>> {
         let Some(tx) = self.router.take() else {
             return Ok(None);
@@ -1020,7 +1044,7 @@ impl TranscriptionManager {
             Ok(None) => return Ok(None),
             Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(None),
             Err(mpsc::RecvTimeoutError::Timeout) => {
-                self.stream_active.store(false, Ordering::Relaxed);
+                self.stream_active.store(false, Ordering::Release);
                 return Err(anyhow::anyhow!(
                     "Timed out waiting {:?} for live transcription to finalize",
                     STREAM_FINALIZE_REPLY_TIMEOUT
@@ -1042,7 +1066,7 @@ impl TranscriptionManager {
         if let Some(tx) = self.router.take() {
             let _ = tx.send(StreamCmd::Cancel);
         }
-        self.stream_active.store(false, Ordering::Relaxed);
+        self.stream_active.store(false, Ordering::Release);
     }
 
     /// Emit a working-phase event to the streaming overlay (spinner + label).
@@ -1149,10 +1173,12 @@ impl TranscriptionManager {
             // Release the lock before transcribing — no mutex held during the engine call
             drop(engine_guard);
 
-            // Probe transcribe-cpp model capabilities once (cheap GGUF-metadata
-            // reads). The whisper run extension is kind-tagged, so non-whisper
-            // archs (parakeet, voxtral, …) reject it with INVALID_ARG; only
-            // attach it where supported. Translate is gated the same way.
+            // Probe live transcribe-cpp capabilities once (cheap GGUF-metadata
+            // reads). The ModelManager copy is for UI/catalog state; run paths
+            // intentionally use the loaded session as the final source of truth.
+            // The whisper run extension is kind-tagged, so non-whisper archs
+            // (parakeet, voxtral, …) reject it with INVALID_ARG; only attach it
+            // where supported. Translate is gated the same way.
             let mut model_supports_translate = false;
             let mut model_languages: Vec<String> = Vec::new();
             if let LoadedEngine::TranscribeCpp(session) = &engine {
@@ -1251,8 +1277,8 @@ impl TranscriptionManager {
                             anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
                         }),
                     LoadedEngine::SenseVoice(sense_voice_engine) => {
-                        let language = match validated_language.as_str() {
-                            "zh" | "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
+                        let language = match normalize_cjk_language(&validated_language) {
+                            "zh" => Some("zh".to_string()),
                             "en" => Some("en".to_string()),
                             "ja" => Some("ja".to_string()),
                             "ko" => Some("ko".to_string()),
@@ -1291,11 +1317,8 @@ impl TranscriptionManager {
                     LoadedEngine::Cohere(cohere_engine) => {
                         let lang = if validated_language == "auto" {
                             None
-                        } else if validated_language == "zh-Hans" || validated_language == "zh-Hant"
-                        {
-                            Some("zh".to_string())
                         } else {
-                            Some(validated_language.clone())
+                            Some(normalize_cjk_language(&validated_language).to_string())
                         };
                         let options = TranscribeOptions {
                             language: lang,
@@ -1376,11 +1399,7 @@ impl TranscriptionManager {
         // means transcribed 4x faster than real time
         let elapsed_secs = (et - st).as_secs_f64();
         let audio_secs = audio_len as f64 / 16_000.0;
-        let speedup = if elapsed_secs > 0.0 {
-            audio_secs / elapsed_secs
-        } else {
-            0.0
-        };
+        let speedup = real_time_factor(audio_secs, elapsed_secs);
         info!(
             "Transcription completed in {:.2}s for {:.2}s of audio ({:.2}x real-time){}",
             elapsed_secs, audio_secs, speedup, translation_note
@@ -1397,6 +1416,127 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+}
+
+struct StreamPerf {
+    feed_count: u64,
+    emit_count: u64,
+    streamed_samples: u64,
+    stream_compute_elapsed: Duration,
+    last_log: Instant,
+    latest_revision: i32,
+    latest_input_received_ms: i64,
+    latest_audio_committed_ms: i64,
+    latest_buffered_ms: i64,
+}
+
+impl StreamPerf {
+    fn new() -> Self {
+        Self {
+            feed_count: 0,
+            emit_count: 0,
+            streamed_samples: 0,
+            stream_compute_elapsed: Duration::ZERO,
+            last_log: Instant::now(),
+            latest_revision: 0,
+            latest_input_received_ms: 0,
+            latest_audio_committed_ms: 0,
+            latest_buffered_ms: 0,
+        }
+    }
+
+    fn record_feed(&mut self, samples: usize) {
+        self.feed_count += 1;
+        self.streamed_samples += samples as u64;
+    }
+
+    fn record_compute(&mut self, elapsed: Duration) {
+        self.stream_compute_elapsed += elapsed;
+    }
+
+    fn record_update(
+        &mut self,
+        revision: i32,
+        input_received_ms: i64,
+        audio_committed_ms: i64,
+        buffered_ms: i64,
+    ) {
+        self.latest_revision = revision;
+        self.latest_input_received_ms = input_received_ms;
+        self.latest_audio_committed_ms = audio_committed_ms;
+        self.latest_buffered_ms = buffered_ms;
+    }
+
+    fn record_emit(&mut self) {
+        self.emit_count += 1;
+    }
+
+    fn maybe_log(&mut self) {
+        if self.last_log.elapsed() < STREAM_PERF_LOG_INTERVAL {
+            return;
+        }
+
+        let audio_secs = self.audio_secs();
+        let compute_secs = self.compute_secs();
+        debug!(
+            "Live preview perf: {:.2}s streamed audio, {:.2}s model compute ({:.2}x real-time), \
+             input_received={:.2}s, committed_audio={:.2}s, buffered={}ms, revision={}, \
+             {} frames fed, {} updates emitted",
+            audio_secs,
+            compute_secs,
+            real_time_factor(audio_secs, compute_secs),
+            self.latest_input_received_ms as f64 / 1000.0,
+            self.latest_audio_committed_ms as f64 / 1000.0,
+            self.latest_buffered_ms,
+            self.latest_revision,
+            self.feed_count,
+            self.emit_count,
+        );
+        self.last_log = Instant::now();
+    }
+
+    fn log_finalized(&self, chars: usize) {
+        let audio_secs = self.audio_secs();
+        let compute_secs = self.compute_secs();
+        info!(
+            "Live preview finalized in {:.2}s model compute for {:.2}s streamed audio ({:.2}x real-time): \
+             input_received={:.2}s, committed_audio={:.2}s, buffered={}ms, revision={}, \
+             {} frames fed, {} updates emitted, {} chars",
+            compute_secs,
+            audio_secs,
+            real_time_factor(audio_secs, compute_secs),
+            self.latest_input_received_ms as f64 / 1000.0,
+            self.latest_audio_committed_ms as f64 / 1000.0,
+            self.latest_buffered_ms,
+            self.latest_revision,
+            self.feed_count,
+            self.emit_count,
+            chars
+        );
+    }
+
+    fn audio_secs(&self) -> f64 {
+        self.streamed_samples as f64 / 16_000.0
+    }
+
+    fn compute_secs(&self) -> f64 {
+        self.stream_compute_elapsed.as_secs_f64()
+    }
+}
+
+fn real_time_factor(audio_secs: f64, compute_secs: f64) -> f64 {
+    if compute_secs > 0.0 {
+        audio_secs / compute_secs
+    } else {
+        0.0
+    }
+}
+
+fn normalize_cjk_language(language: &str) -> &str {
+    match language {
+        "zh-Hans" | "zh-Hant" => "zh",
+        other => other,
     }
 }
 
@@ -1433,8 +1573,7 @@ fn transcribe_cpp_run_plan(
 ) -> TranscribeCppRunPlan {
     let requested_language = match effective_language {
         "auto" => None,
-        "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
-        other => Some(other.to_string()),
+        other => Some(normalize_cjk_language(other).to_string()),
     };
     // Only pass a language the loaded model actually advertises (per
     // capabilities().languages); otherwise auto-detect rather than failing with

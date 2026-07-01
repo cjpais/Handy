@@ -124,6 +124,8 @@ pub fn rank_of(model_id: &str) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::managers::model_capabilities::KNOWN_ARCHES;
+    use std::collections::BTreeSet;
 
     #[test]
     fn catalog_parses_and_is_nonempty() {
@@ -145,5 +147,20 @@ mod tests {
             assert!((0.0..=1.0).contains(&d.speed_score), "{} speed", d.id);
             assert!((0.0..=1.0).contains(&d.accuracy_score), "{} acc", d.id);
         }
+    }
+
+    #[test]
+    fn catalog_architectures_are_known_to_capability_probe() {
+        let missing: BTreeSet<&str> = CATALOG
+            .iter()
+            .filter_map(|d| d.caps.architecture.as_deref())
+            .filter(|arch| !KNOWN_ARCHES.contains(arch))
+            .collect();
+
+        assert!(
+            missing.is_empty(),
+            "catalog architecture(s) missing from KNOWN_ARCHES: {:?}",
+            missing
+        );
     }
 }

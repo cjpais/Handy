@@ -581,6 +581,101 @@ jobs:
             echo "No AppImage found to process"
           fi
 
+      - name: Audit Linux package runtime contents
+        if: contains(inputs.platform, 'ubuntu')
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PROFILE="${{ steps.build-profile.outputs.profile }}"
+          BUNDLE_DIR="src-tauri/target/${PROFILE}/bundle"
+
+          require_pattern() {
+            local listing="$1"
+            local pattern="$2"
+            local label="$3"
+            if ! grep -Eq "$pattern" "$listing"; then
+              echo "ERROR: missing ${label} (${pattern}) in ${listing}" >&2
+              cat "$listing" >&2
+              exit 1
+            fi
+          }
+
+          require_path() {
+            local path="$1"
+            local label="$2"
+            if [ ! -e "$path" ]; then
+              echo "ERROR: missing ${label}: ${path}" >&2
+              find "$(dirname "$path")" -maxdepth 2 -type f 2>/dev/null >&2 || true
+              exit 1
+            fi
+          }
+
+          smoke_binary() {
+            local root="$1"
+            local label="$2"
+            HANDY_NO_GTK_LAYER_SHELL=1 \
+            LD_LIBRARY_PATH="${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+              "${root}/usr/bin/handy" --list-devices >/tmp/handy-package-smoke.log
+            echo "${label} --list-devices smoke passed"
+          }
+
+          if compgen -G "${BUNDLE_DIR}/deb/*.deb" > /dev/null; then
+            for deb in "${BUNDLE_DIR}"/deb/*.deb; do
+              echo "Auditing deb package: ${deb}"
+              listing="$(mktemp)"
+              dpkg-deb -c "$deb" > "$listing"
+              require_pattern "$listing" 'usr/bin/handy$' "handy binary"
+              require_pattern "$listing" 'usr/lib/libtranscribe\.so' "transcribe runtime library"
+              require_pattern "$listing" 'usr/lib/libggml-cpu.*\.so' "ggml CPU backend module"
+              if [[ "${{ inputs.platform }}" == *"ubuntu-22.04"* && "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+                require_pattern "$listing" 'usr/lib/libonnxruntime\.so' "ONNX Runtime library"
+              fi
+              root="$(mktemp -d)"
+              dpkg-deb -x "$deb" "$root"
+              smoke_binary "$root" "deb"
+              rm -rf "$root" "$listing"
+            done
+          fi
+
+          if compgen -G "${BUNDLE_DIR}/rpm/*.rpm" > /dev/null; then
+            if ! command -v rpm >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y rpm
+            fi
+            for rpm_pkg in "${BUNDLE_DIR}"/rpm/*.rpm; do
+              echo "Auditing rpm package: ${rpm_pkg}"
+              listing="$(mktemp)"
+              rpm -qpl "$rpm_pkg" > "$listing"
+              require_pattern "$listing" '/usr/bin/handy$' "handy binary"
+              require_pattern "$listing" '/usr/lib/libtranscribe\.so' "transcribe runtime library"
+              require_pattern "$listing" '/usr/lib/libggml-cpu.*\.so' "ggml CPU backend module"
+              rm -f "$listing"
+            done
+          fi
+
+          if compgen -G "${BUNDLE_DIR}/appimage/*.AppImage" > /dev/null; then
+            for appimage in "${BUNDLE_DIR}"/appimage/*.AppImage; do
+              echo "Auditing AppImage package: ${appimage}"
+              workdir="$(mktemp -d)"
+              cp "$appimage" "${workdir}/Handy.AppImage"
+              chmod +x "${workdir}/Handy.AppImage"
+              (
+                cd "$workdir"
+                ./Handy.AppImage --appimage-extract >/dev/null
+                require_path "squashfs-root/usr/bin/handy" "AppImage handy binary"
+                require_path "squashfs-root/usr/lib/libtranscribe.so" "AppImage transcribe runtime library"
+                if ! find "squashfs-root/usr/lib" -name 'libggml-cpu*.so*' | grep -q .; then
+                  echo "ERROR: missing AppImage ggml CPU backend module" >&2
+                  find "squashfs-root/usr/lib" -maxdepth 1 -type f >&2
+                  exit 1
+                fi
+                smoke_binary "$(pwd)/squashfs-root" "AppImage"
+              )
+              rm -rf "$workdir"
+            done
+          fi
+
       - name: Upload artifacts (Linux)
         if: inputs.upload-artifacts && contains(inputs.platform, 'ubuntu')
         uses: actions/upload-artifact@v7
@@ -599,6 +694,57 @@ jobs:
         run: |
           $base = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { "src-tauri/target" }
           echo "base=$base" >> $env:GITHUB_OUTPUT
+
+      - name: Audit Windows package runtime contents
+        if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
+        shell: pwsh
+        run: |
+          $profile = "${{ steps.build-profile.outputs.profile }}"
+          $target = "${{ inputs.target }}"
+          $base = "${{ steps.win-artifact-path.outputs.base }}"
+          if ($target -and $target -ne "x86_64-pc-windows-msvc") {
+            $bundleBase = Join-Path $base (Join-Path $target (Join-Path $profile "bundle"))
+          } else {
+            $bundleBase = Join-Path $base (Join-Path $profile "bundle")
+          }
+
+          $stagedDlls = Get-ChildItem "src-tauri/transcribe-libs" -Filter "*.dll" -ErrorAction SilentlyContinue
+          if (-not $stagedDlls) {
+            Write-Host "No staged transcribe DLLs; skipping Windows runtime DLL package audit."
+            exit 0
+          }
+
+          $nsisPackages = Get-ChildItem (Join-Path $bundleBase "nsis") -Filter "*.exe" -ErrorAction SilentlyContinue
+          if (-not $nsisPackages) {
+            throw "No NSIS packages found under $bundleBase for runtime DLL audit"
+          }
+
+          foreach ($pkg in $nsisPackages) {
+            Write-Host "Auditing NSIS package: $($pkg.FullName)"
+            $installDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $installDir | Out-Null
+            $proc = Start-Process -FilePath $pkg.FullName -ArgumentList @("/S", "/PORTABLE", "/D=$installDir") -Wait -PassThru
+            if ($proc.ExitCode -ne 0) {
+              throw "Silent portable install failed for $($pkg.FullName) with exit code $($proc.ExitCode)"
+            }
+
+            $handy = Get-ChildItem $installDir -Filter "handy.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $handy) {
+              throw "Installed NSIS package is missing handy.exe"
+            }
+            if (-not (Get-ChildItem $installDir -Filter "*transcribe*.dll" -Recurse -ErrorAction SilentlyContinue)) {
+              throw "Installed NSIS package is missing transcribe runtime DLLs"
+            }
+            if (-not (Get-ChildItem $installDir -Filter "*ggml*.dll" -Recurse -ErrorAction SilentlyContinue)) {
+              throw "Installed NSIS package is missing ggml runtime DLLs"
+            }
+
+            & $handy.FullName --list-devices | Out-Host
+            if ($LASTEXITCODE -ne 0) {
+              throw "Packaged handy.exe --list-devices failed"
+            }
+            Remove-Item -Recurse -Force $installDir
+          }
 
       - name: Upload artifacts (Windows)
         if: inputs.upload-artifacts && contains(inputs.platform, 'windows')

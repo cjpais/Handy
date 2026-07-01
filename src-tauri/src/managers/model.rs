@@ -1369,11 +1369,14 @@ impl ModelManager {
             return Ok(());
         }
 
-        // If no model is selected, pick the first downloaded one
+        // If no model is selected, pick the first downloaded one using the same
+        // ranked order the UI receives.
         if settings.selected_model.is_empty() {
-            // Find the first available (downloaded) model
-            let models = self.available_models.lock().unwrap();
-            if let Some(available_model) = models.values().find(|model| model.is_downloaded) {
+            if let Some(available_model) = self
+                .get_available_models()
+                .into_iter()
+                .find(|model| model.is_downloaded)
+            {
                 info!(
                     "Auto-selecting model: {} ({})",
                     available_model.id, available_model.name
@@ -1421,7 +1424,7 @@ impl ModelManager {
 
             let path = entry.path();
 
-            // Only process .bin files (not directories)
+            // Skip directories; the .bin / .gguf extension filter is below.
             if !path.is_file() {
                 continue;
             }

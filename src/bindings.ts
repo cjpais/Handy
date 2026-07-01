@@ -960,7 +960,9 @@ export type SoundTheme = "marimba" | "pop" | "custom"
  */
 export type StreamPhase = 
 /**
- * Receiving audio / live text (or waiting for the stream to begin).
+ * Receiving audio / live text (or waiting for the stream to begin). Rust
+ * does not emit this today; the frontend starts in this phase and Rust only
+ * emits transitions away from it.
  */
 "listening" | 
 /**
