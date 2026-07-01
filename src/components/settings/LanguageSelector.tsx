@@ -5,8 +5,8 @@ import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
 import {
   getLanguageLabel,
-  LANGUAGES,
   recognitionLanguage,
+  SELECTABLE_LANGUAGES,
   supportsLanguageCode,
 } from "../../lib/constants/languages";
 
@@ -19,9 +19,12 @@ interface LanguageSelectorProps {
   supportsLanguageDetection?: boolean;
 }
 
-// Mirrors `effective_language` in src-tauri/src/managers/model.rs. The Rust
-// function is authoritative for what the engine receives; this resolves the
-// same value for *display* so the picker shows what will actually be used.
+// Mirrors the matching logic of `effective_language` in
+// src-tauri/src/managers/model.rs. The Rust function is authoritative for the
+// *concrete* code the engine receives (e.g. "en-US"); this resolves the
+// canonical *base* code ("en") so the highlighted picker item matches an entry
+// in the LANGUAGES list. Matching is base-aware (`supportsLanguageCode` strips
+// region/script subtags), so a model advertising full locales still resolves.
 const effectiveLanguage = (
   intent: string,
   supported: string[],
@@ -31,7 +34,7 @@ const effectiveLanguage = (
   if (intent !== "auto" && supportsLanguageCode(supported, intent))
     return intent;
   if (supportsDetection) return "auto";
-  if (supported.includes("en")) return "en";
+  if (supportsLanguageCode(supported, "en")) return "en";
   return recognitionLanguage(supported[0]);
 };
 
@@ -82,8 +85,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const availableLanguages = useMemo(() => {
     if (!supportedLanguages || supportedLanguages.length === 0)
-      return LANGUAGES;
-    return LANGUAGES.filter((lang) =>
+      return SELECTABLE_LANGUAGES;
+    return SELECTABLE_LANGUAGES.filter((lang) =>
       lang.value === "auto"
         ? supportsLanguageDetection
         : supportsLanguageCode(supportedLanguages, lang.value),

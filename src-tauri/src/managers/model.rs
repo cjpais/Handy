@@ -89,6 +89,18 @@ fn recognition_language(language: &str) -> &str {
     }
 }
 
+/// The base code Handy matches a language *intent* on: a tag's primary subtag,
+/// with any BCP-47 region or script suffix dropped (`en-US` → `en`, `zh-CN` →
+/// `zh`, `zh-Hant` → `zh`). Bare and three-letter codes (`haw`) pass through
+/// unchanged. Lets a bare intent (`en`) match a model that advertises full
+/// locales (`en-US`) without discarding the real code the engine needs.
+fn base_language(language: &str) -> &str {
+    match language.split_once('-') {
+        Some((base, _)) => base,
+        None => language,
+    }
+}
+
 fn canonicalize_supported_languages(languages: Vec<String>) -> Vec<String> {
     let mut seen = HashSet::new();
     let mut canonical = Vec::with_capacity(languages.len());
@@ -208,6 +220,14 @@ impl ModelDescriptor {
 /// The canonical coercion used on every transcription path: computed at the
 /// point of use and **never written back** to settings, so the user's last
 /// explicit intent survives switching to an incompatible model and back.
+///
+/// Matching is base-aware ([`base_language`]) and returns the model's own
+/// *concrete* code, so a bare intent (`en`) resolves to the exact string the
+/// engine's prompt table expects (`en-US`) for models that advertise full
+/// BCP-47 locales. Chinese *script* intents (`zh-Hans`/`zh-Hant`) are the sole
+/// exception: they pass through unchanged so the downstream Simplified /
+/// Traditional output conversion still fires (the engine path collapses them to
+/// a plain Chinese code separately).
 pub fn effective_language(
     intent: &str,
     supported_languages: &[String],
@@ -217,12 +237,16 @@ pub fn effective_language(
         return intent.to_string();
     }
 
-    if intent != "auto"
-        && supported_languages
+    if intent != "auto" {
+        if let Some(code) = supported_languages
             .iter()
-            .any(|language| recognition_language(language) == recognition_language(intent))
-    {
-        return intent.to_string();
+            .find(|language| base_language(language) == base_language(intent))
+        {
+            if intent == "zh-Hans" || intent == "zh-Hant" {
+                return intent.to_string();
+            }
+            return code.clone();
+        }
     }
 
     if supports_language_detection {
@@ -231,7 +255,10 @@ pub fn effective_language(
 
     // Model can't auto-detect and the intent isn't usable: fall back to a
     // concrete language (prefer English) so we never hand the engine "auto".
-    if let Some(en) = supported_languages.iter().find(|l| l.as_str() == "en") {
+    if let Some(en) = supported_languages
+        .iter()
+        .find(|language| base_language(language) == "en")
+    {
         return en.clone();
     }
     recognition_language(&supported_languages[0]).to_string()
@@ -2345,6 +2372,38 @@ mod tests {
         let languages = vec!["zh-Hant".to_string()];
 
         assert_eq!(effective_language("auto", &languages, false), "zh");
+    }
+
+    #[test]
+    fn test_effective_language_resolves_bare_intent_to_concrete_locale() {
+        // A model advertising full BCP-47 locales (e.g. Nemotron Streaming):
+        // a bare intent must resolve to the exact code the engine expects, not
+        // be handed back as the bare form the prompt table may not contain.
+        let languages = vec![
+            "en-US".to_string(),
+            "en-GB".to_string(),
+            "es-ES".to_string(),
+            "zh-CN".to_string(),
+            "ja-JP".to_string(),
+        ];
+
+        assert_eq!(effective_language("en", &languages, true), "en-US");
+        assert_eq!(effective_language("es", &languages, true), "es-ES");
+        // `zh`/`ja` have no bare entry in this model's table; resolve to locale.
+        assert_eq!(effective_language("zh", &languages, true), "zh-CN");
+        assert_eq!(effective_language("ja", &languages, true), "ja-JP");
+        // An unsupported intent still auto-detects when the model can.
+        assert_eq!(effective_language("fr", &languages, true), "auto");
+    }
+
+    #[test]
+    fn test_effective_language_preserves_chinese_script_intent_for_locale_model() {
+        // Script intents survive so Simplified/Traditional output conversion
+        // still fires, even when the model advertises a regioned Chinese code.
+        let languages = vec!["en-US".to_string(), "zh-CN".to_string()];
+
+        assert_eq!(effective_language("zh-Hans", &languages, true), "zh-Hans");
+        assert_eq!(effective_language("zh-Hant", &languages, true), "zh-Hant");
     }
 
     #[test]

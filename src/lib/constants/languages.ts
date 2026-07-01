@@ -9,8 +9,8 @@ export const LANGUAGES: Language[] = [
   { value: "auto", label: "Auto Detect" },
   { value: "en", label: "English" },
   { value: CHINESE_LANGUAGE_CODE, label: "Chinese" },
-  { value: "zh-Hans", label: "Chinese (Simplified output)" },
-  { value: "zh-Hant", label: "Chinese (Traditional output)" },
+  { value: "zh-Hans", label: "Chinese (Simplified)" },
+  { value: "zh-Hant", label: "Chinese (Traditional)" },
   { value: "yue", label: "Cantonese" },
   { value: "de", label: "German" },
   { value: "es", label: "Spanish" },
@@ -122,10 +122,29 @@ export const MODEL_CAPABILITY_LANGUAGES: Language[] = LANGUAGES.filter(
     language.value !== "auto" && !CHINESE_OUTPUT_INTENTS.has(language.value),
 );
 
-export const recognitionLanguage = (languageCode: string): string =>
-  CHINESE_OUTPUT_INTENTS.has(languageCode)
-    ? CHINESE_LANGUAGE_CODE
-    : languageCode;
+// Languages offered in the transcription-language picker. We surface the two
+// explicit Chinese *output* variants (Simplified / Traditional) and hide the
+// bare recognition code `zh` ("Chinese"): all three recognize identically, so
+// the plain option only adds ambiguity about which script you get. `zh` stays in
+// LANGUAGES — it's still a valid *effective* language (auto-detect and must-pick
+// fallback can resolve to it) and its label is needed to render that state — it
+// just isn't directly selectable.
+export const SELECTABLE_LANGUAGES: Language[] = LANGUAGES.filter(
+  (language) => language.value !== CHINESE_LANGUAGE_CODE,
+);
+
+// Collapse a language tag to the base code Handy matches on, dropping any
+// BCP-47 region or script subtag: "en-US" → "en", "zh-CN" → "zh", "zh-Hant" →
+// "zh". Bare and three-letter codes ("haw") pass through unchanged. This lets
+// the picker match a model's *real* codes — which may be full locales like
+// "en-US" (e.g. Nemotron Streaming) — against Handy's canonical bare-code
+// LANGUAGES list without the backend having to mangle the codes the engine needs.
+export const recognitionLanguage = (languageCode: string): string => {
+  const separatorIndex = languageCode.indexOf("-");
+  return separatorIndex === -1
+    ? languageCode
+    : languageCode.slice(0, separatorIndex);
+};
 
 export const supportsLanguageCode = (
   supportedLanguages: string[],
