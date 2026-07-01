@@ -389,6 +389,32 @@ jobs:
             '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      # Windows x64 links a BASELINE ONNX Runtime dynamically instead of statically
+      # embedding pyke's default download-binaries build, which is compiled with a
+      # global /arch:AVX2 baseline and executes BMI2/AVX in a C++ static initializer
+      # — crashing at process startup on any pre-Haswell CPU (Sandy/Ivy Bridge, older
+      # AMD) before main() runs. Microsoft's official build uses an SSE2 baseline with
+      # MLAS runtime CPU dispatch, so it runs everywhere and dispatches to AVX2/AVX-512
+      # kernels when present (perf parity on capable CPUs). build.rs stages
+      # onnxruntime.dll into transcribe-libs/, which tauri.windows.conf.json bundles
+      # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static posture
+      # and drops tauri.windows.conf.json anyway).
+      # NOTE: sourced from Microsoft's GitHub release; can be re-hosted on
+      # blob.handy.computer to match the macOS/Linux steps.
+      - name: Install ONNX Runtime (Windows x64)
+        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ORT_VERSION = "1.24.2"
+          $url = "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/onnxruntime-win-x64-$ORT_VERSION.zip"
+          Invoke-WebRequest -Uri $url -OutFile ort.zip
+          Expand-Archive -Path ort.zip -DestinationPath ort-dist -Force
+          $ortLib = (Resolve-Path "ort-dist/onnxruntime-win-x64-$ORT_VERSION/lib").Path
+          Write-Host "ORT_LIB_LOCATION=$ortLib"
+          Add-Content -Path $env:GITHUB_ENV -Value "ORT_LIB_LOCATION=$ortLib"
+          Add-Content -Path $env:GITHUB_ENV -Value "ORT_PREFER_DYNAMIC_LINK=1"
+
       # ggml-vulkan (built by transcribe-cpp-sys when the Vulkan backend is on)
       # does `find_package(SPIRV-Headers CONFIG REQUIRED)` for <spirv-headers/
       # spirv.hpp>. ggml's CMake appends $VULKAN_SDK to CMAKE_PREFIX_PATH first,
