@@ -1178,18 +1178,13 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     Ok(())
 }
 
-/// Save accelerator settings, re-apply globals, and unload the model so it
-/// reloads with the new backend on next transcription.
-fn apply_and_reload_accelerator(app: &AppHandle, s: settings::AppSettings) {
+/// Save accelerator settings and make the next model use reload with them.
+/// The currently running transcription, if any, keeps its existing engine.
+fn save_accelerator_and_reload_next_use(app: &AppHandle, s: settings::AppSettings) {
     settings::write_settings(app, s);
-    crate::managers::transcription::apply_accelerator_settings(app);
 
     let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
-    if tm.is_model_loaded() {
-        if let Err(e) = tm.unload_model() {
-            log::warn!("Failed to unload model after accelerator change: {e}");
-        }
-    }
+    tm.reload_model_on_next_use();
 }
 
 #[tauri::command]
@@ -1200,7 +1195,7 @@ pub fn change_transcribe_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.transcribe_accelerator = accelerator;
-    apply_and_reload_accelerator(&app, s);
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
@@ -1212,7 +1207,7 @@ pub fn change_ort_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.ort_accelerator = accelerator;
-    apply_and_reload_accelerator(&app, s);
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
@@ -1221,7 +1216,7 @@ pub fn change_ort_accelerator_setting(
 pub fn change_transcribe_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.transcribe_gpu_device = device;
-    apply_and_reload_accelerator(&app, s);
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 

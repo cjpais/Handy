@@ -189,23 +189,6 @@ impl Drop for LoadingGuard {
     }
 }
 
-/// RAII guard that clears an engine lease on any exit path.
-struct EngineLeaseGuard {
-    lease_id: u64,
-    active_engine_lease: Arc<AtomicU64>,
-}
-
-impl Drop for EngineLeaseGuard {
-    fn drop(&mut self) {
-        let _ = self.active_engine_lease.compare_exchange(
-            self.lease_id,
-            0,
-            Ordering::AcqRel,
-            Ordering::Acquire,
-        );
-    }
-}
-
 /// RAII guard that clears the streaming worker/lease flags on any worker exit -
 /// normal return, early return, or a panic in an engine call that unwinds the
 /// detached worker thread. Tokens prevent an older worker from clearing a newer
@@ -248,6 +231,7 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    reload_model_on_next_use: Arc<AtomicBool>,
     /// Routes real-time audio frames to the active streaming worker. The audio
     /// recorder captures an `Arc<StreamRouter>` directly (handed to it at
     /// recorder creation time), so the per-frame path never goes through Tauri
@@ -257,19 +241,19 @@ pub struct TranscriptionManager {
     /// True only while a transcribe-cpp `Stream` is actually in flight (set by
     /// the worker once `stream()` succeeds). Used for overlay/UI decisions.
     stream_active: Arc<AtomicBool>,
-    /// Engine/streaming state has four separate meanings:
+    /// Streaming state has four separate meanings:
     /// router open = audio frames should be routed, worker active = no second
     /// worker may start, engine lease = the loaded engine is out of the mutex,
     /// stream active = live preview UI should show a streaming session.
-    /// Monotonic id source for stream workers and batch engine leases.
-    next_engine_holder_id: Arc<AtomicU64>,
+    /// Monotonic id source for stream workers. Zero means "no worker".
+    next_stream_worker_id: Arc<AtomicU64>,
     /// Nonzero while a stream worker exists, even if it has not leased the engine
     /// yet. This prevents a second worker from starting after finalize/cancel
     /// closes the router but before the first worker has fully exited.
     active_stream_worker: Arc<AtomicU64>,
-    /// Nonzero while streaming or batch transcription has taken the engine out of `engine`.
+    /// Nonzero while the streaming worker has taken the engine out of `engine`.
     /// `is_model_loaded()` consults this so the model still reports "loaded"
-    /// while an active transcription holds it.
+    /// while the worker holds it.
     active_engine_lease: Arc<AtomicU64>,
 }
 
@@ -285,9 +269,10 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            reload_model_on_next_use: Arc::new(AtomicBool::new(false)),
             router: Arc::new(StreamRouter::new()),
             stream_active: Arc::new(AtomicBool::new(false)),
-            next_engine_holder_id: Arc::new(AtomicU64::new(1)),
+            next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
             active_engine_lease: Arc::new(AtomicU64::new(0)),
         };
@@ -375,9 +360,16 @@ impl TranscriptionManager {
     }
 
     pub fn is_model_loaded(&self) -> bool {
-        // The engine may be leased out to active transcription work (taken out
-        // of the mutex). It's still loaded, just in use, so report true.
+        // The engine may be leased out to the streaming worker (taken out of
+        // the mutex). It's still loaded, just in use, so report true.
         self.lock_engine().is_some() || self.active_engine_lease.load(Ordering::Acquire) != 0
+    }
+
+    /// Accelerator changes should not disturb the current transcription. Mark
+    /// the cached engine stale; the next model-use path reloads it with the
+    /// latest settings.
+    pub fn reload_model_on_next_use(&self) {
+        self.reload_model_on_next_use.store(true, Ordering::Release);
     }
 
     /// Atomically check whether a model load is in progress and, if not, mark
@@ -468,6 +460,8 @@ impl TranscriptionManager {
         model_id: &str,
         device_index: Option<usize>,
     ) -> Result<()> {
+        apply_accelerator_settings(&self.app_handle);
+
         let load_start = std::time::Instant::now();
         debug!("Starting to load model: {}", model_id);
 
@@ -538,8 +532,7 @@ impl TranscriptionManager {
                 // no runtime global). With an explicit `device_index` (the
                 // --device-index flag) hard-select that registered device;
                 // otherwise re-read the persisted accelerator preference (so an
-                // accelerator change — which unloads the model — takes effect on
-                // the next load).
+                // accelerator change marked for reload takes effect here).
                 let (backend, gpu_device) = match device_index {
                     Some(index) => resolve_device_index(index).inspect_err(|e| {
                         emit_loading_failed(&e.to_string());
@@ -706,13 +699,23 @@ impl TranscriptionManager {
     /// Kicks off the model loading in a background thread if it's not already loaded
     pub fn initiate_model_load(&self) {
         let mut is_loading = self.is_loading.lock().unwrap();
-        if *is_loading || self.is_model_loaded() {
+        if *is_loading {
+            return;
+        }
+
+        let reload_pending = self.reload_model_on_next_use.load(Ordering::Acquire);
+        if !reload_pending && self.is_model_loaded() {
             return;
         }
 
         *is_loading = true;
         let self_clone = self.clone();
         thread::spawn(move || {
+            if reload_pending {
+                self_clone
+                    .reload_model_on_next_use
+                    .store(false, Ordering::Release);
+            }
             let settings = get_settings(&self_clone.app_handle);
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
                 error!("Failed to load model: {}", e);
@@ -769,7 +772,7 @@ impl TranscriptionManager {
             warn!("start_stream called while a stream worker is already active");
             return;
         }
-        let worker_id = self.next_engine_holder_id.fetch_add(1, Ordering::Relaxed);
+        let worker_id = self.next_stream_worker_id.fetch_add(1, Ordering::Relaxed);
         if self
             .active_stream_worker
             .compare_exchange(0, worker_id, Ordering::AcqRel, Ordering::Acquire)
@@ -1172,7 +1175,6 @@ impl TranscriptionManager {
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
         let result = {
-            let lease_id = self.next_engine_holder_id.fetch_add(1, Ordering::Relaxed);
             let mut engine_guard = self.lock_engine();
 
             // Take the engine out so we own it during transcription.
@@ -1185,21 +1187,6 @@ impl TranscriptionManager {
                         "Model failed to load after auto-load attempt. Please check your model settings."
                     ));
                 }
-            };
-
-            if self
-                .active_engine_lease
-                .compare_exchange(0, lease_id, Ordering::AcqRel, Ordering::Acquire)
-                .is_err()
-            {
-                *engine_guard = Some(engine);
-                return Err(anyhow::anyhow!(
-                    "Transcription engine is already in use. Please try again."
-                ));
-            }
-            let _engine_lease = EngineLeaseGuard {
-                lease_id,
-                active_engine_lease: Arc::clone(&self.active_engine_lease),
             };
 
             // Release the lock before transcribing — no mutex held during the engine call
@@ -1367,7 +1354,7 @@ impl TranscriptionManager {
             match transcribe_result {
                 Ok(inner_result) => {
                     // Success or normal error: return the engine unless a model
-                    // or accelerator change invalidated it while it was in use.
+                    // switch/unload invalidated it while it was in use.
                     self.return_engine(engine, &active_model);
                     inner_result?
                 }
@@ -1829,11 +1816,11 @@ fn resolve_gpu_device(setting: TranscribeAcceleratorSetting, gpu_device: i32) ->
 }
 
 /// Apply the user's ORT accelerator preference to the transcribe-rs global.
-/// Called on startup and whenever the user changes the setting.
+/// Called on startup and before loading a model.
 ///
 /// The transcribe.cpp (whisper-family) backend is no longer set here: it is
 /// chosen at model-load time from [`select_transcribe_backend`], so changing the
-/// accelerator only needs a model reload (see `apply_and_reload_accelerator`).
+/// accelerator only needs a model reload (see `reload_model_on_next_use`).
 pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
     use transcribe_rs::accel;
 
