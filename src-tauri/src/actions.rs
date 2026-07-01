@@ -601,6 +601,7 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
@@ -610,12 +611,20 @@ impl ShortcutAction for TranscribeAction {
             );
 
             let stop_recording_time = Instant::now();
-            if let Some(samples) = rm.stop_recording(&binding_id) {
+            if let Some(samples) = rm.stop_recording(&binding_id, cancel_generation) {
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
                     samples.len()
                 );
+
+                if rm.was_cancelled_since(cancel_generation) {
+                    debug!("Transcription operation cancelled after recording stop");
+                    tm.cancel_stream();
+                    utils::hide_recording_overlay(&ah);
+                    change_tray_icon(&ah, TrayIconState::Idle);
+                    return;
+                }
 
                 if samples.is_empty() {
                     debug!("Recording produced no audio samples; skipping persistence");
@@ -676,6 +685,13 @@ impl ShortcutAction for TranscribeAction {
                         }
                     };
 
+                    if rm.was_cancelled_since(cancel_generation) {
+                        debug!("Transcription operation cancelled before output handling");
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        return;
+                    }
+
                     match transcription_result {
                         Ok(transcription) => {
                             debug!(
@@ -694,6 +710,13 @@ impl ShortcutAction for TranscribeAction {
                             let processed =
                                 process_transcription_output(&ah, &transcription, post_process)
                                     .await;
+
+                            if rm.was_cancelled_since(cancel_generation) {
+                                debug!("Transcription operation cancelled before paste");
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                                return;
+                            }
 
                             // Save to history if WAV was saved
                             if wav_saved {
@@ -715,7 +738,15 @@ impl ShortcutAction for TranscribeAction {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
+                                let rm_for_paste = Arc::clone(&rm);
                                 ah.run_on_main_thread(move || {
+                                    if rm_for_paste.was_cancelled_since(cancel_generation) {
+                                        debug!("Transcription operation cancelled before paste");
+                                        utils::hide_recording_overlay(&ah_clone);
+                                        change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                        return;
+                                    }
+
                                     match utils::paste(final_text, ah_clone.clone()) {
                                         Ok(()) => debug!(
                                             "Text pasted successfully in {:?}",
@@ -737,6 +768,15 @@ impl ShortcutAction for TranscribeAction {
                             }
                         }
                         Err(err) => {
+                            if rm.was_cancelled_since(cancel_generation) {
+                                debug!(
+                                    "Transcription operation cancelled after transcription error"
+                                );
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                                return;
+                            }
+
                             error!("Transcription failed: {}", err);
                             // Surface the failure to the UI (toast). The full
                             // message is also in handy.log via the line above.

@@ -188,6 +188,7 @@ pub struct AudioRecordingManager {
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
     close_generation: Arc<AtomicU64>,
+    cancel_generation: Arc<AtomicU64>,
     stream_router: Arc<StreamRouter>,
 }
 
@@ -215,6 +216,7 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
             close_generation: Arc::new(AtomicU64::new(0)),
+            cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
         };
 
@@ -469,7 +471,15 @@ impl AudioRecordingManager {
         Ok(())
     }
 
-    pub fn stop_recording(&self, binding_id: &str) -> Option<Vec<f32>> {
+    pub fn cancel_generation(&self) -> u64 {
+        self.cancel_generation.load(Ordering::Acquire)
+    }
+
+    pub fn was_cancelled_since(&self, generation: u64) -> bool {
+        self.cancel_generation.load(Ordering::Acquire) != generation
+    }
+
+    pub fn stop_recording(&self, binding_id: &str, cancel_generation: u64) -> Option<Vec<f32>> {
         let mut state = self.state.lock().unwrap();
 
         match *state {
@@ -489,7 +499,16 @@ impl AudioRecordingManager {
                         "Extra recording buffer: sleeping {}ms before stopping",
                         buffer_ms
                     );
-                    std::thread::sleep(Duration::from_millis(buffer_ms));
+                    let started = Instant::now();
+                    let buffer = Duration::from_millis(buffer_ms);
+                    while started.elapsed() < buffer {
+                        if self.was_cancelled_since(cancel_generation) {
+                            debug!("Recording stop cancelled during extra buffer");
+                            break;
+                        }
+                        let remaining = buffer.saturating_sub(started.elapsed());
+                        std::thread::sleep(remaining.min(Duration::from_millis(25)));
+                    }
                 }
 
                 let samples = if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
@@ -517,6 +536,11 @@ impl AudioRecordingManager {
                     }
                 }
 
+                if self.was_cancelled_since(cancel_generation) {
+                    debug!("Recording stop cancelled; discarding captured samples");
+                    return None;
+                }
+
                 // Pad if very short
                 let s_len = samples.len();
                 // debug!("Got {} samples", s_len);
@@ -534,32 +558,39 @@ impl AudioRecordingManager {
     pub fn is_recording(&self) -> bool {
         matches!(
             *self.state.lock().unwrap(),
-            RecordingState::Recording { .. } | RecordingState::Stopping { .. }
+            RecordingState::Recording { .. } | RecordingState::Stopping
         )
     }
 
     /// Cancel any ongoing recording without returning audio samples
     pub fn cancel_recording(&self) {
+        self.cancel_generation.fetch_add(1, Ordering::AcqRel);
         let mut state = self.state.lock().unwrap();
 
-        if let RecordingState::Recording { .. } = *state {
-            *state = RecordingState::Idle;
-            drop(state);
+        match *state {
+            RecordingState::Recording { .. } => {
+                *state = RecordingState::Idle;
+                drop(state);
 
-            if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                let _ = rec.stop(); // Discard the result
-            }
+                if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                    let _ = rec.stop(); // Discard the result
+                }
 
-            *self.is_recording.lock().unwrap() = false;
+                *self.is_recording.lock().unwrap() = false;
 
-            // In on-demand mode, close the mic (lazily if the setting is enabled)
-            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
-                if get_settings(&self.app_handle).lazy_stream_close {
-                    self.schedule_lazy_close();
-                } else {
-                    self.stop_microphone_stream();
+                // In on-demand mode, close the mic (lazily if the setting is enabled)
+                if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
+                    if get_settings(&self.app_handle).lazy_stream_close {
+                        self.schedule_lazy_close();
+                    } else {
+                        self.stop_microphone_stream();
+                    }
                 }
             }
+            RecordingState::Stopping => {
+                debug!("Cancellation requested while recording is stopping");
+            }
+            RecordingState::Idle => {}
         }
     }
 }

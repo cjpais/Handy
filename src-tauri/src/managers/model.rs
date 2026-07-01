@@ -5,7 +5,7 @@ use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
-use hf_hub::api::tokio::{ApiBuilder, Progress};
+use hf_hub::api::tokio::{ApiBuilder, CancellationToken, Progress};
 use hf_hub::{Cache, Repo, RepoType};
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
@@ -396,7 +396,7 @@ impl Drop for RescanGuard {
 /// every error path without requiring manual cleanup at each `?` or `return Err`.
 struct DownloadCleanup<'a> {
     available_models: &'a Mutex<HashMap<String, ModelInfo>>,
-    cancel_flags: &'a Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    cancel_flags: &'a Arc<Mutex<HashMap<String, CancellationToken>>>,
     model_id: String,
     disarmed: bool,
 }
@@ -420,7 +420,7 @@ pub struct ModelManager {
     app_handle: AppHandle,
     models_dir: PathBuf,
     available_models: Mutex<HashMap<String, ModelInfo>>,
-    cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    cancel_flags: Arc<Mutex<HashMap<String, CancellationToken>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
     /// Single-flight guard for [`Self::rescan_local_models`] so concurrent
     /// refresh requests coalesce instead of scanning the disk in parallel.
@@ -1151,8 +1151,8 @@ impl ModelManager {
         {
             let mut live = self.available_models.lock().unwrap();
             for (id, info) in snapshot {
-                if !live.contains_key(&id) {
-                    live.insert(id, info);
+                if let std::collections::hash_map::Entry::Vacant(entry) = live.entry(id) {
+                    entry.insert(info);
                     added += 1;
                 }
             }
@@ -1218,7 +1218,7 @@ impl ModelManager {
 
         for filename in &bundled_models {
             let bundled_path = self.app_handle.path().resolve(
-                &format!("resources/models/{}", filename),
+                format!("resources/models/{}", filename),
                 tauri::path::BaseDirectory::Resource,
             );
 
@@ -1744,6 +1744,15 @@ impl ModelManager {
                 model.is_downloading = true;
             }
         }
+
+        // Register a cancellation token so `cancel_download` can abort this
+        // transfer promptly. The guard removes it on every exit path.
+        let cancel_token = CancellationToken::new();
+        {
+            let mut flags = self.cancel_flags.lock().unwrap();
+            flags.insert(model_id.clone(), cancel_token.clone());
+        }
+
         let mut cleanup = DownloadCleanup {
             available_models: &self.available_models,
             cancel_flags: &self.cancel_flags,
@@ -1768,12 +1777,28 @@ impl ModelManager {
             .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
         let repo = api.repo(Repo::with_revision(repo_id, RepoType::Model, revision));
         let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
-        repo.download_with_progress(&filename, progress)
+        match repo
+            .download_with_progress_cancellable(&filename, progress, cancel_token)
             .await
-            .map_err(|e| anyhow::anyhow!("Hugging Face download failed: {}", e))?;
+        {
+            Ok(_) => {}
+            Err(hf_hub::api::tokio::ApiError::Cancelled) => {
+                // User cancelled. hf-hub leaves the partially downloaded
+                // `.sync.part` in the shared cache, so a later attempt resumes
+                // instead of restarting. The guard resets is_downloading and
+                // drops the token; `cancel_download` already emitted
+                // `model-download-cancelled`.
+                info!("HF download cancelled for: {}", model_id);
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(anyhow::anyhow!("Hugging Face download failed: {}", e));
+            }
+        }
 
         cleanup.disarmed = true;
         self.update_download_status()?;
+        self.cancel_flags.lock().unwrap().remove(&model_id);
         let _ = self.app_handle.emit("model-download-complete", &model_id);
         info!("HF model {} downloaded", model_id);
         Ok(())
@@ -1832,11 +1857,11 @@ impl ModelManager {
             }
         }
 
-        // Create cancellation flag for this download
-        let cancel_flag = Arc::new(AtomicBool::new(false));
+        // Create cancellation token for this download
+        let cancel_token = CancellationToken::new();
         {
             let mut flags = self.cancel_flags.lock().unwrap();
-            flags.insert(model_id.to_string(), cancel_flag.clone());
+            flags.insert(model_id.to_string(), cancel_token.clone());
         }
 
         // Guard ensures is_downloading and cancel_flags are cleaned up on every
@@ -1928,7 +1953,7 @@ impl ModelManager {
         // Download with progress
         while let Some(chunk) = stream.next().await {
             // Check if download was cancelled
-            if cancel_flag.load(Ordering::Relaxed) {
+            if cancel_token.is_cancelled() {
                 drop(file);
                 info!("Download cancelled for: {}", model_id);
                 // Keep partial file for resume functionality.
@@ -2277,12 +2302,14 @@ impl ModelManager {
     pub fn cancel_download(&self, model_id: &str) -> Result<()> {
         debug!("ModelManager: cancel_download called for: {}", model_id);
 
-        // Set the cancellation flag to stop the download loop
+        // Trigger the cancellation token to stop the download. The HF path
+        // aborts its in-flight chunk tasks and unwinds promptly; the URL path
+        // observes it on the next chunk of its stream loop.
         {
             let flags = self.cancel_flags.lock().unwrap();
-            if let Some(flag) = flags.get(model_id) {
-                flag.store(true, Ordering::Relaxed);
-                info!("Cancellation flag set for: {}", model_id);
+            if let Some(token) = flags.get(model_id) {
+                token.cancel();
+                info!("Cancellation token triggered for: {}", model_id);
             } else {
                 warn!("No active download found for: {}", model_id);
             }
