@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
-use crate::managers::model::{EngineType, ModelDescriptor, ModelSource, Origin, QuantFile};
+use crate::managers::model::{EngineType, ModelDescriptor, ModelSource, QuantFile};
 use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 
 #[derive(Deserialize)]
@@ -36,7 +36,6 @@ struct CatalogModel {
     name: String,
     description: String,
     architecture: Option<String>,
-    parameters: Option<String>,
     languages: Vec<String>,
     capabilities: CatalogCaps,
     speed_score: Option<f32>,
@@ -74,14 +73,12 @@ impl From<CatalogModel> for ModelDescriptor {
 
         ModelDescriptor {
             id: format!("{}/{}", m.id, default_filename),
-            origin: Origin::Catalog,
             source: ModelSource::HuggingFace {
                 repo_id: m.id,
                 revision: "main".to_string(),
             },
             name: m.name,
             description: m.description,
-            parameters: m.parameters,
             engine_type: EngineType::TranscribeCpp,
             caps: CapabilityProbe {
                 verdict: Compatibility::Compatible, // curated org models we ship support for

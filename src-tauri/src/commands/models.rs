@@ -21,17 +21,6 @@ pub async fn get_model_info(
     Ok(model_manager.get_model_info(&model_id))
 }
 
-#[tauri::command]
-#[specta::specta]
-pub async fn refresh_recommended_models(
-    model_manager: State<'_, Arc<ModelManager>>,
-) -> Result<(), String> {
-    model_manager
-        .refresh_recommended_models()
-        .await
-        .map_err(|e| e.to_string())
-}
-
 /// Re-scan local sources (custom models dir + shared HF cache) for models added
 /// since launch
 #[tauri::command]

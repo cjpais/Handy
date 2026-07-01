@@ -607,7 +607,6 @@ pub fn run(cli_args: CliArgs) {
             commands::models::get_current_model,
             commands::models::get_transcription_model_status,
             commands::models::is_model_loading,
-            commands::models::refresh_recommended_models,
             commands::models::rescan_local_models,
             commands::audio::update_microphone_mode,
             commands::audio::get_microphone_mode,

@@ -8,16 +8,11 @@
 //! search/listing can show languages, streaming, and translation honestly.
 //!
 //! Everything goes through the [`CapabilityProber`] trait. Today the only
-//! implementation, [`GgufHeaderProber`], parses the header bytes directly via
-//! [`crate::managers::gguf_meta`]. If transcribe-cpp later exposes a
+//! implementation, [`GgufHeaderProber`], parses a local GGUF's header directly
+//! via [`crate::managers::gguf_meta`]. If transcribe-cpp later exposes a
 //! metadata-only probe (covering parakeet-style *inferred* streaming and legacy
 //! `.bin`), a `TranscribeCppProber` can be dropped in behind this same trait
 //! without touching any caller.
-
-// Foundation module: the prober is consumed by the model-source, discovery, and
-// search commits that follow. Until that wiring lands nothing calls into it, so
-// silence dead-code warnings; remove this once it's used.
-#![allow(dead_code)]
 
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -131,24 +126,12 @@ impl CapabilityProbe {
     }
 }
 
-/// Signals that a header buffer was too short; `needed` is a lower-bound hint
-/// for the total number of bytes to fetch before retrying.
-#[derive(Debug, Clone, Copy)]
-pub struct NeedMore {
-    pub needed: usize,
-}
-
-/// Reads model capabilities from a GGUF header — from a local file or from the
-/// leading bytes of a remote one. See the module docs for the substitution
-/// story (`GgufHeaderProber` now, a transcribe-cpp-backed prober later).
+/// Reads model capabilities from a local GGUF's header. See the module docs for
+/// the substitution story (`GgufHeaderProber` now, a transcribe-cpp-backed
+/// prober later).
 pub trait CapabilityProber: Send + Sync {
-    /// Probe a GGUF already on disk (HF-cache scan, post-download).
+    /// Probe a GGUF already on disk (custom-dir + HF-cache scans, post-download).
     fn probe_file(&self, path: &Path) -> CapabilityProbe;
-
-    /// Probe from the leading bytes of a (possibly remote, range-fetched) GGUF.
-    /// `Err(NeedMore)` means the buffer was too short — fetch that many total
-    /// bytes and try again.
-    fn probe_header(&self, bytes: &[u8]) -> Result<CapabilityProbe, NeedMore>;
 }
 
 /// Pure-Rust prober backed by [`crate::managers::gguf_meta`]. The default and,
@@ -160,15 +143,6 @@ impl CapabilityProber for GgufHeaderProber {
         match read_header_metadata(path) {
             Ok(meta) => CapabilityProbe::from_metadata(&meta),
             Err(_) => CapabilityProbe::unsupported(),
-        }
-    }
-
-    fn probe_header(&self, bytes: &[u8]) -> Result<CapabilityProbe, NeedMore> {
-        match gguf_meta::parse_header(bytes) {
-            Ok(meta) => Ok(CapabilityProbe::from_metadata(&meta)),
-            Err(GgufError::Truncated { needed }) => Err(NeedMore { needed }),
-            // Bad magic / unsupported version / malformed: a definitive verdict.
-            Err(_) => Ok(CapabilityProbe::unsupported()),
         }
     }
 }
@@ -236,11 +210,7 @@ mod tests {
         for (k, v) in kvs {
             kv.insert(k.to_string(), v);
         }
-        GgufMetadata {
-            version: 3,
-            tensor_count: 0,
-            kv,
-        }
+        GgufMetadata { kv }
     }
 
     #[test]
@@ -280,13 +250,5 @@ mod tests {
             CapabilityProbe::from_metadata(&meta).verdict,
             Compatibility::MaybeIncompatible
         );
-    }
-
-    #[test]
-    fn header_probe_rejects_non_gguf_as_unsupported() {
-        let probe = GgufHeaderProber
-            .probe_header(b"definitely not gguf")
-            .unwrap();
-        assert_eq!(probe.verdict, Compatibility::Unsupported);
     }
 }

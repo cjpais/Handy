@@ -1,4 +1,3 @@
-use super::hf_api;
 use super::model_capabilities::{
     CapabilityProbe, CapabilityProber, Compatibility, GgufHeaderProber,
 };
@@ -104,46 +103,8 @@ fn canonicalize_supported_languages(languages: Vec<String>) -> Vec<String> {
     canonical
 }
 
-/// Where a descriptor's *metadata* entered the registry — provenance. Distinct
-/// from [`ModelSource`] (how we fetch bytes) and from [`DiskStatus`] (whether
-/// it's on disk). When two producers yield the same id, [`Origin::rank`] decides
-/// which one's metadata wins; on-disk presence is layered on top as status, not
-/// a second entry. (Scaffolding for the descriptor migration — some variants are
-/// produced by later slices.)
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Origin {
-    /// Hardcoded in the binary (Url-hosted Whisper, legacy ONNX models).
-    Legacy,
-    /// The baked, bundled `catalog.json` — the offline default set.
-    Catalog,
-    /// A live Hugging Face fetch (recommended collection / search).
-    HfDiscovery,
-    /// Found on disk in the shared Hugging Face cache.
-    HfCache,
-    /// A file the user dropped into the custom models directory.
-    CustomDir,
-}
-
-#[allow(dead_code)]
-impl Origin {
-    /// Lower wins when two producers yield the same id: curated metadata
-    /// (Legacy/Catalog) outranks live discovery, which outranks on-disk scans.
-    /// Used by the registry upsert (later slice); on-disk presence is applied
-    /// separately as `DiskStatus`.
-    pub fn rank(self) -> u8 {
-        match self {
-            Origin::Legacy => 0,
-            Origin::Catalog => 1,
-            Origin::HfDiscovery => 2,
-            Origin::HfCache | Origin::CustomDir => 3,
-        }
-    }
-}
-
 /// One downloadable quantization of a model. Mirrors a `files[]` entry in
 /// `catalog.json`, so it deserializes straight from the catalog.
-#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct QuantFile {
     pub filename: String,
@@ -154,7 +115,6 @@ pub struct QuantFile {
 /// Live, on-disk status — the half of [`ModelInfo`] that isn't part of the
 /// static spec. Kept separate so a descriptor stays purely descriptive and
 /// status can be recomputed without rebuilding it.
-#[allow(dead_code)]
 #[derive(Debug, Clone, Default)]
 pub struct DiskStatus {
     pub is_downloaded: bool,
@@ -162,21 +122,17 @@ pub struct DiskStatus {
     pub partial_size: u64,
 }
 
-/// The source-agnostic *spec* of a model. Every producer — catalog, HF
-/// discovery, on-disk scan, legacy table — yields one of these; [`ModelInfo`]
-/// is just this flattened together with a [`DiskStatus`] via
-/// [`ModelDescriptor::to_model_info`], the single construction site that
-/// replaces the ~20 hand-written `ModelInfo { .. }` literals as producers
-/// migrate over.
-#[allow(dead_code)]
+/// The spec of a bundled catalog model: everything in `catalog.json` normalised
+/// into one shape, rendered into the frontend-facing [`ModelInfo`] via
+/// [`ModelDescriptor::to_model_info`] by combining it with a [`DiskStatus`].
+/// (The catalog is the only producer that routes through this; the legacy table
+/// and on-disk scans build `ModelInfo` directly.)
 #[derive(Debug, Clone)]
 pub struct ModelDescriptor {
     pub id: String,
-    pub origin: Origin,
     pub source: ModelSource,
     pub name: String,
     pub description: String,
-    pub parameters: Option<String>,
     pub engine_type: EngineType,
     pub caps: CapabilityProbe,
     pub files: Vec<QuantFile>,
@@ -192,20 +148,7 @@ pub struct ModelDescriptor {
     pub recommended: bool,
 }
 
-#[allow(dead_code)]
 impl ModelDescriptor {
-    /// Catalog slug — the HF repo basename without the `-gguf` suffix — used to
-    /// match a descriptor against the hardcoded legacy ids. Empty for non-HF
-    /// descriptors.
-    pub fn slug(&self) -> &str {
-        let repo = match &self.source {
-            ModelSource::HuggingFace { repo_id, .. } => repo_id.as_str(),
-            _ => return "",
-        };
-        let base = repo.rsplit('/').next().unwrap_or(repo);
-        base.strip_suffix("-gguf").unwrap_or(base)
-    }
-
     /// The quant we surface for download/size: the declared default, else the
     /// first (smallest) file.
     fn default_file(&self) -> Option<&QuantFile> {
@@ -239,7 +182,9 @@ impl ModelDescriptor {
             is_recommended: self.recommended,
             supports_language_selection: languages.len() > 1,
             supported_languages: languages,
-            is_custom: self.origin == Origin::CustomDir,
+            // Catalog models are always HF-sourced downloads, never user-dropped
+            // custom files (those bypass the descriptor and set this directly).
+            is_custom: false,
             supports_streaming: self.caps.supports_streaming.unwrap_or(false),
             supports_language_detection: self.caps.supports_language_detect.unwrap_or(false),
         }
@@ -289,11 +234,6 @@ pub struct DownloadProgress {
     pub percentage: f64,
 }
 
-/// The Hugging Face collection whose models Handy treats as "recommended".
-/// Public collection, but its members are currently private (need a token).
-const RECOMMENDED_COLLECTION_SLUG: &str =
-    "handy-computer/recommended-asr-models-6a3f23d4a6ecabb49cc74b9b";
-
 /// Resolve a Hugging Face model file in the shared HF cache, if already present.
 /// Uses hf-hub's stock location (HF_HOME or ~/.cache/huggingface/hub) so
 /// downloads are shared with other tools.
@@ -307,22 +247,6 @@ fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathB
         .get(filename)
 }
 
-/// Whether a GGUF filename names the Q8_0 quantization.
-fn is_q8_0(path: &str) -> bool {
-    path.to_lowercase().contains("q8_0")
-}
-
-/// Pick which of a repo's GGUFs to surface. For now Handy standardises on Q8_0;
-/// if a repo has none, fall back to a single file so it still shows up. (A quant
-/// picker can replace this later.)
-fn select_quant(files: Vec<hf_api::RepoFile>) -> Vec<hf_api::RepoFile> {
-    if files.iter().any(|f| is_q8_0(&f.path)) {
-        files.into_iter().filter(|f| is_q8_0(&f.path)).collect()
-    } else {
-        files.into_iter().take(1).collect()
-    }
-}
-
 /// Friendly name advertised by GGUF metadata, if present. Empty strings are not
 /// useful display names, so callers can keep their filename/repo fallback.
 fn probed_display_name(probe: &CapabilityProbe) -> Option<String> {
@@ -332,54 +256,6 @@ fn probed_display_name(probe: &CapabilityProbe) -> Option<String> {
         .map(str::trim)
         .filter(|name| !name.is_empty())
         .map(str::to_string)
-}
-
-/// Build a `ModelInfo` for a Hugging Face GGUF file from its capability probe.
-///
-/// Routes through [`ModelDescriptor`] (origin [`Origin::HfDiscovery`]): the
-/// descriptor is the canonical spec every producer yields, and
-/// [`ModelDescriptor::to_model_info`] is the one render site. Behaviour is
-/// unchanged from the previous inline construction — a discovered HF file still
-/// surfaces with unknown scores and `is_downloaded` left for
-/// `update_download_status` to settle.
-fn hf_model_info(
-    repo_id: &str,
-    file_path: &str,
-    size: u64,
-    probe: &CapabilityProbe,
-    is_recommended: bool,
-) -> ModelInfo {
-    let display = probed_display_name(probe)
-        .unwrap_or_else(|| repo_id.rsplit('/').next().unwrap_or(repo_id).to_string());
-    let description = if is_recommended {
-        format!("Recommended • {}", repo_id)
-    } else {
-        format!("From Hugging Face • {}", repo_id)
-    };
-    let descriptor = ModelDescriptor {
-        id: format!("{}/{}", repo_id, file_path),
-        origin: Origin::HfDiscovery,
-        source: ModelSource::HuggingFace {
-            repo_id: repo_id.to_string(),
-            revision: "main".to_string(),
-        },
-        name: display,
-        description,
-        parameters: None,
-        engine_type: EngineType::TranscribeCpp,
-        caps: probe.clone(),
-        files: vec![QuantFile {
-            filename: file_path.to_string(),
-            quant: String::new(),
-            size_bytes: size,
-        }],
-        default_quant: None,
-        speed_score: 0.0,
-        accuracy_score: 0.0,
-        recommended_rank: is_recommended.then_some(0),
-        recommended: is_recommended,
-    };
-    descriptor.to_model_info(&DiskStatus::default())
 }
 
 /// Capability fields for a locally-discovered on-disk model, derived from its
@@ -1790,69 +1666,6 @@ impl ModelManager {
             hasher.update(&buffer[..n]);
         }
         Ok(format!("{:x}", hasher.finalize()))
-    }
-
-    /// Fetch the recommended-models collection from Hugging Face and merge its
-    /// GGUF files into the model list. Best-effort: offline, or private members
-    /// without a token, simply yields nothing. Capabilities stay unknown until
-    /// the model is downloaded (or until the range-fetch probe lands).
-    pub async fn refresh_recommended_models(&self) -> Result<()> {
-        let repo_ids = match hf_api::fetch_collection_models(RECOMMENDED_COLLECTION_SLUG).await {
-            Ok(ids) => ids,
-            Err(e) => {
-                warn!("Could not fetch recommended collection: {}", e);
-                return Ok(());
-            }
-        };
-        if repo_ids.is_empty() {
-            debug!("Recommended collection returned no items (no token / empty)");
-            return Ok(());
-        }
-
-        for repo_id in repo_ids {
-            match hf_api::fetch_repo_gguf_files(&repo_id).await {
-                Ok(files) => {
-                    for file in select_quant(files) {
-                        let probe =
-                            hf_api::probe_hf_capabilities(&repo_id, "main", &file.path).await;
-                        self.merge_hf_model(hf_model_info(
-                            &repo_id, &file.path, file.size, &probe, true,
-                        ));
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "Could not list files for recommended repo {}: {}",
-                        repo_id, e
-                    )
-                }
-            }
-        }
-
-        self.update_download_status()?;
-        let _ = self.app_handle.emit("models-updated", ());
-        Ok(())
-    }
-
-    /// Merge an HF model into the list: insert if new, otherwise adopt the
-    /// recommended flag and fill in any capabilities the existing entry lacks
-    /// (a cache-discovered entry already has authoritative capabilities).
-    fn merge_hf_model(&self, info: ModelInfo) {
-        let mut models = self.available_models.lock().unwrap();
-        match models.get_mut(&info.id) {
-            Some(existing) => {
-                existing.is_recommended |= info.is_recommended;
-                if existing.supported_languages.is_empty() {
-                    existing.supported_languages = info.supported_languages;
-                    existing.supports_language_selection = info.supports_language_selection;
-                }
-                existing.supports_streaming |= info.supports_streaming;
-                existing.supports_translation |= info.supports_translation;
-            }
-            None => {
-                models.insert(info.id.clone(), info);
-            }
-        }
     }
 
     /// Download a Hugging Face-sourced model into the shared HF cache via

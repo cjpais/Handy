@@ -12,11 +12,6 @@
 //! little-endian. v1 (32-bit lengths) is not supported; every transcribe-cpp
 //! model is v3.
 
-// Foundation module: every item here is consumed by the model-source,
-// discovery, and search commits that follow. Until that wiring lands nothing
-// calls into it, so silence dead-code warnings; remove this once it's used.
-#![allow(dead_code)]
-
 use std::collections::HashMap;
 
 /// GGUF magic: the ASCII bytes "GGUF" read as a little-endian u32.
@@ -98,19 +93,16 @@ impl GgufValue {
     }
 }
 
-/// The parsed front-of-file metadata of a GGUF model.
+/// The parsed front-of-file metadata of a GGUF model. Only the key/value block
+/// is retained — the version is validated during parsing and the tensor count is
+/// skipped, since Handy reads capabilities purely from the KV pairs.
 #[derive(Debug, Clone)]
 pub struct GgufMetadata {
-    pub version: u32,
-    pub tensor_count: u64,
     /// All key/value metadata pairs, keyed by their GGUF key.
     pub kv: HashMap<String, GgufValue>,
 }
 
 impl GgufMetadata {
-    pub fn get(&self, key: &str) -> Option<&GgufValue> {
-        self.kv.get(key)
-    }
     pub fn get_str(&self, key: &str) -> Option<&str> {
         self.kv.get(key).and_then(GgufValue::as_str)
     }
@@ -261,7 +253,9 @@ pub fn parse_header(bytes: &[u8]) -> Result<GgufMetadata, GgufError> {
     if version != 2 && version != 3 {
         return Err(GgufError::UnsupportedVersion(version));
     }
-    let tensor_count = cur.u64()?;
+    // Tensor count precedes the KV count in the header; read past it (we never
+    // touch tensors) to reach the metadata block.
+    cur.u64()?;
     let kv_count = cur.u64()?;
     if kv_count > MAX_KV_COUNT {
         return Err(GgufError::Malformed("absurd metadata kv count"));
@@ -275,11 +269,7 @@ pub fn parse_header(bytes: &[u8]) -> Result<GgufMetadata, GgufError> {
         kv.insert(key, value);
     }
 
-    Ok(GgufMetadata {
-        version,
-        tensor_count,
-        kv,
-    })
+    Ok(GgufMetadata { kv })
 }
 
 #[cfg(test)]
@@ -347,7 +337,6 @@ mod tests {
             ),
         ]);
         let meta = parse_header(&data).unwrap();
-        assert_eq!(meta.version, 3);
         assert_eq!(meta.get_str("general.architecture"), Some("whisper"));
         assert_eq!(meta.get_bool("stt.capability.translate"), Some(true));
         assert_eq!(
