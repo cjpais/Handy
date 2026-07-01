@@ -43,10 +43,10 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
 
     const selectedStyle = (getSetting("overlay_style") ||
       "live") as OverlayStyle;
-    // The retired "none" position value falls back to "bottom" in the picker.
-    const rawPosition = (getSetting("overlay_position") ||
-      "bottom") as OverlayPosition;
-    const selectedPosition = rawPosition === "none" ? "bottom" : rawPosition;
+    // Only "top" and "bottom" are selectable; anything else (empty, or a legacy
+    // "none" from before the position was retired) falls back to "bottom".
+    const selectedPosition: OverlayPosition =
+      getSetting("overlay_position") === "top" ? "top" : "bottom";
 
     return (
       <>

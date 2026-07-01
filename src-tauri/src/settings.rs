@@ -109,8 +109,12 @@ pub struct PostProcessProvider {
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
-    None,
     Top,
+    // `none` is retired: overlay visibility is owned by `OverlayStyle` now. The
+    // alias keeps legacy stores (`"overlay_position": "none"`) deserializing
+    // instead of failing the whole load; the one-time overlay migration reads the
+    // raw stored string to recover the old "hidden" intent as `OverlayStyle::None`.
+    #[serde(alias = "none")]
     Bottom,
 }
 
@@ -363,7 +367,11 @@ pub struct AppSettings {
     pub update_checks_enabled: bool,
     #[serde(default = "default_show_whats_new_on_update")]
     pub show_whats_new_on_update: bool,
-    #[serde(default)]
+    /// The app version whose What's New the user has already seen. Fresh installs
+    /// default to the current version (nothing is "new" to them). Existing users
+    /// upgrading from before this key existed are blanked by the migration so they
+    /// see the current release's notes — see `apply_settings_migrations`.
+    #[serde(default = "default_whats_new_last_seen_version")]
     pub whats_new_last_seen_version: String,
     #[serde(default = "default_model")]
     pub selected_model: String,
@@ -440,24 +448,19 @@ pub struct AppSettings {
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
-    // `alias` keeps reading the pre-transcribe.cpp-migration setting keys
-    // (`whisper_accelerator` / `whisper_gpu_device`) from existing stores.
-    #[serde(default, alias = "whisper_accelerator")]
+    #[serde(default)]
     pub transcribe_accelerator: TranscribeAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
-    #[serde(
-        default = "default_transcribe_gpu_device",
-        alias = "whisper_gpu_device"
-    )]
+    #[serde(default = "default_transcribe_gpu_device")]
     pub transcribe_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
     #[serde(default = "default_vad_enabled")]
     pub vad_enabled: bool,
-    /// Which recording overlay to show: None / Minimal / Live. Replaces the old
-    /// `live_preview` bool; streaming mode is no longer gated on this (it follows
-    /// model capability). Migrated from `overlay_position` + `live_preview`.
+    /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
+    /// not gated on this — that follows model capability. Migrated from the old
+    /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
 }
@@ -499,10 +502,9 @@ fn default_selected_language() -> String {
 }
 
 fn default_overlay_position() -> OverlayPosition {
-    #[cfg(target_os = "linux")]
-    return OverlayPosition::None;
-    #[cfg(not(target_os = "linux"))]
-    return OverlayPosition::Bottom;
+    // Position only matters when the overlay is shown; whether it shows at all is
+    // `overlay_style` (Linux defaults that to None). So a single default suffices.
+    OverlayPosition::Bottom
 }
 
 fn default_overlay_style() -> OverlayStyle {
@@ -995,16 +997,33 @@ fn apply_settings_migrations(
         updated = true;
     }
 
-    // One-time overlay migration (only while the new key is absent):
-    // overlay_position(none) -> style None (and reset position to Bottom,
-    // since 'none' is retired from the position picker); otherwise style Live.
+    // One-time What's New migration: migrations only run on an existing store
+    // (fresh installs take get_default_settings, which stamps the current
+    // version). So a missing key here means a user upgrading from before it
+    // existed — blank it so they see the current release's What's New. Mirrors
+    // the onboarding migration above: an explicit first-run-vs-upgrade decision
+    // rather than relying on the serde default silently diverging.
+    if settings_value.get("whats_new_last_seen_version").is_none() {
+        settings.whats_new_last_seen_version = String::new();
+        updated = true;
+    }
+
+    // One-time overlay migration (only while the new key is absent): the retired
+    // overlay_position `none` meant "hide the overlay", so map it to the new
+    // OverlayStyle::None; any other position had the overlay visible, so Live.
+    // The position enum no longer has a `none` variant (a legacy "none" in the
+    // store deserializes to Bottom via a serde alias), so read the raw stored
+    // string to recover the old intent.
     if settings_value.get("overlay_style").is_none() {
-        if settings.overlay_position == OverlayPosition::None {
-            settings.overlay_style = OverlayStyle::None;
-            settings.overlay_position = OverlayPosition::Bottom;
+        let was_hidden = settings_value
+            .get("overlay_position")
+            .and_then(|v| v.as_str())
+            == Some("none");
+        settings.overlay_style = if was_hidden {
+            OverlayStyle::None
         } else {
-            settings.overlay_style = OverlayStyle::Live;
-        }
+            OverlayStyle::Live
+        };
         updated = true;
     }
 
@@ -1064,8 +1083,8 @@ mod tests {
     #[test]
     fn overlay_migration_keeps_disabled_overlay_off() {
         let mut settings = get_default_settings();
-        settings.overlay_position = OverlayPosition::None;
 
+        // Legacy store: overlay was hidden via the retired position "none".
         let raw = serde_json::json!({
             "selected_model": "",
             "overlay_position": "none"
@@ -1073,7 +1092,17 @@ mod tests {
 
         assert!(apply_settings_migrations(&mut settings, &raw));
         assert_eq!(settings.overlay_style, OverlayStyle::None);
-        assert_eq!(settings.overlay_position, OverlayPosition::Bottom);
+    }
+
+    #[test]
+    fn legacy_none_overlay_position_deserializes_to_bottom() {
+        // A persisted "none" must not fail the whole settings load; the serde
+        // alias folds it onto Bottom (visibility is owned by overlay_style).
+        let raw = serde_json::json!({ "overlay_position": "none" });
+        let position: OverlayPosition =
+            serde_json::from_value(raw.get("overlay_position").unwrap().clone())
+                .expect("legacy \"none\" should deserialize, not error");
+        assert_eq!(position, OverlayPosition::Bottom);
     }
 
     #[test]

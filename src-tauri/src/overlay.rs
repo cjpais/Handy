@@ -84,7 +84,7 @@ fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow
                     gtk_window.set_anchor(Edge::Top, true);
                     gtk_window.set_anchor(Edge::Bottom, false);
                 }
-                OverlayPosition::Bottom | OverlayPosition::None => {
+                OverlayPosition::Bottom => {
                     gtk_window.set_anchor(Edge::Bottom, true);
                     gtk_window.set_anchor(Edge::Top, false);
                 }
@@ -244,9 +244,7 @@ fn calculate_overlay_position(
     let x = monitor_x + (monitor_width - width) / 2.0;
     let y = match settings.overlay_position {
         OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
-        OverlayPosition::Bottom | OverlayPosition::None => {
-            monitor_y + monitor_height - height - OVERLAY_BOTTOM_OFFSET
-        }
+        OverlayPosition::Bottom => monitor_y + monitor_height - height - OVERLAY_BOTTOM_OFFSET,
     };
 
     Some((x, y))
