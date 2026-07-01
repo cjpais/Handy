@@ -141,53 +141,15 @@ jobs:
           dpkg-query -W -f='${Status}\n' libgtk-layer-shell0 | grep -q "install ok installed"
           ldconfig -p | grep -q "libgtk-layer-shell.so.0"
 
+      # x86_64 only — Windows-on-ARM links transcribe-cpp statically CPU-only
+      # (no `vulkan` feature; see src-tauri/Cargo.toml), so ggml-vulkan is never
+      # built there and no Vulkan SDK, headers, or glslc are needed.
       - name: Install Vulkan SDK (Windows x64)
         if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
           version: 1.4.309.0
           cache: true
-
-      # humbletim/install-vulkan-sdk@v1.2 cannot target Windows ARM64 yet.
-      # Download prebuilt binaries (Bin) + build headers/libs from source.
-      # See https://github.com/humbletim/install-vulkan-sdk/pull/22 for prebuilt ARM64 support progress.
-      - name: Prepare Vulkan SDK env (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $sdkDir = Join-Path $env:GITHUB_WORKSPACE "VULKAN_SDK"
-          New-Item -ItemType Directory -Force -Path $sdkDir | Out-Null
-          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK=$sdkDir"
-
-      - name: Download Vulkan SDK binaries (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $url = "https://sdk.lunarg.com/sdk/download/1.4.309.0/warm/InstallVulkanARM64-1.4.309.0.exe"
-          $outFile = "vulkan_sdk_arm.exe"
-          Write-Host "Downloading Vulkan SDK binaries from $url"
-          Invoke-WebRequest -Uri $url -OutFile $outFile
-
-      - name: Extract Vulkan SDK binaries (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $sdkDir = $env:VULKAN_SDK
-          $sevenZip = (Get-Command 7z.exe -ErrorAction Stop).Source
-          Write-Host "Extracting binaries to $sdkDir"
-          & $sevenZip x "./vulkan_sdk_arm.exe" "-o$sdkDir" -aoa
-          $binPath = Join-Path $sdkDir "Bin"
-          Add-Content -Path $env:GITHUB_PATH -Value $binPath
-          Write-Host "Verifying glslc..."
-          & (Join-Path $binPath "glslc.exe") --version
-
-      - name: Build Vulkan SDK headers and libs (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
-        with:
-          vulkan-query-version: 1.4.309.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
 
       - name: Cache trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries
@@ -714,6 +676,29 @@ jobs:
             exit 0
           }
 
+          # Assert an installed/extracted package layout ships the runtime DLLs
+          # and a launchable handy.exe. Shared by the NSIS and MSI audits below so
+          # both installers are held to the same bar.
+          function Assert-PackageContents {
+            param([string]$Root, [string]$Label)
+
+            $handy = Get-ChildItem $Root -Filter "handy.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $handy) {
+              throw "$Label package is missing handy.exe"
+            }
+            if (-not (Get-ChildItem $Root -Filter "*transcribe*.dll" -Recurse -ErrorAction SilentlyContinue)) {
+              throw "$Label package is missing transcribe runtime DLLs"
+            }
+            if (-not (Get-ChildItem $Root -Filter "*ggml*.dll" -Recurse -ErrorAction SilentlyContinue)) {
+              throw "$Label package is missing ggml runtime DLLs"
+            }
+
+            & $handy.FullName --list-devices | Out-Host
+            if ($LASTEXITCODE -ne 0) {
+              throw "$Label handy.exe --list-devices failed"
+            }
+          }
+
           $nsisPackages = Get-ChildItem (Join-Path $bundleBase "nsis") -Filter "*.exe" -ErrorAction SilentlyContinue
           if (-not $nsisPackages) {
             throw "No NSIS packages found under $bundleBase for runtime DLL audit"
@@ -727,22 +712,34 @@ jobs:
             if ($proc.ExitCode -ne 0) {
               throw "Silent portable install failed for $($pkg.FullName) with exit code $($proc.ExitCode)"
             }
+            Assert-PackageContents -Root $installDir -Label "Installed NSIS"
+            Remove-Item -Recurse -Force $installDir
+          }
 
-            $handy = Get-ChildItem $installDir -Filter "handy.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if (-not $handy) {
-              throw "Installed NSIS package is missing handy.exe"
-            }
-            if (-not (Get-ChildItem $installDir -Filter "*transcribe*.dll" -Recurse -ErrorAction SilentlyContinue)) {
-              throw "Installed NSIS package is missing transcribe runtime DLLs"
-            }
-            if (-not (Get-ChildItem $installDir -Filter "*ggml*.dll" -Recurse -ErrorAction SilentlyContinue)) {
-              throw "Installed NSIS package is missing ggml runtime DLLs"
-            }
+          # WiX MSI: an administrative install (`/a`) lays out the packaged file
+          # tree into TARGETDIR without a real install — no elevation, no registry
+          # writes, no machine state to clean up — the MSI analog of NSIS's
+          # /S /PORTABLE. The same DLL + smoke checks then apply.
+          $msiPackages = Get-ChildItem (Join-Path $bundleBase "msi") -Filter "*.msi" -ErrorAction SilentlyContinue
+          if (-not $msiPackages) {
+            throw "No MSI packages found under $bundleBase for runtime DLL audit"
+          }
 
-            & $handy.FullName --list-devices | Out-Host
-            if ($LASTEXITCODE -ne 0) {
-              throw "Packaged handy.exe --list-devices failed"
+          foreach ($pkg in $msiPackages) {
+            Write-Host "Auditing MSI package: $($pkg.FullName)"
+            $installDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $installDir | Out-Null
+            $logFile = Join-Path $installDir "msi-admin-install.log"
+            # Single-string ArgumentList so quoting of paths is explicit and not
+            # subject to Start-Process array-join quirks. Public properties
+            # (TARGETDIR) go last per msiexec convention.
+            $msiArgs = "/a `"$($pkg.FullName)`" /qn /L*v `"$logFile`" TARGETDIR=`"$installDir`""
+            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
+            if ($proc.ExitCode -ne 0) {
+              if (Test-Path $logFile) { Get-Content $logFile | Out-Host }
+              throw "Administrative install failed for $($pkg.FullName) with exit code $($proc.ExitCode)"
             }
+            Assert-PackageContents -Root $installDir -Label "Installed MSI"
             Remove-Item -Recurse -Force $installDir
           }
 
