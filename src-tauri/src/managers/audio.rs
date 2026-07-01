@@ -7,7 +7,7 @@ use crate::audio_toolkit::{
     AudioRecorder, SileroVad, VadPolicy,
 };
 use crate::helpers::clamshell;
-use crate::managers::transcription::TranscriptionManager;
+use crate::managers::transcription::StreamRouter;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
@@ -130,21 +130,19 @@ pub enum MicrophoneMode {
 fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
+    stream_router: Arc<StreamRouter>,
 ) -> Result<AudioRecorder, anyhow::Error> {
-    let offline_silero = SileroVad::new(vad_path, VAD_THRESHOLD)
+    // A single Silero engine covers both the offline and streaming policies.
+    // They're never active at the same time within a recording, so the recorder
+    // reconfigures this one detector's hangover tail per session instead of
+    // keeping two ONNX sessions resident. It starts on the offline tail; the
+    // recorder swaps in the streaming tail when that policy is selected.
+    let silero = SileroVad::new(vad_path, VAD_THRESHOLD)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
-    let streaming_silero = SileroVad::new(vad_path, VAD_THRESHOLD)
-        .map_err(|e| anyhow::anyhow!("Failed to create streaming SileroVad: {}", e))?;
-    let offline_vad = SmoothedVad::new(
-        Box::new(offline_silero),
+    let smoothed_vad = SmoothedVad::new(
+        Box::new(silero),
         VAD_PREFILL_FRAMES,
         VAD_OFFLINE_HANGOVER_FRAMES,
-        VAD_ONSET_FRAMES,
-    );
-    let streaming_vad = SmoothedVad::new(
-        Box::new(streaming_silero),
-        VAD_PREFILL_FRAMES,
-        VAD_STREAMING_HANGOVER_FRAMES,
         VAD_ONSET_FRAMES,
     );
 
@@ -154,27 +152,25 @@ fn create_audio_recorder(
     // directly (not via Tauri state) so the per-frame path is a single relaxed
     // atomic load when no stream is pending — zero-cost for users with live
     // preview off.
-    let mut recorder = AudioRecorder::new()
+    let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
-        .with_vad_profiles(Box::new(offline_vad), Box::new(streaming_vad))
+        .with_vad(
+            Box::new(smoothed_vad),
+            VAD_OFFLINE_HANGOVER_FRAMES,
+            VAD_STREAMING_HANGOVER_FRAMES,
+        )
         .with_level_callback({
             let app_handle = app_handle.clone();
             move |levels| {
                 utils::emit_levels(&app_handle, &levels);
             }
+        })
+        .with_audio_callback({
+            let router = stream_router;
+            move |frame| {
+                router.feed(frame);
+            }
         });
-
-    // Register the streaming audio callback only if the TranscriptionManager
-    // is available (it always is in normal operation). The callback captures
-    // the `Arc<StreamRouter>` directly, so it never touches Tauri state on the
-    // hot path. The recorder's per-session VAD policy controls whether these
-    // frames are raw or VAD-gated.
-    if let Some(tm) = app_handle.try_state::<Arc<TranscriptionManager>>() {
-        let router = tm.stream_router();
-        recorder = recorder.with_audio_callback(move |frame| {
-            router.feed(frame);
-        });
-    }
 
     Ok(recorder)
 }
@@ -192,12 +188,16 @@ pub struct AudioRecordingManager {
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
     close_generation: Arc<AtomicU64>,
+    stream_router: Arc<StreamRouter>,
 }
 
 impl AudioRecordingManager {
     /* ---------- construction ------------------------------------------------ */
 
-    pub fn new(app: &tauri::AppHandle) -> Result<Self, anyhow::Error> {
+    pub fn new(
+        app: &tauri::AppHandle,
+        stream_router: Arc<StreamRouter>,
+    ) -> Result<Self, anyhow::Error> {
         let settings = get_settings(app);
         let mode = if settings.always_on_microphone {
             MicrophoneMode::AlwaysOn
@@ -215,6 +215,7 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
             close_generation: Arc::new(AtomicU64::new(0)),
+            stream_router,
         };
 
         // Always-on?  Open immediately.
@@ -316,6 +317,7 @@ impl AudioRecordingManager {
             *recorder_opt = Some(create_audio_recorder(
                 vad_path.to_str().unwrap(),
                 &self.app_handle,
+                Arc::clone(&self.stream_router),
             )?);
         }
         Ok(())

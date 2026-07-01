@@ -27,6 +27,10 @@ pub trait VoiceActivityDetector: Send + Sync {
         Ok(self.push_frame(frame)?.is_speech())
     }
 
+    /// Set the post-speech hangover tail (in 30 ms frames) applied to
+    /// subsequent frames. Detectors without a smoothing tail can ignore this.
+    fn set_hangover_frames(&mut self, _frames: usize) {}
+
     fn reset(&mut self) {}
 }
 

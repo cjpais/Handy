@@ -2,7 +2,8 @@ use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
-    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, TranscribeAcceleratorSetting,
+    get_settings, AppSettings, ModelUnloadTimeout, OrtAcceleratorSetting,
+    TranscribeAcceleratorSetting,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
@@ -33,6 +34,7 @@ use transcribe_rs::{
 };
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
+const STREAM_FINALIZE_REPLY_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -525,17 +527,29 @@ impl TranscriptionManager {
                     emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
                 })?;
-                // Record the model's real streaming capability (from GGUF
-                // metadata) so the picker badge reflects runtime truth rather
-                // than a static guess. The load-completed event below triggers a
+                // Reconcile the registry's advertised capabilities with the
+                // loaded model's real ones (from GGUF metadata) so badges and
+                // capability gating reflect runtime truth rather than the
+                // pre-download probe. The load-completed event below triggers a
                 // frontend model refresh that picks this up.
                 let caps = session.model().capabilities();
-                self.model_manager
-                    .set_supports_streaming(model_id, caps.supports_streaming);
+                self.model_manager.set_runtime_capabilities(
+                    model_id,
+                    caps.supports_streaming,
+                    caps.supports_translate,
+                    caps.supports_language_detect,
+                    caps.languages.clone(),
+                );
                 info!(
                     "Loaded whisper model '{}' (requested {:?}, gpu_device {}, bound backend '{}', \
-                     supports_streaming={})",
-                    model_id, backend, gpu_device, bound_backend, caps.supports_streaming
+                     supports_streaming={}, supports_translate={}, supports_language_detect={})",
+                    model_id,
+                    backend,
+                    gpu_device,
+                    bound_backend,
+                    caps.supports_streaming,
+                    caps.supports_translate,
+                    caps.supports_language_detect
                 );
                 LoadedEngine::TranscribeCpp(session)
             }
@@ -798,32 +812,18 @@ impl TranscriptionManager {
         // Build run options mirroring the offline transcribe-cpp path: task +
         // language gated against what the model actually advertises.
         let settings = get_settings(&self.app_handle);
-        // Resolve intent → effective language for this model (same capability-
-        // aware coercion as the offline path), then map to the engine's option.
-        let effective_language = match self.model_manager.get_model_info(&model_id) {
-            Some(info) => crate::managers::model::effective_language(
-                &settings.selected_language,
-                &info.supported_languages,
-                info.supports_language_detection,
-            ),
-            None => settings.selected_language.clone(),
-        };
-        let requested_language = match effective_language.as_str() {
-            "auto" => None,
-            "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
-            other => Some(other.to_string()),
-        };
-        let language = requested_language.filter(|lang| languages.iter().any(|l| l == lang));
-        // Same task/target decision as the offline path (see cpp_translation_task).
-        let (task, target_language) = cpp_translation_task(
+        let effective_language =
+            effective_language_for_model(&settings, self.model_manager.as_ref(), &model_id);
+        let run_plan = transcribe_cpp_run_plan(
             settings.translate_to_english,
+            &effective_language,
+            &languages,
             supports_translate,
-            language.as_deref(),
         );
         let run_options = RunOptions {
-            task,
-            language,
-            target_language,
+            task: run_plan.task,
+            language: run_plan.language,
+            target_language: run_plan.target_language,
             ..Default::default()
         };
 
@@ -1001,40 +1001,40 @@ impl TranscriptionManager {
         }
     }
 
-    /// Flush the active stream and return its final, post-filtered text. Returns
-    /// `None` when no stream was active (caller should batch-transcribe instead).
-    pub fn finalize_stream(&self) -> Option<String> {
-        let tx = self.router.take()?;
+    /// Flush the active stream and return its final, post-filtered text.
+    ///
+    /// `Ok(None)` means no usable stream was active and the caller may fall back
+    /// to batch transcription. `Err` means finalize itself failed or timed out;
+    /// the worker may still hold the engine, so callers should not immediately
+    /// start a batch transcription against the same manager.
+    pub fn finalize_stream(&self) -> Result<Option<String>> {
+        let Some(tx) = self.router.take() else {
+            return Ok(None);
+        };
         let (reply_tx, reply_rx) = mpsc::channel();
         if tx.send(StreamCmd::Finalize(reply_tx)).is_err() {
-            return None;
+            return Ok(None);
         }
-        let raw = match reply_rx.recv() {
+        let raw = match reply_rx.recv_timeout(STREAM_FINALIZE_REPLY_TIMEOUT) {
             Ok(Some(text)) => text,
-            _ => return None,
+            Ok(None) => return Ok(None),
+            Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(None),
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                self.stream_active.store(false, Ordering::Relaxed);
+                return Err(anyhow::anyhow!(
+                    "Timed out waiting {:?} for live transcription to finalize",
+                    STREAM_FINALIZE_REPLY_TIMEOUT
+                ));
+            }
         };
 
-        // Apply the same custom-word correction + filler/hallucination filtering
-        // the offline path uses. Streaming models are non-whisper (no decode
-        // prompt), so custom words always go through fuzzy post-correction.
         let settings = get_settings(&self.app_handle);
-        let corrected = if settings.custom_words.is_empty() {
-            raw
-        } else {
-            apply_custom_words(
-                &raw,
-                &settings.custom_words,
-                settings.word_correction_threshold,
-            )
-        };
-        let filtered = filter_transcription_output(
-            &corrected,
-            &settings.app_language,
-            &settings.custom_filler_words,
-        );
+        // Streaming models do not receive a decode prompt, so custom words
+        // always go through the shared fuzzy post-correction path.
+        let filtered = post_process_transcription_text(raw, &settings, false);
 
         self.maybe_unload_immediately("streaming transcription");
-        Some(filtered)
+        Ok(Some(filtered))
     }
 
     /// Abandon any active stream without producing text (e.g. on cancel).
@@ -1114,14 +1114,8 @@ impl TranscriptionManager {
         // will actually use. The coercion is capability-aware (a must-pick model
         // never receives "auto") and computed fresh here — it is never written
         // back to settings, so the intent survives switching models and back.
-        let validated_language = match self.model_manager.get_model_info(&active_model) {
-            Some(info) => crate::managers::model::effective_language(
-                &settings.selected_language,
-                &info.supported_languages,
-                info.supports_language_detection,
-            ),
-            None => settings.selected_language.clone(),
-        };
+        let validated_language =
+            effective_language_for_model(&settings, self.model_manager.as_ref(), &active_model);
         if validated_language != settings.selected_language {
             debug!(
                 "Language intent '{}' resolved to '{}' for model '{}'",
@@ -1180,21 +1174,6 @@ impl TranscriptionManager {
             let transcribe_result = catch_unwind(AssertUnwindSafe(|| -> Result<String> {
                 match &mut engine {
                     LoadedEngine::TranscribeCpp(session) => {
-                        let requested_language = if validated_language == "auto" {
-                            None
-                        } else if validated_language == "zh-Hans" || validated_language == "zh-Hant"
-                        {
-                            Some("zh".to_string())
-                        } else {
-                            Some(validated_language.clone())
-                        };
-                        // Only pass a language the loaded model actually advertises
-                        // (per capabilities().languages); otherwise auto-detect
-                        // rather than failing with UNSUPPORTED_LANGUAGE. Language-
-                        // agnostic models report an empty list -> always auto.
-                        let language = requested_language
-                            .filter(|lang| model_languages.iter().any(|l| l == lang));
-
                         // Custom words become the initial prompt ONLY for models
                         // that accept one (whisper family). Attaching the
                         // whisper run extension to a non-whisper arch is rejected
@@ -1210,16 +1189,17 @@ impl TranscriptionManager {
                                 }))
                             };
 
-                        let (task, target_language) = cpp_translation_task(
+                        let run_plan = transcribe_cpp_run_plan(
                             settings.translate_to_english,
+                            &validated_language,
+                            &model_languages,
                             model_supports_translate,
-                            language.as_deref(),
                         );
 
                         let run_options = RunOptions {
-                            task,
-                            language,
-                            target_language,
+                            task: run_plan.task,
+                            language: run_plan.language,
+                            target_language: run_plan.target_language,
                             // Whisper-family long-form (>30s) decode degenerates into a
                             // repetition loop when an initial prompt is set AND timestamps
                             // are off — a shared whisper.cpp behavior (verified: whisper.cpp
@@ -1382,22 +1362,8 @@ impl TranscriptionManager {
         // words were already handed to the model as an initial prompt (whisper
         // family). Non-whisper transcribe-cpp models can't take a prompt, so they
         // still get fuzzy correction here, same as the ONNX engines.
-        let corrected_result = if !settings.custom_words.is_empty() && !model_takes_initial_prompt {
-            apply_custom_words(
-                &result,
-                &settings.custom_words,
-                settings.word_correction_threshold,
-            )
-        } else {
-            result
-        };
-
-        // Filter out filler words and hallucinations
-        let filtered_result = filter_transcription_output(
-            &corrected_result,
-            &settings.app_language,
-            &settings.custom_filler_words,
-        );
+        let filtered_result =
+            post_process_transcription_text(result, &settings, model_takes_initial_prompt);
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
@@ -1432,6 +1398,82 @@ impl TranscriptionManager {
 
         Ok(final_result)
     }
+}
+
+/// Resolve the persisted language intent into the language a specific model can
+/// use without writing the coerced value back to settings.
+fn effective_language_for_model(
+    settings: &AppSettings,
+    model_manager: &ModelManager,
+    model_id: &str,
+) -> String {
+    match model_manager.get_model_info(model_id) {
+        Some(info) => crate::managers::model::effective_language(
+            &settings.selected_language,
+            &info.supported_languages,
+            info.supports_language_detection,
+        ),
+        None => settings.selected_language.clone(),
+    }
+}
+
+struct TranscribeCppRunPlan {
+    task: Task,
+    language: Option<String>,
+    target_language: Option<String>,
+}
+
+/// Build the transcribe-cpp language/task options shared by batch and live
+/// streaming paths.
+fn transcribe_cpp_run_plan(
+    translate_to_english: bool,
+    effective_language: &str,
+    model_languages: &[String],
+    model_supports_translate: bool,
+) -> TranscribeCppRunPlan {
+    let requested_language = match effective_language {
+        "auto" => None,
+        "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
+        other => Some(other.to_string()),
+    };
+    // Only pass a language the loaded model actually advertises (per
+    // capabilities().languages); otherwise auto-detect rather than failing with
+    // UNSUPPORTED_LANGUAGE. Language-agnostic models report an empty list, so
+    // they always stay on auto.
+    let language = requested_language.filter(|lang| model_languages.iter().any(|l| l == lang));
+    let (task, target_language) = cpp_translation_task(
+        translate_to_english,
+        model_supports_translate,
+        language.as_deref(),
+    );
+
+    TranscribeCppRunPlan {
+        task,
+        language,
+        target_language,
+    }
+}
+
+fn post_process_transcription_text(
+    raw: String,
+    settings: &AppSettings,
+    custom_words_already_prompted: bool,
+) -> String {
+    let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
+        apply_custom_words(
+            &raw,
+            &settings.custom_words,
+            settings.word_correction_threshold,
+        )
+    } else {
+        raw
+    };
+
+    filter_transcription_output(
+        &corrected,
+        &settings.app_language,
+        &settings.custom_filler_words,
+    )
 }
 
 /// Decide a transcribe-cpp run's task + translation target from settings.
@@ -1698,6 +1740,51 @@ pub fn get_available_accelerators() -> AvailableAccelerators {
         transcribe: transcribe_options,
         ort: ort_options,
         gpu_devices: cached_gpu_devices().to_vec(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn languages(codes: &[&str]) -> Vec<String> {
+        codes.iter().map(|code| (*code).to_string()).collect()
+    }
+
+    #[test]
+    fn transcribe_cpp_run_plan_maps_chinese_variants() {
+        let plan = transcribe_cpp_run_plan(false, "zh-Hant", &languages(&["zh"]), true);
+
+        assert!(matches!(plan.task, Task::Transcribe));
+        assert_eq!(plan.language.as_deref(), Some("zh"));
+        assert_eq!(plan.target_language, None);
+    }
+
+    #[test]
+    fn transcribe_cpp_run_plan_skips_english_translation() {
+        let plan = transcribe_cpp_run_plan(true, "en", &languages(&["en", "es"]), true);
+
+        assert!(matches!(plan.task, Task::Transcribe));
+        assert_eq!(plan.language.as_deref(), Some("en"));
+        assert_eq!(plan.target_language, None);
+    }
+
+    #[test]
+    fn transcribe_cpp_run_plan_translates_supported_non_english() {
+        let plan = transcribe_cpp_run_plan(true, "es", &languages(&["en", "es"]), true);
+
+        assert!(matches!(plan.task, Task::Translate));
+        assert_eq!(plan.language.as_deref(), Some("es"));
+        assert_eq!(plan.target_language.as_deref(), Some("en"));
+    }
+
+    #[test]
+    fn transcribe_cpp_run_plan_requires_model_translation_support() {
+        let plan = transcribe_cpp_run_plan(true, "es", &languages(&["en", "es"]), false);
+
+        assert!(matches!(plan.task, Task::Transcribe));
+        assert_eq!(plan.language.as_deref(), Some("es"));
+        assert_eq!(plan.target_language, None);
     }
 }
 

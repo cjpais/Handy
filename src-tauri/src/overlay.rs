@@ -443,29 +443,28 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
-// Cached "overlay is enabled" flag, kept in sync with the
-// overlay_position setting. Avoids reading the Tauri store on every
-// audio callback (~24 Hz during recording). Defaults to false so the
-// audio path doesn't emit until lib.rs::setup populates the cache from
-// initial settings.
+// Cached "overlay is enabled" flag, kept in sync with overlay_style. Avoids
+// reading the Tauri store on every audio callback (~24 Hz during recording).
+// Defaults to false so the audio path doesn't emit until lib.rs::setup
+// populates the cache from initial settings.
 static OVERLAY_ENABLED: AtomicBool = AtomicBool::new(false);
 
 /// Update the cached overlay-enabled flag. Called from `lib.rs` at
-/// startup after settings load, and from `change_overlay_position_setting`
-/// whenever the user changes the overlay position.
+/// startup after settings load, and from `change_overlay_style_setting`
+/// whenever the user changes whether the overlay is shown.
 pub fn update_overlay_enabled_cache(enabled: bool) {
     OVERLAY_ENABLED.store(enabled, Ordering::Relaxed);
 }
 
 pub fn emit_levels(app_handle: &AppHandle, levels: &[f32]) {
     // Skip emission when the overlay is disabled. The recording_overlay
-    // window is created at boot regardless of overlay_position, so
-    // without this guard a hidden overlay's WebKit subprocess still
+    // window is created at boot regardless of overlay_style, so without this
+    // guard a hidden overlay's WebKit subprocess still
     // processes every event. Each event drives some kind of WebKit
     // C++ allocation that accumulates without bound (mechanism not
     // directly characterized; see issue #1279 for the investigation).
-    // For users with `overlay_position: none` (the Linux default) this
-    // skip eliminates the upstream driver of that accumulation.
+    // For users with `overlay_style: none` (the Linux default) this skip
+    // eliminates the upstream driver of that accumulation.
     if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
         return;
     }

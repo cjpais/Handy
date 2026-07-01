@@ -41,21 +41,24 @@ pub enum VadPolicy {
     Streaming,
 }
 
+/// A single VAD engine plus the two hangover-tail lengths its smoothing wrapper
+/// should use. The offline and streaming policies are never active
+/// concurrently, so one detector is reconfigured per session (see `Cmd::Start`)
+/// rather than kept as two resident engines.
 #[derive(Clone)]
-struct VadProfiles {
-    offline: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
-    streaming: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
+struct VadConfig {
+    detector: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
+    offline_hangover_frames: usize,
+    streaming_hangover_frames: usize,
 }
 
-impl VadProfiles {
-    fn detector(
-        &self,
-        policy: VadPolicy,
-    ) -> Option<&Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>> {
+impl VadConfig {
+    /// Post-speech hangover tail (in 30 ms frames) for the given policy.
+    /// `Disabled` never reaches the detector, so it maps to the offline value.
+    fn hangover_for(&self, policy: VadPolicy) -> usize {
         match policy {
-            VadPolicy::Disabled => None,
-            VadPolicy::Offline => Some(&self.offline),
-            VadPolicy::Streaming => Some(&self.streaming),
+            VadPolicy::Streaming => self.streaming_hangover_frames,
+            VadPolicy::Offline | VadPolicy::Disabled => self.offline_hangover_frames,
         }
     }
 }
@@ -68,7 +71,7 @@ pub struct AudioRecorder {
     device: Option<Device>,
     cmd_tx: Option<mpsc::Sender<Cmd>>,
     worker_handle: Option<std::thread::JoinHandle<()>>,
-    vad_profiles: Option<VadProfiles>,
+    vad: Option<VadConfig>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
 }
@@ -79,20 +82,25 @@ impl AudioRecorder {
             device: None,
             cmd_tx: None,
             worker_handle: None,
-            vad_profiles: None,
+            vad: None,
             level_cb: None,
             audio_cb: None,
         })
     }
 
-    pub fn with_vad_profiles(
+    /// Attach a single VAD engine, reconfigured per session for the offline vs
+    /// streaming hangover tail. The two policies are mutually exclusive within a
+    /// recording, so one engine covers both instead of two resident instances.
+    pub fn with_vad(
         mut self,
-        offline: Box<dyn VoiceActivityDetector>,
-        streaming: Box<dyn VoiceActivityDetector>,
+        detector: Box<dyn VoiceActivityDetector>,
+        offline_hangover_frames: usize,
+        streaming_hangover_frames: usize,
     ) -> Self {
-        self.vad_profiles = Some(VadProfiles {
-            offline: Arc::new(Mutex::new(offline)),
-            streaming: Arc::new(Mutex::new(streaming)),
+        self.vad = Some(VadConfig {
+            detector: Arc::new(Mutex::new(detector)),
+            offline_hangover_frames,
+            streaming_hangover_frames,
         });
         self
     }
@@ -135,7 +143,7 @@ impl AudioRecorder {
         };
 
         let thread_device = device.clone();
-        let vad_profiles = self.vad_profiles.clone();
+        let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
@@ -218,7 +226,7 @@ impl AudioRecorder {
                     // Keep the stream alive while we process samples.
                     run_consumer(
                         sample_rate,
-                        vad_profiles,
+                        vad,
                         sample_rx,
                         cmd_rx,
                         level_cb,
@@ -460,7 +468,7 @@ mod tests {
 #[allow(clippy::too_many_arguments)]
 fn run_consumer(
     in_sample_rate: u32,
-    vad_profiles: Option<VadProfiles>,
+    vad: Option<VadConfig>,
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
@@ -502,7 +510,7 @@ fn run_consumer(
         samples: &[f32],
         recording: bool,
         vad_policy: VadPolicy,
-        vad_profiles: &Option<VadProfiles>,
+        vad: &Option<VadConfig>,
         audio_cb: &Option<AudioFrameCallback>,
         out_buf: &mut Vec<f32>,
     ) {
@@ -522,11 +530,8 @@ fn run_consumer(
             return;
         }
 
-        if let Some(vad_arc) = vad_profiles
-            .as_ref()
-            .and_then(|profiles| profiles.detector(vad_policy))
-        {
-            let mut det = vad_arc.lock().unwrap();
+        if let Some(cfg) = vad {
+            let mut det = cfg.detector.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
                 VadFrame::Speech(buf) => emit(buf),
                 VadFrame::Noise => {}
@@ -560,7 +565,7 @@ fn run_consumer(
                 frame,
                 recording,
                 vad_policy,
-                &vad_profiles,
+                &vad,
                 &audio_cb,
                 &mut processed_samples,
             )
@@ -575,11 +580,15 @@ fn run_consumer(
                     processed_samples.clear();
                     recording = true;
                     visualizer.reset();
-                    if let Some(v) = vad_profiles
-                        .as_ref()
-                        .and_then(|profiles| profiles.detector(vad_policy))
-                    {
-                        v.lock().unwrap().reset();
+                    // Reconfigure the single VAD engine for this session's policy
+                    // and clear its smoothing + recurrent state before it sees
+                    // any frames.
+                    if vad_policy != VadPolicy::Disabled {
+                        if let Some(cfg) = &vad {
+                            let mut det = cfg.detector.lock().unwrap();
+                            det.set_hangover_frames(cfg.hangover_for(vad_policy));
+                            det.reset();
+                        }
                     }
                 }
                 Cmd::Stop(reply_tx) => {
@@ -598,7 +607,7 @@ fn run_consumer(
                                         frame,
                                         true,
                                         vad_policy,
-                                        &vad_profiles,
+                                        &vad,
                                         &audio_cb,
                                         &mut processed_samples,
                                     )
@@ -617,7 +626,7 @@ fn run_consumer(
                             frame,
                             true,
                             vad_policy,
-                            &vad_profiles,
+                            &vad,
                             &audio_cb,
                             &mut processed_samples,
                         )

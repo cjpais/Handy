@@ -7,7 +7,7 @@ Handy model catalog generator.
 
 Merges three sources into one catalog.json:
   1. HF card `transcribe_cpp` block  -> capabilities + benchmarks (canonical)
-  2. a tiny GGUF header range-read    -> friendly name, param label, architecture
+  2. a tiny GGUF header range-read    -> display labels only
   3. local CURATION (this file)       -> recommended set, editorial descriptions
 
 Emits catalog.json to be committed and `include_str!`'d into the Rust binary.
@@ -31,7 +31,8 @@ def acc_from_wer(wer):
 
 # ───────────────────────── curation (CJ owns; editorial, not derivable) ──────
 # slug -> {rank?, desc?, use_case?, default_quant?, hidden?}.  All optional.
-CURATION = {  # desc = PLACEHOLDER taglines — CJ to rewrite
+# desc is hand-written UI copy; models without one use factual generated summaries.
+CURATION = {
     "parakeet-unified-en-0.6b":        {"rank": 1, "desc": "Fast, accurate English with live transcription."},
     "nemotron-3.5-asr-streaming-0.6b": {"rank": 2, "desc": "Live multilingual transcription across 28 languages."},
     "canary-180m-flash":               {"rank": 3, "desc": "Tiny and instant — runs well on any hardware."},
@@ -95,7 +96,12 @@ fs  = HfFileSystem(token=os.environ.get("HF_TOKEN"))
 
 GGUF_WANT = {"general.architecture", "general.name", "general.basename", "general.size_label"}
 def probe_header(repo, filename, nbytes=65536):
-    """Range-read the GGUF header and pull the friendly general.* fields (no tensors)."""
+    """Range-read only friendly general.* labels (no tensors, no capabilities).
+
+    Capabilities come from HF card data here and from Rust's GGUF probe at
+    runtime. Keep this as a narrow display-label reader so the catalog generator
+    does not become a second source of truth for model behavior.
+    """
     out = {}
     try:
         with fs.open(f"{repo}/{filename}", "rb", block_size=nbytes) as f:
@@ -132,6 +138,30 @@ def probe_header(repo, filename, nbytes=65536):
         pass                      # ran past the buffer (hit tokenizer) — keep what we got
     return out
 
+def gguf_files(repo, siblings):
+    """Return GGUF files with mandatory size metadata.
+
+    `QuantFile.size_bytes` is a non-null `u64` in Rust. Failing generation here
+    keeps a transient/malformed HF listing from producing a catalog that panics
+    at app startup when deserialized by `include_str!("catalog.json")`.
+    """
+    files = []
+    invalid = []
+    for x in siblings:
+        if not x.rfilename.endswith(".gguf"):
+            continue
+        if type(x.size) is not int or x.size <= 0:
+            invalid.append(x.rfilename)
+            continue
+        files.append({
+            "filename": x.rfilename,
+            "quant": quant_of(x.rfilename),
+            "size_bytes": x.size,
+        })
+    if invalid:
+        raise ValueError(f"{repo}: missing/invalid size metadata for {', '.join(invalid)}")
+    return sorted(files, key=lambda f: f["size_bytes"])
+
 def build(repo):
     info = api.model_info(repo, files_metadata=True)
     cd = info.card_data.to_dict() if info.card_data else {}
@@ -140,9 +170,7 @@ def build(repo):
     b = dict(cd.get("transcribe_cpp") or {});  b.update(OVERRIDES.get(s, {}))
     langs = cd.get("language") or []
 
-    files = sorted(({"filename": x.rfilename, "quant": quant_of(x.rfilename), "size_bytes": x.size}
-                    for x in info.siblings if x.rfilename.endswith(".gguf")),
-                   key=lambda f: f["size_bytes"] or 0)
+    files = gguf_files(repo, info.siblings)
     q8 = next((f for f in files if "Q8" in f["quant"]), files[-1] if files else None)
     gg = probe_header(repo, q8["filename"]) if q8 else {}
 
@@ -190,6 +218,7 @@ def build(repo):
 def main():
     repos = [m.id for m in api.list_models(author=ORG, limit=500)]
     models = []
+    failures = []
     with ThreadPoolExecutor(max_workers=10) as ex:
         futs = {ex.submit(build, r): r for r in repos}
         for f in as_completed(futs):
@@ -197,7 +226,11 @@ def main():
                 m = f.result()
                 if not CURATION.get(m["slug"], {}).get("hidden"): models.append(m)
             except Exception as e:
+                failures.append((futs[f], e))
                 print(f"!! {futs[f]}: {e}", file=sys.stderr)
+    if failures:
+        print(f"catalog generation failed for {len(failures)} repo(s)", file=sys.stderr)
+        raise SystemExit(1)
     models.sort(key=lambda m: (not m["recommended"], m["recommended_rank"] or 1e9,
                                m["family"], -(m["speed_score"] or 0)))
     catalog = {

@@ -2,10 +2,12 @@
 //! this GGUF actually do".
 //!
 //! Capabilities are canonical *in the GGUF itself*: transcribe-cpp reads them
-//! from the model's metadata at load time. The runtime path already does that
-//! and reconciles the UI once a model is loaded. This module covers the other
-//! half — reading the same values from the GGUF header *before* download, so
-//! search/listing can show languages, streaming, and translation honestly.
+//! from the model's metadata at load time, and the runtime reconciles the
+//! registry against that ground truth once a model is loaded — streaming,
+//! translation, language detection, and the supported-language set (see
+//! [`crate::managers::model::ModelManager::set_runtime_capabilities`]). This
+//! module covers the other half — reading the same values from the GGUF header
+//! *before* download, so search/listing can show them honestly ahead of a load.
 //!
 //! Everything goes through the [`CapabilityProber`] trait. Today the only
 //! implementation, [`GgufHeaderProber`], parses a local GGUF's header directly
@@ -51,6 +53,15 @@ const KEY_LANGUAGES: &str = "general.languages";
 const KEY_CAP_STREAMING: &str = "stt.capability.streaming";
 const KEY_CAP_TRANSLATE: &str = "stt.capability.translate";
 const KEY_CAP_LANG_DETECT: &str = "stt.capability.lang_detect";
+const PROBE_KEYS: &[&str] = &[
+    KEY_ARCH,
+    KEY_NAME,
+    KEY_VARIANT,
+    KEY_LANGUAGES,
+    KEY_CAP_STREAMING,
+    KEY_CAP_TRANSLATE,
+    KEY_CAP_LANG_DETECT,
+];
 
 /// How confident we are that Handy can run a given model, judged from its GGUF
 /// header alone (pre-download).
@@ -181,7 +192,7 @@ fn read_header_metadata(path: &Path) -> Result<GgufMetadata, GgufError> {
     loop {
         let buf = read_prefix(path, size).map_err(|_| GgufError::Malformed("cannot read file"))?;
         let read_len = buf.len();
-        match gguf_meta::parse_header(&buf) {
+        match gguf_meta::parse_header(&buf, PROBE_KEYS) {
             Ok(meta) => return Ok(meta),
             Err(GgufError::Truncated { needed }) => {
                 if read_len < size {

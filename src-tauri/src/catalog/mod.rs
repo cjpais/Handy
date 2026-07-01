@@ -19,7 +19,9 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
-use crate::managers::model::{EngineType, ModelDescriptor, ModelSource, QuantFile};
+use crate::managers::model::{
+    default_quant_file, EngineType, ModelDescriptor, ModelSource, QuantFile,
+};
 use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 
 #[derive(Deserialize)]
@@ -63,11 +65,7 @@ impl From<CatalogModel> for ModelDescriptor {
         // The default download file. Its name is folded into the id so a catalog
         // entry collides (dedups) with the very same file later discovered in
         // the HF cache — both compute `"{repo_id}/{filename}"`.
-        let default_filename = m
-            .files
-            .iter()
-            .find(|f| Some(&f.quant) == m.default_quant.as_ref())
-            .or_else(|| m.files.first())
+        let default_filename = default_quant_file(&m.files, m.default_quant.as_deref())
             .map(|f| f.filename.clone())
             .unwrap_or_default();
 

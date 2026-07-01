@@ -313,21 +313,25 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
 }
 
 async fn maybe_convert_chinese_variant(
-    settings: &AppSettings,
+    effective_language: &str,
     transcription: &str,
 ) -> Option<String> {
-    // Check if language is set to Simplified or Traditional Chinese
-    let is_simplified = settings.selected_language == "zh-Hans";
-    let is_traditional = settings.selected_language == "zh-Hant";
+    // Gate on the language the model actually transcribed in (the effective
+    // language), not the persisted intent. A leftover zh-Hans/zh-Hant intent
+    // from a previously selected model must not run OpenCC S2T/T2S over output a
+    // non-Chinese model produced — that would silently rewrite any shared CJK
+    // characters (e.g. Japanese kanji) in the result.
+    let is_simplified = effective_language == "zh-Hans";
+    let is_traditional = effective_language == "zh-Hant";
 
     if !is_simplified && !is_traditional {
-        debug!("selected_language is not Simplified or Traditional Chinese; skipping translation");
+        debug!("effective language is not Simplified or Traditional Chinese; skipping conversion");
         return None;
     }
 
     debug!(
-        "Starting Chinese translation using OpenCC for language: {}",
-        settings.selected_language
+        "Starting Chinese variant conversion using OpenCC for language: {}",
+        effective_language
     );
 
     // Use OpenCC to convert based on selected language
@@ -362,6 +366,28 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
+/// Resolve the persisted language *intent* into the language the
+/// currently-loaded model will actually use — the same capability-aware
+/// coercion the transcription paths apply (see
+/// [`crate::managers::model::effective_language`] and `transcription.rs`).
+/// Post-processing resolves it independently so it agrees with the language the
+/// transcription ran in, without threading a value through the pipeline.
+fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String {
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    let model_manager = app.state::<Arc<ModelManager>>();
+    let active_model = tm
+        .get_current_model()
+        .unwrap_or_else(|| settings.selected_model.clone());
+    match model_manager.get_model_info(&active_model) {
+        Some(info) => crate::managers::model::effective_language(
+            &settings.selected_language,
+            &info.supported_languages,
+            info.supports_language_detection,
+        ),
+        None => settings.selected_language.clone(),
+    }
+}
+
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
@@ -372,7 +398,13 @@ pub(crate) async fn process_transcription_output(
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
-    if let Some(converted_text) = maybe_convert_chinese_variant(&settings, transcription).await {
+    // Resolve the language the transcription actually ran in (the persisted
+    // intent coerced against the loaded model's capabilities) so OpenCC keys off
+    // the effective language rather than a possibly-stale intent.
+    let effective_language = resolve_effective_language(app, &settings);
+    if let Some(converted_text) =
+        maybe_convert_chinese_variant(&effective_language, transcription).await
+    {
         final_text = converted_text;
     }
 
@@ -609,12 +641,14 @@ impl ShortcutAction for TranscribeAction {
                     let transcription_time = Instant::now();
                     let transcription_result = match tm.finalize_stream() {
                         // A stream that finalized with usable text wins. An empty
-                        // result — finalize error, or a stream that produced
+                        // result — no active stream, or a stream that produced
                         // nothing — falls back to a full batch transcription of
-                        // the same audio rather than silently pasting/saving
-                        // nothing with no error surfaced.
-                        Some(text) if !text.trim().is_empty() => Ok(text),
-                        _ => tm.transcribe(samples),
+                        // the same audio. A finalize timeout/error is surfaced
+                        // instead because the stream worker may still hold the
+                        // engine, so a batch fallback would contend with it.
+                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
+                        Ok(_) => tm.transcribe(samples),
+                        Err(err) => Err(err),
                     };
 
                     // Await WAV save and verify

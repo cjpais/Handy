@@ -178,22 +178,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=========================");
     print_help();
 
-    let offline_silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
-    let streaming_silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
-    let offline_vad = SmoothedVad::new(
-        Box::new(offline_silero),
+    let silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
+    let smoothed_vad = SmoothedVad::new(
+        Box::new(silero),
         VAD_PREFILL_FRAMES,
         VAD_OFFLINE_HANGOVER_FRAMES,
         VAD_ONSET_FRAMES,
     );
-    let streaming_vad = SmoothedVad::new(
-        Box::new(streaming_silero),
-        VAD_PREFILL_FRAMES,
+    let recorder = AudioRecorder::new()?.with_vad(
+        Box::new(smoothed_vad),
+        VAD_OFFLINE_HANGOVER_FRAMES,
         VAD_STREAMING_HANGOVER_FRAMES,
-        VAD_ONSET_FRAMES,
     );
-    let recorder =
-        AudioRecorder::new()?.with_vad_profiles(Box::new(offline_vad), Box::new(streaming_vad));
     let mut state = RecorderState::new(recorder);
 
     let mut devices = list_input_devices()?;

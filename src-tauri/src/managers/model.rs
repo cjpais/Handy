@@ -112,6 +112,20 @@ pub struct QuantFile {
     pub size_bytes: u64,
 }
 
+/// Pick the default quant among `files`: the one whose `quant` matches
+/// `default_quant`, else the first file. The single source of the "which file do
+/// we surface" rule — shared by [`ModelDescriptor::default_file`] and the
+/// catalog's id construction so the two can never drift.
+pub(crate) fn default_quant_file<'a>(
+    files: &'a [QuantFile],
+    default_quant: Option<&str>,
+) -> Option<&'a QuantFile> {
+    files
+        .iter()
+        .find(|f| Some(f.quant.as_str()) == default_quant)
+        .or_else(|| files.first())
+}
+
 /// Live, on-disk status — the half of [`ModelInfo`] that isn't part of the
 /// static spec. Kept separate so a descriptor stays purely descriptive and
 /// status can be recomputed without rebuilding it.
@@ -150,12 +164,9 @@ pub struct ModelDescriptor {
 
 impl ModelDescriptor {
     /// The quant we surface for download/size: the declared default, else the
-    /// first (smallest) file.
+    /// first file.
     fn default_file(&self) -> Option<&QuantFile> {
-        self.files
-            .iter()
-            .find(|f| Some(&f.quant) == self.default_quant.as_ref())
-            .or_else(|| self.files.first())
+        default_quant_file(&self.files, self.default_quant.as_deref())
     }
 
     /// Render the frontend-facing [`ModelInfo`] by combining this spec with live
@@ -1103,9 +1114,14 @@ impl ModelManager {
 
     /// Re-run the local discovery scans (custom models dir + shared HF cache) so
     /// models a user dropped in or downloaded outside Handy show up without a
-    /// restart. Additive by design: it inserts newly-found files and never
-    /// touches existing entries, so in-flight downloads and runtime-probed
-    /// capabilities are preserved untouched.
+    /// restart. The merge is additive: only genuinely-new ids are inserted, so
+    /// existing entries keep their values — including runtime-probed capabilities
+    /// set by [`Self::set_runtime_capabilities`]. It then runs a full
+    /// [`Self::update_download_status`], which recomputes the disk-derived flags
+    /// (`is_downloaded` / `is_downloading` / `partial_size`) for *every* entry;
+    /// a rescan that races an in-flight download can therefore briefly clear that
+    /// download's `is_downloading` flag, but the download continues and the
+    /// event-driven UI self-corrects.
     ///
     /// The disk walk and 64 KiB GGUF header probes run against a cloned snapshot
     /// *off-lock*, so audio/transcription readers never block on I/O; only the
@@ -1156,13 +1172,43 @@ impl ModelManager {
         models.get(model_id).cloned()
     }
 
-    /// Record a model's real streaming capability, probed from the loaded
-    /// model's runtime capabilities (GGUF metadata). The picker badge reads
-    /// this; it is corrected here rather than guessed at registry build time.
-    pub fn set_supports_streaming(&self, model_id: &str, supports_streaming: bool) {
+    /// Reconcile a model's advertised capabilities with the ground truth read
+    /// from the loaded model (transcribe-cpp's GGUF-derived capabilities),
+    /// overwriting the pre-download view the registry was built from (catalog
+    /// metadata or a GGUF-header probe — see [`super::model_capabilities`]).
+    ///
+    /// This is where the header probe's gaps get corrected. It matters most for:
+    /// - **streaming**, which transcribe-cpp *infers* at load for the
+    ///   parakeet/streaming families (the flat GGUF key can be absent) and which
+    ///   gates whether streaming is even attempted before a load (see
+    ///   `actions.rs`), with no fresh-read recovery in that direction;
+    /// - **language detection** and the **supported-language set**, both of
+    ///   which feed [`effective_language`], so a mislabeled header would
+    ///   otherwise coerce an "auto" intent to a forced language for good.
+    ///
+    /// Translate is reconciled too for badge accuracy, though the run paths
+    /// re-read it live from the loaded model regardless.
+    pub fn set_runtime_capabilities(
+        &self,
+        model_id: &str,
+        supports_streaming: bool,
+        supports_translation: bool,
+        supports_language_detection: bool,
+        supported_languages: Vec<String>,
+    ) {
+        let supported_languages = canonicalize_supported_languages(supported_languages);
         let mut models = self.available_models.lock().unwrap();
         if let Some(model) = models.get_mut(model_id) {
             model.supports_streaming = supports_streaming;
+            model.supports_translation = supports_translation;
+            model.supports_language_detection = supports_language_detection;
+            // An empty set means the model is language-agnostic — but it is also
+            // what a failed capability read leaves behind, so keep the probed /
+            // catalog list rather than blanking a known one to nothing.
+            if !supported_languages.is_empty() {
+                model.supports_language_selection = supported_languages.len() > 1;
+                model.supported_languages = supported_languages;
+            }
         }
     }
 

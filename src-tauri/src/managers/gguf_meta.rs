@@ -37,10 +37,11 @@ const T_FLOAT64: u32 = 12;
 /// is comfortably within these.
 const MAX_STRING_LEN: usize = 64 * 1024 * 1024;
 const MAX_ARRAY_LEN: u64 = 16 * 1024 * 1024;
+const MAX_STORED_ARRAY_LEN: u64 = 4096;
 const MAX_KV_COUNT: u64 = 1_000_000;
 
 /// A parsed GGUF metadata value. Only the shapes Handy consumes are given
-/// accessors; everything else is still read so the cursor advances correctly.
+/// accessors; unrequested values are skipped without materializing them.
 #[derive(Debug, Clone, PartialEq)]
 pub enum GgufValue {
     U8(u8),
@@ -98,7 +99,7 @@ impl GgufValue {
 /// skipped, since Handy reads capabilities purely from the KV pairs.
 #[derive(Debug, Clone)]
 pub struct GgufMetadata {
-    /// All key/value metadata pairs, keyed by their GGUF key.
+    /// Requested key/value metadata pairs, keyed by their GGUF key.
     pub kv: HashMap<String, GgufValue>,
 }
 
@@ -187,14 +188,26 @@ impl<'a> ByteCursor<'a> {
         ]))
     }
 
-    /// A GGUF string: u64 length followed by that many UTF-8 bytes.
-    fn string(&mut self) -> Result<String, GgufError> {
-        let len = self.u64()? as usize;
+    fn string_len(&mut self) -> Result<usize, GgufError> {
+        let len = usize::try_from(self.u64()?)
+            .map_err(|_| GgufError::Malformed("string length too large"))?;
         if len > MAX_STRING_LEN {
             return Err(GgufError::Malformed("string length too large"));
         }
+        Ok(len)
+    }
+
+    /// A GGUF string: u64 length followed by that many UTF-8 bytes.
+    fn string(&mut self) -> Result<String, GgufError> {
+        let len = self.string_len()?;
         let bytes = self.take(len)?;
         Ok(String::from_utf8_lossy(bytes).into_owned())
+    }
+
+    fn skip_string(&mut self) -> Result<(), GgufError> {
+        let len = self.string_len()?;
+        self.take(len)?;
+        Ok(())
     }
 }
 
@@ -227,6 +240,9 @@ fn read_value(cur: &mut ByteCursor, value_type: u32) -> Result<GgufValue, GgufEr
             if len > MAX_ARRAY_LEN {
                 return Err(GgufError::Malformed("array length too large"));
             }
+            if len > MAX_STORED_ARRAY_LEN {
+                return Err(GgufError::Malformed("stored array length too large"));
+            }
             // Don't pre-allocate the claimed length: a truncated buffer can
             // advertise a huge array it doesn't actually contain.
             let mut items = Vec::with_capacity(len.min(1024) as usize);
@@ -239,10 +255,61 @@ fn read_value(cur: &mut ByteCursor, value_type: u32) -> Result<GgufValue, GgufEr
     })
 }
 
+fn scalar_size(value_type: u32) -> Option<usize> {
+    match value_type {
+        T_UINT8 | T_INT8 | T_BOOL => Some(1),
+        T_UINT16 | T_INT16 => Some(2),
+        T_UINT32 | T_INT32 | T_FLOAT32 => Some(4),
+        T_UINT64 | T_INT64 | T_FLOAT64 => Some(8),
+        _ => None,
+    }
+}
+
+fn skip_value(cur: &mut ByteCursor, value_type: u32) -> Result<(), GgufError> {
+    if let Some(size) = scalar_size(value_type) {
+        cur.take(size)?;
+        return Ok(());
+    }
+
+    match value_type {
+        T_STRING => cur.skip_string(),
+        T_ARRAY => {
+            let elem_type = cur.u32()?;
+            if elem_type == T_ARRAY {
+                return Err(GgufError::Malformed("nested arrays are not allowed"));
+            }
+            let len = cur.u64()?;
+            if len > MAX_ARRAY_LEN {
+                return Err(GgufError::Malformed("array length too large"));
+            }
+
+            if let Some(size) = scalar_size(elem_type) {
+                let bytes = usize::try_from(len)
+                    .ok()
+                    .and_then(|len| len.checked_mul(size))
+                    .ok_or(GgufError::Malformed("length overflow"))?;
+                cur.take(bytes)?;
+            } else if elem_type == T_STRING {
+                for _ in 0..len {
+                    cur.skip_string()?;
+                }
+            } else {
+                return Err(GgufError::Malformed("unknown array element type"));
+            }
+            Ok(())
+        }
+        _ => Err(GgufError::Malformed("unknown value type")),
+    }
+}
+
 /// Parse the GGUF metadata header from `bytes`. `bytes` may be the whole file or
 /// just a leading prefix (e.g. an HTTP Range fetch); a prefix too short to hold
 /// the full metadata section returns [`GgufError::Truncated`].
-pub fn parse_header(bytes: &[u8]) -> Result<GgufMetadata, GgufError> {
+///
+/// Only keys listed in `wanted_keys` are materialized. Other values are skipped
+/// with checked cursor movement so large tokenizer metadata arrays do not become
+/// Handy allocations while probing a few capability fields.
+pub fn parse_header(bytes: &[u8], wanted_keys: &[&str]) -> Result<GgufMetadata, GgufError> {
     let mut cur = ByteCursor::new(bytes);
 
     let magic = cur.u32()?;
@@ -261,12 +328,19 @@ pub fn parse_header(bytes: &[u8]) -> Result<GgufMetadata, GgufError> {
         return Err(GgufError::Malformed("absurd metadata kv count"));
     }
 
-    let mut kv = HashMap::with_capacity(kv_count.min(256) as usize);
+    let mut kv = HashMap::with_capacity(wanted_keys.len());
     for _ in 0..kv_count {
         let key = cur.string()?;
         let value_type = cur.u32()?;
-        let value = read_value(&mut cur, value_type)?;
-        kv.insert(key, value);
+        if wanted_keys.contains(&key.as_str()) {
+            let value = read_value(&mut cur, value_type)?;
+            kv.insert(key, value);
+            if kv.len() == wanted_keys.len() {
+                break;
+            }
+        } else {
+            skip_value(&mut cur, value_type)?;
+        }
     }
 
     Ok(GgufMetadata { kv })
@@ -336,7 +410,15 @@ mod tests {
                 ]),
             ),
         ]);
-        let meta = parse_header(&data).unwrap();
+        let meta = parse_header(
+            &data,
+            &[
+                "general.architecture",
+                "stt.capability.translate",
+                "general.languages",
+            ],
+        )
+        .unwrap();
         assert_eq!(meta.get_str("general.architecture"), Some("whisper"));
         assert_eq!(meta.get_bool("stt.capability.translate"), Some(true));
         assert_eq!(
@@ -349,7 +431,7 @@ mod tests {
     #[test]
     fn rejects_non_gguf() {
         assert!(matches!(
-            parse_header(b"not a gguf file at all"),
+            parse_header(b"not a gguf file at all", &["general.architecture"]),
             Err(GgufError::NotGguf)
         ));
     }
@@ -357,7 +439,7 @@ mod tests {
     #[test]
     fn reports_truncation_with_hint() {
         let data = build_gguf(&[("general.architecture", GgufValue::String("whisper".into()))]);
-        let err = parse_header(&data[..data.len() - 3]).unwrap_err();
+        let err = parse_header(&data[..data.len() - 3], &["general.architecture"]).unwrap_err();
         match err {
             GgufError::Truncated { needed } => assert!(needed >= data.len() - 3),
             other => panic!("expected Truncated, got {other:?}"),
@@ -367,8 +449,46 @@ mod tests {
     #[test]
     fn empty_buffer_is_truncated_not_panic() {
         assert!(matches!(
-            parse_header(&[]),
+            parse_header(&[], &["general.architecture"]),
             Err(GgufError::Truncated { .. })
         ));
+    }
+
+    #[test]
+    fn stops_after_wanted_keys_without_reading_later_large_arrays() {
+        let mut data = build_gguf(&[("general.architecture", GgufValue::String("whisper".into()))]);
+        // Patch kv_count from 1 to 2 and append an enormous, intentionally
+        // truncated array. The parser should stop after the wanted first key.
+        data[16..24].copy_from_slice(&2u64.to_le_bytes());
+        push_str(&mut data, "tokenizer.ggml.tokens");
+        data.extend_from_slice(&T_ARRAY.to_le_bytes());
+        data.extend_from_slice(&T_STRING.to_le_bytes());
+        data.extend_from_slice(&MAX_ARRAY_LEN.to_le_bytes());
+
+        let meta = parse_header(&data, &["general.architecture"]).unwrap();
+        assert_eq!(meta.get_str("general.architecture"), Some("whisper"));
+    }
+
+    #[test]
+    fn skips_unwanted_arrays_without_storing_them() {
+        let mut data = Vec::new();
+        data.extend_from_slice(&GGUF_MAGIC.to_le_bytes());
+        data.extend_from_slice(&3u32.to_le_bytes()); // version
+        data.extend_from_slice(&0u64.to_le_bytes()); // tensor_count
+        data.extend_from_slice(&2u64.to_le_bytes()); // kv_count
+
+        push_str(&mut data, "unwanted.bytes");
+        data.extend_from_slice(&T_ARRAY.to_le_bytes());
+        data.extend_from_slice(&T_UINT8.to_le_bytes());
+        data.extend_from_slice(&(MAX_STORED_ARRAY_LEN + 1).to_le_bytes());
+        data.extend(std::iter::repeat(0).take((MAX_STORED_ARRAY_LEN + 1) as usize));
+
+        push_str(&mut data, "general.architecture");
+        data.extend_from_slice(&T_STRING.to_le_bytes());
+        push_str(&mut data, "whisper");
+
+        let meta = parse_header(&data, &["general.architecture"]).unwrap();
+        assert_eq!(meta.get_str("general.architecture"), Some("whisper"));
+        assert_eq!(meta.kv.len(), 1);
     }
 }

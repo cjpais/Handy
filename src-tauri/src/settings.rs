@@ -352,6 +352,11 @@ impl std::ops::DerefMut for SecretMap {
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
+    /// Internal settings schema marker for one-time migrations. Fresh installs
+    /// start at the current version; existing stores missing this key are
+    /// treated as version 0 and migrated forward.
+    #[serde(default = "default_settings_schema_version")]
+    pub settings_schema_version: u32,
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
     pub audio_feedback: bool,
@@ -469,6 +474,12 @@ fn default_model() -> String {
     "".to_string()
 }
 
+const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 1;
+
+fn default_settings_schema_version() -> u32 {
+    CURRENT_SETTINGS_SCHEMA_VERSION
+}
+
 fn default_always_on_microphone() -> bool {
     false
 }
@@ -508,8 +519,8 @@ fn default_overlay_position() -> OverlayPosition {
 }
 
 fn default_overlay_style() -> OverlayStyle {
-    // Mirror the overlay-position default: Linux hides the overlay by default,
-    // other platforms show the live overlay by default.
+    // Linux hides the overlay by default; other platforms show the live overlay.
+    // Position is independent and only selects top vs. bottom placement.
     #[cfg(target_os = "linux")]
     return OverlayStyle::None;
     #[cfg(not(target_os = "linux"))]
@@ -818,6 +829,7 @@ pub fn get_default_settings() -> AppSettings {
     );
 
     AppSettings {
+        settings_schema_version: default_settings_schema_version(),
         bindings,
         push_to_talk: true,
         audio_feedback: false,
@@ -1008,6 +1020,23 @@ fn apply_settings_migrations(
         updated = true;
     }
 
+    let stored_schema_version = settings_value
+        .get("settings_schema_version")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
+    if stored_schema_version < 1 {
+        // `transcribe_gpu_device` used to be a UI ordinal; it is now a
+        // transcribe.cpp registry index. A positive legacy value can point at a
+        // different GPU after CPU/accelerator/backend devices are included in
+        // the registry, so reset ambiguous explicit selections to Auto once.
+        if settings.transcribe_gpu_device > 0 {
+            settings.transcribe_accelerator = TranscribeAcceleratorSetting::Auto;
+            settings.transcribe_gpu_device = default_transcribe_gpu_device();
+        }
+        settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
+        updated = true;
+    }
+
     // One-time overlay migration (only while the new key is absent): the retired
     // overlay_position `none` meant "hide the overlay", so map it to the new
     // OverlayStyle::None; any other position had the overlay visible, so Live.
@@ -1071,6 +1100,10 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+        assert_eq!(
+            settings.settings_schema_version,
+            CURRENT_SETTINGS_SCHEMA_VERSION
+        );
     }
 
     #[cfg(not(target_os = "linux"))]
@@ -1119,6 +1152,55 @@ mod tests {
         assert!(apply_settings_migrations(&mut settings, &raw));
         assert_eq!(settings.overlay_style, OverlayStyle::Live);
         assert_eq!(settings.overlay_position, OverlayPosition::Top);
+    }
+
+    #[test]
+    fn gpu_device_migration_resets_legacy_positive_selection_to_auto() {
+        let mut settings = get_default_settings();
+        settings.transcribe_accelerator = TranscribeAcceleratorSetting::Gpu;
+        settings.transcribe_gpu_device = 2;
+
+        let raw = serde_json::json!({
+            "transcribe_accelerator": "gpu",
+            "transcribe_gpu_device": 2
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Auto
+        );
+        assert_eq!(
+            settings.transcribe_gpu_device,
+            default_transcribe_gpu_device()
+        );
+        assert_eq!(
+            settings.settings_schema_version,
+            CURRENT_SETTINGS_SCHEMA_VERSION
+        );
+    }
+
+    #[test]
+    fn gpu_device_migration_keeps_current_schema_positive_selection() {
+        let mut settings = get_default_settings();
+        settings.transcribe_accelerator = TranscribeAcceleratorSetting::Gpu;
+        settings.transcribe_gpu_device = 2;
+
+        let raw = serde_json::json!({
+            "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
+            "onboarding_completed": false,
+            "whats_new_last_seen_version": default_whats_new_last_seen_version(),
+            "overlay_style": "live",
+            "transcribe_accelerator": "gpu",
+            "transcribe_gpu_device": 2
+        });
+
+        assert!(!apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Gpu
+        );
+        assert_eq!(settings.transcribe_gpu_device, 2);
     }
 
     #[test]
