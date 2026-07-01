@@ -95,7 +95,14 @@ tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.10.0"
 
 [target.'cfg(windows)'.dependencies]
-transcribe-rs = { version = "0.3.8", features = ["ort-directml"] }
+# ONNX Runtime on Windows is CPU-only (no ort-directml), matching macOS/Linux.
+# The DirectML EP was experimental and, more importantly, pulled in pyke's
+# prebuilt ONNX Runtime which is compiled with a global /arch:AVX2 baseline that
+# executes BMI2/AVX in a static initializer and crashes at process startup on any
+# pre-Haswell CPU (Sandy/Ivy Bridge, older AMD). Dropping the feature means we
+# link a baseline ONNX Runtime (dynamically, via ORT_LIB_LOCATION in build.yml)
+# with proper runtime CPU dispatch. Base `transcribe-rs` (features = ["onnx"])
+# is inherited here, so Parakeet/Moonshine/etc. still run on CPU.
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
