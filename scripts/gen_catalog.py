@@ -30,16 +30,24 @@ def acc_from_wer(wer):
     return None if wer is None else round(100 * math.exp(-wer / ACC_SCALE))
 
 # ───────────────────────── curation (CJ owns; editorial, not derivable) ──────
-# slug -> {rank?, desc?, use_case?, default_quant?, hidden?}.  All optional.
+# slug -> {rank?, rec?, desc?, use_case?, default_quant?, hidden?}.  All optional.
 # desc is hand-written UI copy; models without one use factual generated summaries.
+# rank = editorial sort position (broad ordering). rec = the small "Recommended"
+# badge / onboarding subset — independent of rank, so a model can rank high
+# without carrying the recommended tag.
 CURATION = {
-    "parakeet-unified-en-0.6b":        {"rank": 1, "desc": "Fast, accurate English with live transcription."},
-    "nemotron-3.5-asr-streaming-0.6b": {"rank": 2, "desc": "Live multilingual transcription across 28 languages."},
-    "canary-180m-flash":               {"rank": 3, "desc": "Tiny and instant — runs well on any hardware."},
-    "cohere-transcribe-03-2026":       {"rank": 4, "desc": "Highest accuracy, 14 languages."},
-    "whisper-medium":                  {"rank": 5, "desc": "Broadest language coverage, with translation to English."},
-    "Voxtral-Mini-4B-Realtime-2602":   {"rank": 6, "desc": "Live multilingual, excellent on Apple Silicon."},
-    # description-only (not recommended) — carried over from the legacy .bin entry
+    "parakeet-unified-en-0.6b":        {"rank": 1, "rec": True, "desc": "Fast, accurate live English transcription"},
+    "nemotron-3.5-asr-streaming-0.6b": {"rank": 2, "rec": True, "desc": "Live multilingual transcription across 28 languages"},
+    "canary-180m-flash":               {"rank": 3, "rec": True, "desc": "Tiny and instant, runs well on any hardware"},
+    "cohere-transcribe-03-2026":       {"rank": 4, "rec": True, "desc": "Highest accuracy, 14 languages, slower"},
+    "whisper-medium":                  {"rank": 5, "rec": True, "desc": "Broadest language, but may run a bit slow"},
+    # ranked (sorted high) but NOT tagged recommended
+    "Voxtral-Mini-4B-Realtime-2602":   {"rank": 6, "desc": "Live multilingual, excellent on powerful machines"},
+    "parakeet-tdt-0.6b-v3":            {"rank": 7, "desc": "Fast and accurate. Supports 25 European languages"},
+    "parakeet-tdt-0.6b-v2":            {"rank": 8, "desc": "English only. The best model for English speakers"},
+    "Qwen3-ASR-0.6B":                  {"rank": 9, "desc": "Excellent multilingual model"},
+    "Fun-ASR-MLT-Nano-2512":           {"rank": 10, "desc": "A tiny multilingual model"},
+    # description-only (unranked, not recommended) — carried over from the legacy .bin entry
     "Breeze-ASR-25":                   {"desc": "Optimized for Taiwanese Mandarin. Code-switching support."},
 }
 # temporary capability corrections pending a card re-push (remove once cards fixed)
@@ -211,8 +219,8 @@ def build(repo):
         "accuracy_score": acc_from_wer(hw),
         "files": files,
         "default_quant": default_quant,
-        "recommended": "rank" in cur,
-        "recommended_rank": cur.get("rank"),
+        "recommended": bool(cur.get("rec")),         # small badge/onboarding subset
+        "recommended_rank": cur.get("rank"),          # editorial sort position (independent)
     }
 
 def main():

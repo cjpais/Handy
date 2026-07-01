@@ -1,6 +1,6 @@
 {
   "catalog_version": 1,
-  "generated_at": "2026-06-29T23:58:27+00:00",
+  "generated_at": "2026-07-01T13:30:59+00:00",
   "models": [
     {
       "id": "handy-computer/parakeet-unified-en-0.6b-gguf",
@@ -9,7 +9,7 @@
       "architecture": "parakeet",
       "family": "parakeet",
       "parameters": "0.6B",
-      "description": "Fast, accurate English with live transcription.",
+      "description": "Fast, accurate live English transcription",
       "base_model": "nvidia/parakeet-unified-en-0.6b",
       "license": "cc-by-4.0",
       "language_count": 1,
@@ -65,7 +65,7 @@
       "architecture": "parakeet",
       "family": "nemotron",
       "parameters": "0.6B",
-      "description": "Live multilingual transcription across 28 languages.",
+      "description": "Live multilingual transcription across 28 languages",
       "base_model": "nvidia/nemotron-3.5-asr-streaming-0.6b",
       "license": "other",
       "language_count": 28,
@@ -121,7 +121,7 @@
       "architecture": "canary",
       "family": "canary",
       "parameters": "180M",
-      "description": "Tiny and instant — runs well on any hardware.",
+      "description": "Tiny and instant, runs well on any hardware",
       "base_model": "nvidia/canary-180m-flash",
       "license": "cc-by-4.0",
       "language_count": 4,
@@ -177,7 +177,7 @@
       "architecture": "cohere_asr",
       "family": "cohere",
       "parameters": "2.0B",
-      "description": "Highest accuracy, 14 languages.",
+      "description": "Highest accuracy, 14 languages, slower",
       "base_model": "CohereLabs/cohere-transcribe-03-2026",
       "license": "apache-2.0",
       "language_count": 14,
@@ -233,7 +233,7 @@
       "architecture": "whisper",
       "family": "whisper",
       "parameters": "764M",
-      "description": "Broadest language coverage, with translation to English.",
+      "description": "Broadest language, but may run a bit slow",
       "base_model": "openai/whisper-medium",
       "license": "apache-2.0",
       "language_count": 99,
@@ -289,7 +289,7 @@
       "architecture": "voxtral_realtime",
       "family": "voxtral",
       "parameters": "4.8B",
-      "description": "Live multilingual, excellent on Apple Silicon.",
+      "description": "Live multilingual, excellent on powerful machines",
       "base_model": "mistralai/Voxtral-Mini-4B-Realtime-2602",
       "license": "apache-2.0",
       "language_count": 13,
@@ -335,8 +335,232 @@
         }
       ],
       "default_quant": "Q5_K_M",
-      "recommended": true,
+      "recommended": false,
       "recommended_rank": 6
+    },
+    {
+      "id": "handy-computer/parakeet-tdt-0.6b-v3-gguf",
+      "slug": "parakeet-tdt-0.6b-v3",
+      "name": "Parakeet TDT 0.6B v3",
+      "architecture": "parakeet",
+      "family": "parakeet",
+      "parameters": "0.6B",
+      "description": "Fast and accurate. Supports 25 European languages",
+      "base_model": "nvidia/parakeet-tdt-0.6b-v3",
+      "license": "cc-by-4.0",
+      "language_count": 25,
+      "languages": ["bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt", "mt", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "uk"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": true,
+        "timestamps": "token"
+      },
+      "speed_score": 79,
+      "accuracy_score": 88,
+      "files": [
+        {
+          "filename": "parakeet-tdt-0.6b-v3-Q4_K_M.gguf",
+          "quant": "Q4_K_M",
+          "size_bytes": 485425504
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v3-Q5_K_M.gguf",
+          "quant": "Q5_K_M",
+          "size_bytes": 548946272
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v3-Q6_K.gguf",
+          "quant": "Q6_K",
+          "size_bytes": 610342240
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v3-Q8_0.gguf",
+          "quant": "Q8_0",
+          "size_bytes": 739508576
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v3-F16.gguf",
+          "quant": "F16",
+          "size_bytes": 1255869856
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v3-F32.gguf",
+          "quant": "F32",
+          "size_bytes": 2508435616
+        }
+      ],
+      "default_quant": "Q8_0",
+      "recommended": false,
+      "recommended_rank": 7
+    },
+    {
+      "id": "handy-computer/parakeet-tdt-0.6b-v2-gguf",
+      "slug": "parakeet-tdt-0.6b-v2",
+      "name": "Parakeet TDT 0.6B v2",
+      "architecture": "parakeet",
+      "family": "parakeet",
+      "parameters": "0.6B",
+      "description": "English only. The best model for English speakers",
+      "base_model": "nvidia/parakeet-tdt-0.6b-v2",
+      "license": "cc-by-4.0",
+      "language_count": 1,
+      "languages": ["en"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": false,
+        "timestamps": "token"
+      },
+      "speed_score": 85,
+      "accuracy_score": 89,
+      "files": [
+        {
+          "filename": "parakeet-tdt-0.6b-v2-Q4_K_M.gguf",
+          "quant": "Q4_K_M",
+          "size_bytes": 475491840
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v2-Q5_K_M.gguf",
+          "quant": "Q5_K_M",
+          "size_bytes": 539012608
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v2-Q6_K.gguf",
+          "quant": "Q6_K",
+          "size_bytes": 600408576
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v2-Q8_0.gguf",
+          "quant": "Q8_0",
+          "size_bytes": 729574912
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v2-F16.gguf",
+          "quant": "F16",
+          "size_bytes": 1237334592
+        },
+        {
+          "filename": "parakeet-tdt-0.6b-v2-F32.gguf",
+          "quant": "F32",
+          "size_bytes": 2471550272
+        }
+      ],
+      "default_quant": "Q8_0",
+      "recommended": false,
+      "recommended_rank": 8
+    },
+    {
+      "id": "handy-computer/Qwen3-ASR-0.6B-gguf",
+      "slug": "Qwen3-ASR-0.6B",
+      "name": "Qwen3-ASR 0.6B",
+      "architecture": "qwen3_asr",
+      "family": "qwen3",
+      "parameters": "782M",
+      "description": "Excellent multilingual model",
+      "base_model": "Qwen/Qwen3-ASR-0.6B",
+      "license": "apache-2.0",
+      "language_count": 30,
+      "languages": ["zh", "en", "yue", "ar", "de", "fr", "es", "pt", "id", "it", "ko", "ru", "th", "vi", "ja", "tr", "hi", "ms", "nl", "sv", "da", "fi", "pl", "cs", "fil", "fa", "el", "ro", "hu", "mk"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": true,
+        "timestamps": "none"
+      },
+      "speed_score": 63,
+      "accuracy_score": 87,
+      "files": [
+        {
+          "filename": "Qwen3-ASR-0.6B-Q4_K_M.gguf",
+          "quant": "Q4_K_M",
+          "size_bytes": 589560480
+        },
+        {
+          "filename": "Qwen3-ASR-0.6B-Q5_K_M.gguf",
+          "quant": "Q5_K_M",
+          "size_bytes": 645356192
+        },
+        {
+          "filename": "Qwen3-ASR-0.6B-Q6_K.gguf",
+          "quant": "Q6_K",
+          "size_bytes": 690417824
+        },
+        {
+          "filename": "Qwen3-ASR-0.6B-Q8_0.gguf",
+          "quant": "Q8_0",
+          "size_bytes": 850423456
+        },
+        {
+          "filename": "Qwen3-ASR-0.6B-BF16.gguf",
+          "quant": "BF16",
+          "size_bytes": 1571490016
+        },
+        {
+          "filename": "Qwen3-ASR-0.6B-F16.gguf",
+          "quant": "F16",
+          "size_bytes": 1579793056
+        }
+      ],
+      "default_quant": "Q8_0",
+      "recommended": false,
+      "recommended_rank": 9
+    },
+    {
+      "id": "handy-computer/Fun-ASR-MLT-Nano-2512-gguf",
+      "slug": "Fun-ASR-MLT-Nano-2512",
+      "name": "Fun-ASR Nano Multilingual",
+      "architecture": "funasr_nano",
+      "family": "fun",
+      "parameters": "985M",
+      "description": "A tiny multilingual model",
+      "base_model": "FunAudioLLM/Fun-ASR-MLT-Nano-2512",
+      "license": "other",
+      "language_count": 31,
+      "languages": ["zh", "en", "yue", "ja", "ko", "vi", "id", "th", "ms", "tl", "ar", "hi", "bg", "hr", "cs", "da", "nl", "et", "fi", "el", "hu", "ga", "lv", "lt", "mt", "pl", "pt", "ro", "sk", "sl", "sv"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": false,
+        "timestamps": "none"
+      },
+      "speed_score": 68,
+      "accuracy_score": 89,
+      "files": [
+        {
+          "filename": "Fun-ASR-MLT-Nano-2512-Q4_K_M.gguf",
+          "quant": "Q4_K_M",
+          "size_bytes": 556975168
+        },
+        {
+          "filename": "Fun-ASR-MLT-Nano-2512-Q5_K_M.gguf",
+          "quant": "Q5_K_M",
+          "size_bytes": 631129152
+        },
+        {
+          "filename": "Fun-ASR-MLT-Nano-2512-Q6_K.gguf",
+          "quant": "Q6_K",
+          "size_bytes": 690744384
+        },
+        {
+          "filename": "Fun-ASR-MLT-Nano-2512-Q8_0.gguf",
+          "quant": "Q8_0",
+          "size_bytes": 891271232
+        },
+        {
+          "filename": "Fun-ASR-MLT-Nano-2512-BF16.gguf",
+          "quant": "BF16",
+          "size_bytes": 1667504192
+        },
+        {
+          "filename": "Fun-ASR-MLT-Nano-2512-F16.gguf",
+          "quant": "F16",
+          "size_bytes": 1667504192
+        }
+      ],
+      "default_quant": "Q8_0",
+      "recommended": false,
+      "recommended_rank": 10
     },
     {
       "id": "handy-computer/canary-1b-flash-gguf",
@@ -619,55 +843,55 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/Fun-ASR-MLT-Nano-2512-gguf",
-      "slug": "Fun-ASR-MLT-Nano-2512",
-      "name": "Fun-ASR Nano Multilingual",
-      "architecture": "funasr_nano",
-      "family": "fun",
-      "parameters": "985M",
-      "description": "31-language speech-to-text.",
-      "base_model": "FunAudioLLM/Fun-ASR-MLT-Nano-2512",
-      "license": "other",
-      "language_count": 31,
-      "languages": ["zh", "en", "yue", "ja", "ko", "vi", "id", "th", "ms", "tl", "ar", "hi", "bg", "hr", "cs", "da", "nl", "et", "fi", "el", "hu", "ga", "lv", "lt", "mt", "pl", "pt", "ro", "sk", "sl", "sv"],
+      "id": "handy-computer/gigaam-v3-ctc-gguf",
+      "slug": "gigaam-v3-ctc",
+      "name": "GigaAM v3 CTC",
+      "architecture": "gigaam",
+      "family": "gigaam",
+      "parameters": "221M",
+      "description": "English speech-to-text with token-level timestamps.",
+      "base_model": "ai-sage/GigaAM-v3",
+      "license": "mit",
+      "language_count": 1,
+      "languages": ["ru"],
       "capabilities": {
         "streaming": false,
         "translate": false,
         "lang_detect": false,
-        "timestamps": "none"
+        "timestamps": "token"
       },
-      "speed_score": 68,
-      "accuracy_score": 89,
+      "speed_score": 98,
+      "accuracy_score": 57,
       "files": [
         {
-          "filename": "Fun-ASR-MLT-Nano-2512-Q4_K_M.gguf",
+          "filename": "gigaam-v3-ctc-Q4_K_M.gguf",
           "quant": "Q4_K_M",
-          "size_bytes": 556975168
+          "size_bytes": 182150080
         },
         {
-          "filename": "Fun-ASR-MLT-Nano-2512-Q5_K_M.gguf",
+          "filename": "gigaam-v3-ctc-Q5_K_M.gguf",
           "quant": "Q5_K_M",
-          "size_bytes": 631129152
+          "size_bytes": 204563392
         },
         {
-          "filename": "Fun-ASR-MLT-Nano-2512-Q6_K.gguf",
+          "filename": "gigaam-v3-ctc-Q6_K.gguf",
           "quant": "Q6_K",
-          "size_bytes": 690744384
+          "size_bytes": 226091968
         },
         {
-          "filename": "Fun-ASR-MLT-Nano-2512-Q8_0.gguf",
+          "filename": "gigaam-v3-ctc-Q8_0.gguf",
           "quant": "Q8_0",
-          "size_bytes": 891271232
+          "size_bytes": 271803328
         },
         {
-          "filename": "Fun-ASR-MLT-Nano-2512-BF16.gguf",
-          "quant": "BF16",
-          "size_bytes": 1667504192
-        },
-        {
-          "filename": "Fun-ASR-MLT-Nano-2512-F16.gguf",
+          "filename": "gigaam-v3-ctc-F16.gguf",
           "quant": "F16",
-          "size_bytes": 1667504192
+          "size_bytes": 448750528
+        },
+        {
+          "filename": "gigaam-v3-ctc-F32.gguf",
+          "quant": "F32",
+          "size_bytes": 882913216
         }
       ],
       "default_quant": "Q8_0",
@@ -724,62 +948,6 @@
           "filename": "gigaam-v3-e2e-ctc-F32.gguf",
           "quant": "F32",
           "size_bytes": 883603552
-        }
-      ],
-      "default_quant": "Q8_0",
-      "recommended": false,
-      "recommended_rank": null
-    },
-    {
-      "id": "handy-computer/gigaam-v3-ctc-gguf",
-      "slug": "gigaam-v3-ctc",
-      "name": "GigaAM v3 CTC",
-      "architecture": "gigaam",
-      "family": "gigaam",
-      "parameters": "221M",
-      "description": "English speech-to-text with token-level timestamps.",
-      "base_model": "ai-sage/GigaAM-v3",
-      "license": "mit",
-      "language_count": 1,
-      "languages": ["ru"],
-      "capabilities": {
-        "streaming": false,
-        "translate": false,
-        "lang_detect": false,
-        "timestamps": "token"
-      },
-      "speed_score": 98,
-      "accuracy_score": 57,
-      "files": [
-        {
-          "filename": "gigaam-v3-ctc-Q4_K_M.gguf",
-          "quant": "Q4_K_M",
-          "size_bytes": 182150080
-        },
-        {
-          "filename": "gigaam-v3-ctc-Q5_K_M.gguf",
-          "quant": "Q5_K_M",
-          "size_bytes": 204563392
-        },
-        {
-          "filename": "gigaam-v3-ctc-Q6_K.gguf",
-          "quant": "Q6_K",
-          "size_bytes": 226091968
-        },
-        {
-          "filename": "gigaam-v3-ctc-Q8_0.gguf",
-          "quant": "Q8_0",
-          "size_bytes": 271803328
-        },
-        {
-          "filename": "gigaam-v3-ctc-F16.gguf",
-          "quant": "F16",
-          "size_bytes": 448750528
-        },
-        {
-          "filename": "gigaam-v3-ctc-F32.gguf",
-          "quant": "F32",
-          "size_bytes": 882913216
         }
       ],
       "default_quant": "Q8_0",
@@ -1261,17 +1429,17 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/moonshine-tiny-zh-gguf",
-      "slug": "moonshine-tiny-zh",
-      "name": "Moonshine Tiny (Chinese)",
+      "id": "handy-computer/moonshine-tiny-vi-gguf",
+      "slug": "moonshine-tiny-vi",
+      "name": "Moonshine Tiny (Vietnamese)",
       "architecture": "moonshine",
       "family": "moonshine",
       "parameters": "27M",
       "description": "English speech-to-text.",
-      "base_model": "UsefulSensors/moonshine-tiny-zh",
+      "base_model": "UsefulSensors/moonshine-tiny-vi",
       "license": "mit",
       "language_count": 1,
-      "languages": ["zh"],
+      "languages": ["vi"],
       "capabilities": {
         "streaming": false,
         "translate": false,
@@ -1279,20 +1447,20 @@
         "timestamps": "none"
       },
       "speed_score": 100,
-      "accuracy_score": 40,
+      "accuracy_score": 42,
       "files": [
         {
-          "filename": "moonshine-tiny-zh-Q8_0.gguf",
+          "filename": "moonshine-tiny-vi-Q8_0.gguf",
           "quant": "Q8_0",
           "size_bytes": 35466944
         },
         {
-          "filename": "moonshine-tiny-zh-F16.gguf",
+          "filename": "moonshine-tiny-vi-F16.gguf",
           "quant": "F16",
           "size_bytes": 59244224
         },
         {
-          "filename": "moonshine-tiny-zh-F32.gguf",
+          "filename": "moonshine-tiny-vi-F32.gguf",
           "quant": "F32",
           "size_bytes": 109969088
         }
@@ -1384,6 +1552,47 @@
       "recommended_rank": null
     },
     {
+      "id": "handy-computer/moonshine-tiny-zh-gguf",
+      "slug": "moonshine-tiny-zh",
+      "name": "Moonshine Tiny (Chinese)",
+      "architecture": "moonshine",
+      "family": "moonshine",
+      "parameters": "27M",
+      "description": "English speech-to-text.",
+      "base_model": "UsefulSensors/moonshine-tiny-zh",
+      "license": "mit",
+      "language_count": 1,
+      "languages": ["zh"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": false,
+        "timestamps": "none"
+      },
+      "speed_score": 100,
+      "accuracy_score": 40,
+      "files": [
+        {
+          "filename": "moonshine-tiny-zh-Q8_0.gguf",
+          "quant": "Q8_0",
+          "size_bytes": 35466944
+        },
+        {
+          "filename": "moonshine-tiny-zh-F16.gguf",
+          "quant": "F16",
+          "size_bytes": 59244224
+        },
+        {
+          "filename": "moonshine-tiny-zh-F32.gguf",
+          "quant": "F32",
+          "size_bytes": 109969088
+        }
+      ],
+      "default_quant": "Q8_0",
+      "recommended": false,
+      "recommended_rank": null
+    },
+    {
       "id": "handy-computer/moonshine-tiny-ar-gguf",
       "slug": "moonshine-tiny-ar",
       "name": "Moonshine Tiny (Arabic)",
@@ -1457,47 +1666,6 @@
         },
         {
           "filename": "moonshine-tiny-ja-F32.gguf",
-          "quant": "F32",
-          "size_bytes": 109969088
-        }
-      ],
-      "default_quant": "Q8_0",
-      "recommended": false,
-      "recommended_rank": null
-    },
-    {
-      "id": "handy-computer/moonshine-tiny-vi-gguf",
-      "slug": "moonshine-tiny-vi",
-      "name": "Moonshine Tiny (Vietnamese)",
-      "architecture": "moonshine",
-      "family": "moonshine",
-      "parameters": "27M",
-      "description": "English speech-to-text.",
-      "base_model": "UsefulSensors/moonshine-tiny-vi",
-      "license": "mit",
-      "language_count": 1,
-      "languages": ["vi"],
-      "capabilities": {
-        "streaming": false,
-        "translate": false,
-        "lang_detect": false,
-        "timestamps": "none"
-      },
-      "speed_score": 100,
-      "accuracy_score": 42,
-      "files": [
-        {
-          "filename": "moonshine-tiny-vi-Q8_0.gguf",
-          "quant": "Q8_0",
-          "size_bytes": 35466944
-        },
-        {
-          "filename": "moonshine-tiny-vi-F16.gguf",
-          "quant": "F16",
-          "size_bytes": 59244224
-        },
-        {
-          "filename": "moonshine-tiny-vi-F32.gguf",
           "quant": "F32",
           "size_bytes": 109969088
         }
@@ -1589,17 +1757,17 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/moonshine-base-vi-gguf",
-      "slug": "moonshine-base-vi",
-      "name": "Moonshine Base (Vietnamese)",
+      "id": "handy-computer/moonshine-base-ko-gguf",
+      "slug": "moonshine-base-ko",
+      "name": "Moonshine Base (Korean)",
       "architecture": "moonshine",
       "family": "moonshine",
       "parameters": "62M",
       "description": "English speech-to-text.",
-      "base_model": "UsefulSensors/moonshine-base-vi",
+      "base_model": "UsefulSensors/moonshine-base-ko",
       "license": "mit",
       "language_count": 1,
-      "languages": ["vi"],
+      "languages": ["ko"],
       "capabilities": {
         "streaming": false,
         "translate": false,
@@ -1607,22 +1775,22 @@
         "timestamps": "none"
       },
       "speed_score": 99,
-      "accuracy_score": 52,
+      "accuracy_score": 58,
       "files": [
         {
-          "filename": "moonshine-base-vi-Q8_0.gguf",
+          "filename": "moonshine-base-ko-Q8_0.gguf",
           "quant": "Q8_0",
-          "size_bytes": 77476512
+          "size_bytes": 77476480
         },
         {
-          "filename": "moonshine-base-vi-F16.gguf",
+          "filename": "moonshine-base-ko-F16.gguf",
           "quant": "F16",
-          "size_bytes": 131789472
+          "size_bytes": 131789440
         },
         {
-          "filename": "moonshine-base-vi-F32.gguf",
+          "filename": "moonshine-base-ko-F32.gguf",
           "quant": "F32",
-          "size_bytes": 247657120
+          "size_bytes": 247657088
         }
       ],
       "default_quant": "Q8_0",
@@ -1671,47 +1839,6 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/moonshine-base-zh-gguf",
-      "slug": "moonshine-base-zh",
-      "name": "Moonshine Base (Chinese)",
-      "architecture": "moonshine",
-      "family": "moonshine",
-      "parameters": "62M",
-      "description": "English speech-to-text.",
-      "base_model": "UsefulSensors/moonshine-base-zh",
-      "license": "mit",
-      "language_count": 1,
-      "languages": ["zh"],
-      "capabilities": {
-        "streaming": false,
-        "translate": false,
-        "lang_detect": false,
-        "timestamps": "none"
-      },
-      "speed_score": 99,
-      "accuracy_score": 32,
-      "files": [
-        {
-          "filename": "moonshine-base-zh-Q8_0.gguf",
-          "quant": "Q8_0",
-          "size_bytes": 77476480
-        },
-        {
-          "filename": "moonshine-base-zh-F16.gguf",
-          "quant": "F16",
-          "size_bytes": 131789440
-        },
-        {
-          "filename": "moonshine-base-zh-F32.gguf",
-          "quant": "F32",
-          "size_bytes": 247657088
-        }
-      ],
-      "default_quant": "Q8_0",
-      "recommended": false,
-      "recommended_rank": null
-    },
-    {
       "id": "handy-computer/moonshine-base-ja-gguf",
       "slug": "moonshine-base-ja",
       "name": "Moonshine Base (Japanese)",
@@ -1753,17 +1880,17 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/moonshine-base-ko-gguf",
-      "slug": "moonshine-base-ko",
-      "name": "Moonshine Base (Korean)",
+      "id": "handy-computer/moonshine-base-vi-gguf",
+      "slug": "moonshine-base-vi",
+      "name": "Moonshine Base (Vietnamese)",
       "architecture": "moonshine",
       "family": "moonshine",
       "parameters": "62M",
       "description": "English speech-to-text.",
-      "base_model": "UsefulSensors/moonshine-base-ko",
+      "base_model": "UsefulSensors/moonshine-base-vi",
       "license": "mit",
       "language_count": 1,
-      "languages": ["ko"],
+      "languages": ["vi"],
       "capabilities": {
         "streaming": false,
         "translate": false,
@@ -1771,20 +1898,61 @@
         "timestamps": "none"
       },
       "speed_score": 99,
-      "accuracy_score": 58,
+      "accuracy_score": 52,
       "files": [
         {
-          "filename": "moonshine-base-ko-Q8_0.gguf",
+          "filename": "moonshine-base-vi-Q8_0.gguf",
+          "quant": "Q8_0",
+          "size_bytes": 77476512
+        },
+        {
+          "filename": "moonshine-base-vi-F16.gguf",
+          "quant": "F16",
+          "size_bytes": 131789472
+        },
+        {
+          "filename": "moonshine-base-vi-F32.gguf",
+          "quant": "F32",
+          "size_bytes": 247657120
+        }
+      ],
+      "default_quant": "Q8_0",
+      "recommended": false,
+      "recommended_rank": null
+    },
+    {
+      "id": "handy-computer/moonshine-base-zh-gguf",
+      "slug": "moonshine-base-zh",
+      "name": "Moonshine Base (Chinese)",
+      "architecture": "moonshine",
+      "family": "moonshine",
+      "parameters": "62M",
+      "description": "English speech-to-text.",
+      "base_model": "UsefulSensors/moonshine-base-zh",
+      "license": "mit",
+      "language_count": 1,
+      "languages": ["zh"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": false,
+        "timestamps": "none"
+      },
+      "speed_score": 99,
+      "accuracy_score": 32,
+      "files": [
+        {
+          "filename": "moonshine-base-zh-Q8_0.gguf",
           "quant": "Q8_0",
           "size_bytes": 77476480
         },
         {
-          "filename": "moonshine-base-ko-F16.gguf",
+          "filename": "moonshine-base-zh-F16.gguf",
           "quant": "F16",
           "size_bytes": 131789440
         },
         {
-          "filename": "moonshine-base-ko-F32.gguf",
+          "filename": "moonshine-base-zh-F32.gguf",
           "quant": "F32",
           "size_bytes": 247657088
         }
@@ -2044,62 +2212,6 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/parakeet-tdt-0.6b-v2-gguf",
-      "slug": "parakeet-tdt-0.6b-v2",
-      "name": "Parakeet TDT 0.6B v2",
-      "architecture": "parakeet",
-      "family": "parakeet",
-      "parameters": "0.6B",
-      "description": "English speech-to-text with token-level timestamps.",
-      "base_model": "nvidia/parakeet-tdt-0.6b-v2",
-      "license": "cc-by-4.0",
-      "language_count": 1,
-      "languages": ["en"],
-      "capabilities": {
-        "streaming": false,
-        "translate": false,
-        "lang_detect": false,
-        "timestamps": "token"
-      },
-      "speed_score": 85,
-      "accuracy_score": 89,
-      "files": [
-        {
-          "filename": "parakeet-tdt-0.6b-v2-Q4_K_M.gguf",
-          "quant": "Q4_K_M",
-          "size_bytes": 475491840
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v2-Q5_K_M.gguf",
-          "quant": "Q5_K_M",
-          "size_bytes": 539012608
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v2-Q6_K.gguf",
-          "quant": "Q6_K",
-          "size_bytes": 600408576
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v2-Q8_0.gguf",
-          "quant": "Q8_0",
-          "size_bytes": 729574912
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v2-F16.gguf",
-          "quant": "F16",
-          "size_bytes": 1237334592
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v2-F32.gguf",
-          "quant": "F32",
-          "size_bytes": 2471550272
-        }
-      ],
-      "default_quant": "Q8_0",
-      "recommended": false,
-      "recommended_rank": null
-    },
-    {
       "id": "handy-computer/parakeet-rnnt-0.6b-gguf",
       "slug": "parakeet-rnnt-0.6b",
       "name": "Parakeet RNN-T 0.6B",
@@ -2212,62 +2324,6 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/parakeet-tdt-0.6b-v3-gguf",
-      "slug": "parakeet-tdt-0.6b-v3",
-      "name": "Parakeet TDT 0.6B v3",
-      "architecture": "parakeet",
-      "family": "parakeet",
-      "parameters": "0.6B",
-      "description": "25-language speech-to-text with auto language detection, token-level timestamps.",
-      "base_model": "nvidia/parakeet-tdt-0.6b-v3",
-      "license": "cc-by-4.0",
-      "language_count": 25,
-      "languages": ["bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt", "mt", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "uk"],
-      "capabilities": {
-        "streaming": false,
-        "translate": false,
-        "lang_detect": true,
-        "timestamps": "token"
-      },
-      "speed_score": 79,
-      "accuracy_score": 88,
-      "files": [
-        {
-          "filename": "parakeet-tdt-0.6b-v3-Q4_K_M.gguf",
-          "quant": "Q4_K_M",
-          "size_bytes": 485425504
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v3-Q5_K_M.gguf",
-          "quant": "Q5_K_M",
-          "size_bytes": 548946272
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v3-Q6_K.gguf",
-          "quant": "Q6_K",
-          "size_bytes": 610342240
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v3-Q8_0.gguf",
-          "quant": "Q8_0",
-          "size_bytes": 739508576
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v3-F16.gguf",
-          "quant": "F16",
-          "size_bytes": 1255869856
-        },
-        {
-          "filename": "parakeet-tdt-0.6b-v3-F32.gguf",
-          "quant": "F32",
-          "size_bytes": 2508435616
-        }
-      ],
-      "default_quant": "Q8_0",
-      "recommended": false,
-      "recommended_rank": null
-    },
-    {
       "id": "handy-computer/parakeet-tdt-1.1b-gguf",
       "slug": "parakeet-tdt-1.1b",
       "name": "Parakeet TDT 1.1B",
@@ -2317,62 +2373,6 @@
           "filename": "parakeet-tdt-1.1b-F32.gguf",
           "quant": "F32",
           "size_bytes": 4282202592
-        }
-      ],
-      "default_quant": "Q5_K_M",
-      "recommended": false,
-      "recommended_rank": null
-    },
-    {
-      "id": "handy-computer/parakeet-tdt_ctc-1.1b-gguf",
-      "slug": "parakeet-tdt_ctc-1.1b",
-      "name": "Parakeet TDT-CTC 1.1B",
-      "architecture": "parakeet",
-      "family": "parakeet",
-      "parameters": "1.1B",
-      "description": "English speech-to-text with token-level timestamps.",
-      "base_model": "nvidia/parakeet-tdt_ctc-1.1b",
-      "license": "cc-by-4.0",
-      "language_count": 1,
-      "languages": ["en"],
-      "capabilities": {
-        "streaming": false,
-        "translate": false,
-        "lang_detect": false,
-        "timestamps": "token"
-      },
-      "speed_score": 75,
-      "accuracy_score": 88,
-      "files": [
-        {
-          "filename": "parakeet-tdt_ctc-1.1b-Q4_K_M.gguf",
-          "quant": "Q4_K_M",
-          "size_bytes": 825248000
-        },
-        {
-          "filename": "parakeet-tdt_ctc-1.1b-Q5_K_M.gguf",
-          "quant": "Q5_K_M",
-          "size_bytes": 935758080
-        },
-        {
-          "filename": "parakeet-tdt_ctc-1.1b-Q6_K.gguf",
-          "quant": "Q6_K",
-          "size_bytes": 1042509056
-        },
-        {
-          "filename": "parakeet-tdt_ctc-1.1b-Q8_0.gguf",
-          "quant": "Q8_0",
-          "size_bytes": 1267288320
-        },
-        {
-          "filename": "parakeet-tdt_ctc-1.1b-F16.gguf",
-          "quant": "F16",
-          "size_bytes": 2145162560
-        },
-        {
-          "filename": "parakeet-tdt_ctc-1.1b-F32.gguf",
-          "quant": "F32",
-          "size_bytes": 4282202176
         }
       ],
       "default_quant": "Q5_K_M",
@@ -2436,58 +2436,58 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/Qwen3-ASR-0.6B-gguf",
-      "slug": "Qwen3-ASR-0.6B",
-      "name": "Qwen3-ASR 0.6B",
-      "architecture": "qwen3_asr",
-      "family": "qwen3",
-      "parameters": "782M",
-      "description": "30-language speech-to-text with auto language detection.",
-      "base_model": "Qwen/Qwen3-ASR-0.6B",
-      "license": "apache-2.0",
-      "language_count": 30,
-      "languages": ["zh", "en", "yue", "ar", "de", "fr", "es", "pt", "id", "it", "ko", "ru", "th", "vi", "ja", "tr", "hi", "ms", "nl", "sv", "da", "fi", "pl", "cs", "fil", "fa", "el", "ro", "hu", "mk"],
+      "id": "handy-computer/parakeet-tdt_ctc-1.1b-gguf",
+      "slug": "parakeet-tdt_ctc-1.1b",
+      "name": "Parakeet TDT-CTC 1.1B",
+      "architecture": "parakeet",
+      "family": "parakeet",
+      "parameters": "1.1B",
+      "description": "English speech-to-text with token-level timestamps.",
+      "base_model": "nvidia/parakeet-tdt_ctc-1.1b",
+      "license": "cc-by-4.0",
+      "language_count": 1,
+      "languages": ["en"],
       "capabilities": {
         "streaming": false,
         "translate": false,
-        "lang_detect": true,
-        "timestamps": "none"
+        "lang_detect": false,
+        "timestamps": "token"
       },
-      "speed_score": 63,
-      "accuracy_score": 87,
+      "speed_score": 75,
+      "accuracy_score": 88,
       "files": [
         {
-          "filename": "Qwen3-ASR-0.6B-Q4_K_M.gguf",
+          "filename": "parakeet-tdt_ctc-1.1b-Q4_K_M.gguf",
           "quant": "Q4_K_M",
-          "size_bytes": 589560480
+          "size_bytes": 825248000
         },
         {
-          "filename": "Qwen3-ASR-0.6B-Q5_K_M.gguf",
+          "filename": "parakeet-tdt_ctc-1.1b-Q5_K_M.gguf",
           "quant": "Q5_K_M",
-          "size_bytes": 645356192
+          "size_bytes": 935758080
         },
         {
-          "filename": "Qwen3-ASR-0.6B-Q6_K.gguf",
+          "filename": "parakeet-tdt_ctc-1.1b-Q6_K.gguf",
           "quant": "Q6_K",
-          "size_bytes": 690417824
+          "size_bytes": 1042509056
         },
         {
-          "filename": "Qwen3-ASR-0.6B-Q8_0.gguf",
+          "filename": "parakeet-tdt_ctc-1.1b-Q8_0.gguf",
           "quant": "Q8_0",
-          "size_bytes": 850423456
+          "size_bytes": 1267288320
         },
         {
-          "filename": "Qwen3-ASR-0.6B-BF16.gguf",
-          "quant": "BF16",
-          "size_bytes": 1571490016
-        },
-        {
-          "filename": "Qwen3-ASR-0.6B-F16.gguf",
+          "filename": "parakeet-tdt_ctc-1.1b-F16.gguf",
           "quant": "F16",
-          "size_bytes": 1579793056
+          "size_bytes": 2145162560
+        },
+        {
+          "filename": "parakeet-tdt_ctc-1.1b-F32.gguf",
+          "quant": "F32",
+          "size_bytes": 4282202176
         }
       ],
-      "default_quant": "Q8_0",
+      "default_quant": "Q5_K_M",
       "recommended": false,
       "recommended_rank": null
     },
@@ -3159,62 +3159,6 @@
       "recommended_rank": null
     },
     {
-      "id": "handy-computer/whisper-large-v2-gguf",
-      "slug": "whisper-large-v2",
-      "name": "Whisper Large v2",
-      "architecture": "whisper",
-      "family": "whisper",
-      "parameters": "1.5B",
-      "description": "99-language speech-to-text with translation, auto language detection, segment-level timestamps.",
-      "base_model": "openai/whisper-large-v2",
-      "license": "apache-2.0",
-      "language_count": 99,
-      "languages": ["en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw", "su"],
-      "capabilities": {
-        "streaming": false,
-        "translate": true,
-        "lang_detect": true,
-        "timestamps": "segment"
-      },
-      "speed_score": 23,
-      "accuracy_score": 84,
-      "files": [
-        {
-          "filename": "whisper-large-v2-Q4_K_M.gguf",
-          "quant": "Q4_K_M",
-          "size_bytes": 996526080
-        },
-        {
-          "filename": "whisper-large-v2-Q5_K_M.gguf",
-          "quant": "Q5_K_M",
-          "size_bytes": 1160366080
-        },
-        {
-          "filename": "whisper-large-v2-Q6_K.gguf",
-          "quant": "Q6_K",
-          "size_bytes": 1296353280
-        },
-        {
-          "filename": "whisper-large-v2-Q8_0.gguf",
-          "quant": "Q8_0",
-          "size_bytes": 1667964224
-        },
-        {
-          "filename": "whisper-large-v2-F16.gguf",
-          "quant": "F16",
-          "size_bytes": 3106458208
-        },
-        {
-          "filename": "whisper-large-v2-F32.gguf",
-          "quant": "F32",
-          "size_bytes": 6175245408
-        }
-      ],
-      "default_quant": "Q5_K_M",
-      "recommended": false,
-      "recommended_rank": null
-    },
-    {
       "id": "handy-computer/whisper-large-v3-gguf",
       "slug": "whisper-large-v3",
       "name": "Whisper Large v3",
@@ -3315,6 +3259,62 @@
           "filename": "whisper-large-F32.gguf",
           "quant": "F32",
           "size_bytes": 6175245376
+        }
+      ],
+      "default_quant": "Q5_K_M",
+      "recommended": false,
+      "recommended_rank": null
+    },
+    {
+      "id": "handy-computer/whisper-large-v2-gguf",
+      "slug": "whisper-large-v2",
+      "name": "Whisper Large v2",
+      "architecture": "whisper",
+      "family": "whisper",
+      "parameters": "1.5B",
+      "description": "99-language speech-to-text with translation, auto language detection, segment-level timestamps.",
+      "base_model": "openai/whisper-large-v2",
+      "license": "apache-2.0",
+      "language_count": 99,
+      "languages": ["en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw", "su"],
+      "capabilities": {
+        "streaming": false,
+        "translate": true,
+        "lang_detect": true,
+        "timestamps": "segment"
+      },
+      "speed_score": 23,
+      "accuracy_score": 84,
+      "files": [
+        {
+          "filename": "whisper-large-v2-Q4_K_M.gguf",
+          "quant": "Q4_K_M",
+          "size_bytes": 996526080
+        },
+        {
+          "filename": "whisper-large-v2-Q5_K_M.gguf",
+          "quant": "Q5_K_M",
+          "size_bytes": 1160366080
+        },
+        {
+          "filename": "whisper-large-v2-Q6_K.gguf",
+          "quant": "Q6_K",
+          "size_bytes": 1296353280
+        },
+        {
+          "filename": "whisper-large-v2-Q8_0.gguf",
+          "quant": "Q8_0",
+          "size_bytes": 1667964224
+        },
+        {
+          "filename": "whisper-large-v2-F16.gguf",
+          "quant": "F16",
+          "size_bytes": 3106458208
+        },
+        {
+          "filename": "whisper-large-v2-F32.gguf",
+          "quant": "F32",
+          "size_bytes": 6175245408
         }
       ],
       "default_quant": "Q5_K_M",
