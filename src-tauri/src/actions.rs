@@ -417,23 +417,20 @@ pub(crate) async fn process_transcription_output(
         final_text = converted_text;
     }
 
-    // Always-on input hygiene — runs on both Dictate and Keep.
-    if settings.post_process_enabled {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
-            post_processed_text = Some(processed_text.clone());
-            final_text = processed_text;
+    // Always-on input hygiene — runs on both Dictate and Keep. Gracefully
+    // no-ops if no provider/model/prompt is configured.
+    if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+        post_processed_text = Some(processed_text.clone());
+        final_text = processed_text;
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
-                    .iter()
-                    .find(|prompt| &prompt.id == prompt_id)
-                {
-                    post_process_prompt = Some(prompt.prompt.clone());
-                }
+        if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+            if let Some(prompt) = settings
+                .post_process_prompts
+                .iter()
+                .find(|prompt| &prompt.id == prompt_id)
+            {
+                post_process_prompt = Some(prompt.prompt.clone());
             }
-        } else if final_text != transcription {
-            post_processed_text = Some(final_text.clone());
         }
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
@@ -640,10 +637,7 @@ impl ShortcutAction for TranscribeAction {
                             );
 
                             // Show processing overlay while cleanup runs (both modes)
-                            let cleanup_enabled = get_settings(&ah).post_process_enabled;
-                            if cleanup_enabled {
-                                show_processing_overlay(&ah);
-                            }
+                            show_processing_overlay(&ah);
                             let processed = process_transcription_output(&ah, &transcription).await;
 
                             // Persist to history — Keep mode lands in entries immediately (saved=1)

@@ -387,8 +387,6 @@ pub struct AppSettings {
     pub auto_submit: bool,
     #[serde(default)]
     pub auto_submit_key: AutoSubmitKey,
-    #[serde(default = "default_post_process_enabled")]
-    pub post_process_enabled: bool,
     #[serde(default = "default_post_process_provider_id")]
     pub post_process_provider_id: String,
     #[serde(default = "default_post_process_providers")]
@@ -509,10 +507,6 @@ fn default_audio_feedback_volume() -> f32 {
 
 fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
-}
-
-fn default_post_process_enabled() -> bool {
-    false
 }
 
 fn default_summarize_enabled() -> bool {
@@ -841,7 +835,6 @@ pub fn get_default_settings() -> AppSettings {
         clipboard_handling: ClipboardHandling::default(),
         auto_submit: default_auto_submit(),
         auto_submit_key: AutoSubmitKey::default(),
-        post_process_enabled: default_post_process_enabled(),
         post_process_provider_id: default_post_process_provider_id(),
         post_process_providers: default_post_process_providers(),
         post_process_api_keys: default_post_process_api_keys(),
