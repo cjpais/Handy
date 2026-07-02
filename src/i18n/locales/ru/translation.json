@@ -461,7 +461,8 @@
       },
       "updateChecks": {
         "label": "Проверять наличие обновлений",
-        "description": "Автоматически проверять наличие новых версий Handy"
+        "description": "Автоматически проверять наличие новых версий Handy",
+        "lockedDescription": "Отключено системной конфигурацией (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Звуковая тема",

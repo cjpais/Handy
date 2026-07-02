@@ -461,7 +461,8 @@
       },
       "updateChecks": {
         "label": "檢查更新",
-        "description": "自動檢查 Handy 的新版本"
+        "description": "自動檢查 Handy 的新版本",
+        "lockedDescription": "已被系統設定停用 (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "聲音主題",

@@ -461,7 +461,8 @@
       },
       "updateChecks": {
         "label": "Güncellemeleri Kontrol Et",
-        "description": "Handy için yeni sürümleri otomatik olarak kontrol eder"
+        "description": "Handy için yeni sürümleri otomatik olarak kontrol eder",
+        "lockedDescription": "Sistem yapılandırması tarafından devre dışı bırakıldı (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Ses Teması",

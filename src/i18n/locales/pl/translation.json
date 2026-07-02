@@ -461,7 +461,8 @@
       },
       "updateChecks": {
         "label": "Sprawdzaj aktualizacje",
-        "description": "Automatycznie sprawdzaj nowe wersje Handy"
+        "description": "Automatycznie sprawdzaj nowe wersje Handy",
+        "lockedDescription": "Wyłączone przez konfigurację systemową (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Motyw dźwiękowy",
