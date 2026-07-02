@@ -352,6 +352,39 @@ jobs:
           Write-Host "HANDY_VC_REDIST_DIRS=$dirs"
           Add-Content -Path $env:GITHUB_ENV -Value "HANDY_VC_REDIST_DIRS=$dirs"
 
+      # tauri-bundler's WiX/MSI path needs signtool.exe even with a custom
+      # signCommand: every bundled .dll/.exe RESOURCE goes through
+      # should_sign() → `signtool verify /pa` so already-signed files are
+      # skipped. The app-local VC++ runtime DLLs staged above are the first
+      # .dll resources the ARM64 build ships (its models are .onnx, which the
+      # extension filter skips), so this lookup now runs on ARM64 — and
+      # tauri-bundler resolves the SDK bin dir by host bitness, which it only
+      # maps for x86/x64 (os_bitness() returns None on ARM64), so discovery
+      # always fails there with "SignTool not found" no matter what SDK is
+      # installed. Hand it an explicit path via TAURI_WINDOWS_SIGNTOOL_PATH,
+      # which the bundler checks before the SDK lookup. x64 needs nothing —
+      # its registry+bitness lookup succeeds.
+      - name: Point tauri-bundler at signtool.exe (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bin = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+          $candidates = @(
+            Get-ChildItem "$bin\10.0.*\arm64\signtool.exe" -ErrorAction SilentlyContinue
+            Get-ChildItem "$bin\10.0.*\x64\signtool.exe" -ErrorAction SilentlyContinue
+          ) | Where-Object { $_ }
+          if (-not $candidates) {
+            throw "signtool.exe not found under $bin (is a Windows SDK installed on this runner?)"
+          }
+          # Prefer native arm64 (x64 works too, under emulation); within an
+          # arch, the newest SDK version wins.
+          $signtool = $candidates |
+            Sort-Object { $_.FullName -match '\\arm64\\' }, FullName |
+            Select-Object -Last 1
+          Write-Host "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
+          Add-Content -Path $env:GITHUB_ENV -Value "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
+
       - name: Install ONNX Runtime (x86_64 macOS)
         if: inputs.target == 'x86_64-apple-darwin'
         shell: bash
