@@ -273,6 +273,12 @@ const RecordingOverlay: React.FC = () => {
   // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
   // spinner + label (transcribing / processing). Never both. The pill animates its
   // width between them; the cancel button is in both rows so it stays put.
+  //
+  // When the overlay is hidden, render nothing — the WebView window sits idle with
+  // zero GPU compositing overhead. CSS opacity:0 alone is not enough because the
+  // compositor still processes the layer tree.
+  if (!isVisible) return null;
+
   const working = state === "transcribing" || state === "processing";
   const workLabel =
     state === "processing"
