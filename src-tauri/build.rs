@@ -28,36 +28,21 @@ fn main() {
     // embedding pyke's /arch:AVX2 one (which crashes at startup on pre-Haswell CPUs).
     stage_onnxruntime_dll();
 
-    // Ship the MSVC runtime app-local on Windows (CI sets HANDY_VC_REDIST_DIRS).
-    // Must run after stage_transcribe_runtime_libs(), which recreates the
-    // transcribe-libs/ staging dir clean.
+    // Must run after transcribe staging because that helper recreates transcribe-libs/.
     stage_vc_runtime_dlls();
 
     tauri_build::build()
 }
 
-/// Stage the MSVC runtime DLLs into `transcribe-libs/` so they ship next to
-/// `handy.exe` (Microsoft's "app-local deployment" of the VC++ runtime).
+/// Stage the MSVC runtime DLLs into `transcribe-libs/` for app-local deployment.
 ///
-/// Handy's native stack — transcribe.dll + the ggml modules, Microsoft's
-/// prebuilt onnxruntime.dll, and the C++ objects compiled into handy.exe —
-/// links the VC++ runtime dynamically (/MD). Windows does not ship that
-/// runtime as an OS component, and Tauri's installer only bootstraps WebView2,
-/// so machines without the redist fail to load. Worse, a machine with a redist
-/// OLDER than the MSVC toolset that compiled us crashes at startup with an
-/// access violation inside msvcp140.dll: VS 17.10 (toolset 14.40) made
-/// std::mutex's constructor constexpr, and pre-14.40 runtime DLLs misread the
-/// new zero-initialized mutex layout (issue #1527 — APPCRASH in msvcp140.dll
-/// 14.29, exception 0xc0000005). Shipping the DLLs app-local fixes both cases:
-/// the exe's directory wins the DLL search order, and CI copies the DLLs from
-/// the same Visual Studio install that compiles the native code, so
-/// runtime >= toolset holds by construction.
+/// Handy's native stack links the VC++ runtime dynamically (/MD). Shipping the
+/// DLLs beside `handy.exe` covers machines with no redistributable installed and
+/// machines whose system redist is older than the CI toolset (issue #1527).
 ///
-/// Driven by `HANDY_VC_REDIST_DIRS` — a PATH-style (`;`-separated) list of
-/// redist dirs set by CI (see the "Locate VC++ runtime redist" step in
-/// build.yml). Copies only msvcp140*/vcruntime140*/vcomp140* and skips redist
-/// extras (concrt140, vccorlib140, vcamp140) nothing here imports. No-op when
-/// the env var is unset — local dev machines have Visual Studio installed.
+/// Driven by `HANDY_VC_REDIST_DIRS`, set by CI to the redist dirs from the same
+/// Visual Studio install that compiled the native code. Copies only the runtime
+/// DLL families Handy imports and no-ops when the env var is unset.
 fn stage_vc_runtime_dlls() {
     use std::path::PathBuf;
 
