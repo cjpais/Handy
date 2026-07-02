@@ -121,20 +121,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       },
     );
 
-    // Click outside to close dropdown
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowModelDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
       modelStateUnlisten.then((fn) => fn());
       downloadCompleteUnlisten.then((fn) => fn());
     };
@@ -259,6 +246,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
             models={models}
             currentModelId={displayModelId}
             onModelSelect={handleModelSelect}
+            targetRef={dropdownRef}
+            onClose={() => setShowModelDropdown(false)}
           />
         )}
       </div>

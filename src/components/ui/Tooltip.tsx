@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  VIEWPORT_PADDING,
+  clampHorizontal,
+  resolveVerticalPosition,
+} from "@/lib/utils/viewportPosition";
 
 type TooltipPosition = "top" | "bottom";
 
@@ -17,7 +22,6 @@ interface TooltipProps {
 }
 
 const TOOLTIP_WIDTH = 200;
-const VIEWPORT_PADDING = 12;
 const GAP = 8;
 const ARROW_MARGIN = 12;
 const DEFAULT_HEIGHT = 60;
@@ -36,36 +40,18 @@ export const Tooltip: React.FC<TooltipProps> = ({
     const targetRect = targetRef.current.getBoundingClientRect();
     const tooltipHeight = tooltipRef.current?.offsetHeight || DEFAULT_HEIGHT;
 
-    let actualPosition = position;
-    let top: number;
-
-    if (position === "top") {
-      const spaceAbove = targetRect.top - tooltipHeight - GAP;
-      if (spaceAbove < VIEWPORT_PADDING) {
-        actualPosition = "bottom";
-        top = targetRect.bottom + GAP;
-      } else {
-        top = targetRect.top - GAP - tooltipHeight;
-      }
-    } else {
-      const spaceBelow =
-        window.innerHeight - targetRect.bottom - tooltipHeight - GAP;
-      if (spaceBelow < VIEWPORT_PADDING) {
-        actualPosition = "top";
-        top = targetRect.top - GAP - tooltipHeight;
-      } else {
-        top = targetRect.bottom + GAP;
-      }
-    }
+    const { top, actualPosition } = resolveVerticalPosition(
+      targetRect,
+      tooltipHeight,
+      position,
+      GAP,
+    );
 
     const targetCenter = targetRect.left + targetRect.width / 2;
-    let left = targetCenter - TOOLTIP_WIDTH / 2;
-
-    if (left < VIEWPORT_PADDING) {
-      left = VIEWPORT_PADDING;
-    } else if (left + TOOLTIP_WIDTH > window.innerWidth - VIEWPORT_PADDING) {
-      left = window.innerWidth - TOOLTIP_WIDTH - VIEWPORT_PADDING;
-    }
+    const left = clampHorizontal(
+      targetCenter - TOOLTIP_WIDTH / 2,
+      TOOLTIP_WIDTH,
+    );
 
     const arrowLeft = Math.min(
       Math.max(targetCenter - left, ARROW_MARGIN),
