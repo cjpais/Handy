@@ -460,6 +460,14 @@ Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
 
 If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
 
+### Windows: App Crashes Instantly on Launch (MSVCP140.dll)
+
+On Handy 0.9.0 and earlier, the app can close immediately on launch with no window or error message if the machine's Microsoft Visual C++ runtime is missing or outdated. You can confirm this is the cause in **Event Viewer → Windows Logs → Application**: the APPCRASH event lists `handy.exe` as the faulting application and `MSVCP140.dll` as the faulting module (exception code `0xc0000005`).
+
+**Fix:** install or repair the [Microsoft Visual C++ 2015–2022 Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe), then restart the machine. Alternatively: **Settings → Apps → Installed apps → "Microsoft Visual C++ 2015-2022 Redistributable (x64)" → Modify → Repair**.
+
+Newer Handy releases bundle the required runtime DLLs alongside `handy.exe`, so updating Handy also resolves this.
+
 ### How to Contribute
 
 1. **Check existing issues** at [github.com/cjpais/Handy/issues](https://github.com/cjpais/Handy/issues)

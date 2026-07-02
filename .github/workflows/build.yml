@@ -298,19 +298,51 @@ jobs:
           #     statically linking libomp.
           echo "TRANSCRIBE_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF" >> $env:GITHUB_ENV
 
-      # The static ARM build ships no transcribe-cpp DLLs, so build.rs stages
-      # nothing into src-tauri/transcribe-libs/ and that dir never gets created.
-      # tauri.windows.conf.json exists only to bundle that dir as a resource for
-      # the x86 dynamic-backends posture; on ARM it would point Tauri at a missing
-      # path and fail bundling. Removing it falls back to the base tauri.conf.json
-      # resources (the models) — exactly what the static ARM build wants. Gated to
-      # ARM, so the x86 Windows build keeps the file and still bundles its DLLs.
-      - name: Drop Windows DLL bundle config (Windows ARM64, static)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+      # Ship the MSVC runtime app-local (issue #1527). Handy's native code —
+      # transcribe.dll/ggml on x64, the C++ objects inside handy.exe on both
+      # arches, and Microsoft's prebuilt onnxruntime.dll — links the VC++
+      # runtime dynamically (/MD), but nothing installs that runtime on user
+      # machines: Tauri's installer only bootstraps WebView2 and Windows does
+      # not ship the redist as an OS component. Binaries built by this runner's
+      # MSVC toolset (14.40+) also REQUIRE a matching-or-newer msvcp140.dll —
+      # on machines with an older redist the DLL loads but crashes at startup
+      # with an access violation inside msvcp140.dll (VS 17.10 constexpr
+      # std::mutex change). Point build.rs (stage_vc_runtime_dlls) at this VS
+      # install's own redist folders so the DLLs it stages are version-matched
+      # by construction to the toolset that compiled the native code; they ride
+      # transcribe-libs/ + tauri.windows.conf.json into the exe dir, which wins
+      # the DLL search order. x64 adds the OpenMP dir because
+      # transcribe-cpp-sys forces GGML_OPENMP=ON under MSVC (vcomp140.dll);
+      # ARM64 builds with clang-cl and GGML_OPENMP=OFF, so CRT only.
+      #
+      # This also means the ARM64 build now stages DLLs into transcribe-libs/,
+      # so tauri.windows.conf.json stays — the old "drop the config on ARM"
+      # step (dir never created on the static build) is gone.
+      - name: Locate VC++ runtime redist for app-local bundling (Windows)
+        if: contains(inputs.platform, 'windows')
         shell: pwsh
         run: |
-          Remove-Item "src-tauri/tauri.windows.conf.json"
-          Write-Host "Removed tauri.windows.conf.json (static ARM build ships no DLLs)"
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsRoot = & $vswhere -latest -products * -property installationPath
+          if (-not $vsRoot) { throw "vswhere found no Visual Studio installation" }
+          $versionFile = Join-Path $vsRoot "VC\Auxiliary\Build\Microsoft.VCRedistVersion.default.txt"
+          $redistVersion = (Get-Content $versionFile).Trim()
+          $arch = if ("${{ inputs.target }}" -like "aarch64*") { "arm64" } else { "x64" }
+          $crt = Join-Path $vsRoot "VC\Redist\MSVC\$redistVersion\$arch\Microsoft.VC143.CRT"
+          if (-not (Test-Path (Join-Path $crt "msvcp140.dll"))) {
+            throw "VC++ CRT redist dir not found or incomplete: $crt"
+          }
+          $dirs = $crt
+          if ($arch -eq "x64") {
+            $omp = Join-Path $vsRoot "VC\Redist\MSVC\$redistVersion\$arch\Microsoft.VC143.OpenMP"
+            if (-not (Test-Path (Join-Path $omp "vcomp140.dll"))) {
+              throw "VC++ OpenMP redist dir not found or incomplete: $omp"
+            }
+            $dirs = "$crt;$omp"
+          }
+          Write-Host "HANDY_VC_REDIST_DIRS=$dirs"
+          Add-Content -Path $env:GITHUB_ENV -Value "HANDY_VC_REDIST_DIRS=$dirs"
 
       - name: Install ONNX Runtime (x86_64 macOS)
         if: inputs.target == 'x86_64-apple-darwin'
@@ -359,8 +391,8 @@ jobs:
       # MLAS runtime CPU dispatch, so it runs everywhere and dispatches to AVX2/AVX-512
       # kernels when present (perf parity on capable CPUs). build.rs stages
       # onnxruntime.dll into transcribe-libs/, which tauri.windows.conf.json bundles
-      # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static posture
-      # and drops tauri.windows.conf.json anyway).
+      # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static
+      # ORT posture).
       # NOTE: sourced from Microsoft's GitHub release; can be re-hosted on
       # blob.handy.computer to match the macOS/Linux steps.
       - name: Install ONNX Runtime (Windows x64)
@@ -709,13 +741,34 @@ jobs:
 
           $stagedDlls = Get-ChildItem "src-tauri/transcribe-libs" -Filter "*.dll" -ErrorAction SilentlyContinue
           if (-not $stagedDlls) {
-            Write-Host "No staged transcribe DLLs; skipping Windows runtime DLL package audit."
+            Write-Host "No staged runtime DLLs; skipping Windows runtime DLL package audit."
             exit 0
           }
 
-          # Assert an installed/extracted package layout ships the runtime DLLs
-          # and a launchable handy.exe. Shared by the NSIS and MSI audits below so
-          # both installers are held to the same bar.
+          # Staging must have produced the app-local VC++ runtime on every
+          # Windows target (issue #1527: no/old system redist crashes the app
+          # at startup) plus, on x64, the dynamic transcribe/ggml/ORT posture.
+          # ARM64 links those statically and stages only the VC++ runtime.
+          $requiredStaged = @("msvcp140.dll", "vcruntime140.dll")
+          if ("${{ inputs.target }}" -notlike "aarch64*") {
+            $requiredStaged += @("vcomp140.dll", "onnxruntime.dll")
+            if (-not ($stagedDlls | Where-Object { $_.Name -like "*transcribe*" })) {
+              throw "Staging is missing transcribe runtime DLLs"
+            }
+            if (-not ($stagedDlls | Where-Object { $_.Name -like "*ggml*" })) {
+              throw "Staging is missing ggml runtime DLLs"
+            }
+          }
+          foreach ($name in $requiredStaged) {
+            if (-not ($stagedDlls | Where-Object { $_.Name -ieq $name })) {
+              throw "Staging is missing $name"
+            }
+          }
+
+          # Assert an installed/extracted package layout ships every staged
+          # runtime DLL (transcribe/ggml/ORT and the app-local VC++ runtime)
+          # and a launchable handy.exe. Shared by the NSIS and MSI audits below
+          # so both installers are held to the same bar.
           function Assert-PackageContents {
             param([string]$Root, [string]$Label)
 
@@ -723,11 +776,10 @@ jobs:
             if (-not $handy) {
               throw "$Label package is missing handy.exe"
             }
-            if (-not (Get-ChildItem $Root -Filter "*transcribe*.dll" -Recurse -ErrorAction SilentlyContinue)) {
-              throw "$Label package is missing transcribe runtime DLLs"
-            }
-            if (-not (Get-ChildItem $Root -Filter "*ggml*.dll" -Recurse -ErrorAction SilentlyContinue)) {
-              throw "$Label package is missing ggml runtime DLLs"
+            foreach ($dll in $stagedDlls) {
+              if (-not (Get-ChildItem $Root -Filter $dll.Name -Recurse -ErrorAction SilentlyContinue)) {
+                throw "$Label package is missing staged runtime DLL $($dll.Name)"
+              }
             }
 
             & $handy.FullName --list-devices | Out-Host

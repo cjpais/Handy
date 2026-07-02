@@ -28,7 +28,90 @@ fn main() {
     // embedding pyke's /arch:AVX2 one (which crashes at startup on pre-Haswell CPUs).
     stage_onnxruntime_dll();
 
+    // Ship the MSVC runtime app-local on Windows (CI sets HANDY_VC_REDIST_DIRS).
+    // Must run after stage_transcribe_runtime_libs(), which recreates the
+    // transcribe-libs/ staging dir clean.
+    stage_vc_runtime_dlls();
+
     tauri_build::build()
+}
+
+/// Stage the MSVC runtime DLLs into `transcribe-libs/` so they ship next to
+/// `handy.exe` (Microsoft's "app-local deployment" of the VC++ runtime).
+///
+/// Handy's native stack — transcribe.dll + the ggml modules, Microsoft's
+/// prebuilt onnxruntime.dll, and the C++ objects compiled into handy.exe —
+/// links the VC++ runtime dynamically (/MD). Windows does not ship that
+/// runtime as an OS component, and Tauri's installer only bootstraps WebView2,
+/// so machines without the redist fail to load. Worse, a machine with a redist
+/// OLDER than the MSVC toolset that compiled us crashes at startup with an
+/// access violation inside msvcp140.dll: VS 17.10 (toolset 14.40) made
+/// std::mutex's constructor constexpr, and pre-14.40 runtime DLLs misread the
+/// new zero-initialized mutex layout (issue #1527 — APPCRASH in msvcp140.dll
+/// 14.29, exception 0xc0000005). Shipping the DLLs app-local fixes both cases:
+/// the exe's directory wins the DLL search order, and CI copies the DLLs from
+/// the same Visual Studio install that compiles the native code, so
+/// runtime >= toolset holds by construction.
+///
+/// Driven by `HANDY_VC_REDIST_DIRS` — a PATH-style (`;`-separated) list of
+/// redist dirs set by CI (see the "Locate VC++ runtime redist" step in
+/// build.yml). Copies only msvcp140*/vcruntime140*/vcomp140* and skips redist
+/// extras (concrt140, vccorlib140, vcamp140) nothing here imports. No-op when
+/// the env var is unset — local dev machines have Visual Studio installed.
+fn stage_vc_runtime_dlls() {
+    use std::path::PathBuf;
+
+    println!("cargo:rerun-if-env-changed=HANDY_VC_REDIST_DIRS");
+
+    let Some(redist_dirs) = std::env::var_os("HANDY_VC_REDIST_DIRS") else {
+        return;
+    };
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
+        return;
+    }
+
+    let dest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("transcribe-libs");
+    std::fs::create_dir_all(&dest).expect("create transcribe-libs staging dir");
+
+    let mut copied: Vec<String> = Vec::new();
+    for dir in std::env::split_paths(&redist_dirs) {
+        for entry in std::fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("HANDY_VC_REDIST_DIRS: read {}: {e}", dir.display()))
+            .flatten()
+        {
+            let src = entry.path();
+            let name = src
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string();
+            let lower = name.to_lowercase();
+            let wanted = lower.ends_with(".dll")
+                && (lower.starts_with("msvcp140")
+                    || lower.starts_with("vcruntime140")
+                    || lower.starts_with("vcomp140"));
+            if wanted {
+                std::fs::copy(&src, dest.join(&name))
+                    .unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
+                copied.push(lower);
+            }
+        }
+    }
+
+    // Fail the build rather than ship an installer that regresses issue #1527.
+    for required in ["msvcp140.dll", "vcruntime140.dll"] {
+        if !copied.iter().any(|n| n == required) {
+            panic!(
+                "HANDY_VC_REDIST_DIRS is set but {required} was not found in it; \
+                 the app-local VC++ runtime would be incomplete and Handy would \
+                 crash on machines without a current redist (issue #1527)"
+            );
+        }
+    }
+    println!(
+        "cargo:warning=Staged {} VC++ runtime DLL(s) for app-local deployment",
+        copied.len()
+    );
 }
 
 /// Copy the dynamically-linked ONNX Runtime `onnxruntime.dll` into the
