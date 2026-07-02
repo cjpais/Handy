@@ -280,16 +280,6 @@ export const EntryCard: React.FC<EntryCardProps> = ({
               </p>
             </div>
           )}
-          {(hasSummary || hasPostProcessed) && hasTranscription && (
-            <div className="flex flex-col gap-1.5">
-              <p className="text-xs font-medium text-text/40 uppercase tracking-wide">
-                {t("entries.transcript")}
-              </p>
-              <p className="text-xs italic text-text/70 select-text cursor-text whitespace-pre-wrap break-words">
-                {entry.transcription_text}
-              </p>
-            </div>
-          )}
           <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
         </div>
       </details>
