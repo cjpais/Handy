@@ -298,19 +298,64 @@ jobs:
           #     statically linking libomp.
           echo "TRANSCRIBE_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF" >> $env:GITHUB_ENV
 
-      # The static ARM build ships no transcribe-cpp DLLs, so build.rs stages
-      # nothing into src-tauri/transcribe-libs/ and that dir never gets created.
-      # tauri.windows.conf.json exists only to bundle that dir as a resource for
-      # the x86 dynamic-backends posture; on ARM it would point Tauri at a missing
-      # path and fail bundling. Removing it falls back to the base tauri.conf.json
-      # resources (the models) — exactly what the static ARM build wants. Gated to
-      # ARM, so the x86 Windows build keeps the file and still bundles its DLLs.
-      - name: Drop Windows DLL bundle config (Windows ARM64, static)
+      # Bundle the VC++ runtime app-local so Handy starts on machines without a
+      # current Microsoft redistributable. build.rs stages DLLs from these dirs
+      # into transcribe-libs/, using the same VS install that compiled the code.
+      # x64 also needs vcomp140.dll for ggml OpenMP; ARM64 disables OpenMP.
+      - name: Locate VC++ runtime redist for app-local bundling (Windows)
+        if: contains(inputs.platform, 'windows')
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsRoot = & $vswhere -latest -products * -property installationPath
+          if (-not $vsRoot) { throw "vswhere found no Visual Studio installation" }
+          $versionFile = Join-Path $vsRoot "VC\Auxiliary\Build\Microsoft.VCRedistVersion.default.txt"
+          $redistVersion = (Get-Content $versionFile).Trim()
+          $arch = if ("${{ inputs.target }}" -like "aarch64*") { "arm64" } else { "x64" }
+          $archDir = Join-Path $vsRoot "VC\Redist\MSVC\$redistVersion\$arch"
+          if (-not (Test-Path $archDir)) { throw "VC++ redist arch dir not found: $archDir" }
+          # Glob the VC generation folder; the runtime DLL names stay ABI-stable.
+          $crt = Get-ChildItem $archDir -Directory -Filter "Microsoft.VC*.CRT" |
+            Sort-Object Name | Select-Object -Last 1
+          if (-not $crt -or -not (Test-Path (Join-Path $crt.FullName "msvcp140.dll"))) {
+            throw "VC++ CRT redist dir not found or incomplete under: $archDir"
+          }
+          $dirs = $crt.FullName
+          if ($arch -eq "x64") {
+            $omp = Get-ChildItem $archDir -Directory -Filter "Microsoft.VC*.OpenMP" |
+              Sort-Object Name | Select-Object -Last 1
+            if (-not $omp -or -not (Test-Path (Join-Path $omp.FullName "vcomp140.dll"))) {
+              throw "VC++ OpenMP redist dir not found or incomplete under: $archDir"
+            }
+            $dirs = "$($crt.FullName);$($omp.FullName)"
+          }
+          Write-Host "HANDY_VC_REDIST_DIRS=$dirs"
+          Add-Content -Path $env:GITHUB_ENV -Value "HANDY_VC_REDIST_DIRS=$dirs"
+
+      # MSI packaging verifies bundled .dll/.exe resources with signtool before
+      # custom signing. Tauri's SDK lookup has no ARM64 host mapping, so pass
+      # the tool explicitly once ARM64 starts bundling runtime DLLs.
+      - name: Point tauri-bundler at signtool.exe (Windows ARM64)
         if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
         shell: pwsh
         run: |
-          Remove-Item "src-tauri/tauri.windows.conf.json"
-          Write-Host "Removed tauri.windows.conf.json (static ARM build ships no DLLs)"
+          $ErrorActionPreference = 'Stop'
+          $bin = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+          $candidates = @(
+            Get-ChildItem "$bin\10.0.*\arm64\signtool.exe" -ErrorAction SilentlyContinue
+            Get-ChildItem "$bin\10.0.*\x64\signtool.exe" -ErrorAction SilentlyContinue
+          ) | Where-Object { $_ }
+          if (-not $candidates) {
+            throw "signtool.exe not found under $bin (is a Windows SDK installed on this runner?)"
+          }
+          # Prefer native arm64 (x64 works too, under emulation); within an
+          # arch, the newest SDK version wins.
+          $signtool = $candidates |
+            Sort-Object { $_.FullName -match '\\arm64\\' }, FullName |
+            Select-Object -Last 1
+          Write-Host "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
+          Add-Content -Path $env:GITHUB_ENV -Value "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
 
       - name: Install ONNX Runtime (x86_64 macOS)
         if: inputs.target == 'x86_64-apple-darwin'
@@ -359,8 +404,8 @@ jobs:
       # MLAS runtime CPU dispatch, so it runs everywhere and dispatches to AVX2/AVX-512
       # kernels when present (perf parity on capable CPUs). build.rs stages
       # onnxruntime.dll into transcribe-libs/, which tauri.windows.conf.json bundles
-      # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static posture
-      # and drops tauri.windows.conf.json anyway).
+      # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static
+      # ORT posture).
       # NOTE: sourced from Microsoft's GitHub release; can be re-hosted on
       # blob.handy.computer to match the macOS/Linux steps.
       - name: Install ONNX Runtime (Windows x64)
@@ -686,36 +731,52 @@ jobs:
             src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/rpm/*.rpm
           retention-days: 30
 
-      - name: Resolve Windows artifact path
-        if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
-        id: win-artifact-path
+      - name: Resolve Windows bundle path
+        if: contains(inputs.platform, 'windows')
+        id: win-bundle-path
         shell: pwsh
         run: |
           $base = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { "src-tauri/target" }
           echo "base=$base" >> $env:GITHUB_OUTPUT
 
+      # Run on Windows releases too; upload-artifacts only controls retention.
       - name: Audit Windows package runtime contents
-        if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
+        if: contains(inputs.platform, 'windows')
         shell: pwsh
         run: |
           $profile = "${{ steps.build-profile.outputs.profile }}"
           $target = "${{ inputs.target }}"
-          $base = "${{ steps.win-artifact-path.outputs.base }}"
+          $base = "${{ steps.win-bundle-path.outputs.base }}"
           if ($target -and $target -ne "x86_64-pc-windows-msvc") {
             $bundleBase = Join-Path $base (Join-Path $target (Join-Path $profile "bundle"))
           } else {
             $bundleBase = Join-Path $base (Join-Path $profile "bundle")
           }
 
+          # VC++ runtime staging is mandatory for every Windows build.
           $stagedDlls = Get-ChildItem "src-tauri/transcribe-libs" -Filter "*.dll" -ErrorAction SilentlyContinue
           if (-not $stagedDlls) {
-            Write-Host "No staged transcribe DLLs; skipping Windows runtime DLL package audit."
-            exit 0
+            throw "src-tauri/transcribe-libs contains no DLLs; every Windows build must stage the app-local VC++ runtime (issue #1527)"
           }
 
-          # Assert an installed/extracted package layout ships the runtime DLLs
-          # and a launchable handy.exe. Shared by the NSIS and MSI audits below so
-          # both installers are held to the same bar.
+          # x64 also ships dynamic transcribe/ggml/ORT DLLs; ARM64 is otherwise static.
+          $requiredStaged = @("msvcp140.dll", "vcruntime140.dll")
+          if ("${{ inputs.target }}" -notlike "aarch64*") {
+            $requiredStaged += @("vcomp140.dll", "onnxruntime.dll")
+            if (-not ($stagedDlls | Where-Object { $_.Name -like "*transcribe*" })) {
+              throw "Staging is missing transcribe runtime DLLs"
+            }
+            if (-not ($stagedDlls | Where-Object { $_.Name -like "*ggml*" })) {
+              throw "Staging is missing ggml runtime DLLs"
+            }
+          }
+          foreach ($name in $requiredStaged) {
+            if (-not ($stagedDlls | Where-Object { $_.Name -ieq $name })) {
+              throw "Staging is missing $name"
+            }
+          }
+
+          # Both installer types must contain every staged DLL and launch.
           function Assert-PackageContents {
             param([string]$Root, [string]$Label)
 
@@ -723,11 +784,10 @@ jobs:
             if (-not $handy) {
               throw "$Label package is missing handy.exe"
             }
-            if (-not (Get-ChildItem $Root -Filter "*transcribe*.dll" -Recurse -ErrorAction SilentlyContinue)) {
-              throw "$Label package is missing transcribe runtime DLLs"
-            }
-            if (-not (Get-ChildItem $Root -Filter "*ggml*.dll" -Recurse -ErrorAction SilentlyContinue)) {
-              throw "$Label package is missing ggml runtime DLLs"
+            foreach ($dll in $stagedDlls) {
+              if (-not (Get-ChildItem $Root -Filter $dll.Name -Recurse -ErrorAction SilentlyContinue)) {
+                throw "$Label package is missing staged runtime DLL $($dll.Name)"
+              }
             }
 
             & $handy.FullName --list-devices | Out-Host
@@ -753,10 +813,7 @@ jobs:
             Remove-Item -Recurse -Force $installDir
           }
 
-          # WiX MSI: an administrative install (`/a`) lays out the packaged file
-          # tree into TARGETDIR without a real install — no elevation, no registry
-          # writes, no machine state to clean up — the MSI analog of NSIS's
-          # /S /PORTABLE. The same DLL + smoke checks then apply.
+          # Administrative install extracts the MSI payload without elevation.
           $msiPackages = Get-ChildItem (Join-Path $bundleBase "msi") -Filter "*.msi" -ErrorAction SilentlyContinue
           if (-not $msiPackages) {
             throw "No MSI packages found under $bundleBase for runtime DLL audit"
@@ -767,9 +824,7 @@ jobs:
             $installDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
             New-Item -ItemType Directory -Path $installDir | Out-Null
             $logFile = Join-Path $installDir "msi-admin-install.log"
-            # Single-string ArgumentList so quoting of paths is explicit and not
-            # subject to Start-Process array-join quirks. Public properties
-            # (TARGETDIR) go last per msiexec convention.
+            # Keep quoting explicit and place public properties last.
             $msiArgs = "/a `"$($pkg.FullName)`" /qn /L*v `"$logFile`" TARGETDIR=`"$installDir`""
             $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
             if ($proc.ExitCode -ne 0) {
@@ -786,6 +841,6 @@ jobs:
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |
-            ${{ steps.win-artifact-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
-            ${{ steps.win-artifact-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
+            ${{ steps.win-bundle-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            ${{ steps.win-bundle-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30
