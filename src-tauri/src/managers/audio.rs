@@ -10,7 +10,7 @@ use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -185,6 +185,13 @@ pub struct AudioRecordingManager {
     close_generation: Arc<AtomicU64>,
     cancel_generation: Arc<AtomicU64>,
     stream_router: Arc<StreamRouter>,
+    /// Resolution of a *named* microphone (selected or clamshell) to its cpal
+    /// device, cached so on-demand recording starts skip the full device
+    /// enumeration (~40-110ms). Keyed by the resolved name, so a settings
+    /// change misses naturally; cleared when an open fails (device unplugged)
+    /// so the retry re-enumerates. The system-default case is never cached —
+    /// the recorder resolves the current default itself, cheaply.
+    cached_device: Arc<Mutex<Option<(String, cpal::Device)>>>,
 }
 
 impl AudioRecordingManager {
@@ -213,6 +220,7 @@ impl AudioRecordingManager {
             close_generation: Arc::new(AtomicU64::new(0)),
             cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
+            cached_device: Arc::new(Mutex::new(None)),
         };
 
         // Always-on?  Open immediately.
@@ -225,31 +233,68 @@ impl AudioRecordingManager {
 
     /* ---------- helper methods --------------------------------------------- */
 
+    /// The microphone name the settings ask for, or `None` for the system
+    /// default. Only runs the clamshell probe (an `ioreg` subprocess, ~10-20ms)
+    /// when a clamshell microphone is actually configured.
+    fn desired_device_name(&self, settings: &AppSettings) -> Option<String> {
+        if settings.clamshell_microphone.is_some() {
+            let clamshell_started = Instant::now();
+            let is_clamshell = clamshell::is_clamshell().unwrap_or(false);
+            debug!(
+                "device resolve: clamshell_check={:?} (clamshell={})",
+                clamshell_started.elapsed(),
+                is_clamshell
+            );
+            if is_clamshell {
+                return settings.clamshell_microphone.clone();
+            }
+        }
+        settings.selected_microphone.clone()
+    }
+
+    pub fn invalidate_device_cache(&self) {
+        *self.cached_device.lock().unwrap() = None;
+    }
+
     fn get_effective_microphone_device(&self, settings: &AppSettings) -> Option<cpal::Device> {
-        // Check if we're in clamshell mode and have a clamshell microphone configured
-        let use_clamshell_mic = if let Ok(is_clamshell) = clamshell::is_clamshell() {
-            is_clamshell && settings.clamshell_microphone.is_some()
-        } else {
-            false
+        let device_name = match self.desired_device_name(settings) {
+            Some(name) => name,
+            None => {
+                debug!("device resolve: no mic configured -> system default");
+                return None;
+            }
         };
 
-        let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref().unwrap()
-        } else {
-            settings.selected_microphone.as_ref()?
-        };
+        // Cache hit: skip the full enumeration. A stale device (unplugged)
+        // fails at open, where the caller invalidates and retries fresh.
+        if let Some((cached_name, device)) = self.cached_device.lock().unwrap().as_ref() {
+            if *cached_name == device_name {
+                debug!("device resolve: cache hit for '{}'", device_name);
+                return Some(device.clone());
+            }
+        }
 
         // Find the device by name
-        match list_input_devices() {
+        let enumerate_started = Instant::now();
+        let device = match list_input_devices() {
             Ok(devices) => devices
                 .into_iter()
-                .find(|d| d.name == *device_name)
+                .find(|d| d.name == device_name)
                 .map(|d| d.device),
             Err(e) => {
                 debug!("Failed to list devices, using default: {}", e);
                 None
             }
+        };
+        debug!(
+            "device resolve: enumerate={:?} (found={})",
+            enumerate_started.elapsed(),
+            device.is_some()
+        );
+        if let Some(d) = &device {
+            *self.cached_device.lock().unwrap() = Some((device_name, d.clone()));
         }
+        device
     }
 
     fn schedule_lazy_close(&self) {
@@ -333,30 +378,41 @@ impl AudioRecordingManager {
         let mut did_mute_guard = self.did_mute.lock().unwrap();
         *did_mute_guard = false;
 
-        // Get the selected device from settings, considering clamshell mode
+        // Get the selected device from settings, considering clamshell mode.
+        // No pre-flight enumeration here: when nothing is configured the
+        // recorder resolves the system default itself, and a machine with no
+        // input devices at all fails inside open() with the same
+        // "No input device found" error this used to check for.
         let settings = get_settings(&self.app_handle);
+        let resolve_started = Instant::now();
         let selected_device = self.get_effective_microphone_device(&settings);
-
-        // Pre-flight check: if no device was selected/configured AND no devices
-        // exist at all, fail early with a clear error instead of letting cpal
-        // produce a cryptic backend-specific message.
-        if selected_device.is_none() {
-            let has_any_device = list_input_devices()
-                .map(|devices| !devices.is_empty())
-                .unwrap_or(false);
-            if !has_any_device {
-                return Err(anyhow::anyhow!("No input device found"));
-            }
-        }
+        let resolve_elapsed = resolve_started.elapsed();
 
         // Ensure VAD is loaded if it wasn't for whatever reason
+        let vad_started = Instant::now();
         self.preload_vad()?;
+        let vad_elapsed = vad_started.elapsed();
 
+        let open_started = Instant::now();
         let mut recorder_opt = self.recorder.lock().unwrap();
         if let Some(rec) = recorder_opt.as_mut() {
-            rec.open(selected_device)
-                .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
+            if let Err(first_err) = rec.open(selected_device.clone()) {
+                // A cached device or config may have gone stale (unplugged,
+                // rate/format changed). Re-resolve from a fresh enumeration and
+                // retry once before surfacing the error.
+                warn!("Recorder open failed ({first_err}); re-resolving device and retrying once");
+                self.invalidate_device_cache();
+                let fresh_device = self.get_effective_microphone_device(&settings);
+                rec.open(fresh_device)
+                    .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
+            }
         }
+        debug!(
+            "mic stream breakdown: device_resolve={:?} vad_ensure={:?} open={:?}",
+            resolve_elapsed,
+            vad_elapsed,
+            open_started.elapsed()
+        );
 
         *open_flag = true;
         // This timing covers through cpal's stream.play() returning — i.e. the
@@ -457,6 +513,10 @@ impl AudioRecordingManager {
     }
 
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
+        // Device settings changed; drop the cached resolution so the next
+        // open re-enumerates. (The name-keyed cache would miss anyway; this
+        // just avoids holding a stale cpal::Device alive.)
+        self.invalidate_device_cache();
         // If currently open, restart the microphone stream to use the new device
         if *self.is_open.lock().unwrap() {
             self.close_generation.fetch_add(1, Ordering::SeqCst);

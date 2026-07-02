@@ -443,6 +443,7 @@ impl ShortcutAction for TranscribeAction {
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
         // Load ASR model and VAD model in parallel
+        let kickoff_started = Instant::now();
         tm.initiate_model_load();
         let rm_clone = Arc::clone(&rm);
         std::thread::spawn(move || {
@@ -450,11 +451,15 @@ impl ShortcutAction for TranscribeAction {
                 debug!("VAD pre-load failed: {}", e);
             }
         });
+        let kickoff_elapsed = kickoff_started.elapsed();
 
         let binding_id = binding_id.to_string();
+        let tray_started = Instant::now();
         change_tray_icon(app, TrayIconState::Recording);
+        let tray_elapsed = tray_started.elapsed();
 
         // Get the microphone mode to determine audio feedback timing
+        let plan_started = Instant::now();
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
 
@@ -479,15 +484,26 @@ impl ShortcutAction for TranscribeAction {
         if model_supports_streaming {
             tm.start_stream();
         }
+        let plan_elapsed = plan_started.elapsed();
 
         // Sizing the overlay follows the same advertised capability. A model that
         // doesn't stream (or whose capability is not known yet) gets the compact
         // pill instead of an oversized transparent live window.
+        let overlay_started = Instant::now();
         match settings.overlay_style {
             OverlayStyle::Live if model_supports_streaming => utils::show_streaming_overlay(app),
             OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
             OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
         }
+        // Everything above runs before capture can begin, so each span here is
+        // added keypress->capture latency.
+        debug!(
+            "start-path pre-recording steps: model_kickoff={:?} tray={:?} settings+stream_plan={:?} overlay={:?}",
+            kickoff_elapsed,
+            tray_elapsed,
+            plan_elapsed,
+            overlay_started.elapsed()
+        );
         debug!("Microphone mode - always_on: {}", is_always_on);
 
         let mut recording_error: Option<String> = None;

@@ -369,19 +369,37 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         #[cfg(target_os = "linux")]
         update_gtk_layer_shell_anchors(&overlay_window);
 
+        let size_started = std::time::Instant::now();
         let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+        let size_elapsed = size_started.elapsed();
+
+        let pos_started = std::time::Instant::now();
+        let mut set_pos_elapsed = std::time::Duration::ZERO;
         if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+            let set_pos_started = std::time::Instant::now();
             let _ = overlay_window
                 .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            set_pos_elapsed = set_pos_started.elapsed();
         }
+        let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
 
+        let show_started = std::time::Instant::now();
         let _ = overlay_window.show();
+        let show_elapsed = show_started.elapsed();
 
         // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 
         let _ = overlay_window.emit("show-overlay", state);
+        log::debug!(
+            "overlay '{}': set_size={:?} pos_calc={:?} set_pos={:?} show={:?}",
+            state,
+            size_elapsed,
+            pos_calc_elapsed,
+            set_pos_elapsed,
+            show_elapsed
+        );
     }
 }
 
