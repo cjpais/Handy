@@ -13,7 +13,8 @@ export const UpdateChecksToggle: React.FC<UpdateChecksToggleProps> = ({
   grouped = false,
 }) => {
   const { t } = useTranslation();
-  const { getSetting, updateSetting, isUpdating } = useSettings();
+  const { getSetting, updateSetting, isUpdating, updateChecksLocked } =
+    useSettings();
   const updateChecksEnabled = getSetting("update_checks_enabled") ?? true;
 
   return (
@@ -21,8 +22,13 @@ export const UpdateChecksToggle: React.FC<UpdateChecksToggleProps> = ({
       checked={updateChecksEnabled}
       onChange={(enabled) => updateSetting("update_checks_enabled", enabled)}
       isUpdating={isUpdating("update_checks_enabled")}
+      disabled={updateChecksLocked}
       label={t("settings.debug.updateChecks.label")}
-      description={t("settings.debug.updateChecks.description")}
+      description={
+        updateChecksLocked
+          ? t("settings.debug.updateChecks.lockedDescription")
+          : t("settings.debug.updateChecks.description")
+      }
       descriptionMode={descriptionMode}
       grouped={grouped}
     />

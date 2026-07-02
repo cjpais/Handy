@@ -1,3 +1,4 @@
+use crate::utils;
 use log::{debug, warn};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -980,6 +981,10 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
+    if update_checks_forced_disabled() {
+        settings.update_checks_enabled = false;
+    }
+
     settings
 }
 
@@ -1081,6 +1086,13 @@ fn apply_settings_migrations(
     }
 
     updated
+}
+
+/// Update checks are forced off (without touching the persisted setting) when
+/// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
+/// can't work against an immutable /nix/store install.
+pub fn update_checks_forced_disabled() -> bool {
+    utils::env_flag_enabled("HANDY_DISABLE_UPDATER")
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {

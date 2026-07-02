@@ -7,7 +7,7 @@ use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::image::Image;
-use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Manager, Theme};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -252,45 +252,60 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
     )
     .expect("failed to create unload model item");
 
-    let menu = match state {
+    let cancel_i = matches!(
+        state,
+        TrayIconState::Recording | TrayIconState::Transcribing
+    )
+    .then(|| {
+        MenuItem::with_id(app, "cancel", &strings.cancel, true, None::<&str>)
+            .expect("failed to create cancel item")
+    });
+
+    // When update checks are forced off (e.g. HANDY_DISABLE_UPDATER, set by the
+    // Nix package), the item is dropped from the menu entirely rather than shown
+    // disabled — it can never do anything in that case, and a disabled item still
+    // shifts every entry below it by one position. A manually-disabled toggle in
+    // Debug Settings keeps the old greyed-out behavior via `check_updates_i`'s
+    // `enabled` flag above.
+    let update_checks_locked = settings::update_checks_forced_disabled();
+
+    let sep_1 = separator();
+    let sep_2 = separator();
+    let sep_3 = separator();
+    let sep_4 = separator();
+
+    let mut items: Vec<&dyn IsMenuItem<_>> = vec![&version_i, &sep_1];
+
+    match state {
         TrayIconState::Recording | TrayIconState::Transcribing => {
-            let cancel_i = MenuItem::with_id(app, "cancel", &strings.cancel, true, None::<&str>)
-                .expect("failed to create cancel item");
-            Menu::with_items(
-                app,
-                &[
-                    &version_i,
-                    &separator(),
-                    &cancel_i,
-                    &separator(),
-                    &copy_last_transcript_i,
-                    &separator(),
-                    &settings_i,
-                    &check_updates_i,
-                    &separator(),
-                    &quit_i,
-                ],
-            )
-            .expect("failed to create menu")
+            items.push(
+                cancel_i
+                    .as_ref()
+                    .expect("cancel item created for this state"),
+            );
+            items.push(&sep_2);
+            items.push(&copy_last_transcript_i);
+            items.push(&sep_3);
+            items.push(&settings_i);
         }
-        TrayIconState::Idle => Menu::with_items(
-            app,
-            &[
-                &version_i,
-                &separator(),
-                &copy_last_transcript_i,
-                &separator(),
-                &model_submenu,
-                &unload_model_i,
-                &separator(),
-                &settings_i,
-                &check_updates_i,
-                &separator(),
-                &quit_i,
-            ],
-        )
-        .expect("failed to create menu"),
-    };
+        TrayIconState::Idle => {
+            items.push(&copy_last_transcript_i);
+            items.push(&sep_2);
+            items.push(&model_submenu);
+            items.push(&unload_model_i);
+            items.push(&sep_3);
+            items.push(&settings_i);
+        }
+    }
+
+    if !update_checks_locked {
+        items.push(&check_updates_i);
+    }
+
+    items.push(&sep_4);
+    items.push(&quit_i);
+
+    let menu = Menu::with_items(app, &items).expect("failed to create menu");
 
     let tray = app.state::<TrayIcon>();
     let _ = tray.set_menu(Some(menu));

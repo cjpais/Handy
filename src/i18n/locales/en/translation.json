@@ -461,7 +461,8 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of Handy"
+        "description": "Automatically check for new versions of Handy",
+        "lockedDescription": "Disabled by system configuration (HANDY_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Preview What's New",
