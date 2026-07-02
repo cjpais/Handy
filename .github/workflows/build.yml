@@ -329,17 +329,25 @@ jobs:
           $versionFile = Join-Path $vsRoot "VC\Auxiliary\Build\Microsoft.VCRedistVersion.default.txt"
           $redistVersion = (Get-Content $versionFile).Trim()
           $arch = if ("${{ inputs.target }}" -like "aarch64*") { "arm64" } else { "x64" }
-          $crt = Join-Path $vsRoot "VC\Redist\MSVC\$redistVersion\$arch\Microsoft.VC143.CRT"
-          if (-not (Test-Path (Join-Path $crt "msvcp140.dll"))) {
-            throw "VC++ CRT redist dir not found or incomplete: $crt"
+          $archDir = Join-Path $vsRoot "VC\Redist\MSVC\$redistVersion\$arch"
+          if (-not (Test-Path $archDir)) { throw "VC++ redist arch dir not found: $archDir" }
+          # The folder name carries the toolset moniker (Microsoft.VC143.CRT on
+          # VS2022/v143, Microsoft.VC145.CRT on VS2026/v145, ...) — glob it
+          # instead of hardcoding a generation. The DLLs inside keep their
+          # ABI-stable *140.dll names either way.
+          $crt = Get-ChildItem $archDir -Directory -Filter "Microsoft.VC*.CRT" |
+            Sort-Object Name | Select-Object -Last 1
+          if (-not $crt -or -not (Test-Path (Join-Path $crt.FullName "msvcp140.dll"))) {
+            throw "VC++ CRT redist dir not found or incomplete under: $archDir"
           }
-          $dirs = $crt
+          $dirs = $crt.FullName
           if ($arch -eq "x64") {
-            $omp = Join-Path $vsRoot "VC\Redist\MSVC\$redistVersion\$arch\Microsoft.VC143.OpenMP"
-            if (-not (Test-Path (Join-Path $omp "vcomp140.dll"))) {
-              throw "VC++ OpenMP redist dir not found or incomplete: $omp"
+            $omp = Get-ChildItem $archDir -Directory -Filter "Microsoft.VC*.OpenMP" |
+              Sort-Object Name | Select-Object -Last 1
+            if (-not $omp -or -not (Test-Path (Join-Path $omp.FullName "vcomp140.dll"))) {
+              throw "VC++ OpenMP redist dir not found or incomplete under: $archDir"
             }
-            $dirs = "$crt;$omp"
+            $dirs = "$($crt.FullName);$($omp.FullName)"
           }
           Write-Host "HANDY_VC_REDIST_DIRS=$dirs"
           Add-Content -Path $env:GITHUB_ENV -Value "HANDY_VC_REDIST_DIRS=$dirs"
