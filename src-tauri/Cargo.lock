@@ -7047,9 +7047,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13b4a8ff896f7099716286aabaf9df0f78f26f7e3707d33dcd1c82a2ca0563b6"
+checksum = "b32749d8a4c16bc1b4e7ea07a463e454a7bddde459a29fdf998025a4ce874d52"
 dependencies = [
  "log",
  "thiserror 2.0.18",
@@ -7058,9 +7058,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp-sys"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e06fff0397caf8032bfa911209be2ac542f5d52440832c24a6ffdf47b3788911"
+checksum = "28e526bd52b0b16ea54a296c40273a0573a5886c5c6a69aa1790c3b9bde578d0"
 dependencies = [
  "cmake",
  "serde_json",
