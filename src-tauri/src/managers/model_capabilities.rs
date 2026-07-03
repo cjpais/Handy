@@ -156,7 +156,13 @@ impl CapabilityProber for GgufHeaderProber {
     fn probe_file(&self, path: &Path) -> CapabilityProbe {
         match read_header_metadata(path) {
             Ok(meta) => CapabilityProbe::from_metadata(&meta),
-            Err(_) => CapabilityProbe::unsupported(),
+            Err(e) => {
+                // A .gguf we can't read is how a broken file surfaces (dangling
+                // cache symlink, truncated download, not-actually-GGUF) — say so
+                // instead of silently dropping it from discovery.
+                log::warn!("Failed to read GGUF header from {}: {}", path.display(), e);
+                CapabilityProbe::unsupported()
+            }
         }
     }
 }

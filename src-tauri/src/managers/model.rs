@@ -285,6 +285,42 @@ fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathB
         .get(filename)
 }
 
+/// Log when an HF cache entry is in a *broken* state — the "downloaded but
+/// invisible" failure that otherwise stays silent. Deliberately narrow to
+/// avoid false alarms: a missing repo dir is simply not-downloaded, and a
+/// resolved ref without our file just means a sibling file (e.g. another
+/// quant) from the same repo was downloaded. What we flag:
+/// - repo dir present but the ref unreadable (interrupted download), or
+/// - the snapshot entry exists but doesn't resolve (dangling symlink).
+fn warn_if_hf_cache_entry_broken(repo_id: &str, revision: &str, filename: &str) {
+    let repo = Repo::with_revision(repo_id.to_string(), RepoType::Model, revision.to_string());
+    let repo_dir = Cache::from_env().path().join(repo.folder_name());
+    if !repo_dir.exists() {
+        return;
+    }
+    let Ok(commit) = fs::read_to_string(repo_dir.join("refs").join(revision)) else {
+        warn!(
+            "HF cache dir {:?} exists but has no usable ref for revision {}; \
+             likely an interrupted download. Re-download the model or delete that directory.",
+            repo_dir, revision
+        );
+        return;
+    };
+    let pointer = repo_dir
+        .join("snapshots")
+        .join(commit.trim())
+        .join(filename);
+    // symlink_metadata succeeding while the followed path doesn't exist is
+    // exactly a dangling symlink.
+    if pointer.symlink_metadata().is_ok() && !pointer.exists() {
+        warn!(
+            "HF cache entry {:?} is a dangling symlink (its blob is missing); \
+             re-download the model or delete {:?}.",
+            pointer, repo_dir
+        );
+    }
+}
+
 /// Friendly name advertised by GGUF metadata, if present. Empty strings are not
 /// useful display names, so callers can keep their filename/repo fallback.
 fn probed_display_name(probe: &CapabilityProbe) -> Option<String> {
@@ -1307,7 +1343,19 @@ impl ModelManager {
 
         for model in models.values_mut() {
             if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
-                model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some();
+                // A file manually placed in the models dir satisfies an HF
+                // catalog entry, and wins over the shared HF cache: an
+                // explicitly placed file is user intent, and this is the
+                // documented fallback when HF downloads are unavailable.
+                if self.models_dir.join(&model.filename).is_file() {
+                    model.is_downloaded = true;
+                } else {
+                    let cached = hf_cached_path(repo_id, revision, &model.filename);
+                    if cached.is_none() {
+                        warn_if_hf_cache_entry_broken(repo_id, revision, &model.filename);
+                    }
+                    model.is_downloaded = cached.is_some();
+                }
                 model.is_downloading = false;
                 model.partial_size = 0;
                 continue;
@@ -1471,7 +1519,10 @@ impl ModelManager {
                 continue;
             };
 
-            // Skip predefined model files
+            // A file whose name matches a catalog model is not surfaced as a
+            // separate custom entry — it satisfies the catalog entry itself
+            // (update_download_status / get_model_path treat a models-dir file
+            // as a local override for HF-source models).
             if predefined_filenames.contains(&filename) {
                 continue;
             }
@@ -1626,8 +1677,15 @@ impl ModelManager {
 
                 let path = snapshot.join(&fname);
                 let probe = prober.probe_file(&path);
-                // Only surface models transcribe-cpp recognises.
+                // Only surface models transcribe-cpp recognises. Unreadable
+                // files already warn inside probe_file; valid-but-foreign GGUFs
+                // (e.g. LLMs sharing the cache) are expected and stay quiet.
                 if probe.verdict != Compatibility::Compatible {
+                    debug!(
+                        "HF cache scan skipping {} (verdict: {:?})",
+                        path.display(),
+                        probe.verdict
+                    );
                     continue;
                 }
                 let caps = local_caps(&probe);
@@ -1790,6 +1848,10 @@ impl ModelManager {
         // link's real bandwidth. 8 stays light on CPU/RAM (~80 MB peak buffers)
         // even on older machines and is browser-like in connection count.
         let api = ApiBuilder::from_env()
+            // Never attach ambient HF credentials (~/.cache/huggingface/token).
+            // Every repo Handy downloads is public, and a stale token left by an
+            // old `huggingface-cli login` turns downloads into opaque 401s.
+            .with_token(None)
             .with_progress(false)
             .with_max_files(8)
             .build()
@@ -2185,10 +2247,19 @@ impl ModelManager {
         debug!("ModelManager: Found model info: {:?}", model_info);
 
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
+            let mut deleted = false;
+            // A manual drop-in in the models dir satisfies this entry the same
+            // way a cache download does, so delete must remove it too —
+            // otherwise the model would still show as downloaded afterwards.
+            let local_override = self.models_dir.join(&model_info.filename);
+            if local_override.is_file() {
+                info!("Deleting local model file at: {:?}", local_override);
+                fs::remove_file(&local_override)?;
+                deleted = true;
+            }
             // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
             // the whole repo dir (blobs + refs + snapshots). Per product decision,
             // delete hard-removes from the shared HF cache.
-            let mut deleted = false;
             if let Some(file) = hf_cached_path(repo_id, revision, &model_info.filename) {
                 if let Some(repo_dir) = file.ancestors().nth(3) {
                     if repo_dir
@@ -2285,6 +2356,12 @@ impl ModelManager {
         }
 
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
+            // A manual drop-in in the models dir wins over the shared HF cache
+            // (explicit user intent; mirrors update_download_status).
+            let local_override = self.models_dir.join(&model_info.filename);
+            if local_override.is_file() {
+                return Ok(local_override);
+            }
             return hf_cached_path(repo_id, revision, &model_info.filename).ok_or_else(|| {
                 anyhow::anyhow!("Complete model file not found in HF cache: {}", model_id)
             });
