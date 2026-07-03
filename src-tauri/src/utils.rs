@@ -67,3 +67,22 @@ pub fn is_kde_plasma() -> bool {
 pub fn is_kde_wayland() -> bool {
     is_wayland() && is_kde_plasma()
 }
+
+/// Name of the frontmost application (the dictation target). Used for the
+/// `${app}` post-processing prompt variable so prompts can adapt tone to the
+/// target app.
+#[cfg(target_os = "macos")]
+pub fn frontmost_app_name() -> Option<String> {
+    use objc2_app_kit::NSWorkspace;
+    unsafe {
+        let workspace = NSWorkspace::sharedWorkspace();
+        let app = workspace.frontmostApplication()?;
+        app.localizedName().map(|name| name.to_string())
+    }
+}
+
+// ponytail: macOS only; Windows (GetForegroundWindow) / Linux when needed
+#[cfg(not(target_os = "macos"))]
+pub fn frontmost_app_name() -> Option<String> {
+    None
+}

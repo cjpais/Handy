@@ -130,6 +130,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         return None;
     }
 
+    // ponytail: frontmost app read at post-process time, not recording start;
+    // good enough since the target app keeps focus during transcription
+    let prompt = prompt.replace(
+        "${app}",
+        &crate::utils::frontmost_app_name().unwrap_or_else(|| "unknown".to_string()),
+    );
+
     debug!(
         "Starting LLM post-processing with provider '{}' (model: {})",
         provider.id, model
