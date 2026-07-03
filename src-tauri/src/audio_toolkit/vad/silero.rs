@@ -49,4 +49,10 @@ impl VoiceActivityDetector for SileroVad {
             Ok(VadFrame::Noise)
         }
     }
+
+    fn reset(&mut self) {
+        // Clear the Silero LSTM hidden/cell state so a new session doesn't
+        // inherit recurrent context from the previous recording.
+        self.engine.reset();
+    }
 }

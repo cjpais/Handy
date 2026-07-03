@@ -3,7 +3,7 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::sync::Arc;
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -68,6 +68,7 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
 
     let icon_path = get_icon_path(theme, icon.clone());
 
+    let icon_started = std::time::Instant::now();
     let _ = tray.set_icon(Some(
         Image::from_path(
             app.path()
@@ -76,9 +77,29 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
         )
         .expect("failed to set icon"),
     ));
+    let icon_elapsed = icon_started.elapsed();
 
     // Update menu based on state
+    let menu_started = std::time::Instant::now();
     update_tray_menu(app, &icon, None);
+    debug!(
+        "tray icon change ({:?}): set_icon={:?} menu={:?}",
+        icon,
+        icon_elapsed,
+        menu_started.elapsed()
+    );
+}
+
+pub fn tray_tooltip() -> String {
+    version_label()
+}
+
+fn version_label() -> String {
+    if cfg!(debug_assertions) {
+        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+    } else {
+        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+    }
 }
 
 pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
@@ -94,11 +115,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
     let (settings_accelerator, quit_accelerator) = (Some("Ctrl+,"), Some("Ctrl+Q"));
 
     // Create common menu items
-    let version_label = if cfg!(debug_assertions) {
-        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
-    } else {
-        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
-    };
+    let version_label = version_label();
     let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)
         .expect("failed to create version item");
     let settings_i = MenuItem::with_id(
@@ -212,6 +229,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
     let tray = app.state::<TrayIcon>();
     let _ = tray.set_menu(Some(menu));
     let _ = tray.set_icon_as_template(true);
+    let _ = tray.set_tooltip(Some(version_label));
 }
 
 fn last_transcript_text(entry: &HistoryEntry) -> &str {
@@ -232,19 +250,28 @@ pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
 
 pub fn copy_last_transcript(app: &AppHandle) {
     let history_manager = app.state::<Arc<HistoryManager>>();
-    let entry = match history_manager.get_latest_entry() {
+    let entry = match history_manager.get_latest_completed_entry() {
         Ok(Some(entry)) => entry,
         Ok(None) => {
-            warn!("No transcription history entries available for tray copy.");
+            warn!("No completed transcription history entries available for tray copy.");
             return;
         }
         Err(err) => {
-            error!("Failed to fetch last transcription entry: {}", err);
+            error!(
+                "Failed to fetch last completed transcription entry: {}",
+                err
+            );
             return;
         }
     };
 
-    if let Err(err) = app.clipboard().write_text(last_transcript_text(&entry)) {
+    let text = last_transcript_text(&entry);
+    if text.trim().is_empty() {
+        warn!("Last completed transcription is empty; skipping tray copy.");
+        return;
+    }
+
+    if let Err(err) = app.clipboard().write_text(text) {
         error!("Failed to copy last transcript to clipboard: {}", err);
         return;
     }
@@ -267,6 +294,7 @@ mod tests {
             transcription_text: transcription.to_string(),
             post_processed_text: post_processed.map(|text| text.to_string()),
             post_process_prompt: None,
+            post_process_requested: false,
         }
     }
 

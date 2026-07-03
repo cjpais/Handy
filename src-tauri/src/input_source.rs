@@ -220,3 +220,16 @@ pub fn get_language_from_input_source() -> Option<String> {
     let source = get_current_input_source()?;
     input_source_to_language(&source).map(|s| s.to_string())
 }
+
+/// Resolve a persisted language *intent* one step ahead of the capability
+/// coercion ([`crate::managers::model::effective_language`]): the dynamic
+/// `os_input` intent maps to the current OS keyboard language ("auto" when the
+/// layout is unmappable); every other intent passes through unchanged. Like the
+/// coercion itself, the result is never written back to settings.
+pub fn resolve_language_intent(intent: &str) -> String {
+    if intent == "os_input" {
+        get_language_from_input_source().unwrap_or_else(|| "auto".to_string())
+    } else {
+        intent.to_string()
+    }
+}

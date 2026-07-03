@@ -4,18 +4,49 @@ import { invoke } from "@tauri-apps/api/core";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
-import { LANGUAGES } from "../../lib/constants/languages";
+import {
+  getLanguageLabel,
+  recognitionLanguage,
+  SELECTABLE_LANGUAGES,
+  supportsLanguageCode,
+} from "../../lib/constants/languages";
 
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
   supportedLanguages?: string[];
+  // Whether the model can auto-detect language. Gates the "Auto" option:
+  // must-pick models (no detection) omit it and force a concrete choice.
+  supportsLanguageDetection?: boolean;
 }
+
+// Mirrors the matching logic of `effective_language` in
+// src-tauri/src/managers/model.rs. The Rust function is authoritative for the
+// *concrete* code the engine receives (e.g. "en-US"); this resolves the
+// canonical *base* code ("en") so the highlighted picker item matches an entry
+// in the LANGUAGES list. Matching is base-aware (`supportsLanguageCode` strips
+// region/script subtags), so a model advertising full locales still resolves.
+const effectiveLanguage = (
+  intent: string,
+  supported: string[],
+  supportsDetection: boolean,
+): string => {
+  // "os_input" is a dynamic intent resolved against the OS keyboard layout at
+  // use time (backend `resolve_language_intent`); it can't be coerced here.
+  if (intent === "os_input") return intent;
+  if (supported.length === 0) return intent;
+  if (intent !== "auto" && supportsLanguageCode(supported, intent))
+    return intent;
+  if (supportsDetection) return "auto";
+  if (supportsLanguageCode(supported, "en")) return "en";
+  return recognitionLanguage(supported[0]);
+};
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
   supportedLanguages,
+  supportsLanguageDetection = true,
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
@@ -25,7 +56,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedLanguage = getSetting("selected_language") || "auto";
+  // The persisted *intent* (auto | code). What's actually used/shown is the
+  // effective value resolved against the current model's capabilities.
+  const intent = getSetting("selected_language") || "auto";
+  const selectedLanguage = effectiveLanguage(
+    intent,
+    supportedLanguages ?? [],
+    supportsLanguageDetection,
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -64,12 +102,16 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const availableLanguages = useMemo(() => {
     if (!supportedLanguages || supportedLanguages.length === 0)
-      return LANGUAGES;
-    return LANGUAGES.filter(
-      (lang) =>
-        lang.value === "auto" || supportedLanguages.includes(lang.value),
+      return SELECTABLE_LANGUAGES;
+    return SELECTABLE_LANGUAGES.filter((lang) =>
+      lang.value === "auto"
+        ? supportsLanguageDetection
+        : // "os_input" resolves dynamically at use time, so it stays available
+          // regardless of the model's advertised language set.
+          lang.value === "os_input" ||
+          supportsLanguageCode(supportedLanguages, lang.value),
     );
-  }, [supportedLanguages]);
+  }, [supportedLanguages, supportsLanguageDetection]);
 
   const filteredLanguages = useMemo(
     () =>
@@ -81,14 +123,13 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const selectedLanguageName = useMemo(() => {
     if (selectedLanguage === "os_input") {
-      const resolved = LANGUAGES.find((l) => l.value === osInputLang)?.label;
+      const resolved = osInputLang ? getLanguageLabel(osInputLang) : undefined;
       return resolved
         ? t("settings.general.language.followOs", { language: resolved })
         : t("settings.general.language.followOsInput");
     }
     return (
-      LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
-      t("settings.general.language.auto")
+      getLanguageLabel(selectedLanguage) || t("settings.general.language.auto")
     );
   }, [selectedLanguage, osInputLang, t]);
 

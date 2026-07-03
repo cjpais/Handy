@@ -1,0 +1,624 @@
+{
+  "tray": {
+    "settings": "Inställningar...",
+    "checkUpdates": "Sök efter uppdateringar...",
+    "copyLastTranscript": "Kopiera senaste transkriptionen",
+    "unloadModel": "Avlasta modell",
+    "model": "Modell",
+    "quit": "Avsluta",
+    "cancel": "Avbryt"
+  },
+  "sidebar": {
+    "general": "Allmänt",
+    "models": "Modeller",
+    "advanced": "Avancerat",
+    "postProcessing": "Efterbearbetning",
+    "history": "Historik",
+    "debug": "Felsökning",
+    "about": "Om"
+  },
+  "onboarding": {
+    "subtitle": "För att komma igång, välj en transkriptionsmodell",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
+    "recommended": "Rekommenderat",
+    "customModelDescription": "Stöds inte officiellt",
+    "modelCard": {
+      "accuracy": "noggrannhet",
+      "speed": "hastighet"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Snabb och ganska noggrann."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Bra noggrannhet, medelhög hastighet"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Balanserad noggrannhet och hastighet."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Bra noggrannhet, men långsam."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Endast engelska. Den bästa modellen för engelsktalande."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Snabb och noggrann"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Mycket snabb, endast engelska. Hanterar accenter bra."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Blixtsnabb, endast engelska"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Snabb, endast engelska. Bra balans mellan hastighet och noggrannhet."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Endast engelska. Hög kvalitet."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimerad för taiwanesisk mandarin. Stöd för kodväxling."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Mycket snabb. Kinesiska, engelska, japanska, koreanska, kantonesiska."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Rysk taligenkänning. Snabb och noggrann."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Mycket snabb. Engelska, tyska, spanska, franska. Stöder översättning."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Noggrann flerspråkig. 25 europeiska språk. Stöder översättning."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "En stor, långsammare, men mycket noggrann flerspråkig modell."
+      }
+    },
+    "errors": {
+      "selectModel": "Failed to select model"
+    },
+    "permissions": {
+      "title": "Behörigheter krävs",
+      "description": "Handy behöver ett par behörigheter för att fungera korrekt.",
+      "microphone": {
+        "title": "Mikrofonåtkomst",
+        "description": "Krävs för att höra din röst för transkription."
+      },
+      "accessibility": {
+        "title": "Hjälpmedelsåtkomst",
+        "description": "Krävs för att skriva transkriberad text i dina program."
+      },
+      "grant": "Bevilja behörighet",
+      "granted": "Beviljad",
+      "waiting": "Väntar...",
+      "allGranted": "Allt klart!",
+      "errors": {
+        "checkFailed": "Misslyckades med att kontrollera behörigheter. Försök igen.",
+        "requestFailed": "Misslyckades med att begära behörighet. Försök igen."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "Anpassad",
+    "streaming": "Streaming",
+    "active": "Aktiv",
+    "switching": "Byter...",
+    "noModelsAvailable": "Inga modeller tillgängliga",
+    "verifying": "Verifierar {{modelName}}...",
+    "verifyingGeneric": "Verifierar...",
+    "extracting": "Extraherar {{modelName}}...",
+    "extractingMultiple": "Extraherar {{count}} modeller...",
+    "extractingGeneric": "Extraherar...",
+    "downloading": "Laddar ner {{percentage}}%",
+    "downloadingMultiple": "Laddar ner {{count}} modeller...",
+    "modelReady": "Modell klar",
+    "loading": "Laddar {{modelName}}...",
+    "loadingGeneric": "Laddar...",
+    "modelError": "Modellfel",
+    "modelUnloaded": "Modell avlastad",
+    "noModelDownloadRequired": "Ingen modell - Nedladdning krävs",
+    "deleteModel": "Ta bort {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "Avbryt",
+    "cancelDownload": "Avbryt nedladdning",
+    "capabilities": {
+      "languageSelection": "Stöder flera indataspråk",
+      "singleLanguage": "Stöder endast detta språk",
+      "languageCount": "{{total}} languages",
+      "languageOnly": "Endast {{language}}",
+      "translation": "Kan översätta till engelska",
+      "translate": "Översätt till engelska",
+      "streaming": "Visar transkription i realtid medan du talar"
+    },
+    "legacy": "Äldre"
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "{{model}}-inställningar"
+    },
+    "general": {
+      "title": "Allmänt",
+      "shortcut": {
+        "title": "Handy-kortkommandon",
+        "description": "Konfigurera kortkommandon för att starta tal-till-text-inspelning",
+        "loading": "Laddar kortkommandon...",
+        "none": "Inga kortkommandon konfigurerade",
+        "notFound": "Kortkommando hittades inte",
+        "pressKeys": "Tryck på tangenter...",
+        "bindings": {
+          "transcribe": {
+            "name": "Kortkommando för transkribering",
+            "description": "Kortkommandot för att spela in och transkribera din röst."
+          },
+          "cancel": {
+            "name": "Kortkommando för att avbryta",
+            "description": "Kortkommandot för att avbryta den aktuella inspelningen."
+          },
+          "transcribe_with_post_process": {
+            "name": "Snabbkommando för efterbearbetning",
+            "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbearbetning på din transkription."
+          }
+        },
+        "errors": {
+          "restore": "Misslyckades med att återställa ursprungligt kortkommando",
+          "set": "Misslyckades med att ställa in kortkommando: {{error}}",
+          "reset": "Misslyckades med att återställa kortkommando till ursprungsvärdet"
+        }
+      },
+      "language": {
+        "title": "Språk",
+        "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
+        "searchPlaceholder": "Sök språk...",
+        "noResults": "Inga språk hittades",
+        "auto": "Auto"
+      },
+      "pushToTalk": {
+        "label": "Tryck för att tala",
+        "description": "Håll ned för att spela in, släpp för att stoppa"
+      }
+    },
+    "models": {
+      "title": "Transkriptionsmodeller",
+      "description": "Välj en transkriptionsmodell eller ladda ner ytterligare modeller. Olika modeller erbjuder varierande nivåer av noggrannhet och hastighet.",
+      "yourModels": "Nedladdade modeller",
+      "availableModels": "Tillgängliga att ladda ner",
+      "deleteConfirm": "Är du säker på att du vill ta bort {{modelName}}? Du måste ladda ner den igen för att använda den.",
+      "deleteActiveConfirm": "{{modelName}} är din aktiva modell. Om du tar bort den avbryts transkriptioner tills du väljer en ny modell. Är du säker?",
+      "deleteTitle": "Ta bort modell",
+      "filters": {
+        "allLanguages": "Alla språk"
+      },
+      "noModelsMatch": "Inga modeller matchar detta filter.",
+      "searchPlaceholder": "Sök modeller efter namn…",
+      "rescan": {
+        "label": "Skanna om",
+        "tooltip": "Skanna om efter modeller som lagts till i modellmappen eller Hugging Face-cachen utanför Handy"
+      }
+    },
+    "sound": {
+      "title": "Ljud",
+      "microphone": {
+        "title": "Mikrofon",
+        "description": "Välj din föredragna mikrofonenhet",
+        "placeholder": "Välj mikrofon...",
+        "loading": "Laddar..."
+      },
+      "audioFeedback": {
+        "label": "Ljudåterkoppling",
+        "description": "Spela upp ljud när inspelningen startar och stoppar"
+      },
+      "outputDevice": {
+        "title": "Utmatningsenhet",
+        "description": "Välj din föredragna ljudutmatningsenhet för återkopplingsljud",
+        "placeholder": "Välj utmatningsenhet...",
+        "loading": "Laddar..."
+      },
+      "volume": {
+        "title": "Volym",
+        "description": "Justera volymen för ljudåterkopplingsljud"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "App",
+        "output": "Utmatning",
+        "transcription": "Transkription",
+        "history": "Historik",
+        "experimental": "Experimentellt"
+      },
+      "experimentalToggle": {
+        "label": "Experimentella funktioner",
+        "description": "Aktivera experimentella funktioner som fortfarande är under utveckling."
+      },
+      "lazyStreamClose": {
+        "label": "Håll mikrofonen öppen mellan transkriptioner",
+        "description": "Håller mikrofonströmmen öppen i 30 sekunder efter att inspelningen avslutats, vilket minskar latensen för transkriptioner efter varandra. Kan försämra Bluetooth-ljudkvaliteten medan den är aktiv."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "Whisper-acceleration",
+          "description": "Hårdvaruacceleration för Whisper-modeller. Auto använder GPU om tillgängligt (Metal på macOS, Vulkan på Windows/Linux)."
+        },
+        "ort": {
+          "title": "ONNX-acceleration",
+          "description": "Hårdvaruacceleration för ONNX-modeller (Parakeet, Canary, Moonshine, etc.). DirectML på Windows är experimentellt. Modeller kan misslyckas med att transkribera."
+        },
+        "gpuDevice": {
+          "auto": "Auto"
+        }
+      },
+      "startHidden": {
+        "label": "Starta dold",
+        "description": "Starta i systemfältet utan att öppna fönstret."
+      },
+      "autostart": {
+        "label": "Starta vid uppstart",
+        "description": "Starta Handy automatiskt när du loggar in på din dator."
+      },
+      "showTrayIcon": {
+        "label": "Visa ikon i systemfältet",
+        "description": "Visa Handy-ikonen i systemfältet."
+      },
+      "overlay": {
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Ingen",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Överlagringsposition",
+          "description": "Visa visuell återkoppling under inspelning och transkription. På Linux rekommenderas 'Ingen'.",
+          "options": {
+            "bottom": "Nederst",
+            "top": "Överst"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "Klistra-in-metod",
+        "description": "Välj hur text infogas. Direkt: simulerar skrivande via systeminmatning. Ingen: hoppar över klistra in, uppdaterar endast historik/urklipp.",
+        "options": {
+          "clipboard": "Urklipp ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Urklipp (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Urklipp (Shift+Insert)",
+          "direct": "Direkt",
+          "none": "Ingen",
+          "externalScript": "Externt skript"
+        },
+        "externalScriptPlaceholder": "/sökväg/till/ditt/skript.sh"
+      },
+      "typingTool": {
+        "title": "Skrivverktyg",
+        "description": "Välj vilket Linux-skrivverktyg som ska användas för metoden Direkt klistra in. Auto kommer automatiskt att upptäcka och använda det bästa tillgängliga verktyget för ditt system.",
+        "options": {
+          "auto": "Auto (Rekommenderas)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Hantering av urklipp",
+        "description": "Ändra inte urklipp bevarar ditt nuvarande urklippsinnehåll efter transkription. Kopiera till urklipp lämnar transkriptionsresultatet i ditt urklipp efter att ha klistrat in.",
+        "options": {
+          "dontModify": "Ändra inte urklipp",
+          "copyToClipboard": "Kopiera till urklipp"
+        }
+      },
+      "autoSubmit": {
+        "title": "Skicka automatiskt",
+        "description": "Skicka automatiskt den valda tangentkombinationen efter textinsättning. Cmd+Enter gäller på macOS, medan Windows/Linux använder Super+Enter.",
+        "options": {
+          "off": "Av",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Översätt till engelska",
+        "description": "Översätt automatiskt tal från andra språk till engelska under transkription."
+      },
+      "modelUnload": {
+        "title": "Avlasta modell",
+        "description": "Frigör automatiskt GPU/CPU-minne när modellen inte har använts under den angivna tiden",
+        "options": {
+          "never": "Aldrig",
+          "immediately": "Omedelbart",
+          "min2": "Efter 2 minuter",
+          "min5": "Efter 5 minuter",
+          "min10": "Efter 10 minuter",
+          "min15": "Efter 15 minuter",
+          "hour1": "Efter 1 timme",
+          "sec15": "Efter 15 sekunder (Felsökning)"
+        }
+      },
+      "customWords": {
+        "title": "Anpassade ord",
+        "description": "Lägg till ord som ofta hörs fel eller stavas fel under transkription. Systemet kommer automatiskt att korrigera liknande ord för att matcha din lista.",
+        "placeholder": "Lägg till ett ord",
+        "add": "Lägg till",
+        "remove": "Ta bort {{word}}",
+        "duplicate": "\"{{word}}\" finns redan"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "Snabbkommando"
+      },
+      "api": {
+        "title": "API (OpenAI-kompatibelt)",
+        "provider": {
+          "title": "Leverantör",
+          "description": "Välj en OpenAI-kompatibel leverantör."
+        },
+        "appleIntelligence": {
+          "unavailable": "Apple Intelligence är inte tillgängligt på den här enheten. Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare med Apple Intelligence aktiverat i systeminställningarna."
+        },
+        "baseUrl": {
+          "title": "Bas-URL",
+          "description": "API-bas-URL för den valda leverantören. Endast den anpassade leverantören kan redigeras.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API-nyckel",
+          "description": "API-nyckel för den valda leverantören.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modell",
+          "descriptionCustom": "Ange den modellidentifierare som förväntas av din anpassade slutpunkt.",
+          "descriptionDefault": "Välj en modell som exponeras av den valda leverantören.",
+          "placeholderWithOptions": "Sök eller välj en modell",
+          "placeholderNoOptions": "Ange ett modellnamn",
+          "refreshModels": "Uppdatera modeller"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Vald prompt",
+          "description": "Välj en mall för att förfina transkriptioner eller skapa en ny. Använd ${output} inuti prompttexten för att referera till den fångade transkriptionen."
+        },
+        "noPrompts": "Inga prompter tillgängliga",
+        "selectPrompt": "Välj en prompt",
+        "createNew": "Skapa ny prompt",
+        "promptLabel": "Prompt-etikett",
+        "promptLabelPlaceholder": "Ange namn på prompt",
+        "promptInstructions": "Prompt-instruktioner",
+        "promptInstructionsPlaceholder": "Skriv instruktionerna som ska köras efter transkription. Exempel: Förbättra grammatik och tydlighet för följande text: ${output}",
+        "promptTip": "Tips: Använd <code>${output}</code> för att infoga den transkriberade texten i din prompt.",
+        "updatePrompt": "Uppdatera prompt",
+        "deletePrompt": "Ta bort prompt",
+        "createPrompt": "Skapa prompt",
+        "cancel": "Avbryt",
+        "selectToEdit": "Välj en prompt ovan för att visa och redigera dess detaljer.",
+        "createFirst": "Klicka på 'Skapa ny prompt' ovan för att skapa din första prompt för efterbearbetning."
+      }
+    },
+    "history": {
+      "title": "Historik",
+      "openFolder": "Öppna mapp för inspelningar",
+      "loading": "Laddar historik...",
+      "empty": "Inga transkriptioner ännu. Börja spela in för att bygga upp din historik!",
+      "copyToClipboard": "Kopiera transkription till urklipp",
+      "save": "Spara transkription",
+      "unsave": "Ta bort från sparade",
+      "delete": "Ta bort post",
+      "deleteError": "Misslyckades med att ta bort post. Försök igen.",
+      "retranscribe": "Transkribera igen",
+      "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
+      "transcribing": "Transkriberar...",
+      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök."
+    },
+    "debug": {
+      "title": "Felsökning",
+      "logDirectory": {
+        "title": "Loggmapp",
+        "description": "Plats där loggfiler lagras"
+      },
+      "logLevel": {
+        "title": "Loggnivå",
+        "description": "Ställ in loggningens detaljrikedom"
+      },
+      "liveLogs": {
+        "title": "Liveloggar",
+        "description": "Strömma programmets loggar i realtid för att diagnostisera problem utan att öppna loggfilen. Endast loggar som skapas medan den här panelen är öppen visas; följer inställningen Loggnivå ovan.",
+        "live": "Live",
+        "paused": "Pausad",
+        "pause": "Pausa",
+        "resume": "Återuppta",
+        "copied": "Kopierad",
+        "lineCount": "{{count}} rader",
+        "empty": "Väntar på loggar… Poster visas här när appen skickar dem."
+      },
+      "updateChecks": {
+        "label": "Sök efter uppdateringar",
+        "description": "Sök automatiskt efter nya versioner av Handy"
+      },
+      "soundTheme": {
+        "label": "Ljudtema",
+        "description": "Välj ett ljudtema för återkoppling vid start och stopp av inspelning"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Tröskelvärde för ordkorrigering",
+        "description": "Känslighet för anpassade ordkorrigeringar"
+      },
+      "historyLimit": {
+        "title": "Historikgräns",
+        "description": "Maximalt antal historikposter som ska sparas",
+        "entries": "poster"
+      },
+      "recordingRetention": {
+        "title": "Radera inspelningar automatiskt",
+        "description": "Radera gamla inspelningar automatiskt för att spara utrymme",
+        "never": "Aldrig",
+        "preserveLimit": "Behåll de senaste {{count}}",
+        "days3": "Efter 3 dagar",
+        "weeks2": "Efter 2 veckor",
+        "months3": "Efter 3 månader",
+        "placeholder": "Välj lagringsperiod..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Alltid påslagen mikrofon",
+        "description": "Håll mikrofonen aktiv för snabbare svar"
+      },
+      "clamshellMicrophone": {
+        "title": "Clamshell-mikrofon",
+        "description": "Mikrofon som ska användas när bärbara datorns lock är stängt"
+      },
+      "postProcessingToggle": {
+        "label": "Efterbearbetning",
+        "description": "Aktivera AI-driven textförfining efter transkription"
+      },
+      "muteWhileRecording": {
+        "label": "Ljudlös under inspelning",
+        "description": "Stäng av systemljudet under inspelning"
+      },
+      "appendTrailingSpace": {
+        "label": "Lägg till avslutande mellanslag",
+        "description": "Lägg till ett mellanslag efter klistrad transkription"
+      },
+      "keyboardImplementation": {
+        "title": "Tangentbordsimplementering",
+        "description": "Välj tangentbordsgenvägens implementation.",
+        "bindingsReset": "Kortkommandona var inkompatibla och återställdes till standardvärden"
+      },
+      "paths": {
+        "appData": "Appdata:",
+        "models": "Modeller:",
+        "settings": "Inställningar:"
+      },
+      "pasteDelay": {
+        "title": "Fördröjning vid klistra in",
+        "description": "Fördröjning innan klistra in-tangenttryckning skickas (i millisekunder). Öka om fel text klistras in."
+      },
+      "recordingBuffer": {
+        "title": "Extra inspelningsbuffert",
+        "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
+      },
+      "whatsNewPreview": {
+        "title": "Förhandsvisa nyheter",
+        "description": "Öppna den senaste medföljande versionsinformationen utan att markera den som visad",
+        "button": "Förhandsvisa",
+        "noNotes": "Ingen medföljande versionsinformation hittades",
+        "error": "Det gick inte att förhandsvisa versionsinformationen"
+      }
+    },
+    "about": {
+      "title": "Om",
+      "version": {
+        "title": "Version",
+        "description": "Nuvarande version av Handy"
+      },
+      "appDataDirectory": {
+        "title": "Mapp för appdata",
+        "description": "Plats där Handy lagrar sina data"
+      },
+      "sourceCode": {
+        "title": "Källkod",
+        "description": "Visa källkod och bidra",
+        "button": "Visa på GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Stöd utvecklingen",
+        "description": "Hjälp oss att fortsätta bygga Handy",
+        "button": "Donera"
+      },
+      "acknowledgments": {
+        "title": "Tack till",
+        "ggml": {
+          "title": "ggml",
+          "description": "Högpresterande inferens av OpenAI:s Whisper-modell för automatisk taligenkänning",
+          "details": "Handy använder ggml för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
+        }
+      },
+      "whatsNewUpdates": {
+        "label": "Visa nyheter",
+        "description": "Visa versionsinformation efter Handy-uppdateringar"
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "Söker efter uppdateringar...",
+    "updateAvailableShort": "Uppdatering tillgänglig",
+    "upToDate": "Uppdaterad",
+    "updateCheckingDisabled": "Uppdateringskontroll inaktiverad",
+    "downloading": "Laddar ner... {{progress}}%",
+    "installing": "Installerar...",
+    "preparing": "Förbereder...",
+    "checkForUpdates": "Sök efter uppdateringar",
+    "portableUpdateTitle": "Manuell uppdatering krävs",
+    "portableUpdateMessage": "Portabla installationer kan inte uppdateras automatiskt. Så här uppdaterar du: ladda ner den senaste NSIS-installeraren från GitHub Releases, installera den i samma mapp och kopiera sedan din Data/-mapp (inställningar, modeller, inspelningar) från den gamla versionen till den nya.",
+    "portableUpdateButton": "Öppna GitHub Releases"
+  },
+  "common": {
+    "loading": "Laddar...",
+    "delete": "Ta bort",
+    "close": "Stäng",
+    "open": "Öppna",
+    "copy": "Kopiera",
+    "clear": "Rensa",
+    "noOptionsFound": "Inga alternativ hittades"
+  },
+  "accessibility": {
+    "permissionsDescription": "Handy behöver behörighet för hjälpmedel för att kunna skriva transkriberad text.",
+    "openSettings": "Öppna systeminställningar"
+  },
+  "errors": {
+    "loadDirectory": "Fel vid laddning av mapp: {{error}}",
+    "micPermissionDeniedTitle": "Mikrofonåtkomst nekad",
+    "micPermissionDenied": {
+      "generic": "Mikrofonåtkomst nekades av operativsystemet. Bevilja mikrofonbehörighet i dina systeminställningar.",
+      "windows": "Aktivera mikrofonåtkomst i Inställningar → Integritet och säkerhet → Mikrofon (inklusive åtkomst till skrivbordsappar).",
+      "macos": "Bevilja mikrofonåtkomst i Systeminställningar → Integritet och säkerhet → Mikrofon.",
+      "linux": "Bevilja mikrofonåtkomst i systemets ljud- eller integritetsinställningar."
+    },
+    "recordingFailed": "Misslyckades med att starta inspelning: {{error}}",
+    "modelLoadFailed": "Misslyckades med att ladda modell: {{model}}",
+    "modelLoadFailedUnknown": "okänd modell",
+    "noInputDeviceTitle": "Ingen mikrofon hittades",
+    "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
+    "pasteFailedTitle": "Det gick inte att klistra in texten",
+    "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
+    "transcriptionFailedTitle": "Transkriptionen misslyckades"
+  },
+  "appLanguage": {
+    "title": "Applikationsspråk",
+    "description": "Ändra språket i Handy-gränssnittet"
+  },
+  "overlay": {
+    "transcribing": "Transkriberar...",
+    "processing": "Bearbetar..."
+  },
+  "whatsNew": {
+    "title": "Nytt i Handy v{{version}}"
+  }
+}

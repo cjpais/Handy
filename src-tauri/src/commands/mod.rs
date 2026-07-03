@@ -16,6 +16,12 @@ pub fn cancel_operation(app: AppHandle) {
 
 #[tauri::command]
 #[specta::specta]
+pub fn is_portable() -> bool {
+    crate::portable::is_portable()
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
     let app_data_dir = crate::portable::app_data_dir(&app)
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;

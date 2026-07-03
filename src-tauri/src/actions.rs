@@ -1,11 +1,13 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
-use crate::audio_toolkit::is_microphone_access_denied;
+use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error, VadPolicy};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::managers::model::ModelManager;
+use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -63,7 +65,21 @@ fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
 }
 
+/// Returns `true` when a transcription has no meaningful content to
+/// post-process (empty or whitespace-only). Used to skip the post-processing
+/// LLM call when nothing was actually transcribed, which would otherwise make
+/// the model reply with an error message such as "you need to provide the
+/// transcription".
+fn is_blank_transcription(transcription: &str) -> bool {
+    transcription.trim().is_empty()
+}
+
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+    if is_blank_transcription(transcription) {
+        debug!("Post-processing skipped because the transcription is empty");
+        return None;
+    }
+
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
         None => {
@@ -124,6 +140,22 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
+
+    // Disable reasoning for providers where post-processing rarely benefits from it.
+    // - custom: top-level reasoning_effort (works for local OpenAI-compat servers)
+    // - openrouter: nested reasoning object; exclude:true also keeps reasoning text
+    //   out of the response so it can't pollute structured-output JSON parsing
+    let (reasoning_effort, reasoning) = match provider.id.as_str() {
+        "custom" => (Some("none".to_string()), None),
+        "openrouter" => (
+            None,
+            Some(crate::llm_client::ReasoningConfig {
+                effort: Some("none".to_string()),
+                exclude: Some(true),
+            }),
+        ),
+        _ => (None, None),
+    };
 
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
@@ -195,6 +227,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             user_content,
             Some(system_prompt),
             Some(json_schema),
+            reasoning_effort.clone(),
+            reasoning.clone(),
         )
         .await
         {
@@ -244,8 +278,15 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     let processed_prompt = prompt.replace("${output}", transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
-    match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
-        .await
+    match crate::llm_client::send_chat_completion(
+        &provider,
+        api_key,
+        &model,
+        processed_prompt,
+        reasoning_effort,
+        reasoning,
+    )
+    .await
     {
         Ok(Some(content)) => {
             let content = strip_invisible_chars(&content);
@@ -272,21 +313,25 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
 }
 
 async fn maybe_convert_chinese_variant(
-    settings: &AppSettings,
+    effective_language: &str,
     transcription: &str,
 ) -> Option<String> {
-    // Check if language is set to Simplified or Traditional Chinese
-    let is_simplified = settings.selected_language == "zh-Hans";
-    let is_traditional = settings.selected_language == "zh-Hant";
+    // Gate on the language the model actually transcribed in (the effective
+    // language), not the persisted intent. A leftover zh-Hans/zh-Hant intent
+    // from a previously selected model must not run OpenCC S2T/T2S over output a
+    // non-Chinese model produced — that would silently rewrite any shared CJK
+    // characters (e.g. Japanese kanji) in the result.
+    let is_simplified = effective_language == "zh-Hans";
+    let is_traditional = effective_language == "zh-Hant";
 
     if !is_simplified && !is_traditional {
-        debug!("selected_language is not Simplified or Traditional Chinese; skipping translation");
+        debug!("effective language is not Simplified or Traditional Chinese; skipping conversion");
         return None;
     }
 
     debug!(
-        "Starting Chinese translation using OpenCC for language: {}",
-        settings.selected_language
+        "Starting Chinese variant conversion using OpenCC for language: {}",
+        effective_language
     );
 
     // Use OpenCC to convert based on selected language
@@ -295,7 +340,7 @@ async fn maybe_convert_chinese_variant(
         BuiltinConfig::Tw2sp
     } else {
         // Convert Simplified Chinese to Traditional Chinese
-        BuiltinConfig::S2twp
+        BuiltinConfig::S2tw
     };
 
     match OpenCC::from_config(config) {
@@ -315,6 +360,82 @@ async fn maybe_convert_chinese_variant(
     }
 }
 
+pub(crate) struct ProcessedTranscription {
+    pub final_text: String,
+    pub post_processed_text: Option<String>,
+    pub post_process_prompt: Option<String>,
+}
+
+/// Resolve the persisted language *intent* into the language the currently-loaded
+/// model will actually use — the same capability-aware coercion the transcription
+/// paths apply (see [`crate::managers::model::effective_language`]). Post-processing
+/// resolves it independently so it agrees with the language the transcription ran
+/// in, without threading a value through the pipeline.
+fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String {
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    let model_manager = app.state::<Arc<ModelManager>>();
+    let active_model = tm
+        .get_current_model()
+        .unwrap_or_else(|| settings.selected_model.clone());
+    // The dynamic `os_input` intent resolves against the current OS keyboard
+    // layout first, mirroring `effective_language_for_model` in transcription.rs.
+    let intent = crate::input_source::resolve_language_intent(&settings.selected_language);
+    match model_manager.get_model_info(&active_model) {
+        Some(info) => crate::managers::model::effective_language(
+            &intent,
+            &info.supported_languages,
+            info.supports_language_detection,
+        ),
+        None => intent,
+    }
+}
+
+pub(crate) async fn process_transcription_output(
+    app: &AppHandle,
+    transcription: &str,
+    post_process: bool,
+) -> ProcessedTranscription {
+    let settings = get_settings(app);
+    let mut final_text = transcription.to_string();
+    let mut post_processed_text: Option<String> = None;
+    let mut post_process_prompt: Option<String> = None;
+
+    // Resolve the language the transcription actually ran in (the persisted
+    // intent coerced against the loaded model's capabilities) so OpenCC keys off
+    // the effective language rather than a possibly-stale intent.
+    let effective_language = resolve_effective_language(app, &settings);
+    if let Some(converted_text) =
+        maybe_convert_chinese_variant(&effective_language, transcription).await
+    {
+        final_text = converted_text;
+    }
+
+    if post_process {
+        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+            post_processed_text = Some(processed_text.clone());
+            final_text = processed_text;
+
+            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                if let Some(prompt) = settings
+                    .post_process_prompts
+                    .iter()
+                    .find(|prompt| &prompt.id == prompt_id)
+                {
+                    post_process_prompt = Some(prompt.prompt.clone());
+                }
+            }
+        }
+    } else if final_text != transcription {
+        post_processed_text = Some(final_text.clone());
+    }
+
+    ProcessedTranscription {
+        final_text,
+        post_processed_text,
+        post_process_prompt,
+    }
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -322,17 +443,70 @@ impl ShortcutAction for TranscribeAction {
 
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
-        tm.initiate_model_load();
-
-        let binding_id = binding_id.to_string();
-        change_tray_icon(app, TrayIconState::Recording);
-        show_recording_overlay(app);
-
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
+        // Load ASR model and VAD model in parallel
+        let kickoff_started = Instant::now();
+        tm.initiate_model_load();
+        let rm_clone = Arc::clone(&rm);
+        std::thread::spawn(move || {
+            if let Err(e) = rm_clone.preload_vad() {
+                debug!("VAD pre-load failed: {}", e);
+            }
+        });
+        let kickoff_elapsed = kickoff_started.elapsed();
+
+        let binding_id = binding_id.to_string();
+        let tray_started = Instant::now();
+        change_tray_icon(app, TrayIconState::Recording);
+        let tray_elapsed = tray_started.elapsed();
+
         // Get the microphone mode to determine audio feedback timing
+        let plan_started = Instant::now();
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
+
+        let selected_model_info = app
+            .state::<Arc<ModelManager>>()
+            .get_model_info(&settings.selected_model);
+
+        // Use the app-facing model capability as the single pre-recording source
+        // for live streaming decisions. Unknown support is represented as false
+        // until the model registry is updated by discovery or runtime load.
+        let model_supports_streaming = selected_model_info
+            .as_ref()
+            .map(|m| m.supports_streaming)
+            .unwrap_or(false);
+        let vad_policy = if !settings.vad_enabled {
+            VadPolicy::Disabled
+        } else if model_supports_streaming {
+            VadPolicy::Streaming
+        } else {
+            VadPolicy::Offline
+        };
+        if model_supports_streaming {
+            tm.start_stream();
+        }
+        let plan_elapsed = plan_started.elapsed();
+
+        // Sizing the overlay follows the same advertised capability. A model that
+        // doesn't stream (or whose capability is not known yet) gets the compact
+        // pill instead of an oversized transparent live window.
+        let overlay_started = Instant::now();
+        match settings.overlay_style {
+            OverlayStyle::Live if model_supports_streaming => utils::show_streaming_overlay(app),
+            OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
+            OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
+        }
+        // Everything above runs before capture can begin, so each span here is
+        // added keypress->capture latency.
+        debug!(
+            "start-path pre-recording steps: model_kickoff={:?} tray={:?} settings+stream_plan={:?} overlay={:?}",
+            kickoff_elapsed,
+            tray_elapsed,
+            plan_elapsed,
+            overlay_started.elapsed()
+        );
         debug!("Microphone mode - always_on: {}", is_always_on);
 
         let mut recording_error: Option<String> = None;
@@ -348,7 +522,7 @@ impl ShortcutAction for TranscribeAction {
                 rm_clone.apply_mute();
             });
 
-            if let Err(e) = rm.try_start_recording(&binding_id) {
+            if let Err(e) = rm.try_start_recording(&binding_id, vad_policy) {
                 debug!("Recording failed: {}", e);
                 recording_error = Some(e);
             }
@@ -357,7 +531,7 @@ impl ShortcutAction for TranscribeAction {
             // This allows the microphone to be activated before playing the sound
             debug!("On-demand mode: Starting recording first, then audio feedback");
             let recording_start_time = Instant::now();
-            match rm.try_start_recording(&binding_id) {
+            match rm.try_start_recording(&binding_id, vad_policy) {
                 Ok(()) => {
                     debug!("Recording started in {:?}", recording_start_time.elapsed());
                     // Small delay to ensure microphone stream is active
@@ -385,11 +559,14 @@ impl ShortcutAction for TranscribeAction {
         } else {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
+            tm.cancel_stream();
             utils::hide_recording_overlay(app);
             change_tray_icon(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
                 let error_type = if is_microphone_access_denied(&err) {
                     "microphone_permission_denied"
+                } else if is_no_input_device_error(&err) {
+                    "no_input_device"
                 } else {
                     "unknown"
                 };
@@ -422,7 +599,17 @@ impl ShortcutAction for TranscribeAction {
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
-        show_transcribing_overlay(app);
+        // Stop should give immediate visual feedback. Live streaming can keep
+        // the larger panel, but it still switches from listening to a working
+        // spinner while the stream finalizes. Non-streaming paths use the
+        // compact transcribing pill (None no-ops in show_*).
+        let style = get_settings(app).overlay_style;
+        match (style, tm.is_streaming()) {
+            (OverlayStyle::Live, true) => {
+                tm.emit_stream_working(StreamWorkKind::Transcribing);
+            }
+            _ => show_transcribing_overlay(app),
+        }
 
         // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
@@ -432,124 +619,206 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
-            let binding_id = binding_id.clone(); // Clone for the inner async task
             debug!(
                 "Starting async transcription task for binding: {}",
                 binding_id
             );
 
             let stop_recording_time = Instant::now();
-            if let Some(samples) = rm.stop_recording(&binding_id) {
+            if let Some(samples) = rm.stop_recording(&binding_id, cancel_generation) {
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
                     samples.len()
                 );
 
-                let transcription_time = Instant::now();
-                let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
-                    Ok(transcription) => {
-                        debug!(
-                            "Transcription completed in {:?}: '{}'",
-                            transcription_time.elapsed(),
-                            transcription
-                        );
-                        if !transcription.is_empty() {
-                            let settings = get_settings(&ah);
-                            let mut final_text = transcription.clone();
-                            let mut post_processed_text: Option<String> = None;
-                            let mut post_process_prompt: Option<String> = None;
+                if rm.was_cancelled_since(cancel_generation) {
+                    debug!("Transcription operation cancelled after recording stop");
+                    tm.cancel_stream();
+                    utils::hide_recording_overlay(&ah);
+                    change_tray_icon(&ah, TrayIconState::Idle);
+                    return;
+                }
 
-                            // First, check if Chinese variant conversion is needed
-                            if let Some(converted_text) =
-                                maybe_convert_chinese_variant(&settings, &transcription).await
-                            {
-                                final_text = converted_text;
+                if samples.is_empty() {
+                    debug!("Recording produced no audio samples; skipping persistence");
+                    // Tear down any streaming worker so its channel doesn't leak
+                    // and block the next start_stream.
+                    tm.cancel_stream();
+                    utils::hide_recording_overlay(&ah);
+                    change_tray_icon(&ah, TrayIconState::Idle);
+                } else {
+                    // Save WAV concurrently with transcription
+                    let sample_count = samples.len();
+                    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+                    let wav_path = hm.recordings_dir().join(&file_name);
+                    let wav_path_for_verify = wav_path.clone();
+                    let samples_for_wav = samples.clone();
+                    let wav_handle = tauri::async_runtime::spawn_blocking(move || {
+                        crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
+                    });
+
+                    // Transcribe concurrently with WAV save. If a live stream was
+                    // running, finalize it and use its text (all audio was already
+                    // fed to the stream); otherwise batch-transcribe the samples.
+                    let transcription_time = Instant::now();
+                    let transcription_result = match tm.finalize_stream() {
+                        // A finalized stream with usable text wins. An empty result
+                        // (no active stream, produced nothing, or a finalize error
+                        // after the engine was returned) falls back to a full batch
+                        // transcription of the same audio. A finalize timeout is
+                        // surfaced instead — the worker may still hold the engine,
+                        // so a batch fallback would contend with it.
+                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
+                        Ok(_) => tm.transcribe(samples),
+                        Err(err) => Err(err),
+                    };
+
+                    // Await WAV save and verify
+                    let wav_saved = match wav_handle.await {
+                        Ok(Ok(())) => {
+                            match crate::audio_toolkit::verify_wav_file(
+                                &wav_path_for_verify,
+                                sample_count,
+                            ) {
+                                Ok(()) => true,
+                                Err(e) => {
+                                    error!("WAV verification failed: {}", e);
+                                    false
+                                }
                             }
+                        }
+                        Ok(Err(e)) => {
+                            error!("Failed to save WAV file: {}", e);
+                            false
+                        }
+                        Err(e) => {
+                            error!("WAV save task panicked: {}", e);
+                            false
+                        }
+                    };
 
-                            // Then apply LLM post-processing if this is the post-process hotkey
-                            // Uses final_text which may already have Chinese conversion applied
+                    if rm.was_cancelled_since(cancel_generation) {
+                        debug!("Transcription operation cancelled before output handling");
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        return;
+                    }
+
+                    match transcription_result {
+                        Ok(transcription) => {
+                            debug!(
+                                "Transcription completed in {:?}: '{}'",
+                                transcription_time.elapsed(),
+                                transcription
+                            );
+
                             if post_process {
-                                show_processing_overlay(&ah);
+                                if style == OverlayStyle::Live {
+                                    tm.emit_stream_working(StreamWorkKind::Polishing);
+                                } else {
+                                    show_processing_overlay(&ah);
+                                }
                             }
-                            let processed = if post_process {
-                                post_process_transcription(&settings, &final_text).await
-                            } else {
-                                None
-                            };
-                            if let Some(processed_text) = processed {
-                                post_processed_text = Some(processed_text.clone());
-                                final_text = processed_text;
+                            let processed =
+                                process_transcription_output(&ah, &transcription, post_process)
+                                    .await;
 
-                                // Get the prompt that was used
-                                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                                    if let Some(prompt) = settings
-                                        .post_process_prompts
-                                        .iter()
-                                        .find(|p| &p.id == prompt_id)
-                                    {
-                                        post_process_prompt = Some(prompt.prompt.clone());
-                                    }
-                                }
-                            } else if final_text != transcription {
-                                // Chinese conversion was applied but no LLM post-processing
-                                post_processed_text = Some(final_text.clone());
-                            }
-
-                            // Save to history with post-processed text and prompt
-                            let hm_clone = Arc::clone(&hm);
-                            let transcription_for_history = transcription.clone();
-                            tauri::async_runtime::spawn(async move {
-                                if let Err(e) = hm_clone
-                                    .save_transcription(
-                                        samples_clone,
-                                        transcription_for_history,
-                                        post_processed_text,
-                                        post_process_prompt,
-                                    )
-                                    .await
-                                {
-                                    error!("Failed to save transcription to history: {}", e);
-                                }
-                            });
-
-                            // Paste the final text (either processed or original)
-                            let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
-                                }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+                            if rm.was_cancelled_since(cancel_generation) {
+                                debug!("Transcription operation cancelled before paste");
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
-                            });
-                        } else {
+                                return;
+                            }
+
+                            // Save to history if WAV was saved
+                            if wav_saved {
+                                if let Err(err) = hm.save_entry(
+                                    file_name,
+                                    transcription,
+                                    post_process,
+                                    processed.post_processed_text.clone(),
+                                    processed.post_process_prompt.clone(),
+                                ) {
+                                    error!("Failed to save history entry: {}", err);
+                                }
+                            }
+
+                            if processed.final_text.is_empty() {
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                            } else {
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+                                let final_text = processed.final_text;
+                                let rm_for_paste = Arc::clone(&rm);
+                                ah.run_on_main_thread(move || {
+                                    if rm_for_paste.was_cancelled_since(cancel_generation) {
+                                        debug!("Transcription operation cancelled before paste");
+                                        utils::hide_recording_overlay(&ah_clone);
+                                        change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                        return;
+                                    }
+
+                                    match utils::paste(final_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => {
+                                            error!("Failed to paste transcription: {}", e);
+                                            let _ = ah_clone.emit("paste-error", ());
+                                        }
+                                    }
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            }
+                        }
+                        Err(err) => {
+                            if rm.was_cancelled_since(cancel_generation) {
+                                debug!(
+                                    "Transcription operation cancelled after transcription error"
+                                );
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                                return;
+                            }
+
+                            error!("Transcription failed: {}", err);
+                            // Surface the failure to the UI (toast). The full
+                            // message is also in handy.log via the line above.
+                            let _ = ah.emit("transcription-error", err.to_string());
+                            // Save entry with empty text so user can retry
+                            if wav_saved {
+                                if let Err(save_err) = hm.save_entry(
+                                    file_name,
+                                    String::new(),
+                                    post_process,
+                                    None,
+                                    None,
+                                ) {
+                                    error!("Failed to save failed history entry: {}", save_err);
+                                }
+                            }
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
-                    Err(err) => {
-                        debug!("Global Shortcut Transcription error: {}", err);
-                        utils::hide_recording_overlay(&ah);
-                        change_tray_icon(&ah, TrayIconState::Idle);
-                    }
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
+                // Tear down any streaming worker so its channel doesn't leak.
+                tm.cancel_stream();
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
@@ -621,3 +890,21 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+#[cfg(test)]
+mod tests {
+    use super::is_blank_transcription;
+
+    #[test]
+    fn blank_transcription_is_detected() {
+        assert!(is_blank_transcription(""));
+        assert!(is_blank_transcription("   "));
+        assert!(is_blank_transcription("\t\n  \r\n"));
+    }
+
+    #[test]
+    fn non_blank_transcription_is_kept() {
+        assert!(!is_blank_transcription("hello"));
+        assert!(!is_blank_transcription("  hello  "));
+    }
+}

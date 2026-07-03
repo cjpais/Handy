@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build:
     permissions:
-      contents: read
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -48,5 +48,5 @@ jobs:
       target: ${{ matrix.target }}
       build-args: ${{ matrix.args }}
       upload-artifacts: true
-      sign-binaries: false
+      sign-binaries: true
     secrets: inherit

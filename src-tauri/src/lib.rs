@@ -3,6 +3,7 @@ mod actions;
 mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
+mod catalog;
 pub mod cli;
 mod clipboard;
 mod commands;
@@ -24,7 +25,7 @@ mod utils;
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
-use tauri_specta::{collect_commands, Builder};
+use tauri_specta::{collect_commands, collect_events, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
@@ -35,7 +36,7 @@ use managers::transcription::TranscriptionManager;
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tauri::image::Image;
 pub use transcription_coordinator::TranscriptionCoordinator;
@@ -50,6 +51,14 @@ use crate::settings::get_settings;
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+
+/// When `true`, log records are also forwarded to the webview via the
+/// `log://log` event for the debug panel's live log viewer. Gated on debug
+/// mode — the live log viewer is its only consumer and only exists in debug
+/// mode — so normal runs never broadcast log records (which can include file
+/// paths or transcribed text) onto the frontend event bus. Synced at startup
+/// and whenever debug mode is toggled (see `shortcut::change_debug_mode_setting`).
+pub static WEBVIEW_LOG_STREAMING: AtomicBool = AtomicBool::new(false);
 
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     match value {
@@ -144,18 +153,25 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
 
-    // Initialize the managers
-    let recording_manager = Arc::new(
-        AudioRecordingManager::new(app_handle).expect("Failed to initialize recording manager"),
-    );
+    // Initialize the managers. The audio recorder receives the streaming router
+    // explicitly, so always-on microphone startup can wire live-preview frames
+    // even before Tauri state is populated.
     let model_manager =
         Arc::new(ModelManager::new(app_handle).expect("Failed to initialize model manager"));
     let transcription_manager = Arc::new(
         TranscriptionManager::new(app_handle, model_manager.clone())
             .expect("Failed to initialize transcription manager"),
     );
+    let recording_manager = Arc::new(
+        AudioRecordingManager::new(app_handle, transcription_manager.stream_router())
+            .expect("Failed to initialize recording manager"),
+    );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+
+    // Initialize the transcribe-cpp native backend (logging + backend module
+    // registration) once, before any whisper model is loaded.
+    managers::transcription::init_transcribe_backend();
 
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
@@ -172,7 +188,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // This matches the pattern used for Enigo initialization.
 
     #[cfg(unix)]
-    let signals = Signals::new(&[SIGUSR1, SIGUSR2]).unwrap();
+    let signals = Signals::new([SIGUSR1, SIGUSR2]).unwrap();
     // Set up signal handlers for toggling transcription
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone(), signals);
@@ -202,6 +218,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             )
             .unwrap(),
         )
+        .tooltip(tray::tray_tooltip())
         .show_menu_on_left_click(true)
         .icon_as_template(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -280,7 +297,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Get the autostart manager and configure based on user setting
     let autostart_manager = app_handle.autolaunch();
-    let settings = settings::get_settings(&app_handle);
+    let settings = settings::get_settings(app_handle);
 
     if settings.autostart_enabled {
         // Enable autostart if user has opted in
@@ -313,6 +330,198 @@ fn show_main_window_command(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Headless one-shot transcription for the `--transcribe-file` / `--list-devices`
+/// path. Drives the same `TranscriptionManager::transcribe` the app uses; no
+/// mic, no VAD, no download. Returns a process exit code (0 ok, 1 runtime
+/// failure, 2 bad input/usage).
+fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
+    use std::time::Instant;
+
+    // --list-devices: print registered compute devices (with indices) and exit.
+    // Useful on multi-GPU machines to discover the index for --device-index.
+    if args.list_devices {
+        let devices = crate::managers::transcription::describe_compute_devices();
+        if devices.is_empty() {
+            println!("No transcribe-cpp compute devices registered.");
+        } else {
+            println!("transcribe-cpp compute devices:");
+            for d in &devices {
+                println!("  {}", d);
+            }
+        }
+        if args.transcribe_file.is_none() {
+            return 0;
+        }
+    }
+
+    // --list-models: print the model registry (catalog + on-disk + custom) with
+    // their ids — the same ids `--model` accepts — then exit. `--json` emits the
+    // full ModelInfo array for scripting.
+    if args.list_models {
+        let model_manager = app.state::<Arc<ModelManager>>();
+        let models = model_manager.get_available_models();
+        if args.json {
+            match serde_json::to_string_pretty(&models) {
+                Ok(s) => println!("{}", s),
+                Err(e) => {
+                    eprintln!("error: failed to serialize models: {}", e);
+                    return 1;
+                }
+            }
+        } else if models.is_empty() {
+            println!("No models available.");
+        } else {
+            println!("Available models (✓ = installed):");
+            let width = models.iter().map(|m| m.id.len()).max().unwrap_or(0);
+            for m in &models {
+                let mark = if m.is_downloaded { "✓" } else { " " };
+                let rec = if m.is_recommended {
+                    "  [recommended]"
+                } else {
+                    ""
+                };
+                println!(
+                    "  {}  {:<width$}  {}{}",
+                    mark,
+                    m.id,
+                    m.name,
+                    rec,
+                    width = width
+                );
+            }
+        }
+        if args.transcribe_file.is_none() {
+            return 0;
+        }
+    }
+
+    let Some(wav) = args.transcribe_file.clone() else {
+        return 0;
+    };
+
+    // read_wav_samples reads 16-bit int samples and does no validation; the app
+    // only ever saves 16 kHz mono 16-bit PCM, so reject anything else rather than
+    // transcribe garbage / mis-time / mis-decode.
+    match hound::WavReader::open(&wav) {
+        Ok(reader) => {
+            let spec = reader.spec();
+            if spec.sample_rate != 16_000
+                || spec.channels != 1
+                || spec.bits_per_sample != 16
+                || spec.sample_format != hound::SampleFormat::Int
+            {
+                eprintln!(
+                    "error: expected 16 kHz mono 16-bit PCM WAV, got {} Hz / {} ch / {}-bit {:?}",
+                    spec.sample_rate, spec.channels, spec.bits_per_sample, spec.sample_format
+                );
+                return 2;
+            }
+        }
+        Err(e) => {
+            eprintln!("error: cannot open {}: {}", wav.display(), e);
+            return 2;
+        }
+    }
+
+    let samples = match crate::audio_toolkit::read_wav_samples(&wav) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("error: failed to read {}: {}", wav.display(), e);
+            return 2;
+        }
+    };
+    let audio_secs = samples.len() as f64 / 16_000.0;
+
+    let tm = app.state::<Arc<TranscriptionManager>>();
+
+    let model_id = args
+        .model
+        .clone()
+        .unwrap_or_else(|| get_settings(app).selected_model);
+    if model_id.is_empty() {
+        eprintln!("error: no model selected (pass --model or pick one in the app)");
+        return 2;
+    }
+
+    // --device-index hard-selects a compute device by its --list-devices registry
+    // index (transcribe-cpp / whisper-family models only; not persisted). Omit it
+    // to use the persisted accelerator setting.
+    let device_index = args.device_index;
+    let requested_device = match device_index {
+        Some(idx) => format!("index {}", idx),
+        None => "settings".to_string(),
+    };
+
+    // Cold load (timed).
+    let load_start = Instant::now();
+    if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
+        eprintln!("error: load_model('{}') failed: {}", model_id, e);
+        return 1;
+    }
+    let load_ms = load_start.elapsed().as_millis() as u64;
+    let bound_backend = tm.current_backend();
+
+    let runs = args.repeat.unwrap_or(1).max(1);
+    let mut times_ms: Vec<u64> = Vec::new();
+    let mut text = String::new();
+    for i in 0..runs {
+        // If the model's unload-timeout is "Immediately", transcribe() unloads
+        // the engine after each run; reload (untimed) so repeats keep working
+        // and the inference timing below stays clean.
+        if !tm.is_model_loaded() {
+            if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
+                eprintln!("error: reload before run {} failed: {}", i + 1, e);
+                return 1;
+            }
+        }
+        let t = Instant::now();
+        match tm.transcribe(samples.clone()) {
+            Ok(out) => text = out,
+            Err(e) => {
+                eprintln!("error: transcribe failed: {}", e);
+                return 1;
+            }
+        }
+        times_ms.push(t.elapsed().as_millis() as u64);
+    }
+    let best_ms = times_ms.iter().copied().min().unwrap_or(0);
+    let rtf = if best_ms > 0 {
+        audio_secs / (best_ms as f64 / 1000.0)
+    } else {
+        0.0
+    };
+
+    if args.json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "model": model_id,
+                "requested_device": requested_device,
+                "bound_backend": bound_backend,
+                "audio_secs": audio_secs,
+                "load_ms": load_ms,
+                "transcribe_ms": times_ms,
+                "best_ms": best_ms,
+                "rtf": rtf,
+                "text": text,
+            })
+        );
+    } else {
+        println!(
+            "model={} device={} backend={} audio={:.2}s load={}ms best={}ms rtf={:.2}x",
+            model_id,
+            requested_device,
+            bound_backend.as_deref().unwrap_or("?"),
+            audio_secs,
+            load_ms,
+            best_ms,
+            rtf,
+        );
+        println!("text: {}", text);
+    }
+    0
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run(cli_args: CliArgs) {
     // Detect portable mode before anything else
@@ -322,107 +531,120 @@ pub fn run(cli_args: CliArgs) {
     // when the variable is unset
     let console_filter = build_console_filter();
 
-    let specta_builder = Builder::<tauri::Wry>::new().commands(collect_commands![
-        shortcut::change_binding,
-        shortcut::reset_binding,
-        shortcut::change_ptt_setting,
-        shortcut::change_audio_feedback_setting,
-        shortcut::change_audio_feedback_volume_setting,
-        shortcut::change_sound_theme_setting,
-        shortcut::change_start_hidden_setting,
-        shortcut::change_autostart_setting,
-        shortcut::change_translate_to_english_setting,
-        shortcut::change_selected_language_setting,
-        shortcut::change_overlay_position_setting,
-        shortcut::change_debug_mode_setting,
-        shortcut::change_word_correction_threshold_setting,
-        shortcut::change_extra_recording_buffer_setting,
-        shortcut::change_paste_method_setting,
-        shortcut::get_available_typing_tools,
-        shortcut::change_typing_tool_setting,
-        shortcut::change_external_script_path_setting,
-        shortcut::change_clipboard_handling_setting,
-        shortcut::change_auto_submit_setting,
-        shortcut::change_auto_submit_key_setting,
-        shortcut::change_post_process_enabled_setting,
-        shortcut::change_experimental_enabled_setting,
-        shortcut::change_post_process_base_url_setting,
-        shortcut::change_post_process_api_key_setting,
-        shortcut::change_post_process_model_setting,
-        shortcut::set_post_process_provider,
-        shortcut::fetch_post_process_models,
-        shortcut::add_post_process_prompt,
-        shortcut::update_post_process_prompt,
-        shortcut::delete_post_process_prompt,
-        shortcut::set_post_process_selected_prompt,
-        shortcut::update_custom_words,
-        shortcut::suspend_binding,
-        shortcut::resume_binding,
-        shortcut::change_mute_while_recording_setting,
-        shortcut::change_append_trailing_space_setting,
-        shortcut::change_lazy_stream_close_setting,
-        shortcut::change_app_language_setting,
-        shortcut::change_update_checks_setting,
-        shortcut::change_keyboard_implementation_setting,
-        shortcut::get_keyboard_implementation,
-        shortcut::change_show_tray_icon_setting,
-        shortcut::change_whisper_accelerator_setting,
-        shortcut::change_ort_accelerator_setting,
-        shortcut::get_available_accelerators,
-        shortcut::handy_keys::start_handy_keys_recording,
-        shortcut::handy_keys::stop_handy_keys_recording,
-        shortcut::get_language_from_os_input,
-        trigger_update_check,
-        show_main_window_command,
-        commands::cancel_operation,
-        commands::get_app_dir_path,
-        commands::get_app_settings,
-        commands::get_default_settings,
-        commands::get_log_dir_path,
-        commands::set_log_level,
-        commands::open_recordings_folder,
-        commands::open_log_dir,
-        commands::open_app_data_dir,
-        commands::check_apple_intelligence_available,
-        commands::initialize_enigo,
-        commands::initialize_shortcuts,
-        commands::models::get_available_models,
-        commands::models::get_model_info,
-        commands::models::download_model,
-        commands::models::delete_model,
-        commands::models::cancel_download,
-        commands::models::set_active_model,
-        commands::models::get_current_model,
-        commands::models::get_transcription_model_status,
-        commands::models::is_model_loading,
-        commands::models::has_any_models_available,
-        commands::models::has_any_models_or_downloads,
-        commands::audio::update_microphone_mode,
-        commands::audio::get_microphone_mode,
-        commands::audio::get_windows_microphone_permission_status,
-        commands::audio::open_microphone_privacy_settings,
-        commands::audio::get_available_microphones,
-        commands::audio::set_selected_microphone,
-        commands::audio::get_selected_microphone,
-        commands::audio::get_available_output_devices,
-        commands::audio::set_selected_output_device,
-        commands::audio::get_selected_output_device,
-        commands::audio::play_test_sound,
-        commands::audio::check_custom_sounds,
-        commands::audio::set_clamshell_microphone,
-        commands::audio::get_clamshell_microphone,
-        commands::audio::is_recording,
-        commands::transcription::set_model_unload_timeout,
-        commands::transcription::get_model_load_status,
-        commands::transcription::unload_model_manually,
-        commands::history::get_history_entries,
-        commands::history::toggle_history_entry_saved,
-        commands::history::get_audio_file_path,
-        commands::history::delete_history_entry,
-        commands::history::update_history_limit,
-        commands::history::update_recording_retention_period,
-        helpers::clamshell::is_laptop,
-    ]);
+    let specta_builder = Builder::<tauri::Wry>::new()
+        .commands(collect_commands![
+            shortcut::change_binding,
+            shortcut::reset_binding,
+            shortcut::change_ptt_setting,
+            shortcut::change_audio_feedback_setting,
+            shortcut::change_audio_feedback_volume_setting,
+            shortcut::change_sound_theme_setting,
+            shortcut::change_start_hidden_setting,
+            shortcut::change_autostart_setting,
+            shortcut::change_translate_to_english_setting,
+            shortcut::change_selected_language_setting,
+            shortcut::change_overlay_position_setting,
+            shortcut::change_overlay_style_setting,
+            shortcut::change_debug_mode_setting,
+            shortcut::change_word_correction_threshold_setting,
+            shortcut::change_extra_recording_buffer_setting,
+            shortcut::change_paste_delay_ms_setting,
+            shortcut::change_paste_method_setting,
+            shortcut::get_available_typing_tools,
+            shortcut::change_typing_tool_setting,
+            shortcut::change_external_script_path_setting,
+            shortcut::change_clipboard_handling_setting,
+            shortcut::change_auto_submit_setting,
+            shortcut::change_auto_submit_key_setting,
+            shortcut::change_post_process_enabled_setting,
+            shortcut::change_experimental_enabled_setting,
+            shortcut::change_post_process_base_url_setting,
+            shortcut::change_post_process_api_key_setting,
+            shortcut::change_post_process_model_setting,
+            shortcut::set_post_process_provider,
+            shortcut::fetch_post_process_models,
+            shortcut::add_post_process_prompt,
+            shortcut::update_post_process_prompt,
+            shortcut::delete_post_process_prompt,
+            shortcut::set_post_process_selected_prompt,
+            shortcut::update_custom_words,
+            shortcut::suspend_binding,
+            shortcut::resume_binding,
+            shortcut::change_mute_while_recording_setting,
+            shortcut::change_append_trailing_space_setting,
+            shortcut::change_lazy_stream_close_setting,
+            shortcut::change_vad_enabled_setting,
+            shortcut::change_app_language_setting,
+            shortcut::change_update_checks_setting,
+            shortcut::change_show_whats_new_on_update_setting,
+            shortcut::change_whats_new_last_seen_version_setting,
+            shortcut::change_keyboard_implementation_setting,
+            shortcut::get_keyboard_implementation,
+            shortcut::change_show_tray_icon_setting,
+            shortcut::change_transcribe_accelerator_setting,
+            shortcut::change_ort_accelerator_setting,
+            shortcut::change_transcribe_gpu_device,
+            shortcut::get_available_accelerators,
+            shortcut::handy_keys::start_handy_keys_recording,
+            shortcut::handy_keys::stop_handy_keys_recording,
+            shortcut::get_language_from_os_input,
+            trigger_update_check,
+            show_main_window_command,
+            commands::cancel_operation,
+            commands::is_portable,
+            commands::get_app_dir_path,
+            commands::get_app_settings,
+            commands::get_default_settings,
+            commands::get_log_dir_path,
+            commands::set_log_level,
+            commands::open_recordings_folder,
+            commands::open_log_dir,
+            commands::open_app_data_dir,
+            commands::check_apple_intelligence_available,
+            commands::initialize_enigo,
+            commands::initialize_shortcuts,
+            commands::models::get_available_models,
+            commands::models::get_model_info,
+            commands::models::download_model,
+            commands::models::delete_model,
+            commands::models::cancel_download,
+            commands::models::set_active_model,
+            commands::models::get_current_model,
+            commands::models::get_transcription_model_status,
+            commands::models::is_model_loading,
+            commands::models::rescan_local_models,
+            commands::audio::update_microphone_mode,
+            commands::audio::get_microphone_mode,
+            commands::audio::get_windows_microphone_permission_status,
+            commands::audio::open_microphone_privacy_settings,
+            commands::audio::get_available_microphones,
+            commands::audio::set_selected_microphone,
+            commands::audio::get_selected_microphone,
+            commands::audio::get_available_output_devices,
+            commands::audio::set_selected_output_device,
+            commands::audio::get_selected_output_device,
+            commands::audio::play_test_sound,
+            commands::audio::check_custom_sounds,
+            commands::audio::set_clamshell_microphone,
+            commands::audio::get_clamshell_microphone,
+            commands::audio::is_recording,
+            commands::transcription::set_model_unload_timeout,
+            commands::transcription::get_model_load_status,
+            commands::transcription::unload_model_manually,
+            commands::history::get_history_entries,
+            commands::history::toggle_history_entry_saved,
+            commands::history::get_audio_file_path,
+            commands::history::delete_history_entry,
+            commands::history::retry_history_entry_transcription,
+            commands::history::update_history_limit,
+            commands::history::update_recording_retention_period,
+            helpers::clamshell::is_laptop,
+        ])
+        .events(collect_events![
+            managers::history::HistoryUpdatePayload,
+            managers::transcription::StreamTextEvent,
+            managers::transcription::StreamPhaseEvent,
+        ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     specta_builder
@@ -431,6 +653,13 @@ pub fn run(cli_args: CliArgs) {
             "../src/bindings.ts",
         )
         .expect("Failed to export typescript bindings");
+
+    let invoke_handler = specta_builder.invoke_handler();
+
+    // The headless path must run as its own instance (see the single-instance
+    // note below), not forward to an already-running app.
+    let headless_mode =
+        cli_args.transcribe_file.is_some() || cli_args.list_devices || cli_args.list_models;
 
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
@@ -443,8 +672,16 @@ pub fn run(cli_args: CliArgs) {
                 .rotation_strategy(RotationStrategy::KeepOne)
                 .clear_targets()
                 .targets([
-                    // Console output respects RUST_LOG environment variable
-                    Target::new(TargetKind::Stdout).filter({
+                    // Console output respects RUST_LOG environment variable. In
+                    // headless mode (--transcribe-file/--list-devices/--list-models)
+                    // stdout carries only the result (JSON or plain), so send console
+                    // logs to stderr instead to keep stdout clean for CI parsing.
+                    Target::new(if headless_mode {
+                        TargetKind::Stderr
+                    } else {
+                        TargetKind::Stdout
+                    })
+                    .filter({
                         let console_filter = console_filter.clone();
                         move |metadata| console_filter.enabled(metadata)
                     }),
@@ -463,6 +700,15 @@ pub fn run(cli_args: CliArgs) {
                         let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
                         metadata.level() <= level_filter_from_u8(file_level)
                     }),
+                    // Stream logs to the webview (via the `log://log` event) so the
+                    // debug panel's live log viewer can show them in real time. Only
+                    // active while debug mode is on (its sole consumer), and shares the
+                    // file log level so the "Log Level" setting controls verbosity.
+                    Target::new(TargetKind::Webview).filter(|metadata| {
+                        WEBVIEW_LOG_STREAMING.load(Ordering::Relaxed)
+                            && metadata.level()
+                                <= level_filter_from_u8(FILE_LOG_LEVEL.load(Ordering::Relaxed))
+                    }),
                 ])
                 .build(),
         );
@@ -472,8 +718,13 @@ pub fn run(cli_args: CliArgs) {
         builder = builder.plugin(tauri_nspanel::init());
     }
 
-    builder
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+    // Single-instance forwards CLI args to an already-running Handy and exits.
+    // That would make the headless path
+    // (--transcribe-file/--list-devices/--list-models) a silent no-op whenever the
+    // app is already open, so skip it in headless mode and run a standalone
+    // instance instead.
+    if !headless_mode {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == "--toggle-transcription") {
                 signal_handle::send_transcription_input(app, "transcribe", "CLI");
             } else if args.iter().any(|a| a == "--toggle-post-process") {
@@ -483,7 +734,10 @@ pub fn run(cli_args: CliArgs) {
             } else {
                 show_main_window(app);
             }
-        }))
+        }));
+    }
+
+    builder
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -499,6 +753,50 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
+            specta_builder.mount_events(app);
+
+            // Headless one-shot path (`--transcribe-file` / `--list-devices` /
+            // `--list-models`): initialize only what transcription needs — the
+            // store/paths plugins, the model + transcription managers, and the
+            // transcribe-cpp backend + accelerator settings — then run on a worker
+            // thread and exit. Deliberately skips the window, tray, overlay, audio
+            // recorder (so it never opens the mic, even with always_on_microphone),
+            // signal handlers, and autostart that initialize_core_logic sets up.
+            if headless_mode {
+                let app_handle = app.handle().clone();
+                let model_manager = Arc::new(
+                    ModelManager::new(&app_handle).expect("Failed to initialize model manager"),
+                );
+                let transcription_manager = Arc::new(
+                    TranscriptionManager::new(&app_handle, model_manager.clone())
+                        .expect("Failed to initialize transcription manager"),
+                );
+                app_handle.manage(model_manager);
+                app_handle.manage(transcription_manager);
+                managers::transcription::init_transcribe_backend();
+                managers::transcription::apply_accelerator_settings(&app_handle);
+
+                let handle = app_handle.clone();
+                let args = cli_args.clone();
+                std::thread::spawn(move || {
+                    let code = run_headless_transcription(&handle, &args);
+                    // Drop the loaded engine before teardown: ggml-metal's global
+                    // device free asserts (SIGABRT) if a model's Metal resources
+                    // are still alive at C++ static-destructor time.
+                    if let Some(tm) = handle.try_state::<Arc<TranscriptionManager>>() {
+                        let _ = tm.unload_model();
+                    }
+                    // process::exit (not app.exit, which exits 0 regardless) so the
+                    // exit code propagates to the shell for CI gating. Flush first
+                    // since process::exit runs no destructors / buffer flushes.
+                    use std::io::Write;
+                    let _ = std::io::stdout().flush();
+                    let _ = std::io::stderr().flush();
+                    std::process::exit(code);
+                });
+                return Ok(());
+            }
+
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
@@ -516,7 +814,7 @@ pub fn run(cli_args: CliArgs) {
 
             win_builder.build()?;
 
-            let mut settings = get_settings(&app.handle());
+            let mut settings = get_settings(app.handle());
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
             if cli_args.debug {
@@ -528,10 +826,31 @@ pub fn run(cli_args: CliArgs) {
             let file_log_level: log::Level = tauri_log_level.into();
             // Store the file log level in the atomic for the filter to use
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
+            // Only forward logs to the webview while debug mode is on (the live log
+            // viewer is the sole consumer and only exists in debug mode). This also
+            // honors the runtime `--debug` override applied to `settings` above.
+            WEBVIEW_LOG_STREAMING.store(settings.debug_mode, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
+
+            // Populate the overlay-enabled cache from initial settings so the
+            // audio path (overlay::emit_levels, called ~24 Hz during recording)
+            // can do a single atomic load instead of reading the Tauri store.
+            // Kept in sync by shortcut::change_overlay_style_setting.
+            overlay::update_overlay_enabled_cache(
+                settings.overlay_style != settings::OverlayStyle::None,
+            );
+
+            // Pre-warm GPU/accelerator enumeration on a background thread. The first
+            // get_available_accelerators call enumerates ORT execution providers and
+            // transcribe-cpp compute devices, which can take a moment; without this
+            // the cost is paid synchronously when the user first opens Advanced
+            // settings, freezing the UI. Result is cached in a OnceLock.
+            std::thread::spawn(|| {
+                let _ = crate::managers::transcription::get_available_accelerators();
+            });
 
             // Hide tray icon if --no-tray was passed
             if cli_args.no_tray {
@@ -560,7 +879,7 @@ pub fn run(cli_args: CliArgs) {
 
                 #[cfg(target_os = "macos")]
                 {
-                    let settings = get_settings(&window.app_handle());
+                    let settings = get_settings(window.app_handle());
                     let tray_visible =
                         settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
@@ -578,18 +897,24 @@ pub fn run(cli_args: CliArgs) {
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);
                 // Update tray icon to match new theme, maintaining idle state
-                utils::change_tray_icon(&window.app_handle(), utils::TrayIconState::Idle);
+                utils::change_tray_icon(window.app_handle(), utils::TrayIconState::Idle);
             }
             _ => {}
         })
-        .invoke_handler(specta_builder.invoke_handler())
+        .invoke_handler(invoke_handler)
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app, event| {
+        .run(|app, event| match &event {
             #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Reopen { .. } = &event {
+            tauri::RunEvent::Reopen { .. } => {
                 show_main_window(app);
             }
-            let _ = (app, event); // suppress unused warnings on non-macOS
+            // Teardown transcribe.cpp before exit
+            tauri::RunEvent::Exit => {
+                if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
+                    let _ = tm.unload_model();
+                }
+            }
+            _ => {}
         });
 }

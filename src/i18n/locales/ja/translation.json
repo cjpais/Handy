@@ -19,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "おすすめ",
-    "download": "ダウンロード",
-    "downloading": "ダウンロード中...",
     "customModelDescription": "公式サポート対象外",
-    "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
     "modelCard": {
       "accuracy": "精度",
       "speed": "速度"
@@ -88,11 +89,14 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "高精度な多言語対応。25のヨーロッパ言語。翻訳対応。"
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "大型で低速ですが、非常に高精度な多言語モデル。"
       }
     },
     "errors": {
-      "loadModels": "利用可能なモデルの読み込みに失敗しました",
-      "downloadModel": "モデルのダウンロードに失敗しました: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "権限が必要です",
@@ -117,9 +121,12 @@
   },
   "modelSelector": {
     "custom": "カスタム",
+    "streaming": "ストリーミング",
     "active": "アクティブ",
     "switching": "切替中...",
     "noModelsAvailable": "利用可能なモデルがありません",
+    "verifying": "{{modelName}}を検証中...",
+    "verifyingGeneric": "検証中...",
     "extracting": "{{modelName}}を展開中...",
     "extractingMultiple": "{{count}}個のモデルを展開中...",
     "extractingGeneric": "展開中...",
@@ -135,37 +142,38 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "複数の入力言語をサポート",
-      "multiLanguage": "多言語",
+      "languageCount": "{{total}} languages",
       "translation": "英語への翻訳が可能",
       "translate": "英語に翻訳",
       "singleLanguage": "この言語のみ対応",
-      "languageOnly": "{{language}}のみ"
+      "languageOnly": "{{language}}のみ",
+      "streaming": "話しながらリアルタイムで転写を表示"
     },
     "cancel": "キャンセル",
-    "cancelDownload": "ダウンロードをキャンセル"
+    "cancelDownload": "ダウンロードをキャンセル",
+    "legacy": "レガシー"
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} 設定",
-      "noSettingsNeeded": "このモデルは設定不要で自動的に動作します。"
+      "title": "{{model}} 設定"
     },
     "models": {
       "title": "転写モデル",
       "description": "転写モデルを選択するか、追加のモデルをダウンロードします。異なるモデルは精度と速度のレベルが異なります。",
-      "downloaded": "ダウンロード済み",
-      "available": "ダウンロード可能",
       "deleteConfirm": "{{modelName}}を削除してもよろしいですか？再度使用するにはダウンロードが必要です。",
       "deleteActiveConfirm": "{{modelName}}は現在使用中のモデルです。削除すると、新しいモデルを選択するまで文字起こしが停止します。本当に削除しますか？",
       "deleteTitle": "モデルを削除",
       "filters": {
-        "all": "すべて",
-        "multiLanguage": "多言語",
-        "translation": "翻訳",
         "allLanguages": "すべての言語"
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
       "yourModels": "ダウンロード済みモデル",
-      "availableModels": "ダウンロード可能"
+      "availableModels": "ダウンロード可能",
+      "searchPlaceholder": "名前でモデルを検索…",
+      "rescan": {
+        "label": "再スキャン",
+        "tooltip": "Handy の外部でモデルフォルダーまたは Hugging Face キャッシュに追加されたモデルを再スキャンします"
+      }
     },
     "general": {
       "title": "一般",
@@ -199,7 +207,6 @@
       "language": {
         "title": "言語",
         "description": "音声認識の言語を選択してください。自動を選択すると言語を自動的に判定します。特定の言語を選択すると、その言語の精度が向上する場合があります。",
-        "descriptionUnsupported": "Parakeetモデルは言語を自動的に検出します。手動選択は不要です。",
         "searchPlaceholder": "言語を検索...",
         "noResults": "言語が見つかりません",
         "auto": "自動",
@@ -235,7 +242,6 @@
       }
     },
     "advanced": {
-      "title": "詳細設定",
       "groups": {
         "app": "アプリ",
         "output": "出力",
@@ -252,13 +258,16 @@
         "description": "録音停止後30秒間マイクストリームを開いたままにし、連続した文字起こしの遅延を軽減します。Bluetooth音声品質に影響する場合があります。"
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper アクセラレーション",
           "description": "Whisper モデルのハードウェアアクセラレーション。自動モードでは利用可能な場合 GPU を使用します（macOS では Metal、Windows/Linux では Vulkan）。"
         },
         "ort": {
           "title": "ONNX アクセラレーション",
           "description": "ONNX モデルのハードウェアアクセラレーション（Parakeet、Canary、Moonshine など）。Windows の DirectML は実験的です。モデルの文字起こしに失敗する場合があります。"
+        },
+        "gpuDevice": {
+          "auto": "自動"
         }
       },
       "startHidden": {
@@ -274,12 +283,22 @@
         "description": "システムトレイにHandyのアイコンを表示します。"
       },
       "overlay": {
-        "title": "オーバーレイ位置",
-        "description": "録音と文字起こし中に視覚的なフィードバックオーバーレイを表示。Linuxでは「なし」を推奨。",
-        "options": {
-          "none": "なし",
-          "bottom": "下",
-          "top": "上"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "なし",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "オーバーレイ位置",
+          "description": "録音と文字起こし中に視覚的なフィードバックオーバーレイを表示。Linuxでは「なし」を推奨。",
+          "options": {
+            "bottom": "下",
+            "top": "上"
+          }
         }
       },
       "pasteMethod": {
@@ -323,8 +342,7 @@
       },
       "translateToEnglish": {
         "label": "英語に翻訳",
-        "description": "文字起こし中に他の言語から英語に自動的に翻訳。",
-        "descriptionUnsupported": "翻訳は{{model}}モデルではサポートされていません。"
+        "description": "文字起こし中に他の言語から英語に自動的に翻訳。"
       },
       "modelUnload": {
         "title": "モデルのアンロード",
@@ -347,10 +365,13 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "後処理",
       "hotkey": {
         "title": "ホットキー"
       },
@@ -361,9 +382,6 @@
           "description": "OpenAI互換のプロバイダーを選択。"
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "完全にデバイス上で動作。APIキーやネットワークアクセスは不要。",
-          "requirements": "macOS Tahoe（26.0）以降を実行するApple Silicon Macが必要です。システム設定でApple Intelligenceを有効にする必要があります。",
           "unavailable": "このデバイスではApple Intelligenceを利用できません。macOS Tahoe（26.0）以降を実行し、システム設定でApple Intelligenceが有効になっているApple Silicon Macが必要です。"
         },
         "baseUrl": {
@@ -378,10 +396,8 @@
         },
         "model": {
           "title": "モデル",
-          "descriptionApple": "オプションの数値トークン制限を指定するか、デフォルトのオンデバイスプリセットを使用。",
           "descriptionCustom": "カスタムエンドポイントが期待するモデル識別子を指定。",
           "descriptionDefault": "選択したプロバイダーが提供するモデルを選択。",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "モデルを検索または選択",
           "placeholderNoOptions": "モデル名を入力",
           "refreshModels": "モデルを更新"
@@ -418,7 +434,11 @@
       "save": "文字起こしを保存",
       "unsave": "保存から削除",
       "delete": "エントリーを削除",
-      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。"
+      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。",
+      "retranscribe": "再文字起こし",
+      "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
+      "transcribing": "文字起こし中...",
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
     },
     "debug": {
       "title": "デバッグ",
@@ -429,6 +449,17 @@
       "logLevel": {
         "title": "ログレベル",
         "description": "ログの詳細度を設定"
+      },
+      "liveLogs": {
+        "title": "ライブログ",
+        "description": "ログファイルを開かずに問題を診断できるよう、アプリケーションのログをリアルタイムで表示します。このパネルを開いている間に出力されたログのみが表示され、上記の「ログレベル」設定に従います。",
+        "live": "ライブ",
+        "paused": "一時停止中",
+        "pause": "一時停止",
+        "resume": "再開",
+        "copied": "コピーしました",
+        "lineCount": "{{count}} 行",
+        "empty": "ログを待機中… アプリが出力すると、ここにエントリが表示されます。"
       },
       "updateChecks": {
         "label": "アップデートを確認",
@@ -494,6 +525,13 @@
       "recordingBuffer": {
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間（ミリ秒）。末尾の音声を捕捉するため。0 = 追加バッファなし。"
+      },
+      "whatsNewPreview": {
+        "title": "新機能をプレビュー",
+        "description": "最新の同梱リリースノートを既読にせずに開く",
+        "button": "プレビュー",
+        "noNotes": "同梱リリースノートが見つかりません",
+        "error": "リリースノートのプレビューに失敗しました"
       }
     },
     "about": {
@@ -518,55 +556,43 @@
       },
       "acknowledgments": {
         "title": "謝辞",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
-          "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
+          "details": "Handyは高速でローカルな音声からテキストへの変換にggmlを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
+      },
+      "whatsNewUpdates": {
+        "label": "新機能を表示",
+        "description": "Handyのアップデート後にリリースノートを表示"
       }
     }
   },
   "footer": {
-    "downloadingModel": "{{model}}をダウンロード中...",
     "checkingUpdates": "アップデートを確認中...",
-    "updateAvailable": "アップデートあり: {{version}}",
     "updateAvailableShort": "アップデートあり",
     "upToDate": "最新です",
-    "downloadUpdate": "アップデートをダウンロード",
-    "restart": "再起動",
     "updateCheckingDisabled": "アップデート確認無効",
     "downloading": "ダウンロード中... {{progress}}%",
     "installing": "インストール中...",
     "preparing": "準備中...",
-    "checkForUpdates": "アップデートを確認"
+    "checkForUpdates": "アップデートを確認",
+    "portableUpdateTitle": "手動での更新が必要です",
+    "portableUpdateMessage": "ポータブル版は自動的に更新できません。更新するには、GitHub Releases から最新の NSIS インストーラーをダウンロードし、同じフォルダーにインストールしてから、古いバージョンの Data/ フォルダー（設定、モデル、録音）を新しいバージョンにコピーしてください。",
+    "portableUpdateButton": "GitHub Releases を開く"
   },
   "common": {
     "loading": "読み込み中...",
-    "save": "保存",
-    "cancel": "キャンセル",
-    "reset": "リセット",
-    "add": "追加",
-    "remove": "削除",
     "delete": "削除",
-    "edit": "編集",
-    "create": "作成",
-    "update": "更新",
     "close": "閉じる",
     "open": "開く",
-    "default": "デフォルト",
-    "enabled": "有効",
-    "disabled": "無効",
-    "on": "オン",
-    "off": "オフ",
-    "yes": "はい",
-    "no": "いいえ",
+    "copy": "コピー",
+    "clear": "クリア",
     "noOptionsFound": "オプションが見つかりません"
   },
   "accessibility": {
-    "permissionsRequired": "アクセシビリティ権限が必要です",
     "permissionsDescription": "Handyが文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",
-    "openSettings": "システム設定を開く",
-    "dismiss": "閉じる"
+    "openSettings": "システム設定を開く"
   },
   "errors": {
     "loadDirectory": "ディレクトリの読み込みエラー: {{error}}",
@@ -577,9 +603,14 @@
       "macos": "システム設定 → プライバシーとセキュリティ → マイクでマイクへのアクセスを許可してください。",
       "linux": "システムのサウンドまたはプライバシー設定でマイクへのアクセスを許可してください。"
     },
+    "noInputDeviceTitle": "マイクが見つかりません",
+    "noInputDevice": "オーディオ入力デバイスが検出されませんでした。マイクまたはヘッドセットを接続してから再試行してください。",
     "recordingFailed": "録音の開始に失敗しました: {{error}}",
     "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
-    "modelLoadFailedUnknown": "不明なモデル"
+    "modelLoadFailedUnknown": "不明なモデル",
+    "pasteFailedTitle": "テキストの貼り付けに失敗しました",
+    "pasteFailed": "アクティブなアプリケーションにテキストを貼り付けられませんでした。",
+    "transcriptionFailedTitle": "文字起こしに失敗しました"
   },
   "appLanguage": {
     "title": "アプリケーション言語",
@@ -588,5 +619,8 @@
   "overlay": {
     "transcribing": "文字起こし中...",
     "processing": "処理中..."
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}} の新機能"
   }
 }

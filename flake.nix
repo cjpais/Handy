@@ -29,6 +29,42 @@
       # Read version from Cargo.toml
       cargoToml = fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
       version = cargoToml.package.version;
+
+      # Shared native library dependencies for both package build and dev shell.
+      # Keep in sync: if a native dep is needed for compilation, add it here.
+      commonNativeDeps = pkgs: with pkgs; [
+        webkitgtk_4_1
+        gtk3
+        glib
+        libsoup_3
+        alsa-lib
+        onnxruntime
+        libayatana-appindicator
+        libevdev
+        libxtst
+        gtk-layer-shell
+        openssl
+        vulkan-loader
+        vulkan-headers
+        shaderc
+      ];
+
+      # GStreamer plugins for WebKitGTK audio/video
+      gstPlugins = pkgs: with pkgs.gst_all_1; [
+        gstreamer
+        gst-plugins-base
+        gst-plugins-good
+        gst-plugins-bad
+        gst-plugins-ugly
+      ];
+
+      # Shared environment variables for Rust/native builds
+      commonEnv = pkgs: let lib = pkgs.lib; in {
+        ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
+        ORT_PREFER_DYNAMIC_LINK = "1";
+        GST_PLUGIN_SYSTEM_PATH_1_0 = "${lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (gstPlugins pkgs)}";
+      };
+
     in
     {
       packages = forAllSystems (
@@ -36,9 +72,18 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ bun2nix.overlays.default ];
+            overlays = [
+              bun2nix.overlays.default
+            ];
           };
           lib = pkgs.lib;
+          combinedAlsaPlugins = pkgs.symlinkJoin {
+            name = "combined-alsa-plugins";
+            paths = [
+              "${pkgs.pipewire}/lib/alsa-lib"
+              "${pkgs.alsa-plugins}/lib/alsa-lib"
+            ];
+          };
         in
         {
           handy = pkgs.rustPlatform.buildRustPackage {
@@ -47,6 +92,8 @@
             src = self;
 
             cargoRoot = "src-tauri";
+            buildAndTestSubdir = "src-tauri";
+            tauriBundleType = "deb";
 
             cargoLock = {
               lockFile = ./src-tauri/Cargo.lock;
@@ -58,7 +105,7 @@
             };
 
             postPatch = ''
-              ${pkgs.jq}/bin/jq 'del(.build.beforeBuildCommand) | .bundle.createUpdaterArtifacts = false' \
+              ${pkgs.jq}/bin/jq '.bundle.createUpdaterArtifacts = false' \
                 src-tauri/tauri.conf.json > $TMPDIR/tauri.conf.json
               cp $TMPDIR/tauri.conf.json src-tauri/tauri.conf.json
 
@@ -101,86 +148,27 @@
               pkgs.bun2nix.hook # Sets up node_modules from pre-fetched bun cache
               jq
               cmake
-              llvmPackages.libclang
+              rustPlatform.bindgenHook
               shaderc
             ];
-
-            preBuild = ''
-              # bun2nix.hook has already set up node_modules from pre-fetched cache.
-              # Build the frontend with bun (tsc + vite).
-              export HOME=$TMPDIR
-              bun run build
-            '';
 
             # Tests require runtime resources (audio devices, model files, GPU/Vulkan)
             # not available in the Nix build sandbox
             doCheck = false;
 
-            # The tauri hook's installPhase expects target/ in cwd, but our
-            # cargoRoot puts it under src-tauri/. Override to extract the DEB.
-            installPhase = ''
-              runHook preInstall
-              mkdir -p $out
-              cd src-tauri
-              mv target/${pkgs.stdenv.hostPlatform.rust.rustcTarget}/release/bundle/deb/*/data/usr/* $out/
-              runHook postInstall
-            '';
-
-            buildInputs = with pkgs; [
-              webkitgtk_4_1
-              gtk3
-              glib
+            buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
               glib-networking
-              libsoup_3
-              alsa-lib
-              onnxruntime
-              libayatana-appindicator
-              libevdev
               libx11
-              libxtst
-              gtk-layer-shell
-              openssl
-              vulkan-loader
-              vulkan-headers
-              shaderc
+            ]) ++ gstPlugins pkgs;
 
-              # Required for WebKitGTK audio/video
-              gst_all_1.gstreamer
-              gst_all_1.gst-plugins-base
-              gst_all_1.gst-plugins-good
-              gst_all_1.gst-plugins-bad
-              gst_all_1.gst-plugins-ugly
-            ];
-
-            env = {
-              LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-              BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${lib.getVersion pkgs.llvmPackages.libclang}/include -isystem ${pkgs.glibc.dev}/include";
-              ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
+            env = commonEnv pkgs // {
               OPENSSL_NO_VENDOR = "1";
-
-              # Tell Gstreamer where to find plugins
-              GST_PLUGIN_SYSTEM_PATH_1_0 = "${pkgs.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (
-                with pkgs.gst_all_1;
-                [
-                  gstreamer
-                  gst-plugins-base
-                  gst-plugins-good
-                  gst-plugins-bad
-                  gst-plugins-ugly
-                ]
-              )}";
             };
 
             preFixup = ''
               gappsWrapperArgs+=(
                 --set WEBKIT_DISABLE_DMABUF_RENDERER 1
-                --set ALSA_PLUGIN_DIR "${pkgs.pipewire}/lib/alsa-lib:${pkgs.alsa-plugins}/lib/alsa-lib"
-                --prefix LD_LIBRARY_PATH : "${
-                  lib.makeLibraryPath [
-                    pkgs.vulkan-loader
-                    pkgs.onnxruntime
-                  ]
-                }"
+                --set ALSA_PLUGIN_DIR "${combinedAlsaPlugins}"
               )
             '';
 
@@ -223,8 +211,8 @@
         in
         {
           default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              # Rust
+            buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
+              # Rust toolchain
               rustc
               cargo
               rust-analyzer
@@ -232,39 +220,19 @@
               # Frontend
               nodejs
               bun
-              # Tauri CLI
+              # Build tools
               cargo-tauri
-              # Native deps
               pkg-config
-              openssl
-              alsa-lib
-              libsoup_3
-              webkitgtk_4_1
-              gtk3
-              gtk-layer-shell
-              glib
-              libxtst
-              libevdev
-              llvmPackages.libclang
+              rustPlatform.bindgenHook
               cmake
-              vulkan-headers
-              vulkan-loader
-              shaderc
-              libappindicator
-            ];
+            ]);
 
-            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libappindicator ]}";
-            GST_PLUGIN_SYSTEM_PATH_1_0 = "${pkgs.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (
-              with pkgs.gst_all_1;
-              [
-                gstreamer
-                gst-plugins-base
-                gst-plugins-good
-                gst-plugins-bad
-                gst-plugins-ugly
-              ]
-            )}";
+            inherit (commonEnv pkgs)
+              ORT_LIB_LOCATION
+              ORT_PREFER_DYNAMIC_LINK
+              GST_PLUGIN_SYSTEM_PATH_1_0;
+
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libayatana-appindicator pkgs.onnxruntime pkgs.vulkan-loader ]}";
 
             # Same as wrapGAppsHook4
             XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:${pkgs.hicolor-icon-theme}/share";
