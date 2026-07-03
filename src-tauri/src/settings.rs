@@ -538,7 +538,8 @@ fn default_sound_theme() -> SoundTheme {
 }
 
 fn default_post_process_enabled() -> bool {
-    false
+    // Cleanup is the core product; local Ollama fallback is graceful when absent
+    true
 }
 
 fn default_app_language() -> String {
@@ -552,7 +553,7 @@ fn default_show_tray_icon() -> bool {
 }
 
 fn default_post_process_provider_id() -> String {
-    "openai".to_string()
+    "custom".to_string()
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
@@ -657,6 +658,10 @@ fn default_post_process_api_keys() -> SecretMap {
 fn default_model_for_provider(provider_id: &str) -> String {
     if provider_id == APPLE_INTELLIGENCE_PROVIDER_ID {
         return APPLE_INTELLIGENCE_DEFAULT_MODEL_ID.to_string();
+    }
+    if provider_id == "custom" {
+        // Local Ollama default so cleanup works offline out of the box
+        return "qwen3:8b".to_string();
     }
     String::new()
 }
@@ -836,7 +841,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: None,
+        post_process_selected_prompt_id: Some("default_improve_transcriptions".to_string()),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
