@@ -3,7 +3,7 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::sync::Arc;
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -68,6 +68,7 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
 
     let icon_path = get_icon_path(theme, icon.clone());
 
+    let icon_started = std::time::Instant::now();
     let _ = tray.set_icon(Some(
         Image::from_path(
             app.path()
@@ -76,9 +77,17 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
         )
         .expect("failed to set icon"),
     ));
+    let icon_elapsed = icon_started.elapsed();
 
     // Update menu based on state
+    let menu_started = std::time::Instant::now();
     update_tray_menu(app, &icon, None);
+    debug!(
+        "tray icon change ({:?}): set_icon={:?} menu={:?}",
+        icon,
+        icon_elapsed,
+        menu_started.elapsed()
+    );
 }
 
 pub fn tray_tooltip() -> String {

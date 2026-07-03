@@ -35,5 +35,5 @@ export const LANGUAGE_METADATA: Record<
   ar: { name: "Arabic", nativeName: "العربية", priority: 17, direction: "rtl" },
   he: { name: "Hebrew", nativeName: "עברית", priority: 18, direction: "rtl" },
   sv: { name: "Swedish", nativeName: "Svenska", priority: 19 },
-  bg: { name: "Bulgarian", nativeName: "Български", priority: 20 }
+  bg: { name: "Bulgarian", nativeName: "Български", priority: 20 },
 };
