@@ -1,4 +1,4 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{apply_custom_words, apply_snippets, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
@@ -1610,6 +1610,17 @@ fn post_process_transcription_text(
         )
     } else {
         raw
+    };
+
+    let corrected = if settings.snippets.is_empty() {
+        corrected
+    } else {
+        let pairs: Vec<(String, String)> = settings
+            .snippets
+            .iter()
+            .map(|s| (s.trigger.clone(), s.expansion.clone()))
+            .collect();
+        apply_snippets(&corrected, &pairs)
     };
 
     filter_transcription_output(

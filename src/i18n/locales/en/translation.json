@@ -364,6 +364,15 @@
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
       },
+      "snippets": {
+        "title": "Snippets",
+        "description": "Say a trigger word and it expands to your saved text before any AI processing. Example: saying \"my email\" inserts your address.",
+        "triggerPlaceholder": "Trigger",
+        "expansionPlaceholder": "Expands to",
+        "add": "Add",
+        "remove": "Remove {{trigger}}",
+        "duplicate": "\"{{trigger}}\" already exists"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

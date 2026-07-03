@@ -84,6 +84,24 @@ fn find_best_match<'a>(
     best_match.map(|m| (m, best_score))
 }
 
+/// Expand snippet triggers into their replacement text. Triggers match as
+/// whole words, case-insensitively, anywhere in the transcript.
+pub fn apply_snippets(text: &str, snippets: &[(String, String)]) -> String {
+    let mut result = text.to_string();
+    for (trigger, expansion) in snippets {
+        let trigger = trigger.trim();
+        if trigger.is_empty() {
+            continue;
+        }
+        if let Ok(re) = Regex::new(&format!(r"(?i)\b{}\b", regex::escape(trigger))) {
+            result = re
+                .replace_all(&result, regex::NoExpand(expansion))
+                .into_owned();
+        }
+    }
+    result
+}
+
 /// Applies custom word corrections to transcribed text using fuzzy matching
 ///
 /// This function corrects words in the input text by finding the best matches
@@ -337,6 +355,30 @@ mod tests {
         let custom_words = vec!["hello".to_string(), "world".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
         assert_eq!(result, "hello world");
+    }
+
+    #[test]
+    fn test_apply_snippets() {
+        let snippets = vec![
+            ("my email".to_string(), "brandon@example.com".to_string()),
+            ("sig".to_string(), "Best,\nBrandon".to_string()),
+        ];
+        // whole-word, case-insensitive
+        assert_eq!(
+            apply_snippets("send it to My Email please", &snippets),
+            "send it to brandon@example.com please"
+        );
+        // no partial-word matches ("sig" must not fire inside "signature")
+        assert_eq!(
+            apply_snippets("the signature looks fine", &snippets),
+            "the signature looks fine"
+        );
+        // literal expansion: no regex capture-group expansion of $ in output
+        let dollar = vec![("price".to_string(), "$100".to_string())];
+        assert_eq!(apply_snippets("the price is firm", &dollar), "the $100 is firm");
+        // empty trigger is ignored
+        let empty = vec![("  ".to_string(), "x".to_string())];
+        assert_eq!(apply_snippets("hello", &empty), "hello");
     }
 
     #[test]
