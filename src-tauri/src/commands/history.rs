@@ -108,19 +108,10 @@ pub async fn retry_history_entry_transcription(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn update_history_limit(
-    app: AppHandle,
-    history_manager: State<'_, Arc<HistoryManager>>,
-    limit: usize,
-) -> Result<(), String> {
+pub async fn update_history_limit(app: AppHandle, limit: usize) -> Result<(), String> {
     let mut settings = crate::settings::get_settings(&app);
     settings.history_limit = limit;
     crate::settings::write_settings(&app, settings);
-
-    history_manager
-        .cleanup_old_entries()
-        .map_err(|e| e.to_string())?;
-
     Ok(())
 }
 
@@ -128,7 +119,6 @@ pub async fn update_history_limit(
 #[specta::specta]
 pub async fn update_recording_retention_period(
     app: AppHandle,
-    history_manager: State<'_, Arc<HistoryManager>>,
     period: String,
 ) -> Result<(), String> {
     use crate::settings::RecordingRetentionPeriod;
@@ -145,10 +135,5 @@ pub async fn update_recording_retention_period(
     let mut settings = crate::settings::get_settings(&app);
     settings.recording_retention_period = retention_period;
     crate::settings::write_settings(&app, settings);
-
-    history_manager
-        .cleanup_old_entries()
-        .map_err(|e| e.to_string())?;
-
     Ok(())
 }
