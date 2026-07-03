@@ -588,6 +588,37 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
+/// Copy the current selection in the frontmost app via a synthesized copy
+/// keystroke and return it. The previous clipboard content is restored.
+/// Returns an empty string when nothing is selected.
+pub fn copy_selected_text(app_handle: &AppHandle) -> Result<String, String> {
+    let clipboard = app_handle.clipboard();
+    let saved = clipboard.read_text().unwrap_or_default();
+
+    // Clear first so we can tell "nothing selected" from stale content
+    clipboard
+        .write_text("")
+        .map_err(|e| format!("Failed to clear clipboard: {}", e))?;
+
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    {
+        let mut enigo = enigo_state
+            .0
+            .lock()
+            .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+        input::send_copy(&mut enigo)?;
+    }
+
+    // Give the frontmost app time to service the copy
+    std::thread::sleep(Duration::from_millis(150));
+    let selection = clipboard.read_text().unwrap_or_default();
+
+    let _ = clipboard.write_text(&saved);
+    Ok(selection)
+}
+
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;

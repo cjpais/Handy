@@ -49,6 +49,9 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    /// Command Mode: capture the current selection on stop and have the LLM
+    /// apply the spoken instruction to it instead of cleaning a transcript.
+    command_mode: bool,
 }
 
 /// Field name for structured output JSON schema
@@ -77,28 +80,6 @@ fn is_blank_transcription(transcription: &str) -> bool {
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
-        return None;
-    }
-
-    let provider = match settings.active_post_process_provider().cloned() {
-        Some(provider) => provider,
-        None => {
-            debug!("Post-processing enabled but no provider is selected");
-            return None;
-        }
-    };
-
-    let model = settings
-        .post_process_models
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
-
-    if model.trim().is_empty() {
-        debug!(
-            "Post-processing skipped because provider '{}' has no model configured",
-            provider.id
-        );
         return None;
     }
 
@@ -137,6 +118,42 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         &crate::utils::frontmost_app_name().unwrap_or_else(|| "unknown".to_string()),
     );
 
+    let system_prompt = build_system_prompt(&prompt);
+    let legacy_prompt = prompt.replace("${output}", transcription);
+    run_llm(settings, system_prompt, transcription.to_string(), legacy_prompt).await
+}
+
+/// Send a system+user request through the configured post-processing provider.
+/// `legacy_prompt` is the single-message fallback used for providers without
+/// structured output support (and when structured output fails).
+async fn run_llm(
+    settings: &AppSettings,
+    system_prompt: String,
+    user_content: String,
+    legacy_prompt: String,
+) -> Option<String> {
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("Post-processing enabled but no provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "Post-processing skipped because provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
     debug!(
         "Starting LLM post-processing with provider '{}' (model: {})",
         provider.id, model
@@ -166,9 +183,6 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
 
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
-
-        let system_prompt = build_system_prompt(&prompt);
-        let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
         if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
@@ -281,8 +295,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    // Legacy mode: send the fully-rendered prompt as a single message
+    let processed_prompt = legacy_prompt;
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
@@ -437,6 +451,42 @@ pub(crate) async fn process_transcription_output(
         final_text,
         post_processed_text,
         post_process_prompt,
+    }
+}
+
+/// System prompt for Command Mode: apply a spoken instruction to the selected text.
+const COMMAND_MODE_SYSTEM_PROMPT: &str = "You are a text editing engine. The user selected text and spoke an instruction. Apply the instruction to the text and output only the resulting text — no explanations, no markdown fences. If no text is provided, output only the text the instruction asks for.";
+
+pub(crate) async fn process_command_output(
+    app: &AppHandle,
+    instruction: &str,
+    selection: &str,
+) -> ProcessedTranscription {
+    let settings = get_settings(app);
+    let user_content = if selection.trim().is_empty() {
+        format!("Instruction:\n{}", instruction)
+    } else {
+        format!("Text:\n{}\n\nInstruction:\n{}", selection, instruction)
+    };
+    let legacy_prompt = format!("{}\n\n{}", COMMAND_MODE_SYSTEM_PROMPT, user_content);
+    let edited = if is_blank_transcription(instruction) {
+        None
+    } else {
+        run_llm(
+            &settings,
+            COMMAND_MODE_SYSTEM_PROMPT.to_string(),
+            user_content,
+            legacy_prompt,
+        )
+        .await
+    };
+
+    // On LLM failure paste nothing rather than replacing the user's selection
+    // with the raw spoken instruction.
+    ProcessedTranscription {
+        final_text: edited.clone().unwrap_or_default(),
+        post_processed_text: edited,
+        post_process_prompt: Some(COMMAND_MODE_SYSTEM_PROMPT.to_string()),
     }
 }
 
@@ -623,7 +673,32 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let command_mode = self.command_mode;
         let cancel_generation = rm.cancel_generation();
+
+        // Command Mode: capture the selection now, on the main thread. This runs
+        // after the hotkey release, so the synthesized copy combo can't fight
+        // held modifiers or retrigger the binding.
+        let selection_rx = if command_mode {
+            let (tx, rx) = std::sync::mpsc::channel::<String>();
+            let ah_sel = app.clone();
+            match app.run_on_main_thread(move || {
+                let selection =
+                    crate::clipboard::copy_selected_text(&ah_sel).unwrap_or_else(|e| {
+                        warn!("Command Mode selection capture failed: {}", e);
+                        String::new()
+                    });
+                let _ = tx.send(selection);
+            }) {
+                Ok(()) => Some(rx),
+                Err(e) => {
+                    error!("Failed to schedule selection capture: {:?}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
@@ -728,9 +803,22 @@ impl ShortcutAction for TranscribeAction {
                                     show_processing_overlay(&ah);
                                 }
                             }
-                            let processed =
+                            let processed = if command_mode {
+                                let selection = if let Some(rx) = selection_rx {
+                                    tauri::async_runtime::spawn_blocking(move || {
+                                        rx.recv_timeout(std::time::Duration::from_secs(2))
+                                            .unwrap_or_default()
+                                    })
+                                    .await
+                                    .unwrap_or_default()
+                                } else {
+                                    String::new()
+                                };
+                                process_command_output(&ah, &transcription, &selection).await
+                            } else {
                                 process_transcription_output(&ah, &transcription, post_process)
-                                    .await;
+                                    .await
+                            };
 
                             if rm.was_cancelled_since(cancel_generation) {
                                 debug!("Transcription operation cancelled before paste");
@@ -878,11 +966,22 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            command_mode: false,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            command_mode: false,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "command_mode".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: true,
+            command_mode: true,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
