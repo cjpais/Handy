@@ -74,11 +74,9 @@ pub fn is_kde_wayland() -> bool {
 #[cfg(target_os = "macos")]
 pub fn frontmost_app_name() -> Option<String> {
     use objc2_app_kit::NSWorkspace;
-    unsafe {
-        let workspace = NSWorkspace::sharedWorkspace();
-        let app = workspace.frontmostApplication()?;
-        app.localizedName().map(|name| name.to_string())
-    }
+    let workspace = NSWorkspace::sharedWorkspace();
+    let app = workspace.frontmostApplication()?;
+    app.localizedName().map(|name| name.to_string())
 }
 
 // ponytail: macOS only; Windows (GetForegroundWindow) / Linux when needed
