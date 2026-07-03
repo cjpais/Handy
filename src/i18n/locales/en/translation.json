@@ -12,6 +12,7 @@
     "general": "General",
     "models": "Models",
     "advanced": "Advanced",
+    "poptart": "Poptart",
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",
@@ -156,6 +157,12 @@
   "settings": {
     "modelSettings": {
       "title": "{{model}} Settings"
+    },
+    "poptart": {
+      "groups": {
+        "commandMode": "Command Mode",
+        "snippets": "Snippets"
+      }
     },
     "general": {
       "title": "General",
