@@ -17,11 +17,11 @@ const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
   return supportsLanguageCode(model.supported_languages, langCode);
 };
 
-// Legacy models are the blob (Url-sourced) .bin/ONNX downloads, superseded by
+// Legacy models are the retired blob-hosted .bin/ONNX downloads, superseded by
 // the catalog GGUFs. They stay runnable when already on disk, but we no longer
-// advertise the download.
+// advertise the download. The backend marks them explicitly via `deprecated`.
 const isLegacyModel = (model: ModelInfo): boolean =>
-  typeof model.source === "object" && "Url" in model.source;
+  Boolean(model.deprecated);
 
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
