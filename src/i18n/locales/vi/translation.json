@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "Cần cấp quyền",
-      "description": "Handy cần một số quyền để hoạt động bình thường.",
+      "description": "Poptart cần một số quyền để hoạt động bình thường.",
       "microphone": {
         "title": "Quyền truy cập Micrô",
         "description": "Cần thiết để nghe giọng nói của bạn để chuyển đổi."
@@ -172,13 +172,13 @@
       "searchPlaceholder": "Tìm mô hình theo tên…",
       "rescan": {
         "label": "Quét lại",
-        "tooltip": "Quét lại các mô hình được thêm vào thư mục mô hình hoặc bộ nhớ đệm Hugging Face bên ngoài Handy"
+        "tooltip": "Quét lại các mô hình được thêm vào thư mục mô hình hoặc bộ nhớ đệm Hugging Face bên ngoài Poptart"
       }
     },
     "general": {
       "title": "Chung",
       "shortcut": {
-        "title": "Phím tắt Handy",
+        "title": "Phím tắt Poptart",
         "description": "Cấu hình phím tắt để kích hoạt ghi âm chuyển đổi giọng nói thành văn bản",
         "loading": "Đang tải phím tắt...",
         "none": "Chưa cấu hình phím tắt",
@@ -274,11 +274,11 @@
       },
       "autostart": {
         "label": "Khởi động cùng hệ thống",
-        "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."
+        "description": "Tự động khởi động Poptart khi bạn đăng nhập vào máy tính."
       },
       "showTrayIcon": {
         "label": "Hiển thị biểu tượng khay",
-        "description": "Hiển thị biểu tượng Handy trong khay hệ thống."
+        "description": "Hiển thị biểu tượng Poptart trong khay hệ thống."
       },
       "overlay": {
         "style": {
@@ -461,7 +461,7 @@
       },
       "updateChecks": {
         "label": "Kiểm tra cập nhật",
-        "description": "Tự động kiểm tra phiên bản mới của Handy"
+        "description": "Tự động kiểm tra phiên bản mới của Poptart"
       },
       "soundTheme": {
         "label": "Chủ đề âm thanh",
@@ -536,11 +536,11 @@
       "title": "Giới thiệu",
       "version": {
         "title": "Phiên bản",
-        "description": "Phiên bản hiện tại của Handy"
+        "description": "Phiên bản hiện tại của Poptart"
       },
       "appDataDirectory": {
         "title": "Thư mục dữ liệu ứng dụng",
-        "description": "Vị trí Handy lưu trữ dữ liệu"
+        "description": "Vị trí Poptart lưu trữ dữ liệu"
       },
       "sourceCode": {
         "title": "Mã nguồn",
@@ -549,7 +549,7 @@
       },
       "supportDevelopment": {
         "title": "Hỗ trợ phát triển",
-        "description": "Giúp chúng tôi tiếp tục xây dựng Handy",
+        "description": "Giúp chúng tôi tiếp tục xây dựng Poptart",
         "button": "Quyên góp"
       },
       "acknowledgments": {
@@ -557,12 +557,12 @@
         "ggml": {
           "title": "ggml",
           "description": "Suy luận hiệu suất cao của mô hình nhận dạng giọng nói tự động Whisper của OpenAI",
-          "details": "Handy sử dụng ggml để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
+          "details": "Poptart sử dụng ggml để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
         }
       },
       "whatsNewUpdates": {
         "label": "Hiển thị điểm mới",
-        "description": "Hiển thị ghi chú phát hành sau khi Handy cập nhật"
+        "description": "Hiển thị ghi chú phát hành sau khi Poptart cập nhật"
       }
     }
   },
@@ -589,7 +589,7 @@
     "noOptionsFound": "Không tìm thấy tùy chọn"
   },
   "accessibility": {
-    "permissionsDescription": "Handy cần quyền truy cập để gõ văn bản đã chuyển đổi.",
+    "permissionsDescription": "Poptart cần quyền truy cập để gõ văn bản đã chuyển đổi.",
     "openSettings": "Mở Cài đặt Hệ thống"
   },
   "errors": {
@@ -612,13 +612,13 @@
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",
-    "description": "Thay đổi ngôn ngữ giao diện của Handy"
+    "description": "Thay đổi ngôn ngữ giao diện của Poptart"
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
     "processing": "Đang xử lý..."
   },
   "whatsNew": {
-    "title": "Điểm mới trong Handy v{{version}}"
+    "title": "Điểm mới trong Poptart v{{version}}"
   }
 }

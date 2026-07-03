@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "Wymagane uprawnienia",
-      "description": "Handy potrzebuje kilku uprawnień, aby działać poprawnie.",
+      "description": "Poptart potrzebuje kilku uprawnień, aby działać poprawnie.",
       "microphone": {
         "title": "Dostęp do mikrofonu",
         "description": "Wymagany do słyszenia Twojego głosu w celu transkrypcji."
@@ -172,13 +172,13 @@
       "searchPlaceholder": "Szukaj modeli według nazwy…",
       "rescan": {
         "label": "Skanuj ponownie",
-        "tooltip": "Skanuj ponownie w poszukiwaniu modeli dodanych do folderu modeli lub pamięci podręcznej Hugging Face poza Handy"
+        "tooltip": "Skanuj ponownie w poszukiwaniu modeli dodanych do folderu modeli lub pamięci podręcznej Hugging Face poza Poptart"
       }
     },
     "general": {
       "title": "Ogólne",
       "shortcut": {
-        "title": "Skróty Handy",
+        "title": "Skróty Poptart",
         "description": "Skonfiguruj skróty klawiaturowe do uruchamiania nagrywania mowy",
         "loading": "Wczytywanie skrótów...",
         "none": "Brak skonfigurowanych skrótów",
@@ -274,11 +274,11 @@
       },
       "autostart": {
         "label": "Uruchamiaj przy starcie",
-        "description": "Automatycznie uruchamiaj Handy po zalogowaniu."
+        "description": "Automatycznie uruchamiaj Poptart po zalogowaniu."
       },
       "showTrayIcon": {
         "label": "Pokaż ikonę w zasobniku",
-        "description": "Wyświetlaj ikonę Handy w zasobniku systemowym."
+        "description": "Wyświetlaj ikonę Poptart w zasobniku systemowym."
       },
       "overlay": {
         "style": {
@@ -461,7 +461,7 @@
       },
       "updateChecks": {
         "label": "Sprawdzaj aktualizacje",
-        "description": "Automatycznie sprawdzaj nowe wersje Handy"
+        "description": "Automatycznie sprawdzaj nowe wersje Poptart"
       },
       "soundTheme": {
         "label": "Motyw dźwiękowy",
@@ -536,11 +536,11 @@
       "title": "O programie",
       "version": {
         "title": "Wersja",
-        "description": "Aktualna wersja Handy"
+        "description": "Aktualna wersja Poptart"
       },
       "appDataDirectory": {
         "title": "Katalog danych aplikacji",
-        "description": "Miejsce, gdzie Handy przechowuje swoje dane"
+        "description": "Miejsce, gdzie Poptart przechowuje swoje dane"
       },
       "sourceCode": {
         "title": "Kod źródłowy",
@@ -549,7 +549,7 @@
       },
       "supportDevelopment": {
         "title": "Wspieraj rozwój",
-        "description": "Pomóż nam dalej rozwijać Handy",
+        "description": "Pomóż nam dalej rozwijać Poptart",
         "button": "Wesprzyj"
       },
       "acknowledgments": {
@@ -557,12 +557,12 @@
         "ggml": {
           "title": "ggml",
           "description": "Wydajne wykonywanie modelu rozpoznawania mowy Whisper od OpenAI",
-          "details": "Handy używa ggml do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
+          "details": "Poptart używa ggml do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
       },
       "whatsNewUpdates": {
         "label": "Pokaż nowości",
-        "description": "Pokazuj informacje o wydaniu po aktualizacjach Handy"
+        "description": "Pokazuj informacje o wydaniu po aktualizacjach Poptart"
       }
     }
   },
@@ -589,7 +589,7 @@
     "noOptionsFound": "Nie znaleziono opcji"
   },
   "accessibility": {
-    "permissionsDescription": "Handy potrzebuje uprawnień dostępności, aby wpisywać transkrybowany tekst.",
+    "permissionsDescription": "Poptart potrzebuje uprawnień dostępności, aby wpisywać transkrybowany tekst.",
     "openSettings": "Otwórz ustawienia systemowe"
   },
   "errors": {
@@ -612,13 +612,13 @@
   },
   "appLanguage": {
     "title": "Język aplikacji",
-    "description": "Zmień język interfejsu Handy"
+    "description": "Zmień język interfejsu Poptart"
   },
   "overlay": {
     "transcribing": "Transkrypcja...",
     "processing": "Przetwarzanie..."
   },
   "whatsNew": {
-    "title": "Nowości w Handy v{{version}}"
+    "title": "Nowości w Poptart v{{version}}"
   }
 }

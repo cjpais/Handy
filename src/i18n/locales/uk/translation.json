@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "Потрібні дозволи",
-      "description": "Handy потребує деяких дозволів для коректної роботи.",
+      "description": "Poptart потребує деяких дозволів для коректної роботи.",
       "microphone": {
         "title": "Доступ до мікрофона",
         "description": "Потрібен для прослуховування вашого голосу для транскрипції."
@@ -213,7 +213,7 @@
       "searchPlaceholder": "Пошук моделей за назвою…",
       "rescan": {
         "label": "Пересканувати",
-        "tooltip": "Пересканувати моделі, додані до папки моделей або кешу Hugging Face поза межами Handy"
+        "tooltip": "Пересканувати моделі, додані до папки моделей або кешу Hugging Face поза межами Poptart"
       }
     },
     "sound": {
@@ -274,11 +274,11 @@
       },
       "autostart": {
         "label": "Запуск при старті системи",
-        "description": "Автоматично запускати Handy при вході в систему"
+        "description": "Автоматично запускати Poptart при вході в систему"
       },
       "showTrayIcon": {
         "label": "Показати значок у треї",
-        "description": "Відображати значок Handy у системному треї."
+        "description": "Відображати значок Poptart у системному треї."
       },
       "overlay": {
         "style": {
@@ -461,7 +461,7 @@
       },
       "updateChecks": {
         "label": "Перевірка оновлень",
-        "description": "Автоматично перевіряти наявність нових версій Handy"
+        "description": "Автоматично перевіряти наявність нових версій Poptart"
       },
       "soundTheme": {
         "label": "Звукова тема",
@@ -536,11 +536,11 @@
       "title": "Інфо",
       "version": {
         "title": "Версія",
-        "description": "Поточна версія Handy"
+        "description": "Поточна версія Poptart"
       },
       "appDataDirectory": {
         "title": "Папка даних програми",
-        "description": "Розташування даних Handy"
+        "description": "Розташування даних Poptart"
       },
       "sourceCode": {
         "title": "Вихідний код",
@@ -549,7 +549,7 @@
       },
       "supportDevelopment": {
         "title": "Підтримати розробку",
-        "description": "Допоможіть нам продовжувати розвивати Handy",
+        "description": "Допоможіть нам продовжувати розвивати Poptart",
         "button": "Підтримати"
       },
       "acknowledgments": {
@@ -557,12 +557,12 @@
         "ggml": {
           "title": "ggml",
           "description": "Високопродуктивний інференс моделі автоматичного розпізнавання мовлення Whisper від OpenAI",
-          "details": "Handy використовує ggml для швидкої локальної обробки мовлення в текст. Дякуємо за чудову роботу Георгію Герганову та контриб'юторам."
+          "details": "Poptart використовує ggml для швидкої локальної обробки мовлення в текст. Дякуємо за чудову роботу Георгію Герганову та контриб'юторам."
         }
       },
       "whatsNewUpdates": {
         "label": "Показувати новини",
-        "description": "Показувати примітки до випуску після оновлень Handy"
+        "description": "Показувати примітки до випуску після оновлень Poptart"
       }
     }
   },
@@ -589,7 +589,7 @@
     "noOptionsFound": "Опцій не знайдено"
   },
   "accessibility": {
-    "permissionsDescription": "Handy потребує дозволи доступності для введення транскрибованого тексту.",
+    "permissionsDescription": "Poptart потребує дозволи доступності для введення транскрибованого тексту.",
     "openSettings": "Відкрити Системні налаштування"
   },
   "errors": {
@@ -612,13 +612,13 @@
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",
-    "description": "Змінити мову інтерфейсу Handy"
+    "description": "Змінити мову інтерфейсу Poptart"
   },
   "overlay": {
     "transcribing": "Обробка...",
     "processing": "Постобробка..."
   },
   "whatsNew": {
-    "title": "Нове в Handy v{{version}}"
+    "title": "Нове в Poptart v{{version}}"
   }
 }

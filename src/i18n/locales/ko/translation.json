@@ -160,7 +160,7 @@
     "general": {
       "title": "일반",
       "shortcut": {
-        "title": "Handy 단축키",
+        "title": "Poptart 단축키",
         "description": "음성-텍스트 녹음을 시작하는 키보드 단축키를 설정하세요",
         "loading": "단축키 로딩 중...",
         "none": "설정된 단축키 없음",
@@ -236,7 +236,7 @@
       "searchPlaceholder": "이름으로 모델 검색…",
       "rescan": {
         "label": "다시 스캔",
-        "tooltip": "Handy 외부에서 모델 폴더 또는 Hugging Face 캐시에 추가된 모델을 다시 스캔합니다"
+        "tooltip": "Poptart 외부에서 모델 폴더 또는 Hugging Face 캐시에 추가된 모델을 다시 스캔합니다"
       }
     },
     "advanced": {
@@ -278,7 +278,7 @@
       },
       "showTrayIcon": {
         "label": "트레이 아이콘 표시",
-        "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
+        "description": "시스템 트레이에 Poptart 아이콘을 표시합니다."
       },
       "overlay": {
         "style": {
@@ -549,7 +549,7 @@
       },
       "supportDevelopment": {
         "title": "개발 지원",
-        "description": "Handy 개발을 계속할 수 있도록 도와주세요",
+        "description": "Poptart 개발을 계속할 수 있도록 도와주세요",
         "button": "후원하기"
       },
       "acknowledgments": {
@@ -562,7 +562,7 @@
       },
       "whatsNewUpdates": {
         "label": "새 소식 표시",
-        "description": "Handy 업데이트 후 릴리스 노트를 표시합니다"
+        "description": "Poptart 업데이트 후 릴리스 노트를 표시합니다"
       }
     }
   },
@@ -612,13 +612,13 @@
   },
   "appLanguage": {
     "title": "애플리케이션 언어",
-    "description": "Handy 인터페이스의 언어를 변경하세요"
+    "description": "Poptart 인터페이스의 언어를 변경하세요"
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
   },
   "whatsNew": {
-    "title": "Handy v{{version}}의 새 소식"
+    "title": "Poptart v{{version}}의 새 소식"
   }
 }

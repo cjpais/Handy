@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "נדרשות הרשאות",
-      "description": "Handy צריך כמה הרשאות כדי לעבוד כמו שצריך.",
+      "description": "Poptart צריך כמה הרשאות כדי לעבוד כמו שצריך.",
       "microphone": {
         "title": "גישה למיקרופון",
         "description": "נדרש כדי לשמוע את הקול שלך לצורך תמלול."
@@ -160,7 +160,7 @@
     "general": {
       "title": "כללי",
       "shortcut": {
-        "title": "קיצורי מקשים של Handy",
+        "title": "קיצורי מקשים של Poptart",
         "description": "הגדר קיצורי מקשים כדי להפעיל הקלטה ותמלול דיבור",
         "loading": "טוען קיצורי מקשים...",
         "none": "לא הוגדרו קיצורי מקשים",
@@ -213,7 +213,7 @@
       "searchPlaceholder": "חיפוש מודלים לפי שם…",
       "rescan": {
         "label": "סריקה מחדש",
-        "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Handy"
+        "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Poptart"
       }
     },
     "sound": {
@@ -274,11 +274,11 @@
       },
       "autostart": {
         "label": "הפעל עם עליית המערכת",
-        "description": "הפעל את Handy אוטומטית כשאתה מתחבר למחשב."
+        "description": "הפעל את Poptart אוטומטית כשאתה מתחבר למחשב."
       },
       "showTrayIcon": {
         "label": "הצג אייקון במגש",
-        "description": "הצג את האייקון של Handy במגש המערכת."
+        "description": "הצג את האייקון של Poptart במגש המערכת."
       },
       "overlay": {
         "style": {
@@ -461,7 +461,7 @@
       },
       "updateChecks": {
         "label": "בדוק עדכונים",
-        "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של Handy"
+        "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של Poptart"
       },
       "soundTheme": {
         "label": "ערכת צלילים",
@@ -536,11 +536,11 @@
       "title": "אודות",
       "version": {
         "title": "גרסה",
-        "description": "הגרסה הנוכחית של Handy"
+        "description": "הגרסה הנוכחית של Poptart"
       },
       "appDataDirectory": {
         "title": "תיקיית נתוני אפליקציה",
-        "description": "המיקום שבו Handy שומר את הנתונים שלו"
+        "description": "המיקום שבו Poptart שומר את הנתונים שלו"
       },
       "sourceCode": {
         "title": "קוד מקור",
@@ -549,7 +549,7 @@
       },
       "supportDevelopment": {
         "title": "תמיכה בפיתוח",
-        "description": "עזור לנו להמשיך לבנות את Handy",
+        "description": "עזור לנו להמשיך לבנות את Poptart",
         "button": "תרומה"
       },
       "acknowledgments": {
@@ -557,12 +557,12 @@
         "ggml": {
           "title": "ggml",
           "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
-          "details": "Handy משתמש ב-ggml לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
+          "details": "Poptart משתמש ב-ggml לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
         }
       },
       "whatsNewUpdates": {
         "label": "הצג מה חדש",
-        "description": "הצג הערות גרסה לאחר עדכוני Handy"
+        "description": "הצג הערות גרסה לאחר עדכוני Poptart"
       }
     }
   },
@@ -589,7 +589,7 @@
     "noOptionsFound": "לא נמצאו אפשרויות"
   },
   "accessibility": {
-    "permissionsDescription": "Handy צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
+    "permissionsDescription": "Poptart צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
     "openSettings": "פתח את הגדרות המערכת"
   },
   "errors": {
@@ -612,13 +612,13 @@
   },
   "appLanguage": {
     "title": "שפת האפליקציה",
-    "description": "שנה את שפת הממשק של Handy"
+    "description": "שנה את שפת הממשק של Poptart"
   },
   "overlay": {
     "transcribing": "מתמלל...",
     "processing": "מעבד..."
   },
   "whatsNew": {
-    "title": "חדש ב-Handy v{{version}}"
+    "title": "חדש ב-Poptart v{{version}}"
   }
 }

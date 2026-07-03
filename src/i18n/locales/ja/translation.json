@@ -172,7 +172,7 @@
       "searchPlaceholder": "名前でモデルを検索…",
       "rescan": {
         "label": "再スキャン",
-        "tooltip": "Handy の外部でモデルフォルダーまたは Hugging Face キャッシュに追加されたモデルを再スキャンします"
+        "tooltip": "Poptart の外部でモデルフォルダーまたは Hugging Face キャッシュに追加されたモデルを再スキャンします"
       }
     },
     "general": {
@@ -619,6 +619,6 @@
     "processing": "処理中..."
   },
   "whatsNew": {
-    "title": "Handy v{{version}} の新機能"
+    "title": "Poptart v{{version}} の新機能"
   }
 }

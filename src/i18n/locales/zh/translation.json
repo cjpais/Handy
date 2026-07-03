@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "需要权限",
-      "description": "Handy 需要一些权限才能正常工作。",
+      "description": "Poptart 需要一些权限才能正常工作。",
       "microphone": {
         "title": "麦克风访问",
         "description": "需要听取您的语音进行转录。"
@@ -172,13 +172,13 @@
       "searchPlaceholder": "按名称搜索模型…",
       "rescan": {
         "label": "重新扫描",
-        "tooltip": "重新扫描在 Handy 之外添加到模型文件夹或 Hugging Face 缓存中的模型"
+        "tooltip": "重新扫描在 Poptart 之外添加到模型文件夹或 Hugging Face 缓存中的模型"
       }
     },
     "general": {
       "title": "通用",
       "shortcut": {
-        "title": "Handy 快捷键",
+        "title": "Poptart 快捷键",
         "description": "配置启动语音转文字录制的键盘快捷键",
         "loading": "加载快捷键中...",
         "none": "未配置快捷键",
@@ -274,11 +274,11 @@
       },
       "autostart": {
         "label": "开机启动",
-        "description": "登录计算机时自动启动 Handy。"
+        "description": "登录计算机时自动启动 Poptart。"
       },
       "showTrayIcon": {
         "label": "显示托盘图标",
-        "description": "在系统托盘中显示 Handy 图标。"
+        "description": "在系统托盘中显示 Poptart 图标。"
       },
       "overlay": {
         "style": {
@@ -461,7 +461,7 @@
       },
       "updateChecks": {
         "label": "检查更新",
-        "description": "自动检查 Handy 的新版本"
+        "description": "自动检查 Poptart 的新版本"
       },
       "soundTheme": {
         "label": "声音主题",
@@ -536,11 +536,11 @@
       "title": "关于",
       "version": {
         "title": "版本",
-        "description": "Handy 的当前版本"
+        "description": "Poptart 的当前版本"
       },
       "appDataDirectory": {
         "title": "应用数据目录",
-        "description": "Handy 存储数据的位置"
+        "description": "Poptart 存储数据的位置"
       },
       "sourceCode": {
         "title": "源代码",
@@ -549,7 +549,7 @@
       },
       "supportDevelopment": {
         "title": "支持开发",
-        "description": "帮助我们继续开发 Handy",
+        "description": "帮助我们继续开发 Poptart",
         "button": "捐赠"
       },
       "acknowledgments": {
@@ -557,12 +557,12 @@
         "ggml": {
           "title": "ggml",
           "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
-          "details": "Handy 使用 ggml 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+          "details": "Poptart 使用 ggml 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
       },
       "whatsNewUpdates": {
         "label": "显示新功能",
-        "description": "Handy 更新后显示发行说明"
+        "description": "Poptart 更新后显示发行说明"
       }
     }
   },
@@ -589,7 +589,7 @@
     "noOptionsFound": "未找到选项"
   },
   "accessibility": {
-    "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
+    "permissionsDescription": "Poptart 需要辅助功能权限才能输入转录的文字。",
     "openSettings": "打开系统设置"
   },
   "errors": {
@@ -612,13 +612,13 @@
   },
   "appLanguage": {
     "title": "应用语言",
-    "description": "更改 Handy 界面的语言"
+    "description": "更改 Poptart 界面的语言"
   },
   "overlay": {
     "transcribing": "正在转录...",
     "processing": "处理中..."
   },
   "whatsNew": {
-    "title": "Handy v{{version}} 新功能"
+    "title": "Poptart v{{version}} 新功能"
   }
 }
