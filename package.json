@@ -20,6 +20,7 @@
     "postinstall": "bun scripts/check-nix-deps.ts"
   },
   "dependencies": {
+    "@lucide/lab": "^0.1.2",
     "@tailwindcss/vite": "^4.1.16",
     "@tauri-apps/api": "^2.10.0",
     "@tauri-apps/plugin-autostart": "~2.5.1",

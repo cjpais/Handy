@@ -4,11 +4,12 @@ import {
   Cog,
   FlaskConical,
   History,
+  Icon,
   Info,
   Sparkles,
   Cpu,
 } from "lucide-react";
-import PoptartIcon from "./icons/PoptartIcon";
+import { toaster } from "@lucide/lab";
 import PoptartLogo from "./icons/PoptartLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -40,6 +41,8 @@ interface SectionConfig {
   enabled: (settings: any) => boolean;
 }
 
+const ToasterIcon = (props: IconProps) => <Icon iconNode={toaster} {...props} />;
+
 export const SECTIONS_CONFIG = {
   general: {
     labelKey: "sidebar.general",
@@ -61,7 +64,7 @@ export const SECTIONS_CONFIG = {
   },
   poptart: {
     labelKey: "sidebar.poptart",
-    icon: PoptartIcon,
+    icon: ToasterIcon,
     component: PoptartSettings,
     enabled: () => true,
   },
