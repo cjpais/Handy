@@ -24,6 +24,9 @@ finish-args:
   # Network access for model downloads
   - --share=network
 
+  # Persist HuggingFace cache across restarts so downloaded models survive
+  - --persist=.cache/huggingface
+
   # System tray support
   - --talk-name=org.kde.StatusNotifierWatcher
 
