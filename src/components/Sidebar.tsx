@@ -2,13 +2,13 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import {
   Cog,
-  Cookie,
   FlaskConical,
   History,
   Info,
   Sparkles,
   Cpu,
 } from "lucide-react";
+import PoptartIcon from "./icons/PoptartIcon";
 import PoptartLogo from "./icons/PoptartLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -61,7 +61,7 @@ export const SECTIONS_CONFIG = {
   },
   poptart: {
     labelKey: "sidebar.poptart",
-    icon: Cookie,
+    icon: PoptartIcon,
     component: PoptartSettings,
     enabled: () => true,
   },
