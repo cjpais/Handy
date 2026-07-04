@@ -180,6 +180,18 @@ build_in_sdk() {
     mkdir -p "$staging/data/usr/lib/Handy"
     cp -r "$PROJECT_ROOT/src-tauri/resources" "$staging/data/usr/lib/Handy/resources"
 
+    # Transcribe-cpp shared libraries (installed by the cmake build)
+    # Copy entire lib64 directory with symlinks preserved
+    local transcribe_lib_dir
+    transcribe_lib_dir=$(find "$PROJECT_ROOT/src-tauri/target/release/build" -maxdepth 3 -name "out" -path "*/transcribe-cpp-sys-*" -type d 2>/dev/null | head -1)
+    if [ -n "$transcribe_lib_dir" ] && [ -d "$transcribe_lib_dir/lib64" ]; then
+        mkdir -p "$staging/data/usr/lib64"
+        cp -a "$transcribe_lib_dir"/lib64/*.so* "$staging/data/usr/lib64/"
+        log_info "Bundled transcribe-cpp runtime libraries from $transcribe_lib_dir/lib64"
+    else
+        log_warn "transcribe-cpp library directory not found"
+    fi
+
     # Desktop file
     mkdir -p "$staging/data/usr/share/applications"
     cat > "$staging/data/usr/share/applications/Handy.desktop" << 'DESKTOP'

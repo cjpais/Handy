@@ -111,6 +111,10 @@ modules:
       - cp -r deb-extract/usr/lib/Handy/. /app/lib/Handy/
       - find /app/lib/Handy -type f -exec chmod 644 {} \;
 
+      # Install transcribe-cpp shared libraries
+      - mkdir -p /app/lib64
+      - if [ -d deb-extract/usr/lib64 ]; then cp -a deb-extract/usr/lib64/*.so* /app/lib64/; fi
+
       # Install desktop file with correct icon reference
       - sed -i 's/^Icon=.*/Icon=com.pais.handy/' deb-extract/usr/share/applications/Handy.desktop
       - install -Dm644 deb-extract/usr/share/applications/Handy.desktop /app/share/applications/com.pais.handy.desktop
