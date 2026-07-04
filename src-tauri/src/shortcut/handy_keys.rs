@@ -357,25 +357,36 @@ impl HandyKeysState {
         debug!("Stopped handy-keys recording mode");
         Ok(())
     }
-}
 
-impl Drop for HandyKeysState {
-    fn drop(&mut self) {
-        // Signal recording to stop
-        self.recording_running.store(false, Ordering::SeqCst);
-        self.is_recording.store(false, Ordering::SeqCst);
+    /// Shut down the manager thread and rdev listener.
+    /// Called when switching to another keyboard implementation.
+    pub fn shutdown(&self) {
+        self.stop_recording().ok();
 
-        // Send shutdown command
         if let Ok(sender) = self.command_sender.lock() {
             let _ = sender.send(ManagerCommand::Shutdown);
+            drop(sender);
         }
 
-        // Wait for the manager thread to finish
         if let Ok(mut handle) = self.thread_handle.lock() {
             if let Some(h) = handle.take() {
                 let _ = h.join();
             }
         }
+    }
+
+    /// Returns true if the manager thread is still running.
+    pub fn is_alive(&self) -> bool {
+        self.thread_handle
+            .lock()
+            .map(|h| h.is_some())
+            .unwrap_or(false)
+    }
+}
+
+impl Drop for HandyKeysState {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 

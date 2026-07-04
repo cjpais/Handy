@@ -2446,6 +2446,7 @@ dependencies = [
  "chrono",
  "clap",
  "cpal",
+ "crossbeam-channel",
  "enigo",
  "env_filter",
  "ferrous-opencc",

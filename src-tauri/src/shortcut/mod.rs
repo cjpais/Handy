@@ -312,6 +312,15 @@ pub fn change_keyboard_implementation_setting(
         current_impl, new_impl
     );
 
+    // Shut down the current implementation before switching.
+    // HandyKeys's rdev listener must be stopped, otherwise it keeps
+    // retrying X11 grabs forever on Wayland.
+    if current_impl == KeyboardImplementation::HandyKeys {
+        if let Some(state) = app.try_state::<handy_keys::HandyKeysState>() {
+            state.shutdown();
+        }
+    }
+
     // Unregister all shortcuts from the current implementation
     unregister_all_shortcuts(&app, current_impl);
 
@@ -370,6 +379,22 @@ pub fn get_keyboard_implementation(app: AppHandle) -> String {
         KeyboardImplementation::HandyKeys => "handy_keys".to_string(),
         KeyboardImplementation::Portal => "portal".to_string(),
     }
+}
+
+/// Return the trigger the system actually bound for a portal shortcut.
+/// On Wayland, users can reassign shortcuts in system settings;
+/// this queries the portal via ListShortcuts for the real binding.
+/// Returns None if the portal is not active or the shortcut is unknown.
+#[tauri::command]
+#[specta::specta]
+pub fn get_portal_trigger_description(app: AppHandle, binding_id: String) -> Option<String> {
+    #[cfg(target_os = "linux")]
+    if let Some(state) = app.try_state::<portal_impl::PortalState>() {
+        return state.trigger_description(&binding_id);
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = (app, binding_id);
+    None
 }
 
 // ============================================================================
@@ -506,8 +531,12 @@ fn register_all_shortcuts_for_implementation(
 
 /// Initialize HandyKeys if not already initialized, with rollback on failure
 fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> {
-    if app.try_state::<handy_keys::HandyKeysState>().is_some() {
-        return Ok(false); // Already initialized, caller should continue
+    if app
+        .try_state::<handy_keys::HandyKeysState>()
+        .map(|s| s.is_alive())
+        .unwrap_or(false)
+    {
+        return Ok(false); // Already initialized and alive
     }
 
     if let Err(e) = handy_keys::init_shortcuts(app) {

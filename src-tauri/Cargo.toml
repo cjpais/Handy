@@ -141,6 +141,7 @@ transcribe-cpp = { version = "0.1.1", default-features = false, features = ["met
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = { version = "0.13", features = ["remote_desktop", "screencast", "global_shortcuts"] }
+crossbeam-channel = "0.5"
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 transcribe-cpp = { version = "0.1.1", default-features = false, features = [
