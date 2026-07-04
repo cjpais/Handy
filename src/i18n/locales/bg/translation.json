@@ -384,6 +384,7 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
       "typingDelay": {
         "title": "Забавяне при въвеждане",
         "description": "Контролира скоростта на изпращане на събитията за въвеждане. Увеличете тази стойност, ако символите се въвеждат в грешен ред.",

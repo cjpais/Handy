@@ -139,6 +139,21 @@ build_in_sdk() {
                 ninja -C build install
             fi
 
+            # Build SPIRV-Headers for transcribe-cpp Vulkan backend
+            if [ ! -f "$SDK_PREFIX/share/cmake/SPIRV-Headers/SPIRV-HeadersConfig.cmake" ]; then
+                echo "Building SPIRV-Headers..."
+                cd /tmp
+                curl -sL https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags/vulkan-sdk-1.4.309.0.tar.gz | tar xz
+                cd SPIRV-Headers-vulkan-sdk-1.4.309.0
+                cmake -B build -DCMAKE_INSTALL_PREFIX="$SDK_PREFIX" -DSPIRV_HEADERS_SKIP_EXAMPLES=ON
+                cmake --install build --prefix "$SDK_PREFIX"
+            fi
+
+            export CMAKE_PREFIX_PATH="$SDK_PREFIX:$SDK_PREFIX/lib/cmake:${CMAKE_PREFIX_PATH:-}"
+            export CPATH="$SDK_PREFIX/include:${CPATH:-}"
+            export CPLUS_INCLUDE_PATH="$SDK_PREFIX/include:${CPLUS_INCLUDE_PATH:-}"
+            export CMAKE_INCLUDE_PATH="$SDK_PREFIX/include"
+
             cd "$SDK_PROJECT_ROOT"
 
             # Build frontend and Rust binary via Tauri (--no-bundle skips

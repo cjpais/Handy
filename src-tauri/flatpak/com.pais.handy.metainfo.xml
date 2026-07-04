@@ -82,7 +82,7 @@
   -->
 
   <releases>
-    <release version="0.8.3" date="2026-06-29">
+    <release version="0.9.0" date="2026-07-04">
       <description>
         <p>Wayland native Flatpak release</p>
       </description>
