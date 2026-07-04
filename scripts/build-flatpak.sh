@@ -278,6 +278,7 @@ main() {
         --force-clean \
         --user \
         --disable-cache \
+        --disable-rofiles-fuse \
         --repo="$REPO_DIR" \
         "$BUILD_DIR" \
         "$APP_ID.yaml"
