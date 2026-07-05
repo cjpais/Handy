@@ -306,11 +306,25 @@ fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathB
 /// quant) from the same repo was downloaded. What we flag:
 /// - repo dir present but the ref unreadable (interrupted download), or
 /// - the snapshot entry exists but doesn't resolve (dangling symlink).
+///
+/// A `.sync.part` under `blobs/` is exempt from the first case: hf-hub writes
+/// the ref only after the blob completes, so a repo dir holding a `.sync.part`
+/// and no ref is the *healthy* state of a cancelled or in-flight transfer —
+/// the next download resumes it rather than needing manual cleanup.
 fn warn_if_hf_cache_entry_broken(repo_id: &str, revision: &str, filename: &str) {
     let repo = Repo::with_revision(repo_id.to_string(), RepoType::Model, revision.to_string());
     let repo_dir = Cache::from_env().path().join(repo.folder_name());
     if !repo_dir.exists() {
         return;
+    }
+    if let Ok(blobs) = fs::read_dir(repo_dir.join("blobs")) {
+        if blobs.flatten().any(|e| {
+            e.file_name()
+                .to_str()
+                .is_some_and(|n| n.ends_with(".sync.part"))
+        }) {
+            return;
+        }
     }
     let Ok(commit) = fs::read_to_string(repo_dir.join("refs").join(revision)) else {
         warn!(
@@ -829,7 +843,10 @@ impl ModelManager {
         for model in models.values_mut() {
             if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
                 let artifact = self.local_artifact(model);
-                if artifact.is_none() {
+                // `is_downloading` still holds its pre-refresh value here, so an
+                // in-flight transfer (whose ref hf-hub only writes at the end)
+                // isn't misreported as a broken cache entry.
+                if artifact.is_none() && !model.is_downloading {
                     warn_if_hf_cache_entry_broken(repo_id, revision, &model.filename);
                 }
                 model.is_downloaded = artifact.is_some();
@@ -933,10 +950,21 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Collect filenames of predefined transcribe-cpp file-based models to skip
+        // Filenames a spec-defined entry can claim from the models dir:
+        // Url-sourced (legacy) files live here, and catalog HF entries accept a
+        // drop-in override here (`hf_drop_in`). Scoped to exactly those so a
+        // cache-discovered entry that merely shares a filename can't shadow a
+        // dropped-in file it doesn't own — drop-ins never resolve to
+        // non-catalog entries, so such a file must surface as custom instead,
+        // regardless of whether this scan runs before or after the cache scan.
         let predefined_filenames: HashSet<String> = available_models
             .values()
             .filter(|m| matches!(m.engine_type, EngineType::TranscribeCpp) && !m.is_directory)
+            .filter(|m| match &m.source {
+                ModelSource::Url { .. } => true,
+                ModelSource::HuggingFace { .. } => crate::catalog::is_catalog_model(&m.id),
+                ModelSource::Local => false,
+            })
             .map(|m| m.filename.clone())
             .collect();
 
@@ -1394,6 +1422,9 @@ impl ModelManager {
                 let _ = fs::remove_file(&partial_path);
             }
             self.update_download_status()?;
+            // Mirror the HF short-circuit: the frontend set optimistic
+            // downloading state and clears it on this event.
+            let _ = self.app_handle.emit("model-download-complete", model_id);
             return Ok(());
         }
 
@@ -2073,6 +2104,76 @@ mod tests {
         assert!(!models.contains_key("readme"));
         assert!(!models.contains_key("download.bin"));
         assert!(!models.contains_key("some-directory"));
+    }
+
+    #[test]
+    fn test_drop_in_shadowing_scoped_to_claimable_filenames() {
+        let temp_dir = TempDir::new().unwrap();
+        let models_dir = temp_dir.path().to_path_buf();
+
+        // A drop-in that shares its filename with a model discovered from the
+        // shared HF cache (non-catalog id). The cache entry doesn't own the
+        // models-dir file (`hf_drop_in` is catalog-scoped), so the drop-in must
+        // surface as its own custom entry even when the cache entry is already
+        // registered — the rescan case, where the cache scan ran first.
+        let mut f = File::create(models_dir.join("whisper-q8.gguf")).unwrap();
+        f.write_all(&build_test_gguf_string_metadata(&[(
+            "general.name",
+            "Dropped In",
+        )]))
+        .unwrap();
+
+        // A drop-in matching a *catalog* entry's default filename. That file
+        // satisfies the catalog entry itself, so it must NOT become a custom
+        // entry.
+        let catalog_info = crate::catalog::CATALOG[0].to_model_info(&DiskStatus::default());
+        File::create(models_dir.join(&catalog_info.filename)).unwrap();
+
+        let mut models = HashMap::new();
+        models.insert(catalog_info.id.clone(), catalog_info.clone());
+        models.insert(
+            "someorg/whisper-repo/whisper-q8.gguf".to_string(),
+            ModelInfo {
+                id: "someorg/whisper-repo/whisper-q8.gguf".to_string(),
+                name: "Cache Find".to_string(),
+                description: "From Hugging Face cache: someorg/whisper-repo".to_string(),
+                filename: "whisper-q8.gguf".to_string(),
+                source: ModelSource::HuggingFace {
+                    repo_id: "someorg/whisper-repo".to_string(),
+                    revision: "main".to_string(),
+                },
+                size_mb: 100,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::TranscribeCpp,
+                accuracy_score: 0.0,
+                speed_score: 0.0,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec![],
+                supports_language_selection: false,
+                is_custom: false,
+                supports_streaming: false,
+                supports_language_detection: false,
+                deprecated: false,
+            },
+        );
+
+        ModelManager::discover_custom_transcribe_models(&models_dir, &mut models).unwrap();
+
+        let dropped = models
+            .get("whisper-q8")
+            .expect("drop-in sharing a cache entry's filename must still be discovered");
+        assert!(dropped.is_custom);
+        assert_eq!(dropped.name, "Dropped In");
+
+        let catalog_stem = catalog_info.filename.trim_end_matches(".gguf");
+        assert!(
+            !models.contains_key(catalog_stem),
+            "catalog-filename drop-in must satisfy the catalog entry, not become custom"
+        );
     }
 
     #[test]
