@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -76,6 +76,50 @@ fn paste_via_clipboard(
     let _ = clipboard.write_text(&clipboard_content);
 
     Ok(())
+}
+
+/// Captures the text currently selected in the frontmost application by
+/// simulating Ctrl+C/Cmd+C, then restores the clipboard to what it held
+/// before the call. Returns `None` if nothing was selected (or on failure),
+/// distinguished from stale clipboard content by clearing the clipboard first.
+pub(crate) fn capture_selected_text(app_handle: &AppHandle) -> Option<String> {
+    let enigo_state = app_handle.try_state::<EnigoState>()?;
+    let mut enigo = enigo_state.0.lock().ok()?;
+
+    let clipboard = app_handle.clipboard();
+    let original_content = clipboard.read_text().unwrap_or_default();
+
+    #[cfg(target_os = "linux")]
+    if is_wayland() && is_wl_copy_available() {
+        let _ = write_clipboard_via_wl_copy("");
+    } else {
+        let _ = clipboard.write_text("");
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = clipboard.write_text("");
+
+    if let Err(e) = input::send_copy_ctrl_c(&mut enigo) {
+        warn!("Failed to send copy command: {}", e);
+    }
+
+    std::thread::sleep(Duration::from_millis(150));
+
+    let captured = clipboard.read_text().unwrap_or_default();
+
+    #[cfg(target_os = "linux")]
+    if is_wayland() && is_wl_copy_available() {
+        let _ = write_clipboard_via_wl_copy(&original_content);
+    } else {
+        let _ = clipboard.write_text(&original_content);
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = clipboard.write_text(&original_content);
+
+    if captured.trim().is_empty() {
+        None
+    } else {
+        Some(captured)
+    }
 }
 
 /// Attempts to send a key combination using Linux-native tools.

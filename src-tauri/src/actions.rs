@@ -60,9 +60,14 @@ fn strip_invisible_chars(s: &str) -> String {
 }
 
 /// Build a system prompt from the user's prompt template.
-/// Removes `${output}` placeholder since the transcription is sent as the user message.
-fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template.replace("${output}", "").trim().to_string()
+/// Removes `${output}` placeholder since the transcription is sent as the user message,
+/// and substitutes `${selected}` with the captured selection.
+fn build_system_prompt(prompt_template: &str, selected_text: &str) -> String {
+    prompt_template
+        .replace("${output}", "")
+        .replace("${selected}", selected_text)
+        .trim()
+        .to_string()
 }
 
 /// Returns `true` when a transcription has no meaningful content to
@@ -74,7 +79,11 @@ fn is_blank_transcription(transcription: &str) -> bool {
     transcription.trim().is_empty()
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+async fn post_process_transcription(
+    app: &AppHandle,
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
@@ -130,6 +139,14 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         return None;
     }
 
+    // Only simulate a copy keystroke (which touches the user's clipboard) when
+    // the prompt actually references the selection.
+    let selected_text = if prompt.contains("${selected}") {
+        crate::clipboard::capture_selected_text(app).unwrap_or_default()
+    } else {
+        String::new()
+    };
+
     debug!(
         "Starting LLM post-processing with provider '{}' (model: {})",
         provider.id, model
@@ -160,7 +177,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt);
+        let system_prompt = build_system_prompt(&prompt, &selected_text);
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -274,8 +291,10 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    // Legacy mode: Replace ${output}/${selected} variables in the prompt with the actual text
+    let processed_prompt = prompt
+        .replace("${output}", transcription)
+        .replace("${selected}", &selected_text);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
@@ -408,7 +427,7 @@ pub(crate) async fn process_transcription_output(
     }
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+        if let Some(processed_text) = post_process_transcription(app, &settings, &final_text).await {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
