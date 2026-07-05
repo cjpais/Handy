@@ -75,33 +75,48 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
     // Detach and process in background
     (async () => {
       toast.info(
-        `Started transcription for ${filesToProcess.length} file(s) in background.`,
+        t("localFileTranscriber.startToast", {
+          count: filesToProcess.length,
+        }) ||
+          `Started transcription for ${filesToProcess.length} file(s) in background.`,
       );
 
-      const promises = filesToProcess.map(async (file) => {
+      const results: { file: string; success: boolean }[] = [];
+
+      for (const file of filesToProcess) {
+        const fileName = file.split(/[/\\]/).pop() || file;
         try {
           const result = await commands.processLocalFile(file, targetAction);
           if (result.status === "ok") {
-            return { file, success: true };
+            results.push({ file, success: true });
           } else {
             toast.error(
-              `Failed to process ${file.split(/[/\\]/).pop()}: ${result.error}`,
+              t("localFileTranscriber.failToast", {
+                fileName,
+                error: result.error,
+              }) || `Failed to process ${fileName}: ${result.error}`,
             );
-            return { file, success: false };
+            results.push({ file, success: false });
           }
         } catch (error: any) {
+          const errorMsg = error.message || error;
           toast.error(
-            `Error processing ${file.split(/[/\\]/).pop()}: ${error.message || error}`,
+            t("localFileTranscriber.errorToast", {
+              fileName,
+              error: errorMsg,
+            }) || `Error processing ${fileName}: ${errorMsg}`,
           );
-          return { file, success: false };
+          results.push({ file, success: false });
         }
-      });
+      }
 
-      const results = await Promise.all(promises);
       const successCount = results.filter((r) => r.success).length;
 
       if (successCount > 0) {
-        toast.success(`Successfully processed ${successCount} file(s)`);
+        toast.success(
+          t("localFileTranscriber.successToast", { count: successCount }) ||
+            `Successfully processed ${successCount} file(s)`,
+        );
         onSuccess(targetAction);
       }
     })();

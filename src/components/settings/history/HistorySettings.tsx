@@ -287,7 +287,7 @@ export const HistorySettings: React.FC = () => {
           initial="hidden"
           animate="visible"
         >
-          <AnimatePresence initial={false}>
+          <AnimatePresence>
             {entries.map((entry) => (
               <motion.div
                 key={entry.id}
@@ -296,6 +296,7 @@ export const HistorySettings: React.FC = () => {
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
                 transition={{
                   opacity: { duration: 0.2 },
                   layout: { type: "spring", bounce: 0, duration: 0.4 },

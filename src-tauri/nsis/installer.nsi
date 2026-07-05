@@ -599,6 +599,8 @@ Function .onInit
     FileClose $1
     ${If} $2 == "ThegAi Portable Mode"
       StrCpy $PortableMode 1
+    ${OrIf} $2 == "Handy Portable Mode"
+      StrCpy $PortableMode 1
     ${OrIf} $2 == ""
     ${AndIf} ${FileExists} "$INSTDIR\Data"
       StrCpy $PortableMode 1

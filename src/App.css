@@ -130,6 +130,10 @@
   /* Apply colors */
   color: var(--color-text);
   background-color: var(--color-background);
+
+  /* Easing variables */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 .container {
@@ -223,9 +227,18 @@
 }
 .markdown-summary h2 {
   font-size: 1.25rem;
+  border-left: 3px solid var(--color-forest-green);
+  padding-left: 0.75rem;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
 }
 .markdown-summary h3 {
   font-size: 1.1rem;
+  border-left: 2px solid var(--color-terracotta);
+  padding-left: 0.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 .markdown-summary ul,
 .markdown-summary ol {
@@ -248,10 +261,6 @@
 }
 
 /* Redesign updates */
-:root {
-  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
-}
 
 .meeting-card-collapsed {
   transition:
@@ -299,19 +308,4 @@
 }
 .markdown-answer li {
   margin-bottom: 0.25rem;
-}
-
-/* Premium Heading Accent */
-.markdown-summary h2 {
-  border-left: 3px solid var(--color-forest-green);
-  padding-left: 0.75rem;
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
-  line-height: 1.3;
-}
-.markdown-summary h3 {
-  border-left: 2px solid var(--color-terracotta);
-  padding-left: 0.5rem;
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
 }

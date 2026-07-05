@@ -105,6 +105,8 @@ export const FloatingBar: React.FC<FloatingBarProps> = ({
                 <button
                   onClick={() => setIsHistoryOpen(false)}
                   className="text-bark-grey hover:text-charcoal p-0.5 rounded transition-colors"
+                  aria-label={t("common.close") || "Close"}
+                  title={t("common.close") || "Close"}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -183,6 +185,10 @@ export const FloatingBar: React.FC<FloatingBarProps> = ({
                 <button
                   onClick={() => onSearchChange("")}
                   className="text-bark-grey hover:text-charcoal p-1 transition-colors"
+                  aria-label={
+                    t("settings.meetings.clearSearch") || "Clear search"
+                  }
+                  title={t("settings.meetings.clearSearch") || "Clear search"}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -206,7 +212,14 @@ export const FloatingBar: React.FC<FloatingBarProps> = ({
                       ? "bg-forest-green/10 text-forest-green"
                       : "text-bark-grey hover:text-charcoal hover:bg-warm-bone/40"
                   }`}
-                  title="Toggle Chat History"
+                  title={
+                    t("settings.meetings.toggleChatHistory") ||
+                    "Toggle Chat History"
+                  }
+                  aria-label={
+                    t("settings.meetings.toggleChatHistory") ||
+                    "Toggle Chat History"
+                  }
                 >
                   <MessageSquare className="w-4 h-4" />
                 </button>
@@ -229,6 +242,8 @@ export const FloatingBar: React.FC<FloatingBarProps> = ({
                 onClick={handleSend}
                 disabled={isSendingChat || !chatInput.trim()}
                 className="p-2 rounded-xl bg-forest-green hover:bg-deep-forest-green disabled:opacity-40 disabled:cursor-not-allowed text-orange-off-white transition-all duration-150 active:scale-95 flex items-center justify-center cursor-pointer shadow-md"
+                title={t("settings.meetings.sendChat") || "Send message"}
+                aria-label={t("settings.meetings.sendChat") || "Send message"}
               >
                 {isSendingChat ? (
                   <span className="w-4 h-4 border-2 border-orange-off-white border-t-transparent rounded-full animate-spin"></span>

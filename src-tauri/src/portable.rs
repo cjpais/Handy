@@ -95,7 +95,11 @@ pub fn store_path(relative: &str) -> PathBuf {
 /// Extracted for testability.
 fn is_valid_portable_marker(path: &std::path::Path) -> bool {
     std::fs::read_to_string(path)
-        .map(|s| s.trim().starts_with("ThegAi Portable Mode"))
+        .map(|s| {
+            let s_trimmed = s.trim();
+            s_trimmed.starts_with("ThegAi Portable Mode")
+                || s_trimmed.starts_with("Handy Portable Mode")
+        })
         .unwrap_or(false)
 }
 
@@ -111,6 +115,17 @@ mod tests {
         let marker = dir.join("portable");
         let mut f = std::fs::File::create(&marker).unwrap();
         write!(f, "ThegAi Portable Mode").unwrap();
+        assert!(is_valid_portable_marker(&marker));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn test_legacy_handy_magic_string_enables_portable() {
+        let dir = std::env::temp_dir().join("thegai_test_legacy_handy");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("portable");
+        let mut f = std::fs::File::create(&marker).unwrap();
+        write!(f, "Handy Portable Mode").unwrap();
         assert!(is_valid_portable_marker(&marker));
         std::fs::remove_dir_all(dir).unwrap();
     }

@@ -813,7 +813,7 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
         {
             Some(existing) => {
                 if existing.id == "default_meeting_summary"
-                    && !existing.prompt.contains("Do NOT translate")
+                    && !existing.prompt.contains("GitHub-style alerts")
                 {
                     existing.prompt = prompt.prompt.clone();
                     changed = true;

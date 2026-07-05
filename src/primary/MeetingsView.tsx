@@ -52,9 +52,19 @@ function isMeetingEntry(entry: HistoryEntry): boolean {
 const InteractiveTaskListItem: React.FC<{ children?: React.ReactNode }> = ({
   children,
 }) => {
-  const [checked, setChecked] = useState(false);
-
   const childrenArray = React.Children.toArray(children);
+
+  // Find if there is an input checkbox to determine initial state
+  const checkboxChild = childrenArray.find(
+    (child: any) =>
+      child?.type === "input" && child?.props?.type === "checkbox",
+  ) as any;
+
+  const initialChecked = !!(
+    checkboxChild?.props?.checked || checkboxChild?.props?.defaultChecked
+  );
+
+  const [checked, setChecked] = useState(initialChecked);
 
   // Filter out the default input checkbox rendered by react-markdown / remark-gfm
   const textContent = childrenArray.filter(
@@ -290,7 +300,11 @@ export const MeetingsView: React.FC = () => {
 
       for (let i = 0; i < e.dataTransfer.files.length; i++) {
         const file = e.dataTransfer.files[i];
-        const path = (file as any).path || file.name;
+        const path = (file as any).path;
+        if (!path) {
+          ignoredFiles.push(file.name);
+          continue;
+        }
         const ext = path.split(".").pop()?.toLowerCase();
         const isAudio =
           ext && ["wav", "mp3", "m4a", "flac", "ogg"].includes(ext);
@@ -303,7 +317,11 @@ export const MeetingsView: React.FC = () => {
       }
 
       if (ignoredFiles.length > 0) {
-        toast.error(`Ignored unsupported file(s): ${ignoredFiles.join(", ")}`);
+        toast.error(
+          t("settings.meetings.ignoredUnsupportedFiles", {
+            files: ignoredFiles.join(", "),
+          }) || `Ignored unsupported file(s): ${ignoredFiles.join(", ")}`,
+        );
       }
 
       if (droppedFiles.length > 0) {
@@ -390,17 +408,6 @@ export const MeetingsView: React.FC = () => {
     setExpandTranscript(false);
     setDetailViewMode("summary");
   }, [selectedMeeting?.id]);
-
-  // Disable right-click menu and custom context menu globally
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener("contextmenu", handleContextMenu);
-    return () => {
-      window.removeEventListener("contextmenu", handleContextMenu);
-    };
-  }, []);
 
   // Helper to extract parsed title, subtitle, and time pill
   const getMeetingMetadata = useCallback(
@@ -748,7 +755,14 @@ export const MeetingsView: React.FC = () => {
     ) {
       try {
         const parsed = JSON.parse(entry.post_processed_text);
-        text = parsed.summary || entry.post_processed_text;
+        let summary = parsed.summary || "";
+        if (parsed.action_items && parsed.action_items.length > 0) {
+          const actionMarkdown = parsed.action_items
+            .map((item: string) => `- [ ] ${item}`)
+            .join("\n");
+          summary += `\n\n## Action Items\n${actionMarkdown}`;
+        }
+        text = summary || entry.post_processed_text;
       } catch (e) {
         text = entry.post_processed_text;
       }
@@ -948,7 +962,8 @@ export const MeetingsView: React.FC = () => {
                   onClick={() => {
                     if (
                       confirm(
-                        "Are you sure you want to delete this meeting summary?",
+                        t("settings.meetings.deleteConfirmation") ||
+                          "Are you sure you want to delete this meeting summary?",
                       )
                     ) {
                       void deleteMeeting(selectedMeeting.id);
@@ -996,7 +1011,8 @@ export const MeetingsView: React.FC = () => {
                       ? "bg-forest-green text-orange-off-white"
                       : "text-bark-grey hover:text-charcoal hover:bg-stone-mist/40"
                   }`}
-                  title="Summary"
+                  title={t("settings.meetings.summaryTab") || "Summary"}
+                  aria-label={t("settings.meetings.summaryTab") || "Summary"}
                 >
                   <Sparkles className="w-4 h-4" />
                 </button>
@@ -1008,7 +1024,10 @@ export const MeetingsView: React.FC = () => {
                       ? "bg-forest-green text-orange-off-white"
                       : "text-bark-grey hover:text-charcoal hover:bg-stone-mist/40"
                   }`}
-                  title="Transcript"
+                  title={t("settings.meetings.transcriptTab") || "Transcript"}
+                  aria-label={
+                    t("settings.meetings.transcriptTab") || "Transcript"
+                  }
                 >
                   <FileText className="w-4 h-4" />
                 </button>
@@ -1063,7 +1082,11 @@ export const MeetingsView: React.FC = () => {
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
-                        <span>{showTranscriptCopied ? "Copied" : "Copy"}</span>
+                        <span>
+                          {showTranscriptCopied
+                            ? t("settings.meetings.copied") || "Copied"
+                            : t("settings.meetings.copy") || "Copy"}
+                        </span>
                       </button>
                     </div>
                     <div className="text-sm text-bark-grey whitespace-pre-wrap leading-relaxed select-text font-normal font-sans max-h-96 overflow-y-auto pr-2 scrollbar-thin">

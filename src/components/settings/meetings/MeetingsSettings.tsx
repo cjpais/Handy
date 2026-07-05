@@ -620,7 +620,14 @@ export const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
     ) {
       try {
         const parsed = JSON.parse(entry.post_processed_text);
-        return parsed.summary || entry.post_processed_text;
+        let summary = parsed.summary || "";
+        if (parsed.action_items && parsed.action_items.length > 0) {
+          const actionMarkdown = parsed.action_items
+            .map((item: string) => `- [ ] ${item}`)
+            .join("\n");
+          summary += `\n\n## Action Items\n${actionMarkdown}`;
+        }
+        return summary || entry.post_processed_text;
       } catch (e) {
         return entry.post_processed_text;
       }
