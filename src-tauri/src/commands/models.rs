@@ -104,7 +104,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
         .get_model_info(model_id)
         .ok_or_else(|| format!("Model not found: {}", model_id))?;
 
-    if !model_info.is_downloaded {
+    if !model_info.is_downloaded() {
         return Err(format!("Model not downloaded: {}", model_id));
     }
 

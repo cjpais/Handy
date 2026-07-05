@@ -18,7 +18,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   onModelSelect,
 }) => {
   const { t } = useTranslation();
-  const downloadedModels = models.filter((m) => m.is_downloaded);
+  const downloadedModels = models.filter((m) => m.status === "downloaded");
 
   const handleModelClick = (modelId: string) => {
     onModelSelect(modelId);

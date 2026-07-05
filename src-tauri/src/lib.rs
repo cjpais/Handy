@@ -128,7 +128,7 @@ fn should_force_show_permissions_window(app: &AppHandle) -> bool {
         let has_downloaded_models = model_manager
             .get_available_models()
             .iter()
-            .any(|model| model.is_downloaded);
+            .any(|model| model.is_downloaded());
 
         if !has_downloaded_models {
             return false;
@@ -373,7 +373,7 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
             println!("Available models (✓ = installed):");
             let width = models.iter().map(|m| m.id.len()).max().unwrap_or(0);
             for m in &models {
-                let mark = if m.is_downloaded { "✓" } else { " " };
+                let mark = if m.is_downloaded() { "✓" } else { " " };
                 let rec = if m.is_recommended {
                     "  [recommended]"
                 } else {

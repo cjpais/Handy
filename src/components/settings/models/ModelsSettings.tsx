@@ -103,7 +103,7 @@ export const ModelsSettings: React.FC = () => {
       return "active";
     }
     const model = models.find((m: ModelInfo) => m.id === modelId);
-    if (model?.is_downloaded) {
+    if (model?.status === "downloaded") {
       return "available";
     }
     return "downloadable";
@@ -169,7 +169,7 @@ export const ModelsSettings: React.FC = () => {
     const q = searchQuery.trim().toLowerCase();
     return models.filter((model: ModelInfo) => {
       // Hide deprecated legacy (.bin/ONNX) downloads unless already on disk.
-      if (isLegacyModel(model) && !model.is_downloaded) return false;
+      if (isLegacyModel(model) && model.status !== "downloaded") return false;
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }
@@ -189,7 +189,7 @@ export const ModelsSettings: React.FC = () => {
     for (const model of filteredModels) {
       if (
         model.is_custom ||
-        model.is_downloaded ||
+        model.status === "downloaded" ||
         model.id in downloadingModels ||
         model.id in extractingModels
       ) {

@@ -86,7 +86,7 @@ export const useModelStore = create<ModelsStore>()(
             produce((state) => {
               const backendDownloading: Record<string, true> = {};
               result.data
-                .filter((m) => m.is_downloading)
+                .filter((m) => m.status === "downloading")
                 .forEach((m) => {
                   backendDownloading[m.id] = true;
                 });

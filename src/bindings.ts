@@ -911,7 +911,7 @@ reset_bindings: string[] }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
-export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean; 
+export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; status: ModelState; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean; 
 /**
  * Retired legacy models (frozen in `legacy.json`): kept working for users
  * who already downloaded them, hidden from new downloads in the UI.
@@ -942,6 +942,23 @@ sha256: string | null } } |
  * in a shared cache. Nothing to download.
  */
 "Local"
+/**
+ * Where a model is in its local-artifact lifecycle. Strictly linear
+ * (not_downloaded → downloading → verifying → extracting → downloaded), and
+ * backend-owned: the frontend renders it directly instead of reconstructing
+ * state from a trail of events. The in-flight states are written only by the
+ * task performing the work; `update_download_status` recomputes the two
+ * resting states from disk and never touches an in-flight entry.
+ */
+export type ModelState = "not_downloaded" | "downloading" | 
+/**
+ * SHA-256 check after a URL download (legacy models only).
+ */
+"verifying" | 
+/**
+ * tar.gz unpack for directory models (legacy models only).
+ */
+"extracting" | "downloaded"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "top" | "bottom"

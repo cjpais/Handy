@@ -475,7 +475,7 @@ impl TranscriptionManager {
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if !model_info.is_downloaded {
+        if !model_info.is_downloaded() {
             let error_msg = "Model not downloaded";
             let _ = self.app_handle.emit(
                 "model-state-changed",

@@ -56,6 +56,35 @@ pub enum ModelSource {
     Local,
 }
 
+/// Where a model is in its local-artifact lifecycle. Strictly linear
+/// (not_downloaded → downloading → verifying → extracting → downloaded), and
+/// backend-owned: the frontend renders it directly instead of reconstructing
+/// state from a trail of events. The in-flight states are written only by the
+/// task performing the work; `update_download_status` recomputes the two
+/// resting states from disk and never touches an in-flight entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ModelState {
+    #[default]
+    NotDownloaded,
+    Downloading,
+    /// SHA-256 check after a URL download (legacy models only).
+    Verifying,
+    /// tar.gz unpack for directory models (legacy models only).
+    Extracting,
+    Downloaded,
+}
+
+impl ModelState {
+    /// A task (download / verify / extract) currently owns this entry's state.
+    fn is_in_flight(self) -> bool {
+        matches!(
+            self,
+            ModelState::Downloading | ModelState::Verifying | ModelState::Extracting
+        )
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct ModelInfo {
     pub id: String,
@@ -64,9 +93,7 @@ pub struct ModelInfo {
     pub filename: String,
     pub source: ModelSource,
     pub size_mb: u64,
-    pub is_downloaded: bool,
-    pub is_downloading: bool,
-    pub partial_size: u64,
+    pub status: ModelState,
     pub is_directory: bool,
     pub engine_type: EngineType,
     pub accuracy_score: f32,        // 0.0 to 1.0, higher is more accurate
@@ -82,6 +109,12 @@ pub struct ModelInfo {
     /// who already downloaded them, hidden from new downloads in the UI.
     #[serde(default)]
     pub deprecated: bool,
+}
+
+impl ModelInfo {
+    pub fn is_downloaded(&self) -> bool {
+        self.status == ModelState::Downloaded
+    }
 }
 
 const CHINESE_LANGUAGE_CODE: &str = "zh";
@@ -142,19 +175,9 @@ pub(crate) fn default_quant_file<'a>(
         .or_else(|| files.first())
 }
 
-/// Live, on-disk status — the half of [`ModelInfo`] that isn't part of the
-/// static spec. Kept separate so a descriptor stays purely descriptive and
-/// status can be recomputed without rebuilding it.
-#[derive(Debug, Clone, Default)]
-pub struct DiskStatus {
-    pub is_downloaded: bool,
-    pub is_downloading: bool,
-    pub partial_size: u64,
-}
-
 /// The spec of a bundled model: everything in `catalog.json` / `legacy.json`
 /// normalised into one shape, rendered into the frontend-facing [`ModelInfo`]
-/// via [`ModelDescriptor::to_model_info`] by combining it with a [`DiskStatus`].
+/// via [`ModelDescriptor::to_model_info`] by combining it with a [`ModelState`].
 /// (The on-disk scans still build `ModelInfo` directly.)
 #[derive(Debug, Clone)]
 pub struct ModelDescriptor {
@@ -194,7 +217,7 @@ impl ModelDescriptor {
 
     /// Render the frontend-facing [`ModelInfo`] by combining this spec with live
     /// disk `status`.
-    pub fn to_model_info(&self, status: &DiskStatus) -> ModelInfo {
+    pub fn to_model_info(&self, status: ModelState) -> ModelInfo {
         let file = self.default_file();
         let languages =
             canonicalize_supported_languages(self.caps.languages.clone().unwrap_or_default());
@@ -205,9 +228,7 @@ impl ModelDescriptor {
             filename: file.map(|f| f.filename.clone()).unwrap_or_default(),
             source: self.source.clone(),
             size_mb: file.map(|f| f.size_bytes / (1024 * 1024)).unwrap_or(0),
-            is_downloaded: status.is_downloaded,
-            is_downloading: status.is_downloading,
-            partial_size: status.partial_size,
+            status,
             is_directory: self.is_directory,
             engine_type: self.engine_type.clone(),
             accuracy_score: self.accuracy_score,
@@ -482,9 +503,10 @@ impl Drop for RescanGuard {
     }
 }
 
-/// RAII guard that cleans up download state (`is_downloading` flag and cancel flag)
-/// when dropped, unless explicitly disarmed. This ensures consistent cleanup on
-/// every error path without requiring manual cleanup at each `?` or `return Err`.
+/// RAII guard that cleans up download state (in-flight [`ModelState`] and
+/// cancel flag) when dropped, unless explicitly disarmed. This ensures
+/// consistent cleanup on every error path without requiring manual cleanup at
+/// each `?` or `return Err`.
 struct DownloadCleanup<'a> {
     available_models: &'a Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: &'a Arc<Mutex<HashMap<String, CancellationToken>>>,
@@ -500,7 +522,11 @@ impl<'a> Drop for DownloadCleanup<'a> {
         {
             let mut models = self.available_models.lock().unwrap();
             if let Some(model) = models.get_mut(self.model_id.as_str()) {
-                model.is_downloading = false;
+                // The artifact is incomplete on every non-disarmed path
+                // (error or cancel), so the resting state is NotDownloaded.
+                if model.status.is_in_flight() {
+                    model.status = ModelState::NotDownloaded;
+                }
             }
         }
         self.cancel_flags.lock().unwrap().remove(&self.model_id);
@@ -512,7 +538,6 @@ pub struct ModelManager {
     models_dir: PathBuf,
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, CancellationToken>>>,
-    extracting_models: Arc<Mutex<HashSet<String>>>,
     /// Single-flight guard for [`Self::rescan_local_models`] so concurrent
     /// refresh requests coalesce instead of scanning the disk in parallel.
     is_rescanning: Arc<AtomicBool>,
@@ -557,7 +582,6 @@ impl ModelManager {
             models_dir,
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
-            extracting_models: Arc::new(Mutex::new(HashSet::new())),
             is_rescanning: Arc::new(AtomicBool::new(false)),
         };
 
@@ -614,7 +638,7 @@ impl ModelManager {
         let mut added = 0usize;
         for desc in descriptors {
             if let Entry::Vacant(slot) = available_models.entry(desc.id.clone()) {
-                slot.insert(desc.to_model_info(&DiskStatus::default()));
+                slot.insert(desc.to_model_info(ModelState::NotDownloaded));
                 added += 1;
             }
         }
@@ -638,9 +662,8 @@ impl ModelManager {
     /// The merge is additive: only new ids are inserted, so existing entries keep
     /// their values — including runtime-probed capabilities from
     /// [`Self::set_runtime_capabilities`]. It then runs [`Self::update_download_status`],
-    /// which recomputes disk-derived flags for *every* entry; a rescan racing an
-    /// in-flight download can briefly clear its `is_downloading`, but the download
-    /// continues and the event-driven UI self-corrects.
+    /// which recomputes the resting states from disk; in-flight entries are
+    /// skipped there, so a rescan racing a download cannot clobber its state.
     ///
     /// The disk walk and 64 KiB header probes run against a cloned snapshot
     /// *off-lock* so readers never block on I/O; only the brief merge takes the
@@ -837,50 +860,51 @@ impl ModelManager {
         }
     }
 
+    /// Set a model's lifecycle state in the registry. State only; callers
+    /// decide whether and how to notify the frontend.
+    fn set_state(&self, model_id: &str, state: ModelState) {
+        let mut models = self.available_models.lock().unwrap();
+        if let Some(model) = models.get_mut(model_id) {
+            model.status = state;
+        }
+    }
+
     fn update_download_status(&self) -> Result<()> {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
-            if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
-                let artifact = self.local_artifact(model);
-                // `is_downloading` still holds its pre-refresh value here, so an
-                // in-flight transfer (whose ref hf-hub only writes at the end)
-                // isn't misreported as a broken cache entry.
-                if artifact.is_none() && !model.is_downloading {
-                    warn_if_hf_cache_entry_broken(repo_id, revision, &model.filename);
-                }
-                model.is_downloaded = artifact.is_some();
-                model.is_downloading = false;
-                model.partial_size = 0;
+            // The task doing the work owns an in-flight entry's state; the disk
+            // can't tell us more than it already knows, and recomputing here
+            // would clobber it (e.g. a rescan racing a download). The task
+            // settles the state to Downloaded / NotDownloaded when it finishes.
+            if model.status.is_in_flight() {
                 continue;
             }
-            if model.is_directory {
-                let extracting_path = self
-                    .models_dir
-                    .join(format!("{}.extracting", &model.filename));
-
-                // Clean up any leftover .extracting directories from interrupted extractions
-                // But only if this model is NOT currently being extracted
-                let is_currently_extracting = {
-                    let extracting = self.extracting_models.lock().unwrap();
-                    extracting.contains(&model.id)
-                };
-                if extracting_path.exists() && !is_currently_extracting {
-                    warn!("Cleaning up interrupted extraction for model: {}", model.id);
-                    let _ = fs::remove_dir_all(&extracting_path);
+            let downloaded = if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
+                let artifact = self.local_artifact(model);
+                if artifact.is_none() {
+                    warn_if_hf_cache_entry_broken(repo_id, revision, &model.filename);
                 }
-            }
-
-            let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
-            model.is_downloaded = self.local_artifact(model).is_some();
-            model.is_downloading = false;
-            // Partial size of the in-progress artifact (.tar.gz for directory
-            // models), if any.
-            if partial_path.exists() {
-                model.partial_size = partial_path.metadata().map(|m| m.len()).unwrap_or(0);
+                artifact.is_some()
             } else {
-                model.partial_size = 0;
-            }
+                if model.is_directory {
+                    // Clean up leftovers from an interrupted extraction (the
+                    // in-flight skip above keeps live extractions out of here).
+                    let extracting_path = self
+                        .models_dir
+                        .join(format!("{}.extracting", &model.filename));
+                    if extracting_path.exists() {
+                        warn!("Cleaning up interrupted extraction for model: {}", model.id);
+                        let _ = fs::remove_dir_all(&extracting_path);
+                    }
+                }
+                self.local_artifact(model).is_some()
+            };
+            model.status = if downloaded {
+                ModelState::Downloaded
+            } else {
+                ModelState::NotDownloaded
+            };
         }
 
         Ok(())
@@ -920,7 +944,7 @@ impl ModelManager {
             if let Some(available_model) = self
                 .get_available_models()
                 .into_iter()
-                .find(|model| model.is_downloaded)
+                .find(|model| model.is_downloaded())
             {
                 info!(
                     "Auto-selecting model: {} ({})",
@@ -1070,9 +1094,7 @@ impl ModelManager {
                     filename,
                     source: ModelSource::Local, // already on disk; nothing to download
                     size_mb,
-                    is_downloaded: true, // Already present on disk
-                    is_downloading: false,
-                    partial_size: 0,
+                    status: ModelState::Downloaded, // already present on disk
                     is_directory: false,
                     engine_type: EngineType::TranscribeCpp,
                     accuracy_score: 0.0, // Sentinel: UI hides score bars when both are 0
@@ -1200,9 +1222,7 @@ impl ModelManager {
                             revision: revision.clone(),
                         },
                         size_mb,
-                        is_downloaded: true,
-                        is_downloading: false,
-                        partial_size: 0,
+                        status: ModelState::Downloaded,
                         is_directory: false,
                         engine_type: EngineType::TranscribeCpp,
                         accuracy_score: 0.0,
@@ -1306,13 +1326,8 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Mark downloading; the guard resets the flag on any error path.
-        {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(&model_id) {
-                model.is_downloading = true;
-            }
-        }
+        // Mark downloading; the guard resets the state on any error path.
+        self.set_state(&model_id, ModelState::Downloading);
 
         // Register a cancellation token so `cancel_download` can abort this
         // transfer promptly. The guard removes it on every exit path.
@@ -1370,7 +1385,7 @@ impl ModelManager {
         }
 
         cleanup.disarmed = true;
-        self.update_download_status()?;
+        self.set_state(&model_id, ModelState::Downloaded);
         self.cancel_flags.lock().unwrap().remove(&model_id);
         let _ = self.app_handle.emit("model-download-complete", &model_id);
         info!("HF model {} downloaded", model_id);
@@ -1439,12 +1454,7 @@ impl ModelManager {
         };
 
         // Mark as downloading
-        {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(model_id) {
-                model.is_downloading = true;
-            }
-        }
+        self.set_state(model_id, ModelState::Downloading);
 
         // Create cancellation token for this download
         let cancel_token = CancellationToken::new();
@@ -1609,6 +1619,7 @@ impl ModelManager {
         // Verify SHA256 checksum. Runs in a blocking thread so the async executor is not
         // stalled while hashing large model files (up to 1.6 GB). On failure the partial
         // is deleted inside verify_sha256 so the next attempt always starts fresh.
+        self.set_state(model_id, ModelState::Verifying);
         let _ = self.app_handle.emit("model-verification-started", model_id);
         info!("Verifying SHA256 for model {}...", model_id);
         let verify_path = partial_path.clone();
@@ -1626,11 +1637,7 @@ impl ModelManager {
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
-            // Track that this model is being extracted
-            {
-                let mut extracting = self.extracting_models.lock().unwrap();
-                extracting.insert(model_id.to_string());
-            }
+            self.set_state(model_id, ModelState::Extracting);
 
             // Emit extraction started event
             let _ = self.app_handle.emit("model-extraction-started", model_id);
@@ -1663,11 +1670,7 @@ impl ModelManager {
                 // Delete the corrupt partial file so the next download attempt starts fresh
                 // instead of resuming from a broken archive (issue #858).
                 let _ = fs::remove_file(&partial_path);
-                // Remove from extracting set
-                {
-                    let mut extracting = self.extracting_models.lock().unwrap();
-                    extracting.remove(model_id);
-                }
+                // The cleanup guard settles the state when this error propagates.
                 let _ = self.app_handle.emit(
                     "model-extraction-failed",
                     &serde_json::json!({
@@ -1702,11 +1705,6 @@ impl ModelManager {
             }
 
             info!("Successfully extracted archive for model: {}", model_id);
-            // Remove from extracting set
-            {
-                let mut extracting = self.extracting_models.lock().unwrap();
-                extracting.remove(model_id);
-            }
             // Emit extraction completed event
             let _ = self.app_handle.emit("model-extraction-completed", model_id);
 
@@ -1717,17 +1715,10 @@ impl ModelManager {
             fs::rename(&partial_path, &model_path)?;
         }
 
-        // Disarm the guard — success path does its own cleanup because it
-        // additionally sets is_downloaded = true.
+        // Disarm the guard — success settles the state to Downloaded instead
+        // of the guard's NotDownloaded.
         cleanup.disarmed = true;
-        {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(model_id) {
-                model.is_downloading = false;
-                model.is_downloaded = true;
-                model.partial_size = 0;
-            }
-        }
+        self.set_state(model_id, ModelState::Downloaded);
         self.cancel_flags.lock().unwrap().remove(model_id);
 
         // Emit completion event
@@ -1855,16 +1846,15 @@ impl ModelManager {
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if !model_info.is_downloaded {
-            return Err(anyhow::anyhow!("Model not available: {}", model_id));
-        }
-
         // Ensure we don't return partial files/directories
-        if model_info.is_downloading {
+        if model_info.status.is_in_flight() {
             return Err(anyhow::anyhow!(
                 "Model is currently downloading: {}",
                 model_id
             ));
+        }
+        if !model_info.is_downloaded() {
+            return Err(anyhow::anyhow!("Model not available: {}", model_id));
         }
 
         if matches!(model_info.source, ModelSource::HuggingFace { .. }) {
@@ -1909,11 +1899,14 @@ impl ModelManager {
             }
         }
 
-        // Update state immediately for UI responsiveness
+        // Update state immediately for UI responsiveness. The unwinding task's
+        // cleanup guard only touches in-flight states, so this doesn't race it.
         {
             let mut models = self.available_models.lock().unwrap();
             if let Some(model) = models.get_mut(model_id) {
-                model.is_downloading = false;
+                if model.status == ModelState::Downloading {
+                    model.status = ModelState::NotDownloaded;
+                }
             }
         }
 
@@ -2049,9 +2042,7 @@ mod tests {
                     sha256: None,
                 },
                 size_mb: 100,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
+                status: ModelState::NotDownloaded,
                 is_directory: false,
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.5,
@@ -2081,7 +2072,7 @@ mod tests {
         assert_eq!(custom.name, "My Custom Model");
         assert_eq!(custom.filename, "my-custom-model.bin");
         assert!(matches!(custom.source, ModelSource::Local)); // Custom models have no remote source
-        assert!(custom.is_downloaded);
+        assert!(custom.is_downloaded());
         assert!(custom.is_custom);
         assert_eq!(custom.accuracy_score, 0.0);
         assert_eq!(custom.speed_score, 0.0);
@@ -2126,7 +2117,7 @@ mod tests {
         // A drop-in matching a *catalog* entry's default filename. That file
         // satisfies the catalog entry itself, so it must NOT become a custom
         // entry.
-        let catalog_info = crate::catalog::CATALOG[0].to_model_info(&DiskStatus::default());
+        let catalog_info = crate::catalog::CATALOG[0].to_model_info(ModelState::NotDownloaded);
         File::create(models_dir.join(&catalog_info.filename)).unwrap();
 
         let mut models = HashMap::new();
@@ -2143,9 +2134,7 @@ mod tests {
                     revision: "main".to_string(),
                 },
                 size_mb: 100,
-                is_downloaded: true,
-                is_downloading: false,
-                partial_size: 0,
+                status: ModelState::Downloaded,
                 is_directory: false,
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.0,
@@ -2333,7 +2322,7 @@ mod tests {
 
         let id = "handy-computer/whisper-test/whisper-q8.gguf";
         let m = models.get(id).expect("whisper gguf should be discovered");
-        assert!(m.is_downloaded);
+        assert!(m.is_downloaded());
         assert!(
             matches!(&m.source, ModelSource::HuggingFace { repo_id, revision }
             if repo_id == "handy-computer/whisper-test" && revision == "main")
