@@ -1230,13 +1230,6 @@ impl TranscriptionManager {
                             task: run_plan.task,
                             language: run_plan.language,
                             target_language: run_plan.target_language,
-                            // Leave `timestamps` at its default (`Auto` — richest the
-                            // family supports). Auto keeps whisper's timestamps on, so
-                            // long-form (>30s) decode stays stable rather than degenerating
-                            // into the repetition loop whisper.cpp hits when an initial
-                            // prompt is set AND timestamps are off. Forcing `None` also
-                            // misbehaves on some non-whisper arches, so we no longer override
-                            // per-arch and let each family resolve its own richest granularity.
                             family,
                             ..Default::default()
                         };
