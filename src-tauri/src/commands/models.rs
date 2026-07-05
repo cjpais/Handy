@@ -54,6 +54,35 @@ pub async fn download_model(
         );
     }
 
+    if result.is_ok() {
+        // A model the user just downloaded is the one they want active, so the
+        // backend switches to it — the single selection authority (this policy
+        // used to live in a frontend model-download-complete listener). Skipped
+        // during onboarding, whose flow selects explicitly and must not be
+        // completed out from under it, and while recording. Detached because
+        // switching loads the model (seconds); the download response must not
+        // wait on that.
+        let app = app_handle.clone();
+        let manager = model_manager.inner().clone();
+        let id = model_id.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            // Ok also covers a user-cancelled download; only switch to a model
+            // that actually landed on disk.
+            let downloaded = manager
+                .get_model_info(&id)
+                .is_some_and(|m| m.is_downloaded());
+            if !downloaded || !get_settings(&app).onboarding_completed {
+                return;
+            }
+            if crate::commands::audio::is_recording(app.clone()) {
+                return;
+            }
+            if let Err(e) = switch_active_model(&app, &id) {
+                log::warn!("Auto-select after download failed for {}: {}", id, e);
+            }
+        });
+    }
+
     result
 }
 

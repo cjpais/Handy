@@ -97,29 +97,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       },
     );
 
-    // Auto-select model when download completes (fires after extraction too)
-    const downloadCompleteUnlisten = listen<string>(
-      "model-download-complete",
-      (event) => {
-        const modelId = event.payload;
-        setTimeout(async () => {
-          try {
-            const isRecording = await commands.isRecording();
-            if (!isRecording) {
-              setPendingModelId(modelId);
-              setModelError(null);
-              setShowModelDropdown(false);
-              const success = await selectModel(modelId);
-              if (!success) {
-                setPendingModelId(null);
-              }
-            }
-          } catch {
-            // Ignore errors in auto-select
-          }
-        }, 500);
-      },
-    );
+    // Note: auto-selecting a freshly downloaded model is backend policy now
+    // (see the download_model command) — no download-complete listener here.
 
     // Click outside to close dropdown
     const handleClickOutside = (event: MouseEvent) => {
@@ -136,9 +115,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       modelStateUnlisten.then((fn) => fn());
-      downloadCompleteUnlisten.then((fn) => fn());
     };
-  }, [selectModel]);
+  }, []);
 
   const handleModelSelect = async (modelId: string) => {
     setPendingModelId(modelId);
