@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import type { ModelInfo } from "@/bindings";
 import type { ModelCardStatus } from "./ModelCard";
 import ModelCard from "./ModelCard";
-import HandyTextLogo from "../icons/HandyTextLogo";
+import ThegAiTextLogo from "../icons/ThegAiTextLogo";
 import { useModelStore } from "../../stores/modelStore";
 
 interface OnboardingProps {
@@ -93,7 +93,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   return (
     <div className="h-screen w-screen flex flex-col p-6 gap-6 inset-0 justify-center items-center">
       <div className="flex flex-col items-center gap-2 shrink-0 text-center">
-        <HandyTextLogo width={200} className="mb-2" />
+        <ThegAiTextLogo width={200} className="mb-2" />
         <p className="text-bark-grey text-sm max-w-md font-medium mx-auto leading-relaxed">
           {t("onboarding.subtitle")}
         </p>

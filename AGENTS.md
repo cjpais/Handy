@@ -4,10 +4,10 @@ This file provides guidance to AI coding assistants working with code in this re
 
 ## Project Context
 
-This repo is a Handy-derived Tauri desktop app, but the active codebase is no longer a plain Handy checkout.
+This repo is a ThegAi-branded (derived from Handy) Tauri desktop app.
 
 - The product surface is now MASR-oriented and includes Malayalam-specific transcription flows.
-- The app still uses the `handy` binary/app identity in several places (`cli.rs`, window title, updater config, package metadata), so do not rename those incidentally during feature work.
+- The app uses the `thegai` binary/app identity (`cli.rs`, window title, updater config, package metadata).
 - Treat the current implementation as the source of truth over older Handy-era docs and assumptions.
 
 ## Development Commands
@@ -71,7 +71,7 @@ For platform-specific build setup, see [BUILD.md](BUILD.md).
 
 ## Architecture Overview
 
-MASR is a cross-platform Tauri 2.x desktop app with a Rust backend and a React/TypeScript frontend. The architecture is still Handy-like, but several major features have been added on top:
+MASR is a cross-platform Tauri 2.x desktop app with a Rust backend and a React/TypeScript frontend. The architecture is still ThegAi/Handy-like, but several major features have been added on top:
 
 - Malayalam ASR support on Windows via a native IndicConformer pipeline
 - Multiple transcription engines beyond Whisper
@@ -162,12 +162,12 @@ Relevant files:
 
 The app has **four** Vite/Tauri webview entry points:
 
-| HTML entry | Window label | Purpose |
-|---|---|---|
-| `index.html` | `main` | Settings shell (App.tsx) — onboarding, all settings sections |
-| `src/primary/index.html` | `primary` | Primary window — default app surface on startup/tray/reopen |
-| `src/overlay/index.html` | `recording_overlay` | Recording overlay |
-| `src/meeting_prompt/index.html` | `meeting_prompt` | Meeting prompt panel |
+| HTML entry                      | Window label        | Purpose                                                      |
+| ------------------------------- | ------------------- | ------------------------------------------------------------ |
+| `index.html`                    | `main`              | Settings shell (App.tsx) — onboarding, all settings sections |
+| `src/primary/index.html`        | `primary`           | Primary window — default app surface on startup/tray/reopen  |
+| `src/overlay/index.html`        | `recording_overlay` | Recording overlay                                            |
+| `src/meeting_prompt/index.html` | `meeting_prompt`    | Meeting prompt panel                                         |
 
 All four are declared in `vite.config.ts` under `build.rollupOptions.input`.
 
@@ -370,7 +370,7 @@ CLI flags are runtime-only overrides and should not mutate persisted settings.
 - When the task touches meetings or Google, inspect existing plumbing first instead of introducing parallel state or commands.
 - Preserve the split Gmail/Tasks vs Calendar auth model.
 - Preserve the multi-entry window architecture for primary window, overlay, and meeting prompts.
-- Avoid accidental renames of Handy-branded runtime identifiers unless the task explicitly requests a product rename.
+- Avoid accidental renames of branded runtime identifiers unless the task explicitly requests a product rename.
 - Regenerate/update bindings only through the existing Rust specta export path.
 
 ## GitHub Workflow for AI Coding Assistants

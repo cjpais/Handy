@@ -526,11 +526,11 @@ pub fn run(cli_args: CliArgs) {
                     Target::new(if let Some(data_dir) = portable::data_dir() {
                         TargetKind::Folder {
                             path: data_dir.join("logs"),
-                            file_name: Some("handy".into()),
+                            file_name: Some("thegai".into()),
                         }
                     } else {
                         TargetKind::LogDir {
-                            file_name: Some("handy".into()),
+                            file_name: Some("thegai".into()),
                         }
                     })
                     .filter(|metadata| {
@@ -580,7 +580,7 @@ pub fn run(cli_args: CliArgs) {
             // shown when the user clicks Settings in the primary window.
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                    .title("Handy")
+                    .title("ThegAi")
                     .inner_size(820.0, 660.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)
@@ -600,7 +600,7 @@ pub fn run(cli_args: CliArgs) {
                 "primary",
                 tauri::WebviewUrl::App("src/primary/index.html".into()),
             )
-            .title("Handy")
+            .title("ThegAi")
             .inner_size(1100.0, 720.0)
             .min_inner_size(800.0, 600.0)
             .resizable(true)

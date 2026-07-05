@@ -8,9 +8,9 @@ import {
   Sparkles,
   Cpu,
   Users,
+  Sliders,
 } from "lucide-react";
-import HandyTextLogo from "./icons/HandyTextLogo";
-import HandyHand from "./icons/HandyHand";
+import ThegAiTextLogo from "./icons/ThegAiTextLogo";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
@@ -43,7 +43,7 @@ interface SectionConfig {
 export const SECTIONS_CONFIG = {
   general: {
     labelKey: "sidebar.general",
-    icon: HandyHand,
+    icon: Sliders,
     component: GeneralSettings,
     enabled: () => true,
   },
@@ -109,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="flex flex-col w-44 h-full border-e border-stone-mist bg-orange-off-white items-center px-3 py-4 select-none">
-      <HandyTextLogo width={110} className="mb-6 mt-2 shrink-0" />
+      <ThegAiTextLogo width={110} className="mb-6 mt-2 shrink-0" />
       <div className="flex flex-col w-full items-center gap-1.5 pt-4 border-t border-stone-mist overflow-y-auto scrollbar-none">
         {availableSections.map((section) => {
           const Icon = section.icon;

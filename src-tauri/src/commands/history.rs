@@ -20,7 +20,7 @@ pub async fn process_local_file(
         return Err(format!("File does not exist: {}", path));
     }
 
-    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+    let file_name = format!("thegai-{}.wav", chrono::Utc::now().timestamp());
     let dest_path = history_manager.recordings_dir().join(&file_name);
 
     // For now, we only support WAV or we attempt to read samples and save as WAV.

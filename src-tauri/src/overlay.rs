@@ -131,8 +131,8 @@ fn env_flag_enabled(name: &str) -> bool {
 /// Returns true if layer shell was successfully initialized, false otherwise
 #[cfg(target_os = "linux")]
 fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
-    if env_flag_enabled("HANDY_NO_GTK_LAYER_SHELL") {
-        debug!("Skipping GTK layer shell init (HANDY_NO_GTK_LAYER_SHELL is enabled)");
+    if env_flag_enabled("THEGAI_NO_GTK_LAYER_SHELL") {
+        debug!("Skipping GTK layer shell init (THEGAI_NO_GTK_LAYER_SHELL is enabled)");
         return false;
     }
 
