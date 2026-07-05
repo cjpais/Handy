@@ -403,6 +403,8 @@ pub struct AppSettings {
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
+    pub post_process_last_used_prompt_id: Option<String>,
+    #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
@@ -787,6 +789,24 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+
+    #[cfg(target_os = "macos")]
+    let default_prompt_picker_shortcut = "ctrlleft+fn";
+    #[cfg(not(target_os = "macos"))]
+    let default_prompt_picker_shortcut = "ctrl+alt+p";
+
+    bindings.insert(
+        "transcribe_with_prompt_picker".to_string(),
+        ShortcutBinding {
+            id: "transcribe_with_prompt_picker".to_string(),
+            name: "Transcribe with Prompt Picker".to_string(),
+            description:
+                "Converts your speech into text, then lets you pick which AI post-processing prompt to apply."
+                    .to_string(),
+            default_binding: default_prompt_picker_shortcut.to_string(),
+            current_binding: default_prompt_picker_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -837,6 +857,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        post_process_last_used_prompt_id: None,
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),

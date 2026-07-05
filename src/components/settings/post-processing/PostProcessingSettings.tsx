@@ -435,6 +435,11 @@ export const PostProcessingSettings: React.FC = () => {
           descriptionMode="tooltip"
           grouped={true}
         />
+        <ShortcutInput
+          shortcutId="transcribe_with_prompt_picker"
+          descriptionMode="tooltip"
+          grouped={true}
+        />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.postProcessing.api.title")}>

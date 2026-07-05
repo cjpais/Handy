@@ -1,0 +1,83 @@
+@import "../styles/theme.css";
+
+html,
+body {
+  background: transparent;
+}
+
+.pp-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--color-background) 98%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
+  border-radius: 12px;
+  overflow: hidden;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  outline: none;
+}
+
+.pp-body {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  padding: 8px;
+  min-height: 0;
+}
+
+.pp-list {
+  flex: 0 0 42%;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid
+    color-mix(in srgb, var(--color-mid-gray) 18%, transparent);
+  border-radius: 8px;
+}
+
+.pp-item {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text);
+  user-select: none;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-item:hover {
+  background: color-mix(in srgb, var(--color-logo-primary) 10%, transparent);
+}
+
+.pp-item.selected {
+  background: color-mix(in srgb, var(--color-logo-primary) 20%, transparent);
+  font-weight: 600;
+}
+
+.pp-preview {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid
+    color-mix(in srgb, var(--color-mid-gray) 18%, transparent);
+  border-radius: 8px;
+  color: color-mix(in srgb, var(--color-text) 75%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.pp-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--color-mid-gray) 18%, transparent);
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11px;
+}
