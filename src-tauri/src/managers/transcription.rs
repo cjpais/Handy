@@ -18,7 +18,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
     Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
-    TimestampKind, WhisperRunOptions,
+    WhisperRunOptions,
 };
 use transcribe_rs::{
     onnx::{
@@ -1230,18 +1230,6 @@ impl TranscriptionManager {
                             task: run_plan.task,
                             language: run_plan.language,
                             target_language: run_plan.target_language,
-                            // Whisper-family long-form (>30s) decode degenerates into a
-                            // repetition loop when an initial prompt is set AND timestamps
-                            // are off — a shared whisper.cpp behavior (verified: whisper.cpp
-                            // collapses in the same prompt + no-timestamps cell). Handy runs
-                            // whisper.cpp with timestamps on, so request segment timestamps
-                            // here too for parity, which keeps multi-window decode stable.
-                            // Only whisper advertises InitialPrompt; other arches keep None.
-                            timestamps: if model_takes_initial_prompt {
-                                TimestampKind::Segment
-                            } else {
-                                TimestampKind::None
-                            },
                             family,
                             ..Default::default()
                         };
