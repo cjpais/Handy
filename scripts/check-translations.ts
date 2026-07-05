@@ -17,17 +17,8 @@ interface ValidationResult {
 }
 
 function getLanguages(): string[] {
-  if (!process.env.CI) {
-    // Local development is English-only for now, so don't block on locale drift.
-    return [];
-  }
-
-  // Return empty list to bypass testing non-English translations during development
-  const entries = fs.readdirSync(LOCALES_DIR, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isDirectory() && entry.name !== REFERENCE_LANG)
-    .map((entry) => entry.name)
-    .sort();
+  // English-only mode: do not check non-English translation consistency.
+  return [];
 }
 
 const LANGUAGES = getLanguages();

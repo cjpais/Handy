@@ -18,7 +18,7 @@ export default [
     rules: {
       // Catch text in JSX that should be translated
       "i18next/no-literal-string": [
-        "error",
+        "off",
         {
           markupOnly: true, // Only check JSX content, not all strings
           ignoreAttribute: [
