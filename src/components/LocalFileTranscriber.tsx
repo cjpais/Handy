@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { X, FileAudio, FilePlus2, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -106,18 +107,31 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
     })();
   };
 
-  const buttonText = files.length === 1
-    ? t("localFileTranscriber.startTranscriptionOne") || "Start Transcription (1 file)"
-    : t("localFileTranscriber.startTranscriptionMultiple", { count: files.length }) || `Start Transcription (${files.length} files)`;
+  const buttonText =
+    files.length === 1
+      ? t("localFileTranscriber.startTranscriptionOne") ||
+        "Start Transcription (1 file)"
+      : t("localFileTranscriber.startTranscriptionMultiple", {
+          count: files.length,
+        }) || `Start Transcription (${files.length} files)`;
 
-  return (
+  // Disable body scroll when modal is active
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0908]/80 backdrop-blur-md p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0908]/80 backdrop-blur-md p-4"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -125,7 +139,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ type: "spring", duration: 0.3, bounce: 0.1 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#141211] border border-stone-mist rounded-[20px] shadow-2xl w-full max-w-lg max-h-[85vh] md:max-h-[600px] flex flex-col overflow-hidden"
+        className="bg-[#141211] border border-stone-mist rounded-[20px] shadow-2xl w-full max-w-lg max-h-[85vh] md:max-h-[520px] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-stone-mist/50">
@@ -138,7 +152,8 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
                 {t("localFileTranscriber.title")}
               </h2>
               <p className="text-xs text-bark-grey mt-0.5">
-                {t("localFileTranscriber.subtitle") || "Convert local audio files into written text and summaries."}
+                {t("localFileTranscriber.subtitle") ||
+                  "Convert local audio files into written text and summaries."}
               </p>
             </div>
           </div>
@@ -151,7 +166,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+        <div className="p-5 flex-1 overflow-y-auto space-y-4">
           {/* File list section */}
           <div className="space-y-2">
             <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-bark-grey/85 mb-2">
@@ -162,7 +177,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
                 {t("localFileTranscriber.empty")}
               </div>
             ) : (
-              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
                 <AnimatePresence initial={false}>
                   {files.map((file) => {
                     const fileName = file.split(/[/\\]/).pop() || file;
@@ -211,7 +226,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
           </div>
 
           {/* Action Choice cards */}
-          <div className="space-y-3 pt-4 border-t border-stone-mist/50">
+          <div className="space-y-2 pt-3 border-t border-stone-mist/50">
             <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-bark-grey/85">
               {t("localFileTranscriber.action")}
             </div>
@@ -219,7 +234,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
               {/* Summarize card */}
               <label
                 onClick={() => setAction("meeting")}
-                className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition-all duration-150 active:scale-[0.99] select-none ${
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 active:scale-[0.99] select-none ${
                   action === "meeting"
                     ? "border-forest-green bg-forest-green/[0.04]"
                     : "border-stone-mist/60 bg-warm-bone/20 hover:border-stone-mist hover:bg-warm-bone/45"
@@ -246,7 +261,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
               {/* Transcribe card */}
               <label
                 onClick={() => setAction("transcribe")}
-                className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition-all duration-150 active:scale-[0.99] select-none ${
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-150 active:scale-[0.99] select-none ${
                   action === "transcribe"
                     ? "border-forest-green bg-forest-green/[0.04]"
                     : "border-stone-mist/60 bg-warm-bone/20 hover:border-stone-mist hover:bg-warm-bone/45"
@@ -274,9 +289,10 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
         </div>
 
         {/* Pinned Footer */}
-        <div className="p-5 border-t border-stone-mist/50 bg-[#141211]/90 flex flex-col gap-4">
+        <div className="p-4 border-t border-stone-mist/50 bg-[#141211]/90 flex flex-col gap-3">
           <div className="text-xs text-pebble text-center leading-normal">
-            {t("localFileTranscriber.backgroundNotice") || "All files will be processed sequentially in the background."}
+            {t("localFileTranscriber.backgroundNotice") ||
+              "All files will be processed sequentially in the background."}
           </div>
           <div className="flex justify-end gap-3">
             <Button
@@ -298,6 +314,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   );
 };

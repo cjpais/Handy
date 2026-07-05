@@ -292,7 +292,8 @@ export const MeetingsView: React.FC = () => {
         const file = e.dataTransfer.files[i];
         const path = (file as any).path || file.name;
         const ext = path.split(".").pop()?.toLowerCase();
-        const isAudio = ext && ["wav", "mp3", "m4a", "flac", "ogg"].includes(ext);
+        const isAudio =
+          ext && ["wav", "mp3", "m4a", "flac", "ogg"].includes(ext);
 
         if (isAudio) {
           droppedFiles.push(path);
