@@ -1156,6 +1156,12 @@ impl TranscriptionManager {
         // (whisper family). Gates the whisper-only run extension below, and
         // whether fuzzy custom-word correction still runs afterwards.
         let mut model_takes_initial_prompt = false;
+        // Whether the loaded model is actually whisper-family (arch string).
+        // Non-whisper archs (e.g. Voxtral Small) can advertise
+        // Feature::InitialPrompt yet reject the whisper-kind run extension
+        // with INVALID_ARG, so the whisper extension must be gated on the
+        // arch, not on the feature (see #1601).
+        let mut model_is_whisper = false;
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
@@ -1189,6 +1195,7 @@ impl TranscriptionManager {
                 let model = session.model();
                 let caps = model.capabilities();
                 model_takes_initial_prompt = model.supports(Feature::InitialPrompt);
+                model_is_whisper = model.arch() == "whisper";
                 model_supports_translate = caps.supports_translate;
                 model_languages = caps.languages;
                 debug!(
@@ -1210,7 +1217,7 @@ impl TranscriptionManager {
                         // with INVALID_ARG, so skip it there and let the fuzzy
                         // post-correction handle custom words instead.
                         let family =
-                            if settings.custom_words.is_empty() || !model_takes_initial_prompt {
+                            if settings.custom_words.is_empty() || !model_is_whisper {
                                 None
                             } else {
                                 Some(RunExtension::Whisper(WhisperRunOptions {
@@ -1390,7 +1397,7 @@ impl TranscriptionManager {
         // family). Non-whisper transcribe-cpp models can't take a prompt, so they
         // still get fuzzy correction here, same as the ONNX engines.
         let filtered_result =
-            post_process_transcription_text(result, &settings, model_takes_initial_prompt);
+            post_process_transcription_text(result, &settings, model_is_whisper);
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
