@@ -1152,9 +1152,11 @@ impl TranscriptionManager {
             );
         }
 
-        // Whether the loaded transcribe-cpp model accepts a decode prompt
-        // (whisper family). Gates the whisper-only run extension below, and
-        // whether fuzzy custom-word correction still runs afterwards.
+        // Whether the loaded transcribe-cpp model advertises
+        // Feature::InitialPrompt. Informational (logged below); the whisper
+        // run extension and the fuzzy-correction skip are gated on
+        // `model_is_whisper` instead, since non-whisper archs can advertise
+        // the feature while rejecting the whisper-kind extension.
         let mut model_takes_initial_prompt = false;
         // Whether the loaded model is actually whisper-family (arch string).
         // Non-whisper archs (e.g. Voxtral Small) can advertise
@@ -1394,8 +1396,9 @@ impl TranscriptionManager {
 
         // Apply fuzzy word correction if custom words are configured — UNLESS the
         // words were already handed to the model as an initial prompt (whisper
-        // family). Non-whisper transcribe-cpp models can't take a prompt, so they
-        // still get fuzzy correction here, same as the ONNX engines.
+        // family). We don't pass a prompt to non-whisper models (it requires the
+        // whisper-kind run extension), so they still get fuzzy correction here,
+        // same as the ONNX engines.
         let filtered_result =
             post_process_transcription_text(result, &settings, model_is_whisper);
 
