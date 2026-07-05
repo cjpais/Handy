@@ -14,6 +14,25 @@ import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
+import { motion, AnimatePresence } from "framer-motion";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12, filter: "blur(2px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { type: "spring" as const, bounce: 0, duration: 0.4 },
+  },
+};
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -22,7 +41,9 @@ const IconButton: React.FC<{
   active?: boolean;
   children: React.ReactNode;
 }> = ({ onClick, title, disabled, active, children }) => (
-  <button
+  <motion.button
+    whileTap={disabled ? {} : { scale: 0.97 }}
+    transition={{ duration: 0.1 }}
     onClick={onClick}
     disabled={disabled}
     className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20 ${
@@ -33,7 +54,7 @@ const IconButton: React.FC<{
     title={title}
   >
     {children}
-  </button>
+  </motion.button>
 );
 
 const PAGE_SIZE = 30;
@@ -238,32 +259,60 @@ export const HistorySettings: React.FC = () => {
 
   if (loading) {
     content = (
-      <div className="px-4 py-3 text-center text-text/60">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="px-4 py-8 text-center text-text/60"
+      >
         {t("settings.history.loading")}
-      </div>
+      </motion.div>
     );
   } else if (entries.length === 0) {
     content = (
-      <div className="px-4 py-3 text-center text-text/60">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        transition={{ duration: 0.3 }}
+        className="px-4 py-8 text-center text-text/60"
+      >
         {t("settings.history.empty")}
-      </div>
+      </motion.div>
     );
   } else {
     content = (
       <>
-        <div className="divide-y divide-mid-gray/20">
-          {entries.map((entry) => (
-            <HistoryEntryComponent
-              key={entry.id}
-              entry={entry}
-              onToggleSaved={() => toggleSaved(entry.id)}
-              onCopyText={() => copyToClipboard(entry.transcription_text)}
-              getAudioUrl={getAudioUrl}
-              deleteAudio={deleteAudioEntry}
-              retryTranscription={retryHistoryEntry}
-            />
-          ))}
-        </div>
+        <motion.div
+          className="divide-y divide-mid-gray/20"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <AnimatePresence initial={false}>
+            {entries.map((entry) => (
+              <motion.div
+                key={entry.id}
+                variants={itemVariants}
+                layout
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, height: 0 }}
+                transition={{
+                  opacity: { duration: 0.2 },
+                  layout: { type: "spring", bounce: 0, duration: 0.4 },
+                }}
+              >
+                <HistoryEntryComponent
+                  entry={entry}
+                  onToggleSaved={() => toggleSaved(entry.id)}
+                  onCopyText={() => copyToClipboard(entry.transcription_text)}
+                  getAudioUrl={getAudioUrl}
+                  deleteAudio={deleteAudioEntry}
+                  retryTranscription={retryHistoryEntry}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
         {/* Sentinel for infinite scroll */}
         <div ref={sentinelRef} className="h-1" />
       </>

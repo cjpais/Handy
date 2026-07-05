@@ -12,6 +12,7 @@ import { commands } from "@/bindings";
 import { HistorySettings } from "@/components/settings";
 import { MeetingsView } from "./MeetingsView";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
+import { motion, AnimatePresence } from "framer-motion";
 
 type PrimaryTab = "meetings" | "transcription";
 
@@ -125,14 +126,17 @@ function PrimaryApp() {
         }}
       />
       <div className="flex h-full flex-col">
-        <header className="border-b border-stone-mist bg-orange-off-white/95 px-6 py-5 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4">
-            <div className="space-y-1">
-              {/* eslint-disable-next-line i18next/no-literal-string */}
-              <p className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-bark-grey">
-                Handy
-              </p>
-              <div className="flex items-center gap-2 rounded-[14px] bg-warm-bone p-1">
+        <header className="border-b border-stone-mist bg-orange-off-white/95 px-6 py-4 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3">
+            {/* Centered App Title */}
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <h1 className="text-xl font-bold text-charcoal font-cooper tracking-wide">
+              Thegai
+            </h1>
+
+            {/* Navigation Strip */}
+            <div className="flex w-full items-center justify-between border-t border-stone-mist/30 pt-3">
+              <div className="flex items-center gap-1 rounded-2xl bg-warm-bone/80 p-1 border border-stone-mist/50">
                 {PRIMARY_TABS.map((tab) => {
                   const isActive = tab.id === activeTab;
                   return (
@@ -140,32 +144,58 @@ function PrimaryApp() {
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      className={`rounded-[10px] px-4 py-2 text-sm font-semibold transition-colors ${
+                      className={`relative rounded-xl px-4 py-2 text-sm font-medium transition-colors outline-none z-10 cursor-pointer ${
                         isActive
-                          ? "bg-forest-green text-orange-off-white shadow-sm"
-                          : "text-bark-grey hover:bg-orange-off-white hover:text-charcoal"
+                          ? "text-orange-off-white"
+                          : "text-bark-grey hover:text-charcoal"
                       }`}
                     >
+                      {isActive && (
+                        <motion.div
+                          layoutId="primaryTabActiveIndicator"
+                          className="absolute inset-0 bg-forest-green rounded-xl z-[-1] shadow-sm"
+                          transition={{
+                            type: "spring",
+                            bounce: 0.2,
+                            duration: 0.5,
+                          }}
+                        />
+                      )}
                       {t(tab.labelKey)}
                     </button>
                   );
                 })}
               </div>
+
+              <button
+                type="button"
+                onClick={handleOpenSettings}
+                className="inline-flex items-center gap-2 rounded-[12px] border border-stone-mist bg-warm-bone px-4 py-2 text-sm font-semibold text-charcoal transition-colors hover:border-forest-green/40 hover:text-forest-green cursor-pointer"
+              >
+                <Settings2 className="h-4 w-4" />
+                {t("tray.settings")}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleOpenSettings}
-              className="inline-flex items-center gap-2 rounded-[12px] border border-stone-mist bg-warm-bone px-4 py-2 text-sm font-semibold text-charcoal transition-colors hover:border-forest-green/40 hover:text-forest-green"
-            >
-              <Settings2 className="h-4 w-4" />
-              {t("tray.settings")}
-            </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-6 py-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 relative [scrollbar-gutter:stable]">
           <div className="mx-auto w-full max-w-6xl">
-            {activeTab === "meetings" ? <MeetingsView /> : <HistorySettings />}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 8, filter: "blur(2px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -8, filter: "blur(2px)" }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                {activeTab === "meetings" ? (
+                  <MeetingsView />
+                ) : (
+                  <HistorySettings />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
       </div>

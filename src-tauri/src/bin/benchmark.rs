@@ -17,7 +17,7 @@ use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use transcribe_rs::whisper_cpp::{WhisperEngine, WhisperInferenceParams, WhisperLoadParams};
 
 #[cfg(windows)]
-use handy_app_lib::malayalam_asr::MalayalamAsr;
+use thegai_app_lib::malayalam_asr::MalayalamAsr;
 
 // ─── Model selector ──────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ struct Cli {
     #[arg(long)]
     model_dir: Option<PathBuf>,
 
-    /// Explicit path to a Whisper .bin file (auto-detected from Handy app data if omitted)
+    /// Explicit path to a Whisper .bin file (auto-detected from ThegAi app data if omitted)
     #[arg(long)]
     whisper_model_path: Option<PathBuf>,
 
@@ -452,14 +452,14 @@ fn resolve_whisper_path(cli: &Cli) -> Result<PathBuf> {
     if let Some(p) = &cli.whisper_model_path {
         return Ok(p.clone());
     }
-    let handy_models = dirs_next_appdata().join("com.pais.handy").join("models");
+    let thegai_models = dirs_next_appdata().join("com.thegai.app").join("models");
     let filename = match &cli.model {
         ModelChoice::WhisperTurbo => "ggml-large-v3-turbo.bin",
         ModelChoice::WhisperLarge => "ggml-large-v3-q5_0.bin",
         #[cfg(windows)]
         ModelChoice::Malayalam => unreachable!(),
     };
-    let path = handy_models.join(filename);
+    let path = thegai_models.join(filename);
     if !path.exists() {
         return Err(anyhow::anyhow!(
             "Whisper model not found at {:?}. Use --whisper-model-path to specify the path.",

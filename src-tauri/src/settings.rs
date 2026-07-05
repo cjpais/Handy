@@ -719,7 +719,7 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
         LLMPrompt {
             id: "default_meeting_summary".to_string(),
             name: "Meeting Summary".to_string(),
-            prompt: "You are a helpful assistant. Write a high-level, concise summary of the meeting transcript in English. Focus on the main topics discussed, key arguments, and decisions made. Do NOT translate the transcript sentence-by-sentence. Keep the summary under 200 words. At the end, add an \"Action Items\" section with bullet points prefixed with ✅ for any tasks, decisions, or follow-ups mentioned.\n\nFormat:\n## Summary\n[Write a concise meeting summary here]\n\n## Action Items\n✅ [action item 1]\n✅ [action item 2]\n...\n\nTranscript:\n${output}".to_string(),
+            prompt: "You are a helpful assistant. Write a high-level, concise summary of the meeting transcript in English. Focus on the main topics discussed, key arguments, and decisions made. Do NOT translate the transcript sentence-by-sentence. Keep the summary under 200 words. At the end, add an \"Action Items\" section with task-list style checkboxes (- [ ]) for any tasks, decisions, or follow-ups mentioned. Use GitHub-style alerts (> [!NOTE] or > [!IMPORTANT]) for key highlights or warnings if needed.\n\nFormat:\n# [A 3-5 word title for the meeting]\nTags: [up to 3 comma-separated key topics/tags]\n\n## Summary\n[Write a concise meeting summary here]\n\n## Action Items\n- [ ] [action item 1]\n- [ ] [action item 2]\n...\n\nTranscript:\n${output}".to_string(),
         },
     ]
 }

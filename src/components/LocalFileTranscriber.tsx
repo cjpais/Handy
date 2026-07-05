@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { X, FileAudio, FilePlus2, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "./ui/Button";
 import { commands } from "@/bindings";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface LocalFileTranscriberProps {
   initialFiles: string[];
@@ -20,6 +21,19 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
   const { t } = useTranslation();
   const [files, setFiles] = useState<string[]>(initialFiles);
   const [action, setAction] = useState<"meeting" | "transcribe">("meeting");
+
+  // Handle Escape key to close the modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   const handleAddMore = async () => {
     try {
@@ -59,29 +73,31 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
 
     // Detach and process in background
     (async () => {
-      let successCount = 0;
       toast.info(
         `Started transcription for ${filesToProcess.length} file(s) in background.`,
       );
-      for (let i = 0; i < filesToProcess.length; i++) {
+
+      const promises = filesToProcess.map(async (file) => {
         try {
-          const result = await commands.processLocalFile(
-            filesToProcess[i],
-            targetAction,
-          );
+          const result = await commands.processLocalFile(file, targetAction);
           if (result.status === "ok") {
-            successCount++;
+            return { file, success: true };
           } else {
             toast.error(
-              `Failed to process ${filesToProcess[i].split(/[/\\]/).pop()}: ${result.error}`,
+              `Failed to process ${file.split(/[/\\]/).pop()}: ${result.error}`,
             );
+            return { file, success: false };
           }
         } catch (error: any) {
           toast.error(
-            `Error processing ${filesToProcess[i].split(/[/\\]/).pop()}: ${error.message || error}`,
+            `Error processing ${file.split(/[/\\]/).pop()}: ${error.message || error}`,
           );
+          return { file, success: false };
         }
-      }
+      });
+
+      const results = await Promise.all(promises);
+      const successCount = results.filter((r) => r.success).length;
 
       if (successCount > 0) {
         toast.success(`Successfully processed ${successCount} file(s)`);
@@ -90,102 +106,165 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
     })();
   };
 
+  const buttonText = files.length === 1
+    ? t("localFileTranscriber.startTranscriptionOne") || "Start Transcription (1 file)"
+    : t("localFileTranscriber.startTranscriptionMultiple", { count: files.length }) || `Start Transcription (${files.length} files)`;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0908]/80 backdrop-blur-sm">
-      <div className="bg-orange-off-white border border-stone-mist rounded-[16px] shadow-xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-stone-mist">
-          <h2 className="text-md font-bold font-cooper flex items-center gap-2 text-charcoal">
-            <FileAudio className="w-5 h-5 text-forest-green" />
-            {t("localFileTranscriber.title")}
-          </h2>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0908]/80 backdrop-blur-md p-4"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ type: "spring", duration: 0.3, bounce: 0.1 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[#141211] border border-stone-mist rounded-[20px] shadow-2xl w-full max-w-lg max-h-[85vh] md:max-h-[600px] flex flex-col overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between p-5 border-b border-stone-mist/50">
+          <div className="flex gap-4">
+            <div className="w-10 h-10 rounded-xl bg-forest-green/10 flex items-center justify-center text-forest-green shrink-0">
+              <FileAudio className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-md font-bold font-cooper text-charcoal">
+                {t("localFileTranscriber.title")}
+              </h2>
+              <p className="text-xs text-bark-grey mt-0.5">
+                {t("localFileTranscriber.subtitle") || "Convert local audio files into written text and summaries."}
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md hover:bg-stone-mist/30 text-bark-grey transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-stone-mist/30 text-bark-grey transition-all hover:text-charcoal cursor-pointer active:scale-95 duration-100"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 flex-1 overflow-y-auto space-y-4">
-          {files.length === 0 ? (
-            <div className="text-center text-bark-grey py-8 font-mono text-xs uppercase tracking-wider">
-              {t("localFileTranscriber.empty")}
+        {/* Scrollable Body */}
+        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+          {/* File list section */}
+          <div className="space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-bark-grey/85 mb-2">
+              {t("localFileTranscriber.selectedFiles")} ({files.length})
             </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="text-xs font-semibold uppercase tracking-[0.04em] font-mono text-bark-grey mb-2">
-                {t("localFileTranscriber.selectedFiles")}
+            {files.length === 0 ? (
+              <div className="text-center text-pebble py-8 border border-dashed border-stone-mist/60 rounded-xl bg-warm-bone/20 font-mono text-xs uppercase tracking-wider">
+                {t("localFileTranscriber.empty")}
               </div>
-              {files.map((file, idx) => {
-                const fileName = file.split(/[/\\]/).pop() || file;
-                return (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between bg-warm-bone/45 border border-stone-mist rounded-[8px] p-2 px-3 transition-colors hover:bg-warm-bone/80"
-                  >
-                    <span className="text-sm text-charcoal truncate mr-4 flex-1" title={file}>
-                      {fileName}
-                    </span>
-                    <button
-                      onClick={() => removeFile(file)}
-                      className="text-bark-grey hover:text-alarm-red transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            ) : (
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                <AnimatePresence initial={false}>
+                  {files.map((file) => {
+                    const fileName = file.split(/[/\\]/).pop() || file;
+                    return (
+                      <motion.div
+                        layout
+                        key={file}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex items-center justify-between bg-warm-bone/45 border border-stone-mist/40 rounded-xl p-3 hover:bg-warm-bone/80 transition-colors group"
+                      >
+                        <div className="flex items-center min-w-0 flex-1 mr-4">
+                          <FileAudio className="w-4 h-4 text-bark-grey shrink-0 mr-2.5" />
+                          <span
+                            className="text-xs font-medium text-charcoal truncate"
+                            title={file}
+                          >
+                            {fileName}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => removeFile(file)}
+                          className="text-bark-grey hover:text-alarm-red transition-all p-1.5 hover:bg-alarm-red/10 rounded-lg cursor-pointer active:scale-90"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
 
-          <div className="pt-2 border-t border-stone-mist">
-            <button
-              onClick={handleAddMore}
-              className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.04em] font-mono text-forest-green hover:text-deep-forest-green transition-colors cursor-pointer"
-            >
-              <FilePlus2 className="w-4 h-4" />
-              {t("localFileTranscriber.addMoreFiles")}
-            </button>
+            {/* Add More Files Trigger */}
+            <div className="pt-1">
+              <button
+                onClick={handleAddMore}
+                className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.04em] font-mono text-forest-green hover:text-deep-forest-green transition-all cursor-pointer active:scale-97"
+              >
+                <FilePlus2 className="w-4 h-4" />
+                {t("localFileTranscriber.addMoreFiles")}
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3 pt-4 border-t border-stone-mist">
-            <div className="text-xs font-semibold uppercase tracking-[0.04em] font-mono text-bark-grey">
+          {/* Action Choice cards */}
+          <div className="space-y-3 pt-4 border-t border-stone-mist/50">
+            <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-bark-grey/85">
               {t("localFileTranscriber.action")}
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-3 p-3 rounded-[12px] border cursor-pointer transition-colors bg-warm-bone/45 border-stone-mist hover:border-forest-green/50">
+            <div className="grid grid-cols-1 gap-2.5">
+              {/* Summarize card */}
+              <label
+                onClick={() => setAction("meeting")}
+                className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition-all duration-150 active:scale-[0.99] select-none ${
+                  action === "meeting"
+                    ? "border-forest-green bg-forest-green/[0.04]"
+                    : "border-stone-mist/60 bg-warm-bone/20 hover:border-stone-mist hover:bg-warm-bone/45"
+                }`}
+              >
                 <input
                   type="radio"
                   name="action"
                   value="meeting"
                   checked={action === "meeting"}
                   onChange={() => setAction("meeting")}
-                  className="w-4 h-4 text-forest-green focus:ring-forest-green bg-orange-off-white border-stone-mist"
+                  className="w-4 h-4 mt-0.5 text-forest-green focus:ring-forest-green bg-[#141211] border-stone-mist"
                 />
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-charcoal">
+                  <span className="text-xs font-semibold text-charcoal">
                     {t("localFileTranscriber.summarizeAsMeeting")}
                   </span>
-                  <span className="text-xs text-bark-grey">
+                  <span className="text-[11px] text-bark-grey mt-0.5 leading-relaxed">
                     {t("localFileTranscriber.summarizeAsMeetingDesc")}
                   </span>
                 </div>
               </label>
 
-              <label className="flex items-center gap-3 p-3 rounded-[12px] border cursor-pointer transition-colors bg-warm-bone/45 border-stone-mist hover:border-forest-green/50">
+              {/* Transcribe card */}
+              <label
+                onClick={() => setAction("transcribe")}
+                className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition-all duration-150 active:scale-[0.99] select-none ${
+                  action === "transcribe"
+                    ? "border-forest-green bg-forest-green/[0.04]"
+                    : "border-stone-mist/60 bg-warm-bone/20 hover:border-stone-mist hover:bg-warm-bone/45"
+                }`}
+              >
                 <input
                   type="radio"
                   name="action"
                   value="transcribe"
                   checked={action === "transcribe"}
                   onChange={() => setAction("transcribe")}
-                  className="w-4 h-4 text-forest-green focus:ring-forest-green bg-orange-off-white border-stone-mist"
+                  className="w-4 h-4 mt-0.5 text-forest-green focus:ring-forest-green bg-[#141211] border-stone-mist"
                 />
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-charcoal">
+                  <span className="text-xs font-semibold text-charcoal">
                     {t("localFileTranscriber.plainTranscribe")}
                   </span>
-                  <span className="text-xs text-bark-grey">
+                  <span className="text-[11px] text-bark-grey mt-0.5 leading-relaxed">
                     {t("localFileTranscriber.plainTranscribeDesc")}
                   </span>
                 </div>
@@ -194,23 +273,31 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
           </div>
         </div>
 
-        <div className="p-4 border-t border-stone-mist bg-orange-off-white/80 flex flex-col gap-3">
+        {/* Pinned Footer */}
+        <div className="p-5 border-t border-stone-mist/50 bg-[#141211]/90 flex flex-col gap-4">
+          <div className="text-xs text-pebble text-center leading-normal">
+            {t("localFileTranscriber.backgroundNotice") || "All files will be processed sequentially in the background."}
+          </div>
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={onClose}>
-              {t("common.cancel")}
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="active:scale-[0.97] transition-transform duration-150"
+            >
+              {t("common.cancel") || "Cancel"}
             </Button>
             <Button
               variant="primary"
               onClick={handleTranscribe}
               disabled={files.length === 0}
-              className="flex items-center gap-2"
+              className="active:scale-[0.97] transition-transform duration-150 flex items-center gap-2"
             >
-              <Play className="w-3.5 h-3.5" />
-              {t("localFileTranscriber.startTranscription")}
+              <Play className="w-3 h-3 fill-current" />
+              <span>{buttonText}</span>
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };

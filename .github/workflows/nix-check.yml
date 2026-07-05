@@ -88,7 +88,7 @@ jobs:
         if: steps.bun-check.outputs.outdated != 'true'
         id: eval
         run: |
-          if ! nix eval .#packages.x86_64-linux.handy.drvPath 2>eval_err.log; then
+          if ! nix eval .#packages.x86_64-linux.thegai.drvPath 2>eval_err.log; then
             echo "failed=true" >> "$GITHUB_OUTPUT"
             cat eval_err.log
           fi
@@ -122,6 +122,6 @@ jobs:
       # On PRs: only runs when nix packaging files change (~25 min with cold cache).
       # On push to main and workflow_dispatch: always runs so every commit on
       # main has a verified nix build before release.
-      - name: Build handy
+      - name: Build thegai
         if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true' && (steps.nix-files.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
-        run: nix build .#handy -L --show-trace
+        run: nix build .#thegai -L --show-trace

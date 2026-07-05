@@ -105,7 +105,7 @@
     },
     "permissions": {
       "title": "Permissions Required",
-      "description": "Handy needs a couple of permissions to work properly.",
+      "description": "ThegAi needs a couple of permissions to work properly.",
       "microphone": {
         "title": "Microphone Access",
         "description": "Required to hear your voice for transcription."
@@ -163,7 +163,7 @@
     "general": {
       "title": "General",
       "shortcut": {
-        "title": "Handy Shortcuts",
+        "title": "ThegAi Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
@@ -303,11 +303,11 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start Handy when you log in to your computer."
+        "description": "Automatically start ThegAi when you log in to your computer."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
-        "description": "Display the Handy icon in the system tray."
+        "description": "Display the ThegAi icon in the system tray."
       },
       "overlay": {
         "title": "Overlay Position",
@@ -481,6 +481,7 @@
       "empty": "No meetings recorded yet. Start a meeting to generate summaries!",
       "summary": "Meeting Summary",
       "summaryFailed": "Failed to generate meeting summary.",
+      "detectedMeeting": "Detected Meeting",
       "processing": "Processing",
       "fullTranscript": "Full Transcript",
       "toastSuccess": "Meeting summary generated!",
@@ -515,6 +516,11 @@
       "chatPlaceholder": "Ask something about the meeting...",
       "ask": "Ask",
       "asking": "Asking...",
+      "searchPlaceholder": "Search meetings...",
+      "chatPlaceholder_detail": "Ask about this meeting...",
+      "backToMeetings": "Back",
+      "noSearchResults": "No meetings match your search",
+      "clear": "Clear",
       "assistant": {
         "localToggle": "Meeting Assistant",
         "localDescription": "Detect active meeting windows locally and show a prompt to start meeting mode.",
@@ -553,7 +559,7 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of Handy"
+        "description": "Automatically check for new versions of ThegAi"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -621,11 +627,11 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Handy"
+        "description": "Current version of ThegAi"
       },
       "appDataDirectory": {
         "title": "App Data Directory",
-        "description": "Location where Handy stores its data"
+        "description": "Location where ThegAi stores its data"
       },
       "sourceCode": {
         "title": "Source Code",
@@ -634,7 +640,7 @@
       },
       "supportDevelopment": {
         "title": "Support Development",
-        "description": "Help us continue building Handy",
+        "description": "Help us continue building ThegAi",
         "button": "Donate"
       },
       "acknowledgments": {
@@ -642,7 +648,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
-          "details": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+          "details": "ThegAi uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
       }
     }
@@ -688,7 +694,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",
-    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
+    "permissionsDescription": "ThegAi needs accessibility permissions to type transcribed text.",
     "openSettings": "Open System Settings",
     "dismiss": "Dismiss"
   },
@@ -712,7 +718,7 @@
   },
   "appLanguage": {
     "title": "Application Language",
-    "description": "Change the language of the Handy interface"
+    "description": "Change the language of the ThegAi interface"
   },
   "overlay": {
     "transcribing": "Transcribing...",
@@ -720,6 +726,7 @@
   },
   "localFileTranscriber": {
     "title": "Transcribe Local Files",
+    "subtitle": "Convert local audio files into written text and summaries.",
     "empty": "No files selected. Add some audio files to transcribe.",
     "selectedFiles": "Selected Files:",
     "addMoreFiles": "Add more files",
@@ -728,6 +735,11 @@
     "summarizeAsMeetingDesc": "Transcribes and summarizes to English (Meetings tab)",
     "plainTranscribe": "Plain Transcribe",
     "plainTranscribeDesc": "Basic Malayalam transcription (History tab)",
-    "startTranscription": "Start Transcription"
+    "startTranscription": "Start Transcription",
+    "startTranscriptionOne": "Start Transcription (1 file)",
+    "startTranscriptionMultiple": "Start Transcription ({{count}} files)",
+    "backgroundNotice": "All files will be processed sequentially in the background.",
+    "dropFiles": "Drop audio files here to transcribe",
+    "supportedFormats": "Supports WAV, MP3, M4A, FLAC, OGG"
   }
 }
