@@ -1322,7 +1322,7 @@ impl ModelManager {
         // tool)? Done.
         if self.local_artifact(model_info).is_some() {
             self.update_download_status()?;
-            let _ = self.app_handle.emit("model-download-complete", &model_id);
+            let _ = self.app_handle.emit("models-updated", ());
             return Ok(());
         }
 
@@ -1373,9 +1373,8 @@ impl ModelManager {
             Err(hf_hub::api::tokio::ApiError::Cancelled) => {
                 // User cancelled. hf-hub leaves the partially downloaded
                 // `.sync.part` in the shared cache, so a later attempt resumes
-                // instead of restarting. The guard resets is_downloading and
-                // drops the token; `cancel_download` already emitted
-                // `model-download-cancelled`.
+                // instead of restarting. The guard settles the state and drops
+                // the token; `cancel_download` already notified the frontend.
                 info!("HF download cancelled for: {}", model_id);
                 return Ok(());
             }
@@ -1387,7 +1386,7 @@ impl ModelManager {
         cleanup.disarmed = true;
         self.set_state(&model_id, ModelState::Downloaded);
         self.cancel_flags.lock().unwrap().remove(&model_id);
-        let _ = self.app_handle.emit("model-download-complete", &model_id);
+        let _ = self.app_handle.emit("models-updated", ());
         info!("HF model {} downloaded", model_id);
         Ok(())
     }
@@ -1396,9 +1395,9 @@ impl ModelManager {
         let result = self.download_model_inner(model_id).await;
         if result.is_err() {
             // Every mutation leaves fresh status behind, error paths included:
-            // the cleanup guard already reset the in-memory flags, but the UI
-            // only learns about it from an event. (Success paths emit
-            // `model-download-complete` instead.)
+            // the cleanup guard already settled the in-memory state, but the
+            // UI only learns about it from an event. (Success paths emit their
+            // own `models-updated`.)
             let _ = self.update_download_status();
             let _ = self.app_handle.emit("models-updated", ());
         }
@@ -1438,8 +1437,8 @@ impl ModelManager {
             }
             self.update_download_status()?;
             // Mirror the HF short-circuit: the frontend set optimistic
-            // downloading state and clears it on this event.
-            let _ = self.app_handle.emit("model-download-complete", model_id);
+            // downloading state and clears it when the refresh lands.
+            let _ = self.app_handle.emit("models-updated", ());
             return Ok(());
         }
 
@@ -1620,7 +1619,7 @@ impl ModelManager {
         // stalled while hashing large model files (up to 1.6 GB). On failure the partial
         // is deleted inside verify_sha256 so the next attempt always starts fresh.
         self.set_state(model_id, ModelState::Verifying);
-        let _ = self.app_handle.emit("model-verification-started", model_id);
+        let _ = self.app_handle.emit("models-updated", ());
         info!("Verifying SHA256 for model {}...", model_id);
         let verify_path = partial_path.clone();
         let verify_expected = expected_sha256.clone();
@@ -1631,16 +1630,11 @@ impl ModelManager {
         .await
         .map_err(|e| anyhow::anyhow!("SHA256 task panicked: {}", e))?;
         verify_result?;
-        let _ = self
-            .app_handle
-            .emit("model-verification-completed", model_id);
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
             self.set_state(model_id, ModelState::Extracting);
-
-            // Emit extraction started event
-            let _ = self.app_handle.emit("model-extraction-started", model_id);
+            let _ = self.app_handle.emit("models-updated", ());
             info!("Extracting archive for directory-based model: {}", model_id);
 
             // Use a temporary extraction directory to ensure atomic operations
@@ -1670,14 +1664,9 @@ impl ModelManager {
                 // Delete the corrupt partial file so the next download attempt starts fresh
                 // instead of resuming from a broken archive (issue #858).
                 let _ = fs::remove_file(&partial_path);
-                // The cleanup guard settles the state when this error propagates.
-                let _ = self.app_handle.emit(
-                    "model-extraction-failed",
-                    &serde_json::json!({
-                        "model_id": model_id,
-                        "error": error_msg
-                    }),
-                );
+                // The cleanup guard settles the state when this error
+                // propagates, and the download wrapper + command surface it
+                // (models-updated + model-download-failed).
                 anyhow::anyhow!(error_msg)
             })?;
 
@@ -1705,8 +1694,6 @@ impl ModelManager {
             }
 
             info!("Successfully extracted archive for model: {}", model_id);
-            // Emit extraction completed event
-            let _ = self.app_handle.emit("model-extraction-completed", model_id);
 
             // Remove the downloaded tar.gz file
             let _ = fs::remove_file(&partial_path);
@@ -1721,8 +1708,7 @@ impl ModelManager {
         self.set_state(model_id, ModelState::Downloaded);
         self.cancel_flags.lock().unwrap().remove(model_id);
 
-        // Emit completion event
-        let _ = self.app_handle.emit("model-download-complete", model_id);
+        let _ = self.app_handle.emit("models-updated", ());
 
         info!(
             "Successfully downloaded model {} to {:?}",
@@ -1829,7 +1815,7 @@ impl ModelManager {
         }
 
         if deleted_something {
-            let _ = self.app_handle.emit("model-deleted", model_id);
+            let _ = self.app_handle.emit("models-updated", ());
         }
 
         if let Some(e) = first_err {
@@ -1913,8 +1899,8 @@ impl ModelManager {
         // Update download status to reflect current state
         self.update_download_status()?;
 
-        // Emit cancellation event so all UI components can clear their state
-        let _ = self.app_handle.emit("model-download-cancelled", model_id);
+        // Notify so all UI components refresh their state
+        let _ = self.app_handle.emit("models-updated", ());
 
         info!("Download cancellation initiated for: {}", model_id);
         Ok(())

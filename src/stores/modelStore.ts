@@ -81,28 +81,45 @@ export const useModelStore = create<ModelsStore>()(
         if (result.status === "ok") {
           set({ models: result.data, error: null });
 
-          // Sync downloading state from backend
+          // Derive per-model activity from the backend-owned status — this is
+          // the single writer for these records, besides the optimistic entry
+          // downloadModel sets on click (whose progress entry keeps it alive
+          // until the backend reports this model's state).
           set(
             produce((state) => {
-              const backendDownloading: Record<string, true> = {};
-              result.data
-                .filter((m) => m.status === "downloading")
-                .forEach((m) => {
-                  backendDownloading[m.id] = true;
-                });
+              const statusOf = new Map(
+                result.data.map((m) => [m.id, m.status]),
+              );
+              const inFlight = (s?: string) =>
+                s === "downloading" || s === "verifying" || s === "extracting";
 
-              // Merge: keep frontend state if downloading, add backend state
-              Object.keys(backendDownloading).forEach((id) => {
-                state.downloadingModels[id] = true;
-              });
+              state.verifyingModels = {};
+              state.extractingModels = {};
+              for (const m of result.data) {
+                if (m.status === "verifying")
+                  state.verifyingModels[m.id] = true;
+                if (m.status === "extracting")
+                  state.extractingModels[m.id] = true;
+                // Downloading covers the whole in-flight span, matching the
+                // sections/spinners that key off it.
+                if (inFlight(m.status)) state.downloadingModels[m.id] = true;
+              }
 
-              // Remove models that backend says are NOT downloading AND
-              // frontend doesn't have progress for (completed/cancelled)
-              Object.keys(state.downloadingModels).forEach((id) => {
-                if (!backendDownloading[id] && !state.downloadProgress[id]) {
+              for (const id of Object.keys(state.downloadingModels)) {
+                if (!inFlight(statusOf.get(id)) && !state.downloadProgress[id]) {
                   delete state.downloadingModels[id];
                 }
-              });
+              }
+
+              // A download that settled successfully clears its transient
+              // records here; failure and cancel paths clear their own.
+              for (const id of Object.keys(state.downloadProgress)) {
+                if (statusOf.get(id) === "downloaded") {
+                  delete state.downloadingModels[id];
+                  delete state.downloadProgress[id];
+                  delete state.downloadStats[id];
+                }
+              }
             }),
           );
         } else {
@@ -319,19 +336,6 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-download-complete", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            delete state.downloadingModels[modelId];
-            delete state.verifyingModels[modelId];
-            delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
-          }),
-        );
-        get().loadModels();
-      });
-
       listen<{ model_id: string; error: string }>(
         "model-download-failed",
         (event) => {
@@ -349,80 +353,18 @@ export const useModelStore = create<ModelsStore>()(
         },
       );
 
-      listen<string>("model-verification-started", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            state.verifyingModels[modelId] = true;
-          }),
-        );
-      });
-
-      listen<string>("model-verification-completed", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            delete state.verifyingModels[modelId];
-          }),
-        );
-      });
-
-      listen<string>("model-extraction-started", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            state.extractingModels[modelId] = true;
-          }),
-        );
-      });
-
-      listen<string>("model-extraction-completed", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            delete state.extractingModels[modelId];
-          }),
-        );
-        get().loadModels();
-      });
-
-      listen<{ model_id: string; error: string }>(
-        "model-extraction-failed",
-        (event) => {
-          const modelId = event.payload.model_id;
-          set(
-            produce((state) => {
-              delete state.extractingModels[modelId];
-              state.error = `Failed to extract model: ${event.payload.error}`;
-            }),
-          );
-        },
-      );
-
-      listen<string>("model-download-cancelled", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            delete state.downloadingModels[modelId];
-            delete state.verifyingModels[modelId];
-            delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
-          }),
-        );
-      });
-
-      listen<string>("model-deleted", () => {
-        get().loadModels();
-        get().loadCurrentModel();
-      });
-
       listen("model-state-changed", () => {
         get().loadModels();
         get().loadCurrentModel();
       });
 
+      // The single "something changed, re-sync" signal: every backend status
+      // transition (download start/finish, verify, extract, cancel, delete,
+      // rescan) emits this. Verifying/extracting/downloading records derive
+      // from models[].status inside loadModels.
       listen("models-updated", () => {
         get().loadModels();
+        get().loadCurrentModel();
       });
 
       set({ initialized: true });
