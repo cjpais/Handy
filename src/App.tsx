@@ -21,10 +21,10 @@ import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
-const renderSettingsContent = (section: SidebarSection) => {
+const renderSettingsContent = (section: SidebarSection, simulateProd: boolean) => {
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
-  return <ActiveComponent />;
+  return <ActiveComponent {...(section === "advanced" ? { simulateProd } : {})} />;
 };
 
 function App() {
@@ -363,7 +363,7 @@ function App() {
           <div className="flex-1 overflow-y-auto">
             <div className="flex flex-col items-center p-4 gap-4">
               <AccessibilityPermissions />
-              {renderSettingsContent(currentSection)}
+              {renderSettingsContent(currentSection, simulateProd)}
             </div>
           </div>
         </div>
@@ -382,7 +382,7 @@ function App() {
         />
       )}
       {/* Fixed footer at bottom */}
-      <Footer />
+      <Footer simulateProd={simulateProd} />
     </div>
   );
 }

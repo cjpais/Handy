@@ -484,7 +484,7 @@ fn dirs_sys_appdata() -> PathBuf {
 fn model_display_name(m: &ModelChoice) -> &'static str {
     match m {
         #[cfg(windows)]
-        ModelChoice::Malayalam => "MalayalamAsr (IndicConformer CTC)",
+        ModelChoice::Malayalam => "MalayalamAsr (ThegaV1)",
         ModelChoice::WhisperTurbo => "Whisper Turbo (large-v3-turbo)",
         ModelChoice::WhisperLarge => "Whisper Large (large-v3-q5_0)",
     }

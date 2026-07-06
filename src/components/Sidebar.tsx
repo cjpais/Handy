@@ -1,4 +1,5 @@
 import React from "react";
+import logo from "../assets/logo.png";
 import { useTranslation } from "react-i18next";
 import {
   Cog,
@@ -10,7 +11,6 @@ import {
   Users,
   Sliders,
 } from "lucide-react";
-import ThegAiTextLogo from "./icons/ThegAiTextLogo";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
@@ -128,7 +128,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="flex flex-col w-44 h-full border-e border-stone-mist bg-orange-off-white items-center px-3 py-4 select-none justify-between">
       <div className="flex flex-col w-full items-center flex-1 overflow-hidden">
-        <ThegAiTextLogo width={110} className="mb-6 mt-2 shrink-0" />
+        <div className="flex items-center justify-center gap-2 mb-6 mt-2 shrink-0">
+          <img
+            src={logo}
+            alt="Logo"
+            className="h-7 w-7 object-contain select-none"
+          />
+          <span className="text-xl font-bold text-charcoal font-cooper tracking-wide">
+            Thegai
+          </span>
+        </div>
         <div className="flex-1 flex flex-col w-full items-center gap-1.5 pt-4 border-t border-stone-mist overflow-y-auto scrollbar-none">
           {availableSections.map((section) => {
             const Icon = section.icon;
@@ -168,7 +177,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
             title="Toggle between Developer and simulated Production view of settings"
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${simulateProd ? "bg-amber-500 animate-pulse" : "bg-[#1d7a46]"}`} />
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${simulateProd ? "bg-amber-500 animate-pulse" : "bg-[#1d7a46]"}`}
+            />
             {simulateProd ? "SIMULATED PROD" : "DEV VIEW"}
           </button>
         </div>

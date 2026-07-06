@@ -39,83 +39,88 @@ type NonCreatableProps = {
 
 export type SelectProps = BaseProps & (CreatableProps | NonCreatableProps);
 
-const baseBackground =
-  "color-mix(in srgb, var(--color-mid-gray) 10%, transparent)";
-const hoverBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 12%, transparent)";
-const focusBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 20%, transparent)";
-const neutralBorder =
-  "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)";
-
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
-    minHeight: 40,
-    borderRadius: 6,
-    borderColor: state.isFocused ? "var(--color-logo-primary)" : neutralBorder,
-    boxShadow: state.isFocused ? "0 0 0 1px var(--color-logo-primary)" : "none",
-    backgroundColor: state.isFocused ? focusBackground : baseBackground,
-    fontSize: "0.875rem",
-    color: "var(--color-text)",
+    minHeight: 42,
+    borderRadius: 12, // matching --radius-inputs
+    borderColor: state.isFocused
+      ? "var(--color-forest-green)"
+      : "var(--color-stone-mist)",
+    boxShadow: state.isFocused ? "0 0 0 3px rgba(29, 122, 70, 0.15)" : "none",
+    backgroundColor: "var(--color-orange-off-white)",
+    fontSize: "1rem", // text-base
+    color: "var(--color-charcoal)",
     transition: "all 150ms ease",
     ":hover": {
-      borderColor: "var(--color-logo-primary)",
-      backgroundColor: hoverBackground,
+      borderColor: state.isFocused
+        ? "var(--color-forest-green)"
+        : "var(--color-bark-grey)",
     },
   }),
   valueContainer: (base) => ({
     ...base,
-    paddingInline: 10,
-    paddingBlock: 6,
+    paddingInline: 16,
+    paddingBlock: 8,
   }),
   input: (base) => ({
     ...base,
-    color: "var(--color-text)",
+    color: "var(--color-charcoal)",
+    margin: 0,
+    padding: 0,
   }),
   singleValue: (base) => ({
     ...base,
-    color: "var(--color-text)",
+    color: "var(--color-charcoal)",
   }),
   dropdownIndicator: (base, state) => ({
     ...base,
     color: state.isFocused
-      ? "var(--color-logo-primary)"
-      : "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+      ? "var(--color-forest-green)"
+      : "var(--color-bark-grey)",
     ":hover": {
-      color: "var(--color-logo-primary)",
+      color: "var(--color-forest-green)",
     },
   }),
   clearIndicator: (base) => ({
     ...base,
-    color: "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+    color: "var(--color-bark-grey)",
     ":hover": {
-      color: "var(--color-logo-primary)",
+      color: "var(--color-alarm-red)",
     },
   }),
   menu: (provided) => ({
     ...provided,
     zIndex: 30,
-    backgroundColor: "var(--color-background)",
-    color: "var(--color-text)",
-    border:
-      "1px solid color-mix(in srgb, var(--color-mid-gray) 30%, transparent)",
-    boxShadow: "0 10px 30px rgba(15, 15, 15, 0.2)",
+    backgroundColor: "var(--color-orange-off-white)",
+    color: "var(--color-charcoal)",
+    border: "1px solid var(--color-stone-mist)",
+    borderRadius: 12,
+    boxShadow: "var(--shadow-xl)",
   }),
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected
-      ? focusBackground
+      ? "var(--color-forest-green)"
       : state.isFocused
-        ? hoverBackground
+        ? "color-mix(in srgb, var(--color-forest-green) 10%, transparent)"
         : "transparent",
-    color: "var(--color-text)",
+    color: state.isSelected
+      ? "var(--color-orange-off-white)"
+      : "var(--color-charcoal)",
     cursor: state.isDisabled ? "not-allowed" : base.cursor,
     opacity: state.isDisabled ? 0.5 : 1,
+    paddingInline: 16,
+    paddingBlock: 10,
+    ":active": {
+      backgroundColor: state.isSelected
+        ? "var(--color-deep-forest-green)"
+        : "color-mix(in srgb, var(--color-forest-green) 20%, transparent)",
+    },
   }),
   placeholder: (base) => ({
     ...base,
-    color: "color-mix(in srgb, var(--color-mid-gray) 65%, transparent)",
+    color: "var(--color-pebble)",
   }),
 };
 

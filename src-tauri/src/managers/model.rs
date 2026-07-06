@@ -27,7 +27,7 @@ pub enum EngineType {
     GigaAM,
     Canary,
     Cohere,
-    MalayalamIndicConformerCTC,
+    ThegaV1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -611,14 +611,16 @@ impl ModelManager {
             },
         );
 
-        const MALAYALAM_MODEL_URL: Option<&str> = None;
+        const MALAYALAM_MODEL_URL: Option<&str> = Some(
+            "https://github.com/RealNickey/runtime-depot/releases/download/v1.0.0/thegav1.tar.gz",
+        );
         available_models.insert(
-            "malayalam-indicconformer-ctc".to_string(),
+            "thegav1".to_string(),
             ModelInfo {
-                id: "malayalam-indicconformer-ctc".to_string(),
-                name: "Malayalam IndicConformer CTC".to_string(),
+                id: "thegav1".to_string(),
+                name: "ThegaV1".to_string(),
                 description: "Malayalam speech recognition. High accuracy.".to_string(),
-                filename: "malayalam-indicconformer-ctc".to_string(),
+                filename: "thegav1".to_string(),
                 url: MALAYALAM_MODEL_URL.map(String::from),
                 sha256: Some(
                     "976753F720CC2CCB68155F150B74ED0BA200F364D0346590A2D9A01868611C4D".to_string(),
@@ -628,7 +630,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: true,
-                engine_type: EngineType::MalayalamIndicConformerCTC,
+                engine_type: EngineType::ThegaV1,
                 accuracy_score: 0.85,
                 speed_score: 0.60,
                 supports_translation: false,
