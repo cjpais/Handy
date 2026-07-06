@@ -40,9 +40,9 @@ tauri_panel! {
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
-const MEETING_PROMPT_WIDTH: f64 = 304.0;
-const MEETING_PROMPT_HEIGHT: f64 = 88.0;
-const MEETING_STOPPED_AUTO_CLOSE_MS: u64 = 3500;
+const MEETING_PROMPT_WIDTH: f64 = 320.0;
+const MEETING_PROMPT_HEIGHT: f64 = 80.0;
+const MEETING_STOPPED_AUTO_CLOSE_MS: u64 = 5000;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
 #[serde(rename_all = "camelCase")]

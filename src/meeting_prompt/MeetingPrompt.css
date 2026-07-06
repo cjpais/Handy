@@ -1,24 +1,86 @@
-:root {
-  color-scheme: dark;
-  font-family:
-    "Geist",
-    "Segoe UI",
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  --meeting-forest: #1d7a46;
-  --meeting-deep-forest: #06381f;
-  --meeting-forest-ink: #0b2d1b;
-  --meeting-terracotta: #c8673d;
-  --meeting-alarm: #d94d47;
-  --meeting-surface: #151412;
-  --meeting-cream: #fff7e8;
-  --meeting-cream-soft: #fff4df;
-  --meeting-muted: rgba(255, 247, 232, 0.68);
-  background: transparent;
-  color: var(--meeting-cream);
+@import "../App.css";
+
+.meeting-overlay-root {
+  --ease-emil: cubic-bezier(0.23, 1, 0.32, 1);
+  
+  /* Overwrite Tailwind variables locally to force light-theme on the glass card */
+  --color-stone-mist: #e7e5e4;
+  --color-bark-grey: #79716b;
+  --color-on-surface: #1e1b1a;
+  --color-outline-variant: #bec9be;
+  --color-alarm: #ff0000;
+  --color-primary: #006032;
+  --color-primary-container: #1d7a46;
+  --color-on-primary-container: #acffc2;
+  --color-error: #ba1a1a;
+  --color-surface-container-low: #fbf2f0;
+  --color-background: #fff8f6;
+  --color-surface: #fff8f6;
+
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  font-family: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  background: transparent !important;
+}
+
+/* Explicit class definitions and overrides to fix broken Tailwind classes in this webview context */
+.meeting-overlay-root .text-on-surface {
+  color: #1e1b1a !important;
+}
+
+.meeting-overlay-root .text-bark-grey {
+  color: #79716b !important;
+}
+
+.meeting-overlay-root .text-error {
+  color: #ba1a1a !important;
+}
+
+.meeting-overlay-root .text-primary {
+  color: #006032 !important;
+}
+
+.meeting-overlay-root .bg-alarm {
+  background-color: #ff0000 !important;
+}
+
+.meeting-overlay-root .bg-stone-mist {
+  background-color: #e7e5e4 !important;
+}
+
+.meeting-overlay-root .border-outline-variant {
+  border-color: #bec9be !important;
+}
+
+.meeting-overlay-root .bg-primary-container\/30 {
+  background-color: rgba(29, 122, 70, 0.3) !important;
+}
+
+.meeting-overlay-root .bg-primary\/10 {
+  background-color: rgba(0, 96, 50, 0.1) !important;
+}
+
+/* Hover effects */
+.meeting-overlay-root .hover\:bg-surface-container-low:hover {
+  background-color: #fbf2f0 !important;
+}
+
+.meeting-overlay-root .hover\:bg-primary-container\/10:hover {
+  background-color: rgba(29, 122, 70, 0.1) !important;
+}
+
+.meeting-overlay-root .hover\:bg-stone-mist\/50:hover {
+  background-color: rgba(231, 229, 228, 0.5) !important;
+}
+
+.meeting-overlay-root .hover\:bg-error\/10:hover {
+  background-color: rgba(186, 26, 26, 0.1) !important;
+}
+
+.meeting-overlay-root .hover\:bg-primary\/10:hover {
+  background-color: rgba(0, 96, 50, 0.1) !important;
 }
 
 html,
@@ -27,254 +89,97 @@ body,
   width: 100%;
   height: 100%;
   margin: 0;
-  background: transparent;
+  padding: 0;
+  background: transparent !important;
   overflow: hidden;
 }
 
-button {
-  font: inherit;
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
 }
 
-.meeting-overlay-root {
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
+.animate-pulse-dot {
+  animation: pulse-dot 2s var(--ease-emil) infinite;
 }
 
-.meeting-overlay-card {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  border-radius: 14px;
-  background: var(--meeting-surface);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
-  transform-origin: top right;
+.glass-panel {
+  background: rgba(255, 251, 247, 0.95); /* Orange Off-white */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background-color 0.3s var(--ease-emil);
 }
 
-.meeting-state-suggestion {
-  background:
-    linear-gradient(90deg, rgba(29, 122, 70, 0.08), transparent 54%),
-    var(--meeting-cream-soft);
-  color: #181511;
-}
-
-.meeting-state-recording {
-  background:
-    linear-gradient(145deg, rgba(200, 103, 61, 0.18), transparent 45%),
-    linear-gradient(180deg, #0b4b2b, var(--meeting-deep-forest));
-}
-
-.meeting-state-stopped {
-  background:
-    linear-gradient(145deg, rgba(29, 122, 70, 0.22), transparent 50%),
-    linear-gradient(180deg, #153324, #111713);
-}
-
-.meeting-overlay-main {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  height: 100%;
-  padding: 11px 12px 14px;
-  box-sizing: border-box;
-}
-
-.meeting-overlay-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--meeting-cream);
-  background: rgba(29, 122, 70, 0.92);
-}
-
-.meeting-state-suggestion .meeting-overlay-icon {
-  color: var(--meeting-forest);
-  background: transparent;
-}
-
-.meeting-state-recording .meeting-overlay-icon {
-  color: #fff2e6;
-  background: rgba(200, 103, 61, 0.38);
-}
-
-.meeting-state-stopped .meeting-overlay-icon {
-  color: #e3f9eb;
-  background: rgba(29, 122, 70, 0.28);
-}
-
-.meeting-overlay-copy {
-  min-width: 0;
-}
-
-.meeting-overlay-title {
-  font-size: 13px;
-  font-weight: 780;
-  line-height: 1.1;
-  letter-spacing: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.meeting-overlay-detail {
-  margin-top: 4px;
-  color: rgba(24, 21, 17, 0.58);
-  font-size: 11px;
-  font-weight: 660;
-  line-height: 1.25;
-  letter-spacing: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.meeting-state-recording .meeting-overlay-detail {
-  color: #fff1e1;
-  font-size: 22px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.meeting-state-recording .meeting-overlay-title,
-.meeting-state-stopped .meeting-overlay-title {
-  color: var(--meeting-cream);
-}
-
-.meeting-state-recording .meeting-overlay-detail,
-.meeting-state-stopped .meeting-overlay-detail {
-  color: var(--meeting-muted);
-}
-
-.meeting-overlay-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.meeting-overlay-btn,
-.meeting-overlay-icon-btn {
-  border: 0;
+.btn-interactive {
+  transition: transform 0.15s var(--ease-emil), background-color 0.15s var(--ease-emil), color 0.15s var(--ease-emil);
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background-color 140ms ease,
-    color 140ms ease,
-    opacity 140ms ease,
-    box-shadow 140ms ease;
 }
 
-.meeting-overlay-btn:disabled,
-.meeting-overlay-icon-btn:disabled {
-  cursor: default;
-  opacity: 0.68;
+.btn-interactive:active {
+  transform: scale(0.97);
 }
 
-.meeting-overlay-btn {
-  height: 32px;
-  border-radius: 11px;
-  padding: 0 11px;
-  gap: 7px;
-  color: var(--meeting-cream);
-  font-size: 12px;
-  font-weight: 780;
-  letter-spacing: 0;
-  white-space: nowrap;
+/* Animations for Success/Saved State */
+@keyframes draw-check {
+  0% { stroke-dashoffset: 48; }
+  100% { stroke-dashoffset: 0; }
 }
 
-.meeting-overlay-btn.quiet {
-  color: rgba(24, 21, 17, 0.62);
-  background: rgba(24, 21, 17, 0.06);
+@keyframes slide-up-bounce {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-.meeting-overlay-btn.quiet:hover {
-  color: #181511;
-  background: rgba(24, 21, 17, 0.1);
+@keyframes scale-in-bounce {
+  0% { opacity: 0; transform: scale(0.8); }
+  50% { transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
-.meeting-overlay-btn.record {
-  color: #ffffff;
-  background: var(--meeting-forest);
-  box-shadow: 0 4px 12px rgba(29, 122, 70, 0.22);
+.check-path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
 }
 
-.meeting-overlay-btn.record:hover {
-  background: #238852;
+.anim-draw-check {
+  animation: draw-check 0.6s var(--ease-emil) forwards;
 }
 
-.meeting-overlay-btn.record::before {
-  content: "";
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: #f0473e;
-  box-shadow: 0 0 0 3px rgba(240, 71, 62, 0.12);
+.anim-slide-up {
+  opacity: 0;
+  animation: slide-up-bounce 0.6s var(--ease-emil) forwards;
 }
 
-.meeting-overlay-btn.stop {
-  background: var(--meeting-alarm);
-  color: #fff4ee;
-  min-width: 96px;
+.anim-slide-up-delayed {
+  opacity: 0;
+  animation: slide-up-bounce 0.6s var(--ease-emil) 0.1s forwards;
 }
 
-.meeting-overlay-btn.stop:hover {
-  background: #e45b55;
+.anim-scale-in {
+  animation: scale-in-bounce 0.5s var(--ease-emil) forwards;
 }
 
-.meeting-overlay-icon-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 11px;
-  color: rgba(255, 247, 232, 0.74);
-  background: rgba(255, 247, 232, 0.09);
-}
-
-.meeting-overlay-icon-btn:hover {
-  color: var(--meeting-cream);
-  background: rgba(255, 247, 232, 0.14);
-}
-
+/* Timer / Progress Bar styles */
 .meeting-overlay-progress {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 7px;
-  height: 3px;
-  border-radius: 999px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
   overflow: hidden;
-  background: rgba(29, 122, 70, 0.14);
+  background: rgba(29, 122, 70, 0.1);
+  z-index: 20;
 }
 
 .meeting-overlay-progress-bar {
   width: 100%;
   height: 100%;
-  border-radius: inherit;
-  background: var(--meeting-forest);
-  transform-origin: left center;
-}
-
-.meeting-overlay-captured {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 7px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--meeting-forest);
+  background: #1d7a46;
   transform-origin: left center;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .meeting-overlay-btn,
-  .meeting-overlay-icon-btn {
+  .btn-interactive {
     transition: none;
   }
 }

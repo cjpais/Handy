@@ -547,13 +547,14 @@
         "openMeeting": "Open Meeting",
         "dismiss": "Dismiss",
         "startRecording": "Start Recording",
-        "suggestionTitle": "Meeting detected",
-        "recordingTitle": "Meeting recording",
-        "capturedTitle": "Meeting captured",
+        "suggestionTitle": "Meeting Detected",
+        "recordingTitle": "Recording",
+        "capturedTitle": "Recording Saved",
         "detectedMeeting": "Detected Meeting",
         "record": "Record",
         "hide": "Hide",
-        "stopSave": "Stop/save"
+        "stopSave": "STOP",
+        "viewMeeting": "View"
       }
     },
     "debug": {
