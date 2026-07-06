@@ -24,6 +24,10 @@ const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Holds the canvas draw fn so the mic-level event handler can drive it directly.
+  // The overlay is a non-activating NSPanel where WebKit throttles rAF to ~0, so
+  // the animation must be pushed by the incoming level events, not pulled by rAF.
+  const renderRef = useRef<() => void>(() => {});
   const [streamText, setStreamText] = useState<StreamTextEvent>({
     committed: "",
     tentative: "",
@@ -86,9 +90,10 @@ const RecordingOverlay: React.FC = () => {
       });
 
       const unlistenLevel = await listen<number[]>("mic-level", (event) => {
-        // Store raw band levels; the canvas loop smooths + animates them at 60fps
-        // so motion stays fluid regardless of the ~24 Hz packet rate.
+        // Store raw band levels and draw a frame now. Event-driven so the waveform
+        // animates even when WebKit has throttled rAF in this background panel.
         latestLevelsRef.current = event.payload as number[];
+        renderRef.current();
       });
 
       const unlistenStream = await events.streamTextEvent.listen((event) => {
@@ -134,64 +139,73 @@ const RecordingOverlay: React.FC = () => {
       ntop: 0,
       nbot: 0,
     }));
-    let raf = 0;
     let last = performance.now();
-    const draw = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+    const render = () => {
+      const now = performance.now();
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
       last = now;
       const cv = canvasRef.current;
       const ctx = cv?.getContext("2d");
-      if (cv && ctx) {
-        const dpr = Math.max(1, window.devicePixelRatio || 1);
-        const cssW = cv.clientWidth || 188;
-        const cssH = cv.clientHeight || 32;
-        if (cv.width !== Math.round(cssW * dpr)) cv.width = Math.round(cssW * dpr);
-        if (cv.height !== Math.round(cssH * dpr))
-          cv.height = Math.round(cssH * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, cssW, cssH);
-        ctx.fillStyle = getComputedStyle(cv).color || "#f28cbb";
+      if (!cv || !ctx) return;
 
-        const L = latestLevelsRef.current;
-        const n = WAVE_BARS;
-        const slot = cssW / n;
-        const bw = Math.min(5, slot * 0.62);
-        const r = bw / 2;
-        const mid = cssH / 2;
-        const maxAmp = cssH / 2 - 1;
-        for (let i = 0; i < n; i++) {
-          // Map the band even if the backend sent a different count than WAVE_BARS.
-          const base =
-            L.length === n
-              ? L[i] || 0
-              : L[Math.floor((i / n) * L.length)] || 0;
-          const b = bars[i];
-          b.ntop -= dt;
-          b.nbot -= dt;
-          // Re-roll top/bottom targets on independent staggered timers so the two
-          // edges never move in lockstep (the "not mirrored" ask).
-          if (b.ntop <= 0) {
-            b.ttop = base * (0.5 + Math.random() * 0.7);
-            b.ntop = 0.05 + Math.random() * 0.12;
-          }
-          if (b.nbot <= 0) {
-            b.tbot = base * (0.5 + Math.random() * 0.7);
-            b.nbot = 0.05 + Math.random() * 0.12;
-          }
-          b.top += (b.ttop - b.top) * (b.ttop > b.top ? 0.5 : 0.16);
-          b.bot += (b.tbot - b.bot) * (b.tbot > b.bot ? 0.5 : 0.16);
-          const up = Math.max(1.5, b.top * maxAmp);
-          const dn = Math.max(1.5, b.bot * maxAmp);
-          const x = i * slot + (slot - bw) / 2;
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(x, mid - up, bw, up + dn, r);
-          else ctx.rect(x, mid - up, bw, up + dn);
-          ctx.fill();
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const cssW = cv.clientWidth || 188;
+      const cssH = cv.clientHeight || 32;
+      if (cv.width !== Math.round(cssW * dpr)) cv.width = Math.round(cssW * dpr);
+      if (cv.height !== Math.round(cssH * dpr))
+        cv.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+      ctx.fillStyle = getComputedStyle(cv).color || "#f28cbb";
+
+      // dt-based easing so the feel is the same whether we're ticking at the
+      // ~24Hz event rate (rAF throttled) or 60fps rAF (panel focused).
+      const kAtt = 1 - Math.exp(-32 * dt);
+      const kRel = 1 - Math.exp(-9 * dt);
+      const L = latestLevelsRef.current;
+      const n = WAVE_BARS;
+      const slot = cssW / n;
+      const bw = Math.min(5, slot * 0.62);
+      const r = bw / 2;
+      const mid = cssH / 2;
+      const maxAmp = cssH / 2 - 1;
+      for (let i = 0; i < n; i++) {
+        // Map the band even if the backend sent a different count than WAVE_BARS.
+        const base =
+          L.length === n ? L[i] || 0 : L[Math.floor((i / n) * L.length)] || 0;
+        const b = bars[i];
+        b.ntop -= dt;
+        b.nbot -= dt;
+        // Re-roll top/bottom targets on independent staggered timers so the two
+        // edges never move in lockstep (the "not mirrored" ask).
+        if (b.ntop <= 0) {
+          b.ttop = base * (0.5 + Math.random() * 0.7);
+          b.ntop = 0.05 + Math.random() * 0.12;
         }
+        if (b.nbot <= 0) {
+          b.tbot = base * (0.5 + Math.random() * 0.7);
+          b.nbot = 0.05 + Math.random() * 0.12;
+        }
+        b.top += (b.ttop - b.top) * (b.ttop > b.top ? kAtt : kRel);
+        b.bot += (b.tbot - b.bot) * (b.tbot > b.bot ? kAtt : kRel);
+        const up = Math.max(1.5, b.top * maxAmp);
+        const dn = Math.max(1.5, b.bot * maxAmp);
+        const x = i * slot + (slot - bw) / 2;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(x, mid - up, bw, up + dn, r);
+        else ctx.rect(x, mid - up, bw, up + dn);
+        ctx.fill();
       }
-      raf = requestAnimationFrame(draw);
     };
-    raf = requestAnimationFrame(draw);
+    // Push draws from mic-level events (see renderRef) so motion survives rAF
+    // throttling; rAF adds extra smoothness only while the panel is focused.
+    renderRef.current = render;
+    let raf = 0;
+    const loop = () => {
+      render();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, []);
 
