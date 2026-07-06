@@ -109,6 +109,16 @@
         "title": "Доступ к универсальному доступу",
         "description": "Необходим для ввода расшифрованного текста в ваши приложения."
       },
+      "remoteDesktop": {
+        "title": "Разрешение ввода",
+        "description": "Разрешите Handy автоматически вставлять продиктованный текст в активное приложение.",
+        "note": "Вы можете отключить или включить это разрешение в настройках в любое время.",
+        "button": "Разрешить автоматический ввод",
+        "skipButton": "Не сейчас",
+        "warningTooltip": "Разрешение ввода не настроено",
+        "configured": "Настроено",
+        "notConfigured": "Требует настройки"
+      },
       "grant": "Предоставить разрешение",
       "granted": "Предоставлено",
       "waiting": "Ожидание...",
@@ -273,8 +283,9 @@
         "description": "Запускать в системный трей, не открывая окно."
       },
       "autostart": {
-        "label": "Запускать при старте",
-        "description": "Автоматически запускать Handy при входе в систему."
+        "label": "Запуск при запуске",
+        "description": "Автоматически запускать Handy при входе в систему.",
+        "error": "Не удалось обновить настройку автозапуска. Ваше окружение рабочего стола может не поддерживать эту функцию."
       },
       "showTrayIcon": {
         "label": "Показать значок в трее",
@@ -310,7 +321,14 @@
           "none": "Нет",
           "externalScript": "Внешний скрипт"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "Запрос…",
+          "errors": {
+            "requestFailed": "Не удалось запросить разрешение.",
+            "revokeFailed": "Не удалось удалить разрешение."
+          }
+        }
       },
       "typingTool": {
         "title": "Инструмент ввода",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Задержка ввода",
+        "description": "Управляет скоростью отправки событий ввода. Увеличьте это значение, если символы вводятся в неправильном порядке.",
+        "unit": "мс"
       }
     },
     "postProcessing": {

@@ -109,6 +109,16 @@
         "title": "접근성 권한",
         "description": "녹음된 텍스트를 애플리케이션에 입력하기 위해 필요합니다."
       },
+      "remoteDesktop": {
+        "title": "입력 권한",
+        "description": "Handy가 받아쓴 텍스트를 활성 앱에 자동으로 삽입하도록 허용합니다.",
+        "note": "이 권한은 언제든지 설정에서 비활성화하거나 활성화할 수 있습니다.",
+        "button": "자동 입력 허용",
+        "skipButton": "나중에",
+        "warningTooltip": "입력 권한이 구성되지 않았습니다",
+        "configured": "구성됨",
+        "notConfigured": "설정 필요"
+      },
       "grant": "권한 부여",
       "granted": "승인됨",
       "waiting": "대기 중...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "시작 시 실행",
-        "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다."
+        "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다.",
+        "error": "자동 시작 설정을 업데이트하지 못했습니다. 데스크톱 환경이 이 기능을 지원하지 않을 수 있습니다."
       },
       "showTrayIcon": {
         "label": "트레이 아이콘 표시",
@@ -310,7 +321,14 @@
           "none": "없음",
           "externalScript": "외부 스크립트"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "요청 중…",
+          "errors": {
+            "requestFailed": "권한 요청에 실패했습니다.",
+            "revokeFailed": "권한 제거에 실패했습니다."
+          }
+        }
       },
       "typingTool": {
         "title": "타이핑 도구",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "입력 지연",
+        "description": "입력 이벤트를 보내는 속도를 조절합니다. 문자가 잘못된 순서로 입력되면 이 값을 늘리세요.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

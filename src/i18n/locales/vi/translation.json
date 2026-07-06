@@ -109,6 +109,16 @@
         "title": "Quyền truy cập Trợ năng",
         "description": "Cần thiết để nhập văn bản đã chuyển đổi vào các ứng dụng của bạn."
       },
+      "remoteDesktop": {
+        "title": "Quyền nhập",
+        "description": "Cho phép Handy tự động chèn văn bản đã đọc vào ứng dụng đang hoạt động.",
+        "note": "Bạn có thể tắt hoặc bật quyền này bất cứ lúc nào trong phần cài đặt.",
+        "button": "Cho phép nhập tự động",
+        "skipButton": "Để sau",
+        "warningTooltip": "Quyền nhập chưa được cấu hình",
+        "configured": "Đã cấu hình",
+        "notConfigured": "Cần cấu hình"
+      },
       "grant": "Cấp quyền",
       "granted": "Đã cấp",
       "waiting": "Đang chờ...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "Khởi động cùng hệ thống",
-        "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."
+        "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính.",
+        "error": "Không thể cập nhật cài đặt khởi động tự động. Môi trường desktop của bạn có thể không hỗ trợ tính năng này."
       },
       "showTrayIcon": {
         "label": "Hiển thị biểu tượng khay",
@@ -310,7 +321,14 @@
           "none": "Không có",
           "externalScript": "Script bên ngoài"
         },
-        "externalScriptPlaceholder": "/duong-dan/toi/script.sh"
+        "externalScriptPlaceholder": "/duong-dan/toi/script.sh",
+        "portal": {
+          "buttonRequesting": "Đang yêu cầu…",
+          "errors": {
+            "requestFailed": "Yêu cầu quyền thất bại.",
+            "revokeFailed": "Xóa quyền thất bại."
+          }
+        }
       },
       "typingTool": {
         "title": "Công cụ gõ",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Độ trễ gõ",
+        "description": "Điều chỉnh tốc độ gửi sự kiện gõ. Tăng giá trị này nếu ký tự được nhập sai thứ tự.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

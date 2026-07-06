@@ -109,6 +109,16 @@
         "title": "Accessibility Access",
         "description": "Required to type transcribed text into your applications."
       },
+      "remoteDesktop": {
+        "title": "Typing authorization",
+        "description": "Allow Handy to insert dictated text automatically into the active app.",
+        "note": "You can disable or enable this permission at any time in settings.",
+        "button": "Allow automatic typing",
+        "skipButton": "Not now",
+        "warningTooltip": "Typing authorization not configured",
+        "configured": "Configured",
+        "notConfigured": "Configuration is required"
+      },
       "grant": "Grant Permission",
       "granted": "Granted",
       "waiting": "Waiting...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start Handy when you log in to your computer."
+        "description": "Automatically start Handy when you log in to your computer.",
+        "error": "Failed to update autostart setting. Your desktop environment may not support this feature."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
@@ -310,7 +321,14 @@
           "none": "None",
           "externalScript": "External Script"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "Requesting…",
+          "errors": {
+            "requestFailed": "Permission request failed.",
+            "revokeFailed": "Permission removal failed."
+          }
+        }
       },
       "typingTool": {
         "title": "Typing Tool",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Typing delay",
+        "description": "Control the speed used to send typing events. Increase this value if characters are typed out of order.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

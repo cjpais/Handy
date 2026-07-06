@@ -109,6 +109,16 @@
         "title": "Acceso de Accesibilidad",
         "description": "Necesario para escribir el texto transcrito en tus aplicaciones."
       },
+      "remoteDesktop": {
+        "title": "Autorización de escritura",
+        "description": "Permite que Handy inserte automáticamente el texto dictado en la aplicación activa.",
+        "note": "Puedes desactivar o activar este permiso en cualquier momento desde los ajustes.",
+        "button": "Permitir escritura automática",
+        "skipButton": "Ahora no",
+        "warningTooltip": "Autorización de escritura no configurada",
+        "configured": "Configurada",
+        "notConfigured": "Por configurar"
+      },
       "grant": "Conceder Permiso",
       "granted": "Concedido",
       "waiting": "Esperando...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "Iniciar al Arranque",
-        "description": "Iniciar Handy automáticamente cuando inicies sesión en tu computadora."
+        "description": "Iniciar Handy automáticamente cuando inicies sesión en tu computadora.",
+        "error": "No se pudo actualizar la configuración de inicio automático. Es posible que tu entorno de escritorio no admita esta función."
       },
       "showTrayIcon": {
         "label": "Mostrar Icono de Bandeja",
@@ -310,7 +321,14 @@
           "none": "Ninguno",
           "externalScript": "Script externo"
         },
-        "externalScriptPlaceholder": "/ruta/a/su/script.sh"
+        "externalScriptPlaceholder": "/ruta/a/su/script.sh",
+        "portal": {
+          "buttonRequesting": "Solicitando…",
+          "errors": {
+            "requestFailed": "La solicitud de permiso falló.",
+            "revokeFailed": "La eliminación del permiso falló."
+          }
+        }
       },
       "typingTool": {
         "title": "Herramienta de Escritura",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Retraso de escritura",
+        "description": "Controla la velocidad con la que se envían los eventos de escritura. Aumenta este valor si los caracteres se escriben en un orden incorrecto.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

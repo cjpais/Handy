@@ -4,6 +4,8 @@ mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
 mod catalog;
+#[cfg(target_os = "linux")]
+mod autostart;
 pub mod cli;
 mod clipboard;
 mod commands;
@@ -13,6 +15,8 @@ mod llm_client;
 mod managers;
 mod overlay;
 pub mod portable;
+#[cfg(target_os = "linux")]
+mod remote_desktop;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -22,7 +26,6 @@ mod tray_i18n;
 mod utils;
 
 pub use cli::CliArgs;
-#[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
 
@@ -42,7 +45,9 @@ pub use transcription_coordinator::TranscriptionCoordinator;
 
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Listener, Manager};
-use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+use tauri_plugin_autostart::MacosLauncher;
+#[cfg(not(target_os = "linux"))]
+use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
 use crate::settings::get_settings;
@@ -155,6 +160,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Initialize the managers. The audio recorder receives the streaming router
     // explicitly, so always-on microphone startup can wire live-preview frames
     // even before Tauri state is populated.
+
+    #[cfg(target_os = "linux")]
+    {
+        crate::remote_desktop::init_authorization(app_handle);
+    }
+
     let model_manager =
         Arc::new(ModelManager::new(app_handle).expect("Failed to initialize model manager"));
     let transcription_manager = Arc::new(
@@ -207,7 +218,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Choose the appropriate initial icon based on theme
     let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
 
-    let tray = TrayIconBuilder::new()
+    let tray_builder = TrayIconBuilder::with_id("handy-tray")
         .icon(
             Image::from_path(
                 app_handle
@@ -218,8 +229,24 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             .unwrap(),
         )
         .tooltip(tray::tray_tooltip())
-        .show_menu_on_left_click(true)
-        .icon_as_template(true)
+        .show_menu_on_left_click(true);
+
+    // On Linux/Flatpak, explicitly set the temp directory to the shared tray-icon location.
+    // Without this, bwrap sandbox creates files in an isolated namespace that the host
+    // StatusNotifierWatcher cannot access, causing blank tray icons.
+    #[cfg(target_os = "linux")]
+    let tray_builder = {
+        let temp_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
+        let tray_temp_path = format!("{}/tray-icon", temp_dir);
+        std::fs::create_dir_all(&tray_temp_path).ok();
+        tray_builder.temp_dir_path(&tray_temp_path)
+    };
+
+    // Only set icon_as_template on macOS - on Linux this can cause icon display issues
+    #[cfg(target_os = "macos")]
+    let tray_builder = tray_builder.icon_as_template(true);
+
+    let tray = tray_builder
         .on_menu_event(|app, event| match event.id.as_ref() {
             "settings" => {
                 show_main_window(app);
@@ -295,15 +322,32 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     });
 
     // Get the autostart manager and configure based on user setting
-    let autostart_manager = app_handle.autolaunch();
-    let settings = settings::get_settings(app_handle);
+    let settings = settings::get_settings(&app_handle);
 
-    if settings.autostart_enabled {
-        // Enable autostart if user has opted in
-        let _ = autostart_manager.enable();
-    } else {
-        // Disable autostart if user has opted out
-        let _ = autostart_manager.disable();
+    // On Linux, use custom autostart that handles Flatpak correctly
+    #[cfg(target_os = "linux")]
+    {
+        let result = if settings.autostart_enabled {
+            autostart::enable()
+        } else {
+            autostart::disable()
+        };
+        if let Err(e) = result {
+            log::warn!("Failed to configure autostart: {}", e);
+        }
+    }
+
+    // On other platforms, use the tauri plugin
+    #[cfg(not(target_os = "linux"))]
+    {
+        let autostart_manager = app_handle.autolaunch();
+        if settings.autostart_enabled {
+            // Enable autostart if user has opted in
+            let _ = autostart_manager.enable();
+        } else {
+            // Disable autostart if user has opted out
+            let _ = autostart_manager.disable();
+        }
     }
 
     // Create the recording overlay window (hidden by default)
@@ -548,6 +592,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_extra_recording_buffer_setting,
             shortcut::change_paste_delay_ms_setting,
+            shortcut::change_remote_desktop_key_event_delay_ms_setting,
             shortcut::change_paste_method_setting,
             shortcut::get_available_typing_tools,
             shortcut::change_typing_tool_setting,
@@ -601,6 +646,10 @@ pub fn run(cli_args: CliArgs) {
             commands::check_apple_intelligence_available,
             commands::initialize_enigo,
             commands::initialize_shortcuts,
+            commands::is_wayland_active,
+            commands::request_remote_desktop_authorization,
+            commands::delete_remote_desktop_authorization,
+            commands::get_remote_desktop_authorization,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
@@ -644,7 +693,6 @@ pub fn run(cli_args: CliArgs) {
             managers::transcription::StreamPhaseEvent,
         ]);
 
-    #[cfg(debug_assertions)] // <- Only export on non-release builds
     specta_builder
         .export(
             Typescript::default().bigint(BigIntExportBehavior::Number),
@@ -871,6 +919,16 @@ pub fn run(cli_args: CliArgs) {
             Ok(())
         })
         .on_window_event(|window, event| match event {
+            tauri::WindowEvent::Focused(true) => {
+                // Workaround for Tauri #11856: on Linux/Wayland, xdg-decoration
+                // buttons can become unresponsive. Toggling resizable forces a
+                // compositor re-configure that restores them.
+                #[cfg(target_os = "linux")]
+                {
+                    let _ = window.set_resizable(false);
+                    let _ = window.set_resizable(true);
+                }
+            }
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 let _res = window.hide();

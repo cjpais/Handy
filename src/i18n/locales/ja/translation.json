@@ -109,6 +109,16 @@
         "title": "アクセシビリティへのアクセス",
         "description": "アプリに文字起こししたテキストを入力するために必要です。"
       },
+      "remoteDesktop": {
+        "title": "入力の許可",
+        "description": "Handy が音声入力したテキストをアクティブなアプリへ自動的に挿入できるようにします。",
+        "note": "この権限は設定からいつでも無効化または有効化できます。",
+        "button": "自動入力を許可",
+        "skipButton": "今はしない",
+        "warningTooltip": "入力の許可が設定されていません",
+        "configured": "設定済み",
+        "notConfigured": "設定が必要"
+      },
       "grant": "権限を許可",
       "granted": "許可済み",
       "waiting": "待機中…",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "起動時に実行",
-        "description": "コンピューターにログインしたときに Handy を自動的に起動。"
+        "description": "コンピューターにログインしたときに Handy を自動的に起動。",
+        "error": "自動起動設定の更新に失敗しました。お使いのデスクトップ環境はこの機能をサポートしていない可能性があります。"
       },
       "showTrayIcon": {
         "label": "トレイアイコンを表示",
@@ -310,7 +321,14 @@
           "none": "なし",
           "externalScript": "外部スクリプト"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "リクエスト中…",
+          "errors": {
+            "requestFailed": "権限のリクエストに失敗しました。",
+            "revokeFailed": "権限の削除に失敗しました。"
+          }
+        }
       },
       "typingTool": {
         "title": "タイピングツール",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "音声区間検出 (VAD)",
         "description": "録音から無音部分を除去します。ストリーミング対応モデルはより長い音声検出区間を使用します。VAD を無効にすると音声をそのまま録音します。"
+      },
+      "typingDelay": {
+        "title": "入力遅延",
+        "description": "入力イベントを送信する速度を制御します。文字が順序どおりに入力されない場合は、この値を増やしてください。",
+        "unit": "ミリ秒"
       }
     },
     "postProcessing": {

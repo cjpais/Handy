@@ -109,6 +109,16 @@
         "title": "Bedienungshilfen-Zugriff",
         "description": "Erforderlich, um transkribierten Text in deine Anwendungen einzugeben."
       },
+      "remoteDesktop": {
+        "title": "Eingabeautorisierung",
+        "description": "Erlauben Sie Handy, diktierten Text automatisch in die aktive App einzufügen.",
+        "note": "Sie können diese Berechtigung jederzeit in den Einstellungen deaktivieren oder aktivieren.",
+        "button": "Automatische Eingabe erlauben",
+        "skipButton": "Nicht jetzt",
+        "warningTooltip": "Eingabeautorisierung nicht konfiguriert",
+        "configured": "Konfiguriert",
+        "notConfigured": "Einrichtung erforderlich"
+      },
       "grant": "Berechtigung erteilen",
       "granted": "Erteilt",
       "waiting": "Warten...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "Beim Start ausführen",
-        "description": "Handy automatisch beim Anmelden starten."
+        "description": "Handy automatisch beim Anmelden starten.",
+        "error": "Autostart-Einstellung konnte nicht aktualisiert werden. Ihre Desktop-Umgebung unterstützt diese Funktion möglicherweise nicht."
       },
       "showTrayIcon": {
         "label": "Taskleistensymbol anzeigen",
@@ -310,7 +321,14 @@
           "none": "Keine",
           "externalScript": "Externes Skript"
         },
-        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh"
+        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh",
+        "portal": {
+          "buttonRequesting": "Wird angefordert…",
+          "errors": {
+            "requestFailed": "Berechtigungsanfrage fehlgeschlagen.",
+            "revokeFailed": "Entfernen der Berechtigung fehlgeschlagen."
+          }
+        }
       },
       "typingTool": {
         "title": "Eingabetool",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Tippverzögerung",
+        "description": "Steuert die Geschwindigkeit, mit der Tippereignisse gesendet werden. Erhöhen Sie diesen Wert, wenn Zeichen in falscher Reihenfolge eingegeben werden.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

@@ -109,6 +109,16 @@
         "title": "Erişilebilirlik Erişimi",
         "description": "Transkribe edilen metni uygulamalarınıza yazabilmek için gereklidir."
       },
+      "remoteDesktop": {
+        "title": "Yazma izni",
+        "description": "Handy’nin dikte edilen metni etkin uygulamaya otomatik olarak eklemesine izin verin.",
+        "note": "Bu izni ayarlardan istediğiniz zaman devre dışı bırakabilir veya etkinleştirebilirsiniz.",
+        "button": "Otomatik yazmaya izin ver",
+        "skipButton": "Şimdi değil",
+        "warningTooltip": "Yazma izni yapılandırılmadı",
+        "configured": "Yapılandırıldı",
+        "notConfigured": "Yapılandırılmalı"
+      },
       "grant": "İzin Ver",
       "granted": "Verildi",
       "waiting": "Bekleniyor...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "Başlangıçta Çalıştır",
-        "description": "Bilgisayara giriş yaptığınızda Handy otomatik olarak başlatılır."
+        "description": "Bilgisayara giriş yaptığınızda Handy otomatik olarak başlatılır.",
+        "error": "Otomatik başlatma ayarı güncellenemedi. Masaüstü ortamınız bu özelliği desteklemiyor olabilir."
       },
       "showTrayIcon": {
         "label": "Tepsi simgesini göster",
@@ -310,7 +321,14 @@
           "none": "Yok",
           "externalScript": "Harici Betik"
         },
-        "externalScriptPlaceholder": "/dosya/yolu/betik.sh"
+        "externalScriptPlaceholder": "/dosya/yolu/betik.sh",
+        "portal": {
+          "buttonRequesting": "İsteniyor…",
+          "errors": {
+            "requestFailed": "İzin isteği başarısız.",
+            "revokeFailed": "İzin kaldırma başarısız."
+          }
+        }
       },
       "typingTool": {
         "title": "Yazma Aracı",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Yazma gecikmesi",
+        "description": "Yazma olaylarının gönderilme hızını kontrol eder. Karakterler yanlış sırayla yazılıyorsa bu değeri artırın.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

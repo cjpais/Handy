@@ -9,6 +9,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS: u64 = 5;
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -187,12 +188,13 @@ pub enum RecordingRetentionPeriod {
 pub enum KeyboardImplementation {
     Tauri,
     HandyKeys,
+    Portal,
 }
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
         #[cfg(target_os = "linux")]
-        return KeyboardImplementation::Tauri;
+        return KeyboardImplementation::Portal;
         #[cfg(not(target_os = "linux"))]
         return KeyboardImplementation::HandyKeys;
     }
@@ -263,6 +265,7 @@ impl SoundTheme {
 pub enum TypingTool {
     #[default]
     Auto,
+    RemoteDesktop,
     Wtype,
     Kwtype,
     Dotool,
@@ -420,6 +423,8 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default = "default_remote_desktop_key_event_delay_ms")]
+    pub remote_desktop_key_event_delay_ms: u64,
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
@@ -438,6 +443,8 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    #[serde(default)]
+    pub remote_desktop_token: Option<String>,
 }
 
 fn default_model() -> String {
@@ -515,6 +522,10 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_remote_desktop_key_event_delay_ms() -> u64 {
+    DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS
 }
 
 fn default_auto_submit() -> bool {
@@ -846,6 +857,7 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
+        remote_desktop_key_event_delay_ms: default_remote_desktop_key_event_delay_ms(),
         external_script_path: None,
         custom_filler_words: None,
         transcribe_accelerator: TranscribeAcceleratorSetting::default(),
@@ -854,7 +866,20 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
         overlay_style: default_overlay_style(),
+        remote_desktop_token: None,
     }
+}
+
+/// Returns the persisted Remote Desktop portal token, if one is stored.
+pub fn get_remote_desktop_token(app: &AppHandle) -> Option<String> {
+    get_settings(app).remote_desktop_token
+}
+
+/// Persists or clears the Remote Desktop portal token in application settings.
+pub fn set_remote_desktop_token(app: &AppHandle, token: Option<String>) {
+    let mut settings = get_settings(app);
+    settings.remote_desktop_token = token;
+    write_settings(app, settings);
 }
 
 impl AppSettings {

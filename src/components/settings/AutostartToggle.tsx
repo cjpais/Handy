@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
+import { commands } from "@/bindings";
 
 interface AutostartToggleProps {
   descriptionMode?: "inline" | "tooltip";
@@ -11,15 +13,29 @@ interface AutostartToggleProps {
 export const AutostartToggle: React.FC<AutostartToggleProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { getSetting, refreshSettings } = useSettings();
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const autostartEnabled = getSetting("autostart_enabled") ?? false;
+
+    const handleChange = async (enabled: boolean) => {
+      setIsUpdating(true);
+      try {
+        const result = await commands.changeAutostartSetting(enabled);
+        if (result.status === "error") {
+          toast.error(t("settings.advanced.autostart.error"));
+        }
+        await refreshSettings();
+      } finally {
+        setIsUpdating(false);
+      }
+    };
 
     return (
       <ToggleSwitch
         checked={autostartEnabled}
-        onChange={(enabled) => updateSetting("autostart_enabled", enabled)}
-        isUpdating={isUpdating("autostart_enabled")}
+        onChange={handleChange}
+        isUpdating={isUpdating}
         label={t("settings.advanced.autostart.label")}
         description={t("settings.advanced.autostart.description")}
         descriptionMode={descriptionMode}

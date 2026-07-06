@@ -109,6 +109,16 @@
         "title": "Доступ до доступності",
         "description": "Потрібен для введення транскрибованого тексту у ваші додатки."
       },
+      "remoteDesktop": {
+        "title": "Дозвіл введення",
+        "description": "Дозвольте Handy автоматично вставляти продиктований текст в активну програму.",
+        "note": "Ви можете будь-коли вимкнути або ввімкнути цей дозвіл у налаштуваннях.",
+        "button": "Дозволити автоматичне введення",
+        "skipButton": "Не зараз",
+        "warningTooltip": "Дозвіл введення не налаштовано",
+        "configured": "Налаштовано",
+        "notConfigured": "Потрібно налаштувати"
+      },
       "grant": "Надати дозвіл",
       "granted": "Надано",
       "waiting": "Очікування...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "Запуск при старті системи",
-        "description": "Автоматично запускати Handy при вході в систему"
+        "description": "Автоматично запускати Handy при вході в систему",
+        "error": "Не вдалося оновити налаштування автозапуску. Ваше середовище робочого столу може не підтримувати цю функцію."
       },
       "showTrayIcon": {
         "label": "Показати значок у треї",
@@ -310,7 +321,14 @@
           "none": "Немає",
           "externalScript": "Зовнішній скрипт"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "Запит триває…",
+          "errors": {
+            "requestFailed": "Не вдалося запитати дозвіл.",
+            "revokeFailed": "Не вдалося видалити дозвіл."
+          }
+        }
       },
       "typingTool": {
         "title": "Інструмент введення",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Затримка введення",
+        "description": "Керує швидкістю надсилання подій введення. Збільште це значення, якщо символи вводяться в неправильному порядку.",
+        "unit": "мс"
       }
     },
     "postProcessing": {

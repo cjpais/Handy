@@ -109,6 +109,16 @@
         "title": "إمكانية الوصول",
         "description": ".مطلوب لكتابة النص المفرغ في تطبيقاتك"
       },
+      "remoteDesktop": {
+        "title": "إذن الكتابة",
+        "description": "اسمح لـ Handy بإدراج النص المملى تلقائياً في التطبيق النشط.",
+        "note": "يمكنك تعطيل هذا الإذن أو تفعيله في أي وقت من الإعدادات.",
+        "button": "السماح بالكتابة التلقائية",
+        "skipButton": "ليس الآن",
+        "warningTooltip": "إذن الكتابة غير مهيأ",
+        "configured": "مهيأ",
+        "notConfigured": "يتطلب الإعداد"
+      },
       "grant": "منح الإذن",
       "granted": "تم المنح",
       "waiting": "...في الانتظار",
@@ -253,7 +263,8 @@
       },
       "autostart": {
         "label": "التشغيل عند بدء التشغيل",
-        "description": ".بدء تشغيل Handy تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
+        "description": ".بدء تشغيل Handy تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك",
+        "error": "فشل في تحديث إعداد بدء التشغيل التلقائي. قد لا تدعم بيئة سطح المكتب الخاصة بك هذه الميزة."
       },
       "showTrayIcon": {
         "label": "إظهار أيقونة شريط النظام",
@@ -289,7 +300,14 @@
           "none": "بلا",
           "externalScript": "نص برمجي خارجي"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "جارٍ الطلب…",
+          "errors": {
+            "requestFailed": "فشل طلب الإذن.",
+            "revokeFailed": "فشلت إزالة الإذن."
+          }
+        }
       },
       "typingTool": {
         "title": "أداة الكتابة",
@@ -346,6 +364,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "تأخير الكتابة",
+        "description": "يتحكم في سرعة إرسال أحداث الكتابة. ارفع هذه القيمة إذا ظهرت الأحرف بترتيب غير صحيح.",
+        "unit": "مللي ثانية"
       }
     },
     "postProcessing": {

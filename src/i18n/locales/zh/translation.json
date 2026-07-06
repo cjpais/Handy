@@ -109,6 +109,16 @@
         "title": "辅助功能访问",
         "description": "需要将转录文本输入到您的应用程序中。"
       },
+      "remoteDesktop": {
+        "title": "输入授权",
+        "description": "允许 Handy 将听写文本自动插入当前活动的应用程序。",
+        "note": "你可以随时在设置中停用或启用此权限。",
+        "button": "允许自动输入",
+        "skipButton": "暂时不要",
+        "warningTooltip": "输入授权尚未配置",
+        "configured": "已配置",
+        "notConfigured": "需要配置"
+      },
       "grant": "授予权限",
       "granted": "已授予",
       "waiting": "等待中...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "开机启动",
-        "description": "登录计算机时自动启动 Handy。"
+        "description": "登录计算机时自动启动 Handy。",
+        "error": "无法更新自动启动设置。您的桌面环境可能不支持此功能。"
       },
       "showTrayIcon": {
         "label": "显示托盘图标",
@@ -310,7 +321,14 @@
           "none": "无",
           "externalScript": "外部脚本"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "正在请求…",
+          "errors": {
+            "requestFailed": "权限请求失败。",
+            "revokeFailed": "移除权限失败。"
+          }
+        }
       },
       "typingTool": {
         "title": "输入工具",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "输入延迟",
+        "description": "控制发送输入事件的速度。如果字符输入顺序错误，请增大此值。",
+        "unit": "毫秒"
       }
     },
     "postProcessing": {

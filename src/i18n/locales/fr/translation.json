@@ -109,6 +109,16 @@
         "title": "Accès à l'accessibilité",
         "description": "Nécessaire pour taper le texte transcrit dans vos applications."
       },
+      "remoteDesktop": {
+        "title": "Autorisation de saisie",
+        "description": "Autorisez Handy à insérer automatiquement le texte dicté dans l’application active.",
+        "note": "Vous pourrez désactiver ou réactiver cette autorisation à tout moment dans les paramètres.",
+        "button": "Autoriser la saisie automatique",
+        "skipButton": "Pas maintenant",
+        "warningTooltip": "Autorisation de saisie non configurée",
+        "configured": "Configurée",
+        "notConfigured": "À configurer"
+      },
       "grant": "Accorder l'autorisation",
       "granted": "Accordé",
       "waiting": "En attente...",
@@ -274,7 +284,8 @@
       },
       "autostart": {
         "label": "Lancer au démarrage",
-        "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
+        "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur.",
+        "error": "Impossible de mettre à jour le paramètre de démarrage automatique. Votre environnement de bureau peut ne pas prendre en charge cette fonctionnalité."
       },
       "showTrayIcon": {
         "label": "Afficher l'icône de la barre",
@@ -310,7 +321,14 @@
           "none": "Aucun",
           "externalScript": "Script externe"
         },
-        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh"
+        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh",
+        "portal": {
+          "buttonRequesting": "Demande en cours…",
+          "errors": {
+            "requestFailed": "La demande d'autorisation a échoué.",
+            "revokeFailed": "La suppression de l’autorisation a échoué."
+          }
+        }
       },
       "typingTool": {
         "title": "Outil de frappe",
@@ -367,6 +385,11 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "typingDelay": {
+        "title": "Délai de frappe",
+        "description": "Contrôle la vitesse d'envoi des événements de frappe. Augmentez cette valeur si les caractères sont saisis dans le désordre.",
+        "unit": "ms"
       }
     },
     "postProcessing": {
