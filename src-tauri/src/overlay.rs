@@ -64,8 +64,14 @@ const OVERLAY_TOP_OFFSET: f64 = 46.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_TOP_OFFSET: f64 = 4.0;
 
+// Lift the bottom overlay clear of the Dock. The card's bottom edge sits this
+// many points above the screen edge; ~90 clears a standard-size bottom Dock with
+// a small gap. (We can't use the screen's visible-frame/work-area here — it
+// mis-reports on macOS for monitors at negative positions, see
+// calculate_overlay_position — so this is a fixed heuristic. Bump it if the Dock
+// is enlarged/magnified.)
 #[cfg(target_os = "macos")]
-const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
+const OVERLAY_BOTTOM_OFFSET: f64 = 90.0;
 
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
