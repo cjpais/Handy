@@ -1,10 +1,16 @@
 use rustfft::{num_complex::Complex32, Fft, FftPlanner};
 use std::sync::Arc;
 
-const DB_MIN: f32 = -55.0;
-const DB_MAX: f32 = -8.0;
-const GAIN: f32 = 1.3;
-const CURVE_POWER: f32 = 0.7;
+// Waveform sensitivity. The dB window [DB_MIN, DB_MAX] is what maps onto the
+// 0..1 bar range: DB_MIN sits just under quiet-room ambient (so silence stays
+// flat) and DB_MAX near conversational speech level (so normal talking drives
+// the bars most of the way up instead of the old -8 dB ceiling that only loud
+// speech could reach). GAIN/CURVE add extra low-end lift. Tune here if bars
+// feel too twitchy (raise DB_MIN / lower GAIN) or too flat (lower DB_MAX).
+const DB_MIN: f32 = -52.0;
+const DB_MAX: f32 = -20.0;
+const GAIN: f32 = 1.6;
+const CURVE_POWER: f32 = 0.65;
 
 pub struct AudioVisualiser {
     fft: Arc<dyn Fft<f32>>,
