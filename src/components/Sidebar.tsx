@@ -1,4 +1,5 @@
 import React from "react";
+import logo from "../assets/logo.png";
 import { useTranslation } from "react-i18next";
 import {
   Cog,
@@ -129,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col w-full items-center flex-1 overflow-hidden">
         <div className="flex items-center justify-center gap-2 mb-6 mt-2 shrink-0">
           <img
-            src="/src/assets/logo.png"
+            src={logo}
             alt="Logo"
             className="h-7 w-7 object-contain select-none"
           />

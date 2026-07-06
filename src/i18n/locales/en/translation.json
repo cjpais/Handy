@@ -96,7 +96,7 @@
       },
       "thegav1": {
         "name": "ThegaV1",
-        "description": "Malayalam speech recognition. High accuracy (ThegaV1)."
+        "description": "Malayalam speech recognition. High accuracy."
       }
     },
     "errors": {

@@ -56,7 +56,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       return;
     }
 
-    if (onLoadRequest) {
+    if (autoPlay && onLoadRequest) {
       onLoadRequest()
         .then((newSrc) => {
           if (active && newSrc) {
@@ -71,7 +71,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return () => {
       active = false;
     };
-  }, [initialSrc, onLoadRequest]);
+  }, [initialSrc, onLoadRequest, autoPlay]);
 
   // Stable animation loop with no dependencies
   const tick = useCallback(() => {
