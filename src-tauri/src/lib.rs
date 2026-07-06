@@ -330,6 +330,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+    utils::create_meeting_prompt_window(app_handle);
 }
 
 #[tauri::command]

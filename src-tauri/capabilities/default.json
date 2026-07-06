@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capabilities for the app",
-  "windows": ["main", "primary", "recording_overlay"],
+  "windows": ["main", "primary", "recording_overlay", "meeting_prompt"],
   "permissions": [
     "core:default",
     "opener:default",

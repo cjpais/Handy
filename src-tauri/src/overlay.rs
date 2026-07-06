@@ -268,16 +268,22 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 }
 
 fn calculate_meeting_prompt_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
-    let monitor = get_monitor_with_cursor(app_handle)?;
+    let monitor = match get_monitor_with_cursor(app_handle) {
+        Some(m) => m,
+        None => {
+            log::warn!("calculate_meeting_prompt_position: get_monitor_with_cursor returned None");
+            return None;
+        }
+    };
     let scale = monitor.scale_factor();
     let monitor_x = monitor.position().x as f64 / scale;
     let monitor_y = monitor.position().y as f64 / scale;
     let monitor_width = monitor.size().width as f64 / scale;
 
-    Some((
-        monitor_x + monitor_width - MEETING_PROMPT_WIDTH - 24.0,
-        monitor_y + OVERLAY_TOP_OFFSET + 24.0,
-    ))
+    let x = monitor_x + monitor_width - MEETING_PROMPT_WIDTH - 24.0;
+    let y = monitor_y + OVERLAY_TOP_OFFSET + 24.0;
+    log::info!("calculate_meeting_prompt_position: monitor={:?}, scale={}, pos=({}, {})", monitor.name(), scale, x, y);
+    Some((x, y))
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
@@ -371,9 +377,13 @@ pub fn create_meeting_prompt_window(app_handle: &AppHandle) {
         builder = builder.data_directory(data_dir.join("webview"));
     }
 
-    if let Ok(window) = builder.build() {
-        #[cfg(target_os = "windows")]
-        force_overlay_topmost(&window);
+    match builder.build() {
+        Ok(_) => {
+            log::debug!("Meeting prompt window created successfully (hidden)");
+        }
+        Err(e) => {
+            log::error!("Failed to create meeting prompt window: {}", e);
+        }
     }
 }
 
@@ -533,20 +543,31 @@ fn emit_meeting_overlay_snapshot(
     app_handle: &AppHandle,
     snapshot: MeetingOverlaySnapshot,
 ) -> MeetingOverlaySnapshot {
+    log::info!("emit_meeting_overlay_snapshot: snapshot={:?}", snapshot);
     let snapshot = update_meeting_overlay_snapshot(snapshot);
 
     if app_handle.get_webview_window("meeting_prompt").is_none() {
+        log::info!("emit_meeting_overlay_snapshot: meeting_prompt window is None, creating it.");
         create_meeting_prompt_window(app_handle);
     }
 
     if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
         if let Some((x, y)) = calculate_meeting_prompt_position(app_handle) {
+            log::info!("emit_meeting_overlay_snapshot: setting position to ({}, {})", x, y);
             let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        } else {
+            log::warn!("emit_meeting_overlay_snapshot: calculate_meeting_prompt_position returned None");
         }
-        let _ = window.show();
+        log::info!("emit_meeting_overlay_snapshot: calling window.show()");
+        let show_res = window.show();
+        log::info!("emit_meeting_overlay_snapshot: window.show() returned {:?}", show_res);
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&window);
-        let _ = window.emit("meeting-overlay-show", snapshot.clone());
+        log::info!("emit_meeting_overlay_snapshot: emitting meeting-overlay-show event");
+        let emit_res = window.emit("meeting-overlay-show", snapshot.clone());
+        log::info!("emit_meeting_overlay_snapshot: window.emit() returned {:?}", emit_res);
+    } else {
+        log::error!("emit_meeting_overlay_snapshot: Failed to get/create meeting_prompt window!");
     }
 
     snapshot
@@ -604,7 +625,7 @@ pub fn show_meeting_stopped_overlay(app_handle: &AppHandle) {
 }
 
 pub fn hide_meeting_prompt_window(app_handle: &AppHandle) {
-    update_meeting_overlay_snapshot(MeetingOverlaySnapshot {
+    let snapshot = update_meeting_overlay_snapshot(MeetingOverlaySnapshot {
         sequence: 0,
         mode: MeetingOverlayMode::Hidden,
         prompt: None,
@@ -612,7 +633,13 @@ pub fn hide_meeting_prompt_window(app_handle: &AppHandle) {
     });
 
     if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
-        let _ = window.destroy();
+        let _ = window.emit("meeting-overlay-show", snapshot);
+
+        let window_clone = window.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            let _ = window_clone.hide();
+        });
     }
 }
 

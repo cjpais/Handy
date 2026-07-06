@@ -51,6 +51,31 @@ function App() {
   );
   const hasCompletedPostOnboardingInit = useRef(false);
 
+  const [simulateProd, setSimulateProd] = useState<boolean>(() => {
+    if (import.meta.env.DEV) {
+      return localStorage.getItem("thegai_dev_simulate_prod") === "true";
+    }
+    return false;
+  });
+
+  const handleToggleSimulateProd = () => {
+    setSimulateProd((prev) => {
+      const next = !prev;
+      localStorage.setItem("thegai_dev_simulate_prod", String(next));
+      return next;
+    });
+  };
+
+  // Automatically redirect to general if a hidden section becomes active in prod mode
+  useEffect(() => {
+    const isRealProd = !import.meta.env.DEV;
+    const isSimulatingOrRealProd = isRealProd || simulateProd;
+    const hiddenSections = ["models", "history", "meetings", "postprocessing"];
+    if (isSimulatingOrRealProd && hiddenSections.includes(currentSection)) {
+      setCurrentSection("general");
+    }
+  }, [simulateProd, currentSection]);
+
   useEffect(() => {
     checkOnboardingStatus();
   }, []);
@@ -330,6 +355,8 @@ function App() {
         <Sidebar
           activeSection={currentSection}
           onSectionChange={setCurrentSection}
+          simulateProd={simulateProd}
+          onToggleSimulateProd={handleToggleSimulateProd}
         />
         {/* Scrollable content area */}
         <div className="flex-1 flex flex-col overflow-hidden">
