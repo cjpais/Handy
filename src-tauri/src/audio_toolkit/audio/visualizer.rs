@@ -1,16 +1,18 @@
 use rustfft::{num_complex::Complex32, Fft, FftPlanner};
 use std::sync::Arc;
 
-// Waveform sensitivity. The dB window [DB_MIN, DB_MAX] is what maps onto the
-// 0..1 bar range: DB_MIN sits just under quiet-room ambient (so silence stays
-// flat) and DB_MAX near conversational speech level (so normal talking drives
-// the bars most of the way up instead of the old -8 dB ceiling that only loud
-// speech could reach). GAIN/CURVE add extra low-end lift. Tune here if bars
-// feel too twitchy (raise DB_MIN / lower GAIN) or too flat (lower DB_MAX).
-const DB_MIN: f32 = -52.0;
-const DB_MAX: f32 = -20.0;
-const GAIN: f32 = 1.6;
-const CURVE_POWER: f32 = 0.65;
+// Waveform sensitivity. The dB window [DB_MIN, DB_MAX] maps onto the 0..1 bar
+// range. NOTE the scale: dB here = 20*log10(rms_fft / window_size), which for
+// real mic input lands roughly -95 (silent) to -50 (loud speech) — far lower
+// than a dBFS meter. Measured on this setup: silence ~-95, quiet speech ~-70 to
+// -80, peaks ~-60. So DB_MIN sits just above ambient (silence stays flat) and
+// DB_MAX near loud speech (fills the bars). GAIN/CURVE add low-end lift. Tune
+// here if bars feel too twitchy (raise DB_MIN / lower GAIN) or too flat (lower
+// DB_MAX).
+const DB_MIN: f32 = -80.0;
+const DB_MAX: f32 = -44.0;
+const GAIN: f32 = 1.4;
+const CURVE_POWER: f32 = 0.6;
 
 pub struct AudioVisualiser {
     fft: Arc<dyn Fft<f32>>,
