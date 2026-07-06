@@ -171,8 +171,15 @@ const RecordingOverlay: React.FC = () => {
       const maxAmp = cssH / 2 - 1;
       for (let i = 0; i < n; i++) {
         // Map the band even if the backend sent a different count than WAVE_BARS.
-        const base =
+        const raw =
           L.length === n ? L[i] || 0 : L[Math.floor((i / n) * L.length)] || 0;
+        // Center-weight the bars: a mild arch (center taller) plus a gentle treble
+        // lift that offsets the bass-heavy speech spectrum, so the visual mass sits
+        // in the middle instead of piling up on the low-frequency (left) side.
+        const pos = n > 1 ? i / (n - 1) : 0.5;
+        const weight =
+          (0.6 + 0.4 * Math.sin(Math.PI * pos)) * (0.78 + 0.44 * pos);
+        const base = raw * weight;
         const b = bars[i];
         b.ntop -= dt;
         b.nbot -= dt;
