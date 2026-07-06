@@ -49,7 +49,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   const containerClasses = grouped
     ? "px-4 py-2 bg-transparent"
-    : "px-5 py-4 rounded-[16px] border border-stone-mist bg-orange-off-white/40 backdrop-blur-sm transition-all hover:bg-orange-off-white/60 shadow-sm";
+    : "px-5 py-4 rounded-cards border border-stone-mist bg-orange-off-white/40 backdrop-blur-sm transition-all hover:bg-orange-off-white/60 shadow-sm";
 
   if (layout === "stacked") {
     if (descriptionMode === "tooltip") {
@@ -57,7 +57,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
         <div className={containerClasses}>
           <div className="flex items-center gap-2 mb-2">
             <h3
-              className={`text-sm font-medium ${disabled ? "opacity-50" : ""}`}
+              className={`text-sm font-medium text-charcoal ${disabled ? "opacity-50" : ""}`}
             >
               {title}
             </h3>
@@ -69,7 +69,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
               onClick={toggleTooltip}
             >
               <svg
-                className="w-4 h-4 text-mid-gray cursor-help hover:text-logo-primary transition-colors duration-200 select-none"
+                className="w-4 h-4 text-bark-grey cursor-help hover:text-forest-green transition-colors duration-200 select-none"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -92,7 +92,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
               </svg>
               {showTooltip && (
                 <Tooltip targetRef={tooltipRef} position="top">
-                  <p className="text-sm text-center leading-relaxed">
+                  <p className="text-xs text-center leading-relaxed text-charcoal">
                     {description}
                   </p>
                 </Tooltip>
@@ -107,10 +107,14 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     return (
       <div className={containerClasses}>
         <div className="mb-2">
-          <h3 className={`text-sm font-medium ${disabled ? "opacity-50" : ""}`}>
+          <h3
+            className={`text-sm font-medium text-charcoal ${disabled ? "opacity-50" : ""}`}
+          >
             {title}
           </h3>
-          <p className={`text-sm ${disabled ? "opacity-50" : ""}`}>
+          <p
+            className={`text-xs text-bark-grey mt-0.5 ${disabled ? "opacity-50" : ""}`}
+          >
             {description}
           </p>
         </div>
@@ -122,7 +126,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   // Horizontal layout (default)
   const horizontalContainerClasses = grouped
     ? "flex items-center justify-between px-4 py-2 bg-transparent"
-    : "flex items-center justify-between px-5 py-4 rounded-[16px] border border-stone-mist bg-orange-off-white/40 backdrop-blur-sm transition-all hover:bg-orange-off-white/60 shadow-sm";
+    : "flex items-center justify-between px-5 py-4 rounded-cards border border-stone-mist bg-orange-off-white/40 backdrop-blur-sm transition-all hover:bg-orange-off-white/60 shadow-sm";
 
   if (descriptionMode === "tooltip") {
     return (
@@ -130,7 +134,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
         <div className="max-w-2/3">
           <div className="flex items-center gap-2">
             <h3
-              className={`text-sm font-medium ${disabled ? "opacity-50" : ""}`}
+              className={`text-sm font-medium text-charcoal ${disabled ? "opacity-50" : ""}`}
             >
               {title}
             </h3>
@@ -142,7 +146,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
               onClick={toggleTooltip}
             >
               <svg
-                className="w-4 h-4 text-mid-gray cursor-help hover:text-logo-primary transition-colors duration-200 select-none"
+                className="w-4 h-4 text-bark-grey cursor-help hover:text-forest-green transition-colors duration-200 select-none"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -165,7 +169,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
               </svg>
               {showTooltip && (
                 <Tooltip targetRef={tooltipRef} position={tooltipPosition}>
-                  <p className="text-sm text-center leading-relaxed">
+                  <p className="text-xs text-center leading-relaxed text-charcoal">
                     {description}
                   </p>
                 </Tooltip>
@@ -181,10 +185,14 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   return (
     <div className={horizontalContainerClasses}>
       <div className="max-w-2/3">
-        <h3 className={`text-sm font-medium ${disabled ? "opacity-50" : ""}`}>
+        <h3
+          className={`text-sm font-medium text-charcoal ${disabled ? "opacity-50" : ""}`}
+        >
           {title}
         </h3>
-        <p className={`text-sm ${disabled ? "opacity-50" : ""}`}>
+        <p
+          className={`text-xs text-bark-grey mt-0.5 ${disabled ? "opacity-50" : ""}`}
+        >
           {description}
         </p>
       </div>

@@ -19,17 +19,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "font-semibold rounded-[8px] border transition-all duration-150 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer inline-flex items-center justify-center gap-2 font-mono uppercase tracking-[0.04em]";
+    "font-semibold rounded-buttons border transition-all duration-150 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer inline-flex items-center justify-center gap-2 font-mono uppercase tracking-[0.04em] active:scale-[0.97]";
 
   const variantClasses = {
     primary:
-      "text-[#fffbf7] bg-[#1d7a46] border-transparent hover:bg-[#155d35] focus:ring-1 focus:ring-[#1d7a46]",
+      "text-[#fffbf7] bg-[#1d7a46] border-transparent hover:bg-[#155d35] focus:ring-[3px] focus:ring-[#1d7a46]/15",
     "primary-soft":
-      "text-charcoal bg-forest-green/10 border-transparent hover:bg-forest-green/20 focus:ring-1 focus:ring-forest-green",
+      "text-charcoal bg-forest-green/10 border-transparent hover:bg-forest-green/20 focus:ring-[3px] focus:ring-forest-green/15",
     secondary:
-      "bg-transparent border border-stone-mist text-charcoal hover:border-charcoal hover:bg-orange-off-white/30",
+      "bg-transparent border border-stone-mist text-charcoal hover:border-charcoal hover:bg-orange-off-white/30 focus:ring-[3px] focus:ring-stone-mist/50",
     danger:
-      "text-[#fffbf7] bg-alarm-red border-transparent hover:bg-red-700 focus:ring-1 focus:ring-red-500",
+      "text-[#fffbf7] bg-alarm-red border-transparent hover:bg-red-700 focus:ring-[3px] focus:ring-alarm-red/15",
     "danger-ghost":
       "text-alarm-red border-transparent hover:bg-alarm-red/10 focus:bg-alarm-red/20",
     ghost:

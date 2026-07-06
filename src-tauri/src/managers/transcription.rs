@@ -48,7 +48,7 @@ enum LoadedEngine {
     Canary(CanaryModel),
     Cohere(CohereModel),
     #[cfg(windows)]
-    MalayalamIndicConformerCTC(MalayalamAsr),
+    ThegaV1(MalayalamAsr),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -381,7 +381,7 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::Cohere(engine)
             }
-            EngineType::MalayalamIndicConformerCTC => {
+            EngineType::ThegaV1 => {
                 #[cfg(windows)]
                 {
                     let engine = MalayalamAsr::load(&model_path).map_err(|e| {
@@ -390,7 +390,7 @@ impl TranscriptionManager {
                         emit_loading_failed(&error_msg);
                         anyhow::anyhow!(error_msg)
                     })?;
-                    LoadedEngine::MalayalamIndicConformerCTC(engine)
+                    LoadedEngine::ThegaV1(engine)
                 }
                 #[cfg(not(windows))]
                 {
@@ -655,7 +655,7 @@ impl TranscriptionManager {
                                 .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
                         }
                         #[cfg(windows)]
-                        LoadedEngine::MalayalamIndicConformerCTC(asr) => asr
+                        LoadedEngine::ThegaV1(asr) => asr
                             .transcribe(&audio)
                             .map(|text| transcribe_rs::TranscriptionResult {
                                 text,

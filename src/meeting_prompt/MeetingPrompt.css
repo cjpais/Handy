@@ -2,7 +2,7 @@
 
 .meeting-overlay-root {
   --ease-emil: cubic-bezier(0.23, 1, 0.32, 1);
-  
+
   /* Overwrite Tailwind variables locally to force light-theme on the glass card */
   --color-stone-mist: #e7e5e4;
   --color-bark-grey: #79716b;
@@ -20,7 +20,12 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  font-family: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family:
+    "Geist",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
   overflow: hidden;
   background: transparent !important;
 }
@@ -95,8 +100,15 @@ body,
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.1); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
 }
 
 .animate-pulse-dot {
@@ -111,7 +123,10 @@ body,
 }
 
 .btn-interactive {
-  transition: transform 0.15s var(--ease-emil), background-color 0.15s var(--ease-emil), color 0.15s var(--ease-emil);
+  transition:
+    transform 0.15s var(--ease-emil),
+    background-color 0.15s var(--ease-emil),
+    color 0.15s var(--ease-emil);
   cursor: pointer;
 }
 
@@ -121,19 +136,37 @@ body,
 
 /* Animations for Success/Saved State */
 @keyframes draw-check {
-  0% { stroke-dashoffset: 48; }
-  100% { stroke-dashoffset: 0; }
+  0% {
+    stroke-dashoffset: 48;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes slide-up-bounce {
-  0% { opacity: 0; transform: translateY(12px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scale-in-bounce {
-  0% { opacity: 0; transform: scale(0.8); }
-  50% { transform: scale(1.05); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .check-path {

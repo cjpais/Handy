@@ -16,24 +16,24 @@ const variantStyles: Record<
   { container: string; icon: string; text: string }
 > = {
   error: {
-    container: "bg-red-500/10",
-    icon: "text-red-500",
-    text: "text-red-400",
+    container: "bg-alarm-red/10 border border-alarm-red/20",
+    icon: "text-alarm-red",
+    text: "text-charcoal",
   },
   warning: {
-    container: "bg-yellow-500/10",
-    icon: "text-yellow-500",
-    text: "text-yellow-400",
+    container: "bg-terracotta/10 border border-terracotta/20",
+    icon: "text-terracotta",
+    text: "text-charcoal",
   },
   info: {
-    container: "bg-blue-500/10",
-    icon: "text-blue-500",
-    text: "text-blue-400",
+    container: "bg-tide-teal/10 border border-tide-teal/20",
+    icon: "text-tide-teal",
+    text: "text-charcoal",
   },
   success: {
-    container: "bg-green-500/10",
-    icon: "text-green-500",
-    text: "text-green-400",
+    container: "bg-forest-green/10 border border-forest-green/20",
+    icon: "text-forest-green",
+    text: "text-charcoal",
   },
 };
 
@@ -55,10 +55,10 @@ export const Alert: React.FC<AlertProps> = ({
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 ${styles.container} ${contained ? "" : "rounded-lg"} ${className}`}
+      className={`flex items-start gap-3 p-4 ${styles.container} ${contained ? "" : "rounded-buttons"} ${className}`}
     >
       <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${styles.icon}`} />
-      <p className={`text-sm ${styles.text}`}>{children}</p>
+      <div className={`text-sm ${styles.text}`}>{children}</div>
     </div>
   );
 };

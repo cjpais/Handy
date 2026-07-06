@@ -57,25 +57,46 @@
 }
 
 @font-face {
-  font-family: "Cooper LtBT";
-  src: url("/src/assets/fonts/Cooper Lt BT Light/Cooper Lt BT Light.ttf")
+  font-family: "Averia Serif Libre";
+  src: url("/src/assets/fonts/Averia_Serif_Libre/AveriaSerifLibre-Light.ttf")
     format("truetype");
   font-weight: 300;
   font-style: normal;
 }
 @font-face {
-  font-family: "Cooper LtBT";
-  src: url("/src/assets/fonts/Cooper Lt BT Light Italic/Cooper Lt BT Light Italic.ttf")
+  font-family: "Averia Serif Libre";
+  src: url("/src/assets/fonts/Averia_Serif_Libre/AveriaSerifLibre-LightItalic.ttf")
     format("truetype");
   font-weight: 300;
   font-style: italic;
 }
 @font-face {
-  font-family: "Cooper LtBT";
-  src: url("/src/assets/fonts/Cooper Lt BT Bold/Cooper Lt BT Bold.ttf")
+  font-family: "Averia Serif Libre";
+  src: url("/src/assets/fonts/Averia_Serif_Libre/AveriaSerifLibre-Regular.ttf")
+    format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Averia Serif Libre";
+  src: url("/src/assets/fonts/Averia_Serif_Libre/AveriaSerifLibre-Italic.ttf")
+    format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: "Averia Serif Libre";
+  src: url("/src/assets/fonts/Averia_Serif_Libre/AveriaSerifLibre-Bold.ttf")
     format("truetype");
   font-weight: 700;
   font-style: normal;
+}
+@font-face {
+  font-family: "Averia Serif Libre";
+  src: url("/src/assets/fonts/Averia_Serif_Libre/AveriaSerifLibre-BoldItalic.ttf")
+    format("truetype");
+  font-weight: 700;
+  font-style: italic;
 }
 
 @theme {
@@ -106,8 +127,19 @@
 
   /* Typography Families */
   --font-geist: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-cooper-ltbt: "Cooper LtBT", "Playfair Display", serif;
+  --font-cooper-ltbt: "Averia Serif Libre", "Playfair Display", serif;
   --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* Border Radius from Design tokens */
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-tags: 8px;
+  --radius-cards: 16px;
+  --radius-links: 8px;
+  --radius-pills: 9999px;
+  --radius-inputs: 12px;
+  --radius-buttons: 8px;
 }
 
 :root {
@@ -308,4 +340,29 @@
 }
 .markdown-answer li {
   margin-bottom: 0.25rem;
+}
+
+/* Explicit border-radius overrides to prevent pill shapes */
+.rounded-buttons {
+  border-radius: 8px !important;
+}
+.rounded-inputs {
+  border-radius: 12px !important;
+}
+.rounded-cards {
+  border-radius: 16px !important;
+}
+.rounded-tags {
+  border-radius: 8px !important;
+}
+
+/* Remove up/down arrow spinners for number inputs globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

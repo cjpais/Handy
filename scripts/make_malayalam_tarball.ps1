@@ -7,12 +7,12 @@ $asrProjectDir = "d:\Downloads\Projects\Asr malayalam"
 $zipPath = Join-Path $asrProjectDir "indicconformer_ml_ctc_onnx.zip"
 $extractedModelDir = Join-Path $asrProjectDir "model"
 $masrRootDir = Resolve-Path (Join-Path $PSScriptRoot "..")
-$targetTarballName = "malayalam-indicconformer-ctc.tar.gz"
+$targetTarballName = "thegav1.tar.gz"
 $targetTarballPath = Join-Path $masrRootDir $targetTarballName
 
 # Create a temporary directory
 $tempDir = Join-Path $env:TEMP "masr_tarball_temp_$(Get-Random)"
-$stageDir = Join-Path $tempDir "malayalam-indicconformer-ctc"
+$stageDir = Join-Path $tempDir "thegav1"
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 
 Write-Host "Staging model files..."
@@ -91,8 +91,8 @@ if (Test-Path $targetTarballPath) {
     Remove-Item $targetTarballPath -Force
 }
 
-# Run tar.exe. -C changes directory to $tempDir before compressing the folder malayalam-indicconformer-ctc
-tar.exe -czf $targetTarballPath -C $tempDir malayalam-indicconformer-ctc
+# Run tar.exe. -C changes directory to $tempDir before compressing the folder thegav1
+tar.exe -czf $targetTarballPath -C $tempDir thegav1
 
 # Clean up temp directory
 Write-Host "Cleaning up temporary files..."

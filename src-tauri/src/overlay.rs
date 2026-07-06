@@ -282,7 +282,13 @@ fn calculate_meeting_prompt_position(app_handle: &AppHandle) -> Option<(f64, f64
 
     let x = monitor_x + monitor_width - MEETING_PROMPT_WIDTH - 24.0;
     let y = monitor_y + OVERLAY_TOP_OFFSET + 24.0;
-    log::info!("calculate_meeting_prompt_position: monitor={:?}, scale={}, pos=({}, {})", monitor.name(), scale, x, y);
+    log::info!(
+        "calculate_meeting_prompt_position: monitor={:?}, scale={}, pos=({}, {})",
+        monitor.name(),
+        scale,
+        x,
+        y
+    );
     Some((x, y))
 }
 
@@ -553,19 +559,31 @@ fn emit_meeting_overlay_snapshot(
 
     if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
         if let Some((x, y)) = calculate_meeting_prompt_position(app_handle) {
-            log::info!("emit_meeting_overlay_snapshot: setting position to ({}, {})", x, y);
+            log::info!(
+                "emit_meeting_overlay_snapshot: setting position to ({}, {})",
+                x,
+                y
+            );
             let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         } else {
-            log::warn!("emit_meeting_overlay_snapshot: calculate_meeting_prompt_position returned None");
+            log::warn!(
+                "emit_meeting_overlay_snapshot: calculate_meeting_prompt_position returned None"
+            );
         }
         log::info!("emit_meeting_overlay_snapshot: calling window.show()");
         let show_res = window.show();
-        log::info!("emit_meeting_overlay_snapshot: window.show() returned {:?}", show_res);
+        log::info!(
+            "emit_meeting_overlay_snapshot: window.show() returned {:?}",
+            show_res
+        );
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&window);
         log::info!("emit_meeting_overlay_snapshot: emitting meeting-overlay-show event");
         let emit_res = window.emit("meeting-overlay-show", snapshot.clone());
-        log::info!("emit_meeting_overlay_snapshot: window.emit() returned {:?}", emit_res);
+        log::info!(
+            "emit_meeting_overlay_snapshot: window.emit() returned {:?}",
+            emit_res
+        );
     } else {
         log::error!("emit_meeting_overlay_snapshot: Failed to get/create meeting_prompt window!");
     }

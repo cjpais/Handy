@@ -27,6 +27,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const src = loadedSrc;
   const animationRef = useRef<number>();
   const dragTimeRef = useRef<number>(0);
+  const playOnLoadRef = useRef(false);
 
   // Use refs to avoid stale closures in animation loop
   const isPlayingRef = useRef(false);
@@ -40,6 +41,37 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   useEffect(() => {
     isDraggingRef.current = isDragging;
   }, [isDragging]);
+
+  // Load the audio source on mount or when props change
+  useEffect(() => {
+    let active = true;
+    playOnLoadRef.current = false;
+    setLoadedSrc(initialSrc ?? null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setIsLoading(false);
+
+    if (initialSrc) {
+      return;
+    }
+
+    if (onLoadRequest) {
+      onLoadRequest()
+        .then((newSrc) => {
+          if (active && newSrc) {
+            setLoadedSrc(newSrc);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load audio source on mount:", err);
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [initialSrc, onLoadRequest]);
 
   // Stable animation loop with no dependencies
   const tick = useCallback(() => {
@@ -114,7 +146,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     if (!audio) return;
 
     // Play when loadedSrc changes from null to a value (lazy load case)
-    if (loadedSrc && !prevLoadedSrc.current && onLoadRequest) {
+    if (
+      loadedSrc &&
+      !prevLoadedSrc.current &&
+      onLoadRequest &&
+      (playOnLoadRef.current || autoPlay)
+    ) {
+      playOnLoadRef.current = false;
       audio.play().catch((error) => {
         console.error("Auto-play failed:", error);
       });
@@ -173,6 +211,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         // If no src loaded yet, request it
         if (!src && onLoadRequest) {
           setIsLoading(true);
+          playOnLoadRef.current = true;
           const newSrc = await onLoadRequest();
           setIsLoading(false);
           if (newSrc) {
@@ -234,7 +273,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       <button
         onClick={togglePlay}
         disabled={isLoading}
-        className="transition-colors cursor-pointer text-text hover:text-logo-primary disabled:opacity-50"
+        className="transition-all duration-150 cursor-pointer text-charcoal hover:text-forest-green active:scale-[0.88] disabled:opacity-40"
         aria-label={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? (
@@ -245,7 +284,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       </button>
 
       <div className="flex-1 flex items-center gap-2">
-        <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
+        <span className="text-xs text-bark-grey min-w-[30px] tabular-nums">
           {formatTime(currentTime)}
         </span>
 
@@ -258,13 +297,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           onChange={handleSeek}
           onMouseDown={handleSliderMouseDown}
           onTouchStart={handleSliderTouchStart}
-          className={`flex-1 h-1 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-logo-primary ${progressPercent >= 99.5 ? "[&::-webkit-slider-thumb]:translate-x-0.5 [&::-moz-range-thumb]:translate-x-0.5" : ""}`}
+          className={`flex-1 h-1 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-forest-green ${progressPercent >= 99.5 ? "[&::-webkit-slider-thumb]:translate-x-0.5 [&::-moz-range-thumb]:translate-x-0.5" : ""}`}
           style={{
-            background: `linear-gradient(to right, #FAA2CA 0%, #FAA2CA ${progressPercent}%, rgba(128, 128, 128, 0.2) ${progressPercent}%, rgba(128, 128, 128, 0.2) 100%)`,
+            background: `linear-gradient(to right, var(--color-forest-green) 0%, var(--color-forest-green) ${progressPercent}%, rgba(128, 128, 128, 0.2) ${progressPercent}%, rgba(128, 128, 128, 0.2) 100%)`,
           }}
         />
 
-        <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
+        <span className="text-xs text-bark-grey min-w-[30px] tabular-nums">
           {formatTime(duration)}
         </span>
       </div>

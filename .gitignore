@@ -44,8 +44,8 @@ blob-report/
 result
 
 # Large model archives
-malayalam-indicconformer-ctc.tar.gz
-malayalam-indicconformer-ctc/
+thegav1.tar.gz
+thegav1/
 .env
 .agents/
 .codex

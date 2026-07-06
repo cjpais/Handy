@@ -128,11 +128,16 @@ function PrimaryApp() {
       <div className="flex h-full flex-col">
         <header className="border-b border-stone-mist bg-orange-off-white/95 px-6 py-4 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3">
-            {/* Centered App Title */}
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <h1 className="text-xl font-bold text-charcoal font-cooper tracking-wide">
-              Thegai
-            </h1>
+            <div className="flex items-center gap-2">
+              <img
+                src="/src/assets/logo.png"
+                alt="Logo"
+                className="h-6 w-6 object-contain select-none"
+              />
+              <h1 className="text-xl font-bold text-charcoal font-cooper tracking-wide">
+                Thegai
+              </h1>
+            </div>
 
             {/* Navigation Strip */}
             <div className="flex w-full items-center justify-between border-t border-stone-mist/30 pt-3">

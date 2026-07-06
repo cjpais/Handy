@@ -94,9 +94,9 @@
         "name": "Cohere",
         "description": "A large, slower, but very accurate multilingual model."
       },
-      "malayalam-indicconformer-ctc": {
-        "name": "Malayalam IndicConformer CTC",
-        "description": "Malayalam speech recognition. High accuracy."
+      "thegav1": {
+        "name": "ThegaV1",
+        "description": "Malayalam speech recognition. High accuracy (ThegaV1)."
       }
     },
     "errors": {

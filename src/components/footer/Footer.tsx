@@ -4,8 +4,15 @@ import { getVersion } from "@tauri-apps/api/app";
 import ModelSelector from "../model-selector";
 import UpdateChecker from "../update-checker";
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  simulateProd?: boolean;
+}
+
+const Footer: React.FC<FooterProps> = ({ simulateProd }) => {
   const [version, setVersion] = useState("");
+
+  const isRealProd = !import.meta.env.DEV;
+  const isSimulatingOrRealProd = isRealProd || simulateProd;
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -25,7 +32,7 @@ const Footer: React.FC = () => {
     <div className="w-full border-t border-mid-gray/20 pt-3">
       <div className="flex justify-between items-center text-xs px-4 pb-3 text-text/60">
         <div className="flex items-center gap-4">
-          <ModelSelector />
+          {!isSimulatingOrRealProd && <ModelSelector />}
         </div>
 
         {/* Update Status */}

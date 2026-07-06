@@ -11,16 +11,20 @@ export const Textarea: React.FC<TextareaProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded-md text-start transition-[background-color,border-color] duration-150 hover:bg-logo-primary/10 hover:border-logo-primary focus:outline-none focus:bg-logo-primary/10 focus:border-logo-primary resize-y";
+    "bg-orange-off-white border border-stone-mist rounded-inputs text-charcoal text-start transition-all duration-150 focus:outline-none placeholder:text-pebble resize-y";
+
+  const interactiveClasses = props.disabled
+    ? "opacity-40 cursor-not-allowed bg-orange-off-white border-stone-mist/50"
+    : "hover:border-bark-grey focus:border-forest-green focus:ring-[3px] focus:ring-forest-green/15 focus:bg-orange-off-white/80";
 
   const variantClasses = {
-    default: "px-3 py-2 min-h-[100px]",
-    compact: "px-2 py-1 min-h-[80px]",
+    default: "px-4 py-3 text-base min-h-[120px]",
+    compact: "px-3 py-2 text-sm min-h-[90px]",
   };
 
   return (
     <textarea
-      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${interactiveClasses} ${className}`}
       {...props}
     />
   );

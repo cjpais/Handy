@@ -23,15 +23,9 @@ pub async fn process_local_file(
     let file_name = format!("thegai-{}.wav", chrono::Utc::now().timestamp());
     let dest_path = history_manager.recordings_dir().join(&file_name);
 
-    // For now, we only support WAV or we attempt to read samples and save as WAV.
-    // Use read_wav_samples for simple implementation.
-    // In the future, this should decode mp3/flac using rodio.
-    let samples = crate::audio_toolkit::read_wav_samples(&source_path).map_err(|e| {
-        format!(
-            "Failed to read audio file (only WAV is supported currently): {}",
-            e
-        )
-    })?;
+    // Decode MP3/FLAC/WAV/etc. using Symphonia and resample to 16kHz mono.
+    let samples = crate::audio_toolkit::read_any_audio_file(&source_path)
+        .map_err(|e| format!("Failed to read audio file: {}", e))?;
 
     if samples.is_empty() {
         return Err("Audio file contains no samples".to_string());
@@ -174,7 +168,7 @@ pub async fn retry_history_entry_transcription(
         .ok_or_else(|| format!("History entry {} not found", id))?;
 
     let audio_path = history_manager.get_audio_file_path(&entry.file_name);
-    let samples = crate::audio_toolkit::read_wav_samples(&audio_path)
+    let samples = crate::audio_toolkit::read_any_audio_file(&audio_path)
         .map_err(|e| format!("Failed to load audio: {}", e))?;
 
     if samples.is_empty() {

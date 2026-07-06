@@ -5,14 +5,15 @@ import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
 } from "tauri-plugin-macos-permissions-api";
+import { Button } from "./ui/Button";
 
 // Define permission state type
 type PermissionState = "request" | "verify" | "granted";
 
 // Define button configuration type
-interface ButtonConfig {
+interface ButtonPropsConfig {
   text: string;
-  className: string;
+  variant: "primary" | "secondary";
 }
 
 const AccessibilityPermissions: React.FC = () => {
@@ -68,36 +69,36 @@ const AccessibilityPermissions: React.FC = () => {
   }
 
   // Configure button text and style based on state
-  const buttonConfig: Record<PermissionState, ButtonConfig | null> = {
+  const buttonConfig: Record<PermissionState, ButtonPropsConfig | null> = {
     request: {
       text: t("accessibility.openSettings"),
-      className:
-        "px-2 py-1 text-sm font-semibold bg-mid-gray/10 border  border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary",
+      variant: "primary",
     },
     verify: {
       text: t("accessibility.openSettings"),
-      className:
-        "bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1 px-3 rounded-md text-sm flex items-center justify-center cursor-pointer",
+      variant: "secondary",
     },
     granted: null,
   };
 
-  const config = buttonConfig[permissionState] as ButtonConfig;
+  const config = buttonConfig[permissionState] as ButtonPropsConfig;
 
   return (
-    <div className="p-4 w-full rounded-lg border border-mid-gray">
-      <div className="flex justify-between items-center gap-2">
-        <div className="">
-          <p className="text-sm font-medium">
+    <div className="p-4 w-full rounded-cards border border-stone-mist bg-orange-off-white/40">
+      <div className="flex justify-between items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-charcoal">
             {t("accessibility.permissionsDescription")}
           </p>
         </div>
-        <button
+        <Button
           onClick={handleButtonClick}
-          className={`min-h-10 ${config.className}`}
+          variant={config.variant}
+          size="sm"
+          className="shrink-0"
         >
           {config.text}
-        </button>
+        </Button>
       </div>
     </div>
   );
