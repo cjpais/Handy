@@ -160,8 +160,8 @@ const RecordingOverlay: React.FC = () => {
 
       // dt-based easing so the feel is the same whether we're ticking at the
       // ~24Hz event rate (rAF throttled) or 60fps rAF (panel focused).
-      const kAtt = 1 - Math.exp(-32 * dt);
-      const kRel = 1 - Math.exp(-9 * dt);
+      const kAtt = 1 - Math.exp(-38 * dt);
+      const kRel = 1 - Math.exp(-13 * dt);
       const L = latestLevelsRef.current;
       const n = WAVE_BARS;
       const slot = cssW / n;
@@ -179,12 +179,12 @@ const RecordingOverlay: React.FC = () => {
         // Re-roll top/bottom targets on independent staggered timers so the two
         // edges never move in lockstep (the "not mirrored" ask).
         if (b.ntop <= 0) {
-          b.ttop = base * (0.5 + Math.random() * 0.7);
-          b.ntop = 0.05 + Math.random() * 0.12;
+          b.ttop = base * (0.38 + Math.random() * 0.92);
+          b.ntop = 0.03 + Math.random() * 0.08;
         }
         if (b.nbot <= 0) {
-          b.tbot = base * (0.5 + Math.random() * 0.7);
-          b.nbot = 0.05 + Math.random() * 0.12;
+          b.tbot = base * (0.38 + Math.random() * 0.92);
+          b.nbot = 0.03 + Math.random() * 0.08;
         }
         b.top += (b.ttop - b.top) * (b.ttop > b.top ? kAtt : kRel);
         b.bot += (b.tbot - b.bot) * (b.tbot > b.bot ? kAtt : kRel);
