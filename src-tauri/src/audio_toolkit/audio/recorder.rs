@@ -542,7 +542,7 @@ fn run_consumer(
     let mut awaiting_first_captured_chunk: Option<Instant> = None;
 
     // ---------- spectrum visualisation setup ---------------------------- //
-    const BUCKETS: usize = 16;
+    const BUCKETS: usize = 28;
     // Scale the FFT window to the device sample rate so the analysis window
     // (~33 ms) and frequency resolution (~30 Hz/bin) stay roughly constant
     // across devices. A fixed 512-sample window collapses the low vocal

@@ -25,13 +25,13 @@
      the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
      since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
      in sync when these change. */
-  --ov-rest-w: 172px; /* resting compact pill (minimal, recording) -- roomy enough
-                         for the English working label before the grow starts */
-  --ov-pill-w: 184px; /* base width / Live pill before it opens or collapses */
-  --ov-work-w: 216px; /* working pill (transcribing / polishing) -- wide enough to
+  --ov-rest-w: 256px; /* resting compact pill (minimal, recording) -- sized to hold
+                         the bold 188px waveform canvas plus dot + cancel */
+  --ov-pill-w: 256px; /* base width / Live pill before it opens or collapses */
+  --ov-work-w: 256px; /* working pill (transcribing / polishing) -- wide enough to
                          center longer labels; shared by Live (collapsed) + minimal */
-  --ov-open-w: 392px; /* Live panel, expanded */
-  --ov-base-h: 40px; /* control-row height (.sbase) */
+  --ov-open-w: 448px; /* Live panel, expanded */
+  --ov-base-h: 44px; /* control-row height (.sbase) -- taller to host the waveform */
   --ov-cap-max-h: 64px; /* max height of the scrolling live-text region */
 }
 @media (prefers-color-scheme: dark) {
@@ -291,22 +291,14 @@
   opacity: 1;
 }
 
-/* Waveform — simple reactive bars, themed; heights set inline from mic levels. */
+/* Waveform — big, bold, 60fps canvas. Bars are drawn in JS (asymmetric center
+   style); `color` carries the themed accent to the canvas fillStyle. */
 .swave {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding-right: 8px;
-  height: 18px;
+  display: block;
+  width: 188px;
+  height: 32px;
+  color: var(--s-accent);
   flex: none;
-}
-.swave i {
-  width: 4px;
-  min-height: 3px;
-  max-height: 18px;
-  border-radius: 2px;
-  background: var(--s-accent);
-  transition: height 80ms linear;
 }
 .sx {
   width: 22px;
