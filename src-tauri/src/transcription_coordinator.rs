@@ -346,4 +346,176 @@ mod tests {
             PttAction::CancelRelease
         );
     }
+
+    // ---------------------------------------------------------------------
+    // Sequence-level regression coverage for issue #1539.
+    //
+    // Under X11 key auto-repeat, holding a push-to-talk key does not emit one
+    // long press. It emits the initial press followed by a stream of
+    // synthesized release/press pairs, then a single genuine release on key-up.
+    // Before the fix, every synthesized release passed straight through and
+    // stopped recording, so holding the key "rapidly toggled" recording on and
+    // off. The fix defers each release for a short grace window and cancels it
+    // when the matching auto-repeat press arrives.
+    //
+    // The unit tests above assert `classify_ptt_event` in isolation. The
+    // simulator below threads that classifier through the same `pending_release`
+    // / `stage` state transitions the coordinator loop performs (lines that
+    // handle `Command::Input` and the `recv_timeout` grace expiry), so a whole
+    // event burst can be exercised deterministically without a Tauri AppHandle
+    // or real timers.
+    // ---------------------------------------------------------------------
+
+    const BINDING: &str = "transcribe";
+
+    #[derive(Clone, Copy)]
+    enum Ev {
+        /// A key-down event (real initial press or a synthesized auto-repeat press).
+        Press,
+        /// A key-up event (synthesized auto-repeat release or the genuine key-up).
+        Release,
+        /// The `RELEASE_GRACE` window elapsed with no cancelling press arriving.
+        Grace,
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    enum SimStage {
+        Idle,
+        Recording,
+        Processing,
+    }
+
+    struct SimResult {
+        starts: u32,
+        stops: u32,
+        stage: SimStage,
+    }
+
+    /// Mirror of the coordinator loop's decision logic for a single push-to-talk
+    /// binding: it calls the real `classify_ptt_event` and applies the exact same
+    /// Defer / Cancel / debounce / start / stop transitions.
+    fn simulate(events: &[Ev]) -> SimResult {
+        let mut stage = SimStage::Idle;
+        let mut pending: Option<String> = None;
+        let mut last_press_ms: Option<u64> = None;
+        let mut clock_ms: u64 = 0;
+        let mut starts = 0u32;
+        let mut stops = 0u32;
+        let debounce_ms = DEBOUNCE.as_millis() as u64;
+
+        for ev in events {
+            // Auto-repeat events arrive a few ms apart, well inside DEBOUNCE.
+            clock_ms += 5;
+
+            match ev {
+                Ev::Grace => {
+                    // Coordinator's `RecvTimeoutError::Timeout` arm: fire the
+                    // deferred release iff we are still recording that binding.
+                    if let Some(pending_binding) = pending.take() {
+                        if stage == SimStage::Recording && pending_binding == BINDING {
+                            stage = SimStage::Processing;
+                            stops += 1;
+                        }
+                    }
+                }
+                Ev::Press | Ev::Release => {
+                    let is_pressed = matches!(ev, Ev::Press);
+                    let pending_binding = pending.as_deref();
+                    let recording_binding = if stage == SimStage::Recording {
+                        Some(BINDING)
+                    } else {
+                        None
+                    };
+
+                    match classify_ptt_event(
+                        pending_binding,
+                        is_pressed,
+                        true, // push_to_talk
+                        BINDING,
+                        recording_binding,
+                    ) {
+                        PttAction::CancelRelease => {
+                            pending = None;
+                            continue;
+                        }
+                        PttAction::DeferRelease => {
+                            pending = Some(BINDING.to_string());
+                            continue;
+                        }
+                        PttAction::Passthrough => {}
+                    }
+
+                    if is_pressed {
+                        if last_press_ms.is_some_and(|t| clock_ms - t < debounce_ms) {
+                            continue;
+                        }
+                        last_press_ms = Some(clock_ms);
+                    }
+
+                    if is_pressed && stage == SimStage::Idle {
+                        stage = SimStage::Recording;
+                        starts += 1;
+                    } else if !is_pressed && stage == SimStage::Recording {
+                        stage = SimStage::Processing;
+                        stops += 1;
+                    }
+                }
+            }
+        }
+
+        SimResult {
+            starts,
+            stops,
+            stage,
+        }
+    }
+
+    /// Initial press plus several synthesized release/press pairs, as X11 emits
+    /// while a push-to-talk key is held down.
+    fn autorepeat_burst() -> Vec<Ev> {
+        let mut events = vec![Ev::Press];
+        for _ in 0..6 {
+            events.push(Ev::Release);
+            events.push(Ev::Press);
+        }
+        events
+    }
+
+    /// Regression for #1539: a burst of X11 auto-repeat release/press pairs must
+    /// not stop recording. Before the fix the first synthesized release stopped
+    /// recording immediately (stops == 1, stage left Recording), which produced
+    /// the rapid on/off toggling. With the fix the releases are coalesced and
+    /// recording stays continuously active for the whole burst.
+    #[test]
+    fn x11_autorepeat_burst_does_not_toggle_recording() {
+        let result = simulate(&autorepeat_burst());
+        assert_eq!(result.starts, 1, "recording should start exactly once");
+        assert_eq!(
+            result.stops, 0,
+            "synthesized auto-repeat releases must not stop recording mid-burst"
+        );
+        assert_eq!(
+            result.stage,
+            SimStage::Recording,
+            "recording must remain active across the entire auto-repeat burst"
+        );
+    }
+
+    /// Complements the burst test: once the key is genuinely released and the
+    /// grace window elapses with no re-press, recording stops exactly once. This
+    /// proves the debounce only coalesces synthesized releases and does not wedge
+    /// the coordinator or swallow the real key-up.
+    #[test]
+    fn genuine_release_after_grace_stops_recording_once() {
+        let mut events = autorepeat_burst();
+        events.push(Ev::Release); // genuine key-up
+        events.push(Ev::Grace); // grace window elapses, no cancelling press
+        let result = simulate(&events);
+        assert_eq!(result.starts, 1, "recording should start exactly once");
+        assert_eq!(
+            result.stops, 1,
+            "a genuine release should stop recording exactly once"
+        );
+        assert_eq!(result.stage, SimStage::Processing);
+    }
 }
