@@ -19,10 +19,10 @@
   },
   "onboarding": {
     "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Modelli compatibili",
+    "downloadModelsTitle": "Disponibile per il download",
+    "showAllModels": "Mostra tutti e {{total}} modelli",
+    "showFewerModels": "Mostra meno modelli",
     "recommended": "Raccomandato",
     "customModelDescription": "Non ufficialmente supportato",
     "modelCard": {
@@ -96,7 +96,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Impossibile selezionare il modello"
     },
     "permissions": {
       "title": "Permessi Richiesti",
@@ -283,11 +283,11 @@
       "overlay": {
         "style": {
           "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "description": "Scegli l'overlay di registrazione: 'Nessuno' lo nasconde, 'Minimo' mostra una barra compatta, 'In tempo reale' mostra la trascrizione in tempo reale mentre parli (solo per modelli che supportano lo streaming — cerca il badge 'Streaming' nel selettore del modello). Su Linux si raccomanda l'opzione 'Nessuno'.",
           "options": {
-            "none": "Nessuna",
-            "minimal": "Minimal",
-            "live": "Live"
+            "none": "Nessuno",
+            "minimal": "Minimo",
+            "live": "In tempo reale"
           }
         },
         "position": {
@@ -300,7 +300,7 @@
         }
       },
       "pasteMethod": {
-        "title": "Metodo di Incolla",
+        "title": "Metodo di Incollaggio",
         "description": "Scegli come viene inserito il testo. Diretto: simula l'input da tastiera. Nessuno: non incolla, aggiorna solo la cronologia/appunti.",
         "options": {
           "clipboard": "Appunti ({{modifier}}+V)",
@@ -365,8 +365,8 @@
         "duplicate": "\"{{word}}\" esiste già"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Rilevamento dell'attività vocale",
+        "description": "Filtra il silenzio dalle registrazioni. I modelli che supportano lo streaming utilizzano una coda VAD più lunga; disabilitando la VAD si registra l'audio grezzo."
       }
     },
     "postProcessing": {
