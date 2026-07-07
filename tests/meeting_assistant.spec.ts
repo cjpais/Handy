@@ -35,7 +35,7 @@ test.describe("Meeting Assistant", () => {
 
     await expect(page.getByText("Meeting detected")).toBeVisible();
     await page.getByRole("button", { name: "Record" }).click();
-    await expect(page.getByText("Meeting recording")).toBeVisible();
+    await expect(page.getByText("Recording")).toBeVisible();
 
     const state = await getMockState(page);
     expect(state.promptEvents).toContainEqual({ action: "start" });

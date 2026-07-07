@@ -100,7 +100,6 @@ MASR is a cross-platform Tauri 2.x desktop app with a Rust backend and a React/T
   - `meeting_assistant.rs` - local meeting detection, calendar polling, prompt emission
   - `google_oauth.rs` - desktop OAuth flow with feature-scoped Google scopes
   - `google_api.rs` - Gmail, Google Tasks, and Calendar API calls
-  - `diarization.rs` - speaker diarization support
 - `audio_toolkit/` - low-level audio capture, resampling, VAD, visualization helpers
 
 ## Frontend Structure (`src/`)

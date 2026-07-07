@@ -980,7 +980,6 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
                 let default_settings = get_default_settings();
                 let mut updated = false;
 
-                // Merge default bindings into existing settings
                 for (key, value) in default_settings.bindings {
                     if !settings.bindings.contains_key(&key) {
                         debug!("Adding missing binding: {}", key);

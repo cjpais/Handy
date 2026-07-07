@@ -22,7 +22,7 @@ if (Test-Path "$targetDebug\DirectML.dll") {
 }
 
 Write-Host "3. Finding the compiled test executable..." -ForegroundColor Cyan
-$testExes = Get-ChildItem -Path $targetDeps -Filter handy_app_lib-*.exe
+$testExes = Get-ChildItem -Path $targetDeps -Filter thegai_app_lib-*.exe
 if ($testExes.Count -eq 0) {
     Write-Error "No compiled test executable found!"
     exit 1

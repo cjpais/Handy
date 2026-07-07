@@ -3,7 +3,6 @@ use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error};
 use crate::managers::audio::AudioRecordingManager;
-use crate::managers::diarization::DiarizationManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, OutputLanguage, APPLE_INTELLIGENCE_PROVIDER_ID};
@@ -1021,24 +1020,7 @@ impl ShortcutAction for MeetingAction {
         let start_time = Instant::now();
         debug!("MeetingAction::start called for binding: {}", binding_id);
 
-        let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
-        let dm = app.state::<Arc<DiarizationManager>>();
-
-        tm.initiate_model_load();
-        let rm_clone = Arc::clone(&rm);
-        std::thread::spawn(move || {
-            if let Err(e) = rm_clone.preload_vad() {
-                debug!("VAD pre-load failed: {}", e);
-            }
-        });
-
-        let dm_clone = Arc::clone(&dm);
-        tauri::async_runtime::spawn(async move {
-            if let Err(e) = dm_clone.init().await {
-                debug!("Diarization models pre-load failed: {}", e);
-            }
-        });
 
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
@@ -1132,7 +1114,6 @@ impl ShortcutAction for MeetingAction {
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
-        let dm = Arc::clone(&app.state::<Arc<DiarizationManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
         crate::overlay::show_meeting_stopped_overlay(app);
@@ -1181,22 +1162,16 @@ impl ShortcutAction for MeetingAction {
                         "default_meeting_summary"
                     };
 
-                    // Transcribe and diarize concurrently with WAV save
+                    // Transcribe concurrently with WAV save
                     let transcription_time = Instant::now();
-
-                    let dm_clone = dm.clone();
-                    let samples_for_diarize = samples.clone();
-                    let diarization_handle = tauri::async_runtime::spawn(async move {
-                        if let Err(e) = dm_clone.init().await {
-                            error!("Failed to initialize DiarizationManager: {}", e);
-                            return Err(e);
-                        }
-                        dm_clone.diarize(&samples_for_diarize, 16000).await
-                    });
 
                     let tm_clone = tm.clone();
                     let samples_for_transcribe = samples.clone();
                     let transcribe_handle = tauri::async_runtime::spawn_blocking(move || {
+                        if let Err(e) = tm_clone.load_model_if_different("thegav1") {
+                            error!("Failed to load ThegaV1 model for meeting transcription: {}", e);
+                            return Err(anyhow::anyhow!("Failed to load ThegaV1 model: {}", e));
+                        }
                         tm_clone.transcribe(samples_for_transcribe)
                     });
 
@@ -1242,19 +1217,6 @@ impl ShortcutAction for MeetingAction {
                         None
                     };
 
-                    // Await transcription and diarization results
-                    let diarization_res = match diarization_handle.await {
-                        Ok(Ok(res)) => Some(res),
-                        Ok(Err(e)) => {
-                            error!("Diarization failed: {}", e);
-                            None
-                        }
-                        Err(e) => {
-                            error!("Diarization task panicked: {}", e);
-                            None
-                        }
-                    };
-
                     let transcription_result = match transcribe_handle.await {
                         Ok(res) => res,
                         Err(e) => Err(anyhow::anyhow!("Transcription task panicked: {}", e)),
@@ -1262,19 +1224,9 @@ impl ShortcutAction for MeetingAction {
 
                     match transcription_result {
                         Ok(result) => {
-                            let transcription = if let (Some(diar), Some(ref segs)) =
-                                (&diarization_res, &result.segments)
-                            {
-                                if !segs.is_empty() {
-                                    align_transcription_with_diarization(segs, &diar.segments)
-                                } else {
-                                    result.text.clone()
-                                }
-                            } else {
-                                result.text.clone()
-                            };
+                            let transcription = result.text.clone();
                             debug!(
-                                "Transcription and Diarization completed in {:?}: '{}'",
+                                "Transcription completed in {:?}: '{}'",
                                 transcription_time.elapsed(),
                                 transcription
                             );
@@ -1345,86 +1297,6 @@ impl ShortcutAction for MeetingAction {
         debug!("MeetingAction::stop completed in {:?}", stop_time.elapsed());
     }
 }
-
-fn align_transcription_with_diarization(
-    trans_segs: &[transcribe_rs::TranscriptionSegment],
-    diar_segs: &[polyvoice::types::Segment],
-) -> String {
-    let mut aligned_transcript = String::new();
-    let mut current_speaker: Option<polyvoice::types::SpeakerId> = None;
-    let mut current_paragraph = String::new();
-
-    for t_seg in trans_segs {
-        let t_start = t_seg.start as f64;
-        let t_end = t_seg.end as f64;
-
-        // Find the speaker with the maximum overlap with [t_start, t_end]
-        let mut best_speaker: Option<polyvoice::types::SpeakerId> = None;
-        let mut max_overlap = 0.0;
-
-        for d_seg in diar_segs {
-            if let Some(spk) = d_seg.speaker {
-                let d_start = d_seg.time.start;
-                let d_end = d_seg.time.end;
-
-                // Overlap interval is [max(t_start, d_start), min(t_end, d_end)]
-                let overlap_start = t_start.max(d_start);
-                let overlap_end = t_end.min(d_end);
-
-                if overlap_end > overlap_start {
-                    let overlap = overlap_end - overlap_start;
-                    if overlap > max_overlap {
-                        max_overlap = overlap;
-                        best_speaker = Some(spk);
-                    }
-                }
-            }
-        }
-
-        // If no overlap is found (e.g. silence or empty diarization), fall back or use previous
-        let speaker = best_speaker.or(current_speaker);
-
-        if speaker != current_speaker {
-            // Speaker changed! Flush the previous paragraph
-            if !current_paragraph.is_empty() {
-                if let Some(spk) = current_speaker {
-                    aligned_transcript.push_str(&format!(
-                        "Speaker {}: {}\n\n",
-                        spk.0 + 1,
-                        current_paragraph.trim()
-                    ));
-                } else {
-                    aligned_transcript.push_str(&format!(
-                        "Unknown Speaker: {}\n\n",
-                        current_paragraph.trim()
-                    ));
-                }
-                current_paragraph.clear();
-            }
-            current_speaker = speaker;
-        }
-
-        current_paragraph.push_str(&t_seg.text);
-        current_paragraph.push_str(" ");
-    }
-
-    // Flush the final paragraph
-    if !current_paragraph.is_empty() {
-        if let Some(spk) = current_speaker {
-            aligned_transcript.push_str(&format!(
-                "Speaker {}: {}\n",
-                spk.0 + 1,
-                current_paragraph.trim()
-            ));
-        } else {
-            aligned_transcript
-                .push_str(&format!("Unknown Speaker: {}\n", current_paragraph.trim()));
-        }
-    }
-
-    aligned_transcript
-}
-
 // Test Action
 struct TestAction;
 

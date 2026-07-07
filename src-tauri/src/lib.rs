@@ -20,7 +20,6 @@ mod tray;
 mod tray_i18n;
 mod utils;
 
-#[cfg(windows)]
 pub mod malayalam_asr;
 
 pub use cli::CliArgs;
@@ -30,7 +29,6 @@ use tauri_specta::{collect_commands, collect_events, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
-use managers::diarization::DiarizationManager;
 use managers::history::HistoryManager;
 use managers::meeting_assistant::MeetingAssistantManager;
 use managers::model::ModelManager;
@@ -188,11 +186,6 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
-    let models_dir = crate::portable::app_data_dir(app_handle)
-        .expect("Failed to get app data dir")
-        .join("models");
-    let diarization_manager = Arc::new(DiarizationManager::new(models_dir));
-
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
 
@@ -201,7 +194,6 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
-    app_handle.manage(diarization_manager.clone());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
