@@ -1,5 +1,4 @@
 pub mod audio;
-pub mod diarization;
 pub mod google_api;
 pub mod google_oauth;
 pub mod history;

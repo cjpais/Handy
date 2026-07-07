@@ -16,10 +16,13 @@
     "history": "History",
     "meetings": "Meetings",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "launchOnboarding": "Launch Onboarding",
+    "launchOnboardingTitle": "Launch the onboarding flow in check/preview mode"
   },
   "onboarding": {
     "subtitle": "To get started, choose a transcription model",
+    "exitPreview": "Exit Preview",
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",

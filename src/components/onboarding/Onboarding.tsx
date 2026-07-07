@@ -9,9 +9,15 @@ import { useModelStore } from "../../stores/modelStore";
 
 interface OnboardingProps {
   onModelSelected: () => void;
+  isPreview?: boolean;
+  onExitPreview?: () => void;
 }
 
-const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
+const Onboarding: React.FC<OnboardingProps> = ({
+  onModelSelected,
+  isPreview = false,
+  onExitPreview,
+}) => {
   const { t } = useTranslation();
   const {
     models,
@@ -28,6 +34,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   const isDownloading = selectedModelId !== null;
 
   const visibleModels = models;
+
+  const filterDownloadedModels = (m: ModelInfo) => isPreview ? true : !m.is_downloaded;
 
   // Watch for the selected model to finish downloading + verifying + extracting
   useEffect(() => {
@@ -65,6 +73,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   ]);
 
   const handleDownloadModel = async (modelId: string) => {
+    if (isPreview) {
+      toast.success(t("onboarding.success", { defaultValue: "Preview: Model selected successfully!" }));
+      onModelSelected();
+      return;
+    }
     setSelectedModelId(modelId);
 
     // Error toast is handled centrally by the model-download-failed event listener
@@ -91,10 +104,18 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col p-6 gap-6 inset-0 justify-center items-center">
-      <div className="flex flex-col items-center gap-2 shrink-0 text-center">
-        <ThegAiTextLogo width={200} className="mb-2" />
-        <p className="text-bark-grey text-sm max-w-md font-medium mx-auto leading-relaxed">
+    <div className="h-screen w-screen flex flex-col p-6 gap-4 inset-0 relative">
+      {isPreview && onExitPreview && (
+        <button
+          onClick={onExitPreview}
+          className="absolute top-4 right-4 px-3 py-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-[10px] font-mono font-bold tracking-wide uppercase transition-all duration-200"
+        >
+          {t("onboarding.exitPreview")}
+        </button>
+      )}
+      <div className="flex flex-col items-center gap-2 shrink-0">
+        <ThegAiTextLogo width={200} />
+        <p className="text-text/70 max-w-md font-medium mx-auto">
           {t("onboarding.subtitle")}
         </p>
       </div>
@@ -102,7 +123,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
         <div className="flex flex-col gap-4 pb-6">
           {visibleModels
-            .filter((m: ModelInfo) => !m.is_downloaded)
+            .filter(filterDownloadedModels)
             .filter((model: ModelInfo) => model.is_recommended)
             .map((model: ModelInfo) => (
               <ModelCard
@@ -119,7 +140,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
             ))}
 
           {visibleModels
-            .filter((m: ModelInfo) => !m.is_downloaded)
+            .filter(filterDownloadedModels)
             .filter((model: ModelInfo) => !model.is_recommended)
             .sort(
               (a: ModelInfo, b: ModelInfo) =>

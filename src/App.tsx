@@ -32,6 +32,8 @@ function App() {
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
+  // Track if we are currently testing/previewing the onboarding flow in dev mode
+  const [isOnboardingPreview, setIsOnboardingPreview] = useState(false);
   // Track if this is a returning user who just needs to grant permissions
   // (vs a new user who needs full onboarding including model selection)
   const [isReturningUser, setIsReturningUser] = useState(false);
@@ -312,12 +314,25 @@ function App() {
   const handleAccessibilityComplete = () => {
     // Returning users already have models, skip to main app
     // New users need to select a model
-    setOnboardingStep(isReturningUser ? "done" : "model");
+    setOnboardingStep(isOnboardingPreview ? "model" : (isReturningUser ? "done" : "model"));
   };
 
   const handleModelSelected = () => {
     // Transition to main app - user has started a download
     setOnboardingStep("done");
+    if (isOnboardingPreview) {
+      setIsOnboardingPreview(false);
+    }
+  };
+
+  const handleExitOnboardingPreview = () => {
+    setIsOnboardingPreview(false);
+    setOnboardingStep("done");
+  };
+
+  const handleTriggerOnboarding = () => {
+    setIsOnboardingPreview(true);
+    setOnboardingStep("accessibility");
   };
 
   // Still checking onboarding status
@@ -326,11 +341,23 @@ function App() {
   }
 
   if (onboardingStep === "accessibility") {
-    return <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
+    return (
+      <AccessibilityOnboarding
+        onComplete={handleAccessibilityComplete}
+        isPreview={isOnboardingPreview}
+        onExitPreview={handleExitOnboardingPreview}
+      />
+    );
   }
 
   if (onboardingStep === "model") {
-    return <Onboarding onModelSelected={handleModelSelected} />;
+    return (
+      <Onboarding
+        onModelSelected={handleModelSelected}
+        isPreview={isOnboardingPreview}
+        onExitPreview={handleExitOnboardingPreview}
+      />
+    );
   }
 
   return (
@@ -357,6 +384,7 @@ function App() {
           onSectionChange={setCurrentSection}
           simulateProd={simulateProd}
           onToggleSimulateProd={handleToggleSimulateProd}
+          onTriggerOnboarding={handleTriggerOnboarding}
         />
         {/* Scrollable content area */}
         <div className="flex-1 flex flex-col overflow-hidden">

@@ -101,6 +101,7 @@ interface SidebarProps {
   onSectionChange: (section: SidebarSection) => void;
   simulateProd: boolean;
   onToggleSimulateProd: () => void;
+  onTriggerOnboarding: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -108,6 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSectionChange,
   simulateProd,
   onToggleSimulateProd,
+  onTriggerOnboarding,
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
@@ -167,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {import.meta.env.DEV && (
-        <div className="w-full pt-4 border-t border-stone-mist mt-4 shrink-0 px-1">
+        <div className="w-full pt-4 border-t border-stone-mist mt-4 shrink-0 px-1 flex flex-col gap-2">
           <button
             onClick={onToggleSimulateProd}
             className={`w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-md border text-[10px] font-mono font-bold tracking-wide uppercase transition-all duration-200 ${
@@ -181,6 +183,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`w-1.5 h-1.5 rounded-full ${simulateProd ? "bg-amber-500 animate-pulse" : "bg-[#1d7a46]"}`}
             />
             {simulateProd ? "SIMULATED PROD" : "DEV VIEW"}
+          </button>
+
+          <button
+            onClick={onTriggerOnboarding}
+            className="w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-md border border-[#1d7a46]/20 bg-[#1d7a46]/5 text-[#1d7a46] hover:bg-[#1d7a46]/10 text-[10px] font-mono font-bold tracking-wide uppercase transition-all duration-200"
+            title={t("sidebar.launchOnboardingTitle")}
+          >
+            {t("sidebar.launchOnboarding")}
           </button>
         </div>
       )}

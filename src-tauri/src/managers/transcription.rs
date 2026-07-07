@@ -1,5 +1,4 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
-#[cfg(windows)]
 use crate::malayalam_asr::MalayalamAsr;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
@@ -47,7 +46,6 @@ enum LoadedEngine {
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
     Cohere(CohereModel),
-    #[cfg(windows)]
     ThegaV1(MalayalamAsr),
 }
 
@@ -382,7 +380,7 @@ impl TranscriptionManager {
                 LoadedEngine::Cohere(engine)
             }
             EngineType::ThegaV1 => {
-                #[cfg(windows)]
+                #[cfg(target_os = "windows")]
                 {
                     let engine = MalayalamAsr::load(&model_path).map_err(|e| {
                         let error_msg =
@@ -392,11 +390,11 @@ impl TranscriptionManager {
                     })?;
                     LoadedEngine::ThegaV1(engine)
                 }
-                #[cfg(not(windows))]
+                #[cfg(not(target_os = "windows"))]
                 {
-                    return Err(anyhow::anyhow!(
-                        "Malayalam ASR is only supported on Windows"
-                    ));
+                    let error_msg = format!("Malayalam ASR model {} is not supported on this operating system.", model_id);
+                    emit_loading_failed(&error_msg);
+                    return Err(anyhow::anyhow!(error_msg));
                 }
             }
         };
@@ -432,6 +430,16 @@ impl TranscriptionManager {
             load_duration.as_millis()
         );
         Ok(())
+    }
+
+    /// Load model_id only if it differs from the currently loaded model.
+    pub fn load_model_if_different(&self, model_id: &str) -> Result<()> {
+        let current = self.current_model_id.lock().unwrap();
+        if current.as_deref() == Some(model_id) {
+            return Ok(());
+        }
+        drop(current);
+        self.load_model(model_id)
     }
 
     /// Kicks off the model loading in a background thread if it's not already loaded
@@ -654,13 +662,12 @@ impl TranscriptionManager {
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
                         }
-                        #[cfg(windows)]
                         LoadedEngine::ThegaV1(asr) => asr
                             .transcribe(&audio)
                             .map(|text| transcribe_rs::TranscriptionResult {
                                 text,
                                 segments: Some(Vec::new()),
-                            })
+                             })
                             .map_err(|e| {
                                 anyhow::anyhow!("Malayalam ASR transcription failed: {}", e)
                             }),
