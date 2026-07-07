@@ -45,7 +45,10 @@
     },
     "linux": {
       "deb": {
-        "depends": ["libgtk-layer-shell0"],
+        "depends": [
+          "libgtk-layer-shell0",
+          "libopenblas0"
+        ],
         "files": {
           "/usr/lib": "transcribe-libs"
         }
