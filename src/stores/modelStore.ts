@@ -106,7 +106,10 @@ export const useModelStore = create<ModelsStore>()(
               }
 
               for (const id of Object.keys(state.downloadingModels)) {
-                if (!inFlight(statusOf.get(id)) && !state.downloadProgress[id]) {
+                if (
+                  !inFlight(statusOf.get(id)) &&
+                  !state.downloadProgress[id]
+                ) {
                   delete state.downloadingModels[id];
                 }
               }

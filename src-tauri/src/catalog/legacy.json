@@ -628,9 +628,7 @@
       "id": "parakeet-tdt-0.6b-v2",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "en"
-      ],
+      "languages": ["en"],
       "name": "Parakeet V2",
       "size_mb": 451,
       "source": {
@@ -702,9 +700,7 @@
       "id": "moonshine-base",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "en"
-      ],
+      "languages": ["en"],
       "name": "Moonshine Base",
       "size_mb": 55,
       "source": {
@@ -727,9 +723,7 @@
       "id": "moonshine-tiny-streaming-en",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "en"
-      ],
+      "languages": ["en"],
       "name": "Moonshine V2 Tiny",
       "size_mb": 31,
       "source": {
@@ -752,9 +746,7 @@
       "id": "moonshine-small-streaming-en",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "en"
-      ],
+      "languages": ["en"],
       "name": "Moonshine V2 Small",
       "size_mb": 99,
       "source": {
@@ -777,9 +769,7 @@
       "id": "moonshine-medium-streaming-en",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "en"
-      ],
+      "languages": ["en"],
       "name": "Moonshine V2 Medium",
       "size_mb": 192,
       "source": {
@@ -802,13 +792,7 @@
       "id": "sense-voice-int8",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "zh",
-        "en",
-        "yue",
-        "ja",
-        "ko"
-      ],
+      "languages": ["zh", "en", "yue", "ja", "ko"],
       "name": "SenseVoice",
       "size_mb": 152,
       "source": {
@@ -831,9 +815,7 @@
       "id": "gigaam-v3-e2e-ctc",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "ru"
-      ],
+      "languages": ["ru"],
       "name": "GigaAM v3",
       "size_mb": 151,
       "source": {
@@ -856,12 +838,7 @@
       "id": "canary-180m-flash",
       "is_directory": true,
       "is_recommended": false,
-      "languages": [
-        "en",
-        "de",
-        "es",
-        "fr"
-      ],
+      "languages": ["en", "de", "es", "fr"],
       "name": "Canary 180M Flash",
       "size_mb": 146,
       "source": {
