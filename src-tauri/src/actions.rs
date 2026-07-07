@@ -74,6 +74,10 @@ fn is_blank_transcription(transcription: &str) -> bool {
     transcription.trim().is_empty()
 }
 
+fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool {
+    style == OverlayStyle::Live && is_streaming
+}
+
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
@@ -601,11 +605,13 @@ impl ShortcutAction for TranscribeAction {
         // spinner while the stream finalizes. Non-streaming paths use the
         // compact transcribing pill (None no-ops in show_*).
         let style = get_settings(app).overlay_style;
-        match (style, tm.is_streaming()) {
-            (OverlayStyle::Live, true) => {
-                tm.emit_stream_working(StreamWorkKind::Transcribing);
-            }
-            _ => show_transcribing_overlay(app),
+        // Capture this before finalizing the stream so every later working state
+        // targets the same overlay that was shown for this transcription.
+        let use_streaming_overlay = should_use_streaming_overlay(style, tm.is_streaming());
+        if use_streaming_overlay {
+            tm.emit_stream_working(StreamWorkKind::Transcribing);
+        } else {
+            show_transcribing_overlay(app);
         }
 
         // Unmute before playing audio feedback so the stop sound is audible
@@ -715,7 +721,7 @@ impl ShortcutAction for TranscribeAction {
                             );
 
                             if post_process {
-                                if style == OverlayStyle::Live {
+                                if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
                                     show_processing_overlay(&ah);
@@ -890,7 +896,8 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 
 #[cfg(test)]
 mod tests {
-    use super::is_blank_transcription;
+    use super::{is_blank_transcription, should_use_streaming_overlay};
+    use crate::settings::OverlayStyle;
 
     #[test]
     fn blank_transcription_is_detected() {
@@ -903,5 +910,13 @@ mod tests {
     fn non_blank_transcription_is_kept() {
         assert!(!is_blank_transcription("hello"));
         assert!(!is_blank_transcription("  hello  "));
+    }
+
+    #[test]
+    fn live_overlay_uses_streaming_states_only_for_streaming_models() {
+        assert!(should_use_streaming_overlay(OverlayStyle::Live, true));
+        assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
+        assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
+        assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
     }
 }
