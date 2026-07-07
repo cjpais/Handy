@@ -74,7 +74,7 @@ sha2 = "0.10"
 # Canary, Cohere). Per-platform backend features are added in the target tables.
 transcribe-rs = { version = "0.3.8", features = ["onnx"] }
 transcribe-cpp = { version = "0.1.1", default-features = false }
-handy-keys = "0.2.4"
+handy-keys = "0.3.0"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
