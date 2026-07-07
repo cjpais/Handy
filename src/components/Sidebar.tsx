@@ -188,9 +188,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onTriggerOnboarding}
             className="w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-md border border-[#1d7a46]/20 bg-[#1d7a46]/5 text-[#1d7a46] hover:bg-[#1d7a46]/10 text-[10px] font-mono font-bold tracking-wide uppercase transition-all duration-200"
-            title="Launch the onboarding flow in check/preview mode"
+            title={t("sidebar.launchOnboardingTitle")}
           >
-            LAUNCH ONBOARDING
+            {t("sidebar.launchOnboarding")}
           </button>
         </div>
       )}

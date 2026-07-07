@@ -1172,7 +1172,11 @@ impl ShortcutAction for MeetingAction {
                             error!("Failed to load ThegaV1 model for meeting transcription: {}", e);
                             return Err(anyhow::anyhow!("Failed to load ThegaV1 model: {}", e));
                         }
-                        tm_clone.transcribe(samples_for_transcribe)
+                        let res = tm_clone.transcribe(samples_for_transcribe);
+                        if let Err(e) = tm_clone.unload_model() {
+                            warn!("Failed to unload ThegaV1 model after meeting transcription: {}", e);
+                        }
+                        res
                     });
 
                     // Await WAV save and verify

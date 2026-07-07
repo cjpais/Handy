@@ -35,6 +35,8 @@ const Onboarding: React.FC<OnboardingProps> = ({
 
   const visibleModels = models;
 
+  const filterDownloadedModels = (m: ModelInfo) => isPreview ? true : !m.is_downloaded;
+
   // Watch for the selected model to finish downloading + verifying + extracting
   useEffect(() => {
     if (!selectedModelId) return;
@@ -108,7 +110,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
           onClick={onExitPreview}
           className="absolute top-4 right-4 px-3 py-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-[10px] font-mono font-bold tracking-wide uppercase transition-all duration-200"
         >
-          Exit Preview
+          {t("onboarding.exitPreview")}
         </button>
       )}
       <div className="flex flex-col items-center gap-2 shrink-0">
@@ -121,7 +123,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
         <div className="flex flex-col gap-4 pb-6">
           {visibleModels
-            .filter((m: ModelInfo) => isPreview ? true : !m.is_downloaded)
+            .filter(filterDownloadedModels)
             .filter((model: ModelInfo) => model.is_recommended)
             .map((model: ModelInfo) => (
               <ModelCard
@@ -138,7 +140,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
             ))}
 
           {visibleModels
-            .filter((m: ModelInfo) => isPreview ? true : !m.is_downloaded)
+            .filter(filterDownloadedModels)
             .filter((model: ModelInfo) => !model.is_recommended)
             .sort(
               (a: ModelInfo, b: ModelInfo) =>

@@ -380,13 +380,22 @@ impl TranscriptionManager {
                 LoadedEngine::Cohere(engine)
             }
             EngineType::ThegaV1 => {
-                let engine = MalayalamAsr::load(&model_path).map_err(|e| {
-                    let error_msg =
-                        format!("Failed to load Malayalam ASR model {}: {}", model_id, e);
+                #[cfg(target_os = "windows")]
+                {
+                    let engine = MalayalamAsr::load(&model_path).map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load Malayalam ASR model {}: {}", model_id, e);
+                        emit_loading_failed(&error_msg);
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                    LoadedEngine::ThegaV1(engine)
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    let error_msg = format!("Malayalam ASR model {} is not supported on this operating system.", model_id);
                     emit_loading_failed(&error_msg);
-                    anyhow::anyhow!(error_msg)
-                })?;
-                LoadedEngine::ThegaV1(engine)
+                    return Err(anyhow::anyhow!(error_msg));
+                }
             }
         };
 

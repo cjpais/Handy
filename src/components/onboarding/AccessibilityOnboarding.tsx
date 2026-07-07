@@ -347,7 +347,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
           onClick={onExitPreview}
           className="absolute top-4 right-4 px-3 py-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 text-[10px] font-mono font-bold tracking-wide uppercase transition-all duration-200"
         >
-          Exit Preview
+          {t("onboarding.exitPreview")}
         </button>
       )}
       <div className="flex flex-col items-center gap-2">
