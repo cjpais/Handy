@@ -39,11 +39,12 @@ export function LiveWaveform({
     }
 
     let unlisten: (() => void) | null = null;
+    let cancelled = false;
     let smoothedLevels = Array(9).fill(0);
 
     const setupListener = async () => {
       try {
-        unlisten = await listen<number[]>("mic-level", (event) => {
+        const result = await listen<number[]>("mic-level", (event) => {
           hasReceivedEventsRef.current = true;
           const newLevels = event.payload || [];
           if (newLevels.length === 0) return;
@@ -51,7 +52,7 @@ export function LiveWaveform({
           // Squelch Noise Gate to cut out background mic static hum
           const maxVal = Math.max(...newLevels);
           const noiseGateThreshold = 0.02;
-          
+
           let targetLevels = newLevels;
           if (maxVal < noiseGateThreshold) {
             targetLevels = Array(newLevels.length).fill(0);
@@ -67,6 +68,12 @@ export function LiveWaveform({
           smoothedLevels = smoothed;
           levelsRef.current = smoothed;
         });
+
+        if (cancelled) {
+          result();
+        } else {
+          unlisten = result;
+        }
       } catch (err) {
         console.warn("Failed to listen to Tauri mic-level event:", err);
       }
@@ -75,6 +82,7 @@ export function LiveWaveform({
     setupListener();
 
     return () => {
+      cancelled = true;
       if (unlisten) unlisten();
     };
   }, [active]);
@@ -83,14 +91,17 @@ export function LiveWaveform({
   useEffect(() => {
     if (!active) return;
 
-    const isTauri = typeof window !== "undefined" && ((window as any).__TAURI_INTERNALS__ !== undefined || (window as any).__TAURI__ !== undefined);
+    const isTauri =
+      typeof window !== "undefined" &&
+      ((window as any).__TAURI_INTERNALS__ !== undefined ||
+        (window as any).__TAURI__ !== undefined);
     if (isTauri) return;
 
     const fallbackInterval = setInterval(() => {
       if (!hasReceivedEventsRef.current) {
         const simulatedLevels = Array(9)
           .fill(0)
-          .map(() => Math.random() * 0.35 + (Math.sin(Date.now() / 200) * 0.05));
+          .map(() => Math.random() * 0.35 + Math.sin(Date.now() / 200) * 0.05);
         levelsRef.current = simulatedLevels;
       }
     }, 100);
@@ -111,31 +122,40 @@ export function LiveWaveform({
       currentHeightsRef.current = Array(totalBars).fill(minHeight);
     }
 
+    const container = containerRef.current;
+
+    // Determine colors dynamically once at effect setup time
+    let resolvedBgColor = barColor;
+    if (container) {
+      try {
+        if (barColor.startsWith("var(")) {
+          const varName = barColor.slice(4, -1);
+          resolvedBgColor =
+            getComputedStyle(container).getPropertyValue(varName).trim() ||
+            resolvedBgColor;
+        } else if (barColor === "gray") {
+          resolvedBgColor =
+            getComputedStyle(container)
+              .getPropertyValue("--color-pebble")
+              .trim() || "var(--color-pebble)";
+        }
+      } catch (e) {}
+    }
+
     const render = () => {
-      const container = containerRef.current;
-      if (!container) {
+      const containerElement = containerRef.current;
+      if (!containerElement) {
         animationFrameId = requestAnimationFrame(render);
         return;
       }
 
-      const bars = container.children;
+      const bars = containerElement.children;
       if (bars.length !== totalBars) {
         animationFrameId = requestAnimationFrame(render);
         return;
       }
 
       const levels = levelsRef.current;
-      
-      // Determine colors dynamically
-      let resolvedBgColor = barColor;
-      try {
-        if (barColor.startsWith("var(")) {
-          const varName = barColor.slice(4, -1);
-          resolvedBgColor = getComputedStyle(container).getPropertyValue(varName).trim() || resolvedBgColor;
-        } else if (barColor === "gray") {
-          resolvedBgColor = getComputedStyle(container).getPropertyValue("--color-pebble").trim() || "var(--color-pebble)";
-        }
-      } catch (e) {}
 
       // Increment phase
       phaseRef.current = (phaseRef.current + 0.018) % (Math.PI * 2);
@@ -160,7 +180,7 @@ export function LiveWaveform({
             // Map the center of the visualizer (normalizedDist near 0) to high-energy/low-frequency bands (index 0)
             const levelIndex = Math.min(
               levels.length - 1,
-              Math.floor(normalizedDist * levels.length)
+              Math.floor(normalizedDist * levels.length),
             );
             const rawVal = levels[levelIndex] || 0;
             const val = rawVal < 0.015 ? 0 : rawVal;
@@ -180,7 +200,10 @@ export function LiveWaveform({
         const bar = bars[i] as HTMLDivElement;
         if (bar) {
           bar.style.height = `${newHeight}px`;
-          if (resolvedBgColor && bar.style.backgroundColor !== resolvedBgColor) {
+          if (
+            resolvedBgColor &&
+            bar.style.backgroundColor !== resolvedBgColor
+          ) {
             bar.style.backgroundColor = resolvedBgColor;
           }
         }
@@ -220,7 +243,7 @@ export function LiveWaveform({
             marginRight: i === totalBars - 1 ? 0 : `${barGap}px`,
             backgroundColor: resolvedBgColor,
           }}
-        />
+        />,
       );
     }
     return bars;
@@ -239,7 +262,10 @@ export function LiveWaveform({
           : undefined,
       }}
     >
-      <div ref={containerRef} className="flex items-center justify-center h-full">
+      <div
+        ref={containerRef}
+        className="flex items-center justify-center h-full"
+      >
         {renderInitialBars()}
       </div>
     </div>
