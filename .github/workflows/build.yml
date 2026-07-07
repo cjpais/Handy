@@ -141,6 +141,11 @@ jobs:
           dpkg-query -W -f='${Status}\n' libgtk-layer-shell0 | grep -q "install ok installed"
           ldconfig -p | grep -q "libgtk-layer-shell.so.0"
 
+      - name: Verify OpenBLAS runtime dependency (Ubuntu)
+        if: contains(inputs.platform, 'ubuntu')
+        run: |
+          ldconfig -p | grep -q "libopenblas.so.0"
+
       # x86_64 only — Windows-on-ARM links transcribe-cpp statically CPU-only
       # (no `vulkan` feature; see src-tauri/Cargo.toml), so ggml-vulkan is never
       # built there and no Vulkan SDK, headers, or glslc are needed.
