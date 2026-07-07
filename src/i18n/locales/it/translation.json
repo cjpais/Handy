@@ -283,7 +283,7 @@
       "overlay": {
         "style": {
           "title": "Overlay",
-          "description": "Scegli l'overlay di registrazione: "Nessuno" lo nasconde, "Minimo" mostra una barra compatta, "In tmpo reale" mostra la trascrizione in tempo reale mentre parli (solo per modelli che supportano lo streaming — cerca il badge "Streaming" nel selettore del modello). Su Linux si raccomanda l'opzione "Nessuno".",
+          "description": "Scegli l'overlay di registrazione: 'Nessuno' lo nasconde, 'Minimo' mostra una barra compatta, 'In tempo reale' mostra la trascrizione in tempo reale mentre parli (solo per modelli che supportano lo streaming — cerca il badge 'Streaming' nel selettore del modello). Su Linux si raccomanda l'opzione 'Nessuno'.",
           "options": {
             "none": "Nessuno",
             "minimal": "Minimo",
