@@ -46,6 +46,7 @@
     "linux": {
       "deb": {
         "depends": ["libgtk-layer-shell0"],
+        "recommends": ["ydotool", "wl-clipboard", "wtype", "xdotool"],
         "files": {
           "/usr/lib": "transcribe-libs"
         }

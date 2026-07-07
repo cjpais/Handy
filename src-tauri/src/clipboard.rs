@@ -4,13 +4,15 @@ use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
+#[cfg(target_os = "linux")]
+use log::warn;
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
-use crate::utils::{is_kde_wayland, is_wayland};
+use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
@@ -53,11 +55,22 @@ fn paste_via_clipboard(
 
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
-        match paste_method {
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo)?,
+        let enigo_result = match paste_method {
+            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo),
+            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo),
+            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo),
             _ => return Err("Invalid paste method for clipboard paste".into()),
+        };
+
+        if enigo_result.is_err() {
+            #[cfg(target_os = "linux")]
+            if is_wayland() {
+                warn!("Clipboard paste key combo failed on Wayland, falling back to direct typing");
+                if try_direct_typing_linux(text, TypingTool::Auto)? {
+                    return Ok(());
+                }
+            }
+            enigo_result?;
         }
     }
 
@@ -78,38 +91,81 @@ fn paste_via_clipboard(
     Ok(())
 }
 
+/// Logs a tool failure and returns whether the attempt succeeded.
+#[cfg(target_os = "linux")]
+fn attempt_tool(name: &str, result: Result<(), String>) -> bool {
+    match result {
+        Ok(()) => {
+            info!("Using {} successfully", name);
+            true
+        }
+        Err(e) => {
+            warn!("{} failed: {}, trying next tool", name, e);
+            false
+        }
+    }
+}
+
 /// Attempts to send a key combination using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype (but not on KDE), then dotool, then ydotool
-        // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
-        if !is_kde_wayland() && is_wtype_available() {
-            info!("Using wtype for key combo");
-            send_key_combo_via_wtype(paste_method)?;
-            return Ok(true);
-        }
-        if is_dotool_available() {
-            info!("Using dotool for key combo");
-            send_key_combo_via_dotool(paste_method)?;
-            return Ok(true);
-        }
-        if is_ydotool_available() {
-            info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
-            return Ok(true);
+        // GNOME Wayland does not expose the virtual keyboard protocol that wtype needs.
+        // Prefer uinput-based tools (ydotool/dotool) first.
+        if is_gnome_wayland() {
+            if is_ydotool_available()
+                && attempt_tool("ydotool", send_key_combo_via_ydotool(paste_method))
+            {
+                return Ok(true);
+            }
+            if is_dotool_available()
+                && attempt_tool("dotool", send_key_combo_via_dotool(paste_method))
+            {
+                return Ok(true);
+            }
+            if is_wtype_available() && attempt_tool("wtype", send_key_combo_via_wtype(paste_method))
+            {
+                return Ok(true);
+            }
+        } else if is_kde_wayland() {
+            if is_dotool_available()
+                && attempt_tool("dotool", send_key_combo_via_dotool(paste_method))
+            {
+                return Ok(true);
+            }
+            if is_ydotool_available()
+                && attempt_tool("ydotool", send_key_combo_via_ydotool(paste_method))
+            {
+                return Ok(true);
+            }
+        } else {
+            // Other Wayland compositors: try wtype first, but fall through on failure.
+            if is_wtype_available() && attempt_tool("wtype", send_key_combo_via_wtype(paste_method))
+            {
+                return Ok(true);
+            }
+            if is_dotool_available()
+                && attempt_tool("dotool", send_key_combo_via_dotool(paste_method))
+            {
+                return Ok(true);
+            }
+            if is_ydotool_available()
+                && attempt_tool("ydotool", send_key_combo_via_ydotool(paste_method))
+            {
+                return Ok(true);
+            }
         }
     } else {
         // X11: prefer xdotool, then ydotool
-        if is_xdotool_available() {
-            info!("Using xdotool for key combo");
-            send_key_combo_via_xdotool(paste_method)?;
+        if is_xdotool_available()
+            && attempt_tool("xdotool", send_key_combo_via_xdotool(paste_method))
+        {
             return Ok(true);
         }
-        if is_ydotool_available() {
-            info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
+        if is_ydotool_available()
+            && attempt_tool("ydotool", send_key_combo_via_ydotool(paste_method))
+        {
             return Ok(true);
         }
     }
@@ -159,27 +215,42 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
     // Auto mode - existing fallback chain
     if is_wayland() {
         // KDE Wayland: prefer kwtype (uses KDE Fake Input protocol, supports umlauts)
-        if is_kde_wayland() && is_kwtype_available() {
-            info!("Using kwtype for direct text input on KDE Wayland");
-            type_text_via_kwtype(text)?;
+        if is_kde_wayland()
+            && is_kwtype_available()
+            && attempt_tool("kwtype", type_text_via_kwtype(text))
+        {
             return Ok(true);
         }
-        // Wayland: prefer wtype, then dotool, then ydotool
-        // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
-        if !is_kde_wayland() && is_wtype_available() {
-            info!("Using wtype for direct text input");
-            type_text_via_wtype(text)?;
-            return Ok(true);
-        }
-        if is_dotool_available() {
-            info!("Using dotool for direct text input");
-            type_text_via_dotool(text)?;
-            return Ok(true);
-        }
-        if is_ydotool_available() {
-            info!("Using ydotool for direct text input");
-            type_text_via_ydotool(text)?;
-            return Ok(true);
+
+        // GNOME Wayland: wtype's virtual keyboard protocol is unavailable; use uinput tools.
+        if is_gnome_wayland() {
+            if is_ydotool_available() && attempt_tool("ydotool", type_text_via_ydotool(text)) {
+                return Ok(true);
+            }
+            if is_dotool_available() && attempt_tool("dotool", type_text_via_dotool(text)) {
+                return Ok(true);
+            }
+            if is_wtype_available() && attempt_tool("wtype", type_text_via_wtype(text)) {
+                return Ok(true);
+            }
+        } else if is_kde_wayland() {
+            if is_dotool_available() && attempt_tool("dotool", type_text_via_dotool(text)) {
+                return Ok(true);
+            }
+            if is_ydotool_available() && attempt_tool("ydotool", type_text_via_ydotool(text)) {
+                return Ok(true);
+            }
+        } else {
+            // Other Wayland compositors: try wtype first, fall through on failure.
+            if is_wtype_available() && attempt_tool("wtype", type_text_via_wtype(text)) {
+                return Ok(true);
+            }
+            if is_dotool_available() && attempt_tool("dotool", type_text_via_dotool(text)) {
+                return Ok(true);
+            }
+            if is_ydotool_available() && attempt_tool("ydotool", type_text_via_ydotool(text)) {
+                return Ok(true);
+            }
         }
     } else {
         // X11: prefer xdotool, then ydotool
