@@ -1,0 +1,34 @@
+repo:    https://github.com/richgel999/miniz
+release: 3.1.1
+tag:     3.1.1
+sha:     d10b03cc73475af673df40f06e5cefd1d5f940d9
+
+This directory is a vendored snapshot of miniz at the release above: the
+amalgamated single-file distribution (miniz.c + miniz.h) attached to the GitHub
+release, copied verbatim, plus upstream's LICENSE. Do not edit miniz.c / miniz.h
+by hand — re-vendor from a newer release instead and update this file.
+
+Why vendored: miniz replaces the previous system-zlib dependency. transcribe
+uses zlib only for Whisper's temperature-fallback compression-ratio heuristic
+(two calls: mz_compressBound + mz_compress). Vendoring a single C file removes
+find_package(ZLIB)/vcpkg from the build and makes the static/shared artifacts
+self-contained across platforms.
+
+License: MIT. The authoritative text is the LICENSE file in this directory
+(Copyright RAD Game Tools / Valve Software and Rich Geldreich / Tenacious
+Software LLC). NOTE: the comment block at the top of miniz.c / miniz.h still
+reads "public domain ... unlicense statement at the end of this file" — this is
+a stale artifact from miniz's pre-relicensing history; there is no unlicense
+statement at the end of the files, and upstream's current license is the MIT
+LICENSE shipped here and stated in the project readme.
+
+Build configuration (see src/CMakeLists.txt): compiled trimmed via
+  MINIZ_NO_ARCHIVE_APIS   (no ZIP)
+  MINIZ_NO_INFLATE_APIS   (we only compress, never decompress)
+  MINIZ_NO_STDIO          (no file I/O)
+  MINIZ_NO_TIME           (no wall-clock dependency)
+  MINIZ_NO_ZLIB_COMPATIBLE_NAMES
+The last one suppresses miniz's zlib-compatible aliases (compress, uncompress,
+crc32, Z_OK, uLong, ...) so libtranscribe does not export those global symbols
+and cannot collide with a real zlib in a downstream link. Call sites use the
+mz_-prefixed native API (mz_compress / mz_compressBound / MZ_OK / mz_ulong).

@@ -1,0 +1,48 @@
+[package]
+name = "transcribe-cpp"
+version = "0.1.1"
+edition = "2021"
+rust-version = "1.74"
+description = "Rust bindings for transcribe.cpp, a C/C++ speech-to-text library built on ggml"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/handy-computer/transcribe.cpp"
+homepage = "https://github.com/handy-computer/transcribe.cpp"
+keywords = ["transcription", "speech", "asr", "stt", "ggml"]
+categories = ["multimedia::audio", "api-bindings"]
+# A unique `links` name so build.rs can re-emit the -sys crate's location
+# metadata one more hop (as DEP_TRANSCRIBE_CPP_*) for downstream packaging. No
+# native linking happens here — that lives in -sys. See build.rs.
+links = "transcribe_cpp"
+
+[lib]
+name = "transcribe_cpp"
+path = "src/lib.rs"
+
+[features]
+# These mirror transcribe-cpp-sys: enabling a backend here just forwards the
+# feature to the -sys crate, which forwards it to the CMake build.
+default = ["metal"]
+metal = ["transcribe-cpp-sys/metal"]
+vulkan = ["transcribe-cpp-sys/vulkan"]
+cuda = ["transcribe-cpp-sys/cuda"]
+openmp = ["transcribe-cpp-sys/openmp"]
+# `shared` links a shared libtranscribe; `dynamic-backends` additionally ships
+# each compute backend as a runtime-loaded module (and implies `shared`, both
+# here so CARGO_FEATURE_SHARED is set for this crate's build.rs rpath gate, and
+# via the -sys feature). See notes/rust-dynamic-backends-plan.md.
+shared = ["transcribe-cpp-sys/shared"]
+dynamic-backends = ["shared", "transcribe-cpp-sys/dynamic-backends"]
+
+[dependencies]
+# default-features = false so the safe crate's own features are the ONLY control
+# surface: without it, sys's `default = ["metal"]` stays active even under
+# `transcribe-cpp --no-default-features`, silently re-enabling Metal. The backend
+# features below forward explicitly, so the default (`metal`) still reaches sys
+# via `metal = ["transcribe-cpp-sys/metal"]`.
+transcribe-cpp-sys = { version = "0.1.1", path = "../../..", default-features = false }
+thiserror = "2"
+log = "0.4"
+
+[dev-dependencies]
+hound = "3"

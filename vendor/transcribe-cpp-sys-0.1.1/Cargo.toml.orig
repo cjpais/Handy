@@ -1,0 +1,90 @@
+# This Cargo.toml lives at the repo root on purpose, mirroring the root
+# pyproject.toml: the `transcribe-cpp-sys` crate must carry the whole C++ tree
+# (include/, src/, vendored ggml/, cmake/, CMakeLists.txt) so a `cargo build`
+# can compile libtranscribe from source on any machine, and a registry tarball
+# cannot reach outside its manifest's directory. The `include` whitelist below
+# is the same move and the same root cause as pyproject-at-root.
+#
+# The sys crate's Rust sources live under bindings/rust/sys/ (via the [lib]
+# `path` and `build` keys); the safe `transcribe-cpp` wrapper is the workspace
+# member at bindings/rust/. See notes/rust-bindings-plan.md.
+
+[package]
+name = "transcribe-cpp-sys"
+version = "0.1.1"
+edition = "2021"
+rust-version = "1.74"
+description = "Native FFI bindings for transcribe.cpp, a C/C++ speech-to-text library built on ggml"
+license = "MIT"
+readme = "bindings/rust/sys/README.md"
+repository = "https://github.com/handy-computer/transcribe.cpp"
+homepage = "https://github.com/handy-computer/transcribe.cpp"
+keywords = ["transcription", "speech", "asr", "stt", "ggml"]
+categories = ["multimedia::audio", "external-ffi-bindings"]
+links = "transcribe"
+build = "bindings/rust/sys/build.rs"
+
+# Allowlist (not a denylist): the crate tarball contains exactly these paths.
+# git-ignored trees (models/, build*/, target/, dumps are NOT ignored — see
+# below) are pruned by cargo's git file listing too, but the whitelist is the
+# load-bearing guarantee. dumps/ and reports/ are git-TRACKED, so only an
+# allowlist keeps them out. The `cargo package` audit gate (rust-ci.yml)
+# asserts ggml is present and models/dumps/reports are absent, plus the 10 MB
+# crates.io size cap. ggml/examples and ggml/tests are pruned (not needed to
+# build libggml) to keep weight down.
+include = [
+    "/CMakeLists.txt",
+    "/CMakePresets.json",
+    "/LICENSE",
+    "/include/**/*.h",
+    "/include/transcribe.abihash",
+    "/src/**",
+    "/cmake/**",
+    "/ggml/CMakeLists.txt",
+    "/ggml/cmake/**",
+    "/ggml/include/**",
+    "/ggml/src/**",
+    "/ggml/scripts/**",
+    "/ggml/LICENSE",
+    "/ggml/AUTHORS",
+    "/ggml/ggml.pc.in",
+    "/bindings/rust/sys/**",
+]
+
+[lib]
+name = "transcribe_cpp_sys"
+path = "bindings/rust/sys/src/lib.rs"
+
+[features]
+# Metal is the default backend on Apple targets; on every other target the
+# `metal` feature is a no-op (build.rs only forwards -DTRANSCRIBE_METAL=ON when
+# the host is Apple — non-Apple uses the CMake default, which is CPU). A pure
+# CPU build on macOS is `default-features = false`.
+default = ["metal"]
+metal = []
+vulkan = []
+cuda = []
+openmp = []
+# `shared` links a shared libtranscribe (.so/.dylib/.dll) loaded at runtime
+# instead of statically baking it into the consumer binary. The default is a
+# self-contained static link. (Renamed from `dylib`.)
+shared = []
+# `dynamic-backends` additionally ships each compute backend (the per-ISA CPU
+# tiers, Vulkan, CUDA, ...) as a loadable module next to the library, selected at
+# runtime by transcribe_init_backends(). Requires a shared library, so it implies
+# `shared`. See notes/rust-dynamic-backends-plan.md.
+dynamic-backends = ["shared"]
+
+[build-dependencies]
+cmake = "0.1"
+serde_json = "1"
+
+# The sys crate's manifest is THIS file (repo root) so the tarball can carry
+# the whole C++ tree; its Rust sources are the only non-package subtree under
+# bindings/rust/ (build.rs + src/ at bindings/rust/sys/). The two sibling
+# packages — the safe wrapper and the dev xtask — are workspace members. The
+# sys sources must NOT live inside a member's directory, or cargo would refuse
+# to package them with the root crate (a member owns its whole subtree).
+[workspace]
+resolver = "2"
+members = ["bindings/rust/transcribe-cpp", "bindings/rust/xtask"]

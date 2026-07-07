@@ -150,6 +150,8 @@ transcribe-cpp = { version = "0.1.1", default-features = false, features = [
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
+transcribe-cpp = { path = "../vendor/transcribe-cpp-0.1.1" }
+transcribe-cpp-sys = { path = "../vendor/transcribe-cpp-sys-0.1.1" }
 
 [dev-dependencies]
 tempfile = "3"

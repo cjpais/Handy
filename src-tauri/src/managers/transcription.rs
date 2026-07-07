@@ -17,8 +17,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
-    Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
-    WhisperRunOptions,
+    Backend, Error as TranscribeCppError, Feature, Model, ModelOptions, RunExtension, RunOptions,
+    Session, StreamOptions, Task, WhisperRunOptions,
 };
 use transcribe_rs::{
     onnx::{
@@ -1152,18 +1152,13 @@ impl TranscriptionManager {
             );
         }
 
-        // Whether the loaded transcribe-cpp model advertises
-        // Feature::InitialPrompt. Informational (logged below); the whisper
-        // run extension and the fuzzy-correction skip are gated on
-        // `model_is_whisper` instead, since non-whisper archs can advertise
-        // the feature while rejecting the whisper-kind extension.
-        let mut model_takes_initial_prompt = false;
         // Whether the loaded model is actually whisper-family (arch string).
         // Non-whisper archs (e.g. Voxtral Small) can advertise
         // Feature::InitialPrompt yet reject the whisper-kind run extension
         // with INVALID_ARG, so the whisper extension must be gated on the
         // arch, not on the feature (see #1601).
         let mut model_is_whisper = false;
+        let mut model_arch = String::new();
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
@@ -1196,13 +1191,16 @@ impl TranscriptionManager {
             if let LoadedEngine::TranscribeCpp(session) = &engine {
                 let model = session.model();
                 let caps = model.capabilities();
-                model_takes_initial_prompt = model.supports(Feature::InitialPrompt);
-                model_is_whisper = model.arch() == "whisper";
+                let model_takes_initial_prompt = model.supports(Feature::InitialPrompt);
+                model_arch = model.arch().to_string();
+                model_is_whisper = model_arch == "whisper";
                 model_supports_translate = caps.supports_translate;
                 model_languages = caps.languages;
                 debug!(
-                    "transcribe-cpp model '{}' on '{}': initial_prompt={}, translate={}, languages={:?}",
-                    settings.selected_model,
+                    "transcribe-cpp model '{}' arch='{}' variant='{}' on '{}': initial_prompt={}, translate={}, languages={:?}",
+                    active_model,
+                    model.arch(),
+                    model.variant(),
                     model.backend(),
                     model_takes_initial_prompt,
                     model_supports_translate,
@@ -1238,23 +1236,23 @@ impl TranscriptionManager {
                             task: run_plan.task,
                             language: run_plan.language,
                             target_language: run_plan.target_language,
+                            max_new_tokens: default_max_new_tokens_for_arch(&model_arch),
                             family,
                             ..Default::default()
                         };
 
                         debug!(
-                            "transcribe-cpp run: task={:?}, language={:?}, initial_prompt={}",
+                            "transcribe-cpp run: task={:?}, language={:?}, initial_prompt={}, max_new_tokens={}",
                             run_options.task,
                             run_options.language,
-                            run_options.family.is_some()
+                            run_options.family.is_some(),
+                            run_options.max_new_tokens
                         );
 
                         session
                             .run(&audio, &run_options)
                             .map(|t| t.text)
-                            .map_err(|e| {
-                                anyhow::anyhow!("transcribe-cpp transcription failed: {}", e)
-                            })
+                            .or_else(|e| partial_transcript_or_error(e, &active_model))
                     }
                     LoadedEngine::Parakeet(parakeet_engine) => {
                         let params = ParakeetParams {
@@ -1876,6 +1874,66 @@ pub fn get_available_accelerators() -> AvailableAccelerators {
         transcribe: transcribe_options,
         ort: ort_options,
         gpu_devices: cached_gpu_devices().to_vec(),
+    }
+}
+
+fn default_max_new_tokens_for_arch(arch: &str) -> i32 {
+    match arch {
+        "qwen3_asr" => 4096,
+        "canary" => 512,
+        _ => -1,
+    }
+}
+
+fn partial_transcript_or_error(error: TranscribeCppError, model_id: &str) -> Result<String> {
+    if let TranscribeCppError::OutputTruncated {
+        partial: Some(partial),
+        ..
+    } = &error
+    {
+        let text = partial.text.trim().to_string();
+        if !text.is_empty() {
+            warn!(
+                "Using partial transcript from truncated transcribe-cpp output for model '{}': {} chars. {}",
+                model_id,
+                text.chars().count(),
+                describe_transcribe_cpp_error(&error)
+            );
+            return Ok(text);
+        }
+    }
+
+    Err(anyhow::anyhow!(
+        "transcribe-cpp transcription failed: {}",
+        describe_transcribe_cpp_error(&error)
+    ))
+}
+
+fn describe_transcribe_cpp_error(error: &TranscribeCppError) -> String {
+    match error {
+        TranscribeCppError::OutputTruncated { partial, .. } => {
+            let partial_summary = partial
+                .as_ref()
+                .map(|transcript| {
+                    let chars = transcript.text.chars().count();
+                    if chars == 0 {
+                        "no partial transcript was produced".to_string()
+                    } else {
+                        format!("partial transcript has {chars} characters")
+                    }
+                })
+                .unwrap_or_else(|| "no partial transcript was returned".to_string());
+
+            format!(
+                "{error}. The decoder hit its generation token budget before the model emitted end-of-stream; this is not the model audio-length limit. {partial_summary}. Try VAD/chunking for this model family, or use a streaming/chunked model."
+            )
+        }
+        TranscribeCppError::InvalidArgument(_) => {
+            format!(
+                "{error}. The selected model rejected one of the run options for this request; check the debug log line with model arch, task, language, and initial_prompt."
+            )
+        }
+        _ => error.to_string(),
     }
 }
 

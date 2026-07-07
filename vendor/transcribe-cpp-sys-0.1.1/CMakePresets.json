@@ -1,0 +1,70 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "wheel-base",
+      "hidden": true,
+      "displayName": "Official wheel posture (shared, no vendored OpenMP/BLAS)",
+      "description": "Shared libtranscribe for the Python provider wheels. OpenMP and non-Apple system BLAS are off so wheel-repair tools (auditwheel/delocate/delvewheel) never vendor an OpenMP/BLAS runtime that would collide with PyTorch/NumPy/MKL in the same process. GGML_NATIVE off so the binary is not tuned to the build machine. NOTE: the official wheels build these same postures through the TRANSCRIBE_WHEEL_LANE overrides in the repo-root pyproject.toml (base posture supplied by the SKBUILD block in CMakeLists.txt) — keep both in sync. The presets remain for hand-built provider directories.",
+      "binaryDir": "${sourceDir}/build-wheel",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "TRANSCRIBE_BUILD_SHARED": "ON",
+        "TRANSCRIBE_USE_OPENMP": "OFF",
+        "TRANSCRIBE_USE_SYSTEM_BLAS": "OFF",
+        "TRANSCRIBE_BUILD_TESTS": "OFF",
+        "TRANSCRIBE_BUILD_EXAMPLES": "OFF",
+        "GGML_NATIVE": "OFF"
+      }
+    },
+    {
+      "name": "wheel-linux-cpu",
+      "inherits": "wheel-base",
+      "displayName": "Linux x86_64 conservative CPU wheel",
+      "description": "The permanent compatibility floor. TRANSCRIBE_X86_CONSERVATIVE fans out to GGML_NATIVE=OFF plus every x86 SIMD tier OFF (one switch, defined in CMakeLists.txt — GGML_NATIVE=OFF alone does NOT disable the tiers): the resulting binary runs on a baseline x86-64 machine without SIGILL. Performance is the job of the fat-CPU (Strategy B) track, not this wheel.",
+      "cacheVariables": {
+        "TRANSCRIBE_X86_CONSERVATIVE": "ON"
+      }
+    },
+    {
+      "name": "wheel-macos-metal",
+      "inherits": "wheel-base",
+      "displayName": "macOS arm64 Metal wheel",
+      "description": "Metal ships by default on Apple Silicon, with the shader library embedded so there are no sidecar .metal files to vendor or locate at runtime. Single-artifact (no dynamic backend modules): one platform, one GPU API.",
+      "cacheVariables": {
+        "TRANSCRIBE_METAL": "ON",
+        "GGML_METAL": "ON",
+        "GGML_METAL_EMBED_LIBRARY": "ON"
+      }
+    },
+    {
+      "name": "wheel-linux-cpu-vulkan",
+      "inherits": "wheel-linux-cpu",
+      "displayName": "Linux x86_64 default wheel: fat CPU + Vulkan backend modules",
+      "description": "The default Linux provider (M6.5). GGML_BACKEND_DL builds every backend as a loadable module next to libtranscribe; GGML_CPU_ALL_VARIANTS emits one ggml-cpu-<tier> module per x86 ISA tier (runtime feature scoring, llama.cpp-release shape) — the x64 baseline tier is the SIGILL-safe floor, so the per-tier SIMD-off flags inherited from wheel-linux-cpu are inert here (ggml gates them behind NOT GGML_CPU_ALL_VARIANTS) and kept only as the floor if ALL_VARIANTS is disabled. The Vulkan module ships too. On machines without a Vulkan loader/driver the Vulkan module fails to load quietly and CPU keeps working — degradation verified by the provider-dl-vulkan and clean-install CI lanes. Build image needs the Vulkan SDK (glslc).",
+      "cacheVariables": {
+        "TRANSCRIBE_GGML_BACKEND_DL": "ON",
+        "TRANSCRIBE_VULKAN": "ON",
+        "GGML_VULKAN": "ON",
+        "GGML_CPU_ALL_VARIANTS": "ON"
+      }
+    },
+    {
+      "name": "wheel-windows-cpu-vulkan",
+      "inherits": "wheel-linux-cpu-vulkan",
+      "displayName": "Windows x86_64 default wheel: CPU + Vulkan backend modules",
+      "description": "Same provider shape as wheel-linux-cpu-vulkan on Windows: conservative CPU module + Vulkan module, loaded package-locally (the Python loader calls os.add_dll_directory before CDLL). Build image needs the Vulkan SDK (glslc)."
+    },
+    {
+      "name": "validation",
+      "displayName": "Local numerical-parity validation build (build/)",
+      "description": "Dev build for scripts/validate.py: enables TRANSCRIBE_ENABLE_VALIDATION_HOOKS so the reference-mel injection (TRANSCRIBE_MEL_FROM_REF) and per-layer tensor dumps (TRANSCRIBE_DUMP_ALL_BLOCKS / TRANSCRIBE_DUMP_SUB_BLOCKS) are compiled in. Targets build/ (the dir validate.py runs build/bin/transcribe-cli from) and reuses the existing generator. NOT for release — shipped and wheel builds leave the hooks out (TRANSCRIBE_ENABLE_VALIDATION_HOOKS defaults OFF).",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "TRANSCRIBE_ENABLE_VALIDATION_HOOKS": "ON"
+      }
+    }
+  ]
+}
