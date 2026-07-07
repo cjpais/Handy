@@ -70,7 +70,7 @@ pub async fn process_local_file(
             "default_meeting_summary"
         };
         let summary_opt =
-            crate::actions::run_specific_llm_prompt(&settings, prompt_id, &transcription).await;
+            crate::actions::run_specific_llm_prompt(&app, &settings, prompt_id, &transcription).await;
         (summary_opt, Some(prompt_id.to_string()))
     } else {
         let processed = process_transcription_output(&app, &transcription, false).await;
@@ -315,3 +315,53 @@ pub async fn ask_meeting_question(
         Err(e) => Err(e),
     }
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn regenerate_history_entry_summary(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+) -> Result<(), String> {
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    if entry.transcription_text.is_empty() {
+        return Err("No transcription available to summarize".to_string());
+    }
+
+    let settings = crate::settings::get_settings(&app);
+    
+    // Determine the prompt ID to use. If it's a meeting entry, we use the meeting prompt,
+    // otherwise we use standard post-processing.
+    let is_meeting = entry.post_process_prompt.as_deref() == Some("default_meeting_summary")
+        || entry.post_process_prompt.as_deref() == Some("default_meeting_notes_with_actions");
+
+    let (post_processed_text, post_process_prompt) = if is_meeting {
+        let prompt_id = if settings.google_oauth_token.is_some() {
+            "default_meeting_notes_with_actions"
+        } else {
+            "default_meeting_summary"
+        };
+        let summary_opt =
+            crate::actions::run_specific_llm_prompt(&app, &settings, prompt_id, &entry.transcription_text).await;
+        (summary_opt, Some(prompt_id.to_string()))
+    } else {
+        let processed = process_transcription_output(&app, &entry.transcription_text, entry.post_process_requested).await;
+        (processed.post_processed_text, processed.post_process_prompt)
+    };
+
+    history_manager
+        .update_transcription(
+            id,
+            entry.transcription_text,
+            post_processed_text,
+            post_process_prompt,
+        )
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+

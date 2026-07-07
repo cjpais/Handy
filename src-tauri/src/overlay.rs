@@ -50,6 +50,7 @@ pub enum MeetingOverlayMode {
     Suggestion,
     Recording,
     Stopped,
+    Discarded,
     Hidden,
 }
 
@@ -637,6 +638,32 @@ pub fn show_meeting_stopped_overlay(app_handle: &AppHandle) {
 
         let current = get_meeting_overlay_snapshot();
         if current.sequence == stopped_sequence && current.mode == MeetingOverlayMode::Stopped {
+            hide_meeting_prompt_window(&app_clone);
+        }
+    });
+}
+
+pub fn show_meeting_discarded_overlay(app_handle: &AppHandle) {
+    let prompt = get_meeting_overlay_snapshot().prompt;
+    let discarded_snapshot = emit_meeting_overlay_snapshot(
+        app_handle,
+        MeetingOverlaySnapshot {
+            sequence: 0,
+            mode: MeetingOverlayMode::Discarded,
+            prompt,
+            recording_started_at: None,
+        },
+    );
+
+    let app_clone = app_handle.clone();
+    let discarded_sequence = discarded_snapshot.sequence;
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(
+            MEETING_STOPPED_AUTO_CLOSE_MS,
+        ));
+
+        let current = get_meeting_overlay_snapshot();
+        if current.sequence == discarded_sequence && current.mode == MeetingOverlayMode::Discarded {
             hide_meeting_prompt_window(&app_clone);
         }
     });

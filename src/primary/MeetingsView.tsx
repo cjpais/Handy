@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -228,6 +229,232 @@ const itemVariants = {
   },
 };
 
+interface CopySummaryButtonProps {
+  onCopy: () => void;
+  isCopied: boolean;
+  title: string;
+}
+
+const CopySummaryButton: React.FC<CopySummaryButtonProps> = ({
+  onCopy,
+  isCopied,
+  title,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onCopy}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+      className="p-2 rounded-xl text-bark-grey hover:text-charcoal hover:bg-orange-off-white border border-stone-mist/40 shadow-sm transition-colors flex items-center justify-center cursor-pointer select-none"
+      title={title}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      <div className="flex items-center gap-1.5">
+        {isCopied ? (
+          <Check className="w-4 h-4 text-forest-green" />
+        ) : (
+          <Copy className="w-4 h-4" />
+        )}
+        <motion.span
+          initial={{ width: 0, opacity: 0 }}
+          animate={{
+            width: isHovered ? "auto" : 0,
+            opacity: isHovered ? 1 : 0,
+          }}
+          transition={{ type: "spring", stiffness: 350, damping: 20 }}
+          className="overflow-hidden whitespace-nowrap text-xs font-semibold"
+        >
+          {isCopied ? "Copied!" : "Copy Summary"}
+        </motion.span>
+      </div>
+    </motion.button>
+  );
+};
+
+interface SendFollowUpButtonProps {
+  onClick: () => void;
+  title: string;
+}
+
+const SendFollowUpButton: React.FC<SendFollowUpButtonProps> = ({
+  onClick,
+  title,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+      className="p-2 rounded-xl text-bark-grey hover:text-charcoal hover:bg-orange-off-white border border-stone-mist/40 shadow-sm transition-colors flex items-center justify-center cursor-pointer select-none"
+      title={title}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      <div className="flex items-center gap-1.5">
+        <Mail className="w-4 h-4" />
+        <motion.span
+          initial={{ width: 0, opacity: 0 }}
+          animate={{
+            width: isHovered ? "auto" : 0,
+            opacity: isHovered ? 1 : 0,
+          }}
+          transition={{ type: "spring", stiffness: 350, damping: 20 }}
+          className="overflow-hidden whitespace-nowrap text-xs font-semibold"
+        >
+          Send Follow-up
+        </motion.span>
+      </div>
+    </motion.button>
+  );
+};
+
+interface RegenerateButtonProps {
+  onRegenerate: () => void;
+  isRegenerating: boolean;
+  title: string;
+}
+
+const RegenerateButton: React.FC<RegenerateButtonProps> = ({
+  onRegenerate,
+  isRegenerating,
+  title,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onRegenerate}
+      disabled={isRegenerating}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+      className="p-2 rounded-xl text-bark-grey hover:text-charcoal hover:bg-orange-off-white border border-stone-mist/40 shadow-sm transition-colors flex items-center justify-center cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
+      title={title}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      <div className="flex items-center gap-1.5">
+        <RefreshCw className={`w-4 h-4 ${isRegenerating ? "animate-spin" : ""}`} />
+        <motion.span
+          initial={{ width: 0, opacity: 0 }}
+          animate={{
+            width: isHovered ? "auto" : 0,
+            opacity: isHovered ? 1 : 0,
+          }}
+          transition={{ type: "spring", stiffness: 350, damping: 20 }}
+          className="overflow-hidden whitespace-nowrap text-xs font-semibold"
+        >
+          {isRegenerating ? "Regenerating..." : "Regenerate"}
+        </motion.span>
+      </div>
+    </motion.button>
+  );
+};
+
+interface HoldToDeleteButtonProps {
+  onDelete: () => void;
+  title: string;
+}
+
+const HoldToDeleteButton: React.FC<HoldToDeleteButtonProps> = ({
+  onDelete,
+  title,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isHolding, setIsHolding] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+
+  const startHold = (e: React.PointerEvent) => {
+    if (e.button !== 0) return; // Only trigger for left-click/tap
+    setIsHolding(true);
+    
+    if (progressRef.current) {
+      progressRef.current.style.transition = "clip-path 2s linear";
+      progressRef.current.style.clipPath = "inset(0 0% 0 0)";
+    }
+
+    timerRef.current = setTimeout(() => {
+      onDelete();
+      setIsHolding(false);
+    }, 2000);
+  };
+
+  const endHold = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsHolding(false);
+    
+    if (progressRef.current) {
+      progressRef.current.style.transition = "clip-path 200ms ease-out";
+      progressRef.current.style.clipPath = "inset(0 100% 0 0)";
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  return (
+    <motion.button
+      type="button"
+      onPointerDown={startHold}
+      onPointerUp={endHold}
+      onPointerLeave={() => {
+        endHold();
+        setIsHovered(false);
+      }}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerCancel={endHold}
+      className="relative overflow-hidden p-2 rounded-xl text-bark-grey hover:text-alarm-red hover:bg-alarm-red/10 border border-stone-mist/40 shadow-sm transition-colors flex items-center justify-center cursor-pointer select-none"
+      title={title}
+      style={{ touchAction: "none" }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      {/* Colored progress bar overlay */}
+      <div
+        ref={progressRef}
+        className="absolute inset-0 bg-alarm-red/20"
+        style={{
+          clipPath: "inset(0 100% 0 0)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div className="relative flex items-center gap-1.5 z-10">
+        <Trash2 className={`w-4 h-4 ${isHolding ? "animate-pulse text-alarm-red" : ""}`} />
+        <motion.span
+          initial={{ width: 0, opacity: 0 }}
+          animate={{
+            width: isHovered ? "auto" : 0,
+            opacity: isHovered ? 1 : 0,
+          }}
+          transition={{ type: "spring", stiffness: 350, damping: 20 }}
+          className="overflow-hidden whitespace-nowrap text-xs font-semibold"
+        >
+          {isHolding ? "Keep holding..." : "Hold to Delete"}
+        </motion.span>
+      </div>
+    </motion.button>
+  );
+};
+
 export const MeetingsView: React.FC = () => {
   const { t, i18n } = useTranslation();
   const osType = useOsType();
@@ -257,6 +484,7 @@ export const MeetingsView: React.FC = () => {
   // Copy success feedback states
   const [showSummaryCopied, setShowSummaryCopied] = useState(false);
   const [showTranscriptCopied, setShowTranscriptCopied] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Google follow-up modal state
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
@@ -568,6 +796,24 @@ export const MeetingsView: React.FC = () => {
     },
     [loadMeetings, selectedMeeting, t],
   );
+
+  const handleRegenerate = async (id: number) => {
+    if (isRegenerating) return;
+    setIsRegenerating(true);
+    try {
+      const result = await commands.regenerateHistoryEntrySummary(id);
+      if (result.status === "ok") {
+        toast.success("Summary regenerated successfully!");
+      } else {
+        toast.error("Failed to regenerate summary: " + result.error);
+      }
+    } catch (error: any) {
+      console.error("Failed to regenerate summary:", error);
+      toast.error("Failed to regenerate summary");
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleUploadClick = async () => {
     try {
@@ -930,50 +1176,31 @@ export const MeetingsView: React.FC = () => {
 
               {/* Detail Action buttons */}
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => copySummary(selectedMeeting)}
-                  className="p-2 rounded-xl text-bark-grey hover:text-charcoal hover:bg-orange-off-white border border-stone-mist/40 transition-colors flex items-center justify-center cursor-pointer shadow-sm"
+                <CopySummaryButton
+                  onCopy={() => copySummary(selectedMeeting)}
+                  isCopied={showSummaryCopied}
                   title={t("settings.history.copyToClipboard")}
-                >
-                  {showSummaryCopied ? (
-                    <Check className="w-4 h-4 text-forest-green" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
+                />
                 {isGoogleConnected && (
-                  <button
-                    type="button"
+                  <SendFollowUpButton
                     onClick={() => {
                       setFollowUpMeeting(selectedMeeting);
                       setRecipientsInput("");
                       setEmailsError("");
                       setShowFollowUpDialog(true);
                     }}
-                    className="p-2 rounded-xl text-bark-grey hover:text-charcoal hover:bg-orange-off-white border border-stone-mist/40 transition-colors flex items-center justify-center cursor-pointer shadow-sm"
                     title={t("settings.meetings.sendViaGoogle")}
-                  >
-                    <Mail className="w-4 h-4" />
-                  </button>
+                  />
                 )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        t("settings.meetings.deleteConfirmation") ||
-                          "Are you sure you want to delete this meeting summary?",
-                      )
-                    ) {
-                      void deleteMeeting(selectedMeeting.id);
-                    }
-                  }}
-                  className="p-2 rounded-xl text-bark-grey hover:text-alarm-red hover:bg-alarm-red/10 border border-stone-mist/40 transition-colors flex items-center justify-center cursor-pointer shadow-sm"
+                <RegenerateButton
+                  onRegenerate={() => handleRegenerate(selectedMeeting.id)}
+                  isRegenerating={isRegenerating}
+                  title="Regenerate summary"
+                />
+                <HoldToDeleteButton
+                  onDelete={() => deleteMeeting(selectedMeeting.id)}
                   title={t("settings.history.delete")}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                />
               </div>
             </div>
 

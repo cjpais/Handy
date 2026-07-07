@@ -3,9 +3,71 @@ fn main() {
     build_apple_intelligence_bridge();
 
     generate_tray_translations();
+    generate_fallback_api_keys();
 
     tauri_build::build()
 }
+
+/// Parse fallback API keys from environment/dot-env files at build time
+/// and embed them in fallback_api_keys.rs to keep them secure.
+fn generate_fallback_api_keys() {
+    use std::collections::HashMap;
+    use std::fs;
+    use std::path::Path;
+
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+
+    // Register dependency on env files
+    println!("cargo:rerun-if-changed=../.env");
+    println!("cargo:rerun-if-changed=../benchmark/.env");
+
+    let mut keys = HashMap::new();
+    keys.insert("GoogleAPI".to_string(), String::new());
+    keys.insert("GROQ_API_KEY".to_string(), String::new());
+    keys.insert("OPENROUTER_API_KEY".to_string(), String::new());
+    keys.insert("GEMINI_API_KEY_1".to_string(), String::new());
+    keys.insert("GEMINI_API_KEY_2".to_string(), String::new());
+
+    let parse_env_file = |path: &Path, keys_map: &mut HashMap<String, String>| {
+        if let Ok(content) = fs::read_to_string(path) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    continue;
+                }
+                if let Some((key, val)) = trimmed.split_once('=') {
+                    let key = key.trim();
+                    let val = val.trim().trim_matches('"').trim_matches('\'');
+                    if keys_map.contains_key(key) {
+                        keys_map.insert(key.to_string(), val.to_string());
+                    }
+                }
+            }
+        }
+    };
+
+    // Load from root .env and benchmark/.env
+    parse_env_file(Path::new("../.env"), &mut keys);
+    parse_env_file(Path::new("../benchmark/.env"), &mut keys);
+
+    // Generate Rust file
+    let content = format!(
+        "// Auto-generated fallback API keys - do not edit\n\n\
+         pub const GOOGLE_API_KEY: &str = {:?};\n\
+         pub const GROQ_API_KEY: &str = {:?};\n\
+         pub const OPENROUTER_API_KEY: &str = {:?};\n\
+         pub const GEMINI_API_KEY_1: &str = {:?};\n\
+         pub const GEMINI_API_KEY_2: &str = {:?};\n",
+        keys.get("GoogleAPI").cloned().unwrap_or_default(),
+        keys.get("GROQ_API_KEY").cloned().unwrap_or_default(),
+        keys.get("OPENROUTER_API_KEY").cloned().unwrap_or_default(),
+        keys.get("GEMINI_API_KEY_1").cloned().unwrap_or_default(),
+        keys.get("GEMINI_API_KEY_2").cloned().unwrap_or_default(),
+    );
+
+    fs::write(Path::new(&out_dir).join("fallback_api_keys.rs"), content).unwrap();
+}
+
 
 /// Generate tray menu translations from frontend locale files.
 ///

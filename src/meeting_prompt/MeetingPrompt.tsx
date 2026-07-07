@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, EyeOff, Mic, Square } from "lucide-react";
+import { Check, EyeOff, Mic, Square, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import "./MeetingPrompt.css";
 
 type MeetingPromptSource = "LocalDetection" | "GoogleCalendar";
-type MeetingOverlayMode = "suggestion" | "recording" | "stopped" | "hidden";
+type MeetingOverlayMode = "suggestion" | "recording" | "stopped" | "discarded" | "hidden";
 
 interface MeetingOverlayPrompt {
   provider: string;
@@ -304,6 +304,26 @@ export default function MeetingPrompt() {
               </div>
             )}
 
+            {snapshot.mode === "discarded" && (
+              <div className="flex h-full items-center px-6 justify-between w-full">
+                <div className="flex items-center gap-4 flex-1">
+                  <div
+                    className="w-8 h-8 rounded-full bg-bark-grey/10 flex items-center justify-center text-bark-grey z-10 relative anim-scale-in"
+                  >
+                    <Info size={20} className="text-bark-grey" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-body-sm font-semibold text-on-surface leading-tight anim-slide-up">
+                      {t("settings.meetings.assistant.discardedTitle")}
+                    </span>
+                    <span className="font-caption text-bark-grey leading-tight mt-1 anim-slide-up-delayed">
+                      {t("settings.meetings.assistant.discardedDescription")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {snapshot.mode === "suggestion" && (
               <div className="meeting-overlay-progress" aria-hidden="true">
                 <motion.div
@@ -323,6 +343,24 @@ export default function MeetingPrompt() {
               <div className="meeting-overlay-progress" aria-hidden="true">
                 <motion.div
                   key={`stopped-progress-${snapshot.sequence}`}
+                  className="meeting-overlay-progress-bar"
+                  initial={{ scaleX: 1 }}
+                  animate={{ scaleX: 0 }}
+                  transition={{
+                    duration: STOPPED_SECONDS,
+                    ease: "linear",
+                  }}
+                  onAnimationComplete={() => {
+                    void closeStoppedOverlay();
+                  }}
+                />
+              </div>
+            )}
+
+            {snapshot.mode === "discarded" && (
+              <div className="meeting-overlay-progress" aria-hidden="true">
+                <motion.div
+                  key={`discarded-progress-${snapshot.sequence}`}
                   className="meeting-overlay-progress-bar"
                   initial={{ scaleX: 1 }}
                   animate={{ scaleX: 0 }}

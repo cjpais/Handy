@@ -839,6 +839,14 @@ async retryHistoryEntryTranscription(id: number) : Promise<Result<null, string>>
     else return { status: "error", error: e  as any };
 }
 },
+async regenerateHistoryEntrySummary(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("regenerate_history_entry_summary", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async updateHistoryLimit(limit: number) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_history_limit", { limit }) };
@@ -1003,7 +1011,7 @@ reset_bindings: string[] }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
-export type MeetingOverlayMode = "suggestion" | "recording" | "stopped" | "hidden"
+export type MeetingOverlayMode = "suggestion" | "recording" | "stopped" | "discarded" | "hidden"
 export type MeetingOverlayPrompt = { provider: string; title: string; source: MeetingPromptSource; start_time: string; join_url: string | null }
 export type MeetingOverlaySnapshot = { sequence: number; mode: MeetingOverlayMode; prompt: MeetingOverlayPrompt | null; recording_started_at: string | null }
 export type MeetingPromptPayload = { provider: string; title: string; source: MeetingPromptSource; start_time: string; join_url: string | null }

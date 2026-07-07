@@ -5,7 +5,7 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, OutputLanguage, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{get_settings, AppSettings, OutputLanguage, APPLE_INTELLIGENCE_PROVIDER_ID, PostProcessProvider};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -321,64 +321,142 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 }
 
-pub async fn run_specific_llm_prompt(
-    settings: &AppSettings,
+include!(concat!(env!("OUT_DIR"), "/fallback_api_keys.rs"));
+
+#[derive(Clone, serde::Serialize)]
+struct FallbackEventPayload {
+    failed_model: String,
+    failed_provider: String,
+    error: String,
+    next_model: Option<String>,
+    next_provider: Option<String>,
+}
+
+struct FallbackModel {
+    provider_id: &'static str,
+    model_name: &'static str,
+}
+
+const FALLBACK_CHAIN: &[FallbackModel] = &[
+    // Gemini/Google
+    FallbackModel { provider_id: "google", model_name: "gemini-3.5-flash" },
+    FallbackModel { provider_id: "google", model_name: "gemini-3.1-flash-lite" },
+    FallbackModel { provider_id: "google", model_name: "gemini-2.5-flash" },
+    FallbackModel { provider_id: "google", model_name: "gemini-2.5-flash-lite" },
+    FallbackModel { provider_id: "google", model_name: "gemma-4-31b-it" },
+    FallbackModel { provider_id: "google", model_name: "gemma-4-26b-a4b-it" },
+    
+    // OpenRouter
+    FallbackModel { provider_id: "openrouter", model_name: "nvidia/nemotron-3-ultra-550b-a55b:free" },
+    FallbackModel { provider_id: "openrouter", model_name: "google/gemma-4-31b-it:free" },
+    FallbackModel { provider_id: "openrouter", model_name: "google/gemma-4-26b-a4b-it:free" },
+    
+    // Groq
+    FallbackModel { provider_id: "groq", model_name: "llama-3.3-70b-versatile" },
+    FallbackModel { provider_id: "groq", model_name: "llama-3.1-8b-instant" },
+    FallbackModel { provider_id: "groq", model_name: "mixtral-8x7b-32768" },
+];
+
+const DEFAULT_MEETING_NOTES_WITH_ACTIONS_PROMPT: &str = r#"You are a helpful assistant. Write a high-level, concise summary of the meeting transcript in English. Focus on the main topics discussed, key arguments, and decisions made. Return a JSON object with a "summary" field containing the summary text and an "action_items" field containing a list of action items.
+
+Transcript:
+${output}"#;
+
+fn sanitize_error_msg(mut err: String) -> String {
+    let keys = [
+        GOOGLE_API_KEY,
+        GROQ_API_KEY,
+        OPENROUTER_API_KEY,
+        GEMINI_API_KEY_1,
+        GEMINI_API_KEY_2,
+    ];
+    for key in &keys {
+        if !key.is_empty() {
+            err = err.replace(key, "[REDACTED]");
+        }
+    }
+    err
+}
+
+fn get_candidate_keys(settings: &AppSettings, provider_id: &str) -> Vec<String> {
+    let mut keys = Vec::new();
+    
+    if let Some(key) = settings.post_process_api_keys.get(provider_id) {
+        let key_trimmed = key.trim().to_string();
+        if !key_trimmed.is_empty() {
+            keys.push(key_trimmed);
+        }
+    }
+    
+    match provider_id {
+        "google" => {
+            for key in &[GOOGLE_API_KEY, GEMINI_API_KEY_1, GEMINI_API_KEY_2] {
+                let key_trimmed = key.trim().to_string();
+                if !key_trimmed.is_empty() && !keys.contains(&key_trimmed) {
+                    keys.push(key_trimmed);
+                }
+            }
+        }
+        "openrouter" => {
+            let key_trimmed = OPENROUTER_API_KEY.trim().to_string();
+            if !key_trimmed.is_empty() && !keys.contains(&key_trimmed) {
+                keys.push(key_trimmed);
+            }
+        }
+        "groq" => {
+            let key_trimmed = GROQ_API_KEY.trim().to_string();
+            if !key_trimmed.is_empty() && !keys.contains(&key_trimmed) {
+                keys.push(key_trimmed);
+            }
+        }
+        _ => {}
+    }
+    
+    keys
+}
+
+fn get_fallback_provider(settings: &AppSettings, provider_id: &str) -> PostProcessProvider {
+    if let Some(provider) = settings.post_process_provider(provider_id) {
+        provider.clone()
+    } else {
+        match provider_id {
+            "google" => PostProcessProvider {
+                id: "google".to_string(),
+                label: "Google (Gemini)".to_string(),
+                base_url: "https://generativelanguage.googleapis.com/v1beta/openai".to_string(),
+                allow_base_url_edit: false,
+                models_endpoint: Some("/models".to_string()),
+                supports_structured_output: true,
+            },
+            "openrouter" => PostProcessProvider {
+                id: "openrouter".to_string(),
+                label: "OpenRouter".to_string(),
+                base_url: "https://openrouter.ai/api/v1".to_string(),
+                allow_base_url_edit: false,
+                models_endpoint: Some("/models".to_string()),
+                supports_structured_output: true,
+            },
+            "groq" => PostProcessProvider {
+                id: "groq".to_string(),
+                label: "Groq".to_string(),
+                base_url: "https://api.groq.com/openai/v1".to_string(),
+                allow_base_url_edit: false,
+                models_endpoint: Some("/models".to_string()),
+                supports_structured_output: false,
+            },
+            _ => panic!("Unknown provider"),
+        }
+    }
+}
+
+async fn attempt_chat_completion(
+    provider: &PostProcessProvider,
+    api_key: &str,
+    model: &str,
     prompt_id: &str,
+    prompt: &str,
     text: &str,
-) -> Option<String> {
-    let provider = match settings.active_post_process_provider().cloned() {
-        Some(provider) => provider,
-        None => {
-            debug!("run_specific_llm_prompt: no provider is selected");
-            return None;
-        }
-    };
-
-    let model = settings
-        .post_process_models
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
-
-    if model.trim().is_empty() {
-        debug!(
-            "run_specific_llm_prompt: provider '{}' has no model configured",
-            provider.id
-        );
-        return None;
-    }
-
-    let prompt = match settings
-        .post_process_prompts
-        .iter()
-        .find(|prompt| prompt.id == prompt_id)
-    {
-        Some(prompt) => prompt.prompt.clone(),
-        None => {
-            debug!(
-                "run_specific_llm_prompt: prompt '{}' was not found",
-                prompt_id
-            );
-            return None;
-        }
-    };
-
-    if prompt.trim().is_empty() {
-        debug!("run_specific_llm_prompt: the prompt is empty");
-        return None;
-    }
-
-    debug!(
-        "Running specific LLM prompt '{}' with provider '{}' (model: {})",
-        prompt_id, provider.id, model
-    );
-
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
-
+) -> Result<String, String> {
     let (reasoning_effort, reasoning) = match provider.id.as_str() {
         "custom" | "google" | "ollama" => (Some("none".to_string()), None),
         "openrouter" => (
@@ -392,34 +470,9 @@ pub async fn run_specific_llm_prompt(
     };
 
     if provider.supports_structured_output {
-        let system_prompt = build_system_prompt(&prompt);
+        let system_prompt = build_system_prompt(prompt);
         let user_content = text.to_string();
 
-        if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
-            #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-            {
-                if !apple_intelligence::check_apple_intelligence_availability() {
-                    return None;
-                }
-                let token_limit = model.trim().parse::<i32>().unwrap_or(0);
-                return match apple_intelligence::process_text_with_system_prompt(
-                    &system_prompt,
-                    &user_content,
-                    token_limit,
-                ) {
-                    Ok(result) => {
-                        if result.trim().is_empty() {
-                            None
-                        } else {
-                            Some(strip_invisible_chars(&result))
-                        }
-                    }
-                    Err(_) => None,
-                };
-            }
-            #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-            return None;
-        }
         let description = if prompt_id == "default_meeting_summary" {
             "The meeting summary and action items in English"
         } else if prompt_id == "default_translate_to_english" {
@@ -443,9 +496,9 @@ pub async fn run_specific_llm_prompt(
         });
 
         match crate::llm_client::send_chat_completion_with_schema(
-            &provider,
-            api_key.clone(),
-            &model,
+            provider,
+            api_key.to_string(),
+            model,
             user_content,
             Some(system_prompt),
             Some(json_schema),
@@ -454,38 +507,264 @@ pub async fn run_specific_llm_prompt(
         )
         .await
         {
-            Ok(Some(content)) => match serde_json::from_str::<serde_json::Value>(&content) {
-                Ok(json) => {
-                    if let Some(transcription_value) =
-                        json.get(TRANSCRIPTION_FIELD).and_then(|t| t.as_str())
-                    {
-                        return Some(strip_invisible_chars(transcription_value));
-                    } else {
-                        return Some(strip_invisible_chars(&content));
+            Ok(Some(content)) => {
+                match serde_json::from_str::<serde_json::Value>(&content) {
+                    Ok(json) => {
+                        if let Some(transcription_value) =
+                            json.get(TRANSCRIPTION_FIELD).and_then(|t| t.as_str())
+                        {
+                            return Ok(strip_invisible_chars(transcription_value));
+                        } else {
+                            return Ok(strip_invisible_chars(&content));
+                        }
+                    }
+                    Err(_) => {
+                        return Ok(strip_invisible_chars(&content));
                     }
                 }
-                Err(_) => {
-                    return Some(strip_invisible_chars(&content));
-                }
-            },
-            _ => {}
+            }
+            Ok(None) => return Err("LLM API response has no content".to_string()),
+            Err(e) => return Err(e),
         }
     }
 
     let processed_prompt = prompt.replace("${output}", text);
     match crate::llm_client::send_chat_completion(
-        &provider,
-        api_key,
-        &model,
+        provider,
+        api_key.to_string(),
+        model,
         processed_prompt,
         reasoning_effort,
         reasoning,
     )
     .await
     {
-        Ok(Some(content)) => Some(strip_invisible_chars(&content)),
-        _ => None,
+        Ok(Some(content)) => Ok(strip_invisible_chars(&content)),
+        Ok(None) => Err("LLM API response has no content".to_string()),
+        Err(e) => Err(e),
     }
+}
+
+pub async fn run_specific_llm_prompt(
+    app: &AppHandle,
+    settings: &AppSettings,
+    prompt_id: &str,
+    text: &str,
+) -> Option<String> {
+    let is_meeting_summary = prompt_id == "default_meeting_summary" || prompt_id == "default_meeting_notes_with_actions";
+
+    let prompt = match settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| prompt.id == prompt_id)
+    {
+        Some(prompt) => prompt.prompt.clone(),
+        None => {
+            if prompt_id == "default_meeting_notes_with_actions" {
+                DEFAULT_MEETING_NOTES_WITH_ACTIONS_PROMPT.to_string()
+            } else if prompt_id == "default_meeting_summary" {
+                // Return default meeting summary prompt if not found
+                "You are a helpful assistant. Write a high-level, concise summary of the meeting transcript in English.\n\nTranscript:\n${output}".to_string()
+            } else {
+                debug!(
+                    "run_specific_llm_prompt: prompt '{}' was not found",
+                    prompt_id
+                );
+                return None;
+            }
+        }
+    };
+
+    if prompt.trim().is_empty() {
+        debug!("run_specific_llm_prompt: the prompt is empty");
+        return None;
+    }
+
+    let mut result: Option<String> = None;
+
+    if is_meeting_summary {
+        // 1. Try configured provider/model
+        let primary_provider = settings.active_post_process_provider().cloned();
+        let primary_model = settings
+            .post_process_models
+            .get(&primary_provider.as_ref().map(|p| p.id.clone()).unwrap_or_default())
+            .cloned()
+            .unwrap_or_default();
+
+        if let Some(ref provider) = primary_provider {
+            if !primary_model.trim().is_empty() {
+                let api_key = settings
+                    .post_process_api_keys
+                    .get(&provider.id)
+                    .cloned()
+                    .unwrap_or_default();
+
+                // Try up to 2 times (initial + 1 retry)
+                for attempt in 1..=2 {
+                    debug!("Attempt {} for primary model {} (provider: {})", attempt, primary_model, provider.id);
+                    match attempt_chat_completion(
+                        provider,
+                        &api_key,
+                        &primary_model,
+                        prompt_id,
+                        &prompt,
+                        text,
+                    )
+                    .await
+                    {
+                        Ok(res) => {
+                            result = Some(res);
+                            break;
+                        }
+                        Err(e) => {
+                            warn!(
+                                "Primary model call failed (attempt {}): {}",
+                                attempt,
+                                e
+                            );
+                            // Emit fallback event
+                            let next_fallback = FALLBACK_CHAIN.first();
+                            let sanitized_err = sanitize_error_msg(e);
+                            let _ = app.emit(
+                                "meeting-summary-fallback",
+                                FallbackEventPayload {
+                                    failed_model: primary_model.clone(),
+                                    failed_provider: provider.id.clone(),
+                                    error: sanitized_err,
+                                    next_model: next_fallback.map(|f| f.model_name.to_string()),
+                                    next_provider: next_fallback.map(|f| f.provider_id.to_string()),
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        if result.is_none() {
+            warn!("Primary model failed or was not configured. Starting fallback chain.");
+
+            // 2. Iterate through fallback chain
+            for (idx, fallback) in FALLBACK_CHAIN.iter().enumerate() {
+                let provider = get_fallback_provider(settings, fallback.provider_id);
+                let candidate_keys = get_candidate_keys(settings, fallback.provider_id);
+
+                if candidate_keys.is_empty() {
+                    debug!(
+                        "Skipping fallback model {} because no API key is available for provider {}",
+                        fallback.model_name,
+                        fallback.provider_id
+                    );
+                    continue;
+                }
+
+                let mut model_success = false;
+                // Try each candidate key
+                for key in &candidate_keys {
+                    // Try up to 2 times for each key
+                    for attempt in 1..=2 {
+                        debug!(
+                            "Fallback Attempt {} for model {} using provider {} (key length: {})",
+                            attempt,
+                            fallback.model_name,
+                            fallback.provider_id,
+                            key.len()
+                        );
+                        match attempt_chat_completion(
+                            &provider,
+                            key,
+                            fallback.model_name,
+                            prompt_id,
+                            &prompt,
+                            text,
+                        )
+                        .await
+                        {
+                            Ok(res) => {
+                                result = Some(res);
+                                model_success = true;
+                                break;
+                            }
+                            Err(e) => {
+                                warn!(
+                                    "Fallback model {} failed (attempt {}): {}",
+                                    fallback.model_name,
+                                    attempt,
+                                    e
+                                );
+
+                                // Determine next model in the chain for the event payload
+                                let next_fallback = FALLBACK_CHAIN.get(idx + 1);
+                                let sanitized_err = sanitize_error_msg(e);
+                                let _ = app.emit(
+                                    "meeting-summary-fallback",
+                                    FallbackEventPayload {
+                                        failed_model: fallback.model_name.to_string(),
+                                        failed_provider: fallback.provider_id.to_string(),
+                                        error: sanitized_err,
+                                        next_model: next_fallback.map(|f| f.model_name.to_string()),
+                                        next_provider: next_fallback.map(|f| f.provider_id.to_string()),
+                                    },
+                                );
+                            }
+                        }
+                    }
+                    if model_success {
+                        break;
+                    }
+                }
+
+                if model_success {
+                    break;
+                }
+            }
+        }
+    } else {
+        // Fallback-free path for non-meeting-summary prompts
+        let provider = match settings.active_post_process_provider().cloned() {
+            Some(provider) => provider,
+            None => {
+                debug!("run_specific_llm_prompt: no provider is selected");
+                return None;
+            }
+        };
+
+        let model = settings
+            .post_process_models
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default();
+
+        if model.trim().is_empty() {
+            debug!(
+                "run_specific_llm_prompt: provider '{}' has no model configured",
+                provider.id
+            );
+            return None;
+        }
+
+        let api_key = settings
+            .post_process_api_keys
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default();
+
+        match attempt_chat_completion(
+            &provider,
+            &api_key,
+            &model,
+            prompt_id,
+            &prompt,
+            text,
+        )
+        .await
+        {
+            Ok(res) => result = Some(res),
+            Err(_) => {}
+        }
+    }
+
+    result
 }
 
 async fn maybe_convert_chinese_variant(
@@ -574,7 +853,7 @@ pub(crate) async fn process_transcription_output(
     match settings.output_language {
         OutputLanguage::Malayalam => {}
         OutputLanguage::Manglish => {
-            if let Some(transliterated) = run_manglish_transliteration(&settings, &final_text).await
+            if let Some(transliterated) = run_manglish_transliteration(app, &settings, &final_text).await
             {
                 post_processed_text = Some(transliterated.clone());
                 final_text = transliterated;
@@ -588,7 +867,7 @@ pub(crate) async fn process_transcription_output(
             }
         }
         OutputLanguage::English => {
-            if let Some(translated) = run_english_translation(&settings, &final_text).await {
+            if let Some(translated) = run_english_translation(app, &settings, &final_text).await {
                 post_processed_text = Some(translated.clone());
                 final_text = translated;
                 if post_process_prompt.is_none() {
@@ -611,7 +890,7 @@ pub(crate) async fn process_transcription_output(
 
 /// Run Manglish transliteration using the Google/Gemini provider with gemma-4-26b-a4b-it.
 /// Falls back to the active post-processing provider if Google API key is not set.
-async fn run_manglish_transliteration(settings: &AppSettings, text: &str) -> Option<String> {
+async fn run_manglish_transliteration(app: &AppHandle, settings: &AppSettings, text: &str) -> Option<String> {
     let google_provider = settings.post_process_provider("google").cloned();
     let google_key = settings
         .post_process_api_keys
@@ -653,12 +932,12 @@ async fn run_manglish_transliteration(settings: &AppSettings, text: &str) -> Opt
         }
     }
     // Fallback: use active post-process provider
-    run_specific_llm_prompt(settings, "default_manglish_transliteration", text).await
+    run_specific_llm_prompt(app, settings, "default_manglish_transliteration", text).await
 }
 
 /// Run English translation using the Google/Gemini provider with gemma-4-26b-a4b-it.
 /// Falls back to the active post-processing provider if Google API key is not set.
-async fn run_english_translation(settings: &AppSettings, text: &str) -> Option<String> {
+async fn run_english_translation(app: &AppHandle, settings: &AppSettings, text: &str) -> Option<String> {
     let google_provider = settings.post_process_provider("google").cloned();
     let google_key = settings
         .post_process_api_keys
@@ -699,7 +978,7 @@ async fn run_english_translation(settings: &AppSettings, text: &str) -> Option<S
         }
     }
     // Fallback: use active post-process provider
-    run_specific_llm_prompt(settings, "default_translate_to_english", text).await
+    run_specific_llm_prompt(app, settings, "default_translate_to_english", text).await
 }
 
 impl ShortcutAction for TranscribeAction {
@@ -1011,7 +1290,7 @@ impl ShortcutAction for CancelAction {
 // Meeting Action
 struct MeetingAction;
 
-const MEETING_MIN_RECORDING_SECONDS: usize = 10;
+const MEETING_MIN_RECORDING_SECONDS: usize = 30;
 const MEETING_SAMPLE_RATE: usize = 16_000;
 const MEETING_MIN_SAMPLE_COUNT: usize = MEETING_MIN_RECORDING_SECONDS * MEETING_SAMPLE_RATE;
 
@@ -1116,7 +1395,6 @@ impl ShortcutAction for MeetingAction {
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
-        crate::overlay::show_meeting_stopped_overlay(app);
 
         rm.remove_mute();
         play_feedback_sound(app, SoundType::Stop);
@@ -1144,7 +1422,10 @@ impl ShortcutAction for MeetingAction {
                         samples.len()
                     );
                     change_tray_icon(&ah, TrayIconState::Idle);
+                    crate::overlay::show_meeting_discarded_overlay(&ah);
                 } else {
+                    crate::overlay::show_meeting_stopped_overlay(&ah);
+                    
                     // Save WAV concurrently with transcription
                     let sample_count = samples.len();
                     let file_name = format!("thegai-{}.wav", chrono::Utc::now().timestamp());
@@ -1236,7 +1517,7 @@ impl ShortcutAction for MeetingAction {
                             );
 
                             let summary_opt =
-                                run_specific_llm_prompt(&settings, prompt_id, &transcription).await;
+                                run_specific_llm_prompt(&ah, &settings, prompt_id, &transcription).await;
 
                             let display_summary = if prompt_id
                                 == "default_meeting_notes_with_actions"

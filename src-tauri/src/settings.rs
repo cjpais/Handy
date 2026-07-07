@@ -465,7 +465,7 @@ pub struct AppSettings {
     pub google_oauth_token: Option<String>,
     #[serde(default)]
     pub google_auth_tokens: GoogleAuthTokens,
-    #[serde(default)]
+    #[serde(default = "default_meeting_detection_enabled")]
     pub meeting_detection_enabled: bool,
     #[serde(default)]
     pub meeting_calendar_prompts_enabled: bool,
@@ -490,7 +490,11 @@ fn default_start_hidden() -> bool {
 }
 
 fn default_autostart_enabled() -> bool {
-    false
+    true
+}
+
+fn default_meeting_detection_enabled() -> bool {
+    !cfg!(debug_assertions)
 }
 
 fn default_update_checks_enabled() -> bool {
@@ -937,7 +941,7 @@ pub fn get_default_settings() -> AppSettings {
         output_language: OutputLanguage::default(),
         google_oauth_token: None,
         google_auth_tokens: GoogleAuthTokens::default(),
-        meeting_detection_enabled: false,
+        meeting_detection_enabled: default_meeting_detection_enabled(),
         meeting_calendar_prompts_enabled: false,
         meeting_prompt_lead_minutes: default_meeting_prompt_lead_minutes(),
     }
