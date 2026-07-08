@@ -5,7 +5,10 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    build_default_clean_prompt, get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID,
+    DEFAULT_CLEAN_PROMPT_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -73,6 +76,25 @@ fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
 }
 
+/// Resolves the text of the selected post-process prompt. For the built-in
+/// Clean prompt, this is assembled at call time from the `clean_*` toggles
+/// rather than read from storage, so toggling a setting takes effect
+/// immediately. User-created custom prompts are returned as stored.
+fn resolve_clean_prompt_text(settings: &AppSettings, prompt_id: &str) -> Option<String> {
+    if prompt_id == DEFAULT_CLEAN_PROMPT_ID {
+        return Some(build_default_clean_prompt(
+            settings.clean_strip_filler,
+            settings.clean_convert_spoken,
+        ));
+    }
+
+    settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| prompt.id == prompt_id)
+        .map(|prompt| prompt.prompt.clone())
+}
+
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
@@ -104,12 +126,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     };
 
-    let prompt = match settings
-        .post_process_prompts
-        .iter()
-        .find(|prompt| prompt.id == selected_prompt_id)
-    {
-        Some(prompt) => prompt.prompt.clone(),
+    let prompt = match resolve_clean_prompt_text(settings, &selected_prompt_id) {
+        Some(prompt) => prompt,
         None => {
             debug!(
                 "Post-processing skipped because prompt '{}' was not found",
@@ -424,13 +442,7 @@ pub(crate) async fn process_transcription_output(
         final_text = processed_text;
 
         if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-            if let Some(prompt) = settings
-                .post_process_prompts
-                .iter()
-                .find(|prompt| &prompt.id == prompt_id)
-            {
-                post_process_prompt = Some(prompt.prompt.clone());
-            }
+            post_process_prompt = resolve_clean_prompt_text(&settings, prompt_id);
         }
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());

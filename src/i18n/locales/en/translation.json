@@ -214,14 +214,14 @@
     },
     "transcription": {
       "title": "Transcription",
-      "description": "Choose and manage speech recognition models, and adjust transcription quality.",
-      "quality": {
-        "title": "Quality"
-      }
+      "description": "Choose and manage speech recognition models, and adjust transcription quality."
     },
     "output": {
       "title": "Output",
-      "description": "Configure how transcribed text is pasted into your active application."
+      "description": "Configure how transcribed text is pasted into your active application.",
+      "quality": {
+        "title": "Quality"
+      }
     },
     "app": {
       "title": "App",
@@ -456,17 +456,13 @@
       },
       "cleanup": {
         "title": "Cleanup options",
-        "removeFillers": {
-          "label": "Remove filler words",
-          "description": "Removes um, uh, like, you know, etc."
+        "stripFiller": {
+          "label": "Strip filler",
+          "description": "Removes hesitations (um, uh, like, you know) and self-corrections (no wait, scratch that)."
         },
-        "fixPunctuation": {
-          "label": "Fix punctuation",
-          "description": "Adds sentence-ending punctuation and commas."
-        },
-        "fixCapitalisation": {
-          "label": "Fix capitalisation",
-          "description": "Capitalises sentence starts and proper nouns."
+        "convertSpoken": {
+          "label": "Convert spoken elements",
+          "description": "Converts number words to digits, date words to date format, and spoken punctuation to symbols (period → ., comma → ,, question mark → ?)."
         }
       },
       "api": {

@@ -7,10 +7,7 @@ import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
-import { SettingsGroup } from "../../ui/SettingsGroup";
 import { ModelSettingsCard } from "../general/ModelSettingsCard";
-import { CustomWords } from "../CustomWords";
-import { AppendTrailingSpace } from "../AppendTrailingSpace";
 
 export const TranscriptionSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -335,11 +332,6 @@ export const TranscriptionSettings: React.FC = () => {
 
       {/* STT quality settings */}
       <ModelSettingsCard />
-
-      <SettingsGroup title={t("settings.transcription.quality.title")}>
-        <CustomWords descriptionMode="tooltip" grouped={true} />
-        <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
-      </SettingsGroup>
     </div>
   );
 };

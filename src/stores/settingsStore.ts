@@ -132,6 +132,10 @@ const settingUpdaters: {
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
+  clean_strip_filler: (value) =>
+    commands.changeCleanStripFillerSetting(value as boolean),
+  clean_convert_spoken: (value) =>
+    commands.changeCleanConvertSpokenSetting(value as boolean),
   summarize_enabled: (value) => commands.setSummarizeEnabled(value as boolean),
   summarize_selected_prompt_id: (value) =>
     commands.setSummarizeSelectedPrompt(value as string),

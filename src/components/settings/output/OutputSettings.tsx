@@ -5,6 +5,8 @@ import { PasteMethodSetting } from "../PasteMethod";
 import { TypingToolSetting } from "../TypingTool";
 import { ClipboardHandlingSetting } from "../ClipboardHandling";
 import { AutoSubmit } from "../AutoSubmit";
+import { CustomWords } from "../CustomWords";
+import { AppendTrailingSpace } from "../AppendTrailingSpace";
 
 export const OutputSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -24,6 +26,11 @@ export const OutputSettings: React.FC = () => {
         <TypingToolSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />
         <AutoSubmit descriptionMode="tooltip" grouped={true} />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.output.quality.title")}>
+        <CustomWords descriptionMode="tooltip" grouped={true} />
+        <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>
   );

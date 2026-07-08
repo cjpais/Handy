@@ -273,36 +273,24 @@ fn collapse_stutters(text: &str) -> String {
 /// Filters transcription output by removing filler words and stutter artifacts.
 ///
 /// This function cleans up raw transcription text by:
-/// 1. Removing filler words based on the app language (or custom list)
+/// 1. Removing filler words based on the app language
 /// 2. Collapsing repeated word stutters (e.g., "wh wh wh" -> "wh")
 /// 3. Cleaning up excess whitespace
 ///
 /// # Arguments
 /// * `text` - The raw transcription text to filter
 /// * `lang` - The app language code (e.g., "en", "pt-BR") used to select filler words
-/// * `custom_filler_words` - Optional user-provided filler word list. `Some(vec)` overrides
-///   language defaults; `Some(empty vec)` disables filtering; `None` uses language defaults.
 ///
 /// # Returns
 /// The filtered text with filler words and stutters removed
-pub fn filter_transcription_output(
-    text: &str,
-    lang: &str,
-    custom_filler_words: &Option<Vec<String>>,
-) -> String {
+pub fn filter_transcription_output(text: &str, lang: &str) -> String {
     let mut filtered = text.to_string();
 
-    // Build filler patterns from custom list or language defaults
-    let patterns: Vec<Regex> = match custom_filler_words {
-        Some(words) => words
-            .iter()
-            .filter_map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).ok())
-            .collect(),
-        None => get_filler_words_for_language(lang)
-            .iter()
-            .map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).unwrap())
-            .collect(),
-    };
+    // Build filler patterns from language defaults
+    let patterns: Vec<Regex> = get_filler_words_for_language(lang)
+        .iter()
+        .map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).unwrap())
+        .collect();
 
     // Remove filler words
     for pattern in &patterns {
@@ -364,91 +352,91 @@ mod tests {
     #[test]
     fn test_filter_filler_words() {
         let text = "So uhm I was thinking uh about this";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "So I was thinking about this");
     }
 
     #[test]
     fn test_filter_filler_words_case_insensitive() {
         let text = "UHM this is UH a test";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "this is a test");
     }
 
     #[test]
     fn test_filter_filler_words_with_punctuation() {
         let text = "Well, uhm, I think, uh. that's right";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "Well, I think, that's right");
     }
 
     #[test]
     fn test_filter_cleans_whitespace() {
         let text = "Hello    world   test";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "Hello world test");
     }
 
     #[test]
     fn test_filter_trims() {
         let text = "  Hello world  ";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "Hello world");
     }
 
     #[test]
     fn test_filter_combined() {
         let text = "  Uhm, so I was, uh, thinking about this  ";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "so I was, thinking about this");
     }
 
     #[test]
     fn test_filter_preserves_valid_text() {
         let text = "This is a completely normal sentence.";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "This is a completely normal sentence.");
     }
 
     #[test]
     fn test_filter_stutter_collapse() {
         let text = "w wh wh wh wh wh wh wh wh wh why";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "w wh why");
     }
 
     #[test]
     fn test_filter_stutter_short_words() {
         let text = "I I I I think so so so so";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "I think so");
     }
 
     #[test]
     fn test_filter_stutter_longer_words() {
         let text = "Check data doc doc doc doc documentation.";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "Check data doc documentation.");
     }
 
     #[test]
     fn test_filter_stutter_mixed_case() {
         let text = "No NO no NO no";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "No");
     }
 
     #[test]
     fn test_filter_stutter_preserves_two_repetitions() {
         let text = "no no is fine";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "no no is fine");
     }
 
     #[test]
     fn test_filter_english_removes_um() {
         let text = "um I think um this is good";
-        let result = filter_transcription_output(text, "en", &None);
+        let result = filter_transcription_output(text, "en");
         assert_eq!(result, "I think this is good");
     }
 
@@ -456,7 +444,7 @@ mod tests {
     fn test_filter_portuguese_preserves_um() {
         // "um" means "a/an" in Portuguese
         let text = "um gato bonito";
-        let result = filter_transcription_output(text, "pt", &None);
+        let result = filter_transcription_output(text, "pt");
         assert_eq!(result, "um gato bonito");
     }
 
@@ -464,7 +452,7 @@ mod tests {
     fn test_filter_spanish_preserves_ha() {
         // "ha" means "has" in Spanish
         let text = "ha sido un buen día";
-        let result = filter_transcription_output(text, "es", &None);
+        let result = filter_transcription_output(text, "es");
         assert_eq!(result, "ha sido un buen día");
     }
 
@@ -472,31 +460,14 @@ mod tests {
     fn test_filter_language_code_with_region() {
         // "pt-BR" should normalize to "pt"
         let text = "um gato bonito";
-        let result = filter_transcription_output(text, "pt-BR", &None);
+        let result = filter_transcription_output(text, "pt-BR");
         assert_eq!(result, "um gato bonito");
-    }
-
-    #[test]
-    fn test_filter_custom_filler_words_override() {
-        let custom = Some(vec!["okay".to_string(), "right".to_string()]);
-        let text = "okay so I think right this works";
-        let result = filter_transcription_output(text, "en", &custom);
-        assert_eq!(result, "so I think this works");
-    }
-
-    #[test]
-    fn test_filter_custom_filler_words_empty_disables() {
-        let custom = Some(vec![]);
-        let text = "So uhm I was thinking uh about this";
-        let result = filter_transcription_output(text, "en", &custom);
-        // No filler words removed since custom list is empty
-        assert_eq!(result, "So uhm I was thinking uh about this");
     }
 
     #[test]
     fn test_filter_unknown_language_uses_fallback() {
         let text = "uh I think uhm this works";
-        let result = filter_transcription_output(text, "xx", &None);
+        let result = filter_transcription_output(text, "xx");
         assert_eq!(result, "I think this works");
     }
 
@@ -504,7 +475,7 @@ mod tests {
     fn test_filter_fallback_does_not_remove_um() {
         // Fallback (unknown language) should not remove "um" since it's a real word in some languages
         let text = "um I think this works";
-        let result = filter_transcription_output(text, "xx", &None);
+        let result = filter_transcription_output(text, "xx");
         assert_eq!(result, "um I think this works");
     }
 

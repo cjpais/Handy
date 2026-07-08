@@ -9,6 +9,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const DEFAULT_CLEAN_PROMPT_ID: &str = "default_improve_transcriptions";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -399,6 +400,10 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default = "default_post_process_selected_prompt_id")]
     pub post_process_selected_prompt_id: Option<String>,
+    #[serde(default = "default_true")]
+    pub clean_strip_filler: bool,
+    #[serde(default = "default_true")]
+    pub clean_convert_spoken: bool,
     #[serde(default = "default_summarize_enabled")]
     pub summarize_enabled: bool,
     #[serde(default)]
@@ -426,8 +431,6 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
-    #[serde(default)]
-    pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
     pub whisper_accelerator: WhisperAcceleratorSetting,
     #[serde(default)]
@@ -459,6 +462,10 @@ fn default_autostart_enabled() -> bool {
 }
 
 fn default_update_checks_enabled() -> bool {
+    true
+}
+
+fn default_true() -> bool {
     true
 }
 
@@ -654,16 +661,53 @@ fn default_post_process_models() -> HashMap<String, String> {
     map
 }
 
+/// Assembles the Clean-stage system prompt from the fixed grammar floor plus
+/// the enabled optional fragments. Called at post-processing call time with
+/// live toggle state (see `actions::resolve_clean_prompt_text`), and here
+/// with both toggles on to keep the persisted default prompt in sync with
+/// what dynamic assembly produces.
+///
+/// Grammar/spelling/punctuation correction is unconditional: it sits at the
+/// data-quality floor rather than in a real user preference window, so it is
+/// not gated behind a toggle (see "Ability to slightly customise clean step"
+/// scope revision).
+pub fn build_default_clean_prompt(strip_filler: bool, convert_spoken: bool) -> String {
+    let mut fragments: Vec<&str> = vec![
+        "Fix spelling errors",
+        "Fix capitalisation errors",
+        "Fix punctuation errors",
+    ];
+
+    if strip_filler {
+        fragments.push("Remove filler words and hesitations (um, uh, like, you know)");
+        fragments.push("Remove self-corrections, keeping only the corrected version");
+    }
+    if convert_spoken {
+        fragments.push(
+            "Convert spoken numbers to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)",
+        );
+        fragments.push("Convert spoken dates to date format (seventeenth June → 17th June, first Jan → 1st January)");
+    }
+
+    let mut prompt = String::from("Apply ONLY these fixes to the following transcript, in order:");
+    for (i, fragment) in fragments.iter().enumerate() {
+        prompt.push_str(&format!("\n{}. {}", i + 1, fragment));
+    }
+    prompt.push_str("\n\nDo nothing else. Keep the language in the original version. Preserve exact meaning and word order. Do not paraphrase or reorder content. Return transcript unchanged except for these categories. If you're unsure whether something fits these categories, leave it unchanged.\n\nTranscript:\n${output}");
+
+    prompt
+}
+
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
     vec![LLMPrompt {
-        id: "default_improve_transcriptions".to_string(),
+        id: DEFAULT_CLEAN_PROMPT_ID.to_string(),
         name: "Improve Transcriptions".to_string(),
-        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+        prompt: build_default_clean_prompt(true, true),
     }]
 }
 
 fn default_post_process_selected_prompt_id() -> Option<String> {
-    Some("default_improve_transcriptions".to_string())
+    Some(DEFAULT_CLEAN_PROMPT_ID.to_string())
 }
 
 fn default_whisper_gpu_device() -> i32 {
@@ -841,6 +885,8 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: default_post_process_selected_prompt_id(),
+        clean_strip_filler: true,
+        clean_convert_spoken: true,
         summarize_enabled: default_summarize_enabled(),
         summarize_models: HashMap::new(),
         summarize_prompts: default_summarize_prompts(),
@@ -855,7 +901,6 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
-        custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
