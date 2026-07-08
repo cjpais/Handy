@@ -1,0 +1,624 @@
+{
+  "tray": {
+    "settings": "Instellingen...",
+    "checkUpdates": "Controleren op updates...",
+    "copyLastTranscript": "Laatste transcriptie kopiëren",
+    "unloadModel": "Model ontladen",
+    "model": "Model",
+    "quit": "Afsluiten",
+    "cancel": "Annuleren"
+  },
+  "sidebar": {
+    "general": "Algemeen",
+    "models": "Modellen",
+    "advanced": "Geavanceerd",
+    "postProcessing": "Naverwerking",
+    "history": "Geschiedenis",
+    "debug": "Probleemoplossing",
+    "about": "Over Handy"
+  },
+  "onboarding": {
+    "subtitle": "Kies een transcriptiemodel om aan de slag te gaan",
+    "existingModelsTitle": "Compatibele modellen",
+    "downloadModelsTitle": "Beschikbaar voor download",
+    "showAllModels": "Toon alle {{total}} modellen",
+    "showFewerModels": "Minder modellen tonen",
+    "recommended": "Aanbevolen",
+    "customModelDescription": "Niet officieel ondersteund",
+    "modelCard": {
+      "accuracy": "nauwkeurigheid",
+      "speed": "snelheid"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Snel en redelijk nauwkeurig."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Goede nauwkeurigheid, gemiddelde snelheid."
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Balans tussen nauwkeurigheid en snelheid."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Hoge nauwkeurigheid, maar traag."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Alleen Engels. Het beste model voor Engelstaligen."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Snel en nauwkeurig."
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Zeer snel, alleen Engels. Gaat goed om met accenten."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultrasnel, alleen Engels."
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Snel, alleen Engels. Goede balans tussen snelheid en nauwkeurigheid."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Alleen Engels. Hoge kwaliteit."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Geoptimaliseerd voor Taiwanees-Mandarijn. Ondersteunt codewisseling."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Zeer snel. Chinees, Engels, Japans, Koreaans, Kantonees."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Russische spraakherkenning. Snel en nauwkeurig."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Zeer snel. Engels, Duits, Spaans, Frans. Ondersteunt vertaling."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Nauwkeurig meertalig. 25 Europese talen. Ondersteunt vertaling."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Een groot, trager, maar zeer nauwkeurig meertalig model."
+      }
+    },
+    "errors": {
+      "selectModel": "Model selecteren mislukt"
+    },
+    "permissions": {
+      "title": "Machtigingen vereist",
+      "description": "Handy heeft een aantal machtigingen nodig om goed te kunnen werken.",
+      "microphone": {
+        "title": "Microfoontoegang",
+        "description": "Vereist om je stem op te nemen voor transcriptie."
+      },
+      "accessibility": {
+        "title": "Toegankelijkheid",
+        "description": "Vereist om getranscribeerde tekst in je applicaties te kunnen typen."
+      },
+      "grant": "Machtiging verlenen",
+      "granted": "Verleend",
+      "waiting": "Wachten...",
+      "allGranted": "Alles ingesteld!",
+      "errors": {
+        "checkFailed": "Machtigingen controleren mislukt. Probeer het opnieuw.",
+        "requestFailed": "Machtiging aanvragen mislukt. Probeer het opnieuw."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "Aangepast",
+    "legacy": "Klassiek",
+    "streaming": "Streaming",
+    "active": "Actief",
+    "switching": "Wisselen...",
+    "noModelsAvailable": "Geen modellen beschikbaar",
+    "verifying": "Verifiëren van {{modelName}}...",
+    "verifyingGeneric": "Verifiëren...",
+    "extracting": "Uitpakken van {{modelName}}...",
+    "extractingMultiple": "Uitpakken van {{count}} modellen...",
+    "extractingGeneric": "Uitpakken...",
+    "downloading": "Downloaden {{percentage}}%",
+    "downloadingMultiple": "Downloaden van {{count}} modellen...",
+    "modelReady": "Model gereed",
+    "loading": "Laden van {{modelName}}...",
+    "loadingGeneric": "Laden...",
+    "modelError": "Modelfout",
+    "modelUnloaded": "Model ontladen",
+    "noModelDownloadRequired": "Geen model - Download vereist",
+    "deleteModel": "{{modelName}} verwijderen",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "Annuleren",
+    "cancelDownload": "Download annuleren",
+    "capabilities": {
+      "languageSelection": "Ondersteunt meerdere invoertalen",
+      "singleLanguage": "Ondersteunt alleen deze taal",
+      "languageCount": "{{total}} talen",
+      "languageOnly": "Alleen {{language}}",
+      "translation": "Kan vertalen naar het Engels",
+      "translate": "Vertalen",
+      "streaming": "Toont live transcriptie tijdens het spreken"
+    }
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "Instellingen voor {{model}}"
+    },
+    "general": {
+      "title": "Algemeen",
+      "shortcut": {
+        "title": "Sneltoetsen",
+        "description": "Configureer sneltoetsen om spraak-naar-tekst-opnames te starten",
+        "loading": "Sneltoetsen laden...",
+        "none": "Geen sneltoetsen geconfigureerd",
+        "notFound": "Sneltoets niet gevonden",
+        "pressKeys": "Druk op toetsen...",
+        "bindings": {
+          "transcribe": {
+            "name": "Sneltoets voor dicteren",
+            "description": "De sneltoets om je stem op te nemen en te transcriberen."
+          },
+          "cancel": {
+            "name": "Sneltoets voor annuleren",
+            "description": "De sneltoets om de huidige opname te annuleren."
+          },
+          "transcribe_with_post_process": {
+            "name": "Sneltoets voor naverwerking",
+            "description": "Optioneel: Een specifieke sneltoets die altijd AI-naverwerking toepast op je transcriptie."
+          }
+        },
+        "errors": {
+          "restore": "Herstellen van originele sneltoets mislukt",
+          "set": "Instellen van sneltoets mislukt: {{error}}",
+          "reset": "Sneltoets terugzetten naar standaardwaarde mislukt"
+        }
+      },
+      "language": {
+        "title": "Taal",
+        "description": "Selecteer de taal voor spraakherkenning. 'Automatisch' detecteert de taal vanzelf, terwijl het kiezen van een specifieke taal de nauwkeurigheid voor die taal kan verbeteren.",
+        "searchPlaceholder": "Talen zoeken...",
+        "noResults": "Geen talen gevonden",
+        "auto": "Automatisch"
+      },
+      "pushToTalk": {
+        "label": "Push-to-talk",
+        "description": "Ingedrukt houden om op te nemen, loslaten om te stoppen"
+      }
+    },
+    "models": {
+      "title": "Transcriptiemodellen",
+      "description": "Selecteer een transcriptiemodel of download extra modellen. Verschillende modellen bieden variërende niveaus van nauwkeurigheid en snelheid.",
+      "searchPlaceholder": "Modellen zoeken op naam...",
+      "yourModels": "Gedownloade modellen",
+      "availableModels": "Beschikbaar voor download",
+      "deleteConfirm": "Weet je zeker dat je {{modelName}} wilt verwijderen? Je moet het model opnieuw downloaden om het weer te gebruiken.",
+      "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
+      "deleteTitle": "Model verwijderen",
+      "filters": {
+        "allLanguages": "Alle talen"
+      },
+      "rescan": {
+        "label": "Opnieuw scannen",
+        "tooltip": "Scannen naar modellen die buiten Handy om zijn toegevoegd aan de modellenmap of Hugging Face-cache"
+      },
+      "noModelsMatch": "Geen modellen voldoen aan dit filter."
+    },
+    "sound": {
+      "title": "Geluid",
+      "microphone": {
+        "title": "Microfoon",
+        "description": "Selecteer de gewenste microfoon",
+        "placeholder": "Microfoon selecteren...",
+        "loading": "Laden..."
+      },
+      "audioFeedback": {
+        "label": "Geluidsfeedback",
+        "description": "Geluid afspelen wanneer de opname start en stopt"
+      },
+      "outputDevice": {
+        "title": "Afspeelapparaat",
+        "description": "Selecteer het gewenste audioapparaat voor feedbackgeluiden",
+        "placeholder": "Afspeelapparaat selecteren...",
+        "loading": "Laden..."
+      },
+      "volume": {
+        "title": "Volume",
+        "description": "Pas het volume van de geluidsfeedback aan"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "App",
+        "output": "Uitvoer",
+        "transcription": "Transcriptie",
+        "history": "Geschiedenis",
+        "experimental": "Experimenteel"
+      },
+      "experimentalToggle": {
+        "label": "Experimentele functies",
+        "description": "Schakel experimentele functies in die nog in ontwikkeling zijn."
+      },
+      "lazyStreamClose": {
+        "label": "Microfoon openhouden tussen transcripties",
+        "description": "Houdt de microfoonstream tot 30 seconden open nadat een opname stopt. Dit vermindert de vertraging bij opeenvolgende opnames, maar kan de Bluetooth-audiokwaliteit tijdelijk verminderen."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "transcribe.cpp-versnelling",
+          "description": "Hardwareversnelling voor transcribe.cpp-modellen (Whisper-familie). 'Automatisch' gebruikt de GPU indien beschikbaar (Metal op macOS, Vulkan op Windows/Linux)."
+        },
+        "ort": {
+          "title": "ONNX-versnelling",
+          "description": "Hardwareversnelling voor ONNX-modellen (Parakeet, Canary, Moonshine, etc.). DirectML op Windows is experimenteel; modellen kunnen daardoor haperen."
+        },
+        "gpuDevice": {
+          "auto": "Automatisch"
+        }
+      },
+      "startHidden": {
+        "label": "Geminimaliseerd opstarten",
+        "description": "Start op de achtergrond in het systeemvak zonder het hoofdvenster te openen."
+      },
+      "autostart": {
+        "label": "Starten bij opstarten",
+        "description": "Handy automatisch starten zodra je inlogt op je computer."
+      },
+      "showTrayIcon": {
+        "label": "Pictogram in systeemvak tonen",
+        "description": "Toon het Handy-pictogram in het systeemvak."
+      },
+      "overlay": {
+        "style": {
+          "title": "Overlay",
+          "description": "Kies de opname-overlay: 'Geen' verbergt deze, 'Minimaal' toont een compacte balk, 'Live' toont de tekst in realtime tijdens het spreken (alleen voor streaming-modellen). Op Linux wordt 'Geen' aanbevolen.",
+          "options": {
+            "none": "Geen",
+            "minimal": "Minimaal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Overlay-positie",
+          "description": "Waar de overlay op het scherm verschijnt tijdens het opnemen en transcriberen.",
+          "options": {
+            "bottom": "Onderkant",
+            "top": "Bovenkant"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "Plakmethode",
+        "description": "Kies hoe tekst wordt ingevoegd. 'Direct' simuleert typen via het systeem. 'Geen' slaat het plakken over en werkt alleen de geschiedenis en het klembord bij.",
+        "options": {
+          "clipboard": "Klembord ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Klembord (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Klembord (Shift+Insert)",
+          "direct": "Direct",
+          "none": "Geen",
+          "externalScript": "Extern script"
+        },
+        "externalScriptPlaceholder": "/pad/naar/je/script.sh"
+      },
+      "typingTool": {
+        "title": "Typgereedschap",
+        "description": "Kies welke Linux-typtool gebruikt moet worden voor de 'Directe' plakmethode. 'Automatisch' detecteert zelf de beste optie voor jouw systeem.",
+        "options": {
+          "auto": "Automatisch (Aanbevolen)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Klembordbeheer",
+        "description": "'Klembord niet aanpassen' behoudt je huidige klembordinhoud na een transcriptie. 'Kopiëren naar klembord' laat de getranscribeerde tekst achter op je klembord.",
+        "options": {
+          "dontModify": "Klembord niet aanpassen",
+          "copyToClipboard": "Kopiëren naar klembord"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatisch verzenden",
+        "description": "Verzend automatisch de geselecteerde toetsencombinatie na het invoegen van de tekst. Cmd+Enter geldt voor macOS, Windows/Linux gebruiken Super+Enter.",
+        "options": {
+          "off": "Uit",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Vertalen naar het Engels",
+        "description": "Vertaal spraak uit andere talen tijdens het transcriberen automatisch naar het Engels."
+      },
+      "modelUnload": {
+        "title": "Model ontladen",
+        "description": "Geheugen (GPU/CPU) automatisch vrijmaken wanneer het model voor de opgegeven tijd niet is gebruikt",
+        "options": {
+          "never": "Nooit",
+          "immediately": "Direct",
+          "min2": "Na 2 minuten",
+          "min5": "Na 5 minuten",
+          "min10": "Na 10 minuten",
+          "min15": "Na 15 minuten",
+          "hour1": "Na 1 uur",
+          "sec15": "Na 15 seconden (Debug)"
+        }
+      },
+      "customWords": {
+        "title": "Eigen woordenlijst",
+        "description": "Voeg woorden toe die vaak verkeerd worden verstaan of gespeld. Het systeem corrigeert klankverwante woorden automatisch naar jouw lijst.",
+        "placeholder": "Woord toevoegen",
+        "add": "Toevoegen",
+        "remove": "{{word}} verwijderen",
+        "duplicate": "\"{{word}}\" bestaat al"
+      },
+      "voiceActivityDetection": {
+        "title": "Spraakactiviteitsdetectie (VAD)",
+        "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "Sneltoets"
+      },
+      "api": {
+        "title": "API (OpenAI-compatibel)",
+        "provider": {
+          "title": "Provider",
+          "description": "Selecteer een OpenAI-compatibele provider."
+        },
+        "appleIntelligence": {
+          "unavailable": "Apple Intelligence is niet beschikbaar op dit apparaat. Vereist een Apple Silicon Mac met macOS Tahoe (26.0) of nieuwer waarop Apple Intelligence is ingeschakeld via de Systeeminstellingen."
+        },
+        "baseUrl": {
+          "title": "Basis-URL",
+          "description": "API-basis-URL voor de geselecteerde provider. Alleen de aangepaste provider kan worden bewerkt.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API-sleutel",
+          "description": "API-sleutel voor de geselecteerde provider.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionCustom": "Geef de model-ID op die door je aangepaste eindpunt wordt verwacht.",
+          "descriptionDefault": "Kies een model dat door de geselecteerde provider wordt aangeboden.",
+          "placeholderWithOptions": "Zoek of selecteer een model",
+          "placeholderNoOptions": "Typ een modelnaam",
+          "refreshModels": "Modellen verversen"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Geselecteerde prompt",
+          "description": "Selecteer een sjabloon voor het verfijnen van transcripties of maak een nieuwe aan. Gebruik ${output} in de prompttekst om naar de gemaakte transcriptie te verwijzen."
+        },
+        "noPrompts": "Geen prompts beschikbaar",
+        "selectPrompt": "Selecteer een prompt",
+        "createNew": "Nieuwe prompt maken",
+        "promptLabel": "Promptnaam",
+        "promptLabelPlaceholder": "Voer promptnaam in",
+        "promptInstructions": "Prompt-instructies",
+        "promptInstructionsPlaceholder": "Schrijf de instructies die na de transcriptie moeten worden uitgevoerd. Voorbeeld: Verbeter de grammatica en helderheid van de volgende tekst: ${output}",
+        "promptTip": "Tip: Gebruik <code>${output}</code> om de getranscribeerde tekst in je prompt in te voegen.",
+        "updatePrompt": "Prompt bijwerken",
+        "deletePrompt": "Prompt verwijderen",
+        "createPrompt": "Prompt maken",
+        "cancel": "Annuleren",
+        "selectToEdit": "Selecteer hierboven een prompt om de details te bekijken en te bewerken.",
+        "createFirst": "Klik hierboven op 'Nieuwe prompt maken' om je eerste naverwerkingsprompt aan te maken."
+      }
+    },
+    "history": {
+      "title": "Geschiedenis",
+      "openFolder": "Opnamemap openen",
+      "loading": "Geschiedenis laden...",
+      "empty": "Nog geen transcripties. Start met opnemen om je geschiedenis op te bouwen!",
+      "copyToClipboard": "Transcriptie naar klembord kopiëren",
+      "save": "Transcriptie opslaan",
+      "unsave": "Verwijderen uit opgeslagen",
+      "delete": "Item verwijderen",
+      "deleteError": "Item verwijderen mislukt. Probeer het opnieuw.",
+      "retranscribe": "Opnieuw transcriberen",
+      "retranscribeError": "Opnieuw transcriberen mislukt. Probeer het opnieuw.",
+      "transcribing": "Transcriberen...",
+      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram."
+    },
+    "debug": {
+      "title": "Probleemoplossing",
+      "logDirectory": {
+        "title": "Logboekmap",
+        "description": "Locatie waar logbestanden worden opgeslagen"
+      },
+      "logLevel": {
+        "title": "Logboekniveau",
+        "description": "Stel de gedetailleerdheid van de logboeken in"
+      },
+      "liveLogs": {
+        "title": "Live logboeken",
+        "description": "Streamt applicatielogs in realtime om problemen te diagnosticeren zonder het logbestand te openen. Alleen logs die worden gegenereerd terwijl dit paneel open is worden getoond; dit respecteert het bovenstaande logboekniveau.",
+        "live": "Live",
+        "paused": "Gepauzeerd",
+        "pause": "Pauzeren",
+        "resume": "Hervatten",
+        "copied": "Gekopieerd",
+        "lineCount": "{{count}} regels",
+        "empty": "Wachten op logboeken... Meldingen verschijnen hier zodra de app ze genereert."
+      },
+      "updateChecks": {
+        "label": "Controleren op updates",
+        "description": "Automatisch controleren op nieuwe versies van Handy"
+      },
+      "whatsNewPreview": {
+        "title": "Voorbeeld van release-notes",
+        "description": "Open de nieuwste meegeleverde release-notes zonder deze als gelezen te markeren",
+        "button": "Voorbeeld",
+        "noNotes": "Geen meegeleverde release-notes gevonden",
+        "error": "Voorbeeld van release-notes laden mislukt"
+      },
+      "soundTheme": {
+        "label": "Geluidsthema",
+        "description": "Kies een geluidsthema voor feedback bij het starten en stoppen van opnames"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Drempelwaarde woordcorrectie",
+        "description": "Gevoeligheid voor eigen woordcorrecties"
+      },
+      "historyLimit": {
+        "title": "Geschiedenislimiet",
+        "description": "Maximum aantal te bewaren geschiedenisitems",
+        "entries": "items"
+      },
+      "recordingRetention": {
+        "title": "Opnames automatisch verwijderen",
+        "description": "Oude opnames automatisch verwijderen om ruimte te besparen",
+        "never": "Nooit",
+        "preserveLimit": "Bewaar de nieuwste {{count}}",
+        "days3": "Na 3 dagen",
+        "weeks2": "Na 2 weken",
+        "months3": "Na 3 maanden",
+        "placeholder": "Selecteer bewaarperiode..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Microfoon altijd aan",
+        "description": "Houd de microfoon actief voor een snellere reactietijd"
+      },
+      "clamshellMicrophone": {
+        "title": "Clamshell-microfoon",
+        "description": "Microfoon die gebruikt moet worden wanneer het laptopscherm gesloten is"
+      },
+      "postProcessingToggle": {
+        "label": "Naverwerking",
+        "description": "Schakel AI-gestuurde tekstverfijning in na transcriptie"
+      },
+      "muteWhileRecording": {
+        "label": "Dempen tijdens opname",
+        "description": "Systeemgeluid dempen tijdens het opnemen"
+      },
+      "appendTrailingSpace": {
+        "label": "Spatie achteraan toevoegen",
+        "description": "Voeg een spatie toe na de geplakte transcriptie"
+      },
+      "keyboardImplementation": {
+        "title": "Toetsenbord-implementatie",
+        "description": "Kies de backend voor sneltoetsen.",
+        "bindingsReset": "Sneltoetsen waren incompatibel en zijn teruggezet naar de standaardwaarden"
+      },
+      "paths": {
+        "appData": "App-data:",
+        "models": "Modellen:",
+        "settings": "Instellingen:"
+      },
+      "pasteDelay": {
+        "title": "Plakvertraging",
+        "description": "Vertraging voordat de plak-toetsaanslag wordt verzonden (in milliseconden). Verhoog dit als de verkeerde tekst wordt geplakt."
+      },
+      "recordingBuffer": {
+        "title": "Extra opnamebuffer",
+        "description": "Extra tijd (in milliseconden) om te blijven opnemen nadat je de toets loslaat, om naloopaudio op te vangen. 0 = geen extra buffer."
+      }
+    },
+    "about": {
+      "title": "Over Handy",
+      "version": {
+        "title": "Versie",
+        "description": "Huidige versie van Handy"
+      },
+      "whatsNewUpdates": {
+        "label": "Toon 'Wat is er nieuw'",
+        "description": "Release-notes tonen nadat Handy is bijgewerkt"
+      },
+      "appDataDirectory": {
+        "title": "App-datamap",
+        "description": "Locatie waar Handy de gegevens opslaat"
+      },
+      "sourceCode": {
+        "title": "Broncode",
+        "description": "Bekijk de broncode en draag bij",
+        "button": "Bekijk op GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Ontwikkeling ondersteunen",
+        "description": "Help ons om te blijven bouwen aan Handy",
+        "button": "Doneren"
+      },
+      "acknowledgments": {
+        "title": "Dankbetuigingen",
+        "ggml": {
+          "title": "ggml",
+          "description": "Krachtige tensorbibliotheek voor lokale AI-verwerking",
+          "details": "Handy's lokale spraak-naar-tekst is gebouwd op transcribe.cpp en ggml. Met dank aan het geweldige werk van Georgi Gerganov en alle bijdragers."
+        }
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "Controleren op updates...",
+    "updateAvailableShort": "Update beschikbaar",
+    "upToDate": "Up-to-date",
+    "updateCheckingDisabled": "Updatecontrole uitgeschakeld",
+    "downloading": "Downloaden... {{progress}}%",
+    "installing": "Installeren...",
+    "preparing": "Voorbereiden...",
+    "checkForUpdates": "Controleren op updates",
+    "portableUpdateTitle": "Handmatige update vereist",
+    "portableUpdateMessage": "Draagbare (portable) installaties kunnen niet automatisch worden bijgewerkt. Om bij te werken: download het nieuwste NSIS-installatiebestand van GitHub Releases, installeer het in dezelfde map en kopieer vervolgens je Data/-map (instellingen, modellen, opnames) van de oude versie naar de nieuwe.",
+    "portableUpdateButton": "GitHub Releases openen"
+  },
+  "whatsNew": {
+    "title": "Nieuw in Handy v{{version}}"
+  },
+  "common": {
+    "loading": "Laden...",
+    "delete": "Verwijderen",
+    "close": "Sluiten",
+    "open": "Openen",
+    "copy": "Kopiëren",
+    "clear": "Wissen",
+    "noOptionsFound": "Geen opties gevonden"
+  },
+  "accessibility": {
+    "permissionsDescription": "Handy heeft toegankelijkheidsmachtigingen nodig om getranscribeerde tekst te kunnen typen.",
+    "openSettings": "Systeeminstellingen openen"
+  },
+  "errors": {
+    "loadDirectory": "Fout bij laden van map: {{error}}",
+    "micPermissionDeniedTitle": "Microfoontoegang geweigerd",
+    "micPermissionDenied": {
+      "generic": "Microfoontoegang is geweigerd door het besturingssysteem. Verleen microfoonmachtiging in je systeeminstellingen.",
+      "windows": "Schakel microfoontoegang in via Instellingen → Privacy & beveiliging → Microfoon (inclusief toegang voor desktop-apps).",
+      "macos": "Verleen microfoontoegang via Systeeminstellingen → Privacy & Beveiliging → Microfoon.",
+      "linux": "Verleen microfoontoegang in de geluids- of privacyinstellingen van je systeem."
+    },
+    "noInputDeviceTitle": "Geen microfoon gevonden",
+    "noInputDevice": "Er is geen audio-invoerapparaat gedetecteerd. Sluit een microfoon of headset aan en probeer het opnieuw.",
+    "recordingFailed": "Opname starten mislukt: {{error}}",
+    "modelLoadFailed": "Model laden mislukt: {{model}}",
+    "modelLoadFailedUnknown": "onbekend model",
+    "pasteFailedTitle": "Tekst plakken mislukt",
+    "pasteFailed": "Tekst kon niet worden geplakt in de actieve applicatie.",
+    "transcriptionFailedTitle": "Transcriptie mislukt"
+  },
+  "appLanguage": {
+    "title": "Interfacetaal",
+    "description": "Wijzig de taal van de Handy-interface"
+  },
+  "overlay": {
+    "transcribing": "Transcriberen...",
+    "processing": "Verwerken..."
+  }
+}

@@ -60,7 +60,7 @@ pub fn process_text_with_system_prompt(
         let error_c_str = if !response.error_message.is_null() {
             unsafe { CStr::from_ptr(response.error_message) }
         } else {
-            CStr::from_bytes_with_nul(b"Unknown error\0").unwrap()
+            c"Unknown error"
         };
         let error_msg = error_c_str.to_string_lossy().into_owned();
         Err(error_msg)
