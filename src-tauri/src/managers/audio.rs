@@ -8,7 +8,7 @@ use crate::audio_toolkit::{
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
-use crate::settings::{get_settings, AppSettings};
+use crate::settings::{get_settings, AppSettings, MediaWhileRecordingMode};
 use crate::utils;
 use log::{debug, error, info, warn};
 use std::path::Path;
@@ -20,14 +20,15 @@ use tauri::Manager;
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 const VAD_THRESHOLD: f32 = 0.3;
 
-fn set_mute(mute: bool) {
-    // Expected behavior:
-    // - Windows: works on most systems using standard audio drivers.
-    // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
-    //   but some distros may lack the tools used.
-    // - macOS: works on most standard setups via AppleScript.
-    // If unsupported, fails silently.
+#[derive(Debug, Clone)]
+enum MediaModification {
+    None,
+    Muted,
+    Paused { apps: Vec<String> },
+    Ducked,
+}
 
+fn set_mute(mute: bool) {
     #[cfg(target_os = "windows")]
     {
         unsafe {
@@ -48,8 +49,6 @@ fn set_mute(mute: bool) {
                 };
             }
 
-            // Initialize the COM library for this thread.
-            // If already initialized (e.g., by another library like Tauri), this does nothing.
             let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
 
             let all_devices: IMMDeviceEnumerator =
@@ -71,8 +70,6 @@ fn set_mute(mute: bool) {
         let mute_val = if mute { "1" } else { "0" };
         let amixer_state = if mute { "mute" } else { "unmute" };
 
-        // Try multiple backends to increase compatibility
-        // 1. PipeWire (wpctl)
         if Command::new("wpctl")
             .args(["set-mute", "@DEFAULT_AUDIO_SINK@", mute_val])
             .output()
@@ -82,7 +79,6 @@ fn set_mute(mute: bool) {
             return;
         }
 
-        // 2. PulseAudio (pactl)
         if Command::new("pactl")
             .args(["set-sink-mute", "@DEFAULT_SINK@", mute_val])
             .output()
@@ -92,7 +88,6 @@ fn set_mute(mute: bool) {
             return;
         }
 
-        // 3. ALSA (amixer)
         let _ = Command::new("amixer")
             .args(["set", "Master", amixer_state])
             .output();
@@ -106,6 +101,220 @@ fn set_mute(mute: bool) {
             if mute { "true" } else { "false" }
         );
         let _ = Command::new("osascript").args(["-e", &script]).output();
+    }
+}
+
+/// Pause playing media. Uses AppleScript for native apps (state-checked)
+/// plus MediaRemote for browser/system media (Chrome, Safari, Firefox).
+fn pause_playing_media() -> Vec<String> {
+    #[cfg(target_os = "macos")]
+    {
+        use crate::media_remote;
+        use std::process::Command;
+
+        let mut paused = Vec::new();
+
+        let script = r#"
+set pausedApps to ""
+try
+    tell application "System Events"
+        if (name of processes) contains "Spotify" then
+            tell application "Spotify"
+                if player state is playing then
+                    pause
+                    set pausedApps to pausedApps & "spotify,"
+                end if
+            end tell
+        end if
+    end tell
+end try
+try
+    tell application "System Events"
+        if (name of processes) contains "Music" then
+            tell application "Music"
+                if player state is playing then
+                    pause
+                    set pausedApps to pausedApps & "music,"
+                end if
+            end tell
+        end if
+    end tell
+end try
+return pausedApps
+"#;
+        if let Ok(output) = Command::new("/usr/bin/osascript").args(["-e", script]).output() {
+            if output.status.success() {
+                let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                paused.extend(
+                    result.split(',').filter(|s| !s.is_empty()).map(|s| s.to_string()),
+                );
+            }
+        }
+
+        // Send MediaRemote PAUSE for browser media. This is fire-and-forget:
+        // we do NOT resume via MediaRemote because we can't reliably read
+        // playback state on macOS 15.4+ (playbackRate returns null).
+        // Resuming blindly would start previously-paused apps.
+        if paused.is_empty() {
+            media_remote::pause();
+            debug!("MediaRemote PAUSE sent (browser media, no auto-resume)");
+        }
+
+        return paused;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        if Command::new("playerctl")
+            .args(["pause"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return vec!["playerctl".to_string()];
+        }
+        return Vec::new();
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        return Vec::new();
+    }
+}
+
+/// Resume only the apps that were previously paused.
+fn resume_paused_media(apps: &[String]) {
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+
+        for app in apps {
+            match app.as_str() {
+                "spotify" => {
+                    let _ = Command::new("/usr/bin/osascript")
+                        .args(["-e", "tell application \"Spotify\" to play"])
+                        .output();
+                }
+                "music" => {
+                    let _ = Command::new("/usr/bin/osascript")
+                        .args(["-e", "tell application \"Music\" to play"])
+                        .output();
+                }
+                _ => {}
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        for app in apps {
+            if app == "playerctl" {
+                let _ = Command::new("playerctl").args(["play"]).output();
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let _ = apps;
+    }
+}
+
+fn get_system_volume() -> Option<u8> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let output = Command::new("osascript")
+            .args(["-e", "output volume of (get volume settings)"])
+            .output()
+            .ok()?;
+        if output.status.success() {
+            let vol_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return vol_str.parse().ok();
+        }
+        return std::option::Option::None;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        if let Ok(output) = Command::new("wpctl")
+            .args(["get-volume", "@DEFAULT_AUDIO_SINK@"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout);
+                if let Some(vol_str) = s.split_whitespace().nth(1) {
+                    if let Ok(vol) = vol_str.parse::<f32>() {
+                        return Some((vol * 100.0).min(100.0) as u8);
+                    }
+                }
+            }
+        }
+        if let Ok(output) = Command::new("pactl")
+            .args(["get-sink-volume", "@DEFAULT_SINK@"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout);
+                for part in s.split_whitespace() {
+                    if let Some(pct) = part.strip_suffix('%') {
+                        if let Ok(vol) = pct.parse::<u8>() {
+                            return Some(vol);
+                        }
+                    }
+                }
+            }
+        }
+        return std::option::Option::None;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        return std::option::Option::None;
+    }
+}
+
+fn set_system_volume(volume: u8) {
+    let vol = volume.min(100);
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let script = format!("set volume output volume {}", vol);
+        let _ = Command::new("osascript").args(["-e", &script]).output();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        let pct = format!("{}%", vol);
+        if Command::new("wpctl")
+            .args(["set-volume", "@DEFAULT_AUDIO_SINK@", &pct])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return;
+        }
+        if Command::new("pactl")
+            .args(["set-sink-volume", "@DEFAULT_SINK@", &pct])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return;
+        }
+        let _ = Command::new("amixer")
+            .args(["set", "Master", &pct])
+            .output();
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        debug!("Volume fade not yet implemented on Windows");
     }
 }
 
@@ -182,7 +391,7 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
-    did_mute: Arc<Mutex<bool>>,
+    media_mod: Arc<Mutex<MediaModification>>,
     close_generation: Arc<AtomicU64>,
     cancel_generation: Arc<AtomicU64>,
     stream_router: Arc<StreamRouter>,
@@ -217,7 +426,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
-            did_mute: Arc::new(Mutex::new(false)),
+            media_mod: Arc::new(Mutex::new(MediaModification::None)),
             close_generation: Arc::new(AtomicU64::new(0)),
             cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
@@ -324,26 +533,64 @@ impl AudioRecordingManager {
 
     /* ---------- microphone life-cycle -------------------------------------- */
 
-    /// Applies mute if mute_while_recording is enabled and stream is open
+    /// Applies the configured media behavior (mute / pause / fade) while recording
     pub fn apply_mute(&self) {
         let settings = get_settings(&self.app_handle);
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        let mut mod_guard = self.media_mod.lock().unwrap();
 
-        if settings.mute_while_recording && *self.is_open.lock().unwrap() {
-            set_mute(true);
-            *did_mute_guard = true;
-            debug!("Mute applied");
+        if !*self.is_open.lock().unwrap() {
+            return;
+        }
+
+        let mode = settings.media_while_recording_mode;
+        match mode {
+            MediaWhileRecordingMode::None => {}
+            MediaWhileRecordingMode::Mute => {
+                set_mute(true);
+                *mod_guard = MediaModification::Muted;
+                debug!("Media mode: muted");
+            }
+            MediaWhileRecordingMode::Pause => {
+                let apps = pause_playing_media();
+                if !apps.is_empty() {
+                    debug!("Media mode: paused {:?}", apps);
+                    *mod_guard = MediaModification::Paused { apps };
+                } else {
+                    debug!("Media mode: nothing was playing");
+                }
+            }
+            MediaWhileRecordingMode::Fade => {
+                if crate::audio_duck::start(0.3) {
+                    *mod_guard = MediaModification::Ducked;
+                    debug!("Media mode: ducked via Core Audio Process Taps");
+                } else {
+                    set_mute(true);
+                    *mod_guard = MediaModification::Muted;
+                    debug!("Media mode: duck failed, fell back to mute");
+                }
+            }
         }
     }
 
-    /// Removes mute if it was applied
+    /// Reverses whatever media modification was applied
     pub fn remove_mute(&self) {
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
-            set_mute(false);
-            *did_mute_guard = false;
-            debug!("Mute removed");
+        let mut mod_guard = self.media_mod.lock().unwrap();
+        match &*mod_guard {
+            MediaModification::None => {}
+            MediaModification::Muted => {
+                set_mute(false);
+                debug!("Media restore: unmuted");
+            }
+            MediaModification::Paused { apps } => {
+                resume_paused_media(apps);
+                debug!("Media restore: resumed {:?}", apps);
+            }
+            MediaModification::Ducked => {
+                crate::audio_duck::stop();
+                debug!("Media restore: duck stopped");
+            }
         }
+        *mod_guard = MediaModification::None;
     }
 
     pub fn preload_vad(&self) -> Result<(), anyhow::Error> {
@@ -375,9 +622,9 @@ impl AudioRecordingManager {
 
         let start_time = Instant::now();
 
-        // Don't mute immediately - caller will handle muting after audio feedback
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        *did_mute_guard = false;
+        // Don't apply media behavior immediately - caller will handle it after audio feedback
+        let mut mod_guard = self.media_mod.lock().unwrap();
+        *mod_guard = MediaModification::None;
 
         // Get the selected device from settings, considering clamshell mode.
         // No pre-flight enumeration here: when nothing is configured the
@@ -434,11 +681,14 @@ impl AudioRecordingManager {
             return;
         }
 
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
-            set_mute(false);
+        let mut mod_guard = self.media_mod.lock().unwrap();
+        match &*mod_guard {
+            MediaModification::Muted => set_mute(false),
+            MediaModification::Paused { apps } => resume_paused_media(apps),
+            MediaModification::Ducked => crate::audio_duck::stop(),
+            MediaModification::None => {}
         }
-        *did_mute_guard = false;
+        *mod_guard = MediaModification::None;
 
         if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
             // If still recording, stop first.
