@@ -387,6 +387,29 @@ async changeKeyboardImplementationSetting(implementation: string) : Promise<Resu
 async getKeyboardImplementation() : Promise<string> {
     return await TAURI_INVOKE("get_keyboard_implementation");
 },
+/**
+ * Current shortcut backend status, for the settings UI to render
+ * missing-permission banners (Linux) instead of hotkeys failing silently.
+ */
+async getKeyboardBackendStatus() : Promise<KeyboardBackendStatus> {
+    return await TAURI_INVOKE("get_keyboard_backend_status");
+},
+/**
+ * Re-attempt the handy-keys backend after the user has granted access.
+ * 
+ * udev uaccess ACLs apply immediately, so a retry can succeed without
+ * restarting Handy. Rebuilds a live-but-degraded manager (to pick up newly
+ * granted `/dev/uinput` access) or, when the last init failed entirely and
+ * we fell back to the Tauri implementation, switches back to handy-keys.
+ */
+async retryHandyKeysBackend() : Promise<Result<KeyboardBackendStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("retry_handy_keys_backend") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeShowTrayIconSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_show_tray_icon_setting", { enabled }) };
@@ -850,10 +873,12 @@ async isLaptop() : Promise<Result<boolean, string>> {
 
 export const events = __makeEvents__<{
 historyUpdatePayload: HistoryUpdatePayload,
+keyboardBackendStatus: KeyboardBackendStatus,
 streamPhaseEvent: StreamPhaseEvent,
 streamTextEvent: StreamTextEvent
 }>({
 historyUpdatePayload: "history-update-payload",
+keyboardBackendStatus: "keyboard-backend-status",
 streamPhaseEvent: "stream-phase-event",
 streamTextEvent: "stream-text-event"
 })
@@ -898,6 +923,22 @@ export type EngineType =
  */
 "TranscribeCpp" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GigaAM" | "Canary" | "Cohere"
 export type GpuDeviceOption = { id: number; name: string; total_vram_mb: number }
+/**
+ * How the handy-keys backend ended up running.
+ * 
+ * On Linux the blocking backend needs write access to `/dev/uinput` on top
+ * of `/dev/input` read access; when only blocking is unavailable we fall
+ * back to the read-only listener and record why here.
+ */
+export type HandyKeysStatus = { 
+/**
+ * Whether registered hotkeys are swallowed before reaching other apps
+ */
+blocking: boolean; 
+/**
+ * The error that made blocking unavailable (contains the exact fix)
+ */
+blocking_error: string | null }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
@@ -908,6 +949,25 @@ export type ImplementationChangeResult = { success: boolean;
  * List of binding IDs that were reset to defaults due to incompatibility
  */
 reset_bindings: string[] }
+/**
+ * Snapshot of how keyboard shortcuts are currently being provided, so the
+ * frontend can surface missing-permission states (Linux evdev backend)
+ * instead of hotkeys failing silently.
+ */
+export type KeyboardBackendStatus = { 
+/**
+ * The implementation currently driving shortcuts ("tauri" | "handy_keys")
+ */
+active_implementation: string; 
+/**
+ * Blocking/degraded details when handy-keys is active
+ */
+handy_keys: HandyKeysStatus | null; 
+/**
+ * Why the last handy-keys initialization failed entirely, if it did.
+ * The message comes from the backend and names the exact fix.
+ */
+init_error: string | null }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"

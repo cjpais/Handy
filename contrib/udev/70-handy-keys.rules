@@ -1,0 +1,38 @@
+# udev rules for Handy's Linux keyboard backend (handy-keys).
+#
+# The "Handy Keys" shortcut backend reads keyboards directly from
+# /dev/input/event* (identical behavior on X11, Wayland, and the console) and
+# can additionally *block* registered hotkeys from reaching other applications
+# by grabbing keyboards and re-injecting non-hotkey keystrokes through
+# /dev/uinput. Both device classes are root-owned by default; these rules use
+# the systemd-logind "uaccess" tag, which places an ACL for the user
+# physically seated at the machine. Unlike GROUP="input" + group membership,
+# uaccess needs no group setup, applies immediately (no logout), and does not
+# extend access to SSH sessions.
+#
+# Packagers: ship this file verbatim to /usr/lib/udev/rules.d/ and run
+# `udevadm control --reload && udevadm trigger` in your post-install step.
+# uaccess rules must sort before 73-seat-late.rules, so keep the file name
+# prefix below 73 if you rename it.
+#
+# Flatpak note: sandboxed formats that hide /dev/input cannot use this backend
+# at all (it would need the XDG GlobalShortcuts portal, which handy-keys does
+# not implement yet) — these rules are only meaningful for deb/rpm/AUR-style
+# native packages.
+
+# --- Tier 1: hotkey blocking (enabled) --------------------------------------
+# Write access to /dev/uinput lets Handy swallow registered hotkeys instead of
+# letting them also reach the focused application. uinput is an *injection*
+# device: this grants the ability to synthesize input, not to observe it.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"
+
+# --- Tier 2: zero-setup keyboard reading (disabled by default) ---------------
+# Uncommenting the rule below grants the seated user read access to all input
+# devices, so Handy can detect hotkeys without the user joining the 'input'
+# group. Be honest with yourself about what that means: ANY application
+# running as that user can then observe every keystroke system-wide — the
+# kernel offers nothing finer-grained than evdev node access. Most
+# distributions deliberately do not ship such a rule, which is why Handy
+# leaves it commented and instead walks the user through 'input' group
+# membership in its first-run setup dialog.
+#SUBSYSTEM=="input", KERNEL=="event*", TAG+="uaccess"

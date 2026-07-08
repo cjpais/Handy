@@ -516,7 +516,24 @@
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults",
+        "permissions": {
+          "dialogTitle": "Keyboard access needed",
+          "close": "Close",
+          "retry": "Retry",
+          "retrying": "Retrying...",
+          "retrySuccess": "Handy Keys backend is active",
+          "retryStillDegraded": "Hotkeys are detected, but blocking is still unavailable",
+          "initErrorIntro": "Handy Keys reads keyboards directly from /dev/input, and this system has not granted Handy access yet. Run the commands below in a terminal, then log out and back in.",
+          "degradedIntro": "Hotkeys are detected but not blocked, so key presses also reach the focused application. To let Handy swallow registered hotkeys, grant write access to /dev/uinput:",
+          "readCommandLabel": "1. Allow reading keyboards (required — takes effect after you log out and back in)",
+          "blockingCommandLabel": "2. Allow hotkey blocking (recommended — takes effect immediately)",
+          "blockingCommandLabelDegraded": "Allow hotkey blocking (takes effect immediately)",
+          "packagedNote": "The .deb and .rpm packages install the uinput rule automatically; if you installed one of those, you only need the first command.",
+          "errorDetails": "Backend error",
+          "copy": "Copy command",
+          "copied": "Copied"
+        }
       },
       "paths": {
         "appData": "App Data:",

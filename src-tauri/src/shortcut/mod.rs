@@ -14,10 +14,12 @@ pub mod handy_keys;
 mod tauri_impl;
 
 use log::{error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
+use tauri_specta::Event;
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
@@ -29,6 +31,63 @@ use crate::settings::{
 use crate::tray;
 
 // Note: Commands are accessed via shortcut::handy_keys:: in lib.rs
+
+/// Snapshot of how keyboard shortcuts are currently being provided, so the
+/// frontend can surface missing-permission states (Linux evdev backend)
+/// instead of hotkeys failing silently.
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct KeyboardBackendStatus {
+    /// The implementation currently driving shortcuts ("tauri" | "handy_keys")
+    pub active_implementation: String,
+    /// Blocking/degraded details when handy-keys is active
+    pub handy_keys: Option<handy_keys::HandyKeysStatus>,
+    /// Why the last handy-keys initialization failed entirely, if it did.
+    /// The message comes from the backend and names the exact fix.
+    pub init_error: Option<String>,
+}
+
+/// Remembers the most recent handy-keys init failure across the fallback to
+/// the Tauri implementation, so the settings UI can still show the fix.
+#[derive(Default)]
+struct KeyboardBackendFailure(Mutex<Option<String>>);
+
+fn set_backend_failure(app: &AppHandle, err: Option<String>) {
+    if app.try_state::<KeyboardBackendFailure>().is_none() {
+        app.manage(KeyboardBackendFailure::default());
+    }
+    if let Some(state) = app.try_state::<KeyboardBackendFailure>() {
+        if let Ok(mut guard) = state.0.lock() {
+            *guard = err;
+        }
+    }
+}
+
+fn current_backend_status(app: &AppHandle) -> KeyboardBackendStatus {
+    let settings = get_settings(app);
+    let handy_keys_status = if settings.keyboard_implementation == KeyboardImplementation::HandyKeys
+    {
+        app.try_state::<handy_keys::HandyKeysState>()
+            .map(|s| s.status())
+    } else {
+        None
+    };
+    let init_error = app
+        .try_state::<KeyboardBackendFailure>()
+        .and_then(|s| s.0.lock().ok().and_then(|guard| guard.clone()));
+
+    KeyboardBackendStatus {
+        active_implementation: match settings.keyboard_implementation {
+            KeyboardImplementation::Tauri => "tauri".to_string(),
+            KeyboardImplementation::HandyKeys => "handy_keys".to_string(),
+        },
+        handy_keys: handy_keys_status,
+        init_error,
+    }
+}
+
+fn emit_backend_status(app: &AppHandle) {
+    let _ = current_backend_status(app).emit(app);
+}
 
 /// Initialize shortcuts using the configured implementation
 pub fn init_shortcuts(app: &AppHandle) {
@@ -45,15 +104,23 @@ pub fn init_shortcuts(app: &AppHandle) {
                 // Fall back to Tauri implementation and persist this fallback
                 warn!("Falling back to Tauri global shortcut implementation and saving fallback to settings");
 
+                // Keep the failure around: the frontend shows it (with the
+                // fix the error message names) and offers a retry.
+                set_backend_failure(app, Some(e));
+
                 // Update settings to persist the fallback so we don't retry HandyKeys on next launch
                 let mut settings = settings::get_settings(app);
                 settings.keyboard_implementation = KeyboardImplementation::Tauri;
                 settings::write_settings(app, settings);
 
                 tauri_impl::init_shortcuts(app);
+            } else {
+                set_backend_failure(app, None);
             }
         }
     }
+
+    emit_backend_status(app);
 }
 
 /// Register the cancel shortcut (called when recording starts)
@@ -285,6 +352,7 @@ pub fn change_keyboard_implementation_setting(
     // Initialize new implementation if needed (HandyKeys needs state)
     if new_impl == KeyboardImplementation::HandyKeys && initialize_handy_keys_with_rollback(&app)? {
         // Shortcuts already registered during init
+        emit_backend_status(&app);
         return Ok(ImplementationChangeResult {
             success: true,
             reset_bindings: vec![],
@@ -305,6 +373,7 @@ pub fn change_keyboard_implementation_setting(
     );
 
     info!("Keyboard implementation switched to {:?}", new_impl);
+    emit_backend_status(&app);
 
     Ok(ImplementationChangeResult {
         success: true,
@@ -450,19 +519,68 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 
     if let Err(e) = handy_keys::init_shortcuts(app) {
         error!("Failed to initialize HandyKeys: {}", e);
+        set_backend_failure(app, Some(e.clone()));
         // Rollback to Tauri
         let mut settings = settings::get_settings(app);
         settings.keyboard_implementation = KeyboardImplementation::Tauri;
         settings::write_settings(app, settings);
         tauri_impl::init_shortcuts(app);
+        emit_backend_status(app);
         return Err(format!(
             "Failed to initialize HandyKeys: {}. Reverted to Tauri.",
             e
         ));
     }
 
+    set_backend_failure(app, None);
     // init_shortcuts already registered shortcuts
     Ok(true)
+}
+
+/// Current shortcut backend status, for the settings UI to render
+/// missing-permission banners (Linux) instead of hotkeys failing silently.
+#[tauri::command]
+#[specta::specta]
+pub fn get_keyboard_backend_status(app: AppHandle) -> KeyboardBackendStatus {
+    current_backend_status(&app)
+}
+
+/// Re-attempt the handy-keys backend after the user has granted access.
+///
+/// udev uaccess ACLs apply immediately, so a retry can succeed without
+/// restarting Handy. Rebuilds a live-but-degraded manager (to pick up newly
+/// granted `/dev/uinput` access) or, when the last init failed entirely and
+/// we fell back to the Tauri implementation, switches back to handy-keys.
+#[tauri::command]
+#[specta::specta]
+pub fn retry_handy_keys_backend(app: AppHandle) -> Result<KeyboardBackendStatus, String> {
+    set_backend_failure(&app, None);
+
+    let result: Result<(), String> = (|| {
+        // Rebuild an existing manager first: it may be dead or running
+        // detect-only, and a fresh construction picks up new permissions.
+        if let Some(state) = app.try_state::<handy_keys::HandyKeysState>() {
+            state.restart_manager()?;
+        }
+
+        if get_settings(&app).keyboard_implementation == KeyboardImplementation::HandyKeys {
+            // The restarted manager starts with no registrations
+            register_all_shortcuts_for_implementation(&app, KeyboardImplementation::HandyKeys);
+            Ok(())
+        } else {
+            // We previously fell back (and persisted) Tauri; switch back.
+            // This re-runs handy-keys init with rollback on failure.
+            change_keyboard_implementation_setting(app.clone(), "handy_keys".to_string())
+                .map(|_| ())
+        }
+    })();
+
+    if let Err(e) = &result {
+        set_backend_failure(&app, Some(e.clone()));
+    }
+    emit_backend_status(&app);
+
+    result.map(|()| current_backend_status(&app))
 }
 
 // ============================================================================

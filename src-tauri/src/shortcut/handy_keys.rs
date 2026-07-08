@@ -29,13 +29,14 @@
 
 use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener};
 use log::{debug, error, info};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::settings::{self, get_settings, ShortcutBinding};
@@ -56,12 +57,29 @@ enum ManagerCommand {
     Shutdown,
 }
 
+/// How the handy-keys backend ended up running.
+///
+/// On Linux the blocking backend needs write access to `/dev/uinput` on top
+/// of `/dev/input` read access; when only blocking is unavailable we fall
+/// back to the read-only listener and record why here.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct HandyKeysStatus {
+    /// Whether registered hotkeys are swallowed before reaching other apps
+    pub blocking: bool,
+    /// The error that made blocking unavailable (contains the exact fix)
+    pub blocking_error: Option<String>,
+}
+
 /// State for the handy-keys shortcut manager
 pub struct HandyKeysState {
+    /// App handle, kept so the manager thread can be restarted in place
+    app: AppHandle,
     /// Channel to send commands to the manager thread (wrapped in Mutex for Sync)
     command_sender: Mutex<Sender<ManagerCommand>>,
     /// Handle to the manager thread (wrapped in Mutex for Sync, allows proper join on drop)
     thread_handle: Mutex<Option<JoinHandle<()>>>,
+    /// Outcome of the most recent manager construction
+    status: Mutex<HandyKeysStatus>,
     /// Recording listener for UI key capture (only active during recording)
     recording_listener: Mutex<Option<KeyboardListener>>,
     /// Flag indicating if we're in recording mode
@@ -86,19 +104,19 @@ pub struct FrontendKeyEvent {
 }
 
 impl HandyKeysState {
-    /// Create a new HandyKeysState
+    /// Create a new HandyKeysState.
+    ///
+    /// Fails when the platform hotkey manager cannot be constructed at all
+    /// (e.g. missing `/dev/input` read access on Linux); the error string
+    /// contains the platform's suggested fix.
     pub fn new(app: AppHandle) -> Result<Self, String> {
-        let (cmd_tx, cmd_rx) = mpsc::channel::<ManagerCommand>();
-
-        // Start the manager thread
-        let app_clone = app.clone();
-        let thread_handle = thread::spawn(move || {
-            Self::manager_thread(cmd_rx, app_clone);
-        });
+        let (cmd_tx, thread_handle, status) = Self::spawn_manager_thread(app.clone())?;
 
         Ok(Self {
+            app,
             command_sender: Mutex::new(cmd_tx),
             thread_handle: Mutex::new(Some(thread_handle)),
+            status: Mutex::new(status),
             recording_listener: Mutex::new(None),
             is_recording: AtomicBool::new(false),
             recording_binding_id: Mutex::new(None),
@@ -106,18 +124,139 @@ impl HandyKeysState {
         })
     }
 
+    /// Outcome of the most recent manager construction.
+    pub fn status(&self) -> HandyKeysStatus {
+        self.status
+            .lock()
+            .map(|s| s.clone())
+            .unwrap_or(HandyKeysStatus {
+                blocking: false,
+                blocking_error: None,
+            })
+    }
+
+    /// Spawn a manager thread and wait for it to report whether the platform
+    /// hotkey manager could be constructed (and in which mode).
+    fn spawn_manager_thread(
+        app: AppHandle,
+    ) -> Result<(Sender<ManagerCommand>, JoinHandle<()>, HandyKeysStatus), String> {
+        let (cmd_tx, cmd_rx) = mpsc::channel::<ManagerCommand>();
+        let (ready_tx, ready_rx) = mpsc::channel::<Result<HandyKeysStatus, String>>();
+
+        let thread_handle = thread::spawn(move || {
+            Self::manager_thread(cmd_rx, ready_tx, app);
+        });
+
+        // Construction opens devices/hooks and is quick; the timeout only
+        // guards against the thread dying without reporting.
+        match ready_rx.recv_timeout(Duration::from_secs(10)) {
+            Ok(Ok(status)) => Ok((cmd_tx, thread_handle, status)),
+            Ok(Err(e)) => {
+                let _ = thread_handle.join();
+                Err(e)
+            }
+            Err(_) => Err("handy-keys manager thread did not report startup status".to_string()),
+        }
+    }
+
+    /// Tear down the manager thread and build a fresh one, picking up any
+    /// newly granted permissions (udev uaccess ACLs apply immediately, so
+    /// this lets a user grant access and retry without restarting Handy).
+    ///
+    /// All previously registered hotkeys are gone after a restart — the
+    /// caller is responsible for re-registering bindings.
+    pub fn restart_manager(&self) -> Result<HandyKeysStatus, String> {
+        // Shut down the old thread first: on Linux the old manager owns
+        // exclusive keyboard grabs that must be released before a new
+        // blocking manager can take them.
+        if let Ok(sender) = self.command_sender.lock() {
+            let _ = sender.send(ManagerCommand::Shutdown);
+        }
+        if let Ok(mut handle) = self.thread_handle.lock() {
+            if let Some(h) = handle.take() {
+                let _ = h.join();
+            }
+        }
+
+        let (cmd_tx, thread_handle, status) = Self::spawn_manager_thread(self.app.clone())?;
+
+        *self
+            .command_sender
+            .lock()
+            .map_err(|_| "Failed to lock command_sender")? = cmd_tx;
+        *self
+            .thread_handle
+            .lock()
+            .map_err(|_| "Failed to lock thread_handle")? = Some(thread_handle);
+        *self.status.lock().map_err(|_| "Failed to lock status")? = status.clone();
+
+        Ok(status)
+    }
+
+    /// Build the platform hotkey manager, preferring the blocking backend.
+    ///
+    /// On Linux, blocking needs write access to `/dev/uinput` on top of
+    /// `/dev/input` read access. When only the uinput half is missing, fall
+    /// back to the read-only listener: hotkeys are still detected, they just
+    /// also reach the focused application.
+    fn create_manager() -> Result<(HotkeyManager, HandyKeysStatus), String> {
+        match HotkeyManager::new_with_blocking() {
+            Ok(manager) => Ok((
+                manager,
+                HandyKeysStatus {
+                    blocking: true,
+                    blocking_error: None,
+                },
+            )),
+            Err(blocking_err) => {
+                #[cfg(target_os = "linux")]
+                {
+                    log::warn!(
+                        "handy-keys blocking backend unavailable, falling back to read-only listener: {}",
+                        blocking_err
+                    );
+                    return HotkeyManager::new()
+                        .map(|manager| {
+                            (
+                                manager,
+                                HandyKeysStatus {
+                                    blocking: false,
+                                    blocking_error: Some(blocking_err.to_string()),
+                                },
+                            )
+                        })
+                        .map_err(|read_err| read_err.to_string());
+                }
+                #[cfg(not(target_os = "linux"))]
+                {
+                    Err(blocking_err.to_string())
+                }
+            }
+        }
+    }
+
     /// The main manager thread - owns the HotkeyManager and processes commands
-    fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle) {
+    fn manager_thread(
+        cmd_rx: Receiver<ManagerCommand>,
+        ready_tx: Sender<Result<HandyKeysStatus, String>>,
+        app: AppHandle,
+    ) {
         info!("handy-keys manager thread started");
 
-        // Create the HotkeyManager in this thread
-        let manager = match HotkeyManager::new_with_blocking() {
-            Ok(m) => m,
+        // Create the HotkeyManager in this thread and report the outcome so
+        // init failures surface to the caller instead of dying silently here.
+        let (manager, status) = match Self::create_manager() {
+            Ok(pair) => pair,
             Err(e) => {
                 error!("Failed to create HotkeyManager: {}", e);
+                let _ = ready_tx.send(Err(e));
                 return;
             }
         };
+        if !status.blocking {
+            info!("handy-keys running in detect-only mode (hotkeys are not blocked)");
+        }
+        let _ = ready_tx.send(Ok(status));
 
         // Maps binding IDs to HotkeyIds and hotkey strings
         let mut binding_to_hotkey: HashMap<String, HotkeyId> = HashMap::new();

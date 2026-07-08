@@ -47,16 +47,20 @@
       "deb": {
         "depends": ["libgtk-layer-shell0"],
         "files": {
-          "/usr/lib": "transcribe-libs"
-        }
+          "/usr/lib": "transcribe-libs",
+          "/usr/lib/udev/rules.d/70-handy-keys.rules": "../contrib/udev/70-handy-keys.rules"
+        },
+        "postInstallScript": "../contrib/udev/postinst.sh"
       },
       "rpm": {
         "compression": {
           "type": "none"
         },
         "files": {
-          "/usr/lib": "transcribe-libs"
-        }
+          "/usr/lib": "transcribe-libs",
+          "/usr/lib/udev/rules.d/70-handy-keys.rules": "../contrib/udev/70-handy-keys.rules"
+        },
+        "postInstallScript": "../contrib/udev/postinst.sh"
       },
       "appimage": {
         "bundleMediaFramework": true,

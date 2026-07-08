@@ -146,6 +146,15 @@ For reliable text input on Linux, install the appropriate tool for your display 
 
 Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
 
+**Handy Keys shortcut backend (experimental):**
+
+The Handy Keys keyboard backend (Settings → Advanced → Experimental) reads keyboards directly from `/dev/input/event*` on Linux, which works identically on X11, Wayland, and the console. It needs two permissions:
+
+- **Reading hotkeys (required):** read access to `/dev/input`. Add your user to the `input` group: `sudo usermod -aG input $USER` (then log out and back in).
+- **Blocking hotkeys (recommended):** write access to `/dev/uinput`, so registered shortcuts are swallowed instead of also reaching the focused application. The `.deb` and `.rpm` packages install a udev rule ([`contrib/udev/70-handy-keys.rules`](contrib/udev/70-handy-keys.rules)) that grants this automatically to the logged-in user. AppImage users (or anyone else) can install it manually — Handy shows the exact commands in a setup dialog when access is missing.
+
+If `/dev/input` is readable but `/dev/uinput` is not, Handy degrades gracefully: hotkeys are detected but not blocked, and the settings page explains how to enable blocking. Sandboxed formats that hide `/dev/input` (e.g. Flatpak) cannot use this backend; that would require the XDG GlobalShortcuts portal, which is not implemented yet.
+
 **Other Notes:**
 
 - **Runtime library dependency (`libgtk-layer-shell.so.0`)**:
