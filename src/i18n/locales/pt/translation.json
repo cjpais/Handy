@@ -517,8 +517,12 @@
         "settings": "Configurações:"
       },
       "pasteDelay": {
-        "title": "Atraso de colagem",
-        "description": "Atraso antes de enviar a tecla de colar (em milissegundos). Aumente se o texto errado estiver sendo colado."
+        "title": "Atraso de colagem (antes)",
+        "description": "Atraso (em milissegundos) após copiar o texto, antes de enviar a tecla de colar. Aumente se nada for colado."
+      },
+      "pasteDelayAfter": {
+        "title": "Atraso de colagem (depois)",
+        "description": "Atraso (em milissegundos) após a tecla de colar, antes de restaurar a área de transferência anterior. Aumente se o conteúdo antigo da área de transferência estiver sendo colado em vez da transcrição."
       },
       "recordingBuffer": {
         "title": "Buffer de gravação extra",

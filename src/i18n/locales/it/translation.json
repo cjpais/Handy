@@ -517,8 +517,12 @@
         "settings": "Impostazioni:"
       },
       "pasteDelay": {
-        "title": "Ritardo incolla",
-        "description": "Ritardo prima dell'invio del tasto incolla (in millisecondi). Aumentare se viene incollato il testo sbagliato."
+        "title": "Ritardo incolla (prima)",
+        "description": "Ritardo (in millisecondi) dopo aver copiato il testo, prima di inviare il tasto incolla. Aumentare se non viene incollato nulla."
+      },
+      "pasteDelayAfter": {
+        "title": "Ritardo incolla (dopo)",
+        "description": "Ritardo (in millisecondi) dopo il tasto incolla, prima di ripristinare gli appunti precedenti. Aumentare se viene incollato il vecchio contenuto degli appunti invece della trascrizione."
       },
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",
