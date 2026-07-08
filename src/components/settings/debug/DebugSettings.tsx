@@ -27,6 +27,13 @@ export const DebugSettings: React.FC = () => {
         />
         <WordCorrectionThreshold descriptionMode="tooltip" grouped={true} />
         <PasteDelay descriptionMode="tooltip" grouped={true} />
+        <PasteDelay
+          descriptionMode="tooltip"
+          grouped={true}
+          settingKey="paste_delay_after_ms"
+          labelKey="settings.debug.pasteDelayAfter.title"
+          descriptionKey="settings.debug.pasteDelayAfter.description"
+        />
         <RecordingBuffer descriptionMode="tooltip" grouped={true} />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
