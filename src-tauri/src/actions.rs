@@ -59,10 +59,23 @@ fn strip_invisible_chars(s: &str) -> String {
     s.replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
 }
 
-/// Build a system prompt from the user's prompt template.
-/// Removes `${output}` placeholder since the transcription is sent as the user message.
-fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template.replace("${output}", "").trim().to_string()
+/// Substitute the transcript into the user's prompt template.
+///
+/// If the template contains the `${output}` placeholder, the transcript is spliced in at
+/// that position so the prompt reaches the model exactly as the author laid it out.
+/// If the placeholder is absent, the transcript is appended under a labelled delimiter
+/// so it can't be silently dropped.
+///
+/// Why: previously the structured-output path stripped `${output}` and sent the transcript
+/// as a separate user message. That left a dangling trailing header (e.g. "Transcript:")
+/// in the system prompt, and several models interpreted the dangling header as empty
+/// input and replied asking the user to provide the transcript.
+fn render_prompt_with_transcript(prompt_template: &str, transcription: &str) -> String {
+    if prompt_template.contains("${output}") {
+        prompt_template.replace("${output}", transcription)
+    } else {
+        format!("{}\n\nTranscript:\n{}", prompt_template.trim(), transcription)
+    }
 }
 
 /// Returns `true` when a transcription has no meaningful content to
@@ -164,10 +177,9 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt);
-        let user_content = transcription.to_string();
-
-        // Handle Apple Intelligence separately since it uses native Swift APIs
+        // Handle Apple Intelligence separately since it uses native Swift APIs.
+        // The native Foundation Models API takes system instructions and user content
+        // as distinct parameters, so we keep the split there.
         if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
             #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
             {
@@ -178,6 +190,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                     return None;
                 }
 
+                let system_prompt = prompt.replace("${output}", "").trim().to_string();
+                let user_content = transcription.to_string();
                 let token_limit = model.trim().parse::<i32>().unwrap_or(0);
                 return match apple_intelligence::process_text_with_system_prompt(
                     &system_prompt,
@@ -224,12 +238,18 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             "additionalProperties": false
         });
 
+        // Inline the transcript into the template (the layout the prompt author wrote)
+        // and send as a single user message. Splitting template/transcript across
+        // system+user messages caused some models to treat the transcript as empty
+        // when the template ended in a placeholder header like "Transcript:".
+        let user_content = render_prompt_with_transcript(&prompt, transcription);
+
         match crate::llm_client::send_chat_completion_with_schema(
             &provider,
             api_key.clone(),
             &model,
             user_content,
-            Some(system_prompt),
+            None,
             Some(json_schema),
             reasoning_effort.clone(),
             reasoning.clone(),
@@ -278,8 +298,9 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    // Legacy mode: inline the transcript into the template (and append it under a
+    // labelled delimiter if the template has no ${output} placeholder).
+    let processed_prompt = render_prompt_with_transcript(&prompt, transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
