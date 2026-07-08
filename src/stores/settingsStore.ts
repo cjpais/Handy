@@ -335,7 +335,7 @@ export const useSettingsStore = create<SettingsStore>()(
                 bindings: {
                   ...state.settings.bindings,
                   [id]: {
-                    ...state.settings.bindings[id]!,
+                    ...state.settings.bindings?.[id]!,
                     current_binding: binding,
                   },
                 },
@@ -366,7 +366,7 @@ export const useSettingsStore = create<SettingsStore>()(
                   bindings: {
                     ...state.settings.bindings,
                     [id]: {
-                      ...state.settings.bindings[id]!,
+                      ...state.settings.bindings?.[id]!,
                       current_binding: originalBinding,
                     },
                   },
