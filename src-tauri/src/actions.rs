@@ -759,31 +759,89 @@ impl ShortcutAction for TranscribeAction {
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
                                 let rm_for_paste = Arc::clone(&rm);
-                                ah.run_on_main_thread(move || {
-                                    if rm_for_paste.was_cancelled_since(cancel_generation) {
-                                        debug!("Transcription operation cancelled before paste");
-                                        utils::hide_recording_overlay(&ah_clone);
-                                        change_tray_icon(&ah_clone, TrayIconState::Idle);
+
+                                // Check cancellation before hiding/modifying state.
+                                if rm_for_paste.was_cancelled_since(cancel_generation) {
+                                    debug!("Transcription operation cancelled before paste");
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                    return;
+                                }
+
+                                // Hide the overlay immediately on the main thread to start the fade-out
+                                // and release input focus back to the target text application.
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+
+                                // Platform-specific focus delay check for Linux + IBus.
+                                // Wrapped in #[cfg(target_os = "linux")] so this logic and thread spawning
+                                // are completely stripped at compile-time on Windows and macOS.
+                                #[cfg(target_os = "linux")]
+                                {
+                                    let settings = get_settings(&ah);
+                                    let has_overlay = settings.overlay_style != OverlayStyle::None;
+                                    let is_direct = settings.paste_method
+                                        == crate::settings::PasteMethod::Direct;
+                                    let is_ibus_tool = settings.typing_tool
+                                        == crate::settings::TypingTool::Ibus
+                                        || settings.typing_tool
+                                            == crate::settings::TypingTool::Auto;
+
+                                    if has_overlay && is_direct && is_ibus_tool {
+                                        // Spawn a standard OS background thread (NOT a tokio task) to handle delay.
+                                        // The blocking D-Bus query (`will_use_ibus`) is performed safely inside this thread
+                                        // to avoid deadlocking the tokio async runtime.
+                                        let rm_for_paste2 = rm_for_paste.clone();
+                                        std::thread::spawn(move || {
+                                            if crate::clipboard::will_use_ibus(&ah_clone) {
+                                                // Sleep 400ms to allow the 300ms overlay fade-out and focus transition to complete
+                                                std::thread::sleep(
+                                                    std::time::Duration::from_millis(400),
+                                                );
+                                            }
+
+                                            let ah_clone2 = ah_clone.clone();
+                                            let rm_for_paste3 = rm_for_paste2.clone();
+                                            let _ = ah_clone.run_on_main_thread(move || {
+                                                if rm_for_paste3.was_cancelled_since(cancel_generation) {
+                                                    debug!("Transcription operation cancelled before paste");
+                                                    return;
+                                                }
+                                                match utils::paste(final_text, ah_clone2.clone()) {
+                                                    Ok(()) => debug!(
+                                                        "Text pasted successfully in {:?}",
+                                                        paste_time.elapsed()
+                                                    ),
+                                                    Err(e) => {
+                                                        error!("Failed to paste transcription: {}", e);
+                                                        let _ = ah_clone2.emit("paste-error", ());
+                                                    }
+                                                }
+                                            });
+                                        });
                                         return;
                                     }
+                                }
 
-                                    match utils::paste(final_text, ah_clone.clone()) {
+                                // For all other scenarios (Windows, macOS, and Linux without IBus/Overlay),
+                                // immediately paste on the main thread without spawning threads or sleeping!
+                                let ah_clone2 = ah_clone.clone();
+                                let rm_for_paste2 = rm_for_paste.clone();
+                                let _ = ah_clone.run_on_main_thread(move || {
+                                    if rm_for_paste2.was_cancelled_since(cancel_generation) {
+                                        debug!("Transcription operation cancelled before paste");
+                                        return;
+                                    }
+                                    match utils::paste(final_text, ah_clone2.clone()) {
                                         Ok(()) => debug!(
                                             "Text pasted successfully in {:?}",
                                             paste_time.elapsed()
                                         ),
                                         Err(e) => {
                                             error!("Failed to paste transcription: {}", e);
-                                            let _ = ah_clone.emit("paste-error", ());
+                                            let _ = ah_clone2.emit("paste-error", ());
                                         }
                                     }
-                                    utils::hide_recording_overlay(&ah_clone);
-                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
-                                })
-                                .unwrap_or_else(|e| {
-                                    error!("Failed to run paste on main thread: {:?}", e);
-                                    utils::hide_recording_overlay(&ah);
-                                    change_tray_icon(&ah, TrayIconState::Idle);
                                 });
                             }
                         }
