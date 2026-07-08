@@ -17,8 +17,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
-    Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
-    WhisperRunOptions,
+    Backend, Error as TranscribeCppError, Feature, Model, ModelOptions, RunExtension, RunOptions,
+    Session, StreamOptions, Task, WhisperRunOptions,
 };
 use transcribe_rs::{
     onnx::{
@@ -35,6 +35,7 @@ use transcribe_rs::{
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 const STREAM_FINALIZE_REPLY_TIMEOUT: Duration = Duration::from_secs(30);
+const TRANSCRIBE_CPP_MAX_NEW_TOKENS: i32 = 4096;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -1246,6 +1247,7 @@ impl TranscriptionManager {
                             task: run_plan.task,
                             language: run_plan.language,
                             target_language: run_plan.target_language,
+                            max_new_tokens: TRANSCRIBE_CPP_MAX_NEW_TOKENS,
                             family,
                             ..Default::default()
                         };
@@ -1257,12 +1259,28 @@ impl TranscriptionManager {
                             run_options.family.is_some()
                         );
 
-                        session
-                            .run(&audio, &run_options)
-                            .map(|t| t.text)
-                            .map_err(|e| {
-                                anyhow::anyhow!("transcribe-cpp transcription failed: {}", e)
-                            })
+                        match session.run(&audio, &run_options) {
+                            Ok(transcript) => Ok(transcript.text),
+                            Err(error) => {
+                                if matches!(
+                                    error,
+                                    TranscribeCppError::OutputTruncated { .. }
+                                ) {
+                                    if let Some(partial) = error.partial() {
+                                        if !partial.text.trim().is_empty() {
+                                            warn!(
+                                                "transcribe-cpp output truncated; using partial transcript"
+                                            );
+                                            return Ok(partial.text.clone());
+                                        }
+                                    }
+                                }
+                                Err(anyhow::anyhow!(
+                                    "transcribe-cpp transcription failed: {}",
+                                    error
+                                ))
+                            }
+                        }
                     }
                     LoadedEngine::Parakeet(parakeet_engine) => {
                         let params = ParakeetParams {
