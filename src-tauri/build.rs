@@ -177,7 +177,15 @@ fn build_apple_intelligence_bridge() {
         println!("cargo:warning=Building with Apple Intelligence support.");
         REAL_SWIFT_FILE
     } else {
-        println!("cargo:warning=Apple Intelligence SDK not found. Building with stubs.");
+        // The SDK genuinely lacking FoundationModels is only one reason we build
+        // stubs — CLT-only detection and HANDY_FORCE_AI_STUB (each warned about
+        // above) also land here, and for those the framework does exist. Only
+        // claim it's "not found" when that's actually true.
+        if framework_path.exists() {
+            println!("cargo:warning=Building Apple Intelligence with stubs.");
+        } else {
+            println!("cargo:warning=Apple Intelligence SDK not found. Building with stubs.");
+        }
         STUB_SWIFT_FILE
     };
 
