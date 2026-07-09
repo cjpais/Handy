@@ -896,8 +896,8 @@ pub fn run(cli_args: CliArgs) {
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);
-                // Update tray icon to match new theme, maintaining idle state
-                utils::change_tray_icon(window.app_handle(), utils::TrayIconState::Idle);
+                // Re-apply the current tray state with the new theme's icon set
+                utils::refresh_tray_icon(window.app_handle());
             }
             _ => {}
         })
