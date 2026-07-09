@@ -470,6 +470,11 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
+            // Entry/exit logging: this task does a synchronous roundtrip to the
+            // handy-keys manager thread, so "started" without "finished" in a
+            // log identifies a wedged manager thread eating a runtime worker.
+            let task_started = std::time::Instant::now();
+            debug!("register_cancel_shortcut task started");
             if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
                 if let Some(state) = app_clone.try_state::<HandyKeysState>() {
                     if let Err(e) = state.register(&cancel_binding) {
@@ -477,6 +482,10 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
                     }
                 }
             }
+            debug!(
+                "register_cancel_shortcut task finished in {:.1?}",
+                task_started.elapsed()
+            );
         });
     }
 }
@@ -493,11 +502,17 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
+            let task_started = std::time::Instant::now();
+            debug!("unregister_cancel_shortcut task started");
             if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
                 if let Some(state) = app_clone.try_state::<HandyKeysState>() {
                     let _ = state.unregister(&cancel_binding);
                 }
             }
+            debug!(
+                "unregister_cancel_shortcut task finished in {:.1?}",
+                task_started.elapsed()
+            );
         });
     }
 }

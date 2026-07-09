@@ -3,7 +3,7 @@
 //! This module provides shortcut functionality using Tauri's built-in
 //! global-shortcut plugin.
 
-use log::{error, warn};
+use log::{debug, error, warn};
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -167,11 +167,20 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
+            // Entry/exit logging: "started" without "finished" in a log means
+            // this task blocked inside the global-shortcut plugin, eating a
+            // runtime worker.
+            let task_started = std::time::Instant::now();
+            debug!("register_cancel_shortcut task started");
             if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
                 if let Err(e) = register_shortcut(&app_clone, cancel_binding) {
                     error!("Failed to register cancel shortcut: {}", e);
                 }
             }
+            debug!(
+                "register_cancel_shortcut task finished in {:.1?}",
+                task_started.elapsed()
+            );
         });
     }
 }
@@ -189,10 +198,16 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
+            let task_started = std::time::Instant::now();
+            debug!("unregister_cancel_shortcut task started");
             if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
                 // We ignore errors here as it might already be unregistered
                 let _ = unregister_shortcut(&app_clone, cancel_binding);
             }
+            debug!(
+                "unregister_cancel_shortcut task finished in {:.1?}",
+                task_started.elapsed()
+            );
         });
     }
 }

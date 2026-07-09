@@ -762,6 +762,19 @@ async getClamshellMicrophone() : Promise<Result<string, string>> {
 async isRecording() : Promise<boolean> {
     return await TAURI_INVOKE("is_recording");
 },
+/**
+ * Debug-page probe: opens a throwaway stream on the configured microphone
+ * and reports whether it actually delivers audio. Runs on the blocking pool —
+ * the probe waits up to ~2s for a first callback.
+ */
+async probeMicrophone() : Promise<Result<MicProbeReport, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("probe_microphone") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async setModelUnloadTimeout(timeout: ModelUnloadTimeout) : Promise<void> {
     await TAURI_INVOKE("set_model_unload_timeout", { timeout });
 },
@@ -931,6 +944,36 @@ reset_bindings: string[] }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
+/**
+ * Result of a one-shot microphone probe, surfaced on the debug settings page
+ * and mirrored into the log. See [`AudioRecordingManager::probe_microphone`].
+ */
+export type MicProbeReport = { 
+/**
+ * "ok" | "silent" | "open_failed" | "device_not_found" | "busy"
+ */
+verdict: string; 
+/**
+ * The device the probe targeted ("system default" when none selected).
+ */
+device: string; 
+/**
+ * Every input device visible in a fresh enumeration.
+ */
+input_devices: string[]; 
+/**
+ * Stream config negotiated by this probe's fresh query.
+ */
+fresh_config: string | null; 
+/**
+ * Config the main recorder had cached for the same device, if any.
+ */
+cached_config: string | null; open_ms: number | null; 
+/**
+ * Time until the first data callback; `None` means the stream stayed
+ * silent for the whole probe window.
+ */
+first_chunk_ms: number | null; telemetry: string | null; error: string | null }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**

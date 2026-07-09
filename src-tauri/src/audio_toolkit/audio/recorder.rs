@@ -1,7 +1,7 @@
 use std::{
     io::Error,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         mpsc, Arc, Mutex,
     },
     time::{Duration, Instant},
@@ -70,6 +70,91 @@ impl VadConfig {
 /// policy while recording. Used to feed a live streaming transcription as audio arrives.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 
+/// Live counters updated from inside the cpal stream callbacks, readable from
+/// any thread. This is the ground truth for "is the device actually delivering
+/// audio" — a stream can build and play successfully yet never invoke its data
+/// callback (seen on Windows after system sleep, #1213), which event-driven
+/// logging cannot distinguish from a healthy idle stream.
+pub struct StreamTelemetry {
+    epoch: Instant,
+    chunks: AtomicU64,
+    frames: AtomicU64,
+    errors: AtomicU64,
+    /// Milliseconds since `epoch` of the most recent data callback; 0 = never.
+    last_chunk_ms: AtomicU64,
+    last_error: Mutex<Option<String>>,
+}
+
+impl StreamTelemetry {
+    fn new() -> Arc<Self> {
+        Arc::new(Self {
+            epoch: Instant::now(),
+            chunks: AtomicU64::new(0),
+            frames: AtomicU64::new(0),
+            errors: AtomicU64::new(0),
+            last_chunk_ms: AtomicU64::new(0),
+            last_error: Mutex::new(None),
+        })
+    }
+
+    fn record_chunk(&self, frame_count: usize) {
+        self.chunks.fetch_add(1, Ordering::Relaxed);
+        self.frames.fetch_add(frame_count as u64, Ordering::Relaxed);
+        let ms = self.epoch.elapsed().as_millis() as u64;
+        self.last_chunk_ms.store(ms.max(1), Ordering::Relaxed);
+    }
+
+    fn record_error(&self, message: String) {
+        self.errors.fetch_add(1, Ordering::Relaxed);
+        *self.last_error.lock().unwrap() = Some(message);
+    }
+
+    pub fn chunks(&self) -> u64 {
+        self.chunks.load(Ordering::Relaxed)
+    }
+
+    /// Time since the last data callback, or `None` if none ever fired.
+    pub fn last_chunk_age(&self) -> Option<Duration> {
+        match self.last_chunk_ms.load(Ordering::Relaxed) {
+            0 => None,
+            ms => Some(
+                self.epoch
+                    .elapsed()
+                    .saturating_sub(Duration::from_millis(ms)),
+            ),
+        }
+    }
+
+    /// One-line state dump for logs: callback counts, staleness, errors.
+    pub fn summary(&self) -> String {
+        let age = match self.last_chunk_age() {
+            Some(age) => format!("{age:.1?} ago"),
+            None => "never".to_string(),
+        };
+        let mut s = format!(
+            "chunks={} frames={} last_chunk={} errors={}",
+            self.chunks(),
+            self.frames.load(Ordering::Relaxed),
+            age,
+            self.errors.load(Ordering::Relaxed),
+        );
+        if let Some(err) = self.last_error.lock().unwrap().as_ref() {
+            s.push_str(&format!(" last_error='{err}'"));
+        }
+        s
+    }
+}
+
+/// Human-readable one-liner for a stream config ("48000Hz 2ch F32").
+pub fn config_summary(config: &cpal::SupportedStreamConfig) -> String {
+    format!(
+        "{}Hz {}ch {:?}",
+        config.sample_rate().0,
+        config.channels(),
+        config.sample_format()
+    )
+}
+
 pub struct AudioRecorder {
     device: Option<Device>,
     cmd_tx: Option<mpsc::Sender<Cmd>>,
@@ -84,6 +169,9 @@ pub struct AudioRecorder {
     /// cleared whenever an open fails so a stale rate/format self-heals on the
     /// caller's retry.
     config_cache: Arc<Mutex<Option<(String, cpal::SupportedStreamConfig)>>>,
+    /// Counters for the currently-open stream (kept after close for post-mortem
+    /// logging until the next open replaces them).
+    telemetry: Option<Arc<StreamTelemetry>>,
 }
 
 impl AudioRecorder {
@@ -96,7 +184,25 @@ impl AudioRecorder {
             level_cb: None,
             audio_cb: None,
             config_cache: Arc::new(Mutex::new(None)),
+            telemetry: None,
         })
+    }
+
+    /// Telemetry counters for the current (or most recent) stream, if any.
+    pub fn telemetry(&self) -> Option<Arc<StreamTelemetry>> {
+        self.telemetry.clone()
+    }
+
+    /// What the config cache currently holds for `device_name`. Probe logging
+    /// uses this to spot stale cached configs, a suspect in silent post-resume
+    /// streams.
+    pub fn cached_config_summary(&self, device_name: &str) -> Option<String> {
+        self.config_cache
+            .lock()
+            .unwrap()
+            .as_ref()
+            .filter(|(name, _)| name == device_name)
+            .map(|(_, cfg)| config_summary(cfg))
     }
 
     /// Attach a single VAD engine, reconfigured per session for the offline vs
@@ -160,6 +266,8 @@ impl AudioRecorder {
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
         let config_cache = Arc::clone(&self.config_cache);
+        let telemetry = StreamTelemetry::new();
+        self.telemetry = Some(telemetry.clone());
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -200,6 +308,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        telemetry.clone(),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::I8 => AudioRecorder::build_stream::<i8>(
@@ -208,6 +317,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        telemetry.clone(),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::I16 => AudioRecorder::build_stream::<i16>(
@@ -216,6 +326,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        telemetry.clone(),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
@@ -224,6 +335,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        telemetry.clone(),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
@@ -232,6 +344,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        telemetry.clone(),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     sample_format => {
@@ -277,6 +390,7 @@ impl AudioRecorder {
                         audio_cb,
                         stop_flag,
                         stream_running_at,
+                        telemetry,
                     );
                     drop(stream);
                 }
@@ -325,10 +439,42 @@ impl AudioRecorder {
 
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         let (resp_tx, resp_rx) = mpsc::channel();
-        if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Stop(resp_tx))?;
+        match &self.cmd_tx {
+            Some(tx) => tx.send(Cmd::Stop(resp_tx))?,
+            None => return Err(Box::new(Error::other("recorder is not open"))),
         }
-        Ok(resp_rx.recv()?) // wait for the samples
+
+        // The worker polls commands at least every IDLE_POLL and bounds its
+        // end-of-stream drain to 2s, so even a fully silent stream answers a
+        // Stop within ~3s. Log progress while waiting so a wedged stop shows
+        // up in logs, and give up after 10s — an error here feeds the caller's
+        // empty-recording recovery path instead of hanging the transcription
+        // pipeline forever (#1213).
+        let wait_started = Instant::now();
+        loop {
+            match resp_rx.recv_timeout(Duration::from_secs(1)) {
+                Ok(samples) => return Ok(samples),
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    let waited = wait_started.elapsed();
+                    let state = self
+                        .telemetry
+                        .as_ref()
+                        .map(|t| t.summary())
+                        .unwrap_or_else(|| "no telemetry".to_string());
+                    if waited >= Duration::from_secs(10) {
+                        return Err(Box::new(Error::other(format!(
+                            "recorder worker did not answer stop within {waited:.1?} ({state})"
+                        ))));
+                    }
+                    log::warn!("recorder stop: reply pending for {waited:.1?} ({state})");
+                }
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    return Err(Box::new(Error::other(
+                        "recorder worker exited before answering stop",
+                    )));
+                }
+            }
+        }
     }
 
     pub fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -336,7 +482,15 @@ impl AudioRecorder {
             let _ = tx.send(Cmd::Shutdown);
         }
         if let Some(h) = self.worker_handle.take() {
+            let join_started = Instant::now();
             let _ = h.join();
+            let waited = join_started.elapsed();
+            // The worker polls commands every IDLE_POLL, so a healthy shutdown
+            // joins quickly; anything slower means it was stuck in a stream or
+            // driver call.
+            if waited > Duration::from_secs(2) {
+                log::warn!("mic worker took {waited:.1?} to shut down");
+            }
         }
         self.device = None;
         Ok(())
@@ -348,6 +502,7 @@ impl AudioRecorder {
         sample_tx: mpsc::Sender<AudioChunk>,
         channels: usize,
         stop_flag: Arc<AtomicBool>,
+        telemetry: Arc<StreamTelemetry>,
     ) -> Result<cpal::Stream, cpal::BuildStreamError>
     where
         T: Sample + SizedSample + Send + 'static,
@@ -355,8 +510,13 @@ impl AudioRecorder {
     {
         let mut output_buffer = Vec::new();
         let mut eos_sent = false;
+        let err_telemetry = telemetry.clone();
 
         let stream_cb = move |data: &[T], _: &cpal::InputCallbackInfo| {
+            // Count every callback, even while stopped: the counter existing at
+            // all is what distinguishes a live-but-idle stream from a zombie
+            // that never calls back.
+            telemetry.record_chunk(data.len() / channels.max(1));
             if stop_flag.load(Ordering::Relaxed) {
                 if !eos_sent {
                     let _ = sample_tx.send(AudioChunk::EndOfStream);
@@ -395,7 +555,15 @@ impl AudioRecorder {
         device.build_input_stream(
             &config.clone().into(),
             stream_cb,
-            |err| log::error!("Stream error: {}", err),
+            move |err| {
+                let message = err.to_string();
+                err_telemetry.record_error(message.clone());
+                log::error!(
+                    "Stream error (#{}): {}",
+                    err_telemetry.errors.load(Ordering::Relaxed),
+                    message
+                );
+            },
             None,
         )
     }
@@ -523,6 +691,7 @@ fn run_consumer(
     audio_cb: Option<AudioFrameCallback>,
     stop_flag: Arc<AtomicBool>,
     stream_running_at: Instant,
+    telemetry: Arc<StreamTelemetry>,
 ) {
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
@@ -597,13 +766,52 @@ fn run_consumer(
         }
     }
 
-    // Runs until the stream closes and `recv` returns `Err`.
-    while let Ok(chunk) = sample_rx.recv() {
+    // How long the consumer sleeps waiting for audio before waking to poll
+    // commands anyway. Streams can go silent without erroring (wedged device
+    // after system sleep, dead Bluetooth link — #1213); when command handling
+    // was gated on audio arrival, Cmd::Stop was never seen on a silent stream
+    // and the stop path hung forever. The timeout bounds command latency and
+    // provides the spot to report silence for diagnosis.
+    const IDLE_POLL: Duration = Duration::from_millis(500);
+    let mut silence_since: Option<Instant> = None;
+    let mut next_silence_report = Duration::from_secs(1);
+
+    // Runs until the stream closes and `recv` disconnects, or Cmd::Shutdown.
+    loop {
+        let chunk = match sample_rx.recv_timeout(IDLE_POLL) {
+            Ok(chunk) => {
+                silence_since = None;
+                next_silence_report = Duration::from_secs(1);
+                Some(chunk)
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // Nothing from the audio callback for a while. Report it
+                // (throttled: 1s after silence starts, then every 5s) — this
+                // is the signature of a zombie stream that opened fine but
+                // never delivers data.
+                let since = silence_since.get_or_insert_with(Instant::now);
+                if since.elapsed() >= next_silence_report {
+                    // The telemetry counters are the callback-side truth: if
+                    // they advance while this fires, chunks are being lost on
+                    // the way to the consumer; if they don't, the stream is a
+                    // zombie that never calls back.
+                    log::warn!(
+                        "mic worker: no audio received for {:.1?} ({})",
+                        since.elapsed(),
+                        telemetry.summary()
+                    );
+                    next_silence_report += Duration::from_secs(5);
+                }
+                None
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => return,
+        };
+
         // Handle pending commands BEFORE the in-flight chunk so a Start
         // captures it. Commands used to be polled after processing, which
         // silently dropped one buffer period of audio (~10ms built-in, up to
         // ~100ms on Bluetooth) at every recording start.
-        let mut pending = Some(chunk);
+        let mut pending = chunk;
         while let Ok(cmd) = cmd_rx.try_recv() {
             match cmd {
                 Cmd::Start(policy, sent_at) => {
@@ -700,7 +908,8 @@ fn run_consumer(
 
         let raw = match pending.take() {
             Some(AudioChunk::Samples(s)) => s,
-            // EndOfStream, or the chunk was consumed by a Stop above.
+            // EndOfStream, an idle-poll timeout, or the chunk was consumed by
+            // a Stop above.
             _ => continue,
         };
 

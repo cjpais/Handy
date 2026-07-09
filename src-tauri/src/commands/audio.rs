@@ -1,6 +1,6 @@
 use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
-use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
+use crate::managers::audio::{AudioRecordingManager, MicProbeReport, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
 use log::warn;
 use serde::{Deserialize, Serialize};
@@ -309,4 +309,16 @@ pub fn get_clamshell_microphone(app: AppHandle) -> Result<String, String> {
 pub fn is_recording(app: AppHandle) -> bool {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.is_recording()
+}
+
+/// Debug-page probe: opens a throwaway stream on the configured microphone
+/// and reports whether it actually delivers audio. Runs on the blocking pool —
+/// the probe waits up to ~2s for a first callback.
+#[tauri::command]
+#[specta::specta]
+pub async fn probe_microphone(app: AppHandle) -> Result<MicProbeReport, String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>().inner().clone();
+    tokio::task::spawn_blocking(move || rm.probe_microphone())
+        .await
+        .map_err(|e| format!("Probe task failed: {e}"))
 }

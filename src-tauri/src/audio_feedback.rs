@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::thread;
+use std::time::Instant;
 use tauri::{AppHandle, Manager};
 
 pub enum SoundType {
@@ -99,6 +100,10 @@ fn play_audio_file(
     selected_device: Option<String>,
     volume: f32,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Step timings: the output side of a wedged audio stack (delayed or
+    // missing feedback sounds after system sleep, #1213) shows up here,
+    // correlating with silent capture streams on the same device.
+    let select_started = Instant::now();
     let stream_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
             debug!("Using default device");
@@ -128,15 +133,27 @@ fn play_audio_file(
         OutputStreamBuilder::from_default_device()?
     };
 
+    let select_elapsed = select_started.elapsed();
+
+    let open_started = Instant::now();
     let stream_handle = stream_builder.open_stream()?;
     let mixer = stream_handle.mixer();
 
     let file = File::open(path)?;
     let buf_reader = BufReader::new(file);
+    let open_elapsed = open_started.elapsed();
 
+    let play_started = Instant::now();
     let sink = rodio::play(mixer, buf_reader)?;
     sink.set_volume(volume);
     sink.sleep_until_end();
+
+    debug!(
+        "feedback sound: device_select={:.1?} open_stream={:.1?} playback={:.1?}",
+        select_elapsed,
+        open_elapsed,
+        play_started.elapsed()
+    );
 
     Ok(())
 }

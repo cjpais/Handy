@@ -470,6 +470,20 @@
         "noNotes": "No bundled release notes found",
         "error": "Failed to preview release notes"
       },
+      "micProbe": {
+        "title": "Microphone Probe",
+        "description": "Open a test stream on the configured microphone and check that it actually delivers audio. The full report is written to the log — useful after waking from sleep if recordings get stuck.",
+        "button": "Run Probe",
+        "running": "Probing…",
+        "error": "Microphone probe failed",
+        "verdict": {
+          "ok": "OK — first audio after {{ms}}ms",
+          "silent": "Silent — stream opened but delivered no audio",
+          "openFailed": "Failed to open the microphone",
+          "deviceNotFound": "Configured microphone not found",
+          "busy": "Recording in progress — try again when idle"
+        }
+      },
       "soundTheme": {
         "label": "Sound Theme",
         "description": "Choose a sound theme for recording start and stop feedback"

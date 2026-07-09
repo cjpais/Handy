@@ -20,6 +20,28 @@ use tauri::Manager;
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 const VAD_THRESHOLD: f32 = 0.3;
 
+/// Result of a one-shot microphone probe, surfaced on the debug settings page
+/// and mirrored into the log. See [`AudioRecordingManager::probe_microphone`].
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+pub struct MicProbeReport {
+    /// "ok" | "silent" | "open_failed" | "device_not_found" | "busy"
+    pub verdict: String,
+    /// The device the probe targeted ("system default" when none selected).
+    pub device: String,
+    /// Every input device visible in a fresh enumeration.
+    pub input_devices: Vec<String>,
+    /// Stream config negotiated by this probe's fresh query.
+    pub fresh_config: Option<String>,
+    /// Config the main recorder had cached for the same device, if any.
+    pub cached_config: Option<String>,
+    pub open_ms: Option<u32>,
+    /// Time until the first data callback; `None` means the stream stayed
+    /// silent for the whole probe window.
+    pub first_chunk_ms: Option<u32>,
+    pub telemetry: Option<String>,
+    pub error: Option<String>,
+}
+
 fn set_mute(mute: bool) {
     // Expected behavior:
     // - Windows: works on most systems using standard audio drivers.
@@ -525,6 +547,154 @@ impl AudioRecordingManager {
             self.start_microphone_stream()?;
         }
         Ok(())
+    }
+
+    /// One-shot microphone health probe for the debug page: fresh device
+    /// enumeration (bypassing the device cache), fresh config query (the
+    /// throwaway recorder has no config cache), open a stream, and wait up to
+    /// 2s for the first data callback. Answers, from a single log line,
+    /// whether a device that looks openable actually delivers audio — the
+    /// failure behind post-sleep "stuck transcribing" reports (#1213) is a
+    /// stream that opens fine and never calls back.
+    pub fn probe_microphone(&self) -> MicProbeReport {
+        use cpal::traits::{DeviceTrait, HostTrait};
+
+        const FIRST_CHUNK_WINDOW: Duration = Duration::from_secs(2);
+        let probe_started = Instant::now();
+
+        let settings = get_settings(&self.app_handle);
+        let desired = self.desired_device_name(&settings);
+        let target_label = desired
+            .clone()
+            .unwrap_or_else(|| "system default".to_string());
+
+        let mut report = MicProbeReport {
+            verdict: String::new(),
+            device: target_label.clone(),
+            input_devices: Vec::new(),
+            fresh_config: None,
+            cached_config: None,
+            open_ms: None,
+            first_chunk_ms: None,
+            telemetry: None,
+            error: None,
+        };
+
+        if self.is_recording() {
+            report.verdict = "busy".into();
+            report.error = Some("a recording is in progress; try again when idle".into());
+            warn!("mic probe: skipped, recording in progress");
+            return report;
+        }
+
+        // Fresh enumeration, deliberately bypassing cached_device.
+        let devices = match list_input_devices() {
+            Ok(devices) => devices,
+            Err(e) => {
+                report.verdict = "open_failed".into();
+                report.error = Some(format!("device enumeration failed: {e}"));
+                error!("mic probe: device enumeration failed: {e}");
+                return report;
+            }
+        };
+        report.input_devices = devices
+            .iter()
+            .map(|d| {
+                if d.is_default {
+                    format!("{} (default)", d.name)
+                } else {
+                    d.name.clone()
+                }
+            })
+            .collect();
+
+        // Resolve the probe target: the configured device by name from the
+        // fresh enumeration, or None to let the recorder pick the default.
+        let device = match &desired {
+            None => None,
+            Some(name) => match devices.into_iter().find(|d| d.name == *name) {
+                Some(d) => Some(d.device),
+                None => {
+                    report.verdict = "device_not_found".into();
+                    report.error = Some(format!("'{name}' not present in enumeration"));
+                    warn!(
+                        "mic probe: verdict=device_not_found target='{name}' input_devices={:?}",
+                        report.input_devices
+                    );
+                    return report;
+                }
+            },
+        };
+
+        // What the main recorder's config cache holds for this device — a
+        // stale entry is one suspect for silent post-resume streams. The cache
+        // is keyed by concrete device name, so resolve the default's name.
+        let cache_key = match &desired {
+            Some(name) => Some(name.clone()),
+            None => crate::audio_toolkit::get_cpal_host()
+                .default_input_device()
+                .and_then(|d| d.name().ok()),
+        };
+        if let (Some(key), Some(rec)) = (&cache_key, self.recorder.lock().unwrap().as_ref()) {
+            report.cached_config = rec.cached_config_summary(key);
+        }
+
+        // Throwaway recorder: no VAD, no callbacks, empty config cache.
+        let mut probe_rec = match AudioRecorder::new() {
+            Ok(r) => r,
+            Err(e) => {
+                report.verdict = "open_failed".into();
+                report.error = Some(format!("failed to create probe recorder: {e}"));
+                return report;
+            }
+        };
+
+        let open_started = Instant::now();
+        if let Err(e) = probe_rec.open(device) {
+            report.verdict = "open_failed".into();
+            report.error = Some(e.to_string());
+            error!(
+                "mic probe: verdict=open_failed target='{target_label}' error='{e}' input_devices={:?}",
+                report.input_devices
+            );
+            return report;
+        }
+        report.open_ms = Some(open_started.elapsed().as_millis() as u32);
+        if let Some(key) = &cache_key {
+            report.fresh_config = probe_rec.cached_config_summary(key);
+        }
+
+        let telemetry = probe_rec.telemetry();
+        let wait_started = Instant::now();
+        while wait_started.elapsed() < FIRST_CHUNK_WINDOW {
+            if telemetry.as_ref().is_some_and(|t| t.chunks() > 0) {
+                report.first_chunk_ms = Some(wait_started.elapsed().as_millis() as u32);
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        let _ = probe_rec.close();
+
+        report.telemetry = telemetry.map(|t| t.summary());
+        report.verdict = if report.first_chunk_ms.is_some() {
+            "ok".into()
+        } else {
+            "silent".into()
+        };
+        info!(
+            "mic probe: verdict={} target='{}' open={:?}ms first_chunk={:?}ms fresh_config={:?} cached_config={:?} telemetry=[{}] input_devices={:?} total={:.1?}",
+            report.verdict,
+            target_label,
+            report.open_ms,
+            report.first_chunk_ms,
+            report.fresh_config,
+            report.cached_config,
+            report.telemetry.as_deref().unwrap_or("none"),
+            report.input_devices,
+            probe_started.elapsed()
+        );
+
+        report
     }
 
     pub fn cancel_generation(&self) -> u64 {
