@@ -10,12 +10,45 @@ use strsim::levenshtein;
 fn build_ngram(words: &[&str]) -> String {
     words
         .iter()
-        .map(|w| {
-            w.trim_matches(|c: char| !c.is_alphanumeric())
-                .to_lowercase()
-        })
+        .map(|w| build_match_key(w))
         .collect::<Vec<_>>()
         .concat()
+}
+
+fn build_match_key(word: &str) -> String {
+    word.chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(|c| c.to_lowercase())
+        .collect()
+}
+
+struct CustomWordMatchKey {
+    word_index: usize,
+    key: String,
+}
+
+fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWordMatchKey> {
+    let primary_key = build_match_key(word);
+    let mut keys = Vec::with_capacity(2);
+
+    if !primary_key.is_empty() {
+        keys.push(CustomWordMatchKey {
+            word_index,
+            key: primary_key.clone(),
+        });
+    }
+
+    if word.contains('&') {
+        let expanded_key = build_match_key(&word.replace('&', " and "));
+        if !expanded_key.is_empty() && expanded_key != primary_key {
+            keys.push(CustomWordMatchKey {
+                word_index,
+                key: expanded_key,
+            });
+        }
+    }
+
+    keys
 }
 
 /// Finds the best matching custom word for a candidate string
@@ -26,7 +59,7 @@ fn build_ngram(words: &[&str]) -> String {
 /// # Arguments
 /// * `candidate` - The cleaned/lowercased candidate string to match
 /// * `custom_words` - Original custom words (for returning the replacement)
-/// * `custom_words_nospace` - Custom words with spaces removed, lowercased (for comparison)
+/// * `custom_word_match_keys` - Normalized custom-word keys for comparison
 /// * `threshold` - Maximum similarity score to accept
 ///
 /// # Returns
@@ -34,7 +67,7 @@ fn build_ngram(words: &[&str]) -> String {
 fn find_best_match<'a>(
     candidate: &str,
     custom_words: &'a [String],
-    custom_words_nospace: &[String],
+    custom_word_match_keys: &[CustomWordMatchKey],
     threshold: f64,
 ) -> Option<(&'a String, f64)> {
     if candidate.is_empty() || candidate.len() > 50 {
@@ -44,20 +77,20 @@ fn find_best_match<'a>(
     let mut best_match: Option<&String> = None;
     let mut best_score = f64::MAX;
 
-    for (i, custom_word_nospace) in custom_words_nospace.iter().enumerate() {
+    for custom_word_key in custom_word_match_keys {
         // Skip if lengths are too different (optimization + prevents over-matching)
         // Use percentage-based check: max 25% length difference (prevents n-grams from
         // matching significantly shorter custom words, e.g., "openaigpt" vs "openai")
-        let len_diff = (candidate.len() as i32 - custom_word_nospace.len() as i32).abs() as f64;
-        let max_len = candidate.len().max(custom_word_nospace.len()) as f64;
+        let len_diff = (candidate.len() as i32 - custom_word_key.key.len() as i32).abs() as f64;
+        let max_len = candidate.len().max(custom_word_key.key.len()) as f64;
         let max_allowed_diff = (max_len * 0.25).max(2.0); // At least 2 chars difference allowed
         if len_diff > max_allowed_diff {
             continue;
         }
 
         // Calculate Levenshtein distance (normalized by length)
-        let levenshtein_dist = levenshtein(candidate, custom_word_nospace);
-        let max_len = candidate.len().max(custom_word_nospace.len()) as f64;
+        let levenshtein_dist = levenshtein(candidate, &custom_word_key.key);
+        let max_len = candidate.len().max(custom_word_key.key.len()) as f64;
         let levenshtein_score = if max_len > 0.0 {
             levenshtein_dist as f64 / max_len
         } else {
@@ -65,7 +98,7 @@ fn find_best_match<'a>(
         };
 
         // Calculate phonetic similarity using Soundex
-        let phonetic_match = soundex(candidate, custom_word_nospace);
+        let phonetic_match = soundex(candidate, &custom_word_key.key);
 
         // Combine scores: favor phonetic matches, but also consider string similarity
         let combined_score = if phonetic_match {
@@ -76,7 +109,7 @@ fn find_best_match<'a>(
 
         // Accept if the score is good enough (configurable threshold)
         if combined_score < threshold && combined_score < best_score {
-            best_match = Some(&custom_words[i]);
+            best_match = Some(&custom_words[custom_word_key.word_index]);
             best_score = combined_score;
         }
     }
@@ -104,13 +137,11 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
         return text.to_string();
     }
 
-    // Pre-compute lowercase versions to avoid repeated allocations
-    let custom_words_lower: Vec<String> = custom_words.iter().map(|w| w.to_lowercase()).collect();
-
-    // Pre-compute versions with spaces removed for n-gram comparison
-    let custom_words_nospace: Vec<String> = custom_words_lower
+    // Pre-compute normalized comparison keys to avoid repeated allocations.
+    let custom_word_match_keys: Vec<CustomWordMatchKey> = custom_words
         .iter()
-        .map(|w| w.replace(' ', ""))
+        .enumerate()
+        .flat_map(|(index, word)| build_custom_word_match_keys(word, index))
         .collect();
 
     let words: Vec<&str> = text.split_whitespace().collect();
@@ -130,7 +161,7 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
             let ngram = build_ngram(ngram_words);
 
             if let Some((replacement, _score)) =
-                find_best_match(&ngram, custom_words, &custom_words_nospace, threshold)
+                find_best_match(&ngram, custom_words, &custom_word_match_keys, threshold)
             {
                 // Extract punctuation from first and last words of the n-gram
                 let (prefix, _) = extract_punctuation(ngram_words[0]);
@@ -159,7 +190,7 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
 fn preserve_case_pattern(original: &str, replacement: &str) -> String {
     if original.chars().all(|c| c.is_uppercase()) {
         replacement.to_uppercase()
-    } else if original.chars().next().map_or(false, |c| c.is_uppercase()) {
+    } else if original.chars().next().is_some_and(|c| c.is_uppercase()) {
         let mut chars: Vec<char> = replacement.chars().collect();
         if let Some(first_char) = chars.get_mut(0) {
             *first_char = first_char.to_uppercase().next().unwrap_or(*first_char);
@@ -231,7 +262,7 @@ fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
 
 static MULTI_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
 
-/// Collapses repeated 1-2 letter words (3+ repetitions) to a single instance.
+/// Collapses repeated words (3+ repetitions) to a single instance.
 /// E.g., "wh wh wh wh" -> "wh", "I I I I" -> "I"
 fn collapse_stutters(text: &str) -> String {
     let words: Vec<&str> = text.split_whitespace().collect();
@@ -246,8 +277,7 @@ fn collapse_stutters(text: &str) -> String {
         let word = words[i];
         let word_lower = word.to_lowercase();
 
-        // Only process 1-2 letter words
-        if word_lower.len() <= 2 && word_lower.chars().all(|c| c.is_alphabetic()) {
+        if word_lower.chars().all(|c| c.is_alphabetic()) {
             // Count consecutive repetitions (case-insensitive)
             let mut count = 1;
             while i + count < words.len() && words[i + count].to_lowercase() == word_lower {
@@ -275,7 +305,7 @@ fn collapse_stutters(text: &str) -> String {
 ///
 /// This function cleans up raw transcription text by:
 /// 1. Removing filler words based on the app language (or custom list)
-/// 2. Collapsing repeated 1-2 letter stutters (e.g., "wh wh wh" -> "wh")
+/// 2. Collapsing repeated word stutters (e.g., "wh wh wh" -> "wh")
 /// 3. Cleaning up excess whitespace
 ///
 /// # Arguments
@@ -426,6 +456,13 @@ mod tests {
     }
 
     #[test]
+    fn test_filter_stutter_longer_words() {
+        let text = "Check data doc doc doc doc documentation.";
+        let result = filter_transcription_output(text, "en", &None);
+        assert_eq!(result, "Check data doc documentation.");
+    }
+
+    #[test]
     fn test_filter_stutter_mixed_case() {
         let text = "No NO no NO no";
         let result = filter_transcription_output(text, "en", &None);
@@ -557,5 +594,29 @@ mod tests {
             "got double-counted result: {}",
             result
         );
+    }
+
+    #[test]
+    fn test_apply_custom_words_matches_ampersand_word() {
+        let text = "send it to RD for review";
+        let custom_words = vec!["R&D".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.18);
+        assert_eq!(result, "send it to R&D for review");
+    }
+
+    #[test]
+    fn test_apply_custom_words_matches_spoken_ampersand_word() {
+        let text = "send it to R and D for review";
+        let custom_words = vec!["R&D".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.18);
+        assert_eq!(result, "send it to R&D for review");
+    }
+
+    #[test]
+    fn test_apply_custom_words_preserves_ampersand_word() {
+        let text = "send it to R&D for review";
+        let custom_words = vec!["R&D".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.18);
+        assert_eq!(result, "send it to R&D for review");
     }
 }

@@ -1,5 +1,10 @@
 use anyhow::Result;
 
+pub const VAD_PREFILL_FRAMES: usize = 15;
+pub const VAD_OFFLINE_HANGOVER_FRAMES: usize = 15;
+pub const VAD_STREAMING_HANGOVER_FRAMES: usize = 55;
+pub const VAD_ONSET_FRAMES: usize = 2;
+
 pub enum VadFrame<'a> {
     /// Speech – may aggregate several frames (prefill + current + hangover)
     Speech(&'a [f32]),
@@ -21,6 +26,10 @@ pub trait VoiceActivityDetector: Send + Sync {
     fn is_voice(&mut self, frame: &[f32]) -> Result<bool> {
         Ok(self.push_frame(frame)?.is_speech())
     }
+
+    /// Set the post-speech hangover tail (in 30 ms frames) applied to
+    /// subsequent frames. Detectors without a smoothing tail can ignore this.
+    fn set_hangover_frames(&mut self, _frames: usize) {}
 
     fn reset(&mut self) {}
 }

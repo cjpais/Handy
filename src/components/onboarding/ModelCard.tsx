@@ -1,9 +1,11 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  AudioLines,
   Check,
   Download,
   Globe,
+  HardDrive,
   Languages,
   Loader2,
   Trash2,
@@ -14,7 +16,10 @@ import {
   getTranslatedModelDescription,
   getTranslatedModelName,
 } from "../../lib/utils/modelTranslation";
-import { LANGUAGES } from "../../lib/constants/languages";
+import {
+  getLanguageLabel,
+  getUniqueCapabilityLanguages,
+} from "../../lib/constants/languages";
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 
@@ -23,13 +28,28 @@ const getLanguageDisplayText = (
   supportedLanguages: string[],
   t: (key: string, options?: Record<string, unknown>) => string,
 ): string => {
-  if (supportedLanguages.length === 1) {
-    const langCode = supportedLanguages[0];
-    const langName =
-      LANGUAGES.find((l) => l.value === langCode)?.label || langCode;
+  const capabilityLanguages = getUniqueCapabilityLanguages(supportedLanguages);
+  if (capabilityLanguages.length === 1) {
+    const langCode = capabilityLanguages[0];
+    const langName = getLanguageLabel(langCode) || langCode;
     return t("modelSelector.capabilities.languageOnly", { language: langName });
   }
-  return t("modelSelector.capabilities.multiLanguage");
+  return t("modelSelector.capabilities.languageCount", {
+    total: capabilityLanguages.length,
+  });
+};
+
+// Legacy = a blob (Url-sourced) .bin/ONNX model, kept runnable but no longer the
+// advertised download (catalog GGUFs supersede it).
+export const isLegacySource = (model: ModelInfo): boolean =>
+  typeof model.source === "object" && "Url" in model.source;
+
+// Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").
+const getQuantLabel = (filename: string): string | null => {
+  const match = filename.match(
+    /[._-](IQ\d+_\w+|Q\d+(?:_\w+)?|F16|BF16|F32)\.gguf$/i,
+  );
+  return match ? match[1].toUpperCase() : null;
 };
 
 export type ModelCardStatus =
@@ -78,6 +98,13 @@ const ModelCard: React.FC<ModelCardProps> = ({
   // Get translated model name and description
   const displayName = getTranslatedModelName(model, t);
   const displayDescription = getTranslatedModelDescription(model, t);
+  const showModelSize =
+    status === "downloadable" || status === "available" || status === "active";
+  const formattedModelSize = formatModelSize(Number(model.size_mb));
+  const quantLabel = getQuantLabel(model.filename);
+  const capabilityLanguages = getUniqueCapabilityLanguages(
+    model.supported_languages,
+  );
 
   const baseClasses =
     "flex flex-col rounded-xl px-4 py-3 gap-2 text-left transition-all duration-200";
@@ -150,6 +177,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
             {model.is_custom && (
               <Badge variant="secondary">{t("modelSelector.custom")}</Badge>
             )}
+            {isLegacySource(model) && (
+              <Badge variant="secondary">{t("modelSelector.legacy")}</Badge>
+            )}
             {status === "switching" && (
               <Badge variant="secondary">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
@@ -195,11 +225,11 @@ const ModelCard: React.FC<ModelCardProps> = ({
 
       {/* Bottom row: tags + action buttons (full width) */}
       <div className="flex items-center gap-3 w-full -mb-0.5 mt-0.5 h-5">
-        {model.supported_languages.length > 0 && (
+        {capabilityLanguages.length > 0 && (
           <div
             className="flex items-center gap-1 text-xs text-text/50"
             title={
-              model.supported_languages.length === 1
+              capabilityLanguages.length === 1
                 ? t("modelSelector.capabilities.singleLanguage")
                 : t("modelSelector.capabilities.languageSelection")
             }
@@ -217,10 +247,24 @@ const ModelCard: React.FC<ModelCardProps> = ({
             <span>{t("modelSelector.capabilities.translate")}</span>
           </div>
         )}
-        {status === "downloadable" && (
+        {model.supports_streaming && (
+          <div
+            className="flex items-center gap-1 text-xs text-text/50"
+            title={t("modelSelector.capabilities.streaming")}
+          >
+            <AudioLines className="w-3.5 h-3.5" />
+            <span>{t("modelSelector.streaming")}</span>
+          </div>
+        )}
+        {showModelSize && (
           <span className="flex items-center gap-1.5 ms-auto text-xs text-text/50">
-            <Download className="w-3.5 h-3.5" />
-            <span>{formatModelSize(Number(model.size_mb))}</span>
+            {status === "downloadable" ? (
+              <Download className="w-3.5 h-3.5" />
+            ) : (
+              <HardDrive className="w-3.5 h-3.5" />
+            )}
+            <span>{formattedModelSize}</span>
+            {quantLabel && <span className="text-text/40">{quantLabel}</span>}
           </span>
         )}
         {onDelete && (status === "available" || status === "active") && (
@@ -229,7 +273,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             size="sm"
             onClick={handleDelete}
             title={t("modelSelector.deleteModel", { modelName: displayName })}
-            className="flex items-center gap-1.5 ms-auto text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
+            className="flex items-center gap-1.5 text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{t("common.delete")}</span>

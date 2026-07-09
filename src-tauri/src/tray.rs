@@ -3,7 +3,7 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -88,6 +88,7 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
 
     let icon_path = get_icon_path(theme, icon);
 
+    let icon_started = std::time::Instant::now();
     let _ = tray.set_icon(Some(
         Image::from_path(
             app.path()
@@ -96,9 +97,29 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
         )
         .expect("failed to set icon"),
     ));
+    let icon_elapsed = icon_started.elapsed();
 
     // Update menu based on state
+    let menu_started = std::time::Instant::now();
     update_tray_menu(app, None);
+    debug!(
+        "tray icon change ({:?}): set_icon={:?} menu={:?}",
+        icon,
+        icon_elapsed,
+        menu_started.elapsed()
+    );
+}
+
+pub fn tray_tooltip() -> String {
+    version_label()
+}
+
+fn version_label() -> String {
+    if cfg!(debug_assertions) {
+        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+    } else {
+        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+    }
 }
 
 pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
@@ -115,11 +136,7 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
     let (settings_accelerator, quit_accelerator) = (Some("Ctrl+,"), Some("Ctrl+Q"));
 
     // Create common menu items
-    let version_label = if cfg!(debug_assertions) {
-        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
-    } else {
-        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
-    };
+    let version_label = version_label();
     let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)
         .expect("failed to create version item");
     let settings_i = MenuItem::with_id(
@@ -233,6 +250,7 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
     let tray = app.state::<TrayIcon>();
     let _ = tray.set_menu(Some(menu));
     let _ = tray.set_icon_as_template(true);
+    let _ = tray.set_tooltip(Some(version_label));
 }
 
 fn last_transcript_text(entry: &HistoryEntry) -> &str {
