@@ -4,19 +4,25 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
 use log::{debug, error, info, warn};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Manager, Theme};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum TrayIconState {
+    #[default]
     Idle,
     Recording,
     Transcribing,
 }
+
+/// Last state passed to `change_tray_icon`, so theme-only refreshes can
+/// re-apply it instead of guessing (e.g. resetting to Idle mid-recording).
+#[derive(Default)]
+pub struct CurrentTrayState(Mutex<TrayIconState>);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum AppTheme {
@@ -94,6 +100,22 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState) -> &'static str {
 }
 
 pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
+    if let Some(state) = app.try_state::<CurrentTrayState>() {
+        *state.0.lock().unwrap_or_else(|e| e.into_inner()) = icon.clone();
+    }
+    apply_tray_icon(app, &icon);
+}
+
+/// Re-applies the last known tray state — for when only the *theme* changed.
+pub fn refresh_tray_icon(app: &AppHandle) {
+    let icon = app
+        .try_state::<CurrentTrayState>()
+        .map(|s| s.0.lock().unwrap_or_else(|e| e.into_inner()).clone())
+        .unwrap_or_default();
+    apply_tray_icon(app, &icon);
+}
+
+fn apply_tray_icon(app: &AppHandle, icon: &TrayIconState) {
     let tray = app.state::<TrayIcon>();
     let theme = get_current_theme(app);
 
@@ -112,7 +134,7 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
 
     // Update menu based on state
     let menu_started = std::time::Instant::now();
-    update_tray_menu(app, &icon, None);
+    update_tray_menu(app, icon, None);
     debug!(
         "tray icon change ({:?}): icon={} set_icon={:?} menu={:?}",
         icon,
