@@ -18,10 +18,13 @@ use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
+
+const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
 
 #[derive(Clone, serde::Serialize)]
 struct RecordingErrorEvent {
@@ -72,6 +75,30 @@ fn build_system_prompt(prompt_template: &str) -> String {
 /// transcription".
 fn is_blank_transcription(transcription: &str) -> bool {
     transcription.trim().is_empty()
+}
+
+async fn complete_unless_cancelled<F, C>(operation: F, is_cancelled: C) -> Option<F::Output>
+where
+    F: Future,
+    C: Fn() -> bool,
+{
+    tokio::pin!(operation);
+
+    loop {
+        if is_cancelled() {
+            return None;
+        }
+
+        if let Ok(result) =
+            tokio::time::timeout(CANCELLATION_POLL_INTERVAL, operation.as_mut()).await
+        {
+            return Some(result);
+        }
+    }
+}
+
+fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool {
+    style == OverlayStyle::Live && is_streaming
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -601,11 +628,13 @@ impl ShortcutAction for TranscribeAction {
         // spinner while the stream finalizes. Non-streaming paths use the
         // compact transcribing pill (None no-ops in show_*).
         let style = get_settings(app).overlay_style;
-        match (style, tm.is_streaming()) {
-            (OverlayStyle::Live, true) => {
-                tm.emit_stream_working(StreamWorkKind::Transcribing);
-            }
-            _ => show_transcribing_overlay(app),
+        // Capture this before finalizing the stream so every later working state
+        // targets the same overlay that was shown for this transcription.
+        let use_streaming_overlay = should_use_streaming_overlay(style, tm.is_streaming());
+        if use_streaming_overlay {
+            tm.emit_stream_working(StreamWorkKind::Transcribing);
+        } else {
+            show_transcribing_overlay(app);
         }
 
         // Unmute before playing audio feedback so the stop sound is audible
@@ -715,15 +744,23 @@ impl ShortcutAction for TranscribeAction {
                             );
 
                             if post_process {
-                                if style == OverlayStyle::Live {
+                                if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
                                     show_processing_overlay(&ah);
                                 }
                             }
-                            let processed =
-                                process_transcription_output(&ah, &transcription, post_process)
-                                    .await;
+                            let Some(processed) = complete_unless_cancelled(
+                                process_transcription_output(&ah, &transcription, post_process),
+                                || rm.was_cancelled_since(cancel_generation),
+                            )
+                            .await
+                            else {
+                                debug!("Transcription operation cancelled during output handling");
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                                return;
+                            };
 
                             if rm.was_cancelled_since(cancel_generation) {
                                 debug!("Transcription operation cancelled before paste");
@@ -890,7 +927,13 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 
 #[cfg(test)]
 mod tests {
-    use super::is_blank_transcription;
+    use super::{complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay};
+    use crate::settings::OverlayStyle;
+    use std::future;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+    use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn blank_transcription_is_detected() {
@@ -903,5 +946,41 @@ mod tests {
     fn non_blank_transcription_is_kept() {
         assert!(!is_blank_transcription("hello"));
         assert!(!is_blank_transcription("  hello  "));
+    }
+
+    #[test]
+    fn completed_operation_returns_its_output() {
+        let result = tauri::async_runtime::block_on(complete_unless_cancelled(
+            future::ready("done"),
+            || false,
+        ));
+
+        assert_eq!(result, Some("done"));
+    }
+
+    #[test]
+    fn pending_operation_stops_after_cancellation() {
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled_for_thread = Arc::clone(&cancelled);
+        let cancel_thread = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(10));
+            cancelled_for_thread.store(true, Ordering::Release);
+        });
+
+        let result = tauri::async_runtime::block_on(complete_unless_cancelled(
+            future::pending::<()>(),
+            || cancelled.load(Ordering::Acquire),
+        ));
+
+        cancel_thread.join().unwrap();
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn live_overlay_uses_streaming_states_only_for_streaming_models() {
+        assert!(should_use_streaming_overlay(OverlayStyle::Live, true));
+        assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
+        assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
+        assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
     }
 }

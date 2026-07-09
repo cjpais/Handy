@@ -617,6 +617,7 @@ fn run_consumer(
                     processed_samples.clear();
                     recording = true;
                     visualizer.reset();
+                    frame_resampler.reset();
                     // Reconfigure the single VAD engine for this session's policy
                     // and clear its smoothing + recurrent state before it sees
                     // any frames.

@@ -517,8 +517,12 @@
         "settings": "Cài đặt:"
       },
       "pasteDelay": {
-        "title": "Độ trễ dán",
-        "description": "Độ trễ trước khi gửi phím dán (tính bằng mili giây). Tăng nếu văn bản sai đang được dán."
+        "title": "Độ trễ dán (trước)",
+        "description": "Độ trễ (tính bằng mili giây) sau khi sao chép văn bản, trước khi gửi phím dán. Tăng nếu không có gì được dán."
+      },
+      "pasteDelayAfter": {
+        "title": "Độ trễ dán (sau)",
+        "description": "Độ trễ (tính bằng mili giây) sau khi gửi phím dán, trước khi khôi phục bảng nhớ tạm trước đó. Tăng nếu nội dung bảng nhớ tạm cũ được dán thay vì bản chép lời."
       },
       "recordingBuffer": {
         "title": "Bộ đệm ghi âm thêm",
