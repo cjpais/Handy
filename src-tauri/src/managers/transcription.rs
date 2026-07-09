@@ -179,7 +179,15 @@ pub struct LoadingGuard {
 
 impl Drop for LoadingGuard {
     fn drop(&mut self) {
-        let mut is_loading = self.is_loading.lock().unwrap();
+        // Recover from a poisoned mutex instead of panicking —
+        // a panic inside Drop calls abort().
+        let mut is_loading = match self.is_loading.lock() {
+            Ok(g) => g,
+            Err(e) => {
+                warn!("Recovered poisoned is_loading mutex during LoadingGuard drop — a panic occurred earlier this session");
+                e.into_inner()
+            }
+        };
         *is_loading = false;
         self.loading_condvar.notify_all();
     }
@@ -1218,15 +1226,14 @@ impl TranscriptionManager {
                         // whisper run extension to a non-whisper arch is rejected
                         // with INVALID_ARG, so skip it there and let the fuzzy
                         // post-correction handle custom words instead.
-                        let family =
-                            if settings.custom_words.is_empty() || !model_is_whisper {
-                                None
-                            } else {
-                                Some(RunExtension::Whisper(WhisperRunOptions {
-                                    initial_prompt: Some(settings.custom_words.join(", ")),
-                                    ..Default::default()
-                                }))
-                            };
+                        let family = if settings.custom_words.is_empty() || !model_is_whisper {
+                            None
+                        } else {
+                            Some(RunExtension::Whisper(WhisperRunOptions {
+                                initial_prompt: Some(settings.custom_words.join(", ")),
+                                ..Default::default()
+                            }))
+                        };
 
                         let run_plan = transcribe_cpp_run_plan(
                             settings.translate_to_english,
@@ -1387,8 +1394,7 @@ impl TranscriptionManager {
         // family). We don't pass a prompt to non-whisper models (it requires the
         // whisper-kind run extension), so they still get fuzzy correction here,
         // same as the ONNX engines.
-        let filtered_result =
-            post_process_transcription_text(result, &settings, model_is_whisper);
+        let filtered_result = post_process_transcription_text(result, &settings, model_is_whisper);
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
@@ -1941,8 +1947,17 @@ impl Drop for TranscriptionManager {
         // Signal the watcher thread to shutdown
         self.shutdown_signal.store(true, Ordering::Relaxed);
 
-        // Wait for the thread to finish gracefully
-        if let Some(handle) = self.watcher_handle.lock().unwrap().take() {
+        // Wait for the thread to finish gracefully.
+        // Use match instead of unwrap to avoid panicking if the mutex is
+        // poisoned — a panic inside Drop calls abort().
+        let mut guard = match self.watcher_handle.lock() {
+            Ok(g) => g,
+            Err(e) => {
+                warn!("Recovered poisoned watcher_handle mutex during TranscriptionManager drop — a panic occurred earlier this session");
+                e.into_inner()
+            }
+        };
+        if let Some(handle) = guard.take() {
             if let Err(e) = handle.join() {
                 warn!("Failed to join idle watcher thread: {:?}", e);
             } else {

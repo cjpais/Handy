@@ -517,8 +517,12 @@
         "settings": "Nastavení:"
       },
       "pasteDelay": {
-        "title": "Zpoždění vložení",
-        "description": "Zpoždění před odesláním klávesy pro vložení (v milisekundách). Zvyšte, pokud se vkládá špatný text."
+        "title": "Zpoždění vložení (před)",
+        "description": "Zpoždění (v milisekundách) po zkopírování textu, před odesláním klávesy pro vložení. Zvyšte, pokud se nic nevloží."
+      },
+      "pasteDelayAfter": {
+        "title": "Zpoždění vložení (po)",
+        "description": "Zpoždění (v milisekundách) po klávese pro vložení, před obnovením předchozí schránky. Zvyšte, pokud se místo přepisu vkládá starý obsah schránky."
       },
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
