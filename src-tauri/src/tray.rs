@@ -4,6 +4,7 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
 use log::{debug, error, info, warn};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -89,14 +90,14 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
     let icon_path = get_icon_path(theme, icon);
 
     let icon_started = std::time::Instant::now();
-    let _ = tray.set_icon(Some(
-        Image::from_path(
-            app.path()
-                .resolve(icon_path, tauri::path::BaseDirectory::Resource)
-                .expect("failed to resolve"),
-        )
-        .expect("failed to set icon"),
-    ));
+    if let Err(err) = load_tray_icon(
+        app.path()
+            .resolve(icon_path, tauri::path::BaseDirectory::Resource),
+    )
+    .and_then(|image| tray.set_icon(Some(image)))
+    {
+        error!("Failed to update tray icon '{icon_path}': {err}");
+    }
     let icon_elapsed = icon_started.elapsed();
 
     // Update menu based on state
@@ -108,6 +109,11 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
         icon_elapsed,
         menu_started.elapsed()
     );
+}
+
+fn load_tray_icon(resolved_icon_path: tauri::Result<PathBuf>) -> tauri::Result<Image<'static>> {
+    let resolved_icon_path = resolved_icon_path?;
+    Image::from_path(&resolved_icon_path).map(Image::to_owned)
 }
 
 pub fn tray_tooltip() -> String {
@@ -302,7 +308,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::last_transcript_text;
+    use super::{last_transcript_text, load_tray_icon};
     use crate::managers::history::HistoryEntry;
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
@@ -329,5 +335,17 @@ mod tests {
     fn falls_back_to_raw_transcription() {
         let entry = build_entry("raw", None);
         assert_eq!(last_transcript_text(&entry), "raw");
+    }
+
+    #[test]
+    fn tray_icon_resolution_failure_is_returned_instead_of_panicking() {
+        assert!(load_tray_icon(Err(tauri::Error::UnknownPath)).is_err());
+    }
+
+    #[test]
+    fn tray_icon_returns_err_when_file_does_not_exist() {
+        let dir = tempfile::tempdir().expect("failed to create tempdir");
+        let missing = dir.path().join("does_not_exist.png");
+        assert!(load_tray_icon(Ok(missing)).is_err());
     }
 }
