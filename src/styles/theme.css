@@ -1,0 +1,20 @@
+/* Handy Colors */
+
+:root {
+  --color-text: #0f0f0f;
+  --color-background: #fbfbfb;
+  --color-background-ui: #da5893;
+  --color-logo-primary: #faa2ca;
+  --color-logo-stroke: #382731;
+  --color-text-stroke: #f6f6f6;
+  --color-mid-gray: #808080;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #fbfbfb;
+    --color-background: #2c2b29;
+    --color-logo-primary: #f28cbb;
+    --color-logo-stroke: #fad1ed;
+  }
+}

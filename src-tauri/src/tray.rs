@@ -3,20 +3,37 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Manager, Theme};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TrayIconState {
     Idle,
     Recording,
     Transcribing,
+}
+
+/// Tauri managed state holding the last icon state set via `change_tray_icon`.
+pub struct CurrentTrayIconState(pub Mutex<TrayIconState>);
+
+impl CurrentTrayIconState {
+    pub fn new() -> Self {
+        Self(Mutex::new(TrayIconState::Idle))
+    }
+
+    pub fn get(&self) -> TrayIconState {
+        *self.0.lock().unwrap()
+    }
+
+    fn set(&self, state: TrayIconState) {
+        *self.0.lock().unwrap() = state;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -67,8 +84,12 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
     let tray = app.state::<TrayIcon>();
     let theme = get_current_theme(app);
 
-    let icon_path = get_icon_path(theme, icon.clone());
+    // Store current state
+    app.state::<CurrentTrayIconState>().set(icon);
 
+    let icon_path = get_icon_path(theme, icon);
+
+    let icon_started = std::time::Instant::now();
     if let Err(err) = load_tray_icon(
         app.path()
             .resolve(icon_path, tauri::path::BaseDirectory::Resource),
@@ -77,9 +98,17 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
     {
         error!("Failed to update tray icon '{icon_path}': {err}");
     }
+    let icon_elapsed = icon_started.elapsed();
 
     // Update menu based on state
-    update_tray_menu(app, &icon, None);
+    let menu_started = std::time::Instant::now();
+    update_tray_menu(app, None);
+    debug!(
+        "tray icon change ({:?}): set_icon={:?} menu={:?}",
+        icon,
+        icon_elapsed,
+        menu_started.elapsed()
+    );
 }
 
 fn load_tray_icon(resolved_icon_path: tauri::Result<PathBuf>) -> tauri::Result<Image<'static>> {
@@ -99,7 +128,8 @@ fn version_label() -> String {
     }
 }
 
-pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
+pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
+    let state = app.state::<CurrentTrayIconState>().get();
     let settings = settings::get_settings(app);
 
     let locale = locale.unwrap_or(&settings.app_language);
