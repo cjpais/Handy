@@ -16,7 +16,7 @@ interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
   onModelSelect: (modelId: string) => void;
-  targetRef: React.RefObject<HTMLElement>;
+  targetRef: React.RefObject<HTMLElement | null>;
   onClose: () => void;
 }
 
