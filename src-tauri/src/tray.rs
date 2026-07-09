@@ -4,6 +4,7 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
 use log::{debug, error, info, warn};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -11,18 +12,29 @@ use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Manager, Theme};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TrayIconState {
-    #[default]
     Idle,
     Recording,
     Transcribing,
 }
 
-/// Last state passed to `change_tray_icon`, so theme-only refreshes can
-/// re-apply it instead of guessing (e.g. resetting to Idle mid-recording).
-#[derive(Default)]
-pub struct CurrentTrayState(Mutex<TrayIconState>);
+/// Tauri managed state holding the last icon state set via `change_tray_icon`.
+pub struct CurrentTrayIconState(pub Mutex<TrayIconState>);
+
+impl CurrentTrayIconState {
+    pub fn new() -> Self {
+        Self(Mutex::new(TrayIconState::Idle))
+    }
+
+    pub fn get(&self) -> TrayIconState {
+        *self.0.lock().unwrap()
+    }
+
+    fn set(&self, state: TrayIconState) {
+        *self.0.lock().unwrap() = state;
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum AppTheme {
@@ -100,41 +112,28 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState) -> &'static str {
 }
 
 pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
-    if let Some(state) = app.try_state::<CurrentTrayState>() {
-        *state.0.lock().unwrap_or_else(|e| e.into_inner()) = icon.clone();
-    }
-    apply_tray_icon(app, &icon);
-}
-
-/// Re-applies the last known tray state — for when only the *theme* changed.
-pub fn refresh_tray_icon(app: &AppHandle) {
-    let icon = app
-        .try_state::<CurrentTrayState>()
-        .map(|s| s.0.lock().unwrap_or_else(|e| e.into_inner()).clone())
-        .unwrap_or_default();
-    apply_tray_icon(app, &icon);
-}
-
-fn apply_tray_icon(app: &AppHandle, icon: &TrayIconState) {
     let tray = app.state::<TrayIcon>();
     let theme = get_current_theme(app);
 
-    let icon_path = get_icon_path(theme, icon.clone());
+    // Store current state
+    app.state::<CurrentTrayIconState>().set(icon);
+
+    let icon_path = get_icon_path(theme, icon);
 
     let icon_started = std::time::Instant::now();
-    let _ = tray.set_icon(Some(
-        Image::from_path(
-            app.path()
-                .resolve(icon_path, tauri::path::BaseDirectory::Resource)
-                .expect("failed to resolve"),
-        )
-        .expect("failed to set icon"),
-    ));
+    if let Err(err) = load_tray_icon(
+        app.path()
+            .resolve(icon_path, tauri::path::BaseDirectory::Resource),
+    )
+    .and_then(|image| tray.set_icon(Some(image)))
+    {
+        error!("Failed to update tray icon '{icon_path}': {err}");
+    }
     let icon_elapsed = icon_started.elapsed();
 
     // Update menu based on state
     let menu_started = std::time::Instant::now();
-    update_tray_menu(app, icon, None);
+    update_tray_menu(app, None);
     debug!(
         "tray icon change ({:?}): icon={} set_icon={:?} menu={:?}",
         icon,
@@ -142,6 +141,18 @@ fn apply_tray_icon(app: &AppHandle, icon: &TrayIconState) {
         icon_elapsed,
         menu_started.elapsed()
     );
+}
+
+/// Re-applies the last known tray state — for when only the *theme* changed
+/// and the state itself (idle/recording/transcribing) should be preserved.
+pub fn refresh_tray_icon(app: &AppHandle) {
+    let icon = app.state::<CurrentTrayIconState>().get();
+    change_tray_icon(app, icon);
+}
+
+fn load_tray_icon(resolved_icon_path: tauri::Result<PathBuf>) -> tauri::Result<Image<'static>> {
+    let resolved_icon_path = resolved_icon_path?;
+    Image::from_path(&resolved_icon_path).map(Image::to_owned)
 }
 
 pub fn tray_tooltip() -> String {
@@ -156,7 +167,8 @@ fn version_label() -> String {
     }
 }
 
-pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
+pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
+    let state = app.state::<CurrentTrayIconState>().get();
     let settings = settings::get_settings(app);
 
     let locale = locale.unwrap_or(&settings.app_language);
@@ -335,7 +347,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::last_transcript_text;
+    use super::{last_transcript_text, load_tray_icon};
     use crate::managers::history::HistoryEntry;
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
@@ -362,5 +374,17 @@ mod tests {
     fn falls_back_to_raw_transcription() {
         let entry = build_entry("raw", None);
         assert_eq!(last_transcript_text(&entry), "raw");
+    }
+
+    #[test]
+    fn tray_icon_resolution_failure_is_returned_instead_of_panicking() {
+        assert!(load_tray_icon(Err(tauri::Error::UnknownPath)).is_err());
+    }
+
+    #[test]
+    fn tray_icon_returns_err_when_file_does_not_exist() {
+        let dir = tempfile::tempdir().expect("failed to create tempdir");
+        let missing = dir.path().join("does_not_exist.png");
+        assert!(load_tray_icon(Ok(missing)).is_err());
     }
 }
