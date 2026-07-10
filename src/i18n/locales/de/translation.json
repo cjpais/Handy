@@ -618,6 +618,15 @@
     "title": "Anwendungssprache",
     "description": "Sprache der Handy-Oberfläche ändern"
   },
+  "theme": {
+    "title": "Anwendungsdesign",
+    "description": "Wählen Sie, ob Handy dem Systemthema folgt oder hell bzw. dunkel bleibt",
+    "options": {
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    }
+  },
   "overlay": {
     "transcribing": "Transkribiere...",
     "processing": "Verarbeite..."

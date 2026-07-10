@@ -618,6 +618,15 @@
     "title": "Ngôn ngữ ứng dụng",
     "description": "Thay đổi ngôn ngữ giao diện của Handy"
   },
+  "theme": {
+    "title": "Giao diện ứng dụng",
+    "description": "Chọn xem Handy theo chủ đề hệ thống hay giữ ở chế độ sáng hoặc tối",
+    "options": {
+      "system": "Hệ thống",
+      "light": "Sáng",
+      "dark": "Tối"
+    }
+  },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
     "processing": "Đang xử lý..."

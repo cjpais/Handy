@@ -621,6 +621,15 @@
     "title": "Application Language",
     "description": "Change the language of the Handy interface"
   },
+  "theme": {
+    "title": "Application Theme",
+    "description": "Choose whether Handy follows your system theme or stays light or dark",
+    "options": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."

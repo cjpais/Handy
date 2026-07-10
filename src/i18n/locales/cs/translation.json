@@ -618,6 +618,15 @@
     "title": "Jazyk aplikace",
     "description": "Změňte jazyk rozhraní Handy"
   },
+  "theme": {
+    "title": "Motiv aplikace",
+    "description": "Zvolte, zda má Handy sledovat motiv systému, nebo zůstat světlý či tmavý",
+    "options": {
+      "system": "Systém",
+      "light": "Světlý",
+      "dark": "Tmavý"
+    }
+  },
   "overlay": {
     "transcribing": "Přepisuji...",
     "processing": "Zpracovávám..."

@@ -1,20 +1,37 @@
 /* Handy Colors */
 
 :root {
-  --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
+  /* Palette source of truth. Each themed color is defined once as a
+     light/dark pair; the active tokens below and the `data-theme` overrides
+     in App.css reference these, so a hex value lives in exactly one place. */
+  --light-color-text: #0f0f0f;
+  --light-color-background: #fbfbfb;
+  --light-color-logo-primary: #faa2ca;
+  --light-color-logo-stroke: #382731;
+
+  --dark-color-text: #fbfbfb;
+  --dark-color-background: #2c2b29;
+  --dark-color-logo-primary: #f28cbb;
+  --dark-color-logo-stroke: #fad1ed;
+
+  /* Tokens that do not change between light and dark */
   --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
+
+  /* Active palette — defaults to light, follows the OS via the media query
+     below, or is forced by `data-theme` (see App.css). */
+  --color-text: var(--light-color-text);
+  --color-background: var(--light-color-background);
+  --color-logo-primary: var(--light-color-logo-primary);
+  --color-logo-stroke: var(--light-color-logo-stroke);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    --color-text: var(--dark-color-text);
+    --color-background: var(--dark-color-background);
+    --color-logo-primary: var(--dark-color-logo-primary);
+    --color-logo-stroke: var(--dark-color-logo-stroke);
   }
 }

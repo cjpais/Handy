@@ -618,6 +618,15 @@
     "title": "Uygulama Dili",
     "description": "Handy arayüzünün dilini değiştirin"
   },
+  "theme": {
+    "title": "Uygulama teması",
+    "description": "Handy'nin sistem temasını izlemesini ya da açık veya koyu kalmasını seçin",
+    "options": {
+      "system": "Sistem",
+      "light": "Açık",
+      "dark": "Koyu"
+    }
+  },
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
     "processing": "İşleniyor..."

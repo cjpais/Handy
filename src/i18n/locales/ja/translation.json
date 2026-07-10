@@ -618,6 +618,15 @@
     "title": "アプリの言語",
     "description": "Handy インターフェースの言語を変更"
   },
+  "theme": {
+    "title": "アプリのテーマ",
+    "description": "Handy をシステムのテーマに合わせるか、ライトまたはダークで固定するかを選択します",
+    "options": {
+      "system": "システム",
+      "light": "ライト",
+      "dark": "ダーク"
+    }
+  },
   "overlay": {
     "transcribing": "文字起こし中…",
     "processing": "処理中…"

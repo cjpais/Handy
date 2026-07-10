@@ -59,6 +59,27 @@
   }
 }
 
+/*
+ * Explicit theme override, driven by the `theme` setting via
+ * `document.documentElement.dataset.theme`. When set, the higher-specificity
+ * attribute selectors win over the `prefers-color-scheme` media query above,
+ * so a user can keep Handy light or dark regardless of the OS setting.
+ * `system` (or no attribute) leaves the OS in charge.
+ */
+:root[data-theme="light"] {
+  --color-text: var(--light-color-text);
+  --color-background: var(--light-color-background);
+  --color-logo-primary: var(--light-color-logo-primary);
+  --color-logo-stroke: var(--light-color-logo-stroke);
+}
+
+:root[data-theme="dark"] {
+  --color-text: var(--dark-color-text);
+  --color-background: var(--dark-color-background);
+  --color-logo-primary: var(--dark-color-logo-primary);
+  --color-logo-stroke: var(--dark-color-logo-stroke);
+}
+
 /* macOS - tint native overlay scrollbar thumb */
 :root[data-platform="macos"] {
   scrollbar-color: var(--scrollbar-thumb) transparent;

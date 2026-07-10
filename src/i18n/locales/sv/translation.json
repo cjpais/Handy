@@ -618,6 +618,15 @@
     "title": "Applikationsspråk",
     "description": "Ändra språket i Handy-gränssnittet"
   },
+  "theme": {
+    "title": "Apptema",
+    "description": "Välj om Handy ska följa systemets tema eller förbli ljust eller mörkt",
+    "options": {
+      "system": "System",
+      "light": "Ljust",
+      "dark": "Mörkt"
+    }
+  },
   "overlay": {
     "transcribing": "Transkriberar...",
     "processing": "Bearbetar..."

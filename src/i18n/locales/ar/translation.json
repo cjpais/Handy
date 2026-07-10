@@ -618,6 +618,15 @@
     "title": "لغة التطبيق",
     "description": "تغيير لغة واجهة Handy"
   },
+  "theme": {
+    "title": "سمة التطبيق",
+    "description": "اختر ما إذا كان Handy يتبع مظهر النظام أو يبقى فاتحًا أو داكنًا",
+    "options": {
+      "system": "النظام",
+      "light": "فاتح",
+      "dark": "داكن"
+    }
+  },
   "overlay": {
     "transcribing": "...جاري التفريغ",
     "processing": "...جاري المعالجة"

@@ -618,6 +618,15 @@
     "title": "שפת האפליקציה",
     "description": "שנה את שפת הממשק של Handy"
   },
+  "theme": {
+    "title": "ערכת נושא של האפליקציה",
+    "description": "בחר אם Handy יעקוב אחר ערכת הנושא של המערכת או יישאר בהיר או כהה",
+    "options": {
+      "system": "מערכת",
+      "light": "בהיר",
+      "dark": "כהה"
+    }
+  },
   "overlay": {
     "transcribing": "מתמלל...",
     "processing": "מעבד..."

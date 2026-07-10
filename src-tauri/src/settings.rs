@@ -258,6 +258,16 @@ impl SoundTheme {
     }
 }
 
+/// UI appearance mode. `System` follows the OS `prefers-color-scheme`; `Light`
+/// and `Dark` force one of the two palettes Handy already ships.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum Theme {
+    System,
+    Light,
+    Dark,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum TypingTool {
@@ -419,6 +429,8 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default = "default_theme")]
+    pub theme: Theme,
     #[serde(default)]
     pub experimental_enabled: bool,
     #[serde(default)]
@@ -557,6 +569,10 @@ fn default_audio_feedback_volume() -> f32 {
 
 fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
+}
+
+fn default_theme() -> Theme {
+    Theme::System
 }
 
 fn default_post_process_enabled() -> bool {
@@ -862,6 +878,7 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        theme: default_theme(),
         experimental_enabled: false,
         lazy_stream_close: false,
         keyboard_implementation: KeyboardImplementation::default(),

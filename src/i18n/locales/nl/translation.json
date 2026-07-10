@@ -621,6 +621,15 @@
     "title": "Interfacetaal",
     "description": "Wijzig de taal van de Handy-interface"
   },
+  "theme": {
+    "title": "App-thema",
+    "description": "Kies of Handy het systeemthema volgt of licht of donker blijft",
+    "options": {
+      "system": "Systeem",
+      "light": "Licht",
+      "dark": "Donker"
+    }
+  },
   "overlay": {
     "transcribing": "Transcriberen...",
     "processing": "Verwerken..."

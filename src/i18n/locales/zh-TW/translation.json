@@ -618,6 +618,15 @@
     "title": "應用程式語言",
     "description": "變更 Handy 介面的語言"
   },
+  "theme": {
+    "title": "應用程式主題",
+    "description": "選擇 Handy 跟隨系統主題，或維持淺色或深色",
+    "options": {
+      "system": "跟隨系統",
+      "light": "淺色",
+      "dark": "深色"
+    }
+  },
   "overlay": {
     "transcribing": "正在轉錄...",
     "processing": "處理中..."

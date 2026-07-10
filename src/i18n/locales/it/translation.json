@@ -618,6 +618,15 @@
     "title": "Lingua Applicazione",
     "description": "Cambia la lingua dell'interfaccia di Handy"
   },
+  "theme": {
+    "title": "Tema dell'applicazione",
+    "description": "Scegli se Handy segue il tema di sistema o resta chiaro o scuro",
+    "options": {
+      "system": "Sistema",
+      "light": "Chiaro",
+      "dark": "Scuro"
+    }
+  },
   "overlay": {
     "transcribing": "Trascrizione...",
     "processing": "Elaborazione..."
