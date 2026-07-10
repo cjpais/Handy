@@ -20,6 +20,7 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { ShortcutInput } from "../ShortcutInput";
+import { TranslationTargetLanguage } from "../TranslationTargetLanguage";
 import { useSettings } from "../../../hooks/useSettings";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
@@ -443,6 +444,15 @@ export const PostProcessingSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
         <PostProcessingSettingsPrompts />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.translation.title")}>
+        <ShortcutInput
+          shortcutId="transcribe_with_translation"
+          descriptionMode="tooltip"
+          grouped={true}
+        />
+        <TranslationTargetLanguage grouped={true} />
       </SettingsGroup>
     </div>
   );

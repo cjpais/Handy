@@ -423,6 +423,16 @@
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
       }
     },
+    "translation": {
+      "title": "Translation",
+      "targetLanguage": {
+        "title": "Target language",
+        "description": "Dictation triggered with the translation shortcut is translated into this language using the same LLM provider configured for post-processing."
+      },
+      "shortcut": {
+        "title": "Translation shortcut"
+      }
+    },
     "history": {
       "title": "History",
       "openFolder": "Open Recordings Folder",
