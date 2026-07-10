@@ -48,9 +48,15 @@ impl TranscriptionCoordinator {
         thread::spawn(move || {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let mut stage = Stage::Idle;
+                // When the current stage was entered; logged with dropped
+                // inputs so a pipeline stuck in Processing (e.g. a wedged
+                // stop path, #1213) is visible with its age from the first
+                // ignored keypress.
+                let mut stage_since = Instant::now();
                 let mut last_press: Option<Instant> = None;
 
                 while let Ok(cmd) = rx.recv() {
+                    let stage_before = std::mem::discriminant(&stage);
                     match cmd {
                         Command::Input {
                             binding_id,
@@ -76,6 +82,12 @@ impl TranscriptionCoordinator {
                                     && matches!(&stage, Stage::Recording(id) if id == &binding_id)
                                 {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                } else if is_pressed {
+                                    debug!(
+                                        "Ignoring press for '{binding_id}': pipeline busy ({} for {:.1?})",
+                                        stage_name(&stage),
+                                        stage_since.elapsed()
+                                    );
                                 }
                             } else if is_pressed {
                                 match &stage {
@@ -86,7 +98,11 @@ impl TranscriptionCoordinator {
                                         stop(&app, &mut stage, &binding_id, &hotkey_string);
                                     }
                                     _ => {
-                                        debug!("Ignoring press for '{binding_id}': pipeline busy")
+                                        debug!(
+                                            "Ignoring press for '{binding_id}': pipeline busy ({} for {:.1?})",
+                                            stage_name(&stage),
+                                            stage_since.elapsed()
+                                        )
                                     }
                                 }
                             }
@@ -104,6 +120,9 @@ impl TranscriptionCoordinator {
                         Command::ProcessingFinished => {
                             stage = Stage::Idle;
                         }
+                    }
+                    if std::mem::discriminant(&stage) != stage_before {
+                        stage_since = Instant::now();
                     }
                 }
                 debug!("Transcription coordinator exited");
@@ -155,6 +174,14 @@ impl TranscriptionCoordinator {
         if self.tx.send(Command::ProcessingFinished).is_err() {
             warn!("Transcription coordinator channel closed");
         }
+    }
+}
+
+fn stage_name(stage: &Stage) -> &'static str {
+    match stage {
+        Stage::Idle => "Idle",
+        Stage::Recording(_) => "Recording",
+        Stage::Processing => "Processing",
     }
 }
 

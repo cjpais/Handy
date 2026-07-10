@@ -7,6 +7,7 @@ mod catalog;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod diagnostics;
 mod helpers;
 mod input;
 mod llm_client;
@@ -628,6 +629,7 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::set_clamshell_microphone,
             commands::audio::get_clamshell_microphone,
             commands::audio::is_recording,
+            commands::audio::probe_microphone,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,
@@ -834,6 +836,12 @@ pub fn run(cli_args: CliArgs) {
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
+
+            // Diagnostics probes: suspend/resume markers and async-runtime
+            // liveness. Their output is what makes post-sleep wedge reports
+            // (#1213) diagnosable from a single log.
+            diagnostics::spawn_suspend_watcher();
+            diagnostics::spawn_async_runtime_heartbeat();
 
             // Populate the overlay-enabled cache from initial settings so the
             // audio path (overlay::emit_levels, called ~24 Hz during recording)

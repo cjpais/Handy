@@ -647,6 +647,15 @@ impl ShortcutAction for TranscribeAction {
         let post_process = self.post_process;
         let cancel_generation = rm.cancel_generation();
 
+        // Paired with "Starting async transcription task" below: "Queuing"
+        // without "Starting" in a log means the async runtime never polled the
+        // task (starved workers), while both followed by silence means the
+        // task blocked — two different wedges that look identical without
+        // this line.
+        debug!(
+            "Queuing async transcription task for binding: {}",
+            binding_id
+        );
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
             debug!(
