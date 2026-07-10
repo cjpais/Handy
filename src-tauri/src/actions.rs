@@ -68,6 +68,56 @@ fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
 }
 
+/// English display name for a language code, mirroring the common entries of the
+/// frontend `LANGUAGES` list (src/lib/constants/languages.ts). Only the widely
+/// used targets are mapped; an unknown code falls back to the code itself, which
+/// LLMs still interpret acceptably.
+fn language_english_name(code: &str) -> String {
+    let name = match code {
+        "en" => "English",
+        "zh" | "zh-Hans" => "Simplified Chinese",
+        "zh-Hant" => "Traditional Chinese",
+        "es" => "Spanish",
+        "fr" => "French",
+        "de" => "German",
+        "ja" => "Japanese",
+        "ko" => "Korean",
+        "ru" => "Russian",
+        "pt" => "Portuguese",
+        "it" => "Italian",
+        "nl" => "Dutch",
+        "pl" => "Polish",
+        "tr" => "Turkish",
+        "uk" => "Ukrainian",
+        "ar" => "Arabic",
+        "he" => "Hebrew",
+        "hi" => "Hindi",
+        "sv" => "Swedish",
+        "cs" => "Czech",
+        "el" => "Greek",
+        "ro" => "Romanian",
+        "hu" => "Hungarian",
+        "fi" => "Finnish",
+        "da" => "Danish",
+        "no" => "Norwegian",
+        "vi" => "Vietnamese",
+        "th" => "Thai",
+        "id" => "Indonesian",
+        _ => return code.to_string(),
+    };
+    name.to_string()
+}
+
+/// Build the translation system prompt for the given target language code.
+fn build_translation_prompt(target_language_code: &str) -> String {
+    let language = language_english_name(target_language_code);
+    format!(
+        "Translate the following text into {language}. Output only the translation, \
+         preserving the original meaning and tone. Do not add explanations, notes, \
+         or quotation marks."
+    )
+}
+
 /// Returns `true` when a transcription has no meaningful content to
 /// post-process (empty or whitespace-only). Used to skip the post-processing
 /// LLM call when nothing was actually transcribed, which would otherwise make
@@ -982,5 +1032,24 @@ mod tests {
         assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
         assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
         assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
+    }
+
+    #[test]
+    fn language_name_maps_known_codes() {
+        assert_eq!(super::language_english_name("de"), "German");
+        assert_eq!(super::language_english_name("ja"), "Japanese");
+    }
+
+    #[test]
+    fn language_name_falls_back_to_code_for_unknown() {
+        assert_eq!(super::language_english_name("xx"), "xx");
+    }
+
+    #[test]
+    fn translation_prompt_names_the_target_language() {
+        let prompt = super::build_translation_prompt("de");
+        assert!(prompt.contains("German"));
+        assert!(prompt.to_lowercase().contains("translate"));
+        assert!(prompt.to_lowercase().contains("only the translation"));
     }
 }
