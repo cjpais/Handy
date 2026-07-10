@@ -517,8 +517,12 @@
         "settings": "Einstellungen:"
       },
       "pasteDelay": {
-        "title": "Einfügeverzögerung",
-        "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhe den Wert, wenn falscher Text eingefügt wird."
+        "title": "Einfügeverzögerung (vorher)",
+        "description": "Verzögerung (in Millisekunden) nach dem Kopieren des Textes, bevor der Einfüge-Tastendruck gesendet wird. Erhöhe den Wert, wenn nichts eingefügt wird."
+      },
+      "pasteDelayAfter": {
+        "title": "Einfügeverzögerung (nachher)",
+        "description": "Verzögerung (in Millisekunden) nach dem Einfüge-Tastendruck, bevor deine vorherige Zwischenablage wiederhergestellt wird. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
       },
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
@@ -613,6 +617,15 @@
   "appLanguage": {
     "title": "Anwendungssprache",
     "description": "Sprache der Handy-Oberfläche ändern"
+  },
+  "theme": {
+    "title": "Anwendungsdesign",
+    "description": "Wählen Sie, ob Handy dem Systemthema folgt oder hell bzw. dunkel bleibt",
+    "options": {
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    }
   },
   "overlay": {
     "transcribing": "Transkribiere...",

@@ -524,8 +524,12 @@
         "settings": "Settings:"
       },
       "pasteDelay": {
-        "title": "Paste Delay",
-        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
+        "title": "Paste Delay (Before)",
+        "description": "Delay (in milliseconds) after copying text, before sending the paste keystroke. Increase if nothing gets pasted."
+      },
+      "pasteDelayAfter": {
+        "title": "Paste Delay (After)",
+        "description": "Delay (in milliseconds) after the paste keystroke, before restoring your previous clipboard. Increase if your old clipboard content is being pasted instead of the transcription."
       },
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
@@ -616,6 +620,15 @@
   "appLanguage": {
     "title": "Application Language",
     "description": "Change the language of the Handy interface"
+  },
+  "theme": {
+    "title": "Application Theme",
+    "description": "Choose whether Handy follows your system theme or stays light or dark",
+    "options": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
   },
   "overlay": {
     "transcribing": "Transcribing...",

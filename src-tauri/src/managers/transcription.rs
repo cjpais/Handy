@@ -18,7 +18,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
     Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
-    TimestampKind, WhisperRunOptions,
+    WhisperRunOptions,
 };
 use transcribe_rs::{
     onnx::{
@@ -179,7 +179,15 @@ pub struct LoadingGuard {
 
 impl Drop for LoadingGuard {
     fn drop(&mut self) {
-        let mut is_loading = self.is_loading.lock().unwrap();
+        // Recover from a poisoned mutex instead of panicking —
+        // a panic inside Drop calls abort().
+        let mut is_loading = match self.is_loading.lock() {
+            Ok(g) => g,
+            Err(e) => {
+                warn!("Recovered poisoned is_loading mutex during LoadingGuard drop — a panic occurred earlier this session");
+                e.into_inner()
+            }
+        };
         *is_loading = false;
         self.loading_condvar.notify_all();
     }
@@ -1152,10 +1160,18 @@ impl TranscriptionManager {
             );
         }
 
-        // Whether the loaded transcribe-cpp model accepts a decode prompt
-        // (whisper family). Gates the whisper-only run extension below, and
-        // whether fuzzy custom-word correction still runs afterwards.
+        // Whether the loaded transcribe-cpp model advertises
+        // Feature::InitialPrompt. Informational (logged below); the whisper
+        // run extension and the fuzzy-correction skip are gated on
+        // `model_is_whisper` instead, since non-whisper archs can advertise
+        // the feature while rejecting the whisper-kind extension.
         let mut model_takes_initial_prompt = false;
+        // Whether the loaded model is actually whisper-family (arch string).
+        // Non-whisper archs (e.g. Voxtral Small) can advertise
+        // Feature::InitialPrompt yet reject the whisper-kind run extension
+        // with INVALID_ARG, so the whisper extension must be gated on the
+        // arch, not on the feature (see #1601).
+        let mut model_is_whisper = false;
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
@@ -1189,6 +1205,7 @@ impl TranscriptionManager {
                 let model = session.model();
                 let caps = model.capabilities();
                 model_takes_initial_prompt = model.supports(Feature::InitialPrompt);
+                model_is_whisper = model.arch() == "whisper";
                 model_supports_translate = caps.supports_translate;
                 model_languages = caps.languages;
                 debug!(
@@ -1209,15 +1226,14 @@ impl TranscriptionManager {
                         // whisper run extension to a non-whisper arch is rejected
                         // with INVALID_ARG, so skip it there and let the fuzzy
                         // post-correction handle custom words instead.
-                        let family =
-                            if settings.custom_words.is_empty() || !model_takes_initial_prompt {
-                                None
-                            } else {
-                                Some(RunExtension::Whisper(WhisperRunOptions {
-                                    initial_prompt: Some(settings.custom_words.join(", ")),
-                                    ..Default::default()
-                                }))
-                            };
+                        let family = if settings.custom_words.is_empty() || !model_is_whisper {
+                            None
+                        } else {
+                            Some(RunExtension::Whisper(WhisperRunOptions {
+                                initial_prompt: Some(settings.custom_words.join(", ")),
+                                ..Default::default()
+                            }))
+                        };
 
                         let run_plan = transcribe_cpp_run_plan(
                             settings.translate_to_english,
@@ -1230,18 +1246,6 @@ impl TranscriptionManager {
                             task: run_plan.task,
                             language: run_plan.language,
                             target_language: run_plan.target_language,
-                            // Whisper-family long-form (>30s) decode degenerates into a
-                            // repetition loop when an initial prompt is set AND timestamps
-                            // are off — a shared whisper.cpp behavior (verified: whisper.cpp
-                            // collapses in the same prompt + no-timestamps cell). Handy runs
-                            // whisper.cpp with timestamps on, so request segment timestamps
-                            // here too for parity, which keeps multi-window decode stable.
-                            // Only whisper advertises InitialPrompt; other arches keep None.
-                            timestamps: if model_takes_initial_prompt {
-                                TimestampKind::Segment
-                            } else {
-                                TimestampKind::None
-                            },
                             family,
                             ..Default::default()
                         };
@@ -1387,10 +1391,10 @@ impl TranscriptionManager {
 
         // Apply fuzzy word correction if custom words are configured — UNLESS the
         // words were already handed to the model as an initial prompt (whisper
-        // family). Non-whisper transcribe-cpp models can't take a prompt, so they
-        // still get fuzzy correction here, same as the ONNX engines.
-        let filtered_result =
-            post_process_transcription_text(result, &settings, model_takes_initial_prompt);
+        // family). We don't pass a prompt to non-whisper models (it requires the
+        // whisper-kind run extension), so they still get fuzzy correction here,
+        // same as the ONNX engines.
+        let filtered_result = post_process_transcription_text(result, &settings, model_is_whisper);
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
@@ -1943,8 +1947,17 @@ impl Drop for TranscriptionManager {
         // Signal the watcher thread to shutdown
         self.shutdown_signal.store(true, Ordering::Relaxed);
 
-        // Wait for the thread to finish gracefully
-        if let Some(handle) = self.watcher_handle.lock().unwrap().take() {
+        // Wait for the thread to finish gracefully.
+        // Use match instead of unwrap to avoid panicking if the mutex is
+        // poisoned — a panic inside Drop calls abort().
+        let mut guard = match self.watcher_handle.lock() {
+            Ok(g) => g,
+            Err(e) => {
+                warn!("Recovered poisoned watcher_handle mutex during TranscriptionManager drop — a panic occurred earlier this session");
+                e.into_inner()
+            }
+        };
+        if let Some(handle) = guard.take() {
             if let Err(e) = handle.join() {
                 warn!("Failed to join idle watcher thread: {:?}", e);
             } else {

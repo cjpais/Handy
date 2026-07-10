@@ -517,8 +517,12 @@
         "settings": "设置:"
       },
       "pasteDelay": {
-        "title": "粘贴延迟",
-        "description": "发送粘贴按键前的延迟（毫秒）。如果粘贴了错误的文本，请增加此值。"
+        "title": "粘贴延迟（前）",
+        "description": "复制文本后、发送粘贴按键前的延迟（毫秒）。如果没有粘贴任何内容，请增加此值。"
+      },
+      "pasteDelayAfter": {
+        "title": "粘贴延迟（后）",
+        "description": "发送粘贴按键后、恢复先前剪贴板前的延迟（毫秒）。如果粘贴的是旧的剪贴板内容而非转录文本，请增加此值。"
       },
       "recordingBuffer": {
         "title": "额外录音缓冲",
@@ -613,6 +617,15 @@
   "appLanguage": {
     "title": "应用语言",
     "description": "更改 Handy 界面的语言"
+  },
+  "theme": {
+    "title": "应用主题",
+    "description": "选择 Handy 跟随系统主题，还是保持浅色或深色",
+    "options": {
+      "system": "跟随系统",
+      "light": "浅色",
+      "dark": "深色"
+    }
   },
   "overlay": {
     "transcribing": "正在转录...",
