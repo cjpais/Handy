@@ -619,7 +619,7 @@
     "description": "Handy arayüzünün dilini değiştirin"
   },
   "theme": {
-    "title": "Görünüm",
+    "title": "Uygulama teması",
     "description": "Handy'nin sistem temasını izlemesini ya da açık veya koyu kalmasını seçin",
     "options": {
       "system": "Sistem",

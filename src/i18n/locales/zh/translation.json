@@ -619,7 +619,7 @@
     "description": "更改 Handy 界面的语言"
   },
   "theme": {
-    "title": "外观",
+    "title": "应用主题",
     "description": "选择 Handy 跟随系统主题，还是保持浅色或深色",
     "options": {
       "system": "跟随系统",

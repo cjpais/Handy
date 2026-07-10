@@ -619,7 +619,7 @@
     "description": "Změňte jazyk rozhraní Handy"
   },
   "theme": {
-    "title": "Vzhled",
+    "title": "Motiv aplikace",
     "description": "Zvolte, zda má Handy sledovat motiv systému, nebo zůstat světlý či tmavý",
     "options": {
       "system": "Systém",

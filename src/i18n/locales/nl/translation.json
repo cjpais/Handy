@@ -622,7 +622,7 @@
     "description": "Wijzig de taal van de Handy-interface"
   },
   "theme": {
-    "title": "Weergave",
+    "title": "App-thema",
     "description": "Kies of Handy het systeemthema volgt of licht of donker blijft",
     "options": {
       "system": "Systeem",

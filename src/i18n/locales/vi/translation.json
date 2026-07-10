@@ -619,7 +619,7 @@
     "description": "Thay đổi ngôn ngữ giao diện của Handy"
   },
   "theme": {
-    "title": "Giao diện",
+    "title": "Giao diện ứng dụng",
     "description": "Chọn xem Handy theo chủ đề hệ thống hay giữ ở chế độ sáng hoặc tối",
     "options": {
       "system": "Hệ thống",

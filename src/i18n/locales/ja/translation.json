@@ -619,7 +619,7 @@
     "description": "Handy インターフェースの言語を変更"
   },
   "theme": {
-    "title": "外観",
+    "title": "アプリのテーマ",
     "description": "Handy をシステムのテーマに合わせるか、ライトまたはダークで固定するかを選択します",
     "options": {
       "system": "システム",

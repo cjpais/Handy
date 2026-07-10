@@ -619,7 +619,7 @@
     "description": "Ändra språket i Handy-gränssnittet"
   },
   "theme": {
-    "title": "Utseende",
+    "title": "Apptema",
     "description": "Välj om Handy ska följa systemets tema eller förbli ljust eller mörkt",
     "options": {
       "system": "System",

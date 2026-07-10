@@ -619,7 +619,7 @@
     "description": "Alterar o idioma da interface do Handy"
   },
   "theme": {
-    "title": "Aparência",
+    "title": "Tema do aplicativo",
     "description": "Escolha se o Handy segue o tema do sistema ou permanece claro ou escuro",
     "options": {
       "system": "Sistema",
