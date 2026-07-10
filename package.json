@@ -17,7 +17,8 @@
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
-    "postinstall": "bun scripts/check-nix-deps.ts"
+    "postinstall": "bun scripts/check-nix-deps.ts",
+    "xds": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",
@@ -47,6 +48,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "^0.1.4",
     "@playwright/test": "^1.58.0",
     "@tauri-apps/cli": "^2.10.0",
     "@types/node": "^24.9.1",
