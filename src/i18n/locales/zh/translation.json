@@ -517,8 +517,12 @@
         "settings": "设置:"
       },
       "pasteDelay": {
-        "title": "粘贴延迟",
-        "description": "发送粘贴按键前的延迟（毫秒）。如果粘贴了错误的文本，请增加此值。"
+        "title": "粘贴延迟（前）",
+        "description": "复制文本后、发送粘贴按键前的延迟（毫秒）。如果没有粘贴任何内容，请增加此值。"
+      },
+      "pasteDelayAfter": {
+        "title": "粘贴延迟（后）",
+        "description": "发送粘贴按键后、恢复先前剪贴板前的延迟（毫秒）。如果粘贴的是旧的剪贴板内容而非转录文本，请增加此值。"
       },
       "recordingBuffer": {
         "title": "额外录音缓冲",

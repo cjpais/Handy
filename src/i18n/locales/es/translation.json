@@ -517,8 +517,12 @@
         "settings": "Configuración:"
       },
       "pasteDelay": {
-        "title": "Retraso de pegado",
-        "description": "Retraso antes de enviar la pulsación de tecla de pegar (en milisegundos). Aumente si se está pegando texto incorrecto."
+        "title": "Retraso de pegado (antes)",
+        "description": "Retraso (en milisegundos) después de copiar el texto, antes de enviar la pulsación de tecla de pegar. Auméntelo si no se pega nada."
+      },
+      "pasteDelayAfter": {
+        "title": "Retraso de pegado (después)",
+        "description": "Retraso (en milisegundos) después de la pulsación de tecla de pegar, antes de restaurar el portapapeles anterior. Auméntelo si se pega el contenido antiguo del portapapeles en lugar de la transcripción."
       },
       "recordingBuffer": {
         "title": "Búfer de grabación adicional",

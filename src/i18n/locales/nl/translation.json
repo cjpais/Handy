@@ -524,8 +524,12 @@
         "settings": "Instellingen:"
       },
       "pasteDelay": {
-        "title": "Plakvertraging",
-        "description": "Vertraging voordat de plak-toetsaanslag wordt verzonden (in milliseconden). Verhoog dit als de verkeerde tekst wordt geplakt."
+        "title": "Plakvertraging (voor)",
+        "description": "Vertraging (in milliseconden) na het kopiëren van de tekst, voordat de plak-toetsaanslag wordt verzonden. Verhoog dit als er niets wordt geplakt."
+      },
+      "pasteDelayAfter": {
+        "title": "Plakvertraging (na)",
+        "description": "Vertraging (in milliseconden) na de plak-toetsaanslag, voordat je vorige klembord wordt hersteld. Verhoog dit als de oude klembordinhoud wordt geplakt in plaats van de transcriptie."
       },
       "recordingBuffer": {
         "title": "Extra opnamebuffer",

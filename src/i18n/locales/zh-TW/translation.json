@@ -517,8 +517,12 @@
         "settings": "設定:"
       },
       "pasteDelay": {
-        "title": "貼上延遲",
-        "description": "發送貼上按鍵前的延遲（毫秒）。如果貼上了錯誤的文字，請增加此值"
+        "title": "貼上延遲（前）",
+        "description": "複製文字後、發送貼上按鍵前的延遲（毫秒）。如果沒有貼上任何內容，請增加此值。"
+      },
+      "pasteDelayAfter": {
+        "title": "貼上延遲（後）",
+        "description": "發送貼上按鍵後、還原先前剪貼簿前的延遲（毫秒）。如果貼上的是舊的剪貼簿內容而非轉錄文字，請增加此值。"
       },
       "recordingBuffer": {
         "title": "額外錄音緩衝",
