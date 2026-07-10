@@ -121,7 +121,7 @@ fn build_translation_prompt(target_language_code: &str) -> String {
     format!(
         "Translate the following text into {language}. Output only the translation, \
          preserving the original meaning and tone. Do not add explanations, notes, \
-         or quotation marks."
+         or quotation marks.\n\n${{output}}"
     )
 }
 
@@ -1059,5 +1059,6 @@ mod tests {
         assert!(prompt.contains("German"));
         assert!(prompt.to_lowercase().contains("translate"));
         assert!(prompt.to_lowercase().contains("only the translation"));
+        assert!(prompt.contains("${output}"));
     }
 }

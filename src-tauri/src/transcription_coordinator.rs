@@ -38,7 +38,9 @@ pub struct TranscriptionCoordinator {
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
-    id == "transcribe" || id == "transcribe_with_post_process"
+    id == "transcribe"
+        || id == "transcribe_with_post_process"
+        || id == "transcribe_with_translation"
 }
 
 impl TranscriptionCoordinator {
@@ -181,4 +183,17 @@ fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &st
     };
     action.stop(app, binding_id, hotkey_string);
     *stage = Stage::Processing;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_transcribe_binding;
+
+    #[test]
+    fn translation_binding_is_a_transcribe_binding() {
+        assert!(is_transcribe_binding("transcribe"));
+        assert!(is_transcribe_binding("transcribe_with_post_process"));
+        assert!(is_transcribe_binding("transcribe_with_translation"));
+        assert!(!is_transcribe_binding("cancel"));
+    }
 }

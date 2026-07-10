@@ -93,6 +93,9 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording contains no speech".to_string());
     }
 
+    // NOTE (v1 limitation): history persists only a post_process bool, so a
+    // retried translation entry re-runs as PostProcess, not Translate. Persisting
+    // the full TranscribeMode would require a history-entry schema change.
     let mode = if entry.post_process_requested {
         crate::actions::TranscribeMode::PostProcess
     } else {
