@@ -259,6 +259,17 @@ fn current_overlay_logical_size(window: &tauri::webview::WebviewWindow) -> Optio
     Some((size.width as f64 / scale, size.height as f64 / scale))
 }
 
+/// Reapplies the logical size after a move so WebView2 refreshes its rendering
+/// bounds using the destination monitor's DPI.
+#[cfg(target_os = "windows")]
+fn refresh_overlay_rendering_bounds(
+    window: &tauri::webview::WebviewWindow,
+    width: f64,
+    height: f64,
+) {
+    let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+}
+
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
@@ -387,6 +398,9 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         }
         let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
 
+        #[cfg(target_os = "windows")]
+        refresh_overlay_rendering_bounds(&overlay_window, width, height);
+
         let show_started = std::time::Instant::now();
         let _ = overlay_window.show();
         let show_elapsed = show_started.elapsed();
@@ -443,6 +457,9 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
             let _ = overlay_window
                 .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
+
+        #[cfg(target_os = "windows")]
+        refresh_overlay_rendering_bounds(&overlay_window, width, height);
     }
 }
 
