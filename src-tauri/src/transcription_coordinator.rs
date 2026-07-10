@@ -1,6 +1,8 @@
 use crate::actions::ACTION_MAP;
+use crate::audio_toolkit::audio::AutoStopEvent;
 use crate::managers::audio::AudioRecordingManager;
-use log::{debug, error, warn};
+use crate::managers::wakeword::WAKE_SOURCE;
+use log::{debug, error, info, warn};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -20,13 +22,23 @@ enum Command {
     Cancel {
         recording_was_active: bool,
     },
+    /// A hands-free (wake-word) session hit a silence/no-speech/duration
+    /// threshold. Distinct from `Input` toggle semantics on purpose: a toggle
+    /// racing a manual stop would *start* a phantom recording, whereas this
+    /// command only ever stops a wake-initiated session.
+    AutoStop {
+        event: AutoStopEvent,
+    },
     ProcessingFinished,
 }
 
 /// Pipeline lifecycle, owned exclusively by the coordinator thread.
 enum Stage {
     Idle,
-    Recording(String), // binding_id
+    Recording {
+        binding_id: String,
+        wake_initiated: bool,
+    },
     Processing,
 }
 
@@ -38,7 +50,7 @@ pub struct TranscriptionCoordinator {
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
-    id == "transcribe" || id == "transcribe_with_post_process"
+    id == "transcribe" || id == "transcribe_with_post_process" || id == "voice_command"
 }
 
 impl TranscriptionCoordinator {
@@ -73,7 +85,7 @@ impl TranscriptionCoordinator {
                                 if is_pressed && matches!(stage, Stage::Idle) {
                                     start(&app, &mut stage, &binding_id, &hotkey_string);
                                 } else if !is_pressed
-                                    && matches!(&stage, Stage::Recording(id) if id == &binding_id)
+                                    && matches!(&stage, Stage::Recording { binding_id: id, .. } if id == &binding_id)
                                 {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
                                 }
@@ -82,7 +94,9 @@ impl TranscriptionCoordinator {
                                     Stage::Idle => {
                                         start(&app, &mut stage, &binding_id, &hotkey_string);
                                     }
-                                    Stage::Recording(id) if id == &binding_id => {
+                                    Stage::Recording { binding_id: id, .. }
+                                        if id == &binding_id =>
+                                    {
                                         stop(&app, &mut stage, &binding_id, &hotkey_string);
                                     }
                                     _ => {
@@ -96,9 +110,36 @@ impl TranscriptionCoordinator {
                         } => {
                             // Don't reset during processing — wait for the pipeline to finish.
                             if !matches!(stage, Stage::Processing)
-                                && (recording_was_active || matches!(stage, Stage::Recording(_)))
+                                && (recording_was_active
+                                    || matches!(stage, Stage::Recording { .. }))
                             {
                                 stage = Stage::Idle;
+                            }
+                        }
+                        Command::AutoStop { event } => {
+                            // Only a wake-initiated session may be ended by the
+                            // recorder; stray/late events (session already
+                            // stopped manually, shortcut session running, or
+                            // pipeline processing) are ignored.
+                            let Stage::Recording {
+                                binding_id,
+                                wake_initiated: true,
+                            } = &stage
+                            else {
+                                debug!("Ignoring AutoStop({event:?}): no wake-initiated recording");
+                                continue;
+                            };
+                            let binding_id = binding_id.clone();
+                            match event {
+                                AutoStopEvent::SilenceStop | AutoStopEvent::MaxDurationStop => {
+                                    info!("Auto-stopping wake session ({event:?})");
+                                    stop(&app, &mut stage, &binding_id, WAKE_SOURCE);
+                                }
+                                AutoStopEvent::NoSpeechCancel => {
+                                    info!("Cancelling wake session: no speech detected");
+                                    crate::utils::cancel_current_operation(&app);
+                                    stage = Stage::Idle;
+                                }
                             }
                         }
                         Command::ProcessingFinished => {
@@ -156,6 +197,15 @@ impl TranscriptionCoordinator {
             warn!("Transcription coordinator channel closed");
         }
     }
+
+    /// Notify that a hands-free session hit an auto-stop threshold (sent from
+    /// the recorder's consumer thread). No-op unless a wake-initiated
+    /// recording is active when the coordinator processes it.
+    pub fn notify_auto_stop(&self, event: AutoStopEvent) {
+        if self.tx.send(Command::AutoStop { event }).is_err() {
+            warn!("Transcription coordinator channel closed");
+        }
+    }
 }
 
 fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
@@ -168,7 +218,10 @@ fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &s
         .try_state::<Arc<AudioRecordingManager>>()
         .is_some_and(|a| a.is_recording())
     {
-        *stage = Stage::Recording(binding_id.to_string());
+        *stage = Stage::Recording {
+            binding_id: binding_id.to_string(),
+            wake_initiated: hotkey_string == WAKE_SOURCE,
+        };
     } else {
         debug!("Start for '{binding_id}' did not begin recording; staying idle");
     }

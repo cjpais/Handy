@@ -9,6 +9,7 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
+mod intelligence;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -161,9 +162,17 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         TranscriptionManager::new(app_handle, model_manager.clone())
             .expect("Failed to initialize transcription manager"),
     );
+    // The wake-word manager owns the runtime the recorder feeds idle frames to;
+    // detection stays disabled until apply_settings() runs (after the
+    // coordinator is managed, since detections trigger through it).
+    let wake_word_manager = Arc::new(managers::wakeword::WakeWordManager::new(app_handle.clone()));
     let recording_manager = Arc::new(
-        AudioRecordingManager::new(app_handle, transcription_manager.stream_router())
-            .expect("Failed to initialize recording manager"),
+        AudioRecordingManager::new(
+            app_handle,
+            transcription_manager.stream_router(),
+            wake_word_manager.runtime(),
+        )
+        .expect("Failed to initialize recording manager"),
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
@@ -180,7 +189,26 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(wake_word_manager.clone());
+    app_handle.manage(intelligence::last_output::LastOutputState::default());
+    let vocab_miner = Arc::new(intelligence::vocab::VocabMiner::new(app_handle.clone()));
+    app_handle.manage(vocab_miner.clone());
+    let mcp_manager = Arc::new(managers::mcp::McpManager::new(app_handle.clone()));
+    app_handle.manage(mcp_manager.clone());
+    // Connect configured MCP servers (no-op when mcp_enabled is off).
+    managers::mcp::sync_in_background(&mcp_manager);
     app_handle.manage(tray::CurrentTrayIconState::new());
+
+    // Vocabulary scan shortly after launch (only does work when enough new
+    // history accumulated and the intelligence provider is reachable).
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+        vocab_miner.maybe_run(false);
+    });
+
+    // Start wake-word listening if enabled (model loads on a background
+    // thread; the coordinator is already managed at this point).
+    wake_word_manager.apply_settings();
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -628,6 +656,26 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::set_clamshell_microphone,
             commands::audio::get_clamshell_microphone,
             commands::audio::is_recording,
+            commands::audio::change_wake_word_enabled_setting,
+            commands::audio::change_wake_word_model_setting,
+            commands::audio::change_wake_word_custom_model_path_setting,
+            commands::audio::change_wake_word_threshold_setting,
+            commands::audio::change_wake_word_silence_timeout_setting,
+            commands::intelligence::change_intelligence_provider_setting,
+            commands::intelligence::change_intelligence_model_setting,
+            commands::intelligence::test_intelligence_connection,
+            commands::intelligence::change_voice_edit_enabled_setting,
+            commands::intelligence::change_voice_edit_window_setting,
+            commands::intelligence::get_vocab_suggestions,
+            commands::intelligence::resolve_vocab_suggestion,
+            commands::intelligence::run_vocab_scan_now,
+            commands::mcp::change_mcp_enabled_setting,
+            commands::mcp::get_mcp_servers,
+            commands::mcp::upsert_mcp_server,
+            commands::mcp::remove_mcp_server,
+            commands::mcp::test_mcp_server,
+            commands::mcp::get_mcp_tool_catalog,
+            commands::mcp::set_mcp_tool_auto_approved,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,
@@ -644,6 +692,8 @@ pub fn run(cli_args: CliArgs) {
             managers::history::HistoryUpdatePayload,
             managers::transcription::StreamTextEvent,
             managers::transcription::StreamPhaseEvent,
+            intelligence::vocab::VocabSuggestionsUpdated,
+            intelligence::intent::VoiceCommandResult,
         ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -806,6 +856,9 @@ pub fn run(cli_args: CliArgs) {
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)
                     .maximizable(false)
+                    // The UI theme (thegridcn Tron) is dark-only; pin the native
+                    // window chrome to dark so it matches on light-OS machines.
+                    .theme(Some(tauri::Theme::Dark))
                     .visible(false);
 
             if let Some(data_dir) = portable::data_dir() {

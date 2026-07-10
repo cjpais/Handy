@@ -504,5 +504,7 @@ Handy is open-source software, but the Handy name, logo, icon, and brand assets 
 - **Whisper** by OpenAI for the speech recognition model
 - **ggml and transcribe.cpp** for amazing cross-platform speech-to-text inference/acceleration
 - **Silero** for great lightweight VAD
+- **[openWakeWord](https://github.com/dscripka/openWakeWord)** by David Scripka for the wake-word models (code Apache-2.0; the bundled official pretrained models in `src-tauri/resources/models/wakeword/` are CC BY-NC-SA 4.0 — non-commercial)
+- **[home-assistant-wakewords-collection](https://github.com/fwartner/home-assistant-wakewords-collection)** for the community-trained "Jarvis" wake-word model (`jarvis_v2.onnx`, MIT)
 - **Tauri** team for the excellent Rust-based app framework
 - **Community contributors** helping make Handy better

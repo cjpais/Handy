@@ -2,23 +2,22 @@
 
 :root {
   --s-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  /* Near-opaque app surface (theme.css --color-background at 98%). Auto-flips
-     light/dark with --color-background, so no dark-mode override is needed. */
+  /* Near-opaque app surface (theme.css --color-background at 98%). The Tron
+     theme is dark-only, so there is no light/dark switching here. */
   --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
-  /* Accent = logo pink; flips automatically via --color-logo-primary. */
+  /* Accent = theme accent (Tron cyan) via the theme.css shim. */
   --s-accent: var(--color-logo-primary);
   --s-accent-soft: color-mix(
     in srgb,
-    var(--color-background-ui) 16%,
+    var(--color-logo-primary) 20%,
     transparent
   );
-  /* Neutrals. Hairlines reuse the app's mid-gray at low opacity — same vocabulary
-     as the app's border-mid-gray/* utilities. muted/faint are overlay-specific
-     secondary/tertiary text grays (no theme equivalent). */
-  --s-muted: #6e6e6e;
-  --s-faint: #9a9a9a;
-  --s-border: color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
-  --s-hair: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
+  /* Neutrals derive from the theme's muted-foreground; the card border uses the
+     theme border (cyan-tinted) to match the main window's Tron look. */
+  --s-muted: var(--color-mid-gray);
+  --s-faint: color-mix(in srgb, var(--color-mid-gray) 60%, transparent);
+  --s-border: var(--border);
+  --s-hair: color-mix(in srgb, var(--color-text) 8%, transparent);
 
   /* Card geometry — single source of truth for the visible overlay sizes. The
      native overlay window (overlay.rs) is sized from these: it must be at least
@@ -33,22 +32,6 @@
   --ov-open-w: 392px; /* Live panel, expanded */
   --ov-base-h: 40px; /* control-row height (.sbase) */
   --ov-cap-max-h: 64px; /* max height of the scrolling live-text region */
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Accent uses the lighter logo pink in dark — reads better on the dark
-       surface than the deeper UI pink. */
-    --s-accent-soft: color-mix(
-      in srgb,
-      var(--color-logo-primary) 20%,
-      transparent
-    );
-    --s-muted: #a3a09a;
-    --s-faint: #6f6c66;
-    /* Hairlines flip to the near-white text token for contrast on dark. */
-    --s-border: color-mix(in srgb, var(--color-text) 12%, transparent);
-    --s-hair: color-mix(in srgb, var(--color-text) 8%, transparent);
-  }
 }
 
 /* ============================================================

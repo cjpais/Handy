@@ -1,6 +1,7 @@
 use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
-use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
+use crate::managers::audio::AudioRecordingManager;
+use crate::managers::wakeword::{effective_microphone_mode, WakeWordManager};
 use crate::settings::{get_settings, write_settings};
 use log::warn;
 use serde::{Deserialize, Serialize};
@@ -155,18 +156,85 @@ pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), Str
     // Update settings
     let mut settings = get_settings(&app);
     settings.always_on_microphone = always_on;
-    write_settings(&app, settings);
+    write_settings(&app, settings.clone());
 
-    // Update the audio manager mode
+    // Update the audio manager mode. The wake word may still require an
+    // always-on stream even when the user turns this setting off.
     let rm = app.state::<Arc<AudioRecordingManager>>();
-    let new_mode = if always_on {
-        MicrophoneMode::AlwaysOn
-    } else {
-        MicrophoneMode::OnDemand
-    };
-
-    rm.update_mode(new_mode)
+    rm.update_mode(effective_microphone_mode(&settings))
         .map_err(|e| format!("Failed to update microphone mode: {}", e))
+}
+
+/// Apply the wake-word settings side effects shared by the setters below:
+/// reload the detector and re-derive the microphone mode.
+fn refresh_wake_word_state(app: &AppHandle) -> Result<(), String> {
+    let settings = get_settings(app);
+    app.state::<Arc<WakeWordManager>>().apply_settings();
+    app.state::<Arc<AudioRecordingManager>>()
+        .update_mode(effective_microphone_mode(&settings))
+        .map_err(|e| format!("Failed to update microphone mode: {}", e))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_wake_word_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.wake_word_enabled = enabled;
+    write_settings(&app, settings);
+    refresh_wake_word_state(&app)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_wake_word_model_setting(
+    app: AppHandle,
+    model: crate::settings::WakeWordModel,
+) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.wake_word_model = model;
+    write_settings(&app, settings);
+    refresh_wake_word_state(&app)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_wake_word_custom_model_path_setting(
+    app: AppHandle,
+    path: Option<String>,
+) -> Result<(), String> {
+    // Validate before persisting so a bogus file is rejected with a message
+    // instead of silently breaking detection.
+    if let Some(p) = path.as_deref() {
+        app.state::<Arc<WakeWordManager>>()
+            .validate_custom_model(p)
+            .map_err(|e| format!("Not a usable openWakeWord model: {e:#}"))?;
+    }
+    let mut settings = get_settings(&app);
+    settings.wake_word_custom_model_path = path;
+    write_settings(&app, settings);
+    refresh_wake_word_state(&app)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_wake_word_threshold_setting(app: AppHandle, threshold: f32) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.wake_word_threshold = threshold;
+    write_settings(&app, settings);
+    // Cheap runtime update; no ONNX session reload needed.
+    app.state::<Arc<WakeWordManager>>()
+        .apply_threshold(threshold);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_wake_word_silence_timeout_setting(app: AppHandle, ms: u32) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.wake_word_silence_timeout_ms = ms as u64;
+    write_settings(&app, settings);
+    // Read at session start (TranscribeAction::start); nothing to refresh.
+    Ok(())
 }
 
 #[tauri::command]

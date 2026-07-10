@@ -1,13 +1,16 @@
 use crate::audio_toolkit::{
+    audio::RecordSession,
     list_input_devices,
     vad::{
         SmoothedVad, VAD_OFFLINE_HANGOVER_FRAMES, VAD_ONSET_FRAMES, VAD_PREFILL_FRAMES,
         VAD_STREAMING_HANGOVER_FRAMES,
     },
-    AudioRecorder, SileroVad, VadPolicy,
+    wakeword::WakeWordRuntime,
+    AudioRecorder, SileroVad,
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
+use crate::managers::wakeword::effective_microphone_mode;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info, warn};
@@ -132,6 +135,7 @@ fn create_audio_recorder(
     vad_path: &Path,
     app_handle: &tauri::AppHandle,
     stream_router: Arc<StreamRouter>,
+    wake_runtime: Arc<WakeWordRuntime>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     // A single Silero engine covers both the offline and streaming policies (never
     // active at once within a recording), so the recorder reconfigures its
@@ -166,6 +170,17 @@ fn create_audio_recorder(
             move |frame| {
                 router.feed(frame);
             }
+        })
+        .with_wake_word(wake_runtime)
+        .with_auto_stop_callback({
+            let app_handle = app_handle.clone();
+            move |event| {
+                // Only pushes onto the coordinator channel; the coordinator
+                // ignores it unless a wake-initiated session is active.
+                if let Some(c) = app_handle.try_state::<crate::TranscriptionCoordinator>() {
+                    c.notify_auto_stop(event);
+                }
+            }
         });
 
     Ok(recorder)
@@ -186,6 +201,7 @@ pub struct AudioRecordingManager {
     close_generation: Arc<AtomicU64>,
     cancel_generation: Arc<AtomicU64>,
     stream_router: Arc<StreamRouter>,
+    wake_runtime: Arc<WakeWordRuntime>,
     /// Resolution of a *named* microphone (selected or clamshell) to its cpal
     /// device, cached so on-demand recording starts skip the full device
     /// enumeration (~40-110ms). Keyed by the resolved name, so a settings
@@ -201,13 +217,10 @@ impl AudioRecordingManager {
     pub fn new(
         app: &tauri::AppHandle,
         stream_router: Arc<StreamRouter>,
+        wake_runtime: Arc<WakeWordRuntime>,
     ) -> Result<Self, anyhow::Error> {
         let settings = get_settings(app);
-        let mode = if settings.always_on_microphone {
-            MicrophoneMode::AlwaysOn
-        } else {
-            MicrophoneMode::OnDemand
-        };
+        let mode = effective_microphone_mode(&settings);
 
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),
@@ -221,6 +234,7 @@ impl AudioRecordingManager {
             close_generation: Arc::new(AtomicU64::new(0)),
             cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
+            wake_runtime,
             cached_device: Arc::new(Mutex::new(None)),
         };
 
@@ -361,6 +375,7 @@ impl AudioRecordingManager {
                 &vad_path,
                 &self.app_handle,
                 Arc::clone(&self.stream_router),
+                Arc::clone(&self.wake_runtime),
             )?);
         }
         Ok(())
@@ -481,7 +496,7 @@ impl AudioRecordingManager {
     pub fn try_start_recording(
         &self,
         binding_id: &str,
-        vad_policy: VadPolicy,
+        session: RecordSession,
     ) -> Result<(), String> {
         let mut state = self.state.lock().unwrap();
 
@@ -498,7 +513,7 @@ impl AudioRecordingManager {
             }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                if rec.start(vad_policy).is_ok() {
+                if rec.start(session).is_ok() {
                     *self.is_recording.lock().unwrap() = true;
                     *state = RecordingState::Recording {
                         binding_id: binding_id.to_string(),

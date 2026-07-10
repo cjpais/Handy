@@ -16,6 +16,7 @@ use crate::audio_toolkit::{
     audio::{AudioVisualiser, FrameResampler},
     constants,
     vad::{self, VadFrame},
+    wakeword::WakeWordRuntime,
     VoiceActivityDetector,
 };
 
@@ -23,7 +24,7 @@ enum Cmd {
     /// Begin capturing. Carries the send timestamp so the consumer can log how
     /// long the command sat in the channel (and how much audio was dropped
     /// before it was seen).
-    Start(VadPolicy, Instant),
+    Start(RecordSession, Instant),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -42,6 +43,107 @@ pub enum VadPolicy {
     Offline,
     /// VAD profile with a longer post-speech tail for streaming-capable models.
     Streaming,
+}
+
+/// Frame-count thresholds (30 ms per frame) for ending a hands-free session
+/// without user input. Only wake-word-initiated sessions carry one.
+#[derive(Clone, Copy, Debug)]
+pub struct AutoStopConfig {
+    /// Consecutive VAD-noise frames after speech has been heard -> stop.
+    /// Note the SmoothedVad hangover tail (~15 frames offline) reports
+    /// trailing frames as speech, so the effective latency is this threshold
+    /// plus ~0.5 s.
+    pub silence_frames: usize,
+    /// Total frames with no speech at all -> cancel (the user never spoke).
+    pub no_speech_frames: usize,
+    /// Absolute session cap -> stop (safety net).
+    pub max_frames: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AutoStopEvent {
+    SilenceStop,
+    NoSpeechCancel,
+    MaxDurationStop,
+}
+
+pub type AutoStopCallback = Arc<dyn Fn(AutoStopEvent) + Send + Sync + 'static>;
+
+/// Per-recording-session capture parameters.
+#[derive(Clone, Copy, Debug)]
+pub struct RecordSession {
+    pub vad_policy: VadPolicy,
+    pub auto_stop: Option<AutoStopConfig>,
+}
+
+impl RecordSession {
+    pub fn manual(vad_policy: VadPolicy) -> Self {
+        Self {
+            vad_policy,
+            auto_stop: None,
+        }
+    }
+}
+
+/// What the frame pipeline concluded about one 30 ms frame.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FrameVerdict {
+    /// Not recording (frame went to wake-word detection, if enabled).
+    Inactive,
+    Speech,
+    Noise,
+}
+
+/// Counts frame verdicts during a session and decides when a hands-free
+/// session should end. Fires at most once per session.
+struct AutoStopTracker {
+    cfg: Option<AutoStopConfig>,
+    frames: usize,
+    speech_seen: bool,
+    consecutive_noise: usize,
+    fired: bool,
+}
+
+impl AutoStopTracker {
+    fn new(cfg: Option<AutoStopConfig>) -> Self {
+        Self {
+            cfg,
+            frames: 0,
+            speech_seen: false,
+            consecutive_noise: 0,
+            fired: false,
+        }
+    }
+
+    fn on_verdict(&mut self, verdict: FrameVerdict) -> Option<AutoStopEvent> {
+        let cfg = self.cfg?;
+        if self.fired {
+            return None;
+        }
+        match verdict {
+            FrameVerdict::Inactive => return None,
+            FrameVerdict::Speech => {
+                self.speech_seen = true;
+                self.consecutive_noise = 0;
+            }
+            FrameVerdict::Noise => self.consecutive_noise += 1,
+        }
+        self.frames += 1;
+
+        let event = if self.frames >= cfg.max_frames {
+            Some(AutoStopEvent::MaxDurationStop)
+        } else if self.speech_seen && self.consecutive_noise >= cfg.silence_frames {
+            Some(AutoStopEvent::SilenceStop)
+        } else if !self.speech_seen && self.frames >= cfg.no_speech_frames {
+            Some(AutoStopEvent::NoSpeechCancel)
+        } else {
+            None
+        };
+        if event.is_some() {
+            self.fired = true;
+        }
+        event
+    }
 }
 
 /// A single VAD engine plus the two hangover-tail lengths its smoothing wrapper
@@ -77,6 +179,10 @@ pub struct AudioRecorder {
     vad: Option<VadConfig>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
+    /// Wake-word runtime fed with idle (non-recording) frames.
+    wake: Option<Arc<WakeWordRuntime>>,
+    /// Invoked (at most once per session) when a hands-free session should end.
+    auto_stop_cb: Option<AutoStopCallback>,
     /// Preferred stream config cached per device name. The two HAL property
     /// queries in `get_preferred_config` cost ~40-85ms per open (worse on
     /// USB/Bluetooth), which lands on the keypress->capture path in on-demand
@@ -95,6 +201,8 @@ impl AudioRecorder {
             vad: None,
             level_cb: None,
             audio_cb: None,
+            wake: None,
+            auto_stop_cb: None,
             config_cache: Arc::new(Mutex::new(None)),
         })
     }
@@ -136,6 +244,25 @@ impl AudioRecorder {
         self
     }
 
+    /// Attach a wake-word runtime. Idle 16 kHz frames (i.e. while no recording
+    /// session is active) are fed to it on the consumer thread; it decides
+    /// internally whether detection is enabled.
+    pub fn with_wake_word(mut self, runtime: Arc<WakeWordRuntime>) -> Self {
+        self.wake = Some(runtime);
+        self
+    }
+
+    /// Register a callback fired (at most once per session) when a session
+    /// with an [`AutoStopConfig`] should end. Runs on the consumer thread —
+    /// keep it cheap (forward to a channel).
+    pub fn with_auto_stop_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(AutoStopEvent) + Send + Sync + 'static,
+    {
+        self.auto_stop_cb = Some(Arc::new(cb));
+        self
+    }
+
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
         if self.worker_handle.is_some() {
             return Ok(()); // already open
@@ -159,6 +286,8 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
+        let wake = self.wake.clone();
+        let auto_stop_cb = self.auto_stop_cb.clone();
         let config_cache = Arc::clone(&self.config_cache);
 
         let worker = std::thread::spawn(move || {
@@ -275,6 +404,8 @@ impl AudioRecorder {
                         cmd_rx,
                         level_cb,
                         audio_cb,
+                        wake,
+                        auto_stop_cb,
                         stop_flag,
                         stream_running_at,
                     );
@@ -316,9 +447,9 @@ impl AudioRecorder {
         }
     }
 
-    pub fn start(&self, vad_policy: VadPolicy) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn start(&self, session: RecordSession) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Start(vad_policy, Instant::now()))?;
+            tx.send(Cmd::Start(session, Instant::now()))?;
         }
         Ok(())
     }
@@ -472,7 +603,10 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
+    use super::{
+        is_microphone_access_denied, is_no_input_device_error, AutoStopConfig, AutoStopEvent,
+        AutoStopTracker, FrameVerdict,
+    };
 
     #[test]
     fn detects_access_is_denied() {
@@ -511,6 +645,90 @@ mod tests {
         assert!(!is_no_input_device_error("permission denied"));
         assert!(!is_no_input_device_error("device not found"));
     }
+
+    const CFG: AutoStopConfig = AutoStopConfig {
+        silence_frames: 10,
+        no_speech_frames: 50,
+        max_frames: 100,
+    };
+
+    #[test]
+    fn auto_stop_fires_silence_stop_after_speech() {
+        let mut t = AutoStopTracker::new(Some(CFG));
+        for _ in 0..5 {
+            assert_eq!(t.on_verdict(FrameVerdict::Speech), None);
+        }
+        for i in 0..10 {
+            let event = t.on_verdict(FrameVerdict::Noise);
+            if i < 9 {
+                assert_eq!(event, None);
+            } else {
+                assert_eq!(event, Some(AutoStopEvent::SilenceStop));
+            }
+        }
+        // Fires once only.
+        assert_eq!(t.on_verdict(FrameVerdict::Noise), None);
+    }
+
+    #[test]
+    fn auto_stop_speech_resets_silence_counter() {
+        let mut t = AutoStopTracker::new(Some(CFG));
+        t.on_verdict(FrameVerdict::Speech);
+        for _ in 0..9 {
+            assert_eq!(t.on_verdict(FrameVerdict::Noise), None);
+        }
+        t.on_verdict(FrameVerdict::Speech); // resets the run
+        for _ in 0..9 {
+            assert_eq!(t.on_verdict(FrameVerdict::Noise), None);
+        }
+        assert_eq!(
+            t.on_verdict(FrameVerdict::Noise),
+            Some(AutoStopEvent::SilenceStop)
+        );
+    }
+
+    #[test]
+    fn auto_stop_cancels_when_speech_never_starts() {
+        let mut t = AutoStopTracker::new(Some(CFG));
+        for i in 0..50 {
+            let event = t.on_verdict(FrameVerdict::Noise);
+            if i < 49 {
+                assert_eq!(event, None);
+            } else {
+                assert_eq!(event, Some(AutoStopEvent::NoSpeechCancel));
+            }
+        }
+    }
+
+    #[test]
+    fn auto_stop_max_duration_caps_session() {
+        let mut t = AutoStopTracker::new(Some(CFG));
+        // Alternate speech/noise so neither silence nor no-speech trips first.
+        for i in 0..99 {
+            let v = if i % 2 == 0 {
+                FrameVerdict::Speech
+            } else {
+                FrameVerdict::Noise
+            };
+            assert_eq!(t.on_verdict(v), None, "frame {i}");
+        }
+        assert_eq!(
+            t.on_verdict(FrameVerdict::Speech),
+            Some(AutoStopEvent::MaxDurationStop)
+        );
+    }
+
+    #[test]
+    fn auto_stop_disabled_without_config_and_ignores_inactive() {
+        let mut t = AutoStopTracker::new(None);
+        for _ in 0..1000 {
+            assert_eq!(t.on_verdict(FrameVerdict::Noise), None);
+        }
+        let mut t = AutoStopTracker::new(Some(CFG));
+        for _ in 0..1000 {
+            assert_eq!(t.on_verdict(FrameVerdict::Inactive), None);
+        }
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -521,6 +739,8 @@ fn run_consumer(
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
+    wake: Option<Arc<WakeWordRuntime>>,
+    auto_stop_cb: Option<AutoStopCallback>,
     stop_flag: Arc<AtomicBool>,
     stream_running_at: Instant,
 ) {
@@ -533,6 +753,7 @@ fn run_consumer(
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
     let mut vad_policy = VadPolicy::Offline;
+    let mut auto_stop = AutoStopTracker::new(None);
 
     // ---------- latency instrumentation ---------------------------------- //
     // First-chunk arrival exposes the play()->samples-flowing gap; the
@@ -562,16 +783,22 @@ fn run_consumer(
         4000.0, // vocal_max_hz
     );
 
+    #[allow(clippy::too_many_arguments)]
     fn handle_frame(
         samples: &[f32],
         recording: bool,
         vad_policy: VadPolicy,
         vad: &Option<VadConfig>,
         audio_cb: &Option<AudioFrameCallback>,
+        wake: &Option<Arc<WakeWordRuntime>>,
         out_buf: &mut Vec<f32>,
-    ) {
+    ) -> FrameVerdict {
         if !recording {
-            return;
+            // Idle frames feed wake-word detection instead of being dropped.
+            if let Some(ww) = wake {
+                ww.push_frame(samples);
+            }
+            return FrameVerdict::Inactive;
         }
 
         let mut emit = |buf: &[f32]| {
@@ -583,17 +810,21 @@ fn run_consumer(
 
         if vad_policy == VadPolicy::Disabled {
             emit(samples);
-            return;
+            return FrameVerdict::Speech;
         }
 
         if let Some(cfg) = vad {
             let mut det = cfg.detector.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => emit(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    emit(buf);
+                    FrameVerdict::Speech
+                }
+                VadFrame::Noise => FrameVerdict::Noise,
             }
         } else {
             emit(samples);
+            FrameVerdict::Speech
         }
     }
 
@@ -606,14 +837,15 @@ fn run_consumer(
         let mut pending = Some(chunk);
         while let Ok(cmd) = cmd_rx.try_recv() {
             match cmd {
-                Cmd::Start(policy, sent_at) => {
+                Cmd::Start(session, sent_at) => {
                     log::debug!(
                         "Cmd::Start processed {:?} after send; capture begins with the in-flight chunk",
                         sent_at.elapsed()
                     );
                     awaiting_first_captured_chunk = Some(Instant::now());
                     stop_flag.store(false, Ordering::Relaxed);
-                    vad_policy = policy;
+                    vad_policy = session.vad_policy;
+                    auto_stop = AutoStopTracker::new(session.auto_stop);
                     processed_samples.clear();
                     recording = true;
                     visualizer.reset();
@@ -643,8 +875,9 @@ fn run_consumer(
                                 vad_policy,
                                 &vad,
                                 &audio_cb,
+                                &wake,
                                 &mut processed_samples,
-                            )
+                            );
                         });
                     }
 
@@ -662,8 +895,9 @@ fn run_consumer(
                                         vad_policy,
                                         &vad,
                                         &audio_cb,
+                                        &wake,
                                         &mut processed_samples,
-                                    )
+                                    );
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -681,11 +915,18 @@ fn run_consumer(
                             vad_policy,
                             &vad,
                             &audio_cb,
+                            &wake,
                             &mut processed_samples,
-                        )
+                        );
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
+
+                    // Idle listening resumes now; drop any pre-session context so
+                    // it can't skew the next wake-word score window.
+                    if let Some(ww) = &wake {
+                        ww.reset_context();
+                    }
 
                     // Resume the audio callback so the consumer loop can continue
                     // receiving chunks (important for always-on microphone mode).
@@ -723,14 +964,21 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(
+            let verdict = handle_frame(
                 frame,
                 recording,
                 vad_policy,
                 &vad,
                 &audio_cb,
+                &wake,
                 &mut processed_samples,
-            )
+            );
+            if let Some(event) = auto_stop.on_verdict(verdict) {
+                log::info!("Hands-free session auto-stop: {event:?}");
+                if let Some(cb) = &auto_stop_cb {
+                    cb(event);
+                }
+            }
         });
 
         if recording {

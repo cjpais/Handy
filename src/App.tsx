@@ -16,7 +16,7 @@ import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
-import { commands } from "@/bindings";
+import { commands, events } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
@@ -151,6 +151,35 @@ function App() {
     };
   }, [t]);
 
+  // Voice command (MCP tool call) outcomes surface as toasts — commands never
+  // paste text, so this is their only user-visible feedback.
+  useEffect(() => {
+    const unlisten = events.voiceCommandResult.listen((event) => {
+      const result = event.payload;
+      switch (result.kind) {
+        case "executed":
+          toast.success(t("voiceCommand.executed", { tool: result.tool }), {
+            description: result.summary || undefined,
+          });
+          break;
+        case "denied":
+          toast.info(t("voiceCommand.denied", { tool: result.tool }));
+          break;
+        case "no_tool_matched":
+          toast.info(t("voiceCommand.noToolMatched"));
+          break;
+        case "failed":
+          toast.error(t("voiceCommand.failedTitle"), {
+            description: result.message,
+          });
+          break;
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   // Listen for model loading failures and show a toast
   useEffect(() => {
     const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
@@ -268,14 +297,14 @@ function App() {
       className="h-screen flex flex-col select-none cursor-default"
     >
       <Toaster
-        theme="system"
+        theme="dark"
         toastOptions={{
           unstyled: true,
           classNames: {
             toast:
-              "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
+              "bg-background border border-border/60 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
             title: "font-medium",
-            description: "text-mid-gray",
+            description: "text-muted-foreground",
           },
         }}
       />

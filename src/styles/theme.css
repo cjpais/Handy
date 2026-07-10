@@ -1,20 +1,16 @@
-/* Handy Colors */
+/* Handy Colors — thegridcn "Tron" theme (dark-only).
+   The palette lives in thegridcn-theme.css (shadcn-style tokens in oklch).
+   The legacy --color-* names below are a compatibility shim: the recording
+   overlay (RecordingOverlay.css) derives its --s-* tokens from them, and any
+   remaining legacy Tailwind utilities resolve through them. */
+
+@import "./thegridcn-theme.css";
 
 :root {
-  --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6;
-  --color-mid-gray: #808080;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
-  }
+  --color-text: var(--foreground);
+  --color-background: var(--background);
+  --color-background-ui: var(--primary);
+  --color-logo-primary: var(--accent);
+  --color-logo-stroke: var(--foreground);
+  --color-mid-gray: var(--muted-foreground);
 }

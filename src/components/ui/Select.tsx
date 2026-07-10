@@ -40,27 +40,25 @@ type NonCreatableProps = {
 export type SelectProps = BaseProps & (CreatableProps | NonCreatableProps);
 
 const baseBackground =
-  "color-mix(in srgb, var(--color-mid-gray) 10%, transparent)";
-const hoverBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 12%, transparent)";
-const focusBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 20%, transparent)";
+  "color-mix(in srgb, var(--muted-foreground) 10%, transparent)";
+const hoverBackground = "color-mix(in srgb, var(--accent) 12%, transparent)";
+const focusBackground = "color-mix(in srgb, var(--accent) 20%, transparent)";
 const neutralBorder =
-  "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)";
+  "color-mix(in srgb, var(--muted-foreground) 80%, transparent)";
 
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
     minHeight: 40,
     borderRadius: 6,
-    borderColor: state.isFocused ? "var(--color-logo-primary)" : neutralBorder,
-    boxShadow: state.isFocused ? "0 0 0 1px var(--color-logo-primary)" : "none",
+    borderColor: state.isFocused ? "var(--accent)" : neutralBorder,
+    boxShadow: state.isFocused ? "0 0 0 1px var(--accent)" : "none",
     backgroundColor: state.isFocused ? focusBackground : baseBackground,
     fontSize: "0.875rem",
-    color: "var(--color-text)",
+    color: "var(--foreground)",
     transition: "all 150ms ease",
     ":hover": {
-      borderColor: "var(--color-logo-primary)",
+      borderColor: "var(--accent)",
       backgroundColor: hoverBackground,
     },
   }),
@@ -71,36 +69,35 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   }),
   input: (base) => ({
     ...base,
-    color: "var(--color-text)",
+    color: "var(--foreground)",
   }),
   singleValue: (base) => ({
     ...base,
-    color: "var(--color-text)",
+    color: "var(--foreground)",
   }),
   dropdownIndicator: (base, state) => ({
     ...base,
     color: state.isFocused
-      ? "var(--color-logo-primary)"
-      : "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+      ? "var(--accent)"
+      : "color-mix(in srgb, var(--muted-foreground) 80%, transparent)",
     ":hover": {
-      color: "var(--color-logo-primary)",
+      color: "var(--accent)",
     },
   }),
   clearIndicator: (base) => ({
     ...base,
-    color: "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+    color: "color-mix(in srgb, var(--muted-foreground) 80%, transparent)",
     ":hover": {
-      color: "var(--color-logo-primary)",
+      color: "var(--accent)",
     },
   }),
   menu: (provided) => ({
     ...provided,
     zIndex: 30,
-    backgroundColor: "var(--color-background)",
-    color: "var(--color-text)",
-    border:
-      "1px solid color-mix(in srgb, var(--color-mid-gray) 30%, transparent)",
-    boxShadow: "0 10px 30px rgba(15, 15, 15, 0.2)",
+    backgroundColor: "var(--popover)",
+    color: "var(--popover-foreground)",
+    border: "1px solid var(--border)",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
   }),
   option: (base, state) => ({
     ...base,
@@ -109,13 +106,13 @@ const selectStyles: StylesConfig<SelectOption, false> = {
       : state.isFocused
         ? hoverBackground
         : "transparent",
-    color: "var(--color-text)",
+    color: "var(--foreground)",
     cursor: state.isDisabled ? "not-allowed" : base.cursor,
     opacity: state.isDisabled ? 0.5 : 1,
   }),
   placeholder: (base) => ({
     ...base,
-    color: "color-mix(in srgb, var(--color-mid-gray) 65%, transparent)",
+    color: "color-mix(in srgb, var(--muted-foreground) 65%, transparent)",
   }),
 };
 

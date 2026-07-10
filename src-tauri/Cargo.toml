@@ -56,6 +56,14 @@ log = "0.4.25"
 env_filter = "0.1.0"
 tokio = "1.43.0"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
+# Wake-word detection (openWakeWord ONNX pipeline). Pin ort to the exact rc
+# already resolved via vad-rs/transcribe-rs — ort release candidates are
+# API-incompatible with each other.
+ort = "=2.0.0-rc.12"
+ndarray = "0.17"
+# MCP client for voice commands (stdio child-process servers only). Pinned:
+# the SDK's API surface still shifts between minor versions.
+rmcp = { version = "=2.2.0", default-features = false, features = ["client", "transport-child-process"] }
 enigo = "0.6.1"
 rodio = { git = "https://github.com/cjpais/rodio.git" }
 reqwest = { version = "0.12", features = ["json", "stream"] }
@@ -77,7 +85,7 @@ transcribe-cpp = { version = "0.1.2", default-features = false }
 handy-keys = "0.3.0"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
-specta = "=2.0.0-rc.22"
+specta = { version = "=2.0.0-rc.22", features = ["serde_json"] }
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 tauri-plugin-dialog = "2.6"

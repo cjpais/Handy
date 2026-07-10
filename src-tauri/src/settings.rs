@@ -9,6 +9,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const OLLAMA_PROVIDER_ID: &str = "ollama";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -91,6 +92,25 @@ pub struct LLMPrompt {
     pub id: String,
     pub name: String,
     pub prompt: String,
+}
+
+/// A user-configured MCP server, launched as a child process speaking stdio
+/// (the same shape as Claude Desktop's `mcpServers` entries).
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct McpServerConfig {
+    pub id: String,
+    pub name: String,
+    pub command: String,
+    #[serde(default)]
+    pub args: Vec<String>,
+    #[serde(default)]
+    pub env: HashMap<String, String>,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -268,6 +288,36 @@ pub enum TypingTool {
     Dotool,
     Ydotool,
     Xdotool,
+}
+
+/// Which openWakeWord classifier head to listen with. The preset models are
+/// bundled; `Custom` points at a user-imported .onnx head.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum WakeWordModel {
+    #[default]
+    HeyJarvis,
+    /// Bare "Jarvis" (also reacts to "Hey Jarvis") — community model from
+    /// fwartner/home-assistant-wakewords-collection (MIT).
+    Jarvis,
+    Alexa,
+    HeyMycroft,
+    HeyRhasspy,
+    Custom,
+}
+
+impl WakeWordModel {
+    /// Bundled resource path of the preset head, or `None` for `Custom`.
+    pub fn bundled_head_path(self) -> Option<&'static str> {
+        match self {
+            WakeWordModel::HeyJarvis => Some("resources/models/wakeword/hey_jarvis_v0.1.onnx"),
+            WakeWordModel::Jarvis => Some("resources/models/wakeword/jarvis_v2.onnx"),
+            WakeWordModel::Alexa => Some("resources/models/wakeword/alexa_v0.1.onnx"),
+            WakeWordModel::HeyMycroft => Some("resources/models/wakeword/hey_mycroft_v0.1.onnx"),
+            WakeWordModel::HeyRhasspy => Some("resources/models/wakeword/hey_rhasspy_v0.1.onnx"),
+            WakeWordModel::Custom => None,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
@@ -452,6 +502,42 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    /// Hands-free activation: saying the wake word starts a transcription
+    /// session. Keeps the microphone stream always open while enabled.
+    #[serde(default)]
+    pub wake_word_enabled: bool,
+    #[serde(default)]
+    pub wake_word_model: WakeWordModel,
+    /// Path to a user-supplied openWakeWord-compatible classifier head
+    /// (only used when `wake_word_model` is `Custom`).
+    #[serde(default)]
+    pub wake_word_custom_model_path: Option<String>,
+    #[serde(default = "default_wake_word_threshold")]
+    pub wake_word_threshold: f32,
+    /// Silence duration after speech that ends a wake-word session.
+    #[serde(default = "default_wake_word_silence_timeout_ms")]
+    pub wake_word_silence_timeout_ms: u64,
+    /// Provider used by the intelligence layer (edit commands, vocabulary
+    /// mining, voice commands). Separate from post-processing so users can
+    /// post-process with a cloud provider while intelligence runs locally.
+    #[serde(default = "default_intelligence_provider_id")]
+    pub intelligence_provider_id: String,
+    #[serde(default)]
+    pub intelligence_model: String,
+    /// Voice edit commands ("scratch that", "make it shorter") acting on the
+    /// last pasted output within a time window.
+    #[serde(default)]
+    pub voice_edit_enabled: bool,
+    #[serde(default = "default_voice_edit_window_secs")]
+    pub voice_edit_window_secs: u64,
+    /// Voice → MCP tool calls (the `voice_command` binding).
+    #[serde(default)]
+    pub mcp_enabled: bool,
+    #[serde(default)]
+    pub mcp_servers: Vec<McpServerConfig>,
+    /// Tools the user chose "Always allow" for, as "server_id/tool_name".
+    #[serde(default)]
+    pub mcp_auto_approved_tools: Vec<String>,
 }
 
 fn default_model() -> String {
@@ -470,6 +556,22 @@ fn default_push_to_talk() -> bool {
 
 fn default_always_on_microphone() -> bool {
     false
+}
+
+fn default_wake_word_threshold() -> f32 {
+    0.5
+}
+
+fn default_wake_word_silence_timeout_ms() -> u64 {
+    2000
+}
+
+fn default_intelligence_provider_id() -> String {
+    OLLAMA_PROVIDER_ID.to_string()
+}
+
+fn default_voice_edit_window_secs() -> u64 {
+    30
 }
 
 fn default_translate_to_english() -> bool {
@@ -655,6 +757,17 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         supports_structured_output: true,
     });
 
+    // Ollama — local models via its OpenAI-compatible endpoint. No API key.
+    // Ollama honors json_schema response_format on current model families.
+    providers.push(PostProcessProvider {
+        id: OLLAMA_PROVIDER_ID.to_string(),
+        label: "Ollama".to_string(),
+        base_url: "http://localhost:11434/v1".to_string(),
+        allow_base_url_edit: true,
+        models_endpoint: Some("/models".to_string()),
+        supports_structured_output: true,
+    });
+
     // Custom provider always comes last
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
@@ -820,6 +933,22 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
 
+    #[cfg(target_os = "macos")]
+    let default_voice_command_shortcut = "option+ctrl+space";
+    #[cfg(not(target_os = "macos"))]
+    let default_voice_command_shortcut = "ctrl+alt+space";
+
+    bindings.insert(
+        "voice_command".to_string(),
+        ShortcutBinding {
+            id: "voice_command".to_string(),
+            name: "Voice Command".to_string(),
+            description: "Records a spoken command and executes it via an MCP tool.".to_string(),
+            default_binding: default_voice_command_shortcut.to_string(),
+            current_binding: default_voice_command_shortcut.to_string(),
+        },
+    );
+
     AppSettings {
         settings_schema_version: default_settings_schema_version(),
         bindings,
@@ -877,6 +1006,18 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
         overlay_style: default_overlay_style(),
+        wake_word_enabled: false,
+        wake_word_model: WakeWordModel::default(),
+        wake_word_custom_model_path: None,
+        wake_word_threshold: default_wake_word_threshold(),
+        wake_word_silence_timeout_ms: default_wake_word_silence_timeout_ms(),
+        intelligence_provider_id: default_intelligence_provider_id(),
+        intelligence_model: String::new(),
+        voice_edit_enabled: false,
+        voice_edit_window_secs: default_voice_edit_window_secs(),
+        mcp_enabled: false,
+        mcp_servers: Vec::new(),
+        mcp_auto_approved_tools: Vec::new(),
     }
 }
 

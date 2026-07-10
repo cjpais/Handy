@@ -40,6 +40,20 @@ bun run format:frontend   # Prettier only
 bun run format:backend    # cargo fmt only
 ```
 
+**Testing:**
+
+```bash
+bun run test:playwright           # Playwright e2e tests (starts Vite dev server on :1420 automatically)
+bun run test:playwright:ui        # Playwright interactive UI mode
+bunx playwright test tests/app.spec.ts        # Run a single test file
+bunx playwright test -g "test name"           # Run a single test by name
+
+cd src-tauri && cargo test        # Rust unit tests (inline #[cfg(test)] modules)
+cd src-tauri && cargo test <name> # Run Rust tests matching a name
+
+bun run check:translations        # Verify locale files are in sync with en/translation.json
+```
+
 **Model Setup (Required for Development):**
 
 ```bash
@@ -84,7 +98,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
   - `shared/`, `ui/`, `icons/`, `footer/` - Shared components
 - `hooks/useSettings.ts` - Settings state management hook
 - `stores/settingsStore.ts` - Zustand store for settings
-- `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta)
+- `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta) — never edit by hand. Regenerated automatically on every debug build (`bun run tauri dev`). To expose a new Rust command: annotate it with `#[tauri::command]` + `#[specta::specta]`, register it in the `collect_commands!` list in `lib.rs`, then run the app in dev mode once.
 - `overlay/` - Recording overlay window entry point
 - `lib/types.ts` - Shared TypeScript type definitions
 

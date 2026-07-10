@@ -239,6 +239,51 @@
         "description": "Regola il volume del feedback audio"
       }
     },
+    "wakeWord": {
+      "title": "Wake Word",
+      "enabled": {
+        "label": "Enable wake word",
+        "description": "Start a hands-free transcription by saying the wake word (e.g. \"Hey Jarvis\"). Keeps the microphone always on and uses a small amount of CPU (~1-2%) while listening. Recording stops automatically after a pause in speech."
+      },
+      "model": {
+        "title": "Wake word",
+        "description": "Which phrase activates transcription. Custom lets you import any openWakeWord-compatible model trained with their free notebook.",
+        "options": {
+          "jarvis": "Jarvis",
+          "hey_jarvis": "Hey Jarvis",
+          "alexa": "Alexa",
+          "hey_mycroft": "Hey Mycroft",
+          "hey_rhasspy": "Hey Rhasspy",
+          "custom": "Custom model…"
+        }
+      },
+      "customModel": {
+        "title": "Custom model",
+        "description": "An openWakeWord classifier (.onnx) trained for your own phrase.",
+        "choose": "Choose file…",
+        "invalid": "Could not load the wake-word model: {{error}}"
+      },
+      "threshold": {
+        "title": "Sensitivity threshold",
+        "description": "Detection score required to trigger (0-1). Lower values trigger more easily but cause more false activations; higher values require clearer pronunciation."
+      },
+      "silenceTimeout": {
+        "title": "Stop after silence",
+        "description": "How long a pause in speech ends a wake-word recording."
+      }
+    },
+    "voiceEdit": {
+      "title": "Voice Edits",
+      "enabled": {
+        "label": "Enable voice edit commands",
+        "description": "After a dictation is pasted, saying \"scratch that\", \"make it shorter\", or \"bullet it\" edits the pasted text instead of typing new text. Uses the Local Intelligence model for rewrites. Note: if you type or move the cursor after a paste, an edit may remove the wrong characters."
+      },
+      "window": {
+        "title": "Edit window",
+        "description": "How long after a paste the next dictation is checked for an edit command."
+      },
+      "autoSubmitWarning": "Voice edits are disabled while Auto Submit is on — the Enter key has already been sent after each paste."
+    },
     "advanced": {
       "groups": {
         "app": "App",
@@ -368,6 +413,65 @@
         "title": "Rilevamento dell'attività vocale",
         "description": "Filtra il silenzio dalle registrazioni. I modelli che supportano lo streaming utilizzano una coda VAD più lunga; disabilitando la VAD si registra l'audio grezzo."
       }
+    },
+    "intelligence": {
+      "title": "Local Intelligence",
+      "provider": {
+        "title": "Intelligence provider",
+        "description": "The LLM used for voice edit commands, vocabulary learning, and voice commands. Separate from post-processing, so this can run locally (Ollama) while post-processing uses any provider."
+      },
+      "model": {
+        "title": "Model",
+        "description": "Model used for intelligence features. A small, fast instruct model like qwen2.5:7b-instruct is recommended."
+      },
+      "testConnection": "Test connection",
+      "status": {
+        "checking": "Checking…",
+        "error": "Provider unreachable: {{error}}",
+        "noModels": "Connected, but no models found. Pull a model first (e.g. `ollama pull qwen2.5:7b-instruct`)."
+      }
+    },
+    "mcp": {
+      "title": "Voice Commands (MCP)",
+      "enabled": {
+        "label": "Enable voice commands",
+        "description": "Hold the Voice Command shortcut and speak an instruction (e.g. \"open my downloads folder\"). The Local Intelligence model routes it to a tool on one of your MCP servers. Read-only tools run immediately; tools that modify your system ask for confirmation unless auto-approved below."
+      },
+      "servers": {
+        "title": "MCP servers",
+        "description": "Command-line MCP servers (stdio) Handy launches and connects to — the same format as Claude Desktop's server config.",
+        "add": "Add server",
+        "edit": "Edit",
+        "remove": "Remove server"
+      },
+      "form": {
+        "name": "Name (e.g. Filesystem)",
+        "command": "Command (e.g. npx)",
+        "args": "Arguments (space-separated, e.g. -y @modelcontextprotocol/server-filesystem /Users/me)",
+        "save": "Save",
+        "test": "Test",
+        "testing": "Testing…",
+        "cancel": "Cancel",
+        "testOk": "Server OK — {{count}} tool(s) found",
+        "testFailed": "Server test failed"
+      },
+      "catalog": {
+        "title": "Available tools",
+        "description": "Tools discovered on connected servers. Read-only tools always auto-run; check auto-approve to skip the confirmation for a modifying tool.",
+        "readOnly": "read-only",
+        "modifies": "modifies system",
+        "autoApprove": "Auto-approve"
+      }
+    },
+    "vocabSuggestions": {
+      "title": "Learned vocabulary",
+      "description": "Words mined from your transcription history by the Local Intelligence model — names, jargon, and project names it thinks you say often. Adding a word puts it in the custom words dictionary; dismissing hides it forever.",
+      "empty": "No suggestions yet. They appear automatically as your transcription history grows.",
+      "add": "Add to custom words",
+      "dismiss": "Dismiss",
+      "scanNow": "Scan now",
+      "scanning": "Scanning…",
+      "chipTooltip": "{{kind}} — seen ~{{count}} times"
     },
     "postProcessing": {
       "hotkey": {
@@ -624,5 +728,11 @@
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"
+  },
+  "voiceCommand": {
+    "executed": "Ran {{tool}}",
+    "denied": "Cancelled {{tool}}",
+    "noToolMatched": "No matching tool for that command",
+    "failedTitle": "Voice command failed"
   }
 }

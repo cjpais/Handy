@@ -190,7 +190,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
             <h2 className="text-base font-semibold">
               {t("footer.portableUpdateTitle")}
             </h2>
-            <p className="text-sm text-text/70">
+            <p className="text-sm text-foreground/70">
               {t("footer.portableUpdateMessage")}
             </p>
             <div className="flex gap-2 justify-end">
@@ -201,7 +201,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
                 {t("common.close")}
               </button>
               <button
-                className="px-3 py-1.5 text-sm rounded bg-logo-primary text-white hover:bg-logo-primary/80 transition-colors"
+                className="px-3 py-1.5 text-sm rounded bg-accent text-accent-foreground hover:bg-accent/80 transition-colors"
                 onClick={() => {
                   openUrl("https://github.com/cjpais/Handy/releases/latest");
                   setShowPortableUpdateDialog(false);
@@ -220,14 +220,14 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
             disabled={isUpdateDisabled}
             className={`transition-colors disabled:opacity-50 tabular-nums ${
               updateAvailable
-                ? "text-logo-primary hover:text-logo-primary/80 font-medium"
-                : "text-text/60 hover:text-text/80"
+                ? "text-accent hover:text-accent/80 font-medium"
+                : "text-foreground/60 hover:text-foreground/80"
             }`}
           >
             {getUpdateStatusText()}
           </button>
         ) : (
-          <span className="text-text/60 tabular-nums">
+          <span className="text-foreground/60 tabular-nums">
             {getUpdateStatusText()}
           </span>
         )}

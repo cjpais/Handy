@@ -762,6 +762,161 @@ async getClamshellMicrophone() : Promise<Result<string, string>> {
 async isRecording() : Promise<boolean> {
     return await TAURI_INVOKE("is_recording");
 },
+async changeWakeWordEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_wake_word_enabled_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeWakeWordModelSetting(model: WakeWordModel) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_wake_word_model_setting", { model }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeWakeWordCustomModelPathSetting(path: string | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_wake_word_custom_model_path_setting", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeWakeWordThresholdSetting(threshold: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_wake_word_threshold_setting", { threshold }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeWakeWordSilenceTimeoutSetting(ms: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_wake_word_silence_timeout_setting", { ms }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeIntelligenceProviderSetting(providerId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_intelligence_provider_setting", { providerId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeIntelligenceModelSetting(model: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_intelligence_model_setting", { model }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Check the configured intelligence provider is reachable; returns the list
+ * of available models so the UI can populate its model dropdown. Works even
+ * before a model is selected.
+ */
+async testIntelligenceConnection() : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("test_intelligence_connection") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeVoiceEditEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_voice_edit_enabled_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeVoiceEditWindowSetting(secs: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_voice_edit_window_setting", { secs }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getVocabSuggestions() : Promise<VocabSuggestion[]> {
+    return await TAURI_INVOKE("get_vocab_suggestions");
+},
+async resolveVocabSuggestion(word: string, accept: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("resolve_vocab_suggestion", { word, accept }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async runVocabScanNow() : Promise<void> {
+    await TAURI_INVOKE("run_vocab_scan_now");
+},
+async changeMcpEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_mcp_enabled_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getMcpServers() : Promise<McpServerConfig[]> {
+    return await TAURI_INVOKE("get_mcp_servers");
+},
+/**
+ * Add or update a server config (matched by id) and re-sync connections.
+ */
+async upsertMcpServer(config: McpServerConfig) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("upsert_mcp_server", { config }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async removeMcpServer(serverId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("remove_mcp_server", { serverId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Spawn a (possibly unsaved) server config and return its tools — the
+ * settings UI "Test" button.
+ */
+async testMcpServer(config: McpServerConfig) : Promise<Result<McpToolInfo[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("test_mcp_server", { config }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getMcpToolCatalog() : Promise<McpToolInfo[]> {
+    return await TAURI_INVOKE("get_mcp_tool_catalog");
+},
+/**
+ * Toggle a tool ("server_id/tool_name") on the auto-approve allowlist.
+ */
+async setMcpToolAutoApproved(tool: string, approved: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_mcp_tool_auto_approved", { tool, approved }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async setModelUnloadTimeout(timeout: ModelUnloadTimeout) : Promise<void> {
     await TAURI_INVOKE("set_model_unload_timeout", { timeout });
 },
@@ -859,11 +1014,15 @@ async isLaptop() : Promise<Result<boolean, string>> {
 export const events = __makeEvents__<{
 historyUpdatePayload: HistoryUpdatePayload,
 streamPhaseEvent: StreamPhaseEvent,
-streamTextEvent: StreamTextEvent
+streamTextEvent: StreamTextEvent,
+vocabSuggestionsUpdated: VocabSuggestionsUpdated,
+voiceCommandResult: VoiceCommandResult
 }>({
 historyUpdatePayload: "history-update-payload",
 streamPhaseEvent: "stream-phase-event",
-streamTextEvent: "stream-text-event"
+streamTextEvent: "stream-text-event",
+vocabSuggestionsUpdated: "vocab-suggestions-updated",
+voiceCommandResult: "voice-command-result"
 })
 
 /** user-defined constants **/
@@ -903,7 +1062,40 @@ whats_new_last_seen_version?: string; selected_model?: string; onboarding_comple
  * not gated on this — that follows model capability. Migrated from the old
  * `overlay_position` (position `none` → style `None`).
  */
-overlay_style?: OverlayStyle }
+overlay_style?: OverlayStyle; 
+/**
+ * Hands-free activation: saying the wake word starts a transcription
+ * session. Keeps the microphone stream always open while enabled.
+ */
+wake_word_enabled?: boolean; wake_word_model?: WakeWordModel; 
+/**
+ * Path to a user-supplied openWakeWord-compatible classifier head
+ * (only used when `wake_word_model` is `Custom`).
+ */
+wake_word_custom_model_path?: string | null; wake_word_threshold?: number; 
+/**
+ * Silence duration after speech that ends a wake-word session.
+ */
+wake_word_silence_timeout_ms?: number; 
+/**
+ * Provider used by the intelligence layer (edit commands, vocabulary
+ * mining, voice commands). Separate from post-processing so users can
+ * post-process with a cloud provider while intelligence runs locally.
+ */
+intelligence_provider_id?: string; intelligence_model?: string; 
+/**
+ * Voice edit commands ("scratch that", "make it shorter") acting on the
+ * last pasted output within a time window.
+ */
+voice_edit_enabled?: boolean; voice_edit_window_secs?: number; 
+/**
+ * Voice → MCP tool calls (the `voice_command` binding).
+ */
+mcp_enabled?: boolean; mcp_servers?: McpServerConfig[]; 
+/**
+ * Tools the user chose "Always allow" for, as "server_id/tool_name".
+ */
+mcp_auto_approved_tools?: string[] }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
@@ -918,7 +1110,11 @@ export type EngineType =
  */
 "TranscribeCpp" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GigaAM" | "Canary" | "Cohere"
 export type GpuDeviceOption = { id: number; name: string; total_vram_mb: number }
-export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean }
+export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean; 
+/**
+ * 'dictation' (pasted text) or 'command' (voice-driven MCP tool call).
+ */
+entry_kind?: string }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
  * Result of changing keyboard implementation
@@ -928,9 +1124,25 @@ export type ImplementationChangeResult = { success: boolean;
  * List of binding IDs that were reset to defaults due to incompatibility
  */
 reset_bindings: string[] }
+export type JsonValue = null | boolean | number | string | JsonValue[] | Partial<{ [key in string]: JsonValue }>
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
+/**
+ * A user-configured MCP server, launched as a child process speaking stdio
+ * (the same shape as Claude Desktop's `mcpServers` entries).
+ */
+export type McpServerConfig = { id: string; name: string; command: string; args?: string[]; env?: Partial<{ [key in string]: string }>; enabled?: boolean }
+/**
+ * A tool discovered on a connected server, flattened for the intent
+ * pipeline and the settings UI.
+ */
+export type McpToolInfo = { server_id: string; name: string; description: string | null; input_schema: JsonValue; 
+/**
+ * MCP `readOnlyHint` annotation: `Some(true)` means the tool does not
+ * modify its environment (safe to auto-run).
+ */
+read_only_hint: boolean | null }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**
@@ -1007,8 +1219,33 @@ export type StreamTextEvent = { committed: string; tentative: string }
  * Semantic kind of "working" phase, used to localize the spinner label.
  */
 export type StreamWorkKind = "transcribing" | "polishing"
+export type SuggestionStatus = "pending" | "dismissed"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
+export type VocabSuggestion = { word: string; 
+/**
+ * What the model thinks it is: "name", "jargon", "project", ...
+ */
+kind: string; evidence_count: number; first_seen_ms: number; status: SuggestionStatus }
+/**
+ * Emitted whenever the suggestion list changes so the settings UI refreshes.
+ */
+export type VocabSuggestionsUpdated = null
+/**
+ * Result of a voice command, emitted to the frontend as a toast and recorded
+ * in history.
+ */
+export type VoiceCommandResult = { kind: "executed"; tool: string; summary: string } | { kind: "denied"; tool: string } | { kind: "no_tool_matched" } | { kind: "failed"; message: string }
+/**
+ * Which openWakeWord classifier head to listen with. The preset models are
+ * bundled; `Custom` points at a user-imported .onnx head.
+ */
+export type WakeWordModel = "hey_jarvis" | 
+/**
+ * Bare "Jarvis" (also reacts to "Hey Jarvis") — community model from
+ * fwartner/home-assistant-wakewords-collection (MIT).
+ */
+"jarvis" | "alexa" | "hey_mycroft" | "hey_rhasspy" | "custom"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 
 /** tauri-specta globals **/

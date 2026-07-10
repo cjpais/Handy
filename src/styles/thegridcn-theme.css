@@ -1,0 +1,69 @@
+:root {
+  --panel: #0c1421;
+}
+
+/* Core Tron dark backgrounds - deep black with slight blue tint */
+:root {
+  --background: oklch(0.06 0.02 250);
+  --foreground: oklch(0.95 0.02 220);
+
+  /* Cards & Popovers - Dark with subtle blue tint */
+  --card: oklch(0.1 0.02 250);
+  --card-foreground: oklch(0.92 0.02 220);
+  --popover: oklch(0.1 0.02 250);
+  --popover-foreground: oklch(0.92 0.02 220);
+
+  /* Destructive */
+  --destructive: oklch(0.55 0.25 30);
+
+  /* Sidebar base */
+  --sidebar: oklch(0.08 0.02 250);
+  --sidebar-foreground: oklch(0.92 0.02 220);
+
+  /* Border radius */
+  --radius: 0.5rem;
+}
+
+/* NOTE: the upstream registry item also ships element base styles (`*`, `body`,
+   `h1-h6`). They are intentionally stripped here and re-homed in src/App.css:
+   this file is imported by the recording overlay (via styles/theme.css), whose
+   window must keep a transparent body. Re-strip after any future
+   `shadcn add @thegridcn/theme-*` that rewrites this file. */
+
+/* ============================================
+   THEME: TRON (User) - CYAN
+   Classic Tron aesthetic
+   ============================================ */
+:root {
+  --primary: oklch(0.75 0.18 195);
+  --primary-foreground: oklch(0.1 0 0);
+
+  --secondary: oklch(0.18 0.05 200);
+  --secondary-foreground: oklch(0.95 0 0);
+
+  --muted: oklch(0.15 0.03 200);
+  --muted-foreground: oklch(0.65 0 0);
+
+  --accent: oklch(0.7 0.15 195);
+  --accent-foreground: oklch(0.1 0 0);
+
+  --border: oklch(0.3 0.1 195);
+  --input: oklch(0.2 0.06 195);
+  --ring: oklch(0.75 0.18 195);
+
+  --glow: oklch(0.75 0.18 195);
+  --glow-muted: oklch(0.5 0.12 195);
+
+  --chart-1: oklch(0.75 0.18 195);
+  --chart-2: oklch(0.65 0.15 210);
+  --chart-3: oklch(0.7 0.12 180);
+  --chart-4: oklch(0.6 0.18 200);
+  --chart-5: oklch(0.8 0.1 190);
+
+  --sidebar-primary: oklch(0.75 0.18 195);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.18 0.05 200);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.3 0.1 195);
+  --sidebar-ring: oklch(0.75 0.18 195);
+}

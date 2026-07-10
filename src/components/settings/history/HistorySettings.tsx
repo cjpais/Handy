@@ -25,10 +25,10 @@ const IconButton: React.FC<{
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20 ${
+    className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-foreground/20 ${
       active
-        ? "text-logo-primary hover:text-logo-primary/80"
-        : "text-text/50 hover:text-logo-primary"
+        ? "text-accent hover:text-accent/80"
+        : "text-foreground/50 hover:text-accent"
     }`}
     title={title}
   >
@@ -238,20 +238,20 @@ export const HistorySettings: React.FC = () => {
 
   if (loading) {
     content = (
-      <div className="px-4 py-3 text-center text-text/60">
+      <div className="px-4 py-3 text-center text-foreground/60">
         {t("settings.history.loading")}
       </div>
     );
   } else if (entries.length === 0) {
     content = (
-      <div className="px-4 py-3 text-center text-text/60">
+      <div className="px-4 py-3 text-center text-foreground/60">
         {t("settings.history.empty")}
       </div>
     );
   } else {
     content = (
       <>
-        <div className="divide-y divide-mid-gray/20">
+        <div className="divide-y divide-border/60">
           {entries.map((entry) => (
             <HistoryEntryComponent
               key={entry.id}
@@ -275,7 +275,7 @@ export const HistorySettings: React.FC = () => {
       <div className="space-y-2">
         <div className="px-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t("settings.history.title")}
             </h2>
           </div>
@@ -284,7 +284,7 @@ export const HistorySettings: React.FC = () => {
             label={t("settings.history.openFolder")}
           />
         </div>
-        <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
+        <div className="bg-background border border-border/60 rounded-lg overflow-visible">
           {content}
         </div>
       </div>
@@ -415,8 +415,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           retrying
             ? ""
             : hasTranscription
-              ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
-              : "text-text/40"
+              ? "text-foreground/90 select-text cursor-text whitespace-pre-wrap break-words"
+              : "text-foreground/40"
         }`}
         style={
           retrying
@@ -427,8 +427,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         {retrying && (
           <style>{`
             @keyframes transcribe-pulse {
-              0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
-              50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+              0%, 100% { color: color-mix(in srgb, var(--foreground) 40%, transparent); }
+              50% { color: color-mix(in srgb, var(--foreground) 90%, transparent); }
             }
           `}</style>
         )}

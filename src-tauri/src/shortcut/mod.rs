@@ -397,6 +397,11 @@ fn register_all_shortcuts_for_implementation(
             continue;
         }
 
+        // Skip the voice-command shortcut when MCP is disabled
+        if id == "voice_command" && !current_settings.mcp_enabled {
+            continue;
+        }
+
         let mut binding = current_settings
             .bindings
             .get(id)

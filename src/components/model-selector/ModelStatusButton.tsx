@@ -32,7 +32,7 @@ const ModelStatusButton: React.FC<ModelStatusButtonProps> = ({
       case "loading":
         return "bg-yellow-400 animate-pulse";
       case "downloading":
-        return "bg-logo-primary animate-pulse";
+        return "bg-accent animate-pulse";
       case "verifying":
         return "bg-orange-400 animate-pulse";
       case "extracting":
@@ -40,18 +40,18 @@ const ModelStatusButton: React.FC<ModelStatusButtonProps> = ({
       case "error":
         return "bg-red-400";
       case "unloaded":
-        return "bg-mid-gray/60";
+        return "bg-muted-foreground/60";
       case "none":
         return "bg-red-400";
       default:
-        return "bg-mid-gray/60";
+        return "bg-muted-foreground/60";
     }
   };
 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 hover:text-text/80 transition-colors ${className}`}
+      className={`flex items-center gap-2 hover:text-foreground/80 transition-colors ${className}`}
       title={`Model status: ${displayText}`}
     >
       <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />

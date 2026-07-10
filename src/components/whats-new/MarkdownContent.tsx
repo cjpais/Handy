@@ -62,27 +62,29 @@ const isSafeImageSrc = (src: string) => {
 
 const components: Components = {
   h1: ({ children }) => (
-    <h3 className="text-base font-semibold leading-snug text-text">
+    <h3 className="text-base font-semibold leading-snug text-foreground">
       {children}
     </h3>
   ),
   h2: ({ children }) => (
-    <h3 className="text-[15px] font-semibold leading-snug text-text">
+    <h3 className="text-[15px] font-semibold leading-snug text-foreground">
       {children}
     </h3>
   ),
   h3: ({ children }) => (
-    <h3 className="text-sm font-semibold leading-snug text-text">{children}</h3>
+    <h3 className="text-sm font-semibold leading-snug text-foreground">
+      {children}
+    </h3>
   ),
   p: ({ children }) => (
-    <p className="text-sm leading-relaxed text-text/80">{children}</p>
+    <p className="text-sm leading-relaxed text-foreground/80">{children}</p>
   ),
   ul: ({ children, className }) => {
     const isTaskList = className?.includes("contains-task-list");
 
     return (
       <ul
-        className={`space-y-1 text-sm leading-relaxed text-text/80 ${
+        className={`space-y-1 text-sm leading-relaxed text-foreground/80 ${
           isTaskList ? "ps-0" : "list-disc ps-5"
         }`}
       >
@@ -95,7 +97,7 @@ const components: Components = {
 
     return (
       <li
-        className={`${isTaskListItem ? "list-none" : "pl-1"} marker:text-text/50`}
+        className={`${isTaskListItem ? "list-none" : "pl-1"} marker:text-foreground/50`}
       >
         {children}
       </li>
@@ -110,20 +112,20 @@ const components: Components = {
         checked={Boolean(checked)}
         disabled
         readOnly
-        className="me-2 h-3.5 w-3.5 align-middle accent-logo-primary"
+        className="me-2 h-3.5 w-3.5 align-middle accent-accent"
       />
     );
   },
   ol: ({ children }) => (
-    <ol className="list-decimal space-y-1 ps-5 text-sm leading-relaxed text-text/80">
+    <ol className="list-decimal space-y-1 ps-5 text-sm leading-relaxed text-foreground/80">
       {children}
     </ol>
   ),
   del: ({ children }) => (
-    <del className="text-text/60 line-through">{children}</del>
+    <del className="text-foreground/60 line-through">{children}</del>
   ),
   br: () => <br />,
-  hr: () => <hr className="border-mid-gray/20" />,
+  hr: () => <hr className="border-border/60" />,
   img: ({ alt, src }) => {
     if (!src || !isSafeImageSrc(src)) return null;
 
@@ -139,16 +141,18 @@ const components: Components = {
   },
   table: ({ children }) => (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-sm leading-relaxed text-text/80">
+      <table className="w-full border-collapse text-left text-sm leading-relaxed text-foreground/80">
         {children}
       </table>
     </div>
   ),
   thead: ({ children }) => (
-    <thead className="border-b border-mid-gray/30 text-text">{children}</thead>
+    <thead className="border-b border-border/60 text-foreground">
+      {children}
+    </thead>
   ),
   tbody: ({ children }) => (
-    <tbody className="divide-y divide-mid-gray/20">{children}</tbody>
+    <tbody className="divide-y divide-border/60">{children}</tbody>
   ),
   tr: ({ children }) => <tr>{children}</tr>,
   th: ({ children }) => (
@@ -156,7 +160,7 @@ const components: Components = {
   ),
   td: ({ children }) => <td className="px-2 py-1.5 align-top">{children}</td>,
   blockquote: ({ children }) => (
-    <blockquote className="border-s-2 border-logo-primary/50 ps-3 text-sm leading-relaxed text-text/70">
+    <blockquote className="border-s-2 border-ring/50 ps-3 text-sm leading-relaxed text-foreground/70">
       {children}
     </blockquote>
   ),
@@ -172,13 +176,13 @@ const components: Components = {
     }
 
     return (
-      <code className="rounded bg-mid-gray/10 px-1 py-0.5 font-mono text-[0.85em]">
+      <code className="rounded bg-muted/60 px-1 py-0.5 font-mono text-[0.85em]">
         {children}
       </code>
     );
   },
   pre: ({ children }) => (
-    <pre className="overflow-x-auto rounded-md bg-mid-gray/10 p-3 text-xs leading-relaxed text-text/80">
+    <pre className="overflow-x-auto rounded-md bg-muted/60 p-3 text-xs leading-relaxed text-foreground/80">
       {children}
     </pre>
   ),
@@ -195,7 +199,7 @@ const components: Components = {
           event.preventDefault();
           void openSafeUrl(href);
         }}
-        className="text-logo-primary underline decoration-logo-primary/40 underline-offset-2 hover:decoration-logo-primary"
+        className="text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent"
       >
         {children}
       </a>

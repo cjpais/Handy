@@ -1,16 +1,76 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 
-/* Register the shared color tokens (src/styles/theme.css) as Tailwind
-   utilities */
+/* The Tron theme is dark-only; main.tsx force-adds .dark on <html> so `dark:`
+   variants stay active regardless of the OS appearance setting. */
+@custom-variant dark (&:is(.dark *));
+
+/* Register the shadcn-style tokens (src/styles/thegridcn-theme.css) as
+   Tailwind utilities */
 @theme inline {
-  --color-text: var(--color-text);
-  --color-background: var(--color-background);
-  --color-background-ui: var(--color-background-ui);
-  --color-logo-primary: var(--color-logo-primary);
-  --color-logo-stroke: var(--color-logo-stroke);
-  --color-text-stroke: var(--color-text-stroke);
-  --color-mid-gray: var(--color-mid-gray);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-panel: var(--panel);
+  --color-glow: var(--glow);
+  --color-glow-muted: var(--glow-muted);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Element base styles from the thegridcn theme, re-homed here so they only
+   apply to the main window (the overlay window must keep a transparent body —
+   see src/styles/thegridcn-theme.css). */
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
 }
 
 :root {
@@ -26,21 +86,16 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --scrollbar-thumb: color-mix(in srgb, var(--color-text), transparent 85%);
+  --scrollbar-thumb: color-mix(in srgb, var(--foreground), transparent 85%);
   --scrollbar-thumb-hover: color-mix(
     in srgb,
-    var(--color-text),
+    var(--foreground),
     transparent 70%
   );
 
-  /* Log console surface — a subtle shade off the app background so the live log
-     viewer reads as a distinct console. In light mode this is a faint gray code
-     block (matching other surfaces); the dark theme overrides it below. */
-  --color-log-surface: color-mix(in srgb, var(--color-background), black 6%);
-
-  /* Apply colors */
-  color: var(--color-text);
-  background-color: var(--color-background);
+  /* Log console surface — the theme's panel color, a subtle shade off the app
+     background so the live log viewer reads as a distinct console. */
+  --color-log-surface: var(--panel);
 }
 
 .container {
@@ -50,13 +105,6 @@
   flex-direction: column;
   justify-content: center;
   text-align: center;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Just a bit darker than the (already dark) background, keeping its warm tint */
-    --color-log-surface: color-mix(in srgb, var(--color-background), black 15%);
-  }
 }
 
 /* macOS - tint native overlay scrollbar thumb */
@@ -88,18 +136,12 @@
   background-color: var(--scrollbar-thumb-hover);
 }
 
-@layer utilities {
-  .text-stroke {
-    -webkit-text-stroke: 2px var(--color-text-stroke);
-  }
-}
-
 .logo-primary {
-  fill: var(--color-logo-primary);
+  fill: var(--accent);
 }
 
 .logo-stroke {
-  fill: var(--color-logo-stroke);
-  stroke: var(--color-logo-stroke);
+  fill: var(--foreground);
+  stroke: var(--foreground);
   stroke-width: 1;
 }

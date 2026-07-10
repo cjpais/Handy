@@ -33,18 +33,18 @@ const LEVEL_META: Record<
 > = {
   1: {
     tag: "TRACE",
-    tagClass: "text-mid-gray",
-    msgClass: "text-mid-gray",
+    tagClass: "text-muted-foreground",
+    msgClass: "text-muted-foreground",
   },
   2: {
     tag: "DEBUG",
     tagClass: "text-sky-600 dark:text-sky-400",
-    msgClass: "text-text/80",
+    msgClass: "text-foreground/80",
   },
   3: {
     tag: "INFO",
     tagClass: "text-emerald-600 dark:text-emerald-400",
-    msgClass: "text-text",
+    msgClass: "text-foreground",
   },
   4: {
     tag: "WARN",
@@ -60,8 +60,8 @@ const LEVEL_META: Record<
 
 const UNKNOWN_META = {
   tag: "LOG",
-  tagClass: "text-mid-gray",
-  msgClass: "text-text",
+  tagClass: "text-muted-foreground",
+  msgClass: "text-foreground",
 };
 
 const metaFor = (level: number) => LEVEL_META[level] ?? UNKNOWN_META;
@@ -178,10 +178,10 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({
       layout="stacked"
     >
       <div className="flex items-center justify-between mb-2 gap-2">
-        <div className="flex items-center gap-2 text-xs text-mid-gray min-w-0">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
           <span
             className={`inline-block w-2 h-2 rounded-full shrink-0 ${
-              paused ? "bg-mid-gray" : "bg-emerald-500 animate-pulse"
+              paused ? "bg-muted-foreground/60" : "bg-emerald-500 animate-pulse"
             }`}
           />
           <span className="shrink-0">
@@ -226,10 +226,10 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="h-72 overflow-y-auto rounded-lg border border-mid-gray/30 bg-[var(--color-log-surface)] p-3 font-mono text-xs leading-relaxed select-text"
+        className="h-72 overflow-y-auto rounded-lg border border-border/60 bg-[var(--color-log-surface)] p-3 font-mono text-xs leading-relaxed select-text"
       >
         {logs.length === 0 ? (
-          <div className="text-mid-gray select-none">
+          <div className="text-muted-foreground select-none">
             {t("settings.debug.liveLogs.empty")}
           </div>
         ) : (
@@ -237,7 +237,7 @@ export const LiveLogViewer: React.FC<LiveLogViewerProps> = ({
             const meta = metaFor(line.level);
             return (
               <div key={line.id} className="flex gap-2">
-                <span className="text-mid-gray/80 shrink-0 select-none tabular-nums">
+                <span className="text-muted-foreground/80 shrink-0 select-none tabular-nums">
                   {line.time}
                 </span>
                 <span

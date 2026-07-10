@@ -11,6 +11,8 @@ import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
+import { WakeWordSettings } from "../WakeWordSettings";
+import { VoiceEdit } from "../VoiceEdit";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -39,6 +41,8 @@ export const GeneralSettings: React.FC = () => {
         />
         <VolumeSlider disabled={!audioFeedbackEnabled} />
       </SettingsGroup>
+      <WakeWordSettings />
+      <VoiceEdit />
     </div>
   );
 };

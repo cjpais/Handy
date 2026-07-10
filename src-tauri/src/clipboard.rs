@@ -589,7 +589,40 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+/// What `paste` actually did — callers use this to decide whether the output
+/// is voice-edit eligible (exact typed text incl. trailing space, and whether
+/// an auto-submit Enter already fired).
+#[derive(Debug, Clone)]
+pub struct PasteOutcome {
+    pub text: String,
+    pub method: PasteMethod,
+    pub auto_submitted: bool,
+}
+
+/// Simulate Backspace presses to remove the last `char_count` characters in
+/// the focused app. Used by voice edit commands ("scratch that"). Chunked with
+/// short sleeps so target apps keep up with the synthetic key events.
+pub fn delete_chars(app_handle: &AppHandle, char_count: usize) -> Result<(), String> {
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    let mut enigo = enigo_state
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+
+    for i in 0..char_count {
+        enigo
+            .key(Key::Backspace, Direction::Click)
+            .map_err(|e| format!("Failed to send Backspace: {}", e))?;
+        if i % 50 == 49 {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+    Ok(())
+}
+
+pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
@@ -649,7 +682,8 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
     }
 
-    if should_send_auto_submit(settings.auto_submit, paste_method) {
+    let auto_submitted = should_send_auto_submit(settings.auto_submit, paste_method);
+    if auto_submitted {
         std::thread::sleep(Duration::from_millis(50));
         send_return_key(&mut enigo, settings.auto_submit_key)?;
     }
@@ -662,7 +696,11 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             .map_err(|e| format!("Failed to copy to clipboard: {}", e))?;
     }
 
-    Ok(())
+    Ok(PasteOutcome {
+        text,
+        method: paste_method,
+        auto_submitted,
+    })
 }
 
 #[cfg(test)]

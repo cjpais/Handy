@@ -43,7 +43,7 @@ export const HistoryLimit: React.FC<HistoryLimitProps> = ({
           disabled={isUpdating("history_limit")}
           className="w-20"
         />
-        <span className="text-sm text-text">
+        <span className="text-sm text-foreground">
           {t("settings.debug.historyLimit.entries")}
         </span>
       </div>

@@ -44,10 +44,10 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
         <progress
           value={percentage}
           max={100}
-          className={`${progressClasses} [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-mid-gray/20 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-logo-primary`}
+          className={`${progressClasses} [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-accent`}
         />
         {(showSpeed || showLabel) && (
-          <div className="text-xs text-text/60 tabular-nums min-w-fit">
+          <div className="text-xs text-foreground/60 tabular-nums min-w-fit">
             {showLabel && item.label && (
               <span className="me-2">{item.label}</span>
             )}
@@ -75,12 +75,12 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
               value={percentage}
               max={100}
               title={item.label || `${percentage}%`}
-              className="w-3 h-1.5 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-mid-gray/20 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-logo-primary"
+              className="w-3 h-1.5 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-accent"
             />
           );
         })}
       </div>
-      <div className="text-xs text-text/60 min-w-fit">
+      <div className="text-xs text-foreground/60 min-w-fit">
         {progress.length} downloading...
       </div>
     </div>

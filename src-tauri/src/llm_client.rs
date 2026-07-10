@@ -32,6 +32,61 @@ pub struct ReasoningConfig {
     pub exclude: Option<bool>,
 }
 
+/// OpenAI function-calling tool definition.
+#[derive(Debug, Serialize, Clone)]
+pub struct ToolDefinition {
+    #[serde(rename = "type")]
+    pub kind: String, // always "function"
+    pub function: ToolFunctionDef,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ToolFunctionDef {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// JSON Schema of the arguments object.
+    pub parameters: Value,
+}
+
+impl ToolDefinition {
+    pub fn function(name: String, description: Option<String>, parameters: Value) -> Self {
+        Self {
+            kind: "function".to_string(),
+            function: ToolFunctionDef {
+                name,
+                description,
+                parameters,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ToolCall {
+    /// Part of the OpenAI wire format; unused today but kept for multi-call
+    /// support later.
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub id: Option<String>,
+    pub function: ToolCallFunction,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ToolCallFunction {
+    pub name: String,
+    /// JSON-encoded arguments object (OpenAI convention).
+    pub arguments: String,
+}
+
+/// Result of a chat completion that offered tools: the model either answered
+/// in text or requested tool calls.
+#[derive(Debug)]
+pub enum ChatOutcome {
+    Text(Option<String>),
+    ToolCalls(Vec<ToolCall>),
+}
+
 #[derive(Debug, Serialize)]
 struct ChatCompletionRequest {
     model: String,
@@ -42,6 +97,10 @@ struct ChatCompletionRequest {
     reasoning_effort: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reasoning: Option<ReasoningConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<ToolDefinition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_choice: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,6 +116,8 @@ struct ChatChoice {
 #[derive(Debug, Deserialize)]
 struct ChatMessageResponse {
     content: Option<String>,
+    #[serde(default)]
+    tool_calls: Option<Vec<ToolCall>>,
 }
 
 /// Build headers for API requests based on provider type
@@ -185,6 +246,8 @@ pub async fn send_chat_completion_with_schema(
         response_format,
         reasoning_effort,
         reasoning,
+        tools: None,
+        tool_choice: None,
     };
 
     let response = client
@@ -215,6 +278,72 @@ pub async fn send_chat_completion_with_schema(
         .choices
         .first()
         .and_then(|choice| choice.message.content.clone()))
+}
+
+/// Send a chat completion offering tools (OpenAI function-calling format).
+/// Returns the model's tool calls, or its text answer when it chose none.
+pub async fn send_chat_completion_with_tools(
+    provider: &PostProcessProvider,
+    api_key: String,
+    model: &str,
+    system_prompt: String,
+    user_content: String,
+    tools: Vec<ToolDefinition>,
+) -> Result<ChatOutcome, String> {
+    let base_url = provider.base_url.trim_end_matches('/');
+    let url = format!("{}/chat/completions", base_url);
+    let client = create_client(provider, &api_key)?;
+
+    let request_body = ChatCompletionRequest {
+        model: model.to_string(),
+        messages: vec![
+            ChatMessage {
+                role: "system".to_string(),
+                content: system_prompt,
+            },
+            ChatMessage {
+                role: "user".to_string(),
+                content: user_content,
+            },
+        ],
+        response_format: None,
+        reasoning_effort: Some("none".to_string()),
+        reasoning: None,
+        tools: Some(tools),
+        tool_choice: Some(Value::String("auto".to_string())),
+    };
+
+    let response = client
+        .post(&url)
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format!("HTTP request failed: {}", e))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Failed to read error response".to_string());
+        return Err(format!(
+            "API request failed with status {}: {}",
+            status, error_text
+        ));
+    }
+
+    let completion: ChatCompletionResponse = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse API response: {}", e))?;
+
+    let Some(choice) = completion.choices.into_iter().next() else {
+        return Ok(ChatOutcome::Text(None));
+    };
+    match choice.message.tool_calls {
+        Some(calls) if !calls.is_empty() => Ok(ChatOutcome::ToolCalls(calls)),
+        _ => Ok(ChatOutcome::Text(choice.message.content)),
+    }
 }
 
 /// Fetch available models from an OpenAI-compatible API

@@ -1,5 +1,7 @@
 pub mod audio;
 pub mod history;
+pub mod intelligence;
+pub mod mcp;
 pub mod models;
 pub mod transcription;
 

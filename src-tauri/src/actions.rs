@@ -52,6 +52,8 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    /// Route the transcript to an MCP tool call instead of pasting it.
+    voice_command: bool,
 }
 
 /// Field name for structured output JSON schema
@@ -173,7 +175,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     // - openrouter: nested reasoning object; exclude:true also keeps reasoning text
     //   out of the response so it can't pollute structured-output JSON parsing
     let (reasoning_effort, reasoning) = match provider.id.as_str() {
-        "custom" => (Some("none".to_string()), None),
+        "custom" | "ollama" => (Some("none".to_string()), None),
         "openrouter" => (
             None,
             Some(crate::llm_client::ReasoningConfig {
@@ -393,6 +395,130 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
+/// Voice edit commands: when the fresh transcript is an edit command
+/// ("scratch that", "make it shorter") targeting a recent paste, execute it
+/// against the focused app and return `true` — the transcript is consumed and
+/// must not be pasted or saved to history. Any intelligence failure falls
+/// through to plain dictation, except failures after the intent was clearly
+/// recognized (then the command is consumed and an error surfaced instead of
+/// pasting command speech as text).
+async fn try_voice_edit(
+    app: &AppHandle,
+    transcript: &str,
+    rm: &Arc<AudioRecordingManager>,
+    cancel_generation: u64,
+) -> bool {
+    use crate::intelligence::edit::{self, EditIntent};
+    use crate::intelligence::last_output::LastOutputState;
+
+    let settings = get_settings(app);
+    // Auto-submit already pressed Enter after the last paste — deleting
+    // backwards would eat someone else's characters.
+    if !settings.voice_edit_enabled || settings.auto_submit {
+        return false;
+    }
+    let last_state = app.state::<LastOutputState>();
+    let window = Duration::from_secs(settings.voice_edit_window_secs.max(1));
+    let Some(last) = last_state.get_fresh(window) else {
+        return false;
+    };
+
+    // Two-tier detection: phrase table, then LLM only for edit-shaped
+    // utterances (never delays ordinary dictation).
+    let intent = match edit::detect_fast(transcript) {
+        Some(intent) => Some(intent),
+        None if edit::is_edit_candidate(transcript) => {
+            match crate::intelligence::resolve_context(&settings) {
+                Ok(ctx) => complete_unless_cancelled(edit::detect_llm(&ctx, transcript), || {
+                    rm.was_cancelled_since(cancel_generation)
+                })
+                .await
+                .and_then(|r| {
+                    r.unwrap_or_else(|e| {
+                        debug!("Edit-intent LLM check failed; treating as dictation: {e}");
+                        None
+                    })
+                }),
+                Err(e) => {
+                    debug!("Intelligence not configured; treating as dictation: {e}");
+                    None
+                }
+            }
+        }
+        None => None,
+    };
+    let Some(intent) = intent else {
+        return false;
+    };
+
+    match intent {
+        EditIntent::Delete => {
+            debug!(
+                "Voice edit: deleting last output ({} chars)",
+                last.char_count
+            );
+            let app_clone = app.clone();
+            let count = last.char_count;
+            let _ = app.run_on_main_thread(move || {
+                if let Err(e) = crate::clipboard::delete_chars(&app_clone, count) {
+                    error!("Voice edit delete failed: {e}");
+                    let _ = app_clone.emit("paste-error", ());
+                }
+            });
+            last_state.clear();
+            true
+        }
+        EditIntent::Rewrite(style) => {
+            debug!("Voice edit: rewriting last output ({style:?})");
+            show_processing_overlay(app);
+            let ctx = match crate::intelligence::resolve_context(&settings) {
+                Ok(ctx) => ctx,
+                Err(e) => {
+                    warn!("Voice edit rewrite unavailable: {e}");
+                    let _ = app.emit("transcription-error", format!("Voice edit failed: {e}"));
+                    return true; // recognized command; don't paste it as text
+                }
+            };
+            let rewrite_result = complete_unless_cancelled(
+                edit::rewrite(&ctx, last.text.trim_end(), &style),
+                || rm.was_cancelled_since(cancel_generation),
+            )
+            .await;
+            match rewrite_result {
+                Some(Ok(new_text)) => {
+                    let app_clone = app.clone();
+                    let count = last.char_count;
+                    let _ = app.run_on_main_thread(move || {
+                        if let Err(e) = crate::clipboard::delete_chars(&app_clone, count) {
+                            error!("Voice edit delete-before-rewrite failed: {e}");
+                            let _ = app_clone.emit("paste-error", ());
+                            return;
+                        }
+                        match utils::paste(new_text, app_clone.clone()) {
+                            Ok(outcome) => {
+                                if !outcome.auto_submitted {
+                                    app_clone.state::<LastOutputState>().record(outcome.text);
+                                }
+                            }
+                            Err(e) => {
+                                error!("Voice edit paste failed: {e}");
+                                let _ = app_clone.emit("paste-error", ());
+                            }
+                        }
+                    });
+                    true
+                }
+                Some(Err(e)) => {
+                    warn!("Voice edit rewrite failed: {e}");
+                    let _ = app.emit("transcription-error", format!("Voice edit failed: {e}"));
+                    true
+                }
+                None => true, // cancelled
+            }
+        }
+    }
+}
+
 /// Resolve the persisted language *intent* into the language the currently-loaded
 /// model will actually use — the same capability-aware coercion the transcription
 /// paths apply (see [`crate::managers::model::effective_language`]). Post-processing
@@ -488,7 +614,10 @@ impl ShortcutAction for TranscribeAction {
         // Get the microphone mode to determine audio feedback timing
         let plan_started = Instant::now();
         let settings = get_settings(app);
-        let is_always_on = settings.always_on_microphone;
+        let is_always_on = matches!(
+            crate::managers::wakeword::effective_microphone_mode(&settings),
+            crate::managers::audio::MicrophoneMode::AlwaysOn
+        );
 
         let selected_model_info = app
             .state::<Arc<ModelManager>>()
@@ -501,13 +630,36 @@ impl ShortcutAction for TranscribeAction {
             .as_ref()
             .map(|m| m.supports_streaming)
             .unwrap_or(false);
-        let vad_policy = if !settings.vad_enabled {
+        let mut vad_policy = if !settings.vad_enabled {
             VadPolicy::Disabled
         } else if model_supports_streaming {
             VadPolicy::Streaming
         } else {
             VadPolicy::Offline
         };
+
+        // Wake-word sessions end hands-free on silence, which needs VAD frame
+        // verdicts — so a Disabled policy is upgraded to Offline for them.
+        let wake_initiated = _shortcut_str == crate::managers::wakeword::WAKE_SOURCE;
+        let auto_stop = if wake_initiated {
+            if vad_policy == VadPolicy::Disabled {
+                vad_policy = VadPolicy::Offline;
+            }
+            // 30 ms per frame; see AutoStopConfig docs for the SmoothedVad
+            // hangover latency this rides on top of.
+            Some(crate::audio_toolkit::audio::AutoStopConfig {
+                silence_frames: (settings.wake_word_silence_timeout_ms / 30).max(10) as usize,
+                no_speech_frames: 8_000 / 30, // cancel after 8 s of no speech
+                max_frames: 60_000 / 30,      // 60 s safety cap
+            })
+        } else {
+            None
+        };
+        let session = crate::audio_toolkit::audio::RecordSession {
+            vad_policy,
+            auto_stop,
+        };
+
         if model_supports_streaming {
             tm.start_stream();
         }
@@ -546,7 +698,7 @@ impl ShortcutAction for TranscribeAction {
                 rm_clone.apply_mute();
             });
 
-            if let Err(e) = rm.try_start_recording(&binding_id, vad_policy) {
+            if let Err(e) = rm.try_start_recording(&binding_id, session) {
                 debug!("Recording failed: {}", e);
                 recording_error = Some(e);
             }
@@ -555,7 +707,7 @@ impl ShortcutAction for TranscribeAction {
             // This allows the microphone to be activated before playing the sound
             debug!("On-demand mode: Starting recording first, then audio feedback");
             let recording_start_time = Instant::now();
-            match rm.try_start_recording(&binding_id, vad_policy) {
+            match rm.try_start_recording(&binding_id, session) {
                 Ok(()) => {
                     debug!("Recording started in {:?}", recording_start_time.elapsed());
                     // Small delay to ensure microphone stream is active
@@ -645,6 +797,7 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let voice_command = self.voice_command;
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
@@ -743,6 +896,57 @@ impl ShortcutAction for TranscribeAction {
                                 transcription
                             );
 
+                            if voice_command {
+                                let transcript = transcription.trim().to_string();
+                                if !transcript.is_empty() {
+                                    show_processing_overlay(&ah);
+                                    let result = complete_unless_cancelled(
+                                        crate::intelligence::intent::run_voice_command(
+                                            &ah,
+                                            &transcript,
+                                        ),
+                                        || rm.was_cancelled_since(cancel_generation),
+                                    )
+                                    .await;
+                                    if let Some(result) = result {
+                                        if wav_saved {
+                                            let summary = match &result {
+                                                crate::intelligence::intent::VoiceCommandResult::Executed { tool, summary } =>
+                                                    Some(format!("[{tool}] {summary}")),
+                                                _ => None,
+                                            };
+                                            if let Err(err) = hm.save_entry(
+                                                file_name, transcript, false, summary, None,
+                                                "command",
+                                            ) {
+                                                error!(
+                                                    "Failed to save command history entry: {err}"
+                                                );
+                                            }
+                                        }
+                                        use tauri_specta::Event as _;
+                                        if let Err(e) = result.emit(&ah) {
+                                            error!("Failed to emit voice command result: {e}");
+                                        }
+                                    }
+                                }
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                                return;
+                            }
+
+                            // Voice edit commands consume the transcript: no
+                            // paste, no history entry (drop the command's WAV).
+                            if try_voice_edit(&ah, &transcription, &rm, cancel_generation).await {
+                                if wav_saved {
+                                    let _ =
+                                        std::fs::remove_file(hm.recordings_dir().join(&file_name));
+                                }
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                                return;
+                            }
+
                             if post_process {
                                 if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
@@ -777,8 +981,14 @@ impl ShortcutAction for TranscribeAction {
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
+                                    "dictation",
                                 ) {
                                     error!("Failed to save history entry: {}", err);
+                                } else {
+                                    // Opportunistic vocabulary scan (no-op
+                                    // until enough new entries accumulate).
+                                    ah.state::<Arc<crate::intelligence::vocab::VocabMiner>>()
+                                        .maybe_run(false);
                                 }
                             }
 
@@ -799,10 +1009,28 @@ impl ShortcutAction for TranscribeAction {
                                     }
 
                                     match utils::paste(final_text, ah_clone.clone()) {
-                                        Ok(()) => debug!(
-                                            "Text pasted successfully in {:?}",
-                                            paste_time.elapsed()
-                                        ),
+                                        Ok(outcome) => {
+                                            debug!(
+                                                "Text pasted successfully in {:?}",
+                                                paste_time.elapsed()
+                                            );
+                                            // Track for voice edit commands.
+                                            // Auto-submitted output can't be
+                                            // edited (Enter already sent).
+                                            let last = ah_clone
+                                                .state::<crate::intelligence::last_output::LastOutputState>();
+                                            if outcome.auto_submitted
+                                                || matches!(
+                                                    outcome.method,
+                                                    crate::settings::PasteMethod::None
+                                                        | crate::settings::PasteMethod::ExternalScript
+                                                )
+                                            {
+                                                last.clear();
+                                            } else {
+                                                last.record(outcome.text);
+                                            }
+                                        }
                                         Err(e) => {
                                             error!("Failed to paste transcription: {}", e);
                                             let _ = ah_clone.emit("paste-error", ());
@@ -840,6 +1068,7 @@ impl ShortcutAction for TranscribeAction {
                                     post_process,
                                     None,
                                     None,
+                                    "dictation",
                                 ) {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
@@ -908,11 +1137,22 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            voice_command: false,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            voice_command: false,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "voice_command".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+            voice_command: true,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),

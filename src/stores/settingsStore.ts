@@ -6,6 +6,7 @@ import type {
   AudioDevice,
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
+  WakeWordModel,
 } from "@/bindings";
 import { commands } from "@/bindings";
 
@@ -163,6 +164,25 @@ const settingUpdaters: {
     commands.changeTranscribeGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  wake_word_enabled: (value) =>
+    commands.changeWakeWordEnabledSetting(value as boolean),
+  wake_word_model: (value) =>
+    commands.changeWakeWordModelSetting(value as WakeWordModel),
+  wake_word_custom_model_path: (value) =>
+    commands.changeWakeWordCustomModelPathSetting(value as string | null),
+  wake_word_threshold: (value) =>
+    commands.changeWakeWordThresholdSetting(value as number),
+  wake_word_silence_timeout_ms: (value) =>
+    commands.changeWakeWordSilenceTimeoutSetting(value as number),
+  intelligence_provider_id: (value) =>
+    commands.changeIntelligenceProviderSetting(value as string),
+  intelligence_model: (value) =>
+    commands.changeIntelligenceModelSetting(value as string),
+  voice_edit_enabled: (value) =>
+    commands.changeVoiceEditEnabledSetting(value as boolean),
+  voice_edit_window_secs: (value) =>
+    commands.changeVoiceEditWindowSetting(value as number),
+  mcp_enabled: (value) => commands.changeMcpEnabledSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

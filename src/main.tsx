@@ -6,6 +6,10 @@ import App from "./App";
 // Set platform before render so CSS can scope per-platform (e.g. scrollbar styles)
 document.documentElement.dataset.platform = platform();
 
+// The Tron theme is dark-only: keep `dark:` variants active regardless of the
+// OS appearance setting (see @custom-variant dark in App.css)
+document.documentElement.classList.add("dark");
+
 // Initialize i18n
 import "./i18n";
 
