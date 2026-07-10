@@ -373,6 +373,8 @@ pub struct AppSettings {
     pub selected_output_device: Option<String>,
     #[serde(default = "default_translate_to_english")]
     pub translate_to_english: bool,
+    #[serde(default = "default_translation_target_language")]
+    pub translation_target_language: String,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
     #[serde(default = "default_overlay_position")]
@@ -474,6 +476,10 @@ fn default_always_on_microphone() -> bool {
 
 fn default_translate_to_english() -> bool {
     false
+}
+
+fn default_translation_target_language() -> String {
+    "en".to_string()
 }
 
 fn default_start_hidden() -> bool {
@@ -809,6 +815,26 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+
+    #[cfg(target_os = "windows")]
+    let default_translation_shortcut = "ctrl+alt+space";
+    #[cfg(target_os = "macos")]
+    let default_translation_shortcut = "option+ctrl+space";
+    #[cfg(target_os = "linux")]
+    let default_translation_shortcut = "ctrl+alt+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_translation_shortcut = "alt+ctrl+space";
+
+    bindings.insert(
+        "transcribe_with_translation".to_string(),
+        ShortcutBinding {
+            id: "transcribe_with_translation".to_string(),
+            name: "Transcribe with Translation".to_string(),
+            description: "Converts your speech into text and translates it.".to_string(),
+            default_binding: default_translation_shortcut.to_string(),
+            current_binding: default_translation_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -839,6 +865,7 @@ pub fn get_default_settings() -> AppSettings {
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
+        translation_target_language: default_translation_target_language(),
         selected_language: "auto".to_string(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
@@ -1466,5 +1493,20 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn default_settings_include_translation_target_and_binding() {
+        let s = get_default_settings();
+        assert_eq!(s.translation_target_language, "en");
+        assert!(s.bindings.contains_key("transcribe_with_translation"));
+    }
+
+    #[test]
+    fn translation_target_language_defaults_when_missing_from_json() {
+        // A stored config predating this feature has no field; serde default fills it.
+        let json = r#"{"settings_schema_version":1}"#;
+        let parsed: AppSettings = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.translation_target_language, "en");
     }
 }

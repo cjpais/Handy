@@ -542,6 +542,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_start_hidden_setting,
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
+            shortcut::change_translation_target_language_setting,
             shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,
             shortcut::change_overlay_style_setting,
