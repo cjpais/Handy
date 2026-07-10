@@ -171,24 +171,29 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     if let Some(mouse_location) = input::get_cursor_position(app_handle) {
         if let Ok(monitors) = app_handle.available_monitors() {
             for monitor in monitors {
-                // Tauri's monitor position/size are physical pixels, but enigo
-                // may return logical coordinates (confirmed on macOS via
-                // NSEvent::mouseLocation; on Windows, GetCursorPos behavior
-                // depends on the process DPI-awareness context). Dividing by
-                // scale_factor normalizes to logical, which is safe regardless:
-                // if enigo returns logical it matches directly, and if it returns
-                // physical on a scale=1 monitor the division is a no-op.
-                let scale = monitor.scale_factor();
-                let pos = PhysicalPosition::new(
-                    (monitor.position().x as f64 / scale) as i32,
-                    (monitor.position().y as f64 / scale) as i32,
-                );
-                let size = PhysicalSize::new(
-                    (monitor.size().width as f64 / scale) as u32,
-                    (monitor.size().height as f64 / scale) as u32,
-                );
-                if is_mouse_within_monitor(mouse_location, &pos, &size) {
+                // Enigo uses GetCursorPos on Windows, so both the cursor and
+                // Tauri's monitor bounds are in physical screen coordinates.
+                #[cfg(target_os = "windows")]
+                if is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size()) {
                     return Some(monitor);
+                }
+
+                // Enigo returns logical coordinates on macOS. Preserve the
+                // existing normalized comparison there and on Linux.
+                #[cfg(not(target_os = "windows"))]
+                {
+                    let scale = monitor.scale_factor();
+                    let pos = PhysicalPosition::new(
+                        (monitor.position().x as f64 / scale) as i32,
+                        (monitor.position().y as f64 / scale) as i32,
+                    );
+                    let size = PhysicalSize::new(
+                        (monitor.size().width as f64 / scale) as u32,
+                        (monitor.size().height as f64 / scale) as u32,
+                    );
+                    if is_mouse_within_monitor(mouse_location, &pos, &size) {
+                        return Some(monitor);
+                    }
                 }
             }
         }
@@ -225,9 +230,8 @@ fn is_mouse_within_monitor(
 /// The per-platform OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants
 /// already account for system chrome (menu bar, taskbar).
 ///
-/// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
-/// converts PhysicalPosition using the scale factor of the monitor the window
-/// is *currently* on, which is wrong when moving cross-monitor.
+/// Windows uses `place_windows_overlay` instead because a mixed-DPI desktop
+/// does not have one consistent global logical coordinate space.
 fn calculate_overlay_position(
     app_handle: &AppHandle,
     width: f64,
@@ -253,21 +257,64 @@ fn calculate_overlay_position(
 
 /// Current overlay window size in logical units (points), for repositioning
 /// without assuming a fixed size (compact vs. streaming).
+#[cfg(not(target_os = "windows"))]
 fn current_overlay_logical_size(window: &tauri::webview::WebviewWindow) -> Option<(f64, f64)> {
     let size = window.inner_size().ok()?;
     let scale = window.scale_factor().ok()?;
     Some((size.width as f64 / scale, size.height as f64 / scale))
 }
 
-/// Reapplies the logical size after a move so WebView2 refreshes its rendering
-/// bounds using the destination monitor's DPI.
 #[cfg(target_os = "windows")]
-fn refresh_overlay_rendering_bounds(
-    window: &tauri::webview::WebviewWindow,
-    width: f64,
-    height: f64,
+static WINDOWS_OVERLAY_IS_STREAMING: AtomicBool = AtomicBool::new(false);
+
+/// Positions and sizes the overlay atomically in the destination monitor's
+/// physical coordinate space. This avoids converting through the window's old
+/// DPI when crossing between differently-scaled monitors.
+#[cfg(target_os = "windows")]
+fn place_windows_overlay(
+    app_handle: &AppHandle,
+    overlay_window: &tauri::webview::WebviewWindow,
+    logical_width: f64,
+    logical_height: f64,
 ) {
-    let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+    use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, SWP_NOACTIVATE, SWP_NOZORDER};
+
+    let Some(monitor) = get_monitor_with_cursor(app_handle) else {
+        return;
+    };
+    let scale = monitor.scale_factor();
+    let width = (logical_width * scale).round().max(1.0) as i32;
+    let height = (logical_height * scale).round().max(1.0) as i32;
+    let monitor_position = monitor.position();
+    let monitor_size = monitor.size();
+    let x = (monitor_position.x as f64 + (monitor_size.width as f64 - width as f64) / 2.0).round()
+        as i32;
+    let y = match settings::get_settings(app_handle).overlay_position {
+        OverlayPosition::Top => {
+            (monitor_position.y as f64 + OVERLAY_TOP_OFFSET * scale).round() as i32
+        }
+        OverlayPosition::Bottom => (monitor_position.y as f64 + monitor_size.height as f64
+            - height as f64
+            - OVERLAY_BOTTOM_OFFSET * scale)
+            .round() as i32,
+    };
+
+    let overlay_clone = overlay_window.clone();
+    let _ = overlay_clone.clone().run_on_main_thread(move || {
+        if let Ok(hwnd) = overlay_clone.hwnd() {
+            unsafe {
+                let _ = SetWindowPos(
+                    hwnd,
+                    None,
+                    x,
+                    y,
+                    width,
+                    height,
+                    SWP_NOACTIVATE | SWP_NOZORDER,
+                );
+            }
+        }
+    });
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
@@ -385,21 +432,29 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         update_gtk_layer_shell_anchors(&overlay_window);
 
         let size_started = std::time::Instant::now();
+        #[cfg(not(target_os = "windows"))]
         let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+        #[cfg(target_os = "windows")]
+        WINDOWS_OVERLAY_IS_STREAMING.store(state == "streaming", Ordering::Relaxed);
         let size_elapsed = size_started.elapsed();
 
         let pos_started = std::time::Instant::now();
-        let mut set_pos_elapsed = std::time::Duration::ZERO;
-        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
-            let set_pos_started = std::time::Instant::now();
-            let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
-            set_pos_elapsed = set_pos_started.elapsed();
-        }
-        let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
-
+        #[cfg(not(target_os = "windows"))]
+        let set_pos_elapsed =
+            if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+                let set_pos_started = std::time::Instant::now();
+                let _ = overlay_window
+                    .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+                set_pos_started.elapsed()
+            } else {
+                std::time::Duration::ZERO
+            };
         #[cfg(target_os = "windows")]
-        refresh_overlay_rendering_bounds(&overlay_window, width, height);
+        let set_pos_elapsed = {
+            place_windows_overlay(app_handle, &overlay_window, width, height);
+            std::time::Duration::ZERO
+        };
+        let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
 
         let show_started = std::time::Instant::now();
         let _ = overlay_window.show();
@@ -449,17 +504,28 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
             update_gtk_layer_shell_anchors(&overlay_window);
         }
 
-        // Use the window's current size so centering stays correct whether the
-        // overlay is in compact or streaming layout.
-        let (width, height) = current_overlay_logical_size(&overlay_window)
-            .unwrap_or((OVERLAY_WIDTH, OVERLAY_HEIGHT));
-        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
-            let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        #[cfg(target_os = "windows")]
+        {
+            let state = if WINDOWS_OVERLAY_IS_STREAMING.load(Ordering::Relaxed) {
+                "streaming"
+            } else {
+                "recording"
+            };
+            let (width, height) = overlay_dimensions(state);
+            place_windows_overlay(app_handle, &overlay_window, width, height);
         }
 
-        #[cfg(target_os = "windows")]
-        refresh_overlay_rendering_bounds(&overlay_window, width, height);
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Use the window's current size so centering stays correct whether the
+            // overlay is in compact or streaming layout.
+            let (width, height) = current_overlay_logical_size(&overlay_window)
+                .unwrap_or((OVERLAY_WIDTH, OVERLAY_HEIGHT));
+            if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+                let _ = overlay_window
+                    .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            }
+        }
     }
 }
 
