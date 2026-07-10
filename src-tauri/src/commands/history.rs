@@ -93,8 +93,12 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording contains no speech".to_string());
     }
 
-    let processed =
-        process_transcription_output(&app, &transcription, entry.post_process_requested).await;
+    let mode = if entry.post_process_requested {
+        crate::actions::TranscribeMode::PostProcess
+    } else {
+        crate::actions::TranscribeMode::Plain
+    };
+    let processed = process_transcription_output(&app, &transcription, mode).await;
     history_manager
         .update_transcription(
             id,

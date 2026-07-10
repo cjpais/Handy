@@ -49,9 +49,16 @@ pub trait ShortcutAction: Send + Sync {
     fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum TranscribeMode {
+    Plain,
+    PostProcess,
+    Translate,
+}
+
 // Transcribe Action
 struct TranscribeAction {
-    post_process: bool,
+    mode: TranscribeMode,
 }
 
 /// Field name for structured output JSON schema
@@ -151,7 +158,11 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+async fn run_llm(
+    settings: &AppSettings,
+    transcription: &str,
+    system_prompt: String,
+) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
@@ -179,30 +190,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         return None;
     }
 
-    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
-        Some(id) => id.clone(),
-        None => {
-            debug!("Post-processing skipped because no prompt is selected");
-            return None;
-        }
-    };
-
-    let prompt = match settings
-        .post_process_prompts
-        .iter()
-        .find(|prompt| prompt.id == selected_prompt_id)
-    {
-        Some(prompt) => prompt.prompt.clone(),
-        None => {
-            debug!(
-                "Post-processing skipped because prompt '{}' was not found",
-                selected_prompt_id
-            );
-            return None;
-        }
-    };
-
-    if prompt.trim().is_empty() {
+    if system_prompt.trim().is_empty() {
         debug!("Post-processing skipped because the selected prompt is empty");
         return None;
     }
@@ -237,7 +225,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt);
+        let system_prompt = build_system_prompt(&system_prompt);
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -352,7 +340,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 
     // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    let processed_prompt = system_prompt.replace("${output}", transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
@@ -467,7 +455,7 @@ fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
-    post_process: bool,
+    mode: TranscribeMode,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
     let mut final_text = transcription.to_string();
@@ -484,23 +472,41 @@ pub(crate) async fn process_transcription_output(
         final_text = converted_text;
     }
 
-    if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
-            post_processed_text = Some(processed_text.clone());
-            final_text = processed_text;
+    match mode {
+        TranscribeMode::PostProcess => {
+            let system_prompt = settings
+                .post_process_selected_prompt_id
+                .as_ref()
+                .and_then(|id| {
+                    settings
+                        .post_process_prompts
+                        .iter()
+                        .find(|p| &p.id == id)
+                })
+                .map(|p| p.prompt.clone());
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
-                    .iter()
-                    .find(|prompt| &prompt.id == prompt_id)
+            if let Some(system_prompt) = system_prompt {
+                if let Some(processed) = run_llm(&settings, &final_text, system_prompt.clone()).await
                 {
-                    post_process_prompt = Some(prompt.prompt.clone());
+                    post_processed_text = Some(processed.clone());
+                    final_text = processed;
+                    post_process_prompt = Some(system_prompt);
                 }
             }
         }
-    } else if final_text != transcription {
-        post_processed_text = Some(final_text.clone());
+        TranscribeMode::Translate => {
+            let system_prompt = build_translation_prompt(&settings.translation_target_language);
+            if let Some(processed) = run_llm(&settings, &final_text, system_prompt.clone()).await {
+                post_processed_text = Some(processed.clone());
+                final_text = processed;
+                post_process_prompt = Some(system_prompt);
+            }
+        }
+        TranscribeMode::Plain => {
+            if final_text != transcription {
+                post_processed_text = Some(final_text.clone());
+            }
+        }
     }
 
     ProcessedTranscription {
@@ -694,7 +700,7 @@ impl ShortcutAction for TranscribeAction {
         play_feedback_sound(app, SoundType::Stop);
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
-        let post_process = self.post_process;
+        let mode = self.mode;
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
@@ -793,7 +799,7 @@ impl ShortcutAction for TranscribeAction {
                                 transcription
                             );
 
-                            if post_process {
+                            if mode != TranscribeMode::Plain {
                                 if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
@@ -801,7 +807,7 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
                             let Some(processed) = complete_unless_cancelled(
-                                process_transcription_output(&ah, &transcription, post_process),
+                                process_transcription_output(&ah, &transcription, mode),
                                 || rm.was_cancelled_since(cancel_generation),
                             )
                             .await
@@ -824,7 +830,7 @@ impl ShortcutAction for TranscribeAction {
                                 if let Err(err) = hm.save_entry(
                                     file_name,
                                     transcription,
-                                    post_process,
+                                    mode != TranscribeMode::Plain,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
@@ -887,7 +893,7 @@ impl ShortcutAction for TranscribeAction {
                                 if let Err(save_err) = hm.save_entry(
                                     file_name,
                                     String::new(),
-                                    post_process,
+                                    mode != TranscribeMode::Plain,
                                     None,
                                     None,
                                 ) {
@@ -956,13 +962,15 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     let mut map = HashMap::new();
     map.insert(
         "transcribe".to_string(),
-        Arc::new(TranscribeAction {
-            post_process: false,
-        }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction { mode: TranscribeMode::Plain }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction { mode: TranscribeMode::PostProcess }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_with_translation".to_string(),
+        Arc::new(TranscribeAction { mode: TranscribeMode::Translate }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
