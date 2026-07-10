@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
@@ -234,11 +234,11 @@ function App() {
     setOnboardingStep("done");
   };
 
-  // Rendered in every branch (including onboarding) so toast.error() calls
-  // surface to the user. sonner renders via a portal, so its position in the
-  // tree doesn't affect layout. Without this, errors during onboarding (e.g. a
-  // model download failing because blob.handy.computer is unreachable) are
-  // silently swallowed and the wizard just appears to "blink".
+  // Rendered once around every step below (including onboarding) so
+  // toast.error() calls surface to the user. sonner renders via a portal, so
+  // its position in the tree doesn't affect layout. Without this, errors during
+  // onboarding (e.g. a model download failing because blob.handy.computer is
+  // unreachable) are silently swallowed and the wizard just appears to "blink".
   const toaster = (
     <Toaster
       theme="system"
@@ -259,49 +259,49 @@ function App() {
     return null;
   }
 
+  // Select the content for the current step. The Toaster is rendered once, in a
+  // stable wrapper around this node, so crossing between onboarding steps and
+  // the main app never remounts it (which would drop any in-flight toast).
+  let content: ReactNode;
   if (onboardingStep === "accessibility") {
-    return (
-      <>
-        {toaster}
-        <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
-      </>
+    content = (
+      <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
     );
-  }
-
-  if (onboardingStep === "model") {
-    return (
-      <>
-        {toaster}
-        <Onboarding onModelSelected={handleModelSelected} />
-      </>
+  } else if (onboardingStep === "model") {
+    content = <Onboarding onModelSelected={handleModelSelected} />;
+  } else {
+    content = (
+      <div
+        dir={direction}
+        className="h-screen flex flex-col select-none cursor-default"
+      >
+        {/* Main content area that takes remaining space */}
+        <div className="flex-1 flex overflow-hidden">
+          <Sidebar
+            activeSection={currentSection}
+            onSectionChange={setCurrentSection}
+          />
+          {/* Scrollable content area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
+              <div className="flex flex-col items-center p-4 gap-4">
+                <AccessibilityPermissions />
+                {renderSettingsContent(currentSection)}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Fixed footer at bottom */}
+        <Footer />
+      </div>
     );
   }
 
   return (
-    <div
-      dir={direction}
-      className="h-screen flex flex-col select-none cursor-default"
-    >
+    <>
       {toaster}
-      {/* Main content area that takes remaining space */}
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          activeSection={currentSection}
-          onSectionChange={setCurrentSection}
-        />
-        {/* Scrollable content area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col items-center p-4 gap-4">
-              <AccessibilityPermissions />
-              {renderSettingsContent(currentSection)}
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Fixed footer at bottom */}
-      <Footer />
-    </div>
+      {content}
+    </>
   );
 }
 
