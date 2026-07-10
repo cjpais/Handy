@@ -817,9 +817,11 @@ pub fn run(cli_args: CliArgs) {
 
             let mut settings = get_settings(app.handle());
 
-            // Apply the persisted appearance theme to the window chrome (e.g. the
-            // Windows title bar) before it is shown, so it matches the in-app
-            // palette without a flash of the wrong theme.
+            // Apply the persisted appearance theme to the Windows title bar before
+            // the window is shown, so it matches the in-app palette without a flash
+            // of the wrong theme. On macOS/Linux, Tauri themes are app-wide and
+            // would also affect windows that intentionally keep the system theme.
+            #[cfg(target_os = "windows")]
             shortcut::apply_window_theme(app.handle(), settings.theme);
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)

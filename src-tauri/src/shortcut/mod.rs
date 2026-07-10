@@ -529,14 +529,16 @@ pub fn change_theme_setting(app: AppHandle, theme: String) -> Result<(), String>
     };
     settings.theme = parsed;
     settings::write_settings(&app, settings);
+    #[cfg(target_os = "windows")]
     apply_window_theme(&app, parsed);
     Ok(())
 }
 
-/// Applies the appearance setting to the OS window chrome (e.g. the Windows
-/// title bar), which CSS `data-theme` cannot reach. `System` clears the override
-/// so the window follows the OS. Call this on startup and whenever the setting
-/// changes to keep the title bar in sync with the in-app palette.
+/// Applies the appearance setting to the Windows title bar, which CSS
+/// `data-theme` cannot reach. `System` clears the override so the window follows
+/// Windows. Call this on startup and whenever the setting changes to keep the
+/// title bar in sync with the in-app palette.
+#[cfg(target_os = "windows")]
 pub fn apply_window_theme(app: &AppHandle, theme: Theme) {
     let window_theme = match theme {
         Theme::System => None,
