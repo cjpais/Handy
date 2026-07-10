@@ -1,7 +1,8 @@
 use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -57,6 +58,9 @@ fn overlay_dimensions(state: &str) -> (f64, f64) {
         (OVERLAY_WIDTH, OVERLAY_HEIGHT)
     }
 }
+
+static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
+const EMIT_THROTTLE_MS: u64 = 33; // ~30 FPS
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -369,19 +373,37 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         #[cfg(target_os = "linux")]
         update_gtk_layer_shell_anchors(&overlay_window);
 
+        let size_started = std::time::Instant::now();
         let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+        let size_elapsed = size_started.elapsed();
+
+        let pos_started = std::time::Instant::now();
+        let mut set_pos_elapsed = std::time::Duration::ZERO;
         if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+            let set_pos_started = std::time::Instant::now();
             let _ = overlay_window
                 .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            set_pos_elapsed = set_pos_started.elapsed();
         }
+        let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
 
+        let show_started = std::time::Instant::now();
         let _ = overlay_window.show();
+        let show_elapsed = show_started.elapsed();
 
         // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 
         let _ = overlay_window.emit("show-overlay", state);
+        log::debug!(
+            "overlay '{}': set_size={:?} pos_calc={:?} set_pos={:?} show={:?}",
+            state,
+            size_elapsed,
+            pos_calc_elapsed,
+            set_pos_elapsed,
+            show_elapsed
+        );
     }
 }
 
@@ -473,6 +495,20 @@ pub fn emit_levels(app_handle: &AppHandle, levels: &[f32]) {
     if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
         return;
     }
+
+    // Throttle to ~30 FPS. Even with the overlay enabled, the raw audio
+    // callback fires far faster than the UI needs; capping emission rate
+    // cuts the per-frame `eval_script`/IPC volume that drives the wry
+    // memory growth in issue #1279 (upstream tauri-apps/wry#1489).
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+    let last = LAST_MIC_LEVEL_EMIT.load(Ordering::Relaxed);
+    if now.saturating_sub(last) < EMIT_THROTTLE_MS {
+        return;
+    }
+    LAST_MIC_LEVEL_EMIT.store(now, Ordering::Relaxed);
 
     // Target only the overlay window. In Tauri 2 both `AppHandle::emit`
     // and `WebviewWindow::emit` broadcast to all webviews; Tauri's
