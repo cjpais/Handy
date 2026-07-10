@@ -529,7 +529,25 @@ pub fn change_theme_setting(app: AppHandle, theme: String) -> Result<(), String>
     };
     settings.theme = parsed;
     settings::write_settings(&app, settings);
+    apply_window_theme(&app, parsed);
     Ok(())
+}
+
+/// Applies the appearance setting to the OS window chrome (e.g. the Windows
+/// title bar), which CSS `data-theme` cannot reach. `System` clears the override
+/// so the window follows the OS. Call this on startup and whenever the setting
+/// changes to keep the title bar in sync with the in-app palette.
+pub fn apply_window_theme(app: &AppHandle, theme: Theme) {
+    let window_theme = match theme {
+        Theme::System => None,
+        Theme::Light => Some(tauri::Theme::Light),
+        Theme::Dark => Some(tauri::Theme::Dark),
+    };
+    if let Some(window) = app.get_webview_window("main") {
+        if let Err(e) = window.set_theme(window_theme) {
+            warn!("Failed to apply window theme: {}", e);
+        }
+    }
 }
 
 #[tauri::command]
