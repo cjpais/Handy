@@ -104,7 +104,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 onClick={() => handleSelect(option.value)}
                 disabled={option.disabled}
               >
-                <span className="whitespace-normal break-words">{option.label}</span>
+                <span className="whitespace-normal break-words">
+                  {option.label}
+                </span>
               </button>
             ))
           )}

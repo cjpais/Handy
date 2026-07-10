@@ -38,6 +38,13 @@ ORT_LIB_LOCATION=$(brew --prefix onnxruntime)/lib ORT_PREFER_DYNAMIC_LINK=1 bun 
 - Visual Studio 2019/2022 with C++ development tools
 - Or Visual Studio Build Tools 2019/2022
 
+> [!IMPORTANT]
+> Windows' 260-character path limit can break the native build (the Vulkan
+> shader generator nests very deep). If `bun run tauri build` fails with
+> `MSB3491` / "path exceeds the OS max path limit", see
+> [Windows build fails with `MSB3491`](#windows-build-fails-with-msb3491--path-exceeds-260-characters)
+> in Troubleshooting.
+
 #### Linux
 
 - Build essentials
@@ -47,17 +54,19 @@ ORT_LIB_LOCATION=$(brew --prefix onnxruntime)/lib ORT_PREFER_DYNAMIC_LINK=1 bun 
   ```bash
   # Ubuntu/Debian
   sudo apt update
-  sudo apt install build-essential libasound2-dev pkg-config libssl-dev libvulkan-dev vulkan-tools glslc libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libgtk-layer-shell0 libgtk-layer-shell-dev patchelf cmake
+  sudo apt install build-essential libasound2-dev pkg-config libssl-dev libvulkan-dev vulkan-tools glslc spirv-headers glslang-tools libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libgtk-layer-shell0 libgtk-layer-shell-dev patchelf cmake
 
   # Fedora/RHEL
   sudo dnf groupinstall "Development Tools"
   sudo dnf install alsa-lib-devel pkgconf openssl-devel vulkan-devel \
+    spirv-headers-devel spirv-tools-devel glslang glslc \
     gtk3-devel webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel \
     gtk-layer-shell gtk-layer-shell-devel \
     cmake
 
   # Arch Linux
   sudo pacman -S base-devel alsa-lib pkgconf openssl vulkan-devel \
+    spirv-headers glslang shaderc \
     gtk3 webkit2gtk-4.1 libappindicator-gtk3 librsvg gtk-layer-shell \
     cmake
   ```
@@ -102,18 +111,21 @@ cd /tmp
 ar x /path/to/Handy/src-tauri/target/release/bundle/deb/Handy_*_amd64.deb data.tar.gz
 tar xzf data.tar.gz
 sudo cp usr/bin/handy /usr/bin/
-sudo cp -r usr/lib/Handy /usr/lib/
+sudo cp -a usr/lib/. /usr/lib/
 sudo cp -r usr/share/icons/hicolor/* /usr/share/icons/hicolor/
 sudo cp usr/share/applications/Handy.desktop /usr/share/applications/
+sudo ldconfig
 ```
 
-After subsequent rebuilds, only the binary needs re-copying:
+After subsequent rebuilds, copy the binary and any refreshed runtime libraries:
 
 ```bash
 sudo cp src-tauri/target/release/handy /usr/bin/
+sudo cp -a src-tauri/transcribe-libs/. /usr/lib/
+sudo ldconfig
 ```
 
-Resources only need re-copying if they change upstream (new icons, sounds, etc.).
+Resources only need re-copying if they change upstream (new icons, sounds, models, etc.).
 
 ## Troubleshooting
 
@@ -143,3 +155,44 @@ bun run tauri build -- --bundles deb
 ```
 
 Then install using the deb extraction method above.
+
+### Windows build fails with `MSB3491` / path exceeds 260 characters
+
+On Windows the native build can fail partway through with an error like:
+
+```
+error MSB3491: Could not write lines to file "...VCTargetsPath.tlog\VCTargetsPath.lastbuildstate".
+Path: ... exceeds the OS max path limit. The fully qualified file name must be less than 260 characters.
+```
+
+This is **not** a code or toolchain problem — it's Windows' legacy 260-character
+path limit (`MAX_PATH`). The Vulkan shader generator builds as a nested CMake
+sub-project (`...\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\...`),
+which alone adds ~140 characters on top of Cargo's already-deep
+`target\release\build\<crate>-<hash>\out\build\...` directory. If your checkout
+isn't very shallow, MSBuild's `.tlog` write overflows the limit. (CI doesn't hit
+this because it builds from a short root such as `D:\a\Handy`.)
+
+Either fix works; the first is the most reliable:
+
+**1. Build with a shorter target directory** (no admin, fixes it immediately):
+
+```powershell
+$env:CARGO_TARGET_DIR = "C:\h"
+bun run tauri build
+```
+
+Artifacts then land in `C:\h\release\...` instead of the repo's `src-tauri\target\`.
+Alternatively, clone the repo to a short root (e.g. `C:\Handy`).
+
+**2. Enable Windows long paths** (one-time, machine-wide; needs an Administrator
+PowerShell, and modern Visual Studio 2022). This removes the limit for every
+build, not just Handy:
+
+```powershell
+Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' LongPathsEnabled 1
+git config --global core.longpaths true
+```
+
+Restart your shell (or reboot) afterward so the change takes effect. If a build
+still trips on the limit, fall back to option 1.
