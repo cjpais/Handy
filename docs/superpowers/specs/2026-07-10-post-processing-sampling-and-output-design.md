@@ -9,8 +9,12 @@ Give users global temperature and top-k controls for LLM post-processing, and pr
 - Add `post_process_temperature` as a persisted floating-point setting with a default of `0.2` and an allowed range of `0.0` through `2.0`.
 - Add `post_process_top_k` as a persisted integer setting with a default of `40` and an allowed range of `0` through `100`. A value of `0` disables top-k sampling.
 - Show both controls in the post-processing settings beside the prompt configuration, following the existing slider and `SettingContainer` patterns.
-- Add English source translations for all new user-facing labels and descriptions. Other locales may use the existing i18next fallback until translated.
+- Add localized strings for all new user-facing labels and descriptions in every supported locale.
 - Expose dedicated Tauri setting commands and connect them to the Zustand settings updater, preserving the existing optimistic-update behavior.
+- Present the editable prompt as the **System Message** in the prompt editor.
+- Explain that Handy sends the captured transcript automatically as a separate user message; users do not need to include `${output}`.
+- Remove `${output}` from the prompt placeholder example and tip while retaining backend compatibility with saved prompts that still contain the legacy placeholder.
+- Apply the revised prompt-editor copy across every supported locale without adding new UI structure.
 
 ## Request construction
 
