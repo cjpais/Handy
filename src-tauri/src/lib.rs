@@ -817,11 +817,12 @@ pub fn run(cli_args: CliArgs) {
 
             let mut settings = get_settings(app.handle());
 
-            // Apply the persisted appearance theme to the Windows title bar before
+            // Apply the persisted appearance theme to the native title bar before
             // the window is shown, so it matches the in-app palette without a flash
-            // of the wrong theme. On macOS/Linux, Tauri themes are app-wide and
-            // would also affect windows that intentionally keep the system theme.
-            #[cfg(target_os = "windows")]
+            // of the wrong theme. On macOS this sets the app appearance app-wide
+            // (title bar + overlay together), which is the intended behaviour.
+            // Linux is left to CSS `data-theme` alone.
+            #[cfg(any(target_os = "windows", target_os = "macos"))]
             shortcut::apply_window_theme(app.handle(), settings.theme);
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
