@@ -1,0 +1,637 @@
+{
+  "tray": {
+    "settings": "Einstellungen...",
+    "checkUpdates": "Nach Updates suchen...",
+    "copyLastTranscript": "Letzte Transkription kopieren",
+    "unloadModel": "Modell entladen",
+    "model": "Modell",
+    "quit": "Beenden",
+    "cancel": "Abbrechen"
+  },
+  "sidebar": {
+    "general": "Allgemein",
+    "models": "Modelle",
+    "advanced": "Erweitert",
+    "postProcessing": "Nachbearbeitung",
+    "history": "Verlauf",
+    "debug": "Debug",
+    "about": "Info"
+  },
+  "onboarding": {
+    "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
+    "recommended": "Empfohlen",
+    "customModelDescription": "Nicht offiziell unterstützt",
+    "modelCard": {
+      "accuracy": "Genauigkeit",
+      "speed": "Geschwindigkeit"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Schnell und recht genau."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Gute Genauigkeit, mittlere Geschwindigkeit"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Ausgewogene Genauigkeit und Geschwindigkeit."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Gute Genauigkeit, aber langsam."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Nur Englisch. Das beste Modell für englischsprachige Nutzer."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Schnell und genau"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Sehr schnell, nur Englisch. Verarbeitet Akzente gut."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultraschnell, nur Englisch"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Schnell, nur Englisch. Gute Balance zwischen Geschwindigkeit und Genauigkeit."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Nur Englisch. Hohe Qualität."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimiert für taiwanesisches Mandarin. Unterstützung für Code-Switching."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Sehr schnell. Chinesisch, Englisch, Japanisch, Koreanisch, Kantonesisch."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Russische Spracherkennung. Schnell und präzise."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Sehr schnell. Englisch, Deutsch, Spanisch, Französisch. Unterstützt Übersetzung."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Genaue mehrsprachige Erkennung. 25 europäische Sprachen. Unterstützt Übersetzung."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Ein großes, langsameres, aber sehr genaues mehrsprachiges Modell."
+      }
+    },
+    "errors": {
+      "selectModel": "Failed to select model"
+    },
+    "permissions": {
+      "title": "Berechtigungen erforderlich",
+      "description": "Handy benötigt einige Berechtigungen, um richtig zu funktionieren.",
+      "microphone": {
+        "title": "Mikrofonzugriff",
+        "description": "Erforderlich, um deine Stimme für die Transkription zu hören."
+      },
+      "accessibility": {
+        "title": "Bedienungshilfen-Zugriff",
+        "description": "Erforderlich, um transkribierten Text in deine Anwendungen einzugeben."
+      },
+      "grant": "Berechtigung erteilen",
+      "granted": "Erteilt",
+      "waiting": "Warten...",
+      "allGranted": "Alles bereit!",
+      "errors": {
+        "checkFailed": "Berechtigungsprüfung fehlgeschlagen. Bitte erneut versuchen.",
+        "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "Benutzerdefiniert",
+    "streaming": "Streaming",
+    "active": "Aktiv",
+    "switching": "Wechseln...",
+    "noModelsAvailable": "Keine Modelle verfügbar",
+    "verifying": "Überprüfung von {{modelName}}...",
+    "verifyingGeneric": "Überprüfung...",
+    "extracting": "Entpacke {{modelName}}...",
+    "extractingMultiple": "Entpacke {{count}} Modelle...",
+    "extractingGeneric": "Wird entpackt...",
+    "downloading": "Herunterladen {{percentage}}%",
+    "downloadingMultiple": "Lade {{count}} Modelle herunter...",
+    "modelReady": "Modell bereit",
+    "loading": "Lade {{modelName}}...",
+    "loadingGeneric": "Wird geladen...",
+    "modelError": "Modellfehler",
+    "modelUnloaded": "Modell entladen",
+    "noModelDownloadRequired": "Kein Modell - Download erforderlich",
+    "deleteModel": "{{modelName}} löschen",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Unterstützt mehrere Eingabesprachen",
+      "languageCount": "{{total}} languages",
+      "translation": "Kann ins Englische übersetzen",
+      "translate": "Ins Englische übersetzen",
+      "singleLanguage": "Unterstützt nur diese Sprache",
+      "languageOnly": "Nur {{language}}",
+      "streaming": "Zeigt die Transkription live während des Sprechens an"
+    },
+    "cancel": "Abbrechen",
+    "cancelDownload": "Download abbrechen",
+    "legacy": "Veraltet"
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "{{model}}-Einstellungen"
+    },
+    "models": {
+      "title": "Transkriptionsmodelle",
+      "description": "Wähle ein Transkriptionsmodell aus oder lade zusätzliche Modelle herunter. Verschiedene Modelle bieten unterschiedliche Genauigkeits- und Geschwindigkeitsstufen.",
+      "deleteConfirm": "Bist du sicher, dass du {{modelName}} löschen möchtest? Du musst es erneut herunterladen, um es zu verwenden.",
+      "deleteActiveConfirm": "{{modelName}} ist dein aktives Modell. Das Löschen stoppt Transkriptionen, bis du ein neues Modell auswählst. Bist du sicher?",
+      "deleteTitle": "Modell löschen",
+      "filters": {
+        "allLanguages": "Alle Sprachen"
+      },
+      "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
+      "yourModels": "Heruntergeladene Modelle",
+      "availableModels": "Zum Download verfügbar",
+      "searchPlaceholder": "Modelle nach Namen suchen…",
+      "rescan": {
+        "label": "Neu scannen",
+        "tooltip": "Erneut nach Modellen scannen, die außerhalb von Handy zum Modellordner oder Hugging-Face-Cache hinzugefügt wurden"
+      }
+    },
+    "general": {
+      "title": "Allgemein",
+      "shortcut": {
+        "title": "Handy-Tastenkürzel",
+        "description": "Tastenkürzel für die Sprachaufnahme konfigurieren",
+        "loading": "Tastenkürzel werden geladen...",
+        "none": "Keine Tastenkürzel konfiguriert",
+        "notFound": "Tastenkürzel nicht gefunden",
+        "pressKeys": "Tasten drücken...",
+        "bindings": {
+          "transcribe": {
+            "name": "Transkriptions-Tastenkürzel",
+            "description": "Das Tastenkürzel zum Aufnehmen und Transkribieren deiner Stimme."
+          },
+          "cancel": {
+            "name": "Abbrechen-Tastenkürzel",
+            "description": "Das Tastenkürzel zum Abbrechen der aktuellen Aufnahme."
+          },
+          "transcribe_with_post_process": {
+            "name": "Nachbearbeitungs-Tastenkürzel",
+            "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf deine Transkription anwendet."
+          }
+        },
+        "errors": {
+          "restore": "Ursprüngliches Tastenkürzel konnte nicht wiederhergestellt werden",
+          "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}",
+          "reset": "Tastenkürzel konnte nicht auf Originalwert zurückgesetzt werden"
+        }
+      },
+      "language": {
+        "title": "Sprache",
+        "description": "Wähle die Sprache für die Spracherkennung. Auto erkennt die Sprache automatisch, die Auswahl einer bestimmten Sprache kann die Genauigkeit verbessern.",
+        "searchPlaceholder": "Sprachen suchen...",
+        "noResults": "Keine Sprachen gefunden",
+        "auto": "Auto"
+      },
+      "pushToTalk": {
+        "label": "Push-to-Talk",
+        "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      }
+    },
+    "sound": {
+      "title": "Ton",
+      "microphone": {
+        "title": "Mikrofon",
+        "description": "Bevorzugtes Mikrofon auswählen",
+        "placeholder": "Mikrofon auswählen...",
+        "loading": "Wird geladen..."
+      },
+      "audioFeedback": {
+        "label": "Audio-Feedback",
+        "description": "Ton bei Start und Ende der Aufnahme abspielen"
+      },
+      "outputDevice": {
+        "title": "Ausgabegerät",
+        "description": "Bevorzugtes Audioausgabegerät für Feedback-Töne auswählen",
+        "placeholder": "Ausgabegerät auswählen...",
+        "loading": "Wird geladen..."
+      },
+      "volume": {
+        "title": "Lautstärke",
+        "description": "Lautstärke der Audio-Feedback-Töne anpassen"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "App",
+        "output": "Ausgabe",
+        "transcription": "Transkription",
+        "history": "Verlauf",
+        "experimental": "Experimentell"
+      },
+      "experimentalToggle": {
+        "label": "Experimentelle Funktionen",
+        "description": "Experimentelle Funktionen aktivieren, die sich noch in Entwicklung befinden."
+      },
+      "lazyStreamClose": {
+        "label": "Mikrofon zwischen Transkriptionen offen halten",
+        "description": "Hält den Mikrofon-Stream nach dem Aufnahmestopp 30 Sekunden lang offen, um die Latenz bei aufeinanderfolgenden Transkriptionen zu verringern. Kann die Bluetooth-Audioqualität beeinträchtigen."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "Whisper-Beschleunigung",
+          "description": "Hardwarebeschleunigung für Whisper-Modelle. Automatisch nutzt GPU falls verfügbar (Metal auf macOS, Vulkan auf Windows/Linux)."
+        },
+        "ort": {
+          "title": "ONNX-Beschleunigung",
+          "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
+        },
+        "gpuDevice": {
+          "auto": "Auto"
+        }
+      },
+      "startHidden": {
+        "label": "Versteckt starten",
+        "description": "In den Systembereich starten, ohne das Fenster zu öffnen."
+      },
+      "autostart": {
+        "label": "Beim Start ausführen",
+        "description": "Handy automatisch beim Anmelden starten."
+      },
+      "showTrayIcon": {
+        "label": "Taskleistensymbol anzeigen",
+        "description": "Das Handy-Symbol in der Taskleiste anzeigen."
+      },
+      "overlay": {
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "Keine",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "Overlay-Position",
+          "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",
+          "options": {
+            "bottom": "Unten",
+            "top": "Oben"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "Einfügemethode",
+        "description": "Wähle, wie Text eingefügt wird. Direkt: simuliert Tippen über Systemeingabe. Keine: überspringt Einfügen, aktualisiert nur Verlauf/Zwischenablage.",
+        "options": {
+          "clipboard": "Zwischenablage ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Zwischenablage (Strg+Umschalt+V)",
+          "clipboardShiftInsert": "Zwischenablage (Umschalt+Einfg)",
+          "direct": "Direkt",
+          "none": "Keine",
+          "externalScript": "Externes Skript"
+        },
+        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh"
+      },
+      "typingTool": {
+        "title": "Eingabetool",
+        "description": "Wähle, welches Linux-Eingabetool für die Direkt-Einfügen-Methode verwendet werden soll. Auto erkennt und verwendet automatisch das beste verfügbare Tool für dein System.",
+        "options": {
+          "auto": "Auto (Empfohlen)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Zwischenablage-Verhalten",
+        "description": "Zwischenablage nicht ändern bewahrt den aktuellen Inhalt nach der Transkription. In Zwischenablage kopieren hinterlässt das Transkriptionsergebnis in der Zwischenablage.",
+        "options": {
+          "dontModify": "Zwischenablage nicht ändern",
+          "copyToClipboard": "In Zwischenablage kopieren"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatisch absenden",
+        "description": "Sendet nach dem Einfügen von Text automatisch die ausgewählte Tastenkombination. Cmd+Enter gilt für macOS, während Windows/Linux Super+Enter verwenden.",
+        "options": {
+          "off": "Aus",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Ins Englische übersetzen",
+        "description": "Sprache aus anderen Sprachen automatisch während der Transkription ins Englische übersetzen."
+      },
+      "modelUnload": {
+        "title": "Modell entladen",
+        "description": "GPU/CPU-Speicher automatisch freigeben, wenn das Modell für die angegebene Zeit nicht verwendet wurde",
+        "options": {
+          "never": "Nie",
+          "immediately": "Sofort",
+          "min2": "Nach 2 Minuten",
+          "min5": "Nach 5 Minuten",
+          "min10": "Nach 10 Minuten",
+          "min15": "Nach 15 Minuten",
+          "hour1": "Nach 1 Stunde",
+          "sec15": "Nach 15 Sekunden (Debug)"
+        }
+      },
+      "customWords": {
+        "title": "Benutzerdefinierte Wörter",
+        "description": "Wörter hinzufügen, die oft falsch gehört oder geschrieben werden. Das System korrigiert automatisch ähnlich klingende Wörter entsprechend deiner Liste.",
+        "placeholder": "Wort hinzufügen",
+        "add": "Hinzufügen",
+        "remove": "{{word}} entfernen",
+        "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "Tastenkürzel"
+      },
+      "api": {
+        "title": "API (OpenAI-kompatibel)",
+        "provider": {
+          "title": "Anbieter",
+          "description": "Wähle einen OpenAI-kompatiblen Anbieter."
+        },
+        "appleIntelligence": {
+          "unavailable": "Apple Intelligence ist auf diesem Gerät nicht verfügbar. Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer und aktiviertem Apple Intelligence in den Systemeinstellungen."
+        },
+        "baseUrl": {
+          "title": "Basis-URL",
+          "description": "API-Basis-URL für den ausgewählten Anbieter. Nur der benutzerdefinierte Anbieter kann bearbeitet werden.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API-Schlüssel",
+          "description": "API-Schlüssel für den ausgewählten Anbieter.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modell",
+          "descriptionCustom": "Gib die Modellkennung an, die von deinem benutzerdefinierten Endpunkt erwartet wird.",
+          "descriptionDefault": "Wähle ein Modell des ausgewählten Anbieters.",
+          "placeholderWithOptions": "Modell suchen oder auswählen",
+          "placeholderNoOptions": "Modellnamen eingeben",
+          "refreshModels": "Modelle aktualisieren"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Ausgewählter Prompt",
+          "description": "Wähle eine Vorlage zur Verfeinerung von Transkriptionen oder erstelle eine neue. Verwende ${output} im Prompt-Text, um auf das erfasste Transkript zu verweisen."
+        },
+        "noPrompts": "Keine Prompts verfügbar",
+        "selectPrompt": "Prompt auswählen",
+        "createNew": "Neuen Prompt erstellen",
+        "promptLabel": "Prompt-Name",
+        "promptLabelPlaceholder": "Prompt-Namen eingeben",
+        "promptInstructions": "Prompt-Anweisungen",
+        "promptInstructionsPlaceholder": "Schreibe die Anweisungen, die nach der Transkription ausgeführt werden sollen. Beispiel: Verbessere Grammatik und Klarheit für folgenden Text: ${output}",
+        "promptTip": "Tipp: Verwende <code>${output}</code>, um den transkribierten Text in deinen Prompt einzufügen.",
+        "updatePrompt": "Prompt aktualisieren",
+        "deletePrompt": "Prompt löschen",
+        "createPrompt": "Prompt erstellen",
+        "cancel": "Abbrechen",
+        "selectToEdit": "Wähle oben einen Prompt aus, um dessen Details anzuzeigen und zu bearbeiten.",
+        "createFirst": "Klicke oben auf 'Neuen Prompt erstellen', um deinen ersten Nachbearbeitungs-Prompt zu erstellen."
+      }
+    },
+    "history": {
+      "title": "Verlauf",
+      "openFolder": "Aufnahmeordner öffnen",
+      "loading": "Verlauf wird geladen...",
+      "empty": "Noch keine Transkriptionen. Starte eine Aufnahme, um deinen Verlauf aufzubauen!",
+      "copyToClipboard": "Transkription in Zwischenablage kopieren",
+      "save": "Transkription speichern",
+      "unsave": "Aus Gespeicherten entfernen",
+      "delete": "Eintrag löschen",
+      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
+      "retranscribe": "Erneut transkribieren",
+      "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "transcribing": "Transkribiere...",
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+    },
+    "debug": {
+      "title": "Debug",
+      "logDirectory": {
+        "title": "Log-Verzeichnis",
+        "description": "Speicherort der Log-Dateien"
+      },
+      "logLevel": {
+        "title": "Log-Level",
+        "description": "Ausführlichkeit der Protokollierung festlegen"
+      },
+      "liveLogs": {
+        "title": "Live-Logs",
+        "description": "Anwendungs-Logs in Echtzeit anzeigen, um Probleme zu diagnostizieren, ohne die Log-Datei zu öffnen. Es werden nur Logs angezeigt, die ausgegeben werden, während dieses Feld geöffnet ist; berücksichtigt die obige Log-Level-Einstellung.",
+        "live": "Live",
+        "paused": "Pausiert",
+        "pause": "Pausieren",
+        "resume": "Fortsetzen",
+        "copied": "Kopiert",
+        "lineCount": "{{count}} Zeilen",
+        "empty": "Warte auf Logs … Einträge erscheinen hier, sobald die App sie ausgibt."
+      },
+      "updateChecks": {
+        "label": "Nach Updates suchen",
+        "description": "Automatisch nach neuen Versionen von Handy suchen"
+      },
+      "soundTheme": {
+        "label": "Sound-Thema",
+        "description": "Sound-Thema für Aufnahme-Start und -Stop-Feedback auswählen"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Wortkorrektur-Schwelle",
+        "description": "Empfindlichkeit für benutzerdefinierte Wortkorrekturen"
+      },
+      "historyLimit": {
+        "title": "Verlaufslimit",
+        "description": "Maximale Anzahl der Verlaufseinträge",
+        "entries": "Einträge"
+      },
+      "recordingRetention": {
+        "title": "Aufnahmen automatisch löschen",
+        "description": "Alte Aufnahmen automatisch löschen, um Speicherplatz zu sparen",
+        "never": "Nie",
+        "preserveLimit": "Neueste {{count}} behalten",
+        "days3": "Nach 3 Tagen",
+        "weeks2": "Nach 2 Wochen",
+        "months3": "Nach 3 Monaten",
+        "placeholder": "Aufbewahrungszeitraum auswählen..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Mikrofon immer aktiv",
+        "description": "Mikrofon für schnellere Reaktion aktiv halten"
+      },
+      "clamshellMicrophone": {
+        "title": "Clamshell-Mikrofon",
+        "description": "Mikrofon bei geschlossenem Laptop-Deckel"
+      },
+      "postProcessingToggle": {
+        "label": "Nachbearbeitung",
+        "description": "KI-gestützte Textverfeinerung nach der Transkription aktivieren"
+      },
+      "muteWhileRecording": {
+        "label": "Während Aufnahme stummschalten",
+        "description": "Systemaudio während der Aufnahme stummschalten"
+      },
+      "appendTrailingSpace": {
+        "label": "Leerzeichen anhängen",
+        "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
+      },
+      "keyboardImplementation": {
+        "title": "Tastatur-Implementierung",
+        "description": "Wähle das Backend für Tastaturkürzel.",
+        "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
+      },
+      "paths": {
+        "appData": "App-Daten:",
+        "models": "Modelle:",
+        "settings": "Einstellungen:"
+      },
+      "pasteDelay": {
+        "title": "Einfügeverzögerung (vorher)",
+        "description": "Verzögerung (in Millisekunden) nach dem Kopieren des Textes, bevor der Einfüge-Tastendruck gesendet wird. Erhöhe den Wert, wenn nichts eingefügt wird."
+      },
+      "pasteDelayAfter": {
+        "title": "Einfügeverzögerung (nachher)",
+        "description": "Verzögerung (in Millisekunden) nach dem Einfüge-Tastendruck, bevor deine vorherige Zwischenablage wiederhergestellt wird. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
+      },
+      "recordingBuffer": {
+        "title": "Zusätzlicher Aufnahmepuffer",
+        "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
+      },
+      "whatsNewPreview": {
+        "title": "Vorschau der Neuerungen",
+        "description": "Die neuesten gebündelten Versionshinweise öffnen, ohne sie als gesehen zu markieren",
+        "button": "Vorschau",
+        "noNotes": "Keine gebündelten Versionshinweise gefunden",
+        "error": "Versionshinweise konnten nicht angezeigt werden"
+      }
+    },
+    "about": {
+      "title": "Info",
+      "version": {
+        "title": "Version",
+        "description": "Aktuelle Version von Handy"
+      },
+      "appDataDirectory": {
+        "title": "App-Datenverzeichnis",
+        "description": "Speicherort der Handy-Daten"
+      },
+      "sourceCode": {
+        "title": "Quellcode",
+        "description": "Quellcode ansehen und beitragen",
+        "button": "Auf GitHub ansehen"
+      },
+      "supportDevelopment": {
+        "title": "Entwicklung unterstützen",
+        "description": "Hilf uns, Handy weiterzuentwickeln",
+        "button": "Spenden"
+      },
+      "acknowledgments": {
+        "title": "Danksagungen",
+        "ggml": {
+          "title": "ggml",
+          "description": "Hochleistungs-Inferenz des Whisper-Spracherkennungsmodells von OpenAI",
+          "details": "Handy verwendet ggml für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
+        }
+      },
+      "whatsNewUpdates": {
+        "label": "Neuerungen anzeigen",
+        "description": "Versionshinweise nach Handy-Updates anzeigen"
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "Suche nach Updates...",
+    "updateAvailableShort": "Update verfügbar",
+    "upToDate": "Aktuell",
+    "updateCheckingDisabled": "Update-Prüfung deaktiviert",
+    "downloading": "Wird heruntergeladen... {{progress}}%",
+    "installing": "Wird installiert...",
+    "preparing": "Wird vorbereitet...",
+    "checkForUpdates": "Nach Updates suchen",
+    "portableUpdateTitle": "Manuelles Update erforderlich",
+    "portableUpdateMessage": "Portable Installationen können nicht automatisch aktualisiert werden. Zum Aktualisieren: Lade den neuesten NSIS-Installer von GitHub Releases herunter, installiere ihn im selben Ordner und kopiere dann deinen Data/-Ordner (Einstellungen, Modelle, Aufnahmen) von der alten Version in die neue.",
+    "portableUpdateButton": "GitHub Releases öffnen"
+  },
+  "common": {
+    "loading": "Wird geladen...",
+    "delete": "Löschen",
+    "close": "Schließen",
+    "open": "Öffnen",
+    "copy": "Kopieren",
+    "clear": "Leeren",
+    "noOptionsFound": "Keine Optionen gefunden"
+  },
+  "accessibility": {
+    "permissionsDescription": "Handy benötigt Bedienungshilfen-Berechtigungen, um transkribierten Text einzugeben.",
+    "openSettings": "Systemeinstellungen öffnen"
+  },
+  "errors": {
+    "loadDirectory": "Fehler beim Laden des Verzeichnisses: {{error}}",
+    "micPermissionDeniedTitle": "Mikrofonzugriff verweigert",
+    "micPermissionDenied": {
+      "generic": "Der Mikrofonzugriff wurde vom Betriebssystem verweigert. Bitte erteile die Mikrofonberechtigung in deinen Systemeinstellungen.",
+      "windows": "Aktiviere den Mikrofonzugriff unter Einstellungen → Datenschutz und Sicherheit → Mikrofon (einschließlich Desktop-App-Zugriff).",
+      "macos": "Erteile den Mikrofonzugriff in Systemeinstellungen → Datenschutz & Sicherheit → Mikrofon.",
+      "linux": "Erteile den Mikrofonzugriff in den Sound- oder Datenschutzeinstellungen deines Systems."
+    },
+    "noInputDeviceTitle": "Kein Mikrofon gefunden",
+    "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließe ein Mikrofon oder Headset an und versuche es erneut.",
+    "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
+    "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
+    "modelLoadFailedUnknown": "unbekanntes Modell",
+    "pasteFailedTitle": "Text konnte nicht eingefügt werden",
+    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "transcriptionFailedTitle": "Transkription fehlgeschlagen"
+  },
+  "appLanguage": {
+    "title": "Anwendungssprache",
+    "description": "Sprache der Handy-Oberfläche ändern"
+  },
+  "theme": {
+    "title": "Anwendungsdesign",
+    "description": "Wählen Sie, ob Handy dem Systemthema folgt oder hell bzw. dunkel bleibt",
+    "options": {
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    }
+  },
+  "overlay": {
+    "transcribing": "Transkribiere...",
+    "processing": "Verarbeite..."
+  },
+  "whatsNew": {
+    "title": "Neu in Handy v{{version}}"
+  }
+}

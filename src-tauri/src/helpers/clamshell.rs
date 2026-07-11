@@ -6,7 +6,6 @@ use std::process::Command;
 /// This queries the macOS IORegistry for the AppleClamshellState key.
 /// Returns true if the lid is closed, false if open.
 #[cfg(target_os = "macos")]
-#[tauri::command]
 pub fn is_clamshell() -> Result<bool, String> {
     let output = Command::new("ioreg")
         .args(["-r", "-k", "AppleClamshellState", "-d", "4"])
@@ -32,6 +31,7 @@ pub fn is_clamshell() -> Result<bool, String> {
 /// Returns true if a battery is detected (laptop), false otherwise (desktop)
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn is_laptop() -> Result<bool, String> {
     let output = Command::new("pmset")
         .arg("-g")
@@ -48,7 +48,6 @@ pub fn is_laptop() -> Result<bool, String> {
 /// Stub implementation for non-macOS platforms
 /// Always returns false since clamshell mode is macOS-specific
 #[cfg(not(target_os = "macos"))]
-#[tauri::command]
 pub fn is_clamshell() -> Result<bool, String> {
     Ok(false)
 }
@@ -57,6 +56,7 @@ pub fn is_clamshell() -> Result<bool, String> {
 /// Always returns false since laptop detection is macOS-specific
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn is_laptop() -> Result<bool, String> {
     Ok(false)
 }

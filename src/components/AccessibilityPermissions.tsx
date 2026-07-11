@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { type } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
@@ -14,9 +16,13 @@ interface ButtonConfig {
 }
 
 const AccessibilityPermissions: React.FC = () => {
+  const { t } = useTranslation();
   const [hasAccessibility, setHasAccessibility] = useState<boolean>(false);
   const [permissionState, setPermissionState] =
     useState<PermissionState>("request");
+
+  // Accessibility permissions are only required on macOS
+  const isMacOS = type() === "macos";
 
   // Check permissions without requesting
   const checkPermissions = async (): Promise<boolean> => {
@@ -43,8 +49,10 @@ const AccessibilityPermissions: React.FC = () => {
     }
   };
 
-  // On app boot - check permissions
+  // On app boot - check permissions (only on macOS)
   useEffect(() => {
+    if (!isMacOS) return;
+
     const initialSetup = async (): Promise<void> => {
       const hasPermissions: boolean = await checkAccessibilityPermission();
       setHasAccessibility(hasPermissions);
@@ -52,23 +60,24 @@ const AccessibilityPermissions: React.FC = () => {
     };
 
     initialSetup();
-  }, []);
+  }, [isMacOS]);
 
-  if (hasAccessibility) {
+  // Skip rendering on non-macOS platforms or if permission is already granted
+  if (!isMacOS || hasAccessibility) {
     return null;
   }
 
   // Configure button text and style based on state
   const buttonConfig: Record<PermissionState, ButtonConfig | null> = {
     request: {
-      text: "Grant",
+      text: t("accessibility.openSettings"),
       className:
         "px-2 py-1 text-sm font-semibold bg-mid-gray/10 border  border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary",
     },
     verify: {
-      text: "Verify",
+      text: t("accessibility.openSettings"),
       className:
-        "bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1 px-3 rounded text-sm flex items-center justify-center cursor-pointer",
+        "bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1 px-3 rounded-md text-sm flex items-center justify-center cursor-pointer",
     },
     granted: null,
   };
@@ -80,7 +89,7 @@ const AccessibilityPermissions: React.FC = () => {
       <div className="flex justify-between items-center gap-2">
         <div className="">
           <p className="text-sm font-medium">
-            Please grant accessibility permissions for Handy
+            {t("accessibility.permissionsDescription")}
           </p>
         </div>
         <button

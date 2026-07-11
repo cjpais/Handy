@@ -1,36 +1,43 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
-import { LogDirectory } from "./LogDirectory";
 import { LogLevelSelector } from "./LogLevelSelector";
+import { LiveLogViewer } from "./LiveLogViewer";
+import { PasteDelay } from "./PasteDelay";
+import { RecordingBuffer } from "./RecordingBuffer";
 import { SettingsGroup } from "../../ui/SettingsGroup";
-import { HistoryLimit } from "../HistoryLimit";
 import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
 import { SoundPicker } from "../SoundPicker";
-import { PostProcessingToggle } from "../PostProcessingToggle";
-import { MuteWhileRecording } from "../MuteWhileRecording";
-import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
+import { UpdateChecksToggle } from "../UpdateChecksToggle";
+import { WhatsNewPreview } from "./WhatsNewPreview";
 
 export const DebugSettings: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title="Debug">
-        <LogDirectory grouped={true} />
+      <SettingsGroup title={t("settings.debug.title")}>
         <LogLevelSelector grouped={true} />
+        <WhatsNewPreview descriptionMode="tooltip" grouped={true} />
+        <UpdateChecksToggle descriptionMode="tooltip" grouped={true} />
         <SoundPicker
-          label="Sound Theme"
-          description="Choose a sound theme for recording start and stop feedback"
+          label={t("settings.debug.soundTheme.label")}
+          description={t("settings.debug.soundTheme.description")}
         />
         <WordCorrectionThreshold descriptionMode="tooltip" grouped={true} />
-        <HistoryLimit descriptionMode="tooltip" grouped={true} />
-        <RecordingRetentionPeriodSelector
+        <PasteDelay descriptionMode="tooltip" grouped={true} />
+        <PasteDelay
           descriptionMode="tooltip"
           grouped={true}
+          settingKey="paste_delay_after_ms"
+          labelKey="settings.debug.pasteDelayAfter.title"
+          descriptionKey="settings.debug.pasteDelayAfter.description"
         />
+        <RecordingBuffer descriptionMode="tooltip" grouped={true} />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
-        <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
-        <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
+        <LiveLogViewer descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>
   );

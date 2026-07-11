@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Slider } from "../../ui/Slider";
 import { useSettings } from "../../../hooks/useSettings";
 
@@ -10,6 +11,7 @@ interface WordCorrectionThresholdProps {
 export const WordCorrectionThreshold: React.FC<
   WordCorrectionThresholdProps
 > = ({ descriptionMode = "tooltip", grouped = false }) => {
+  const { t } = useTranslation();
   const { settings, updateSetting } = useSettings();
 
   const handleThresholdChange = (value: number) => {
@@ -22,8 +24,8 @@ export const WordCorrectionThreshold: React.FC<
       onChange={handleThresholdChange}
       min={0.0}
       max={1.0}
-      label="Word Correction Threshold"
-      description="Controls how aggressively custom words are applied. Lower values mean fewer corrections will be made, higher values mean more corrections. Range: 0 (least aggressive) to 1 (most aggressive)."
+      label={t("settings.debug.wordCorrectionThreshold.title")}
+      description={t("settings.debug.wordCorrectionThreshold.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
     />

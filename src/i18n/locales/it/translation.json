@@ -1,0 +1,637 @@
+{
+  "tray": {
+    "settings": "Impostazioni...",
+    "checkUpdates": "Verifica aggiornamenti...",
+    "copyLastTranscript": "Copia l'ultima trascrizione",
+    "unloadModel": "Rilascia modello",
+    "model": "Modello",
+    "quit": "Esci",
+    "cancel": "Annulla"
+  },
+  "sidebar": {
+    "general": "Generale",
+    "models": "Modelli",
+    "advanced": "Avanzate",
+    "postProcessing": "Post-Elaborazione",
+    "history": "Cronologia",
+    "debug": "Debug",
+    "about": "Informazioni"
+  },
+  "onboarding": {
+    "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
+    "existingModelsTitle": "Modelli compatibili",
+    "downloadModelsTitle": "Disponibile per il download",
+    "showAllModels": "Mostra tutti e {{total}} modelli",
+    "showFewerModels": "Mostra meno modelli",
+    "recommended": "Raccomandato",
+    "customModelDescription": "Non ufficialmente supportato",
+    "modelCard": {
+      "accuracy": "accuratezza",
+      "speed": "velocità"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Veloce e abbastanza accurato."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Buona accuratezza, velocità nella media"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Bilanciato fra accuratezza e velocità."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Buona accuratezza, ma lento."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Solo inglese. Il miglior modello per chi parla inglese."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Veloce e accurato"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Molto veloce, solo inglese. Gestisce bene gli accenti."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultra-veloce, solo inglese"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Veloce, solo inglese. Buon equilibrio tra velocità e precisione."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Solo inglese. Alta qualità."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Ottimizzato per il mandarino taiwanese. Supporto per il code-switching."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Molto veloce. Cinese, inglese, giapponese, coreano, cantonese."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Riconoscimento vocale in russo. Veloce e preciso."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Molto veloce. Inglese, tedesco, spagnolo, francese. Supporta la traduzione."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Multilingue accurato. 25 lingue europee. Supporta la traduzione."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Un modello grande, più lento, ma molto accurato e multilingue."
+      }
+    },
+    "errors": {
+      "selectModel": "Impossibile selezionare il modello"
+    },
+    "permissions": {
+      "title": "Permessi Richiesti",
+      "description": "Handy ha bisogno di alcuni permessi per funzionare correttamente.",
+      "microphone": {
+        "title": "Accesso al Microfono",
+        "description": "Necessario per sentire la tua voce per la trascrizione."
+      },
+      "accessibility": {
+        "title": "Accesso all'Accessibilità",
+        "description": "Necessario per digitare il testo trascritto nelle tue applicazioni."
+      },
+      "grant": "Concedi Permesso",
+      "granted": "Concesso",
+      "waiting": "In attesa...",
+      "allGranted": "Tutto pronto!",
+      "errors": {
+        "checkFailed": "Impossibile verificare i permessi. Riprova.",
+        "requestFailed": "Impossibile richiedere il permesso. Riprova."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "Personalizzato",
+    "streaming": "Streaming",
+    "active": "Attivo",
+    "switching": "Cambio...",
+    "noModelsAvailable": "Nessun modello disponibile",
+    "verifying": "Verifica di {{modelName}}...",
+    "verifyingGeneric": "Verifica...",
+    "extracting": "Estrazione di {{modelName}}...",
+    "extractingMultiple": "Estrazione di {{count}} modelli...",
+    "extractingGeneric": "Estrazione...",
+    "downloading": "Download {{percentage}}%",
+    "downloadingMultiple": "Download di {{count}} modelli...",
+    "modelReady": "Modello Pronto",
+    "loading": "Caricamento di {{modelName}}...",
+    "loadingGeneric": "Caricamento...",
+    "modelError": "Errore del Modello",
+    "modelUnloaded": "Modello Disattivato",
+    "noModelDownloadRequired": "Nessun Modello - Download Richiesto",
+    "deleteModel": "Elimina {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Supporta più lingue di input",
+      "languageCount": "{{total}} languages",
+      "translation": "Può tradurre in inglese",
+      "translate": "Traduci in inglese",
+      "singleLanguage": "Supporta solo questa lingua",
+      "languageOnly": "Solo {{language}}",
+      "streaming": "Mostra la trascrizione in tempo reale mentre parli"
+    },
+    "cancel": "Annulla",
+    "cancelDownload": "Annulla download",
+    "legacy": "Obsoleto"
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "Impostazioni di {{model}}"
+    },
+    "models": {
+      "title": "Modelli di Trascrizione",
+      "description": "Seleziona un modello di trascrizione o scarica modelli aggiuntivi. Diversi modelli offrono diversi livelli di accuratezza e velocità.",
+      "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
+      "deleteActiveConfirm": "{{modelName}} è il tuo modello attivo. Eliminarlo interromperà le trascrizioni fino a quando non selezionerai un nuovo modello. Sei sicuro?",
+      "deleteTitle": "Elimina modello",
+      "filters": {
+        "allLanguages": "Tutte le lingue"
+      },
+      "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
+      "yourModels": "Modelli scaricati",
+      "availableModels": "Disponibili per il Download",
+      "searchPlaceholder": "Cerca modelli per nome…",
+      "rescan": {
+        "label": "Riscansiona",
+        "tooltip": "Riscansiona per trovare modelli aggiunti alla cartella dei modelli o alla cache di Hugging Face al di fuori di Handy"
+      }
+    },
+    "general": {
+      "title": "Generale",
+      "shortcut": {
+        "title": "Scorciatoie di Handy",
+        "description": "Configura le scorciatoie per attivare la trascrizione vocale",
+        "loading": "Caricamento delle scorciatoie...",
+        "none": "Nessuna scorciatoia configurata",
+        "notFound": "Scorciatoia non trovata",
+        "pressKeys": "Premi i tasti...",
+        "bindings": {
+          "transcribe": {
+            "name": "Scorciatoia Trascrizione",
+            "description": "La scorciatoia da tastiera per registrare e trascrivere la tua voce."
+          },
+          "cancel": {
+            "name": "Scorciatoia Annulla",
+            "description": "La scorciatoia da tastiera per annullare la registrazione in corso."
+          },
+          "transcribe_with_post_process": {
+            "name": "Tasto di post-elaborazione",
+            "description": "Facoltativo: Un tasto di scelta rapida dedicato che applica sempre la post-elaborazione IA alla trascrizione."
+          }
+        },
+        "errors": {
+          "restore": "Errore nel ripristino della scorciatoia originale",
+          "set": "Errore nella configurazione della scorciatoia: {{error}}",
+          "reset": "Errore nella reinizializzazione della scorciatoia al valore originale"
+        }
+      },
+      "language": {
+        "title": "Lingua",
+        "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
+        "searchPlaceholder": "Cerca lingue...",
+        "noResults": "Nessuna lingua trovata",
+        "auto": "Auto"
+      },
+      "pushToTalk": {
+        "label": "Premi per Parlare",
+        "description": "Tieni premuto per parlare, rilascia per interrompere"
+      }
+    },
+    "sound": {
+      "title": "Suono",
+      "microphone": {
+        "title": "Microfono",
+        "description": "Scegli il microfono preferito",
+        "placeholder": "Scegli microfono...",
+        "loading": "Caricamento..."
+      },
+      "audioFeedback": {
+        "label": "Feedback Audio",
+        "description": "Riproduci un suono quando la registrazione inizia e finisce"
+      },
+      "outputDevice": {
+        "title": "Dispositivo di Output",
+        "description": "Scegli il dispositivo di output per il feedback audio",
+        "placeholder": "Scegli dispositivo di output...",
+        "loading": "Caricamento..."
+      },
+      "volume": {
+        "title": "Volume",
+        "description": "Regola il volume del feedback audio"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "App",
+        "output": "Output",
+        "transcription": "Trascrizione",
+        "history": "Cronologia",
+        "experimental": "Sperimentale"
+      },
+      "experimentalToggle": {
+        "label": "Funzionalità Sperimentali",
+        "description": "Abilita le funzionalità sperimentali ancora in fase di sviluppo."
+      },
+      "lazyStreamClose": {
+        "label": "Mantieni il microfono aperto tra le trascrizioni",
+        "description": "Mantiene lo stream del microfono aperto per 30 secondi dopo l'arresto della registrazione, riducendo la latenza per trascrizioni consecutive. Potrebbe degradare la qualità audio Bluetooth."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "Accelerazione Whisper",
+          "description": "Accelerazione hardware per i modelli Whisper. Auto utilizza la GPU se disponibile (Metal su macOS, Vulkan su Windows/Linux)."
+        },
+        "ort": {
+          "title": "Accelerazione ONNX",
+          "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). DirectML su Windows è sperimentale. I modelli potrebbero non riuscire a trascrivere."
+        },
+        "gpuDevice": {
+          "auto": "Auto"
+        }
+      },
+      "startHidden": {
+        "label": "Avvia in Background",
+        "description": "Avvia l'applicazione in background senza aprire la finestra."
+      },
+      "autostart": {
+        "label": "Avvia all'Accensione",
+        "description": "Avvia Handy automaticamente quando accedi al computer."
+      },
+      "showTrayIcon": {
+        "label": "Mostra icona nella barra di sistema",
+        "description": "Mostra l'icona di Handy nella barra di sistema."
+      },
+      "overlay": {
+        "style": {
+          "title": "Overlay",
+          "description": "Scegli l'overlay di registrazione: 'Nessuno' lo nasconde, 'Minimo' mostra una barra compatta, 'In tempo reale' mostra la trascrizione in tempo reale mentre parli (solo per modelli che supportano lo streaming — cerca il badge 'Streaming' nel selettore del modello). Su Linux si raccomanda l'opzione 'Nessuno'.",
+          "options": {
+            "none": "Nessuno",
+            "minimal": "Minimo",
+            "live": "In tempo reale"
+          }
+        },
+        "position": {
+          "title": "Posizione della Sovrimpressione",
+          "description": "Mostra un feedback visivo in sovrimpressione durante la registrazione e la trascrizione. Su Linux si raccomanda 'Nessuna'.",
+          "options": {
+            "bottom": "In basso",
+            "top": "In alto"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "Metodo di Incollaggio",
+        "description": "Scegli come viene inserito il testo. Diretto: simula l'input da tastiera. Nessuno: non incolla, aggiorna solo la cronologia/appunti.",
+        "options": {
+          "clipboard": "Appunti ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Appunti (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Appunti (Shift+Insert)",
+          "direct": "Diretto",
+          "none": "Nessuno",
+          "externalScript": "Script esterno"
+        },
+        "externalScriptPlaceholder": "/percorso/del/tuo/script.sh"
+      },
+      "typingTool": {
+        "title": "Strumento di digitazione",
+        "description": "Scegli quale strumento di digitazione Linux usare per il metodo di incolla diretto. Auto rileverà e userà automaticamente lo strumento migliore disponibile per il tuo sistema.",
+        "options": {
+          "auto": "Auto (Consigliato)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Gestione Appunti",
+        "description": "Non Modificare gli Appunti mantiene il contenuto dei tuoi appunti dopo la trascrizione. Copia negli Appunti lascia il risultato della trascrizione negli appunti dopo aver incollato.",
+        "options": {
+          "dontModify": "Non Modificare gli Appunti",
+          "copyToClipboard": "Copia negli Appunti"
+        }
+      },
+      "autoSubmit": {
+        "title": "Invio automatico",
+        "description": "Invia automaticamente la combinazione di tasti selezionata dopo l'inserimento del testo. Cmd+Enter si applica su macOS, mentre Windows/Linux usano Super+Enter.",
+        "options": {
+          "off": "Disattivato",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Traduci in inglese",
+        "description": "Traduci automaticamente in inglese la voce in altre lingue durante la trascrizione."
+      },
+      "modelUnload": {
+        "title": "Disattiva Model",
+        "description": "Libera automaticamente la memoria della GPU/CPU quando il modello non viene utilizzato per un certo periodo",
+        "options": {
+          "never": "Mai",
+          "immediately": "Immediatamente",
+          "min2": "Dopo 2 minuti",
+          "min5": "Dopo 5 minuti",
+          "min10": "Dopo 10 minuti",
+          "min15": "Dopo 15 minuti",
+          "hour1": "Dopo 1 ora",
+          "sec15": "Dopo 15 secondi (Debug)"
+        }
+      },
+      "customWords": {
+        "title": "Parole personalizzate",
+        "description": "Aggiungi parole che vengono spesso fraintese o scritte in modo errato durante la trascrizione. Il sistema correggerà automaticamente le parole dal suono simile in modo che corrispondano al tuo elenco.",
+        "placeholder": "Aggiungi una parola",
+        "add": "Aggiungi",
+        "remove": "Rimuovi {{word}}",
+        "duplicate": "\"{{word}}\" esiste già"
+      },
+      "voiceActivityDetection": {
+        "title": "Rilevamento dell'attività vocale",
+        "description": "Filtra il silenzio dalle registrazioni. I modelli che supportano lo streaming utilizzano una coda VAD più lunga; disabilitando la VAD si registra l'audio grezzo."
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "Tasto di scelta rapida"
+      },
+      "api": {
+        "title": "API (Compatibile con OpenAI)",
+        "provider": {
+          "title": "Provider",
+          "description": "Seleziona un provider compatibile con OpenAI."
+        },
+        "appleIntelligence": {
+          "unavailable": "Apple Intelligence non è disponibile su questo dispositivo. Necessita di un Mac con Apple Silicon e macOS Tahoe (26.0) o successivi con Apple Intelligence abilitata nelle Impostazioni di Sistema."
+        },
+        "baseUrl": {
+          "title": "URL Base",
+          "description": "URL di base per l'API del provider selezionato. Solo per i provider personalizzati.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Chiave API",
+          "description": "Chiave API per il provider selezionato.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modello",
+          "descriptionCustom": "Fornisci l'identificatore del modello previsto dal tuo endpoint personalizzato.",
+          "descriptionDefault": "Scegli un modello reso disponibile dal provider selezionato.",
+          "placeholderWithOptions": "Cerca o scegli un modello",
+          "placeholderNoOptions": "Digita il nome di un modello",
+          "refreshModels": "Aggiorna modelli"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Prompt Selezionato",
+          "description": "Seleziona un template per migliorare le trascrizioni o creane uno nuovo. Usa ${output} nel prompt per fare riferimento alla trascrizione."
+        },
+        "noPrompts": "Nessun prompt disponibile",
+        "selectPrompt": "Scegli un prompt",
+        "createNew": "Crea un nuovo prompt",
+        "promptLabel": "Etichetta del Prompt",
+        "promptLabelPlaceholder": "Inserisci il nome del prompt",
+        "promptInstructions": "Istruzioni del Prompt",
+        "promptInstructionsPlaceholder": "Scrivi le istruzioni da eseguire dopo la trascrizione. Esempio: Migliora la grammatica e la chiarezza per il seguente testo: ${output}",
+        "promptTip": "Suggerimento: Usa <code>${output}</code> per inserire il testo trascritto nel tuo prompt.",
+        "updatePrompt": "Aggiorna Prompt",
+        "deletePrompt": "Elimina Prompt",
+        "createPrompt": "Crea Prompt",
+        "cancel": "Annulla",
+        "selectToEdit": "Scegli un prompt qui sopra per visualizzare o modificare i dettagli.",
+        "createFirst": "Clicca 'Crea un nuovo prompt' qui sopra per creare il tuo primo prompt di post-elaborazione."
+      }
+    },
+    "history": {
+      "title": "Cronologia",
+      "openFolder": "Apri la cartella delle registrazioni",
+      "loading": "Caricamento cronologia...",
+      "empty": "Non ci sono ancora trascrizioni. Comincia a registrare per costruire la tua cronologia!",
+      "copyToClipboard": "Copia la trascrizione negli appunti",
+      "save": "Salva la trascrizione",
+      "unsave": "Rimuovi dai salvataggi",
+      "delete": "Elimina elemento",
+      "deleteError": "Errore nell'eliminazione dell'elemento. Riprova.",
+      "retranscribe": "Ri-trascrivere",
+      "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
+      "transcribing": "Trascrizione in corso...",
+      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione."
+    },
+    "debug": {
+      "title": "Debug",
+      "logDirectory": {
+        "title": "Cartella dei Log",
+        "description": "Cartella dove vengono salvati i file di log"
+      },
+      "logLevel": {
+        "title": "Livello di Log",
+        "description": "Scegli il livello di dettaglio dei log"
+      },
+      "liveLogs": {
+        "title": "Log in Tempo Reale",
+        "description": "Trasmetti i log dell'applicazione in tempo reale per diagnosticare i problemi senza aprire il file di log. Vengono mostrati solo i log emessi mentre questo pannello è aperto; rispetta l'impostazione Livello di Log qui sopra.",
+        "live": "In Diretta",
+        "paused": "In Pausa",
+        "pause": "Pausa",
+        "resume": "Riprendi",
+        "copied": "Copiato",
+        "lineCount": "{{count}} righe",
+        "empty": "In attesa di log… Le voci appariranno qui man mano che l'app le emette."
+      },
+      "updateChecks": {
+        "label": "Controlla aggiornamenti",
+        "description": "Controlla automaticamente la disponibilità di nuove versioni di Handy"
+      },
+      "soundTheme": {
+        "label": "Tema Sonoro",
+        "description": "Scegli un tema sonoro per il feedback di inizio e fine registrazione"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Soglia di Correzione Parole",
+        "description": "Sensibilità per la correzione delle parole personalizzate"
+      },
+      "historyLimit": {
+        "title": "Limite della Cronologia",
+        "description": "Massimo numero di elementi da conservare nella cronologia",
+        "entries": "elementi"
+      },
+      "recordingRetention": {
+        "title": "Eliminazione Automatica Registrazioni",
+        "description": "Elimina automaticamente le registrazioni vecchie per liberare spazio",
+        "never": "Mai",
+        "preserveLimit": "Conserva le ultime {{count}}",
+        "days3": "Dopo 3 giorni",
+        "weeks2": "Dopo 2 settimane",
+        "months3": "Dopo 3 mesi",
+        "placeholder": "Seleziona periodo di conservazione..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Microfono Sempre Attivo",
+        "description": "Tieni il microfono attivo per una risposta più rapida"
+      },
+      "clamshellMicrophone": {
+        "title": "Microfono a portatile chiuso",
+        "description": "Microfono da usare quando il portatile è chiuso"
+      },
+      "postProcessingToggle": {
+        "label": "Post-Elaborazione",
+        "description": "Abilita il miglioramento della trascrizione con IA"
+      },
+      "muteWhileRecording": {
+        "label": "Silenzia durante la registrazione",
+        "description": "Silenzia l'audio di sistema durante la registrazione"
+      },
+      "appendTrailingSpace": {
+        "label": "Aggiungi Spazio Finale",
+        "description": "Aggiungi uno spazio dopo la trascrizione incollata"
+      },
+      "keyboardImplementation": {
+        "title": "Implementazione tastiera",
+        "description": "Scegli il backend per le scorciatoie da tastiera.",
+        "bindingsReset": "Le scorciatoie da tastiera erano incompatibili e sono state ripristinate ai valori predefiniti"
+      },
+      "paths": {
+        "appData": "Dati App:",
+        "models": "Modelli:",
+        "settings": "Impostazioni:"
+      },
+      "pasteDelay": {
+        "title": "Ritardo incolla (prima)",
+        "description": "Ritardo (in millisecondi) dopo aver copiato il testo, prima di inviare il tasto incolla. Aumentare se non viene incollato nulla."
+      },
+      "pasteDelayAfter": {
+        "title": "Ritardo incolla (dopo)",
+        "description": "Ritardo (in millisecondi) dopo il tasto incolla, prima di ripristinare gli appunti precedenti. Aumentare se viene incollato il vecchio contenuto degli appunti invece della trascrizione."
+      },
+      "recordingBuffer": {
+        "title": "Buffer di registrazione extra",
+        "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
+      },
+      "whatsNewPreview": {
+        "title": "Anteprima delle novità",
+        "description": "Apri le note di rilascio incluse più recenti senza segnarle come viste",
+        "button": "Anteprima",
+        "noNotes": "Nessuna nota di rilascio inclusa trovata",
+        "error": "Impossibile mostrare l'anteprima delle note di rilascio"
+      }
+    },
+    "about": {
+      "title": "Informazioni",
+      "version": {
+        "title": "Versione",
+        "description": "Versione attuale di Handy"
+      },
+      "appDataDirectory": {
+        "title": "Cartella Dati App",
+        "description": "Cartella in cui Handy salva i dati"
+      },
+      "sourceCode": {
+        "title": "Codice Sorgente",
+        "description": "Vedi e contribuisci al codice sorgente",
+        "button": "Vedi su GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Supporta lo Sviluppo",
+        "description": "Aiutaci a sviluppare Handy",
+        "button": "Dona"
+      },
+      "acknowledgments": {
+        "title": "Ringraziamenti",
+        "ggml": {
+          "title": "ggml",
+          "description": "Inferenza ad alte prestazioni del modello di riconoscimento vocale automatico Whisper di OpenAI",
+          "details": "Handy usa ggml per il riconoscimento vocale veloce in locale. Grazie a Georgi Gerganov e collaboratori per il fantastico lavoro."
+        }
+      },
+      "whatsNewUpdates": {
+        "label": "Mostra novità",
+        "description": "Mostra le note di rilascio dopo gli aggiornamenti di Handy"
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "Controllo aggiornamenti...",
+    "updateAvailableShort": "Aggiornamento disponibile",
+    "upToDate": "Aggiornato",
+    "updateCheckingDisabled": "Controllo Aggiornamenti Disabilitato",
+    "downloading": "Download... {{progress}}%",
+    "installing": "Installazione...",
+    "preparing": "Preparazione...",
+    "checkForUpdates": "Controlla aggiornamenti",
+    "portableUpdateTitle": "Aggiornamento manuale necessario",
+    "portableUpdateMessage": "Le installazioni portatili non possono essere aggiornate automaticamente. Per aggiornare: scarica l'ultima versione del programma di installazione NSIS da GitHub Releases, installala nella stessa cartella, quindi copia la cartella Data/ (impostazioni, modelli, registrazioni) dalla vecchia versione a quella nuova..",
+    "portableUpdateButton": "Apri i rilasci su GitHub"
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "delete": "Elimina",
+    "close": "Chiudi",
+    "open": "Apri",
+    "copy": "Copia",
+    "clear": "Svuota",
+    "noOptionsFound": "Nessuna opzione trovata"
+  },
+  "accessibility": {
+    "permissionsDescription": "Handy ha bisogno dei permessi di accessibilità per digitare il testo trascritto.",
+    "openSettings": "Apri Impostazioni di Sistema"
+  },
+  "errors": {
+    "loadDirectory": "Errore di caricamento cartella: {{error}}",
+    "micPermissionDeniedTitle": "Accesso al microfono negato",
+    "micPermissionDenied": {
+      "generic": "L'accesso al microfono è stato negato dal sistema operativo. Concedi l'autorizzazione al microfono nelle impostazioni di sistema.",
+      "windows": "Abilita l'accesso al microfono in Impostazioni → Privacy e sicurezza → Microfono (incluso l'accesso delle app desktop).",
+      "macos": "Concedi l'accesso al microfono in Impostazioni di Sistema → Privacy e sicurezza → Microfono.",
+      "linux": "Concedi l'accesso al microfono nelle impostazioni audio o sulla privacy del tuo sistema."
+    },
+    "noInputDeviceTitle": "Nessun microfono trovato",
+    "noInputDevice": "Non è stato rilevato alcun dispositivo di ingresso audio. Collega un microfono o delle cuffie e riprova.",
+    "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
+    "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
+    "modelLoadFailedUnknown": "modello sconosciuto",
+    "pasteFailedTitle": "Impossibile incollare il testo",
+    "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
+    "transcriptionFailedTitle": "Trascrizione non riuscita"
+  },
+  "appLanguage": {
+    "title": "Lingua Applicazione",
+    "description": "Cambia la lingua dell'interfaccia di Handy"
+  },
+  "theme": {
+    "title": "Tema dell'applicazione",
+    "description": "Scegli se Handy segue il tema di sistema o resta chiaro o scuro",
+    "options": {
+      "system": "Sistema",
+      "light": "Chiaro",
+      "dark": "Scuro"
+    }
+  },
+  "overlay": {
+    "transcribing": "Trascrizione...",
+    "processing": "Elaborazione..."
+  },
+  "whatsNew": {
+    "title": "Novità in Handy v{{version}}"
+  }
+}

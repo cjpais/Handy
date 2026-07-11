@@ -2,6 +2,12 @@
 
 Thank you for your interest in contributing to Handy! This guide will help you get started with contributing to this open source speech-to-text application.
 
+## ⚠️ Feature Freeze
+
+**Handy is currently undergoing a feature freeze.** If you are submitting a PR which is a new feature that the community has not asked for, it will be rejected. If the community has asked for it, or you have explicitly gathered support, it may still be considered.
+
+**Bug fixes are the top priority.** There are 60+ issues to fix. Please focus your contributions on fixing bugs and improving stability.
+
 ## 📖 Philosophy
 
 Handy aims to be the most forkable speech-to-text app. The goal is to create both a useful tool and a foundation for others to build upon—a well-patterned, simple codebase that serves the community. We prioritize:
@@ -137,6 +143,25 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
 
 ## 🔧 Making Code Contributions
 
+### Before You Start
+
+**This is critical:** Before writing any code, please do the following:
+
+1. **Search existing issues and PRs** - Check both open AND closed issues and pull requests. Someone may have already addressed this, or there may be a reason it was closed.
+   - [Open issues](https://github.com/cjpais/Handy/issues)
+   - [Closed issues](https://github.com/cjpais/Handy/issues?q=is%3Aissue+is%3Aclosed)
+   - [Open PRs](https://github.com/cjpais/Handy/pulls)
+   - [Closed PRs](https://github.com/cjpais/Handy/pulls?q=is%3Apr+is%3Aclosed)
+
+2. **If something was previously closed** - If you want to revisit a closed issue or PR, you need to:
+   - Provide a strong argument for why it should be reconsidered
+   - Gather community feedback first via [Discussions](https://github.com/cjpais/Handy/discussions)
+   - Link to that discussion in your PR
+
+3. **Get community feedback for features** - PRs with demonstrated community interest are **much more likely to be merged**. Start a discussion, get feedback, and link to it in your PR. This helps ensure Handy stays focused and useful for the most people without becoming bloated.
+
+Community feedback is essential to keeping Handy the best it can be for everyone. It helps prioritize what matters most and prevents feature creep.
+
 ### Development Workflow
 
 1. **Create a feature branch**:
@@ -193,12 +218,25 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
    - Go to the [Handy repository](https://github.com/cjpais/Handy)
    - Click "New Pull Request"
    - Select your fork and branch
-   - Fill out the PR template with:
+   - Fill out the PR template completely, including:
      - Clear description of changes
-     - Related issues or discussions
+     - Links to related issues or discussions
+     - **Community feedback** (especially important for features)
      - How you tested the changes
      - Screenshots/videos if applicable
      - Breaking changes (if any)
+
+   **Remember:** PRs with community support are prioritized. If you haven't already, start a [discussion](https://github.com/cjpais/Handy/discussions) to gather feedback before or alongside your PR. It is not explicitly required to gather feedback, but it certainly helps your PR get merged faster.
+
+### AI Assistance Disclosure
+
+**AI-assisted PRs are welcome!** Use whatever tools help you contribute, just be upfront about it.
+
+In your PR description, please include:
+
+- Whether AI was used (yes/no)
+- Which tools were used (e.g., "Claude Code", "GitHub Copilot", "ChatGPT")
+- How extensively it was used (e.g., "generated boilerplate", "helped debug", "wrote most of the code")
 
 ### Code Style Guidelines
 

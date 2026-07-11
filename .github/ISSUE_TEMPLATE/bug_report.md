@@ -31,3 +31,7 @@ A clear and concise description of what the bug is.
 **GPU:**
 
 <!-- e.g., Apple M2 GPU, NVIDIA RTX 4080, AMD RX 6800 XT, Intel UHD Graphics -->
+
+## Logs
+
+<!-- Please attach relevant logs to help us diagnose the issue. You can find the log directory by going to Settings > About in the app. -->

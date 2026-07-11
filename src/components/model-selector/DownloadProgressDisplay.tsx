@@ -16,8 +16,8 @@ interface DownloadStats {
 }
 
 interface DownloadProgressDisplayProps {
-  downloadProgress: Map<string, DownloadProgress>;
-  downloadStats: Map<string, DownloadStats>;
+  downloadProgress: Record<string, DownloadProgress>;
+  downloadStats: Record<string, DownloadStats>;
   className?: string;
 }
 
@@ -26,14 +26,13 @@ const DownloadProgressDisplay: React.FC<DownloadProgressDisplayProps> = ({
   downloadStats,
   className = "",
 }) => {
-  if (downloadProgress.size === 0) {
+  const progressValues = Object.values(downloadProgress);
+  if (progressValues.length === 0) {
     return null;
   }
 
-  const progressData: ProgressData[] = Array.from(
-    downloadProgress.values(),
-  ).map((progress) => {
-    const stats = downloadStats.get(progress.model_id);
+  const progressData: ProgressData[] = progressValues.map((progress) => {
+    const stats = downloadStats[progress.model_id];
     return {
       id: progress.model_id,
       percentage: progress.percentage,
@@ -45,7 +44,7 @@ const DownloadProgressDisplay: React.FC<DownloadProgressDisplayProps> = ({
     <ProgressBar
       progress={progressData}
       className={className}
-      showSpeed={downloadProgress.size === 1}
+      showSpeed={progressValues.length === 1}
       size="medium"
     />
   );
