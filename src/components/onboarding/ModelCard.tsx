@@ -92,8 +92,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const isFeatured = variant === "featured";
-  const isClickable =
-    status === "available" || status === "active" || status === "downloadable";
+  // The active model is already loaded — re-selecting it just reloads it for no
+  // gain, so it is deliberately not clickable.
+  const isClickable = status === "available" || status === "downloadable";
 
   // Get translated model name and description
   const displayName = getTranslatedModelName(model, t);
