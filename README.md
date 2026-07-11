@@ -81,6 +81,12 @@ This project is actively being developed and has some [known issues](https://git
 
 **Wayland Support (Linux):**
 
+### Linux Overlay Issue
+
+- The recording overlay window can interfere with pasting on Linux (Debian 13, Gnome, i3, and other window managers/compositors)
+- **Workaround:** Open Settings → Advanced → set "Overlay Position" to `None`. Enable "Audio feedback" in Settings to compensate for the lack of visual feedback.
+- This issue is being tracked in [#327](https://github.com/cjpais/Handy/issues/327)
+
 - Limited or no support for Wayland display server
 
 ### Platform Support
