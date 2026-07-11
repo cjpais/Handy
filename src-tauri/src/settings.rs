@@ -423,6 +423,10 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    #[serde(default = "default_post_process_temperature")]
+    pub post_process_temperature: f32,
+    #[serde(default = "default_post_process_top_k")]
+    pub post_process_top_k: u32,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -577,6 +581,14 @@ fn default_theme() -> Theme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_post_process_temperature() -> f32 {
+    0.2
+}
+
+fn default_post_process_top_k() -> u32 {
+    40
 }
 
 fn default_app_language() -> String {
@@ -875,6 +887,8 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        post_process_temperature: default_post_process_temperature(),
+        post_process_top_k: default_post_process_top_k(),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -1131,6 +1145,8 @@ mod tests {
             .expect("all AppSettings fields need serde defaults");
         assert!(settings.push_to_talk);
         assert!(!settings.audio_feedback);
+        assert_eq!(settings.post_process_temperature, 0.2);
+        assert_eq!(settings.post_process_top_k, 40);
         // Bindings default to empty; the load path merges the real defaults in.
         assert!(settings.bindings.is_empty());
     }

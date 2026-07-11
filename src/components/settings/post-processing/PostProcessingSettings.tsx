@@ -8,6 +8,7 @@ import {
   Dropdown,
   SettingContainer,
   SettingsGroup,
+  Slider,
   Textarea,
 } from "@/components/ui";
 import { Button } from "../../ui/Button";
@@ -414,6 +415,42 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   );
 };
 
+const PostProcessingSamplingComponent: React.FC = () => {
+  const { t } = useTranslation();
+  const { settings, updateSetting } = useSettings();
+
+  return (
+    <>
+      <Slider
+        value={settings?.post_process_temperature ?? 0.2}
+        onChange={(value) => updateSetting("post_process_temperature", value)}
+        min={0}
+        max={2}
+        step={0.1}
+        label={t("settings.postProcessing.sampling.temperature.title")}
+        description={t(
+          "settings.postProcessing.sampling.temperature.description",
+        )}
+        grouped={true}
+        formatValue={(value) => value.toFixed(1)}
+      />
+      <Slider
+        value={settings?.post_process_top_k ?? 40}
+        onChange={(value) =>
+          updateSetting("post_process_top_k", Math.round(value))
+        }
+        min={0}
+        max={100}
+        step={1}
+        label={t("settings.postProcessing.sampling.topK.title")}
+        description={t("settings.postProcessing.sampling.topK.description")}
+        grouped={true}
+        formatValue={(value) => Math.round(value).toString()}
+      />
+    </>
+  );
+};
+
 export const PostProcessingSettingsApi = React.memo(
   PostProcessingSettingsApiComponent,
 );
@@ -442,6 +479,7 @@ export const PostProcessingSettings: React.FC = () => {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
+        <PostProcessingSamplingComponent />
         <PostProcessingSettingsPrompts />
       </SettingsGroup>
     </div>

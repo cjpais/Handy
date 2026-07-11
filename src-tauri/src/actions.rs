@@ -17,6 +17,7 @@ use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
+use regex::Regex;
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;
@@ -56,16 +57,47 @@ struct TranscribeAction {
 
 /// Field name for structured output JSON schema
 const TRANSCRIPTION_FIELD: &str = "transcription";
+const FINAL_TRANSCRIPT_MARKER: &str = "<<<HANDY_FINAL_TRANSCRIPT>>>";
+
+static THINK_BLOCK_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?is)<think(?:\s[^>]*)?>.*?</think>")
+        .expect("the static think-block regex must compile")
+});
 
 /// Strip invisible Unicode characters that some LLMs may insert
 fn strip_invisible_chars(s: &str) -> String {
     s.replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
 }
 
-/// Build a system prompt from the user's prompt template.
-/// Removes `${output}` placeholder since the transcription is sent as the user message.
-fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template.replace("${output}", "").trim().to_string()
+/// Build a system prompt from the user's prompt template. The transcription is
+/// sent separately as the user message, so the placeholder is removed here.
+fn build_system_prompt(prompt_template: &str, require_marker: bool) -> String {
+    let prompt = prompt_template.replace("${output}", "");
+    let output_contract = if require_marker {
+        format!(
+            "Do not include analysis, reasoning, drafting notes, explanations, or a preamble. \
+             Return only the final processed transcript. Start it with the exact marker \
+             {FINAL_TRANSCRIPT_MARKER} on its own line, and put nothing except the final \
+             transcript after that marker."
+        )
+    } else {
+        "Do not include analysis, reasoning, drafting notes, explanations, or a preamble. \
+         Return only the requested structured output."
+            .to_string()
+    };
+
+    format!("{}\n\n{}", prompt.trim(), output_contract)
+}
+
+/// Clean a plain-text post-processing response without guessing which natural
+/// language paragraphs are model commentary.
+fn sanitize_plain_text_response(content: &str) -> String {
+    let without_thinking = THINK_BLOCK_RE.replace_all(content, "");
+    let final_content = without_thinking
+        .rsplit_once(FINAL_TRANSCRIPT_MARKER)
+        .map_or(without_thinking.as_ref(), |(_, transcript)| transcript);
+
+    strip_invisible_chars(final_content).trim().to_string()
 }
 
 /// Returns `true` when a transcription has no meaningful content to
@@ -168,6 +200,10 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .cloned()
         .unwrap_or_default();
 
+    let temperature = settings.post_process_temperature.clamp(0.0, 2.0);
+    let top_k = (provider.id == "custom" && settings.post_process_top_k > 0)
+        .then_some(settings.post_process_top_k.min(100));
+
     // Disable reasoning for providers where post-processing rarely benefits from it.
     // - custom: top-level reasoning_effort (works for local OpenAI-compat servers)
     // - openrouter: nested reasoning object; exclude:true also keeps reasoning text
@@ -187,7 +223,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt);
+        let system_prompt = build_system_prompt(&prompt, false);
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -254,6 +290,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             user_content,
             Some(system_prompt),
             Some(json_schema),
+            temperature,
+            top_k,
             reasoning_effort.clone(),
             reasoning.clone(),
         )
@@ -301,22 +339,25 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
-    debug!("Processed prompt length: {} chars", processed_prompt.len());
+    // Plain-text mode still separates instructions from the raw transcript.
+    let system_prompt = build_system_prompt(&prompt, true);
+    debug!("System prompt length: {} chars", system_prompt.len());
 
     match crate::llm_client::send_chat_completion(
         &provider,
         api_key,
         &model,
-        processed_prompt,
+        transcription.to_string(),
+        system_prompt,
+        temperature,
+        top_k,
         reasoning_effort,
         reasoning,
     )
     .await
     {
         Ok(Some(content)) => {
-            let content = strip_invisible_chars(&content);
+            let content = sanitize_plain_text_response(&content);
             debug!(
                 "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
                 provider.id,
@@ -927,7 +968,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 
 #[cfg(test)]
 mod tests {
-    use super::{complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay};
+    use super::{
+        build_system_prompt, complete_unless_cancelled, is_blank_transcription,
+        sanitize_plain_text_response, should_use_streaming_overlay, FINAL_TRANSCRIPT_MARKER,
+    };
     use crate::settings::OverlayStyle;
     use std::future;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -946,6 +990,40 @@ mod tests {
     fn non_blank_transcription_is_kept() {
         assert!(!is_blank_transcription("hello"));
         assert!(!is_blank_transcription("  hello  "));
+    }
+
+    #[test]
+    fn plain_text_prompt_separates_transcript_and_requires_marker() {
+        let prompt = build_system_prompt("Clean this:\n${output}", true);
+
+        assert!(!prompt.contains("${output}"));
+        assert!(prompt.contains(FINAL_TRANSCRIPT_MARKER));
+        assert!(prompt.contains("Do not include analysis"));
+    }
+
+    #[test]
+    fn plain_text_response_uses_content_after_last_marker() {
+        let content = format!(
+            "Analysis that should not be pasted.\n{FINAL_TRANSCRIPT_MARKER}\nClean transcript."
+        );
+
+        assert_eq!(sanitize_plain_text_response(&content), "Clean transcript.");
+    }
+
+    #[test]
+    fn plain_text_response_strips_multiline_think_blocks() {
+        let content = format!(
+            "<think>First line\nsecond line</think>\n{FINAL_TRANSCRIPT_MARKER}\nFinal text."
+        );
+
+        assert_eq!(sanitize_plain_text_response(&content), "Final text.");
+    }
+
+    #[test]
+    fn plain_text_response_without_marker_keeps_ordinary_text() {
+        let content = "The user wants this exact sentence kept.\nDrafting output is their topic.";
+
+        assert_eq!(sanitize_plain_text_response(content), content);
     }
 
     #[test]

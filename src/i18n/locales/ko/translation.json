@@ -401,6 +401,16 @@
           "refreshModels": "모델 새로고침"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "온도",
+          "description": "후처리의 무작위성을 조절합니다. 값이 낮을수록 더 일관된 결과를 생성합니다."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "사용자 지정 제공자의 토큰 선택을 제한합니다. 0으로 설정하면 비활성화됩니다."
+        }
+      },
       "prompts": {
         "title": "프롬프트",
         "selectedPrompt": {

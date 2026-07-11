@@ -401,6 +401,16 @@
           "refreshModels": "Modellen verversen"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Temperatuur",
+          "description": "Bepaalt de willekeur van de nabewerking. Lagere waarden geven consistentere uitvoer."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Beperkt de tokenkeuze voor aangepaste providers. Stel in op 0 om uit te schakelen."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

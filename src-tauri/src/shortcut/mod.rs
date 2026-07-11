@@ -938,6 +938,31 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_post_process_temperature_setting(
+    app: AppHandle,
+    temperature: f32,
+) -> Result<(), String> {
+    if !temperature.is_finite() {
+        return Err("Post-processing temperature must be a finite number".to_string());
+    }
+
+    let mut settings = settings::get_settings(&app);
+    settings.post_process_temperature = temperature.clamp(0.0, 2.0);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_post_process_top_k_setting(app: AppHandle, top_k: u32) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.post_process_top_k = top_k.min(100);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.experimental_enabled = enabled;

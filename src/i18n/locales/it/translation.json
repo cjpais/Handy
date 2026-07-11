@@ -401,6 +401,16 @@
           "refreshModels": "Aggiorna modelli"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Temperatura",
+          "description": "Controlla la casualità della post-elaborazione. Valori più bassi producono risultati più coerenti."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Limita la scelta dei token per i provider personalizzati. Imposta 0 per disattivare."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

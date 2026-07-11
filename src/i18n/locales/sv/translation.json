@@ -401,6 +401,16 @@
           "refreshModels": "Uppdatera modeller"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Temperatur",
+          "description": "Styr slumpmässigheten i efterbehandlingen. Lägre värden ger mer konsekventa resultat."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Begränsar tokenvalet för anpassade leverantörer. Ange 0 för att inaktivera."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

@@ -401,6 +401,16 @@
           "refreshModels": "Làm mới mô hình"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Nhiệt độ",
+          "description": "Kiểm soát tính ngẫu nhiên của bước hậu xử lý. Giá trị thấp hơn tạo ra kết quả nhất quán hơn."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Giới hạn lựa chọn token cho nhà cung cấp tùy chỉnh. Đặt thành 0 để tắt."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

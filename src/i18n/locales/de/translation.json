@@ -401,6 +401,16 @@
           "refreshModels": "Modelle aktualisieren"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Temperatur",
+          "description": "Steuert die Zufälligkeit der Nachbearbeitung. Niedrigere Werte liefern konsistentere Ergebnisse."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Begrenzt die Token-Auswahl für benutzerdefinierte Anbieter. Mit 0 wird die Funktion deaktiviert."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

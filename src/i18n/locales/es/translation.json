@@ -401,6 +401,16 @@
           "refreshModels": "Actualizar modelos"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Temperatura",
+          "description": "Controla la aleatoriedad del posprocesamiento. Los valores bajos producen resultados más consistentes."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Limita las opciones de tokens para proveedores personalizados. Establécelo en 0 para desactivarlo."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

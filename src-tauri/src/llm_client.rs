@@ -37,6 +37,10 @@ struct ChatCompletionRequest {
     model: String,
     messages: Vec<ChatMessage>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    top_k: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<ResponseFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reasoning_effort: Option<String>,
@@ -112,7 +116,10 @@ pub async fn send_chat_completion(
     provider: &PostProcessProvider,
     api_key: String,
     model: &str,
-    prompt: String,
+    user_content: String,
+    system_prompt: String,
+    temperature: f32,
+    top_k: Option<u32>,
     reasoning_effort: Option<String>,
     reasoning: Option<ReasoningConfig>,
 ) -> Result<Option<String>, String> {
@@ -120,9 +127,11 @@ pub async fn send_chat_completion(
         provider,
         api_key,
         model,
-        prompt,
+        user_content,
+        Some(system_prompt),
         None,
-        None,
+        temperature,
+        top_k,
         reasoning_effort,
         reasoning,
     )
@@ -132,6 +141,8 @@ pub async fn send_chat_completion(
 /// Send a chat completion request with structured output support
 /// When json_schema is provided, uses structured outputs mode
 /// system_prompt is used as the system message when provided
+/// temperature controls response randomness
+/// top_k limits token selection for compatible custom endpoints
 /// reasoning_effort sets the OpenAI-style top-level field (e.g., "none", "low", "medium", "high")
 /// reasoning sets the OpenRouter-style nested object (effort + exclude)
 #[allow(clippy::too_many_arguments)]
@@ -142,6 +153,8 @@ pub async fn send_chat_completion_with_schema(
     user_content: String,
     system_prompt: Option<String>,
     json_schema: Option<Value>,
+    temperature: f32,
+    top_k: Option<u32>,
     reasoning_effort: Option<String>,
     reasoning: Option<ReasoningConfig>,
 ) -> Result<Option<String>, String> {
@@ -182,6 +195,8 @@ pub async fn send_chat_completion_with_schema(
     let request_body = ChatCompletionRequest {
         model: model.to_string(),
         messages,
+        temperature: Some(temperature),
+        top_k,
         response_format,
         reasoning_effort,
         reasoning,
@@ -275,4 +290,52 @@ pub async fn fetch_models(
     }
 
     Ok(models)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ChatCompletionRequest, ChatMessage, ReasoningConfig};
+
+    fn request(top_k: Option<u32>) -> ChatCompletionRequest {
+        ChatCompletionRequest {
+            model: "test-model".to_string(),
+            messages: vec![
+                ChatMessage {
+                    role: "system".to_string(),
+                    content: "Edit the transcript.".to_string(),
+                },
+                ChatMessage {
+                    role: "user".to_string(),
+                    content: "Raw transcript.".to_string(),
+                },
+            ],
+            temperature: Some(0.2),
+            top_k,
+            response_format: None,
+            reasoning_effort: Some("none".to_string()),
+            reasoning: Some(ReasoningConfig {
+                effort: Some("none".to_string()),
+                exclude: Some(true),
+            }),
+        }
+    }
+
+    #[test]
+    fn request_serializes_sampling_reasoning_and_message_roles() {
+        let json = serde_json::to_value(request(Some(40))).unwrap();
+
+        assert_eq!(json["temperature"], 0.2);
+        assert_eq!(json["top_k"], 40);
+        assert_eq!(json["reasoning_effort"], "none");
+        assert_eq!(json["reasoning"]["exclude"], true);
+        assert_eq!(json["messages"][0]["role"], "system");
+        assert_eq!(json["messages"][1]["role"], "user");
+    }
+
+    #[test]
+    fn request_omits_disabled_top_k() {
+        let json = serde_json::to_value(request(None)).unwrap();
+
+        assert!(json.get("top_k").is_none());
+    }
 }

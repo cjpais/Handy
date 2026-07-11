@@ -401,6 +401,16 @@
           "refreshModels": "Actualiser les modèles"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Température",
+          "description": "Contrôle le caractère aléatoire du post-traitement. Des valeurs faibles produisent un résultat plus cohérent."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Limite le choix des jetons pour les fournisseurs personnalisés. Réglez sur 0 pour désactiver."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

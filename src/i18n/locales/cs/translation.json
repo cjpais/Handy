@@ -401,6 +401,16 @@
           "refreshModels": "Obnovit modely"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Teplota",
+          "description": "Řídí náhodnost následného zpracování. Nižší hodnoty poskytují konzistentnější výstup."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Omezuje výběr tokenů u vlastních poskytovatelů. Hodnota 0 funkci vypne."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

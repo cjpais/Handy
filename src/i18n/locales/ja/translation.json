@@ -401,6 +401,16 @@
           "refreshModels": "モデルを更新"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "温度",
+          "description": "後処理のランダム性を調整します。値を低くすると、より一貫した出力になります。"
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "カスタムプロバイダーのトークン候補を制限します。0 にすると無効になります。"
+        }
+      },
       "prompts": {
         "title": "プロンプト",
         "selectedPrompt": {

@@ -401,6 +401,16 @@
           "refreshModels": "重新整理模型"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "溫度",
+          "description": "控制後處理的隨機性。較低的值會產生更一致的輸出。"
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "限制自訂提供者的權杖選擇。設為 0 即可停用。"
+        }
+      },
       "prompts": {
         "title": "提示詞",
         "selectedPrompt": {

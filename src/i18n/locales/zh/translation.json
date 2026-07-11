@@ -401,6 +401,16 @@
           "refreshModels": "刷新模型"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "温度",
+          "description": "控制后处理的随机性。较低的值会产生更一致的输出。"
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "限制自定义提供商的令牌选择。设为 0 即可禁用。"
+        }
+      },
       "prompts": {
         "title": "提示词",
         "selectedPrompt": {

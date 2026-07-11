@@ -421,6 +421,16 @@
         "cancel": "Cancel",
         "selectToEdit": "Select a prompt above to view and edit its details.",
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
+      },
+      "sampling": {
+        "temperature": {
+          "title": "Temperature",
+          "description": "Controls randomness in post-processing. Lower values produce more consistent output."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Limits token choices for custom providers. Set to 0 to disable."
+        }
       }
     },
     "history": {

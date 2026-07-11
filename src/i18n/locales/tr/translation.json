@@ -401,6 +401,16 @@
           "refreshModels": "Modelleri Yenile"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Sıcaklık",
+          "description": "Son işlemenin rastgeleliğini kontrol eder. Daha düşük değerler daha tutarlı çıktı üretir."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Özel sağlayıcılarda belirteç seçeneklerini sınırlar. Devre dışı bırakmak için 0 olarak ayarlayın."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

@@ -401,6 +401,16 @@
           "refreshModels": "Odśwież modele"
         }
       },
+      "sampling": {
+        "temperature": {
+          "title": "Temperatura",
+          "description": "Steruje losowością przetwarzania końcowego. Niższe wartości dają bardziej spójne wyniki."
+        },
+        "topK": {
+          "title": "Top K",
+          "description": "Ogranicza wybór tokenów dla niestandardowych dostawców. Ustaw 0, aby wyłączyć."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {
