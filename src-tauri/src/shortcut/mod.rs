@@ -1201,6 +1201,54 @@ pub fn change_vad_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), S
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_parakeet_stream_att_context_right_setting(
+    app: AppHandle,
+    value: i32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.parakeet_stream_att_context_right = value;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_parakeet_stream_buf_left_ms_setting(
+    app: AppHandle,
+    value: i32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.parakeet_stream_buf_left_ms = value;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_parakeet_stream_buf_chunk_ms_setting(
+    app: AppHandle,
+    value: i32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.parakeet_stream_buf_chunk_ms = value;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_parakeet_stream_buf_right_ms_setting(
+    app: AppHandle,
+    value: i32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.parakeet_stream_buf_right_ms = value;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.app_language = language.clone();

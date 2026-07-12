@@ -1,5 +1,6 @@
 import React from "react";
 import { SettingContainer } from "./SettingContainer";
+import { ResetButton } from "./ResetButton";
 
 interface SliderProps {
   value: number;
@@ -14,6 +15,7 @@ interface SliderProps {
   grouped?: boolean;
   showValue?: boolean;
   formatValue?: (value: number) => string;
+  resetAction?: () => void;
 }
 
 export const Slider: React.FC<SliderProps> = ({
@@ -29,6 +31,7 @@ export const Slider: React.FC<SliderProps> = ({
   grouped = false,
   showValue = true,
   formatValue = (v) => v.toFixed(2),
+  resetAction,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(parseFloat(e.target.value));
@@ -66,6 +69,9 @@ export const Slider: React.FC<SliderProps> = ({
             <span className="text-sm font-medium text-text/90 w-12 text-end">
               {formatValue(value)}
             </span>
+          )}
+          {resetAction && (
+            <ResetButton onClick={resetAction} disabled={disabled} />
           )}
         </div>
       </div>

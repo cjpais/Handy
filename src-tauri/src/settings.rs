@@ -464,6 +464,24 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    /// Parakeet cache-aware streaming: right-context (lookahead) selector in
+    /// encoder frames. Maps to att_context_right in the C API. The valid menu
+    /// depends on the model; Nemotron 3.5 supports {13, 6, 3, 0} = {1120, 560,
+    /// 320, 80} ms lookahead. -1 means "model default".
+    #[serde(default = "default_parakeet_stream_att_context_right")]
+    pub parakeet_stream_att_context_right: i32,
+    /// Parakeet buffered streaming (parakeet-unified): left context in ms.
+    /// Maps to left_ms in the C API. -1 means "model default" (5600 ms).
+    #[serde(default = "default_parakeet_stream_buf_left_ms")]
+    pub parakeet_stream_buf_left_ms: i32,
+    /// Parakeet buffered streaming (parakeet-unified): chunk size in ms.
+    /// Maps to chunk_ms in the C API. -1 means "model default" (1040 ms).
+    #[serde(default = "default_parakeet_stream_buf_chunk_ms")]
+    pub parakeet_stream_buf_chunk_ms: i32,
+    /// Parakeet buffered streaming (parakeet-unified): right context in ms.
+    /// Maps to right_ms in the C API. -1 means "model default" (1040 ms).
+    #[serde(default = "default_parakeet_stream_buf_right_ms")]
+    pub parakeet_stream_buf_right_ms: i32,
 }
 
 fn default_model() -> String {
@@ -525,6 +543,22 @@ fn default_overlay_style() -> OverlayStyle {
     return OverlayStyle::None;
     #[cfg(not(target_os = "linux"))]
     return OverlayStyle::Live;
+}
+
+fn default_parakeet_stream_att_context_right() -> i32 {
+    13 // 1120ms lookahead — model default (max accuracy)
+}
+
+fn default_parakeet_stream_buf_left_ms() -> i32 {
+    5600 // 5.6s left context — model default (max accuracy)
+}
+
+fn default_parakeet_stream_buf_chunk_ms() -> i32 {
+    1040 // 1.04s chunk — model default (max accuracy)
+}
+
+fn default_parakeet_stream_buf_right_ms() -> i32 {
+    1040 // 1.04s right context — model default (max accuracy)
 }
 
 fn default_vad_enabled() -> bool {
@@ -894,6 +928,10 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
         overlay_style: default_overlay_style(),
+        parakeet_stream_att_context_right: default_parakeet_stream_att_context_right(),
+        parakeet_stream_buf_left_ms: default_parakeet_stream_buf_left_ms(),
+        parakeet_stream_buf_chunk_ms: default_parakeet_stream_buf_chunk_ms(),
+        parakeet_stream_buf_right_ms: default_parakeet_stream_buf_right_ms(),
     }
 }
 

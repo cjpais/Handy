@@ -155,7 +155,11 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} Settings"
+      "title": "{{model}} Settings",
+      "streamingLatency": {
+        "label": "Streaming Latency",
+        "description": "Adjust the trade-off between speed and accuracy. Lower values respond faster but may be less accurate. Very low latency settings may cause transcription to lag behind on slower hardware."
+      }
     },
     "general": {
       "title": "General",

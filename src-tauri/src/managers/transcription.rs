@@ -17,7 +17,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
-    Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
+    Backend, ExtSlot, Feature, Model, ModelOptions, ParakeetBufferedStreamOptions,
+    ParakeetStreamOptions, RunExtension, RunOptions, Session, StreamExtension, StreamOptions, Task,
     WhisperRunOptions,
 };
 use transcribe_rs::{
@@ -916,7 +917,38 @@ impl TranscriptionManager {
 
             // StreamOptions::default() uses CommitPolicy::Auto and lets the
             // family pick its own streaming strategy (no family-specific ext).
-            let mut stream = match session.stream(&run_options, &StreamOptions::default()) {
+            let stream_settings = get_settings(&self.app_handle);
+
+            // Detect which stream extension the loaded model accepts:
+            // - Cache-aware (Nemotron models): ParakeetStream with att_context_right
+            // - Buffered (Parakeet Unified): ParakeetBuffered with left/chunk/right_ms
+            const EXT_KIND_PARAKEET_STREAM: u32 = 0x54534B50; // 'PKST'
+            const EXT_KIND_PARAKEET_BUFFERED: u32 = 0x53424B50; // 'PKBS'
+
+            let model = session.model();
+            let family_ext = if model.accepts_ext(ExtSlot::Stream, EXT_KIND_PARAKEET_BUFFERED) {
+                // Parakeet Unified: buffered streaming with (L, C, R) ms parameters
+                Some(StreamExtension::ParakeetBuffered(
+                    ParakeetBufferedStreamOptions {
+                        left_ms: Some(stream_settings.parakeet_stream_buf_left_ms),
+                        chunk_ms: Some(stream_settings.parakeet_stream_buf_chunk_ms),
+                        right_ms: Some(stream_settings.parakeet_stream_buf_right_ms),
+                    },
+                ))
+            } else if model.accepts_ext(ExtSlot::Stream, EXT_KIND_PARAKEET_STREAM) {
+                // Nemotron: cache-aware streaming with att_context_right
+                Some(StreamExtension::ParakeetStream(ParakeetStreamOptions {
+                    att_context_right: Some(stream_settings.parakeet_stream_att_context_right),
+                }))
+            } else {
+                None
+            };
+
+            let stream_opts = StreamOptions {
+                family: family_ext,
+                ..Default::default()
+            };
+            let mut stream = match session.stream(&run_options, &stream_opts) {
                 Ok(s) => s,
                 Err(e) => {
                     error!("Failed to begin stream: {}", e);
