@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Seçili Prompt",
-          "description": "Transkripsiyonları iyileştirmek için bir şablon seçin veya yeni bir tane oluşturun. Yakalanan transkripte referans vermek için prompt metni içinde ${output} kullanın."
+          "description": "Transkripsiyonların son işlemesinde kullanılan sistem mesajını seçin veya oluşturun. Transkripsiyon otomatik olarak ayrı bir kullanıcı mesajı şeklinde gönderilir."
         },
         "noPrompts": "Kullanılabilir prompt yok",
         "selectPrompt": "Prompt Seç",
         "createNew": "Yeni Prompt Oluştur",
         "promptLabel": "Prompt Etiketi",
         "promptLabelPlaceholder": "Prompt adı girin",
-        "promptInstructions": "Prompt Talimatları",
-        "promptInstructionsPlaceholder": "Transkripsiyondan sonra çalıştırılacak talimatları yazın. Örnek: Aşağıdaki metnin dilbilgisini ve açıklığını iyileştir: ${output}",
-        "promptTip": "İpucu: Transkribe edilen metni promptunuza eklemek için <code>${output}</code> kullanın.",
+        "promptInstructions": "Sistem mesajı",
+        "promptInstructionsPlaceholder": "LLM'nin transkripsiyonu nasıl işlemesi gerektiğini yazın. Örnek: Özgün anlamı koruyarak dilbilgisini ve açıklığı iyileştir.",
+        "promptTip": "Transkripsiyon, LLM'ye otomatik olarak ayrı bir kullanıcı mesajı şeklinde gönderilir. ${output} eklemeniz gerekmez.",
         "updatePrompt": "Promptu Güncelle",
         "deletePrompt": "Promptu Sil",
         "createPrompt": "Prompt Oluştur",

@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Prompt đã chọn",
-          "description": "Chọn một mẫu để tinh chỉnh bản ghi hoặc tạo mới. Sử dụng ${output} trong văn bản prompt để tham chiếu bản ghi đã chụp."
+          "description": "Chọn hoặc tạo thông điệp hệ thống dùng để hậu xử lý bản ghi. Bản ghi được tự động gửi dưới dạng một thông điệp người dùng riêng biệt."
         },
         "noPrompts": "Không có prompt nào",
         "selectPrompt": "Chọn một prompt",
         "createNew": "Tạo Prompt mới",
         "promptLabel": "Nhãn Prompt",
         "promptLabelPlaceholder": "Nhập tên prompt",
-        "promptInstructions": "Hướng dẫn Prompt",
-        "promptInstructionsPlaceholder": "Viết hướng dẫn để chạy sau khi chuyển đổi. Ví dụ: Cải thiện ngữ pháp và độ rõ ràng cho văn bản sau: ${output}",
-        "promptTip": "Mẹo: Sử dụng <code>${output}</code> để chèn văn bản đã chuyển đổi vào prompt của bạn.",
+        "promptInstructions": "Thông điệp hệ thống",
+        "promptInstructionsPlaceholder": "Mô tả cách LLM xử lý bản ghi. Ví dụ: Cải thiện ngữ pháp và độ rõ ràng trong khi giữ nguyên ý nghĩa ban đầu.",
+        "promptTip": "Bản ghi được tự động gửi đến LLM dưới dạng một thông điệp người dùng riêng biệt. Bạn không cần thêm ${output}.",
         "updatePrompt": "Cập nhật Prompt",
         "deletePrompt": "Xóa Prompt",
         "createPrompt": "Tạo Prompt",

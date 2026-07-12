@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Wybrany prompt",
-          "description": "Wybierz szablon do ulepszania transkrypcji lub utwórz nowy. Użyj ${output} w treści, aby odwołać się do przechwyconej transkrypcji."
+          "description": "Wybierz lub utwórz komunikat systemowy używany do przetwarzania transkrypcji. Transkrypcja jest automatycznie wysyłana jako osobny komunikat użytkownika."
         },
         "noPrompts": "Brak dostępnych promptów",
         "selectPrompt": "Wybierz prompt",
         "createNew": "Utwórz nowy prompt",
         "promptLabel": "Etykieta promptu",
         "promptLabelPlaceholder": "Wpisz nazwę promptu",
-        "promptInstructions": "Instrukcje promptu",
-        "promptInstructionsPlaceholder": "Wpisz instrukcje do wykonania po transkrypcji. Przykład: Popraw gramatykę i jasność dla następującego tekstu: ${output}",
-        "promptTip": "Wskazówka: użyj <code>${output}</code>, aby wstawić transkrybowany tekst do promptu.",
+        "promptInstructions": "Komunikat systemowy",
+        "promptInstructionsPlaceholder": "Opisz, jak model LLM ma przetworzyć transkrypcję. Przykład: popraw gramatykę i jasność, zachowując pierwotne znaczenie.",
+        "promptTip": "Transkrypcja jest automatycznie wysyłana do modelu LLM jako osobny komunikat użytkownika. Nie musisz dodawać ${output}.",
         "updatePrompt": "Zaktualizuj prompt",
         "deletePrompt": "Usuń prompt",
         "createPrompt": "Utwórz prompt",

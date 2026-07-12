@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Vybraný prompt",
-          "description": "Vyberte šablonu pro zpřesnění přepisu nebo vytvořte novou. V textu promptu použijte ${output} pro vložení zachyceného přepisu."
+          "description": "Vyberte nebo vytvořte systémovou zprávu používanou pro následné zpracování přepisů. Přepis se automaticky odešle jako samostatná uživatelská zpráva."
         },
         "noPrompts": "Nejsou k dispozici žádné prompty",
         "selectPrompt": "Vyberte prompt",
         "createNew": "Vytvořit nový prompt",
         "promptLabel": "Název promptu",
         "promptLabelPlaceholder": "Zadejte název promptu",
-        "promptInstructions": "Instrukce promptu",
-        "promptInstructionsPlaceholder": "Napište instrukce, které se mají spustit po přepisu. Příklad: Zlepšete gramatiku a srozumitelnost následujícího textu: ${output}",
-        "promptTip": "Tip: Použijte <code>${output}</code> pro vložení přepsaného textu do promptu.",
+        "promptInstructions": "Systémová zpráva",
+        "promptInstructionsPlaceholder": "Popište, jak má LLM přepis zpracovat. Příklad: Zlepšete gramatiku a srozumitelnost při zachování původního významu.",
+        "promptTip": "Přepis se automaticky odešle LLM jako samostatná uživatelská zpráva. ${output} není nutné přidávat.",
         "updatePrompt": "Aktualizovat prompt",
         "deletePrompt": "Smazat prompt",
         "createPrompt": "Vytvořit prompt",

@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Prompt Selezionato",
-          "description": "Seleziona un template per migliorare le trascrizioni o creane uno nuovo. Usa ${output} nel prompt per fare riferimento alla trascrizione."
+          "description": "Seleziona o crea il messaggio di sistema usato per post-elaborare le trascrizioni. La trascrizione viene inviata automaticamente come messaggio utente separato."
         },
         "noPrompts": "Nessun prompt disponibile",
         "selectPrompt": "Scegli un prompt",
         "createNew": "Crea un nuovo prompt",
         "promptLabel": "Etichetta del Prompt",
         "promptLabelPlaceholder": "Inserisci il nome del prompt",
-        "promptInstructions": "Istruzioni del Prompt",
-        "promptInstructionsPlaceholder": "Scrivi le istruzioni da eseguire dopo la trascrizione. Esempio: Migliora la grammatica e la chiarezza per il seguente testo: ${output}",
-        "promptTip": "Suggerimento: Usa <code>${output}</code> per inserire il testo trascritto nel tuo prompt.",
+        "promptInstructions": "Messaggio di sistema",
+        "promptInstructionsPlaceholder": "Descrivi come l’LLM deve elaborare la trascrizione. Esempio: Migliora grammatica e chiarezza mantenendo il significato originale.",
+        "promptTip": "La trascrizione viene inviata automaticamente all’LLM come messaggio utente separato. Non è necessario includere ${output}.",
         "updatePrompt": "Aggiorna Prompt",
         "deletePrompt": "Elimina Prompt",
         "createPrompt": "Crea Prompt",

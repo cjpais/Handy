@@ -415,16 +415,16 @@
         "title": "プロンプト",
         "selectedPrompt": {
           "title": "選択したプロンプト",
-          "description": "文字起こしを改善するテンプレートを選択するか、新しく作成します。プロンプトテキスト内で ${output} を使用して、キャプチャした文字起こしを参照します。"
+          "description": "文字起こしの後処理に使用するシステムメッセージを選択または作成します。文字起こしは別のユーザーメッセージとして自動的に送信されます。"
         },
         "noPrompts": "プロンプトがありません",
         "selectPrompt": "プロンプトを選択",
         "createNew": "新しいプロンプトを作成",
         "promptLabel": "プロンプト名",
         "promptLabelPlaceholder": "プロンプト名を入力",
-        "promptInstructions": "プロンプトの指示",
-        "promptInstructionsPlaceholder": "文字起こし後に実行する指示を記述します。例: 以下のテキストの文法と明瞭さを改善してください: ${output}",
-        "promptTip": "ヒント: <code>${output}</code> を使用して、文字起こしテキストをプロンプトに挿入します。",
+        "promptInstructions": "システムメッセージ",
+        "promptInstructionsPlaceholder": "LLM が文字起こしをどのように処理するかを記述します。例: 元の意味を保ちながら文法と明瞭さを改善してください。",
+        "promptTip": "文字起こしは別のユーザーメッセージとして LLM に自動送信されます。${output} を含める必要はありません。",
         "updatePrompt": "プロンプトを更新",
         "deletePrompt": "プロンプトを削除",
         "createPrompt": "プロンプトを作成",

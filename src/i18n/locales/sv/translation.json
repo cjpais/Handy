@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Vald prompt",
-          "description": "Välj en mall för att förfina transkriptioner eller skapa en ny. Använd ${output} inuti prompttexten för att referera till den fångade transkriptionen."
+          "description": "Välj eller skapa systemmeddelandet som används för efterbehandling av transkriptioner. Transkriptionen skickas automatiskt som ett separat användarmeddelande."
         },
         "noPrompts": "Inga prompter tillgängliga",
         "selectPrompt": "Välj en prompt",
         "createNew": "Skapa ny prompt",
         "promptLabel": "Prompt-etikett",
         "promptLabelPlaceholder": "Ange namn på prompt",
-        "promptInstructions": "Prompt-instruktioner",
-        "promptInstructionsPlaceholder": "Skriv instruktionerna som ska köras efter transkription. Exempel: Förbättra grammatik och tydlighet för följande text: ${output}",
-        "promptTip": "Tips: Använd <code>${output}</code> för att infoga den transkriberade texten i din prompt.",
+        "promptInstructions": "Systemmeddelande",
+        "promptInstructionsPlaceholder": "Beskriv hur LLM-modellen ska bearbeta transkriptionen. Exempel: Förbättra grammatik och tydlighet utan att ändra den ursprungliga betydelsen.",
+        "promptTip": "Transkriptionen skickas automatiskt till LLM-modellen som ett separat användarmeddelande. Du behöver inte inkludera ${output}.",
         "updatePrompt": "Uppdatera prompt",
         "deletePrompt": "Ta bort prompt",
         "createPrompt": "Skapa prompt",

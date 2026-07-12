@@ -405,16 +405,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Selected Prompt",
-          "description": "Select a template for refining transcriptions or create a new one. Use ${output} inside the prompt text to reference the captured transcript."
+          "description": "Select or create the system message used to post-process transcriptions. The transcript is sent automatically as a separate user message."
         },
         "noPrompts": "No prompts available",
         "selectPrompt": "Select a prompt",
         "createNew": "Create New Prompt",
         "promptLabel": "Prompt Label",
         "promptLabelPlaceholder": "Enter prompt name",
-        "promptInstructions": "Prompt Instructions",
-        "promptInstructionsPlaceholder": "Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}",
-        "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "promptInstructions": "System Message",
+        "promptInstructionsPlaceholder": "Write instructions for how the LLM should process the transcript. Example: Improve grammar and clarity while preserving the original meaning.",
+        "promptTip": "The transcript is sent to the LLM automatically as a separate user message. You do not need to include ${output}.",
         "updatePrompt": "Update Prompt",
         "deletePrompt": "Delete Prompt",
         "createPrompt": "Create Prompt",

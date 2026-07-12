@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Geselecteerde prompt",
-          "description": "Selecteer een sjabloon voor het verfijnen van transcripties of maak een nieuwe aan. Gebruik ${output} in de prompttekst om naar de gemaakte transcriptie te verwijzen."
+          "description": "Selecteer of maak het systeembericht voor de nabewerking van transcripties. De transcriptie wordt automatisch als een afzonderlijk gebruikersbericht verzonden."
         },
         "noPrompts": "Geen prompts beschikbaar",
         "selectPrompt": "Selecteer een prompt",
         "createNew": "Nieuwe prompt maken",
         "promptLabel": "Promptnaam",
         "promptLabelPlaceholder": "Voer promptnaam in",
-        "promptInstructions": "Prompt-instructies",
-        "promptInstructionsPlaceholder": "Schrijf de instructies die na de transcriptie moeten worden uitgevoerd. Voorbeeld: Verbeter de grammatica en helderheid van de volgende tekst: ${output}",
-        "promptTip": "Tip: Gebruik <code>${output}</code> om de getranscribeerde tekst in je prompt in te voegen.",
+        "promptInstructions": "Systeembericht",
+        "promptInstructionsPlaceholder": "Beschrijf hoe het LLM de transcriptie moet verwerken. Voorbeeld: Verbeter grammatica en helderheid met behoud van de oorspronkelijke betekenis.",
+        "promptTip": "De transcriptie wordt automatisch als een afzonderlijk gebruikersbericht naar het LLM gestuurd. Je hoeft ${output} niet op te nemen.",
         "updatePrompt": "Prompt bijwerken",
         "deletePrompt": "Prompt verwijderen",
         "createPrompt": "Prompt maken",

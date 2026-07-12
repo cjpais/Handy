@@ -415,16 +415,16 @@
         "title": "提示词",
         "selectedPrompt": {
           "title": "已选提示词",
-          "description": "选择用于优化转录的模板或创建新模板。在提示词文本中使用 ${output} 来引用捕获的转录。"
+          "description": "选择或创建用于后处理转录的系统消息。转录内容会自动作为单独的用户消息发送。"
         },
         "noPrompts": "没有可用的提示词",
         "selectPrompt": "选择提示词",
         "createNew": "创建新提示词",
         "promptLabel": "提示词名称",
         "promptLabelPlaceholder": "输入提示词名称",
-        "promptInstructions": "提示词指令",
-        "promptInstructionsPlaceholder": "编写转录后要执行的指令。示例：改进以下文本的语法和清晰度: ${output}",
-        "promptTip": "提示：使用 <code>${output}</code> 将转录文本插入到您的提示词中。",
+        "promptInstructions": "系统消息",
+        "promptInstructionsPlaceholder": "说明 LLM 应如何处理转录。示例：在保留原意的同时改进语法和清晰度。",
+        "promptTip": "转录内容会自动作为单独的用户消息发送给 LLM，无需添加 ${output}。",
         "updatePrompt": "更新提示词",
         "deletePrompt": "删除提示词",
         "createPrompt": "创建提示词",

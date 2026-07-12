@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Ausgewählter Prompt",
-          "description": "Wähle eine Vorlage zur Verfeinerung von Transkriptionen oder erstelle eine neue. Verwende ${output} im Prompt-Text, um auf das erfasste Transkript zu verweisen."
+          "description": "Wähle oder erstelle die Systemnachricht für die Nachbearbeitung von Transkriptionen. Das Transkript wird automatisch als separate Benutzernachricht gesendet."
         },
         "noPrompts": "Keine Prompts verfügbar",
         "selectPrompt": "Prompt auswählen",
         "createNew": "Neuen Prompt erstellen",
         "promptLabel": "Prompt-Name",
         "promptLabelPlaceholder": "Prompt-Namen eingeben",
-        "promptInstructions": "Prompt-Anweisungen",
-        "promptInstructionsPlaceholder": "Schreibe die Anweisungen, die nach der Transkription ausgeführt werden sollen. Beispiel: Verbessere Grammatik und Klarheit für folgenden Text: ${output}",
-        "promptTip": "Tipp: Verwende <code>${output}</code>, um den transkribierten Text in deinen Prompt einzufügen.",
+        "promptInstructions": "Systemnachricht",
+        "promptInstructionsPlaceholder": "Beschreibe, wie das LLM das Transkript bearbeiten soll. Beispiel: Verbessere Grammatik und Klarheit, ohne die ursprüngliche Bedeutung zu verändern.",
+        "promptTip": "Das Transkript wird automatisch als separate Benutzernachricht an das LLM gesendet. ${output} muss nicht eingefügt werden.",
         "updatePrompt": "Prompt aktualisieren",
         "deletePrompt": "Prompt löschen",
         "createPrompt": "Prompt erstellen",

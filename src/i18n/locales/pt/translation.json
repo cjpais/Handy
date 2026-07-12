@@ -415,16 +415,16 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Prompt Selecionado",
-          "description": "Selecione um modelo para refinar transcrições ou crie um novo. Use ${output} dentro do texto do prompt para referenciar a transcrição capturada."
+          "description": "Selecione ou crie a mensagem de sistema usada para pós-processar transcrições. A transcrição é enviada automaticamente como uma mensagem de usuário separada."
         },
         "noPrompts": "Nenhum prompt disponível",
         "selectPrompt": "Selecionar um prompt",
         "createNew": "Criar Novo Prompt",
         "promptLabel": "Rótulo do Prompt",
         "promptLabelPlaceholder": "Digite o nome do prompt",
-        "promptInstructions": "Instruções do Prompt",
-        "promptInstructionsPlaceholder": "Escreva as instruções para executar após a transcrição. Exemplo: Melhore a gramática e clareza do seguinte texto: ${output}",
-        "promptTip": "Dica: Use <code>${output}</code> para inserir o texto transcrito no seu prompt.",
+        "promptInstructions": "Mensagem do sistema",
+        "promptInstructionsPlaceholder": "Descreva como o LLM deve processar a transcrição. Exemplo: Melhore a gramática e a clareza preservando o significado original.",
+        "promptTip": "A transcrição é enviada automaticamente ao LLM como uma mensagem de usuário separada. Não é necessário incluir ${output}.",
         "updatePrompt": "Atualizar Prompt",
         "deletePrompt": "Excluir Prompt",
         "createPrompt": "Criar Prompt",
