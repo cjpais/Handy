@@ -4,7 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
   AudioDevice,
-  WhisperAcceleratorSetting,
+  TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
   WordReplacement,
 } from "@/bindings";
@@ -89,6 +89,10 @@ const settingUpdaters: {
     commands.changeAutostartSetting(value as boolean),
   update_checks_enabled: (value) =>
     commands.changeUpdateChecksSetting(value as boolean),
+  show_whats_new_on_update: (value) =>
+    commands.changeShowWhatsNewOnUpdateSetting(value as boolean),
+  whats_new_last_seen_version: (value) =>
+    commands.changeWhatsNewLastSeenVersionSetting(value as string),
   push_to_talk: (value) => commands.changePttSetting(value as boolean),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
@@ -122,6 +126,8 @@ const settingUpdaters: {
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_delay_ms: (value) =>
     commands.changePasteDelayMsSetting(value as number),
+  paste_delay_after_ms: (value) =>
+    commands.changePasteDelayAfterMsSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>
@@ -142,20 +148,23 @@ const settingUpdaters: {
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
+  theme: (value) => commands.changeThemeSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
   lazy_stream_close: (value) =>
     commands.changeLazyStreamCloseSetting(value as boolean),
+  overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
+  vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
-  whisper_accelerator: (value) =>
-    commands.changeWhisperAcceleratorSetting(
-      value as WhisperAcceleratorSetting,
+  transcribe_accelerator: (value) =>
+    commands.changeTranscribeAcceleratorSetting(
+      value as TranscribeAcceleratorSetting,
     ),
   ort_accelerator: (value) =>
     commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
-  whisper_gpu_device: (value) =>
-    commands.changeWhisperGpuDevice(value as number),
+  transcribe_gpu_device: (value) =>
+    commands.changeTranscribeGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
 };
@@ -332,7 +341,7 @@ export const useSettingsStore = create<SettingsStore>()(
                 bindings: {
                   ...state.settings.bindings,
                   [id]: {
-                    ...state.settings.bindings[id]!,
+                    ...state.settings.bindings?.[id]!,
                     current_binding: binding,
                   },
                 },
@@ -363,7 +372,7 @@ export const useSettingsStore = create<SettingsStore>()(
                   bindings: {
                     ...state.settings.bindings,
                     [id]: {
-                      ...state.settings.bindings[id]!,
+                      ...state.settings.bindings?.[id]!,
                       current_binding: originalBinding,
                     },
                   },
