@@ -29,7 +29,7 @@ The process is entirely local:
 - Silence is filtered using VAD (Voice Activity Detection) with Silero
 - Transcription uses your choice of models:
   - **Whisper models** (Small/Medium/Turbo/Large) with GPU acceleration when available
-  - **Parakeet V3** - CPU-optimized model with excellent performance and automatic language detection
+  - **Parakeet Unified EN 0.6B** - CPU-optimized model with excellent performance and fast, accurate live English transcription
 - Works on Windows, macOS, and Linux
 
 ## Quick Start
@@ -234,12 +234,12 @@ The following are recommendations for running Handy on your own machine. If you 
 - **Linux**: Intel, AMD, or NVIDIA GPU
   - Ubuntu 22.04, 24.04
 
-**For Parakeet V3 Model:**
+**For Parakeet Unified EN 0.6B Model:**
 
 - **CPU-only operation** - runs on a wide variety of hardware
 - **Minimum**: Intel Skylake (6th gen) or equivalent AMD processors
 - **Performance**: ~5x real-time speed on mid-range hardware (tested on i5)
-- **Automatic language detection** - no manual language selection required
+- **English-only** - optimized for fast, accurate live English transcription
 
 ## Roadmap & Active Development
 
@@ -349,10 +349,9 @@ Download the models you want from below
 - Turbo (1600 MB): `https://blob.handy.computer/ggml-large-v3-turbo.bin`
 - Large (1100 MB): `https://blob.handy.computer/ggml-large-v3-q5_0.bin`
 
-**Parakeet Models (compressed archives):**
+**Parakeet Model (from Hugging Face):**
 
-- V2 (473 MB): `https://blob.handy.computer/parakeet-v2-int8.tar.gz`
-- V3 (478 MB): `https://blob.handy.computer/parakeet-v3-int8.tar.gz`
+- Unified EN 0.6B (698 MB): `https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf`
 
 #### Step 4: Install Models
 
@@ -368,31 +367,20 @@ Simply place the `.bin` file directly into the `models` directory:
 └── ggml-large-v3-q5_0.bin
 ```
 
-**For Parakeet Models (.tar.gz archives):**
+**For the Parakeet Model (.gguf from Hugging Face):**
 
-1. Extract the `.tar.gz` file
-2. Place the **extracted directory** into the `models` folder
-3. The directory must be named exactly as follows:
-   - **Parakeet V2**: `parakeet-tdt-0.6b-v2-int8`
-   - **Parakeet V3**: `parakeet-tdt-0.6b-v3-int8`
+Handy loads Parakeet from the Hugging Face cache, not the `models` folder. The easiest way to install it is a single command:
 
-Final structure should look like:
-
+```bash
+huggingface-cli download handy-computer/parakeet-unified-en-0.6b-gguf parakeet-unified-en-0.6b-Q8_0.gguf
 ```
-{app_data_dir}/models/
-├── parakeet-tdt-0.6b-v2-int8/     (directory with model files inside)
-│   ├── (model files)
-│   └── (config files)
-└── parakeet-tdt-0.6b-v3-int8/     (directory with model files inside)
-    ├── (model files)
-    └── (config files)
-```
+
+This downloads the model into `~/.cache/huggingface/hub` in the exact layout Handy expects—no manual file placement needed. (Install the CLI with `pip install -U "huggingface_hub[cli]"` if you don't have it.)
 
 **Important Notes:**
 
-- For Parakeet models, the extracted directory name **must** match exactly as shown above
 - Do not rename the `.bin` files for Whisper models—use the exact filenames from the download URLs
-- After placing the files, restart Handy to detect the new models
+- After downloading the files, restart Handy to detect the new models
 
 #### Step 5: Verify Installation
 
