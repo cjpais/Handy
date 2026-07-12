@@ -19,6 +19,7 @@ fn paste_via_clipboard(
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
+    paste_delay_after_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let clipboard_content = clipboard.read_text().unwrap_or_default();
@@ -61,7 +62,7 @@ fn paste_via_clipboard(
         }
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
 
     // Restore original clipboard content
     // On Wayland, prefer wl-copy for better compatibility
@@ -645,6 +646,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
+    let paste_delay_after_ms = settings.paste_delay_after_ms;
 
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
@@ -654,8 +656,8 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     };
 
     info!(
-        "Using paste method: {:?}, delay: {}ms",
-        paste_method, paste_delay_ms
+        "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
+        paste_method, paste_delay_ms, paste_delay_after_ms
     );
 
     // Get the managed Enigo instance
@@ -687,6 +689,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &app_handle,
                 &paste_method,
                 paste_delay_ms,
+                paste_delay_after_ms,
             )?
         }
         PasteMethod::ExternalScript => {

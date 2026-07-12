@@ -169,12 +169,6 @@
               gappsWrapperArgs+=(
                 --set WEBKIT_DISABLE_DMABUF_RENDERER 1
                 --set ALSA_PLUGIN_DIR "${combinedAlsaPlugins}"
-                --prefix LD_LIBRARY_PATH : "${
-                  lib.makeLibraryPath [
-                    pkgs.vulkan-loader
-                    pkgs.onnxruntime
-                  ]
-                }"
               )
             '';
 
