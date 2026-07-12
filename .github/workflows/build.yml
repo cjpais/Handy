@@ -57,6 +57,12 @@ jobs:
       contents: write
     runs-on: ${{ inputs.platform }}
     steps:
+      # Kept for git checkout and general tooling headroom. The native
+      # transcribe-cpp-sys build no longer needs path help: since 0.1.3 its
+      # build.rs self-mitigates MAX_PATH by compiling through a short NTFS
+      # junction (and ggml's Vulkan shader-gen ExternalProject is flattened),
+      # so no CARGO_TARGET_DIR redirect is required — upstream CI proves the
+      # deep-path build with long paths forced OFF.
       - name: Enable long paths (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -247,17 +253,6 @@ jobs:
             patched_platform="${{ inputs.asset-prefix }}_${patched_platform}"
           fi
           echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
-
-      # transcribe-cpp-sys cmake builds create paths that exceed Windows MAX_PATH
-      # (260 chars). Shorten the target dir to keep paths under the limit.
-      - name: Shorten build path (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $drive = Split-Path -Qualifier $env:GITHUB_WORKSPACE
-          $targetDir = "$drive\t"
-          New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
-          echo "CARGO_TARGET_DIR=$targetDir" >> $env:GITHUB_ENV
 
       # ggml refuses to build its ARM CPU backend under MSVC (upstream check in
       # ggml/src/ggml-cpu/CMakeLists.txt: "MSVC is not supported for ARM, use
@@ -736,14 +731,6 @@ jobs:
             src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/rpm/*.rpm
           retention-days: 30
 
-      - name: Resolve Windows bundle path
-        if: contains(inputs.platform, 'windows')
-        id: win-bundle-path
-        shell: pwsh
-        run: |
-          $base = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { "src-tauri/target" }
-          echo "base=$base" >> $env:GITHUB_OUTPUT
-
       # Run on Windows releases too; upload-artifacts only controls retention.
       - name: Audit Windows package runtime contents
         if: contains(inputs.platform, 'windows')
@@ -751,7 +738,7 @@ jobs:
         run: |
           $profile = "${{ steps.build-profile.outputs.profile }}"
           $target = "${{ inputs.target }}"
-          $base = "${{ steps.win-bundle-path.outputs.base }}"
+          $base = "src-tauri/target"
           if ($target -and $target -ne "x86_64-pc-windows-msvc") {
             $bundleBase = Join-Path $base (Join-Path $target (Join-Path $profile "bundle"))
           } else {
@@ -846,6 +833,6 @@ jobs:
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |
-            ${{ steps.win-bundle-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
-            ${{ steps.win-bundle-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30
