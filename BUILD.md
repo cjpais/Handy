@@ -52,13 +52,14 @@ ORT_LIB_LOCATION=$(brew --prefix onnxruntime)/lib ORT_PREFER_DYNAMIC_LINK=1 bun 
 
   Open a new terminal afterward so `VULKAN_SDK` is set.
 
-> [!IMPORTANT]
-> Windows' 260-character path limit **will** break the native Vulkan build in
-> most checkouts (the shader generator nests very deep). Before your first
-> build, do BOTH steps in
+> [!NOTE]
+> Windows' 260-character path limit used to break the native Vulkan build in
+> most checkouts. Since `transcribe-cpp` 0.1.3 the build works around it
+> automatically (it compiles through a short NTFS junction — no admin rights
+> or setup needed), so a normal checkout just builds. If you still hit
+> path-limit errors, see
 > [Windows build fails with path-limit errors](#windows-build-fails-with-path-limit-errors-msb3491--ftk1011--msb6003)
-> in Troubleshooting — enable long paths **and** set a short
-> `CARGO_TARGET_DIR`. Neither alone is sufficient.
+> in Troubleshooting.
 
 #### Linux
 
@@ -193,28 +194,22 @@ System.IO.DirectoryNotFoundException: Could not find a part of the path ...
 ```
 
 This is **not** a code or toolchain problem — it's Windows' legacy 260-character
-path limit (`MAX_PATH`). The Vulkan shader generator builds as a nested CMake
-sub-project (`...\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\...`),
-which alone adds ~140 characters on top of Cargo's already-deep
-`target\release\build\<crate>-<hash>\out\build\...` directory. If your checkout
-isn't very shallow, the build overflows the limit. (CI doesn't hit this because
-it builds from a short root such as `D:\a\Handy`.)
+path limit (`MAX_PATH`), overflowed by the Vulkan shader generator's nested
+CMake build tree on top of Cargo's already-deep
+`target\release\build\<crate>-<hash>\out\build\...` directory.
 
-**You need BOTH of the following fixes.** Different parts of the toolchain hit
-the limit in different ways: MSBuild's native `FileTracker` (`tracker.exe`)
-ignores the long-paths flag entirely, so a short target dir is required for it —
-while other .NET-side path operations overflow even from a short root unless
-long paths are enabled. Each fix alone still fails.
+Since `transcribe-cpp` 0.1.3 this is mitigated automatically: the native build
+compiles through a short NTFS junction under `%LOCALAPPDATA%\tcs` (created
+without admin rights), so a normal checkout builds with no setup. Enabling
+Windows long paths does **not** reliably help here — MSBuild's native
+`FileTracker` (`tracker.exe`) ignores the long-paths flag — which is why the
+junction, not the registry flag, is the fix.
 
-**1. Enable Windows long paths** (one-time, machine-wide; needs an
-Administrator PowerShell):
-
-```powershell
-Set-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -Value 1 -Type DWord
-git config --global core.longpaths true
-```
-
-**2. Build with a short target directory:**
+If you still see the errors above, junction creation was likely blocked
+(filesystem or corporate policy) — the failing build's log then contains a
+`transcribe-cpp-sys: could not create short build junction ...` warning — or
+your checkout is deep enough to overflow even the shortened layout. Work
+around either case with a short Cargo target directory:
 
 ```powershell
 # Per-shell:
@@ -226,11 +221,9 @@ $env:CARGO_TARGET_DIR = "C:\h"
 ```
 
 Artifacts then land in `C:\h\release\...` instead of the repo's
-`src-tauri\target\`.
-
-Open a **new terminal** afterward — both the registry flag and the persisted
-environment variable are only picked up by freshly started processes. Then
-`bun run tauri dev` and `bun run tauri build` work normally.
+`src-tauri\target\`. Open a **new terminal** if you persisted the variable —
+it is only picked up by freshly started processes. Then `bun run tauri dev`
+and `bun run tauri build` work normally.
 
 ### Windows `tauri build` fails at bundling with `program not found`
 
