@@ -23,8 +23,6 @@ use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 #[cfg(target_os = "linux")]
 use std::env;
 
-#[cfg(target_os = "linux")]
-use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(target_os = "macos")]
 tauri_panel! {
