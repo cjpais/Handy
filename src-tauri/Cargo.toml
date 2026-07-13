@@ -146,6 +146,12 @@ transcribe-cpp = { version = "0.1.3", default-features = false, features = [
   "vulkan",
 ] }
 
+# TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
+# (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →
+# show()). Drop this once a tao release containing it lands in tauri.
+[patch.crates-io]
+tao = { git = "https://github.com/tauri-apps/tao", rev = "07f3742b1833b64be27b1ef991e38d557d4276c9" }
+
 [dev-dependencies]
 tempfile = "3"
 
