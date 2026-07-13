@@ -190,7 +190,7 @@ impl SpeechAnalyzerEngine {
     pub fn load(locale: &str, app_handle: AppHandle, model_id: &str) -> Result<Self, String> {
         if !ffi::available() {
             return Err(
-                "SpeechTranscriber requires a compatible Apple Silicon Mac running macOS 26 or newer."
+                "Apple speech recognition requires a compatible Apple Silicon Mac running macOS 26 or newer."
                     .to_string(),
             );
         }
@@ -220,6 +220,67 @@ impl SpeechAnalyzerEngine {
             .locale
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner()) = locale.clone();
-        ffi::transcribe(samples, &locale)
+        ffi::transcribe(samples, &locale).map(|text| capitalize_sentence_starts(&text))
+    }
+}
+
+/// SpeechTranscriber punctuates well but leaves sentence starts lowercase
+/// (its `TranscriptionOption` set has no casing knob), so uppercase the first
+/// letter of the text and of each sentence after `.`, `!`, `?`, or `…`.
+/// A no-op for uncased scripts and for already-capitalized letters.
+fn capitalize_sentence_starts(text: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut at_sentence_start = true;
+    let mut chars = text.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if at_sentence_start && c.is_alphabetic() {
+            result.extend(c.to_uppercase());
+            at_sentence_start = false;
+            continue;
+        }
+        // Punctuation counts as a sentence end only when followed by
+        // whitespace (or end of text) so decimals like "3.5" stay intact.
+        // Quotes and brackets pass through without consuming the sentence
+        // start; anything else (digits, mid-sentence letters) consumes it.
+        if matches!(c, '.' | '!' | '?' | '…')
+            && chars.peek().is_none_or(|next| next.is_whitespace())
+        {
+            at_sentence_start = true;
+        } else if !c.is_whitespace() && !matches!(c, '"' | '\'' | '“' | '”' | '(' | '[') {
+            at_sentence_start = false;
+        }
+        result.push(c);
+    }
+
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::capitalize_sentence_starts;
+
+    #[test]
+    fn capitalizes_first_letter_and_after_sentence_punctuation() {
+        assert_eq!(
+            capitalize_sentence_starts("hello there. how are you? great! okay"),
+            "Hello there. How are you? Great! Okay"
+        );
+    }
+
+    #[test]
+    fn ignores_decimals_and_leaves_numbers_alone() {
+        assert_eq!(
+            capitalize_sentence_starts("it costs 3.5 dollars. 6 people paid"),
+            "It costs 3.5 dollars. 6 people paid"
+        );
+    }
+
+    #[test]
+    fn capitalizes_through_opening_quotes() {
+        assert_eq!(
+            capitalize_sentence_starts("she said. \"hello world\""),
+            "She said. \"Hello world\""
+        );
     }
 }
