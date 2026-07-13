@@ -2,6 +2,9 @@ fn main() {
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     build_apple_intelligence_bridge();
 
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    build_speech_analyzer_bridge();
+
     generate_tray_translations();
 
     // Linux ships transcribe-cpp as a shared libtranscribe + loadable ggml
@@ -498,6 +501,142 @@ fn build_apple_intelligence_bridge() {
         // Use weak linking so the app can launch on systems without FoundationModels
         println!("cargo:rustc-link-arg=-weak_framework");
         println!("cargo:rustc-link-arg=FoundationModels");
+    }
+
+    println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
+}
+
+/// Compile the SpeechAnalyzer (Speech framework, macOS 26+) Swift bridge.
+/// Mirrors `build_apple_intelligence_bridge`, but instead of probing the SDK
+/// up front it simply attempts to compile the real bridge and falls back to
+/// the stub if the toolchain can't build it (older SDK, CLT-only, …).
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+fn build_speech_analyzer_bridge() {
+    use std::env;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    const REAL_SWIFT_FILE: &str = "swift/speech_analyzer.swift";
+    const STUB_SWIFT_FILE: &str = "swift/speech_analyzer_stub.swift";
+    const BRIDGE_HEADER: &str = "swift/speech_analyzer_bridge.h";
+
+    println!("cargo:rerun-if-changed={REAL_SWIFT_FILE}");
+    println!("cargo:rerun-if-changed={STUB_SWIFT_FILE}");
+    println!("cargo:rerun-if-changed={BRIDGE_HEADER}");
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let object_path = out_dir.join("speech_analyzer.o");
+    let static_lib_path = out_dir.join("libspeech_analyzer.a");
+
+    let sdk_path = env::var("SDKROOT").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--sdk", "macosx", "--show-sdk-path"])
+                .output()
+                .expect("Failed to locate macOS SDK")
+                .stdout,
+        )
+        .expect("SDK path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
+
+    let swiftc_path = env::var("SWIFTC").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--find", "swiftc"])
+                .output()
+                .expect("Failed to locate swiftc")
+                .stdout,
+        )
+        .expect("swiftc path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
+
+    let compile = |source_file: &str| -> bool {
+        Command::new(&swiftc_path)
+            .args([
+                "-parse-as-library",
+                "-target",
+                "arm64-apple-macosx11.0",
+                "-sdk",
+                &sdk_path,
+                "-O",
+                "-import-objc-header",
+                BRIDGE_HEADER,
+                "-c",
+                source_file,
+                "-o",
+                object_path
+                    .to_str()
+                    .expect("Failed to convert object path to string"),
+            ])
+            .status()
+            .expect("Failed to invoke swiftc for SpeechAnalyzer bridge")
+            .success()
+    };
+
+    let force_stub = env::var("HANDY_FORCE_SA_STUB").as_deref() == Ok("1");
+    let built_real = if force_stub {
+        println!("cargo:warning=HANDY_FORCE_SA_STUB=1 set; building SpeechAnalyzer stubs.");
+        false
+    } else if compile(REAL_SWIFT_FILE) {
+        println!("cargo:warning=Building with SpeechAnalyzer support.");
+        true
+    } else {
+        println!(
+            "cargo:warning=SpeechAnalyzer bridge failed to compile (SDK/toolchain too old?). \
+             Building with stubs."
+        );
+        false
+    };
+
+    if !built_real && !compile(STUB_SWIFT_FILE) {
+        panic!("swiftc failed to compile {STUB_SWIFT_FILE}");
+    }
+
+    let status = Command::new("libtool")
+        .args([
+            "-static",
+            "-o",
+            static_lib_path
+                .to_str()
+                .expect("Failed to convert static lib path to string"),
+            object_path
+                .to_str()
+                .expect("Failed to convert object path to string"),
+        ])
+        .status()
+        .expect("Failed to create static library for SpeechAnalyzer bridge");
+
+    if !status.success() {
+        panic!("libtool failed for SpeechAnalyzer bridge");
+    }
+
+    let toolchain_swift_lib = Path::new(&swiftc_path)
+        .parent()
+        .and_then(|p| p.parent())
+        .map(|root| root.join("lib/swift/macosx"))
+        .expect("Unable to determine Swift toolchain lib directory");
+    let sdk_swift_lib = Path::new(&sdk_path).join("usr/lib/swift");
+
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
+    println!("cargo:rustc-link-lib=static=speech_analyzer");
+    println!(
+        "cargo:rustc-link-search=native={}",
+        toolchain_swift_lib.display()
+    );
+    println!("cargo:rustc-link-search=native={}", sdk_swift_lib.display());
+    println!("cargo:rustc-link-lib=framework=Foundation");
+
+    if built_real {
+        // Weak linking so the app still launches on macOS versions without the
+        // SpeechAnalyzer symbols; @available guards handle runtime availability.
+        println!("cargo:rustc-link-arg=-weak_framework");
+        println!("cargo:rustc-link-arg=Speech");
+        println!("cargo:rustc-link-arg=-weak_framework");
+        println!("cargo:rustc-link-arg=AVFoundation");
     }
 
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");

@@ -5,6 +5,7 @@ use crate::settings::{
     get_settings, AppSettings, ModelUnloadTimeout, OrtAcceleratorSetting,
     TranscribeAcceleratorSetting,
 };
+use crate::speech_analyzer::SpeechAnalyzerEngine;
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -168,6 +169,9 @@ enum LoadedEngine {
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
     Cohere(CohereModel),
+    /// Apple's on-device SpeechAnalyzer (macOS 26+); the OS holds the actual
+    /// model, so this only carries the locale.
+    SpeechAnalyzer(SpeechAnalyzerEngine),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -497,7 +501,12 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        let model_path = self.model_manager.get_model_path(model_id)?;
+        // SpeechAnalyzer has no model file; the OS manages its assets.
+        let model_path = if matches!(model_info.engine_type, EngineType::SpeechAnalyzer) {
+            std::path::PathBuf::new()
+        } else {
+            self.model_manager.get_model_path(model_id)?
+        };
 
         // Drop the current engine BEFORE building the new one so transcribe-cpp
         // frees the previous native context first — avoids holding two models at
@@ -659,6 +668,20 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::Cohere(engine)
             }
+            EngineType::SpeechAnalyzer => {
+                // Resolve the user's language intent to a locale now so asset
+                // installation (OS-managed download) happens during load, not
+                // on the first dictation.
+                let settings = get_settings(&self.app_handle);
+                let locale =
+                    effective_language_for_model(&settings, self.model_manager.as_ref(), model_id);
+                let engine = SpeechAnalyzerEngine::load(&locale).map_err(|e| {
+                    let error_msg = format!("Failed to load SpeechAnalyzer: {}", e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::SpeechAnalyzer(engine)
+            }
         };
 
         // Update the current engine and model ID
@@ -739,6 +762,7 @@ impl TranscriptionManager {
             Some(LoadedEngine::TranscribeCpp(session)) => {
                 Some(session.model().backend().to_string())
             }
+            Some(LoadedEngine::SpeechAnalyzer(_)) => Some("speechanalyzer".to_string()),
             Some(_) => Some("onnx".to_string()),
             None => None,
         }
@@ -1336,6 +1360,18 @@ impl TranscriptionManager {
                             .transcribe(&audio, &options)
                             .map(|r| r.text)
                             .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
+                    }
+                    LoadedEngine::SpeechAnalyzer(speech_analyzer_engine) => {
+                        let lang = if validated_language == "auto" {
+                            None
+                        } else {
+                            Some(validated_language.as_str())
+                        };
+                        speech_analyzer_engine
+                            .transcribe(&audio, lang)
+                            .map_err(|e| {
+                                anyhow::anyhow!("SpeechAnalyzer transcription failed: {}", e)
+                            })
                     }
                 }
             }));

@@ -35,6 +35,9 @@ pub enum EngineType {
     GigaAM,
     Canary,
     Cohere,
+    /// Apple's on-device SpeechAnalyzer API (macOS 26+). The OS manages the
+    /// model assets; there is no file for Handy to download or load.
+    SpeechAnalyzer,
 }
 
 /// Where a model comes from and how Handy obtains it — the routing discriminant
@@ -466,6 +469,43 @@ impl ModelManager {
         }
 
         let mut available_models = HashMap::new();
+
+        // Apple's SpeechAnalyzer (macOS 26+): only registered when the running
+        // OS actually has the API. The OS manages the model assets, so the
+        // entry is always "downloaded" — asset installation happens at load.
+        if crate::speech_analyzer::is_available() {
+            available_models.insert(
+                "apple-speechanalyzer".to_string(),
+                ModelInfo {
+                    id: "apple-speechanalyzer".to_string(),
+                    name: "Apple SpeechAnalyzer".to_string(),
+                    description: "Apple's built-in on-device speech recognition (macOS 26+)."
+                        .to_string(),
+                    filename: String::new(),
+                    source: ModelSource::Local,
+                    size_mb: 0,
+                    is_downloaded: true,
+                    is_downloading: false,
+                    partial_size: 0,
+                    is_directory: false,
+                    engine_type: EngineType::SpeechAnalyzer,
+                    accuracy_score: 0.85,
+                    speed_score: 0.95,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: vec![
+                        "en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "yue", "ar",
+                    ]
+                    .into_iter()
+                    .map(String::from)
+                    .collect(),
+                    supports_language_selection: true,
+                    is_custom: false,
+                    supports_streaming: false,
+                    supports_language_detection: false,
+                },
+            );
+        }
 
         // Whisper supported languages (99 languages from tokenizer)
         let whisper_languages: Vec<String> = vec![
@@ -1306,6 +1346,14 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            // SpeechAnalyzer has no on-disk footprint; availability is an OS
+            // property, not a filesystem one.
+            if matches!(model.engine_type, EngineType::SpeechAnalyzer) {
+                model.is_downloaded = crate::speech_analyzer::is_available();
+                model.is_downloading = false;
+                model.partial_size = 0;
+                continue;
+            }
             if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
                 model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some();
                 model.is_downloading = false;
