@@ -193,6 +193,10 @@
             "name": "Abbrechen-Tastenkürzel",
             "description": "Das Tastenkürzel zum Abbrechen der aktuellen Aufnahme."
           },
+          "stop": {
+            "name": "Stopp-Kurzbefehl",
+            "description": "Tastenkürzel zum Beenden der aktuellen Aufnahme und deren Transkription."
+          },
           "transcribe_with_post_process": {
             "name": "Nachbearbeitungs-Tastenkürzel",
             "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf deine Transkription anwendet."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Push-to-Talk",
         "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      },
+      "stopKey": {
+        "label": "Separate Stopp-Taste",
+        "description": "Verwenden Sie zum Beenden einer Aufnahme eine andere Taste als zum Starten (z. B. Enter)"
       }
     },
     "sound": {

@@ -175,6 +175,10 @@
             "name": "取消快捷鍵",
             "description": "用於取消目前錄製的鍵盤快捷鍵"
           },
+          "stop": {
+            "name": "停止快速鍵",
+            "description": "停止目前錄音並進行轉錄的鍵盤快速鍵。"
+          },
           "transcribe_with_post_process": {
             "name": "後處理快捷鍵",
             "description": "可選：專用快捷鍵，使用時一律對轉錄結果套用 AI 後處理"
@@ -196,6 +200,10 @@
       "pushToTalk": {
         "label": "按住說話",
         "description": "按住錄製，放開停止"
+      },
+      "stopKey": {
+        "label": "獨立停止鍵",
+        "description": "使用與開始錄音不同的按鍵來結束錄音(例如 Enter)"
       }
     },
     "models": {

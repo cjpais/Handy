@@ -193,6 +193,10 @@
             "name": "Skrót anulowania",
             "description": "Skrót klawiaturowy do anulowania bieżącego nagrywania."
           },
+          "stop": {
+            "name": "Skrót zatrzymania",
+            "description": "Skrót klawiszowy zatrzymujący bieżące nagranie i transkrybujący je."
+          },
           "transcribe_with_post_process": {
             "name": "Skrót postprocessingu",
             "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Przytrzymaj, aby nagrywać, puść, aby zatrzymać"
+      },
+      "stopKey": {
+        "label": "Osobny klawisz zatrzymania",
+        "description": "Użyj innego klawisza do zakończenia nagrania niż ten, który je rozpoczął (np. Enter)"
       }
     },
     "sound": {

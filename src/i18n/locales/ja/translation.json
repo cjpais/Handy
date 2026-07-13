@@ -193,6 +193,10 @@
             "name": "キャンセルのショートカット",
             "description": "現在の録音をキャンセルするためのキーボードショートカット。"
           },
+          "stop": {
+            "name": "停止ショートカット",
+            "description": "現在の録音を停止して文字起こしするキーボードショートカット。"
+          },
           "transcribe_with_post_process": {
             "name": "後処理のショートカット",
             "description": "文字起こしに常に AI 後処理を適用するキーボードショートカット。 (任意)"
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "プッシュツートーク",
         "description": "押し続けて録音、離して停止"
+      },
+      "stopKey": {
+        "label": "別の停止キー",
+        "description": "録音を開始したキーとは別のキーで録音を終了します(例:Enter)"
       }
     },
     "sound": {

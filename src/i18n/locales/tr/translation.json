@@ -193,6 +193,10 @@
             "name": "İptal Kısayolu",
             "description": "Mevcut kaydı iptal etmek için klavye kısayolu."
           },
+          "stop": {
+            "name": "Durdurma kısayolu",
+            "description": "Geçerli kaydı durdurup yazıya döken klavye kısayolu."
+          },
           "transcribe_with_post_process": {
             "name": "Son İşlem Kısayolu",
             "description": "İsteğe bağlı: Transkripsiyonunuza her zaman AI son işleme uygulayan özel bir kısayol tuşu."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Bas Konuş",
         "description": "Kaydetmek için basılı tutun, durdurmak için bırakın"
+      },
+      "stopKey": {
+        "label": "Ayrı durdurma tuşu",
+        "description": "Kaydı bitirmek için kaydı başlatan tuştan farklı bir tuş kullanın (örn. Enter)"
       }
     },
     "sound": {

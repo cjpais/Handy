@@ -175,6 +175,10 @@
             "name": "Kortkommando för att avbryta",
             "description": "Kortkommandot för att avbryta den aktuella inspelningen."
           },
+          "stop": {
+            "name": "Stoppgenväg",
+            "description": "Tangentbordsgenvägen för att stoppa den aktuella inspelningen och transkribera den."
+          },
           "transcribe_with_post_process": {
             "name": "Snabbkommando för efterbearbetning",
             "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbearbetning på din transkription."
@@ -196,6 +200,10 @@
       "pushToTalk": {
         "label": "Tryck för att tala",
         "description": "Håll ned för att spela in, släpp för att stoppa"
+      },
+      "stopKey": {
+        "label": "Separat stopptangent",
+        "description": "Använd en annan tangent för att avsluta en inspelning än den som startade den (t.ex. Enter)"
       }
     },
     "models": {

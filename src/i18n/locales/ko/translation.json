@@ -175,6 +175,10 @@
             "name": "취소 단축키",
             "description": "현재 녹음을 취소하는 키보드 단축키입니다."
           },
+          "stop": {
+            "name": "중지 단축키",
+            "description": "현재 녹음을 중지하고 전사하는 키보드 단축키입니다."
+          },
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
@@ -196,6 +200,10 @@
       "pushToTalk": {
         "label": "녹음 중 단축키 홀딩",
         "description": "누르고 있으면 녹음, 놓으면 정지"
+      },
+      "stopKey": {
+        "label": "별도 중지 키",
+        "description": "녹음을 시작한 키와 다른 키로 녹음을 종료합니다 (예: Enter)"
       }
     },
     "sound": {

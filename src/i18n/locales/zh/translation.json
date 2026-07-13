@@ -193,6 +193,10 @@
             "name": "取消快捷键",
             "description": "用于取消当前录制的键盘快捷键。"
           },
+          "stop": {
+            "name": "停止快捷键",
+            "description": "停止当前录音并进行转写的键盘快捷键。"
+          },
           "transcribe_with_post_process": {
             "name": "后处理快捷键",
             "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "按住说话",
         "description": "按住录制，松开停止"
+      },
+      "stopKey": {
+        "label": "独立停止键",
+        "description": "使用与开始录音不同的按键来结束录音(例如 Enter)"
       }
     },
     "sound": {

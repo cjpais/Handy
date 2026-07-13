@@ -193,6 +193,10 @@
             "name": "Scorciatoia Annulla",
             "description": "La scorciatoia da tastiera per annullare la registrazione in corso."
           },
+          "stop": {
+            "name": "Scorciatoia di arresto",
+            "description": "La scorciatoia da tastiera per fermare la registrazione corrente e trascriverla."
+          },
           "transcribe_with_post_process": {
             "name": "Tasto di post-elaborazione",
             "description": "Facoltativo: Un tasto di scelta rapida dedicato che applica sempre la post-elaborazione IA alla trascrizione."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Premi per Parlare",
         "description": "Tieni premuto per parlare, rilascia per interrompere"
+      },
+      "stopKey": {
+        "label": "Tasto di arresto separato",
+        "description": "Usa un tasto diverso per terminare la registrazione rispetto a quello che l'ha avviata (es. Invio)"
       }
     },
     "sound": {

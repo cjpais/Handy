@@ -175,6 +175,10 @@
             "name": "Sneltoets voor annuleren",
             "description": "De sneltoets om de huidige opname te annuleren."
           },
+          "stop": {
+            "name": "Stop-sneltoets",
+            "description": "De sneltoets om de huidige opname te stoppen en te transcriberen."
+          },
           "transcribe_with_post_process": {
             "name": "Sneltoets voor naverwerking",
             "description": "Optioneel: Een specifieke sneltoets die altijd AI-naverwerking toepast op je transcriptie."
@@ -196,6 +200,10 @@
       "pushToTalk": {
         "label": "Push-to-talk",
         "description": "Ingedrukt houden om op te nemen, loslaten om te stoppen"
+      },
+      "stopKey": {
+        "label": "Aparte stoptoets",
+        "description": "Gebruik een andere toets om een opname te beëindigen dan de toets waarmee deze is gestart (bijv. Enter)"
       }
     },
     "models": {

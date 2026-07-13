@@ -193,6 +193,10 @@
             "name": "Phím tắt hủy",
             "description": "Phím tắt để hủy bản ghi hiện tại."
           },
+          "stop": {
+            "name": "Phím tắt dừng",
+            "description": "Phím tắt để dừng bản ghi hiện tại và phiên âm nó."
+          },
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Nhấn để nói",
         "description": "Giữ để ghi âm, thả để dừng"
+      },
+      "stopKey": {
+        "label": "Phím dừng riêng",
+        "description": "Dùng một phím khác để kết thúc ghi âm so với phím đã bắt đầu (ví dụ: Enter)"
       }
     },
     "sound": {

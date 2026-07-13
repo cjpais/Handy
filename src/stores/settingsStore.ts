@@ -93,6 +93,8 @@ const settingUpdaters: {
   whats_new_last_seen_version: (value) =>
     commands.changeWhatsNewLastSeenVersionSetting(value as string),
   push_to_talk: (value) => commands.changePttSetting(value as boolean),
+  stop_key_enabled: (value) =>
+    commands.changeStopKeyEnabledSetting(value as boolean),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
       (value as string) === "Default" || value === null

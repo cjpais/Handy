@@ -193,6 +193,10 @@
             "name": "Atajo de Cancelar",
             "description": "El atajo de teclado para cancelar la grabación actual."
           },
+          "stop": {
+            "name": "Atajo de detención",
+            "description": "El atajo de teclado para detener la grabación actual y transcribirla."
+          },
           "transcribe_with_post_process": {
             "name": "Tecla de Post Procesamiento",
             "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Presionar para Hablar",
         "description": "Mantén presionado para grabar, suelta para detener"
+      },
+      "stopKey": {
+        "label": "Tecla de detención separada",
+        "description": "Usa una tecla diferente para finalizar la grabación que la que la inició (p. ej., Enter)"
       }
     },
     "sound": {

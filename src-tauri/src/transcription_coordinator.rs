@@ -34,6 +34,9 @@ enum Command {
     Cancel {
         recording_was_active: bool,
     },
+    /// Stop the active recording and transcribe it, regardless of which
+    /// binding started it (the dedicated stop key).
+    StopRecording,
     ProcessingFinished,
 }
 
@@ -188,6 +191,13 @@ impl TranscriptionCoordinator {
                                 }
                             }
                         }
+                        Command::StopRecording => {
+                            pending_release = None;
+                            if let Stage::Recording(id) = &stage {
+                                let id = id.clone();
+                                stop(&app, &mut stage, &id, "");
+                            }
+                        }
                         Command::Cancel {
                             recording_was_active,
                         } => {
@@ -233,6 +243,14 @@ impl TranscriptionCoordinator {
             })
             .is_err()
         {
+            warn!("Transcription coordinator channel closed");
+        }
+    }
+
+    /// Request that the active recording is stopped and transcribed (the
+    /// dedicated stop key). No-op unless a recording is in progress.
+    pub fn request_stop(&self) {
+        if self.tx.send(Command::StopRecording).is_err() {
             warn!("Transcription coordinator channel closed");
         }
     }
