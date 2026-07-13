@@ -220,10 +220,14 @@ fn is_mouse_within_monitor(
 
 /// Returns overlay position in logical coordinates (points on macOS).
 ///
-/// Uses monitor position/size directly rather than work_area(), which can
-/// return incorrect coordinates on macOS for monitors with negative positions.
-/// The per-platform OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants
-/// already account for system chrome (menu bar, taskbar).
+/// Horizontal centering and the Top anchor use full monitor bounds. The Bottom
+/// anchor uses the macOS work area (visibleFrame) so the overlay tracks the
+/// Dock — just above it when shown, at the screen edge when hidden/auto-hidden.
+/// That relies on the macOS work_area.position.y fix (tauri #14655, shipped in
+/// 2.11), the same bug that led PR #969 to abandon work_area for full monitor
+/// bounds. Other platforms keep full monitor bounds (Wayland work_area is
+/// unreliable; Windows' offset already clears the taskbar). The per-platform
+/// OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants account for the gap.
 ///
 /// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
 /// converts PhysicalPosition using the scale factor of the monitor the window
@@ -238,14 +242,29 @@ fn calculate_overlay_position(
     let monitor_x = monitor.position().x as f64 / scale;
     let monitor_y = monitor.position().y as f64 / scale;
     let monitor_width = monitor.size().width as f64 / scale;
-    let monitor_height = monitor.size().height as f64 / scale;
 
     let settings = settings::get_settings(app_handle);
 
     let x = monitor_x + (monitor_width - width) / 2.0;
     let y = match settings.overlay_position {
         OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
-        OverlayPosition::Bottom => monitor_y + monitor_height - height - OVERLAY_BOTTOM_OFFSET,
+        OverlayPosition::Bottom => {
+            // Bottom edge to anchor the overlay above. On macOS this is the work
+            // area bottom — the top of the Dock, or the screen edge when the
+            // Dock is hidden/auto-hidden — so placement tracks the Dock.
+            // work_area.position is in the same global coordinate space as
+            // monitor.position, so no extra monitor offset is added. Other
+            // platforms use the full monitor bottom.
+            #[cfg(target_os = "macos")]
+            let bottom = {
+                let wa = monitor.work_area();
+                (wa.position.y as f64 + wa.size.height as f64) / scale
+            };
+            #[cfg(not(target_os = "macos"))]
+            let bottom = monitor_y + monitor.size().height as f64 / scale;
+
+            bottom - height - OVERLAY_BOTTOM_OFFSET
+        }
     };
 
     Some((x, y))
