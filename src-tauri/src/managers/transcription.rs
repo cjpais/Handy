@@ -675,12 +675,11 @@ impl TranscriptionManager {
                 let settings = get_settings(&self.app_handle);
                 let locale =
                     effective_language_for_model(&settings, self.model_manager.as_ref(), model_id);
-                let engine = SpeechAnalyzerEngine::load(&locale, self.app_handle.clone(), model_id)
-                    .map_err(|e| {
-                        let error_msg = format!("Failed to load SpeechAnalyzer: {}", e);
-                        emit_loading_failed(&error_msg);
-                        anyhow::anyhow!(error_msg)
-                    })?;
+                let engine = SpeechAnalyzerEngine::load(&locale).map_err(|e| {
+                    let error_msg = format!("Failed to load SpeechAnalyzer: {}", e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
                 LoadedEngine::SpeechAnalyzer(engine)
             }
         };

@@ -13,9 +13,6 @@ typedef struct {
     char* error_message; // Only valid when success = 0
 } SpeechAnalyzerResponse;
 
-// Receives asset-installation progress as a fraction from 0.0 through 1.0.
-typedef void (*SpeechAnalyzerProgressCallback)(double fraction_completed, void* context);
-
 // Check if the SpeechAnalyzer API is available on this device (macOS 26+)
 int is_speech_analyzer_available(void);
 
@@ -24,11 +21,7 @@ SpeechAnalyzerResponse* speech_analyzer_supported_locales(void);
 
 // Ensure the on-device speech assets for the locale are installed
 // (triggers an OS-managed download if needed). Blocks until done.
-SpeechAnalyzerResponse* speech_analyzer_prepare(
-    const char* locale_id,
-    SpeechAnalyzerProgressCallback progress_callback,
-    void* progress_context
-);
+SpeechAnalyzerResponse* speech_analyzer_prepare(const char* locale_id);
 
 // Transcribe 16 kHz mono f32 PCM. Blocks until transcription completes.
 SpeechAnalyzerResponse* speech_analyzer_transcribe(const float* samples, int sample_count, const char* locale_id);

@@ -298,49 +298,46 @@ const ModelCard: React.FC<ModelCardProps> = ({
       </div>
 
       {/* Download/extract progress */}
-      {(status === "downloading" ||
-        status === "switching" ||
-        (isSystemManaged && status === "active")) &&
-        downloadProgress !== undefined && (
-          <div className="w-full mt-3">
-            <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-logo-primary rounded-full transition-all duration-300"
-                style={{ width: `${downloadProgress}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs mt-1">
-              <span className="text-text/50">
-                {t("modelSelector.downloading", {
-                  percentage: Math.round(downloadProgress),
-                })}
-              </span>
-              <div className="flex items-center gap-2">
-                {downloadSpeed !== undefined && downloadSpeed > 0 && (
-                  <span className="tabular-nums text-text/50">
-                    {t("modelSelector.downloadSpeed", {
-                      speed: downloadSpeed.toFixed(1),
-                    })}
-                  </span>
-                )}
-                {status === "downloading" && onCancel && (
-                  <Button
-                    variant="danger-ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onCancel(model.id);
-                    }}
-                    aria-label={t("modelSelector.cancelDownload")}
-                  >
-                    {t("modelSelector.cancel")}
-                  </Button>
-                )}
-              </div>
+      {status === "downloading" && downloadProgress !== undefined && (
+        <div className="w-full mt-3">
+          <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-logo-primary rounded-full transition-all duration-300"
+              style={{ width: `${downloadProgress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs mt-1">
+            <span className="text-text/50">
+              {t("modelSelector.downloading", {
+                percentage: Math.round(downloadProgress),
+              })}
+            </span>
+            <div className="flex items-center gap-2">
+              {downloadSpeed !== undefined && downloadSpeed > 0 && (
+                <span className="tabular-nums text-text/50">
+                  {t("modelSelector.downloadSpeed", {
+                    speed: downloadSpeed.toFixed(1),
+                  })}
+                </span>
+              )}
+              {onCancel && (
+                <Button
+                  variant="danger-ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCancel(model.id);
+                  }}
+                  aria-label={t("modelSelector.cancelDownload")}
+                >
+                  {t("modelSelector.cancel")}
+                </Button>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
       {status === "verifying" && (
         <div className="w-full mt-3">
           <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">

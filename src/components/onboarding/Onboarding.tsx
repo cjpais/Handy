@@ -170,8 +170,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                     status={getExistingModelStatus(model.id)}
                     disabled={isBusy}
                     onSelect={handleSelectExistingModel}
-                    downloadProgress={getModelDownloadProgress(model.id)}
-                    downloadSpeed={getModelDownloadSpeed(model.id)}
                     showRecommended={false}
                   />
                 ))}

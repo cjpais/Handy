@@ -24,9 +24,7 @@ public func speechAnalyzerSupportedLocales() -> UnsafeMutablePointer<SpeechAnaly
 
 @_cdecl("speech_analyzer_prepare")
 public func speechAnalyzerPrepare(
-    _ localeId: UnsafePointer<CChar>,
-    _ progressCallback: SpeechAnalyzerProgressCallback?,
-    _ progressContext: UnsafeMutableRawPointer?
+    _ localeId: UnsafePointer<CChar>
 ) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
     return failureResponse(
         "SpeechAnalyzer is not available in this build (SDK requirement not met).")

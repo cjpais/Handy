@@ -31,23 +31,6 @@ private final class ResultBox: @unchecked Sendable {
     var error: String?
 }
 
-/// Keeps the C callback and its Rust-owned context together while an async
-/// installation request is running. The blocking FFI entry point guarantees
-/// that the context outlives every report.
-private final class ProgressReporter: @unchecked Sendable {
-    private let callback: SpeechAnalyzerProgressCallback?
-    private let context: UnsafeMutableRawPointer?
-
-    init(callback: SpeechAnalyzerProgressCallback?, context: UnsafeMutableRawPointer?) {
-        self.callback = callback
-        self.context = context
-    }
-
-    func report(_ fraction: Double) {
-        callback?(min(max(fraction, 0), 1), context)
-    }
-}
-
 /// Run an async operation to completion on the calling (FFI) thread.
 private func runBlocking(_ operation: @escaping @Sendable () async throws -> String)
     -> ResponsePointer
@@ -105,13 +88,12 @@ private func reservation(_ reservedLocale: Locale, matches selectedLocale: Local
 }
 
 /// Ensure there is a reservation slot for the locale, then download and install
-/// its on-device assets if missing. Installation progress is forwarded to Rust
-/// so the existing model progress UI can display it.
+/// its on-device assets if missing. Blocks until the OS finishes; Handy's model
+/// loading state covers the wait in the UI.
 @available(macOS 26.0, *)
 private func ensureAssets(
     for transcriber: SpeechTranscriber,
-    locale: Locale,
-    reporter: ProgressReporter
+    locale: Locale
 ) async throws {
     let selectedIdentifier = locale.identifier(.bcp47)
     let reservedLocales = await AssetInventory.reservedLocales
@@ -138,29 +120,7 @@ private func ensureAssets(
     }
 
     if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-        reporter.report(0)
-        let progressTask = Task.detached(priority: .utility) {
-            while !Task.isCancelled {
-                reporter.report(request.progress.fractionCompleted)
-                do {
-                    try await Task.sleep(nanoseconds: 100_000_000)
-                } catch {
-                    return
-                }
-            }
-        }
-        do {
-            try await request.downloadAndInstall()
-            progressTask.cancel()
-            await progressTask.value
-            reporter.report(1)
-        } catch {
-            // Await the polling task before unwinding through the FFI boundary;
-            // its callback context is owned by the blocked Rust stack frame.
-            progressTask.cancel()
-            await progressTask.value
-            throw error
-        }
+        try await request.downloadAndInstall()
     }
 }
 
@@ -298,12 +258,9 @@ public func speechAnalyzerSupportedLocales() -> UnsafeMutablePointer<SpeechAnaly
 
 @_cdecl("speech_analyzer_prepare")
 public func speechAnalyzerPrepare(
-    _ localeId: UnsafePointer<CChar>,
-    _ progressCallback: SpeechAnalyzerProgressCallback?,
-    _ progressContext: UnsafeMutableRawPointer?
+    _ localeId: UnsafePointer<CChar>
 ) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
     let swiftLocaleId = String(cString: localeId)
-    let reporter = ProgressReporter(callback: progressCallback, context: progressContext)
     guard #available(macOS 26.0, *) else {
         let responsePtr = makeResponse()
         responsePtr.pointee.error_message = duplicateCString(
@@ -324,7 +281,7 @@ public func speechAnalyzerPrepare(
             reportingOptions: [],
             attributeOptions: []
         )
-        try await ensureAssets(for: transcriber, locale: locale, reporter: reporter)
+        try await ensureAssets(for: transcriber, locale: locale)
         return ""
     }
 }

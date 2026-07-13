@@ -265,7 +265,6 @@ export const ModelsSettings: React.FC = () => {
                   model={model}
                   status={getModelStatus(model.id)}
                   onSelect={handleModelSelect}
-                  downloadProgress={getDownloadProgress(model.id)}
                   showRecommended={false}
                 />
               ))}

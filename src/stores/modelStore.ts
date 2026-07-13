@@ -332,26 +332,6 @@ export const useModelStore = create<ModelsStore>()(
         get().loadModels();
       });
 
-      // System-managed models reuse the download progress UI while the OS
-      // prepares assets, but completion must not trigger the catalog download
-      // behavior (notably ModelSelector's automatic model selection).
-      const clearModelPreparationProgress = (modelId: string) => {
-        set(
-          produce((state) => {
-            delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
-          }),
-        );
-      };
-
-      listen<string>("model-preparation-complete", (event) => {
-        clearModelPreparationProgress(event.payload);
-      });
-
-      listen<string>("model-preparation-failed", (event) => {
-        clearModelPreparationProgress(event.payload);
-      });
-
       listen<{ model_id: string; error: string }>(
         "model-download-failed",
         (event) => {
