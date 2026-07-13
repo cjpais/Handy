@@ -324,7 +324,8 @@ mod tests {
     fn request_serializes_sampling_reasoning_and_message_roles() {
         let json = serde_json::to_value(request(Some(40))).unwrap();
 
-        assert_eq!(json["temperature"], 0.2);
+        let temperature = json["temperature"].as_f64().unwrap();
+        assert!((temperature - 0.2).abs() < f32::EPSILON as f64);
         assert_eq!(json["top_k"], 40);
         assert_eq!(json["reasoning_effort"], "none");
         assert_eq!(json["reasoning"]["exclude"], true);
