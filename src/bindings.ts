@@ -969,7 +969,7 @@ sha256: string | null } } |
  * Already present on disk — a user-provided custom model, or one discovered
  * in a shared cache. Nothing to download.
  */
-"Local" |
+"Local" | 
 /**
  * Supplied and managed by the operating system. There is no Handy-owned
  * model file to download, resolve, or delete.
