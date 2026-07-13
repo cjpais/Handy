@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { ChevronDown, Globe, RefreshCw, Search } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
-import { ModelCard } from "@/components/onboarding";
+import { isSystemSource, ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import {
   getLanguageLabel,
@@ -181,13 +181,18 @@ export const ModelsSettings: React.FC = () => {
     });
   }, [models, languageFilter, searchQuery]);
 
-  // Split filtered models into downloaded (including custom) and available sections
-  const { downloadedModels, availableModels } = useMemo(() => {
+  // Keep operating-system-managed models separate from Handy's downloadable
+  // catalog so the UI does not imply that their assets live in Handy's model
+  // directory or can be deleted here.
+  const { systemModels, downloadedModels, availableModels } = useMemo(() => {
+    const system: ModelInfo[] = [];
     const downloaded: ModelInfo[] = [];
     const available: ModelInfo[] = [];
 
     for (const model of filteredModels) {
-      if (
+      if (isSystemSource(model)) {
+        system.push(model);
+      } else if (
         model.is_custom ||
         model.is_downloaded ||
         model.id in downloadingModels ||
@@ -208,6 +213,7 @@ export const ModelsSettings: React.FC = () => {
     });
 
     return {
+      systemModels: system,
       downloadedModels: downloaded,
       availableModels: available,
     };
@@ -248,6 +254,24 @@ export const ModelsSettings: React.FC = () => {
 
       {filteredModels.length > 0 ? (
         <div className="space-y-6">
+          {systemModels.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium text-text/60">
+                {t("theme.options.system")}
+              </h2>
+              {systemModels.map((model: ModelInfo) => (
+                <ModelCard
+                  key={model.id}
+                  model={model}
+                  status={getModelStatus(model.id)}
+                  onSelect={handleModelSelect}
+                  downloadProgress={getDownloadProgress(model.id)}
+                  showRecommended={false}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Downloaded Models Section — header always visible so filter stays accessible */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">

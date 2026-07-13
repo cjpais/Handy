@@ -507,12 +507,13 @@ fn build_apple_intelligence_bridge() {
 }
 
 /// Compile the SpeechAnalyzer (Speech framework, macOS 26+) Swift bridge.
-/// Mirrors `build_apple_intelligence_bridge`, but instead of probing the SDK
-/// up front it simply attempts to compile the real bridge and falls back to
-/// the stub if the toolchain can't build it (older SDK, CLT-only, …).
+/// A small type-check probe distinguishes an SDK that lacks the API (where the
+/// stub is expected) from a regression in the real bridge (which must fail the
+/// build instead of silently shipping without support).
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 fn build_speech_analyzer_bridge() {
     use std::env;
+    use std::fs;
     use std::path::{Path, PathBuf};
     use std::process::Command;
 
@@ -523,6 +524,9 @@ fn build_speech_analyzer_bridge() {
     println!("cargo:rerun-if-changed={REAL_SWIFT_FILE}");
     println!("cargo:rerun-if-changed={STUB_SWIFT_FILE}");
     println!("cargo:rerun-if-changed={BRIDGE_HEADER}");
+    println!("cargo:rerun-if-env-changed=HANDY_FORCE_SA_STUB");
+    println!("cargo:rerun-if-env-changed=SDKROOT");
+    println!("cargo:rerun-if-env-changed=SWIFTC");
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
     let object_path = out_dir.join("speech_analyzer.o");
@@ -554,46 +558,75 @@ fn build_speech_analyzer_bridge() {
         .to_string()
     });
 
-    let compile = |source_file: &str| -> bool {
-        Command::new(&swiftc_path)
+    let force_stub = env::var("HANDY_FORCE_SA_STUB").as_deref() == Ok("1");
+    let probe_path = out_dir.join("speech_analyzer_probe.swift");
+    fs::write(
+        &probe_path,
+        r#"import Speech
+
+@available(macOS 26.0, *)
+func handySpeechAnalyzerCapabilityProbe() {
+    _ = SpeechAnalyzer.self
+    _ = SpeechTranscriber.self
+    _ = AssetInventory.self
+}
+"#,
+    )
+    .expect("Failed to write SpeechAnalyzer capability probe");
+
+    let probe_succeeded = !force_stub
+        && Command::new(&swiftc_path)
             .args([
-                "-parse-as-library",
                 "-target",
                 "arm64-apple-macosx11.0",
                 "-sdk",
                 &sdk_path,
-                "-O",
-                "-import-objc-header",
-                BRIDGE_HEADER,
-                "-c",
-                source_file,
-                "-o",
-                object_path
+                "-typecheck",
+                probe_path
                     .to_str()
-                    .expect("Failed to convert object path to string"),
+                    .expect("Failed to convert probe path to string"),
             ])
-            .status()
-            .expect("Failed to invoke swiftc for SpeechAnalyzer bridge")
-            .success()
-    };
+            .output()
+            .expect("Failed to invoke swiftc for SpeechAnalyzer capability probe")
+            .status
+            .success();
 
-    let force_stub = env::var("HANDY_FORCE_SA_STUB").as_deref() == Ok("1");
-    let built_real = if force_stub {
+    let (source_file, built_real) = if force_stub {
         println!("cargo:warning=HANDY_FORCE_SA_STUB=1 set; building SpeechAnalyzer stubs.");
-        false
-    } else if compile(REAL_SWIFT_FILE) {
+        (STUB_SWIFT_FILE, false)
+    } else if probe_succeeded {
         println!("cargo:warning=Building with SpeechAnalyzer support.");
-        true
+        (REAL_SWIFT_FILE, true)
     } else {
         println!(
-            "cargo:warning=SpeechAnalyzer bridge failed to compile (SDK/toolchain too old?). \
+            "cargo:warning=SpeechAnalyzer API is unavailable in the active SDK/toolchain. \
              Building with stubs."
         );
-        false
+        (STUB_SWIFT_FILE, false)
     };
 
-    if !built_real && !compile(STUB_SWIFT_FILE) {
-        panic!("swiftc failed to compile {STUB_SWIFT_FILE}");
+    let status = Command::new(&swiftc_path)
+        .args([
+            "-parse-as-library",
+            "-target",
+            "arm64-apple-macosx11.0",
+            "-sdk",
+            &sdk_path,
+            "-O",
+            "-import-objc-header",
+            BRIDGE_HEADER,
+            "-c",
+            source_file,
+            "-o",
+            object_path
+                .to_str()
+                .expect("Failed to convert object path to string"),
+        ])
+        .status()
+        .expect("Failed to invoke swiftc for SpeechAnalyzer bridge");
+
+    if !status.success() {
+        panic!("swiftc failed to compile {source_file}");
     }
 
     let status = Command::new("libtool")

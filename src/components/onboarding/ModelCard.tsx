@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   AudioLines,
   Check,
+  Cpu,
   Download,
   Globe,
   HardDrive,
@@ -43,6 +44,9 @@ const getLanguageDisplayText = (
 // advertised download (catalog GGUFs supersede it).
 export const isLegacySource = (model: ModelInfo): boolean =>
   typeof model.source === "object" && "Url" in model.source;
+
+export const isSystemSource = (model: ModelInfo): boolean =>
+  model.source === "System";
 
 // Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").
 const getQuantLabel = (filename: string): string | null => {
@@ -98,8 +102,12 @@ const ModelCard: React.FC<ModelCardProps> = ({
   // Get translated model name and description
   const displayName = getTranslatedModelName(model, t);
   const displayDescription = getTranslatedModelDescription(model, t);
+  const isSystemManaged = isSystemSource(model);
   const showModelSize =
-    status === "downloadable" || status === "available" || status === "active";
+    !isSystemManaged &&
+    (status === "downloadable" ||
+      status === "available" ||
+      status === "active");
   const formattedModelSize = formatModelSize(Number(model.size_mb));
   const quantLabel = getQuantLabel(model.filename);
   const capabilityLanguages = getUniqueCapabilityLanguages(
@@ -256,6 +264,12 @@ const ModelCard: React.FC<ModelCardProps> = ({
             <span>{t("modelSelector.streaming")}</span>
           </div>
         )}
+        {isSystemManaged && (
+          <span className="flex items-center gap-1.5 ms-auto text-xs text-text/50">
+            <Cpu className="w-3.5 h-3.5" />
+            <span>{t("theme.options.system")}</span>
+          </span>
+        )}
         {showModelSize && (
           <span className="flex items-center gap-1.5 ms-auto text-xs text-text/50">
             {status === "downloadable" ? (
@@ -267,61 +281,66 @@ const ModelCard: React.FC<ModelCardProps> = ({
             {quantLabel && <span className="text-text/40">{quantLabel}</span>}
           </span>
         )}
-        {onDelete && (status === "available" || status === "active") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            title={t("modelSelector.deleteModel", { modelName: displayName })}
-            className="flex items-center gap-1.5 text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{t("common.delete")}</span>
-          </Button>
-        )}
+        {onDelete &&
+          !isSystemManaged &&
+          (status === "available" || status === "active") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              title={t("modelSelector.deleteModel", { modelName: displayName })}
+              className="flex items-center gap-1.5 text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{t("common.delete")}</span>
+            </Button>
+          )}
       </div>
 
       {/* Download/extract progress */}
-      {status === "downloading" && downloadProgress !== undefined && (
-        <div className="w-full mt-3">
-          <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-logo-primary rounded-full transition-all duration-300"
-              style={{ width: `${downloadProgress}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-xs mt-1">
-            <span className="text-text/50">
-              {t("modelSelector.downloading", {
-                percentage: Math.round(downloadProgress),
-              })}
-            </span>
-            <div className="flex items-center gap-2">
-              {downloadSpeed !== undefined && downloadSpeed > 0 && (
-                <span className="tabular-nums text-text/50">
-                  {t("modelSelector.downloadSpeed", {
-                    speed: downloadSpeed.toFixed(1),
-                  })}
-                </span>
-              )}
-              {onCancel && (
-                <Button
-                  variant="danger-ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onCancel(model.id);
-                  }}
-                  aria-label={t("modelSelector.cancelDownload")}
-                >
-                  {t("modelSelector.cancel")}
-                </Button>
-              )}
+      {(status === "downloading" ||
+        status === "switching" ||
+        (isSystemManaged && status === "active")) &&
+        downloadProgress !== undefined && (
+          <div className="w-full mt-3">
+            <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary rounded-full transition-all duration-300"
+                style={{ width: `${downloadProgress}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs mt-1">
+              <span className="text-text/50">
+                {t("modelSelector.downloading", {
+                  percentage: Math.round(downloadProgress),
+                })}
+              </span>
+              <div className="flex items-center gap-2">
+                {downloadSpeed !== undefined && downloadSpeed > 0 && (
+                  <span className="tabular-nums text-text/50">
+                    {t("modelSelector.downloadSpeed", {
+                      speed: downloadSpeed.toFixed(1),
+                    })}
+                  </span>
+                )}
+                {status === "downloading" && onCancel && (
+                  <Button
+                    variant="danger-ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onCancel(model.id);
+                    }}
+                    aria-label={t("modelSelector.cancelDownload")}
+                  >
+                    {t("modelSelector.cancel")}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       {status === "verifying" && (
         <div className="w-full mt-3">
           <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">

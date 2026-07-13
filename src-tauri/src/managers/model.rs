@@ -57,6 +57,9 @@ pub enum ModelSource {
     /// Already present on disk — a user-provided custom model, or one discovered
     /// in a shared cache. Nothing to download.
     Local,
+    /// Supplied and managed by the operating system. There is no Handy-owned
+    /// model file to download, resolve, or delete.
+    System,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -470,41 +473,61 @@ impl ModelManager {
 
         let mut available_models = HashMap::new();
 
-        // Apple's SpeechAnalyzer (macOS 26+): only registered when the running
-        // OS actually has the API. The OS manages the model assets, so the
-        // entry is always "downloaded" — asset installation happens at load.
+        // Apple's SpeechTranscriber (macOS 26+): only register it when both the
+        // API and the current device support the model. The OS owns its assets;
+        // `is_downloaded` means selectable here, not that Handy owns a file.
         if crate::speech_analyzer::is_available() {
-            available_models.insert(
-                "apple-speechanalyzer".to_string(),
-                ModelInfo {
-                    id: "apple-speechanalyzer".to_string(),
-                    name: "Apple SpeechAnalyzer".to_string(),
-                    description: "Apple's built-in on-device speech recognition (macOS 26+)."
-                        .to_string(),
-                    filename: String::new(),
-                    source: ModelSource::Local,
-                    size_mb: 0,
-                    is_downloaded: true,
-                    is_downloading: false,
-                    partial_size: 0,
-                    is_directory: false,
-                    engine_type: EngineType::SpeechAnalyzer,
-                    accuracy_score: 0.85,
-                    speed_score: 0.95,
-                    supports_translation: false,
-                    is_recommended: false,
-                    supported_languages: vec![
-                        "en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "yue", "ar",
-                    ]
-                    .into_iter()
-                    .map(String::from)
-                    .collect(),
-                    supports_language_selection: true,
-                    is_custom: false,
-                    supports_streaming: false,
-                    supports_language_detection: false,
-                },
-            );
+            match crate::speech_analyzer::supported_locales() {
+                Ok(locales) => {
+                    let mut supported_languages = canonicalize_supported_languages(
+                        locales
+                            .into_iter()
+                            .map(|locale| base_language(&locale).to_string())
+                            .collect(),
+                    );
+                    supported_languages.sort();
+
+                    if supported_languages.is_empty() {
+                        warn!(
+                            "SpeechTranscriber reported no supported locales; hiding system model"
+                        );
+                    } else {
+                        available_models.insert(
+                            crate::speech_analyzer::MODEL_ID.to_string(),
+                            ModelInfo {
+                                id: crate::speech_analyzer::MODEL_ID.to_string(),
+                                name: "Apple SpeechTranscriber".to_string(),
+                                description:
+                                    "Apple's built-in on-device speech recognition (macOS 26+)."
+                                        .to_string(),
+                                filename: String::new(),
+                                source: ModelSource::System,
+                                size_mb: 0,
+                                is_downloaded: true,
+                                is_downloading: false,
+                                partial_size: 0,
+                                is_directory: false,
+                                engine_type: EngineType::SpeechAnalyzer,
+                                // No comparable Handy benchmark exists yet; zero hides the
+                                // editorial score bars instead of asserting unsupported ranks.
+                                accuracy_score: 0.0,
+                                speed_score: 0.0,
+                                supports_translation: false,
+                                is_recommended: false,
+                                supports_language_selection: supported_languages.len() > 1,
+                                supported_languages,
+                                is_custom: false,
+                                supports_streaming: false,
+                                supports_language_detection: false,
+                            },
+                        );
+                    }
+                }
+                Err(error) => warn!(
+                    "Failed to query SpeechTranscriber supported locales; hiding system model: {}",
+                    error
+                ),
+            }
         }
 
         // Whisper supported languages (99 languages from tokenizer)
@@ -1346,9 +1369,8 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
-            // SpeechAnalyzer has no on-disk footprint; availability is an OS
-            // property, not a filesystem one.
-            if matches!(model.engine_type, EngineType::SpeechAnalyzer) {
+            // System-managed engines have no Handy-owned on-disk footprint.
+            if matches!(model.source, ModelSource::System) {
                 model.is_downloaded = crate::speech_analyzer::is_available();
                 model.is_downloading = false;
                 model.partial_size = 0;
@@ -1890,6 +1912,11 @@ impl ModelManager {
             ModelSource::Local => {
                 return Err(anyhow::anyhow!("No download source for model"));
             }
+            ModelSource::System => {
+                return Err(anyhow::anyhow!(
+                    "System-managed models are prepared by the operating system"
+                ));
+            }
         };
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
@@ -2232,6 +2259,10 @@ impl ModelManager {
 
         debug!("ModelManager: Found model info: {:?}", model_info);
 
+        if matches!(model_info.source, ModelSource::System) {
+            return Err(anyhow::anyhow!("System-managed models cannot be deleted"));
+        }
+
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
             // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
             // the whole repo dir (blobs + refs + snapshots). Per product decision,
@@ -2329,6 +2360,12 @@ impl ModelManager {
             return Err(anyhow::anyhow!(
                 "Model is currently downloading: {}",
                 model_id
+            ));
+        }
+
+        if matches!(model_info.source, ModelSource::System) {
+            return Err(anyhow::anyhow!(
+                "System-managed models do not have a local model path"
             ));
         }
 

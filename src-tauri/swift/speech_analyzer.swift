@@ -31,6 +31,23 @@ private final class ResultBox: @unchecked Sendable {
     var error: String?
 }
 
+/// Keeps the C callback and its Rust-owned context together while an async
+/// installation request is running. The blocking FFI entry point guarantees
+/// that the context outlives every report.
+private final class ProgressReporter: @unchecked Sendable {
+    private let callback: SpeechAnalyzerProgressCallback?
+    private let context: UnsafeMutableRawPointer?
+
+    init(callback: SpeechAnalyzerProgressCallback?, context: UnsafeMutableRawPointer?) {
+        self.callback = callback
+        self.context = context
+    }
+
+    func report(_ fraction: Double) {
+        callback?(min(max(fraction, 0), 1), context)
+    }
+}
+
 /// Run an async operation to completion on the calling (FFI) thread.
 private func runBlocking(_ operation: @escaping @Sendable () async throws -> String)
     -> ResponsePointer
@@ -62,21 +79,7 @@ private func runBlocking(_ operation: @escaping @Sendable () async throws -> Str
 @available(macOS 26.0, *)
 private func resolveLocale(_ identifier: String) async throws -> Locale {
     let requested = Locale(identifier: identifier)
-    let supported = await SpeechTranscriber.supportedLocales
-    if let match = supported.first(where: {
-        $0.identifier(.bcp47) == requested.identifier(.bcp47)
-    }) {
-        return match
-    }
-    // Bare language codes ("en"): prefer the system's own region variant so a
-    // US user gets en-US spelling, then fall back to any same-language locale.
-    let sameLanguage = supported.filter {
-        $0.language.languageCode == requested.language.languageCode
-    }
-    if let match = sameLanguage.first(where: { $0.region == Locale.current.region }) {
-        return match
-    }
-    if let match = sameLanguage.first {
+    if let match = await SpeechTranscriber.supportedLocale(equivalentTo: requested) {
         return match
     }
     throw NSError(
@@ -87,11 +90,77 @@ private func resolveLocale(_ identifier: String) async throws -> Locale {
         ])
 }
 
-/// Download and install the on-device assets for the transcriber if missing.
 @available(macOS 26.0, *)
-private func ensureAssets(for transcriber: SpeechTranscriber) async throws {
+private func reservation(_ reservedLocale: Locale, matches selectedLocale: Locale) async -> Bool {
+    let selectedIdentifier = selectedLocale.identifier(.bcp47)
+    if reservedLocale.identifier(.bcp47) == selectedIdentifier {
+        return true
+    }
+
+    // Apple may return a canonical variant rather than the identifier supplied
+    // when the reservation was created. Compare through SpeechTranscriber's
+    // own equivalence resolver before deciding that the slot belongs elsewhere.
+    return await SpeechTranscriber.supportedLocale(equivalentTo: reservedLocale)?
+        .identifier(.bcp47) == selectedIdentifier
+}
+
+/// Ensure there is a reservation slot for the locale, then download and install
+/// its on-device assets if missing. Installation progress is forwarded to Rust
+/// so the existing model progress UI can display it.
+@available(macOS 26.0, *)
+private func ensureAssets(
+    for transcriber: SpeechTranscriber,
+    locale: Locale,
+    reporter: ProgressReporter
+) async throws {
+    let selectedIdentifier = locale.identifier(.bcp47)
+    let reservedLocales = await AssetInventory.reservedLocales
+    var selectedIsReserved = false
+    for reservedLocale in reservedLocales {
+        if await reservation(reservedLocale, matches: locale) {
+            selectedIsReserved = true
+            break
+        }
+    }
+
+    // AssetInstallationRequest reserves automatically, but throws when the app
+    // has used every slot. Release non-selected reservations only until a slot
+    // is free; retaining spare reservations avoids needless language churn.
+    if !selectedIsReserved && reservedLocales.count >= AssetInventory.maximumReservedLocales {
+        var reservationCount = reservedLocales.count
+        for reservedLocale in reservedLocales
+        where reservedLocale.identifier(.bcp47) != selectedIdentifier {
+            guard reservationCount >= AssetInventory.maximumReservedLocales else { break }
+            if await AssetInventory.release(reservedLocale: reservedLocale) {
+                reservationCount -= 1
+            }
+        }
+    }
+
     if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-        try await request.downloadAndInstall()
+        reporter.report(0)
+        let progressTask = Task.detached(priority: .utility) {
+            while !Task.isCancelled {
+                reporter.report(request.progress.fractionCompleted)
+                do {
+                    try await Task.sleep(nanoseconds: 100_000_000)
+                } catch {
+                    return
+                }
+            }
+        }
+        do {
+            try await request.downloadAndInstall()
+            progressTask.cancel()
+            await progressTask.value
+            reporter.report(1)
+        } catch {
+            // Await the polling task before unwinding through the FFI boundary;
+            // its callback context is owned by the blocked Rust stack frame.
+            progressTask.cancel()
+            await progressTask.value
+            throw error
+        }
     }
 }
 
@@ -104,7 +173,6 @@ private func transcribeSamples(_ samples: [Float], localeId: String) async throw
         reportingOptions: [],
         attributeOptions: []
     )
-    try await ensureAssets(for: transcriber)
 
     let analyzer = SpeechAnalyzer(modules: [transcriber])
 
@@ -151,11 +219,18 @@ private func transcribeSamples(_ samples: [Float], localeId: String) async throw
     inputBuilder.yield(AnalyzerInput(buffer: buffer))
     inputBuilder.finish()
 
-    try await analyzer.start(inputSequence: inputSequence)
-    try await analyzer.finalizeAndFinishThroughEndOfInput()
+    do {
+        try await analyzer.start(inputSequence: inputSequence)
+        try await analyzer.finalizeAndFinishThroughEndOfInput()
 
-    return try await resultsTask.value
-        .trimmingCharacters(in: .whitespacesAndNewlines)
+        return try await resultsTask.value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    } catch {
+        resultsTask.cancel()
+        await analyzer.cancelAndFinishNow()
+        _ = try? await resultsTask.value
+        throw error
+    }
 }
 
 @available(macOS 26.0, *)
@@ -196,18 +271,49 @@ public func isSpeechAnalyzerAvailable() -> Int32 {
     guard #available(macOS 26.0, *) else {
         return 0
     }
-    return 1
+    return SpeechTranscriber.isAvailable ? 1 : 0
 }
 
-@_cdecl("speech_analyzer_prepare")
-public func speechAnalyzerPrepare(
-    _ localeId: UnsafePointer<CChar>
-) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
-    let swiftLocaleId = String(cString: localeId)
+@_cdecl("speech_analyzer_supported_locales")
+public func speechAnalyzerSupportedLocales() -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
     guard #available(macOS 26.0, *) else {
         let responsePtr = makeResponse()
         responsePtr.pointee.error_message = duplicateCString(
             "SpeechAnalyzer requires macOS 26 or newer.")
+        return responsePtr
+    }
+    guard SpeechTranscriber.isAvailable else {
+        let responsePtr = makeResponse()
+        responsePtr.pointee.error_message = duplicateCString(
+            "SpeechTranscriber is not available on this device.")
+        return responsePtr
+    }
+    return runBlocking {
+        let locales = await SpeechTranscriber.supportedLocales
+            .map { $0.identifier(.bcp47) }
+            .sorted()
+        return locales.joined(separator: "\n")
+    }
+}
+
+@_cdecl("speech_analyzer_prepare")
+public func speechAnalyzerPrepare(
+    _ localeId: UnsafePointer<CChar>,
+    _ progressCallback: SpeechAnalyzerProgressCallback?,
+    _ progressContext: UnsafeMutableRawPointer?
+) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
+    let swiftLocaleId = String(cString: localeId)
+    let reporter = ProgressReporter(callback: progressCallback, context: progressContext)
+    guard #available(macOS 26.0, *) else {
+        let responsePtr = makeResponse()
+        responsePtr.pointee.error_message = duplicateCString(
+            "SpeechAnalyzer requires macOS 26 or newer.")
+        return responsePtr
+    }
+    guard SpeechTranscriber.isAvailable else {
+        let responsePtr = makeResponse()
+        responsePtr.pointee.error_message = duplicateCString(
+            "SpeechTranscriber is not available on this device.")
         return responsePtr
     }
     return runBlocking {
@@ -218,7 +324,7 @@ public func speechAnalyzerPrepare(
             reportingOptions: [],
             attributeOptions: []
         )
-        try await ensureAssets(for: transcriber)
+        try await ensureAssets(for: transcriber, locale: locale, reporter: reporter)
         return ""
     }
 }
@@ -234,6 +340,12 @@ public func speechAnalyzerTranscribe(
         let responsePtr = makeResponse()
         responsePtr.pointee.error_message = duplicateCString(
             "SpeechAnalyzer requires macOS 26 or newer.")
+        return responsePtr
+    }
+    guard SpeechTranscriber.isAvailable else {
+        let responsePtr = makeResponse()
+        responsePtr.pointee.error_message = duplicateCString(
+            "SpeechTranscriber is not available on this device.")
         return responsePtr
     }
     let sampleArray = Array(UnsafeBufferPointer(start: samples, count: Int(sampleCount)))
