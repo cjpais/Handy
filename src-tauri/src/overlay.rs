@@ -220,14 +220,12 @@ fn is_mouse_within_monitor(
 
 /// Returns overlay position in logical coordinates (points on macOS).
 ///
-/// Horizontal centering and the Top anchor use full monitor bounds. The Bottom
-/// anchor uses the macOS work area (visibleFrame) so the overlay tracks the
-/// Dock — just above it when shown, at the screen edge when hidden/auto-hidden.
-/// That relies on the macOS work_area.position.y fix (tauri #14655, shipped in
-/// 2.11), the same bug that led PR #969 to abandon work_area for full monitor
-/// bounds. Other platforms keep full monitor bounds (Wayland work_area is
-/// unreliable; Windows' offset already clears the taskbar). The per-platform
-/// OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants account for the gap.
+/// The Bottom anchor uses the macOS work area (visibleFrame) so the overlay
+/// tracks the Dock — above it when shown, at the screen edge when hidden.
+/// This relies on tauri 2.11's work_area.position.y fix (#14655), the same
+/// bug that led PR #969 to abandon work_area for full monitor bounds. Top and
+/// the other platforms keep full monitor bounds plus the fixed offsets
+/// (work_area is unreliable on Wayland; Windows' offset clears the taskbar).
 ///
 /// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
 /// converts PhysicalPosition using the scale factor of the monitor the window
@@ -249,12 +247,8 @@ fn calculate_overlay_position(
     let y = match settings.overlay_position {
         OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
         OverlayPosition::Bottom => {
-            // Bottom edge to anchor the overlay above. On macOS this is the work
-            // area bottom — the top of the Dock, or the screen edge when the
-            // Dock is hidden/auto-hidden — so placement tracks the Dock.
-            // work_area.position is in the same global coordinate space as
-            // monitor.position, so no extra monitor offset is added. Other
-            // platforms use the full monitor bottom.
+            // work_area.position shares monitor.position's global coordinate
+            // space, so no monitor offset is added.
             #[cfg(target_os = "macos")]
             let bottom = {
                 let wa = monitor.work_area();
