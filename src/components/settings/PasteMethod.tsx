@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
+import { Input } from "../ui/Input";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
@@ -55,11 +56,20 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
         );
       }
 
+      // External script is only available on Linux
+      if (osType === "linux") {
+        options.push({
+          value: "external_script",
+          label: t("settings.advanced.pasteMethod.options.externalScript"),
+        });
+      }
+
       return options;
     };
 
     const selectedMethod = (getSetting("paste_method") ||
       "ctrl_v") as PasteMethod;
+    const externalScriptPath = getSetting("external_script_path") || "";
 
     const pasteMethodOptions = getPasteMethodOptions(osType);
 
@@ -71,14 +81,29 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
         grouped={grouped}
         tooltipPosition="bottom"
       >
-        <Dropdown
-          options={pasteMethodOptions}
-          selectedValue={selectedMethod}
-          onSelect={(value) =>
-            updateSetting("paste_method", value as PasteMethod)
-          }
-          disabled={isUpdating("paste_method")}
-        />
+        <div className="flex flex-col gap-2">
+          <Dropdown
+            options={pasteMethodOptions}
+            selectedValue={selectedMethod}
+            onSelect={(value) =>
+              updateSetting("paste_method", value as PasteMethod)
+            }
+            disabled={isUpdating("paste_method")}
+          />
+          {selectedMethod === "external_script" && (
+            <Input
+              type="text"
+              value={externalScriptPath}
+              onChange={(e) =>
+                updateSetting("external_script_path", e.target.value)
+              }
+              placeholder={t(
+                "settings.advanced.pasteMethod.externalScriptPlaceholder",
+              )}
+              disabled={isUpdating("external_script_path")}
+            />
+          )}
+        </div>
       </SettingContainer>
     );
   },

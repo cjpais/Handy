@@ -4,6 +4,7 @@
     "checkUpdates": "업데이트 확인...",
     "copyLastTranscript": "마지막 녹음 내용 복사",
     "unloadModel": "모델 언로드",
+    "model": "모델",
     "quit": "종료",
     "cancel": "취소"
   },
@@ -18,11 +19,12 @@
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
+    "existingModelsTitle": "Compatible Models",
+    "downloadModelsTitle": "Available to Download",
+    "showAllModels": "Show all {{total}} models",
+    "showFewerModels": "Show fewer models",
     "recommended": "추천",
-    "download": "다운로드",
-    "downloading": "다운로드 중...",
     "customModelDescription": "공식 지원되지 않음",
-    "downloadFailed": "다운로드에 실패했습니다. 다시 시도해주세요.",
     "modelCard": {
       "accuracy": "정확도",
       "speed": "속도"
@@ -75,11 +77,26 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "매우 빠름. 중국어, 영어, 일본어, 한국어, 광둥어."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "러시아어 음성 인식. 빠르고 정확함."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "매우 빠름. 영어, 독일어, 스페인어, 프랑스어. 번역 지원."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "정확한 다국어 지원. 25개 유럽 언어. 번역 지원."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "크고 느리지만 매우 정확한 다국어 모델."
       }
     },
     "errors": {
-      "loadModels": "사용 가능한 모델을 불러오는데 실패했습니다",
-      "downloadModel": "모델 다운로드 실패: {{error}}"
+      "selectModel": "Failed to select model"
     },
     "permissions": {
       "title": "권한 필요",
@@ -104,9 +121,12 @@
   },
   "modelSelector": {
     "custom": "사용자 정의",
+    "streaming": "스트리밍",
     "active": "활성",
     "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
+    "verifying": "{{modelName}} 검증 중...",
+    "verifyingGeneric": "검증 중...",
     "extracting": "{{modelName}} 압축 해제 중...",
     "extractingMultiple": "{{count}}개 모델 압축 해제 중...",
     "extractingGeneric": "압축 해제 중...",
@@ -125,16 +145,17 @@
     "capabilities": {
       "languageSelection": "여러 입력 언어를 지원합니다",
       "singleLanguage": "이 언어만 지원합니다",
-      "multiLanguage": "다국어",
+      "languageCount": "{{total}} languages",
       "languageOnly": "{{language}} 전용",
       "translation": "영어로 번역 가능",
-      "translate": "영어로 번역"
-    }
+      "translate": "영어로 번역",
+      "streaming": "말하는 동안 실시간으로 음성 인식 결과를 표시"
+    },
+    "legacy": "레거시"
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} 설정",
-      "noSettingsNeeded": "이 모델은 별도의 설정 없이 자동으로 작동합니다."
+      "title": "{{model}} 설정"
     },
     "general": {
       "title": "일반",
@@ -168,7 +189,6 @@
       "language": {
         "title": "언어",
         "description": "음성 인식 언어를 선택하세요. 자동은 언어를 자동으로 감지하며, 특정 언어를 선택하면 해당 언어의 정확도가 향상될 수 있습니다.",
-        "descriptionUnsupported": "Parakeet 모델은 자동으로 언어를 감지합니다. 수동 선택이 필요하지 않습니다.",
         "searchPlaceholder": "언어 검색...",
         "noResults": "언어를 찾을 수 없습니다",
         "auto": "자동"
@@ -206,21 +226,20 @@
       "description": "음성 인식 모델을 선택하거나 추가 모델을 다운로드하세요. 모델마다 정확도와 속도가 다릅니다.",
       "yourModels": "다운로드된 모델",
       "availableModels": "다운로드 가능",
-      "downloaded": "다운로드됨",
-      "available": "다운로드 가능",
       "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
       "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
       "deleteTitle": "모델 삭제",
       "filters": {
-        "all": "전체",
-        "multiLanguage": "다국어",
-        "translation": "번역",
         "allLanguages": "모든 언어"
       },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
+      "searchPlaceholder": "이름으로 모델 검색…",
+      "rescan": {
+        "label": "다시 스캔",
+        "tooltip": "Handy 외부에서 모델 폴더 또는 Hugging Face 캐시에 추가된 모델을 다시 스캔합니다"
+      }
     },
     "advanced": {
-      "title": "고급",
       "groups": {
         "app": "앱",
         "output": "출력",
@@ -231,6 +250,23 @@
       "experimentalToggle": {
         "label": "실험적 기능",
         "description": "개발 중인 실험적 기능을 활성화합니다."
+      },
+      "lazyStreamClose": {
+        "label": "전사 사이에 마이크 열어 두기",
+        "description": "녹음 중지 후 30초 동안 마이크 스트림을 열어 두어 연속 전사 시 지연을 줄입니다. 활성화 중 블루투스 오디오 품질이 저하될 수 있습니다."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "Whisper 가속",
+          "description": "Whisper 모델의 하드웨어 가속. 자동 모드는 GPU를 사용합니다 (macOS에서는 Metal, Windows/Linux에서는 Vulkan)."
+        },
+        "ort": {
+          "title": "ONNX 가속",
+          "description": "ONNX 모델의 하드웨어 가속 (Parakeet, Canary, Moonshine 등). Windows의 DirectML은 실험적입니다. 모델이 전사에 실패할 수 있습니다."
+        },
+        "gpuDevice": {
+          "auto": "자동"
+        }
       },
       "startHidden": {
         "label": "숨김으로 시작",
@@ -245,12 +281,22 @@
         "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
       },
       "overlay": {
-        "title": "오버레이 위치",
-        "description": "녹음 및 전사 중 시각적 피드백 오버레이를 표시합니다. Linux에서는 '없음'을 권장합니다.",
-        "options": {
-          "none": "없음",
-          "bottom": "하단",
-          "top": "상단"
+        "style": {
+          "title": "Overlay",
+          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "options": {
+            "none": "없음",
+            "minimal": "Minimal",
+            "live": "Live"
+          }
+        },
+        "position": {
+          "title": "오버레이 위치",
+          "description": "녹음 및 전사 중 시각적 피드백 오버레이를 표시합니다. Linux에서는 '없음'을 권장합니다.",
+          "options": {
+            "bottom": "하단",
+            "top": "상단"
+          }
         }
       },
       "pasteMethod": {
@@ -261,8 +307,10 @@
           "clipboardCtrlShiftV": "클립보드 (Ctrl+Shift+V)",
           "clipboardShiftInsert": "클립보드 (Shift+Insert)",
           "direct": "직접",
-          "none": "없음"
-        }
+          "none": "없음",
+          "externalScript": "외부 스크립트"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
       },
       "typingTool": {
         "title": "타이핑 도구",
@@ -292,8 +340,7 @@
       },
       "translateToEnglish": {
         "label": "영어로 번역",
-        "description": "텍스트로 변환시 다른 언어의 음성을 자동으로 영어로 번역합니다.",
-        "descriptionUnsupported": "번역은 {{model}} 모델에서 지원되지 않습니다."
+        "description": "텍스트로 변환시 다른 언어의 음성을 자동으로 영어로 번역합니다."
       },
       "modelUnload": {
         "title": "모델 언로드",
@@ -306,7 +353,7 @@
           "min10": "10분 후",
           "min15": "15분 후",
           "hour1": "1시간 후",
-          "sec5": "5초 후 (디버그)"
+          "sec15": "15초 후 (디버그)"
         }
       },
       "customWords": {
@@ -314,11 +361,15 @@
         "description": "녹음 중 자주 잘못 들리거나 철자가 틀리는 단어를 추가하세요. 시스템이 유사한 소리의 단어를 목록과 일치하도록 자동으로 수정합니다.",
         "placeholder": "단어 추가",
         "add": "추가",
-        "remove": "{{word}} 제거"
+        "remove": "{{word}} 제거",
+        "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "voiceActivityDetection": {
+        "title": "Voice Activity Detection",
+        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       }
     },
     "postProcessing": {
-      "title": "후처리",
       "hotkey": {
         "title": "단축키"
       },
@@ -329,9 +380,6 @@
           "description": "OpenAI 호환 제공자를 선택하세요."
         },
         "appleIntelligence": {
-          "title": "Apple Intelligence",
-          "description": "완전히 기기에서 실행됩니다. API 키나 네트워크 접근이 필요하지 않습니다.",
-          "requirements": "macOS Tahoe (26.0) 이상을 실행하는 Apple Silicon Mac이 필요합니다. 시스템 설정에서 Apple Intelligence가 활성화되어 있어야 합니다.",
           "unavailable": "이 기기에서는 Apple Intelligence를 사용할 수 없습니다. macOS Tahoe (26.0) 이상을 실행하고 시스템 설정에서 Apple Intelligence가 활성화된 Apple Silicon Mac이 필요합니다."
         },
         "baseUrl": {
@@ -346,10 +394,8 @@
         },
         "model": {
           "title": "모델",
-          "descriptionApple": "선택적 숫자 토큰 제한을 제공하거나 기본 기기 내 프리셋을 유지하세요.",
           "descriptionCustom": "사용자 정의 엔드포인트에서 예상하는 모델 식별자를 제공하세요.",
           "descriptionDefault": "선택한 제공자가 제공하는 모델을 선택하세요.",
-          "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "모델 검색 또는 선택",
           "placeholderNoOptions": "모델 이름 입력",
           "refreshModels": "모델 새로고침"
@@ -386,7 +432,11 @@
       "save": "변환된 텍스트 저장",
       "unsave": "저장에서 제거",
       "delete": "항목 삭제",
-      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요."
+      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요.",
+      "retranscribe": "다시 전사",
+      "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
+      "transcribing": "전사 중...",
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
     },
     "debug": {
       "title": "디버그",
@@ -397,6 +447,17 @@
       "logLevel": {
         "title": "로그 레벨",
         "description": "로깅의 상세도 설정"
+      },
+      "liveLogs": {
+        "title": "실시간 로그",
+        "description": "로그 파일을 열지 않고도 문제를 진단할 수 있도록 애플리케이션 로그를 실시간으로 표시합니다. 이 패널이 열려 있는 동안 발생한 로그만 표시되며, 위의 로그 레벨 설정을 따릅니다.",
+        "live": "실시간",
+        "paused": "일시정지됨",
+        "pause": "일시정지",
+        "resume": "재개",
+        "copied": "복사됨",
+        "lineCount": "{{count}}줄",
+        "empty": "로그 대기 중… 앱이 로그를 출력하면 여기에 표시됩니다."
       },
       "updateChecks": {
         "label": "업데이트 확인",
@@ -451,13 +512,28 @@
         "bindingsReset": "키보드 단축키가 호환되지 않아 기본값으로 재설정되었습니다"
       },
       "pasteDelay": {
-        "title": "붙여넣기 지연",
-        "description": "붙여넣기 키 입력을 보내기 전 지연 시간(밀리초). 잘못된 텍스트가 붙여넣어지면 늘리세요."
+        "title": "붙여넣기 지연 (이전)",
+        "description": "텍스트를 복사한 후 붙여넣기 키 입력을 보내기 전의 지연 시간(밀리초). 아무것도 붙여넣어지지 않으면 늘리세요."
+      },
+      "pasteDelayAfter": {
+        "title": "붙여넣기 지연 (이후)",
+        "description": "붙여넣기 키 입력을 보낸 후 이전 클립보드를 복원하기 전의 지연 시간(밀리초). 전사된 텍스트 대신 이전 클립보드 내용이 붙여넣어지면 늘리세요."
+      },
+      "recordingBuffer": {
+        "title": "추가 녹음 버퍼",
+        "description": "키를 놓은 후 추가로 녹음을 계속하는 시간(밀리초). 후행 오디오를 캡처하기 위함. 0 = 추가 버퍼 없음."
       },
       "paths": {
         "appData": "앱 데이터:",
         "models": "모델:",
         "settings": "설정:"
+      },
+      "whatsNewPreview": {
+        "title": "새 소식 미리보기",
+        "description": "최신 내장 릴리스 노트를 본 것으로 표시하지 않고 엽니다",
+        "button": "미리보기",
+        "noNotes": "내장 릴리스 노트를 찾을 수 없습니다",
+        "error": "릴리스 노트를 미리 볼 수 없습니다"
       }
     },
     "about": {
@@ -482,65 +558,80 @@
       },
       "acknowledgments": {
         "title": "감사의 말",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
-          "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
+          "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 ggml를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
+      },
+      "whatsNewUpdates": {
+        "label": "새 소식 표시",
+        "description": "Handy 업데이트 후 릴리스 노트를 표시합니다"
       }
     }
   },
   "footer": {
-    "downloadingModel": "{{model}} 다운로드 중...",
     "checkingUpdates": "업데이트 확인 중...",
-    "updateAvailable": "업데이트 사용 가능: {{version}}",
     "updateAvailableShort": "업데이트 사용 가능",
     "upToDate": "최신 상태",
-    "downloadUpdate": "업데이트 다운로드",
-    "restart": "재시작",
     "updateCheckingDisabled": "업데이트 확인 비활성화됨",
     "downloading": "다운로드 중... {{progress}}%",
     "installing": "설치 중...",
     "preparing": "준비 중...",
-    "checkForUpdates": "업데이트 확인"
+    "checkForUpdates": "업데이트 확인",
+    "portableUpdateTitle": "수동 업데이트 필요",
+    "portableUpdateMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. 업데이트하려면 GitHub Releases에서 최신 NSIS 설치 프로그램을 다운로드하여 같은 폴더에 설치한 다음, 이전 버전의 Data/ 폴더(설정, 모델, 녹음)를 새 버전으로 복사하세요.",
+    "portableUpdateButton": "GitHub Releases 열기"
   },
   "common": {
     "loading": "로딩 중...",
-    "save": "저장",
-    "cancel": "취소",
-    "reset": "재설정",
-    "add": "추가",
-    "remove": "제거",
     "delete": "삭제",
-    "edit": "편집",
-    "create": "만들기",
-    "update": "업데이트",
     "close": "닫기",
     "open": "열기",
-    "default": "기본값",
-    "enabled": "활성화됨",
-    "disabled": "비활성화됨",
-    "on": "켜짐",
-    "off": "꺼짐",
-    "yes": "예",
-    "no": "아니오",
+    "copy": "복사",
+    "clear": "지우기",
     "noOptionsFound": "옵션을 찾을 수 없습니다"
   },
   "accessibility": {
-    "permissionsRequired": "접근성 권한 필요",
     "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
-    "openSettings": "시스템 설정 열기",
-    "dismiss": "닫기"
+    "openSettings": "시스템 설정 열기"
   },
   "errors": {
-    "loadDirectory": "디렉토리 로딩 오류: {{error}}"
+    "loadDirectory": "디렉토리 로딩 오류: {{error}}",
+    "micPermissionDeniedTitle": "마이크 접근이 거부되었습니다",
+    "micPermissionDenied": {
+      "generic": "운영 체제에서 마이크 접근을 거부했습니다. 시스템 설정에서 마이크 권한을 허용해 주세요.",
+      "windows": "설정 → 개인 정보 및 보안 → 마이크(데스크톱 앱 접근 포함)에서 마이크 접근을 활성화하세요.",
+      "macos": "시스템 설정 → 개인 정보 보호 및 보안 → 마이크에서 마이크 접근을 허용하세요.",
+      "linux": "시스템의 소리 또는 개인 정보 설정에서 마이크 접근을 허용하세요."
+    },
+    "noInputDeviceTitle": "마이크를 찾을 수 없음",
+    "noInputDevice": "오디오 입력 장치가 감지되지 않았습니다. 마이크 또는 헤드셋을 연결한 후 다시 시도해 주세요.",
+    "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
+    "modelLoadFailed": "모델을 불러오지 못했습니다: {{model}}",
+    "modelLoadFailedUnknown": "알 수 없는 모델",
+    "pasteFailedTitle": "텍스트 붙여넣기 실패",
+    "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다.",
+    "transcriptionFailedTitle": "음성 인식 실패"
   },
   "appLanguage": {
     "title": "애플리케이션 언어",
     "description": "Handy 인터페이스의 언어를 변경하세요"
   },
+  "theme": {
+    "title": "앱 테마",
+    "description": "Handy가 시스템 테마를 따를지, 밝게 또는 어둡게 유지할지 선택하세요",
+    "options": {
+      "system": "시스템",
+      "light": "밝게",
+      "dark": "어둡게"
+    }
+  },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}}의 새 소식"
   }
 }

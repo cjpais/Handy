@@ -1,13 +1,16 @@
 @import "tailwindcss";
+@import "./styles/theme.css";
 
-@theme {
-  --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6;
-  --color-mid-gray: #808080;
+/* Register the shared color tokens (src/styles/theme.css) as Tailwind
+   utilities */
+@theme inline {
+  --color-text: var(--color-text);
+  --color-background: var(--color-background);
+  --color-background-ui: var(--color-background-ui);
+  --color-logo-primary: var(--color-logo-primary);
+  --color-logo-stroke: var(--color-logo-stroke);
+  --color-text-stroke: var(--color-text-stroke);
+  --color-mid-gray: var(--color-mid-gray);
 }
 
 :root {
@@ -16,19 +19,24 @@
   line-height: 24px;
   font-weight: 400;
 
-  /* Colors - Light Theme */
-  /* --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-logo-primary: #FAA2CA;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6; */
-
   /* Typography settings */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+  --scrollbar-thumb: color-mix(in srgb, var(--color-text), transparent 85%);
+  --scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--color-text),
+    transparent 70%
+  );
+
+  /* Log console surface — a subtle shade off the app background so the live log
+     viewer reads as a distinct console. In light mode this is a faint gray code
+     block (matching other surfaces); the dark theme overrides it below. */
+  --color-log-surface: color-mix(in srgb, var(--color-background), black 6%);
 
   /* Apply colors */
   color: var(--color-text);
@@ -46,12 +54,59 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Colors - Dark Theme */
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    /* Just a bit darker than the (already dark) background, keeping its warm tint */
+    --color-log-surface: color-mix(in srgb, var(--color-background), black 15%);
   }
+}
+
+/*
+ * Explicit theme override, driven by the `theme` setting via
+ * `document.documentElement.dataset.theme`. When set, the higher-specificity
+ * attribute selectors win over the `prefers-color-scheme` media query above,
+ * so a user can keep Handy light or dark regardless of the OS setting.
+ * `system` (or no attribute) leaves the OS in charge.
+ */
+:root[data-theme="light"] {
+  --color-text: var(--light-color-text);
+  --color-background: var(--light-color-background);
+  --color-logo-primary: var(--light-color-logo-primary);
+  --color-logo-stroke: var(--light-color-logo-stroke);
+}
+
+:root[data-theme="dark"] {
+  --color-text: var(--dark-color-text);
+  --color-background: var(--dark-color-background);
+  --color-logo-primary: var(--dark-color-logo-primary);
+  --color-logo-stroke: var(--dark-color-logo-stroke);
+}
+
+/* macOS - tint native overlay scrollbar thumb */
+:root[data-platform="macos"] {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* Custom Scrollbar - only on Windows/Linux; macOS uses native overlay scrollbars */
+:root:not([data-platform="macos"]) ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  border-right-width: 4px;
+  border-left-width: 3px;
+  background-clip: content-box;
+  min-height: 32px;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
 }
 
 @layer utilities {

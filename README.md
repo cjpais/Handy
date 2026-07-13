@@ -4,7 +4,7 @@
 
 **A free, open source, and extensible speech-to-text application that works completely offline.**
 
-Handy is a cross-platform desktop application built with Tauri (Rust + React/TypeScript) that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field—all without sending your voice to the cloud.
+Handy is a cross-platform desktop application that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field. This happens on your own computer without sending any information to the cloud.
 
 ## Why Handy?
 
@@ -38,6 +38,8 @@ The process is entirely local:
 
 1. Download the latest release from the [releases page](https://github.com/cjpais/Handy/releases) or the [website](https://handy.computer)
    - **macOS**: Also available via [Homebrew cask](https://formulae.brew.sh/cask/handy): `brew install --cask handy`
+   - **Windows**: Also available via [winget](https://github.com/microsoft/winget-pkgs): `winget install cjpais.Handy` \
+     **Note:** The Homebrew cask and winget package are not maintained by the Handy developers.
 2. Install the application
 3. Launch Handy and grant necessary system permissions (microphone, accessibility)
 4. Configure your preferred keyboard shortcuts in Settings
@@ -47,6 +49,14 @@ The process is entirely local:
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
+## Integrations
+
+<a href="https://www.raycast.com/mattiacolombomc/handy" title="Install Handy Raycast Extension"><img src="https://www.raycast.com/mattiacolombomc/handy/install_button@2x.png?v=1.1" height="64" style="height: 64px;" alt="Install handy Raycast Extension" /></a>
+
+Control Handy from [Raycast](https://www.raycast.com) — start/stop recording, browse transcript history, manage dictionary, switch models and languages.
+
+[Source](https://github.com/mattiacolombomc/raycast-handy) · by [@mattiacolombomc](https://github.com/mattiacolombomc)
+
 ## Architecture
 
 Handy is built as a Tauri application combining:
@@ -54,8 +64,8 @@ Handy is built as a Tauri application combining:
 - **Frontend**: React + TypeScript with Tailwind CSS for the settings UI
 - **Backend**: Rust for system integration, audio processing, and ML inference
 - **Core Libraries**:
-  - `whisper-rs`: Local speech recognition with Whisper models
-  - `transcription-rs`: CPU-optimized speech recognition with Parakeet models
+  - `transcribe-cpp`: Local speech recognition with Whisper-family models (GGML/GGUF)
+  - `transcribe-rs`: CPU-optimized speech recognition with Parakeet models
   - `cpal`: Cross-platform audio I/O
   - `vad-rs`: Voice Activity Detection
   - `rdev`: Global keyboard shortcuts and system events
@@ -151,6 +161,7 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
 - If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
+- If Handy fails to start reliably on Linux, see [Troubleshooting → Linux Startup Crashes or Instability](#linux-startup-crashes-or-instability).
 - **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the [CLI flags](#cli-parameters) as the command for your custom shortcut.
 
   **GNOME:**
@@ -198,6 +209,13 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
   ```
 
   `pkill` here simply delivers the signal—it does not terminate the process.
+
+**Overlay & Pasting Issues (Linux):**
+
+- The recording overlay window can interfere with pasting transcribed text into target applications on Linux (X11)
+- **Solution:** Open **Settings > Advanced** and set **"Overlay Position"** to **"None"** to disable the overlay
+- Enable **"Audio Feedback"** (also in Advanced) if you still want audible confirmation of recording state
+- Users who upgrade from older versions or import settings from other platforms may need to manually apply this change
 
 ### Platform Support
 
@@ -252,6 +270,41 @@ We're actively working on several features and improvements. Contributions and f
 
 - Abstract and organize Tauri command patterns
 - Investigate tauri-specta for improved type safety and organization
+
+## Verify Release Signatures
+
+Handy release artifacts are signed with Tauri's updater signature format. The public key is stored in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json) under `plugins.updater.pubkey`.
+
+To verify a release manually, set `ARTIFACT` to the filename you downloaded, save the `pubkey` value from `src-tauri/tauri.conf.json` to `handy.pub.b64`, then decode the public key and matching `.sig` file from base64 and verify the artifact with `minisign`:
+
+```bash
+# Replace with the file you downloaded
+ARTIFACT="Handy_0.8.1_amd64.AppImage"
+
+python3 - "$ARTIFACT" <<'PY'
+import base64, pathlib, sys
+
+artifact = sys.argv[1]
+
+pub = pathlib.Path("handy.pub.b64").read_text().strip()
+pathlib.Path("handy.pub").write_bytes(base64.b64decode(pub))
+
+sig = pathlib.Path(f"{artifact}.sig").read_text().strip()
+pathlib.Path(f"{artifact}.minisig").write_bytes(base64.b64decode(sig))
+PY
+
+minisign -Vm "$ARTIFACT" \
+  -p handy.pub \
+  -x "$ARTIFACT.minisig"
+```
+
+On success, `minisign` prints:
+
+```text
+Signature and comment signature verified
+```
+
+Do not use `gpg` for these `.sig` files.
 
 ## Troubleshooting
 
@@ -365,6 +418,48 @@ Handy can auto-discover custom Whisper GGML models placed in the `models` direct
 - The model must be a valid Whisper GGML format (`.bin` file)
 - Model name is derived from the filename (e.g., `my-custom-model.bin` → "My Custom Model")
 
+### Linux Startup Crashes or Instability
+
+If Handy fails to start reliably on Linux — for example, it crashes shortly after launch, never shows its window, or reports a Wayland protocol error — try the steps below in order.
+
+**1. Install (or reinstall) `gtk-layer-shell`**
+
+Handy uses `gtk-layer-shell` for its recording overlay and links against it at runtime. A missing or broken installation is the most common cause of startup failures and can manifest as a crash or a hang well before any window is shown. Make sure the runtime package is installed for your distro:
+
+| Distro        | Package to install    | Example command                        |
+| ------------- | --------------------- | -------------------------------------- |
+| Ubuntu/Debian | `libgtk-layer-shell0` | `sudo apt install libgtk-layer-shell0` |
+| Fedora/RHEL   | `gtk-layer-shell`     | `sudo dnf install gtk-layer-shell`     |
+| Arch Linux    | `gtk-layer-shell`     | `sudo pacman -S gtk-layer-shell`       |
+
+If it is already installed and you still see startup problems, try reinstalling it (e.g. `sudo pacman -S gtk-layer-shell` again) in case the library files were corrupted by a partial upgrade.
+
+**2. Disable the GTK layer shell overlay (`HANDY_NO_GTK_LAYER_SHELL`)**
+
+If installing the library does not help, you can skip `gtk-layer-shell` initialization entirely as a workaround. On some compositors (notably KDE Plasma under Wayland) it has been reported to interact poorly with the recording overlay. With this variable set, the overlay falls back to a regular always-on-top window:
+
+```bash
+HANDY_NO_GTK_LAYER_SHELL=1 handy
+```
+
+**3. Disable WebKit DMA-BUF renderer (`WEBKIT_DISABLE_DMABUF_RENDERER`)**
+
+On some GPU/driver combinations the WebKitGTK DMA-BUF renderer can cause the window to fail to render or to crash. Try:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 handy
+```
+
+**Making a workaround permanent**
+
+Once you've found a flag that helps, export it from your shell profile (`~/.bashrc`, `~/.zshenv`, …) or from the desktop autostart entry that launches Handy. If you launch Handy from a `.desktop` file, you can prefix the `Exec=` line, e.g.:
+
+```ini
+Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
+```
+
+If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
+
 ### How to Contribute
 
 1. **Check existing issues** at [github.com/cjpais/Handy/issues](https://github.com/cjpais/Handy/issues)
@@ -387,6 +482,10 @@ The goal is to create both a useful tool and a foundation for others to build up
   <a href="https://github.com/epicenter-so/epicenter">
     <img src="sponsor-images/epicenter.png" alt="Epicenter" width="120" height="120">
   </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://boltai.com?utm_source=handy">
+    <img src="sponsor-images/boltai.jpg" alt="Bolt AI" width="120" height="120">
+  </a>
 </div>
 
 ## Related Projects
@@ -398,14 +497,12 @@ The goal is to create both a useful tool and a foundation for others to build up
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
+Handy is open-source software, but the Handy name, logo, icon, and brand assets are not open-source. Unofficial forks, rewrites, and redistributions must use their own branding and must not imply endorsement or affiliation.
+
 ## Acknowledgments
 
 - **Whisper** by OpenAI for the speech recognition model
-- **whisper.cpp and ggml** for amazing cross-platform whisper inference/acceleration
+- **ggml and transcribe.cpp** for amazing cross-platform speech-to-text inference/acceleration
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
 - **Community contributors** helping make Handy better
-
----
-
-_"Your search for the right speech-to-text tool can end here—not because Handy is perfect, but because you can make it perfect for you."_
