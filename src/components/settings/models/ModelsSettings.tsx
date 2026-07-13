@@ -257,7 +257,7 @@ export const ModelsSettings: React.FC = () => {
           {systemModels.length > 0 && (
             <div className="space-y-3">
               <h2 className="text-sm font-medium text-text/60">
-                {t("theme.options.system")}
+                {t("settings.models.systemModels")}
               </h2>
               {systemModels.map((model: ModelInfo) => (
                 <ModelCard

@@ -489,14 +489,14 @@ impl ModelManager {
 
                     if supported_languages.is_empty() {
                         warn!(
-                            "SpeechTranscriber reported no supported locales; hiding system model"
+                            "Apple speech recognition reported no supported locales; hiding system model"
                         );
                     } else {
                         available_models.insert(
                             crate::speech_analyzer::MODEL_ID.to_string(),
                             ModelInfo {
                                 id: crate::speech_analyzer::MODEL_ID.to_string(),
-                                name: "Apple SpeechTranscriber".to_string(),
+                                name: "Apple Speech".to_string(),
                                 description:
                                     "Apple's built-in on-device speech recognition (macOS 26+)."
                                         .to_string(),
@@ -524,7 +524,7 @@ impl ModelManager {
                     }
                 }
                 Err(error) => warn!(
-                    "Failed to query SpeechTranscriber supported locales; hiding system model: {}",
+                    "Failed to query Apple speech recognition supported locales; hiding system model: {}",
                     error
                 ),
             }

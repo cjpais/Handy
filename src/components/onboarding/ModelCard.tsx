@@ -267,7 +267,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         {isSystemManaged && (
           <span className="flex items-center gap-1.5 ms-auto text-xs text-text/50">
             <Cpu className="w-3.5 h-3.5" />
-            <span>{t("theme.options.system")}</span>
+            <span>{t("modelSelector.system")}</span>
           </span>
         )}
         {showModelSize && (
