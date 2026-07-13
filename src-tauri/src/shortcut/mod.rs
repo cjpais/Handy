@@ -83,10 +83,14 @@ fn unregister_dynamic_shortcut(app: &AppHandle, binding_id: &'static str) {
     }
 }
 
-/// Register the recording-scoped shortcuts (called when recording starts)
+/// Register the recording-scoped shortcuts (called when recording starts).
+/// The stop key is toggle-mode only: in push-to-talk, releasing the key
+/// already stops the recording, so registering a stop key would only
+/// swallow keystrokes (the UI hides the setting in push-to-talk too).
 pub fn register_recording_shortcuts(app: &AppHandle) {
     register_dynamic_shortcut(app, "cancel");
-    if get_settings(app).stop_key_enabled {
+    let settings = get_settings(app);
+    if settings.stop_key_enabled && !settings.push_to_talk {
         register_dynamic_shortcut(app, "stop");
     }
 }
