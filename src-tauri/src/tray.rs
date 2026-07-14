@@ -192,14 +192,21 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
         settings_accelerator,
     )
     .expect("failed to create settings item");
-    let check_updates_i = MenuItem::with_id(
-        app,
-        "check_updates",
-        &strings.check_updates,
-        settings.update_checks_enabled,
-        None::<&str>,
-    )
-    .expect("failed to create check updates item");
+    // When update checks are forced off (e.g. HANDY_DISABLE_UPDATER, set by the
+    // Nix package), the item is not created at all rather than shown disabled —
+    // it can never do anything in that case, and a disabled item still shifts
+    // every entry below it by one position. A manually-disabled toggle in
+    // Debug Settings keeps the old greyed-out behavior via the enabled flag.
+    let check_updates_i = (!settings::update_checks_forced_disabled()).then(|| {
+        MenuItem::with_id(
+            app,
+            "check_updates",
+            &strings.check_updates,
+            settings.update_checks_enabled,
+            None::<&str>,
+        )
+        .expect("failed to create check updates item")
+    });
     let copy_last_transcript_i = MenuItem::with_id(
         app,
         "copy_last_transcript",
@@ -261,14 +268,6 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
             .expect("failed to create cancel item")
     });
 
-    // When update checks are forced off (e.g. HANDY_DISABLE_UPDATER, set by the
-    // Nix package), the item is dropped from the menu entirely rather than shown
-    // disabled — it can never do anything in that case, and a disabled item still
-    // shifts every entry below it by one position. A manually-disabled toggle in
-    // Debug Settings keeps the old greyed-out behavior via `check_updates_i`'s
-    // `enabled` flag above.
-    let update_checks_locked = settings::update_checks_forced_disabled();
-
     let sep_1 = separator();
     let sep_2 = separator();
     let sep_3 = separator();
@@ -298,8 +297,8 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
         }
     }
 
-    if !update_checks_locked {
-        items.push(&check_updates_i);
+    if let Some(ref item) = check_updates_i {
+        items.push(item);
     }
 
     items.push(&sep_4);
