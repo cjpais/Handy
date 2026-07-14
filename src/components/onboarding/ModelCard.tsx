@@ -45,8 +45,7 @@ const getLanguageDisplayText = (
 export const isLegacySource = (model: ModelInfo): boolean =>
   typeof model.source === "object" && "Url" in model.source;
 
-export const isSystemSource = (model: ModelInfo): boolean =>
-  model.source === "System";
+const isSystemSource = (model: ModelInfo): boolean => model.source === "System";
 
 // Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").
 const getQuantLabel = (filename: string): string | null => {
