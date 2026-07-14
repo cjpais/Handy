@@ -171,6 +171,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                     disabled={isBusy}
                     onSelect={handleSelectExistingModel}
                     showRecommended={false}
+                    isOnboarding={true}
                   />
                 ))}
             </div>
@@ -197,6 +198,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                   downloadProgress={getModelDownloadProgress(model.id)}
                   downloadSpeed={getModelDownloadSpeed(model.id)}
                   showRecommended={false}
+                  isOnboarding={true}
                 />
               ))}
 
@@ -212,6 +214,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                   downloadProgress={getModelDownloadProgress(model.id)}
                   downloadSpeed={getModelDownloadSpeed(model.id)}
                   showRecommended={false}
+                  isOnboarding={true}
                 />
               ))}
 
@@ -247,6 +250,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                     downloadProgress={getModelDownloadProgress(model.id)}
                     downloadSpeed={getModelDownloadSpeed(model.id)}
                     showRecommended={false}
+                    isOnboarding={true}
                   />
                 ))}
             </div>
