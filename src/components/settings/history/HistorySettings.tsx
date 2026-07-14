@@ -345,7 +345,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await retryTranscription(entry.id);
     } catch (error) {
       console.error("Failed to re-transcribe:", error);
-      toast.error(t("settings.history.retranscribeError"));
+      toast.error(t("settings.history.retranscribeError"), {
+        description:
+          error instanceof Error ? error.message : String(error),
+      });
     } finally {
       setRetrying(false);
     }
