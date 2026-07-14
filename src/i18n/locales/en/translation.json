@@ -96,7 +96,7 @@
       },
       "apple-speechanalyzer": {
         "name": "Apple Speech",
-        "description": "Apple's built-in on-device speech recognition (macOS 26+). Speech assets are downloaded by macOS on first use."
+        "description": "Apple's new on-device SpeechAnalyzer engine (macOS 26+). Speech assets are downloaded and managed by macOS."
       }
     },
     "errors": {

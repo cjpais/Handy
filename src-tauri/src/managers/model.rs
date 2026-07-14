@@ -506,7 +506,7 @@ impl ModelManager {
                                 id: crate::speech_analyzer::MODEL_ID.to_string(),
                                 name: "Apple Speech".to_string(),
                                 description:
-                                    "Apple's built-in on-device speech recognition (macOS 26+). Speech assets are downloaded by macOS on first use."
+                                    "Apple's new on-device SpeechAnalyzer engine (macOS 26+). Speech assets are downloaded and managed by macOS."
                                         .to_string(),
                                 filename: String::new(),
                                 source: ModelSource::System,
