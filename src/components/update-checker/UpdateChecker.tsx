@@ -23,9 +23,13 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const [showPortableUpdateDialog, setShowPortableUpdateDialog] =
     useState(false);
 
-  const { settings, isLoading } = useSettings();
+  const { settings, isLoading, updateChecksLocked } = useSettings();
   const settingsLoaded = !isLoading && settings !== null;
-  const updateChecksEnabled = settings?.update_checks_enabled ?? false;
+  // Forced-off by system configuration (HANDY_DISABLE_UPDATER) overrides the
+  // stored preference without persisting it, mirroring the backend's effective
+  // updater state.
+  const updateChecksEnabled =
+    (settings?.update_checks_enabled ?? false) && !updateChecksLocked;
 
   const upToDateTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const isManualCheckRef = useRef(false);

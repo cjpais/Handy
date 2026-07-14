@@ -981,10 +981,6 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
-    if update_checks_forced_disabled() {
-        settings.update_checks_enabled = false;
-    }
-
     settings
 }
 
@@ -1093,6 +1089,14 @@ fn apply_settings_migrations(
 /// can't work against an immutable /nix/store install.
 pub fn update_checks_forced_disabled() -> bool {
     utils::env_flag_enabled("HANDY_DISABLE_UPDATER")
+}
+
+/// Effective updater state: the user's stored preference, overridden to `false`
+/// while `HANDY_DISABLE_UPDATER` is set. Callers deciding whether to actually
+/// check for updates must use this rather than reading `update_checks_enabled`
+/// directly, so the forced-off state never leaks into the persisted setting.
+pub fn update_checks_effectively_enabled(settings: &AppSettings) -> bool {
+    settings.update_checks_enabled && !update_checks_forced_disabled()
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
