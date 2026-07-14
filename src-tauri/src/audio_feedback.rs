@@ -141,6 +141,11 @@ fn wait_for_play(settings: &AppSettings, path: PathBuf) {
     }
 }
 
+/// If a chime hasn't finished within this bound, its output stream is
+/// considered a zombie (frozen audio clock after a device state change —
+/// observed with wireless headsets) and gets scrapped.
+const PLAYBACK_STALL_TIMEOUT: Duration = Duration::from_secs(5);
+
 fn playback_worker(rx: mpsc::Receiver<Request>) {
     // The output stream is created once and kept open across transcriptions.
     // Recreating it per chime is what raced concurrent WASAPI session state
@@ -161,11 +166,11 @@ fn playback_worker(rx: mpsc::Receiver<Request>) {
                 if let Some((_, stream)) = ensure_stream(&mut cached, device) {
                     if let Err(e) = play_on_stream(stream, &path, volume) {
                         error!(
-                            "Failed to play sound '{}': {}; dropping cached output stream",
+                            "Failed to play sound '{}': {}; scrapping output stream",
                             path.display(),
                             e
                         );
-                        cached = None;
+                        scrap_stream(&mut cached);
                     }
                 }
                 if let Some(done) = done {
@@ -176,14 +181,22 @@ fn playback_worker(rx: mpsc::Receiver<Request>) {
     }
 }
 
+/// Dispose of the cached stream on a throwaway thread. Dropping a cpal
+/// stream whose device wedged can block indefinitely — that must park a
+/// disposable thread, never this worker.
+fn scrap_stream(cached: &mut Option<(Option<String>, rodio::OutputStream)>) {
+    if let Some((_, stream)) = cached.take() {
+        thread::spawn(move || drop(stream));
+    }
+}
+
 fn ensure_stream(
     cached: &mut Option<(Option<String>, rodio::OutputStream)>,
     device: Option<String>,
 ) -> Option<&(Option<String>, rodio::OutputStream)> {
     let stale = cached.as_ref().map(|(d, _)| d != &device).unwrap_or(true);
     if stale {
-        // Drop any previous stream before opening the replacement.
-        *cached = None;
+        scrap_stream(cached);
         match create_stream(device.as_deref()) {
             Ok(stream) => *cached = Some((device, stream)),
             Err(e) => error!("Failed to open audio feedback output stream: {}", e),
@@ -230,6 +243,20 @@ fn play_on_stream(
     let file = File::open(path)?;
     let sink = rodio::play(stream.mixer(), BufReader::new(file))?;
     sink.set_volume(volume);
-    sink.sleep_until_end();
+    // Bounded wait instead of sleep_until_end(): a stream whose device
+    // changed state underneath it stops consuming samples without erroring,
+    // and an unbounded wait would wedge the worker on it forever.
+    let started = std::time::Instant::now();
+    while !sink.empty() {
+        if started.elapsed() > PLAYBACK_STALL_TIMEOUT {
+            sink.stop();
+            return Err(format!(
+                "playback did not finish within {:?} (zombie output stream?)",
+                PLAYBACK_STALL_TIMEOUT
+            )
+            .into());
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
     Ok(())
 }

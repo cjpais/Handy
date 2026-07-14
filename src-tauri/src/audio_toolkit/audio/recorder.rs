@@ -328,7 +328,10 @@ impl AudioRecorder {
         if let Some(tx) = &self.cmd_tx {
             tx.send(Cmd::Stop(resp_tx))?;
         }
-        Ok(resp_rx.recv()?) // wait for the samples
+        // Bounded wait: if the audio stack is wedged (e.g. a WASAPI hang took
+        // the capture callback down), the worker may never reply. Losing one
+        // utterance is recoverable; a forever-busy pipeline is not.
+        Ok(resp_rx.recv_timeout(Duration::from_secs(5))?)
     }
 
     pub fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -336,7 +339,19 @@ impl AudioRecorder {
             let _ = tx.send(Cmd::Shutdown);
         }
         if let Some(h) = self.worker_handle.take() {
-            let _ = h.join();
+            // Bounded join via a reaper thread: dropping the cpal stream on a
+            // wedged audio engine can block indefinitely, and that must not
+            // freeze the caller. A detached parked thread is the lesser evil.
+            let (done_tx, done_rx) = mpsc::channel();
+            std::thread::spawn(move || {
+                let _ = h.join();
+                let _ = done_tx.send(());
+            });
+            if done_rx.recv_timeout(Duration::from_secs(3)).is_err() {
+                log::warn!(
+                    "Mic worker did not shut down within 3s; detaching it (audio stack wedged?)"
+                );
+            }
         }
         self.device = None;
         Ok(())
@@ -597,13 +612,21 @@ fn run_consumer(
         }
     }
 
-    // Runs until the stream closes and `recv` returns `Err`.
-    while let Ok(chunk) = sample_rx.recv() {
+    // Runs until the stream closes and `recv` returns `Err(Disconnected)`.
+    // The timeout matters: commands must stay serviceable even when the
+    // capture callback stops delivering chunks (wedged audio engine, dead
+    // device) — otherwise a Stop/Shutdown sits unread and the caller hangs.
+    loop {
+        let chunk = match sample_rx.recv_timeout(Duration::from_millis(250)) {
+            Ok(chunk) => Some(chunk),
+            Err(mpsc::RecvTimeoutError::Timeout) => None,
+            Err(mpsc::RecvTimeoutError::Disconnected) => return,
+        };
         // Handle pending commands BEFORE the in-flight chunk so a Start
         // captures it. Commands used to be polled after processing, which
         // silently dropped one buffer period of audio (~10ms built-in, up to
         // ~100ms on Bluetooth) at every recording start.
-        let mut pending = Some(chunk);
+        let mut pending = chunk;
         while let Ok(cmd) = cmd_rx.try_recv() {
             match cmd {
                 Cmd::Start(policy, sent_at) => {
