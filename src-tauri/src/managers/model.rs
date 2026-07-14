@@ -121,6 +121,20 @@ fn canonicalize_supported_languages(languages: Vec<String>) -> Vec<String> {
     canonical
 }
 
+/// Map the raw BCP-47 locale list reported by Apple's SpeechAnalyzer
+/// (`en-US`, `en-GB`, `zh-CN`, …) to the deduplicated base-language codes the
+/// language picker works with (`en`, `zh`, …), sorted for stable display.
+fn speech_analyzer_languages(locales: Vec<String>) -> Vec<String> {
+    let mut languages = canonicalize_supported_languages(
+        locales
+            .into_iter()
+            .map(|locale| base_language(&locale).to_string())
+            .collect(),
+    );
+    languages.sort();
+    languages
+}
+
 /// One downloadable quantization of a model. Mirrors a `files[]` entry in
 /// `catalog.json`, so it deserializes straight from the catalog.
 #[derive(Debug, Clone, Deserialize)]
@@ -479,13 +493,7 @@ impl ModelManager {
         if crate::speech_analyzer::is_available() {
             match crate::speech_analyzer::supported_locales() {
                 Ok(locales) => {
-                    let mut supported_languages = canonicalize_supported_languages(
-                        locales
-                            .into_iter()
-                            .map(|locale| base_language(&locale).to_string())
-                            .collect(),
-                    );
-                    supported_languages.sort();
+                    let supported_languages = speech_analyzer_languages(locales);
 
                     if supported_languages.is_empty() {
                         warn!(
@@ -2489,6 +2497,51 @@ mod tests {
 
         assert_eq!(effective_language("zh-Hans", &languages, true), "zh-Hans");
         assert_eq!(effective_language("zh-Hant", &languages, true), "zh-Hant");
+    }
+
+    #[test]
+    fn test_effective_language_never_yields_auto_without_detection_support() {
+        // Load-bearing for Apple SpeechAnalyzer: the load path resolves the
+        // user's language via effective_language() and hands the result
+        // straight to the OS as a locale identifier (ffi::prepare). The model
+        // registers with supports_language_detection = false, so the only
+        // thing keeping the literal string "auto" — the default setting —
+        // from reaching the OS is this fallback resolving to a concrete
+        // language, preferring English.
+        let languages: Vec<String> = vec!["de", "en", "es"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        assert_eq!(effective_language("auto", &languages, false), "en");
+        // Same invariant when the user picked a language the model lacks.
+        assert_eq!(effective_language("fr", &languages, false), "en");
+    }
+
+    #[test]
+    fn test_speech_analyzer_languages_collapses_locales_for_picker() {
+        // SpeechAnalyzer reports full BCP-47 locales, but the language picker
+        // and effective_language() matching work on base codes. Regressions
+        // here surface as duplicate entries in the picker (en-US + en-GB) or
+        // a wrongly enabled picker for a single-language asset list.
+        let result = speech_analyzer_languages(
+            vec!["en-US", "en-GB", "zh-CN", "zh-TW", "yue-CN", "de-DE"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        );
+
+        // Deduplicated to base codes (yue is its own language, not zh), sorted.
+        assert_eq!(result, vec!["de", "en", "yue", "zh"]);
+
+        // Regional variants of one language collapse to a single entry, so
+        // supports_language_selection (len > 1) stays off.
+        let single = speech_analyzer_languages(vec![
+            "en-US".to_string(),
+            "en-GB".to_string(),
+            "en-AU".to_string(),
+        ]);
+        assert_eq!(single, vec!["en"]);
     }
 
     #[test]

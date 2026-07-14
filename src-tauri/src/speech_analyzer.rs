@@ -219,4 +219,16 @@ mod tests {
             "She said. \"Hello world\""
         );
     }
+
+    #[test]
+    fn treats_ellipsis_as_sentence_end() {
+        // `…` is in the sentence-end matcher alongside `.!?` — SpeechTranscriber
+        // emits it for trailing-off speech. Pinned separately because it's the
+        // one member of that set a rewrite of the matcher would most plausibly
+        // drop (it's easy to forget it's a single char, not three dots).
+        assert_eq!(
+            capitalize_sentence_starts("well… maybe tomorrow"),
+            "Well… Maybe tomorrow"
+        );
+    }
 }
