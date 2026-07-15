@@ -22,6 +22,7 @@ import {
 } from "../../lib/constants/languages";
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 // Get display text for model's language support
 const getLanguageDisplayText = (
@@ -91,6 +92,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
   showRecommended = true,
 }) => {
   const { t } = useTranslation();
+  const debugMode = useSettingsStore(
+    (state) => state.settings?.debug_mode ?? false,
+  );
   const isFeatured = variant === "featured";
   const isClickable =
     status === "available" || status === "active" || status === "downloadable";
@@ -264,7 +268,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
               <HardDrive className="w-3.5 h-3.5" />
             )}
             <span>{formattedModelSize}</span>
-            {quantLabel && <span className="text-text/40">{quantLabel}</span>}
+            {debugMode && quantLabel && (
+              <span className="text-text/40">{quantLabel}</span>
+            )}
           </span>
         )}
         {onDelete && (status === "available" || status === "active") && (
