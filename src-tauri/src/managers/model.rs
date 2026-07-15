@@ -525,7 +525,7 @@ impl ModelManager {
                                 supports_language_selection: supported_languages.len() > 1,
                                 supported_languages,
                                 is_custom: false,
-                                supports_streaming: false,
+                                supports_streaming: true,
                                 supports_language_detection: false,
                             },
                         );

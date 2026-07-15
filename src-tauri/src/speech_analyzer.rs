@@ -2,13 +2,15 @@
 //! The Swift side is compiled by build.rs (see swift/speech_analyzer.swift);
 //! on unsupported platforms every call reports unavailable.
 
+use serde::Deserialize;
+use std::ffi::c_void;
 use std::sync::Mutex;
 
 pub const MODEL_ID: &str = "apple-speechanalyzer";
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod ffi {
-    use std::ffi::{c_char, c_float, c_int, CStr, CString};
+    use std::ffi::{c_char, c_float, c_int, c_void, CStr, CString};
 
     #[repr(C)]
     pub struct SpeechAnalyzerResponse {
@@ -26,6 +28,19 @@ mod ffi {
             sample_count: c_int,
             locale_id: *const c_char,
         ) -> *mut SpeechAnalyzerResponse;
+        fn speech_analyzer_stream_start(
+            locale_id: *const c_char,
+            stream_out: *mut *mut c_void,
+        ) -> *mut SpeechAnalyzerResponse;
+        fn speech_analyzer_stream_feed(
+            stream: *mut c_void,
+            samples: *const c_float,
+            sample_count: c_int,
+        ) -> *mut SpeechAnalyzerResponse;
+        fn speech_analyzer_stream_snapshot(stream: *mut c_void) -> *mut SpeechAnalyzerResponse;
+        fn speech_analyzer_stream_finish(stream: *mut c_void) -> *mut SpeechAnalyzerResponse;
+        fn speech_analyzer_stream_cancel(stream: *mut c_void) -> *mut SpeechAnalyzerResponse;
+        fn free_speech_analyzer_stream(stream: *mut c_void);
         fn free_speech_analyzer_response(response: *mut SpeechAnalyzerResponse);
     }
 
@@ -85,10 +100,47 @@ mod ffi {
             unsafe { speech_analyzer_transcribe(samples.as_ptr(), count, locale_cstr.as_ptr()) };
         consume_response(ptr)
     }
+
+    pub fn stream_start(locale: &str) -> Result<*mut c_void, String> {
+        let locale_cstr = CString::new(locale).map_err(|e| e.to_string())?;
+        let mut stream = std::ptr::null_mut();
+        let response = unsafe { speech_analyzer_stream_start(locale_cstr.as_ptr(), &mut stream) };
+        consume_response(response)?;
+        if stream.is_null() {
+            Err("SpeechAnalyzer returned a null stream".to_string())
+        } else {
+            Ok(stream)
+        }
+    }
+
+    pub fn stream_feed(stream: *mut c_void, samples: &[f32]) -> Result<(), String> {
+        let count = c_int::try_from(samples.len())
+            .map_err(|_| "Audio chunk too long for SpeechAnalyzer bridge".to_string())?;
+        let response = unsafe { speech_analyzer_stream_feed(stream, samples.as_ptr(), count) };
+        consume_response(response).map(|_| ())
+    }
+
+    pub fn stream_snapshot(stream: *mut c_void) -> Result<String, String> {
+        consume_response(unsafe { speech_analyzer_stream_snapshot(stream) })
+    }
+
+    pub fn stream_finish(stream: *mut c_void) -> Result<String, String> {
+        consume_response(unsafe { speech_analyzer_stream_finish(stream) })
+    }
+
+    pub fn stream_cancel(stream: *mut c_void) -> Result<(), String> {
+        consume_response(unsafe { speech_analyzer_stream_cancel(stream) }).map(|_| ())
+    }
+
+    pub unsafe fn stream_free(stream: *mut c_void) {
+        unsafe { free_speech_analyzer_stream(stream) };
+    }
 }
 
 #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
 mod ffi {
+    use std::ffi::c_void;
+
     pub fn available() -> bool {
         false
     }
@@ -104,6 +156,28 @@ mod ffi {
     pub fn transcribe(_samples: &[f32], _locale: &str) -> Result<String, String> {
         Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
     }
+
+    pub fn stream_start(_locale: &str) -> Result<*mut c_void, String> {
+        Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
+    }
+
+    pub fn stream_feed(_stream: *mut c_void, _samples: &[f32]) -> Result<(), String> {
+        Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
+    }
+
+    pub fn stream_snapshot(_stream: *mut c_void) -> Result<String, String> {
+        Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
+    }
+
+    pub fn stream_finish(_stream: *mut c_void) -> Result<String, String> {
+        Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
+    }
+
+    pub fn stream_cancel(_stream: *mut c_void) -> Result<(), String> {
+        Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
+    }
+
+    pub unsafe fn stream_free(_stream: *mut c_void) {}
 }
 
 pub fn is_available() -> bool {
@@ -114,9 +188,68 @@ pub fn supported_locales() -> Result<Vec<String>, String> {
     ffi::supported_locales()
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpeechAnalyzerStreamResultEvent {
+    pub revision: u64,
+    pub elapsed_ms: u64,
+    pub is_final: bool,
+    pub text: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpeechAnalyzerStreamSnapshot {
+    pub revision: u64,
+    pub committed: String,
+    pub tentative: String,
+    pub events: Vec<SpeechAnalyzerStreamResultEvent>,
+}
+
+pub struct SpeechAnalyzerStream {
+    handle: *mut c_void,
+    finished: bool,
+}
+
+impl SpeechAnalyzerStream {
+    pub fn feed(&mut self, samples: &[f32]) -> Result<(), String> {
+        ffi::stream_feed(self.handle, samples)
+    }
+
+    pub fn snapshot(&self) -> Result<SpeechAnalyzerStreamSnapshot, String> {
+        let json = ffi::stream_snapshot(self.handle)?;
+        serde_json::from_str(&json)
+            .map_err(|error| format!("Invalid SpeechAnalyzer stream snapshot: {error}"))
+    }
+
+    pub fn finish(&mut self) -> Result<String, String> {
+        let result = ffi::stream_finish(self.handle);
+        self.finished = true;
+        result
+    }
+
+    pub fn cancel(&mut self) -> Result<(), String> {
+        let result = ffi::stream_cancel(self.handle);
+        self.finished = true;
+        result
+    }
+}
+
+impl Drop for SpeechAnalyzerStream {
+    fn drop(&mut self) {
+        if self.handle.is_null() {
+            return;
+        }
+        if !self.finished {
+            let _ = ffi::stream_cancel(self.handle);
+        }
+        unsafe { ffi::stream_free(self.handle) };
+        self.handle = std::ptr::null_mut();
+    }
+}
+
 /// Handle held by the transcription manager while the SpeechAnalyzer "model"
-/// is loaded. The Swift side is stateless per call, so this only carries the
-/// resolved locale.
+/// is loaded. Batch calls create short-lived analyzers; live transcription
+/// creates a separate [`SpeechAnalyzerStream`] while retaining this locale.
 pub struct SpeechAnalyzerEngine {
     locale: Mutex<String>,
 }
@@ -138,97 +271,44 @@ impl SpeechAnalyzerEngine {
         })
     }
 
-    /// Transcribe 16 kHz mono f32 PCM. `language` overrides the load-time
-    /// locale when the user changed it between load and dictation.
-    pub fn transcribe(&self, samples: &[f32], language: Option<&str>) -> Result<String, String> {
-        let locale = language.map(str::to_string).unwrap_or_else(|| {
+    fn resolve_locale(&self, language: Option<&str>) -> String {
+        language.map(str::to_string).unwrap_or_else(|| {
             self.locale
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .clone()
-        });
+        })
+    }
 
+    fn prepare_locale(&self, locale: &str) -> Result<(), String> {
         // AssetInventory may retire an unused asset between runs, and the user
         // may have changed languages since load. Rechecking is cheap when the
         // asset is installed and re-downloads it when the OS evicted it.
-        ffi::prepare(&locale)?;
+        ffi::prepare(locale)?;
         *self
             .locale
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = locale.clone();
-        ffi::transcribe(samples, &locale).map(|text| capitalize_sentence_starts(&text))
-    }
-}
-
-/// SpeechTranscriber punctuates well but leaves sentence starts lowercase
-/// (its `TranscriptionOption` set has no casing knob), so uppercase the first
-/// letter of the text and of each sentence after `.`, `!`, `?`, or `…`.
-/// A no-op for uncased scripts and for already-capitalized letters.
-fn capitalize_sentence_starts(text: &str) -> String {
-    let mut result = String::with_capacity(text.len());
-    let mut at_sentence_start = true;
-    let mut chars = text.chars().peekable();
-
-    while let Some(c) = chars.next() {
-        if at_sentence_start && c.is_alphabetic() {
-            result.extend(c.to_uppercase());
-            at_sentence_start = false;
-            continue;
-        }
-        // Punctuation counts as a sentence end only when followed by
-        // whitespace (or end of text) so decimals like "3.5" stay intact.
-        // Quotes and brackets pass through without consuming the sentence
-        // start; anything else (digits, mid-sentence letters) consumes it.
-        if matches!(c, '.' | '!' | '?' | '…')
-            && chars.peek().is_none_or(|next| next.is_whitespace())
-        {
-            at_sentence_start = true;
-        } else if !c.is_whitespace() && !matches!(c, '"' | '\'' | '“' | '”' | '(' | '[') {
-            at_sentence_start = false;
-        }
-        result.push(c);
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = locale.to_string();
+        Ok(())
     }
 
-    result
-}
-
-#[cfg(test)]
-mod tests {
-    use super::capitalize_sentence_starts;
-
-    #[test]
-    fn capitalizes_first_letter_and_after_sentence_punctuation() {
-        assert_eq!(
-            capitalize_sentence_starts("hello there. how are you? great! okay"),
-            "Hello there. How are you? Great! Okay"
-        );
+    /// Transcribe 16 kHz mono f32 PCM. `language` overrides the load-time
+    /// locale when the user changed it between load and dictation.
+    pub fn transcribe(&self, samples: &[f32], language: Option<&str>) -> Result<String, String> {
+        let locale = self.resolve_locale(language);
+        self.prepare_locale(&locale)?;
+        ffi::transcribe(samples, &locale)
     }
 
-    #[test]
-    fn ignores_decimals_and_leaves_numbers_alone() {
-        assert_eq!(
-            capitalize_sentence_starts("it costs 3.5 dollars. 6 people paid"),
-            "It costs 3.5 dollars. 6 people paid"
-        );
-    }
-
-    #[test]
-    fn capitalizes_through_opening_quotes() {
-        assert_eq!(
-            capitalize_sentence_starts("she said. \"hello world\""),
-            "She said. \"Hello world\""
-        );
-    }
-
-    #[test]
-    fn treats_ellipsis_as_sentence_end() {
-        // `…` is in the sentence-end matcher alongside `.!?` — SpeechTranscriber
-        // emits it for trailing-off speech. Pinned separately because it's the
-        // one member of that set a rewrite of the matcher would most plausibly
-        // drop (it's easy to forget it's a single char, not three dots).
-        assert_eq!(
-            capitalize_sentence_starts("well… maybe tomorrow"),
-            "Well… Maybe tomorrow"
-        );
+    /// Start a long-lived analyzer session that accepts incremental audio and
+    /// exposes final plus volatile transcription snapshots.
+    pub fn start_stream(&self, language: Option<&str>) -> Result<SpeechAnalyzerStream, String> {
+        let locale = self.resolve_locale(language);
+        self.prepare_locale(&locale)?;
+        let handle = ffi::stream_start(&locale)?;
+        Ok(SpeechAnalyzerStream {
+            handle,
+            finished: false,
+        })
     }
 }

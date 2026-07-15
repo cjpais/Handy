@@ -36,6 +36,8 @@ use transcribe_rs::{
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 const STREAM_FINALIZE_REPLY_TIMEOUT: Duration = Duration::from_secs(30);
+const APPLE_STREAM_CHUNK_SAMPLES: usize = 1_600; // 100 ms at 16 kHz.
+const APPLE_STREAM_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -88,8 +90,8 @@ pub struct StreamPhaseEvent {
 /// is processed before finalize runs.
 enum StreamCmd {
     Feed(Vec<f32>),
-    /// Flush the stream and reply with the final text, or `None` if no stream
-    /// was ever active (caller should fall back to batch transcription).
+    /// Flush the stream and reply with its result, or `None` if no stream was
+    /// ever active (caller should fall back to batch transcription).
     Finalize(mpsc::Sender<Option<String>>),
     Cancel,
 }
@@ -244,8 +246,8 @@ pub struct TranscriptionManager {
     /// [`StreamRouter`]. Shared with the audio recorder so per-frame feeds skip
     /// Tauri state and the manager lock.
     router: Arc<StreamRouter>,
-    /// True only while a transcribe-cpp `Stream` is actually in flight (set by
-    /// the worker once `stream()` succeeds). Used for overlay/UI decisions.
+    /// True only while a native or transcribe-cpp stream is actually in flight
+    /// (set by the worker once startup succeeds). Used for overlay/UI decisions.
     stream_active: Arc<AtomicBool>,
     /// Streaming uses four independent flags: router open = frames should route,
     /// worker active = no second worker may start, engine lease = engine is out
@@ -863,9 +865,22 @@ impl TranscriptionManager {
             }
         };
 
-        // Only transcribe-cpp models expose streaming; ONNX engines fall back to
-        // batch. The loaded session (not the ModelManager copy) is the source of
-        // truth for run-path capabilities.
+        // SpeechAnalyzer exposes its own native incremental input and volatile
+        // result stream. Run it through the same router/overlay contract as
+        // transcribe-cpp, then return the stateless engine before replying so a
+        // failed stream can immediately fall back to batch transcription.
+        if let LoadedEngine::SpeechAnalyzer(speech_analyzer) = &engine {
+            let outcome = self.run_speech_analyzer_stream(speech_analyzer, rx, &model_id);
+            self.return_engine(engine, &model_id);
+            if let Some((reply, result)) = outcome {
+                let _ = reply.send(result);
+            }
+            return;
+        }
+
+        // Transcribe-cpp is the other streaming implementation; ONNX engines
+        // fall back to batch. The loaded session (not the ModelManager copy) is
+        // the source of truth for run-path capabilities.
         let (supports_streaming, supports_translate, languages) = match &engine {
             LoadedEngine::TranscribeCpp(session) => {
                 let model = session.model();
@@ -1044,6 +1059,145 @@ impl TranscriptionManager {
         }
         // `_worker` drops here, clearing this worker's active/lease flags after
         // the engine has been returned to the pool.
+    }
+
+    fn run_speech_analyzer_stream(
+        &self,
+        engine: &SpeechAnalyzerEngine,
+        rx: mpsc::Receiver<StreamCmd>,
+        model_id: &str,
+    ) -> Option<(mpsc::Sender<Option<String>>, Option<String>)> {
+        let settings = get_settings(&self.app_handle);
+        let language =
+            effective_language_for_model(&settings, self.model_manager.as_ref(), model_id);
+        let language = (language != "auto").then_some(language.as_str());
+
+        let mut stream = match engine.start_stream(language) {
+            Ok(stream) => stream,
+            Err(error) => {
+                error!("Failed to begin SpeechAnalyzer stream: {error}");
+                return wait_for_stream_finalize(rx).map(|reply| (reply, None));
+            }
+        };
+
+        self.stream_active.store(true, Ordering::Release);
+        self.touch_activity();
+        info!("Native Apple live transcription started (model '{model_id}')");
+
+        let started = Instant::now();
+        let mut pending_audio = Vec::with_capacity(APPLE_STREAM_CHUNK_SAMPLES * 2);
+        let mut streamed_samples = 0usize;
+        let mut last_revision = 0u64;
+        let mut last_poll = Instant::now();
+
+        loop {
+            let command = rx.recv_timeout(APPLE_STREAM_POLL_INTERVAL);
+            let mut should_poll = false;
+
+            match command {
+                Ok(StreamCmd::Feed(pcm)) => {
+                    streamed_samples += pcm.len();
+                    pending_audio.extend_from_slice(&pcm);
+                    if pending_audio.len() >= APPLE_STREAM_CHUNK_SAMPLES {
+                        let chunk = std::mem::take(&mut pending_audio);
+                        if let Err(error) = stream.feed(&chunk) {
+                            error!("SpeechAnalyzer stream feed failed: {error}");
+                            let _ = stream.cancel();
+                            return wait_for_stream_finalize(rx).map(|reply| (reply, None));
+                        }
+                        pending_audio.reserve(APPLE_STREAM_CHUNK_SAMPLES * 2);
+                        self.touch_activity();
+                        should_poll = true;
+                    }
+                }
+                Ok(StreamCmd::Finalize(reply)) => {
+                    if !pending_audio.is_empty() {
+                        if let Err(error) = stream.feed(&pending_audio) {
+                            error!("SpeechAnalyzer final stream feed failed: {error}");
+                            let _ = stream.cancel();
+                            return Some((reply, None));
+                        }
+                    }
+
+                    let result = match stream.finish() {
+                        Ok(text) => {
+                            info!(
+                                "Native Apple live transcription finalized in {:.2}s for {:.2}s of audio ({} chars)",
+                                started.elapsed().as_secs_f64(),
+                                streamed_samples as f64 / 16_000.0,
+                                text.len()
+                            );
+                            Some(text)
+                        }
+                        Err(error) => {
+                            error!(
+                                "SpeechAnalyzer stream finalize failed: {error}; falling back to batch transcription"
+                            );
+                            None
+                        }
+                    };
+                    return Some((reply, result));
+                }
+                Ok(StreamCmd::Cancel) => {
+                    if let Err(error) = stream.cancel() {
+                        warn!("Failed to cancel SpeechAnalyzer stream: {error}");
+                    }
+                    return None;
+                }
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    // Flush a short trailing callback even if it has not reached
+                    // the preferred 100 ms chunk size, then poll for result
+                    // revisions while the speaker pauses.
+                    if !pending_audio.is_empty() {
+                        let chunk = std::mem::take(&mut pending_audio);
+                        if let Err(error) = stream.feed(&chunk) {
+                            error!("SpeechAnalyzer stream feed failed: {error}");
+                            let _ = stream.cancel();
+                            return wait_for_stream_finalize(rx).map(|reply| (reply, None));
+                        }
+                        pending_audio.reserve(APPLE_STREAM_CHUNK_SAMPLES * 2);
+                    }
+                    should_poll = true;
+                }
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    let _ = stream.cancel();
+                    return None;
+                }
+            }
+
+            if should_poll && last_poll.elapsed() >= APPLE_STREAM_POLL_INTERVAL {
+                match stream.snapshot() {
+                    Ok(snapshot) => {
+                        for event in &snapshot.events {
+                            debug!(
+                                "Apple live result: revision={} analyzer_elapsed={}ms audio_received={:.2}s final={} chars={} text={:?}",
+                                event.revision,
+                                event.elapsed_ms,
+                                streamed_samples as f64 / 16_000.0,
+                                event.is_final,
+                                event.text.chars().count(),
+                                event.text
+                            );
+                        }
+                        if snapshot.revision != last_revision {
+                            last_revision = snapshot.revision;
+                            debug!(
+                                "Apple live overlay snapshot: committed_chars={} tentative_chars={}",
+                                snapshot.committed.chars().count(),
+                                snapshot.tentative.chars().count()
+                            );
+                            self.emit_stream_text(&snapshot.committed, &snapshot.tentative);
+                        }
+                    }
+                    Err(error) => {
+                        error!("SpeechAnalyzer stream result polling failed: {error}");
+                        let _ = stream.cancel();
+                        return wait_for_stream_finalize(rx).map(|reply| (reply, None));
+                    }
+                }
+                last_poll = Instant::now();
+            }
+        }
     }
 
     /// Return the leased engine to the mutex, unless the model was switched or
@@ -1682,6 +1836,19 @@ fn cpp_translation_task(
     } else {
         (Task::Transcribe, None)
     }
+}
+
+/// Ignore queued audio after a native stream failure, retaining the finalize
+/// reply so the worker can return its engine before requesting batch fallback.
+fn wait_for_stream_finalize(rx: mpsc::Receiver<StreamCmd>) -> Option<mpsc::Sender<Option<String>>> {
+    while let Ok(command) = rx.recv() {
+        match command {
+            StreamCmd::Feed(_) => {}
+            StreamCmd::Finalize(reply) => return Some(reply),
+            StreamCmd::Cancel => return None,
+        }
+    }
+    None
 }
 
 /// Drain a stream command channel, ignoring fed audio, until the caller

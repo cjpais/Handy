@@ -26,6 +26,16 @@ SpeechAnalyzerResponse* speech_analyzer_prepare(const char* locale_id);
 // Transcribe 16 kHz mono f32 PCM. Blocks until transcription completes.
 SpeechAnalyzerResponse* speech_analyzer_transcribe(const float* samples, int sample_count, const char* locale_id);
 
+// Long-lived streaming session. Audio buffers are fed incrementally into one
+// SpeechAnalyzer context; snapshots contain JSON with committed/tentative text.
+typedef void* SpeechAnalyzerStreamHandle;
+SpeechAnalyzerResponse* speech_analyzer_stream_start(const char* locale_id, SpeechAnalyzerStreamHandle* stream_out);
+SpeechAnalyzerResponse* speech_analyzer_stream_feed(SpeechAnalyzerStreamHandle stream, const float* samples, int sample_count);
+SpeechAnalyzerResponse* speech_analyzer_stream_snapshot(SpeechAnalyzerStreamHandle stream);
+SpeechAnalyzerResponse* speech_analyzer_stream_finish(SpeechAnalyzerStreamHandle stream);
+SpeechAnalyzerResponse* speech_analyzer_stream_cancel(SpeechAnalyzerStreamHandle stream);
+void free_speech_analyzer_stream(SpeechAnalyzerStreamHandle stream);
+
 // Free memory allocated by the response
 void free_speech_analyzer_response(SpeechAnalyzerResponse* response);
 

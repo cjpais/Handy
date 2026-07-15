@@ -40,6 +40,53 @@ public func speechAnalyzerTranscribe(
         "SpeechAnalyzer is not available in this build (SDK requirement not met).")
 }
 
+@_cdecl("speech_analyzer_stream_start")
+public func speechAnalyzerStreamStart(
+    _ localeId: UnsafePointer<CChar>,
+    _ streamOut: UnsafeMutablePointer<UnsafeMutableRawPointer?>
+) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
+    streamOut.pointee = nil
+    return failureResponse(
+        "SpeechAnalyzer is not available in this build (SDK requirement not met).")
+}
+
+@_cdecl("speech_analyzer_stream_feed")
+public func speechAnalyzerStreamFeed(
+    _ stream: UnsafeMutableRawPointer?,
+    _ samples: UnsafePointer<Float>,
+    _ sampleCount: Int32
+) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
+    return failureResponse(
+        "SpeechAnalyzer is not available in this build (SDK requirement not met).")
+}
+
+@_cdecl("speech_analyzer_stream_snapshot")
+public func speechAnalyzerStreamSnapshot(
+    _ stream: UnsafeMutableRawPointer?
+) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
+    return failureResponse(
+        "SpeechAnalyzer is not available in this build (SDK requirement not met).")
+}
+
+@_cdecl("speech_analyzer_stream_finish")
+public func speechAnalyzerStreamFinish(
+    _ stream: UnsafeMutableRawPointer?
+) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
+    return failureResponse(
+        "SpeechAnalyzer is not available in this build (SDK requirement not met).")
+}
+
+@_cdecl("speech_analyzer_stream_cancel")
+public func speechAnalyzerStreamCancel(
+    _ stream: UnsafeMutableRawPointer?
+) -> UnsafeMutablePointer<SpeechAnalyzerResponse> {
+    return failureResponse(
+        "SpeechAnalyzer is not available in this build (SDK requirement not met).")
+}
+
+@_cdecl("free_speech_analyzer_stream")
+public func freeSpeechAnalyzerStream(_ stream: UnsafeMutableRawPointer?) {}
+
 @_cdecl("free_speech_analyzer_response")
 public func freeSpeechAnalyzerResponse(
     _ response: UnsafeMutablePointer<SpeechAnalyzerResponse>?
