@@ -2499,7 +2499,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "hf-hub"
 version = "0.5.0"
-source = "git+https://github.com/cjpais/hf-hub?branch=cancellable-downloads#63b60347570622bf898f49e7f10c2429b8dd21b6"
+source = "git+https://github.com/cjpais/hf-hub?branch=cancellable-downloads#9918f11ab3473135eb7865aa4a5d79d597e6e810"
 dependencies = [
  "dirs 6.0.0",
  "futures",
