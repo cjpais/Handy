@@ -4416,7 +4416,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "handy"
+name = "poptart"
 version = "0.9.0"
 dependencies = [
  "anyhow",

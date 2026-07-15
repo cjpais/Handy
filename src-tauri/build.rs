@@ -6,9 +6,9 @@ fn main() {
 
     // Linux ships transcribe-cpp as a shared libtranscribe + loadable ggml
     // backend modules (the `dynamic-backends` posture in Cargo.toml). Bake an
-    // $ORIGIN-relative rpath into the `handy` binary so it finds libtranscribe
-    // next to it in the package — AppImage `usr/bin/handy` -> `usr/lib`, and
-    // deb/rpm `/usr/bin/handy` -> `/usr/lib`. transcribe's
+    // $ORIGIN-relative rpath into the `poptart` binary so it finds libtranscribe
+    // next to it in the package — AppImage `usr/bin/poptart` -> `usr/lib`, and
+    // deb/rpm `/usr/bin/poptart` -> `/usr/lib`. transcribe's
     // init_backends_default() then loads the ggml modules co-located there.
     // (Windows resolves DLLs from the exe directory, so it needs no rpath;
     // macOS links transcribe-cpp statically via the `metal` feature.)
@@ -37,7 +37,7 @@ fn main() {
 /// Stage the MSVC runtime DLLs into `transcribe-libs/` for app-local deployment.
 ///
 /// Handy's native stack links the VC++ runtime dynamically (/MD). Shipping the
-/// DLLs beside `handy.exe` covers machines with no redistributable installed and
+/// DLLs beside `poptart.exe` covers machines with no redistributable installed and
 /// machines whose system redist is older than the CI toolset (issue #1527).
 ///
 /// Driven by `HANDY_VC_REDIST_DIRS`, set by CI to the redist dirs from the same
@@ -156,7 +156,7 @@ fn stage_onnxruntime_dll() {
 /// this is a no-op there. `RUNTIME_DIR` (core libs) and `MODULE_DIR` (dlopen'd
 /// ggml modules) may be the same dir — the `BTreeSet` below dedups them.
 ///
-/// Where the staged dir lands: Windows bundles it beside `handy.exe` (DLLs resolve
+/// Where the staged dir lands: Windows bundles it beside `poptart.exe` (DLLs resolve
 /// from the exe dir); Linux maps it into `/usr/lib`, on the binary's
 /// `$ORIGIN/../lib` rpath.
 fn stage_transcribe_runtime_libs() {

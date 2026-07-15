@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_valid_magic_string_enables_portable() {
-        let dir = std::env::temp_dir().join("handy_test_valid");
+        let dir = std::env::temp_dir().join("poptart_test_valid");
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         let mut f = std::fs::File::create(&marker).unwrap();
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_empty_file_does_not_enable_portable() {
-        let dir = std::env::temp_dir().join("handy_test_empty");
+        let dir = std::env::temp_dir().join("poptart_test_empty");
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         std::fs::File::create(&marker).unwrap();
@@ -127,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_wrong_content_does_not_enable_portable() {
-        let dir = std::env::temp_dir().join("handy_test_wrong");
+        let dir = std::env::temp_dir().join("poptart_test_wrong");
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         let mut f = std::fs::File::create(&marker).unwrap();
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn test_legacy_empty_marker_without_data_dir_does_not_enable_portable() {
         // Empty marker alone (scoop scenario) — no Data/ dir → not portable
-        let dir = std::env::temp_dir().join("handy_test_legacy_no_data");
+        let dir = std::env::temp_dir().join("poptart_test_legacy_no_data");
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         std::fs::File::create(&marker).unwrap();
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_magic_string_with_whitespace_enables_portable() {
-        let dir = std::env::temp_dir().join("handy_test_ws");
+        let dir = std::env::temp_dir().join("poptart_test_ws");
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         let mut f = std::fs::File::create(&marker).unwrap();
