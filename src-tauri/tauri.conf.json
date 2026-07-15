@@ -40,7 +40,7 @@
       "files": {},
       "hardenedRuntime": true,
       "minimumSystemVersion": "10.15",
-      "signingIdentity": "-",
+      "signingIdentity": "Developer ID Application: Brandon Wilcox (99PD7P7558)",
       "entitlements": "Entitlements.plist"
     },
     "linux": {
