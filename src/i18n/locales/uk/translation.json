@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Велика, повільніша, але дуже точна багатомовна модель."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Новий рушій SpeechAnalyzer від Apple, що працює на пристрої (macOS 26+). Мовні ресурси завантажуються та керуються macOS."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "Користувацька",
     "streaming": "Потокове",
+    "system": "Системна",
     "active": "Активна",
     "noModelsAvailable": "Немає доступних моделей",
     "verifying": "Перевірка {{modelName}}...",

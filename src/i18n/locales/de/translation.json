@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Ein großes, langsameres, aber sehr genaues mehrsprachiges Modell."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Apples neue geräteinterne SpeechAnalyzer-Engine (macOS 26+). Sprachressourcen werden von macOS heruntergeladen und verwaltet."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "Benutzerdefiniert",
     "streaming": "Streaming",
+    "system": "System",
     "active": "Aktiv",
     "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",

@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "ठूलो, अलि ढिलो, तर धेरै सटीक बहुभाषिक मोडेल।"
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Apple को नयाँ अन-डिभाइस SpeechAnalyzer इन्जिन (macOS 26+)। स्पिच एसेटहरू macOS ले डाउनलोड र व्यवस्थापन गर्छ।"
       }
     },
     "errors": {
@@ -123,6 +127,7 @@
     "custom": "कस्टम",
     "legacy": "लिगेसी",
     "streaming": "स्ट्रिमिङ",
+    "system": "सिस्टम",
     "active": "सक्रिय",
     "switching": "बदलिँदैछ...",
     "noModelsAvailable": "कुनै मोडेल उपलब्ध छैन",

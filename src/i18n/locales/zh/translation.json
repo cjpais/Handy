@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "大型模型，速度较慢，但多语言识别非常准确。"
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Apple 全新的设备端 SpeechAnalyzer 引擎（macOS 26+）。语音资源由 macOS 下载和管理。"
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "自定义",
     "streaming": "流式",
+    "system": "系统",
     "active": "活跃",
     "switching": "切换中...",
     "noModelsAvailable": "没有可用的模型",

@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Velký, pomalejší, ale velmi přesný vícejazyčný model."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Nový engine SpeechAnalyzer od Applu běžící přímo v zařízení (macOS 26+). Hlasové soubory stahuje a spravuje macOS."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "Vlastní",
     "streaming": "Streaming",
+    "system": "Systémový",
     "active": "Aktivní",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "verifying": "Ověřování {{modelName}}...",
