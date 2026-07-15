@@ -75,7 +75,6 @@ interface ModelCardProps {
   downloadProgress?: number;
   downloadSpeed?: number; // MB/s
   showRecommended?: boolean;
-  isOnboarding?: boolean;
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
@@ -91,7 +90,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
   downloadProgress,
   downloadSpeed,
   showRecommended = true,
-  isOnboarding = false,
 }) => {
   const { t } = useTranslation();
   const debugMode = useSettingsStore(
@@ -270,7 +268,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
               <HardDrive className="w-3.5 h-3.5" />
             )}
             <span>{formattedModelSize}</span>
-            {!isOnboarding && debugMode && quantLabel && (
+            {debugMode && quantLabel && (
               <span className="text-text/40">{quantLabel}</span>
             )}
           </span>
