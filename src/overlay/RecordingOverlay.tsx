@@ -12,7 +12,12 @@ import type {
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
+type OverlayState =
+  | "recording"
+  | "streaming"
+  | "transcribing"
+  | "processing"
+  | "error";
 
 // Number of reactive bars in the canvas waveform — one per FFT band from the
 // backend (BUCKETS in recorder.rs). Each bar's top and bottom animate
@@ -341,14 +346,24 @@ const RecordingOverlay: React.FC = () => {
     );
   }
 
-  // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
-  // spinner + label (transcribing / processing). Never both. The pill animates its
-  // width between them; the cancel button is in both rows so it stays put.
+  // ---- Minimal overlay: exactly one row at a time — waveform (recording), a
+  // spinner + label (transcribing / processing), or an error label. Never
+  // several. The pill animates its width between them; the cancel button is in
+  // both active rows so it stays put.
   const working = state === "transcribing" || state === "processing";
+  const errored = state === "error";
   const workLabel =
     state === "processing"
       ? t("overlay.processing")
       : t("overlay.transcribing");
+
+  const errorRow = (
+    <div className="sbase">
+      <div className="sbase-l" />
+      <span className="swork-label serr">{t("overlay.commandFailed")}</span>
+      <div className="sbase-r" />
+    </div>
+  );
 
   return (
     <div
@@ -356,9 +371,13 @@ const RecordingOverlay: React.FC = () => {
       className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
     >
       <div
-        className={`scard compact ${working && isVisible ? "cworking" : ""}`}
+        className={`scard compact ${(working || errored) && isVisible ? "cworking" : ""}`}
       >
-        {working ? workingRow(workLabel, true) : listeningRow(false, true)}
+        {errored
+          ? errorRow
+          : working
+            ? workingRow(workLabel, true)
+            : listeningRow(false, true)}
       </div>
     </div>
   );

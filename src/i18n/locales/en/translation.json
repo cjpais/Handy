@@ -160,7 +160,6 @@
     },
     "poptart": {
       "groups": {
-        "commandMode": "Command Mode",
         "snippets": "Snippets"
       }
     },
@@ -185,10 +184,6 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
-          },
-          "command_mode": {
-            "name": "Command Mode Hotkey",
-            "description": "Select text anywhere, hold the hotkey, and speak an instruction (e.g. \"make this a bulleted list\") — the selection is replaced with the edited text."
           }
         },
         "errors": {
@@ -639,6 +634,7 @@
   },
   "overlay": {
     "transcribing": "Transcribing...",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "commandFailed": "Command failed — no response from AI"
   }
 }

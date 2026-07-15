@@ -1,7 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "../../ui/SettingsGroup";
-import { ShortcutInput } from "../ShortcutInput";
 import { Snippets } from "../Snippets";
 
 export const PoptartSettings: React.FC = () => {
@@ -9,14 +8,6 @@ export const PoptartSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.poptart.groups.commandMode")}>
-        <ShortcutInput
-          shortcutId="command_mode"
-          descriptionMode="tooltip"
-          grouped={true}
-        />
-      </SettingsGroup>
-
       <SettingsGroup title={t("settings.poptart.groups.snippets")}>
         <Snippets descriptionMode="tooltip" grouped />
       </SettingsGroup>

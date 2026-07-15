@@ -82,6 +82,37 @@ pub fn send_copy(enigo: &mut Enigo) -> Result<(), String> {
     Ok(())
 }
 
+/// Sends a Ctrl+A or Cmd+A select-all command using platform-specific virtual
+/// key codes. Releases common modifiers first so a still-held hotkey (toggle
+/// mode) can't pollute the combo. Used before pasting a whole-field rewrite.
+pub fn send_select_all(enigo: &mut Enigo) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let (modifier_key, a_key_code) = (Key::Meta, Key::Other(0)); // kVK_ANSI_A
+    #[cfg(target_os = "windows")]
+    let (modifier_key, a_key_code) = (Key::Control, Key::Other(0x41)); // VK_A
+    #[cfg(target_os = "linux")]
+    let (modifier_key, a_key_code) = (Key::Control, Key::Unicode('a'));
+
+    for key in [Key::Control, Key::Alt, Key::Shift, Key::Meta] {
+        let _ = enigo.key(key, enigo::Direction::Release);
+    }
+
+    enigo
+        .key(modifier_key, enigo::Direction::Press)
+        .map_err(|e| format!("Failed to press modifier key: {}", e))?;
+    enigo
+        .key(a_key_code, enigo::Direction::Click)
+        .map_err(|e| format!("Failed to click A key: {}", e))?;
+
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
+    enigo
+        .key(modifier_key, enigo::Direction::Release)
+        .map_err(|e| format!("Failed to release modifier key: {}", e))?;
+
+    Ok(())
+}
+
 /// Sends a Ctrl+Shift+V paste command.
 /// This is commonly used in terminal applications on Linux to paste without formatting.
 /// Note: On Wayland, this may not work - callers should check for Wayland and use alternative methods.

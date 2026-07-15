@@ -49,9 +49,6 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
-    /// Command Mode: capture the current selection on stop and have the LLM
-    /// apply the spoken instruction to it instead of cleaning a transcript.
-    command_mode: bool,
 }
 
 /// Field name for structured output JSON schema
@@ -120,17 +117,63 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
 
     let system_prompt = build_system_prompt(&prompt);
     let legacy_prompt = prompt.replace("${output}", transcription);
-    run_llm(settings, system_prompt, transcription.to_string(), legacy_prompt).await
+    run_llm(
+        settings,
+        system_prompt,
+        transcription.to_string(),
+        legacy_prompt,
+    )
+    .await
 }
 
-/// Send a system+user request through the configured post-processing provider.
-/// `legacy_prompt` is the single-message fallback used for providers without
-/// structured output support (and when structured output fails).
+/// Send a system+user request through the configured post-processing provider
+/// and extract the `transcription` field from the structured response.
+/// Non-JSON content (legacy fallback, Apple Intelligence) passes through raw.
 async fn run_llm(
     settings: &AppSettings,
     system_prompt: String,
     user_content: String,
     legacy_prompt: String,
+) -> Option<String> {
+    let json_schema = serde_json::json!({
+        "type": "object",
+        "properties": {
+            (TRANSCRIPTION_FIELD): {
+                "type": "string",
+                "description": "The cleaned and processed transcription text"
+            }
+        },
+        "required": [TRANSCRIPTION_FIELD],
+        "additionalProperties": false
+    });
+    let content = run_llm_raw(
+        settings,
+        system_prompt,
+        user_content,
+        legacy_prompt,
+        json_schema,
+    )
+    .await?;
+    match serde_json::from_str::<serde_json::Value>(&content) {
+        Ok(json) => match json.get(TRANSCRIPTION_FIELD).and_then(|t| t.as_str()) {
+            Some(text) => Some(text.to_string()),
+            None => Some(content),
+        },
+        Err(_) => Some(content),
+    }
+}
+
+/// Send a system+user request through the configured post-processing provider,
+/// returning the raw response content. `json_schema` shapes structured output
+/// where the provider supports it; `legacy_prompt` is the single-message
+/// fallback used for providers without structured output support (and when
+/// structured output fails).
+async fn run_llm_raw(
+    settings: &AppSettings,
+    system_prompt: String,
+    user_content: String,
+    legacy_prompt: String,
+    json_schema: serde_json::Value,
 ) -> Option<String> {
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
@@ -228,19 +271,6 @@ async fn run_llm(
             }
         }
 
-        // Define JSON schema for transcription output
-        let json_schema = serde_json::json!({
-            "type": "object",
-            "properties": {
-                (TRANSCRIPTION_FIELD): {
-                    "type": "string",
-                    "description": "The cleaned and processed transcription text"
-                }
-            },
-            "required": [TRANSCRIPTION_FIELD],
-            "additionalProperties": false
-        });
-
         match crate::llm_client::send_chat_completion_with_schema(
             &provider,
             api_key.clone(),
@@ -254,32 +284,12 @@ async fn run_llm(
         .await
         {
             Ok(Some(content)) => {
-                // Parse the JSON response to extract the transcription field
-                match serde_json::from_str::<serde_json::Value>(&content) {
-                    Ok(json) => {
-                        if let Some(transcription_value) =
-                            json.get(TRANSCRIPTION_FIELD).and_then(|t| t.as_str())
-                        {
-                            let result = strip_invisible_chars(transcription_value);
-                            debug!(
-                                "Structured output post-processing succeeded for provider '{}'. Output length: {} chars",
-                                provider.id,
-                                result.len()
-                            );
-                            return Some(result);
-                        } else {
-                            error!("Structured output response missing 'transcription' field");
-                            return Some(strip_invisible_chars(&content));
-                        }
-                    }
-                    Err(e) => {
-                        error!(
-                            "Failed to parse structured output JSON: {}. Returning raw content.",
-                            e
-                        );
-                        return Some(strip_invisible_chars(&content));
-                    }
-                }
+                debug!(
+                    "Structured output succeeded for provider '{}'. Output length: {} chars",
+                    provider.id,
+                    content.len()
+                );
+                return Some(strip_invisible_chars(&content));
             }
             Ok(None) => {
                 error!("LLM API response has no content");
@@ -385,6 +395,9 @@ pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    /// Select-all before pasting so the text replaces the whole focused field
+    /// (whole-field rewrites in Command Mode).
+    pub select_all_before_paste: bool,
 }
 
 /// Resolve the persisted language *intent* into the language the currently-loaded
@@ -451,35 +464,172 @@ pub(crate) async fn process_transcription_output(
         final_text,
         post_processed_text,
         post_process_prompt,
+        select_all_before_paste: false,
     }
+}
+
+/// Hotwords that route a transcript to Command Mode, normalized to lowercase
+/// alphanumerics. Longest first so "hey poptart" isn't short-matched by "poptart".
+const HOTWORDS: [&str; 2] = ["heypoptart", "poptart"];
+
+/// Returns the spoken instruction iff the transcript starts with a hotword.
+/// Matching skips separator characters (spaces, commas, hyphens, quotes) and
+/// compares alphanumerics case-insensitively, so Whisper renderings like
+/// "Hey, Pop-Tart:" all match. Must run on the raw transcript, before LLM
+/// cleanup (which could rewrite the hotword). A hotword with nothing after it
+/// returns None — that's plain dictation.
+fn strip_hotword(transcript: &str) -> Option<String> {
+    'hotword: for hotword in HOTWORDS {
+        let mut expected = hotword.chars();
+        let mut next = expected.next();
+        let mut end = 0;
+        for (i, c) in transcript.char_indices() {
+            let Some(e) = next else { break };
+            if c.is_alphanumeric() {
+                if c.to_ascii_lowercase() != e {
+                    continue 'hotword;
+                }
+                next = expected.next();
+                end = i + c.len_utf8();
+            }
+        }
+        if next.is_some() {
+            continue; // transcript ended mid-hotword
+        }
+        let rest = &transcript[end..];
+        // Word boundary: reject "poptarts" and possessives like "Poptart's"
+        if rest
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_alphanumeric() || c == '\'' || c == '\u{2019}')
+        {
+            continue;
+        }
+        let instruction =
+            rest.trim_start_matches(|c: char| c.is_whitespace() || c.is_ascii_punctuation());
+        if instruction.is_empty() {
+            return None;
+        }
+        return Some(instruction.to_string());
+    }
+    None
 }
 
 /// System prompt for Command Mode: apply a spoken instruction to the selected text.
 const COMMAND_MODE_SYSTEM_PROMPT: &str = "You are a text editing engine. The user selected text and spoke an instruction. Apply the instruction to the text and output only the resulting text — no explanations, no markdown fences. If no text is provided, output only the text the instruction asks for.";
 
+/// System prompt for Command Mode with field context (no manual selection):
+/// the LLM decides between rewriting the whole field and inserting at the cursor.
+const COMMAND_FIELD_SYSTEM_PROMPT: &str = "You are a text editing engine inside a text field. You are given the field's current content and a spoken instruction. If the instruction edits, rewrites, fixes, or transforms the existing content, return the complete new field content with action \"replace_field\". If the instruction asks for new text to add (compose, continue, answer), return only the new text with action \"insert\"; it will be typed at the cursor. Respond with only JSON: {\"action\": \"replace_field\" or \"insert\", \"text\": \"...\"} — no explanations, no markdown fences.";
+
+/// What a spoken command operates on, in fallback order.
+pub(crate) enum CommandContext {
+    /// Text the user selected (AX read or clipboard capture) — output replaces it.
+    Selection(String),
+    /// No selection; the focused field's full text, read via AX — the LLM
+    /// decides between a whole-field rewrite and an insertion.
+    Field(String),
+    /// Nothing readable — instruction-only generation, typed at the cursor.
+    Empty,
+}
+
+/// Gather the text the spoken command should operate on. Must run on the main
+/// thread (AX reads + possible synthesized Cmd+C).
+fn capture_command_context(app: &AppHandle) -> CommandContext {
+    let (ax_selected, ax_value) = crate::utils::ax_focused_texts();
+    if let Some(sel) = ax_selected {
+        return CommandContext::Selection(sel);
+    }
+    // Some apps (terminals, some Electron views) don't expose AX text; fall
+    // back to the synthesized-copy clipboard dance.
+    match crate::clipboard::copy_selected_text(app) {
+        Ok(sel) if !sel.trim().is_empty() => return CommandContext::Selection(sel),
+        Ok(_) => {}
+        Err(e) => warn!("Command Mode selection capture failed: {}", e),
+    }
+    match ax_value {
+        Some(field) => CommandContext::Field(field),
+        None => CommandContext::Empty,
+    }
+}
+
+/// Parse the LLM's field-context decision. Any parse failure degrades to
+/// insert-at-cursor with the raw content — never destroys the field.
+fn parse_command_decision(content: &str) -> (bool, String) {
+    #[derive(serde::Deserialize)]
+    struct Decision {
+        action: String,
+        text: String,
+    }
+    let trimmed = content
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
+    match serde_json::from_str::<Decision>(trimmed) {
+        Ok(d) => (d.action == "replace_field", d.text),
+        Err(_) => (false, content.to_string()),
+    }
+}
+
 pub(crate) async fn process_command_output(
     app: &AppHandle,
     instruction: &str,
-    selection: &str,
+    context: CommandContext,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
-    let user_content = if selection.trim().is_empty() {
-        format!("Instruction:\n{}", instruction)
-    } else {
-        format!("Text:\n{}\n\nInstruction:\n{}", selection, instruction)
-    };
-    let legacy_prompt = format!("{}\n\n{}", COMMAND_MODE_SYSTEM_PROMPT, user_content);
-    let edited = if is_blank_transcription(instruction) {
-        None
-    } else {
-        run_llm(
+    if let CommandContext::Field(field) = &context {
+        let user_content = format!("Field content:\n{}\n\nInstruction:\n{}", field, instruction);
+        let legacy_prompt = format!("{}\n\n{}", COMMAND_FIELD_SYSTEM_PROMPT, user_content);
+        let json_schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["replace_field", "insert"],
+                    "description": "replace_field: text replaces the entire field content. insert: text is typed at the cursor."
+                },
+                "text": {"type": "string", "description": "The resulting text."}
+            },
+            "required": ["action", "text"],
+            "additionalProperties": false
+        });
+        let response = run_llm_raw(
             &settings,
-            COMMAND_MODE_SYSTEM_PROMPT.to_string(),
+            COMMAND_FIELD_SYSTEM_PROMPT.to_string(),
             user_content,
             legacy_prompt,
+            json_schema,
         )
-        .await
+        .await;
+        // On LLM failure paste nothing rather than typing the raw instruction.
+        let (replace_field, text) = match response {
+            Some(content) => parse_command_decision(&content),
+            None => (false, String::new()),
+        };
+        return ProcessedTranscription {
+            final_text: text.clone(),
+            post_processed_text: if text.is_empty() { None } else { Some(text) },
+            post_process_prompt: Some(COMMAND_FIELD_SYSTEM_PROMPT.to_string()),
+            select_all_before_paste: replace_field,
+        };
+    }
+
+    let user_content = match &context {
+        CommandContext::Selection(sel) => {
+            format!("Text:\n{}\n\nInstruction:\n{}", sel, instruction)
+        }
+        _ => format!("Instruction:\n{}", instruction),
     };
+    let legacy_prompt = format!("{}\n\n{}", COMMAND_MODE_SYSTEM_PROMPT, user_content);
+    let edited = run_llm(
+        &settings,
+        COMMAND_MODE_SYSTEM_PROMPT.to_string(),
+        user_content,
+        legacy_prompt,
+    )
+    .await;
 
     // On LLM failure paste nothing rather than replacing the user's selection
     // with the raw spoken instruction.
@@ -487,6 +637,7 @@ pub(crate) async fn process_command_output(
         final_text: edited.clone().unwrap_or_default(),
         post_processed_text: edited,
         post_process_prompt: Some(COMMAND_MODE_SYSTEM_PROMPT.to_string()),
+        select_all_before_paste: false,
     }
 }
 
@@ -673,32 +824,7 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
-        let command_mode = self.command_mode;
         let cancel_generation = rm.cancel_generation();
-
-        // Command Mode: capture the selection now, on the main thread. This runs
-        // after the hotkey release, so the synthesized copy combo can't fight
-        // held modifiers or retrigger the binding.
-        let selection_rx = if command_mode {
-            let (tx, rx) = std::sync::mpsc::channel::<String>();
-            let ah_sel = app.clone();
-            match app.run_on_main_thread(move || {
-                let selection =
-                    crate::clipboard::copy_selected_text(&ah_sel).unwrap_or_else(|e| {
-                        warn!("Command Mode selection capture failed: {}", e);
-                        String::new()
-                    });
-                let _ = tx.send(selection);
-            }) {
-                Ok(()) => Some(rx),
-                Err(e) => {
-                    error!("Failed to schedule selection capture: {:?}", e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
@@ -796,25 +922,45 @@ impl ShortcutAction for TranscribeAction {
                                 transcription
                             );
 
-                            if post_process {
+                            // Hotword routing: "hey poptart …" turns the rest of
+                            // the transcript into a command. Detected on the raw
+                            // transcript (LLM cleanup could rewrite the hotword);
+                            // needs the post-process LLM, so without it everything
+                            // is dictation.
+                            let command_instruction = if get_settings(&ah).post_process_enabled {
+                                strip_hotword(&transcription)
+                            } else {
+                                None
+                            };
+
+                            if post_process || command_instruction.is_some() {
                                 if style == OverlayStyle::Live {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
                                     show_processing_overlay(&ah);
                                 }
                             }
-                            let processed = if command_mode {
-                                let selection = if let Some(rx) = selection_rx {
-                                    tauri::async_runtime::spawn_blocking(move || {
+                            let processed = if let Some(instruction) = &command_instruction {
+                                // Capture focus context on the main thread (AX
+                                // reads + possible synthesized Cmd+C); any
+                                // failure degrades to instruction-only mode.
+                                let (tx, rx) = std::sync::mpsc::channel::<CommandContext>();
+                                let ah_ctx = ah.clone();
+                                let context = match ah.run_on_main_thread(move || {
+                                    let _ = tx.send(capture_command_context(&ah_ctx));
+                                }) {
+                                    Ok(()) => tauri::async_runtime::spawn_blocking(move || {
                                         rx.recv_timeout(std::time::Duration::from_secs(2))
-                                            .unwrap_or_default()
+                                            .unwrap_or(CommandContext::Empty)
                                     })
                                     .await
-                                    .unwrap_or_default()
-                                } else {
-                                    String::new()
+                                    .unwrap_or(CommandContext::Empty),
+                                    Err(e) => {
+                                        error!("Failed to schedule context capture: {:?}", e);
+                                        CommandContext::Empty
+                                    }
                                 };
-                                process_command_output(&ah, &transcription, &selection).await
+                                process_command_output(&ah, instruction, context).await
                             } else {
                                 process_transcription_output(&ah, &transcription, post_process)
                                     .await
@@ -832,7 +978,7 @@ impl ShortcutAction for TranscribeAction {
                                 if let Err(err) = hm.save_entry(
                                     file_name,
                                     transcription,
-                                    post_process,
+                                    post_process || command_instruction.is_some(),
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
@@ -841,12 +987,30 @@ impl ShortcutAction for TranscribeAction {
                             }
 
                             if processed.final_text.is_empty() {
-                                utils::hide_recording_overlay(&ah);
+                                if command_instruction.is_some() {
+                                    // A routed command produced nothing (LLM
+                                    // unreachable or empty response): flash the
+                                    // error pill so the failure isn't silent.
+                                    utils::show_error_overlay(&ah);
+                                    let ah_err = ah.clone();
+                                    let rm_err = Arc::clone(&rm);
+                                    std::thread::spawn(move || {
+                                        std::thread::sleep(std::time::Duration::from_millis(1800));
+                                        // Skip the hide if a new recording
+                                        // already took over the overlay.
+                                        if !rm_err.is_recording() {
+                                            utils::hide_recording_overlay(&ah_err);
+                                        }
+                                    });
+                                } else {
+                                    utils::hide_recording_overlay(&ah);
+                                }
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             } else {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
+                                let select_all_before_paste = processed.select_all_before_paste;
                                 let rm_for_paste = Arc::clone(&rm);
                                 ah.run_on_main_thread(move || {
                                     if rm_for_paste.was_cancelled_since(cancel_generation) {
@@ -854,6 +1018,33 @@ impl ShortcutAction for TranscribeAction {
                                         utils::hide_recording_overlay(&ah_clone);
                                         change_tray_icon(&ah_clone, TrayIconState::Idle);
                                         return;
+                                    }
+
+                                    // Whole-field rewrite: select everything so the
+                                    // paste replaces the field. Lock released before
+                                    // utils::paste re-acquires it.
+                                    if select_all_before_paste {
+                                        match ah_clone.try_state::<crate::input::EnigoState>() {
+                                            Some(state) => {
+                                                let result = state
+                                                    .0
+                                                    .lock()
+                                                    .map_err(|e| e.to_string())
+                                                    .and_then(|mut enigo| {
+                                                        crate::input::send_select_all(&mut enigo)
+                                                    });
+                                                if let Err(e) = result {
+                                                    warn!("Select-all before paste failed: {}", e);
+                                                }
+                                                // Give the app a beat to apply the selection
+                                                std::thread::sleep(
+                                                    std::time::Duration::from_millis(50),
+                                                );
+                                            }
+                                            None => warn!(
+                                                "EnigoState unavailable; pasting without select-all"
+                                            ),
+                                        }
                                     }
 
                                     match utils::paste(final_text, ah_clone.clone()) {
@@ -966,22 +1157,11 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
-            command_mode: false,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction {
-            post_process: true,
-            command_mode: false,
-        }) as Arc<dyn ShortcutAction>,
-    );
-    map.insert(
-        "command_mode".to_string(),
-        Arc::new(TranscribeAction {
-            post_process: true,
-            command_mode: true,
-        }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
@@ -1009,5 +1189,74 @@ mod tests {
     fn non_blank_transcription_is_kept() {
         assert!(!is_blank_transcription("hello"));
         assert!(!is_blank_transcription("  hello  "));
+    }
+
+    #[test]
+    fn hotword_variants_route_to_command() {
+        let cases = [
+            ("Hey Poptart, make this shorter", "make this shorter"),
+            ("hey pop tart make it formal", "make it formal"),
+            (
+                "Poptart. delete the last sentence.",
+                "delete the last sentence.",
+            ),
+            ("Pop-Tart: fix grammar", "fix grammar"),
+            ("POPTART do it", "do it"),
+            ("\"Hey Poptart\" summarize", "summarize"),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(
+                super::strip_hotword(input).as_deref(),
+                Some(expected),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn non_hotword_transcripts_stay_dictation() {
+        let cases = [
+            "poptarts are great",
+            "The pop tart was tasty",
+            "Poptart's my favorite snack",
+            "Poptart.",    // empty instruction
+            "hey poptart", // empty instruction
+            "hello world",
+            "",
+            "pop start the music",
+        ];
+        for input in cases {
+            assert_eq!(super::strip_hotword(input), None, "{input}");
+        }
+    }
+
+    #[test]
+    fn command_decision_parses_replace_and_insert() {
+        let (replace, text) =
+            super::parse_command_decision(r#"{"action":"replace_field","text":"fixed text"}"#);
+        assert!(replace);
+        assert_eq!(text, "fixed text");
+
+        let (replace, text) =
+            super::parse_command_decision(r#"{"action":"insert","text":"new sentence"}"#);
+        assert!(!replace);
+        assert_eq!(text, "new sentence");
+    }
+
+    #[test]
+    fn command_decision_strips_fences() {
+        let (replace, text) = super::parse_command_decision(
+            "```json\n{\"action\":\"replace_field\",\"text\":\"hi\"}\n```",
+        );
+        assert!(replace);
+        assert_eq!(text, "hi");
+    }
+
+    #[test]
+    fn command_decision_garbage_degrades_to_insert() {
+        let (replace, text) =
+            super::parse_command_decision("Sure! Here is the text you asked for.");
+        assert!(!replace);
+        assert_eq!(text, "Sure! Here is the text you asked for.");
     }
 }

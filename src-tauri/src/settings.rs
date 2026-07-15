@@ -800,21 +800,6 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
-    #[cfg(target_os = "macos")]
-    let default_command_mode_shortcut = "ctrl+option+space";
-    #[cfg(not(target_os = "macos"))]
-    let default_command_mode_shortcut = "ctrl+alt+space";
-
-    bindings.insert(
-        "command_mode".to_string(),
-        ShortcutBinding {
-            id: "command_mode".to_string(),
-            name: "Command Mode".to_string(),
-            description: "Edits the selected text with a spoken instruction.".to_string(),
-            default_binding: default_command_mode_shortcut.to_string(),
-            current_binding: default_command_mode_shortcut.to_string(),
-        },
-    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -1055,6 +1040,12 @@ fn apply_settings_migrations(
         updated = true;
     }
 
+    // command_mode's dedicated hotkey was replaced by the "hey poptart" hotword;
+    // drop the stale binding so it neither renders nor round-trips.
+    if settings.bindings.remove("command_mode").is_some() {
+        updated = true;
+    }
+
     updated
 }
 
@@ -1200,6 +1191,35 @@ mod tests {
             TranscribeAcceleratorSetting::Gpu
         );
         assert_eq!(settings.transcribe_gpu_device, 2);
+    }
+
+    #[test]
+    fn migration_removes_stale_command_mode_binding() {
+        let mut settings = get_default_settings();
+        assert!(!settings.bindings.contains_key("command_mode"));
+        // A store written before the hotword replaced the dedicated hotkey.
+        settings.bindings.insert(
+            "command_mode".to_string(),
+            ShortcutBinding {
+                id: "command_mode".to_string(),
+                name: "Command Mode".to_string(),
+                description: String::new(),
+                default_binding: "ctrl+option+space".to_string(),
+                current_binding: "ctrl+option+space".to_string(),
+            },
+        );
+
+        let raw = serde_json::json!({
+            "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
+            "onboarding_completed": false,
+            "whats_new_last_seen_version": default_whats_new_last_seen_version(),
+            "overlay_style": "live"
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert!(!settings.bindings.contains_key("command_mode"));
+        // Idempotent: a clean store reports no update.
+        assert!(!apply_settings_migrations(&mut settings, &raw));
     }
 
     #[test]

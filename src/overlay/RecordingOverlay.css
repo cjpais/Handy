@@ -359,3 +359,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.swork-label.serr {
+  color: #ff6b6b;
+}

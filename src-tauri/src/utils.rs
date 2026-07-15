@@ -84,3 +84,50 @@ pub fn frontmost_app_name() -> Option<String> {
 pub fn frontmost_app_name() -> Option<String> {
     None
 }
+
+/// Selected text and full text value of the focused UI element, read via the
+/// Accessibility API. Uses the same TCC Accessibility grant the app already
+/// requires for shortcuts; any failure (trust revoked, no focused element,
+/// non-text element) yields None and callers fall back to the clipboard path.
+#[cfg(target_os = "macos")]
+pub fn ax_focused_texts() -> (Option<String>, Option<String>) {
+    use objc2_application_services::{AXError, AXUIElement};
+    use objc2_core_foundation::{CFRetained, CFString, CFType};
+    use std::ptr::NonNull;
+
+    fn copy_attr(el: &AXUIElement, name: &str) -> Option<CFRetained<CFType>> {
+        let attr = CFString::from_str(name);
+        let mut value: *const CFType = std::ptr::null();
+        let err = unsafe { el.copy_attribute_value(&attr, NonNull::from(&mut value)) };
+        if err != AXError::Success {
+            return None;
+        }
+        NonNull::new(value.cast_mut()).map(|v| unsafe { CFRetained::from_raw(v) })
+    }
+
+    fn as_text(v: CFRetained<CFType>) -> Option<String> {
+        let s = v.downcast::<CFString>().ok()?.to_string();
+        if s.trim().is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    }
+
+    let system = unsafe { AXUIElement::new_system_wide() };
+    let Some(focused) =
+        copy_attr(&system, "AXFocusedUIElement").and_then(|v| v.downcast::<AXUIElement>().ok())
+    else {
+        return (None, None);
+    };
+    let selected = copy_attr(&focused, "AXSelectedText").and_then(as_text);
+    // ponytail: no size cap on the field value; truncate if giant text views
+    // ever blow the LLM context
+    let value = copy_attr(&focused, "AXValue").and_then(as_text);
+    (selected, value)
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn ax_focused_texts() -> (Option<String>, Option<String>) {
+    (None, None) // ponytail: clipboard fallback covers other platforms
+}
