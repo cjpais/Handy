@@ -375,7 +375,10 @@ mod tests {
         );
         // literal expansion: no regex capture-group expansion of $ in output
         let dollar = vec![("price".to_string(), "$100".to_string())];
-        assert_eq!(apply_snippets("the price is firm", &dollar), "the $100 is firm");
+        assert_eq!(
+            apply_snippets("the price is firm", &dollar),
+            "the $100 is firm"
+        );
         // empty trigger is ignored
         let empty = vec![("  ".to_string(), "x".to_string())];
         assert_eq!(apply_snippets("hello", &empty), "hello");
