@@ -543,7 +543,26 @@ public func speechAnalyzerPrepare(
             attributeOptions: []
         )
         try await ensureAssets(for: transcriber, locale: locale)
-        return ""
+
+        // Success text doubles as a diagnostic notice for the Rust side to
+        // log. Handy always feeds 16 kHz mono Float32; if the analyzer ever
+        // prefers a different format, the transcribe/stream paths convert
+        // per-chunk with independent converters, which is only safe while
+        // this never actually engages — so leave a trace when it does.
+        guard
+            let inputFormat = AVAudioFormat(
+                commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1,
+                interleaved: false),
+            let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(
+                compatibleWith: [transcriber], considering: inputFormat),
+            analyzerFormat != inputFormat
+        else {
+            return ""
+        }
+        return
+            "analyzer prefers \(Int(analyzerFormat.sampleRate)) Hz, "
+            + "\(analyzerFormat.channelCount) ch, commonFormat \(analyzerFormat.commonFormat.rawValue) "
+            + "over the 16 kHz mono Float32 feed; per-chunk audio conversion is engaged"
     }
 }
 

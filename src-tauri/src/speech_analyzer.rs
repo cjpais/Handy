@@ -86,10 +86,12 @@ mod ffi {
         result
     }
 
-    pub fn prepare(locale: &str) -> Result<(), String> {
+    /// On success the response text is an optional diagnostic notice from the
+    /// bridge (empty when there is nothing to report).
+    pub fn prepare(locale: &str) -> Result<String, String> {
         let locale_cstr = CString::new(locale).map_err(|e| e.to_string())?;
         let ptr = unsafe { speech_analyzer_prepare(locale_cstr.as_ptr()) };
-        consume_response(ptr).map(|_| ())
+        consume_response(ptr)
     }
 
     pub fn transcribe(samples: &[f32], locale: &str) -> Result<String, String> {
@@ -149,7 +151,7 @@ mod ffi {
         Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
     }
 
-    pub fn prepare(_locale: &str) -> Result<(), String> {
+    pub fn prepare(_locale: &str) -> Result<String, String> {
         Err("SpeechAnalyzer is only available on Apple Silicon macOS".to_string())
     }
 
@@ -247,6 +249,18 @@ impl Drop for SpeechAnalyzerStream {
     }
 }
 
+/// Prepare assets for the locale and surface any diagnostic notice the bridge
+/// returns — currently the analyzer preferring a different audio format than
+/// Handy's 16 kHz mono Float32 feed, which engages per-chunk conversion on the
+/// Swift side and should never happen in practice.
+fn prepare_with_notice(locale: &str) -> Result<(), String> {
+    let notice = ffi::prepare(locale)?;
+    if !notice.is_empty() {
+        log::warn!("SpeechAnalyzer: {notice}");
+    }
+    Ok(())
+}
+
 /// Handle held by the transcription manager while the SpeechAnalyzer "model"
 /// is loaded. Batch calls create short-lived analyzers; live transcription
 /// creates a separate [`SpeechAnalyzerStream`] while retaining this locale.
@@ -265,7 +279,7 @@ impl SpeechAnalyzerEngine {
                     .to_string(),
             );
         }
-        ffi::prepare(locale)?;
+        prepare_with_notice(locale)?;
         Ok(Self {
             locale: Mutex::new(locale.to_string()),
         })
@@ -284,7 +298,7 @@ impl SpeechAnalyzerEngine {
         // AssetInventory may retire an unused asset between runs, and the user
         // may have changed languages since load. Rechecking is cheap when the
         // asset is installed and re-downloads it when the OS evicted it.
-        ffi::prepare(locale)?;
+        prepare_with_notice(locale)?;
         *self
             .locale
             .lock()

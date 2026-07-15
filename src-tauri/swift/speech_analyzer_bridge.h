@@ -21,6 +21,8 @@ SpeechAnalyzerResponse* speech_analyzer_supported_locales(void);
 
 // Ensure the on-device speech assets for the locale are installed
 // (triggers an OS-managed download if needed). Blocks until done.
+// On success, text optionally carries a diagnostic notice worth logging
+// (empty when there is nothing to report).
 SpeechAnalyzerResponse* speech_analyzer_prepare(const char* locale_id);
 
 // Transcribe 16 kHz mono f32 PCM. Blocks until transcription completes.

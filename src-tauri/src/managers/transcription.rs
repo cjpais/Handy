@@ -1076,6 +1076,7 @@ impl TranscriptionManager {
             Ok(stream) => stream,
             Err(error) => {
                 error!("Failed to begin SpeechAnalyzer stream: {error}");
+                self.router.clear();
                 return wait_for_stream_finalize(rx).map(|reply| (reply, None));
             }
         };
@@ -1103,6 +1104,7 @@ impl TranscriptionManager {
                         if let Err(error) = stream.feed(&chunk) {
                             error!("SpeechAnalyzer stream feed failed: {error}");
                             let _ = stream.cancel();
+                            self.router.clear();
                             return wait_for_stream_finalize(rx).map(|reply| (reply, None));
                         }
                         pending_audio.reserve(APPLE_STREAM_CHUNK_SAMPLES * 2);
@@ -1153,6 +1155,7 @@ impl TranscriptionManager {
                         if let Err(error) = stream.feed(&chunk) {
                             error!("SpeechAnalyzer stream feed failed: {error}");
                             let _ = stream.cancel();
+                            self.router.clear();
                             return wait_for_stream_finalize(rx).map(|reply| (reply, None));
                         }
                         pending_audio.reserve(APPLE_STREAM_CHUNK_SAMPLES * 2);
@@ -1170,13 +1173,12 @@ impl TranscriptionManager {
                     Ok(snapshot) => {
                         for event in &snapshot.events {
                             debug!(
-                                "Apple live result: revision={} analyzer_elapsed={}ms audio_received={:.2}s final={} chars={} text={:?}",
+                                "Apple live result: revision={} analyzer_elapsed={}ms audio_received={:.2}s final={} chars={}",
                                 event.revision,
                                 event.elapsed_ms,
                                 streamed_samples as f64 / 16_000.0,
                                 event.is_final,
-                                event.text.chars().count(),
-                                event.text
+                                event.text.chars().count()
                             );
                         }
                         if snapshot.revision != last_revision {
@@ -1192,6 +1194,7 @@ impl TranscriptionManager {
                     Err(error) => {
                         error!("SpeechAnalyzer stream result polling failed: {error}");
                         let _ = stream.cancel();
+                        self.router.clear();
                         return wait_for_stream_finalize(rx).map(|reply| (reply, None));
                     }
                 }
@@ -1856,15 +1859,8 @@ fn wait_for_stream_finalize(rx: mpsc::Receiver<StreamCmd>) -> Option<mpsc::Sende
 /// loaded / not streaming-capable) so the finalize handshake still completes
 /// and the caller falls back to batch transcription.
 fn drain_until_finalize(rx: mpsc::Receiver<StreamCmd>) {
-    while let Ok(cmd) = rx.recv() {
-        match cmd {
-            StreamCmd::Feed(_) => {}
-            StreamCmd::Finalize(reply) => {
-                let _ = reply.send(None);
-                break;
-            }
-            StreamCmd::Cancel => break,
-        }
+    if let Some(reply) = wait_for_stream_finalize(rx) {
+        let _ = reply.send(None);
     }
 }
 
