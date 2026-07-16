@@ -1,0 +1,637 @@
+{
+  "tray": {
+    "settings": "सेटिंग...",
+    "checkUpdates": "अपडेट जांचें...",
+    "copyLastTranscript": "पिछला ट्रांसक्रिप्ट कॉपी करें",
+    "unloadModel": "मॉडल अनलोड करें",
+    "model": "मॉडल",
+    "quit": "बाहर निकलें",
+    "cancel": "रद्द करें"
+  },
+  "sidebar": {
+    "general": "सामान्य",
+    "models": "मॉडल",
+    "advanced": "ऐडवांस",
+    "postProcessing": "पोस्ट प्रोसेस",
+    "history": "इतिहास",
+    "debug": "डिबग",
+    "about": "के बारे में"
+  },
+  "onboarding": {
+    "subtitle": "शुरू करने के लिए, एक ट्रांसक्रिप्शन मॉडल चुनें",
+    "existingModelsTitle": "संगत मॉडल",
+    "downloadModelsTitle": "डाउनलोड के लिए उपलब्ध",
+    "showAllModels": "सभी {{total}} मॉडल दिखाएं",
+    "showFewerModels": "कम मॉडल दिखाएं",
+    "recommended": "सुझाया गया",
+    "customModelDescription": "आधिकारिक रूप से समर्थित नहीं",
+    "modelCard": {
+      "accuracy": "सटीकता",
+      "speed": "स्पीड"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "तेज़ और काफ़ी सटीक."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "अच्छी सटीकता, मध्यम स्पीड"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "सटीकता और स्पीड का संतुलन."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "अच्छी सटीकता, लेकिन धीमा."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "केवल अंग्रेज़ी. अंग्रेज़ी बोलने वालों के लिए सबसे अच्छा मॉडल."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "तेज़ और सटीक"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "बहुत तेज़, केवल अंग्रेज़ी. अलग-अलग लहजों को अच्छी तरह समझता है."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "बेहद तेज़, केवल अंग्रेज़ी"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "तेज़, केवल अंग्रेज़ी. स्पीड और सटीकता का अच्छा संतुलन."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "केवल अंग्रेज़ी. बेहतरीन क्वालिटी."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "ताइवानी मैंडरिन के लिए ऑप्टिमाइज़ किया गया. कोड-स्विचिंग की सुविधा."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "बहुत तेज़. चीनी, अंग्रेज़ी, जापानी, कोरियाई, कैंटोनीज़."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "रूसी बोली पहचानता है. तेज़ और सटीक."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "बहुत तेज़. अंग्रेज़ी, जर्मन, स्पेनिश, फ़्रेंच. अनुवाद भी कर सकता है."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "सटीक बहुभाषी मॉडल. 25 यूरोपीय भाषाएं. अनुवाद भी कर सकता है."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "बड़ा और थोड़ा धीमा, लेकिन बहुत सटीक बहुभाषी मॉडल."
+      }
+    },
+    "errors": {
+      "selectModel": "मॉडल चुना नहीं जा सका"
+    },
+    "permissions": {
+      "title": "अनुमतियों की ज़रूरत है",
+      "description": "Handy को ठीक से काम करने के लिए कुछ अनुमतियों की ज़रूरत है.",
+      "microphone": {
+        "title": "माइक्रोफ़ोन ऐक्सेस",
+        "description": "आपकी आवाज़ सुनकर ट्रांसक्रिप्शन करने के लिए ज़रूरी."
+      },
+      "accessibility": {
+        "title": "ऐक्सेसिबिलिटी ऐक्सेस",
+        "description": "ट्रांसक्राइब किया गया टेक्स्ट आपके ऐप्लिकेशन में टाइप करने के लिए ज़रूरी."
+      },
+      "grant": "अनुमति दें",
+      "granted": "अनुमति मिल गई",
+      "waiting": "इंतज़ार किया जा रहा है...",
+      "allGranted": "सब तैयार!",
+      "errors": {
+        "checkFailed": "अनुमतियां जांची नहीं जा सकीं. कृपया फिर से कोशिश करें.",
+        "requestFailed": "अनुमति मांगी नहीं जा सकी. कृपया फिर से कोशिश करें."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "कस्टम",
+    "legacy": "लीगेसी",
+    "streaming": "स्ट्रीमिंग",
+    "active": "इस्तेमाल में",
+    "switching": "बदला जा रहा है...",
+    "noModelsAvailable": "कोई मॉडल उपलब्ध नहीं है",
+    "verifying": "{{modelName}} की पुष्टि हो रही है...",
+    "verifyingGeneric": "पुष्टि हो रही है...",
+    "extracting": "{{modelName}} एक्सट्रैक्ट हो रहा है...",
+    "extractingMultiple": "{{count}} मॉडल एक्सट्रैक्ट हो रहे हैं...",
+    "extractingGeneric": "एक्सट्रैक्ट हो रहा है...",
+    "downloading": "{{percentage}}% डाउनलोड हो रहा है",
+    "downloadingMultiple": "{{count}} मॉडल डाउनलोड हो रहे हैं...",
+    "modelReady": "मॉडल तैयार है",
+    "loading": "{{modelName}} लोड हो रहा है...",
+    "loadingGeneric": "लोड हो रहा है...",
+    "modelError": "मॉडल में गड़बड़ी",
+    "modelUnloaded": "मॉडल अनलोड किया गया",
+    "noModelDownloadRequired": "कोई मॉडल नहीं - डाउनलोड करना ज़रूरी है",
+    "deleteModel": "{{modelName}} हटाएं",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "रद्द करें",
+    "cancelDownload": "डाउनलोड रद्द करें",
+    "capabilities": {
+      "languageSelection": "कई इनपुट भाषाओं के साथ काम करता है",
+      "singleLanguage": "केवल इसी भाषा के साथ काम करता है",
+      "languageCount": "{{total}} भाषाएं",
+      "languageOnly": "केवल {{language}}",
+      "translation": "अंग्रेज़ी में अनुवाद कर सकता है",
+      "translate": "अनुवाद करें",
+      "streaming": "बोलते समय लाइव ट्रांसक्रिप्शन दिखाता है"
+    }
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "{{model}} सेटिंग"
+    },
+    "general": {
+      "title": "सामान्य",
+      "shortcut": {
+        "title": "Handy शॉर्टकट",
+        "description": "स्पीच-टू-टेक्स्ट रिकॉर्डिंग शुरू करने के लिए कीबोर्ड शॉर्टकट सेट करें",
+        "loading": "शॉर्टकट लोड हो रहे हैं...",
+        "none": "कोई शॉर्टकट सेट नहीं है",
+        "notFound": "शॉर्टकट नहीं मिला",
+        "pressKeys": "बटन दबाएं...",
+        "bindings": {
+          "transcribe": {
+            "name": "ट्रांसक्राइब शॉर्टकट",
+            "description": "आपकी आवाज़ रिकॉर्ड और ट्रांसक्राइब करने के लिए कीबोर्ड शॉर्टकट."
+          },
+          "cancel": {
+            "name": "रद्द करने का शॉर्टकट",
+            "description": "मौजूदा रिकॉर्डिंग रद्द करने के लिए कीबोर्ड शॉर्टकट."
+          },
+          "transcribe_with_post_process": {
+            "name": "पोस्ट-प्रोसेसिंग हॉटकी",
+            "description": "वैकल्पिक: एक अलग हॉटकी जो आपके ट्रांसक्रिप्शन पर हमेशा AI पोस्ट-प्रोसेसिंग लागू करती है."
+          }
+        },
+        "errors": {
+          "restore": "पहले वाला शॉर्टकट वापस नहीं लाया जा सका",
+          "set": "शॉर्टकट सेट नहीं हो सका: {{error}}",
+          "reset": "शॉर्टकट को पहले जैसा रीसेट नहीं किया जा सका"
+        }
+      },
+      "language": {
+        "title": "भाषा",
+        "description": "बोली पहचानने के लिए भाषा चुनें. 'ऑटो' अपने आप भाषा पहचान लेता है, जबकि कोई खास भाषा चुनने से उस भाषा की सटीकता बेहतर हो सकती है.",
+        "searchPlaceholder": "भाषाएं खोजें...",
+        "noResults": "कोई भाषा नहीं मिली",
+        "auto": "ऑटो"
+      },
+      "pushToTalk": {
+        "label": "पुश टू टॉक",
+        "description": "रिकॉर्ड करने के लिए दबाकर रखें, रोकने के लिए छोड़ दें"
+      }
+    },
+    "models": {
+      "title": "ट्रांसक्रिप्शन मॉडल",
+      "description": "कोई ट्रांसक्रिप्शन मॉडल चुनें या दूसरे मॉडल डाउनलोड करें. अलग-अलग मॉडल की सटीकता और स्पीड अलग-अलग होती है.",
+      "searchPlaceholder": "नाम से मॉडल खोजें…",
+      "yourModels": "डाउनलोड किए गए मॉडल",
+      "availableModels": "डाउनलोड के लिए उपलब्ध",
+      "deleteConfirm": "क्या आप वाकई {{modelName}} को हटाना चाहते हैं? इसे फिर से इस्तेमाल करने के लिए आपको इसे दोबारा डाउनलोड करना होगा.",
+      "deleteActiveConfirm": "{{modelName}} अभी इस्तेमाल में है. इसे हटाने पर ट्रांसक्रिप्शन तब तक रुका रहेगा, जब तक आप कोई नया मॉडल नहीं चुन लेते. क्या आप वाकई हटाना चाहते हैं?",
+      "deleteTitle": "मॉडल हटाएं",
+      "filters": {
+        "allLanguages": "सभी भाषाएं"
+      },
+      "rescan": {
+        "label": "फिर से स्कैन करें",
+        "tooltip": "Handy के बाहर, मॉडल फ़ोल्डर या Hugging Face कैश में जोड़े गए मॉडल के लिए फिर से स्कैन करें"
+      },
+      "noModelsMatch": "इस फ़िल्टर से मेल खाने वाला कोई मॉडल नहीं है."
+    },
+    "sound": {
+      "title": "आवाज़",
+      "microphone": {
+        "title": "माइक्रोफ़ोन",
+        "description": "अपना पसंदीदा माइक्रोफ़ोन डिवाइस चुनें",
+        "placeholder": "माइक्रोफ़ोन चुनें...",
+        "loading": "लोड हो रहा है..."
+      },
+      "audioFeedback": {
+        "label": "ऑडियो फ़ीडबैक",
+        "description": "रिकॉर्डिंग शुरू और बंद होने पर साउंड चलाएं"
+      },
+      "outputDevice": {
+        "title": "आउटपुट डिवाइस",
+        "description": "फ़ीडबैक साउंड के लिए अपना पसंदीदा ऑडियो आउटपुट डिवाइस चुनें",
+        "placeholder": "आउटपुट डिवाइस चुनें...",
+        "loading": "लोड हो रहा है..."
+      },
+      "volume": {
+        "title": "वॉल्यूम",
+        "description": "ऑडियो फ़ीडबैक साउंड का वॉल्यूम सेट करें"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "ऐप",
+        "output": "आउटपुट",
+        "transcription": "ट्रांसक्रिप्शन",
+        "history": "इतिहास",
+        "experimental": "प्रायोगिक"
+      },
+      "experimentalToggle": {
+        "label": "प्रायोगिक सुविधाएं",
+        "description": "ऐसी प्रायोगिक सुविधाएं चालू करें जो अभी बन रही हैं."
+      },
+      "lazyStreamClose": {
+        "label": "ट्रांसक्रिप्शन के बीच माइक खुला रखें",
+        "description": "रिकॉर्डिंग रुकने के बाद माइक्रोफ़ोन स्ट्रीम को 30 सेकंड तक खुला रखता है, जिससे लगातार ट्रांसक्रिप्शन के बीच देरी कम होती है. चालू रहने के दौरान Bluetooth ऑडियो की क्वालिटी पर असर पड़ सकता है."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "transcribe.cpp एक्सेलेरेशन",
+          "description": "transcribe.cpp (Whisper-परिवार) मॉडल के लिए हार्डवेयर एक्सेलेरेशन. 'ऑटो' उपलब्ध होने पर GPU का इस्तेमाल करता है (macOS पर Metal, Windows/Linux पर Vulkan)."
+        },
+        "ort": {
+          "title": "ONNX एक्सेलेरेशन",
+          "description": "ONNX मॉडल (Parakeet, Canary, Moonshine वगैरह) के लिए हार्डवेयर एक्सेलेरेशन. Windows पर DirectML प्रायोगिक है. हो सकता है कि कुछ मॉडल ट्रांसक्राइब न कर पाएं."
+        },
+        "gpuDevice": {
+          "auto": "ऑटो"
+        }
+      },
+      "startHidden": {
+        "label": "छिपाकर शुरू करें",
+        "description": "विंडो खोले बिना सिस्टम ट्रे में लॉन्च करें."
+      },
+      "autostart": {
+        "label": "स्टार्टअप पर लॉन्च करें",
+        "description": "कंप्यूटर में लॉग इन करने पर Handy अपने आप शुरू हो जाए."
+      },
+      "showTrayIcon": {
+        "label": "ट्रे आइकन दिखाएं",
+        "description": "सिस्टम ट्रे में Handy का आइकन दिखाएं."
+      },
+      "overlay": {
+        "style": {
+          "title": "ओवरले",
+          "description": "रिकॉर्डिंग ओवरले चुनें: 'कोई नहीं' इसे छिपा देता है, 'मिनिमल' एक छोटा इंडिकेटर दिखाता है, 'लाइव' बोलते समय रीयल टाइम में ट्रांसक्रिप्शन दिखाता है (केवल स्ट्रीमिंग वाले मॉडल — मॉडल पिकर में 'स्ट्रीमिंग' बैज देखें). Linux पर 'कोई नहीं' चुनने का सुझाव दिया जाता है.",
+          "options": {
+            "none": "कोई नहीं",
+            "minimal": "मिनिमल",
+            "live": "लाइव"
+          }
+        },
+        "position": {
+          "title": "ओवरले की जगह",
+          "description": "रिकॉर्डिंग और ट्रांसक्रिप्शन के दौरान ओवरले स्क्रीन पर कहां दिखे.",
+          "options": {
+            "bottom": "नीचे",
+            "top": "ऊपर"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "पेस्ट करने का तरीका",
+        "description": "चुनें कि टेक्स्ट कैसे डाला जाए. 'डायरेक्ट': सिस्टम इनपुट के ज़रिए सीधे टाइप करता है. 'कोई नहीं': पेस्ट नहीं करता, केवल इतिहास/क्लिपबोर्ड अपडेट करता है.",
+        "options": {
+          "clipboard": "क्लिपबोर्ड ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "क्लिपबोर्ड (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "क्लिपबोर्ड (Shift+Insert)",
+          "direct": "डायरेक्ट",
+          "none": "कोई नहीं",
+          "externalScript": "बाहरी स्क्रिप्ट"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
+      },
+      "typingTool": {
+        "title": "टाइपिंग टूल",
+        "description": "चुनें कि 'डायरेक्ट' पेस्ट के लिए कौन सा Linux टाइपिंग टूल इस्तेमाल किया जाए. 'ऑटो' आपके सिस्टम के लिए सबसे अच्छा उपलब्ध टूल अपने आप चुन लेता है.",
+        "options": {
+          "auto": "ऑटो (सुझाया गया)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "क्लिपबोर्ड मैनेजमेंट",
+        "description": "'क्लिपबोर्ड न बदलें' ट्रांसक्रिप्शन के बाद आपके क्लिपबोर्ड का मौजूदा कॉन्टेंट सुरक्षित रखता है. 'क्लिपबोर्ड पर कॉपी करें' पेस्ट करने के बाद ट्रांसक्रिप्शन का नतीजा आपके क्लिपबोर्ड में छोड़ देता है.",
+        "options": {
+          "dontModify": "क्लिपबोर्ड न बदलें",
+          "copyToClipboard": "क्लिपबोर्ड पर कॉपी करें"
+        }
+      },
+      "autoSubmit": {
+        "title": "ऑटो सबमिट",
+        "description": "टेक्स्ट डालने के बाद, चुना गया बटन कॉम्बिनेशन अपने आप भेजें. macOS पर Cmd+Enter लागू होता है, जबकि Windows/Linux पर Super+Enter इस्तेमाल होता है.",
+        "options": {
+          "off": "बंद",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "अंग्रेज़ी में अनुवाद करें",
+        "description": "ट्रांसक्रिप्शन के दौरान, दूसरी भाषाओं में बोली गई बात का अंग्रेज़ी में अपने आप अनुवाद करें."
+      },
+      "modelUnload": {
+        "title": "मॉडल अनलोड करें",
+        "description": "तय समय तक मॉडल का इस्तेमाल न होने पर GPU/CPU मेमोरी अपने आप खाली करें",
+        "options": {
+          "never": "कभी नहीं",
+          "immediately": "तुरंत",
+          "min2": "2 मिनट बाद",
+          "min5": "5 मिनट बाद",
+          "min10": "10 मिनट बाद",
+          "min15": "15 मिनट बाद",
+          "hour1": "1 घंटे बाद",
+          "sec15": "15 सेकंड बाद (डिबग)"
+        }
+      },
+      "customWords": {
+        "title": "कस्टम शब्द",
+        "description": "ऐसे शब्द जोड़ें जो ट्रांसक्रिप्शन के दौरान अक्सर गलत सुने या गलत लिखे जाते हैं. मिलती-जुलती आवाज़ वाले शब्दों को सिस्टम अपने आप आपकी सूची के हिसाब से सुधार देगा.",
+        "placeholder": "शब्द जोड़ें",
+        "add": "जोड़ें",
+        "remove": "{{word}} हटाएं",
+        "duplicate": "\"{{word}}\" पहले से मौजूद है"
+      },
+      "voiceActivityDetection": {
+        "title": "वॉइस एक्टिविटी डिटेक्शन",
+        "description": "रिकॉर्डिंग से बिना आवाज़ वाले हिस्से हटाएं. स्ट्रीमिंग वाले मॉडल लंबी VAD टेल इस्तेमाल करते हैं; VAD बंद करने पर कच्चा ऑडियो रिकॉर्ड होता है."
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "हॉटकी"
+      },
+      "api": {
+        "title": "API (OpenAI संगत)",
+        "provider": {
+          "title": "प्रोवाइडर",
+          "description": "कोई OpenAI-संगत प्रोवाइडर चुनें."
+        },
+        "appleIntelligence": {
+          "unavailable": "Apple Intelligence इस डिवाइस पर उपलब्ध नहीं है. इसके लिए macOS Tahoe (26.0) या उसके बाद का वर्शन चलाने वाला Apple Silicon Mac चाहिए, जिसमें System Settings में Apple Intelligence चालू हो."
+        },
+        "baseUrl": {
+          "title": "बेस URL",
+          "description": "चुने गए प्रोवाइडर के लिए API बेस URL. केवल कस्टम प्रोवाइडर में बदलाव किया जा सकता है.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API कुंजी",
+          "description": "चुने गए प्रोवाइडर के लिए API कुंजी.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "मॉडल",
+          "descriptionCustom": "वह मॉडल आईडी डालें जो आपके कस्टम एंडपॉइंट को चाहिए.",
+          "descriptionDefault": "चुने गए प्रोवाइडर का कोई मॉडल चुनें.",
+          "placeholderWithOptions": "मॉडल खोजें या चुनें",
+          "placeholderNoOptions": "मॉडल का नाम लिखें",
+          "refreshModels": "मॉडल रीफ़्रेश करें"
+        }
+      },
+      "prompts": {
+        "title": "प्रॉम्प्ट",
+        "selectedPrompt": {
+          "title": "चुना गया प्रॉम्प्ट",
+          "description": "ट्रांसक्रिप्शन को बेहतर बनाने के लिए कोई टेम्पलेट चुनें या नया बनाएं. प्रॉम्प्ट टेक्स्ट में कैप्चर किए गए ट्रांसक्रिप्ट का इस्तेमाल करने के लिए ${output} लिखें."
+        },
+        "noPrompts": "कोई प्रॉम्प्ट उपलब्ध नहीं है",
+        "selectPrompt": "कोई प्रॉम्प्ट चुनें",
+        "createNew": "नया प्रॉम्प्ट बनाएं",
+        "promptLabel": "प्रॉम्प्ट का लेबल",
+        "promptLabelPlaceholder": "प्रॉम्प्ट का नाम डालें",
+        "promptInstructions": "प्रॉम्प्ट के निर्देश",
+        "promptInstructionsPlaceholder": "ट्रांसक्रिप्शन के बाद चलाने के लिए निर्देश लिखें. उदाहरण: इस टेक्स्ट का व्याकरण और स्पष्टता सुधारें: ${output}",
+        "promptTip": "सुझाव: अपने प्रॉम्प्ट में ट्रांसक्राइब किया गया टेक्स्ट डालने के लिए <code>${output}</code> का इस्तेमाल करें.",
+        "updatePrompt": "प्रॉम्प्ट अपडेट करें",
+        "deletePrompt": "प्रॉम्प्ट हटाएं",
+        "createPrompt": "प्रॉम्प्ट बनाएं",
+        "cancel": "रद्द करें",
+        "selectToEdit": "जानकारी देखने और बदलाव करने के लिए, ऊपर कोई प्रॉम्प्ट चुनें.",
+        "createFirst": "अपना पहला पोस्ट-प्रोसेसिंग प्रॉम्प्ट बनाने के लिए, ऊपर 'नया प्रॉम्प्ट बनाएं' पर क्लिक करें."
+      }
+    },
+    "history": {
+      "title": "इतिहास",
+      "openFolder": "रिकॉर्डिंग फ़ोल्डर खोलें",
+      "loading": "इतिहास लोड हो रहा है...",
+      "empty": "अभी तक कोई ट्रांसक्रिप्शन नहीं है. अपना इतिहास बनाने के लिए रिकॉर्डिंग शुरू करें!",
+      "copyToClipboard": "ट्रांसक्रिप्शन क्लिपबोर्ड पर कॉपी करें",
+      "save": "ट्रांसक्रिप्शन सेव करें",
+      "unsave": "सेव किए गए से हटाएं",
+      "delete": "एंट्री हटाएं",
+      "deleteError": "एंट्री हटाई नहीं जा सकी. कृपया फिर से कोशिश करें.",
+      "retranscribe": "फिर से ट्रांसक्राइब करें",
+      "retranscribeError": "फिर से ट्रांसक्राइब नहीं किया जा सका. कृपया फिर से कोशिश करें.",
+      "transcribing": "ट्रांसक्राइब हो रहा है...",
+      "transcriptionFailed": "ट्रांसक्रिप्शन नहीं हो सका. आप रीट्राई आइकन से फिर से ट्रांसक्राइब कर सकते हैं."
+    },
+    "debug": {
+      "title": "डिबग",
+      "logDirectory": {
+        "title": "लॉग फ़ोल्डर",
+        "description": "वह जगह जहां लॉग फ़ाइलें सेव होती हैं"
+      },
+      "logLevel": {
+        "title": "लॉग लेवल",
+        "description": "लॉगिंग कितनी डिटेल में हो, यह सेट करें"
+      },
+      "liveLogs": {
+        "title": "लाइव लॉग",
+        "description": "लॉग फ़ाइल खोले बिना समस्याओं का पता लगाने के लिए, ऐप्लिकेशन लॉग रीयल टाइम में स्ट्रीम करें. केवल वही लॉग दिखते हैं जो यह पैनल खुला होने के दौरान बनते हैं; यह ऊपर दी गई लॉग लेवल सेटिंग के हिसाब से काम करता है.",
+        "live": "लाइव",
+        "paused": "रोका गया",
+        "pause": "रोकें",
+        "resume": "फिर से शुरू करें",
+        "copied": "कॉपी हो गया",
+        "lineCount": "{{count}} लाइनें",
+        "empty": "लॉग का इंतज़ार है… ऐप से लॉग आते ही एंट्री यहां दिखेंगी."
+      },
+      "updateChecks": {
+        "label": "अपडेट जांचें",
+        "description": "Handy के नए वर्शन की अपने आप जांच करें"
+      },
+      "whatsNewPreview": {
+        "title": "'नया क्या है' की झलक देखें",
+        "description": "बंडल की गई सबसे नई रिलीज़ नोट को 'देखा गया' मार्क किए बिना खोलें",
+        "button": "झलक देखें",
+        "noNotes": "बंडल की गई कोई रिलीज़ नोट नहीं मिली",
+        "error": "रिलीज़ नोट की झलक नहीं दिखाई जा सकी"
+      },
+      "soundTheme": {
+        "label": "साउंड थीम",
+        "description": "रिकॉर्डिंग शुरू और बंद होने के फ़ीडबैक के लिए कोई साउंड थीम चुनें"
+      },
+      "wordCorrectionThreshold": {
+        "title": "शब्द सुधार की सीमा",
+        "description": "कस्टम शब्द सुधार की संवेदनशीलता"
+      },
+      "historyLimit": {
+        "title": "इतिहास की सीमा",
+        "description": "ज़्यादा से ज़्यादा कितनी इतिहास एंट्री रखी जाएं",
+        "entries": "एंट्री"
+      },
+      "recordingRetention": {
+        "title": "रिकॉर्डिंग अपने आप हटाएं",
+        "description": "जगह बचाने के लिए पुरानी रिकॉर्डिंग अपने आप हटाएं",
+        "never": "कभी नहीं",
+        "preserveLimit": "सबसे नई {{count}} रखें",
+        "days3": "3 दिन बाद",
+        "weeks2": "2 हफ़्ते बाद",
+        "months3": "3 महीने बाद",
+        "placeholder": "कितने समय तक रखें, यह चुनें..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "हमेशा चालू माइक्रोफ़ोन",
+        "description": "तेज़ी से काम करने के लिए माइक्रोफ़ोन चालू रखें"
+      },
+      "clamshellMicrophone": {
+        "title": "क्लैमशेल माइक्रोफ़ोन",
+        "description": "लैपटॉप का ढक्कन बंद होने पर इस्तेमाल होने वाला माइक्रोफ़ोन"
+      },
+      "postProcessingToggle": {
+        "label": "पोस्ट प्रोसेसिंग",
+        "description": "ट्रांसक्रिप्शन के बाद AI की मदद से टेक्स्ट सुधारने की सुविधा चालू करें"
+      },
+      "muteWhileRecording": {
+        "label": "रिकॉर्डिंग के दौरान म्यूट करें",
+        "description": "रिकॉर्डिंग के दौरान सिस्टम ऑडियो म्यूट करें"
+      },
+      "appendTrailingSpace": {
+        "label": "आखिर में स्पेस जोड़ें",
+        "description": "पेस्ट किए गए ट्रांसक्रिप्शन के बाद एक स्पेस जोड़ें"
+      },
+      "keyboardImplementation": {
+        "title": "कीबोर्ड बैकएंड",
+        "description": "कीबोर्ड शॉर्टकट का बैकएंड चुनें.",
+        "bindingsReset": "कीबोर्ड शॉर्टकट संगत नहीं थे, इसलिए उन्हें डिफ़ॉल्ट पर रीसेट कर दिया गया"
+      },
+      "paths": {
+        "appData": "ऐप डेटा:",
+        "models": "मॉडल:",
+        "settings": "सेटिंग:"
+      },
+      "pasteDelay": {
+        "title": "पेस्ट में देरी (पहले)",
+        "description": "टेक्स्ट कॉपी होने के बाद और पेस्ट कीस्ट्रोक भेजने से पहले की देरी (मिलीसेकंड में). अगर कुछ भी पेस्ट न हो रहा हो, तो इसे बढ़ाएं."
+      },
+      "pasteDelayAfter": {
+        "title": "पेस्ट में देरी (बाद में)",
+        "description": "पेस्ट कीस्ट्रोक के बाद और आपका पिछला क्लिपबोर्ड वापस लाने से पहले की देरी (मिलीसेकंड में). अगर ट्रांसक्रिप्शन की जगह आपके क्लिपबोर्ड का पुराना कॉन्टेंट पेस्ट हो रहा हो, तो इसे बढ़ाएं."
+      },
+      "recordingBuffer": {
+        "title": "अतिरिक्त रिकॉर्डिंग बफ़र",
+        "description": "बटन छोड़ने के बाद भी रिकॉर्डिंग जारी रखने का अतिरिक्त समय (मिलीसेकंड में), ताकि आखिरी हिस्से का ऑडियो कैप्चर हो सके. 0 = कोई अतिरिक्त बफ़र नहीं."
+      }
+    },
+    "about": {
+      "title": "के बारे में",
+      "version": {
+        "title": "वर्शन",
+        "description": "Handy का मौजूदा वर्शन"
+      },
+      "whatsNewUpdates": {
+        "label": "'नया क्या है' दिखाएं",
+        "description": "Handy अपडेट होने के बाद रिलीज़ नोट दिखाएं"
+      },
+      "appDataDirectory": {
+        "title": "ऐप डेटा फ़ोल्डर",
+        "description": "वह जगह जहां Handy अपना डेटा सेव करता है"
+      },
+      "sourceCode": {
+        "title": "सोर्स कोड",
+        "description": "सोर्स कोड देखें और योगदान दें",
+        "button": "GitHub पर देखें"
+      },
+      "supportDevelopment": {
+        "title": "डेवलपमेंट में सहयोग करें",
+        "description": "Handy को आगे बढ़ाने में हमारी मदद करें",
+        "button": "दान करें"
+      },
+      "acknowledgments": {
+        "title": "आभार",
+        "ggml": {
+          "title": "ggml",
+          "description": "डिवाइस पर ही मशीन लर्निंग इन्फ़रेंस के लिए हाई-परफ़ॉर्मेंस टेंसर लाइब्रेरी",
+          "details": "Handy का लोकल स्पीच-टू-टेक्स्ट transcribe.cpp और ggml पर आधारित है. Georgi Gerganov और योगदान देने वालों के शानदार काम के लिए धन्यवाद."
+        }
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "अपडेट जांचे जा रहे हैं...",
+    "updateAvailableShort": "अपडेट उपलब्ध है",
+    "upToDate": "अप-टू-डेट",
+    "updateCheckingDisabled": "अपडेट जांच बंद है",
+    "downloading": "डाउनलोड हो रहा है... {{progress}}%",
+    "installing": "इंस्टॉल हो रहा है...",
+    "preparing": "तैयारी हो रही है...",
+    "checkForUpdates": "अपडेट जांचें",
+    "portableUpdateTitle": "मैन्युअल अपडेट ज़रूरी है",
+    "portableUpdateMessage": "पोर्टेबल इंस्टॉल अपने आप अपडेट नहीं हो सकते. अपडेट करने के लिए: GitHub Releases से सबसे नया NSIS इंस्टॉलर डाउनलोड करें, उसे उसी फ़ोल्डर में इंस्टॉल करें, फिर पुराने वर्शन से अपना Data/ फ़ोल्डर (सेटिंग, मॉडल, रिकॉर्डिंग) नए वर्शन में कॉपी करें.",
+    "portableUpdateButton": "GitHub Releases खोलें"
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}} में नया क्या है"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "delete": "हटाएं",
+    "close": "बंद करें",
+    "open": "खोलें",
+    "copy": "कॉपी करें",
+    "clear": "मिटाएं",
+    "noOptionsFound": "कोई विकल्प नहीं मिला"
+  },
+  "accessibility": {
+    "permissionsDescription": "ट्रांसक्राइब किया गया टेक्स्ट टाइप करने के लिए, Handy को ऐक्सेसिबिलिटी अनुमतियों की ज़रूरत है.",
+    "openSettings": "सिस्टम सेटिंग खोलें"
+  },
+  "errors": {
+    "loadDirectory": "फ़ोल्डर लोड करने में गड़बड़ी: {{error}}",
+    "micPermissionDeniedTitle": "माइक्रोफ़ोन का ऐक्सेस नहीं दिया गया",
+    "micPermissionDenied": {
+      "generic": "ऑपरेटिंग सिस्टम ने माइक्रोफ़ोन का ऐक्सेस नहीं दिया. कृपया अपनी सिस्टम सेटिंग में जाकर माइक्रोफ़ोन की अनुमति दें.",
+      "windows": "Settings → Privacy & security → Microphone में माइक्रोफ़ोन ऐक्सेस चालू करें (डेस्कटॉप ऐप ऐक्सेस समेत).",
+      "macos": "System Settings → Privacy & Security → Microphone में माइक्रोफ़ोन का ऐक्सेस दें.",
+      "linux": "अपने सिस्टम की साउंड या प्राइवेसी सेटिंग में माइक्रोफ़ोन का ऐक्सेस दें."
+    },
+    "noInputDeviceTitle": "कोई माइक्रोफ़ोन नहीं मिला",
+    "noInputDevice": "कोई ऑडियो इनपुट डिवाइस नहीं मिला. कृपया माइक्रोफ़ोन या हेडसेट कनेक्ट करके फिर से कोशिश करें.",
+    "recordingFailed": "रिकॉर्डिंग शुरू नहीं हो सकी: {{error}}",
+    "modelLoadFailed": "मॉडल लोड नहीं हो सका: {{model}}",
+    "modelLoadFailedUnknown": "अज्ञात मॉडल",
+    "pasteFailedTitle": "टेक्स्ट पेस्ट नहीं हो सका",
+    "pasteFailed": "खुले हुए ऐप्लिकेशन में टेक्स्ट पेस्ट नहीं किया जा सका.",
+    "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका"
+  },
+  "appLanguage": {
+    "title": "ऐप्लिकेशन की भाषा",
+    "description": "Handy इंटरफ़ेस की भाषा बदलें"
+  },
+  "theme": {
+    "title": "ऐप्लिकेशन थीम",
+    "description": "चुनें कि Handy आपकी सिस्टम थीम के हिसाब से चले या हमेशा लाइट या डार्क रहे",
+    "options": {
+      "system": "सिस्टम",
+      "light": "लाइट",
+      "dark": "डार्क"
+    }
+  },
+  "overlay": {
+    "transcribing": "ट्रांसक्राइब हो रहा है...",
+    "processing": "प्रोसेस हो रहा है..."
+  }
+}
