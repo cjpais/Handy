@@ -2,7 +2,8 @@ use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::mpsc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -74,22 +75,86 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
 
 #[cfg(target_os = "linux")]
+fn set_layer_shell_anchors(gtk_window: &gtk::ApplicationWindow, position: OverlayPosition) {
+    match position {
+        OverlayPosition::Top => {
+            gtk_window.set_anchor(Edge::Top, true);
+            gtk_window.set_anchor(Edge::Bottom, false);
+        }
+        OverlayPosition::Bottom => {
+            gtk_window.set_anchor(Edge::Bottom, true);
+            gtk_window.set_anchor(Edge::Top, false);
+        }
+    }
+}
+
+/// Runs the GTK main loop until all pending events are processed, so a surface
+/// commit (map/unmap) requested just before is actually sent to the compositor.
+#[cfg(target_os = "linux")]
+fn pump_gtk_events() {
+    while gtk::events_pending() {
+        gtk::main_iteration();
+    }
+}
+
+/// Runs `f` with the GTK window of `overlay_window` on the GTK main thread.
+/// No-op if the GTK window isn't available. Linux only.
+#[cfg(target_os = "linux")]
+fn with_gtk_window<F>(overlay_window: &tauri::webview::WebviewWindow, f: F)
+where
+    F: FnOnce(&gtk::ApplicationWindow) + Send + 'static,
+{
+    let w = overlay_window.clone();
+    let _ = overlay_window.run_on_main_thread(move || {
+        if let Ok(gtk_window) = w.gtk_window() {
+            f(&gtk_window);
+        }
+    });
+}
+
+/// Shows a layer surface: apply anchors, map it, pump the GTK event loop so the
+/// compositor commits it. Used by the prime cycle and show_overlay_state.
+#[cfg(target_os = "linux")]
+fn gtk_show_layer_surface(gtk_window: &gtk::ApplicationWindow, position: OverlayPosition) {
+    use gtk::prelude::WidgetExt;
+    set_layer_shell_anchors(gtk_window, position);
+    gtk_window.show();
+    pump_gtk_events();
+}
+
+/// Remaps a layer surface so a runtime anchor change is committed: unmap, apply
+/// new anchors, map again. Used by update_overlay_position on position switch.
+#[cfg(target_os = "linux")]
+fn gtk_remap_layer_surface(gtk_window: &gtk::ApplicationWindow, position: OverlayPosition) {
+    use gtk::prelude::WidgetExt;
+    gtk_window.hide();
+    pump_gtk_events();
+    set_layer_shell_anchors(gtk_window, position);
+    gtk_window.show();
+    pump_gtk_events();
+}
+
+/// Centers a regular (non-layer-shell) overlay window using its current size.
+fn position_overlay_window(overlay_window: &tauri::webview::WebviewWindow, app_handle: &AppHandle) {
+    let (width, height) =
+        current_overlay_logical_size(overlay_window).unwrap_or((OVERLAY_WIDTH, OVERLAY_HEIGHT));
+    if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+        let _ =
+            overlay_window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+    }
+}
+
+#[cfg(target_os = "linux")]
 fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow) {
+    if !LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+        return;
+    }
     let window_clone = overlay_window.clone();
     let _ = overlay_window.run_on_main_thread(move || {
         // Try to get the GTK window from the Tauri webview
         if let Ok(gtk_window) = window_clone.gtk_window() {
             let settings = settings::get_settings(window_clone.app_handle());
-            match settings.overlay_position {
-                OverlayPosition::Top => {
-                    gtk_window.set_anchor(Edge::Top, true);
-                    gtk_window.set_anchor(Edge::Bottom, false);
-                }
-                OverlayPosition::Bottom => {
-                    gtk_window.set_anchor(Edge::Bottom, true);
-                    gtk_window.set_anchor(Edge::Top, false);
-                }
-            }
+            set_layer_shell_anchors(&gtk_window, settings.overlay_position);
         }
     });
 }
@@ -119,22 +184,42 @@ fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool 
     }
 
     if !gtk_layer_shell::is_supported() {
+        debug!(
+            "Layer shell not supported by compositor (GDK_BACKEND={:?}, XDG_SESSION_TYPE={:?})",
+            env::var("GDK_BACKEND"),
+            env::var("XDG_SESSION_TYPE"),
+        );
         return false;
     }
 
-    // Try to get the GTK window from the Tauri webview
-    if let Ok(gtk_window) = overlay_window.gtk_window() {
-        // Initialize layer shell
-        gtk_window.init_layer_shell();
-        gtk_window.set_layer(Layer::Overlay);
-        gtk_window.set_keyboard_mode(KeyboardMode::None);
-        gtk_window.set_exclusive_zone(0);
+    match overlay_window.gtk_window() {
+        Ok(gtk_window) => {
+            use gtk::prelude::WidgetExt;
+            let realized = gtk_window.is_realized();
 
-        update_gtk_layer_shell_anchors(overlay_window);
+            gtk_window.init_layer_shell();
+            gtk_window.set_layer(Layer::Overlay);
+            gtk_window.set_keyboard_mode(KeyboardMode::None);
+            gtk_window.set_exclusive_zone(0);
 
-        return true;
+            update_gtk_layer_shell_anchors(overlay_window);
+
+            let ok = gtk_window.is_layer_window();
+            debug!(
+                "Layer shell init: realized_before_init={} is_layer_window={}",
+                realized, ok
+            );
+            if !ok {
+                log::error!("Failed to init layer shell (window was already realized)");
+            }
+            LAYER_SHELL_ACTIVE.store(ok, Ordering::SeqCst);
+            ok
+        }
+        Err(e) => {
+            log::error!("gtk_window() failed: {:?}", e);
+            false
+        }
     }
-    false
 }
 
 /// Forces a window to be topmost using Win32 API (Windows only)
@@ -288,6 +373,14 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 
     // Position starts unset — update_overlay_position() sets the correct
     // LogicalPosition before the overlay is shown.
+    // On Linux/Wayland allocate the largest possible size so gtk-layer-shell
+    // surfaces never need resizing (compositors like niri ignore set_size on
+    // mapped layer surfaces); other platforms keep the compact initial size.
+    #[cfg(target_os = "linux")]
+    let (init_w, init_h) = (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT);
+    #[cfg(not(target_os = "linux"))]
+    let (init_w, init_h) = (OVERLAY_WIDTH, OVERLAY_HEIGHT);
+
     let mut builder = WebviewWindowBuilder::new(
         app_handle,
         "recording_overlay",
@@ -295,7 +388,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     )
     .title("Recording")
     .resizable(false)
-    .inner_size(OVERLAY_WIDTH, OVERLAY_HEIGHT)
+    .inner_size(init_w, init_h)
     .shadow(false)
     .maximizable(false)
     .minimizable(false)
@@ -318,9 +411,30 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         Ok(window) => {
             #[cfg(target_os = "linux")]
             {
-                // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
                 if init_gtk_layer_shell(&window) {
                     debug!("GTK layer shell initialized for overlay window");
+
+                    // Prime the layer surface with a full map→unmap cycle so the
+                    // first real show() on the first transcription is honored.
+                    // Wayland compositors (niri, KWin) only commit a layer surface
+                    // on an unmapped→mapped transition; priming with show()+hide()
+                    // leaves the surface unmapped, so the first real show() maps it
+                    // fresh instead of being a no-op on an already-mapped surface.
+                    let (tx, rx) = mpsc::channel();
+                    let w = window.clone();
+                    let _ = window.run_on_main_thread(move || {
+                        if let Ok(gtk_window) = w.gtk_window() {
+                            use gtk::prelude::WidgetExt;
+                            let s = settings::get_settings(w.app_handle());
+                            set_layer_shell_anchors(&gtk_window, s.overlay_position);
+                            gtk_window.show();
+                            pump_gtk_events();
+                            gtk_window.hide();
+                            pump_gtk_events();
+                        }
+                        let _ = tx.send(());
+                    });
+                    let _ = rx.recv_timeout(Duration::from_millis(500));
                 } else {
                     debug!("GTK layer shell not available, falling back to regular window");
                 }
@@ -373,50 +487,79 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 }
 
 fn show_overlay_state(app_handle: &AppHandle, state: &str) {
-    // Whether the overlay shows at all is governed by overlay_style; position
-    // only chooses Top vs Bottom placement.
     let settings = settings::get_settings(app_handle);
     if settings.overlay_style == OverlayStyle::None {
         return;
     }
 
-    // Size the overlay for this state (compact vs. streaming), then position it.
     let (width, height) = overlay_dimensions(state);
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         #[cfg(target_os = "linux")]
-        update_gtk_layer_shell_anchors(&overlay_window);
-
-        let size_started = std::time::Instant::now();
-        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
-        let size_elapsed = size_started.elapsed();
-
-        let pos_started = std::time::Instant::now();
-        let mut set_pos_elapsed = std::time::Duration::ZERO;
-        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
-            let set_pos_started = std::time::Instant::now();
-            let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
-            set_pos_elapsed = set_pos_started.elapsed();
+        if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+            // Layer-shell on niri: set anchors + show atomically on the GTK
+            // main thread. Calling show() separately from anchor setup meant
+            // the surface was committed before anchors were applied, making it
+            // invisible. The Tauri window visibility must also flip to "shown"
+            // so `emit("show-overlay")` is delivered to the WebView.
+            let _ = overlay_window.show();
+            let pos = settings::get_settings(overlay_window.app_handle()).overlay_position;
+            // Synchronize with the GTK main thread so emit("show-overlay") below
+            // runs only after the surface is actually mapped. Without this, the
+            // event reaches the WebView before the layer surface is visible,
+            // racing the fade-in and any first-frame layout.
+            let (tx, rx) = mpsc::channel();
+            let w = overlay_window.clone();
+            let _ = overlay_window.run_on_main_thread(move || {
+                if let Ok(gtk_window) = w.gtk_window() {
+                    gtk_show_layer_surface(&gtk_window, pos);
+                }
+                let _ = tx.send(());
+            });
+            let _ = rx.recv_timeout(Duration::from_millis(500));
+        } else {
+            // Non-layer-shell fallback (regular window) on Linux.
+            let _ = overlay_window.show();
+            let _ =
+                overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+            position_overlay_window(&overlay_window, app_handle);
         }
-        let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
 
-        let show_started = std::time::Instant::now();
-        let _ = overlay_window.show();
-        let show_elapsed = show_started.elapsed();
+        #[cfg(not(target_os = "linux"))]
+        {
+            let size_started = std::time::Instant::now();
+            let _ =
+                overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+            let size_elapsed = size_started.elapsed();
 
-        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
-        #[cfg(target_os = "windows")]
-        force_overlay_topmost(&overlay_window);
+            let pos_started = std::time::Instant::now();
+            let mut set_pos_elapsed = std::time::Duration::ZERO;
+            if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+                let set_pos_started = std::time::Instant::now();
+                let _ = overlay_window
+                    .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+                set_pos_elapsed = set_pos_started.elapsed();
+            }
+            let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
+
+            let show_started = std::time::Instant::now();
+            let _ = overlay_window.show();
+            let show_elapsed = show_started.elapsed();
+
+            // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
+            #[cfg(target_os = "windows")]
+            force_overlay_topmost(&overlay_window);
+
+            log::debug!(
+                "overlay '{}': set_size={:?} pos_calc={:?} set_pos={:?} show={:?}",
+                state,
+                size_elapsed,
+                pos_calc_elapsed,
+                set_pos_elapsed,
+                show_elapsed
+            );
+        }
 
         let _ = overlay_window.emit("show-overlay", state);
-        log::debug!(
-            "overlay '{}': set_size={:?} pos_calc={:?} set_pos={:?} show={:?}",
-            state,
-            size_elapsed,
-            pos_calc_elapsed,
-            set_pos_elapsed,
-            show_elapsed
-        );
     }
 }
 
@@ -444,32 +587,50 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
 pub fn update_overlay_position(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         #[cfg(target_os = "linux")]
-        {
-            update_gtk_layer_shell_anchors(&overlay_window);
+        if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+            // On Wayland layer surfaces, anchors can only be applied on an
+            // unmapped→mapped transition. To change Top/Bottom at runtime we
+            // remap the surface: unmap, set the new anchors, then map again so
+            // the compositor (niri, KWin) commits them. Skipping the remap
+            // leaves the surface mapped with stale anchors and the overlay
+            // disappears on position change.
+            let pos = settings::get_settings(overlay_window.app_handle()).overlay_position;
+            with_gtk_window(&overlay_window, move |gtk_window| {
+                gtk_remap_layer_surface(gtk_window, pos);
+            });
+            // Keep Tauri's visibility state in sync (like hide_recording_overlay).
+            let _ = overlay_window.hide();
+            return;
         }
 
-        // Use the window's current size so centering stays correct whether the
-        // overlay is in compact or streaming layout.
-        let (width, height) = current_overlay_logical_size(&overlay_window)
-            .unwrap_or((OVERLAY_WIDTH, OVERLAY_HEIGHT));
-        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
-            let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        #[cfg(target_os = "linux")]
+        if !LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+            // Non-layer-shell fallback on Linux: anchors don't apply, just move.
+            position_overlay_window(&overlay_window, app_handle);
         }
+
+        #[cfg(not(target_os = "linux"))]
+        position_overlay_window(&overlay_window, app_handle);
     }
 }
 
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
-    // Always hide the overlay regardless of settings - if setting was changed while recording,
-    // we still want to hide it properly
+    #[cfg(target_os = "linux")]
+    use gtk::prelude::WidgetExt;
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Emit event to trigger fade-out animation
         let _ = overlay_window.emit("hide-overlay", ());
-        // Hide the window after a short delay to allow animation to complete
         let window_clone = overlay_window.clone();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(300));
+            #[cfg(target_os = "linux")]
+            if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+                with_gtk_window(&window_clone, |gtk_window| gtk_window.hide());
+                // Keep Tauri's visibility state in sync so the next
+                // `overlay_window.show()` (which re-flips the flag) is honored.
+                let _ = window_clone.hide();
+            }
+            #[cfg(not(target_os = "linux"))]
             let _ = window_clone.hide();
         });
     }
@@ -480,6 +641,10 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
 // Defaults to false so the audio path doesn't emit until lib.rs::setup
 // populates the cache from initial settings.
 static OVERLAY_ENABLED: AtomicBool = AtomicBool::new(false);
+
+/// Tracks whether gtk-layer-shell was successfully initialized (Linux only).
+/// Used to skip layer-shell calls when the window is a regular fallback.
+static LAYER_SHELL_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 /// Update the cached overlay-enabled flag. Called from `lib.rs` at
 /// startup after settings load, and from `change_overlay_style_setting`
