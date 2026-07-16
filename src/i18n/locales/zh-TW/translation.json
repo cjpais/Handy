@@ -506,6 +506,14 @@
         "label": "附加尾部空格",
         "description": "在貼上的轉錄後新增空格"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "鍵盤實作",
         "description": "選擇鍵盤快捷鍵的後端",

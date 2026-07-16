@@ -506,6 +506,14 @@
         "label": "끝 공백 추가",
         "description": "붙여넣은 텍스트 끝에 공백 추가"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "키보드 구현",
         "description": "키보드 단축키 백엔드를 선택하세요.",

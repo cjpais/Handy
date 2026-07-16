@@ -506,6 +506,14 @@
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "Triển khai bàn phím",
         "description": "Chọn hệ thống xử lý phím tắt.",

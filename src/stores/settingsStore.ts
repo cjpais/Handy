@@ -143,6 +143,10 @@ const settingUpdaters: {
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
+  lowercase_first_letter: (value) =>
+    commands.changeLowercaseFirstLetterSetting(value as boolean),
+  remove_trailing_period: (value) =>
+    commands.changeRemoveTrailingPeriodSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   theme: (value) => commands.changeThemeSetting(value as string),

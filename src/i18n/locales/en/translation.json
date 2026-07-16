@@ -513,6 +513,14 @@
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
       },
+      "lowercaseFirstLetter": {
+        "label": "Lowercase sentence starts",
+        "description": "Convert the start of every sentence to lowercase. Terms in the custom dictionary keep their specified capitalization"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

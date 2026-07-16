@@ -506,6 +506,14 @@
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "Implementazione tastiera",
         "description": "Scegli il backend per le scorciatoie da tastiera.",

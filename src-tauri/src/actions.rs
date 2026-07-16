@@ -393,6 +393,126 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
+fn format_transcription_text(
+    text: &str,
+    lowercase_sentence_starts: bool,
+    remove_trailing_period: bool,
+    custom_words: &[String],
+) -> String {
+    let mut formatted = text.to_string();
+
+    if lowercase_sentence_starts {
+        lowercase_sentence_starts_in_place(&mut formatted, custom_words);
+    }
+
+    if remove_trailing_period {
+        let terminal_period = formatted.char_indices().rev().find(|(_, character)| {
+            !character.is_whitespace()
+                && !matches!(character, '"' | '\'' | '»' | '”' | '’' | ')' | ']' | '}')
+        });
+
+        if let Some((index, '.')) = terminal_period {
+            let belongs_to_ellipsis = formatted[..index].chars().next_back() == Some('.');
+            if !belongs_to_ellipsis {
+                formatted.remove(index);
+            }
+        }
+    }
+
+    formatted
+}
+
+/// Lowercase the first letter of every sentence, preserving terms explicitly
+/// capitalized in the user's custom dictionary (for example, `GitHub` or
+/// `Москва`). The dictionary is the reliable, user-controlled source for
+/// exceptions when a proper name appears at the beginning of a sentence.
+fn lowercase_sentence_starts_in_place(text: &mut String, custom_words: &[String]) {
+    let mut sentence_start = true;
+    let mut previous_was_alphanumeric = false;
+    let mut replacements: Vec<(usize, usize, String)> = Vec::new();
+    let mut characters = text.char_indices().peekable();
+
+    while let Some((index, character)) = characters.next() {
+        if character.is_alphabetic() {
+            if sentence_start
+                && !starts_with_custom_word(text, index, custom_words)
+                && !starts_with_all_uppercase_word(text, index)
+            {
+                replacements.push((
+                    index,
+                    character.len_utf8(),
+                    character.to_lowercase().collect(),
+                ));
+            }
+            sentence_start = false;
+            previous_was_alphanumeric = true;
+        } else if character.is_alphanumeric() {
+            sentence_start = false;
+            previous_was_alphanumeric = true;
+        } else if matches!(character, '.' | '!' | '?') {
+            // A dot inside an abbreviation, a number, or a domain is not a
+            // sentence boundary: `U.S.`, `3.14`, and `example.com` stay intact.
+            let next_is_alphanumeric = characters
+                .peek()
+                .is_some_and(|(_, next)| next.is_alphanumeric());
+            sentence_start = !(previous_was_alphanumeric && next_is_alphanumeric);
+            previous_was_alphanumeric = false;
+        } else {
+            previous_was_alphanumeric = false;
+        }
+    }
+
+    // Apply from right to left so byte indices remain valid for Unicode case
+    // mappings that change length.
+    for (index, length, lowercase) in replacements.into_iter().rev() {
+        text.replace_range(index..index + length, &lowercase);
+    }
+}
+
+fn starts_with_custom_word(text: &str, start: usize, custom_words: &[String]) -> bool {
+    custom_words.iter().any(|custom_word| {
+        let custom_word = custom_word.trim();
+        if custom_word.is_empty() {
+            return false;
+        }
+
+        let mut text_characters = text[start..].char_indices();
+        let mut end = start;
+
+        for custom_character in custom_word.chars() {
+            let Some((offset, text_character)) = text_characters.next() else {
+                return false;
+            };
+
+            if text_character.to_lowercase().collect::<String>()
+                != custom_character.to_lowercase().collect::<String>()
+            {
+                return false;
+            }
+
+            end = start + offset + text_character.len_utf8();
+        }
+
+        text[end..]
+            .chars()
+            .next()
+            .map_or(true, |next| !next.is_alphanumeric())
+    })
+}
+
+fn starts_with_all_uppercase_word(text: &str, start: usize) -> bool {
+    let word: String = text[start..]
+        .chars()
+        .take_while(|character| character.is_alphabetic())
+        .collect();
+
+    word.chars().count() > 1
+        && word
+            .chars()
+            .filter(|character| character.is_alphabetic())
+            .all(|character| character.is_uppercase())
+}
+
 /// Resolve the persisted language *intent* into the language the currently-loaded
 /// model will actually use — the same capability-aware coercion the transcription
 /// paths apply (see [`crate::managers::model::effective_language`]). Post-processing
@@ -423,6 +543,7 @@ pub(crate) async fn process_transcription_output(
     let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
+    let mut post_process_applied = false;
 
     // Resolve the language the transcription actually ran in (the persisted
     // intent coerced against the loaded model's capabilities) so OpenCC keys off
@@ -436,8 +557,8 @@ pub(crate) async fn process_transcription_output(
 
     if post_process {
         if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
-            post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
+            post_process_applied = true;
 
             if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
                 if let Some(prompt) = settings
@@ -449,7 +570,16 @@ pub(crate) async fn process_transcription_output(
                 }
             }
         }
-    } else if final_text != transcription {
+    }
+
+    final_text = format_transcription_text(
+        &final_text,
+        settings.lowercase_first_letter,
+        settings.remove_trailing_period,
+        &settings.custom_words,
+    );
+
+    if post_process_applied || final_text != transcription {
         post_processed_text = Some(final_text.clone());
     }
 
@@ -927,7 +1057,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 
 #[cfg(test)]
 mod tests {
-    use super::{complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay};
+    use super::{
+        complete_unless_cancelled, format_transcription_text, is_blank_transcription,
+        should_use_streaming_overlay,
+    };
     use crate::settings::OverlayStyle;
     use std::future;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -946,6 +1079,68 @@ mod tests {
     fn non_blank_transcription_is_kept() {
         assert!(!is_blank_transcription("hello"));
         assert!(!is_blank_transcription("  hello  "));
+    }
+
+    #[test]
+    fn transcription_formatting_lowercases_sentence_starts_and_removes_period() {
+        assert_eq!(
+            format_transcription_text("Привет, мир. Как дела? Всё хорошо.", true, true, &[]),
+            "привет, мир. как дела? всё хорошо"
+        );
+        assert_eq!(
+            format_transcription_text("  «Привет, мир.»  ", true, true, &[]),
+            "  «привет, мир»  "
+        );
+    }
+
+    #[test]
+    fn transcription_formatting_preserves_ellipsis_and_independent_toggles() {
+        assert_eq!(
+            format_transcription_text("Привет... Как дела?", true, true, &[]),
+            "привет... как дела?"
+        );
+        assert_eq!(
+            format_transcription_text("Привет...", true, true, &[]),
+            "привет..."
+        );
+        assert_eq!(
+            format_transcription_text("Привет.", false, true, &[]),
+            "Привет"
+        );
+        assert_eq!(
+            format_transcription_text("Привет.", true, false, &[]),
+            "привет."
+        );
+        assert_eq!(
+            format_transcription_text("Привет.", false, false, &[]),
+            "Привет."
+        );
+    }
+
+    #[test]
+    fn transcription_formatting_preserves_custom_dictionary_capitalization() {
+        let custom_words = vec![
+            "Москва".to_string(),
+            "GitHub".to_string(),
+            "OpenAI".to_string(),
+        ];
+        assert_eq!(
+            format_transcription_text(
+                "Москва прекрасна. GitHub и OpenAI полезны.",
+                true,
+                true,
+                &custom_words,
+            ),
+            "Москва прекрасна. GitHub и OpenAI полезны"
+        );
+        assert_eq!(
+            format_transcription_text("США. Обычное предложение.", true, false, &[]),
+            "США. обычное предложение."
+        );
+        assert_eq!(
+            format_transcription_text("Версия U.S. SDK готова.", true, true, &[]),
+            "версия U.S. SDK готова"
+        );
     }
 
     #[test]

@@ -506,6 +506,14 @@
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "Klavye Uygulaması",
         "description": "Klavye kısayolları için kullanılacak altyapıyı seçin.",

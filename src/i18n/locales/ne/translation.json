@@ -513,6 +513,14 @@
         "label": "अन्त्यमा खाली ठाउँ थप्नुहोस्",
         "description": "पेस्ट गरिएको ट्रान्सक्रिप्सनपछि खाली ठाउँ थप्नुहोस्"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "किबोर्ड कार्यान्वयन",
         "description": "किबोर्ड सर्टकट ब्याकइन्ड छान्नुहोस्।",

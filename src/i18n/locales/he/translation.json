@@ -506,6 +506,14 @@
         "label": "הוסף רווח בסוף",
         "description": "הוסף רווח אחרי התמלול המודבק"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "מימוש מקלדת",
         "description": "בחר את מנגנון קיצורי המקלדת.",

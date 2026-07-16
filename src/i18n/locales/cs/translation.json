@@ -506,6 +506,14 @@
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "Implementace klávesnice",
         "description": "Zvolte backend pro klávesové zkratky.",

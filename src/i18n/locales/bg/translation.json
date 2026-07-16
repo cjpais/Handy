@@ -506,6 +506,14 @@
         "label": "Интервал в края",
         "description": "Добавяне на интервал след поставената транскрипция"
       },
+      "lowercaseFirstLetter": {
+        "label": "Start With Lowercase Letter",
+        "description": "Convert the first letter of the transcription to lowercase"
+      },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove a single period from the end of the transcription"
+      },
       "keyboardImplementation": {
         "title": "Реализация на клавиатурата",
         "description": "Избор на бекенд за глобалните бързи клавиши.",
