@@ -146,11 +146,23 @@ fn wait_for_play(settings: &AppSettings, path: PathBuf) {
 /// observed with wireless headsets) and gets scrapped.
 const PLAYBACK_STALL_TIMEOUT: Duration = Duration::from_secs(5);
 
+struct CachedStream {
+    /// The settings selection this stream was created for (None / "Default"
+    /// / explicit device name).
+    selection: Option<String>,
+    /// For a default selection: the concrete device the OS default resolved
+    /// to at creation time. The persistent stream does not follow default
+    /// changes by itself, so this is compared against the current default
+    /// before each use.
+    default_name: Option<String>,
+    stream: rodio::OutputStream,
+}
+
 fn playback_worker(rx: mpsc::Receiver<Request>) {
     // The output stream is created once and kept open across transcriptions.
     // Recreating it per chime is what raced concurrent WASAPI session state
     // and could deadlock the whole audio stack, mic stream shutdown included.
-    let mut cached: Option<(Option<String>, rodio::OutputStream)> = None;
+    let mut cached: Option<CachedStream> = None;
 
     while let Ok(req) = rx.recv() {
         match req {
@@ -163,8 +175,8 @@ fn playback_worker(rx: mpsc::Receiver<Request>) {
                 volume,
                 done,
             } => {
-                if let Some((_, stream)) = ensure_stream(&mut cached, device) {
-                    if let Err(e) = play_on_stream(stream, &path, volume) {
+                if let Some(c) = ensure_stream(&mut cached, device) {
+                    if let Err(e) = play_on_stream(&c.stream, &path, volume) {
                         error!(
                             "Failed to play sound '{}': {}; scrapping output stream",
                             path.display(),
@@ -184,21 +196,53 @@ fn playback_worker(rx: mpsc::Receiver<Request>) {
 /// Dispose of the cached stream on a throwaway thread. Dropping a cpal
 /// stream whose device wedged can block indefinitely — that must park a
 /// disposable thread, never this worker.
-fn scrap_stream(cached: &mut Option<(Option<String>, rodio::OutputStream)>) {
-    if let Some((_, stream)) = cached.take() {
-        thread::spawn(move || drop(stream));
+fn scrap_stream(cached: &mut Option<CachedStream>) {
+    if let Some(c) = cached.take() {
+        thread::spawn(move || drop(c.stream));
     }
 }
 
+fn is_default_selection(device: &Option<String>) -> bool {
+    match device {
+        None => true,
+        Some(name) => name == "Default",
+    }
+}
+
+/// Name of the device the OS default output currently resolves to. A cheap
+/// query compared to stream creation; runs on the worker, so a wedged audio
+/// stack costs a chime, not the pipeline.
+fn current_default_name() -> Option<String> {
+    let host = crate::audio_toolkit::get_cpal_host();
+    host.default_output_device().and_then(|d| d.name().ok())
+}
+
 fn ensure_stream(
-    cached: &mut Option<(Option<String>, rodio::OutputStream)>,
+    cached: &mut Option<CachedStream>,
     device: Option<String>,
-) -> Option<&(Option<String>, rodio::OutputStream)> {
-    let stale = cached.as_ref().map(|(d, _)| d != &device).unwrap_or(true);
+) -> Option<&CachedStream> {
+    // A "Default" stream must follow the OS default: the persistent stream
+    // keeps playing to the device it was opened on, so compare what the
+    // default resolves to now against what it resolved to at creation.
+    let default_name = if is_default_selection(&device) {
+        current_default_name()
+    } else {
+        None
+    };
+    let stale = cached.as_ref().is_none_or(|c| {
+        c.selection != device
+            || (is_default_selection(&device) && c.default_name != default_name)
+    });
     if stale {
         scrap_stream(cached);
         match create_stream(device.as_deref()) {
-            Ok(stream) => *cached = Some((device, stream)),
+            Ok(stream) => {
+                *cached = Some(CachedStream {
+                    selection: device,
+                    default_name,
+                    stream,
+                })
+            }
             Err(e) => error!("Failed to open audio feedback output stream: {}", e),
         }
     }
