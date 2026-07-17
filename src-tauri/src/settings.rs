@@ -536,11 +536,11 @@ fn default_vad_enabled() -> bool {
 }
 
 fn default_lowercase_first_letter() -> bool {
-    true
+    false
 }
 
 fn default_remove_trailing_period() -> bool {
-    true
+    false
 }
 
 fn default_debug_mode() -> bool {
