@@ -307,6 +307,7 @@
           "clipboardCtrlShiftV": "Schowek (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Schowek (Shift+Insert)",
           "direct": "Bezpośrednio",
+          "directCompatibility": "Direct (Slow)",
           "none": "Brak",
           "externalScript": "Skrypt zewnętrzny"
         },

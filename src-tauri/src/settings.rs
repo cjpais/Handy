@@ -149,6 +149,7 @@ pub enum ModelUnloadTimeout {
 pub enum PasteMethod {
     CtrlV,
     Direct,
+    DirectCompatibility,
     None,
     ShiftInsert,
     CtrlShiftV,

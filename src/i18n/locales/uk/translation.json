@@ -307,6 +307,7 @@
           "clipboardCtrlShiftV": "Буфер обміну (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Буфер обміну (Shift+Insert)",
           "direct": "Прямий",
+          "directCompatibility": "Direct (Slow)",
           "none": "Немає",
           "externalScript": "Зовнішній скрипт"
         },
