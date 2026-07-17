@@ -15,7 +15,8 @@
     "postProcessing": "עיבוד משלים",
     "history": "היסטוריה",
     "debug": "ניפוי שגיאות",
-    "about": "אודות"
+    "about": "אודות",
+    "transcribeFile": "קובץ"
   },
   "onboarding": {
     "subtitle": "כדי להתחיל, בחר מודל תמלול",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "חדש ב-Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "תמלול קובץ שמע",
+    "description": "בחרו קובץ שמע או וידאו — המודל הנבחר יתמלל אותו, בדיוק כמו המיקרופון. קבצים בכל אורך מעובדים כזרם, והזיכרון נשאר קבוע. תומך ב-mp3, wav, m4a, flac ועוד (נדרש ffmpeg).",
+    "chooseFile": "בחירת קובץ",
+    "transcribe": "תמלול",
+    "transcribing": "מתמלל…",
+    "file": "קובץ: {{name}}",
+    "remaining": "נותרו ≈{{time}}",
+    "timeMinSec": "{{m}} דק׳ {{s}} שנ׳",
+    "timeSec": "{{s}} שנ׳",
+    "result": "תוצאה",
+    "copy": "העתקה",
+    "copied": "הועתק",
+    "filterName": "שמע / וידאו"
   }
 }

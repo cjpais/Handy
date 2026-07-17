@@ -15,7 +15,8 @@
     "postProcessing": "Post proceso",
     "history": "Historial",
     "debug": "Depuración",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "transcribeFile": "Archivo"
   },
   "onboarding": {
     "subtitle": "Para comenzar, elige un modelo de transcripción",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Nuevo en Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "Transcripción de archivo de audio",
+    "description": "Elige un archivo de audio o vídeo y el modelo seleccionado lo transcribe, igual que el micrófono. Los archivos de cualquier duración se procesan como flujo, la memoria se mantiene estable. Compatible con mp3, wav, m4a, flac y más (requiere ffmpeg).",
+    "chooseFile": "Elegir archivo",
+    "transcribe": "Transcribir",
+    "transcribing": "Transcribiendo…",
+    "file": "Archivo: {{name}}",
+    "remaining": "≈{{time}} restante",
+    "timeMinSec": "{{m}} min {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Resultado",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "filterName": "Audio / Vídeo"
   }
 }

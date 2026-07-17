@@ -36,6 +36,14 @@ use transcribe_rs::{
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 const STREAM_FINALIZE_REPLY_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// Frame size fed to the engine when streaming a file, matching the recorder's
+/// live cadence (512 samples @ 16 kHz = 32 ms) so the model sees the same input
+/// shape it gets from the mic.
+const FILE_STREAM_FRAME: usize = 512;
+
+/// How many frames to feed between progress callbacks (~2s of audio).
+const FILE_STREAM_PROGRESS_EVERY: usize = 64;
+
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
     pub event_type: String,
@@ -450,6 +458,32 @@ impl TranscriptionManager {
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
         self.load_model_with_device(model_id, None)
+    }
+
+    /// Load `model_id` unless it is already the loaded model, serialized with
+    /// every other load path through the `is_loading` slot. Concurrent callers
+    /// (the mic hotkey's `initiate_model_load`, a model switch, a second file
+    /// run) wait for the winner instead of spawning a second multi-GB load.
+    pub fn ensure_model_loaded(&self, model_id: &str) -> Result<()> {
+        loop {
+            {
+                let mut is_loading = self.is_loading.lock().unwrap();
+                while *is_loading {
+                    is_loading = self.loading_condvar.wait(is_loading).unwrap();
+                }
+            }
+            if self.is_model_loaded() && self.get_current_model().as_deref() == Some(model_id) {
+                return Ok(());
+            }
+            // Claim the loading slot; on failure another loader won the race —
+            // loop back and wait for it, then re-check what it loaded.
+            if let Some(_guard) = self.try_start_loading() {
+                if self.is_model_loaded() && self.get_current_model().as_deref() == Some(model_id) {
+                    return Ok(());
+                }
+                return self.load_model_with_device(model_id, None);
+            }
+        }
     }
 
     /// Like [`load_model`](Self::load_model), but lets a caller hard-select the
@@ -1099,6 +1133,218 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
+    /// Transcribe a whole pre-decoded 16 kHz mono buffer by driving the
+    /// streaming engine frame by frame, the way the mic path does.
+    ///
+    /// Memory here stays flat no matter how long the input is: the engine keeps
+    /// bounded state and never sees the buffer as one tensor. `transcribe` does
+    /// the opposite and hands the engine everything at once, which costs
+    /// attention memory quadratic in length — an hour of audio needs tens of GB
+    /// and wedges the machine. Feeding is synchronous, so a slow engine applies
+    /// backpressure instead of letting frames pile up in a queue.
+    ///
+    /// `progress` is called with `(samples_fed, samples_total)` as feeding
+    /// advances. `Ok(None)` means the loaded model can't stream, and the caller
+    /// should fall back to a chunked batch path.
+    pub fn transcribe_buffer_streaming(
+        &self,
+        audio: &[f32],
+        progress: &dyn Fn(usize, usize),
+    ) -> Result<Option<String>> {
+        if audio.is_empty() {
+            return Ok(Some(String::new()));
+        }
+
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
+
+        // Claim both tokens in the same order as the mic path (worker token in
+        // start_stream, then the engine lease in the worker) so a live stream
+        // and a file run can never share the engine. Both claims are try-fail:
+        // whoever loses reports busy instead of blocking, and a failed second
+        // claim releases the first so nothing leaks.
+        let worker_id = self.next_stream_worker_id.fetch_add(1, Ordering::Relaxed);
+        if self
+            .active_stream_worker
+            .compare_exchange(0, worker_id, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
+            return Err(anyhow::anyhow!(
+                "A live dictation is in progress — wait for it to finish."
+            ));
+        }
+        if self
+            .active_engine_lease
+            .compare_exchange(0, worker_id, Ordering::AcqRel, Ordering::Acquire)
+            .is_err()
+        {
+            let _ = self.active_stream_worker.compare_exchange(
+                worker_id,
+                0,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            );
+            return Err(anyhow::anyhow!(
+                "The engine is busy with another transcription — try again later."
+            ));
+        }
+        let _guard = StreamWorkerGuard {
+            worker_id,
+            active_stream_worker: Arc::clone(&self.active_stream_worker),
+            active_engine_lease: Arc::clone(&self.active_engine_lease),
+            stream_active: Arc::clone(&self.stream_active),
+        };
+
+        let model_id = self.get_current_model().unwrap_or_default();
+        let mut engine = match self.lock_engine().take() {
+            Some(e) => e,
+            None => return Err(anyhow::anyhow!("Model is not loaded for transcription.")),
+        };
+
+        // The `Stream` borrows `engine` for its lifetime, so the feed loop lives
+        // in a closure — once it returns, the engine can be given back. The
+        // closure runs under catch_unwind (mirroring `transcribe`): an engine
+        // panic must not unwind through the Tauri command, and the panicked
+        // engine is dropped rather than returned to the pool.
+        //
+        // Deliberately does NOT set `stream_active`: that flag routes the mic
+        // overlay into its live-streaming UI, and a file run must not hijack it.
+        let total = audio.len();
+        let run = catch_unwind(AssertUnwindSafe(|| -> Option<String> {
+            let session = match &mut engine {
+                LoadedEngine::TranscribeCpp(s) => s,
+                _ => {
+                    info!(
+                        "File transcription: model '{}' is not a transcribe-cpp model; \
+                         streaming unavailable",
+                        model_id
+                    );
+                    return None;
+                }
+            };
+
+            let caps = session.model().capabilities();
+            if !caps.supports_streaming {
+                info!(
+                    "File transcription: model '{}' does not support streaming",
+                    model_id
+                );
+                return None;
+            }
+            let languages = caps.languages.clone();
+            let supports_translate = caps.supports_translate;
+
+            let settings = get_settings(&self.app_handle);
+            let effective_language =
+                effective_language_for_model(&settings, self.model_manager.as_ref(), &model_id);
+            let run_plan = transcribe_cpp_run_plan(
+                settings.translate_to_english,
+                &effective_language,
+                &languages,
+                supports_translate,
+            );
+            let run_options = RunOptions {
+                task: run_plan.task,
+                language: run_plan.language,
+                target_language: run_plan.target_language,
+                ..Default::default()
+            };
+
+            let mut stream = match session.stream(&run_options, &StreamOptions::default()) {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("Failed to begin file stream: {}", e);
+                    return None;
+                }
+            };
+
+            let audio_secs = total as f64 / 16_000.0;
+            info!(
+                "File streaming started (model '{}', {:.1}s of audio)",
+                model_id, audio_secs
+            );
+
+            let started = Instant::now();
+            let mut fed = 0usize;
+            let mut consecutive_feed_errors = 0usize;
+            for (i, frame) in audio.chunks(FILE_STREAM_FRAME).enumerate() {
+                match stream.feed(frame) {
+                    Ok(_) => consecutive_feed_errors = 0,
+                    Err(e) => {
+                        consecutive_feed_errors += 1;
+                        warn!("file stream feed failed at sample {}: {}", fed, e);
+                        // A dead stream fails every frame — without this an
+                        // hour-long file would grind through ~112k doomed
+                        // calls. ~25 frames = 0.8s of audio, enough to rule
+                        // out a transient hiccup.
+                        if consecutive_feed_errors >= 25 {
+                            error!(
+                                "file stream: {} consecutive feed failures, aborting stream",
+                                consecutive_feed_errors
+                            );
+                            return None;
+                        }
+                    }
+                }
+                fed += frame.len();
+                if i % FILE_STREAM_PROGRESS_EVERY == 0 {
+                    // Keeps the idle watcher from unloading the model mid-file.
+                    self.touch_activity();
+                    progress(fed, total);
+                }
+            }
+
+            let result = match stream.finalize() {
+                Ok(_) => {
+                    let text = stream.text().display();
+                    let elapsed = started.elapsed().as_secs_f64();
+                    info!(
+                        "File streaming finished: {:.1}s audio in {:.1}s ({:.1}x real-time), {} chars",
+                        audio_secs,
+                        elapsed,
+                        audio_secs / elapsed.max(0.001),
+                        text.len()
+                    );
+                    Some(text)
+                }
+                Err(e) => {
+                    error!("file stream finalize failed: {}", e);
+                    None
+                }
+            };
+            progress(total, total);
+            result
+        }));
+
+        let raw = match run {
+            Ok(r) => r,
+            Err(_) => {
+                error!("File streaming engine panicked; dropping the engine");
+                // Mirror `unload_model`'s bookkeeping so the UI learns the
+                // model is gone; the panicked engine drops when `engine` does.
+                let _ = self.unload_model();
+                return Err(anyhow::anyhow!(
+                    "The transcription engine crashed on this file. The model has been unloaded — try again."
+                ));
+            }
+        };
+
+        self.return_engine(engine, &model_id);
+        self.touch_activity();
+
+        let Some(raw) = raw else {
+            return Ok(None);
+        };
+        // Mirror finalize_stream: streaming models get no decode prompt, so
+        // custom words go through the fuzzy post-correction path.
+        let settings = get_settings(&self.app_handle);
+        Ok(Some(post_process_transcription_text(raw, &settings, false)))
+    }
+
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
@@ -1131,6 +1377,14 @@ impl TranscriptionManager {
 
             let engine_guard = self.lock_engine();
             if engine_guard.is_none() {
+                // Distinguish "leased out to a file/stream worker" from "truly
+                // unloaded" — the old message sent users chasing a phantom
+                // model problem while a file transcription held the engine.
+                if self.active_engine_lease.load(Ordering::Acquire) != 0 {
+                    return Err(anyhow::anyhow!(
+                        "Transcription engine is busy (file transcription in progress). Try again when it finishes."
+                    ));
+                }
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
         }
@@ -1185,6 +1439,11 @@ impl TranscriptionManager {
             let mut engine = match engine_guard.take() {
                 Some(e) => e,
                 None => {
+                    if self.active_engine_lease.load(Ordering::Acquire) != 0 {
+                        return Err(anyhow::anyhow!(
+                            "Transcription engine is busy (file transcription in progress). Try again when it finishes."
+                        ));
+                    }
                     return Err(anyhow::anyhow!(
                         "Model failed to load after auto-load attempt. Please check your model settings."
                     ));

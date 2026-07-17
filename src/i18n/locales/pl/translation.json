@@ -15,7 +15,8 @@
     "postProcessing": "Postproces",
     "history": "Historia",
     "debug": "Debugowanie",
-    "about": "O programie"
+    "about": "O programie",
+    "transcribeFile": "Plik"
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Nowości w Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "Transkrypcja pliku audio",
+    "description": "Wybierz plik audio lub wideo — wybrany model dokona transkrypcji, tak jak z mikrofonu. Pliki dowolnej długości są przetwarzane strumieniowo, pamięć pozostaje stała. Obsługuje mp3, wav, m4a, flac i inne (wymaga ffmpeg).",
+    "chooseFile": "Wybierz plik",
+    "transcribe": "Transkrybuj",
+    "transcribing": "Transkrybowanie…",
+    "file": "Plik: {{name}}",
+    "remaining": "pozostało ≈{{time}}",
+    "timeMinSec": "{{m}} min {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Wynik",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano",
+    "filterName": "Audio / wideo"
   }
 }

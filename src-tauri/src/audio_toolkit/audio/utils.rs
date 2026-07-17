@@ -6,10 +6,14 @@ use std::path::Path;
 /// Read a WAV file and return normalised f32 samples.
 pub fn read_wav_samples<P: AsRef<Path>>(file_path: P) -> Result<Vec<f32>> {
     let reader = WavReader::open(file_path.as_ref())?;
-    let samples = reader
-        .into_samples::<i16>()
-        .map(|s| s.map(|v| v as f32 / i16::MAX as f32))
-        .collect::<Result<Vec<f32>, _>>()?;
+    // Pre-allocate from the header's sample count: collecting an iterator of
+    // Results loses the exact-size lower bound (it degrades to 0), so a plain
+    // collect() grows the Vec by doubling — on an hour-long file that peaks at
+    // ~2.3x the final size mid-realloc.
+    let mut samples = Vec::with_capacity(reader.len() as usize);
+    for s in reader.into_samples::<i16>() {
+        samples.push(s? as f32 / i16::MAX as f32);
+    }
     Ok(samples)
 }
 

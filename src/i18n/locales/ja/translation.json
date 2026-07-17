@@ -15,7 +15,8 @@
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
-    "about": "概要"
+    "about": "概要",
+    "transcribeFile": "ファイル"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしのモデルを選択してください",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"
+  },
+  "transcribeFile": {
+    "title": "音声ファイルの文字起こし",
+    "description": "音声または動画ファイルを選ぶと、マイクと同じように選択中のモデルが文字起こしします。どんな長さのファイルもストリームとして処理され、メモリ使用量は一定です。mp3、wav、m4a、flac などに対応(ffmpeg が必要)。",
+    "chooseFile": "ファイルを選択",
+    "transcribe": "文字起こし",
+    "transcribing": "文字起こし中…",
+    "file": "ファイル: {{name}}",
+    "remaining": "残り約{{time}}",
+    "timeMinSec": "{{m}}分{{s}}秒",
+    "timeSec": "{{s}}秒",
+    "result": "結果",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "filterName": "音声 / 動画"
   }
 }

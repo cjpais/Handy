@@ -15,7 +15,8 @@
     "postProcessing": "Naverwerking",
     "history": "Geschiedenis",
     "debug": "Probleemoplossing",
-    "about": "Over Handy"
+    "about": "Over Handy",
+    "transcribeFile": "Bestand"
   },
   "onboarding": {
     "subtitle": "Kies een transcriptiemodel om aan de slag te gaan",
@@ -633,5 +634,20 @@
   "overlay": {
     "transcribing": "Transcriberen...",
     "processing": "Verwerken..."
+  },
+  "transcribeFile": {
+    "title": "Audiobestand transcriberen",
+    "description": "Kies een audio- of videobestand — het geselecteerde model transcribeert het, net als de microfoon. Bestanden van elke lengte worden als stream verwerkt, het geheugengebruik blijft vlak. Ondersteunt mp3, wav, m4a, flac en meer (ffmpeg vereist).",
+    "chooseFile": "Bestand kiezen",
+    "transcribe": "Transcriberen",
+    "transcribing": "Bezig met transcriberen…",
+    "file": "Bestand: {{name}}",
+    "remaining": "≈{{time}} resterend",
+    "timeMinSec": "{{m}} min {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Resultaat",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd",
+    "filterName": "Audio / Video"
   }
 }

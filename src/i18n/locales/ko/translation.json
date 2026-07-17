@@ -15,7 +15,8 @@
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
-    "about": "정보"
+    "about": "정보",
+    "transcribeFile": "파일"
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}}의 새 소식"
+  },
+  "transcribeFile": {
+    "title": "오디오 파일 전사",
+    "description": "오디오 또는 비디오 파일을 선택하면 마이크와 마찬가지로 선택한 모델이 전사합니다. 어떤 길이의 파일이든 스트림으로 처리되어 메모리 사용량이 일정합니다. mp3, wav, m4a, flac 등 지원(ffmpeg 필요).",
+    "chooseFile": "파일 선택",
+    "transcribe": "전사",
+    "transcribing": "전사 중…",
+    "file": "파일: {{name}}",
+    "remaining": "약 {{time}} 남음",
+    "timeMinSec": "{{m}}분 {{s}}초",
+    "timeSec": "{{s}}초",
+    "result": "결과",
+    "copy": "복사",
+    "copied": "복사됨",
+    "filterName": "오디오 / 비디오"
   }
 }

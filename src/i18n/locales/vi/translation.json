@@ -15,7 +15,8 @@
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "transcribeFile": "Tệp"
   },
   "onboarding": {
     "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Điểm mới trong Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "Phiên âm tệp âm thanh",
+    "description": "Chọn tệp âm thanh hoặc video — mô hình đã chọn sẽ phiên âm nó, giống như micrô. Tệp có độ dài bất kỳ được xử lý dạng luồng, bộ nhớ luôn ổn định. Hỗ trợ mp3, wav, m4a, flac và nhiều định dạng khác (cần ffmpeg).",
+    "chooseFile": "Chọn tệp",
+    "transcribe": "Phiên âm",
+    "transcribing": "Đang phiên âm…",
+    "file": "Tệp: {{name}}",
+    "remaining": "còn lại ≈{{time}}",
+    "timeMinSec": "{{m}} phút {{s}} giây",
+    "timeSec": "{{s}} giây",
+    "result": "Kết quả",
+    "copy": "Sao chép",
+    "copied": "Đã sao chép",
+    "filterName": "Âm thanh / Video"
   }
 }

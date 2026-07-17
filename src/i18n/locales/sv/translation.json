@@ -15,7 +15,8 @@
     "postProcessing": "Efterbearbetning",
     "history": "Historik",
     "debug": "Felsökning",
-    "about": "Om"
+    "about": "Om",
+    "transcribeFile": "Fil"
   },
   "onboarding": {
     "subtitle": "För att komma igång, välj en transkriptionsmodell",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Nytt i Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "Transkribera ljudfil",
+    "description": "Välj en ljud- eller videofil — den valda modellen transkriberar den, precis som mikrofonen. Filer av valfri längd bearbetas som en ström, minnesanvändningen förblir konstant. Stöder mp3, wav, m4a, flac med flera (kräver ffmpeg).",
+    "chooseFile": "Välj fil",
+    "transcribe": "Transkribera",
+    "transcribing": "Transkriberar…",
+    "file": "Fil: {{name}}",
+    "remaining": "≈{{time}} kvar",
+    "timeMinSec": "{{m}} min {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Resultat",
+    "copy": "Kopiera",
+    "copied": "Kopierat",
+    "filterName": "Ljud / video"
   }
 }

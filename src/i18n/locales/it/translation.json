@@ -15,7 +15,8 @@
     "postProcessing": "Post-Elaborazione",
     "history": "Cronologia",
     "debug": "Debug",
-    "about": "Informazioni"
+    "about": "Informazioni",
+    "transcribeFile": "File"
   },
   "onboarding": {
     "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "Trascrizione di file audio",
+    "description": "Scegli un file audio o video: il modello selezionato lo trascrive, come il microfono. File di qualsiasi durata vengono elaborati in streaming, la memoria resta costante. Supporta mp3, wav, m4a, flac e altri (richiede ffmpeg).",
+    "chooseFile": "Scegli file",
+    "transcribe": "Trascrivi",
+    "transcribing": "Trascrizione…",
+    "file": "File: {{name}}",
+    "remaining": "≈{{time}} rimanente",
+    "timeMinSec": "{{m}} min {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Risultato",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "filterName": "Audio / Video"
   }
 }

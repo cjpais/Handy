@@ -15,7 +15,8 @@
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
     "about": "حول",
-    "models": "النماذج"
+    "models": "النماذج",
+    "transcribeFile": "ملف"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "الجديد في Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "تفريغ ملف صوتي",
+    "description": "اختر ملف صوت أو فيديو وسيقوم النموذج المحدد بتفريغه، تمامًا مثل الميكروفون. تُعالج الملفات بأي طول كتدفق، فتبقى الذاكرة ثابتة. يدعم mp3 وwav وm4a وflac وغيرها (يتطلب ffmpeg).",
+    "chooseFile": "اختيار ملف",
+    "transcribe": "تفريغ",
+    "transcribing": "جارٍ التفريغ…",
+    "file": "الملف: {{name}}",
+    "remaining": "متبقٍ ≈{{time}}",
+    "timeMinSec": "{{m}} د {{s}} ث",
+    "timeSec": "{{s}} ث",
+    "result": "النتيجة",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "filterName": "صوت / فيديو"
   }
 }

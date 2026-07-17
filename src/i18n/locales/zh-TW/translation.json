@@ -15,7 +15,8 @@
     "postProcessing": "後處理",
     "history": "歷史紀錄",
     "debug": "偵錯",
-    "about": "關於"
+    "about": "關於",
+    "transcribeFile": "檔案"
   },
   "onboarding": {
     "subtitle": "首先，請選擇一種模型",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"
+  },
+  "transcribeFile": {
+    "title": "音訊檔案轉錄",
+    "description": "選擇音訊或影片檔案,所選模型會像麥克風一樣進行轉錄。任意長度的檔案都以串流方式處理,記憶體用量保持平穩。支援 mp3、wav、m4a、flac 等格式(需要安裝 ffmpeg)。",
+    "chooseFile": "選擇檔案",
+    "transcribe": "轉錄",
+    "transcribing": "轉錄中…",
+    "file": "檔案:{{name}}",
+    "remaining": "剩餘約 {{time}}",
+    "timeMinSec": "{{m}} 分 {{s}} 秒",
+    "timeSec": "{{s}} 秒",
+    "result": "結果",
+    "copy": "複製",
+    "copied": "已複製",
+    "filterName": "音訊 / 影片"
   }
 }

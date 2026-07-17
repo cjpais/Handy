@@ -15,7 +15,8 @@
     "postProcessing": "Nachbearbeitung",
     "history": "Verlauf",
     "debug": "Debug",
-    "about": "Info"
+    "about": "Info",
+    "transcribeFile": "Datei"
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Neu in Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "Audiodatei transkribieren",
+    "description": "Wähle eine Audio- oder Videodatei — das ausgewählte Modell transkribiert sie wie das Mikrofon. Dateien beliebiger Länge werden als Stream verarbeitet, der Speicherbedarf bleibt konstant. Unterstützt mp3, wav, m4a, flac und mehr (ffmpeg erforderlich).",
+    "chooseFile": "Datei wählen",
+    "transcribe": "Transkribieren",
+    "transcribing": "Transkribiere…",
+    "file": "Datei: {{name}}",
+    "remaining": "≈{{time}} verbleibend",
+    "timeMinSec": "{{m}} Min. {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Ergebnis",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "filterName": "Audio / Video"
   }
 }

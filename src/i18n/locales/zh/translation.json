@@ -15,7 +15,8 @@
     "postProcessing": "后处理",
     "history": "历史记录",
     "debug": "调试",
-    "about": "关于"
+    "about": "关于",
+    "transcribeFile": "文件"
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"
+  },
+  "transcribeFile": {
+    "title": "音频文件转写",
+    "description": "选择音频或视频文件,所选模型会像麦克风一样进行转写。任意长度的文件都以流式处理,内存占用保持平稳。支持 mp3、wav、m4a、flac 等格式(需要安装 ffmpeg)。",
+    "chooseFile": "选择文件",
+    "transcribe": "转写",
+    "transcribing": "转写中…",
+    "file": "文件:{{name}}",
+    "remaining": "剩余约 {{time}}",
+    "timeMinSec": "{{m}} 分 {{s}} 秒",
+    "timeSec": "{{s}} 秒",
+    "result": "结果",
+    "copy": "复制",
+    "copied": "已复制",
+    "filterName": "音频 / 视频"
   }
 }

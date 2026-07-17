@@ -15,7 +15,8 @@
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "transcribeFile": "File"
   },
   "onboarding": {
     "subtitle": "To get started, choose a transcription model",
@@ -633,5 +634,20 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "transcribeFile": {
+    "title": "Audio File Transcription",
+    "description": "Pick an audio or video file and the selected model transcribes it, same as the microphone. Files of any length are processed as a stream, so memory stays flat. Supports mp3, wav, m4a, flac and more (requires ffmpeg).",
+    "chooseFile": "Choose File",
+    "transcribe": "Transcribe",
+    "transcribing": "Transcribing…",
+    "file": "File: {{name}}",
+    "remaining": "≈{{time}} remaining",
+    "timeMinSec": "{{m}} min {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Result",
+    "copy": "Copy",
+    "copied": "Copied",
+    "filterName": "Audio / Video"
   }
 }

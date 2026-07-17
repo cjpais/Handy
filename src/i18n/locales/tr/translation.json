@@ -15,7 +15,8 @@
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
     "debug": "Hata Ayıklama",
-    "about": "Hakkında"
+    "about": "Hakkında",
+    "transcribeFile": "Dosya"
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} yenilikleri"
+  },
+  "transcribeFile": {
+    "title": "Ses dosyası transkripsiyonu",
+    "description": "Bir ses veya video dosyası seçin — seçili model, mikrofonda olduğu gibi dosyayı yazıya döker. Her uzunluktaki dosya akış olarak işlenir, bellek kullanımı sabit kalır. mp3, wav, m4a, flac ve daha fazlasını destekler (ffmpeg gerekir).",
+    "chooseFile": "Dosya seç",
+    "transcribe": "Yazıya dök",
+    "transcribing": "Yazıya dökülüyor…",
+    "file": "Dosya: {{name}}",
+    "remaining": "≈{{time}} kaldı",
+    "timeMinSec": "{{m}} dk {{s}} sn",
+    "timeSec": "{{s}} sn",
+    "result": "Sonuç",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "filterName": "Ses / Video"
   }
 }

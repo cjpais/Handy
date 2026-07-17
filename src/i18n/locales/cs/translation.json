@@ -15,7 +15,8 @@
     "postProcessing": "Následné zpracování",
     "history": "Historie",
     "debug": "Ladění",
-    "about": "O aplikaci"
+    "about": "O aplikaci",
+    "transcribeFile": "Soubor"
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",
@@ -633,5 +634,20 @@
   },
   "whatsNew": {
     "title": "Novinky v Handy v{{version}}"
+  },
+  "transcribeFile": {
+    "title": "Přepis zvukového souboru",
+    "description": "Vyberte zvukový nebo video soubor — vybraný model jej přepíše stejně jako mikrofon. Soubory libovolné délky se zpracovávají proudově, paměť zůstává konstantní. Podporuje mp3, wav, m4a, flac a další (vyžaduje ffmpeg).",
+    "chooseFile": "Vybrat soubor",
+    "transcribe": "Přepsat",
+    "transcribing": "Přepisuji…",
+    "file": "Soubor: {{name}}",
+    "remaining": "zbývá ≈{{time}}",
+    "timeMinSec": "{{m}} min {{s}} s",
+    "timeSec": "{{s}} s",
+    "result": "Výsledek",
+    "copy": "Kopírovat",
+    "copied": "Zkopírováno",
+    "filterName": "Audio / video"
   }
 }
