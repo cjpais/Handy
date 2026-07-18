@@ -55,9 +55,7 @@ fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
 
 enum Request {
     /// Ensure the output stream for `device` exists (startup pre-warm).
-    Warm {
-        device: Option<String>,
-    },
+    Warm { device: Option<String> },
     Play {
         path: PathBuf,
         device: Option<String>,
@@ -230,8 +228,7 @@ fn ensure_stream(
         None
     };
     let stale = cached.as_ref().is_none_or(|c| {
-        c.selection != device
-            || (is_default_selection(&device) && c.default_name != default_name)
+        c.selection != device || (is_default_selection(&device) && c.default_name != default_name)
     });
     if stale {
         scrap_stream(cached);
