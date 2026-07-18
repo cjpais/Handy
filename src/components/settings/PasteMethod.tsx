@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
 import { useSettings } from "../../hooks/useSettings";
@@ -18,10 +18,13 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const osType = useOsType();
 
+    const selectedMethod = (getSetting("paste_method") ||
+      "ctrl_v") as PasteMethod;
+
     const getPasteMethodOptions = (osType: string) => {
       const mod = osType === "macos" ? "Cmd" : "Ctrl";
 
-      const options = [
+      const options: DropdownOption[] = [
         {
           value: "ctrl_v",
           label: t("settings.advanced.pasteMethod.options.clipboard", {
@@ -30,12 +33,13 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
         },
       ];
 
-      // Direct input remains supported for existing/manual settings on macOS,
-      // but is intentionally not offered in the UI there.
-      if (osType !== "macos") {
+      // Direct input is not offered on macOS, but keep an existing/manual
+      // selection visible so the UI accurately represents the saved setting.
+      if (osType !== "macos" || selectedMethod === "direct") {
         options.push({
           value: "direct",
           label: t("settings.advanced.pasteMethod.options.direct"),
+          disabled: osType === "macos",
         });
       }
 
@@ -73,8 +77,6 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
       return options;
     };
 
-    const selectedMethod = (getSetting("paste_method") ||
-      "ctrl_v") as PasteMethod;
     const externalScriptPath = getSetting("external_script_path") || "";
 
     const pasteMethodOptions = getPasteMethodOptions(osType);
