@@ -364,6 +364,18 @@
         "remove": "Премахване на {{word}}",
         "duplicate": "„{{word}}“ вече съществува"
       },
+      "wordReplacements": {
+        "title": "Замяна на думи",
+        "description": "Винаги заменя дума или фраза с друга — точно и без значение на главни/малки букви, без приблизително отгатване. Оставете замяната празна, за да премахнете дума.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Дума за намиране",
+        "toLabel": "Замяна с",
+        "add": "Добавяне",
+        "remove": "Премахване на замяната {{from}} на {{to}}",
+        "emptyTarget": "(премахната)",
+        "duplicate": "Замяна за „{{word}}“ вече съществува"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

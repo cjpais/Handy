@@ -364,6 +364,18 @@
         "remove": "删除 {{word}}",
         "duplicate": "\"{{word}}\" 已存在"
       },
+      "wordReplacements": {
+        "title": "词语替换",
+        "description": "始终将一个词或短语替换为另一个 — 精确且不区分大小写，不进行模糊猜测。将替换内容留空可删除某个词。",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "要查找的词",
+        "toLabel": "替换为",
+        "add": "添加",
+        "remove": "删除替换 {{from}} 到 {{to}}",
+        "emptyTarget": "（已删除）",
+        "duplicate": "\"{{word}}\" 的替换已存在"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

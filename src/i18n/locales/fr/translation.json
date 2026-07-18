@@ -364,6 +364,18 @@
         "remove": "Supprimer {{word}}",
         "duplicate": "\"{{word}}\" existe déjà"
       },
+      "wordReplacements": {
+        "title": "Remplacement de mots",
+        "description": "Remplace toujours un mot ou une expression par un autre — de manière exacte et insensible à la casse, sans approximation. Laissez le remplacement vide pour supprimer un mot.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Mot à rechercher",
+        "toLabel": "Remplacer par",
+        "add": "Ajouter",
+        "remove": "Supprimer le remplacement {{from}} par {{to}}",
+        "emptyTarget": "(supprimé)",
+        "duplicate": "Un remplacement pour \"{{word}}\" existe déjà"
+      },
       "voiceActivityDetection": {
         "title": "Détection d'activité vocale (VAD)",
         "description": "Filtre le silence des enregistrements. Les modèles compatibles avec le streaming utilisent une marge de détection VAD plus longue ; désactiver le VAD enregistre l'audio brut."

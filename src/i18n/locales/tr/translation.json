@@ -364,6 +364,18 @@
         "remove": "{{word}} Kaldır",
         "duplicate": "\"{{word}}\" zaten mevcut"
       },
+      "wordReplacements": {
+        "title": "Kelime Değiştirme",
+        "description": "Bir kelimeyi veya ifadeyi her zaman başka biriyle değiştirir — büyük/küçük harfe duyarsız ve tam olarak, yaklaşık tahmin yapmadan. Bir kelimeyi kaldırmak için değiştirme alanını boş bırakın.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Bulunacak kelime",
+        "toLabel": "Şununla değiştir",
+        "add": "Ekle",
+        "remove": "{{from}} → {{to}} değişimini kaldır",
+        "emptyTarget": "(kaldırıldı)",
+        "duplicate": "\"{{word}}\" için bir değişim zaten mevcut"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

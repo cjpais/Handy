@@ -364,6 +364,18 @@
         "remove": "{{word}} verwijderen",
         "duplicate": "\"{{word}}\" bestaat al"
       },
+      "wordReplacements": {
+        "title": "Woordvervangingen",
+        "description": "Vervang een woord of zin altijd door een ander — exact en niet hoofdlettergevoelig, zonder fuzzy gokwerk. Laat de vervanging leeg om een woord te verwijderen.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Te zoeken woord",
+        "toLabel": "Vervangen door",
+        "add": "Toevoegen",
+        "remove": "Vervanging {{from}} naar {{to}} verwijderen",
+        "emptyTarget": "(verwijderd)",
+        "duplicate": "Een vervanging voor \"{{word}}\" bestaat al"
+      },
       "voiceActivityDetection": {
         "title": "Spraakactiviteitsdetectie (VAD)",
         "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."

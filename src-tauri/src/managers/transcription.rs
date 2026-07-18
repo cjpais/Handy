@@ -1,4 +1,6 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{
+    apply_custom_words, apply_word_replacements, filter_transcription_output,
+};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
@@ -1616,8 +1618,13 @@ fn post_process_transcription_text(
         raw
     };
 
+    // Apply deterministic find-and-replace rules. Unlike fuzzy custom words,
+    // these run for every engine (including Whisper) since they are exact
+    // substitutions rather than model-prompt hints.
+    let replaced = apply_word_replacements(&corrected, &settings.word_replacements);
+
     filter_transcription_output(
-        &corrected,
+        &replaced,
         &settings.app_language,
         &settings.custom_filler_words,
     )

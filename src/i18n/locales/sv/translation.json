@@ -364,6 +364,18 @@
         "remove": "Ta bort {{word}}",
         "duplicate": "\"{{word}}\" finns redan"
       },
+      "wordReplacements": {
+        "title": "Ersättning av ord",
+        "description": "Ersätt alltid ett ord eller en fras med ett annat — exakt och skiftlägesokänsligt, utan ungefärliga gissningar. Lämna ersättningen tom för att ta bort ett ord.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Ord att hitta",
+        "toLabel": "Ersätt med",
+        "add": "Lägg till",
+        "remove": "Ta bort ersättningen {{from}} till {{to}}",
+        "emptyTarget": "(borttagen)",
+        "duplicate": "En ersättning för \"{{word}}\" finns redan"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

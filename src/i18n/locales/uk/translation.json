@@ -364,6 +364,18 @@
         "remove": "Видалити {{word}}",
         "duplicate": "\"{{word}}\" вже існує"
       },
+      "wordReplacements": {
+        "title": "Заміна слів",
+        "description": "Завжди замінює слово або фразу іншим — точно й без урахування регістру, без приблизного вгадування. Залиште заміну порожньою, щоб видалити слово.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Слово для пошуку",
+        "toLabel": "Замінити на",
+        "add": "Додати",
+        "remove": "Видалити заміну {{from}} на {{to}}",
+        "emptyTarget": "(видалено)",
+        "duplicate": "Заміна для \"{{word}}\" вже існує"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

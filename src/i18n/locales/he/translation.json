@@ -364,6 +364,18 @@
         "remove": "הסר את {{word}}",
         "duplicate": "\"{{word}}\" כבר קיימת"
       },
+      "wordReplacements": {
+        "title": "החלפת מילים",
+        "description": "תמיד מחליף מילה או ביטוי באחר — באופן מדויק וללא תלות באותיות גדולות/קטנות, ללא ניחוש מקורב. השאר את ההחלפה ריקה כדי להסיר מילה.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "מילה לחיפוש",
+        "toLabel": "החלף ב־",
+        "add": "הוסף",
+        "remove": "הסר את ההחלפה {{from}} ל־{{to}}",
+        "emptyTarget": "(הוסרה)",
+        "duplicate": "החלפה עבור \"{{word}}\" כבר קיימת"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

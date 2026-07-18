@@ -364,6 +364,18 @@
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
       },
+      "wordReplacements": {
+        "title": "단어 바꾸기",
+        "description": "단어나 구문을 항상 다른 것으로 바꿉니다 — 대소문자를 구분하지 않고 정확하게, 유사 추측 없이. 바꿀 내용을 비워 두면 단어가 삭제됩니다.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "찾을 단어",
+        "toLabel": "바꿀 내용",
+        "add": "추가",
+        "remove": "{{from}} → {{to}} 바꾸기 제거",
+        "emptyTarget": "(삭제됨)",
+        "duplicate": "\"{{word}}\"에 대한 바꾸기가 이미 존재합니다"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

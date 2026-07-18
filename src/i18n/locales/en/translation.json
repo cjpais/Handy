@@ -364,6 +364,18 @@
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
       },
+      "wordReplacements": {
+        "title": "Word Replacements",
+        "description": "Always replace a word or phrase with another — exact and case-insensitive, no fuzzy guessing. Leave the replacement blank to remove a word.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Word to find",
+        "toLabel": "Replace with",
+        "add": "Add",
+        "remove": "Remove replacement {{from}} to {{to}}",
+        "emptyTarget": "(removed)",
+        "duplicate": "A replacement for \"{{word}}\" already exists"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."

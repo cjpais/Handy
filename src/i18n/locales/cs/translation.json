@@ -364,6 +364,18 @@
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
       },
+      "wordReplacements": {
+        "title": "Náhrady slov",
+        "description": "Vždy nahradí slovo nebo frázi jiným — přesně a bez ohledu na velikost písmen, bez přibližného hádání. Ponecháním náhrady prázdné slovo odstraníte.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Hledané slovo",
+        "toLabel": "Nahradit za",
+        "add": "Přidat",
+        "remove": "Odebrat náhradu {{from}} za {{to}}",
+        "emptyTarget": "(odebráno)",
+        "duplicate": "Náhrada pro \"{{word}}\" již existuje"
+      },
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
