@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.9.1"
+version = "0.9.3"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -30,7 +30,7 @@ serde = { version = "1", features = ["derive"] }
 
 [dependencies]
 once_cell = "1"
-tauri = { version = "2.10.2", features = [
+tauri = { version = "2.11.5", features = [
   "protocol-asset",
   "macos-private-api",
   "tray-icon",
@@ -73,7 +73,7 @@ sha2 = "0.10"
 # transcribe-rs is now ONNX-only (Parakeet, Moonshine, SenseVoice, GigaAM,
 # Canary, Cohere). Per-platform backend features are added in the target tables.
 transcribe-rs = { version = "0.3.8", features = ["onnx"] }
-transcribe-cpp = { version = "0.1.2", default-features = false }
+transcribe-cpp = { version = "0.1.3", default-features = false }
 handy-keys = "0.3.0"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
@@ -126,30 +126,38 @@ winreg = "0.55"
 # signtool verify entirely. CI pins -DGGML_NATIVE=OFF (see build.yml) so the
 # static build targets a portable ARM baseline, not the build runner's CPU.
 [target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
-transcribe-cpp = { version = "0.1.2", default-features = false, features = [
+transcribe-cpp = { version = "0.1.3", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
 
 [target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
-transcribe-cpp = { version = "0.1.2", default-features = false }
+transcribe-cpp = { version = "0.1.3", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
-transcribe-cpp = { version = "0.1.2", default-features = false, features = ["metal"] }
+transcribe-cpp = { version = "0.1.3", default-features = false, features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
-transcribe-cpp = { version = "0.1.2", default-features = false, features = [
+transcribe-cpp = { version = "0.1.3", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
 
+# TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
+# (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →
+# show()). Drop this once a tao release containing it lands in tauri.
+#
+# tao-macros must be patched to the SAME rev even though nothing here depends on
+# it directly: wry pulls tao-macros 0.1.3 from crates.io, so without this the
+# lockfile carries two tao-macros 0.1.3 entries (registry + git). cargo tolerates
+# that, but Nix's importCargoLock vendors both to the same `tao-macros-0.1.3`
+# dir and fails with a symlink collision. Unifying the source removes the dup.
 [patch.crates-io]
-tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
-tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
-tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
+tao = { git = "https://github.com/tauri-apps/tao", rev = "07f3742b1833b64be27b1ef991e38d557d4276c9" }
+tao-macros = { git = "https://github.com/tauri-apps/tao", rev = "07f3742b1833b64be27b1ef991e38d557d4276c9" }
 
 [dev-dependencies]
 tempfile = "3"

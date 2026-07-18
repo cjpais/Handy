@@ -142,7 +142,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Supporta più lingue di input",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} lingue",
       "translation": "Può tradurre in inglese",
       "translate": "Traduci in inglese",
       "singleLanguage": "Supporta solo questa lingua",
@@ -343,7 +343,7 @@
         "description": "Traduci automaticamente in inglese la voce in altre lingue durante la trascrizione."
       },
       "modelUnload": {
-        "title": "Disattiva Model",
+        "title": "Disattiva modello",
         "description": "Libera automaticamente la memoria della GPU/CPU quando il modello non viene utilizzato per un certo periodo",
         "options": {
           "never": "Mai",
@@ -491,7 +491,7 @@
         "description": "Tieni il microfono attivo per una risposta più rapida"
       },
       "clamshellMicrophone": {
-        "title": "Microfono a portatile chiuso",
+        "title": "Microfono con coperchio chiuso",
         "description": "Microfono da usare quando il portatile è chiuso"
       },
       "postProcessingToggle": {
