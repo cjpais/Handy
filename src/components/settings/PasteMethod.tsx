@@ -28,15 +28,21 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
             modifier: mod,
           }),
         },
-        {
+      ];
+
+      // Direct input remains supported for existing/manual settings on macOS,
+      // but is intentionally not offered in the UI there.
+      if (osType !== "macos") {
+        options.push({
           value: "direct",
           label: t("settings.advanced.pasteMethod.options.direct"),
-        },
-        {
-          value: "none",
-          label: t("settings.advanced.pasteMethod.options.none"),
-        },
-      ];
+        });
+      }
+
+      options.push({
+        value: "none",
+        label: t("settings.advanced.pasteMethod.options.none"),
+      });
 
       // Add Shift+Insert and Ctrl+Shift+V options for Windows and Linux only
       if (osType === "windows" || osType === "linux") {
