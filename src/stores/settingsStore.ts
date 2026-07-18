@@ -18,7 +18,8 @@ interface SettingsStore {
   outputDevices: AudioDevice[];
   customSounds: { start: boolean; stop: boolean };
   postProcessModelOptions: Record<string, string[]>;
-  updateChecksLocked: boolean;
+  // null until loadUpdateChecksLocked() resolves
+  updateChecksLocked: boolean | null;
 
   // Actions
   initialize: () => Promise<void>;
@@ -178,7 +179,7 @@ export const useSettingsStore = create<SettingsStore>()(
     outputDevices: [],
     customSounds: { start: false, stop: false },
     postProcessModelOptions: {},
-    updateChecksLocked: false,
+    updateChecksLocked: null,
 
     // Internal setters
     setSettings: (settings) => set({ settings }),

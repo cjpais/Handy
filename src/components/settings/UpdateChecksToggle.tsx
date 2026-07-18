@@ -22,7 +22,7 @@ export const UpdateChecksToggle: React.FC<UpdateChecksToggleProps> = ({
       checked={updateChecksEnabled}
       onChange={(enabled) => updateSetting("update_checks_enabled", enabled)}
       isUpdating={isUpdating("update_checks_enabled")}
-      disabled={updateChecksLocked}
+      disabled={updateChecksLocked ?? false}
       label={t("settings.debug.updateChecks.label")}
       description={
         updateChecksLocked

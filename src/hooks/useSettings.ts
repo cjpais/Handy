@@ -11,7 +11,7 @@ interface UseSettingsReturn {
   outputDevices: AudioDevice[];
   audioFeedbackEnabled: boolean;
   postProcessModelOptions: Record<string, string[]>;
-  updateChecksLocked: boolean;
+  updateChecksLocked: boolean | null;
 
   // Actions
   updateSetting: <K extends keyof Settings>(
