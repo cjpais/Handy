@@ -1413,6 +1413,15 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
+        // A task already owns this entry's lifecycle; a second invocation
+        // (double-click, second window) is a no-op, not an error — an Err here
+        // would emit model-download-failed and clobber the live download's UI
+        // state.
+        if model_info.status.is_in_flight() {
+            info!("Download already in progress for {}; ignoring", model_id);
+            return Ok(());
+        }
+
         let (url, expected_sha256) = match &model_info.source {
             ModelSource::Url { url, sha256 } => (url.clone(), sha256.clone()),
             ModelSource::HuggingFace { repo_id, revision } => {
