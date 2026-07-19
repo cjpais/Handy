@@ -589,17 +589,23 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
         #[cfg(target_os = "linux")]
         if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
             // On Wayland layer surfaces, anchors can only be applied on an
-            // unmapped→mapped transition. To change Top/Bottom at runtime we
-            // remap the surface: unmap, set the new anchors, then map again so
-            // the compositor (niri, KWin) commits them. Skipping the remap
-            // leaves the surface mapped with stale anchors and the overlay
-            // disappears on position change.
+            // unmapped→mapped transition. A mapped surface must be remapped
+            // (unmap, set the new anchors, map again) so the compositor (niri,
+            // KWin) commits them; skipping the remap leaves stale anchors and
+            // the overlay disappears on position change. An unmapped surface
+            // needs no remap — new anchors apply on its next map. Deciding on
+            // the GTK thread by the mapped state keeps the window's visibility
+            // untouched, so a mid-recording switch no longer hides the overlay
+            // and an idle switch no longer flashes it.
             let pos = settings::get_settings(overlay_window.app_handle()).overlay_position;
             with_gtk_window(&overlay_window, move |gtk_window| {
-                gtk_remap_layer_surface(gtk_window, pos);
+                use gtk::prelude::WidgetExt;
+                if gtk_window.is_mapped() {
+                    gtk_remap_layer_surface(gtk_window, pos);
+                } else {
+                    set_layer_shell_anchors(gtk_window, pos);
+                }
             });
-            // Keep Tauri's visibility state in sync (like hide_recording_overlay).
-            let _ = overlay_window.hide();
             return;
         }
 
