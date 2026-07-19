@@ -38,18 +38,6 @@ export const SECTIONS_CONFIG = {
     component: GeneralSettings,
     enabled: () => true,
   },
-  models: {
-    labelKey: "sidebar.models",
-    icon: Cpu,
-    component: ModelsSettings,
-    enabled: () => true,
-  },
-  advanced: {
-    labelKey: "sidebar.advanced",
-    icon: Cog,
-    component: AdvancedSettings,
-    enabled: () => true,
-  },
   history: {
     labelKey: "sidebar.history",
     icon: History,
@@ -62,17 +50,29 @@ export const SECTIONS_CONFIG = {
     component: PostProcessingSettings,
     enabled: (settings) => settings?.post_process_enabled ?? false,
   },
-  debug: {
-    labelKey: "sidebar.debug",
-    icon: FlaskConical,
-    component: DebugSettings,
-    enabled: (settings) => settings?.debug_mode ?? false,
+  models: {
+    labelKey: "sidebar.models",
+    icon: Cpu,
+    component: ModelsSettings,
+    enabled: () => true,
+  },
+  advanced: {
+    labelKey: "sidebar.advanced",
+    icon: Cog,
+    component: AdvancedSettings,
+    enabled: () => true,
   },
   about: {
     labelKey: "sidebar.about",
     icon: Info,
     component: AboutSettings,
     enabled: () => true,
+  },
+  debug: {
+    labelKey: "sidebar.debug",
+    icon: FlaskConical,
+    component: DebugSettings,
+    enabled: (settings) => settings?.debug_mode ?? false,
   },
 } as const satisfies Record<string, SectionConfig>;
 
