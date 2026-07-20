@@ -2,8 +2,11 @@ use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+#[cfg(target_os = "linux")]
 use std::sync::mpsc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+#[cfg(target_os = "linux")]
+use std::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -635,6 +638,7 @@ static OVERLAY_ENABLED: AtomicBool = AtomicBool::new(false);
 
 /// Tracks whether gtk-layer-shell was successfully initialized (Linux only).
 /// Used to skip layer-shell calls when the window is a regular fallback.
+#[cfg(target_os = "linux")]
 static LAYER_SHELL_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 /// Update the cached overlay-enabled flag. Called from `lib.rs` at
