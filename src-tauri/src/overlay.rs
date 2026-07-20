@@ -196,7 +196,7 @@ fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool 
                 realized, ok
             );
             if !ok {
-                log::error!("Failed to init layer shell (window was already realized)");
+                log::error!("Failed to init layer shell");
             }
             LAYER_SHELL_ACTIVE.store(ok, Ordering::SeqCst);
             ok
