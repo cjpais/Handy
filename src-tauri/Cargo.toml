@@ -109,6 +109,7 @@ windows = { version = "0.61.3", features = [
   "Win32_System_Variant",
   "Win32_Foundation",
   "Win32_UI_WindowsAndMessaging",
+  "Win32_UI_Shell",
 ] }
 winreg = "0.55"
 

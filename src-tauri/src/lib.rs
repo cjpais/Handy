@@ -522,6 +522,84 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
     0
 }
 
+/// Subclass ID for [`session_end_subclass_proc`]. `SetWindowSubclass` keys
+/// subclasses per-window by this value, so it only needs to be unique among
+/// subclasses *we* install on the same window (there is only one).
+#[cfg(target_os = "windows")]
+const SESSION_END_SUBCLASS_ID: usize = 1;
+
+/// Subclass procedure that intercepts Windows session-end messages before
+/// tao's own window procedure sees them.
+///
+/// tao has no shutdown-aware handling: `WM_ENDSESSION` falls through to its
+/// default processing, which synchronously runs Tauri's `RunEvent::Exit`
+/// (transcribe-cpp/GPU teardown) and joins the hotkey-hook, cpal, and
+/// idle-watcher threads — all *inside this window-procedure call*. If any of
+/// that stalls (GPU teardown has been observed to hang on some machines, see
+/// #1710), the call never returns and Windows shows "this app is preventing
+/// shutdown" until the process is force-killed.
+///
+/// Per Microsoft's shutdown guidance, an app should never block
+/// `WM_QUERYENDSESSION` and should exit immediately on `WM_ENDSESSION`
+/// without further cleanup — the OS reclaims all process resources
+/// regardless. So we always allow the session to end, then terminate the
+/// moment it actually does, skipping the teardown path entirely.
+#[cfg(target_os = "windows")]
+unsafe extern "system" fn session_end_subclass_proc(
+    hwnd: windows::Win32::Foundation::HWND,
+    msg: u32,
+    wparam: windows::Win32::Foundation::WPARAM,
+    lparam: windows::Win32::Foundation::LPARAM,
+    _uidsubclass: usize,
+    _dwrefdata: usize,
+) -> windows::Win32::Foundation::LRESULT {
+    use windows::Win32::Foundation::LRESULT;
+    use windows::Win32::UI::Shell::DefSubclassProc;
+    use windows::Win32::UI::WindowsAndMessaging::{WM_ENDSESSION, WM_QUERYENDSESSION};
+
+    match msg {
+        // Never block a shutdown/logoff/restart request.
+        WM_QUERYENDSESSION => LRESULT(1),
+        // wParam is TRUE only when the session is actually ending (FALSE if
+        // another app vetoed the shutdown) — nothing to undo in that case
+        // since we never blocked anything above.
+        WM_ENDSESSION if wparam.0 != 0 => {
+            log::info!("Windows session ending; exiting immediately to avoid blocking shutdown");
+            std::process::exit(0);
+        }
+        _ => DefSubclassProc(hwnd, msg, wparam, lparam),
+    }
+}
+
+/// Installs [`session_end_subclass_proc`] on the main window so session-end
+/// messages are handled before tao's own (potentially slow) cleanup runs.
+#[cfg(target_os = "windows")]
+fn install_session_end_handler(window: &tauri::WebviewWindow) {
+    use windows::Win32::UI::Shell::SetWindowSubclass;
+
+    match window.hwnd() {
+        Ok(hwnd) => {
+            let installed = unsafe {
+                SetWindowSubclass(
+                    hwnd,
+                    Some(session_end_subclass_proc),
+                    SESSION_END_SUBCLASS_ID,
+                    0,
+                )
+            };
+            if !installed.as_bool() {
+                log::warn!("Failed to install Windows session-end handler");
+            }
+        }
+        Err(e) => {
+            log::warn!(
+                "Failed to get main window HWND for session-end handler: {}",
+                e
+            );
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run(cli_args: CliArgs) {
     // Detect portable mode before anything else
@@ -813,7 +891,14 @@ pub fn run(cli_args: CliArgs) {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));
             }
 
-            win_builder.build()?;
+            #[allow(unused_variables)]
+            let main_window = win_builder.build()?;
+
+            // Make sure Windows session end (shutdown/restart/logoff) exits
+            // us immediately instead of running the graceful teardown path,
+            // which can hang and block the shutdown (see #1710).
+            #[cfg(target_os = "windows")]
+            install_session_end_handler(&main_window);
 
             let mut settings = get_settings(app.handle());
 
