@@ -500,11 +500,13 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
             });
             let _ = rx.recv_timeout(Duration::from_millis(500));
         } else {
-            // Non-layer-shell fallback (regular window) on Linux.
-            let _ = overlay_window.show();
+            // Non-layer-shell fallback (regular window) on Linux: size and position
+            // the window before showing it so it doesn't flash at the default or
+            // stale position.
             let _ =
                 overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
             position_overlay_window(&overlay_window, app_handle);
+            let _ = overlay_window.show();
         }
 
         #[cfg(not(target_os = "linux"))]
