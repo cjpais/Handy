@@ -1,9 +1,15 @@
 use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
+use crate::transcription_coordinator::TranscriptionCoordinator;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
+use log::info;
+
+#[cfg(target_os = "macos")]
+use crate::focus;
 
 #[cfg(not(target_os = "macos"))]
 use log::debug;
@@ -61,6 +67,42 @@ fn overlay_dimensions(state: &str) -> (f64, f64) {
 
 static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
 const EMIT_THROTTLE_MS: u64 = 33; // ~30 FPS
+
+/// Session counter for overlay hide-guard. Incremented when a new recording
+/// starts so any pending hide from a previous session is invalidated.
+static OVERLAY_SESSION: AtomicU64 = AtomicU64::new(0);
+
+/// Bump the overlay session counter. Called when a new recording starts.
+/// Any pending hide operation from a previous session will see the session
+/// has changed and will skip hiding the window.
+pub fn bump_overlay_session() -> u64 {
+    OVERLAY_SESSION.fetch_add(1, Ordering::SeqCst)
+}
+
+/// Overlay action mode — determines which visual theme the frontend uses.
+/// The payload emitted to the frontend is formatted as `"{state}:{action}"`
+/// (e.g. `"recording:transcribe"`, `"transcribing:router"`), allowing the
+/// overlay to vary icon/colours/labels based on the originating action.
+pub enum OverlayMode {
+    Transcribe,
+    #[allow(dead_code)]
+    TranscribeWithPostProcess,
+    Router,
+}
+
+impl std::fmt::Display for OverlayMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OverlayMode::Transcribe => write!(f, "transcribe"),
+            OverlayMode::TranscribeWithPostProcess => write!(f, "post_process"),
+            OverlayMode::Router => write!(f, "router"),
+        }
+    }
+}
+
+fn format_overlay_payload(state: &str, mode: &OverlayMode) -> String {
+    format!("{}:{}", state, mode)
+}
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -372,13 +414,19 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
-fn show_overlay_state(app_handle: &AppHandle, state: &str) {
+pub(crate) fn show_overlay_state(app_handle: &AppHandle, state: &str, mode: &OverlayMode) {
     // Whether the overlay shows at all is governed by overlay_style; position
     // only chooses Top vs Bottom placement.
     let settings = settings::get_settings(app_handle);
     if settings.overlay_style == OverlayStyle::None {
         return;
     }
+
+    // Save the currently frontmost application BEFORE showing the overlay.
+    // On macOS, orderFrontRegardless (called by tauri-nspanel's show())
+    // activates the Handy app, stealing focus from the user's target app.
+    #[cfg(target_os = "macos")]
+    focus::save_frontmost_app(app_handle);
 
     // Size the overlay for this state (compact vs. streaming), then position it.
     let (width, height) = overlay_dimensions(state);
@@ -408,7 +456,8 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 
-        let _ = overlay_window.emit("show-overlay", state);
+        let payload = format_overlay_payload(state, mode);
+        let _ = overlay_window.emit("show-overlay", payload);
         log::debug!(
             "overlay '{}': set_size={:?} pos_calc={:?} set_pos={:?} show={:?}",
             state,
@@ -422,22 +471,37 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
 
 /// Shows the recording overlay window with fade-in animation
 pub fn show_recording_overlay(app_handle: &AppHandle) {
-    show_overlay_state(app_handle, "recording");
+    show_overlay_state(app_handle, "recording", &OverlayMode::Transcribe);
+}
+
+/// Shows the recording overlay window with a specific mode.
+pub fn show_recording_overlay_with_mode(app_handle: &AppHandle, mode: OverlayMode) {
+    show_overlay_state(app_handle, "recording", &mode);
 }
 
 /// Shows the larger streaming overlay that displays live transcription text
 pub fn show_streaming_overlay(app_handle: &AppHandle) {
-    show_overlay_state(app_handle, "streaming");
+    show_overlay_state(app_handle, "streaming", &OverlayMode::Transcribe);
 }
 
 /// Shows the transcribing overlay window
 pub fn show_transcribing_overlay(app_handle: &AppHandle) {
-    show_overlay_state(app_handle, "transcribing");
+    show_overlay_state(app_handle, "transcribing", &OverlayMode::Transcribe);
+}
+
+/// Shows the transcribing overlay window with a specific mode.
+pub fn show_transcribing_overlay_with_mode(app_handle: &AppHandle, mode: OverlayMode) {
+    show_overlay_state(app_handle, "transcribing", &mode);
 }
 
 /// Shows the processing overlay window
 pub fn show_processing_overlay(app_handle: &AppHandle) {
-    show_overlay_state(app_handle, "processing");
+    show_overlay_state(app_handle, "processing", &OverlayMode::Transcribe);
+}
+
+/// Shows the processing overlay window with a specific mode.
+pub fn show_processing_overlay_with_mode(app_handle: &AppHandle, mode: OverlayMode) {
+    show_overlay_state(app_handle, "processing", &mode);
 }
 
 /// Updates the overlay window position based on current settings
@@ -459,18 +523,89 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
     }
 }
 
-/// Hides the recording overlay window with fade-out animation
+/// Updates the overlay window position and size based on current settings and mode.
+/// Router mode may use a taller window to accommodate the transcription preview,
+/// while regular transcription uses minimal height to avoid blocking click-through.
+/// The overlay_scale setting (1.0 or 2.0) scales the window dimensions.
+///
+/// This is the state+mode-aware version of `update_overlay_position`, used by
+/// the router confirmation flow (PR 10). Currently delegates to the same
+/// repositioning logic as the parameterless version.
+pub fn update_overlay_position_with_mode(app_handle: &AppHandle, _state: &str, _mode: &OverlayMode) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        #[cfg(target_os = "linux")]
+        {
+            update_gtk_layer_shell_anchors(&overlay_window);
+        }
+
+        let (width, height) = current_overlay_logical_size(&overlay_window)
+            .unwrap_or((OVERLAY_WIDTH, OVERLAY_HEIGHT));
+        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+    }
+}
+
+/// Hides the recording overlay window with fade-out animation.
+///
+/// BUGFIX: Race condition — overlay closing during new transcription.
+/// The old implementation used `thread::spawn` + `sleep(300ms)`, which could
+/// close the overlay when a new recording had already started. This version
+/// uses a two-layer guard:
+/// 1. Session ID: Capture OVERLAY_SESSION at call time, check it in the
+///    closure. If a new recording started (bumped the session), skip hiding.
+/// 2. is_active_use(): Check inside the closure at the latest possible
+///    moment. If still active, skip hiding.
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
+    info!("hide_recording_overlay: called");
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Emit event to trigger fade-out animation
-        let _ = overlay_window.emit("hide-overlay", ());
-        // Hide the window after a short delay to allow animation to complete
+        // Emit event to trigger fade-out animation.
+        // force: false means the frontend will check state before hiding.
+        let _ = overlay_window.emit("hide-overlay", serde_json::json!({ "force": false }));
+
+        // Capture session ID at call time — if a new recording starts between
+        // now and the closure executing, the session will have been bumped.
+        let session_at_call = OVERLAY_SESSION.load(Ordering::SeqCst);
+
+        // Schedule hide on main thread after delay for animation.
+        // The closure checks BOTH the session ID and is_active_use() to
+        // guard against the race condition where a new recording starts
+        // between the caller's is_active_use() check and the actual hide.
+        let app_handle_clone = app_handle.clone();
         let window_clone = overlay_window.clone();
-        std::thread::spawn(move || {
+        let _ = overlay_window.run_on_main_thread(move || {
+            // GUARD 1: Session changed — a new recording started, keep overlay
+            let session_now = OVERLAY_SESSION.load(Ordering::SeqCst);
+            if session_now != session_at_call {
+                log::info!(
+                    "hide_recording_overlay: session changed ({} -> {}), keeping overlay",
+                    session_at_call,
+                    session_now
+                );
+                return;
+            }
+
+            // Small delay for fade-out animation to complete
             std::thread::sleep(std::time::Duration::from_millis(300));
-            let _ = window_clone.hide();
+
+            // GUARD 2: Active use check at the latest possible moment
+            let is_active = app_handle_clone
+                .try_state::<Arc<TranscriptionCoordinator>>()
+                .map_or(false, |coord| coord.is_active_use());
+
+            if !is_active {
+                let _ = window_clone.hide();
+
+                // Restore the previously frontmost application so focus
+                // returns to the user's target app after overlay dismissal.
+                #[cfg(target_os = "macos")]
+                focus::restore_frontmost_app(&app_handle_clone);
+            } else {
+                log::info!("hide_recording_overlay: keeping overlay — new recording active");
+            }
         });
     }
 }
