@@ -116,7 +116,7 @@ where
 }
 
 /// Shows a layer surface: apply anchors, map it, pump the GTK event loop so the
-/// compositor commits it. Used by the prime cycle and show_overlay_state.
+/// compositor commits it. Used by show_overlay_state.
 #[cfg(target_os = "linux")]
 fn gtk_show_layer_surface(gtk_window: &gtk::ApplicationWindow, position: OverlayPosition) {
     use gtk::prelude::WidgetExt;
