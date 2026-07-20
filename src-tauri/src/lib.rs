@@ -20,7 +20,14 @@ mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
-
+// Fork extensions: foundation modules
+mod emergency_save;
+mod errors;
+mod error_events;
+mod focus;
+mod health;
+mod logging;
+mod session;
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};

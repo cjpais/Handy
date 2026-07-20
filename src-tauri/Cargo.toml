@@ -30,6 +30,9 @@ serde = { version = "1", features = ["derive"] }
 
 [dependencies]
 once_cell = "1"
+parking_lot = "0.12"
+thiserror = "2"
+nnnoiseless = { version = "0.5.2", default-features = false }
 tauri = { version = "2.11.5", features = [
   "protocol-asset",
   "macos-private-api",
@@ -84,6 +87,7 @@ tauri-plugin-dialog = "2.6"
 hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downloads", features = [
   "tokio",
 ] }
+uuid = { version = "1", features = ["v4"] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
