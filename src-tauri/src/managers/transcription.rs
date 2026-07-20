@@ -36,22 +36,29 @@ use transcribe_rs::{
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 const STREAM_FINALIZE_REPLY_TIMEOUT: Duration = Duration::from_secs(30);
 
-fn panic_payload_message(payload: &(dyn std::any::Any + Send)) -> String {
-    if let Some(message) = payload.downcast_ref::<&str>() {
-        (*message).to_string()
-    } else if let Some(message) = payload.downcast_ref::<String>() {
-        message.clone()
-    } else {
-        "unknown panic".to_string()
-    }
-}
-
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
     pub event_type: String,
     pub model_id: Option<String>,
     pub model_name: Option<String>,
     pub error: Option<String>,
+}
+
+/// Result of a transcription call, including timing metadata.
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct TranscriptionOutput {
+    /// The transcribed text.
+    pub text: String,
+    /// The model ID that produced this transcription (e.g. "turbo", "parakeet-tdt-0.6b-v2").
+    pub model_id: Option<String>,
+    /// Duration of the input audio in seconds.
+    pub audio_duration_secs: f64,
+    /// Time spent on the transcription engine call in seconds.
+    pub transcription_duration_secs: f64,
+    /// Real-time factor: `audio_secs / transcription_secs`. Values > 1.0 mean
+    /// the engine transcribed faster than real time (e.g. 4.00x = 4 seconds of
+    /// audio transcribed in 1 second).
+    pub real_time_factor: f64,
 }
 
 /// Live transcription snapshot emitted to the overlay during a streaming run.
@@ -805,12 +812,21 @@ impl TranscriptionManager {
         };
 
         // Wait for any in-progress model load to finish (start_stream races the
-        // background load kicked off when recording starts).
+        // background load kicked off when recording starts). Log the wait so we
+        // can diagnose streaming startup latency.
+        let load_wait_start = Instant::now();
         {
             let mut is_loading = self.is_loading.lock().unwrap();
             while *is_loading {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }
+        }
+        let load_wait_elapsed = load_wait_start.elapsed();
+        if load_wait_elapsed.as_millis() > 50 {
+            info!(
+                "Stream worker waited {:.2}s for model load to complete",
+                load_wait_elapsed.as_secs_f64()
+            );
         }
 
         let model_id = self.get_current_model().unwrap_or_default();
@@ -1024,9 +1040,13 @@ impl TranscriptionManager {
             return;
         }
 
+        // Return the engine to the mutex BEFORE sending the finalize reply.
+        // This minimizes the window where batch transcription is blocked —
+        // by the time the caller receives the reply and potentially falls
+        // back to batch, the engine is already available.
         self.return_engine(engine, &model_id);
-        if let (Some(reply), Some(result)) = (finalize_reply, finalize_result) {
-            let _ = reply.send(result);
+        if let (Some(reply), Some(result)) = (finalize_reply, &finalize_result) {
+            let _ = reply.send(result.clone());
         }
         // `_worker` drops here, clearing this worker's active/lease flags after
         // the engine has been returned to the pool.
@@ -1062,6 +1082,7 @@ impl TranscriptionManager {
         if tx.send(StreamCmd::Finalize(reply_tx)).is_err() {
             return Ok(None);
         }
+        let finalize_start = Instant::now();
         let raw = match reply_rx.recv_timeout(STREAM_FINALIZE_REPLY_TIMEOUT) {
             Ok(Some(text)) => text,
             Ok(None) => return Ok(None),
@@ -1074,11 +1095,23 @@ impl TranscriptionManager {
                 ));
             }
         };
+        let finalize_elapsed = finalize_start.elapsed();
+        info!(
+            "Stream finalize received in {:.2}s (worker already returned engine)",
+            finalize_elapsed.as_secs_f64()
+        );
 
         let settings = get_settings(&self.app_handle);
         // Streaming models do not receive a decode prompt, so custom words
         // always go through the shared fuzzy post-correction path.
         let filtered = post_process_transcription_text(raw, &settings, false);
+
+        // Touch the activity timestamp so the idle watcher doesn't unload the
+        // model immediately after streaming — the user is likely to record
+        // again soon. `maybe_unload_immediately` (called below) overrides
+        // this when the user's setting is "Immediately", but for other
+        // timeout values this prevents an unnecessary unload/reload cycle.
+        self.touch_activity();
 
         self.maybe_unload_immediately("streaming transcription");
         Ok(Some(filtered))
@@ -1360,7 +1393,13 @@ impl TranscriptionManager {
                 Err(panic_payload) => {
                     // Engine panicked — do NOT put it back (it's in an unknown state).
                     // The engine is dropped here, effectively unloading it.
-                    let panic_msg = panic_payload_message(panic_payload.as_ref());
+                    let panic_msg = if let Some(s) = panic_payload.downcast_ref::<&str>() {
+                        s.to_string()
+                    } else if let Some(s) = panic_payload.downcast_ref::<String>() {
+                        s.clone()
+                    } else {
+                        "unknown panic".to_string()
+                    };
                     error!(
                         "Transcription engine panicked: {}. Model has been unloaded.",
                         panic_msg
@@ -1428,6 +1467,56 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+
+    /// Like [`transcribe`](Self::transcribe), but returns a [`TranscriptionOutput`]
+    /// that includes timing metadata (audio duration, engine time, real-time factor).
+    ///
+    /// This is a thin wrapper — the core transcription logic is identical to
+    /// `transcribe()`. Use this variant when callers need performance metrics
+    /// (e.g. the retry worker, benchmark commands, or diagnostics).
+    pub fn transcribe_with_metadata(&self, audio: Vec<f32>) -> Result<TranscriptionOutput> {
+        let start = Instant::now();
+        let audio_duration_secs = audio.len() as f64 / 16_000.0;
+        let model_id = self.get_current_model();
+
+        let text = self.transcribe(audio)?;
+
+        let elapsed_secs = start.elapsed().as_secs_f64();
+        let rtf = real_time_factor(audio_duration_secs, elapsed_secs);
+
+        Ok(TranscriptionOutput {
+            text,
+            model_id,
+            audio_duration_secs,
+            transcription_duration_secs: elapsed_secs,
+            real_time_factor: rtf,
+        })
+    }
+
+    /// Prepare the transcription engine for a streaming session. Waits for any
+    /// in-progress model load and ensures the model is loaded and ready.
+    ///
+    /// Returns `Ok(())` if the model is ready, or `Err` if no model is loaded
+    /// and cannot be loaded.
+    pub fn prepare_for_streaming(&self) -> Result<()> {
+        // Wait for any in-progress model load to complete.
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
+
+        if !self.is_model_loaded() {
+            return Err(anyhow::anyhow!(
+                "No model loaded for streaming. Please load a model first."
+            ));
+        }
+
+        // Touch activity to prevent idle unload during streaming.
+        self.touch_activity();
+        Ok(())
     }
 }
 
@@ -1610,43 +1699,21 @@ fn post_process_transcription_text(
     settings: &AppSettings,
     custom_words_already_prompted: bool,
 ) -> String {
-    fail_open_text_transform(raw, |raw| {
-        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
-            apply_custom_words(
-                &raw,
-                &settings.custom_words,
-                settings.word_correction_threshold,
-            )
-        } else {
-            raw
-        };
-
-        filter_transcription_output(
-            &corrected,
-            &settings.app_language,
-            &settings.custom_filler_words,
+    let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
+        apply_custom_words(
+            &raw,
+            &settings.custom_words,
+            settings.word_correction_threshold,
         )
-    })
-}
+    } else {
+        raw
+    };
 
-/// Optional text cleanup must never discard a successful model result. The
-/// transform is pure and owns its input, so recovering the untouched text is
-/// safe even if a bug in custom-word or filler filtering unwinds.
-fn fail_open_text_transform<F>(raw: String, transform: F) -> String
-where
-    F: FnOnce(String) -> String,
-{
-    let fallback = raw.clone();
-    match catch_unwind(AssertUnwindSafe(|| transform(raw))) {
-        Ok(processed) => processed,
-        Err(payload) => {
-            error!(
-                "Optional transcription text post-processing panicked: {}; using the raw transcription",
-                panic_payload_message(payload.as_ref())
-            );
-            fallback
-        }
-    }
+    filter_transcription_output(
+        &corrected,
+        &settings.app_language,
+        &settings.custom_filler_words,
+    )
 }
 
 /// Decide a transcribe-cpp run's task + translation target from settings.
@@ -1919,16 +1986,6 @@ mod tests {
 
     fn languages(codes: &[&str]) -> Vec<String> {
         codes.iter().map(|code| (*code).to_string()).collect()
-    }
-
-    #[test]
-    fn optional_text_transform_falls_back_to_raw_text_after_panic() {
-        let raw = "原始轉錄。".to_string();
-        let result = fail_open_text_transform(raw.clone(), |_| {
-            panic!("simulated optional cleanup failure")
-        });
-
-        assert_eq!(result, raw);
     }
 
     #[test]
