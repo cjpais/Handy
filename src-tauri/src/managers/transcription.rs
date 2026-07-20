@@ -36,6 +36,16 @@ use transcribe_rs::{
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 const STREAM_FINALIZE_REPLY_TIMEOUT: Duration = Duration::from_secs(30);
 
+fn panic_payload_message(payload: &(dyn std::any::Any + Send)) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        (*message).to_string()
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else {
+        "unknown panic".to_string()
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
     pub event_type: String,
@@ -1350,13 +1360,7 @@ impl TranscriptionManager {
                 Err(panic_payload) => {
                     // Engine panicked — do NOT put it back (it's in an unknown state).
                     // The engine is dropped here, effectively unloading it.
-                    let panic_msg = if let Some(s) = panic_payload.downcast_ref::<&str>() {
-                        s.to_string()
-                    } else if let Some(s) = panic_payload.downcast_ref::<String>() {
-                        s.clone()
-                    } else {
-                        "unknown panic".to_string()
-                    };
+                    let panic_msg = panic_payload_message(panic_payload.as_ref());
                     error!(
                         "Transcription engine panicked: {}. Model has been unloaded.",
                         panic_msg
@@ -1606,21 +1610,43 @@ fn post_process_transcription_text(
     settings: &AppSettings,
     custom_words_already_prompted: bool,
 ) -> String {
-    let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
-        apply_custom_words(
-            &raw,
-            &settings.custom_words,
-            settings.word_correction_threshold,
-        )
-    } else {
-        raw
-    };
+    fail_open_text_transform(raw, |raw| {
+        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
+            apply_custom_words(
+                &raw,
+                &settings.custom_words,
+                settings.word_correction_threshold,
+            )
+        } else {
+            raw
+        };
 
-    filter_transcription_output(
-        &corrected,
-        &settings.app_language,
-        &settings.custom_filler_words,
-    )
+        filter_transcription_output(
+            &corrected,
+            &settings.app_language,
+            &settings.custom_filler_words,
+        )
+    })
+}
+
+/// Optional text cleanup must never discard a successful model result. The
+/// transform is pure and owns its input, so recovering the untouched text is
+/// safe even if a bug in custom-word or filler filtering unwinds.
+fn fail_open_text_transform<F>(raw: String, transform: F) -> String
+where
+    F: FnOnce(String) -> String,
+{
+    let fallback = raw.clone();
+    match catch_unwind(AssertUnwindSafe(|| transform(raw))) {
+        Ok(processed) => processed,
+        Err(payload) => {
+            error!(
+                "Optional transcription text post-processing panicked: {}; using the raw transcription",
+                panic_payload_message(payload.as_ref())
+            );
+            fallback
+        }
+    }
 }
 
 /// Decide a transcribe-cpp run's task + translation target from settings.
@@ -1893,6 +1919,16 @@ mod tests {
 
     fn languages(codes: &[&str]) -> Vec<String> {
         codes.iter().map(|code| (*code).to_string()).collect()
+    }
+
+    #[test]
+    fn optional_text_transform_falls_back_to_raw_text_after_panic() {
+        let raw = "原始轉錄。".to_string();
+        let result = fail_open_text_transform(raw.clone(), |_| {
+            panic!("simulated optional cleanup failure")
+        });
+
+        assert_eq!(result, raw);
     }
 
     #[test]

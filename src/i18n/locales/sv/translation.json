@@ -358,7 +358,7 @@
       },
       "customWords": {
         "title": "Anpassade ord",
-        "description": "Lägg till ord som ofta hörs fel eller stavas fel under transkription. Systemet kommer automatiskt att korrigera liknande ord för att matcha din lista.",
+        "description": "Hjälp modeller som stöds att känna igen namn och specialtermer. Ungefärlig korrigering är för närvarande begränsad till ord med bokstäverna A–Z och siffror.",
         "placeholder": "Lägg till ett ord",
         "add": "Lägg till",
         "remove": "Ta bort {{word}}",

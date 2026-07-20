@@ -358,7 +358,7 @@
       },
       "customWords": {
         "title": "Eigen woordenlijst",
-        "description": "Voeg woorden toe die vaak verkeerd worden verstaan of gespeld. Het systeem corrigeert klankverwante woorden automatisch naar jouw lijst.",
+        "description": "Help ondersteunde modellen namen en vaktermen te herkennen. Fuzzy-correctie is momenteel beperkt tot woorden met de letters A–Z en cijfers.",
         "placeholder": "Woord toevoegen",
         "add": "Toevoegen",
         "remove": "{{word}} verwijderen",

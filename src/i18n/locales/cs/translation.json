@@ -358,7 +358,7 @@
       },
       "customWords": {
         "title": "Vlastní slova",
-        "description": "Přidejte slova, která jsou při přepisu často špatně rozpoznána nebo napsána. Systém automaticky opraví podobně znějící slova podle vašeho seznamu.",
+        "description": "Pomozte podporovaným modelům rozpoznávat jména a odborné termíny. Přibližné opravy jsou v současnosti omezeny na slova obsahující písmena A–Z a číslice.",
         "placeholder": "Přidat slovo",
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
