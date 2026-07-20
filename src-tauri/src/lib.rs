@@ -182,11 +182,6 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(history_manager.clone());
     app_handle.manage(tray::CurrentTrayIconState::new());
 
-    // Pre-warm the audio feedback output stream while no transcription is
-    // running: opening it lazily on the transcription path races concurrent
-    // WASAPI session state (see audio_feedback.rs).
-    audio_feedback::init(app_handle);
-
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
     // after permissions are confirmed (on macOS) or after onboarding completes.
