@@ -6,13 +6,21 @@ use rodio::OutputStreamBuilder;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
+use std::sync::OnceLock;
 use std::thread;
+use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
 pub enum SoundType {
     Start,
     Stop,
 }
+
+/// How long a caller that needs the chime to finish (to sequence muting
+/// after it) is allowed to wait. If the audio stack is wedged, callers
+/// proceed without sound instead of hanging the transcription pipeline.
+const BLOCKING_PLAY_TIMEOUT: Duration = Duration::from_secs(3);
 
 fn resolve_sound_path(
     app: &AppHandle,
@@ -45,13 +53,52 @@ fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
     }
 }
 
+enum Request {
+    /// Ensure the output stream for `device` exists (startup pre-warm).
+    Warm { device: Option<String> },
+    Play {
+        path: PathBuf,
+        device: Option<String>,
+        volume: f32,
+        done: Option<mpsc::Sender<()>>,
+    },
+}
+
+static PLAYER: OnceLock<mpsc::Sender<Request>> = OnceLock::new();
+
+fn player() -> &'static mpsc::Sender<Request> {
+    PLAYER.get_or_init(|| {
+        let (tx, rx) = mpsc::channel();
+        thread::Builder::new()
+            .name("audio-feedback".into())
+            .spawn(move || playback_worker(rx))
+            .expect("failed to spawn audio feedback thread");
+        tx
+    })
+}
+
+/// Pre-warm the output stream at startup, while no transcription is running.
+/// Opening the stream is the WASAPI call that can wedge when it races other
+/// audio session activity, taking the rest of the audio stack (including the
+/// microphone stream shutdown on the transcription path) down with it — so it
+/// happens once here and on device change, never per transcription.
+pub fn init(app: &AppHandle) {
+    let settings = settings::get_settings(app);
+    if !settings.audio_feedback {
+        return;
+    }
+    let _ = player().send(Request::Warm {
+        device: settings.selected_output_device.clone(),
+    });
+}
+
 pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
     let settings = settings::get_settings(app);
     if !settings.audio_feedback {
         return;
     }
     if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_async(app, path);
+        send_play(&settings, path, None);
     }
 }
 
@@ -61,66 +108,166 @@ pub fn play_feedback_sound_blocking(app: &AppHandle, sound_type: SoundType) {
         return;
     }
     if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_blocking(app, &path);
+        wait_for_play(&settings, path);
     }
 }
 
 pub fn play_test_sound(app: &AppHandle, sound_type: SoundType) {
     let settings = settings::get_settings(app);
     if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_blocking(app, &path);
+        wait_for_play(&settings, path);
     }
 }
 
-fn play_sound_async(app: &AppHandle, path: PathBuf) {
-    let app_handle = app.clone();
-    thread::spawn(move || {
-        if let Err(e) = play_sound_at_path(&app_handle, path.as_path()) {
-            error!("Failed to play sound '{}': {}", path.display(), e);
-        }
+fn send_play(settings: &AppSettings, path: PathBuf, done: Option<mpsc::Sender<()>>) {
+    let _ = player().send(Request::Play {
+        path,
+        device: settings.selected_output_device.clone(),
+        volume: settings.audio_feedback_volume,
+        done,
     });
 }
 
-fn play_sound_blocking(app: &AppHandle, path: &Path) {
-    if let Err(e) = play_sound_at_path(app, path) {
-        error!("Failed to play sound '{}': {}", path.display(), e);
+fn wait_for_play(settings: &AppSettings, path: PathBuf) {
+    let (tx, rx) = mpsc::channel();
+    send_play(settings, path, Some(tx));
+    if rx.recv_timeout(BLOCKING_PLAY_TIMEOUT).is_err() {
+        warn!(
+            "Audio feedback did not finish within {:?}; continuing without it",
+            BLOCKING_PLAY_TIMEOUT
+        );
     }
 }
 
-fn play_sound_at_path(app: &AppHandle, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let settings = settings::get_settings(app);
-    let volume = settings.audio_feedback_volume;
-    let selected_device = settings.selected_output_device.clone();
-    play_audio_file(path, selected_device, volume)
+/// If a chime hasn't finished within this bound, its output stream is
+/// considered a zombie (frozen audio clock after a device state change —
+/// observed with wireless headsets) and gets scrapped.
+const PLAYBACK_STALL_TIMEOUT: Duration = Duration::from_secs(5);
+
+struct CachedStream {
+    /// The settings selection this stream was created for (None / "Default"
+    /// / explicit device name).
+    selection: Option<String>,
+    /// For a default selection: the concrete device the OS default resolved
+    /// to at creation time. The persistent stream does not follow default
+    /// changes by itself, so this is compared against the current default
+    /// before each use.
+    default_name: Option<String>,
+    stream: rodio::OutputStream,
 }
 
-fn play_audio_file(
-    path: &std::path::Path,
-    selected_device: Option<String>,
-    volume: f32,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let stream_builder = if let Some(device_name) = selected_device {
-        if device_name == "Default" {
-            debug!("Using default device");
-            OutputStreamBuilder::from_default_device()?
-        } else {
-            let host = crate::audio_toolkit::get_cpal_host();
-            let devices = host.output_devices()?;
+fn playback_worker(rx: mpsc::Receiver<Request>) {
+    // The output stream is created once and kept open across transcriptions.
+    // Recreating it per chime is what raced concurrent WASAPI session state
+    // and could deadlock the whole audio stack, mic stream shutdown included.
+    let mut cached: Option<CachedStream> = None;
 
-            let mut found_device = None;
-            for device in devices {
-                if device.name()? == device_name {
-                    found_device = Some(device);
-                    break;
+    while let Ok(req) = rx.recv() {
+        match req {
+            Request::Warm { device } => {
+                ensure_stream(&mut cached, device);
+            }
+            Request::Play {
+                path,
+                device,
+                volume,
+                done,
+            } => {
+                if let Some(c) = ensure_stream(&mut cached, device) {
+                    if let Err(e) = play_on_stream(&c.stream, &path, volume) {
+                        error!(
+                            "Failed to play sound '{}': {}; scrapping output stream",
+                            path.display(),
+                            e
+                        );
+                        scrap_stream(&mut cached);
+                    }
+                }
+                if let Some(done) = done {
+                    let _ = done.send(());
                 }
             }
+        }
+    }
+}
 
-            match found_device {
-                Some(device) => OutputStreamBuilder::from_device(device)?,
-                None => {
-                    warn!("Device '{}' not found, using default device", device_name);
-                    OutputStreamBuilder::from_default_device()?
-                }
+/// Dispose of the cached stream. The drop runs here, on the playback worker
+/// thread: `cpal::Stream` is `!Send` on CoreAudio (macOS) and ALSA (Linux),
+/// so it cannot be moved to another thread to be dropped. If a wedged device
+/// ever made this drop block, only the chime worker would stall — the
+/// transcription pipeline is protected independently by the recorder-side
+/// bounded waits — and in practice dropping a cpal stream returns promptly
+/// (the stall timeout above guards playback, not teardown).
+fn scrap_stream(cached: &mut Option<CachedStream>) {
+    *cached = None;
+}
+
+fn is_default_selection(device: &Option<String>) -> bool {
+    match device {
+        None => true,
+        Some(name) => name == "Default",
+    }
+}
+
+/// Name of the device the OS default output currently resolves to. A cheap
+/// query compared to stream creation; runs on the worker, so a wedged audio
+/// stack costs a chime, not the pipeline.
+fn current_default_name() -> Option<String> {
+    let host = crate::audio_toolkit::get_cpal_host();
+    host.default_output_device().and_then(|d| d.name().ok())
+}
+
+fn ensure_stream(
+    cached: &mut Option<CachedStream>,
+    device: Option<String>,
+) -> Option<&CachedStream> {
+    // A "Default" stream must follow the OS default: the persistent stream
+    // keeps playing to the device it was opened on, so compare what the
+    // default resolves to now against what it resolved to at creation.
+    let default_name = if is_default_selection(&device) {
+        current_default_name()
+    } else {
+        None
+    };
+    let stale = cached.as_ref().is_none_or(|c| {
+        c.selection != device || (is_default_selection(&device) && c.default_name != default_name)
+    });
+    if stale {
+        scrap_stream(cached);
+        match create_stream(device.as_deref()) {
+            Ok(stream) => {
+                *cached = Some(CachedStream {
+                    selection: device,
+                    default_name,
+                    stream,
+                })
+            }
+            Err(e) => error!("Failed to open audio feedback output stream: {}", e),
+        }
+    }
+    cached.as_ref()
+}
+
+fn create_stream(
+    device_name: Option<&str>,
+) -> Result<rodio::OutputStream, Box<dyn std::error::Error>> {
+    let stream_builder = if let Some(name) = device_name.filter(|n| *n != "Default") {
+        let host = crate::audio_toolkit::get_cpal_host();
+        let devices = host.output_devices()?;
+
+        let mut found_device = None;
+        for device in devices {
+            if device.name()? == name {
+                found_device = Some(device);
+                break;
+            }
+        }
+
+        match found_device {
+            Some(device) => OutputStreamBuilder::from_device(device)?,
+            None => {
+                warn!("Device '{}' not found, using default device", name);
+                OutputStreamBuilder::from_default_device()?
             }
         }
     } else {
@@ -128,15 +275,31 @@ fn play_audio_file(
         OutputStreamBuilder::from_default_device()?
     };
 
-    let stream_handle = stream_builder.open_stream()?;
-    let mixer = stream_handle.mixer();
+    Ok(stream_builder.open_stream()?)
+}
 
+fn play_on_stream(
+    stream: &rodio::OutputStream,
+    path: &Path,
+    volume: f32,
+) -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(path)?;
-    let buf_reader = BufReader::new(file);
-
-    let sink = rodio::play(mixer, buf_reader)?;
+    let sink = rodio::play(stream.mixer(), BufReader::new(file))?;
     sink.set_volume(volume);
-    sink.sleep_until_end();
-
+    // Bounded wait instead of sleep_until_end(): a stream whose device
+    // changed state underneath it stops consuming samples without erroring,
+    // and an unbounded wait would wedge the worker on it forever.
+    let started = std::time::Instant::now();
+    while !sink.empty() {
+        if started.elapsed() > PLAYBACK_STALL_TIMEOUT {
+            sink.stop();
+            return Err(format!(
+                "playback did not finish within {:?} (zombie output stream?)",
+                PLAYBACK_STALL_TIMEOUT
+            )
+            .into());
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
     Ok(())
 }
