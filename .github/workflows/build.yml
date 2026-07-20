@@ -782,9 +782,16 @@ jobs:
               }
             }
 
-            & $handy.FullName --list-devices | Out-Host
+            $deviceOutput = (& $handy.FullName --list-devices | Out-String)
+            $deviceOutput | Write-Host
             if ($LASTEXITCODE -ne 0) {
               throw "$Label handy.exe --list-devices failed"
+            }
+            if ("${{ inputs.target }}" -like "aarch64*" -and $deviceOutput -match "kind=(vulkan|cuda|metal|gpu)") {
+              throw "$Label Windows ARM64 package unexpectedly exposed a GPU compute device"
+            }
+            if ("${{ inputs.target }}" -like "aarch64*" -and $deviceOutput -notmatch "kind=cpu") {
+              throw "$Label Windows ARM64 package did not expose its required CPU compute device"
             }
           }
 
