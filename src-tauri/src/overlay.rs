@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "macos"))]
 use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
@@ -167,33 +168,96 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     });
 }
 
+#[cfg(any(target_os = "macos", test))]
+fn physical_cursor_to_logical(
+    cursor: PhysicalPosition<f64>,
+    scale_factor: f64,
+) -> Option<(i32, i32)> {
+    if !scale_factor.is_finite()
+        || scale_factor <= 0.0
+        || !cursor.x.is_finite()
+        || !cursor.y.is_finite()
+    {
+        return None;
+    }
+
+    let x = (cursor.x / scale_factor).floor();
+    let y = (cursor.y / scale_factor).floor();
+    if x < i32::MIN as f64 || x > i32::MAX as f64 || y < i32::MIN as f64 || y > i32::MAX as f64 {
+        return None;
+    }
+
+    Some((x as i32, y as i32))
+}
+
+/// Returns the current cursor position in the same global logical coordinate
+/// space used to compare monitor bounds.
+///
+/// On macOS, Enigo caches `CGDisplay::main()` when its long-lived input state is
+/// created. That cached display becomes stale after docking, undocking, or
+/// changing the main display, which corrupts Enigo's Y-axis conversion. Tauri's
+/// cursor query reads the current display configuration on every call, so use it
+/// for overlay placement while retaining Enigo for input injection elsewhere.
+#[cfg(target_os = "macos")]
+fn current_cursor_position(app_handle: &AppHandle) -> Result<(i32, i32), String> {
+    let cursor = app_handle
+        .cursor_position()
+        .map_err(|error| format!("failed to read cursor position: {error}"))?;
+    let primary = app_handle
+        .primary_monitor()
+        .map_err(|error| format!("failed to read primary monitor: {error}"))?
+        .ok_or_else(|| "no primary monitor is available".to_string())?;
+
+    physical_cursor_to_logical(cursor, primary.scale_factor())
+        .ok_or_else(|| "cursor position or primary monitor scale is invalid".to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn current_cursor_position(app_handle: &AppHandle) -> Result<(i32, i32), String> {
+    input::get_cursor_position(app_handle)
+        .ok_or_else(|| "Enigo did not return a cursor position".to_string())
+}
+
 fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
-    if let Some(mouse_location) = input::get_cursor_position(app_handle) {
-        if let Ok(monitors) = app_handle.available_monitors() {
-            for monitor in monitors {
-                // Tauri's monitor position/size are physical pixels, but enigo
-                // may return logical coordinates (confirmed on macOS via
-                // NSEvent::mouseLocation; on Windows, GetCursorPos behavior
-                // depends on the process DPI-awareness context). Dividing by
-                // scale_factor normalizes to logical, which is safe regardless:
-                // if enigo returns logical it matches directly, and if it returns
-                // physical on a scale=1 monitor the division is a no-op.
-                let scale = monitor.scale_factor();
-                let pos = PhysicalPosition::new(
-                    (monitor.position().x as f64 / scale) as i32,
-                    (monitor.position().y as f64 / scale) as i32,
-                );
-                let size = PhysicalSize::new(
-                    (monitor.size().width as f64 / scale) as u32,
-                    (monitor.size().height as f64 / scale) as u32,
-                );
-                if is_mouse_within_monitor(mouse_location, &pos, &size) {
-                    return Some(monitor);
-                }
-            }
+    let mouse_location = match current_cursor_position(app_handle) {
+        Ok(position) => position,
+        Err(error) => {
+            log::warn!("Overlay cursor lookup failed ({error}); falling back to primary monitor");
+            return app_handle.primary_monitor().ok().flatten();
+        }
+    };
+
+    let monitors = match app_handle.available_monitors() {
+        Ok(monitors) => monitors,
+        Err(error) => {
+            log::warn!(
+                "Overlay monitor enumeration failed ({error}); falling back to primary monitor"
+            );
+            return app_handle.primary_monitor().ok().flatten();
+        }
+    };
+
+    for monitor in monitors {
+        // Tauri's monitor position/size are physical pixels, while the cursor
+        // position is normalized to global logical coordinates above.
+        let scale = monitor.scale_factor();
+        let pos = PhysicalPosition::new(
+            (monitor.position().x as f64 / scale) as i32,
+            (monitor.position().y as f64 / scale) as i32,
+        );
+        let size = PhysicalSize::new(
+            (monitor.size().width as f64 / scale) as u32,
+            (monitor.size().height as f64 / scale) as u32,
+        );
+        if is_mouse_within_monitor(mouse_location, &pos, &size) {
+            return Some(monitor);
         }
     }
 
+    log::warn!(
+        "Cursor at {:?} did not match any current monitor; falling back to primary monitor",
+        mouse_location
+    );
     app_handle.primary_monitor().ok().flatten()
 }
 
@@ -525,4 +589,42 @@ pub fn emit_levels(app_handle: &AppHandle, levels: &[f32]) {
     // eval_script call per callback, cutting the per-callback WebKit
     // dispatch work in half.
     let _ = app_handle.emit_to("recording_overlay", "mic-level", levels);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_mouse_within_monitor, physical_cursor_to_logical};
+    use tauri::{PhysicalPosition, PhysicalSize};
+
+    #[test]
+    fn converts_retina_cursor_to_global_logical_coordinates() {
+        let cursor = PhysicalPosition::new(-1982.984375, 5347.703125);
+
+        assert_eq!(physical_cursor_to_logical(cursor, 2.0), Some((-992, 2673)));
+    }
+
+    #[test]
+    fn rejects_invalid_cursor_scale() {
+        let cursor = PhysicalPosition::new(100.0, 200.0);
+
+        assert_eq!(physical_cursor_to_logical(cursor, 0.0), None);
+        assert_eq!(physical_cursor_to_logical(cursor, f64::NAN), None);
+    }
+
+    #[test]
+    fn matches_cursor_against_negative_origin_monitor() {
+        let monitor_position = PhysicalPosition::new(-1692, -230);
+        let monitor_size = PhysicalSize::new(1692, 3008);
+
+        assert!(is_mouse_within_monitor(
+            (-991, 2673),
+            &monitor_position,
+            &monitor_size
+        ));
+        assert!(!is_mouse_within_monitor(
+            (1376, 1541),
+            &monitor_position,
+            &monitor_size
+        ));
+    }
 }
