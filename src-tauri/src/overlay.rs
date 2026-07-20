@@ -488,7 +488,7 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
             // invisible. The Tauri window visibility must also flip to "shown"
             // so `emit("show-overlay")` is delivered to the WebView.
             let _ = overlay_window.show();
-            let pos = settings::get_settings(overlay_window.app_handle()).overlay_position;
+            let pos = settings.overlay_position;
             // Synchronize with the GTK main thread so emit("show-overlay") below
             // runs only after the surface is actually mapped. Without this, the
             // event reaches the WebView before the layer surface is visible,
