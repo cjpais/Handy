@@ -130,15 +130,16 @@ sudo cp usr/bin/handy /usr/bin/
 sudo cp -a usr/lib/. /usr/lib/
 sudo cp -r usr/share/icons/hicolor/* /usr/share/icons/hicolor/
 sudo cp usr/share/applications/Handy.desktop /usr/share/applications/
-sudo ldconfig
 ```
+
+The runtime libraries live in the app-private `/usr/lib/Handy/` (on the binary's rpath), so no `ldconfig` step is needed.
 
 After subsequent rebuilds, copy the binary and any refreshed runtime libraries:
 
 ```bash
 sudo cp src-tauri/target/release/handy /usr/bin/
-sudo cp -a src-tauri/transcribe-libs/. /usr/lib/
-sudo ldconfig
+sudo mkdir -p /usr/lib/Handy
+sudo cp -a src-tauri/transcribe-libs/. /usr/lib/Handy/
 ```
 
 Resources only need re-copying if they change upstream (new icons, sounds, models, etc.).
