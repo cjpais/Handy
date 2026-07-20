@@ -144,21 +144,6 @@ fn position_overlay_window(overlay_window: &tauri::webview::WebviewWindow, app_h
     }
 }
 
-#[cfg(target_os = "linux")]
-fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow) {
-    if !LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
-        return;
-    }
-    let window_clone = overlay_window.clone();
-    let _ = overlay_window.run_on_main_thread(move || {
-        // Try to get the GTK window from the Tauri webview
-        if let Ok(gtk_window) = window_clone.gtk_window() {
-            let settings = settings::get_settings(window_clone.app_handle());
-            set_layer_shell_anchors(&gtk_window, settings.overlay_position);
-        }
-    });
-}
-
 /// Returns true when the environment variable is set to a truthy value
 /// (e.g. "1", "true", "yes", "on").
 /// "0", "false", "no", "off" and empty string are treated as falsy (case-insensitive).
@@ -201,8 +186,6 @@ fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool 
             gtk_window.set_layer(Layer::Overlay);
             gtk_window.set_keyboard_mode(KeyboardMode::None);
             gtk_window.set_exclusive_zone(0);
-
-            update_gtk_layer_shell_anchors(overlay_window);
 
             let ok = gtk_window.is_layer_window();
             debug!(
