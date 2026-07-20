@@ -971,3 +971,7 @@ pub fn run(cli_args: CliArgs) {
             _ => {}
         });
 }
+
+// Fork extensions: USB watchdog and sleep/wake
+mod sleep_wake;
+mod usb_watchdog;

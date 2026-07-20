@@ -547,3 +547,62 @@ pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
         .ok_or("HandyKeysState not initialized")?;
     state.stop_recording()
 }
+
+/// Reset hotkey state after macOS wake-from-sleep.
+///
+/// On wake, the OS may have injected spurious key events that leave our
+/// hotkey state machine in an inconsistent state (e.g. "recording" even
+/// though no physical key is held). This function unregisters and
+/// re-registers all shortcuts to force a clean slate.
+pub fn reset_hotkey_state_after_wake(app_handle: &tauri::AppHandle) {
+    let settings = get_settings(app_handle);
+    if settings.keyboard_implementation != settings::KeyboardImplementation::HandyKeys {
+        return;
+    }
+
+    let state = match app_handle.try_state::<HandyKeysState>() {
+        Some(s) => s,
+        None => {
+            log::debug!("reset_hotkey_state_after_wake: HandyKeysState not initialized, skipping");
+            return;
+        }
+    };
+
+    // Unregister all shortcuts, then re-register them.
+    let default_bindings = settings::get_default_settings().bindings;
+    for (id, default_binding) in &default_bindings {
+        // Build the effective binding from user settings, falling back to default
+        let binding = settings
+            .bindings
+            .get(id)
+            .cloned()
+            .unwrap_or_else(|| default_binding.clone());
+
+        if let Err(e) = state.unregister(&binding) {
+            log::debug!("reset_hotkey_state_after_wake: unregister {} failed: {}", id, e);
+        }
+    }
+
+    // Skip cancel shortcut (it's dynamic, registered when recording starts)
+    for (id, default_binding) in &default_bindings {
+        if id == "cancel" {
+            continue;
+        }
+        // Skip post-processing shortcut when the feature is disabled
+        if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+            continue;
+        }
+
+        let binding = settings
+            .bindings
+            .get(id)
+            .cloned()
+            .unwrap_or_else(|| default_binding.clone());
+
+        if let Err(e) = state.register(&binding) {
+            log::error!("reset_hotkey_state_after_wake: register {} failed: {}", id, e);
+        }
+    }
+
+    log::info!("reset_hotkey_state_after_wake: shortcuts re-registered after wake");
+}

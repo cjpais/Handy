@@ -9,6 +9,8 @@ use crate::audio_toolkit::{
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
 use crate::settings::{get_settings, AppSettings};
+use crate::usb_watchdog;
+use crate::usb_watchdog::UsbWatchdog;
 use crate::utils;
 use log::{debug, error, info, warn};
 use std::path::Path;
@@ -193,6 +195,8 @@ pub struct AudioRecordingManager {
     /// so the retry re-enumerates. The system-default case is never cached —
     /// the recorder resolves the current default itself, cheaply.
     cached_device: Arc<Mutex<Option<(String, cpal::Device)>>>,
+    /// USB watchdog for recovering dead USB audio devices via power cycling.
+    pub usb_watchdog: Arc<UsbWatchdog>,
 }
 
 impl AudioRecordingManager {
@@ -209,6 +213,12 @@ impl AudioRecordingManager {
             MicrophoneMode::OnDemand
         };
 
+        let usb_watchdog = Arc::new(UsbWatchdog::new(
+            settings.usb_watchdog_enabled,
+            &settings.usb_watchdog_device_name,
+            Some(app.clone()),
+        ));
+
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),
             mode: Arc::new(Mutex::new(mode.clone())),
@@ -222,6 +232,7 @@ impl AudioRecordingManager {
             cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
             cached_device: Arc::new(Mutex::new(None)),
+            usb_watchdog,
         };
 
         // Always-on?  Open immediately.
@@ -367,6 +378,47 @@ impl AudioRecordingManager {
     }
 
     pub fn start_microphone_stream(&self) -> Result<(), anyhow::Error> {
+        // Try the normal open first. If it fails and USB watchdog is enabled,
+        // attempt a power cycle + retry.
+        //
+        // Note: on_mic_open_failed() blocks until the power cycle and settle
+        // period complete, so the retry below runs with the device
+        // re-enumerated and ready.
+        match self.start_microphone_stream_inner() {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                if self.usb_watchdog.on_mic_open_failed() {
+                    // Watchdog completed a power cycle (blocking). Retry the mic
+                    // open now that the device should have re-enumerated.
+                    warn!(
+                        "Mic open failed ({}), USB watchdog cycled - retrying",
+                        e
+                    );
+                    match self.start_microphone_stream_inner() {
+                        Ok(()) => {
+                            usb_watchdog::emit_stage_event_with_handle(
+                                &Some(self.app_handle.clone()),
+                                "recovered",
+                                "Microphone stream recovered",
+                            );
+                            info!("Mic stream recovered after USB power cycle");
+                            Ok(())
+                        }
+                        Err(retry_err) => {
+                            error!("Mic open still failed after USB power cycle: {}", retry_err);
+                            Err(retry_err)
+                        }
+                    }
+                } else {
+                    Err(e)
+                }
+            }
+        }
+    }
+
+    /// Inner implementation of start_microphone_stream — opens the mic stream
+    /// without any USB watchdog retry logic.
+    fn start_microphone_stream_inner(&self) -> Result<(), anyhow::Error> {
         let mut open_flag = self.is_open.lock().unwrap();
         if *open_flag {
             debug!("Microphone stream already active");
@@ -648,5 +700,38 @@ impl AudioRecordingManager {
             }
             RecordingState::Idle => {}
         }
+    }
+
+    /// Restart the microphone stream if it should be active.
+    /// Called after USB power cycling completes to fix the "mic not listening,
+    /// volume bars not moving" issue.
+    /// Returns Ok(()) if the stream was restarted or wasn't needed, Err if restart failed.
+    pub fn restart_microphone_if_needed(&self) -> Result<(), anyhow::Error> {
+        let is_always_on = matches!(*self.mode.lock().unwrap(), MicrophoneMode::AlwaysOn);
+
+        if is_always_on {
+            info!("Restarting microphone stream after USB power cycle");
+            // Stop the current stream if open
+            if *self.is_open.lock().unwrap() {
+                self.stop_microphone_stream();
+            }
+            // Start a fresh stream
+            self.start_microphone_stream()
+        } else {
+            debug!("Microphone stream not needed (not always-on)");
+            Ok(())
+        }
+    }
+
+    /// Check if the microphone stream is currently open and alive.
+    /// Returns (is_open, is_alive).
+    /// This is useful for diagnostics and recovery checks (e.g. after
+    /// macOS sleep/wake).
+    ///
+    /// Note: Without a liveness probe on AudioRecorder, `is_alive` currently
+    /// mirrors `is_open`. A full liveness check will be added in a later PR.
+    pub fn check_stream_health(&self) -> (bool, bool) {
+        let is_open = *self.is_open.lock().unwrap();
+        (is_open, is_open)
     }
 }

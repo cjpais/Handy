@@ -1,14 +1,52 @@
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
+use serde::Serialize;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
+use parking_lot::RwLock;
 
 const DEBOUNCE: Duration = Duration::from_millis(30);
 const RELEASE_GRACE: Duration = Duration::from_millis(50);
+
+/// Unified application state. This is the single source of truth
+/// for the frontend to render the overlay. Emitted via `app-state` events
+/// alongside existing `show-overlay`/`hide-overlay` events for backward
+/// compatibility during migration.
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(tag = "state", content = "data")]
+pub enum AppState {
+    Idle,
+    Recording {
+        binding_id: String,
+    },
+    Processing {
+        binding_id: Option<String>,
+    },
+    UsbCycling {
+        stage: String,
+    },
+    Confirming {
+        text: String,
+        binding_id: Option<String>,
+    },
+}
+
+/// Emit an `app-state` event to both the overlay window and the main window.
+/// This provides a single source of truth for frontend state, supplementing
+/// the existing `show-overlay`/`hide-overlay` events during the migration period.
+pub fn emit_app_state(app: &AppHandle, state: &AppState) {
+    // Emit to overlay window (primary consumer)
+    if let Some(overlay) = app.get_webview_window("recording_overlay") {
+        let _ = overlay.emit("app-state", state);
+    }
+    // Also emit to main window for settings UI and other consumers
+    let _ = app.emit("app-state", state);
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PttAction {
@@ -35,13 +73,33 @@ enum Command {
         recording_was_active: bool,
     },
     ProcessingFinished,
+    /// Transition from Confirming/UsbCycling to Processing with a fresh timer
+    /// and binding_id. Used by the router action after user confirmation so
+    /// the coordinator's internal Stage stays in sync with the shared AppState.
+    SetProcessingWithBinding {
+        binding_id: Option<String>,
+    },
 }
 
 /// Pipeline lifecycle, owned exclusively by the coordinator thread.
+#[allow(dead_code)] // UsbCycling and Confirming are set externally via set_* methods
 enum Stage {
     Idle,
     Recording(String), // binding_id
     Processing,
+    /// USB watchdog is power-cycling a device. The overlay shows a cycling
+    /// indicator. When the cycle completes, the caller sets Idle via
+    /// `set_idle()` or the cancel handler resets.
+    UsbCycling {
+        stage: String,
+    },
+    /// Router confirmation flow — the overlay shows the transcribed text for
+    /// the user to confirm or edit. When confirmed, the caller transitions to
+    /// Processing via `set_processing_with_binding()`.
+    Confirming {
+        text: String,
+        binding_id: Option<String>,
+    },
 }
 
 fn classify_ptt_event(
@@ -73,15 +131,28 @@ fn classify_ptt_event(
 /// the async transcribe-paste pipeline.
 pub struct TranscriptionCoordinator {
     tx: Sender<Command>,
+    /// Shared flag indicating whether Handy is in active use (Recording or Processing stage).
+    /// This is used by the CLI `--is-active-use` flag to determine if the app is busy.
+    active_use: Arc<AtomicBool>,
+    /// Current application state (shared for reads from any thread).
+    /// Updated after every state transition and emitted via `app-state` events.
+    current_state: Arc<RwLock<AppState>>,
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
-    id == "transcribe" || id == "transcribe_with_post_process"
+    id == "transcribe" || id == "transcribe_with_post_process" || id == "transcribe_with_router"
 }
 
 impl TranscriptionCoordinator {
     pub fn new(app: AppHandle) -> Self {
         let (tx, rx) = mpsc::channel();
+        let active_use = Arc::new(AtomicBool::new(false));
+        let active_use_clone = Arc::clone(&active_use);
+        let current_state: Arc<RwLock<AppState>> = Arc::new(RwLock::new(AppState::Idle));
+        let current_state_clone = Arc::clone(&current_state);
+
+        // Emit initial Idle state
+        emit_app_state(&app, &AppState::Idle);
 
         thread::spawn(move || {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -192,16 +263,51 @@ impl TranscriptionCoordinator {
                             recording_was_active,
                         } => {
                             pending_release = None;
-                            // Don't reset during processing — wait for the pipeline to finish.
-                            if !matches!(stage, Stage::Processing)
-                                && (recording_was_active || matches!(stage, Stage::Recording(_)))
-                            {
+                            // Cancel resets any active state (Recording, Processing,
+                            // Confirming, or UsbCycling) back to Idle.
+                            // We check both the thread-local stage and the shared
+                            // AppState, because Confirming/UsbCycling are set
+                            // directly on the shared state by external callers
+                            // without going through the command queue.
+                            let is_active_thread = matches!(
+                                stage,
+                                Stage::Recording(_)
+                                    | Stage::Processing
+                                    | Stage::Confirming { .. }
+                                    | Stage::UsbCycling { .. }
+                            );
+                            let is_active_shared = !matches!(
+                                current_state_clone.read().clone(),
+                                AppState::Idle
+                            );
+                            if recording_was_active || is_active_thread || is_active_shared {
                                 stage = Stage::Idle;
+                                *current_state_clone.write() = AppState::Idle;
+                                active_use_clone.store(false, Ordering::SeqCst);
+                                emit_app_state(&app, &AppState::Idle);
                             }
                         }
                         Command::ProcessingFinished => {
                             stage = Stage::Idle;
+                            emit_app_state(&app, &AppState::Idle);
                         }
+                        Command::SetProcessingWithBinding { binding_id } => {
+                            info!(
+                                "Coordinator: SetProcessingWithBinding binding_id={:?}",
+                                binding_id
+                            );
+                            stage = Stage::Processing;
+                            let app_state = AppState::Processing { binding_id };
+                            emit_app_state(&app, &app_state);
+                        }
+                    }
+
+                    // After every command, sync active_use flag and current_state.
+                    let is_active = !matches!(stage, Stage::Idle);
+                    active_use_clone.store(is_active, Ordering::SeqCst);
+                    {
+                        let mut guard = current_state_clone.write();
+                        *guard = stage_to_app_state(&stage);
                     }
                 }
                 debug!("Transcription coordinator exited");
@@ -211,7 +317,65 @@ impl TranscriptionCoordinator {
             }
         });
 
-        Self { tx }
+        Self {
+            tx,
+            active_use,
+            current_state,
+        }
+    }
+
+    /// Returns true if Handy is in active use (recording or processing).
+    /// This is used by the CLI `--is-active-use` flag to determine if
+    /// the app is busy and should not be quit.
+    pub fn is_active_use(&self) -> bool {
+        self.active_use.load(Ordering::SeqCst)
+    }
+
+    /// Get the current application state (thread-safe).
+    /// This is the single source of truth for frontend state.
+    pub fn get_state(&self) -> AppState {
+        self.current_state.read().clone()
+    }
+
+    /// Set the application state to UsbCycling and emit an app-state event.
+    /// Called from the USB watchdog when cycling a USB port.
+    pub fn set_usb_cycling(&self, app: &AppHandle, stage: String) {
+        let new_state = AppState::UsbCycling { stage };
+        *self.current_state.write() = new_state.clone();
+        emit_app_state(app, &new_state);
+    }
+
+    /// Set the application state to Confirming and emit an app-state event.
+    /// Called when the router preview is shown for user confirmation.
+    /// The `binding_id` identifies the originating action (e.g. "transcribe_with_router").
+    pub fn set_confirming(&self, app: &AppHandle, text: String, binding_id: Option<String>) {
+        let new_state = AppState::Confirming { text, binding_id };
+        *self.current_state.write() = new_state.clone();
+        emit_app_state(app, &new_state);
+    }
+
+    /// Transition the coordinator's internal Stage to Processing with a fresh
+    /// binding_id. This is critical for the router flow: after user confirmation,
+    /// the router subprocess runs asynchronously, so we need the coordinator's
+    /// Stage to reflect Processing. Also updates the shared AppState and emits
+    /// the event.
+    pub fn set_processing_with_binding(&self, app: &AppHandle, binding_id: Option<String>) {
+        let _ = self.tx.send(Command::SetProcessingWithBinding {
+            binding_id: binding_id.clone(),
+        });
+        // Also update the shared AppState immediately so the frontend
+        // transitions to the correct visualizer without waiting for the
+        // coordinator thread to process the command.
+        let new_state = AppState::Processing { binding_id };
+        *self.current_state.write() = new_state.clone();
+        emit_app_state(app, &new_state);
+    }
+
+    /// Set the application state to Idle and emit an app-state event.
+    /// Can be called to explicitly reset state from any thread.
+    pub fn set_idle(&self, app: &AppHandle) {
+        *self.current_state.write() = AppState::Idle;
+        emit_app_state(app, &AppState::Idle);
     }
 
     /// Send a keyboard/signal input event for a transcribe binding.
@@ -256,6 +420,25 @@ impl TranscriptionCoordinator {
     }
 }
 
+/// Convert the internal `Stage` to the corresponding `AppState` for
+/// sharing with the frontend.
+fn stage_to_app_state(stage: &Stage) -> AppState {
+    match stage {
+        Stage::Idle => AppState::Idle,
+        Stage::Recording(id) => AppState::Recording {
+            binding_id: id.clone(),
+        },
+        Stage::Processing => AppState::Processing { binding_id: None },
+        Stage::UsbCycling { stage } => AppState::UsbCycling {
+            stage: stage.clone(),
+        },
+        Stage::Confirming { text, binding_id } => AppState::Confirming {
+            text: text.clone(),
+            binding_id: binding_id.clone(),
+        },
+    }
+}
+
 fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!("No action in ACTION_MAP for '{binding_id}'");
@@ -267,6 +450,7 @@ fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &s
         .is_some_and(|a| a.is_recording())
     {
         *stage = Stage::Recording(binding_id.to_string());
+        emit_app_state(app, &AppState::Recording { binding_id: binding_id.to_string() });
     } else {
         debug!("Start for '{binding_id}' did not begin recording; staying idle");
     }
@@ -279,6 +463,7 @@ fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &st
     };
     action.stop(app, binding_id, hotkey_string);
     *stage = Stage::Processing;
+    emit_app_state(app, &AppState::Processing { binding_id: Some(binding_id.to_string()) });
 }
 
 #[cfg(test)]
