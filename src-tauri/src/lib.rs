@@ -673,6 +673,7 @@ pub fn run(cli_args: CliArgs) {
             commands::initialize_enigo,
             commands::initialize_shortcuts,
             commands::get_system_details,
+            commands::read_recent_logs,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
