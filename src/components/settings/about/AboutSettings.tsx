@@ -11,10 +11,18 @@ import { ShowWhatsNewOnUpdate } from "../ShowWhatsNewOnUpdate";
 import { ThemeSelector } from "../ThemeSelector";
 import { LogDirectory } from "../debug";
 import { commands } from "@/bindings";
+import { Dialog } from "../../ui/Dialog";
+import { Input } from "../../ui/Input";
+import { Textarea } from "../../ui/Textarea";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
   const [version, setVersion] = useState("");
+  const [isReportBugOpen, setIsReportBugOpen] = useState(false);
+  const [bugTitle, setBugTitle] = useState("");
+  const [bugDescription, setBugDescription] = useState("");
+  const [includeLogs, setIncludeLogs] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -38,7 +46,15 @@ export const AboutSettings: React.FC = () => {
     }
   };
 
-  const handleReportBugClick = async () => {
+  const handleReportBugClick = () => {
+    setBugTitle("");
+    setBugDescription("");
+    setIncludeLogs(true);
+    setIsReportBugOpen(true);
+  };
+
+  const handleFormSubmit = async () => {
+    setIsSubmitting(true);
     try {
       let sysDetails = {
         os_version: "Unknown OS",
@@ -51,41 +67,51 @@ export const AboutSettings: React.FC = () => {
         console.error("Failed to get system details:", error);
       }
 
+      let logsText = "";
+      if (includeLogs) {
+        try {
+          logsText = await commands.readRecentLogs();
+        } catch (error) {
+          console.error("Failed to get logs:", error);
+          logsText = `Failed to retrieve logs: ${error}`;
+        }
+      }
+
       const bodyTemplate = `## Before You Submit
 
-**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.** Your bug may already be reported! Right now it's just me maintaining this project so many issues can be overwhelming! Help me out by checking first.
+**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.**
 
 ## Bug Description
 
-A clear and concise description of what the bug is.
+${bugDescription}
 
 ## System Information
 
 **App Version:** ${version || "Unknown Version"}
-
-<!-- You can find this in the app settings or about section -->
-
 **Operating System:** ${sysDetails.os_version}
-
-<!-- e.g., macOS 14.1, Windows 11, Ubuntu 22.04 -->
-
 **CPU:** ${sysDetails.cpu_model}
-
-<!-- e.g., Apple M2, Intel i7-12700K, AMD Ryzen 7 5800X -->
-
 **GPU:** ${sysDetails.gpu_model}
-
-<!-- e.g., Apple M2 GPU, NVIDIA RTX 4080, AMD RX 6800 XT, Intel UHD Graphics -->
-
+${
+  includeLogs
+    ? `
 ## Logs
 
-<!-- Please attach relevant logs to help us diagnose the issue. You can find the log directory by going to Settings > About in the app. -->`;
+\`\`\`
+${logsText}
+\`\`\``
+    : ""
+}`;
 
-      const title = "[BUG - app]";
+      const title = `[BUG - app] ${bugTitle}`;
       const url = `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
       await openUrl(url);
+      setIsReportBugOpen(false);
+      setBugTitle("");
+      setBugDescription("");
     } catch (error) {
       console.error("Failed to open bug report link:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,6 +181,86 @@ A clear and concise description of what the bug is.
           </div>
         </SettingContainer>
       </SettingsGroup>
+
+      <Dialog
+        open={isReportBugOpen}
+        title={t("settings.about.reportBug.title")}
+        closeLabel={t("common.cancel") || "Cancel"}
+        onOpenChange={setIsReportBugOpen}
+      >
+        <div className="space-y-4 py-2 text-start">
+          <div className="text-sm text-mid-gray bg-mid-gray/5 p-3 rounded-md border border-mid-gray/20">
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            Please search{" "}
+            <a
+              href="https://github.com/cjpais/Handy/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-logo-primary hover:underline font-semibold"
+            >
+              existing issues
+            </a>{" "}
+            to avoid duplicates. Your bug may already be reported!
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">Title</label>
+            <Input
+              value={bugTitle}
+              onChange={(e) => setBugTitle(e.target.value)}
+              placeholder="e.g. App crashes when starting recording"
+              className="w-full font-medium"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">Description</label>
+            <Textarea
+              value={bugDescription}
+              onChange={(e) => setBugDescription(e.target.value)}
+              placeholder="Please describe what happened, steps to reproduce, expected vs actual behavior..."
+              className="w-full min-h-[140px] font-medium"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <label className="flex items-center space-x-2.5 text-sm cursor-pointer select-none py-1">
+            <input
+              type="checkbox"
+              checked={includeLogs}
+              onChange={(e) => setIncludeLogs(e.target.checked)}
+              disabled={isSubmitting}
+              className="w-4 h-4 rounded border-mid-gray/80 bg-mid-gray/10 text-logo-primary focus:ring-logo-primary accent-logo-primary"
+            />
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <span className="font-semibold text-mid-gray">Include recent logs (last 100 lines)</span>
+          </label>
+
+          <div className="flex justify-end space-x-3 pt-3 border-t border-mid-gray/20">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setIsReportBugOpen(false)}
+              disabled={isSubmitting}
+            >
+              {t("common.cancel") || "Cancel"}
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleFormSubmit}
+              disabled={!bugTitle.trim() || !bugDescription.trim() || isSubmitting}
+            >
+              {isSubmitting ? "Generating..." : "Submit"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };
