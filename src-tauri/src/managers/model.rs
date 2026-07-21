@@ -1738,8 +1738,8 @@ impl ModelManager {
 
     /// Download a Hugging Face-sourced model into the shared HF cache via
     /// hf-hub, reporting progress through the same `model-download-progress`
-    /// event the URL path uses. Relies on hf-hub's stock token + cache (no
-    /// custom environment wiring).
+    /// event the URL path uses. Uses hf-hub's stock cache, but deliberately
+    /// disables authentication because every catalog repository is public.
     async fn download_hf_model(
         &self,
         model_info: &ModelInfo,
@@ -1790,6 +1790,9 @@ impl ModelManager {
         // link's real bandwidth. 8 stays light on CPU/RAM (~80 MB peak buffers)
         // even on older machines and is browser-like in connection count.
         let api = ApiBuilder::from_env()
+            // Ignore cached and environment-provided credentials. A stale token
+            // can make otherwise-public downloads fail authentication.
+            .with_token(None)
             .with_progress(false)
             .with_max_files(8)
             .build()
