@@ -44,17 +44,12 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
-use std::time::{Instant, Duration};
 
 use crate::settings::get_settings;
 
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
-// Track last tray icon click time for manual double-click detection fallback
-static LAST_TRAY_CLICK: Mutex<Option<Instant>> = Mutex::new(None);
-// Double-click threshold (milliseconds) for manual tray icon detection on macOS
-const DOUBLE_CLICK_THRESHOLD_MS: u64 = 350;
 
 /// When `true`, log records are also forwarded to the webview via the
 /// `log://log` event for the debug panel's live log viewer. Gated on debug
@@ -213,7 +208,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Choose the appropriate initial icon based on theme
     let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
 
-    let tray = TrayIconBuilder::new()
+    let mut tray_builder = TrayIconBuilder::new()
         .icon(
             Image::from_path(
                 app_handle
@@ -224,40 +219,38 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             .unwrap(),
         )
         .tooltip(tray::tray_tooltip())
-        .show_menu_on_left_click(true)
-        .icon_as_template(true)
-        // Handle tray icon events for double-click support across platforms
-        .on_tray_icon_event(|tray, event| {
-            use tauri::tray::{TrayIconEvent, MouseButton, MouseButtonState};
-            match event {
-                TrayIconEvent::DoubleClick { button, .. } => {
-                    if matches!(button, MouseButton::Left) {
-                        let app = tray.app_handle();
-                        show_main_window(&app);
+        .icon_as_template(true);
+
+    // Windows notification-area convention: left click opens the app, right click
+    // shows the menu. Elsewhere (macOS menu bar, Linux) the menu stays on left click.
+    #[cfg(target_os = "windows")]
+    {
+        tray_builder = tray_builder
+            .show_menu_on_left_click(false)
+            .on_tray_icon_event(|tray, event| {
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
+                let opens_window = matches!(
+                    event,
+                    TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } | TrayIconEvent::DoubleClick {
+                        button: MouseButton::Left,
+                        ..
                     }
+                );
+                if opens_window {
+                    show_main_window(tray.app_handle());
                 }
-                TrayIconEvent::Click { button, button_state, .. } => {
-                    if matches!(button, MouseButton::Left) && matches!(button_state, MouseButtonState::Up) {
-                        #[cfg(target_os = "macos")]
-                        {
-                            let now = Instant::now();
-                            if let Ok(mut last) = LAST_TRAY_CLICK.lock() {
-                                let is_double = last
-                                    .map(|prev| now.duration_since(prev) <= Duration::from_millis(DOUBLE_CLICK_THRESHOLD_MS))
-                                    .unwrap_or(false);
-                                *last = Some(now);
-                                if is_double {
-                                    let app = tray.app_handle();
-                                    show_main_window(&app);
-                                }
-                            }
-                        }
-                        // Other platforms: single-click does nothing (menu shows by configuration)
-                    }
-                }
-                _ => {}
-            }
-        })
+            });
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        tray_builder = tray_builder.show_menu_on_left_click(true);
+    }
+
+    let tray = tray_builder
         .on_menu_event(|app, event| match event.id.as_ref() {
             "settings" => {
                 show_main_window(app);
