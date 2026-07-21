@@ -567,6 +567,20 @@
           "description": "Højtydende tensor-bibliotek til maskinlæringsinferens på enheden",
           "details": "Handys lokale tale-til-tekst funktionalitet er bygget på transcribe.cpp og ggml. Tak for det fantastiske arbejde af Georgi Gerganov og bidragyderne."
         }
+      },
+      "reportBug": {
+        "title": "Rapporter et problem",
+        "description": "Hjælp os med at forbedre Handy ved at rapportere problemer",
+        "button": "Rapporter et problem",
+        "toastCopied": "Seneste logfiler kopieret til udklipsholderen!",
+        "toastCopyFailed": "Kunne ikke kopiere logfiler til udklipsholderen.",
+        "inputTitle": "Titel",
+        "inputTitlePlaceholder": "f.eks. Appen går ned ved start af optagelse",
+        "inputDescription": "Beskrivelse",
+        "inputDescriptionPlaceholder": "Beskriv venligst hvad der skete, trin til at genskabe, forventet vs faktisk adfærd...",
+        "includeLogs": "Inkluder seneste logfiler (sidste 100 linjer)",
+        "submitButton": "Opret GitHub Issue",
+        "submittingButton": "Opretter..."
       }
     }
   },
@@ -593,7 +607,8 @@
     "open": "Åbn",
     "copy": "Kopiér",
     "clear": "Ryd",
-    "noOptionsFound": "Ingen muligheder fundet"
+    "noOptionsFound": "Ingen muligheder fundet",
+    "cancel": "Annuller"
   },
   "accessibility": {
     "permissionsDescription": "Handy har brug for tilgængelighedstilladelser for at skrive den transskriberede tekst.",
