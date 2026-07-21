@@ -53,6 +53,9 @@ pub fn init_shortcuts(app: &AppHandle) {
                 tauri_impl::init_shortcuts(app);
             }
         }
+        KeyboardImplementation::None => {
+            info!("Keyboard shortcuts disabled — use compositor keybindings with --toggle-transcription");
+        }
     }
 }
 
@@ -62,6 +65,7 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
         KeyboardImplementation::HandyKeys => handy_keys::register_cancel_shortcut(app),
+        KeyboardImplementation::None => {}
     }
 }
 
@@ -71,6 +75,7 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
         KeyboardImplementation::HandyKeys => handy_keys::unregister_cancel_shortcut(app),
+        KeyboardImplementation::None => {}
     }
 }
 
@@ -80,6 +85,7 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_shortcut(app, binding),
         KeyboardImplementation::HandyKeys => handy_keys::register_shortcut(app, binding),
+        KeyboardImplementation::None => Ok(()),
     }
 }
 
@@ -89,6 +95,7 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_shortcut(app, binding),
         KeyboardImplementation::HandyKeys => handy_keys::unregister_shortcut(app, binding),
+        KeyboardImplementation::None => Ok(()),
     }
 }
 
@@ -320,6 +327,7 @@ pub fn get_keyboard_implementation(app: AppHandle) -> String {
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => "tauri".to_string(),
         KeyboardImplementation::HandyKeys => "handy_keys".to_string(),
+        KeyboardImplementation::None => "none".to_string(),
     }
 }
 
@@ -335,6 +343,7 @@ fn validate_shortcut_for_implementation(
     match implementation {
         KeyboardImplementation::Tauri => tauri_impl::validate_shortcut(raw),
         KeyboardImplementation::HandyKeys => handy_keys::validate_shortcut(raw),
+        KeyboardImplementation::None => Ok(()),
     }
 }
 
@@ -343,6 +352,7 @@ fn parse_keyboard_implementation(s: &str) -> KeyboardImplementation {
     match s {
         "tauri" => KeyboardImplementation::Tauri,
         "handy_keys" => KeyboardImplementation::HandyKeys,
+        "none" => KeyboardImplementation::None,
         other => {
             warn!(
                 "Invalid keyboard implementation '{}', defaulting to tauri",
@@ -366,6 +376,7 @@ fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementat
         let result = match implementation {
             KeyboardImplementation::Tauri => tauri_impl::unregister_shortcut(app, binding),
             KeyboardImplementation::HandyKeys => handy_keys::unregister_shortcut(app, binding),
+            KeyboardImplementation::None => Ok(()),
         };
 
         if let Err(e) = result {
@@ -424,6 +435,7 @@ fn register_all_shortcuts_for_implementation(
         let result = match implementation {
             KeyboardImplementation::Tauri => tauri_impl::register_shortcut(app, binding),
             KeyboardImplementation::HandyKeys => handy_keys::register_shortcut(app, binding),
+            KeyboardImplementation::None => Ok(()),
         };
 
         if let Err(e) = result {
@@ -1279,4 +1291,41 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
     tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
         .await
         .expect("get_available_accelerators panicked")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_keyboard_implementation_none() {
+        assert_eq!(
+            parse_keyboard_implementation("none"),
+            KeyboardImplementation::None
+        );
+    }
+
+    #[test]
+    fn parse_keyboard_implementation_tauri() {
+        assert_eq!(
+            parse_keyboard_implementation("tauri"),
+            KeyboardImplementation::Tauri
+        );
+    }
+
+    #[test]
+    fn parse_keyboard_implementation_handy_keys() {
+        assert_eq!(
+            parse_keyboard_implementation("handy_keys"),
+            KeyboardImplementation::HandyKeys
+        );
+    }
+
+    #[test]
+    fn parse_keyboard_implementation_invalid_defaults_to_tauri() {
+        assert_eq!(
+            parse_keyboard_implementation("garbage"),
+            KeyboardImplementation::Tauri
+        );
+    }
 }
