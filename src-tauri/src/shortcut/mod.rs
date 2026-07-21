@@ -529,16 +529,24 @@ pub fn change_theme_setting(app: AppHandle, theme: String) -> Result<(), String>
     };
     settings.theme = parsed;
     settings::write_settings(&app, settings);
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
     apply_window_theme(&app, parsed);
+    // Notify other webviews (the recording overlay) so they re-apply the palette
+    // live — they set `data-theme` on their own document and can't see this one.
+    let _ = app.emit("theme-changed", theme);
     Ok(())
 }
 
-/// Applies the appearance setting to the Windows title bar, which CSS
-/// `data-theme` cannot reach. `System` clears the override so the window follows
-/// Windows. Call this on startup and whenever the setting changes to keep the
-/// title bar in sync with the in-app palette.
-#[cfg(target_os = "windows")]
+/// Applies the appearance setting to the native window chrome (title bar), which
+/// CSS `data-theme` cannot reach. `System` clears the override so the window
+/// follows the OS. Call this on startup and whenever the setting changes to keep
+/// the title bar in sync with the in-app palette.
+///
+/// On Windows this themes the title bar only. On macOS `set_theme` sets the app
+/// appearance app-wide — which is what we want here: it darkens the title bar and
+/// keeps the overlay in step. Linux is left to `data-theme` alone, since its
+/// window theming is backend-dependent and unreliable.
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub fn apply_window_theme(app: &AppHandle, theme: Theme) {
     let window_theme = match theme {
         Theme::System => None,
