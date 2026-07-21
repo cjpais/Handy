@@ -26,6 +26,8 @@ dist-ssr
 *.sln
 *.sw?
 
+.claude/
+
 /target/
 recording_*
 .crush/
@@ -37,3 +39,6 @@ blob-report/
 
 .direnv
 .envrc
+
+# Nix build output
+result

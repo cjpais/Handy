@@ -38,6 +38,12 @@ export const SECTIONS_CONFIG = {
     component: GeneralSettings,
     enabled: () => true,
   },
+  history: {
+    labelKey: "sidebar.history",
+    icon: History,
+    component: HistorySettings,
+    enabled: () => true,
+  },
   models: {
     labelKey: "sidebar.models",
     icon: Cpu,
@@ -55,12 +61,6 @@ export const SECTIONS_CONFIG = {
     icon: Sparkles,
     component: PostProcessingSettings,
     enabled: (settings) => settings?.post_process_enabled ?? false,
-  },
-  history: {
-    labelKey: "sidebar.history",
-    icon: History,
-    component: HistorySettings,
-    enabled: () => true,
   },
   debug: {
     labelKey: "sidebar.debug",

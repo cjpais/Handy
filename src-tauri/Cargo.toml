@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.7.3"
+version = "0.9.4"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -30,7 +30,7 @@ serde = { version = "1", features = ["derive"] }
 
 [dependencies]
 once_cell = "1"
-tauri = { version = "2.9.1", features = [
+tauri = { version = "2.11.5", features = [
   "protocol-asset",
   "macos-private-api",
   "tray-icon",
@@ -68,13 +68,22 @@ chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = { version = "0.2.3", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
-handy-keys = "0.1.4"
+sha2 = "0.10"
+# Whisper-family models run through transcribe-cpp (GGUF/ggml, native backends);
+# transcribe-rs is now ONNX-only (Parakeet, Moonshine, SenseVoice, GigaAM,
+# Canary, Cohere). Per-platform backend features are added in the target tables.
+transcribe-rs = { version = "0.3.8", features = ["onnx"] }
+transcribe-cpp = { version = "0.1.3", default-features = false }
+handy-keys = "0.3.1"
 ferrous-opencc = "0.2.3"
+clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
-tauri-plugin-dialog = "2"
+tauri-plugin-dialog = "2.6"
+hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downloads", features = [
+  "tokio",
+] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
@@ -83,28 +92,81 @@ signal-hook = "0.3"
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-single-instance = "2.3.2"
-tauri-plugin-updater = "2.9.0"
+tauri-plugin-updater = "2.10.0"
 
 [target.'cfg(windows)'.dependencies]
+# ONNX Runtime on Windows is CPU-only (no ort-directml), matching macOS/Linux.
+# The DirectML EP was experimental and, more importantly, pulled in pyke's
+# prebuilt ONNX Runtime which is compiled with a global /arch:AVX2 baseline that
+# executes BMI2/AVX in a static initializer and crashes at process startup on any
+# pre-Haswell CPU (Sandy/Ivy Bridge, older AMD). Dropping the feature means we
+# link a baseline ONNX Runtime (dynamically, via ORT_LIB_LOCATION in build.yml)
+# with proper runtime CPU dispatch. Base `transcribe-rs` (features = ["onnx"])
+# is inherited here, so Parakeet/Moonshine/etc. still run on CPU.
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Threading",
   "Win32_System_Variant",
   "Win32_Foundation",
   "Win32_UI_WindowsAndMessaging",
 ] }
+winreg = "0.55"
+
+# Whisper backend per Windows arch. x86_64 ships the Vulkan GPU backend and
+# keeps the dynamic-backends posture (loadable per-ISA CPU modules + Vulkan),
+# where runtime ISA scoring (GGML_CPU_ALL_VARIANTS) earns the extra shipped DLLs.
+#
+# Windows-on-ARM is CPU-only: its Adreno Vulkan drivers are immature, and
+# ggml-vulkan's shader generator (vulkan-shaders-gen) does not build under the
+# clang-cl/lld toolchain that ggml's ARM CPU backend requires. dynamic-backends
+# buys nothing on ARM — ALL_VARIANTS is an x86 concept, so a DL build there is
+# just a single portable CPU module shipped as a DLL. So ARM links transcribe-cpp
+# STATICALLY (no features = static CPU-only): the one CPU backend is compiled into
+# handy.exe and we ship zero DLLs, which sidesteps the installer's per-DLL
+# signtool verify entirely. CI pins -DGGML_NATIVE=OFF (see build.yml) so the
+# static build targets a portable ARM baseline, not the build runner's CPU.
+[target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
+transcribe-cpp = { version = "0.1.3", default-features = false, features = [
+  "dynamic-backends",
+  "vulkan",
+] }
+
+[target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
+transcribe-cpp = { version = "0.1.3", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
+transcribe-cpp = { version = "0.1.3", default-features = false, features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
+transcribe-cpp = { version = "0.1.3", default-features = false, features = [
+  "dynamic-backends",
+  "vulkan",
+] }
 
+# TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
+# (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →
+# show()). Drop this once a tao release containing it lands in tauri.
+#
+# The rev is a cjpais/tao branch, not upstream: dev past 0.35.3 also carries
+# tao #1231 (removed window subclassing), which left the thread event target's
+# WNDPROC falling through to DefSubclassProc. On a no-longer-subclassed window
+# that returns 0, so WM_QUERYENDSESSION answered FALSE and vetoed Windows
+# shutdown (Handy #1710). `handy` = 07f3742b + a cherry-pick of tao #1274
+# (DefSubclassProc → DefWindowProcW). Repoint at upstream once #1274 merges.
+#
+# tao-macros must be patched to the SAME rev even though nothing here depends on
+# it directly: wry pulls tao-macros 0.1.3 from crates.io, so without this the
+# lockfile carries two tao-macros 0.1.3 entries (registry + git). cargo tolerates
+# that, but Nix's importCargoLock vendors both to the same `tao-macros-0.1.3`
+# dir and fails with a symlink collision. Unifying the source removes the dup.
 [patch.crates-io]
-tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
-tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
-tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
+tao = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6f8d4bde052b876" }
+tao-macros = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6f8d4bde052b876" }
 
 [dev-dependencies]
 tempfile = "3"
@@ -113,4 +175,4 @@ tempfile = "3"
 lto = true
 codegen-units = 1
 strip = true
-panic = "abort"
+panic = "unwind"

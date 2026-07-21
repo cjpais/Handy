@@ -18,18 +18,16 @@ use std::collections::HashMap;
 // Include the auto-generated TrayStrings struct and TRANSLATIONS static
 include!(concat!(env!("OUT_DIR"), "/tray_translations.rs"));
 
-/// Get the language code from a locale string (e.g., "en-US" -> "en")
-fn get_language_code(locale: &str) -> &str {
-    locale.split(['-', '_']).next().unwrap_or("en")
-}
-
-/// Get localized tray menu strings based on the system locale
+/// Get localized tray menu strings based on the system locale.
+///
+/// Lookup order: full locale (e.g. "zh-TW") → language code ("zh") → English.
 pub fn get_tray_translations(locale: Option<String>) -> TrayStrings {
-    let lang = locale.as_deref().map(get_language_code).unwrap_or("en");
+    let locale_str = locale.as_deref().unwrap_or("en");
+    let lang_code = locale_str.split(['-', '_']).next().unwrap_or("en");
 
-    // Try requested language, fall back to English
     TRANSLATIONS
-        .get(lang)
+        .get(locale_str)
+        .or_else(|| TRANSLATIONS.get(lang_code))
         .or_else(|| TRANSLATIONS.get("en"))
         .cloned()
         .expect("English translations must exist")

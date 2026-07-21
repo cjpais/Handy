@@ -8,17 +8,13 @@ import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
 
-interface ModelStateEvent {
-  event_type: string;
-  model_id?: string;
-  model_name?: string;
-  error?: string;
-}
+import { ModelStateEvent } from "@/lib/types/events";
 
 type ModelStatus =
   | "ready"
   | "loading"
   | "downloading"
+  | "verifying"
   | "extracting"
   | "error"
   | "unloaded"
@@ -35,6 +31,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     currentModel,
     downloadProgress,
     downloadStats,
+    verifyingModels,
     extractingModels,
     selectModel,
   } = useModelStore();
@@ -157,6 +154,20 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   };
 
   const getModelDisplayText = (): string => {
+    const verifyingKeys = Object.keys(verifyingModels);
+    if (verifyingKeys.length > 0) {
+      if (verifyingKeys.length === 1) {
+        const modelId = verifyingKeys[0];
+        const model = models.find((m) => m.id === modelId);
+        const modelName = model
+          ? getTranslatedModelName(model, t)
+          : t("modelSelector.verifyingGeneric").replace("...", "");
+        return t("modelSelector.verifying", { modelName });
+      } else {
+        return t("modelSelector.verifyingGeneric");
+      }
+    }
+
     const extractingKeys = Object.keys(extractingModels);
     if (extractingKeys.length > 0) {
       if (extractingKeys.length === 1) {
@@ -225,6 +236,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
   // Derive display status from model status + store state
   const getDisplayStatus = (): ModelStatus => {
+    if (Object.keys(verifyingModels).length > 0) return "verifying";
     if (Object.keys(extractingModels).length > 0) return "extracting";
     if (Object.keys(downloadProgress).length > 0) return "downloading";
     return modelStatus;

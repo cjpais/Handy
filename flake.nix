@@ -3,62 +3,216 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    # bun2nix: generates per-package Nix fetchurl expressions from bun.lock,
+    # replacing the old FOD approach where a single hash covered the entire
+    # node_modules directory (that hash would break on bun version changes).
+    # See: https://github.com/nix-community/bun2nix
+    bun2nix = {
+      url = "github:nix-community/bun2nix/2.0.8";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
       self,
       nixpkgs,
+      bun2nix,
     }:
     let
-      supportedSystems = [ "x86_64-linux" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       # Read version from Cargo.toml
-      cargoToml = builtins.fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
+      cargoToml = fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
       version = cargoToml.package.version;
+
+      # Shared native library dependencies for both package build and dev shell.
+      # Keep in sync: if a native dep is needed for compilation, add it here.
+      commonNativeDeps = pkgs: with pkgs; [
+        webkitgtk_4_1
+        gtk3
+        glib
+        libsoup_3
+        alsa-lib
+        onnxruntime
+        libayatana-appindicator
+        libevdev
+        libxtst
+        gtk-layer-shell
+        openssl
+        vulkan-loader
+        vulkan-headers
+        shaderc
+      ];
+
+      # GStreamer plugins for WebKitGTK audio/video
+      gstPlugins = pkgs: with pkgs.gst_all_1; [
+        gstreamer
+        gst-plugins-base
+        gst-plugins-good
+        gst-plugins-bad
+        gst-plugins-ugly
+      ];
+
+      # Shared environment variables for Rust/native builds
+      commonEnv = pkgs: let lib = pkgs.lib; in {
+        ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
+        ORT_PREFER_DYNAMIC_LINK = "1";
+        GST_PLUGIN_SYSTEM_PATH_1_0 = "${lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (gstPlugins pkgs)}";
+      };
+
     in
     {
       packages = forAllSystems (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [
+              bun2nix.overlays.default
+            ];
+          };
+          lib = pkgs.lib;
+          combinedAlsaPlugins = pkgs.symlinkJoin {
+            name = "combined-alsa-plugins";
+            paths = [
+              "${pkgs.pipewire}/lib/alsa-lib"
+              "${pkgs.alsa-plugins}/lib/alsa-lib"
+            ];
+          };
         in
         {
-          # AppImage-based package
-          handy-appimage =
-            let
-              appimage = pkgs.appimageTools.wrapType2 {
-                pname = "handy-appimage-unwrapped";
-                inherit version;
-                src = pkgs.fetchurl {
-                  url = "https://github.com/cjpais/Handy/releases/download/v${version}/Handy_${version}_amd64.AppImage";
-                  hash = "sha256-tTswFYLCPGtMbHAb2bQMsklRiRCVXLrtu4pQC8IHdqQ=";
-                };
-                extraPkgs =
-                  p: with p; [
-                    alsa-lib
-                  ];
-              };
-            in
-            pkgs.writeShellScriptBin "handy" ''
-              export WEBKIT_DISABLE_DMABUF_RENDERER=1
-              exec ${appimage}/bin/handy-appimage-unwrapped "$@"
+          handy = pkgs.rustPlatform.buildRustPackage {
+            pname = "handy";
+            inherit version;
+            src = self;
+
+            cargoRoot = "src-tauri";
+            buildAndTestSubdir = "src-tauri";
+            tauriBundleType = "deb";
+
+            cargoLock = {
+              lockFile = ./src-tauri/Cargo.lock;
+              # Automatically fetch git dependencies using builtins.fetchGit.
+              # This eliminates the need for manual outputHashes that had to be
+              # updated every time a git dependency changed in Cargo.lock.
+              # Safe for standalone flakes (not allowed in nixpkgs, it is needed something like crate2nix).
+              allowBuiltinFetchGit = true;
+            };
+
+            postPatch = ''
+              ${pkgs.jq}/bin/jq '.bundle.createUpdaterArtifacts = false' \
+                src-tauri/tauri.conf.json > $TMPDIR/tauri.conf.json
+              cp $TMPDIR/tauri.conf.json src-tauri/tauri.conf.json
+
+              # Strip postinstall hook — it runs check-nix-deps.ts which is only
+              # needed during local development, not inside the Nix sandbox.
+              ${pkgs.jq}/bin/jq 'del(.scripts.postinstall)' \
+                package.json > $TMPDIR/package.json
+              cp $TMPDIR/package.json package.json
+
+              # Point libappindicator-sys to the Nix store path
+              substituteInPlace \
+                $cargoDepsCopy/libappindicator-sys-*/src/lib.rs \
+                --replace-fail \
+                  "libayatana-appindicator3.so.1" \
+                  "${pkgs.libayatana-appindicator}/lib/libayatana-appindicator3.so.1"
+
+              # Disable cbindgen in ferrous-opencc (calls cargo metadata which fails in sandbox)
+              # Upstream removed this call in v0.3.1+
+              substituteInPlace $cargoDepsCopy/ferrous-opencc-0.2.3/build.rs \
+                --replace-fail '.expect("Unable to generate bindings")' '.ok();'
+              substituteInPlace $cargoDepsCopy/ferrous-opencc-0.2.3/build.rs \
+                --replace-fail '.write_to_file("opencc.h");' '// skipped'
             '';
 
-          default = self.packages.${system}.handy-appimage;
+            # Bun dependencies: fetched per-package using hashes from .nix/bun.nix.
+            # This file is auto-generated by `bunx bun2nix -o .nix/bun.nix` and
+            # kept in sync via the postinstall hook in package.json.
+            # To regenerate manually: bun scripts/check-nix-deps.ts
+            bunDeps = pkgs.bun2nix.fetchBunDeps {
+              bunNix = ./.nix/bun.nix;
+            };
+
+            nativeBuildInputs = with pkgs; [
+              cargo-tauri.hook
+              pkg-config
+              wrapGAppsHook4
+              bun
+              # pkgs.bun2nix (from overlay), not the flake input — `with pkgs;`
+              # doesn't shadow function arguments in Nix.
+              pkgs.bun2nix.hook # Sets up node_modules from pre-fetched bun cache
+              jq
+              cmake
+              rustPlatform.bindgenHook
+              shaderc
+            ];
+
+            # Tests require runtime resources (audio devices, model files, GPU/Vulkan)
+            # not available in the Nix build sandbox
+            doCheck = false;
+
+            buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
+              glib-networking
+              libx11
+            ]) ++ gstPlugins pkgs;
+
+            env = commonEnv pkgs // {
+              OPENSSL_NO_VENDOR = "1";
+            };
+
+            preFixup = ''
+              gappsWrapperArgs+=(
+                --set WEBKIT_DISABLE_DMABUF_RENDERER 1
+                --set ALSA_PLUGIN_DIR "${combinedAlsaPlugins}"
+              )
+            '';
+
+            meta = {
+              description = "A free, open source, and extensible speech-to-text application that works completely offline";
+              homepage = "https://github.com/cjpais/Handy";
+              license = lib.licenses.mit;
+              mainProgram = "handy";
+              platforms = supportedSystems;
+            };
+          };
+
+          default = self.packages.${system}.handy;
         }
       );
+
+      # NixOS module for system-level integration (udev, input group)
+      nixosModules.default =
+        { lib, pkgs, ... }:
+        {
+          imports = [ ./nix/module.nix ];
+          programs.handy.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.handy;
+        };
+
+      # Home-manager module for per-user service
+      homeManagerModules.default =
+        { lib, pkgs, ... }:
+        {
+          imports = [ ./nix/hm-module.nix ];
+          services.handy.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.handy;
+        };
 
       # Development shell for building from source
       devShells = forAllSystems (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+          };
         in
         {
           default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              # Rust
+            buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
+              # Rust toolchain
               rustc
               cargo
               rust-analyzer
@@ -66,29 +220,22 @@
               # Frontend
               nodejs
               bun
-              # Tauri CLI
+              # Build tools
               cargo-tauri
-              # Native deps
               pkg-config
-              openssl
-              alsa-lib
-              libsoup_3
-              webkitgtk_4_1
-              gtk3
-              gtk-layer-shell
-              glib
-              libxtst
-              libevdev
-              llvmPackages.libclang
+              rustPlatform.bindgenHook
               cmake
-              vulkan-headers
-              vulkan-loader
-              shaderc
-              libappindicator
-            ];
+            ]);
 
-            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libappindicator ]}";
+            inherit (commonEnv pkgs)
+              ORT_LIB_LOCATION
+              ORT_PREFER_DYNAMIC_LINK
+              GST_PLUGIN_SYSTEM_PATH_1_0;
+
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libayatana-appindicator pkgs.onnxruntime pkgs.vulkan-loader ]}";
+
+            # Same as wrapGAppsHook4
+            XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:${pkgs.hicolor-icon-theme}/share";
 
             shellHook = ''
               echo "Handy development environment"

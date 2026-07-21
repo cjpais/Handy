@@ -50,12 +50,14 @@ public func isAppleIntelligenceAvailable() -> Int32 {
     }
 }
 
-@_cdecl("process_text_with_apple_llm")
-public func processTextWithAppleLLM(
-    _ prompt: UnsafePointer<CChar>,
+@_cdecl("process_text_with_system_prompt_apple")
+public func processTextWithSystemPrompt(
+    _ systemPrompt: UnsafePointer<CChar>,
+    _ userContent: UnsafePointer<CChar>,
     maxTokens: Int32
 ) -> UnsafeMutablePointer<AppleLLMResponse> {
-    let swiftPrompt = String(cString: prompt)
+    let swiftSystemPrompt = String(cString: systemPrompt)
+    let swiftUserContent = String(cString: userContent)
     let responsePtr = ResponsePointer.allocate(capacity: 1)
     responsePtr.initialize(to: AppleLLMResponse(response: nil, success: 0, error_message: nil))
 
@@ -87,17 +89,20 @@ public func processTextWithAppleLLM(
     Task.detached(priority: .userInitiated) {
         defer { semaphore.signal() }
         do {
-            let session = LanguageModelSession(model: model)
+            let session = LanguageModelSession(
+                model: model,
+                instructions: swiftSystemPrompt
+            )
             var output: String
 
             do {
                 let structured = try await session.respond(
-                    to: swiftPrompt,
+                    to: swiftUserContent,
                     generating: CleanedTranscript.self
                 )
                 output = structured.content.cleanedText
             } catch {
-                let fallbackGeneration = try await session.respond(to: swiftPrompt)
+                let fallbackGeneration = try await session.respond(to: swiftUserContent)
                 output = fallbackGeneration.content
             }
 

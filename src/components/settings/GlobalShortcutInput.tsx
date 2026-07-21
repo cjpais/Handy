@@ -49,24 +49,6 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (cleanup) return;
       if (e.repeat) return; // ignore auto-repeat
-      if (e.key === "Escape") {
-        // Cancel recording and restore original binding
-        if (editingShortcutId && originalBinding) {
-          try {
-            await updateBinding(editingShortcutId, originalBinding);
-          } catch (error) {
-            console.error("Failed to restore original binding:", error);
-            toast.error(t("settings.general.shortcut.errors.restore"));
-          }
-        } else if (editingShortcutId) {
-          await commands.resumeBinding(editingShortcutId).catch(console.error);
-        }
-        setEditingShortcutId(null);
-        setKeyPressed([]);
-        setRecordedKeys([]);
-        setOriginalBinding("");
-        return;
-      }
       e.preventDefault();
 
       // Get the key with OS-specific naming and normalize it
