@@ -1,5 +1,6 @@
 export { Dropdown } from "./Dropdown";
 export { Dialog } from "./Dialog";
+export { Input } from "./Input";
 export { Slider } from "./Slider";
 export { ToggleSwitch } from "./ToggleSwitch";
 export { SettingContainer } from "./SettingContainer";
