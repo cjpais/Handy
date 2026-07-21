@@ -555,6 +555,11 @@
         "description": "View source code and contribute",
         "button": "View on GitHub"
       },
+      "reportBug": {
+        "title": "Report a Bug",
+        "description": "Help us improve Handy by reporting issues",
+        "button": "Report a Bug"
+      },
       "supportDevelopment": {
         "title": "Support Development",
         "description": "Help us continue building Handy",
