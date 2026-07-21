@@ -171,17 +171,14 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     if let Some(mouse_location) = input::get_cursor_position(app_handle) {
         if let Ok(monitors) = app_handle.available_monitors() {
             for monitor in monitors {
-                // Enigo uses GetCursorPos on Windows, so the cursor and Tauri's
-                // monitor bounds are both in physical virtual-screen pixels.
-                // Dividing only the bounds by the display scale caused the
-                // cursor to miss secondary monitors on mixed-DPI desktops.
+                // On Windows both the cursor (enigo -> GetCursorPos) and the
+                // monitor bounds are physical pixels, so compare them directly.
                 #[cfg(target_os = "windows")]
                 if is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size()) {
                     return Some(monitor);
                 }
 
-                // Enigo returns logical coordinates on macOS. Preserve the
-                // normalized comparison there and on Linux.
+                // macOS/Linux: enigo returns logical coords, so scale the bounds down.
                 #[cfg(not(target_os = "windows"))]
                 {
                     let scale = monitor.scale_factor();
@@ -237,8 +234,7 @@ fn is_mouse_within_monitor(
 /// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
 /// converts PhysicalPosition using the scale factor of the monitor the window
 /// is *currently* on, which is wrong when moving cross-monitor. Windows uses
-/// `place_windows_overlay` instead, because a mixed-DPI desktop has no single
-/// global logical coordinate space.
+/// `place_windows_overlay` instead (no single logical space across mixed DPI).
 fn calculate_overlay_position(
     app_handle: &AppHandle,
     width: f64,
@@ -285,9 +281,8 @@ fn current_overlay_logical_size(window: &tauri::webview::WebviewWindow) -> Optio
 #[cfg(target_os = "windows")]
 static WINDOWS_OVERLAY_IS_STREAMING: AtomicBool = AtomicBool::new(false);
 
-/// Calculates an overlay rectangle in Windows physical virtual-screen pixels.
-/// Keeping all four values in the destination monitor's coordinate space avoids
-/// converting the position or size through the window's previous monitor DPI.
+/// Overlay rectangle in the destination monitor's physical pixels, so nothing
+/// is converted through the window's previous-monitor DPI.
 #[cfg(target_os = "windows")]
 fn windows_overlay_bounds(
     monitor_position: PhysicalPosition<i32>,
@@ -314,10 +309,8 @@ fn windows_overlay_bounds(
     (x, y, width, height)
 }
 
-/// Moves and sizes the Windows overlay in one native operation. Tauri/tao
-/// converts logical coordinates with the window's current DPI and posts moves
-/// asynchronously, which can put the overlay off-screen when it crosses to a
-/// differently-scaled monitor.
+/// Moves and sizes the overlay in one native SetWindowPos, bypassing tao's
+/// current-DPI logical conversion that mislands cross-monitor moves.
 #[cfg(target_os = "windows")]
 fn place_windows_overlay(
     app_handle: &AppHandle,
@@ -514,6 +507,13 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
+
+        // Re-assert bounds after show(): the pre-show move crosses the DPI
+        // boundary, and tao's WM_DPICHANGED reflow clobbers the first placement.
+        #[cfg(target_os = "windows")]
+        if let Err(error) = place_windows_overlay(app_handle, &overlay_window, width, height) {
+            log::error!("Failed to re-assert recording overlay position: {error}");
+        }
 
         let _ = overlay_window.emit("show-overlay", state);
         log::debug!(
