@@ -365,8 +365,12 @@
         "duplicate": "\"{{word}}\" đã tồn tại"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Phát hiện hoạt động giọng nói (VAD)",
+        "description": "Lọc bỏ khoảng lặng khỏi bản ghi. Các mô hình hỗ trợ phát trực tuyến dùng đuôi VAD dài hơn; tắt VAD sẽ ghi âm thanh thô."
+      },
+      "fillerWordRemoval": {
+        "title": "Loại bỏ từ đệm",
+        "description": "Loại bỏ các từ ngập ngừng phổ biến khi Handy biết ngôn ngữ phiên âm. Tắt để có bản ghi nguyên văn."
       }
     },
     "postProcessing": {

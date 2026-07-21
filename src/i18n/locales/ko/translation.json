@@ -365,8 +365,12 @@
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "음성 활동 감지 (VAD)",
+        "description": "녹음에서 무음 구간을 걸러냅니다. 스트리밍을 지원하는 모델은 더 긴 VAD 종료 대기를 사용하며, VAD를 끄면 원본 오디오가 그대로 녹음됩니다."
+      },
+      "fillerWordRemoval": {
+        "title": "군더더기 표현 제거",
+        "description": "Handy가 전사 언어를 알고 있을 때 흔한 머뭇거림 표현을 제거합니다. 있는 그대로 전사하려면 비활성화하세요."
       }
     },
     "postProcessing": {

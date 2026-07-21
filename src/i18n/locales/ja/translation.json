@@ -367,6 +367,10 @@
       "voiceActivityDetection": {
         "title": "音声区間検出 (VAD)",
         "description": "録音から無音部分を除去します。ストリーミング対応モデルはより長い音声検出区間を使用します。VAD を無効にすると音声をそのまま録音します。"
+      },
+      "fillerWordRemoval": {
+        "title": "フィラー語を削除",
+        "description": "Handy が文字起こしの言語を認識している場合に、よくあるつなぎ言葉を削除します。そのまま文字起こしする場合は無効にしてください。"
       }
     },
     "postProcessing": {

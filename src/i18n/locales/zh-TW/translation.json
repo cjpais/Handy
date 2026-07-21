@@ -365,8 +365,12 @@
         "duplicate": "「{{word}}」已存在"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "語音活動偵測 (VAD)",
+        "description": "過濾錄音中的靜音片段。支援串流的模型會使用較長的 VAD 尾音時長；關閉 VAD 則錄製原始音訊。"
+      },
+      "fillerWordRemoval": {
+        "title": "移除語助詞",
+        "description": "當 Handy 已知轉錄語言時，移除常見的語助詞。若需逐字轉錄，請關閉此選項。"
       }
     },
     "postProcessing": {
