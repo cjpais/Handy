@@ -185,3 +185,136 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }
+
+#[derive(serde::Serialize, Clone, specta::Type)]
+pub struct SystemDetails {
+    pub os_version: String,
+    pub cpu_model: String,
+    pub gpu_model: String,
+}
+
+#[cfg(target_os = "windows")]
+fn get_windows_os_version() -> String {
+    use winreg::enums::HKEY_LOCAL_MACHINE;
+    use winreg::RegKey;
+    let hk_lm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    if let Ok(key) = hk_lm.open_subkey("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion") {
+        let product_name: String = key.get_value("ProductName").unwrap_or_default();
+        let display_version: String = key.get_value("DisplayVersion").unwrap_or_default();
+        if !product_name.is_empty() {
+            if !display_version.is_empty() {
+                return format!("{} (Version {})", product_name, display_version);
+            }
+            return product_name;
+        }
+    }
+    "Unknown OS".to_string()
+}
+
+#[cfg(target_os = "windows")]
+fn get_windows_cpu_model() -> String {
+    use winreg::enums::HKEY_LOCAL_MACHINE;
+    use winreg::RegKey;
+    let hk_lm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    if let Ok(key) = hk_lm.open_subkey("HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0") {
+        let name: String = key.get_value("ProcessorNameString").unwrap_or_default();
+        if !name.is_empty() {
+            return name.trim().to_string();
+        }
+    }
+    "Unknown CPU".to_string()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_system_details() -> SystemDetails {
+    // OS Version
+    #[cfg(target_os = "windows")]
+    let os_version = get_windows_os_version();
+    #[cfg(target_os = "macos")]
+    let os_version = {
+        use std::process::Command;
+        Command::new("sw_vers")
+            .arg("-productVersion")
+            .output()
+            .ok()
+            .and_then(|output| {
+                let ver = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if ver.is_empty() { None } else { Some(format!("macOS {}", ver)) }
+            })
+            .unwrap_or_else(|| "Unknown OS".to_string())
+    };
+    #[cfg(target_os = "linux")]
+    let os_version = {
+        std::fs::read_to_string("/etc/os-release")
+            .ok()
+            .and_then(|content| {
+                content.lines().find(|line| line.starts_with("PRETTY_NAME=")).map(|line| {
+                    line.trim_start_matches("PRETTY_NAME=")
+                        .trim_matches('"')
+                        .to_string()
+                })
+            })
+            .unwrap_or_else(|| "Unknown OS".to_string())
+    };
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let os_version = "Unknown OS".to_string();
+
+    // CPU Model
+    #[cfg(target_os = "windows")]
+    let cpu_model = get_windows_cpu_model();
+    #[cfg(target_os = "macos")]
+    let cpu_model = {
+        use std::process::Command;
+        Command::new("sysctl")
+            .args(["-n", "machdep.cpu.brand_string"])
+            .output()
+            .ok()
+            .and_then(|output| {
+                let name = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if name.is_empty() { None } else { Some(name) }
+            })
+            .or_else(|| {
+                Command::new("sysctl")
+                    .args(["-n", "hw.model"])
+                    .output()
+                    .ok()
+                    .and_then(|output| {
+                        let name = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                        if name.is_empty() { None } else { Some(name) }
+                    })
+            })
+            .unwrap_or_else(|| "Unknown CPU".to_string())
+    };
+    #[cfg(target_os = "linux")]
+    let cpu_model = {
+        std::fs::read_to_string("/proc/cpuinfo")
+            .ok()
+            .and_then(|content| {
+                content.lines()
+                    .find(|line| line.starts_with("model name") || line.starts_with("Model"))
+                    .and_then(|line| line.find(':').map(|pos| line[pos + 1..].trim().to_string()))
+            })
+            .unwrap_or_else(|| "Unknown CPU".to_string())
+    };
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let cpu_model = "Unknown CPU".to_string();
+
+    // GPU Model
+    let gpu_devices = crate::managers::transcription::get_available_accelerators().gpu_devices;
+    let gpu_model = if gpu_devices.is_empty() {
+        "Unknown GPU".to_string()
+    } else {
+        gpu_devices
+            .iter()
+            .map(|d| d.name.clone())
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+
+    SystemDetails {
+        os_version,
+        cpu_model,
+        gpu_model,
+    }
+}
