@@ -598,6 +598,7 @@
     "open": "Open",
     "copy": "Copy",
     "clear": "Clear",
+    "cancel": "Cancel",
     "noOptionsFound": "No options found"
   },
   "accessibility": {
