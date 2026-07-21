@@ -4,9 +4,14 @@ import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { arch } from "@tauri-apps/plugin-os";
 import { ProgressBar } from "../shared";
 import { useSettings } from "../../hooks/useSettings";
 import { commands } from "../../bindings";
+import {
+  buildPortableInstallerUrl,
+  PORTABLE_RELEASES_URL,
+} from "./portableInstaller";
 
 interface UpdateCheckerProps {
   className?: string;
@@ -22,6 +27,9 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const [showUpToDate, setShowUpToDate] = useState(false);
   const [showPortableUpdateDialog, setShowPortableUpdateDialog] =
     useState(false);
+  const [portableInstallerUrl, setPortableInstallerUrl] = useState<string>(
+    PORTABLE_RELEASES_URL,
+  );
 
   const { settings, isLoading } = useSettings();
   const settingsLoaded = !isLoading && settings !== null;
@@ -104,6 +112,17 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
 
     const portable = await commands.isPortable();
     if (portable) {
+      // Portable installs can't self-update in place — point the user straight at
+      // the correct installer for their arch instead of the full releases page.
+      try {
+        const update = await check();
+        setPortableInstallerUrl(
+          buildPortableInstallerUrl(update?.version, arch()),
+        );
+      } catch (error) {
+        console.error("Failed to resolve portable installer URL:", error);
+        setPortableInstallerUrl(PORTABLE_RELEASES_URL);
+      }
       setShowPortableUpdateDialog(true);
       return;
     }
@@ -203,7 +222,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
               <button
                 className="px-3 py-1.5 text-sm rounded bg-logo-primary text-white hover:bg-logo-primary/80 transition-colors"
                 onClick={() => {
-                  openUrl("https://github.com/cjpais/Handy/releases/latest");
+                  openUrl(portableInstallerUrl);
                   setShowPortableUpdateDialog(false);
                 }}
               >
