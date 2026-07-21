@@ -589,6 +589,9 @@ async initializeShortcuts() : Promise<Result<null, string>> {
 async getSystemDetails() : Promise<SystemDetails> {
     return await TAURI_INVOKE("get_system_details");
 },
+async readRecentLogs() : Promise<string> {
+    return await TAURI_INVOKE("read_recent_logs");
+},
 async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_models") };
