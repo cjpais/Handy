@@ -218,8 +218,8 @@ ${bugDescription}
         onOpenChange={setIsReportBugOpen}
       >
         <div className="space-y-4 py-2 text-start">
+          {/* eslint-disable i18next/no-literal-string */}
           <div className="text-sm text-mid-gray bg-mid-gray/5 p-3 rounded-md border border-mid-gray/20">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
             Please search{" "}
             <a
               href="https://github.com/cjpais/Handy/issues"
@@ -231,14 +231,16 @@ ${bugDescription}
             </a>{" "}
             to avoid duplicates. Your bug may already be reported!
           </div>
+          {/* eslint-enable i18next/no-literal-string */}
 
           <div className="flex flex-col space-y-1.5">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">Title</label>
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.inputTitle")}
+            </label>
             <Input
               value={bugTitle}
               onChange={(e) => setBugTitle(e.target.value)}
-              placeholder="e.g. App crashes when starting recording"
+              placeholder={t("settings.about.reportBug.inputTitlePlaceholder")}
               className="w-full font-medium"
               required
               disabled={isSubmitting}
@@ -246,12 +248,13 @@ ${bugDescription}
           </div>
 
           <div className="flex flex-col space-y-1.5">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">Description</label>
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.inputDescription")}
+            </label>
             <Textarea
               value={bugDescription}
               onChange={(e) => setBugDescription(e.target.value)}
-              placeholder="Please describe what happened, steps to reproduce, expected vs actual behavior..."
+              placeholder={t("settings.about.reportBug.inputDescriptionPlaceholder")}
               className="w-full min-h-[140px] font-medium"
               required
               disabled={isSubmitting}
@@ -266,8 +269,9 @@ ${bugDescription}
               disabled={isSubmitting}
               className="w-4 h-4 rounded border-mid-gray/80 bg-mid-gray/10 text-logo-primary focus:ring-logo-primary accent-logo-primary"
             />
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <span className="font-semibold text-mid-gray">Include recent logs (last 100 lines)</span>
+            <span className="font-semibold text-mid-gray">
+              {t("settings.about.reportBug.includeLogs")}
+            </span>
           </label>
 
           <div className="flex justify-end space-x-3 pt-3 border-t border-mid-gray/20">
@@ -285,7 +289,9 @@ ${bugDescription}
               onClick={handleFormSubmit}
               disabled={!bugTitle.trim() || !bugDescription.trim() || isSubmitting}
             >
-              {isSubmitting ? "Generating..." : "Submit"}
+              {isSubmitting
+                ? t("settings.about.reportBug.submittingButton")
+                : t("settings.about.reportBug.submitButton")}
             </Button>
           </div>
         </div>
