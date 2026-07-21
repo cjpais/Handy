@@ -612,6 +612,56 @@ impl ModelManager {
         );
 
         available_models.insert(
+            "ivrit-whisper-large-v3".to_string(),
+            ModelInfo {
+                id: "ivrit-whisper-large-v3".to_string(),
+                name: "Ivrit Whisper Large".to_string(),
+                description: "Optimized for Hebrew. High accuracy.".to_string(),
+                filename: "ivrit-whisper-large-v3.bin".to_string(),
+                url: Some("https://huggingface.co/ivrit-ai/whisper-large-v3-ggml/resolve/main/ggml-model.bin".to_string()),
+                sha256: None,
+                size_mb: 2952,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Whisper,
+                accuracy_score: 0.90,
+                speed_score: 0.25,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["he".to_string()],
+                supports_language_selection: false,
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "ivrit-whisper-large-v3-turbo".to_string(),
+            ModelInfo {
+                id: "ivrit-whisper-large-v3-turbo".to_string(),
+                name: "Ivrit Whisper Turbo".to_string(),
+                description: "Optimized for Hebrew. Fast and accurate.".to_string(),
+                filename: "ivrit-whisper-large-v3-turbo.bin".to_string(),
+                url: Some("https://huggingface.co/ivrit-ai/whisper-large-v3-turbo-ggml/resolve/main/ggml-model.bin".to_string()),
+                sha256: None,
+                size_mb: 1549,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Whisper,
+                accuracy_score: 0.85,
+                speed_score: 0.40,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["he".to_string()],
+                supports_language_selection: false,
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
             "breeze-asr".to_string(),
             ModelInfo {
                 id: "breeze-asr".to_string(),

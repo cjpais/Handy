@@ -70,6 +70,14 @@
         "name": "Moonshine V2 Medium",
         "description": "English only. High quality."
       },
+      "ivrit-whisper-large-v3": {
+        "name": "Ivrit Whisper Large",
+        "description": "Optimized for Hebrew. High accuracy."
+      },
+      "ivrit-whisper-large-v3-turbo": {
+        "name": "Ivrit Whisper Turbo",
+        "description": "Optimized for Hebrew. Fast and accurate."
+      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimized for Taiwanese Mandarin. Code-switching support."
