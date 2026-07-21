@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { toast } from "sonner";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
@@ -103,8 +104,36 @@ ${logsText}
 }`;
 
       const title = `[BUG - app] ${bugTitle}`;
-      const url = `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
-      await openUrl(url);
+      const baseUrl = "https://github.com/cjpais/handy/issues/new";
+      const fullUrl = `${baseUrl}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
+
+      if (fullUrl.length > 1800) {
+        try {
+          await navigator.clipboard.writeText(bodyTemplate);
+          toast.info(t("settings.about.reportBug.toastCopied"));
+        } catch (clipboardErr) {
+          console.error("Failed to copy bug report to clipboard:", clipboardErr);
+          toast.error(t("settings.about.reportBug.toastCopyFailed"));
+        }
+
+        const shortBody = `## Before You Submit
+
+**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.**
+
+## Bug Description
+
+${bugDescription}
+
+## System Information & Logs
+
+[The full bug report, system information, and logs were too long for the URL parameter and have been COPIED TO YOUR CLIPBOARD. Please paste (Ctrl+V) them here!]`;
+
+        const shortUrl = `${baseUrl}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(shortBody)}`;
+        await openUrl(shortUrl);
+      } else {
+        await openUrl(fullUrl);
+      }
+
       setIsReportBugOpen(false);
       setBugTitle("");
       setBugDescription("");
