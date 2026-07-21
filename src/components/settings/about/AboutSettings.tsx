@@ -112,7 +112,10 @@ ${logsText}
           await navigator.clipboard.writeText(bodyTemplate);
           toast.info(t("settings.about.reportBug.toastCopied"));
         } catch (clipboardErr) {
-          console.error("Failed to copy bug report to clipboard:", clipboardErr);
+          console.error(
+            "Failed to copy bug report to clipboard:",
+            clipboardErr,
+          );
           toast.error(t("settings.about.reportBug.toastCopyFailed"));
         }
 
@@ -254,7 +257,9 @@ ${bugDescription}
             <Textarea
               value={bugDescription}
               onChange={(e) => setBugDescription(e.target.value)}
-              placeholder={t("settings.about.reportBug.inputDescriptionPlaceholder")}
+              placeholder={t(
+                "settings.about.reportBug.inputDescriptionPlaceholder",
+              )}
               className="w-full min-h-[140px] font-medium"
               required
               disabled={isSubmitting}
@@ -287,7 +292,9 @@ ${bugDescription}
               variant="primary"
               size="md"
               onClick={handleFormSubmit}
-              disabled={!bugTitle.trim() || !bugDescription.trim() || isSubmitting}
+              disabled={
+                !bugTitle.trim() || !bugDescription.trim() || isSubmitting
+              }
             >
               {isSubmitting
                 ? t("settings.about.reportBug.submittingButton")
