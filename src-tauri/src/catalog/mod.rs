@@ -1,10 +1,15 @@
-//! The bundled, offline model catalog.
+//! The bundled, offline model catalog (plus the frozen legacy list).
 //!
 //! `catalog.json` is generated at build time by `scripts/gen_catalog.py` from the
 //! `handy-computer` Hugging Face org (card `transcribe_cpp` capabilities +
 //! benchmarks, a GGUF header probe for name/params, and local curation for the
 //! recommended set). It is compiled into the binary so Handy ships a complete
 //! model list with zero network access.
+//!
+//! `legacy.json` is the retired hardcoded table (Url-hosted blob.handy.computer
+//! models), frozen at extraction time and deliberately *not* produced by the
+//! generator: it has no upstream to regenerate from, and its ids/filenames are
+//! persisted in user settings and on user disks, so it only ever shrinks.
 //!
 //! Each entry is normalised into a [`ModelDescriptor`] — the same source-agnostic
 //! shape every other producer (HF discovery, on-disk scans, the legacy table)
@@ -13,7 +18,7 @@
 //! `GgufHeaderProber` is the same shape with `None` where a header omits a key,
 //! which is why the two are interchangeable (the catalog is a baked probe).
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -94,6 +99,74 @@ impl From<CatalogModel> for ModelDescriptor {
             accuracy_score: m.accuracy_score.unwrap_or(0.0) / 100.0,
             recommended_rank: m.recommended_rank,
             recommended: m.recommended,
+            is_directory: false,
+            deprecated: false,
+            supports_language_selection: None,
+        }
+    }
+}
+
+/// One model as written in `legacy.json` — the frozen spec of the retired
+/// hardcoded table (Url-hosted downloads from blob.handy.computer). The file
+/// is generated-once, hand-owned, and never regenerated: these models have no
+/// upstream source of truth, and exist only so users who already downloaded
+/// them keep working. Unlike catalog.json, scores here are already normalised
+/// 0.0–1.0 (verbatim from the retired table).
+#[derive(Deserialize)]
+struct LegacyModel {
+    id: String,
+    name: String,
+    description: String,
+    filename: String,
+    source: ModelSource,
+    size_mb: u64,
+    is_directory: bool,
+    engine_type: EngineType,
+    accuracy_score: f32,
+    speed_score: f32,
+    supports_translation: bool,
+    is_recommended: bool,
+    languages: Vec<String>,
+    /// Explicit, not derived from language count: some legacy engines are
+    /// multilingual but take no language parameter (ONNX Parakeet V3).
+    supports_language_selection: bool,
+    supports_streaming: bool,
+    supports_language_detection: bool,
+}
+
+impl From<LegacyModel> for ModelDescriptor {
+    fn from(m: LegacyModel) -> Self {
+        ModelDescriptor {
+            id: m.id,
+            source: m.source,
+            name: m.name,
+            description: m.description,
+            engine_type: m.engine_type,
+            caps: CapabilityProbe {
+                verdict: Compatibility::Compatible,
+                display_name: None,
+                architecture: None,
+                variant: None,
+                languages: Some(m.languages),
+                supports_streaming: Some(m.supports_streaming),
+                supports_translation: Some(m.supports_translation),
+                supports_language_detect: Some(m.supports_language_detection),
+            },
+            files: vec![QuantFile {
+                filename: m.filename,
+                quant: String::new(),
+                // Exact inverse of to_model_info's `size_bytes / (1024*1024)`,
+                // so the rendered size_mb round-trips the retired table's value.
+                size_bytes: m.size_mb * 1024 * 1024,
+            }],
+            default_quant: None,
+            speed_score: m.speed_score,
+            accuracy_score: m.accuracy_score,
+            recommended_rank: None,
+            recommended: m.is_recommended,
+            is_directory: m.is_directory,
+            deprecated: true,
+            supports_language_selection: Some(m.supports_language_selection),
         }
     }
 }
@@ -104,6 +177,31 @@ pub static CATALOG: Lazy<Vec<ModelDescriptor>> = Lazy::new(|| {
         .expect("bundled catalog.json is valid JSON matching the catalog schema");
     root.models.into_iter().map(ModelDescriptor::from).collect()
 });
+
+#[derive(Deserialize)]
+struct LegacyRoot {
+    models: Vec<LegacyModel>,
+}
+
+/// The frozen legacy models, parsed once and normalised into the same
+/// descriptor shape as the catalog.
+pub static LEGACY: Lazy<Vec<ModelDescriptor>> = Lazy::new(|| {
+    let root: LegacyRoot = serde_json::from_str(include_str!("legacy.json"))
+        .expect("bundled legacy.json is valid JSON matching the legacy schema");
+    root.models.into_iter().map(ModelDescriptor::from).collect()
+});
+
+/// Every descriptor id in the bundled catalog.
+static CATALOG_IDS: Lazy<HashSet<String>> =
+    Lazy::new(|| CATALOG.iter().map(|d| d.id.clone()).collect());
+
+/// Whether a registry id was seeded from the bundled catalog. Policies that
+/// only apply to entries Handy itself ships — e.g. the models-dir drop-in
+/// override — use this to avoid affecting entries discovered from the shared
+/// HF cache, which may collide on filename with a catalog model.
+pub fn is_catalog_model(model_id: &str) -> bool {
+    CATALOG_IDS.contains(model_id)
+}
 
 /// Editorial recommended rank keyed by descriptor id (the same id the model
 /// registry uses). Built once from the catalog.
@@ -132,12 +230,34 @@ mod tests {
     }
 
     #[test]
-    fn ids_are_unique() {
-        let mut ids: Vec<&str> = CATALOG.iter().map(|d| d.id.as_str()).collect();
+    fn ids_are_unique_across_catalog_and_legacy() {
+        let mut ids: Vec<&str> = CATALOG
+            .iter()
+            .chain(LEGACY.iter())
+            .map(|d| d.id.as_str())
+            .collect();
         ids.sort_unstable();
         let before = ids.len();
         ids.dedup();
-        assert_eq!(before, ids.len(), "catalog descriptor ids must be unique");
+        assert_eq!(before, ids.len(), "descriptor ids must be unique");
+    }
+
+    #[test]
+    fn legacy_parses_and_is_frozen_shape() {
+        assert_eq!(LEGACY.len(), 16, "legacy.json is frozen; it only shrinks");
+        for d in LEGACY.iter() {
+            assert!(d.deprecated, "{} must be marked deprecated", d.id);
+            assert!(
+                matches!(d.source, ModelSource::Url { .. }),
+                "{} legacy models are Url-hosted",
+                d.id
+            );
+            assert!(
+                !is_catalog_model(&d.id),
+                "{} must not count as a catalog model (drop-in override scope)",
+                d.id
+            );
+        }
     }
 
     #[test]
@@ -146,6 +266,19 @@ mod tests {
             assert!((0.0..=1.0).contains(&d.speed_score), "{} speed", d.id);
             assert!((0.0..=1.0).contains(&d.accuracy_score), "{} acc", d.id);
         }
+    }
+
+    #[test]
+    fn is_catalog_model_matches_catalog_ids() {
+        for d in CATALOG.iter() {
+            assert!(
+                is_catalog_model(&d.id),
+                "{} should be a catalog model",
+                d.id
+            );
+        }
+        assert!(!is_catalog_model("someorg/some-repo/some-file.gguf"));
+        assert!(!is_catalog_model("small"));
     }
 
     #[test]

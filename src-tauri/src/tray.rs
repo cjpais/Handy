@@ -218,7 +218,7 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
     let models = model_manager.get_available_models();
     let current_model_id = &settings.selected_model;
 
-    let mut downloaded: Vec<_> = models.into_iter().filter(|m| m.is_downloaded).collect();
+    let mut downloaded: Vec<_> = models.into_iter().filter(|m| m.is_downloaded()).collect();
     downloaded.sort_by(|a, b| a.name.cmp(&b.name));
 
     let submenu_label = downloaded

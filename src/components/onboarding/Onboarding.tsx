@@ -38,7 +38,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   // Streaming (multilingual). Everything else hides behind "Show all".
   const { downloadable, topPicks, otherRecommended, rest } = useMemo(() => {
     const downloadable = models.filter(
-      (m: ModelInfo) => !m.is_downloaded && !isLegacySource(m),
+      (m: ModelInfo) => m.status !== "downloaded" && !isLegacySource(m),
     );
     const recommended = downloadable.filter((m: ModelInfo) => m.is_recommended);
     // `models` arrives in editorial rank order (the backend sorts by rank_of,
@@ -71,7 +71,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     const stillExtracting = selectedModelId in extractingModels;
 
     if (
-      model?.is_downloaded &&
+      model?.status === "downloaded" &&
       !stillDownloading &&
       !stillVerifying &&
       !stillExtracting &&
@@ -154,7 +154,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
         <div className="space-y-6 pb-6">
-          {models.some((m: ModelInfo) => m.is_downloaded) && (
+          {models.some((m: ModelInfo) => m.status === "downloaded") && (
             <div className="space-y-3">
               <div className="text-left">
                 <h2 className="text-sm font-medium text-text/60">
@@ -162,7 +162,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                 </h2>
               </div>
               {models
-                .filter((m: ModelInfo) => m.is_downloaded)
+                .filter((m: ModelInfo) => m.status === "downloaded")
                 .map((model: ModelInfo) => (
                   <ModelCard
                     key={model.id}
