@@ -205,7 +205,7 @@
         }
       },
       "language": {
-        "title": "Język",
+        "title": "Język modelu",
         "description": "Wybierz język rozpoznawania mowy. Opcja Auto automatycznie określi język, a wybór konkretnego języka może poprawić dokładność.",
         "searchPlaceholder": "Szukaj języka...",
         "noResults": "Nie znaleziono języków",

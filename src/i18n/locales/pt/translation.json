@@ -187,7 +187,7 @@
         }
       },
       "language": {
-        "title": "Idioma",
+        "title": "Idioma do modelo",
         "description": "Selecione o idioma para reconhecimento de fala. Auto detectará automaticamente o idioma, enquanto selecionar um idioma específico pode melhorar a precisão para esse idioma.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "Nenhum idioma encontrado",

@@ -187,7 +187,7 @@
         }
       },
       "language": {
-        "title": "Språk",
+        "title": "Modellspråk",
         "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",

@@ -187,7 +187,7 @@
         }
       },
       "language": {
-        "title": "Taal",
+        "title": "Modeltaal",
         "description": "Selecteer de taal voor spraakherkenning. 'Automatisch' detecteert de taal vanzelf, terwijl het kiezen van een specifieke taal de nauwkeurigheid voor die taal kan verbeteren.",
         "searchPlaceholder": "Talen zoeken...",
         "noResults": "Geen talen gevonden",

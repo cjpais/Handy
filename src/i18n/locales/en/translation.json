@@ -187,7 +187,7 @@
         }
       },
       "language": {
-        "title": "Language",
+        "title": "Model Language",
         "description": "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language.",
         "searchPlaceholder": "Search languages...",
         "noResults": "No languages found",

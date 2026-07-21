@@ -187,7 +187,7 @@
         }
       },
       "language": {
-        "title": "語言",
+        "title": "模型語言",
         "description": "選擇語音識別的語言。選擇自動將自動判定語言，選擇特定語言可以提高該語言的準確度",
         "searchPlaceholder": "搜尋語言...",
         "noResults": "未找到語言",

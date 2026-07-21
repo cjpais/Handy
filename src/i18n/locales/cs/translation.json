@@ -205,7 +205,7 @@
         }
       },
       "language": {
-        "title": "Jazyk",
+        "title": "Jazyk modelu",
         "description": "Vyberte jazyk rozpoznávání řeči. Auto jazyk určí automaticky, zatímco výběr konkrétního jazyka může zlepšit přesnost.",
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",

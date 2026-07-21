@@ -205,7 +205,7 @@
         }
       },
       "language": {
-        "title": "Lingua",
+        "title": "Lingua del modello",
         "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
