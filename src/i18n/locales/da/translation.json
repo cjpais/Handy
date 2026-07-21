@@ -187,7 +187,7 @@
         }
       },
       "language": {
-        "title": "Sprog",
+        "title": "Modelsprog",
         "description": "Vælg sproget til talegenkendelse. Auto tyder automatisk sproget, mens valg af et specifikt sprog kan forbedre nøjagtigheden for det pågældende sprog.",
         "searchPlaceholder": "Søg efter sprog...",
         "noResults": "Ingen sprog fundet",
