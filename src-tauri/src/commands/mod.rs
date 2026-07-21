@@ -318,3 +318,25 @@ pub fn get_system_details() -> SystemDetails {
         gpu_model,
     }
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn read_recent_logs(app: AppHandle) -> String {
+    let log_dir = match crate::portable::app_log_dir(&app) {
+        Ok(dir) => dir,
+        Err(_) => return "Failed to get log directory".to_string(),
+    };
+    let log_file_path = log_dir.join("handy.log");
+    match std::fs::read_to_string(&log_file_path) {
+        Ok(content) => {
+            let lines: Vec<&str> = content.lines().collect();
+            let last_lines = if lines.len() > 100 {
+                &lines[lines.len() - 100..]
+            } else {
+                &lines[..]
+            };
+            last_lines.join("\n")
+        }
+        Err(e) => format!("Failed to read log file: {}", e),
+    }
+}
