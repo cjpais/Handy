@@ -10,6 +10,7 @@ import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ShowWhatsNewOnUpdate } from "../ShowWhatsNewOnUpdate";
 import { ThemeSelector } from "../ThemeSelector";
 import { LogDirectory } from "../debug";
+import { commands } from "@/bindings";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -34,6 +35,57 @@ export const AboutSettings: React.FC = () => {
       await openUrl("https://handy.computer/donate");
     } catch (error) {
       console.error("Failed to open donate link:", error);
+    }
+  };
+
+  const handleReportBugClick = async () => {
+    try {
+      let sysDetails = {
+        os_version: "Unknown OS",
+        cpu_model: "Unknown CPU",
+        gpu_model: "Unknown GPU",
+      };
+      try {
+        sysDetails = await commands.getSystemDetails();
+      } catch (error) {
+        console.error("Failed to get system details:", error);
+      }
+
+      const bodyTemplate = `## Before You Submit
+
+**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.** Your bug may already be reported! Right now it's just me maintaining this project so many issues can be overwhelming! Help me out by checking first.
+
+## Bug Description
+
+A clear and concise description of what the bug is.
+
+## System Information
+
+**App Version:** ${version || "Unknown Version"}
+
+<!-- You can find this in the app settings or about section -->
+
+**Operating System:** ${sysDetails.os_version}
+
+<!-- e.g., macOS 14.1, Windows 11, Ubuntu 22.04 -->
+
+**CPU:** ${sysDetails.cpu_model}
+
+<!-- e.g., Apple M2, Intel i7-12700K, AMD Ryzen 7 5800X -->
+
+**GPU:** ${sysDetails.gpu_model}
+
+<!-- e.g., Apple M2 GPU, NVIDIA RTX 4080, AMD RX 6800 XT, Intel UHD Graphics -->
+
+## Logs
+
+<!-- Please attach relevant logs to help us diagnose the issue. You can find the log directory by going to Settings > About in the app. -->`;
+
+      const title = "[BUG - app]";
+      const url = `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
+      await openUrl(url);
+    } catch (error) {
+      console.error("Failed to open bug report link:", error);
     }
   };
 
@@ -74,6 +126,16 @@ export const AboutSettings: React.FC = () => {
             onClick={() => openUrl("https://github.com/cjpais/Handy")}
           >
             {t("settings.about.sourceCode.button")}
+          </Button>
+        </SettingContainer>
+
+        <SettingContainer
+          title={t("settings.about.reportBug.title")}
+          description={t("settings.about.reportBug.description")}
+          grouped={true}
+        >
+          <Button variant="secondary" size="md" onClick={handleReportBugClick}>
+            {t("settings.about.reportBug.button")}
           </Button>
         </SettingContainer>
 
