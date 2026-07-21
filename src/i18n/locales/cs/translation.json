@@ -193,6 +193,10 @@
             "name": "Zkratka zrušení",
             "description": "Klávesová zkratka pro zrušení aktuálního nahrávání."
           },
+          "stop": {
+            "name": "Zkratka pro zastavení",
+            "description": "Klávesová zkratka pro zastavení aktuálního nahrávání a jeho přepis."
+          },
           "transcribe_with_post_process": {
             "name": "Klávesa pro následné zpracování",
             "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Stisk a mluv",
         "description": "Podržte pro nahrávání, uvolněte pro zastavení"
+      },
+      "stopKey": {
+        "label": "Samostatná klávesa pro zastavení",
+        "description": "Použijte k dokončení nahrávání jinou klávesu, než která ho spustila (např. Enter)"
       }
     },
     "sound": {

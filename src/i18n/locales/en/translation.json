@@ -175,6 +175,10 @@
             "name": "Cancel Shortcut",
             "description": "The keyboard shortcut to cancel the current recording."
           },
+          "stop": {
+            "name": "Stop Shortcut",
+            "description": "The keyboard shortcut to stop the current recording and transcribe it."
+          },
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
@@ -196,6 +200,10 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "stopKey": {
+        "label": "Separate Stop Key",
+        "description": "Use a different key to finish a recording than the one that started it (e.g. Enter)"
       }
     },
     "models": {

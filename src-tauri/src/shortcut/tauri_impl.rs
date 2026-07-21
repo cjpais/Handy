@@ -20,8 +20,8 @@ pub fn init_shortcuts(app: &AppHandle) {
 
     // Register all default shortcuts, applying user customizations
     for (id, default_binding) in default_bindings {
-        if id == "cancel" {
-            continue; // Skip cancel shortcut, it will be registered dynamically
+        if super::is_dynamic_binding(&id) {
+            continue; // Skip cancel/stop shortcuts, they are registered dynamically
         }
         // Skip post-processing shortcut when the feature is disabled
         if id == "transcribe_with_post_process" && !user_settings.post_process_enabled {
@@ -154,12 +154,12 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     Ok(())
 }
 
-/// Register the cancel shortcut (called when recording starts)
-pub fn register_cancel_shortcut(app: &AppHandle) {
-    // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+/// Register a dynamically-managed shortcut (called when recording starts)
+pub fn register_dynamic_shortcut(app: &AppHandle, binding_id: &'static str) {
+    // Dynamic shortcuts are disabled on Linux due to instability with dynamic shortcut registration
     #[cfg(target_os = "linux")]
     {
-        let _ = app;
+        let _ = (app, binding_id);
         return;
     }
 
@@ -167,21 +167,21 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-                if let Err(e) = register_shortcut(&app_clone, cancel_binding) {
-                    error!("Failed to register cancel shortcut: {}", e);
+            if let Some(binding) = get_settings(&app_clone).bindings.get(binding_id).cloned() {
+                if let Err(e) = register_shortcut(&app_clone, binding) {
+                    error!("Failed to register {} shortcut: {}", binding_id, e);
                 }
             }
         });
     }
 }
 
-/// Unregister the cancel shortcut (called when recording stops)
-pub fn unregister_cancel_shortcut(app: &AppHandle) {
-    // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+/// Unregister a dynamically-managed shortcut (called when recording stops)
+pub fn unregister_dynamic_shortcut(app: &AppHandle, binding_id: &'static str) {
+    // Dynamic shortcuts are disabled on Linux due to instability with dynamic shortcut registration
     #[cfg(target_os = "linux")]
     {
-        let _ = app;
+        let _ = (app, binding_id);
         return;
     }
 
@@ -189,9 +189,9 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
+            if let Some(binding) = get_settings(&app_clone).bindings.get(binding_id).cloned() {
                 // We ignore errors here as it might already be unregistered
-                let _ = unregister_shortcut(&app_clone, cancel_binding);
+                let _ = unregister_shortcut(&app_clone, binding);
             }
         });
     }

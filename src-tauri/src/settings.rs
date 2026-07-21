@@ -349,6 +349,12 @@ pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     #[serde(default = "default_push_to_talk")]
     pub push_to_talk: bool,
+    /// When enabled, the "stop" binding is registered while recording so a
+    /// different key (e.g. Enter) can finish the recording than the one that
+    /// started it. Off by default so the stop key never swallows keystrokes
+    /// for users who haven't opted in.
+    #[serde(default)]
+    pub stop_key_enabled: bool,
     #[serde(default)]
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
@@ -835,11 +841,22 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "escape".to_string(),
         },
     );
+    bindings.insert(
+        "stop".to_string(),
+        ShortcutBinding {
+            id: "stop".to_string(),
+            name: "Stop".to_string(),
+            description: "Stops the current recording and transcribes it.".to_string(),
+            default_binding: "enter".to_string(),
+            current_binding: "enter".to_string(),
+        },
+    );
 
     AppSettings {
         settings_schema_version: default_settings_schema_version(),
         bindings,
         push_to_talk: default_push_to_talk(),
+        stop_key_enabled: false,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),

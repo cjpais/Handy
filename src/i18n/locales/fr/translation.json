@@ -193,6 +193,10 @@
             "name": "Raccourci d'Annulation",
             "description": "Le raccourci clavier pour annuler l'enregistrement en cours."
           },
+          "stop": {
+            "name": "Raccourci d'arrêt",
+            "description": "Le raccourci clavier pour arrêter l'enregistrement en cours et le transcrire."
+          },
           "transcribe_with_post_process": {
             "name": "Raccourci de post-traitement",
             "description": "Facultatif : Un raccourci dédié qui applique toujours le post-traitement IA à votre transcription."
@@ -214,6 +218,10 @@
       "pushToTalk": {
         "label": "Appuyer pour parler",
         "description": "Maintenez pour enregistrer, relâchez pour arrêter"
+      },
+      "stopKey": {
+        "label": "Touche d'arrêt distincte",
+        "description": "Utilisez une touche différente pour terminer un enregistrement que celle qui l'a démarré (p. ex. Entrée)"
       }
     },
     "sound": {

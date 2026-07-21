@@ -56,22 +56,52 @@ pub fn init_shortcuts(app: &AppHandle) {
     }
 }
 
-/// Register the cancel shortcut (called when recording starts)
-pub fn register_cancel_shortcut(app: &AppHandle) {
+/// Bindings that are registered dynamically while recording rather than
+/// globally at startup: cancel (Escape) and the optional stop key. Keeping
+/// them recording-scoped means their keys are never swallowed while idle.
+pub fn is_dynamic_binding(id: &str) -> bool {
+    id == "cancel" || id == "stop"
+}
+
+/// Register a dynamically-managed shortcut with the active implementation
+fn register_dynamic_shortcut(app: &AppHandle, binding_id: &'static str) {
     let settings = get_settings(app);
     match settings.keyboard_implementation {
-        KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::register_cancel_shortcut(app),
+        KeyboardImplementation::Tauri => tauri_impl::register_dynamic_shortcut(app, binding_id),
+        KeyboardImplementation::HandyKeys => handy_keys::register_dynamic_shortcut(app, binding_id),
     }
 }
 
-/// Unregister the cancel shortcut (called when recording stops)
-pub fn unregister_cancel_shortcut(app: &AppHandle) {
+/// Unregister a dynamically-managed shortcut from the active implementation
+fn unregister_dynamic_shortcut(app: &AppHandle, binding_id: &'static str) {
     let settings = get_settings(app);
     match settings.keyboard_implementation {
-        KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::unregister_cancel_shortcut(app),
+        KeyboardImplementation::Tauri => tauri_impl::unregister_dynamic_shortcut(app, binding_id),
+        KeyboardImplementation::HandyKeys => {
+            handy_keys::unregister_dynamic_shortcut(app, binding_id)
+        }
     }
+}
+
+/// Register the recording-scoped shortcuts (called when recording starts).
+/// The stop key is toggle-mode only: in push-to-talk, releasing the key
+/// already stops the recording, so registering a stop key would only
+/// swallow keystrokes (the UI hides the setting in push-to-talk too).
+pub fn register_recording_shortcuts(app: &AppHandle) {
+    register_dynamic_shortcut(app, "cancel");
+    let settings = get_settings(app);
+    if settings.stop_key_enabled && !settings.push_to_talk {
+        register_dynamic_shortcut(app, "stop");
+    }
+}
+
+/// Unregister the recording-scoped shortcuts (called when recording stops).
+/// The stop key is unregistered unconditionally so a mid-recording settings
+/// change can never leave it dangling; unregistering an inactive shortcut is
+/// a no-op.
+pub fn unregister_recording_shortcuts(app: &AppHandle) {
+    unregister_dynamic_shortcut(app, "cancel");
+    unregister_dynamic_shortcut(app, "stop");
 }
 
 /// Register a shortcut using the appropriate implementation
@@ -144,9 +174,10 @@ pub fn change_binding(
         }
     };
 
-    // If this is the cancel binding, just update the settings and return
-    // It's managed dynamically, so we don't register/unregister here
-    if id == "cancel" {
+    // If this is a dynamically-managed binding (cancel/stop), just update the
+    // settings and return. It's registered while recording, so we don't
+    // register/unregister here
+    if is_dynamic_binding(&id) {
         if let Some(mut b) = settings.bindings.get(&id).cloned() {
             b.current_binding = binding;
             settings.bindings.insert(id.clone(), b.clone());
@@ -213,6 +244,11 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
 #[tauri::command]
 #[specta::specta]
 pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
+    // Dynamic bindings (cancel/stop) are only registered while recording, so
+    // there is nothing to suspend while the user edits them in the UI.
+    if is_dynamic_binding(&id) {
+        return Ok(());
+    }
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = unregister_shortcut(&app, b) {
             error!("suspend_binding error for id '{}': {}", id, e);
@@ -226,6 +262,11 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
+    // Dynamic bindings must not be re-registered while idle — that would
+    // swallow their keys (e.g. Escape or Enter) system-wide outside recording.
+    if is_dynamic_binding(&id) {
+        return Ok(());
+    }
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = register_shortcut(&app, b) {
             error!("resume_binding error for id '{}': {}", id, e);
@@ -358,8 +399,8 @@ fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementat
     let bindings = settings::get_bindings(app);
 
     for (id, binding) in bindings {
-        // Skip cancel shortcut as it's dynamically registered
-        if id == "cancel" {
+        // Skip dynamically registered shortcuts (cancel/stop)
+        if is_dynamic_binding(&id) {
             continue;
         }
 
@@ -387,8 +428,8 @@ fn register_all_shortcuts_for_implementation(
     let mut current_settings = settings::get_settings(app);
 
     for (id, default_binding) in &default_bindings {
-        // Skip cancel shortcut as it's dynamically registered
-        if id == "cancel" {
+        // Skip dynamically registered shortcuts (cancel/stop)
+        if is_dynamic_binding(id) {
             continue;
         }
 
@@ -474,6 +515,15 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.push_to_talk = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_stop_key_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.stop_key_enabled = enabled;
     settings::write_settings(&app, settings);
     Ok(())
 }

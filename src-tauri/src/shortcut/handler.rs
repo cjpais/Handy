@@ -44,6 +44,20 @@ pub fn handle_shortcut_event(
         return;
     }
 
+    // Stop binding: finishes the current recording and transcribes it. Routed
+    // through the coordinator because only it knows which transcribe binding
+    // started the recording. Only registered while recording (like cancel).
+    if binding_id == "stop" {
+        if is_pressed {
+            if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+                coordinator.request_stop();
+            } else {
+                warn!("TranscriptionCoordinator is not initialized");
+            }
+        }
+        return;
+    }
+
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!(
             "No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', Pressed: {}",
