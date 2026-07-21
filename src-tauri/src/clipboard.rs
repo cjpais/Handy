@@ -12,9 +12,40 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
 
+fn with_enigo<T>(
+    app_handle: &AppHandle,
+    f: impl FnOnce(&mut Enigo) -> Result<T, String>,
+) -> Result<T, String> {
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    let mut enigo = enigo_state
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+    f(&mut enigo)
+}
+
+#[cfg(target_os = "linux")]
+fn should_use_wl_copy(is_wayland_session: bool, wl_copy_available: bool) -> bool {
+    is_wayland_session && wl_copy_available
+}
+
+fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if should_use_wl_copy(is_wayland(), is_wl_copy_available()) {
+        info!("Using wl-copy for clipboard write on Wayland");
+        return write_clipboard_via_wl_copy(text);
+    }
+
+    app_handle
+        .clipboard()
+        .write_text(text)
+        .map_err(|e| format!("Failed to write to clipboard: {}", e))
+}
+
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
-    enigo: &mut Enigo,
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
@@ -33,23 +64,7 @@ fn paste_via_clipboard(
     };
 
     // Write text to clipboard first
-    // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
-    #[cfg(target_os = "linux")]
-    let write_result = if is_wayland() && is_wl_copy_available() {
-        info!("Using wl-copy for clipboard write on Wayland");
-        write_clipboard_via_wl_copy(text)
-    } else {
-        clipboard
-            .write_text(text)
-            .map_err(|e| format!("Failed to write to clipboard: {}", e))
-    };
-
-    #[cfg(not(target_os = "linux"))]
-    let write_result = clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e));
-
-    write_result?;
+    write_text_to_clipboard(app_handle, text)?;
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -62,12 +77,12 @@ fn paste_via_clipboard(
 
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
-        match paste_method {
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo)?,
-            _ => return Err("Invalid paste method for clipboard paste".into()),
-        }
+        with_enigo(app_handle, |enigo| match paste_method {
+            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo),
+            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo),
+            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo),
+            _ => Err("Invalid paste method for clipboard paste".into()),
+        })?;
     }
 
     std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
@@ -77,16 +92,7 @@ fn paste_via_clipboard(
     // an image is only restored when the clipboard held no text at all, which is
     // the case that used to silently wipe screenshots.
     if let Some(clipboard_content) = saved_text {
-        // On Wayland, prefer wl-copy for better compatibility
-        #[cfg(target_os = "linux")]
-        if is_wayland() && is_wl_copy_available() {
-            let _ = write_clipboard_via_wl_copy(&clipboard_content);
-        } else {
-            let _ = clipboard.write_text(&clipboard_content);
-        }
-
-        #[cfg(not(target_os = "linux"))]
-        let _ = clipboard.write_text(&clipboard_content);
+        let _ = write_text_to_clipboard(app_handle, &clipboard_content);
     } else if let Some(image) = saved_image {
         info!("Restoring image to clipboard");
         let _ = clipboard.write_image(&image);
@@ -546,8 +552,8 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
 
 /// Types text directly by simulating individual key presses.
 fn paste_direct(
-    enigo: &mut Enigo,
     text: &str,
+    app_handle: &AppHandle,
     #[cfg(target_os = "linux")] typing_tool: TypingTool,
 ) -> Result<(), String> {
     #[cfg(target_os = "linux")]
@@ -558,7 +564,7 @@ fn paste_direct(
         info!("Falling back to enigo for direct text input");
     }
 
-    input::paste_text_direct(enigo, text)
+    with_enigo(app_handle, |enigo| input::paste_text_direct(enigo, text))
 }
 
 fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
@@ -626,15 +632,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
 
-    // Get the managed Enigo instance
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
-
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
@@ -642,15 +639,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
         PasteMethod::Direct => {
             paste_direct(
-                &mut enigo,
                 &text,
+                &app_handle,
                 #[cfg(target_os = "linux")]
                 settings.typing_tool,
             )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(
-                &mut enigo,
                 &text,
                 &app_handle,
                 &paste_method,
@@ -670,15 +666,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
-        send_return_key(&mut enigo, settings.auto_submit_key)?;
+        with_enigo(&app_handle, |enigo| {
+            send_return_key(enigo, settings.auto_submit_key)
+        })?;
     }
 
     // After pasting, optionally copy to clipboard based on settings
     if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
-        let clipboard = app_handle.clipboard();
-        clipboard
-            .write_text(&text)
-            .map_err(|e| format!("Failed to copy to clipboard: {}", e))?;
+        write_text_to_clipboard(&app_handle, &text)?;
     }
 
     Ok(())
@@ -687,6 +682,26 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+    use tauri::test::{mock_builder, mock_context, noop_assets, MockRuntime};
+
+    static SETTINGS_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    fn mock_app() -> tauri::App<MockRuntime> {
+        mock_builder()
+            .plugin(tauri_plugin_store::Builder::default().build())
+            .build(mock_context(noop_assets()))
+            .unwrap()
+    }
+
+    fn write_test_settings(app: &tauri::App<MockRuntime>, auto_submit: bool) {
+        let mut settings = crate::settings::get_default_settings();
+        settings.paste_method = PasteMethod::None;
+        settings.clipboard_handling = ClipboardHandling::DontModify;
+        settings.auto_submit = auto_submit;
+        settings.append_trailing_space = false;
+        crate::settings::write_settings(&app.handle().clone(), settings);
+    }
 
     #[test]
     fn auto_submit_requires_setting_enabled() {
@@ -705,5 +720,23 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    #[test]
+    fn none_paste_succeeds_without_enigo() {
+        let _guard = SETTINGS_TEST_LOCK.lock().unwrap();
+        let app = mock_app();
+        write_test_settings(&app, false);
+
+        assert!(paste("hello".to_string(), app.handle().clone()).is_ok());
+    }
+
+    #[test]
+    fn none_paste_skips_auto_submit_without_enigo() {
+        let _guard = SETTINGS_TEST_LOCK.lock().unwrap();
+        let app = mock_app();
+        write_test_settings(&app, true);
+
+        assert!(paste("hello".to_string(), app.handle().clone()).is_ok());
     }
 }
