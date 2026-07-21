@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Pokaż nowości",
         "description": "Pokazuj informacje o wydaniu po aktualizacjach Handy"
+      },
+      "reportBug": {
+        "title": "Zgłoś błąd",
+        "description": "Pomóż nam ulepszyć Handy, zgłaszając problemy",
+        "button": "Zgłoś błąd",
+        "toastCopied": "Ostatnie logi skopiowane do schowka!",
+        "toastCopyFailed": "Nie udało się skopiować logów do schowka.",
+        "inputTitle": "Tytuł",
+        "inputTitlePlaceholder": "np. Aplikacja zawiesza się przy rozpoczęciu nagrywania",
+        "inputDescription": "Opis",
+        "inputDescriptionPlaceholder": "Opisz, co się stało, kroki do odtworzenia, oczekiwane a rzeczywiste zachowanie...",
+        "includeLogs": "Dołącz ostatnie logi (ostatnie 100 wierszy)",
+        "submitButton": "Wygeneruj zgłoszenie GitHub",
+        "submittingButton": "Generowanie..."
       }
     }
   },

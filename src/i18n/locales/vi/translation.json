@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Hiển thị điểm mới",
         "description": "Hiển thị ghi chú phát hành sau khi Handy cập nhật"
+      },
+      "reportBug": {
+        "title": "Báo cáo lỗi",
+        "description": "Giúp chúng tôi cải thiện Handy bằng cách báo cáo sự cố",
+        "button": "Báo cáo lỗi",
+        "toastCopied": "Đã sao chép nhật ký gần đây vào khay nhớ tạm!",
+        "toastCopyFailed": "Không thể sao chép nhật ký vào khay nhớ tạm.",
+        "inputTitle": "Tiêu đề",
+        "inputTitlePlaceholder": "ví dụ: Ứng dụng bị treo khi bắt đầu ghi âm",
+        "inputDescription": "Mô tả",
+        "inputDescriptionPlaceholder": "Vui lòng mô tả những gì đã xảy ra, các bước để tái hiện, hành vi mong đợi so với thực tế...",
+        "includeLogs": "Bao gồm nhật ký gần đây (100 dòng cuối)",
+        "submitButton": "Tạo Issue trên GitHub",
+        "submittingButton": "Đang tạo..."
       }
     }
   },

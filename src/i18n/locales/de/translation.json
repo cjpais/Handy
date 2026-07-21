@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Neuerungen anzeigen",
         "description": "Versionshinweise nach Handy-Updates anzeigen"
+      },
+      "reportBug": {
+        "title": "Fehler melden",
+        "description": "Helfen Sie uns Handy zu verbessern, indem Sie Fehler melden",
+        "button": "Fehler melden",
+        "toastCopied": "Neueste Protokolle in die Zwischenablage kopiert!",
+        "toastCopyFailed": "Fehler beim Kopieren der Protokolle in die Zwischenablage.",
+        "inputTitle": "Titel",
+        "inputTitlePlaceholder": "z.B. App stürzt ab, wenn die Aufnahme gestartet wird",
+        "inputDescription": "Beschreibung",
+        "inputDescriptionPlaceholder": "Bitte beschreiben Sie, was passiert ist, Schritte zum Reproduzieren, erwartetes vs. tatsächliches Verhalten...",
+        "includeLogs": "Neueste Protokolle einschließen (letzte 100 Zeilen)",
+        "submitButton": "GitHub-Issue erstellen",
+        "submittingButton": "Wird erstellt..."
       }
     }
   },

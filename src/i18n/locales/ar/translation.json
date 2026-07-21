@@ -546,6 +546,20 @@
       "whatsNewUpdates": {
         "label": "إظهار الجديد",
         "description": "إظهار ملاحظات الإصدار بعد تحديثات Handy"
+      },
+      "reportBug": {
+        "title": "الإبلاغ عن خلل",
+        "description": "ساعدنا في تحسين Handy من خلال الإبلاغ عن المشكلات",
+        "button": "الإبلاغ عن خلل",
+        "toastCopied": "تم نسخ السجلات الأخيرة إلى الحافظة!",
+        "toastCopyFailed": "فشل نسخ السجلات إلى الحافظة.",
+        "inputTitle": "العنوان",
+        "inputTitlePlaceholder": "مثال: يتوقف التطبيق عند بدء التسجيل",
+        "inputDescription": "الوصف",
+        "inputDescriptionPlaceholder": "يرجى وصف ما حدث، خطوات إعادة التشغيل، السلوك المتوقع مقابل الفعلي...",
+        "includeLogs": "تضمين السجلات الأخيرة (آخر 100 سطر)",
+        "submitButton": "إنشاء مشكلة GitHub",
+        "submittingButton": "جاري الإنشاء..."
       }
     },
     "modelSettings": {

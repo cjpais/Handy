@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Yenilikleri Göster",
         "description": "Handy güncellemelerinden sonra sürüm notlarını göster"
+      },
+      "reportBug": {
+        "title": "Hata Bildir",
+        "description": "Sorunları bildirerek Handy'yi geliştirmemize yardımcı olun",
+        "button": "Hata Bildir",
+        "toastCopied": "Son günlükler panoya kopyalandı!",
+        "toastCopyFailed": "Günlükler panoya kopyalanamadı.",
+        "inputTitle": "Başlık",
+        "inputTitlePlaceholder": "ör. Kayıt başlatılırken uygulama çöküyor",
+        "inputDescription": "Açıklama",
+        "inputDescriptionPlaceholder": "Lütfen ne olduğunu, yeniden oluşturma adımlarını, beklenen ve gerçekleşen davranışı açıklayın...",
+        "includeLogs": "Son günlükleri dahil et (son 100 satır)",
+        "submitButton": "GitHub Sorunu Oluştur",
+        "submittingButton": "Oluşturuluyor..."
       }
     }
   },

@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "顯示新功能",
         "description": "Handy 更新後顯示版本資訊"
+      },
+      "reportBug": {
+        "title": "回報 Bug",
+        "description": "透過回報問題協助我們改進 Handy",
+        "button": "回報 Bug",
+        "toastCopied": "最新記錄已複製到剪貼簿！",
+        "toastCopyFailed": "無法將記錄複製到剪貼簿。",
+        "inputTitle": "標題",
+        "inputTitlePlaceholder": "例如：開始錄音時應用程式崩潰",
+        "inputDescription": "描述",
+        "inputDescriptionPlaceholder": "請描述發生的事情、重現步驟、預期行為與實際行為...",
+        "includeLogs": "包含最新記錄（最後 100 行）",
+        "submitButton": "產生 GitHub Issue",
+        "submittingButton": "產生中..."
       }
     }
   },

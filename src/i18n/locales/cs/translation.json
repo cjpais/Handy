@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Zobrazovat novinky",
         "description": "Zobrazovat poznámky k vydání po aktualizacích Handy"
+      },
+      "reportBug": {
+        "title": "Nahlásit chybu",
+        "description": "Pomozte nám vylepšit Handy hlášením problémů",
+        "button": "Nahlásit chybu",
+        "toastCopied": "Nedávné protokoly zkopírovány do schránky!",
+        "toastCopyFailed": "Kopírování protokolů do schránky selhalo.",
+        "inputTitle": "Název",
+        "inputTitlePlaceholder": "např. Aplikace spadné při spuštění nahrávání",
+        "inputDescription": "Popis",
+        "inputDescriptionPlaceholder": "Popište prosím, co se stalo, kroky k reprodukci, očekávané vs skutečné chování...",
+        "includeLogs": "Zahrnout nedávné protokoly (posledních 100 řádků)",
+        "submitButton": "Generovat GitHub Issue",
+        "submittingButton": "Generování..."
       }
     }
   },

@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Visa nyheter",
         "description": "Visa versionsinformation efter Handy-uppdateringar"
+      },
+      "reportBug": {
+        "title": "Rapportera ett fel",
+        "description": "Hjälp oss att förbättra Handy genom att rapportera problem",
+        "button": "Rapportera ett fel",
+        "toastCopied": "Senaste loggar kopierade till urklipp!",
+        "toastCopyFailed": "Misslyckades med att kopiera loggar till urklipp.",
+        "inputTitle": "Titel",
+        "inputTitlePlaceholder": "t.ex. Appen kraschar när inspelning startas",
+        "inputDescription": "Beskrivning",
+        "inputDescriptionPlaceholder": "Beskriv vad som hände, steg för att upprepa, förväntat vs faktiskt beteende...",
+        "includeLogs": "Inkludera senaste loggar (senaste 100 raderna)",
+        "submitButton": "Generera GitHub Issue",
+        "submittingButton": "Genererar..."
       }
     }
   },

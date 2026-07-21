@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "הצג מה חדש",
         "description": "הצג הערות גרסה לאחר עדכוני Handy"
+      },
+      "reportBug": {
+        "title": "דיווח על באג",
+        "description": "עזור לנו לשפר את Handy על ידי דיווח על בעיות",
+        "button": "דיווח על באג",
+        "toastCopied": "היומנים האחרונים הועתקו ללוח הגזירים!",
+        "toastCopyFailed": "כישלון בהעתקת היומנים ללוח הגזירים.",
+        "inputTitle": "כותרת",
+        "inputTitlePlaceholder": "למשל, האפליקציה נסגרת בעת התחלת הקלטה",
+        "inputDescription": "תיאור",
+        "inputDescriptionPlaceholder": "אנא תאר מה קרה, שלבים לשחזור, התנהגות צפויה מול בפועל...",
+        "includeLogs": "כלול יומנים אחרונים (100 שורות אחרונות)",
+        "submitButton": "צור דיווח ב-GitHub",
+        "submittingButton": "יוצר..."
       }
     }
   },
