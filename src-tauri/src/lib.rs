@@ -208,7 +208,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Choose the appropriate initial icon based on theme
     let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
 
-    let tray = TrayIconBuilder::new()
+    let mut tray_builder = TrayIconBuilder::new()
         .icon(
             Image::from_path(
                 app_handle
@@ -219,8 +219,38 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             .unwrap(),
         )
         .tooltip(tray::tray_tooltip())
-        .show_menu_on_left_click(true)
-        .icon_as_template(true)
+        .icon_as_template(true);
+
+    // Windows notification-area convention: left click opens the app, right click
+    // shows the menu. Elsewhere (macOS menu bar, Linux) the menu stays on left click.
+    #[cfg(target_os = "windows")]
+    {
+        tray_builder = tray_builder
+            .show_menu_on_left_click(false)
+            .on_tray_icon_event(|tray, event| {
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
+                let opens_window = matches!(
+                    event,
+                    TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } | TrayIconEvent::DoubleClick {
+                        button: MouseButton::Left,
+                        ..
+                    }
+                );
+                if opens_window {
+                    show_main_window(tray.app_handle());
+                }
+            });
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        tray_builder = tray_builder.show_menu_on_left_click(true);
+    }
+
+    let tray = tray_builder
         .on_menu_event(|app, event| match event.id.as_ref() {
             "settings" => {
                 show_main_window(app);
