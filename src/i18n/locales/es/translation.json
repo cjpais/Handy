@@ -224,6 +224,10 @@
         "placeholder": "Seleccionar micrófono...",
         "loading": "Cargando..."
       },
+      "micGain": {
+        "title": "Refuerzo del micrófono",
+        "description": "Amplifica la entrada del micrófono de Handy para que las voces bajas sean más fáciles de entender para los modelos de transcripción. Solo afecta a Handy — el volumen de entrada del sistema no se modifica. 1.0× significa desactivado."
+      },
       "audioFeedback": {
         "label": "Retroalimentación de audio",
         "description": "Reproducir sonido cuando la grabación inicia y se detiene"

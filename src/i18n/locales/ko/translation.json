@@ -206,6 +206,10 @@
         "placeholder": "마이크 선택...",
         "loading": "로딩 중..."
       },
+      "micGain": {
+        "title": "마이크 부스트",
+        "description": "Handy의 마이크 입력을 증폭하여 조용한 목소리도 전사 모델이 더 잘 이해할 수 있게 합니다. Handy에만 적용되며 시스템 입력 볼륨은 변경되지 않습니다. 1.0×는 꺼짐입니다."
+      },
       "audioFeedback": {
         "label": "오디오 피드백",
         "description": "녹음 시작 및 정지 시 소리 재생"

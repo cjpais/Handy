@@ -353,6 +353,11 @@ pub struct AppSettings {
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
     pub audio_feedback_volume: f32,
+    /// Software input gain applied to Handy's microphone capture only (does not
+    /// touch the system input volume). 1.0 = off; boosts quiet mics so the
+    /// models get a stronger signal.
+    #[serde(default = "default_mic_gain")]
+    pub mic_gain: f32,
     #[serde(default = "default_sound_theme")]
     pub sound_theme: SoundTheme,
     #[serde(default = "default_start_hidden")]
@@ -564,6 +569,10 @@ fn default_recording_retention_period() -> RecordingRetentionPeriod {
 }
 
 fn default_audio_feedback_volume() -> f32 {
+    1.0
+}
+
+fn default_mic_gain() -> f32 {
     1.0
 }
 
@@ -842,6 +851,7 @@ pub fn get_default_settings() -> AppSettings {
         push_to_talk: default_push_to_talk(),
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
+        mic_gain: default_mic_gain(),
         sound_theme: default_sound_theme(),
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),

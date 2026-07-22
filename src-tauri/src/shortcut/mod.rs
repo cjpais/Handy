@@ -498,6 +498,22 @@ pub fn change_audio_feedback_volume_setting(app: AppHandle, volume: f32) -> Resu
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_mic_gain_setting(app: AppHandle, gain: f32) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.mic_gain = if gain.is_finite() {
+        gain.clamp(1.0, 4.0)
+    } else {
+        1.0
+    };
+    settings::write_settings(&app, settings);
+    // Apply immediately to an already-open stream (always-on microphone mode).
+    let rm = app.state::<std::sync::Arc<crate::managers::audio::AudioRecordingManager>>();
+    rm.refresh_mic_gain();
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match theme.as_str() {

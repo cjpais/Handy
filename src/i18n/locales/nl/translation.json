@@ -224,6 +224,10 @@
         "placeholder": "Microfoon selecteren...",
         "loading": "Laden..."
       },
+      "micGain": {
+        "title": "Microfoonversterking",
+        "description": "Versterkt de microfooninvoer van Handy zodat zachte stemmen beter te verstaan zijn voor de transcriptiemodellen. Geldt alleen voor Handy — het invoervolume van het systeem blijft ongewijzigd. 1.0× betekent uit."
+      },
       "audioFeedback": {
         "label": "Geluidsfeedback",
         "description": "Geluid afspelen wanneer de opname start en stopt"

@@ -224,6 +224,10 @@
         "placeholder": "Mikrofon seçin...",
         "loading": "Yükleniyor..."
       },
+      "micGain": {
+        "title": "Mikrofon Güçlendirme",
+        "description": "Handy'nin mikrofon girişini yükselterek sessiz seslerin transkripsiyon modelleri tarafından daha kolay anlaşılmasını sağlar. Yalnızca Handy'yi etkiler — sistemin giriş ses düzeyi değişmez. 1.0× kapalı demektir."
+      },
       "audioFeedback": {
         "label": "Sesli Geri Bildirim",
         "description": "Kayıt başladığında ve bittiğinde ses çalar"

@@ -224,6 +224,10 @@
         "placeholder": "Select microphone...",
         "loading": "Loading..."
       },
+      "micGain": {
+        "title": "Microphone Boost",
+        "description": "Amplify Handy's microphone input so quiet voices are easier for the transcription models to understand. Only affects Handy — your system input volume is untouched. 1.0× is off."
+      },
       "audioFeedback": {
         "label": "Audio Feedback",
         "description": "Play sound when recording starts and stops"

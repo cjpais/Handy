@@ -224,6 +224,10 @@
         "placeholder": "選擇麥克風...",
         "loading": "載入中..."
       },
+      "micGain": {
+        "title": "麥克風增強",
+        "description": "放大 Handy 的麥克風輸入，讓轉錄模型更容易聽清較小的聲音。僅影響 Handy — 系統輸入音量不會改變。1.0× 表示關閉。"
+      },
       "audioFeedback": {
         "label": "聲音回饋",
         "description": "錄製開始和停止時播放聲音"

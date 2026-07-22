@@ -224,6 +224,10 @@
         "placeholder": "Vyberte mikrofon...",
         "loading": "Načítání..."
       },
+      "micGain": {
+        "title": "Zesílení mikrofonu",
+        "description": "Zesílí vstup mikrofonu aplikace Handy, aby přepisovací modely lépe rozuměly tichým hlasům. Ovlivňuje pouze Handy — systémová hlasitost vstupu zůstává beze změny. 1.0× znamená vypnuto."
+      },
       "audioFeedback": {
         "label": "Zvuková odezva",
         "description": "Přehrát zvuk při zahájení a ukončení nahrávání"

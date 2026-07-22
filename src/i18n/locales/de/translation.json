@@ -224,6 +224,10 @@
         "placeholder": "Mikrofon auswählen...",
         "loading": "Wird geladen..."
       },
+      "micGain": {
+        "title": "Mikrofonverstärkung",
+        "description": "Verstärkt Handys Mikrofoneingang, damit leise Stimmen für die Transkriptionsmodelle besser verständlich sind. Betrifft nur Handy — die Eingangslautstärke des Systems bleibt unverändert. 1.0× bedeutet aus."
+      },
       "audioFeedback": {
         "label": "Audio-Feedback",
         "description": "Ton bei Start und Ende der Aufnahme abspielen"

@@ -224,6 +224,10 @@
         "placeholder": "Välj mikrofon...",
         "loading": "Laddar..."
       },
+      "micGain": {
+        "title": "Mikrofonförstärkning",
+        "description": "Förstärker Handys mikrofoningång så att svaga röster blir lättare att förstå för transkriptionsmodellerna. Påverkar bara Handy — systemets ingångsvolym ändras inte. 1.0× betyder av."
+      },
       "audioFeedback": {
         "label": "Ljudåterkoppling",
         "description": "Spela upp ljud när inspelningen startar och stoppar"

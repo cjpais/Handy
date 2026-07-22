@@ -1,7 +1,7 @@
 use std::{
     io::Error,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU32, Ordering},
         mpsc, Arc, Mutex,
     },
     time::{Duration, Instant},
@@ -77,6 +77,9 @@ pub struct AudioRecorder {
     vad: Option<VadConfig>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
+    /// Software input gain applied to captured samples (f32 bits in an atomic
+    /// so the live audio callback can read it lock-free). 1.0 = no boost.
+    gain: Arc<AtomicU32>,
     /// Preferred stream config cached per device name. The two HAL property
     /// queries in `get_preferred_config` cost ~40-85ms per open (worse on
     /// USB/Bluetooth), which lands on the keypress->capture path in on-demand
@@ -95,8 +98,21 @@ impl AudioRecorder {
             vad: None,
             level_cb: None,
             audio_cb: None,
+            gain: Arc::new(AtomicU32::new(1.0f32.to_bits())),
             config_cache: Arc::new(Mutex::new(None)),
         })
+    }
+
+    /// Set the software input gain applied to captured samples. Takes effect
+    /// immediately, including on an already-open stream. Values are clamped to
+    /// a sane range; 1.0 disables the boost.
+    pub fn set_gain(&self, gain: f32) {
+        let gain = if gain.is_finite() {
+            gain.clamp(0.1, 10.0)
+        } else {
+            1.0
+        };
+        self.gain.store(gain.to_bits(), Ordering::Relaxed);
     }
 
     /// Attach a single VAD engine, reconfigured per session for the offline vs
@@ -159,6 +175,7 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
+        let gain = Arc::clone(&self.gain);
         let config_cache = Arc::clone(&self.config_cache);
 
         let worker = std::thread::spawn(move || {
@@ -200,6 +217,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        Arc::clone(&gain),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::I8 => AudioRecorder::build_stream::<i8>(
@@ -208,6 +226,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        Arc::clone(&gain),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::I16 => AudioRecorder::build_stream::<i16>(
@@ -216,6 +235,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        Arc::clone(&gain),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
@@ -224,6 +244,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        Arc::clone(&gain),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
@@ -232,6 +253,7 @@ impl AudioRecorder {
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
+                        Arc::clone(&gain),
                     )
                     .map_err(|e| format!("Failed to build input stream: {e}"))?,
                     sample_format => {
@@ -348,6 +370,7 @@ impl AudioRecorder {
         sample_tx: mpsc::Sender<AudioChunk>,
         channels: usize,
         stop_flag: Arc<AtomicBool>,
+        gain: Arc<AtomicU32>,
     ) -> Result<cpal::Stream, cpal::BuildStreamError>
     where
         T: Sample + SizedSample + Send + 'static,
@@ -381,6 +404,16 @@ impl AudioRecorder {
                         .sum::<f32>()
                         / channels as f32;
                     output_buffer.push(mono_sample);
+                }
+            }
+
+            // Apply the software input gain at the source so every consumer
+            // (offline buffer, live streaming, VAD, level meter) sees the
+            // boosted signal. Clamp to keep samples in Whisper's [-1, 1] range.
+            let gain = f32::from_bits(gain.load(Ordering::Relaxed));
+            if gain != 1.0 {
+                for sample in output_buffer.iter_mut() {
+                    *sample = (*sample * gain).clamp(-1.0, 1.0);
                 }
             }
 
@@ -472,7 +505,23 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
+    use super::{is_microphone_access_denied, is_no_input_device_error, AudioRecorder};
+    use std::sync::atomic::Ordering;
+
+    #[test]
+    fn set_gain_clamps_and_defaults() {
+        let rec = AudioRecorder::new().unwrap();
+        let stored = |rec: &AudioRecorder| f32::from_bits(rec.gain.load(Ordering::Relaxed));
+        assert_eq!(stored(&rec), 1.0); // default: no boost
+        rec.set_gain(2.5);
+        assert_eq!(stored(&rec), 2.5);
+        rec.set_gain(100.0);
+        assert_eq!(stored(&rec), 10.0); // clamped high
+        rec.set_gain(0.0);
+        assert_eq!(stored(&rec), 0.1); // clamped low
+        rec.set_gain(f32::NAN);
+        assert_eq!(stored(&rec), 1.0); // non-finite resets to off
+    }
 
     #[test]
     fn detects_access_is_denied() {

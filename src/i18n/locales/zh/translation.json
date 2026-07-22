@@ -224,6 +224,10 @@
         "placeholder": "选择麦克风...",
         "loading": "加载中..."
       },
+      "micGain": {
+        "title": "麦克风增强",
+        "description": "放大 Handy 的麦克风输入，让转录模型更容易听清较小的声音。仅影响 Handy — 系统输入音量不会改变。1.0× 表示关闭。"
+      },
       "audioFeedback": {
         "label": "音频反馈",
         "description": "录制开始和停止时播放声音"

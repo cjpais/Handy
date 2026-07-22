@@ -224,6 +224,10 @@
         "placeholder": "Vælg mikrofon...",
         "loading": "Indlæser..."
       },
+      "micGain": {
+        "title": "Mikrofonforstærkning",
+        "description": "Forstærker Handys mikrofoninput, så stille stemmer er lettere at forstå for transskriptionsmodellerne. Påvirker kun Handy — systemets inputlydstyrke ændres ikke. 1.0× er slået fra."
+      },
       "audioFeedback": {
         "label": "Lydfeedback",
         "description": "Afspil lyd, når optagelse starter og stopper"

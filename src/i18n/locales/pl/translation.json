@@ -224,6 +224,10 @@
         "placeholder": "Wybierz mikrofon...",
         "loading": "Wczytywanie..."
       },
+      "micGain": {
+        "title": "Wzmocnienie mikrofonu",
+        "description": "Wzmacnia wejście mikrofonu Handy, aby ciche głosy były łatwiejsze do zrozumienia dla modeli transkrypcji. Dotyczy tylko Handy — systemowa głośność wejścia pozostaje bez zmian. 1.0× oznacza wyłączone."
+      },
       "audioFeedback": {
         "label": "Informacja dźwiękowa",
         "description": "Odtwarzaj dźwięk przy rozpoczęciu i zakończeniu nagrywania"

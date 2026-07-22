@@ -224,6 +224,10 @@
         "placeholder": "Chọn micrô...",
         "loading": "Đang tải..."
       },
+      "micGain": {
+        "title": "Tăng cường micrô",
+        "description": "Khuếch đại đầu vào micrô của Handy để các mô hình phiên âm dễ hiểu giọng nói nhỏ hơn. Chỉ ảnh hưởng đến Handy — âm lượng đầu vào của hệ thống không thay đổi. 1.0× nghĩa là tắt."
+      },
       "audioFeedback": {
         "label": "Phản hồi âm thanh",
         "description": "Phát âm thanh khi bắt đầu và kết thúc ghi âm"

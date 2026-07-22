@@ -554,6 +554,7 @@ impl AudioRecordingManager {
         let open_started = Instant::now();
         let mut recorder_opt = self.recorder.lock().unwrap();
         if let Some(rec) = recorder_opt.as_mut() {
+            rec.set_gain(settings.mic_gain);
             if let Err(first_err) = rec.open(selected_device.clone()) {
                 // A cached device or config may have gone stale (unplugged,
                 // rate/format changed). Re-resolve from a fresh enumeration and
@@ -770,6 +771,15 @@ impl AudioRecordingManager {
             _ => None,
         }
     }
+    /// Re-read the mic gain from settings and apply it to the recorder, so a
+    /// settings change takes effect on an already-open (e.g. always-on) stream.
+    pub fn refresh_mic_gain(&self) {
+        let gain = get_settings(&self.app_handle).mic_gain;
+        if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+            rec.set_gain(gain);
+        }
+    }
+
     pub fn is_recording(&self) -> bool {
         matches!(
             *self.state.lock().unwrap(),
