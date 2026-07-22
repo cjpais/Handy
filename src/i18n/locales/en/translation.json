@@ -382,6 +382,9 @@
         "appleIntelligence": {
           "unavailable": "Apple Intelligence is not available on this device. Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings."
         },
+        "localModel": {
+          "note": "Post-processing runs on the transcription model already loaded in Handy — no endpoint or API key needed. Requires a model whose decoder follows instructions (e.g. Voxtral); other models fall back to the unprocessed transcript."
+        },
         "baseUrl": {
           "title": "Base URL",
           "description": "API base URL for the selected provider. Only the custom provider can be edited.",

@@ -1429,6 +1429,81 @@ impl TranscriptionManager {
 
         Ok(final_result)
     }
+
+    /// Text-to-text post-processing on the loaded transcribe-cpp model
+    /// (`transcribe_generate`). Errs when no model is loaded or the loaded
+    /// model does not advertise text-to-text support (probe it with
+    /// [`supports_local_post_processing`](Self::supports_local_post_processing)).
+    pub fn generate_text(&self, instructions: &str, input: &str) -> Result<String> {
+        self.touch_activity();
+
+        // Wait out an in-flight load, mirroring transcribe().
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
+
+        let active_model = self.get_current_model().unwrap_or_default();
+        let mut engine_guard = self.lock_engine();
+        let mut engine = match engine_guard.take() {
+            Some(e) => e,
+            None => {
+                return Err(anyhow::anyhow!("Model is not loaded for post-processing."));
+            }
+        };
+        drop(engine_guard);
+
+        // Same panic posture as transcribe(): a panicking engine is dropped
+        // (unloaded), never returned, so the mutex can't be poisoned.
+        let generate_result = catch_unwind(AssertUnwindSafe(|| -> Result<String> {
+            match &mut engine {
+                LoadedEngine::TranscribeCpp(session) => {
+                    if !session.model().supports(Feature::TextToText) {
+                        return Err(anyhow::anyhow!(
+                            "The loaded model does not support local post-processing."
+                        ));
+                    }
+                    session
+                        .generate(instructions, Some(input), 0)
+                        .map(|t| t.text)
+                        .map_err(|e| anyhow::anyhow!("Local post-processing failed: {}", e))
+                }
+                _ => Err(anyhow::anyhow!(
+                    "The loaded model does not support local post-processing."
+                )),
+            }
+        }));
+
+        let result = match generate_result {
+            Ok(inner) => {
+                self.return_engine(engine, &active_model);
+                inner
+            }
+            Err(panic_payload) => {
+                let panic_msg = panic_payload_message(panic_payload.as_ref());
+                error!(
+                    "Post-processing engine panicked: {}. Model has been unloaded.",
+                    panic_msg
+                );
+                {
+                    let mut current_model = self
+                        .current_model_id
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
+                    *current_model = None;
+                }
+                Err(anyhow::anyhow!(
+                    "Post-processing engine panicked: {}. The model has been unloaded.",
+                    panic_msg
+                ))
+            }
+        };
+
+        self.maybe_unload_immediately("local post-processing");
+        result
+    }
 }
 
 struct StreamPerf {

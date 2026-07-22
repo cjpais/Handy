@@ -7,7 +7,10 @@ use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID,
+    LOCAL_MODEL_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -101,7 +104,11 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+async fn post_process_transcription(
+    app: &AppHandle,
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
@@ -183,6 +190,46 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         ),
         _ => (None, None),
     };
+
+    // Local model: run the pass on the already-loaded transcription model
+    // (transcribe-cpp text-to-text; Voxtral today). No endpoint, no API key,
+    // no JSON schema — the prompt becomes the instruction, the transcription
+    // the input. Runs on a blocking thread: it is model compute, not IO.
+    if provider.id == LOCAL_MODEL_PROVIDER_ID {
+        let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
+        let system_prompt = build_system_prompt(&prompt);
+        let user_content = transcription.to_string();
+        let result = tauri::async_runtime::spawn_blocking(move || {
+            tm.generate_text(&system_prompt, &user_content)
+        })
+        .await;
+        return match result {
+            Ok(Ok(text)) => {
+                let text = strip_invisible_chars(text.trim());
+                if text.is_empty() {
+                    debug!("Local model post-processing returned an empty response");
+                    None
+                } else {
+                    debug!(
+                        "Local model post-processing succeeded. Output length: {} chars",
+                        text.len()
+                    );
+                    Some(text)
+                }
+            }
+            Ok(Err(err)) => {
+                error!(
+                    "Local model post-processing failed: {}. Falling back to original transcription.",
+                    err
+                );
+                None
+            }
+            Err(err) => {
+                error!("Local model post-processing task panicked: {}", err);
+                None
+            }
+        };
+    }
 
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
@@ -435,7 +482,8 @@ pub(crate) async fn process_transcription_output(
     }
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+        if let Some(processed_text) = post_process_transcription(app, &settings, &final_text).await
+        {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 

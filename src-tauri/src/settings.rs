@@ -9,6 +9,8 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const LOCAL_MODEL_PROVIDER_ID: &str = "local_model";
+pub const LOCAL_MODEL_DEFAULT_MODEL_ID: &str = "Loaded transcription model";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -661,6 +663,19 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         });
     }
 
+    // The transcription model itself, when it can follow instructions
+    // (transcribe-cpp text-to-text capability; Voxtral today). No endpoint, no
+    // API key — post-processing runs on the already-loaded local weights. The
+    // capability is probed at use time in actions.rs, like Apple Intelligence.
+    providers.push(PostProcessProvider {
+        id: LOCAL_MODEL_PROVIDER_ID.to_string(),
+        label: "Local Model (loaded)".to_string(),
+        base_url: "local-model://loaded".to_string(),
+        allow_base_url_edit: false,
+        models_endpoint: None,
+        supports_structured_output: false,
+    });
+
     // AWS Bedrock via Mantle (OpenAI-compatible endpoint)
     providers.push(PostProcessProvider {
         id: "bedrock_mantle".to_string(),
@@ -695,6 +710,9 @@ fn default_post_process_api_keys() -> SecretMap {
 fn default_model_for_provider(provider_id: &str) -> String {
     if provider_id == APPLE_INTELLIGENCE_PROVIDER_ID {
         return APPLE_INTELLIGENCE_DEFAULT_MODEL_ID.to_string();
+    }
+    if provider_id == LOCAL_MODEL_PROVIDER_ID {
+        return LOCAL_MODEL_DEFAULT_MODEL_ID.to_string();
     }
     String::new()
 }
