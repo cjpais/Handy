@@ -5,19 +5,19 @@
 //!
 //! ## Architecture
 //!
-//! The implementation uses a dedicated manager thread that owns the `HotkeyManager`:
+//! The implementation uses a dedicated manager thread that owns the keyboard listener:
 //!
 //! ```text
 //! ┌─────────────────┐     commands      ┌──────────────────────┐
 //! │   Main Thread   │ ───────────────▶ │   Manager Thread     │
 //! │                 │   (via channel)   │                      │
-//! │ - register()    │                   │ - owns HotkeyManager │
+//! │ - register()    │                   │ - owns listener      │
 //! │ - unregister()  │                   │ - polls for events   │
 //! └─────────────────┘                   │ - dispatches actions │
 //!                                       └──────────────────────┘
 //! ```
 //!
-//! This design ensures thread-safety since `HotkeyManager` is only accessed
+//! This design ensures thread-safety since keyboard state is only accessed
 //! from a single thread. Commands (register/unregister) are sent via an mpsc
 //! channel and responses are synchronously awaited.
 //!
@@ -27,11 +27,11 @@
 //! polled from a dedicated recording thread. Events are emitted to the frontend
 //! via Tauri's event system.
 
-use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener};
+use handy_keys::{Hotkey, KeyEvent, KeyboardListener};
 use log::{debug, error, info};
 use serde::Serialize;
 use specta::Type;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
@@ -39,6 +39,7 @@ use std::thread::{self, JoinHandle};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::settings::{self, get_settings, ShortcutBinding};
+use crate::transcription_coordinator::{is_transcribe_binding, TranscriptionCoordinator};
 
 use super::handler::handle_shortcut_event;
 
@@ -106,34 +107,40 @@ impl HandyKeysState {
         })
     }
 
-    /// The main manager thread - owns the HotkeyManager and processes commands
+    /// The main manager thread - owns the keyboard listener and processes commands
     fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle) {
         info!("handy-keys manager thread started");
 
-        // Create the HotkeyManager in this thread
-        let manager = match HotkeyManager::new_with_blocking() {
-            Ok(m) => m,
+        // Observe rather than grab key events. Blocking a modifier-only shortcut
+        // such as `fn` prevents normal macOS chords like `fn+delete` from reaching
+        // the focused application.
+        let listener = match KeyboardListener::new() {
+            Ok(listener) => listener,
             Err(e) => {
-                error!("Failed to create HotkeyManager: {}", e);
+                error!("Failed to create KeyboardListener: {}", e);
                 return;
             }
         };
 
-        // Maps binding IDs to HotkeyIds and hotkey strings
-        let mut binding_to_hotkey: HashMap<String, HotkeyId> = HashMap::new();
-        let mut hotkey_to_binding: HashMap<HotkeyId, (String, String)> = HashMap::new(); // (binding_id, hotkey_string)
+        // Track registered hotkeys and the bindings currently held down.
+        let mut binding_to_hotkey: HashMap<String, Hotkey> = HashMap::new();
+        let mut binding_to_hotkey_string: HashMap<String, String> = HashMap::new();
+        let mut pressed_bindings: HashSet<String> = HashSet::new();
+        let mut active_fn_transcribe_binding: Option<String> = None;
+        let mut suppress_fn_transcribe_until_release = false;
 
         loop {
-            // Check for hotkey events (non-blocking)
-            while let Some(event) = manager.try_recv() {
-                if let Some((binding_id, hotkey_string)) = hotkey_to_binding.get(&event.id) {
-                    debug!(
-                        "handy-keys event: binding={}, hotkey={}, state={:?}",
-                        binding_id, hotkey_string, event.state
-                    );
-                    let is_pressed = event.state == HotkeyState::Pressed;
-                    handle_shortcut_event(&app, binding_id, hotkey_string, is_pressed);
-                }
+            // Check for raw key events (non-blocking).
+            while let Some(event) = listener.try_recv() {
+                Self::process_key_event(
+                    &app,
+                    &event,
+                    &binding_to_hotkey,
+                    &binding_to_hotkey_string,
+                    &mut pressed_bindings,
+                    &mut active_fn_transcribe_binding,
+                    &mut suppress_fn_transcribe_until_release,
+                );
             }
 
             // Check for commands (non-blocking with timeout)
@@ -145,9 +152,8 @@ impl HandyKeysState {
                         response,
                     } => {
                         let result = Self::do_register(
-                            &manager,
                             &mut binding_to_hotkey,
-                            &mut hotkey_to_binding,
+                            &mut binding_to_hotkey_string,
                             &binding_id,
                             &hotkey_string,
                         );
@@ -158,9 +164,11 @@ impl HandyKeysState {
                         response,
                     } => {
                         let result = Self::do_unregister(
-                            &manager,
                             &mut binding_to_hotkey,
-                            &mut hotkey_to_binding,
+                            &mut binding_to_hotkey_string,
+                            &mut pressed_bindings,
+                            &mut active_fn_transcribe_binding,
+                            &mut suppress_fn_transcribe_until_release,
                             &binding_id,
                         );
                         let _ = response.send(result);
@@ -183,11 +191,92 @@ impl HandyKeysState {
         info!("handy-keys manager thread stopped");
     }
 
+    /// Process a raw event against the registered hotkeys without consuming it.
+    fn process_key_event(
+        app: &AppHandle,
+        event: &KeyEvent,
+        binding_to_hotkey: &HashMap<String, Hotkey>,
+        binding_to_hotkey_string: &HashMap<String, String>,
+        pressed_bindings: &mut HashSet<String>,
+        active_fn_transcribe_binding: &mut Option<String>,
+        suppress_fn_transcribe_until_release: &mut bool,
+    ) {
+        if *suppress_fn_transcribe_until_release {
+            if !event.modifiers.contains(handy_keys::Modifiers::FN) {
+                debug!("Clearing suppressed fn transcription chord after fn release");
+                *suppress_fn_transcribe_until_release = false;
+            }
+            return;
+        }
+
+        if should_cancel_active_fn(event, active_fn_transcribe_binding.is_some()) {
+            debug!("Cancelling fn transcription because another key was pressed");
+            if let Some(binding_id) = active_fn_transcribe_binding.take() {
+                pressed_bindings.remove(&binding_id);
+            }
+            *suppress_fn_transcribe_until_release = true;
+            request_coordinated_cancel(app);
+            return;
+        }
+
+        if event.is_key_down {
+            let to_press: Vec<String> = binding_to_hotkey
+                .iter()
+                .filter(|(binding_id, hotkey)| {
+                    hotkey.modifiers.matches(event.modifiers)
+                        && hotkey.key == event.key
+                        && !pressed_bindings.contains(*binding_id)
+                })
+                .map(|(binding_id, _)| binding_id.clone())
+                .collect();
+
+            for binding_id in to_press {
+                pressed_bindings.insert(binding_id.clone());
+
+                if let Some(hotkey_string) = binding_to_hotkey_string.get(&binding_id) {
+                    debug!(
+                        "handy-keys event: binding={}, hotkey={}, state=Pressed",
+                        binding_id, hotkey_string
+                    );
+                    if is_fn_transcribe_binding(&binding_id, hotkey_string) {
+                        *active_fn_transcribe_binding = Some(binding_id.clone());
+                    }
+                    handle_shortcut_event(app, &binding_id, hotkey_string, true);
+                }
+            }
+        } else {
+            let to_release: Vec<String> = binding_to_hotkey
+                .iter()
+                .filter(|(binding_id, hotkey)| {
+                    pressed_bindings.contains(*binding_id)
+                        && (hotkey.key == event.key
+                            || (event.key.is_none() && !hotkey.modifiers.matches(event.modifiers)))
+                })
+                .map(|(binding_id, _)| binding_id.clone())
+                .collect();
+
+            for binding_id in to_release {
+                pressed_bindings.remove(&binding_id);
+
+                if active_fn_transcribe_binding.as_deref() == Some(&binding_id) {
+                    *active_fn_transcribe_binding = None;
+                }
+
+                if let Some(hotkey_string) = binding_to_hotkey_string.get(&binding_id) {
+                    debug!(
+                        "handy-keys event: binding={}, hotkey={}, state=Released",
+                        binding_id, hotkey_string
+                    );
+                    handle_shortcut_event(app, &binding_id, hotkey_string, false);
+                }
+            }
+        }
+    }
+
     /// Register a hotkey
     fn do_register(
-        manager: &HotkeyManager,
-        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
-        hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
+        binding_to_hotkey: &mut HashMap<String, Hotkey>,
+        binding_to_hotkey_string: &mut HashMap<String, String>,
         binding_id: &str,
         hotkey_string: &str,
     ) -> Result<(), String> {
@@ -195,12 +284,15 @@ impl HandyKeysState {
             .parse()
             .map_err(|e| format!("Failed to parse hotkey '{}': {}", hotkey_string, e))?;
 
-        let id = manager
-            .register(hotkey)
-            .map_err(|e| format!("Failed to register hotkey: {}", e))?;
+        if binding_to_hotkey
+            .values()
+            .any(|existing| existing == &hotkey)
+        {
+            return Err(format!("Hotkey already registered: {}", hotkey_string));
+        }
 
-        binding_to_hotkey.insert(binding_id.to_string(), id);
-        hotkey_to_binding.insert(id, (binding_id.to_string(), hotkey_string.to_string()));
+        binding_to_hotkey.insert(binding_id.to_string(), hotkey);
+        binding_to_hotkey_string.insert(binding_id.to_string(), hotkey_string.to_string());
 
         debug!(
             "Registered handy-keys shortcut: {} -> {:?}",
@@ -211,16 +303,22 @@ impl HandyKeysState {
 
     /// Unregister a hotkey
     fn do_unregister(
-        manager: &HotkeyManager,
-        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
-        hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
+        binding_to_hotkey: &mut HashMap<String, Hotkey>,
+        binding_to_hotkey_string: &mut HashMap<String, String>,
+        pressed_bindings: &mut HashSet<String>,
+        active_fn_transcribe_binding: &mut Option<String>,
+        suppress_fn_transcribe_until_release: &mut bool,
         binding_id: &str,
     ) -> Result<(), String> {
-        if let Some(id) = binding_to_hotkey.remove(binding_id) {
-            manager
-                .unregister(id)
-                .map_err(|e| format!("Failed to unregister hotkey: {}", e))?;
-            hotkey_to_binding.remove(&id);
+        if binding_to_hotkey.remove(binding_id).is_some() {
+            binding_to_hotkey_string.remove(binding_id);
+            pressed_bindings.remove(binding_id);
+            if active_fn_transcribe_binding.as_deref() == Some(binding_id) {
+                *active_fn_transcribe_binding = None;
+            }
+            if is_transcribe_binding(binding_id) {
+                *suppress_fn_transcribe_until_release = false;
+            }
             debug!("Unregistered handy-keys shortcut: {}", binding_id);
         }
         Ok(())
@@ -357,6 +455,36 @@ impl HandyKeysState {
         debug!("Stopped handy-keys recording mode");
         Ok(())
     }
+}
+
+fn is_fn_transcribe_binding(binding_id: &str, hotkey_string: &str) -> bool {
+    is_transcribe_binding(binding_id) && hotkey_string.eq_ignore_ascii_case("fn")
+}
+
+fn should_cancel_active_fn(event: &KeyEvent, fn_transcription_active: bool) -> bool {
+    fn_transcription_active
+        && event.is_key_down
+        && event.key.is_some_and(|key| !is_mouse_key(key))
+        && event.modifiers.contains(handy_keys::Modifiers::FN)
+}
+
+fn request_coordinated_cancel(app: &AppHandle) {
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        coordinator.request_cancel_operation();
+    } else {
+        log::warn!("TranscriptionCoordinator is not initialized; fn combo cancel ignored");
+    }
+}
+
+fn is_mouse_key(key: handy_keys::Key) -> bool {
+    matches!(
+        key,
+        handy_keys::Key::MouseLeft
+            | handy_keys::Key::MouseRight
+            | handy_keys::Key::MouseMiddle
+            | handy_keys::Key::MouseX1
+            | handy_keys::Key::MouseX2
+    )
 }
 
 impl Drop for HandyKeysState {
@@ -546,4 +674,27 @@ pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
     state.stop_recording()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bare_fn_detection_is_limited_to_transcription_bindings() {
+        assert!(is_fn_transcribe_binding("transcribe", "fn"));
+        assert!(is_fn_transcribe_binding(
+            "transcribe_with_post_process",
+            "FN"
+        ));
+        assert!(!is_fn_transcribe_binding("cancel", "fn"));
+        assert!(!is_fn_transcribe_binding("transcribe", "fn+delete"));
+    }
+
+    #[test]
+    fn mouse_buttons_do_not_cancel_bare_fn_dictation() {
+        assert!(is_mouse_key(handy_keys::Key::MouseLeft));
+        assert!(is_mouse_key(handy_keys::Key::MouseRight));
+        assert!(!is_mouse_key(handy_keys::Key::Delete));
+    }
 }

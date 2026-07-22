@@ -74,6 +74,21 @@ fn native_windows_machine() -> Option<u16> {
 /// Centralized cancellation function that can be called from anywhere in the app.
 /// Handles cancelling both recording and transcription operations and updates UI state.
 pub fn cancel_current_operation(app: &AppHandle) {
+    let recording_was_active = cancel_current_operation_inner(app);
+
+    // Notify coordinator so it can keep lifecycle state coherent.
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        coordinator.notify_cancel(recording_was_active);
+    }
+}
+
+/// Coordinator-only cancellation path that avoids recursively enqueueing a
+/// second cancellation command on the coordinator's own channel.
+pub(crate) fn cancel_current_operation_from_coordinator(app: &AppHandle) -> bool {
+    cancel_current_operation_inner(app)
+}
+
+fn cancel_current_operation_inner(app: &AppHandle) -> bool {
     info!("Initiating operation cancellation...");
 
     // Unregister the cancel shortcut asynchronously
@@ -95,12 +110,8 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Unload model if immediate unload is enabled
     tm.maybe_unload_immediately("cancellation");
 
-    // Notify coordinator so it can keep lifecycle state coherent.
-    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
-        coordinator.notify_cancel(recording_was_active);
-    }
-
     info!("Operation cancellation completed - returned to idle state");
+    recording_was_active
 }
 
 /// Check if using the Wayland display server protocol
