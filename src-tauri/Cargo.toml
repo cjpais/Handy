@@ -117,7 +117,7 @@ winreg = "0.55"
 # sanitization before the paste chord, an integrity-level check so injection
 # into elevated windows fails loudly instead of silently, and a delayed-render
 # restore that waits for the target's actual read instead of a fixed delay.
-win-text-inject = "0.1"
+win-text-inject = "0.1.1"
 
 # Whisper backend per Windows arch. x86_64 ships the Vulkan GPU backend and
 # keeps the dynamic-backends posture (loadable per-ISA CPU modules + Vulkan),
