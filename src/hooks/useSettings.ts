@@ -5,6 +5,7 @@ import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 interface UseSettingsReturn {
   // State
   settings: Settings | null;
+  defaultSettings: Settings | null;
   isLoading: boolean;
   isUpdating: (key: string) => boolean;
   audioDevices: AudioDevice[];
@@ -55,6 +56,7 @@ export const useSettings = (): UseSettingsReturn => {
 
   return {
     settings: store.settings,
+    defaultSettings: store.defaultSettings,
     isLoading: store.isLoading,
     isUpdating: store.isUpdatingKey,
     audioDevices: store.audioDevices,

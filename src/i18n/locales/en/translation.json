@@ -593,7 +593,8 @@
     "open": "Open",
     "copy": "Copy",
     "clear": "Clear",
-    "noOptionsFound": "No options found"
+    "noOptionsFound": "No options found",
+    "reset": "Reset"
   },
   "accessibility": {
     "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
