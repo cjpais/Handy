@@ -152,6 +152,14 @@ const settingUpdaters: {
     commands.changeLazyStreamCloseSetting(value as boolean),
   overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
   vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
+  parakeet_stream_att_context_right: (value) =>
+    commands.changeParakeetStreamAttContextRightSetting(value as number),
+  parakeet_stream_buf_left_ms: (value) =>
+    commands.changeParakeetStreamBufLeftMsSetting(value as number),
+  parakeet_stream_buf_chunk_ms: (value) =>
+    commands.changeParakeetStreamBufChunkMsSetting(value as number),
+  parakeet_stream_buf_right_ms: (value) =>
+    commands.changeParakeetStreamBufRightMsSetting(value as number),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
   transcribe_accelerator: (value) =>

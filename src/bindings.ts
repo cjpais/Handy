@@ -351,6 +351,38 @@ async changeVadEnabledSetting(enabled: boolean) : Promise<Result<null, string>> 
     else return { status: "error", error: e  as any };
 }
 },
+async changeParakeetStreamAttContextRightSetting(value: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_parakeet_stream_att_context_right_setting", { value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeParakeetStreamBufLeftMsSetting(value: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_parakeet_stream_buf_left_ms_setting", { value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeParakeetStreamBufChunkMsSetting(value: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_parakeet_stream_buf_chunk_ms_setting", { value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeParakeetStreamBufRightMsSetting(value: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_parakeet_stream_buf_right_ms_setting", { value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeAppLanguageSetting(language: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_app_language_setting", { language }) };
@@ -911,7 +943,29 @@ whats_new_last_seen_version?: string; selected_model?: string; onboarding_comple
  * not gated on this — that follows model capability. Migrated from the old
  * `overlay_position` (position `none` → style `None`).
  */
-overlay_style?: OverlayStyle }
+overlay_style?: OverlayStyle; 
+/**
+ * Parakeet cache-aware streaming: right-context (lookahead) selector in
+ * encoder frames. Maps to att_context_right in the C API. The valid menu
+ * depends on the model; Nemotron 3.5 supports {13, 6, 3, 0} = {1120, 560,
+ * 320, 80} ms lookahead. -1 means "model default".
+ */
+parakeet_stream_att_context_right?: number; 
+/**
+ * Parakeet buffered streaming (parakeet-unified): left context in ms.
+ * Maps to left_ms in the C API. -1 means "model default" (5600 ms).
+ */
+parakeet_stream_buf_left_ms?: number; 
+/**
+ * Parakeet buffered streaming (parakeet-unified): chunk size in ms.
+ * Maps to chunk_ms in the C API. -1 means "model default" (1040 ms).
+ */
+parakeet_stream_buf_chunk_ms?: number; 
+/**
+ * Parakeet buffered streaming (parakeet-unified): right context in ms.
+ * Maps to right_ms in the C API. -1 means "model default" (1040 ms).
+ */
+parakeet_stream_buf_right_ms?: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
