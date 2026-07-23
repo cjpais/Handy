@@ -555,6 +555,20 @@
         "description": "Bekijk de broncode en draag bij",
         "button": "Bekijk op GitHub"
       },
+      "reportBug": {
+        "title": "Meld een probleem",
+        "description": "Help ons Handy te verbeteren door problemen te melden",
+        "button": "Meld een probleem",
+        "toastCopied": "Recente logs gekopieerd naar klembord!",
+        "toastCopyFailed": "Kopiëren van logs naar klembord mislukt.",
+        "inputTitle": "Titel",
+        "inputTitlePlaceholder": "bijv. App crasht bij starten van opname",
+        "inputDescription": "Beschrijving",
+        "inputDescriptionPlaceholder": "Beschrijf wat er gebeurde, stappen om te reproduceren, verwachte vs werkelijke werking...",
+        "includeLogs": "Voeg recente logs toe (laatste 100 regels)",
+        "submitButton": "Genereer GitHub Issue",
+        "submittingButton": "Genereren..."
+      },
       "supportDevelopment": {
         "title": "Ontwikkeling ondersteunen",
         "description": "Help ons om te blijven bouwen aan Handy",
@@ -593,7 +607,8 @@
     "open": "Openen",
     "copy": "Kopiëren",
     "clear": "Wissen",
-    "noOptionsFound": "Geen opties gevonden"
+    "noOptionsFound": "Geen opties gevonden",
+    "cancel": "Annuleren"
   },
   "accessibility": {
     "permissionsDescription": "Handy heeft toegankelijkheidsmachtigingen nodig om getranscribeerde tekst te kunnen typen.",

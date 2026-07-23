@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Mostrar novidades",
         "description": "Mostrar notas de versão após atualizações do Handy"
+      },
+      "reportBug": {
+        "title": "Reportar um bug",
+        "description": "Ajude-nos a melhorar o Handy reportando problemas",
+        "button": "Reportar um bug",
+        "toastCopied": "Logs recentes copiados para a área de transferência!",
+        "toastCopyFailed": "Falha ao copiar os logs para a área de transferência.",
+        "inputTitle": "Título",
+        "inputTitlePlaceholder": "ex: O aplicativo trava ao iniciar a gravação",
+        "inputDescription": "Descrição",
+        "inputDescriptionPlaceholder": "Por favor, descreva o que aconteceu, passos para reproduzir, comportamento esperado vs real...",
+        "includeLogs": "Incluir logs recentes (últimas 100 linhas)",
+        "submitButton": "Gerar Issue no GitHub",
+        "submittingButton": "Gerando..."
       }
     }
   },
@@ -590,7 +604,8 @@
     "open": "Abrir",
     "copy": "Copiar",
     "clear": "Limpar",
-    "noOptionsFound": "Nenhuma opção encontrada"
+    "noOptionsFound": "Nenhuma opção encontrada",
+    "cancel": "Cancelar"
   },
   "accessibility": {
     "permissionsDescription": "O Handy precisa de permissões de acessibilidade para digitar o texto transcrito.",

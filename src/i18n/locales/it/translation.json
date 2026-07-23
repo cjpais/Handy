@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Mostra novità",
         "description": "Mostra le note di rilascio dopo gli aggiornamenti di Handy"
+      },
+      "reportBug": {
+        "title": "Segnala un bug",
+        "description": "Aiutaci a migliorare Handy segnalando i problemi",
+        "button": "Segnala un bug",
+        "toastCopied": "Log recenti copiati negli appunti!",
+        "toastCopyFailed": "Impossibile copiare i log negli appunti.",
+        "inputTitle": "Titolo",
+        "inputTitlePlaceholder": "es. L'app si blocca all'avvio della registrazione",
+        "inputDescription": "Descrizione",
+        "inputDescriptionPlaceholder": "Descrivi cosa è successo, i passaggi per riprodurre, il comportamento atteso vs effettivo...",
+        "includeLogs": "Includi i log recenti (ultime 100 righe)",
+        "submitButton": "Genera Issue su GitHub",
+        "submittingButton": "Generazione..."
       }
     }
   },
@@ -590,7 +604,8 @@
     "open": "Apri",
     "copy": "Copia",
     "clear": "Svuota",
-    "noOptionsFound": "Nessuna opzione trovata"
+    "noOptionsFound": "Nessuna opzione trovata",
+    "cancel": "Annulla"
   },
   "accessibility": {
     "permissionsDescription": "Handy ha bisogno dei permessi di accessibilità per digitare il testo trascritto.",

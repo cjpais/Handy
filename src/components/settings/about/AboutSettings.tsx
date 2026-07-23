@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { toast } from "sonner";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
@@ -10,10 +11,19 @@ import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ShowWhatsNewOnUpdate } from "../ShowWhatsNewOnUpdate";
 import { ThemeSelector } from "../ThemeSelector";
 import { LogDirectory } from "../debug";
+import { commands } from "@/bindings";
+import { Dialog } from "../../ui/Dialog";
+import { Input } from "../../ui/Input";
+import { Textarea } from "../../ui/Textarea";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
   const [version, setVersion] = useState("");
+  const [isReportBugOpen, setIsReportBugOpen] = useState(false);
+  const [bugTitle, setBugTitle] = useState("");
+  const [bugDescription, setBugDescription] = useState("");
+  const [includeLogs, setIncludeLogs] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -34,6 +44,106 @@ export const AboutSettings: React.FC = () => {
       await openUrl("https://handy.computer/donate");
     } catch (error) {
       console.error("Failed to open donate link:", error);
+    }
+  };
+
+  const handleReportBugClick = () => {
+    setBugTitle("");
+    setBugDescription("");
+    setIncludeLogs(true);
+    setIsReportBugOpen(true);
+  };
+
+  const handleFormSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      let sysDetails = {
+        os_version: "Unknown OS",
+        cpu_model: "Unknown CPU",
+        gpu_model: "Unknown GPU",
+      };
+      try {
+        sysDetails = await commands.getSystemDetails();
+      } catch (error) {
+        console.error("Failed to get system details:", error);
+      }
+
+      let logsText = "";
+      if (includeLogs) {
+        try {
+          logsText = await commands.readRecentLogs();
+        } catch (error) {
+          console.error("Failed to get logs:", error);
+          logsText = `Failed to retrieve logs: ${error}`;
+        }
+      }
+
+      const bodyTemplate = `## Before You Submit
+
+**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.**
+
+## Bug Description
+
+${bugDescription}
+
+## System Information
+
+**App Version:** ${version || "Unknown Version"}
+**Operating System:** ${sysDetails.os_version}
+**CPU:** ${sysDetails.cpu_model}
+**GPU:** ${sysDetails.gpu_model}
+${
+  includeLogs
+    ? `
+## Logs
+
+\`\`\`
+${logsText}
+\`\`\``
+    : ""
+}`;
+
+      const title = `[BUG - app] ${bugTitle}`;
+      const baseUrl = "https://github.com/cjpais/handy/issues/new";
+      const fullUrl = `${baseUrl}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
+
+      if (fullUrl.length > 1800) {
+        try {
+          await navigator.clipboard.writeText(bodyTemplate);
+          toast.info(t("settings.about.reportBug.toastCopied"));
+        } catch (clipboardErr) {
+          console.error(
+            "Failed to copy bug report to clipboard:",
+            clipboardErr,
+          );
+          toast.error(t("settings.about.reportBug.toastCopyFailed"));
+        }
+
+        const shortBody = `## Before You Submit
+
+**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.**
+
+## Bug Description
+
+${bugDescription}
+
+## System Information & Logs
+
+[The full bug report, system information, and logs were too long for the URL parameter and have been COPIED TO YOUR CLIPBOARD. Please paste (Ctrl+V) them here!]`;
+
+        const shortUrl = `${baseUrl}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(shortBody)}`;
+        await openUrl(shortUrl);
+      } else {
+        await openUrl(fullUrl);
+      }
+
+      setIsReportBugOpen(false);
+      setBugTitle("");
+      setBugDescription("");
+    } catch (error) {
+      console.error("Failed to open bug report link:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -77,6 +187,16 @@ export const AboutSettings: React.FC = () => {
           </Button>
         </SettingContainer>
 
+        <SettingContainer
+          title={t("settings.about.reportBug.title")}
+          description={t("settings.about.reportBug.description")}
+          grouped={true}
+        >
+          <Button variant="secondary" size="md" onClick={handleReportBugClick}>
+            {t("settings.about.reportBug.button")}
+          </Button>
+        </SettingContainer>
+
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
         <LogDirectory grouped={true} />
       </SettingsGroup>
@@ -93,6 +213,96 @@ export const AboutSettings: React.FC = () => {
           </div>
         </SettingContainer>
       </SettingsGroup>
+
+      <Dialog
+        open={isReportBugOpen}
+        title={t("settings.about.reportBug.title")}
+        closeLabel={t("common.cancel") || "Cancel"}
+        onOpenChange={setIsReportBugOpen}
+      >
+        <div className="space-y-4 py-2 text-start">
+          {/* eslint-disable i18next/no-literal-string */}
+          <div className="text-sm text-mid-gray bg-mid-gray/5 p-3 rounded-md border border-mid-gray/20">
+            Please search{" "}
+            <a
+              href="https://github.com/cjpais/Handy/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-logo-primary hover:underline font-semibold"
+            >
+              existing issues
+            </a>{" "}
+            to avoid duplicates. Your bug may already be reported!
+          </div>
+          {/* eslint-enable i18next/no-literal-string */}
+
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.inputTitle")}
+            </label>
+            <Input
+              value={bugTitle}
+              onChange={(e) => setBugTitle(e.target.value)}
+              placeholder={t("settings.about.reportBug.inputTitlePlaceholder")}
+              className="w-full font-medium"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.inputDescription")}
+            </label>
+            <Textarea
+              value={bugDescription}
+              onChange={(e) => setBugDescription(e.target.value)}
+              placeholder={t(
+                "settings.about.reportBug.inputDescriptionPlaceholder",
+              )}
+              className="w-full min-h-[140px] font-medium"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <label className="flex items-center space-x-2.5 text-sm cursor-pointer select-none py-1">
+            <input
+              type="checkbox"
+              checked={includeLogs}
+              onChange={(e) => setIncludeLogs(e.target.checked)}
+              disabled={isSubmitting}
+              className="w-4 h-4 rounded border-mid-gray/80 bg-mid-gray/10 text-logo-primary focus:ring-logo-primary accent-logo-primary"
+            />
+            <span className="font-semibold text-mid-gray">
+              {t("settings.about.reportBug.includeLogs")}
+            </span>
+          </label>
+
+          <div className="flex justify-end space-x-3 pt-3 border-t border-mid-gray/20">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setIsReportBugOpen(false)}
+              disabled={isSubmitting}
+            >
+              {t("common.cancel") || "Cancel"}
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleFormSubmit}
+              disabled={
+                !bugTitle.trim() || !bugDescription.trim() || isSubmitting
+              }
+            >
+              {isSubmitting
+                ? t("settings.about.reportBug.submittingButton")
+                : t("settings.about.reportBug.submitButton")}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };

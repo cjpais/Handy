@@ -55,6 +55,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
               // eslint-disable-next-line i18next/no-literal-string
               <span>{item.speed.toFixed(1)}MB/s</span>
             ) : showSpeed ? (
+              // eslint-disable-next-line i18next/no-literal-string
               <span>Downloading...</span>
             ) : null}
           </div>
@@ -81,6 +82,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
         })}
       </div>
       <div className="text-xs text-text/60 min-w-fit">
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         {progress.length} downloading...
       </div>
     </div>

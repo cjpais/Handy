@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Mostrar novedades",
         "description": "Mostrar notas de la versión después de las actualizaciones de Handy"
+      },
+      "reportBug": {
+        "title": "Reportar un error",
+        "description": "Ayúdanos a mejorar Handy reportando problemas",
+        "button": "Reportar un error",
+        "toastCopied": "¡Registros recientes copiados al portapapeles!",
+        "toastCopyFailed": "Error al copiar los registros al portapapeles.",
+        "inputTitle": "Título",
+        "inputTitlePlaceholder": "ej. La aplicación se cierra al iniciar la grabación",
+        "inputDescription": "Descripción",
+        "inputDescriptionPlaceholder": "Por favor describe lo que sucedió, pasos para reproducir, comportamiento esperado vs real...",
+        "includeLogs": "Incluir registros recientes (últimas 100 líneas)",
+        "submitButton": "Generar Issue de GitHub",
+        "submittingButton": "Generando..."
       }
     }
   },
@@ -590,7 +604,8 @@
     "open": "Abrir",
     "copy": "Copiar",
     "clear": "Limpiar",
-    "noOptionsFound": "No se encontraron opciones"
+    "noOptionsFound": "No se encontraron opciones",
+    "cancel": "Cancelar"
   },
   "accessibility": {
     "permissionsDescription": "Handy necesita permisos de accesibilidad para escribir texto transcrito.",

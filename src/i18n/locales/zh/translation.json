@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "显示新功能",
         "description": "Handy 更新后显示发行说明"
+      },
+      "reportBug": {
+        "title": "报告 Bug",
+        "description": "通过报告问题帮助我们改进 Handy",
+        "button": "报告 Bug",
+        "toastCopied": "最新日志已复制到剪贴板！",
+        "toastCopyFailed": "无法将日志复制到剪贴板。",
+        "inputTitle": "标题",
+        "inputTitlePlaceholder": "例如：开始录音时应用崩溃",
+        "inputDescription": "描述",
+        "inputDescriptionPlaceholder": "请描述发生了什么、重现步骤、预期行为与实际行为...",
+        "includeLogs": "包含最新日志（最后 100 行）",
+        "submitButton": "生成 GitHub Issue",
+        "submittingButton": "生成中..."
       }
     }
   },
@@ -590,7 +604,8 @@
     "open": "打开",
     "copy": "复制",
     "clear": "清除",
-    "noOptionsFound": "未找到选项"
+    "noOptionsFound": "未找到选项",
+    "cancel": "取消"
   },
   "accessibility": {
     "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",

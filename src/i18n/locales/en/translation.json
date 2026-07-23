@@ -555,6 +555,20 @@
         "description": "View source code and contribute",
         "button": "View on GitHub"
       },
+      "reportBug": {
+        "title": "Report a Bug",
+        "description": "Help us improve Handy by reporting issues",
+        "button": "Report a Bug",
+        "toastCopied": "Recent logs copied to clipboard!",
+        "toastCopyFailed": "Failed to copy logs to clipboard.",
+        "inputTitle": "Title",
+        "inputTitlePlaceholder": "e.g. App crashes when starting recording",
+        "inputDescription": "Description",
+        "inputDescriptionPlaceholder": "Please describe what happened, steps to reproduce, expected vs actual behavior...",
+        "includeLogs": "Include recent logs (last 100 lines)",
+        "submitButton": "Generate GitHub Issue",
+        "submittingButton": "Generating..."
+      },
       "supportDevelopment": {
         "title": "Support Development",
         "description": "Help us continue building Handy",
@@ -593,6 +607,7 @@
     "open": "Open",
     "copy": "Copy",
     "clear": "Clear",
+    "cancel": "Cancel",
     "noOptionsFound": "No options found"
   },
   "accessibility": {

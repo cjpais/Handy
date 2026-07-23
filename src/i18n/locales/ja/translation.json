@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "新機能を表示",
         "description": "Handy のアップデート後にリリースノートを表示"
+      },
+      "reportBug": {
+        "title": "バグを報告",
+        "description": "問題を報告してHandyの改善にご協力ください",
+        "button": "バグを報告",
+        "toastCopied": "最近のログをクリップボードにコピーしました！",
+        "toastCopyFailed": "ログのクリップボードへのコピーに失敗しました。",
+        "inputTitle": "タイトル",
+        "inputTitlePlaceholder": "例: 録音開始時にアプリがクラッシュする",
+        "inputDescription": "説明",
+        "inputDescriptionPlaceholder": "発生した事象、再現手順、期待される動作と実際の動作を記載してください...",
+        "includeLogs": "最近のログを含める (最新100行)",
+        "submitButton": "GitHub Issueを生成",
+        "submittingButton": "生成中..."
       }
     }
   },
@@ -590,7 +604,8 @@
     "open": "開く",
     "copy": "コピー",
     "clear": "クリア",
-    "noOptionsFound": "オプションが見つかりません"
+    "noOptionsFound": "オプションが見つかりません",
+    "cancel": "キャンセル"
   },
   "accessibility": {
     "permissionsDescription": "Handy が文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",

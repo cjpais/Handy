@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "Afficher les nouveautés",
         "description": "Afficher les notes de version après les mises à jour de Handy"
+      },
+      "reportBug": {
+        "title": "Signaler un bug",
+        "description": "Aidez-nous à améliorer Handy en signalant les problèmes",
+        "button": "Signaler un bug",
+        "toastCopied": "Journaux récents copiés dans le presse-papiers !",
+        "toastCopyFailed": "Échec de la copie des journaux dans le presse-papiers.",
+        "inputTitle": "Titre",
+        "inputTitlePlaceholder": "ex. L'application plante au démarrage de l'enregistrement",
+        "inputDescription": "Description",
+        "inputDescriptionPlaceholder": "Veuillez décrire ce qui s'est passé, les étapes pour reproduire, le comportement attendu vs réel...",
+        "includeLogs": "Inclure les journaux récents (100 dernières lignes)",
+        "submitButton": "Générer un ticket GitHub",
+        "submittingButton": "Génération..."
       }
     }
   },
@@ -590,7 +604,8 @@
     "open": "Ouvrir",
     "copy": "Copier",
     "clear": "Effacer",
-    "noOptionsFound": "Aucune option trouvée"
+    "noOptionsFound": "Aucune option trouvée",
+    "cancel": "Annuler"
   },
   "accessibility": {
     "permissionsDescription": "Handy a besoin des autorisations d'accessibilité pour taper le texte transcrit.",

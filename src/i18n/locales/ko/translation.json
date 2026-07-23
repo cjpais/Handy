@@ -567,6 +567,20 @@
       "whatsNewUpdates": {
         "label": "새 소식 표시",
         "description": "Handy 업데이트 후 릴리스 노트를 표시합니다"
+      },
+      "reportBug": {
+        "title": "버그 신고",
+        "description": "문제를 신고하여 Handy 개선에 참여해 주세요",
+        "button": "버그 신고",
+        "toastCopied": "최근 로그가 클립보드에 복사되었습니다!",
+        "toastCopyFailed": "로그를 클립보드에 복사하지 못했습니다.",
+        "inputTitle": "제목",
+        "inputTitlePlaceholder": "예: 녹음 시작 시 앱이 종료됨",
+        "inputDescription": "설명",
+        "inputDescriptionPlaceholder": "발생한 현상, 재현 방법, 예상 동작과 실제 동작을 설명해 주세요...",
+        "includeLogs": "최근 로그 포함 (최근 100줄)",
+        "submitButton": "GitHub Issue 생성",
+        "submittingButton": "생성 중..."
       }
     }
   },
@@ -590,7 +604,8 @@
     "open": "열기",
     "copy": "복사",
     "clear": "지우기",
-    "noOptionsFound": "옵션을 찾을 수 없습니다"
+    "noOptionsFound": "옵션을 찾을 수 없습니다",
+    "cancel": "취소"
   },
   "accessibility": {
     "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
