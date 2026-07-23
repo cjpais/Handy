@@ -4,7 +4,7 @@ use crate::audio_toolkit::{
         SmoothedVad, VAD_OFFLINE_HANGOVER_FRAMES, VAD_ONSET_FRAMES, VAD_PREFILL_FRAMES,
         VAD_STREAMING_HANGOVER_FRAMES,
     },
-    AudioRecorder, SileroVad, VadPolicy,
+    AudioFrameCallback, Recorder, SileroVad, VadConfig, VadPolicy,
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
@@ -282,7 +282,7 @@ fn create_audio_recorder(
     app_handle: &tauri::AppHandle,
     selected_channel: Option<u16>,
     stream_router: Arc<StreamRouter>,
-) -> Result<AudioRecorder, anyhow::Error> {
+) -> Result<Recorder, anyhow::Error> {
     // A single Silero engine covers both the offline and streaming policies (never
     // active at once within a recording), so the recorder reconfigures its
     // hangover tail per session rather than keeping two ONNX sessions resident.
@@ -295,30 +295,37 @@ fn create_audio_recorder(
         VAD_ONSET_FRAMES,
     );
 
-    // Recorder with VAD, a spectrum-level callback that forwards level updates to
-    // the frontend, and an audio-frame callback that feeds live streaming via a
-    // shared `StreamRouter` (captured directly, not via Tauri state — see its docs).
-    let recorder = AudioRecorder::new()
-        .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
-        .with_vad(
-            Box::new(smoothed_vad),
-            VAD_OFFLINE_HANGOVER_FRAMES,
-            VAD_STREAMING_HANGOVER_FRAMES,
-        )
-        .with_selected_channel(selected_channel)
-        .with_level_callback({
-            let app_handle = app_handle.clone();
-            move |levels| {
-                utils::emit_levels(&app_handle, &levels);
-            }
-        })
-        .with_audio_callback({
-            let router = stream_router;
-            move |frame| {
-                router.feed(frame);
-            }
-        });
+    // Build the shared VAD + callbacks once, then hand them to the `Recorder`
+    // seam which distributes them to whichever backend it selects (native
+    // PipeWire on Linux, cpal/ALSA fallback / other OSes). The single Silero
+    // engine is shared across backends (only one is ever open at a time).
+    let vad = VadConfig::new(
+        Box::new(smoothed_vad),
+        VAD_OFFLINE_HANGOVER_FRAMES,
+        VAD_STREAMING_HANGOVER_FRAMES,
+    );
 
+    // Spectrum-level callback forwards level updates to the frontend.
+    let level_cb: Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static> = Arc::new({
+        let app_handle = app_handle.clone();
+        move |levels| {
+            utils::emit_levels(&app_handle, &levels);
+        }
+    });
+
+    // Audio-frame callback feeds live streaming via a shared `StreamRouter`
+    // (captured directly, not via Tauri state — see its docs).
+    let audio_cb: AudioFrameCallback = Arc::new({
+        let router = stream_router;
+        move |frame| {
+            router.feed(frame);
+        }
+    });
+
+    let mut recorder = Recorder::from_parts(Some(vad), Some(level_cb), Some(audio_cb));
+    // Honor the saved input-channel selection from the first capture, matching
+    // the cpal builder's old `with_selected_channel` at construction time.
+    recorder.set_selected_channel(selected_channel);
     Ok(recorder)
 }
 
@@ -349,7 +356,7 @@ pub struct AudioRecordingManager {
     mode: Arc<Mutex<MicrophoneMode>>,
     app_handle: tauri::AppHandle,
 
-    recorder: Arc<Mutex<Option<AudioRecorder>>>,
+    recorder: Arc<Mutex<Option<Recorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
     mute_state: Arc<Mutex<MuteState>>,
