@@ -9,6 +9,9 @@ use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
+#[cfg(target_os = "windows")]
+mod windows_clipboard;
+
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
 
@@ -44,10 +47,13 @@ fn paste_via_clipboard(
             .map_err(|e| format!("Failed to write to clipboard: {}", e))
     };
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "macos")]
     let write_result = clipboard
         .write_text(text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e));
+
+    #[cfg(target_os = "windows")]
+    let write_result = windows_clipboard::write_excluded_text(text);
 
     write_result?;
 
@@ -85,13 +91,25 @@ fn paste_via_clipboard(
             let _ = clipboard.write_text(&clipboard_content);
         }
 
-        #[cfg(not(target_os = "linux"))]
+        #[cfg(target_os = "macos")]
         let _ = clipboard.write_text(&clipboard_content);
+
+        #[cfg(target_os = "windows")]
+        windows_clipboard::write_excluded_text(&clipboard_content)?;
     } else if let Some(image) = saved_image {
         info!("Restoring image to clipboard");
+
+        #[cfg(target_os = "windows")]
+        windows_clipboard::write_excluded_image(image.rgba(), image.width(), image.height())?;
+
+        #[cfg(not(target_os = "windows"))]
         let _ = clipboard.write_image(&image);
     } else {
         // Nothing was there to begin with — don't leave the transcription behind.
+        #[cfg(target_os = "windows")]
+        windows_clipboard::clear_excluded()?;
+
+        #[cfg(not(target_os = "windows"))]
         let _ = clipboard.clear();
     }
 
