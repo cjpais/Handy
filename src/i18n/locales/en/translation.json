@@ -255,6 +255,10 @@
         "label": "Keep Mic Open Between Transcriptions",
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
       },
+      "debugMode": {
+        "label": "Debug Mode",
+        "description": "Enable debug features like the Debug panel, advanced logging, and experimental settings."
+      },
       "acceleration": {
         "transcribe": {
           "title": "transcribe.cpp Acceleration",

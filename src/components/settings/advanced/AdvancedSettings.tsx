@@ -21,6 +21,7 @@ import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationS
 import { VoiceActivityDetection } from "../VoiceActivityDetection";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
+import { DebugModeToggle } from "./DebugModeToggle";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -68,6 +69,7 @@ export const AdvancedSettings: React.FC = () => {
           />
           <AccelerationSelector descriptionMode="tooltip" grouped={true} />
           <LazyStreamClose descriptionMode="tooltip" grouped={true} />
+          <DebugModeToggle descriptionMode="tooltip" grouped={true} />
         </SettingsGroup>
       )}
     </div>
