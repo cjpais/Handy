@@ -1784,37 +1784,77 @@ impl ModelManager {
             model_id, repo_id, revision, filename
         );
 
-        // Download chunks in parallel (default is 1 = sequential). Throughput
-        // scales near-linearly with this count because each connection is capped
-        // (~8 MB/s observed per stream), so we stack several to approach the
-        // link's real bandwidth. 8 stays light on CPU/RAM (~80 MB peak buffers)
-        // even on older machines and is browser-like in connection count.
-        let api = ApiBuilder::from_env()
-            // Ignore cached and environment-provided credentials. A stale token
-            // can make otherwise-public downloads fail authentication.
-            .with_token(None)
-            .with_progress(false)
-            .with_max_files(8)
-            .build()
-            .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
-        let repo = api.repo(Repo::with_revision(repo_id, RepoType::Model, revision));
-        let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
-        match repo
-            .download_with_progress_cancellable(&filename, progress, cancel_token)
-            .await
-        {
-            Ok(_) => {}
-            Err(hf_hub::api::tokio::ApiError::Cancelled) => {
-                // User cancelled. hf-hub leaves the partially downloaded
-                // `.sync.part` in the shared cache, so a later attempt resumes
-                // instead of restarting. The guard resets is_downloading and
-                // drops the token; `cancel_download` already emitted
-                // `model-download-cancelled`.
-                info!("HF download cancelled for: {}", model_id);
-                return Ok(());
-            }
-            Err(e) => {
-                return Err(anyhow::anyhow!("Hugging Face download failed: {}", e));
+        // hf-hub has no working internal retry (its retry knobs are hardcoded
+        // to zero), so a single transient fault — dropped connection, a 429
+        // from the resolve endpoint, a CDN blip — would otherwise fail the
+        // whole download. Each attempt resumes from the `.sync.part`
+        // committed-offset marker, so a retry only re-fetches what the failed
+        // attempt hadn't finished.
+        const MAX_ATTEMPTS: u32 = 4;
+        let mut attempt: u32 = 1;
+        loop {
+            // Fresh client per attempt so a wedged connection from the previous
+            // try can't poison the retry (all 8 chunk streams multiplex over
+            // one HTTP/2 connection).
+            let api = ApiBuilder::from_env()
+                // Ignore cached and environment-provided credentials. A stale token
+                // can make otherwise-public downloads fail authentication.
+                .with_token(None)
+                .with_progress(false)
+                // Download chunks in parallel (default is 1 = sequential). Throughput
+                // scales near-linearly with this count because each connection is capped
+                // (~8 MB/s observed per stream), so we stack several to approach the
+                // link's real bandwidth. 8 stays light on CPU/RAM (~80 MB peak buffers)
+                // even on older machines and is browser-like in connection count.
+                .with_max_files(8)
+                .build()
+                .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
+            let repo = api.repo(Repo::with_revision(
+                repo_id.clone(),
+                RepoType::Model,
+                revision.clone(),
+            ));
+            let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
+            match repo
+                .download_with_progress_cancellable(&filename, progress, cancel_token.clone())
+                .await
+            {
+                Ok(_) => break,
+                Err(hf_hub::api::tokio::ApiError::Cancelled) => {
+                    // User cancelled. hf-hub leaves the partially downloaded
+                    // `.sync.part` in the shared cache, so a later attempt resumes
+                    // instead of restarting. The guard resets is_downloading and
+                    // drops the token; `cancel_download` already emitted
+                    // `model-download-cancelled`.
+                    info!("HF download cancelled for: {}", model_id);
+                    return Ok(());
+                }
+                Err(e) if attempt < MAX_ATTEMPTS => {
+                    let delay = Duration::from_secs(1 << attempt);
+                    warn!(
+                        "HF download attempt {}/{} failed for {}: {}; retrying in {}s",
+                        attempt,
+                        MAX_ATTEMPTS,
+                        model_id,
+                        e,
+                        delay.as_secs()
+                    );
+                    tokio::select! {
+                        _ = tokio::time::sleep(delay) => {}
+                        _ = cancel_token.cancelled() => {
+                            info!("HF download cancelled for: {}", model_id);
+                            return Ok(());
+                        }
+                    }
+                    attempt += 1;
+                }
+                Err(e) => {
+                    return Err(anyhow::anyhow!(
+                        "Hugging Face download failed after {} attempts: {}",
+                        attempt,
+                        e
+                    ));
+                }
             }
         }
 
