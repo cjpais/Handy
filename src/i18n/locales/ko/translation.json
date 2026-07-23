@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "크고 느리지만 매우 정확한 다국어 모델."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Apple의 새로운 온디바이스 SpeechAnalyzer 엔진(macOS 26 이상). 음성 에셋은 macOS가 다운로드하고 관리합니다."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "사용자 정의",
     "streaming": "스트리밍",
+    "system": "시스템",
     "active": "활성",
     "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",

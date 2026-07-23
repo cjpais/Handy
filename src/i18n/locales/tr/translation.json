@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Büyük, daha yavaş, ancak çok doğru çok dilli bir model."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Apple'ın cihaz üzerinde çalışan yeni SpeechAnalyzer motoru (macOS 26+). Konuşma varlıkları macOS tarafından indirilir ve yönetilir."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "Özel",
     "streaming": "Akış",
+    "system": "Sistem",
     "active": "Aktif",
     "noModelsAvailable": "Kullanılabilir model yok",
     "verifying": "{{modelName}} doğrulanıyor...",

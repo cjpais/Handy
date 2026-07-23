@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Mô hình lớn, chậm hơn, nhưng rất chính xác và đa ngôn ngữ."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Công cụ SpeechAnalyzer mới của Apple chạy ngay trên thiết bị (macOS 26+). Tài nguyên giọng nói được macOS tải xuống và quản lý."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "Tùy chỉnh",
     "streaming": "Truyền trực tiếp",
+    "system": "Hệ thống",
     "active": "Đang hoạt động",
     "switching": "Đang chuyển...",
     "noModelsAvailable": "Không có mô hình nào",

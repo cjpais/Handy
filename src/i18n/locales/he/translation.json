@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "מודל גדול, איטי יותר, אך מדויק מאוד ורב-לשוני."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "מנוע SpeechAnalyzer החדש של Apple הפועל על המכשיר (macOS 26 ואילך). משאבי הדיבור מורדים ומנוהלים על ידי macOS."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "מותאם אישית",
     "streaming": "סטרימינג",
+    "system": "מערכת",
     "active": "פעיל",
     "switching": "מחליף...",
     "noModelsAvailable": "אין מודלים זמינים",

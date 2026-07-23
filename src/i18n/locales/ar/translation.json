@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "نموذج كبير وأبطأ، لكنه دقيق جداً ومتعدد اللغات."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "محرك SpeechAnalyzer الجديد من Apple الذي يعمل على الجهاز (macOS 26 والأحدث). يتولى macOS تنزيل موارد التعرف على الكلام وإدارتها."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "مخصص",
     "streaming": "البث",
+    "system": "النظام",
     "active": "نشط",
     "noModelsAvailable": "لا توجد نماذج متاحة",
     "verifying": "جارٍ التحقق من {{modelName}}...",

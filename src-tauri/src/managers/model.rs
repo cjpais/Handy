@@ -35,6 +35,9 @@ pub enum EngineType {
     GigaAM,
     Canary,
     Cohere,
+    /// Apple's on-device SpeechAnalyzer API (macOS 26+). The OS manages the
+    /// model assets; there is no file for Handy to download or load.
+    SpeechAnalyzer,
 }
 
 /// Where a model comes from and how Handy obtains it — the routing discriminant
@@ -54,6 +57,9 @@ pub enum ModelSource {
     /// Already present on disk — a user-provided custom model, or one discovered
     /// in a shared cache. Nothing to download.
     Local,
+    /// Supplied and managed by the operating system. There is no Handy-owned
+    /// model file to download, resolve, or delete.
+    System,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -113,6 +119,20 @@ fn canonicalize_supported_languages(languages: Vec<String>) -> Vec<String> {
     }
 
     canonical
+}
+
+/// Map the raw BCP-47 locale list reported by Apple's SpeechAnalyzer
+/// (`en-US`, `en-GB`, `zh-CN`, …) to the deduplicated base-language codes the
+/// language picker works with (`en`, `zh`, …), sorted for stable display.
+fn speech_analyzer_languages(locales: Vec<String>) -> Vec<String> {
+    let mut languages = canonicalize_supported_languages(
+        locales
+            .into_iter()
+            .map(|locale| base_language(&locale).to_string())
+            .collect(),
+    );
+    languages.sort();
+    languages
 }
 
 /// One downloadable quantization of a model. Mirrors a `files[]` entry in
@@ -466,6 +486,57 @@ impl ModelManager {
         }
 
         let mut available_models = HashMap::new();
+
+        // Apple's SpeechTranscriber (macOS 26+): only register it when both the
+        // API and the current device support the model. The OS owns its assets;
+        // `is_downloaded` means selectable here, not that Handy owns a file.
+        if crate::speech_analyzer::is_available() {
+            match crate::speech_analyzer::supported_locales() {
+                Ok(locales) => {
+                    let supported_languages = speech_analyzer_languages(locales);
+
+                    if supported_languages.is_empty() {
+                        warn!(
+                            "Apple speech recognition reported no supported locales; hiding system model"
+                        );
+                    } else {
+                        available_models.insert(
+                            crate::speech_analyzer::MODEL_ID.to_string(),
+                            ModelInfo {
+                                id: crate::speech_analyzer::MODEL_ID.to_string(),
+                                name: "Apple Speech".to_string(),
+                                description:
+                                    "Apple's new on-device SpeechAnalyzer engine (macOS 26+). Speech assets are downloaded and managed by macOS."
+                                        .to_string(),
+                                filename: String::new(),
+                                source: ModelSource::System,
+                                size_mb: 0,
+                                is_downloaded: true,
+                                is_downloading: false,
+                                partial_size: 0,
+                                is_directory: false,
+                                engine_type: EngineType::SpeechAnalyzer,
+                                // No comparable Handy benchmark exists yet; zero hides the
+                                // editorial score bars instead of asserting unsupported ranks.
+                                accuracy_score: 0.0,
+                                speed_score: 0.0,
+                                supports_translation: false,
+                                is_recommended: false,
+                                supports_language_selection: supported_languages.len() > 1,
+                                supported_languages,
+                                is_custom: false,
+                                supports_streaming: true,
+                                supports_language_detection: false,
+                            },
+                        );
+                    }
+                }
+                Err(error) => warn!(
+                    "Failed to query Apple speech recognition supported locales; hiding system model: {}",
+                    error
+                ),
+            }
+        }
 
         // Whisper supported languages (99 languages from tokenizer)
         let whisper_languages: Vec<String> = vec![
@@ -1306,6 +1377,13 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            // System-managed engines have no Handy-owned on-disk footprint.
+            if matches!(model.source, ModelSource::System) {
+                model.is_downloaded = crate::speech_analyzer::is_available();
+                model.is_downloading = false;
+                model.partial_size = 0;
+                continue;
+            }
             if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
                 model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some();
                 model.is_downloading = false;
@@ -1845,6 +1923,11 @@ impl ModelManager {
             ModelSource::Local => {
                 return Err(anyhow::anyhow!("No download source for model"));
             }
+            ModelSource::System => {
+                return Err(anyhow::anyhow!(
+                    "System-managed models are prepared by the operating system"
+                ));
+            }
         };
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
@@ -2187,6 +2270,10 @@ impl ModelManager {
 
         debug!("ModelManager: Found model info: {:?}", model_info);
 
+        if matches!(model_info.source, ModelSource::System) {
+            return Err(anyhow::anyhow!("System-managed models cannot be deleted"));
+        }
+
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
             // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
             // the whole repo dir (blobs + refs + snapshots). Per product decision,
@@ -2284,6 +2371,12 @@ impl ModelManager {
             return Err(anyhow::anyhow!(
                 "Model is currently downloading: {}",
                 model_id
+            ));
+        }
+
+        if matches!(model_info.source, ModelSource::System) {
+            return Err(anyhow::anyhow!(
+                "System-managed models do not have a local model path"
             ));
         }
 
@@ -2407,6 +2500,51 @@ mod tests {
 
         assert_eq!(effective_language("zh-Hans", &languages, true), "zh-Hans");
         assert_eq!(effective_language("zh-Hant", &languages, true), "zh-Hant");
+    }
+
+    #[test]
+    fn test_effective_language_never_yields_auto_without_detection_support() {
+        // Load-bearing for Apple SpeechAnalyzer: the load path resolves the
+        // user's language via effective_language() and hands the result
+        // straight to the OS as a locale identifier (ffi::prepare). The model
+        // registers with supports_language_detection = false, so the only
+        // thing keeping the literal string "auto" — the default setting —
+        // from reaching the OS is this fallback resolving to a concrete
+        // language, preferring English.
+        let languages: Vec<String> = vec!["de", "en", "es"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        assert_eq!(effective_language("auto", &languages, false), "en");
+        // Same invariant when the user picked a language the model lacks.
+        assert_eq!(effective_language("fr", &languages, false), "en");
+    }
+
+    #[test]
+    fn test_speech_analyzer_languages_collapses_locales_for_picker() {
+        // SpeechAnalyzer reports full BCP-47 locales, but the language picker
+        // and effective_language() matching work on base codes. Regressions
+        // here surface as duplicate entries in the picker (en-US + en-GB) or
+        // a wrongly enabled picker for a single-language asset list.
+        let result = speech_analyzer_languages(
+            vec!["en-US", "en-GB", "zh-CN", "zh-TW", "yue-CN", "de-DE"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        );
+
+        // Deduplicated to base codes (yue is its own language, not zh), sorted.
+        assert_eq!(result, vec!["de", "en", "yue", "zh"]);
+
+        // Regional variants of one language collapse to a single entry, so
+        // supports_language_selection (len > 1) stays off.
+        let single = speech_analyzer_languages(vec![
+            "en-US".to_string(),
+            "en-GB".to_string(),
+            "en-AU".to_string(),
+        ]);
+        assert_eq!(single, vec!["en"]);
     }
 
     #[test]

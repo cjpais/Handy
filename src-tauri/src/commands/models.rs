@@ -1,4 +1,4 @@
-use crate::managers::model::{ModelInfo, ModelManager};
+use crate::managers::model::{ModelInfo, ModelManager, ModelSource};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use std::sync::Arc;
@@ -65,6 +65,13 @@ pub async fn delete_model(
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    let model_info = model_manager
+        .get_model_info(&model_id)
+        .ok_or_else(|| format!("Model not found: {model_id}"))?;
+    if matches!(model_info.source, ModelSource::System) {
+        return Err("System-managed models cannot be deleted".to_string());
+    }
+
     // If deleting the active model, unload it and clear the setting
     let settings = get_settings(&app_handle);
     if settings.selected_model == model_id {

@@ -93,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Голям, по-бавен, но много точен многоезичен модел."
+      },
+      "apple-speechanalyzer": {
+        "name": "Apple Speech",
+        "description": "Новият вграден в устройството двигател SpeechAnalyzer на Apple (macOS 26+). Гласовите ресурси се изтеглят и управляват от macOS."
       }
     },
     "errors": {
@@ -122,6 +126,7 @@
   "modelSelector": {
     "custom": "Персонализиран",
     "streaming": "Стрийминг",
+    "system": "Системен",
     "active": "Активен",
     "switching": "Превключване...",
     "noModelsAvailable": "Няма налични модели",

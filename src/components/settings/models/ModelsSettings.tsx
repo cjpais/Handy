@@ -181,7 +181,8 @@ export const ModelsSettings: React.FC = () => {
     });
   }, [models, languageFilter, searchQuery]);
 
-  // Split filtered models into downloaded (including custom) and available sections
+  // Split filtered models into downloaded/selectable (including custom and
+  // system-managed models) and available-to-download sections.
   const { downloadedModels, availableModels } = useMemo(() => {
     const downloaded: ModelInfo[] = [];
     const available: ModelInfo[] = [];
