@@ -461,7 +461,8 @@
       },
       "updateChecks": {
         "label": "अपडेटहरू जाँच गर्नुहोस्",
-        "description": "Handy को नयाँ संस्करण स्वतः जाँच गर्नुहोस्"
+        "description": "Handy को नयाँ संस्करण स्वतः जाँच गर्नुहोस्",
+        "lockedDescription": "प्रणाली कन्फिगरेसनद्वारा असक्षम पारिएको (HANDY_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "नयाँ के छ पूर्वावलोकन",
