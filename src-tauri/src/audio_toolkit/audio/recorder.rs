@@ -19,7 +19,11 @@ use crate::audio_toolkit::{
     VoiceActivityDetector,
 };
 
-enum Cmd {
+/// Control protocol shared by every capture backend. The cpal `AudioRecorder`
+/// and the native `PipeWireRecorder` both drive the SAME `run_consumer` loop, so
+/// this type is `pub(crate)` to let the pipewire backend speak the same protocol
+/// instead of duplicating the consumer/VAD/resampler pipeline.
+pub(crate) enum Cmd {
     /// Begin capturing. Carries the send timestamp so the consumer can log how
     /// long the command sat in the channel (and how much audio was dropped
     /// before it was seen).
@@ -28,7 +32,10 @@ enum Cmd {
     Shutdown,
 }
 
-enum AudioChunk {
+/// Mono `f32` chunk produced by a capture backend and consumed by
+/// `run_consumer`. `pub(crate)` so the pipewire backend can push the exact same
+/// chunk type the cpal producer does (see `PipeWireRecorder`).
+pub(crate) enum AudioChunk {
     Samples(Vec<f32>),
     EndOfStream,
 }
@@ -48,14 +55,33 @@ pub enum VadPolicy {
 /// should use. The offline and streaming policies are never active
 /// concurrently, so one detector is reconfigured per session (see `Cmd::Start`)
 /// rather than kept as two resident engines.
+/// A single VAD engine plus its two hangover-tail lengths, shared by both
+/// capture backends. `pub(crate)` + a public `new` so the pipewire backend and
+/// the `Recorder` seam can hold and clone the same config (the detector lives
+/// behind `Arc<Mutex<..>>`, so one ONNX session is shared, never duplicated).
 #[derive(Clone)]
-struct VadConfig {
+pub(crate) struct VadConfig {
     detector: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
     offline_hangover_frames: usize,
     streaming_hangover_frames: usize,
 }
 
 impl VadConfig {
+    /// Build a shared VAD config from a detector and the offline/streaming
+    /// hangover tails. The detector is wrapped in `Arc<Mutex<..>>` so a single
+    /// engine can back multiple recorder backends without re-instantiating it.
+    pub(crate) fn new(
+        detector: Box<dyn VoiceActivityDetector>,
+        offline_hangover_frames: usize,
+        streaming_hangover_frames: usize,
+    ) -> Self {
+        VadConfig {
+            detector: Arc::new(Mutex::new(detector)),
+            offline_hangover_frames,
+            streaming_hangover_frames,
+        }
+    }
+
     /// Post-speech hangover tail (in 30 ms frames) for the given policy.
     /// `Disabled` never reaches the detector, so it maps to the offline value.
     fn hangover_for(&self, policy: VadPolicy) -> usize {
@@ -69,6 +95,11 @@ impl VadConfig {
 /// Callback invoked with each 16 kHz mono frame that passes the active capture
 /// policy while recording. Used to feed a live streaming transcription as audio arrives.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
+
+/// Spectrum-level callback type (per-frame frequency buckets forwarded to the
+/// UI). Aliased so both capture backends and the `Recorder` seam can pass the
+/// exact same boxed callback without re-spelling the signature.
+pub(crate) type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
 
 pub struct AudioRecorder {
     device: Option<Device>,
@@ -108,12 +139,33 @@ impl AudioRecorder {
         offline_hangover_frames: usize,
         streaming_hangover_frames: usize,
     ) -> Self {
-        self.vad = Some(VadConfig {
-            detector: Arc::new(Mutex::new(detector)),
+        self.vad = Some(VadConfig::new(
+            detector,
             offline_hangover_frames,
             streaming_hangover_frames,
-        });
+        ));
         self
+    }
+
+    /// Construct a recorder directly from already-built shared parts (VAD +
+    /// callbacks). This is the seam used by `Recorder` so the cpal backend and
+    /// the native pipewire backend can share ONE VAD engine and ONE set of
+    /// callbacks instead of each building its own. Mirrors what the `with_*`
+    /// builder chain assembles, minus the device (resolved later in `open`).
+    pub(crate) fn from_parts(
+        vad: Option<VadConfig>,
+        level_cb: Option<LevelCallback>,
+        audio_cb: Option<AudioFrameCallback>,
+    ) -> Self {
+        AudioRecorder {
+            device: None,
+            cmd_tx: None,
+            worker_handle: None,
+            vad,
+            level_cb,
+            audio_cb,
+            config_cache: Arc::new(Mutex::new(None)),
+        }
     }
 
     pub fn with_level_callback<F>(mut self, cb: F) -> Self
@@ -513,8 +565,12 @@ mod tests {
     }
 }
 
+/// Backend-neutral consumer: resample -> VAD -> buffer, driven by the shared
+/// `Cmd`/`AudioChunk` protocol. Both the cpal `AudioRecorder` worker and the
+/// native `PipeWireRecorder` spawn this on their own thread, so it is
+/// `pub(crate)` and must NOT be duplicated per backend.
 #[allow(clippy::too_many_arguments)]
-fn run_consumer(
+pub(crate) fn run_consumer(
     in_sample_rate: u32,
     vad: Option<VadConfig>,
     sample_rx: mpsc::Receiver<AudioChunk>,

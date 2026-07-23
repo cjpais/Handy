@@ -143,6 +143,11 @@ transcribe-cpp = { version = "0.1.3", default-features = false, features = ["met
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
+# Native PipeWire capture backend (see audio/pipewire_recorder.rs). The
+# `v0_3_44` feature unlocks newer property keys such as TARGET_OBJECT used to
+# pin capture to a specific source node. Linux-only: the cpal/ALSA path stays
+# the fallback and remains the only backend on Windows/macOS.
+pipewire = { version = "0.10.0", features = ["v0_3_44"] }
 transcribe-cpp = { version = "0.1.3", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
