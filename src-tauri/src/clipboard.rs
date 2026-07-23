@@ -630,10 +630,23 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let enigo_state = app_handle
         .try_state::<EnigoState>()
         .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
+    let mut enigo_slot = enigo_state
         .0
         .lock()
         .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+
+    // On X11 a long-lived Enigo instance can hold keycode bindings the server
+    // has since discarded, which silently drops those characters when typing
+    // (see input::refresh_enigo). Rebuild it so this paste runs against the
+    // current keymap.
+    #[cfg(target_os = "linux")]
+    if paste_method != PasteMethod::None && !is_wayland() {
+        input::refresh_enigo(&mut enigo_slot)?;
+    }
+
+    let enigo = enigo_slot
+        .as_mut()
+        .ok_or("Enigo instance is not available")?;
 
     // Perform the paste operation
     match paste_method {
@@ -642,7 +655,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
         PasteMethod::Direct => {
             paste_direct(
-                &mut enigo,
+                enigo,
                 &text,
                 #[cfg(target_os = "linux")]
                 settings.typing_tool,
@@ -650,7 +663,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(
-                &mut enigo,
+                enigo,
                 &text,
                 &app_handle,
                 &paste_method,
@@ -670,7 +683,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
-        send_return_key(&mut enigo, settings.auto_submit_key)?;
+        send_return_key(enigo, settings.auto_submit_key)?;
     }
 
     // After pasting, optionally copy to clipboard based on settings
