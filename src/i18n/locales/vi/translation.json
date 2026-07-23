@@ -506,6 +506,10 @@
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
       },
+      "removeTrailingPeriod": {
+        "label": "Xóa dấu chấm cuối",
+        "description": "Xóa một dấu chấm cuối khỏi đầu ra bản ghi"
+      },
       "keyboardImplementation": {
         "title": "Triển khai bàn phím",
         "description": "Chọn hệ thống xử lý phím tắt.",

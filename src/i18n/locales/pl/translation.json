@@ -506,6 +506,10 @@
         "label": "Dodaj spację na końcu",
         "description": "Dodaj spację po wklejonej transkrypcji"
       },
+      "removeTrailingPeriod": {
+        "label": "Usuń końcową kropkę",
+        "description": "Usuń jedną końcową kropkę z wyniku transkrypcji"
+      },
       "keyboardImplementation": {
         "title": "Implementacja klawiatury",
         "description": "Wybierz backend dla skrótów klawiaturowych.",

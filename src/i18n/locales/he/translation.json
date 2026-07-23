@@ -506,6 +506,10 @@
         "label": "הוסף רווח בסוף",
         "description": "הוסף רווח אחרי התמלול המודבק"
       },
+      "removeTrailingPeriod": {
+        "label": "הסר נקודה בסוף",
+        "description": "הסר נקודה אחת בסוף פלט התמלול"
+      },
       "keyboardImplementation": {
         "title": "מימוש מקלדת",
         "description": "בחר את מנגנון קיצורי המקלדת.",

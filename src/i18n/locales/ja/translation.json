@@ -506,6 +506,10 @@
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
       },
+      "removeTrailingPeriod": {
+        "label": "末尾の句点を削除",
+        "description": "文字起こしの出力から末尾の句点を1つ削除"
+      },
       "keyboardImplementation": {
         "title": "キーボード実装",
         "description": "キーボードショートカットのバックエンドを選択してください。",

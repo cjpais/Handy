@@ -506,6 +506,10 @@
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
       },
+      "removeTrailingPeriod": {
+        "label": "Rimuovi punto finale",
+        "description": "Rimuovi un punto finale dall'output della trascrizione"
+      },
       "keyboardImplementation": {
         "title": "Implementazione tastiera",
         "description": "Scegli il backend per le scorciatoie da tastiera.",
