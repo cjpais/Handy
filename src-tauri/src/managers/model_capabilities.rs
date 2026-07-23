@@ -46,6 +46,7 @@ pub const KNOWN_ARCHES: &[&str] = &[
     "granite_speech_nar",
     "funasr_nano",
     "medasr",
+    "moss",
 ];
 
 // GGUF metadata keys transcribe-cpp writes for ASR models.
