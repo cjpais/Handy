@@ -384,7 +384,7 @@
         },
         "baseUrl": {
           "title": "Base URL",
-          "description": "API base URL for the selected provider. Only the custom provider can be edited.",
+          "description": "API base URL for the selected provider. Editable when supported by the provider.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {

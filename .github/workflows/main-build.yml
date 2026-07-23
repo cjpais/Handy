@@ -4,9 +4,7 @@ name: "Main Branch Build"
 # caught before a manual release is triggered. Artifacts are kept for 30 days
 # so any commit on main has a downloadable, testable build.
 
-on:
-  push:
-    branches: [main]
+on: workflow_dispatch
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
