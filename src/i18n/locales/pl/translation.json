@@ -584,6 +584,7 @@
     "portableUpdateButton": "Otwórz GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Wczytywanie...",
     "delete": "Usuń",
     "close": "Zamknij",
@@ -591,6 +592,11 @@
     "copy": "Kopiuj",
     "clear": "Wyczyść",
     "noOptionsFound": "Nie znaleziono opcji"
+  },
+  "windowControls": {
+    "minimize": "Minimalizuj okno",
+    "maximize": "Maksymalizuj okno",
+    "close": "Zamknij okno"
   },
   "accessibility": {
     "permissionsDescription": "Handy potrzebuje uprawnień dostępności, aby wpisywać transkrybowany tekst.",

@@ -584,6 +584,7 @@
     "portableUpdateButton": "فتح GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "...جاري التحميل",
     "delete": "حذف",
     "close": "إغلاق",
@@ -591,6 +592,11 @@
     "copy": "نسخ",
     "clear": "مسح",
     "noOptionsFound": "لم يتم العثور على خيارات"
+  },
+  "windowControls": {
+    "minimize": "تصغير النافذة",
+    "maximize": "تكبير النافذة",
+    "close": "إغلاق النافذة"
   },
   "accessibility": {
     "permissionsDescription": ".يحتاج Handy إلى أذونات إمكانية الوصول لكتابة النص المفرغ",

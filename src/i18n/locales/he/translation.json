@@ -584,6 +584,7 @@
     "portableUpdateButton": "פתח את GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "טוען...",
     "delete": "מחק",
     "close": "סגור",
@@ -591,6 +592,11 @@
     "copy": "העתק",
     "clear": "נקה",
     "noOptionsFound": "לא נמצאו אפשרויות"
+  },
+  "windowControls": {
+    "minimize": "מזער חלון",
+    "maximize": "הגדל חלון",
+    "close": "סגור חלון"
   },
   "accessibility": {
     "permissionsDescription": "Handy צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",

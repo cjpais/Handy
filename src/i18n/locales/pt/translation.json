@@ -584,6 +584,7 @@
     "portableUpdateButton": "Abrir GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Carregando...",
     "delete": "Excluir",
     "close": "Fechar",
@@ -591,6 +592,11 @@
     "copy": "Copiar",
     "clear": "Limpar",
     "noOptionsFound": "Nenhuma opção encontrada"
+  },
+  "windowControls": {
+    "minimize": "Minimizar janela",
+    "maximize": "Maximizar janela",
+    "close": "Fechar janela"
   },
   "accessibility": {
     "permissionsDescription": "O Handy precisa de permissões de acessibilidade para digitar o texto transcrito.",

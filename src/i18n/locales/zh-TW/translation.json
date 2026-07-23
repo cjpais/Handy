@@ -584,6 +584,7 @@
     "portableUpdateButton": "開啟 GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "載入中...",
     "delete": "刪除",
     "close": "關閉",
@@ -591,6 +592,11 @@
     "copy": "複製",
     "clear": "清除",
     "noOptionsFound": "未找到選項"
+  },
+  "windowControls": {
+    "minimize": "最小化視窗",
+    "maximize": "最大化視窗",
+    "close": "關閉視窗"
   },
   "accessibility": {
     "permissionsDescription": "Handy 需要輔助使用權限才能輸入轉錄的文字",

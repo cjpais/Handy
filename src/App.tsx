@@ -13,6 +13,7 @@ import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
+import TitleBar from "./components/TitleBar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
@@ -20,6 +21,8 @@ import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
+
+const isLinux = platform() === "linux";
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -286,10 +289,7 @@ function App() {
     content = <Onboarding onModelSelected={handleModelSelected} />;
   } else {
     content = (
-      <div
-        dir={direction}
-        className="h-screen flex flex-col select-none cursor-default"
-      >
+      <>
         <WhatsNewGate />
         {/* Main content area that takes remaining space */}
         <div className="flex-1 flex overflow-hidden">
@@ -309,15 +309,21 @@ function App() {
         </div>
         {/* Fixed footer at bottom */}
         <Footer />
-      </div>
+      </>
     );
   }
 
   return (
-    <>
+    <div
+      dir={direction}
+      className="h-screen flex flex-col select-none cursor-default"
+    >
       {toaster}
-      {content}
-    </>
+      {isLinux && <TitleBar />}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {content}
+      </div>
+    </div>
   );
 }
 

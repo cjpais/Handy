@@ -584,6 +584,7 @@
     "portableUpdateButton": "Mở GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Đang tải...",
     "delete": "Xóa",
     "close": "Đóng",
@@ -591,6 +592,11 @@
     "copy": "Sao chép",
     "clear": "Xóa",
     "noOptionsFound": "Không tìm thấy tùy chọn"
+  },
+  "windowControls": {
+    "minimize": "Thu nhỏ cửa sổ",
+    "maximize": "Phóng to cửa sổ",
+    "close": "Đóng cửa sổ"
   },
   "accessibility": {
     "permissionsDescription": "Handy cần quyền truy cập để gõ văn bản đã chuyển đổi.",

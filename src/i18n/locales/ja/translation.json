@@ -584,6 +584,7 @@
     "portableUpdateButton": "GitHub Releases を開く"
   },
   "common": {
+    "appName": "Handy",
     "loading": "読み込み中…",
     "delete": "削除",
     "close": "閉じる",
@@ -591,6 +592,11 @@
     "copy": "コピー",
     "clear": "クリア",
     "noOptionsFound": "オプションが見つかりません"
+  },
+  "windowControls": {
+    "minimize": "ウィンドウを最小化",
+    "maximize": "ウィンドウを最大化",
+    "close": "ウィンドウを閉じる"
   },
   "accessibility": {
     "permissionsDescription": "Handy が文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",

@@ -587,6 +587,7 @@
     "title": "New in Handy v{{version}}"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Loading...",
     "delete": "Delete",
     "close": "Close",
@@ -594,6 +595,11 @@
     "copy": "Copy",
     "clear": "Clear",
     "noOptionsFound": "No options found"
+  },
+  "windowControls": {
+    "minimize": "Minimize window",
+    "maximize": "Maximize window",
+    "close": "Close window"
   },
   "accessibility": {
     "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",

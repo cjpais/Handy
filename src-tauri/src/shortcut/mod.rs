@@ -276,6 +276,11 @@ pub fn change_keyboard_implementation_setting(
 
     // Unregister all shortcuts from the current implementation
     unregister_all_shortcuts(&app, current_impl);
+    if current_impl == KeyboardImplementation::HandyKeys
+        && new_impl != KeyboardImplementation::HandyKeys
+    {
+        handy_keys::shutdown(&app);
+    }
 
     // Update the setting
     let mut settings = settings::get_settings(&app);
@@ -445,6 +450,17 @@ fn register_all_shortcuts_for_implementation(
 /// Initialize HandyKeys if not already initialized, with rollback on failure
 fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> {
     if app.try_state::<handy_keys::HandyKeysState>().is_some() {
+        if let Err(e) = handy_keys::ensure_running(app) {
+            error!("Failed to restart HandyKeys: {}", e);
+            let mut settings = settings::get_settings(app);
+            settings.keyboard_implementation = KeyboardImplementation::Tauri;
+            settings::write_settings(app, settings);
+            tauri_impl::init_shortcuts(app);
+            return Err(format!(
+                "Failed to restart HandyKeys: {}. Reverted to Tauri.",
+                e
+            ));
+        }
         return Ok(false); // Already initialized, caller should continue
     }
 

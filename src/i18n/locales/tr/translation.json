@@ -584,6 +584,7 @@
     "portableUpdateButton": "GitHub Releases’i aç"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Yükleniyor...",
     "delete": "Sil",
     "close": "Kapat",
@@ -591,6 +592,11 @@
     "copy": "Kopyala",
     "clear": "Temizle",
     "noOptionsFound": "Seçenek bulunamadı"
+  },
+  "windowControls": {
+    "minimize": "Pencereyi küçült",
+    "maximize": "Pencereyi büyüt",
+    "close": "Pencereyi kapat"
   },
   "accessibility": {
     "permissionsDescription": "Handy, transkribe edilen metni yazabilmek için erişilebilirlik izinlerine ihtiyaç duyar.",

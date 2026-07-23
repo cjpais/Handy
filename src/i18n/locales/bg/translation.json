@@ -584,6 +584,7 @@
     "portableUpdateButton": "Отвори GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Зареждане...",
     "delete": "Изтриване",
     "close": "Затваряне",
@@ -591,6 +592,11 @@
     "copy": "Копиране",
     "clear": "Изчистване",
     "noOptionsFound": "Няма намерени опции"
+  },
+  "windowControls": {
+    "minimize": "Минимизиране на прозореца",
+    "maximize": "Максимизиране на прозореца",
+    "close": "Затваряне на прозореца"
   },
   "accessibility": {
     "permissionsDescription": "Handy се нуждае от разрешения за достъпност, за да въвежда транскрибирания текст.",

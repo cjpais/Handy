@@ -584,6 +584,7 @@
     "portableUpdateButton": "Öppna GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Laddar...",
     "delete": "Ta bort",
     "close": "Stäng",
@@ -591,6 +592,11 @@
     "copy": "Kopiera",
     "clear": "Rensa",
     "noOptionsFound": "Inga alternativ hittades"
+  },
+  "windowControls": {
+    "minimize": "Minimera fönster",
+    "maximize": "Maximera fönster",
+    "close": "Stäng fönster"
   },
   "accessibility": {
     "permissionsDescription": "Handy behöver behörighet för hjälpmedel för att kunna skriva transkriberad text.",

@@ -584,6 +584,7 @@
     "portableUpdateButton": "Otevřít GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Načítání...",
     "delete": "Smazat",
     "close": "Zavřít",
@@ -591,6 +592,11 @@
     "copy": "Kopírovat",
     "clear": "Vymazat",
     "noOptionsFound": "Nenalezeny žádné možnosti"
+  },
+  "windowControls": {
+    "minimize": "Minimalizovat okno",
+    "maximize": "Maximalizovat okno",
+    "close": "Zavřít okno"
   },
   "accessibility": {
     "permissionsDescription": "Handy potřebuje oprávnění usnadnění přístupu, aby mohlo psát přepsaný text.",

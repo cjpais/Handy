@@ -584,6 +584,7 @@
     "portableUpdateButton": "Відкрити GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Завантаження...",
     "delete": "Видалити",
     "close": "Закрити",
@@ -591,6 +592,11 @@
     "copy": "Копіювати",
     "clear": "Очистити",
     "noOptionsFound": "Опцій не знайдено"
+  },
+  "windowControls": {
+    "minimize": "Згорнути вікно",
+    "maximize": "Розгорнути вікно",
+    "close": "Закрити вікно"
   },
   "accessibility": {
     "permissionsDescription": "Handy потребує дозволи доступності для введення транскрибованого тексту.",

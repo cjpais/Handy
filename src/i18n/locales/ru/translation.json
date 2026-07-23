@@ -584,6 +584,7 @@
     "portableUpdateButton": "Открыть GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Загрузка...",
     "delete": "Удалить",
     "close": "Закрывать",
@@ -591,6 +592,11 @@
     "copy": "Копировать",
     "clear": "Очистить",
     "noOptionsFound": "Вариантов не найдено"
+  },
+  "windowControls": {
+    "minimize": "Свернуть окно",
+    "maximize": "Развернуть окно",
+    "close": "Закрыть окно"
   },
   "accessibility": {
     "permissionsDescription": "Handy необходимы разрешения на доступ для ввода расшифрованного текста.",

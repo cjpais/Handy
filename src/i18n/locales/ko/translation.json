@@ -584,6 +584,7 @@
     "portableUpdateButton": "GitHub Releases 열기"
   },
   "common": {
+    "appName": "Handy",
     "loading": "로딩 중...",
     "delete": "삭제",
     "close": "닫기",
@@ -591,6 +592,11 @@
     "copy": "복사",
     "clear": "지우기",
     "noOptionsFound": "옵션을 찾을 수 없습니다"
+  },
+  "windowControls": {
+    "minimize": "창 최소화",
+    "maximize": "창 최대화",
+    "close": "창 닫기"
   },
   "accessibility": {
     "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
