@@ -506,6 +506,10 @@
         "label": "Lägg till avslutande mellanslag",
         "description": "Lägg till ett mellanslag efter klistrad transkription"
       },
+      "removeTrailingPeriod": {
+        "label": "Ta bort avslutande punkt",
+        "description": "Ta bort en avslutande punkt från transkriptionsresultatet"
+      },
       "keyboardImplementation": {
         "title": "Tangentbordsimplementering",
         "description": "Välj tangentbordsgenvägens implementation.",

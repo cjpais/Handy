@@ -506,6 +506,10 @@
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
       },
+      "removeTrailingPeriod": {
+        "label": "Sondaki noktayı kaldır",
+        "description": "Transkripsiyon çıktısından bir sondaki noktayı kaldır"
+      },
       "keyboardImplementation": {
         "title": "Klavye Uygulaması",
         "description": "Klavye kısayolları için kullanılacak altyapıyı seçin.",

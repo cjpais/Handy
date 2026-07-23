@@ -427,6 +427,8 @@ pub struct AppSettings {
     pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
+    #[serde(default)]
+    pub remove_trailing_period: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
     #[serde(default = "default_theme")]
@@ -877,6 +879,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
         append_trailing_space: false,
+        remove_trailing_period: false,
         app_language: default_app_language(),
         theme: default_theme(),
         experimental_enabled: false,
@@ -1131,6 +1134,7 @@ mod tests {
             .expect("all AppSettings fields need serde defaults");
         assert!(settings.push_to_talk);
         assert!(!settings.audio_feedback);
+        assert!(!settings.remove_trailing_period);
         // Bindings default to empty; the load path merges the real defaults in.
         assert!(settings.bindings.is_empty());
     }
@@ -1248,6 +1252,7 @@ mod tests {
         assert_eq!(settings.bindings["transcribe"].current_binding, "f13");
         assert_eq!(settings.log_level, LogLevel::Debug);
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
+        assert!(!settings.remove_trailing_period);
 
         // A current-format store must not be rewritten on every read.
         assert!(!apply_settings_migrations(&mut settings, &stored));

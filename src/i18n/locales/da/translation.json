@@ -513,6 +513,10 @@
         "label": "Tilføj efterfølgende mellemrum",
         "description": "Tilføj et mellemrum efter indsat transskription"
       },
+      "removeTrailingPeriod": {
+        "label": "Fjern afsluttende punktum",
+        "description": "Fjern ét afsluttende punktum fra transskriptionsresultatet"
+      },
       "keyboardImplementation": {
         "title": "Tastaturimplementering",
         "description": "Vælg backend til tastaturgenveje.",

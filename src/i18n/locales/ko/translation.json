@@ -506,6 +506,10 @@
         "label": "끝 공백 추가",
         "description": "붙여넣은 텍스트 끝에 공백 추가"
       },
+      "removeTrailingPeriod": {
+        "label": "끝 마침표 제거",
+        "description": "전사 출력에서 끝 마침표 하나 제거"
+      },
       "keyboardImplementation": {
         "title": "키보드 구현",
         "description": "키보드 단축키 백엔드를 선택하세요.",

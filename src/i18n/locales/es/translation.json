@@ -506,6 +506,10 @@
         "label": "Agregar espacio final",
         "description": "Agregar un espacio después de la transcripción pegada"
       },
+      "removeTrailingPeriod": {
+        "label": "Quitar punto final",
+        "description": "Quitar un punto final de la salida de transcripción"
+      },
       "keyboardImplementation": {
         "title": "Implementación del teclado",
         "description": "Elige el sistema que gestiona los atajos de teclado.",

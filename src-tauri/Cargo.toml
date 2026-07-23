@@ -169,6 +169,7 @@ tao = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6
 tao-macros = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6f8d4bde052b876" }
 
 [dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std"] }
 tempfile = "3"
 
 [profile.release]

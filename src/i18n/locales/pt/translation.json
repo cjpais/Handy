@@ -506,6 +506,10 @@
         "label": "Adicionar Espaço Final",
         "description": "Adicionar um espaço após a transcrição colada"
       },
+      "removeTrailingPeriod": {
+        "label": "Remover ponto final",
+        "description": "Remover um ponto final da saída da transcrição"
+      },
       "keyboardImplementation": {
         "title": "Implementação do Teclado",
         "description": "Escolha o sistema responsável pelos atalhos de teclado.",

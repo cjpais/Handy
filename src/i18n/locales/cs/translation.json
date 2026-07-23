@@ -506,6 +506,10 @@
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"
       },
+      "removeTrailingPeriod": {
+        "label": "Odstranit koncovou tečku",
+        "description": "Odstranit jednu koncovou tečku z výsledku přepisu"
+      },
       "keyboardImplementation": {
         "title": "Implementace klávesnice",
         "description": "Zvolte backend pro klávesové zkratky.",

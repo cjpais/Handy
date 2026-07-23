@@ -506,6 +506,10 @@
         "label": "附加尾部空格",
         "description": "在貼上的轉錄後新增空格"
       },
+      "removeTrailingPeriod": {
+        "label": "移除結尾句點",
+        "description": "從轉錄輸出中移除一個結尾句點"
+      },
       "keyboardImplementation": {
         "title": "鍵盤實作",
         "description": "選擇鍵盤快捷鍵的後端",

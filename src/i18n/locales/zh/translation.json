@@ -506,6 +506,10 @@
         "label": "追加尾部空格",
         "description": "在粘贴的转录后添加空格"
       },
+      "removeTrailingPeriod": {
+        "label": "移除结尾句点",
+        "description": "从转录输出中移除一个结尾句点"
+      },
       "keyboardImplementation": {
         "title": "键盘实现",
         "description": "选择键盘快捷键的后端。",

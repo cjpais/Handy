@@ -513,6 +513,10 @@
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
       },
+      "removeTrailingPeriod": {
+        "label": "Remove Trailing Period",
+        "description": "Remove one final period from transcription output"
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

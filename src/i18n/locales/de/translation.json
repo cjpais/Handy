@@ -506,6 +506,10 @@
         "label": "Leerzeichen anhängen",
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
       },
+      "removeTrailingPeriod": {
+        "label": "Abschließenden Punkt entfernen",
+        "description": "Einen abschließenden Punkt aus der Transkriptionsausgabe entfernen"
+      },
       "keyboardImplementation": {
         "title": "Tastatur-Implementierung",
         "description": "Wähle das Backend für Tastaturkürzel.",

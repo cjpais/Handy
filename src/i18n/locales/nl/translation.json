@@ -513,6 +513,10 @@
         "label": "Spatie achteraan toevoegen",
         "description": "Voeg een spatie toe na de geplakte transcriptie"
       },
+      "removeTrailingPeriod": {
+        "label": "Punt aan het einde verwijderen",
+        "description": "Verwijder één punt aan het einde van de transcriptie-uitvoer"
+      },
       "keyboardImplementation": {
         "title": "Toetsenbord-implementatie",
         "description": "Kies de backend voor sneltoetsen.",

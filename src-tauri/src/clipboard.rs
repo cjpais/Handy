@@ -608,18 +608,32 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+/// Removes one ASCII period only when it is the final character. Adjacent
+/// periods are preserved as ellipses. Returns whether `text` changed.
+fn remove_trailing_period(text: &mut String, enabled: bool) -> bool {
+    if !enabled || !text.ends_with('.') || text.ends_with("..") {
+        return false;
+    }
+
+    text.pop();
+    true
+}
+
+pub fn paste(mut text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
 
-    // Append trailing space if setting is enabled
-    let text = if settings.append_trailing_space {
-        format!("{} ", text)
-    } else {
-        text
-    };
+    remove_trailing_period(&mut text, settings.remove_trailing_period);
+    if text.is_empty() {
+        info!("Skipping paste because the transformed text is empty");
+        return Ok(());
+    }
+
+    if settings.append_trailing_space {
+        text.push(' ');
+    }
 
     info!(
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
@@ -687,6 +701,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn auto_submit_requires_setting_enabled() {
@@ -705,5 +720,90 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    #[test]
+    fn only_removes_a_period_when_it_is_the_final_character() {
+        for unchanged in ["Hello.)", "Hello.”", "Hello. ", "Hello.\n", "Hello.。"] {
+            let mut text = unchanged.to_string();
+
+            assert!(!remove_trailing_period(&mut text, true));
+            assert_eq!(text, unchanged);
+        }
+
+        let mut text = "First.).".to_string();
+        assert!(remove_trailing_period(&mut text, true));
+        assert_eq!(text, "First.)");
+    }
+
+    #[test]
+    fn reports_when_removal_makes_the_output_empty() {
+        let mut text = ".".to_string();
+
+        assert!(remove_trailing_period(&mut text, true));
+        assert!(text.is_empty());
+    }
+
+    #[test]
+    fn preserves_other_punctuation_internal_periods_and_ellipses() {
+        for unchanged in [
+            "What?",
+            "Wow!",
+            "Dr. Smith",
+            "Wait..",
+            "Wait...  ",
+            "Hello.\u{3002}",
+        ] {
+            let mut text = unchanged.to_string();
+
+            assert!(!remove_trailing_period(&mut text, true));
+            assert_eq!(text, unchanged);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn disabled_is_identity_for_arbitrary_unicode(mut text in any::<String>()) {
+            let original = text.clone();
+
+            prop_assert!(!remove_trailing_period(&mut text, false));
+            prop_assert_eq!(text, original);
+        }
+
+        #[test]
+        fn removes_exactly_one_final_period(
+            prefix_start in any::<String>(),
+            prefix_end in prop::sample::select(vec!["a", "Z", "0", "\u{00E9}", "\u{4F60}"]),
+        ) {
+            let prefix = format!("{prefix_start}{prefix_end}");
+            let mut text = format!("{prefix}.");
+
+            prop_assert!(remove_trailing_period(&mut text, true));
+            prop_assert_eq!(text, prefix);
+        }
+
+        #[test]
+        fn preserves_a_period_when_any_character_follows_it(
+            prefix in any::<String>(),
+            final_character in any::<char>().prop_filter("final character must not be a period", |character| *character != '.'),
+        ) {
+            let mut text = format!("{prefix}.{final_character}");
+            let original = text.clone();
+
+            prop_assert!(!remove_trailing_period(&mut text, true));
+            prop_assert_eq!(text, original);
+        }
+
+        #[test]
+        fn preserves_adjacent_ellipses(
+            prefix in any::<String>(),
+            periods in 2usize..8,
+        ) {
+            let mut text = format!("{prefix}{}", ".".repeat(periods));
+            let original = text.clone();
+
+            prop_assert!(!remove_trailing_period(&mut text, true));
+            prop_assert_eq!(text, original);
+        }
     }
 }
