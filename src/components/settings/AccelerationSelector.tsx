@@ -65,25 +65,30 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   useEffect(() => {
     commands.getAvailableAccelerators().then((available) => {
       // Build combined transcribe.cpp options: Auto, [GPU devices...], CPU
-      const opts: DropdownOption[] = [
-        {
+      const opts: DropdownOption[] = [];
+      if (available.transcribe.includes("auto")) {
+        opts.push({
           value: "auto",
           label: t("settings.advanced.acceleration.gpuDevice.auto"),
-        },
-      ];
-
-      for (const dev of available.gpu_devices) {
-        const vramLabel =
-          dev.total_vram_mb >= 1024
-            ? `${(dev.total_vram_mb / 1024).toFixed(1)} GB`
-            : `${dev.total_vram_mb} MB`;
-        opts.push({
-          value: `gpu:${dev.id}`,
-          label: `${dev.name} (${vramLabel})`,
         });
       }
 
-      opts.push({ value: "cpu", label: "CPU" });
+      if (available.transcribe.includes("gpu")) {
+        for (const dev of available.gpu_devices) {
+          const vramLabel =
+            dev.total_vram_mb >= 1024
+              ? `${(dev.total_vram_mb / 1024).toFixed(1)} GB`
+              : `${dev.total_vram_mb} MB`;
+          opts.push({
+            value: `gpu:${dev.id}`,
+            label: `${dev.name} (${vramLabel})`,
+          });
+        }
+      }
+
+      if (available.transcribe.includes("cpu")) {
+        opts.push({ value: "cpu", label: "CPU" });
+      }
       setTranscribeOptions(opts);
 
       // ORT options (unchanged)
@@ -105,6 +110,11 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
     currentAccelerator as TranscribeAcceleratorSetting,
     currentGpuDevice as number,
   );
+  const displayedTranscribe = transcribeOptions.some(
+    (option) => option.value === currentTranscribe,
+  )
+    ? currentTranscribe
+    : (transcribeOptions[0]?.value ?? null);
   const currentOrt = getSetting("ort_accelerator") ?? "auto";
 
   const handleTranscribeChange = async (value: string) => {
@@ -124,7 +134,7 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
       >
         <Dropdown
           options={transcribeOptions}
-          selectedValue={currentTranscribe}
+          selectedValue={displayedTranscribe}
           onSelect={handleTranscribeChange}
           disabled={
             isUpdating("transcribe_accelerator") ||

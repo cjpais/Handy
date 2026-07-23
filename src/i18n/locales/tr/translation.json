@@ -358,7 +358,7 @@
       },
       "customWords": {
         "title": "Özel Kelimeler",
-        "description": "Transkripsiyon sırasında sıkça yanlış duyulan veya yanlış yazılan kelimeleri ekleyin. Sistem, benzer sesli kelimeleri listenize göre otomatik olarak düzeltir.",
+        "description": "Desteklenen modellerin adları ve özel terimleri tanımasına yardımcı olun. Bulanık düzeltme şu anda A–Z harflerini ve rakamları kullanan sözcüklerle sınırlıdır.",
         "placeholder": "Kelime ekle",
         "add": "Ekle",
         "remove": "{{word}} Kaldır",

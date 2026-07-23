@@ -358,7 +358,7 @@
       },
       "customWords": {
         "title": "Custom Words",
-        "description": "Add words that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",
+        "description": "Help supported models recognize names and specialized terms. Fuzzy correction is currently limited to words using A–Z and numbers.",
         "placeholder": "Add a word",
         "add": "Add",
         "remove": "Remove {{word}}",

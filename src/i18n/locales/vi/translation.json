@@ -358,7 +358,7 @@
       },
       "customWords": {
         "title": "Từ tùy chỉnh",
-        "description": "Thêm các từ thường bị nghe nhầm hoặc viết sai trong quá trình chuyển đổi. Hệ thống sẽ tự động sửa các từ có âm thanh tương tự để khớp với danh sách của bạn.",
+        "description": "Giúp các mô hình được hỗ trợ nhận dạng tên và thuật ngữ chuyên ngành. Tính năng sửa gần đúng hiện chỉ áp dụng cho các từ sử dụng chữ cái A–Z và chữ số.",
         "placeholder": "Thêm một từ",
         "add": "Thêm",
         "remove": "Xóa {{word}}",

@@ -90,13 +90,20 @@ def headline_wer(d):
     for q in ("q8_0","f16","q5_k_m","q6_k","q4_k_m","f32","bf16"):
         if isinstance(d, dict) and q in d: return d[q], q
     return None, None
-def auto_desc(langn, caps):
+LANG_NAMES = {"en":"English","ar":"Arabic","ja":"Japanese","ko":"Korean","ru":"Russian",
+              "uk":"Ukrainian","vi":"Vietnamese","zh":"Chinese"}
+def auto_desc(langs, caps):
     feats = []
     if caps["translate"]:   feats.append("translation")
     if caps["lang_detect"]: feats.append("auto language detection")
     if caps["streaming"]:   feats.append("streaming")
     if caps["timestamps"] != "none": feats.append(f"{caps['timestamps']}-level timestamps")
-    base = f"{langn}-language speech-to-text" if langn > 1 else "English speech-to-text"
+    if len(langs) > 1:
+        base = f"{len(langs)}-language speech-to-text"
+    else:
+        # unknown code falls back to the raw code so it's caught in diff review
+        lang = LANG_NAMES.get(langs[0], langs[0]) if langs else "English"
+        base = f"{lang} speech-to-text"
     return base + (" with " + ", ".join(feats) + "." if feats else ".")
 
 api = HfApi(token=os.environ.get("HF_TOKEN"))
@@ -209,7 +216,7 @@ def build(repo):
         "architecture": gg.get("general.architecture"),
         "family": family(s, info.tags),
         "parameters": gg.get("general.size_label"),          # "0.6B" / "1.7B" / "62M"
-        "description": cur.get("desc") or auto_desc(len(langs), caps),
+        "description": cur.get("desc") or auto_desc(langs, caps),
         "base_model": cd.get("base_model"),
         "license": cd.get("license"),
         "language_count": len(langs),
@@ -240,7 +247,7 @@ def main():
         print(f"catalog generation failed for {len(failures)} repo(s)", file=sys.stderr)
         raise SystemExit(1)
     models.sort(key=lambda m: (not m["recommended"], m["recommended_rank"] or 1e9,
-                               m["family"], -(m["speed_score"] or 0)))
+                               m["family"], -(m["speed_score"] or 0), m["slug"]))
     catalog = {
         "catalog_version": CATALOG_VERSION,
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),

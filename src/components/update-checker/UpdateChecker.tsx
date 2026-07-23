@@ -186,7 +186,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
     <>
       {showPortableUpdateDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-bg border border-border rounded-lg p-6 max-w-md w-full mx-4 space-y-4">
+          <div className="bg-background border border-mid-gray/20 rounded-lg p-6 max-w-md w-full mx-4 space-y-4">
             <h2 className="text-base font-semibold">
               {t("footer.portableUpdateTitle")}
             </h2>
@@ -195,7 +195,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
             </p>
             <div className="flex gap-2 justify-end">
               <button
-                className="px-3 py-1.5 text-sm rounded border border-border hover:bg-border/50 transition-colors"
+                className="px-3 py-1.5 text-sm rounded border border-mid-gray/20 hover:bg-mid-gray/10 transition-colors"
                 onClick={() => setShowPortableUpdateDialog(false)}
               >
                 {t("common.close")}
