@@ -461,7 +461,8 @@
       },
       "updateChecks": {
         "label": "Tjek for opdateringer",
-        "description": "Tjek automatisk for nye versioner af Handy"
+        "description": "Tjek automatisk for nye versioner af Handy",
+        "lockedDescription": "Deaktiveret af systemkonfiguration (HANDY_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Forhåndsvisning af nyheder",
