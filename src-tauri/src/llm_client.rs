@@ -133,9 +133,7 @@ fn has_api_version_segment(url: &str) -> bool {
                 continue;
             }
 
-            return saw_digit
-                && ch.is_ascii_alphabetic()
-                && chars.all(|c| c.is_ascii_alphabetic());
+            return saw_digit && ch.is_ascii_alphabetic() && chars.all(|c| c.is_ascii_alphabetic());
         }
 
         saw_digit
