@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -11,6 +11,71 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
+
+/// Deliver `text` on Windows via `win-text-inject`.
+///
+/// Replaces the clipboard save/write/sleep/paste/sleep/restore sequence with one that fixes four
+/// defects the delay sliders cannot:
+///
+/// 1. Transcripts no longer enter Windows clipboard history or sync to the Microsoft cloud
+///    clipboard. Writing `CF_UNICODETEXT` alone opts into both.
+/// 2. Modifiers physically held at injection time are released first. In push-to-talk a modifier
+///    is held by construction, and `SendInput` does not reset keyboard state, so a held Right-Alt
+///    turns Ctrl+V into AltGr+V.
+/// 3. Injection into an elevated window is detected up front. UIPI blocks it and reports nothing
+///    through the return value or `GetLastError`, so today the text silently vanishes.
+/// 4. The clipboard is restored only after the target has actually read it, using delayed
+///    rendering, rather than after a fixed delay that a busy application can outrun. This is the
+///    cause of #502.
+#[cfg(windows)]
+fn paste_via_win_text_inject(text: &str, paste_method: &PasteMethod) -> Result<(), String> {
+    use win_text_inject::{inject, Chord, Options, Outcome, Strategy, Target};
+
+    let chord = match paste_method {
+        PasteMethod::CtrlV => Chord::CtrlV,
+        PasteMethod::CtrlShiftV => Chord::CtrlShiftV,
+        PasteMethod::ShiftInsert => Chord::ShiftInsert,
+        _ => return Err("invalid paste method for clipboard paste".into()),
+    };
+
+    let target = Target::foreground().map_err(|e| e.to_string())?;
+
+    // Elevated targets discard synthesized input silently. Leaving the text on the clipboard and
+    // saying so beats delivering nothing and reporting success.
+    if !target.accepts_injection() {
+        return Err(format!(
+            "target {} runs at {:?} integrity; text left on the clipboard for manual paste",
+            target.exe, target.integrity
+        ));
+    }
+
+    let outcome = inject(
+        &target,
+        text,
+        Options {
+            strategy: Strategy::ClipboardPaste,
+            chord: Some(chord),
+            // Handy already resolves the target application itself, so keep its choice.
+            ..Default::default()
+        },
+    )
+    .map_err(|e| e.to_string())?;
+
+    match outcome {
+        Outcome::Pasted {
+            read_confirmed: true,
+        } => Ok(()),
+        // The paste chord went out but no read was observed. The text is still on the clipboard,
+        // so this is recoverable by the user; surface it rather than reporting success.
+        Outcome::Pasted {
+            read_confirmed: false,
+        } => {
+            warn!("paste sent but the target was not observed reading the clipboard");
+            Ok(())
+        }
+        other => Err(format!("unexpected injection outcome: {:?}", other)),
+    }
+}
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
@@ -21,6 +86,21 @@ fn paste_via_clipboard(
     paste_delay_ms: u64,
     paste_delay_after_ms: u64,
 ) -> Result<(), String> {
+    // On Windows the whole save/write/paste/restore sequence is delegated, because the
+    // timer-based version of it has four defects that cannot be fixed by tuning the delays.
+    // See paste_via_win_text_inject.
+    #[cfg(windows)]
+    {
+        match paste_via_win_text_inject(text, paste_method) {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                // Never lose a transcript to an integration problem: fall through to the
+                // original path rather than failing the paste outright.
+                warn!("win-text-inject failed, falling back to timer paste: {}", e);
+            }
+        }
+    }
+
     let clipboard = app_handle.clipboard();
     let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
     // Only probe for an image when there is no text to restore. Text is by far the

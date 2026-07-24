@@ -2504,6 +2504,7 @@ dependencies = [
  "transcribe-cpp",
  "transcribe-rs",
  "vad-rs",
+ "win-text-inject",
  "windows 0.61.3",
  "winreg 0.55.0",
 ]
@@ -7938,6 +7939,15 @@ name = "widestring"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72069c3113ab32ab29e5584db3c6ec55d416895e60715417b5b883a357c3e471"
+
+[[package]]
+name = "win-text-inject"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30ad38dc962b33e083f852b3bd523e7007f0da49377d322147ce1c7a0b4b5fbf"
+dependencies = [
+ "windows 0.61.3",
+]
 
 [[package]]
 name = "winapi"
