@@ -9,6 +9,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const LMSTUDIO_PROVIDER_ID: &str = "lmstudio";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -671,6 +672,16 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         supports_structured_output: true,
     });
 
+    // LM Studio local server (OpenAI-compatible endpoint).
+    providers.push(PostProcessProvider {
+        id: LMSTUDIO_PROVIDER_ID.to_string(),
+        label: "LM Studio".to_string(),
+        base_url: "http://localhost:1234".to_string(),
+        allow_base_url_edit: true,
+        models_endpoint: Some("/models".to_string()),
+        supports_structured_output: false,
+    });
+
     // Custom provider always comes last
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
@@ -736,6 +747,15 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
             .find(|p| p.id == provider.id)
         {
             Some(existing) => {
+                if existing.allow_base_url_edit != provider.allow_base_url_edit {
+                    debug!(
+                        "Updating allow_base_url_edit for provider '{}' from {} to {}",
+                        provider.id, existing.allow_base_url_edit, provider.allow_base_url_edit
+                    );
+                    existing.allow_base_url_edit = provider.allow_base_url_edit;
+                    changed = true;
+                }
+
                 // Sync supports_structured_output field for existing providers (migration)
                 if existing.supports_structured_output != provider.supports_structured_output {
                     debug!(
@@ -750,7 +770,21 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
             }
             None => {
                 // Provider doesn't exist, add it
-                settings.post_process_providers.push(provider.clone());
+                if provider.id != "custom" {
+                    if let Some(custom_index) = settings
+                        .post_process_providers
+                        .iter()
+                        .position(|p| p.id == "custom")
+                    {
+                        settings
+                            .post_process_providers
+                            .insert(custom_index, provider.clone());
+                    } else {
+                        settings.post_process_providers.push(provider.clone());
+                    }
+                } else {
+                    settings.post_process_providers.push(provider.clone());
+                }
                 changed = true;
             }
         }

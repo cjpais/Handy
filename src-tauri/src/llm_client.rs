@@ -105,6 +105,87 @@ fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwes
         .map_err(|e| format!("Failed to build HTTP client: {}", e))
 }
 
+fn has_api_version_segment(url: &str) -> bool {
+    let path = if let Some(scheme_index) = url.find("://") {
+        let after_scheme = &url[scheme_index + 3..];
+        after_scheme
+            .find('/')
+            .map(|path_start| &after_scheme[path_start..])
+            .unwrap_or("")
+    } else {
+        url
+    };
+
+    path.split('/').any(|segment| {
+        let Some(rest) = segment
+            .strip_prefix('v')
+            .or_else(|| segment.strip_prefix('V'))
+        else {
+            return false;
+        };
+
+        let mut chars = rest.chars();
+        let mut saw_digit = false;
+
+        for ch in chars.by_ref() {
+            if ch.is_ascii_digit() {
+                saw_digit = true;
+                continue;
+            }
+
+            return saw_digit && ch.is_ascii_alphabetic() && chars.all(|c| c.is_ascii_alphabetic());
+        }
+
+        saw_digit
+    })
+}
+
+fn strip_known_openai_endpoint(url: &str) -> &str {
+    let lower = url.to_ascii_lowercase();
+    for suffix in [
+        "/chat/completions",
+        "/models",
+        "/responses",
+        "/completions",
+        "/embeddings",
+    ] {
+        if lower.ends_with(suffix) {
+            return &url[..url.len() - suffix.len()];
+        }
+    }
+
+    url
+}
+
+fn normalize_openai_compatible_base_url(base_url: &str) -> String {
+    let base_url = base_url.trim().trim_end_matches('/');
+    let base_url = strip_known_openai_endpoint(base_url).trim_end_matches('/');
+
+    if base_url.is_empty() {
+        return String::new();
+    }
+
+    if has_api_version_segment(base_url) {
+        base_url.to_string()
+    } else {
+        format!("{}/v1", base_url)
+    }
+}
+
+fn provider_endpoint_url(provider: &PostProcessProvider, endpoint: &str) -> String {
+    let endpoint = endpoint.trim();
+    if endpoint.starts_with("http://") || endpoint.starts_with("https://") {
+        return endpoint.trim_end_matches('/').to_string();
+    }
+
+    let base_url = normalize_openai_compatible_base_url(&provider.base_url);
+    format!(
+        "{}/{}",
+        base_url.trim_end_matches('/'),
+        endpoint.trim_start_matches('/')
+    )
+}
+
 /// Send a chat completion request to an OpenAI-compatible API
 /// Returns Ok(Some(content)) on success, Ok(None) if response has no content,
 /// or Err on actual errors (HTTP, parsing, etc.)
@@ -145,8 +226,7 @@ pub async fn send_chat_completion_with_schema(
     reasoning_effort: Option<String>,
     reasoning: Option<ReasoningConfig>,
 ) -> Result<Option<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
-    let url = format!("{}/chat/completions", base_url);
+    let url = provider_endpoint_url(provider, "/chat/completions");
 
     debug!("Sending chat completion request to: {}", url);
 
@@ -223,8 +303,8 @@ pub async fn fetch_models(
     provider: &PostProcessProvider,
     api_key: String,
 ) -> Result<Vec<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
-    let url = format!("{}/models", base_url);
+    let models_endpoint = provider.models_endpoint.as_deref().unwrap_or("/models");
+    let url = provider_endpoint_url(provider, models_endpoint);
 
     debug!("Fetching models from: {}", url);
 
@@ -275,4 +355,54 @@ pub async fn fetch_models(
     }
 
     Ok(models)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn provider_with_base_url(base_url: &str) -> PostProcessProvider {
+        PostProcessProvider {
+            id: "lmstudio".to_string(),
+            label: "LM Studio".to_string(),
+            base_url: base_url.to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+            supports_structured_output: false,
+        }
+    }
+
+    #[test]
+    fn adds_v1_to_provider_host_root() {
+        let provider = provider_with_base_url("http://localhost:1234");
+
+        assert_eq!(
+            provider_endpoint_url(&provider, "/models"),
+            "http://localhost:1234/v1/models"
+        );
+        assert_eq!(
+            provider_endpoint_url(&provider, "/chat/completions"),
+            "http://localhost:1234/v1/chat/completions"
+        );
+    }
+
+    #[test]
+    fn does_not_duplicate_existing_api_version() {
+        let provider = provider_with_base_url("http://localhost:1234/v1/");
+
+        assert_eq!(
+            provider_endpoint_url(&provider, "/models"),
+            "http://localhost:1234/v1/models"
+        );
+    }
+
+    #[test]
+    fn strips_accidental_endpoint_from_base_url() {
+        let provider = provider_with_base_url("http://localhost:1234/v1/models");
+
+        assert_eq!(
+            provider_endpoint_url(&provider, "/chat/completions"),
+            "http://localhost:1234/v1/chat/completions"
+        );
+    }
 }
