@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { SettingContainer } from "./SettingContainer";
 
 interface SliderProps {
@@ -14,6 +15,7 @@ interface SliderProps {
   grouped?: boolean;
   showValue?: boolean;
   formatValue?: (value: number) => string;
+  defaultValue?: number;
 }
 
 export const Slider: React.FC<SliderProps> = ({
@@ -29,10 +31,14 @@ export const Slider: React.FC<SliderProps> = ({
   grouped = false,
   showValue = true,
   formatValue = (v) => v.toFixed(2),
+  defaultValue,
 }) => {
+  const { t } = useTranslation();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(parseFloat(e.target.value));
   };
+
+  const isModified = defaultValue !== undefined && value !== defaultValue;
 
   return (
     <SettingContainer
@@ -68,6 +74,15 @@ export const Slider: React.FC<SliderProps> = ({
             </span>
           )}
         </div>
+        {isModified && (
+          <button
+            type="button"
+            onClick={() => onChange(defaultValue)}
+            className="text-xs text-logo-primary hover:text-logo-primary/80 mt-1 cursor-pointer text-right w-full"
+          >
+            {t("common.reset")}
+          </button>
+        )}
       </div>
     </SettingContainer>
   );

@@ -13,7 +13,7 @@ export const RecordingBuffer: React.FC<RecordingBufferProps> = ({
   grouped = false,
 }) => {
   const { t } = useTranslation();
-  const { settings, updateSetting } = useSettings();
+  const { settings, updateSetting, defaultSettings } = useSettings();
 
   const handleBufferChange = (value: number) => {
     updateSetting("extra_recording_buffer_ms", value);
@@ -23,6 +23,7 @@ export const RecordingBuffer: React.FC<RecordingBufferProps> = ({
     <Slider
       value={settings?.extra_recording_buffer_ms ?? 0}
       onChange={handleBufferChange}
+      defaultValue={defaultSettings?.extra_recording_buffer_ms ?? 0}
       min={0}
       max={1500}
       step={50}
