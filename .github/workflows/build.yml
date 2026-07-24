@@ -78,21 +78,6 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
 
-      - name: Disable signing for unsigned Windows builds
-        if: contains(inputs.platform, 'windows') && !inputs.sign-binaries
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $configPath = "src-tauri/tauri.conf.json"
-          $config = Get-Content $configPath -Raw | ConvertFrom-Json
-          if ($config.bundle.PSObject.Properties.Name -contains "createUpdaterArtifacts") {
-            $config.bundle.PSObject.Properties.Remove("createUpdaterArtifacts")
-          }
-          if ($config.bundle.windows.PSObject.Properties.Name -contains "signCommand") {
-            $config.bundle.windows.PSObject.Properties.Remove("signCommand")
-          }
-          $config | ConvertTo-Json -Depth 100 | Set-Content -Path $configPath
-
       - name: Get version from tauri.conf.json
         id: get-version
         shell: bash
