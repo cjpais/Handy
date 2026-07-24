@@ -276,3 +276,70 @@ pub async fn fetch_models(
 
     Ok(models)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flate2::{write::GzEncoder, Compression};
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::thread;
+
+    fn gzip_body(body: &str) -> Vec<u8> {
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(body.as_bytes()).unwrap();
+        encoder.finish().unwrap()
+    }
+
+    fn spawn_gzip_chat_completion_server() -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0_u8; 4096];
+            let _ = stream.read(&mut request).unwrap();
+
+            let body = gzip_body(r#"{"choices":[{"message":{"content":"OK"}}]}"#);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: application/json\r\n\
+                 Content-Encoding: gzip\r\n\
+                 Content-Length: {}\r\n\
+                 Connection: close\r\n\
+                 \r\n",
+                body.len()
+            );
+
+            stream.write_all(response.as_bytes()).unwrap();
+            stream.write_all(&body).unwrap();
+            stream.flush().unwrap();
+        });
+
+        format!("http://{}", addr)
+    }
+
+    #[test]
+    fn send_chat_completion_decodes_gzip_response() {
+        let base_url = spawn_gzip_chat_completion_server();
+        let provider = PostProcessProvider {
+            id: "openai".to_string(),
+            label: "OpenAI".to_string(),
+            base_url,
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+            supports_structured_output: true,
+        };
+
+        let result = tauri::async_runtime::block_on(send_chat_completion(
+            &provider,
+            "test-key".to_string(),
+            "test-model",
+            "Return OK".to_string(),
+            None,
+            None,
+        ));
+
+        assert_eq!(result.unwrap(), Some("OK".to_string()));
+    }
+}
