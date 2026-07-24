@@ -375,16 +375,16 @@ mod tests {
     }
 
     #[test]
-    fn adds_v1_to_lmstudio_host_root() {
-        let provider = provider_with_base_url("http://100.87.196.91:1234");
+    fn adds_v1_to_provider_host_root() {
+        let provider = provider_with_base_url("http://localhost:1234");
 
         assert_eq!(
             provider_endpoint_url(&provider, "/models"),
-            "http://100.87.196.91:1234/v1/models"
+            "http://localhost:1234/v1/models"
         );
         assert_eq!(
             provider_endpoint_url(&provider, "/chat/completions"),
-            "http://100.87.196.91:1234/v1/chat/completions"
+            "http://localhost:1234/v1/chat/completions"
         );
     }
 
