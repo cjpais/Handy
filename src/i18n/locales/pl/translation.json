@@ -209,7 +209,9 @@
         "description": "Wybierz język rozpoznawania mowy. Opcja Auto automatycznie określi język, a wybór konkretnego języka może poprawić dokładność.",
         "searchPlaceholder": "Szukaj języka...",
         "noResults": "Nie znaleziono języków",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Zgodnie z systemem ({{language}})",
+        "followOsInput": "Zgodnie z językiem wprowadzania systemu"
       },
       "pushToTalk": {
         "label": "Push To Talk",

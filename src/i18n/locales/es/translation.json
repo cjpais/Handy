@@ -209,7 +209,9 @@
         "description": "Selecciona el idioma para el reconocimiento de voz. Auto detectará automáticamente el idioma, mientras que seleccionar un idioma específico puede mejorar la precisión para ese idioma.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "No se encontraron idiomas",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Seguir el SO ({{language}})",
+        "followOsInput": "Seguir el idioma de entrada del SO"
       },
       "pushToTalk": {
         "label": "Presionar para hablar",

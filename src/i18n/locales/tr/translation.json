@@ -209,7 +209,9 @@
         "description": "Konuşma tanıma dilini seçin. 'Otomatik' seçeneği dili kendisi belirler, ancak belirli bir dil seçmek o dildeki doğruluğu artırabilir.",
         "searchPlaceholder": "Dil ara...",
         "noResults": "Dil bulunamadı",
-        "auto": "Otomatik"
+        "auto": "Otomatik",
+        "followOs": "İşletim sistemini takip et ({{language}})",
+        "followOsInput": "İşletim sistemi giriş dilini takip et"
       },
       "pushToTalk": {
         "label": "Bas Konuş",

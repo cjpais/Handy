@@ -7,6 +7,7 @@ export const CHINESE_LANGUAGE_CODE = "zh";
 
 export const LANGUAGES: Language[] = [
   { value: "auto", label: "Auto Detect" },
+  { value: "os_input", label: "Follow OS Input Language" },
   { value: "en", label: "English" },
   { value: CHINESE_LANGUAGE_CODE, label: "Chinese" },
   { value: "zh-Hans", label: "Chinese (Simplified)" },
@@ -119,7 +120,9 @@ const LANGUAGE_LABELS = new Map(
 
 export const MODEL_CAPABILITY_LANGUAGES: Language[] = LANGUAGES.filter(
   (language) =>
-    language.value !== "auto" && !CHINESE_OUTPUT_INTENTS.has(language.value),
+    language.value !== "auto" &&
+    language.value !== "os_input" &&
+    !CHINESE_OUTPUT_INTENTS.has(language.value),
 );
 
 // Languages offered in the transcription-language picker. We surface the two

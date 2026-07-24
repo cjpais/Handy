@@ -1559,13 +1559,17 @@ fn effective_language_for_model(
     model_manager: &ModelManager,
     model_id: &str,
 ) -> String {
+    // The dynamic `os_input` intent resolves against the current OS keyboard
+    // layout first; the capability coercion then applies as for any concrete
+    // intent.
+    let intent = crate::input_source::resolve_language_intent(&settings.selected_language);
     match model_manager.get_model_info(model_id) {
         Some(info) => crate::managers::model::effective_language(
-            &settings.selected_language,
+            &intent,
             &info.supported_languages,
             info.supports_language_detection,
         ),
-        None => settings.selected_language.clone(),
+        None => intent,
     }
 }
 

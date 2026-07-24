@@ -209,7 +209,9 @@
         "description": "Wähle die Sprache für die Spracherkennung. Auto erkennt die Sprache automatisch, die Auswahl einer bestimmten Sprache kann die Genauigkeit verbessern.",
         "searchPlaceholder": "Sprachen suchen...",
         "noResults": "Keine Sprachen gefunden",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Betriebssystem folgen ({{language}})",
+        "followOsInput": "Eingabesprache des Betriebssystems folgen"
       },
       "pushToTalk": {
         "label": "Push-to-Talk",

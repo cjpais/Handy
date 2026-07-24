@@ -209,7 +209,9 @@
         "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Segui il SO ({{language}})",
+        "followOsInput": "Segui la lingua di input del SO"
       },
       "pushToTalk": {
         "label": "Premi per Parlare",

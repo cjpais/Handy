@@ -209,7 +209,9 @@
         "description": "Sélectionnez la langue pour la reconnaissance vocale. Auto déterminera automatiquement la langue, tandis que sélectionner une langue spécifique peut améliorer la précision pour cette langue.",
         "searchPlaceholder": "Rechercher des langues...",
         "noResults": "Aucune langue trouvée",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Suivre le système ({{language}})",
+        "followOsInput": "Suivre la langue de saisie du système"
       },
       "pushToTalk": {
         "label": "Appuyer pour parler",

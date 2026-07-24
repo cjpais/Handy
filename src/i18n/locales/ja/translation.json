@@ -209,7 +209,9 @@
         "description": "音声認識の言語を選択してください。自動を選択すると言語を自動的に判定します。特定の言語を選択すると、その言語の精度が向上する場合があります。",
         "searchPlaceholder": "言語を検索…",
         "noResults": "言語が見つかりません",
-        "auto": "自動"
+        "auto": "自動",
+        "followOs": "OSに従う ({{language}})",
+        "followOsInput": "OS入力言語に従う"
       },
       "pushToTalk": {
         "label": "プッシュツートーク",

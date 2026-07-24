@@ -209,7 +209,9 @@
         "description": "Chọn ngôn ngữ để nhận dạng giọng nói. Tự động sẽ tự động xác định ngôn ngữ, trong khi chọn một ngôn ngữ cụ thể có thể cải thiện độ chính xác cho ngôn ngữ đó.",
         "searchPlaceholder": "Tìm kiếm ngôn ngữ...",
         "noResults": "Không tìm thấy ngôn ngữ",
-        "auto": "Tự động"
+        "auto": "Tự động",
+        "followOs": "Theo hệ điều hành ({{language}})",
+        "followOsInput": "Theo ngôn ngữ nhập của hệ điều hành"
       },
       "pushToTalk": {
         "label": "Nhấn để nói",

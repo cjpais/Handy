@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
@@ -30,6 +31,9 @@ const effectiveLanguage = (
   supported: string[],
   supportsDetection: boolean,
 ): string => {
+  // "os_input" is a dynamic intent resolved against the OS keyboard layout at
+  // use time (backend `resolve_language_intent`); it can't be coerced here.
+  if (intent === "os_input") return intent;
   if (supported.length === 0) return intent;
   if (intent !== "auto" && supportsLanguageCode(supported, intent))
     return intent;
@@ -48,6 +52,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [osInputLang, setOsInputLang] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -83,13 +88,28 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   }, [isOpen]);
 
+  // Fetch OS input language when "os_input" is selected
+  useEffect(() => {
+    if (selectedLanguage !== "os_input") return;
+    const fetchOsLang = () =>
+      invoke<string | null>("get_language_from_os_input")
+        .then(setOsInputLang)
+        .catch(() => {});
+    fetchOsLang();
+    const interval = setInterval(fetchOsLang, 5000); // Poll every 5s
+    return () => clearInterval(interval);
+  }, [selectedLanguage]);
+
   const availableLanguages = useMemo(() => {
     if (!supportedLanguages || supportedLanguages.length === 0)
       return SELECTABLE_LANGUAGES;
     return SELECTABLE_LANGUAGES.filter((lang) =>
       lang.value === "auto"
         ? supportsLanguageDetection
-        : supportsLanguageCode(supportedLanguages, lang.value),
+        : // "os_input" resolves dynamically at use time, so it stays available
+          // regardless of the model's advertised language set.
+          lang.value === "os_input" ||
+          supportsLanguageCode(supportedLanguages, lang.value),
     );
   }, [supportedLanguages, supportsLanguageDetection]);
 
@@ -101,8 +121,17 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     [searchQuery, availableLanguages],
   );
 
-  const selectedLanguageName =
-    getLanguageLabel(selectedLanguage) || t("settings.general.language.auto");
+  const selectedLanguageName = useMemo(() => {
+    if (selectedLanguage === "os_input") {
+      const resolved = osInputLang ? getLanguageLabel(osInputLang) : undefined;
+      return resolved
+        ? t("settings.general.language.followOs", { language: resolved })
+        : t("settings.general.language.followOsInput");
+    }
+    return (
+      getLanguageLabel(selectedLanguage) || t("settings.general.language.auto")
+    );
+  }, [selectedLanguage, osInputLang, t]);
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);

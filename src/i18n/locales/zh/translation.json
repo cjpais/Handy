@@ -209,7 +209,9 @@
         "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
         "searchPlaceholder": "搜索语言...",
         "noResults": "未找到语言",
-        "auto": "自动"
+        "auto": "自动",
+        "followOs": "跟随操作系统 ({{language}})",
+        "followOsInput": "跟随操作系统输入语言"
       },
       "pushToTalk": {
         "label": "按住说话",
