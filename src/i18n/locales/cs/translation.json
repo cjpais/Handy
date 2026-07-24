@@ -365,8 +365,12 @@
         "duplicate": "\"{{word}}\" již existuje"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Detekce hlasové aktivity (VAD)",
+        "description": "Odfiltruje ticho z nahrávek. Modely s podporou streamování používají delší doběh VAD; při vypnutém VAD se nahrává neupravený zvuk."
+      },
+      "fillerWordRemoval": {
+        "title": "Odstranit výplňová slova",
+        "description": "Odstraní běžná zaváhací slova, pokud Handy zná jazyk přepisu. Vypněte pro doslovný přepis."
       }
     },
     "postProcessing": {

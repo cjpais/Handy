@@ -365,8 +365,12 @@
         "duplicate": "\"{{word}}\" zaten mevcut"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Ses Etkinliği Algılama (VAD)",
+        "description": "Kayıtlardaki sessizliği filtreler. Akış destekleyen modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ses ham olarak kaydedilir."
+      },
+      "fillerWordRemoval": {
+        "title": "Dolgu sözcüklerini kaldır",
+        "description": "Handy, transkripsiyon dilini bildiğinde yaygın duraksama sözcüklerini kaldırır. Birebir transkripsiyon için devre dışı bırakın."
       }
     },
     "postProcessing": {

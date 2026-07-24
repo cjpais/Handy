@@ -365,8 +365,12 @@
         "duplicate": "„{{word}}“ вече съществува"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Разпознаване на гласова активност (VAD)",
+        "description": "Филтрира тишината от записите. Моделите с поддръжка на стрийминг използват по-дълга VAD опашка; изключването на VAD записва необработено аудио."
+      },
+      "fillerWordRemoval": {
+        "title": "Премахване на думи паразити",
+        "description": "Премахва често срещаните думи за колебание, когато Handy знае езика на транскрипцията. Изключете за дословна транскрипция."
       }
     },
     "postProcessing": {
