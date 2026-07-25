@@ -7,7 +7,7 @@ use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use hf_hub::api::tokio::{ApiBuilder, CancellationToken, Progress};
 use hf_hub::{Cache, Repo, RepoType};
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use specta::Type;
@@ -122,6 +122,10 @@ pub struct QuantFile {
     pub filename: String,
     pub quant: String,
     pub size_bytes: u64,
+    /// Content sha256 — the trust anchor for downloads from any source (HF or
+    /// mirror). `None` only for catalogs predating the field.
+    #[serde(default)]
+    pub sha256: Option<String>,
 }
 
 /// Pick the default quant among `files`: the one whose `quant` matches
@@ -184,12 +188,45 @@ impl ModelDescriptor {
     /// Render the frontend-facing [`ModelInfo`] by combining this spec with live
     /// disk `status`.
     pub fn to_model_info(&self, status: &DiskStatus) -> ModelInfo {
-        let file = self.default_file();
+        self.render_model_info(self.default_file(), status)
+    }
+
+    /// [`ModelInfo`] for one specific quant `file` of this catalog model — how
+    /// alternate-quant files found on disk surface with full catalog metadata
+    /// instead of as anonymous customs. The default quant keeps the plain
+    /// catalog name; any other quant appends it ("Name (Q4_K_M)") so two
+    /// quants of one model stay tellable apart, and only the default carries
+    /// the Recommended badge. Identity stays `"{repo_id}/{filename}"`, so the
+    /// default quant renders identically to the seeded entry.
+    pub fn to_model_info_for_file(&self, file: &QuantFile, status: &DiskStatus) -> ModelInfo {
+        self.render_model_info(Some(file), status)
+    }
+
+    fn render_model_info(&self, file: Option<&QuantFile>, status: &DiskStatus) -> ModelInfo {
+        let is_default = match (file, self.default_file()) {
+            (Some(f), Some(d)) => f.filename == d.filename,
+            _ => true,
+        };
+        let id = match (&self.source, file) {
+            (ModelSource::HuggingFace { repo_id, .. }, Some(f)) => {
+                format!("{}/{}", repo_id, f.filename)
+            }
+            _ => self.id.clone(),
+        };
+        let name = if is_default {
+            self.name.clone()
+        } else {
+            format!(
+                "{} ({})",
+                self.name,
+                file.map(|f| f.quant.as_str()).unwrap_or("")
+            )
+        };
         let languages =
             canonicalize_supported_languages(self.caps.languages.clone().unwrap_or_default());
         ModelInfo {
-            id: self.id.clone(),
-            name: self.name.clone(),
+            id,
+            name,
             description: self.description.clone(),
             filename: file.map(|f| f.filename.clone()).unwrap_or_default(),
             source: self.source.clone(),
@@ -202,7 +239,7 @@ impl ModelDescriptor {
             accuracy_score: self.accuracy_score,
             speed_score: self.speed_score,
             supports_translation: self.caps.supports_translation.unwrap_or(false),
-            is_recommended: self.recommended,
+            is_recommended: self.recommended && is_default,
             supports_language_selection: languages.len() > 1,
             supported_languages: languages,
             // Catalog models are always HF-sourced downloads, never user-dropped
@@ -272,17 +309,58 @@ pub struct DownloadProgress {
     pub percentage: f64,
 }
 
+/// Bound on connection setup for direct HTTP downloads (mirror + URL models).
+const HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// No headers, body bytes, or hf-hub progress for this long means the transfer
+/// is wedged, not slow: direct downloads error out (keeping the partial for
+/// resume) and HF attempts are cancelled by a watchdog — either way the retry
+/// loop and mirror fallback take over instead of hanging forever.
+const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Start offset of a `Content-Range: bytes <start>-<end>/<total>` header.
+fn content_range_start(value: &str) -> Option<u64> {
+    let range = value.trim().strip_prefix("bytes")?.trim_start();
+    range.split('-').next()?.trim().parse().ok()
+}
+
+/// How a [`ModelManager::download_http_resumable`] call ended, cancellation
+/// being an outcome (partial kept, no error surfaced) rather than a failure.
+#[derive(Debug)]
+enum HttpDownloadOutcome {
+    Completed,
+    Cancelled,
+}
+
+/// Side-channel notifications from the resumable HTTP downloader, decoupled
+/// from Tauri (the production wrapper maps them onto app events) so the
+/// transport logic is testable without an `AppHandle`.
+enum HttpDownloadEvent<'a> {
+    Progress(&'a DownloadProgress),
+    VerificationStarted,
+    VerificationCompleted,
+}
+
 /// Resolve a Hugging Face model file in the shared HF cache, if already present.
 /// Uses hf-hub's stock location (HF_HOME or ~/.cache/huggingface/hub) so
 /// downloads are shared with other tools.
+///
+/// hf-hub resolves purely through `refs/<revision>`. Pinned downloads write
+/// `refs/<commit-sha>`, but caches populated before pinning — or by other
+/// tools, which download via `main` — only have `refs/main`, so lookup falls
+/// back to it. Grandfathered `main` copies may predate the pin; per policy a
+/// working local model is never invalidated by routine catalog regeneration.
 fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathBuf> {
-    Cache::from_env()
-        .repo(Repo::with_revision(
-            repo_id.to_string(),
-            RepoType::Model,
-            revision.to_string(),
-        ))
-        .get(filename)
+    let get = |rev: &str| {
+        Cache::from_env()
+            .repo(Repo::with_revision(
+                repo_id.to_string(),
+                RepoType::Model,
+                rev.to_string(),
+            ))
+            .get(filename)
+    };
+    get(revision).or_else(|| (revision != "main").then(|| get("main")).flatten())
 }
 
 /// Friendly name advertised by GGUF metadata, if present. Empty strings are not
@@ -335,6 +413,10 @@ struct HfProgressState {
     total: u64,
     downloaded: u64,
     last_emit: Instant,
+    /// Every callback (even throttled-out ones) bumps this; the stall watchdog
+    /// reads it. Starts at construction so a hang before the first byte —
+    /// e.g. a wedged metadata/resolve request — also counts as a stall.
+    last_activity: Instant,
 }
 
 impl HfDownloadProgress {
@@ -346,8 +428,14 @@ impl HfDownloadProgress {
                 total: 0,
                 downloaded: 0,
                 last_emit: Instant::now(),
+                last_activity: Instant::now(),
             })),
         }
+    }
+
+    /// Instant of the most recent sign of life from the transfer.
+    fn last_activity(&self) -> Instant {
+        self.state.lock().unwrap().last_activity
     }
 
     fn emit(&self, downloaded: u64, total: u64) {
@@ -375,6 +463,7 @@ impl Progress for HfDownloadProgress {
             st.total = size as u64;
             st.downloaded = 0;
             st.last_emit = Instant::now();
+            st.last_activity = Instant::now();
         }
         self.emit(0, size as u64);
     }
@@ -384,6 +473,7 @@ impl Progress for HfDownloadProgress {
             let mut st = self.state.lock().unwrap();
             st.downloaded = st.downloaded.saturating_add(size as u64);
             let now = Instant::now();
+            st.last_activity = now;
             // Throttle to ~10 updates/sec, but always emit the final byte.
             let emit = now.duration_since(st.last_emit) >= Duration::from_millis(100)
                 || (st.total > 0 && st.downloaded >= st.total);
@@ -1303,13 +1393,33 @@ impl ModelManager {
     }
 
     fn update_download_status(&self) -> Result<()> {
+        // Snapshot in-flight download ids before taking the registry lock (the
+        // two locks are never nested) so a mid-download entry is never dropped.
+        let downloading_ids: HashSet<String> =
+            self.cancel_flags.lock().unwrap().keys().cloned().collect();
         let mut models = self.available_models.lock().unwrap();
+        let mut vanished_alternates: Vec<String> = Vec::new();
 
         for model in models.values_mut() {
             if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
-                model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some();
+                // A models-dir copy counts too: mirror-fallback downloads land
+                // there, and it makes manual drop-ins of catalog files work.
+                let local_path = self.models_dir.join(&model.filename);
+                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some()
+                    || local_path.exists();
                 model.is_downloading = false;
-                model.partial_size = 0;
+                model.partial_size = partial_path.metadata().map(|m| m.len()).unwrap_or(0);
+                // Alternate-quant entries exist only because their file was
+                // discovered on disk — the catalog offers just the default
+                // quant, so they are never presented for download. When the
+                // file is gone, the entry goes with it.
+                if !model.is_downloaded
+                    && !downloading_ids.contains(&model.id)
+                    && Self::is_catalog_alternate_quant(repo_id, &model.filename)
+                {
+                    vanished_alternates.push(model.id.clone());
+                }
                 continue;
             }
             if model.is_directory {
@@ -1357,7 +1467,44 @@ impl ModelManager {
             }
         }
 
+        for id in vanished_alternates {
+            models.remove(&id);
+        }
+
         Ok(())
+    }
+
+    /// Whether `filename` is a catalog-listed quant of `repo_id` other than
+    /// the default — the only quant the catalog seeds and offers for download.
+    fn is_catalog_alternate_quant(repo_id: &str, filename: &str) -> bool {
+        crate::catalog::file_in_catalog(filename, Some(repo_id)).is_some_and(|(desc, file)| {
+            desc.default_file()
+                .is_some_and(|d| d.filename != file.filename)
+        })
+    }
+
+    /// Remove a single file from the shared HF cache: the snapshot pointer for
+    /// the resolved revision and, when the pointer is a symlink, the blob it
+    /// points to. Everything else in the repo (other quants, refs) is left
+    /// untouched. Returns whether anything was removed.
+    fn delete_hf_cache_file(repo_id: &str, revision: &str, filename: &str) -> bool {
+        let Some(pointer) = hf_cached_path(repo_id, revision, filename) else {
+            return false;
+        };
+        // Resolve the blob before the pointer goes away. On Windows the
+        // pointer may be a plain file (hf-hub's symlink fallback renames the
+        // blob into the snapshot), in which case there is no separate blob.
+        let is_symlink = fs::symlink_metadata(&pointer)
+            .map(|m| m.file_type().is_symlink())
+            .unwrap_or(false);
+        if is_symlink {
+            if let Ok(blob) = fs::canonicalize(&pointer) {
+                info!("Deleting HF cache blob at: {:?}", blob);
+                let _ = fs::remove_file(&blob);
+            }
+        }
+        info!("Deleting HF cache file at: {:?}", pointer);
+        fs::remove_file(&pointer).is_ok()
     }
 
     fn auto_select_model_if_needed(&self) -> Result<()> {
@@ -1473,6 +1620,28 @@ impl ModelManager {
 
             // Skip predefined model files
             if predefined_filenames.contains(&filename) {
+                continue;
+            }
+
+            // A file matching ANY catalog-listed quant surfaces as that catalog
+            // model — full name/description/scores, quant-suffixed name for
+            // non-defaults — instead of as an anonymous custom entry. (Default
+            // quants never reach here: they're in `predefined_filenames`.)
+            if let Some((desc, quant_file)) = crate::catalog::file_in_catalog(&filename, None) {
+                let info = desc.to_model_info_for_file(
+                    quant_file,
+                    &DiskStatus {
+                        is_downloaded: true,
+                        ..Default::default()
+                    },
+                );
+                if !available_models.contains_key(&info.id) {
+                    info!(
+                        "Discovered catalog quant in models dir: {} ({})",
+                        info.id, filename
+                    );
+                    available_models.insert(info.id.clone(), info);
+                }
                 continue;
             }
 
@@ -1624,6 +1793,28 @@ impl ModelManager {
                     continue;
                 }
 
+                // Catalog-listed quants (same repo) surface with full catalog
+                // metadata — quant-suffixed name for non-defaults — and skip
+                // the header probe (the catalog is authoritative for its own
+                // models). Everything else keeps the generic probed path.
+                if let Some((desc, quant_file)) =
+                    crate::catalog::file_in_catalog(&fname, Some(&repo_id))
+                {
+                    let info = desc.to_model_info_for_file(
+                        quant_file,
+                        &DiskStatus {
+                            is_downloaded: true,
+                            ..Default::default()
+                        },
+                    );
+                    info!(
+                        "Discovered catalog quant in HF cache: {} ({})",
+                        info.id, repo_id
+                    );
+                    available_models.insert(info.id.clone(), info);
+                    continue;
+                }
+
                 let path = snapshot.join(&fname);
                 let probe = prober.probe_file(&path);
                 // Only surface models transcribe-cpp recognises.
@@ -1749,8 +1940,11 @@ impl ModelManager {
         let model_id = model_info.id.clone();
         let filename = model_info.filename.clone();
 
-        // Already in the shared cache (possibly from another tool)? Done.
-        if hf_cached_path(&repo_id, &revision, &filename).is_some() {
+        // Already in the shared cache (possibly from another tool), or dropped
+        // into the models dir (mirror fallback / manual install)? Done.
+        if hf_cached_path(&repo_id, &revision, &filename).is_some()
+            || self.models_dir.join(&filename).exists()
+        {
             self.update_download_status()?;
             let _ = self.app_handle.emit("model-download-complete", &model_id);
             return Ok(());
@@ -1792,21 +1986,21 @@ impl ModelManager {
         // attempt hadn't finished.
         const MAX_ATTEMPTS: u32 = 4;
         let mut attempt: u32 = 1;
-        loop {
+        let hf_error = loop {
             // Fresh client per attempt so a wedged connection from the previous
-            // try can't poison the retry (all 8 chunk streams multiplex over
-            // one HTTP/2 connection).
+            // try can't poison the retry.
             let api = ApiBuilder::from_env()
                 // Ignore cached and environment-provided credentials. A stale token
                 // can make otherwise-public downloads fail authentication.
                 .with_token(None)
                 .with_progress(false)
-                // Download chunks in parallel (default is 1 = sequential). Throughput
-                // scales near-linearly with this count because each connection is capped
-                // (~8 MB/s observed per stream), so we stack several to approach the
-                // link's real bandwidth. 8 stays light on CPU/RAM (~80 MB peak buffers)
-                // even on older machines and is browser-like in connection count.
-                .with_max_files(8)
+                // Single stream. Corporate IPS/firewalls kill parallel connection
+                // bursts to huggingface.co (#1579: 8 simultaneous chunk connections
+                // all reset while the browser and sequential CLIs work fine on the
+                // same machine). One connection matches the request pattern that is
+                // known to pass those middleboxes; the mirror fallback below covers
+                // the throughput-sensitive cases.
+                .with_max_files(1)
                 .build()
                 .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
             let repo = api.repo(Repo::with_revision(
@@ -1815,12 +2009,55 @@ impl ModelManager {
                 revision.clone(),
             ));
             let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
-            match repo
-                .download_with_progress_cancellable(&filename, progress, cancel_token.clone())
-                .await
-            {
-                Ok(_) => break,
-                Err(hf_hub::api::tokio::ApiError::Cancelled) => {
+
+            // hf-hub has no internal timeouts, so a wedged connection would
+            // otherwise hang this attempt forever and neither the retry loop
+            // nor the mirror fallback would ever fire. The watchdog cancels a
+            // per-attempt child token when progress goes stale; a user cancel
+            // on the parent propagates through the same child.
+            let attempt_token = cancel_token.child_token();
+            let watchdog = tokio::spawn({
+                let probe = progress.clone();
+                let attempt_token = attempt_token.clone();
+                async move {
+                    loop {
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        if attempt_token.is_cancelled() {
+                            break;
+                        }
+                        if probe.last_activity().elapsed() > DOWNLOAD_STALL_TIMEOUT {
+                            attempt_token.cancel();
+                            break;
+                        }
+                    }
+                }
+            });
+            // hf-hub only observes its token inside the chunk loop — the
+            // metadata/resolve request and cache lock run before it, so a hang
+            // there would ignore the cancel entirely. Race the whole future
+            // against the token: on cancel, grant a short grace so an attempt
+            // that IS in the chunk loop can unwind gracefully (committing the
+            // `.sync.part` resume offset), then drop the future outright,
+            // which aborts whatever request it was wedged in.
+            let mut download = std::pin::pin!(repo.download_with_progress_cancellable(
+                &filename,
+                progress,
+                attempt_token.clone()
+            ));
+            let result = tokio::select! {
+                r = &mut download => r,
+                _ = attempt_token.cancelled() => {
+                    match tokio::time::timeout(Duration::from_secs(5), &mut download).await {
+                        Ok(r) => r,
+                        Err(_) => Err(hf_hub::api::tokio::ApiError::Cancelled),
+                    }
+                }
+            };
+            watchdog.abort();
+
+            match result {
+                Ok(_) => break None,
+                Err(hf_hub::api::tokio::ApiError::Cancelled) if cancel_token.is_cancelled() => {
                     // User cancelled. hf-hub leaves the partially downloaded
                     // `.sync.part` in the shared cache, so a later attempt resumes
                     // instead of restarting. The guard resets is_downloading and
@@ -1829,14 +2066,30 @@ impl ModelManager {
                     info!("HF download cancelled for: {}", model_id);
                     return Ok(());
                 }
-                Err(e) if attempt < MAX_ATTEMPTS => {
+                Err(hf_hub::api::tokio::ApiError::Cancelled) => {
+                    // Watchdog stall. Unlike a fast transient error, a wedged
+                    // connection already cost DOWNLOAD_STALL_TIMEOUT and every
+                    // retry would burn the same again before its own watchdog
+                    // fires — skip straight to the mirror fallback.
+                    break Some(anyhow::anyhow!(
+                        "transfer stalled: no progress for {}s",
+                        DOWNLOAD_STALL_TIMEOUT.as_secs()
+                    ));
+                }
+                Err(e) => {
+                    // {:?} keeps the error source chain (reset vs TLS vs timeout);
+                    // Display truncates it to "error sending request".
+                    let err = anyhow::anyhow!("{:?}", e);
+                    if attempt >= MAX_ATTEMPTS {
+                        break Some(err);
+                    }
                     let delay = Duration::from_secs(1 << attempt);
                     warn!(
                         "HF download attempt {}/{} failed for {}: {}; retrying in {}s",
                         attempt,
                         MAX_ATTEMPTS,
                         model_id,
-                        e,
+                        err,
                         delay.as_secs()
                     );
                     tokio::select! {
@@ -1848,13 +2101,52 @@ impl ModelManager {
                     }
                     attempt += 1;
                 }
-                Err(e) => {
-                    return Err(anyhow::anyhow!(
-                        "Hugging Face download failed after {} attempts: {}",
-                        attempt,
-                        e
-                    ));
+            }
+        };
+
+        if let Some(hf_error) = hf_error {
+            // `attempt`, not MAX_ATTEMPTS: a stall breaks out early.
+            error!(
+                "HF download failed for {} after {} attempt(s): {:?}",
+                model_id, attempt, hf_error
+            );
+            let mirrors = crate::catalog::mirror_fallbacks(&model_id);
+            if mirrors.is_empty() {
+                return Err(anyhow::anyhow!(
+                    "Hugging Face download failed after {} attempt(s): {}",
+                    attempt,
+                    hf_error
+                ));
+            }
+            let mut completed = false;
+            for mirror in &mirrors {
+                info!("Falling back to mirror for {}: {}", model_id, mirror.url);
+                match self
+                    .download_from_mirror(&model_id, &filename, mirror, cancel_token.clone())
+                    .await
+                {
+                    Ok(true) => {
+                        completed = true;
+                        break;
+                    }
+                    Ok(false) => {
+                        info!("Mirror download cancelled for: {}", model_id);
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        warn!(
+                            "Mirror download failed for {} from {}: {:?}",
+                            model_id, mirror.url, e
+                        );
+                    }
                 }
+            }
+            if !completed {
+                return Err(anyhow::anyhow!(
+                    "Download failed from Hugging Face ({}) and {} mirror(s)",
+                    hf_error,
+                    mirrors.len()
+                ));
             }
         }
 
@@ -1864,6 +2156,327 @@ impl ModelManager {
         let _ = self.app_handle.emit("model-download-complete", &model_id);
         info!("HF model {} downloaded", model_id);
         Ok(())
+    }
+
+    /// Direct-HTTP download of a catalog model's file from a mirror into the
+    /// models dir (HF-model resolution accepts that location too). Returns
+    /// `Ok(true)` on completion, `Ok(false)` if cancelled (partial kept).
+    async fn download_from_mirror(
+        &self,
+        model_id: &str,
+        filename: &str,
+        mirror: &crate::catalog::MirrorFile,
+        cancel_token: CancellationToken,
+    ) -> Result<bool> {
+        fs::create_dir_all(&self.models_dir)?;
+        let model_path = self.models_dir.join(filename);
+        let partial_path = self.models_dir.join(format!("{}.partial", filename));
+
+        if model_path.exists() {
+            return Ok(true);
+        }
+
+        match self
+            .download_http_resumable(
+                model_id,
+                &mirror.url,
+                &partial_path,
+                Some(mirror.size_bytes),
+                Some(&mirror.sha256),
+                &cancel_token,
+            )
+            .await?
+        {
+            HttpDownloadOutcome::Cancelled => Ok(false),
+            HttpDownloadOutcome::Completed => {
+                fs::rename(&partial_path, &model_path)?;
+                info!(
+                    "Mirror download of {} completed and verified ({:?})",
+                    model_id, model_path
+                );
+                Ok(true)
+            }
+        }
+    }
+
+    /// Emit verification events around a blocking sha256 check of `path`.
+    /// On mismatch `verify_sha256` deletes the file, so the next attempt (or
+    /// next source) starts clean. A `None` hash skips checking (custom models).
+    async fn verify_file_with_events(
+        model_id: &str,
+        path: &Path,
+        expected_sha256: Option<&str>,
+        emit: &(dyn Fn(HttpDownloadEvent<'_>) + Send + Sync),
+    ) -> Result<()> {
+        emit(HttpDownloadEvent::VerificationStarted);
+        let path = path.to_path_buf();
+        let expected = expected_sha256.map(str::to_string);
+        let id = model_id.to_string();
+        tokio::task::spawn_blocking(move || Self::verify_sha256(&path, expected.as_deref(), &id))
+            .await
+            .map_err(|e| anyhow::anyhow!("SHA256 task panicked: {}", e))??;
+        emit(HttpDownloadEvent::VerificationCompleted);
+        Ok(())
+    }
+
+    /// [`Self::download_http_resumable_with_events`] wired to the Tauri event
+    /// bus — the production entry point.
+    async fn download_http_resumable(
+        &self,
+        model_id: &str,
+        url: &str,
+        partial_path: &Path,
+        expected_size: Option<u64>,
+        expected_sha256: Option<&str>,
+        cancel_token: &CancellationToken,
+    ) -> Result<HttpDownloadOutcome> {
+        let app_handle = self.app_handle.clone();
+        let id = model_id.to_string();
+        Self::download_http_resumable_with_events(
+            model_id,
+            url,
+            partial_path,
+            expected_size,
+            expected_sha256,
+            cancel_token,
+            &move |event| {
+                let _ = match event {
+                    HttpDownloadEvent::Progress(progress) => {
+                        app_handle.emit("model-download-progress", progress)
+                    }
+                    HttpDownloadEvent::VerificationStarted => {
+                        app_handle.emit("model-verification-started", &id)
+                    }
+                    HttpDownloadEvent::VerificationCompleted => {
+                        app_handle.emit("model-verification-completed", &id)
+                    }
+                };
+            },
+        )
+        .await
+    }
+
+    /// The one resumable HTTP downloader, shared by the mirror fallback and
+    /// URL-sourced models: fetch `url` into `partial_path`, resuming what's
+    /// already there, and leave verified bytes in `partial_path` on success —
+    /// finalizing (rename / extract) is the caller's job. Takes progress and
+    /// verification notifications as a callback instead of touching Tauri, so
+    /// the failure-mode behavior below is exercised by tests against a local
+    /// socket server.
+    ///
+    /// Robustness properties, in the order the failure modes appear:
+    /// - a partial already at the expected size (crash between completion and
+    ///   finalize) is verified and accepted instead of asking the server for
+    ///   `Range: bytes=<EOF>-` and looping on 416 forever; an oversized one is
+    ///   deleted; a live 416 finishes the partial only when a hash can prove
+    ///   it, and otherwise clears it
+    /// - connection setup and every body chunk are bounded by
+    ///   [`HTTP_CONNECT_TIMEOUT`] / [`DOWNLOAD_STALL_TIMEOUT`] and race the
+    ///   cancel token, so a wedged transfer can neither hang the download
+    ///   forever nor ignore a cancel
+    /// - a 200 to a Range request (server ignored it) restarts from zero
+    ///   rather than appending the whole file to the partial; a 206 must start
+    ///   exactly at our offset or the partial is discarded
+    /// - a server claiming or sending more than the expected size is cut off
+    ///   at the first excess byte, not trusted until it closes the stream
+    /// - the final bytes are checked against `expected_size` (catalog, or
+    ///   content-length when unknown) and `expected_sha256` before returning
+    async fn download_http_resumable_with_events(
+        model_id: &str,
+        url: &str,
+        partial_path: &Path,
+        expected_size: Option<u64>,
+        expected_sha256: Option<&str>,
+        cancel_token: &CancellationToken,
+        emit: &(dyn Fn(HttpDownloadEvent<'_>) + Send + Sync),
+    ) -> Result<HttpDownloadOutcome> {
+        let mut resume_from = partial_path.metadata().map(|m| m.len()).unwrap_or(0);
+
+        if let Some(expected) = expected_size {
+            if resume_from > expected {
+                let _ = fs::remove_file(partial_path);
+                resume_from = 0;
+            } else if resume_from == expected && expected > 0 {
+                info!(
+                    "Partial download of {} is already full-size; verifying",
+                    model_id
+                );
+                Self::verify_file_with_events(model_id, partial_path, expected_sha256, emit)
+                    .await?;
+                return Ok(HttpDownloadOutcome::Completed);
+            }
+        }
+
+        if resume_from > 0 {
+            info!(
+                "Resuming download of {} from byte {}",
+                model_id, resume_from
+            );
+        } else {
+            info!("Starting fresh download of {} from {}", model_id, url);
+        }
+
+        let client = reqwest::Client::builder()
+            .connect_timeout(HTTP_CONNECT_TIMEOUT)
+            .build()?;
+        let mut request = client.get(url);
+        if resume_from > 0 {
+            request = request.header("Range", format!("bytes={}-", resume_from));
+        }
+        let response = tokio::select! {
+            r = tokio::time::timeout(DOWNLOAD_STALL_TIMEOUT, request.send()) => r
+                .map_err(|_| anyhow::anyhow!(
+                    "no response within {}s from {}",
+                    DOWNLOAD_STALL_TIMEOUT.as_secs(), url
+                ))??,
+            _ = cancel_token.cancelled() => return Ok(HttpDownloadOutcome::Cancelled),
+        };
+
+        // 416 to our Range request means its start is at or past the object's
+        // end. With a catalog size in hand that can only mean the server's
+        // object is *smaller* than expected (a full-size partial never issues
+        // a request — handled above), and with no hash there is no trusted
+        // signal to bless the partial: both restart clean. Only a hash can
+        // genuinely finish a partial here. Without a Range in flight a 416 is
+        // just a broken server, which the generic status check below rejects.
+        if resume_from > 0 && response.status() == reqwest::StatusCode::RANGE_NOT_SATISFIABLE {
+            if expected_size.is_some() || expected_sha256.is_none() {
+                let _ = fs::remove_file(partial_path);
+                return Err(anyhow::anyhow!(
+                    "server object ends before the expected size (HTTP 416)"
+                ));
+            }
+            Self::verify_file_with_events(model_id, partial_path, expected_sha256, emit).await?;
+            return Ok(HttpDownloadOutcome::Completed);
+        }
+        // A 200 to a Range request means the server ignored it and is sending
+        // the whole file; appending it to the partial would corrupt the model.
+        if resume_from > 0 && response.status() == reqwest::StatusCode::OK {
+            let _ = fs::remove_file(partial_path);
+            resume_from = 0;
+        }
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "server returned HTTP {}",
+                response.status()
+            ));
+        }
+        // On a 206, trust but verify the offset: a reply starting anywhere but
+        // exactly our partial's end would silently corrupt the file on append.
+        if resume_from > 0 && response.status() == reqwest::StatusCode::PARTIAL_CONTENT {
+            let starts_at = response
+                .headers()
+                .get(reqwest::header::CONTENT_RANGE)
+                .and_then(|v| v.to_str().ok())
+                .and_then(content_range_start);
+            if starts_at != Some(resume_from) {
+                let _ = fs::remove_file(partial_path);
+                return Err(anyhow::anyhow!(
+                    "server returned Content-Range starting at {:?}, expected {}",
+                    starts_at,
+                    resume_from
+                ));
+            }
+        }
+        // When the catalog pins the size, a server advertising a different
+        // total is already misbehaving — reject before writing anything.
+        if let (Some(expected), Some(len)) = (expected_size, response.content_length()) {
+            if resume_from + len != expected {
+                return Err(anyhow::anyhow!(
+                    "server advertises {} bytes, expected {}",
+                    resume_from + len,
+                    expected
+                ));
+            }
+        }
+
+        let known_total =
+            expected_size.or_else(|| response.content_length().map(|l| resume_from + l));
+        let total_size = known_total.unwrap_or(0);
+        let mut downloaded = resume_from;
+        let mut file = if resume_from > 0 {
+            std::fs::OpenOptions::new()
+                .append(true)
+                .open(partial_path)?
+        } else {
+            std::fs::File::create(partial_path)?
+        };
+
+        let emit_progress = |downloaded: u64| {
+            emit(HttpDownloadEvent::Progress(&DownloadProgress {
+                model_id: model_id.to_string(),
+                downloaded,
+                total: total_size,
+                percentage: if total_size > 0 {
+                    (downloaded as f64 / total_size as f64) * 100.0
+                } else {
+                    0.0
+                },
+            }));
+        };
+        emit_progress(downloaded);
+
+        // Throttle progress events to max 10/sec (100ms intervals)
+        let mut last_emit = Instant::now();
+        let throttle = Duration::from_millis(100);
+        let mut stream = response.bytes_stream();
+        loop {
+            let chunk = tokio::select! {
+                c = tokio::time::timeout(DOWNLOAD_STALL_TIMEOUT, stream.next()) => match c {
+                    // Stalled mid-body: keep the partial for resume.
+                    Err(_) => return Err(anyhow::anyhow!(
+                        "transfer stalled: no data for {}s",
+                        DOWNLOAD_STALL_TIMEOUT.as_secs()
+                    )),
+                    Ok(None) => break,
+                    Ok(Some(chunk)) => chunk?,
+                },
+                _ = cancel_token.cancelled() => {
+                    // Keep the partial for resume; caller handles state cleanup.
+                    return Ok(HttpDownloadOutcome::Cancelled);
+                }
+            };
+            // An untrusted server must not be able to fill the disk: cut the
+            // transfer at the first byte past the known total instead of
+            // trusting it to eventually close the stream. Everything written
+            // so far is tainted by a provably-misbehaving server — clear it.
+            if let Some(cap) = known_total {
+                if downloaded + chunk.len() as u64 > cap {
+                    drop(file);
+                    let _ = fs::remove_file(partial_path);
+                    return Err(anyhow::anyhow!(
+                        "server sent more than the expected {} bytes",
+                        cap
+                    ));
+                }
+            }
+            file.write_all(&chunk)?;
+            downloaded += chunk.len() as u64;
+            if last_emit.elapsed() >= throttle {
+                emit_progress(downloaded);
+                last_emit = Instant::now();
+            }
+        }
+        file.flush()?;
+        drop(file);
+        emit_progress(downloaded);
+
+        if let Some(expected) = known_total {
+            let actual = partial_path.metadata()?.len();
+            if actual != expected {
+                let _ = fs::remove_file(partial_path);
+                return Err(anyhow::anyhow!(
+                    "download incomplete: expected {} bytes, got {}",
+                    expected,
+                    actual
+                ));
+            }
+        }
+
+        // The catalog hash is the trust anchor: for a mirror (an untrusted
+        // host) this verification is what makes the fallback safe at all.
+        Self::verify_file_with_events(model_id, partial_path, expected_sha256, emit).await?;
+        Ok(HttpDownloadOutcome::Completed)
     }
 
     pub async fn download_model(&self, model_id: &str) -> Result<()> {
@@ -1901,16 +2514,6 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Check if we have a partial download to resume
-        let mut resume_from = if partial_path.exists() {
-            let size = partial_path.metadata()?.len();
-            info!("Resuming download of model {} from byte {}", model_id, size);
-            size
-        } else {
-            info!("Starting fresh download of model {} from {}", model_id, url);
-            0
-        };
-
         // Mark as downloading
         {
             let mut models = self.available_models.lock().unwrap();
@@ -1935,167 +2538,27 @@ impl ModelManager {
             disarmed: false,
         };
 
-        // Create HTTP client with range request for resuming
-        let client = reqwest::Client::new();
-        let mut request = client.get(&url);
-
-        if resume_from > 0 {
-            request = request.header("Range", format!("bytes={}-", resume_from));
-        }
-
-        let mut response = request.send().await?;
-
-        // If we tried to resume but server returned 200 (not 206 Partial Content),
-        // the server doesn't support range requests. Delete partial file and restart
-        // fresh to avoid file corruption (appending full file to partial).
-        if resume_from > 0 && response.status() == reqwest::StatusCode::OK {
-            warn!(
-                "Server doesn't support range requests for model {}, restarting download",
-                model_id
-            );
-            drop(response);
-            let _ = fs::remove_file(&partial_path);
-
-            // Reset resume_from since we're starting fresh
-            resume_from = 0;
-
-            // Restart download without range header
-            response = client.get(&url).send().await?;
-        }
-
-        // Check for success or partial content status
-        if !response.status().is_success()
-            && response.status() != reqwest::StatusCode::PARTIAL_CONTENT
+        // URL sources carry no authoritative size, so the helper falls back to
+        // the server's content-length for progress and completeness checks.
+        match self
+            .download_http_resumable(
+                model_id,
+                &url,
+                &partial_path,
+                None,
+                expected_sha256.as_deref(),
+                &cancel_token,
+            )
+            .await?
         {
-            return Err(anyhow::anyhow!(
-                "Failed to download model: HTTP {}",
-                response.status()
-            ));
-        }
-
-        let total_size = if resume_from > 0 {
-            // For resumed downloads, add the resume point to content length
-            resume_from + response.content_length().unwrap_or(0)
-        } else {
-            response.content_length().unwrap_or(0)
-        };
-
-        let mut downloaded = resume_from;
-        let mut stream = response.bytes_stream();
-
-        // Open file for appending if resuming, or create new if starting fresh
-        let mut file = if resume_from > 0 {
-            std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&partial_path)?
-        } else {
-            std::fs::File::create(&partial_path)?
-        };
-
-        // Emit initial progress
-        let initial_progress = DownloadProgress {
-            model_id: model_id.to_string(),
-            downloaded,
-            total: total_size,
-            percentage: if total_size > 0 {
-                (downloaded as f64 / total_size as f64) * 100.0
-            } else {
-                0.0
-            },
-        };
-        let _ = self
-            .app_handle
-            .emit("model-download-progress", &initial_progress);
-
-        // Throttle progress events to max 10/sec (100ms intervals)
-        let mut last_emit = Instant::now();
-        let throttle_duration = Duration::from_millis(100);
-
-        // Download with progress
-        while let Some(chunk) = stream.next().await {
-            // Check if download was cancelled
-            if cancel_token.is_cancelled() {
-                drop(file);
+            HttpDownloadOutcome::Cancelled => {
                 info!("Download cancelled for: {}", model_id);
                 // Keep partial file for resume functionality.
                 // Guard handles is_downloading + cancel_flags cleanup on drop.
                 return Ok(());
             }
-
-            let chunk = chunk?;
-
-            file.write_all(&chunk)?;
-            downloaded += chunk.len() as u64;
-
-            let percentage = if total_size > 0 {
-                (downloaded as f64 / total_size as f64) * 100.0
-            } else {
-                0.0
-            };
-
-            // Emit progress event (throttled to avoid UI freeze)
-            if last_emit.elapsed() >= throttle_duration {
-                let progress = DownloadProgress {
-                    model_id: model_id.to_string(),
-                    downloaded,
-                    total: total_size,
-                    percentage,
-                };
-                let _ = self.app_handle.emit("model-download-progress", &progress);
-                last_emit = Instant::now();
-            }
+            HttpDownloadOutcome::Completed => {}
         }
-
-        // Emit final progress to ensure 100% is shown
-        let final_progress = DownloadProgress {
-            model_id: model_id.to_string(),
-            downloaded,
-            total: total_size,
-            percentage: if total_size > 0 {
-                (downloaded as f64 / total_size as f64) * 100.0
-            } else {
-                100.0
-            },
-        };
-        let _ = self
-            .app_handle
-            .emit("model-download-progress", &final_progress);
-
-        file.flush()?;
-        drop(file); // Ensure file is closed before moving
-
-        // Verify downloaded file size matches expected size
-        if total_size > 0 {
-            let actual_size = partial_path.metadata()?.len();
-            if actual_size != total_size {
-                // Download is incomplete/corrupted - delete partial and return error
-                let _ = fs::remove_file(&partial_path);
-                return Err(anyhow::anyhow!(
-                    "Download incomplete: expected {} bytes, got {} bytes",
-                    total_size,
-                    actual_size
-                ));
-            }
-        }
-
-        // Verify SHA256 checksum. Runs in a blocking thread so the async executor is not
-        // stalled while hashing large model files (up to 1.6 GB). On failure the partial
-        // is deleted inside verify_sha256 so the next attempt always starts fresh.
-        let _ = self.app_handle.emit("model-verification-started", model_id);
-        info!("Verifying SHA256 for model {}...", model_id);
-        let verify_path = partial_path.clone();
-        let verify_expected = expected_sha256.clone();
-        let verify_model_id = model_id.to_string();
-        let verify_result = tokio::task::spawn_blocking(move || {
-            Self::verify_sha256(&verify_path, verify_expected.as_deref(), &verify_model_id)
-        })
-        .await
-        .map_err(|e| anyhow::anyhow!("SHA256 task panicked: {}", e))?;
-        verify_result?;
-        let _ = self
-            .app_handle
-            .emit("model-verification-completed", model_id);
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
@@ -2228,11 +2691,18 @@ impl ModelManager {
         debug!("ModelManager: Found model info: {:?}", model_info);
 
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
-            // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
-            // the whole repo dir (blobs + refs + snapshots). Per product decision,
-            // delete hard-removes from the shared HF cache.
+            let is_alternate_quant =
+                Self::is_catalog_alternate_quant(repo_id, &model_info.filename);
             let mut deleted = false;
-            if let Some(file) = hf_cached_path(repo_id, revision, &model_info.filename) {
+            if is_alternate_quant {
+                // Only this quant's own file: the snapshot pointer and its
+                // blob. The default (and any other quants) survive in the
+                // cache — the entry never owned more than its one file.
+                deleted |= Self::delete_hf_cache_file(repo_id, revision, &model_info.filename);
+            } else if let Some(file) = hf_cached_path(repo_id, revision, &model_info.filename) {
+                // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
+                // the whole repo dir (blobs + refs + snapshots). Per product decision,
+                // delete hard-removes from the shared HF cache.
                 if let Some(repo_dir) = file.ancestors().nth(3) {
                     if repo_dir
                         .file_name()
@@ -2245,8 +2715,27 @@ impl ModelManager {
                     }
                 }
             }
+            // Also remove a models-dir copy (mirror fallback / manual drop-in)
+            // and any resumable partial next to it.
+            for path in [
+                self.models_dir.join(&model_info.filename),
+                self.models_dir
+                    .join(format!("{}.partial", &model_info.filename)),
+            ] {
+                if path.exists() {
+                    info!("Deleting model file at: {:?}", path);
+                    fs::remove_file(&path)?;
+                    deleted = true;
+                }
+            }
             if !deleted {
                 return Err(anyhow::anyhow!("No model files found to delete"));
+            }
+            // Alternate-quant entries are discovery-created (the catalog only
+            // seeds defaults), so deleting one un-discovers it rather than
+            // leaving a permanent "(Q4_K_M)" row in the list.
+            if is_alternate_quant {
+                self.available_models.lock().unwrap().remove(model_id);
             }
             self.update_download_status()?;
             let _ = self.app_handle.emit("model-deleted", model_id);
@@ -2328,9 +2817,27 @@ impl ModelManager {
         }
 
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
-            return hf_cached_path(repo_id, revision, &model_info.filename).ok_or_else(|| {
-                anyhow::anyhow!("Complete model file not found in HF cache: {}", model_id)
-            });
+            if let Some(path) = hf_cached_path(repo_id, revision, &model_info.filename) {
+                return Ok(path);
+            }
+            // Mirror-fallback download or manual drop-in in the models dir.
+            // The complete file only ever appears after verification, so a
+            // stale `.partial` alongside it is leftover noise, not a veto —
+            // clear it rather than declaring the model missing.
+            let local_path = self.models_dir.join(&model_info.filename);
+            if local_path.exists() {
+                let partial_path = self
+                    .models_dir
+                    .join(format!("{}.partial", &model_info.filename));
+                if partial_path.exists() {
+                    let _ = fs::remove_file(&partial_path);
+                }
+                return Ok(local_path);
+            }
+            return Err(anyhow::anyhow!(
+                "Complete model file not found in HF cache or models dir: {}",
+                model_id
+            ));
         }
 
         let model_path = self.models_dir.join(&model_info.filename);
@@ -2600,6 +3107,107 @@ mod tests {
         assert_eq!(models.len(), count_before);
     }
 
+    #[test]
+    fn test_catalog_quant_rendering() {
+        let desc = ModelDescriptor {
+            id: "org/repo/model-Q8_0.gguf".to_string(),
+            source: ModelSource::HuggingFace {
+                repo_id: "org/repo".to_string(),
+                revision: "main".to_string(),
+            },
+            name: "Model".to_string(),
+            description: "desc".to_string(),
+            engine_type: EngineType::TranscribeCpp,
+            caps: CapabilityProbe::default(),
+            files: vec![
+                QuantFile {
+                    filename: "model-Q4_K_M.gguf".to_string(),
+                    quant: "Q4_K_M".to_string(),
+                    size_bytes: 1,
+                    sha256: None,
+                },
+                QuantFile {
+                    filename: "model-Q8_0.gguf".to_string(),
+                    quant: "Q8_0".to_string(),
+                    size_bytes: 2,
+                    sha256: None,
+                },
+            ],
+            default_quant: Some("Q8_0".to_string()),
+            speed_score: 0.5,
+            accuracy_score: 0.5,
+            recommended_rank: None,
+            recommended: true,
+        };
+        let status = DiskStatus::default();
+
+        // Default quant: plain name, badge intact.
+        let default_info = desc.to_model_info(&status);
+        assert_eq!(default_info.name, "Model");
+        assert!(default_info.is_recommended);
+
+        // Alternate quant: suffixed name, own id, no badge.
+        let alt_info = desc.to_model_info_for_file(&desc.files[0], &status);
+        assert_eq!(alt_info.id, "org/repo/model-Q4_K_M.gguf");
+        assert_eq!(alt_info.name, "Model (Q4_K_M)");
+        assert_eq!(alt_info.filename, "model-Q4_K_M.gguf");
+        assert!(!alt_info.is_recommended);
+        assert!(!alt_info.is_custom);
+
+        // The default rendered through the per-file path matches to_model_info,
+        // so seeded entries and discovered defaults can never diverge.
+        let same = desc.to_model_info_for_file(&desc.files[1], &status);
+        assert_eq!(same.id, default_info.id);
+        assert_eq!(same.name, default_info.name);
+        assert_eq!(same.is_recommended, default_info.is_recommended);
+    }
+
+    #[test]
+    fn test_discover_catalog_alternate_quant_in_models_dir() {
+        // A real catalog model with more than one quant.
+        let desc = crate::catalog::CATALOG
+            .iter()
+            .find(|d| d.files.len() > 1)
+            .expect("catalog has multi-quant models");
+        let default_filename = default_quant_file(&desc.files, desc.default_quant.as_deref())
+            .unwrap()
+            .filename
+            .clone();
+        let alt = desc
+            .files
+            .iter()
+            .find(|f| f.filename != default_filename)
+            .unwrap();
+
+        let temp_dir = TempDir::new().unwrap();
+        // Content is never probed for catalog-matched files, so empty files do.
+        fs::write(temp_dir.path().join(&alt.filename), b"").unwrap();
+        fs::write(temp_dir.path().join(&default_filename), b"").unwrap();
+
+        let mut models = HashMap::new();
+        ModelManager::seed_catalog_models(&mut models);
+        let seeded = models.len();
+        ModelManager::discover_custom_transcribe_models(temp_dir.path(), &mut models).unwrap();
+
+        // The alternate quant surfaces as a catalog-grade HF entry…
+        let ModelSource::HuggingFace { repo_id, .. } = &desc.source else {
+            panic!("catalog descriptors are HF-sourced");
+        };
+        let alt_id = format!("{}/{}", repo_id, alt.filename);
+        let info = models.get(&alt_id).expect("alternate quant discovered");
+        assert_eq!(info.name, format!("{} ({})", desc.name, alt.quant));
+        assert_eq!(info.description, desc.description);
+        assert!(info.is_downloaded);
+        assert!(!info.is_custom);
+        assert!(matches!(info.source, ModelSource::HuggingFace { .. }));
+
+        // …while the default-quant file dedups onto its seeded entry: exactly
+        // one new id, and no filename-stem custom entries for either file.
+        assert_eq!(models.len(), seeded + 1);
+        assert!(!models.contains_key(alt.filename.trim_end_matches(".gguf")));
+        assert!(!models.contains_key(default_filename.trim_end_matches(".gguf")));
+    }
+
     // ── SHA256 verification tests ─────────────────────────────────────────────
 
     /// Helper: write `data` to a temp file and return (TempDir, path).
@@ -2742,6 +3350,509 @@ mod tests {
         assert!(
             !models.contains_key("someone/llama-7b/llama-q8.gguf"),
             "non-ASR gguf must be ignored"
+        );
+    }
+
+    // ── Resumable HTTP downloader tests ───────────────────────────────────────
+    //
+    // Each test drives `download_http_resumable_with_events` against a scripted
+    // single-connection server on a local socket — no Tauri, no real network.
+    // Success means verified bytes are left in the partial (finalizing is the
+    // caller's job), so "no Completed on a bad hash" is the rename gate too.
+
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::{TcpListener, TcpStream};
+
+    fn sha_hex(data: &[u8]) -> String {
+        format!("{:x}", Sha256::digest(data))
+    }
+
+    fn http_response(status_line: &str, headers: &[String], body: &[u8]) -> Vec<u8> {
+        let mut head = format!("HTTP/1.1 {}\r\nConnection: close\r\n", status_line);
+        for h in headers {
+            head.push_str(h);
+            head.push_str("\r\n");
+        }
+        head.push_str("\r\n");
+        let mut bytes = head.into_bytes();
+        bytes.extend_from_slice(body);
+        bytes
+    }
+
+    async fn read_request_head(sock: &mut TcpStream) -> String {
+        let mut buf = Vec::new();
+        let mut byte = [0u8; 1];
+        while !buf.ends_with(b"\r\n\r\n") {
+            if sock.read_exact(&mut byte).await.is_err() {
+                break;
+            }
+            buf.push(byte[0]);
+        }
+        String::from_utf8_lossy(&buf).into_owned()
+    }
+
+    /// Serve exactly one connection: capture the request head, write
+    /// `response` verbatim, close. Returns the URL to fetch and a handle
+    /// yielding the captured request head (lowercased for header asserts).
+    async fn serve_once(response: Vec<u8>) -> (String, tokio::task::JoinHandle<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let handle = tokio::spawn(async move {
+            let (mut sock, _) = listener.accept().await.unwrap();
+            let head = read_request_head(&mut sock).await;
+            // The client may hang up early (error tests); that's not a
+            // server-side failure.
+            let _ = sock.write_all(&response).await;
+            let _ = sock.shutdown().await;
+            head.to_lowercase()
+        });
+        (format!("http://{}/file", addr), handle)
+    }
+
+    async fn run_download(
+        url: &str,
+        partial: &Path,
+        expected_size: Option<u64>,
+        expected_sha256: Option<&str>,
+        cancel: &CancellationToken,
+    ) -> Result<HttpDownloadOutcome> {
+        ModelManager::download_http_resumable_with_events(
+            "test/model",
+            url,
+            partial,
+            expected_size,
+            expected_sha256,
+            cancel,
+            &|_| {},
+        )
+        .await
+    }
+
+    #[tokio::test]
+    async fn http_fresh_download_completes_and_verifies() {
+        let body = b"hello world";
+        let (url, server) = serve_once(http_response(
+            "200 OK",
+            &[format!("Content-Length: {}", body.len())],
+            body,
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+
+        let out = run_download(
+            &url,
+            &partial,
+            Some(body.len() as u64),
+            Some(&sha_hex(body)),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Completed));
+        assert_eq!(fs::read(&partial).unwrap(), body);
+        let head = server.await.unwrap();
+        assert!(
+            !head.contains("range:"),
+            "fresh download must not send a Range header"
+        );
+    }
+
+    #[tokio::test]
+    async fn http_resume_appends_with_valid_content_range() {
+        let full = b"helloworld";
+        let (url, server) = serve_once(http_response(
+            "206 Partial Content",
+            &[
+                "Content-Range: bytes 5-9/10".to_string(),
+                "Content-Length: 5".to_string(),
+            ],
+            &full[5..],
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, &full[..5]).unwrap();
+
+        let out = run_download(
+            &url,
+            &partial,
+            Some(10),
+            Some(&sha_hex(full)),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Completed));
+        assert_eq!(fs::read(&partial).unwrap(), full);
+        let head = server.await.unwrap();
+        assert!(head.contains("range: bytes=5-"), "got request: {head}");
+    }
+
+    #[tokio::test]
+    async fn http_wrong_content_range_discards_partial() {
+        // Server answers 206 but restarts the range at 0: appending would
+        // corrupt, so the partial must be dropped and the call must fail.
+        let full = b"helloworld";
+        let (url, _server) = serve_once(http_response(
+            "206 Partial Content",
+            &[
+                "Content-Range: bytes 0-9/10".to_string(),
+                "Content-Length: 10".to_string(),
+            ],
+            full,
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, &full[..5]).unwrap();
+
+        let err = run_download(
+            &url,
+            &partial,
+            Some(10),
+            Some(&sha_hex(full)),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(err.to_string().contains("Content-Range"), "{err}");
+        assert!(!partial.exists(), "corrupt-prone partial must be deleted");
+    }
+
+    #[tokio::test]
+    async fn http_range_ignored_200_restarts_from_zero() {
+        let body = b"helloworld!";
+        let (url, _server) = serve_once(http_response(
+            "200 OK",
+            &[format!("Content-Length: {}", body.len())],
+            body,
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, b"XXXXX").unwrap(); // stale bytes that must not survive
+
+        let out = run_download(
+            &url,
+            &partial,
+            Some(body.len() as u64),
+            Some(&sha_hex(body)),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Completed));
+        assert_eq!(fs::read(&partial).unwrap(), body);
+    }
+
+    #[tokio::test]
+    async fn http_416_with_hash_finalizes_complete_partial() {
+        // URL-model shape: no catalog size, but a hash — the one case where a
+        // 416 may bless the partial, because verification proves it.
+        let body = b"the whole file";
+        let (url, _server) = serve_once(http_response("416 Range Not Satisfiable", &[], b"")).await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, body).unwrap();
+
+        let out = run_download(
+            &url,
+            &partial,
+            None,
+            Some(&sha_hex(body)),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Completed));
+        assert_eq!(fs::read(&partial).unwrap(), body);
+    }
+
+    #[tokio::test]
+    async fn http_416_with_wrong_hash_clears_partial() {
+        let (url, _server) = serve_once(http_response("416 Range Not Satisfiable", &[], b"")).await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, b"corrupted bytes").unwrap();
+
+        let err = run_download(
+            &url,
+            &partial,
+            None,
+            Some(&sha_hex(b"the real file")),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(err.to_string().contains("corrupt"), "{err}");
+        assert!(
+            !partial.exists(),
+            "failed verification must delete the partial"
+        );
+    }
+
+    #[tokio::test]
+    async fn http_416_short_of_expected_size_clears_partial() {
+        // Mirror shape: catalog size known, partial shorter, yet the server
+        // says our offset is past EOF — its object is smaller than the catalog
+        // expects. Never blessed, even with a hash on hand.
+        let (url, _server) = serve_once(http_response("416 Range Not Satisfiable", &[], b"")).await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, b"12345").unwrap();
+
+        let err = run_download(
+            &url,
+            &partial,
+            Some(10),
+            Some(&sha_hex(b"1234567890")),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(err.to_string().contains("416"), "{err}");
+        assert!(!partial.exists());
+    }
+
+    #[tokio::test]
+    async fn http_416_without_trust_signals_clears_partial() {
+        // No size, no hash: nothing can prove the partial complete, so a 416
+        // must restart clean instead of accepting unverified bytes.
+        let (url, _server) = serve_once(http_response("416 Range Not Satisfiable", &[], b"")).await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, b"whatever").unwrap();
+
+        let err = run_download(&url, &partial, None, None, &CancellationToken::new())
+            .await
+            .unwrap_err();
+
+        assert!(err.to_string().contains("416"), "{err}");
+        assert!(!partial.exists());
+    }
+
+    #[tokio::test]
+    async fn http_full_size_partial_verified_without_network() {
+        // Crash-between-completion-and-finalize recovery: the partial already
+        // has every byte, so no request is issued at all (the URL points at a
+        // dead port to prove it).
+        let body = b"complete content";
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, body).unwrap();
+
+        let out = run_download(
+            "http://127.0.0.1:9/unreachable",
+            &partial,
+            Some(body.len() as u64),
+            Some(&sha_hex(body)),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Completed));
+        assert_eq!(fs::read(&partial).unwrap(), body);
+    }
+
+    #[tokio::test]
+    async fn http_oversized_partial_restarts_clean() {
+        let body = b"12345";
+        let (url, server) = serve_once(http_response(
+            "200 OK",
+            &[format!("Content-Length: {}", body.len())],
+            body,
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+        fs::write(&partial, b"garbage-beyond-expected").unwrap();
+
+        let out = run_download(
+            &url,
+            &partial,
+            Some(body.len() as u64),
+            Some(&sha_hex(body)),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Completed));
+        assert_eq!(fs::read(&partial).unwrap(), body);
+        let head = server.await.unwrap();
+        assert!(
+            !head.contains("range:"),
+            "oversized partial must restart, not resume: {head}"
+        );
+    }
+
+    #[tokio::test]
+    async fn http_conflicting_content_length_rejected_before_writing() {
+        let (url, _server) = serve_once(http_response(
+            "200 OK",
+            &["Content-Length: 10".to_string()],
+            b"0123456789",
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+
+        let err = run_download(
+            &url,
+            &partial,
+            Some(5),
+            Some(&sha_hex(b"01234")),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(err.to_string().contains("advertises"), "{err}");
+        assert!(
+            !partial.exists(),
+            "nothing may be written on an up-front size conflict"
+        );
+    }
+
+    #[tokio::test]
+    async fn http_body_exceeding_expected_size_aborts_and_clears() {
+        // Chunked response (no Content-Length to reject up-front) that keeps
+        // sending past the expected size: the disk-fill guard must cut the
+        // transfer at the first excess byte and clear the tainted partial.
+        let (url, _server) = serve_once(http_response(
+            "200 OK",
+            &["Transfer-Encoding: chunked".to_string()],
+            b"3\r\nabc\r\n5\r\ndefgh\r\n0\r\n\r\n",
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+
+        let err = run_download(
+            &url,
+            &partial,
+            Some(5),
+            Some(&sha_hex(b"abcde")),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(err.to_string().contains("more than"), "{err}");
+        assert!(!partial.exists(), "tainted partial must be deleted");
+    }
+
+    #[tokio::test]
+    async fn http_wrong_hash_after_download_clears_partial() {
+        let body = b"tampered bytes";
+        let (url, _server) = serve_once(http_response(
+            "200 OK",
+            &[format!("Content-Length: {}", body.len())],
+            body,
+        ))
+        .await;
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+
+        let err = run_download(
+            &url,
+            &partial,
+            Some(body.len() as u64),
+            Some(&sha_hex(b"the expected bytes")),
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(err.to_string().contains("corrupt"), "{err}");
+        assert!(!partial.exists());
+    }
+
+    #[tokio::test]
+    async fn http_cancel_while_awaiting_headers() {
+        // Server accepts and goes silent. Cancellation must win immediately —
+        // not after the stall timeout, and certainly not never.
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut sock, _) = listener.accept().await.unwrap();
+            let _ = read_request_head(&mut sock).await;
+            tokio::time::sleep(Duration::from_secs(600)).await;
+        });
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+
+        let cancel = CancellationToken::new();
+        let trigger = cancel.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            trigger.cancel();
+        });
+
+        let started = Instant::now();
+        let out = run_download(
+            &format!("http://{}/file", addr),
+            &partial,
+            Some(10),
+            Some("00"),
+            &cancel,
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Cancelled));
+        assert!(
+            started.elapsed() < Duration::from_secs(30),
+            "cancel must not wait out the stall timeout"
+        );
+    }
+
+    #[tokio::test]
+    async fn http_cancel_during_stalled_body_keeps_partial() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut sock, _) = listener.accept().await.unwrap();
+            let _ = read_request_head(&mut sock).await;
+            let _ = sock
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nabc")
+                .await;
+            tokio::time::sleep(Duration::from_secs(600)).await;
+        });
+        let dir = TempDir::new().unwrap();
+        let partial = dir.path().join("m.partial");
+
+        let cancel = CancellationToken::new();
+        let trigger = cancel.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            trigger.cancel();
+        });
+
+        let out = run_download(
+            &format!("http://{}/file", addr),
+            &partial,
+            Some(100),
+            Some("00"),
+            &cancel,
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(out, HttpDownloadOutcome::Cancelled));
+        assert_eq!(
+            fs::read(&partial).unwrap(),
+            b"abc",
+            "bytes received before the cancel must be kept for resume"
         );
     }
 }
