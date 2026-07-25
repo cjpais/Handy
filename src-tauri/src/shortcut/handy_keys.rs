@@ -527,6 +527,16 @@ pub fn start_handy_keys_recording(app: AppHandle, binding_id: String) -> Result<
         return Err("handy-keys is not the active keyboard implementation".into());
     }
 
+    // While Secure Input is active the tap receives no KeyDown/KeyUp, so the
+    // recorder would silently capture just the modifier and overwrite the
+    // binding with it (issue #1578). Refuse instead; the frontend maps this
+    // marker to a localized explanation, and the noted impact makes the
+    // warning banner appear with the full story.
+    if crate::secure_input::is_enabled_now() {
+        crate::secure_input::note_recorder_blocked(&app);
+        return Err("secure-input-active".into());
+    }
+
     let state = app
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;

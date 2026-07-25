@@ -11,7 +11,7 @@
 
 mod handler;
 pub mod handy_keys;
-mod tauri_impl;
+pub mod tauri_impl;
 
 use log::{error, info, warn};
 use serde::Serialize;

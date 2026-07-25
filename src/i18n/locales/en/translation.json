@@ -6,7 +6,8 @@
     "unloadModel": "Unload Model",
     "model": "Model",
     "quit": "Quit",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
   },
   "sidebar": {
     "general": "General",
@@ -534,6 +535,26 @@
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
         "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
+      },
+      "keyboardDiagnostic": {
+        "title": "Keyboard Diagnostic",
+        "description": "Checks whether keyboard events reach Handy. Only event counts are recorded — never which keys you press.",
+        "run": "Run 10s diagnostic",
+        "running": "Listening… press your shortcut a few times (e.g. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "enabled",
+        "disabled": "disabled",
+        "holder": "held by {{name}} (pid {{pid}})",
+        "holderUnknown": "no visible holder",
+        "keyDown": "Key down",
+        "keyUp": "Key up",
+        "flagsChanged": "Modifiers",
+        "mouse": "Mouse",
+        "verdictBlocked": "Secure Input is blocking key events — keyed shortcuts cannot work until it is resolved.",
+        "verdictSuspicious": "Modifier events arrived but no key events — something is suppressing keys even though Secure Input reports disabled. Please report this on GitHub.",
+        "verdictOk": "Key events are reaching Handy normally.",
+        "verdictNoEvents": "No events captured — did you press any keys during the test?",
+        "failed": "Diagnostic failed: {{error}}"
       }
     },
     "about": {
@@ -633,5 +654,16 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "secureInput": {
+    "title": "Keyboard shortcuts are blocked by macOS Secure Input",
+    "descriptionWithCulprit": "\"{{name}}\" (pid {{pid}}) is holding Secure Input, so shortcuts that include a regular key can't reach Handy.",
+    "descriptionNoCulprit": "Something is holding Secure Input (no visible holder — an app may have quit without releasing it), so shortcuts that include a regular key can't reach Handy.",
+    "learnMore": "How to fix this",
+    "recorderBlocked": "Can't record shortcuts right now — macOS Secure Input is blocking key events. Resolve the Secure Input warning first.",
+    "uncovered": "These shortcuts can't work until this is resolved: {{bindings}}.",
+    "degraded": "These shortcuts temporarily respond to either left or right modifier: {{bindings}}.",
+    "recorderDisabled": "Recording new shortcuts is disabled until this is resolved.",
+    "dismiss": "Dismiss"
   }
 }
