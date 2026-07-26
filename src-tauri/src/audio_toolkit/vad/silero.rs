@@ -1,5 +1,5 @@
 use anyhow::Result;
-use log::{debug, info};
+use log::info;
 use std::path::Path;
 
 use vad_rs::Vad;

@@ -16,7 +16,6 @@
     "jsx": "react-jsx",
 
     /* Path Aliases */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/bindings": ["./src/bindings.ts"]

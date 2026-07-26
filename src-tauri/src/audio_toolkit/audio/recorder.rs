@@ -166,7 +166,10 @@ impl AudioRecorder {
             let stop_flag_for_stream = stop_flag.clone();
             let init_result = (|| -> Result<(cpal::Stream, u32), String> {
                 let config_started = Instant::now();
-                let device_name = thread_device.name().unwrap_or_default();
+                let device_name = thread_device
+                    .description()
+                    .map(|d| d.name().to_string())
+                    .unwrap_or_default();
                 let cached_config = config_cache
                     .lock()
                     .unwrap()
@@ -181,12 +184,12 @@ impl AudioRecorder {
                 };
                 let config_elapsed = config_started.elapsed();
 
-                let sample_rate = config.sample_rate().0;
+                let sample_rate = config.sample_rate();
                 let channels = config.channels() as usize;
 
                 log::info!(
                     "Using device: {:?}\nSample rate: {}\nChannels: {}\nFormat: {:?}",
-                    thread_device.name(),
+                    thread_device.description().map(|d| d.name().to_string()).unwrap_or_default(),
                     sample_rate,
                     channels,
                     config.sample_format()
@@ -348,7 +351,7 @@ impl AudioRecorder {
         sample_tx: mpsc::Sender<AudioChunk>,
         channels: usize,
         stop_flag: Arc<AtomicBool>,
-    ) -> Result<cpal::Stream, cpal::BuildStreamError>
+    ) -> Result<cpal::Stream, cpal::Error>
     where
         T: Sample + SizedSample + Send + 'static,
         f32: cpal::FromSample<T>,
@@ -393,7 +396,7 @@ impl AudioRecorder {
         };
 
         device.build_input_stream(
-            &config.clone().into(),
+            config.clone().into(),
             stream_cb,
             |err| log::error!("Stream error: {}", err),
             None,

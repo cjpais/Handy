@@ -430,7 +430,7 @@ impl AudioRecordingManager {
     }
 
     fn schedule_lazy_close(&self) {
-        let gen = self.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
+        let generation_id = self.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
         let app = self.app_handle.clone();
         std::thread::spawn(move || {
             std::thread::sleep(STREAM_IDLE_TIMEOUT);
@@ -439,7 +439,7 @@ impl AudioRecordingManager {
             // try_start_recording, preventing a race where the stream is closed
             // under an active recording.
             let state = rm.state.lock().unwrap();
-            if rm.close_generation.load(Ordering::SeqCst) == gen
+            if rm.close_generation.load(Ordering::SeqCst) == generation_id
                 && matches!(*state, RecordingState::Idle)
             {
                 // stop_microphone_stream does not acquire the state lock,

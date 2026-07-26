@@ -3,106 +3,88 @@ name = "handy"
 version = "0.9.4"
 description = "Handy"
 authors = ["cjpais"]
-edition = "2021"
+edition = "2024"
 license = "MIT"
 default-run = "handy"
 
 [profile.dev]
-incremental = true # Compile your binary in smaller steps.
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+incremental = true
 
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "handy_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
-# [[bin]]
-# name = "cli"
-# path = "src/audio_toolkit/bin/cli.rs"
-
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
-serde_json = "1"
-serde = { version = "1", features = ["derive"] }
+tauri-build = "2.6.3"
+serde_json = "1.0.151"
+serde = { version = "1.0.229", features = ["derive"] }
 
 [dependencies]
-once_cell = "1"
+once_cell = "1.21.4"
 tauri = { version = "2.11.5", features = [
   "protocol-asset",
   "macos-private-api",
   "tray-icon",
   'image-png',
 ] }
-tauri-plugin-log = "2.7.1"
-tauri-plugin-opener = "2.5.2"
-tauri-plugin-store = "2.4.1"
+tauri-plugin-log = "2.9.0"
+tauri-plugin-opener = "2.5.4"
+tauri-plugin-store = "2.4.4"
 tauri-plugin-os = "2.3.2"
 tauri-plugin-clipboard-manager = "2.3.2"
 tauri-plugin-macos-permissions = "2.3.0"
 tauri-plugin-process = "2.3.1"
-rusqlite_migration = "2.3"
-tauri-plugin-fs = "2.4.4"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+rusqlite_migration = "2.6.0"
+tauri-plugin-fs = "2.5.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 rdev = { git = "https://github.com/rustdesk-org/rdev" }
-cpal = "0.16.0"
-anyhow = "1.0.95"
-rubato = "0.16.2"
+cpal = "0.18.1"
+anyhow = "1.0.104"
+rubato = "4.0.0"
+audioadapter = "4.0"
+audioadapter-buffers = "4.0"
 hound = "3.5.1"
-log = "0.4.25"
-env_filter = "0.1.0"
-tokio = "1.43.0"
+log = "0.4.33"
+env_filter = "0.1.4"
+tokio = "1.53.1"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 enigo = "0.6.1"
-rodio = { git = "https://github.com/cjpais/rodio.git" }
-reqwest = { version = "0.12", features = ["json", "stream"] }
-futures-util = "0.3"
-rustfft = "6.4.0"
-strsim = "0.11.0"
+rodio = { git = "https://github.com/RustAudio/rodio" }
+reqwest = { version = "0.13.4", features = ["json", "stream"] }
+futures-util = "0.3.33"
+rustfft = "6.4.1"
+strsim = "0.11.1"
 natural = "0.5.0"
-regex = "1"
-chrono = "0.4"
-rusqlite = { version = "0.37", features = ["bundled"] }
-tar = "0.4.44"
-flate2 = "1.0"
-sha2 = "0.10"
-# Whisper-family models run through transcribe-cpp (GGUF/ggml, native backends);
-# transcribe-rs is now ONNX-only (Parakeet, Moonshine, SenseVoice, GigaAM,
-# Canary, Cohere). Per-platform backend features are added in the target tables.
-transcribe-rs = { version = "0.3.8", features = ["onnx"] }
+regex = "1.13.1"
+chrono = "0.4.45"
+rusqlite = { version = "0.40.1", features = ["bundled"] }
+tar = "0.4.46"
+flate2 = "1.1.9"
+sha2 = "0.11.0"
+transcribe-rs = { version = "0.3.11", features = ["onnx"] }
 transcribe-cpp = { version = "*", default-features = false }
 handy-keys = "0.3.2"
-ferrous-opencc = "0.2.3"
-clap = { version = "4", features = ["derive"] }
-specta = "=2.0.0-rc.22"
-specta-typescript = "0.0.9"
-tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
-tauri-plugin-dialog = "2.6"
+ferrous-opencc = "0.4.0"
+clap = { version = "4.6.4", features = ["derive"] }
+specta = "=2.0.0-rc.25"
+specta-typescript = "=0.0.12"
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
+tauri-plugin-dialog = "2.7.2"
 hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downloads", features = [
   "tokio",
 ] }
 
 [target.'cfg(unix)'.dependencies]
-signal-hook = "0.3"
+signal-hook = "0.4.4"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.1"
-tauri-plugin-global-shortcut = "2.3.1"
-tauri-plugin-single-instance = "2.3.2"
-tauri-plugin-updater = "2.10.0"
+tauri-plugin-global-shortcut = "2.3.2"
+tauri-plugin-single-instance = "2.4.3"
+tauri-plugin-updater = "2.10.1"
 
 [target.'cfg(windows)'.dependencies]
-# ONNX Runtime on Windows is CPU-only (no ort-directml), matching macOS/Linux.
-# The DirectML EP was experimental and, more importantly, pulled in pyke's
-# prebuilt ONNX Runtime which is compiled with a global /arch:AVX2 baseline that
-# executes BMI2/AVX in a static initializer and crashes at process startup on any
-# pre-Haswell CPU (Sandy/Ivy Bridge, older AMD). Dropping the feature means we
-# link a baseline ONNX Runtime (dynamically, via ORT_LIB_LOCATION in build.yml)
-# with proper runtime CPU dispatch. Base `transcribe-rs` (features = ["onnx"])
-# is inherited here, so Parakeet/Moonshine/etc. still run on CPU.
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
@@ -112,66 +94,37 @@ windows = { version = "0.61.3", features = [
   "Win32_Foundation",
   "Win32_UI_WindowsAndMessaging",
 ] }
-winreg = "0.55"
+winreg = "0.56.0"
 
-# Whisper backend per Windows arch. x86_64 ships the CUDA GPU backend and
-# keeps the dynamic-backends posture (loadable per-ISA CPU modules + CUDA),
-# where runtime ISA scoring (GGML_CPU_ALL_VARIANTS) earns the extra shipped DLLs.
-#
-# Windows-on-ARM is CPU-only: its Adreno Vulkan drivers are immature, and
-# ggml-vulkan's shader generator (vulkan-shaders-gen) does not build under the
-# clang-cl/lld toolchain that ggml's ARM CPU backend requires. dynamic-backends
-# buys nothing on ARM — ALL_VARIANTS is an x86 concept, so a DL build there is
-# just a single portable CPU module shipped as a DLL. So ARM links transcribe-cpp
-# STATICALLY (no features = static CPU-only): the one CPU backend is compiled into
-# handy.exe and we ship zero DLLs, which sidesteps the installer's per-DLL
-# signtool verify entirely. CI pins -DGGML_NATIVE=OFF (see build.yml) so the
-# static build targets a portable ARM baseline, not the build runner's CPU.
 [target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
-transcribe-cpp = { version = "0.1.3", default-features = false, features = [
+transcribe-cpp = { version = "*", default-features = false, features = [
   "dynamic-backends",
   "cuda",
 ] }
 
 [target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
-transcribe-cpp = { version = "0.1.3", default-features = false }
+transcribe-cpp = { version = "*", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
-transcribe-cpp = { version = "0.1.3", default-features = false, features = ["metal"] }
+transcribe-cpp = { version = "*", default-features = false, features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
-gtk = "0.18"
-transcribe-cpp = { version = "0.1.3", default-features = false, features = [
+gtk-layer-shell = { version = "0.8.2", features = ["v0_6"] }
+gtk = "0.18.2"
+transcribe-cpp = { version = "*", default-features = false, features = [
   "dynamic-backends",
   "cuda",
 ] }
 
-# TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
-# (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →
-# show()). Drop this once a tao release containing it lands in tauri.
-#
-# The rev is a cjpais/tao branch, not upstream: dev past 0.35.3 also carries
-# tao #1231 (removed window subclassing), which left the thread event target's
-# WNDPROC falling through to DefSubclassProc. On a no-longer-subclassed window
-# that returns 0, so WM_QUERYENDSESSION answered FALSE and vetoed Windows
-# shutdown (Handy #1710). `handy` = 07f3742b + a cherry-pick of tao #1274
-# (DefSubclassProc → DefWindowProcW). Repoint at upstream once #1274 merges.
-#
-# tao-macros must be patched to the SAME rev even though nothing here depends on
-# it directly: wry pulls tao-macros 0.1.3 from crates.io, so without this the
-# lockfile carries two tao-macros 0.1.3 entries (registry + git). cargo tolerates
-# that, but Nix's importCargoLock vendors both to the same `tao-macros-0.1.3`
-# dir and fails with a symlink collision. Unifying the source removes the dup.
 [patch.crates-io]
-tao = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6f8d4bde052b876" }
-tao-macros = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6f8d4bde052b876" }
+tao = { git = "https://github.com/cjpais/tao" }
+tao-macros = { git = "https://github.com/cjpais/tao" }
 transcribe-cpp = { git = "https://github.com/handy-computer/transcribe.cpp", branch = "main" }
 transcribe-cpp-sys = { git = "https://github.com/handy-computer/transcribe.cpp", branch = "main" }
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = "3.27.0"
 
 [profile.release]
 lto = true

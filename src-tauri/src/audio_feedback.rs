@@ -2,7 +2,7 @@ use crate::settings::SoundTheme;
 use crate::settings::{self, AppSettings};
 use cpal::traits::{DeviceTrait, HostTrait};
 use log::{debug, error, warn};
-use rodio::OutputStreamBuilder;
+use rodio::{Decoder, DeviceSinkBuilder};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -99,44 +99,45 @@ fn play_audio_file(
     selected_device: Option<String>,
     volume: f32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let stream_builder = if let Some(device_name) = selected_device {
+    let handle = if let Some(device_name) = selected_device {
         if device_name == "Default" {
             debug!("Using default device");
-            OutputStreamBuilder::from_default_device()?
+            DeviceSinkBuilder::open_default_sink()?
         } else {
             let host = crate::audio_toolkit::get_cpal_host();
             let devices = host.output_devices()?;
 
             let mut found_device = None;
             for device in devices {
-                if device.name()? == device_name {
+                let desc = device.description()?;
+                if desc.name() == device_name {
                     found_device = Some(device);
                     break;
                 }
             }
 
             match found_device {
-                Some(device) => OutputStreamBuilder::from_device(device)?,
+                Some(device) => DeviceSinkBuilder::from_device(device)?.open_stream()?,
                 None => {
                     warn!("Device '{}' not found, using default device", device_name);
-                    OutputStreamBuilder::from_default_device()?
+                    DeviceSinkBuilder::open_default_sink()?
                 }
             }
         }
     } else {
         debug!("Using default device");
-        OutputStreamBuilder::from_default_device()?
+        DeviceSinkBuilder::open_default_sink()?
     };
 
-    let stream_handle = stream_builder.open_stream()?;
-    let mixer = stream_handle.mixer();
-
+    let mixer = handle.mixer();
     let file = File::open(path)?;
     let buf_reader = BufReader::new(file);
+    let source = Decoder::new(buf_reader)?;
 
-    let sink = rodio::play(mixer, buf_reader)?;
-    sink.set_volume(volume);
-    sink.sleep_until_end();
+    let player = rodio::Player::connect_new(mixer);
+    player.append(source);
+    player.set_volume(volume);
+    player.sleep_until_end();
 
     Ok(())
 }

@@ -1733,7 +1733,8 @@ impl ModelManager {
             }
             hasher.update(&buffer[..n]);
         }
-        Ok(format!("{:x}", hasher.finalize()))
+        let hash = hasher.finalize();
+        Ok(hash.iter().map(|b| format!("{:02x}", b)).collect())
     }
 
     /// Download a Hugging Face-sourced model into the shared HF cache via

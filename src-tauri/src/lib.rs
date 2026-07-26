@@ -23,7 +23,7 @@ mod utils;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
-use specta_typescript::{BigIntExportBehavior, Typescript};
+use specta_typescript::Typescript;
 use tauri_specta::{collect_commands, collect_events, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
@@ -717,10 +717,7 @@ pub fn run(cli_args: CliArgs) {
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     specta_builder
-        .export(
-            Typescript::default().bigint(BigIntExportBehavior::Number),
-            "../src/bindings.ts",
-        )
+        .export(Typescript::default(), "../src/bindings.ts")
         .expect("Failed to export typescript bindings");
 
     let invoke_handler = specta_builder.invoke_handler();
