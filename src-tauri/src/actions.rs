@@ -475,7 +475,7 @@ impl ShortcutAction for TranscribeAction {
         let rm_clone = Arc::clone(&rm);
         std::thread::spawn(move || {
             if let Err(e) = rm_clone.preload_vad() {
-                debug!("VAD pre-load failed: {}", e);
+                warn!("VAD pre-load failed: {}", e);
             }
         });
         let kickoff_elapsed = kickoff_started.elapsed();

@@ -498,19 +498,22 @@ impl AudioRecordingManager {
     pub fn preload_vad(&self) -> Result<(), anyhow::Error> {
         let mut recorder_opt = self.recorder.lock().unwrap();
         if recorder_opt.is_none() {
+            info!("Preloading Silero VAD model...");
             let vad_path = self
                 .app_handle
                 .path()
                 .resolve(
-                    "resources/models/silero_vad_v4.onnx",
+                    "resources/models/silero_vad_v6.2.onnx",
                     tauri::path::BaseDirectory::Resource,
                 )
                 .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {}", e))?;
+            info!("Loading Silero VAD model: {}", vad_path.display());
             *recorder_opt = Some(create_audio_recorder(
                 &vad_path,
                 &self.app_handle,
                 Arc::clone(&self.stream_router),
             )?);
+            info!("Silero VAD model preloaded successfully");
         }
         Ok(())
     }

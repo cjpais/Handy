@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::{debug, info};
 use std::path::Path;
 
 use vad_rs::Vad;
@@ -21,9 +22,28 @@ impl SileroVad {
             anyhow::bail!("threshold must be between 0.0 and 1.0");
         }
 
+        let path = model_path.as_ref();
+        info!(
+            "SileroVad: loading model from '{}' (threshold={})",
+            path.display(),
+            threshold
+        );
+
+        let metadata = std::fs::metadata(path)
+            .map_err(|e| anyhow::anyhow!("Failed to stat VAD model '{}': {}", path.display(), e))?;
+        let file_size_mb = metadata.len() as f64 / 1_048_576.0;
+        info!(
+            "SileroVad: model file size = {:.2} MB",
+            file_size_mb
+        );
+
+        let engine = Vad::new(path, constants::WHISPER_SAMPLE_RATE as usize)
+            .map_err(|e| anyhow::anyhow!("Failed to create VAD: {e}"))?;
+
+        info!("SileroVad: model loaded and ready");
+
         Ok(Self {
-            engine: Vad::new(&model_path, constants::WHISPER_SAMPLE_RATE as usize)
-                .map_err(|e| anyhow::anyhow!("Failed to create VAD: {e}"))?,
+            engine,
             threshold,
         })
     }

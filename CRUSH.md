@@ -5,7 +5,7 @@
 ```bash
 bun install                    # Install dependencies
 mkdir -p src-tauri/resources/models
-curl -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
+curl -o src-tauri/resources/models/silero_vad_v6.2.onnx https://huggingface.co/BricksDisplay/silero-vad-6.2/resolve/main/onnx/model.onnx
 ```
 
 **Development:**
