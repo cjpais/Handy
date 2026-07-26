@@ -718,7 +718,7 @@ impl AudioRecordingManager {
                         buffer_ms
                     );
                     let started = Instant::now();
-                    let buffer = Duration::from_millis(buffer_ms);
+                    let buffer = Duration::from_millis(buffer_ms.into());
                     while started.elapsed() < buffer {
                         if self.was_cancelled_since(cancel_generation) {
                             debug!("Recording stop cancelled during extra buffer");

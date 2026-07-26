@@ -1870,7 +1870,7 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
 pub struct GpuDeviceOption {
     pub id: i32,
     pub name: String,
-    pub total_vram_mb: usize,
+    pub total_vram_mb: u32,
 }
 
 static GPU_DEVICES: OnceLock<Vec<GpuDeviceOption>> = OnceLock::new();
@@ -1936,7 +1936,7 @@ fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
                 } else {
                     d.description
                 },
-                total_vram_mb: (d.memory_total / (1024 * 1024)) as usize,
+                total_vram_mb: (d.memory_total / (1024 * 1024)) as u32,
             })
             .collect()
     })

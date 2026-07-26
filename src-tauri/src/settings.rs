@@ -398,7 +398,7 @@ pub struct AppSettings {
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
     #[serde(default = "default_history_limit")]
-    pub history_limit: usize,
+    pub history_limit: u32,
     #[serde(default = "default_recording_retention_period")]
     pub recording_retention_period: RecordingRetentionPeriod,
     #[serde(default)]
@@ -440,9 +440,9 @@ pub struct AppSettings {
     #[serde(default = "default_show_tray_icon")]
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
-    pub paste_delay_ms: u64,
+    pub paste_delay_ms: u32,
     #[serde(default = "default_paste_delay_after_ms")]
-    pub paste_delay_after_ms: u64,
+    pub paste_delay_after_ms: u32,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     #[serde(default)]
@@ -456,7 +456,7 @@ pub struct AppSettings {
     #[serde(default = "default_transcribe_gpu_device")]
     pub transcribe_gpu_device: i32,
     #[serde(default)]
-    pub extra_recording_buffer_ms: u64,
+    pub extra_recording_buffer_ms: u32,
     #[serde(default = "default_vad_enabled")]
     pub vad_enabled: bool,
     /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
@@ -543,11 +543,11 @@ fn default_word_correction_threshold() -> f64 {
     0.18
 }
 
-fn default_paste_delay_ms() -> u64 {
+fn default_paste_delay_ms() -> u32 {
     60
 }
 
-fn default_paste_delay_after_ms() -> u64 {
+fn default_paste_delay_after_ms() -> u32 {
     60
 }
 
@@ -555,7 +555,7 @@ fn default_auto_submit() -> bool {
     false
 }
 
-fn default_history_limit() -> usize {
+fn default_history_limit() -> u32 {
     5
 }
 
@@ -1105,7 +1105,7 @@ pub fn get_stored_binding(app: &AppHandle, id: &str) -> ShortcutBinding {
     binding
 }
 
-pub fn get_history_limit(app: &AppHandle) -> usize {
+pub fn get_history_limit(app: &AppHandle) -> u32 {
     let settings = get_settings(app);
     settings.history_limit
 }

@@ -18,8 +18,8 @@ fn paste_via_clipboard(
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
-    paste_delay_ms: u64,
-    paste_delay_after_ms: u64,
+    paste_delay_ms: u32,
+    paste_delay_after_ms: u32,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
@@ -51,7 +51,7 @@ fn paste_via_clipboard(
 
     write_result?;
 
-    std::thread::sleep(Duration::from_millis(paste_delay_ms));
+    std::thread::sleep(Duration::from_millis(paste_delay_ms.into()));
 
     // Send paste key combo
     #[cfg(target_os = "linux")]
@@ -70,7 +70,7 @@ fn paste_via_clipboard(
         }
     }
 
-    std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
+    std::thread::sleep(Duration::from_millis(paste_delay_after_ms.into()));
 
     // Restore original clipboard content.
     // Text takes priority so this path stays identical to the previous behavior;

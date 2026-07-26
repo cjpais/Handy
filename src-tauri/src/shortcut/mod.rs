@@ -774,7 +774,7 @@ pub fn change_word_correction_threshold_setting(
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_extra_recording_buffer_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+pub fn change_extra_recording_buffer_setting(app: AppHandle, ms: u32) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.extra_recording_buffer_ms = ms;
     settings::write_settings(&app, settings);
@@ -783,7 +783,7 @@ pub fn change_extra_recording_buffer_setting(app: AppHandle, ms: u64) -> Result<
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_paste_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+pub fn change_paste_delay_ms_setting(app: AppHandle, ms: u32) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.paste_delay_ms = ms;
     settings::write_settings(&app, settings);
@@ -792,7 +792,7 @@ pub fn change_paste_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), Stri
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_paste_delay_after_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+pub fn change_paste_delay_after_ms_setting(app: AppHandle, ms: u32) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.paste_delay_after_ms = ms;
     settings::write_settings(&app, settings);

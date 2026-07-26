@@ -15,7 +15,7 @@ name = "handy_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = "2.6.3"
+tauri-build = { version = "2.6.3", features = [] }
 serde_json = "1.0.151"
 serde = { version = "1.0.229", features = ["derive"] }
 
@@ -46,7 +46,7 @@ audioadapter = "4.0"
 audioadapter-buffers = "4.0"
 hound = "3.5.1"
 log = "0.4.33"
-env_filter = "0.1.4"
+env_filter = "2.0.0"
 tokio = "1.53.1"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 enigo = "0.6.1"

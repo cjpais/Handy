@@ -354,7 +354,7 @@ mod tests {
         HistoryEntry {
             id: 1,
             file_name: "handy-1.wav".to_string(),
-            timestamp: 0,
+            timestamp: 0.0,
             saved: false,
             title: "Recording".to_string(),
             transcription_text: transcription.to_string(),

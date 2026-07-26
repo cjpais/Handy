@@ -63,10 +63,10 @@ pub struct ModelInfo {
     pub description: String,
     pub filename: String,
     pub source: ModelSource,
-    pub size_mb: u64,
+    pub size_mb: u32,
     pub is_downloaded: bool,
     pub is_downloading: bool,
-    pub partial_size: u64,
+    pub partial_size: u32,
     pub is_directory: bool,
     pub engine_type: EngineType,
     pub accuracy_score: f32,        // 0.0 to 1.0, higher is more accurate
@@ -145,7 +145,7 @@ pub(crate) fn default_quant_file<'a>(
 pub struct DiskStatus {
     pub is_downloaded: bool,
     pub is_downloading: bool,
-    pub partial_size: u64,
+    pub partial_size: u32,
 }
 
 /// The spec of a bundled catalog model: everything in `catalog.json` normalised
@@ -193,7 +193,7 @@ impl ModelDescriptor {
             description: self.description.clone(),
             filename: file.map(|f| f.filename.clone()).unwrap_or_default(),
             source: self.source.clone(),
-            size_mb: file.map(|f| f.size_bytes / (1024 * 1024)).unwrap_or(0),
+            size_mb: file.map(|f| (f.size_bytes / (1024 * 1024)) as u32).unwrap_or(0),
             is_downloaded: status.is_downloaded,
             is_downloading: status.is_downloading,
             partial_size: status.partial_size,
@@ -267,8 +267,8 @@ pub fn effective_language(
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct DownloadProgress {
     pub model_id: String,
-    pub downloaded: u64,
-    pub total: u64,
+    pub downloaded: u32,
+    pub total: u32,
     pub percentage: f64,
 }
 
@@ -332,8 +332,8 @@ struct HfDownloadProgress {
 }
 
 struct HfProgressState {
-    total: u64,
-    downloaded: u64,
+    total: u32,
+    downloaded: u32,
     last_emit: Instant,
 }
 
@@ -350,7 +350,7 @@ impl HfDownloadProgress {
         }
     }
 
-    fn emit(&self, downloaded: u64, total: u64) {
+    fn emit(&self, downloaded: u32, total: u32) {
         let percentage = if total > 0 {
             (downloaded as f64 / total as f64) * 100.0
         } else {
@@ -372,17 +372,17 @@ impl Progress for HfDownloadProgress {
     async fn init(&mut self, size: usize, _filename: &str) {
         {
             let mut st = self.state.lock().unwrap();
-            st.total = size as u64;
+            st.total = size as u32;
             st.downloaded = 0;
             st.last_emit = Instant::now();
         }
-        self.emit(0, size as u64);
+        self.emit(0, size as u32);
     }
 
     async fn update(&mut self, size: usize) {
         let (downloaded, total, emit) = {
             let mut st = self.state.lock().unwrap();
-            st.downloaded = st.downloaded.saturating_add(size as u64);
+            st.downloaded = st.downloaded.saturating_add(size as u32);
             let now = Instant::now();
             // Throttle to ~10 updates/sec, but always emit the final byte.
             let emit = now.duration_since(st.last_emit) >= Duration::from_millis(100)
@@ -1336,7 +1336,7 @@ impl ModelManager {
 
                 // Get partial file size if it exists (for the .tar.gz being downloaded)
                 if partial_path.exists() {
-                    model.partial_size = partial_path.metadata().map(|m| m.len()).unwrap_or(0);
+                    model.partial_size = partial_path.metadata().map(|m| m.len() as u32).unwrap_or(0);
                 } else {
                     model.partial_size = 0;
                 }
@@ -1350,7 +1350,7 @@ impl ModelManager {
 
                 // Get partial file size if it exists
                 if partial_path.exists() {
-                    model.partial_size = partial_path.metadata().map(|m| m.len()).unwrap_or(0);
+                    model.partial_size = partial_path.metadata().map(|m| m.len() as u32).unwrap_or(0);
                 } else {
                     model.partial_size = 0;
                 }
@@ -1497,7 +1497,7 @@ impl ModelManager {
 
             // Get file size in MB
             let size_mb = match path.metadata() {
-                Ok(meta) => meta.len() / (1024 * 1024),
+                Ok(meta) => (meta.len() / (1024 * 1024)) as u32,
                 Err(e) => {
                     warn!("Failed to get metadata for {}: {}", filename, e);
                     0
@@ -1634,7 +1634,7 @@ impl ModelManager {
 
                 let size_mb = path
                     .metadata()
-                    .map(|m| m.len() / (1024 * 1024))
+                    .map(|m| (m.len() / (1024 * 1024)) as u32)
                     .unwrap_or(0);
                 let display = probed_display_name(&probe)
                     .unwrap_or_else(|| fname.trim_end_matches(".gguf").to_string());
@@ -1941,7 +1941,7 @@ impl ModelManager {
             response.content_length().unwrap_or(0)
         };
 
-        let mut downloaded = resume_from;
+        let mut downloaded = resume_from as u32;
         let mut stream = response.bytes_stream();
 
         // Open file for appending if resuming, or create new if starting fresh
@@ -1958,7 +1958,7 @@ impl ModelManager {
         let initial_progress = DownloadProgress {
             model_id: model_id.to_string(),
             downloaded,
-            total: total_size,
+            total: total_size as u32,
             percentage: if total_size > 0 {
                 (downloaded as f64 / total_size as f64) * 100.0
             } else {
@@ -1987,7 +1987,7 @@ impl ModelManager {
             let chunk = chunk?;
 
             file.write_all(&chunk)?;
-            downloaded += chunk.len() as u64;
+            downloaded += chunk.len() as u32;
 
             let percentage = if total_size > 0 {
                 (downloaded as f64 / total_size as f64) * 100.0
@@ -2000,7 +2000,7 @@ impl ModelManager {
                 let progress = DownloadProgress {
                     model_id: model_id.to_string(),
                     downloaded,
-                    total: total_size,
+                    total: total_size as u32,
                     percentage,
                 };
                 let _ = self.app_handle.emit("model-download-progress", &progress);
@@ -2012,7 +2012,7 @@ impl ModelManager {
         let final_progress = DownloadProgress {
             model_id: model_id.to_string(),
             downloaded,
-            total: total_size,
+            total: total_size as u32,
             percentage: if total_size > 0 {
                 (downloaded as f64 / total_size as f64) * 100.0
             } else {

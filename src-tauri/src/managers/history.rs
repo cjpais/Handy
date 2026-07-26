@@ -47,16 +47,16 @@ pub enum HistoryUpdatePayload {
     #[serde(rename = "updated")]
     Updated { entry: HistoryEntry },
     #[serde(rename = "deleted")]
-    Deleted { id: i64 },
+    Deleted { id: i32 },
     #[serde(rename = "toggled")]
-    Toggled { id: i64 },
+    Toggled { id: i32 },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct HistoryEntry {
-    pub id: i64,
+    pub id: i32,
     pub file_name: String,
-    pub timestamp: i64,
+    pub timestamp: f64,
     pub saved: bool,
     pub title: String,
     pub transcription_text: String,
@@ -224,7 +224,7 @@ impl HistoryManager {
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
     ) -> Result<HistoryEntry> {
-        let timestamp = Utc::now().timestamp();
+        let timestamp = Utc::now().timestamp() as f64;
         let title = self.format_timestamp_title(timestamp);
 
         let conn = self.get_connection()?;
@@ -241,7 +241,7 @@ impl HistoryManager {
             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 &file_name,
-                timestamp,
+                timestamp as i64,
                 false,
                 &title,
                 &transcription_text,
@@ -252,7 +252,7 @@ impl HistoryManager {
         )?;
 
         let entry = HistoryEntry {
-            id: conn.last_insert_rowid(),
+            id: conn.last_insert_rowid() as i32,
             file_name,
             timestamp,
             saved: false,
@@ -282,7 +282,7 @@ impl HistoryManager {
     /// Update an existing history entry with new transcription results (used by retry).
     pub fn update_transcription(
         &self,
-        id: i64,
+        id: i32,
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
@@ -347,7 +347,7 @@ impl HistoryManager {
         }
     }
 
-    fn delete_entries_and_files(&self, entries: &[(i64, String)]) -> Result<usize> {
+    fn delete_entries_and_files(&self, entries: &[(i32, String)]) -> Result<u32> {
         if entries.is_empty() {
             return Ok(0);
         }
@@ -377,7 +377,7 @@ impl HistoryManager {
         Ok(deleted_count)
     }
 
-    fn cleanup_by_count(&self, limit: usize) -> Result<()> {
+    fn cleanup_by_count(&self, limit: u32) -> Result<()> {
         let conn = self.get_connection()?;
 
         // Get all entries that are not saved, ordered by timestamp desc
@@ -386,16 +386,16 @@ impl HistoryManager {
         )?;
 
         let rows = stmt.query_map([], |row| {
-            Ok((row.get::<_, i64>("id")?, row.get::<_, String>("file_name")?))
+            Ok((row.get::<_, i32>("id")?, row.get::<_, String>("file_name")?))
         })?;
 
-        let mut entries: Vec<(i64, String)> = Vec::new();
+        let mut entries: Vec<(i32, String)> = Vec::new();
         for row in rows {
             entries.push(row?);
         }
 
-        if entries.len() > limit {
-            let entries_to_delete = &entries[limit..];
+        if entries.len() > limit as usize {
+            let entries_to_delete = &entries[limit as usize..];
             let deleted_count = self.delete_entries_and_files(entries_to_delete)?;
 
             if deleted_count > 0 {
@@ -427,10 +427,10 @@ impl HistoryManager {
         )?;
 
         let rows = stmt.query_map(params![cutoff_timestamp], |row| {
-            Ok((row.get::<_, i64>("id")?, row.get::<_, String>("file_name")?))
+            Ok((row.get::<_, i32>("id")?, row.get::<_, String>("file_name")?))
         })?;
 
-        let mut entries_to_delete: Vec<(i64, String)> = Vec::new();
+        let mut entries_to_delete: Vec<(i32, String)> = Vec::new();
         for row in rows {
             entries_to_delete.push(row?);
         }
@@ -449,15 +449,15 @@ impl HistoryManager {
 
     pub async fn get_history_entries(
         &self,
-        cursor: Option<i64>,
-        limit: Option<usize>,
+        cursor: Option<i32>,
+        limit: Option<u32>,
     ) -> Result<PaginatedHistory> {
         let conn = self.get_connection()?;
         let limit = limit.map(|l| l.min(100));
 
         let mut entries: Vec<HistoryEntry> = match (cursor, limit) {
             (Some(cursor_id), Some(lim)) => {
-                let fetch_count = (lim + 1) as i64;
+                let fetch_count = (lim + 1) as i32;
                 let mut stmt = conn.prepare(
                     "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
                      FROM transcription_history
@@ -471,7 +471,7 @@ impl HistoryManager {
                 result
             }
             (None, Some(lim)) => {
-                let fetch_count = (lim + 1) as i64;
+                let fetch_count = (lim + 1) as i32;
                 let mut stmt = conn.prepare(
                     "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
                      FROM transcription_history
@@ -496,7 +496,7 @@ impl HistoryManager {
             }
         };
 
-        let has_more = limit.is_some_and(|lim| entries.len() > lim);
+        let has_more = limit.is_some_and(|lim| entries.len() > lim as usize);
         if has_more {
             entries.pop();
         }
@@ -554,7 +554,7 @@ impl HistoryManager {
         Ok(entry)
     }
 
-    pub async fn toggle_saved_status(&self, id: i64) -> Result<()> {
+    pub async fn toggle_saved_status(&self, id: i32) -> Result<()> {
         let conn = self.get_connection()?;
 
         // Get current saved status
@@ -585,7 +585,7 @@ impl HistoryManager {
         self.recordings_dir.join(file_name)
     }
 
-    pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
+    pub async fn get_entry_by_id(&self, id: i32) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
             "SELECT
@@ -607,7 +607,7 @@ impl HistoryManager {
         Ok(entry)
     }
 
-    pub async fn delete_entry(&self, id: i64) -> Result<()> {
+    pub async fn delete_entry(&self, id: i32) -> Result<()> {
         let conn = self.get_connection()?;
 
         // Get the entry to find the file name
@@ -638,8 +638,8 @@ impl HistoryManager {
         Ok(())
     }
 
-    fn format_timestamp_title(&self, timestamp: i64) -> String {
-        if let Some(utc_datetime) = DateTime::from_timestamp(timestamp, 0) {
+    fn format_timestamp_title(&self, timestamp: f64) -> String {
+        if let Some(utc_datetime) = DateTime::from_timestamp(timestamp as i64, 0) {
             // Convert UTC to local timezone
             let local_datetime = utc_datetime.with_timezone(&Local);
             local_datetime.format("%B %e, %Y - %l:%M%p").to_string()
@@ -673,7 +673,7 @@ mod tests {
         conn
     }
 
-    fn insert_entry(conn: &Connection, timestamp: i64, text: &str, post_processed: Option<&str>) {
+    fn insert_entry(conn: &Connection, timestamp: f64, text: &str, post_processed: Option<&str>) {
         conn.execute(
             "INSERT INTO transcription_history (
                 file_name,
@@ -686,8 +686,8 @@ mod tests {
                 post_process_requested
             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
-                format!("handy-{}.wav", timestamp),
-                timestamp,
+                format!("handy-{}.wav", timestamp as i64),
+                timestamp as i64,
                 false,
                 format!("Recording {}", timestamp),
                 text,
@@ -709,14 +709,14 @@ mod tests {
     #[test]
     fn get_latest_entry_returns_newest_entry() {
         let conn = setup_conn();
-        insert_entry(&conn, 100, "first", None);
-        insert_entry(&conn, 200, "second", Some("processed"));
+        insert_entry(&conn, 100.0, "first", None);
+        insert_entry(&conn, 200.0, "second", Some("processed"));
 
         let entry = HistoryManager::get_latest_entry_with_conn(&conn)
             .expect("fetch latest entry")
             .expect("entry exists");
 
-        assert_eq!(entry.timestamp, 200);
+        assert!((entry.timestamp - 200.0).abs() < f64::EPSILON);
         assert_eq!(entry.transcription_text, "second");
         assert_eq!(entry.post_processed_text.as_deref(), Some("processed"));
     }
@@ -724,14 +724,14 @@ mod tests {
     #[test]
     fn get_latest_completed_entry_skips_empty_entries() {
         let conn = setup_conn();
-        insert_entry(&conn, 100, "completed", None);
-        insert_entry(&conn, 200, "", None);
+        insert_entry(&conn, 100.0, "completed", None);
+        insert_entry(&conn, 200.0, "", None);
 
         let entry = HistoryManager::get_latest_completed_entry_with_conn(&conn)
             .expect("fetch latest completed entry")
             .expect("completed entry exists");
 
-        assert_eq!(entry.timestamp, 100);
+        assert!((entry.timestamp - 100.0).abs() < f64::EPSILON);
         assert_eq!(entry.transcription_text, "completed");
     }
 }
