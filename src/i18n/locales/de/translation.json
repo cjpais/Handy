@@ -367,6 +367,10 @@
       "voiceActivityDetection": {
         "title": "Sprachaktivitätserkennung (VAD)",
         "description": "Filtert Stille aus Aufnahmen. Streamingfähige Modelle verwenden ein längeres VAD-Ende; das Deaktivieren von VAD nimmt Rohaudio auf."
+      },
+      "fillerWordRemoval": {
+        "title": "Füllwörter entfernen",
+        "description": "Entfernt häufige Verzögerungslaute, wenn Handy die Sprache der Transkription kennt. Deaktivieren für eine wortgetreue Transkription."
       }
     },
     "postProcessing": {

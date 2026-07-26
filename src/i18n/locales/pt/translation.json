@@ -365,8 +365,12 @@
         "duplicate": "\"{{word}}\" já existe"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Detecção de atividade de voz (VAD)",
+        "description": "Filtra o silêncio das gravações. Modelos compatíveis com streaming usam uma cauda de VAD mais longa; desativar o VAD grava o áudio bruto."
+      },
+      "fillerWordRemoval": {
+        "title": "Remover palavras de preenchimento",
+        "description": "Remove hesitações comuns quando o Handy reconhece o idioma da transcrição. Desative para uma transcrição literal."
       }
     },
     "postProcessing": {

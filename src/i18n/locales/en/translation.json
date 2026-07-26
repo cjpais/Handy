@@ -367,6 +367,10 @@
       "voiceActivityDetection": {
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+      },
+      "fillerWordRemoval": {
+        "title": "Remove Filler Words",
+        "description": "Remove common hesitation words when Handy knows the transcription language. Disable for verbatim transcription."
       }
     },
     "postProcessing": {

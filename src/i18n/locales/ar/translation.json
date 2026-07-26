@@ -344,8 +344,12 @@
         "duplicate": "\"{{word}}\" موجود بالفعل"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "اكتشاف النشاط الصوتي (VAD)",
+        "description": "تصفية الصمت من التسجيلات. تستخدم النماذج التي تدعم البث ذيل VAD أطول؛ تعطيل VAD يسجّل الصوت الخام."
+      },
+      "fillerWordRemoval": {
+        "title": "إزالة كلمات الحشو",
+        "description": "إزالة كلمات التردد الشائعة عندما يعرف Handy لغة التفريغ. عطّل هذا الخيار للحصول على تفريغ حرفي."
       }
     },
     "postProcessing": {

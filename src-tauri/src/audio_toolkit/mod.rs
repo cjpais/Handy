@@ -8,6 +8,8 @@ pub use audio::{
     is_microphone_access_denied, is_no_input_device_error, list_input_devices, list_output_devices,
     read_wav_samples, save_wav_file, verify_wav_file, AudioRecorder, CpalDeviceInfo, VadPolicy,
 };
-pub use text::{apply_custom_words, filter_transcription_output};
+pub use text::{
+    apply_custom_words, normalize_transcription_output, remove_filler_words, OutputLanguageEvidence,
+};
 pub use utils::get_cpal_host;
 pub use vad::{SileroVad, VoiceActivityDetector};

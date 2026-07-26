@@ -365,8 +365,12 @@
         "duplicate": "\"{{word}}\" вже існує"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Виявлення голосової активності (VAD)",
+        "description": "Відфільтровує тишу із записів. Моделі з підтримкою потокового режиму використовують довший «хвіст» VAD; якщо вимкнути VAD, записується необроблений звук."
+      },
+      "fillerWordRemoval": {
+        "title": "Видаляти слова-паразити",
+        "description": "Видаляє поширені слова-вагання, коли Handy знає мову транскрипції. Вимкніть для дослівної транскрипції."
       }
     },
     "postProcessing": {

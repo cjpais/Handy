@@ -367,6 +367,10 @@
       "voiceActivityDetection": {
         "title": "Spraakactiviteitsdetectie (VAD)",
         "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."
+      },
+      "fillerWordRemoval": {
+        "title": "Stopwoorden verwijderen",
+        "description": "Verwijdert veelvoorkomende twijfelwoorden wanneer Handy de taal van de transcriptie kent. Schakel dit uit voor een woordelijke transcriptie."
       }
     },
     "postProcessing": {

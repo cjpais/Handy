@@ -367,6 +367,10 @@
       "voiceActivityDetection": {
         "title": "Détection d'activité vocale (VAD)",
         "description": "Filtre le silence des enregistrements. Les modèles compatibles avec le streaming utilisent une marge de détection VAD plus longue ; désactiver le VAD enregistre l'audio brut."
+      },
+      "fillerWordRemoval": {
+        "title": "Supprimer les mots de remplissage",
+        "description": "Supprime les hésitations courantes lorsque Handy connaît la langue de la transcription. Désactivez cette option pour une transcription mot à mot."
       }
     },
     "postProcessing": {

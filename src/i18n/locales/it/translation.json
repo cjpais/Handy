@@ -367,6 +367,10 @@
       "voiceActivityDetection": {
         "title": "Rilevamento dell'attività vocale",
         "description": "Filtra il silenzio dalle registrazioni. I modelli che supportano lo streaming utilizzano una coda VAD più lunga; disabilitando la VAD si registra l'audio grezzo."
+      },
+      "fillerWordRemoval": {
+        "title": "Rimuovi le parole riempitive",
+        "description": "Rimuove le parole di esitazione più comuni quando Handy conosce la lingua della trascrizione. Disattiva per una trascrizione letterale."
       }
     },
     "postProcessing": {
