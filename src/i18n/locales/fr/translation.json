@@ -6,7 +6,8 @@
     "unloadModel": "Décharger le modèle",
     "model": "Modèle",
     "quit": "Quitter",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input"
   },
   "sidebar": {
     "general": "Général",
@@ -528,6 +529,26 @@
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
       },
+      "keyboardDiagnostic": {
+        "title": "Diagnostic du clavier",
+        "description": "Vérifie si les événements clavier atteignent Handy. Seul le nombre d'événements est enregistré, jamais les touches sur lesquelles vous appuyez.",
+        "run": "Lancer un diagnostic de 10 s",
+        "running": "Écoute en cours… appuyez plusieurs fois sur votre raccourci (par ex. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "activé",
+        "disabled": "désactivé",
+        "holder": "détenu par {{name}} (pid {{pid}})",
+        "holderUnknown": "aucun détenteur visible",
+        "keyDown": "Touche enfoncée",
+        "keyUp": "Touche relâchée",
+        "flagsChanged": "Modificateurs",
+        "mouse": "Souris",
+        "verdictBlocked": "Secure Input bloque les événements clavier : les raccourcis contenant une touche normale ne peuvent pas fonctionner tant que ce n'est pas résolu.",
+        "verdictSuspicious": "Des événements de modificateurs sont arrivés, mais aucun événement de touche : quelque chose supprime les touches alors que Secure Input est signalé comme désactivé. Merci de le signaler sur GitHub.",
+        "verdictOk": "Les événements clavier atteignent Handy normalement.",
+        "verdictNoEvents": "Aucun événement capturé : avez-vous appuyé sur des touches pendant le test ?",
+        "failed": "Échec du diagnostic : {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Aperçu des nouveautés",
         "description": "Ouvrir la dernière note de version intégrée sans la marquer comme vue",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Nouveautés de Handy v{{version}}"
+  },
+  "secureInput": {
+    "title": "Les raccourcis clavier sont bloqués par Secure Input de macOS",
+    "descriptionWithCulprit": "« {{name}} » (pid {{pid}}) maintient Secure Input actif, les raccourcis contenant une touche normale n'atteignent donc pas Handy.",
+    "descriptionNoCulprit": "Quelque chose maintient Secure Input actif (aucun détenteur visible — une app a peut-être quitté sans le libérer), les raccourcis contenant une touche normale n'atteignent donc pas Handy.",
+    "learnMore": "Comment résoudre ce problème",
+    "recorderBlocked": "Impossible d'enregistrer un raccourci pour le moment : Secure Input de macOS bloque les événements clavier. Résolvez d'abord l'avertissement Secure Input.",
+    "uncovered": "Ces raccourcis ne peuvent pas fonctionner tant que ce n'est pas résolu : {{bindings}}.",
+    "degraded": "Ces raccourcis répondent temporairement au modificateur gauche ou droit : {{bindings}}.",
+    "recorderDisabled": "L'enregistrement de nouveaux raccourcis est désactivé tant que ce n'est pas résolu.",
+    "dismiss": "Ignorer"
   }
 }

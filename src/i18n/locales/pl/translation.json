@@ -6,7 +6,8 @@
     "unloadModel": "Zwolnij model",
     "model": "Model",
     "quit": "Zamknij",
-    "cancel": "Anuluj"
+    "cancel": "Anuluj",
+    "secureInputWarning": "⚠ Skróty zablokowane przez Secure Input"
   },
   "sidebar": {
     "general": "Ogólne",
@@ -528,6 +529,26 @@
         "title": "Dodatkowy bufor nagrywania",
         "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."
       },
+      "keyboardDiagnostic": {
+        "title": "Diagnostyka klawiatury",
+        "description": "Sprawdza, czy zdarzenia klawiatury docierają do Handy. Zapisywana jest tylko liczba zdarzeń — nigdy to, które klawisze naciskasz.",
+        "run": "Uruchom 10-sekundową diagnostykę",
+        "running": "Nasłuchiwanie… naciśnij swój skrót kilka razy (np. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "włączony",
+        "disabled": "wyłączony",
+        "holder": "trzymany przez {{name}} (pid {{pid}})",
+        "holderUnknown": "brak widocznego posiadacza",
+        "keyDown": "Klawisz wciśnięty",
+        "keyUp": "Klawisz zwolniony",
+        "flagsChanged": "Modyfikatory",
+        "mouse": "Mysz",
+        "verdictBlocked": "Secure Input blokuje zdarzenia klawiszy — skróty zawierające zwykły klawisz nie zadziałają, dopóki nie zostanie to rozwiązane.",
+        "verdictSuspicious": "Dotarły zdarzenia modyfikatorów, ale żadnych zdarzeń klawiszy — coś tłumi klawisze, mimo że Secure Input jest zgłaszany jako wyłączony. Zgłoś to na GitHubie.",
+        "verdictOk": "Zdarzenia klawiszy docierają do Handy normalnie.",
+        "verdictNoEvents": "Nie przechwycono żadnych zdarzeń — czy w trakcie testu naciśnięto jakieś klawisze?",
+        "failed": "Diagnostyka nie powiodła się: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Podgląd nowości",
         "description": "Otwórz najnowsze dołączone informacje o wydaniu bez oznaczania ich jako wyświetlone",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Nowości w Handy v{{version}}"
+  },
+  "secureInput": {
+    "title": "Skróty klawiszowe są zablokowane przez Secure Input w macOS",
+    "descriptionWithCulprit": "„{{name}}” (pid {{pid}}) przytrzymuje Secure Input, więc skróty zawierające zwykły klawisz nie docierają do Handy.",
+    "descriptionNoCulprit": "Coś przytrzymuje Secure Input (brak widocznego posiadacza — jakaś aplikacja mogła zakończyć działanie bez zwolnienia go), więc skróty zawierające zwykły klawisz nie docierają do Handy.",
+    "learnMore": "Jak to naprawić",
+    "recorderBlocked": "Nie można teraz nagrać skrótu — Secure Input w macOS blokuje zdarzenia klawiszy. Najpierw rozwiąż ostrzeżenie o Secure Input.",
+    "uncovered": "Te skróty nie zadziałają, dopóki nie zostanie to rozwiązane: {{bindings}}.",
+    "degraded": "Te skróty tymczasowo reagują na lewy lub prawy modyfikator: {{bindings}}.",
+    "recorderDisabled": "Nagrywanie nowych skrótów jest wyłączone, dopóki nie zostanie to rozwiązane.",
+    "dismiss": "Odrzuć"
   }
 }

@@ -6,7 +6,8 @@
     "unloadModel": "モデルをアンロード",
     "model": "モデル",
     "quit": "終了",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "secureInputWarning": "⚠ Secure Input でショートカットがブロック中"
   },
   "sidebar": {
     "general": "一般",
@@ -528,6 +529,26 @@
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間(ミリ秒)。末尾の音声を捕捉するため。0 = 追加バッファなし。"
       },
+      "keyboardDiagnostic": {
+        "title": "キーボード診断",
+        "description": "キーボードイベントが Handy に届いているかを確認します。記録されるのはイベント数のみで、押したキーの内容は記録されません。",
+        "run": "10 秒間の診断を実行",
+        "running": "待機中… ショートカットを数回押してください (例: Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "有効",
+        "disabled": "無効",
+        "holder": "{{name}} (pid {{pid}}) が保持中",
+        "holderUnknown": "保持元は不明",
+        "keyDown": "キー押下",
+        "keyUp": "キー解放",
+        "flagsChanged": "修飾キー",
+        "mouse": "マウス",
+        "verdictBlocked": "Secure Input がキーイベントをブロックしています。解消されるまで、通常キーを含むショートカットは動作しません。",
+        "verdictSuspicious": "修飾キーのイベントは届いていますが、キーイベントは届いていません。Secure Input は無効と報告されているのに、何かがキーを抑制しています。GitHub で報告してください。",
+        "verdictOk": "キーイベントは Handy に正常に届いています。",
+        "verdictNoEvents": "イベントを検出できませんでした。テスト中にキーを押しましたか？",
+        "failed": "診断に失敗しました: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "新機能をプレビュー",
         "description": "最新の同梱リリースノートを既読にせずに開く",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"
+  },
+  "secureInput": {
+    "title": "macOS の Secure Input によりキーボードショートカットがブロックされています",
+    "descriptionWithCulprit": "「{{name}}」(pid {{pid}}) が Secure Input を保持しているため、通常キーを含むショートカットが Handy に届きません。",
+    "descriptionNoCulprit": "何かが Secure Input を保持しています (保持元は不明 — 解放せずに終了したアプリがある可能性があります)。そのため、通常キーを含むショートカットが Handy に届きません。",
+    "learnMore": "解決方法",
+    "recorderBlocked": "現在ショートカットを記録できません。macOS の Secure Input がキーイベントをブロックしています。先に Secure Input の警告を解消してください。",
+    "uncovered": "解消されるまで、次のショートカットは動作しません: {{bindings}}。",
+    "degraded": "次のショートカットは一時的に左右どちらの修飾キーにも反応します: {{bindings}}。",
+    "recorderDisabled": "解消されるまで、新しいショートカットの記録は無効です。",
+    "dismiss": "閉じる"
   }
 }

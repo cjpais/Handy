@@ -6,7 +6,8 @@
     "unloadModel": "모델 언로드",
     "model": "모델",
     "quit": "종료",
-    "cancel": "취소"
+    "cancel": "취소",
+    "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨"
   },
   "sidebar": {
     "general": "일반",
@@ -523,6 +524,26 @@
         "title": "추가 녹음 버퍼",
         "description": "키를 놓은 후 추가로 녹음을 계속하는 시간(밀리초). 후행 오디오를 캡처하기 위함. 0 = 추가 버퍼 없음."
       },
+      "keyboardDiagnostic": {
+        "title": "키보드 진단",
+        "description": "키보드 이벤트가 Handy에 도달하는지 확인합니다. 이벤트 개수만 기록되며, 어떤 키를 눌렀는지는 절대 기록되지 않습니다.",
+        "run": "10초 진단 실행",
+        "running": "수신 중… 단축키를 몇 번 눌러 보세요 (예: Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "사용 중",
+        "disabled": "사용 안 함",
+        "holder": "{{name}}(pid {{pid}})이(가) 점유 중",
+        "holderUnknown": "점유 중인 앱을 확인할 수 없음",
+        "keyDown": "키 누름",
+        "keyUp": "키 뗌",
+        "flagsChanged": "조합 키",
+        "mouse": "마우스",
+        "verdictBlocked": "Secure Input이 키 이벤트를 차단하고 있습니다. 해결될 때까지 일반 키가 포함된 단축키는 작동할 수 없습니다.",
+        "verdictSuspicious": "조합 키 이벤트는 도착했지만 키 이벤트는 없습니다. Secure Input은 꺼져 있다고 보고되지만 무언가가 키를 가로막고 있습니다. GitHub에 신고해 주세요.",
+        "verdictOk": "키 이벤트가 Handy에 정상적으로 도달하고 있습니다.",
+        "verdictNoEvents": "이벤트가 감지되지 않았습니다. 테스트 중에 키를 누르셨나요?",
+        "failed": "진단 실패: {{error}}"
+      },
       "paths": {
         "appData": "앱 데이터:",
         "models": "모델:",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}}의 새 소식"
+  },
+  "secureInput": {
+    "title": "macOS Secure Input으로 인해 키보드 단축키가 차단되었습니다",
+    "descriptionWithCulprit": "“{{name}}”(pid {{pid}})이(가) Secure Input을 점유하고 있어 일반 키가 포함된 단축키가 Handy에 도달하지 못합니다.",
+    "descriptionNoCulprit": "무언가가 Secure Input을 점유하고 있습니다(점유 중인 앱을 확인할 수 없음 — 앱이 해제하지 않고 종료했을 수 있습니다). 그래서 일반 키가 포함된 단축키가 Handy에 도달하지 못합니다.",
+    "learnMore": "해결 방법",
+    "recorderBlocked": "지금은 단축키를 등록할 수 없습니다. macOS Secure Input이 키 이벤트를 차단하고 있습니다. Secure Input 경고를 먼저 해결하세요.",
+    "uncovered": "해결될 때까지 다음 단축키는 작동하지 않습니다: {{bindings}}.",
+    "degraded": "다음 단축키는 일시적으로 왼쪽 또는 오른쪽 조합 키 중 어느 쪽에나 반응합니다: {{bindings}}.",
+    "recorderDisabled": "해결될 때까지 새 단축키 등록이 비활성화됩니다.",
+    "dismiss": "닫기"
   }
 }
