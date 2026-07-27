@@ -1984,9 +1984,23 @@ impl ModelManager {
         // whole download. Each attempt resumes from the `.sync.part`
         // committed-offset marker, so a retry only re-fetches what the failed
         // attempt hadn't finished.
-        const MAX_ATTEMPTS: u32 = 4;
-        let mut attempt: u32 = 1;
+        // Start moderately parallel for normal-network throughput, then stay
+        // sequential after the first failure. Eight simultaneous connections
+        // were all reset on an affected network in #1579, while one stream
+        // succeeded; four is a less aggressive fast path, and every retry uses
+        // the known-compatible request pattern.
+        const ATTEMPT_STREAMS: [usize; 4] = [4, 1, 1, 1];
+        let mut attempt: usize = 1;
         let hf_error = loop {
+            let stream_count = ATTEMPT_STREAMS[attempt - 1];
+            info!(
+                "HF download attempt {}/{} for {} using {} concurrent stream(s)",
+                attempt,
+                ATTEMPT_STREAMS.len(),
+                model_id,
+                stream_count
+            );
+
             // Fresh client per attempt so a wedged connection from the previous
             // try can't poison the retry.
             let api = ApiBuilder::from_env()
@@ -1994,13 +2008,7 @@ impl ModelManager {
                 // can make otherwise-public downloads fail authentication.
                 .with_token(None)
                 .with_progress(false)
-                // Single stream. Corporate IPS/firewalls kill parallel connection
-                // bursts to huggingface.co (#1579: 8 simultaneous chunk connections
-                // all reset while the browser and sequential CLIs work fine on the
-                // same machine). One connection matches the request pattern that is
-                // known to pass those middleboxes; the mirror fallback below covers
-                // the throughput-sensitive cases.
-                .with_max_files(1)
+                .with_max_files(stream_count)
                 .build()
                 .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
             let repo = api.repo(Repo::with_revision(
@@ -2067,29 +2075,53 @@ impl ModelManager {
                     return Ok(());
                 }
                 Err(hf_hub::api::tokio::ApiError::Cancelled) => {
-                    // Watchdog stall. Unlike a fast transient error, a wedged
-                    // connection already cost DOWNLOAD_STALL_TIMEOUT and every
-                    // retry would burn the same again before its own watchdog
-                    // fires — skip straight to the mirror fallback.
-                    break Some(anyhow::anyhow!(
+                    let err = anyhow::anyhow!(
                         "transfer stalled: no progress for {}s",
                         DOWNLOAD_STALL_TIMEOUT.as_secs()
-                    ));
+                    );
+                    // A parallel attempt may be what wedged the network. Give
+                    // the connection pool a brief pause, then retry once using
+                    // the known-compatible single-stream path. A sequential
+                    // stall already cost DOWNLOAD_STALL_TIMEOUT, so further
+                    // retries would likely just repeat it — use the mirror.
+                    if stream_count == 1 || attempt >= ATTEMPT_STREAMS.len() {
+                        break Some(err);
+                    }
+                    let delay = Duration::from_secs(1_u64 << attempt);
+                    warn!(
+                        "HF download attempt {}/{} stalled for {} using {} concurrent stream(s); retrying with {} stream(s) in {}s",
+                        attempt,
+                        ATTEMPT_STREAMS.len(),
+                        model_id,
+                        stream_count,
+                        ATTEMPT_STREAMS[attempt],
+                        delay.as_secs()
+                    );
+                    tokio::select! {
+                        _ = tokio::time::sleep(delay) => {}
+                        _ = cancel_token.cancelled() => {
+                            info!("HF download cancelled for: {}", model_id);
+                            return Ok(());
+                        }
+                    }
+                    attempt += 1;
                 }
                 Err(e) => {
                     // {:?} keeps the error source chain (reset vs TLS vs timeout);
                     // Display truncates it to "error sending request".
                     let err = anyhow::anyhow!("{:?}", e);
-                    if attempt >= MAX_ATTEMPTS {
+                    if attempt >= ATTEMPT_STREAMS.len() {
                         break Some(err);
                     }
-                    let delay = Duration::from_secs(1 << attempt);
+                    let delay = Duration::from_secs(1_u64 << attempt);
                     warn!(
-                        "HF download attempt {}/{} failed for {}: {}; retrying in {}s",
+                        "HF download attempt {}/{} failed for {} using {} concurrent stream(s): {}; retrying with {} stream(s) in {}s",
                         attempt,
-                        MAX_ATTEMPTS,
+                        ATTEMPT_STREAMS.len(),
                         model_id,
+                        stream_count,
                         err,
+                        ATTEMPT_STREAMS[attempt],
                         delay.as_secs()
                     );
                     tokio::select! {
@@ -2105,7 +2137,7 @@ impl ModelManager {
         };
 
         if let Some(hf_error) = hf_error {
-            // `attempt`, not MAX_ATTEMPTS: a stall breaks out early.
+            // `attempt`, not the schedule length: a sequential stall breaks out early.
             error!(
                 "HF download failed for {} after {} attempt(s): {:?}",
                 model_id, attempt, hf_error
