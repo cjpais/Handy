@@ -52,7 +52,7 @@ export const SUPPORTED_LANGUAGES = Object.keys(resources)
 export type SupportedLanguageCode = string;
 
 // Check if a language code is supported
-const getSupportedLanguage = (
+export const getSupportedLanguage = (
   langCode: string | null | undefined,
 ): SupportedLanguageCode | null => {
   if (!langCode) return null;

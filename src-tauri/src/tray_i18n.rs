@@ -43,3 +43,76 @@ pub fn get_tray_translations(locale: Option<String>) -> TrayStrings {
         .cloned()
         .expect("English translations must exist")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{get_tray_translations, TRANSLATIONS};
+
+    /// Compare every field rather than a single one, so a partial regression
+    /// can't slip through. TrayStrings is generated and derives only Debug.
+    fn assert_resolves_to(locale: Option<&str>, expected_key: &str) {
+        let expected = TRANSLATIONS
+            .get(expected_key)
+            .unwrap_or_else(|| panic!("no translations for {expected_key}"));
+        assert_eq!(
+            format!("{:?}", get_tray_translations(locale.map(str::to_string))),
+            format!("{expected:?}"),
+            "{locale:?} should resolve to {expected_key}"
+        );
+    }
+
+    #[test]
+    fn simplified_and_traditional_chinese_differ() {
+        // Every Chinese assertion below is vacuous if these two are equal.
+        assert_ne!(
+            format!("{:?}", TRANSLATIONS["zh"]),
+            format!("{:?}", TRANSLATIONS["zh-TW"])
+        );
+    }
+
+    #[test]
+    fn traditional_script_locales_resolve_to_zh_tw() {
+        for locale in [
+            "zh-Hant-TW",
+            "zh-Hant-HK",
+            "zh-Hant",
+            "ZH-HANT-TW",
+            "zh_Hant_TW",
+        ] {
+            assert_resolves_to(Some(locale), "zh-TW");
+        }
+    }
+
+    #[test]
+    fn saved_zh_tw_preference_matches_exactly() {
+        assert_resolves_to(Some("zh-TW"), "zh-TW");
+    }
+
+    #[test]
+    fn simplified_chinese_locales_resolve_to_zh() {
+        for locale in ["zh", "zh-CN", "zh-Hans-CN", "zh-SG"] {
+            assert_resolves_to(Some(locale), "zh");
+        }
+    }
+
+    #[test]
+    fn region_subtag_falls_back_to_the_language() {
+        for (locale, expected) in [
+            ("en-US", "en"),
+            ("ja-JP", "ja"),
+            ("pt-BR", "pt"),
+            ("fr-FR", "fr"),
+            // Lookup lowercases before the language fallback.
+            ("FR-FR", "fr"),
+        ] {
+            assert_resolves_to(Some(locale), expected);
+        }
+    }
+
+    #[test]
+    fn unsupported_or_missing_locales_fall_back_to_english() {
+        assert_resolves_to(Some("xx-YY"), "en");
+        assert_resolves_to(Some(""), "en");
+        assert_resolves_to(None, "en");
+    }
+}
