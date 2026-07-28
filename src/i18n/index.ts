@@ -51,34 +51,83 @@ export const SUPPORTED_LANGUAGES = Object.keys(resources)
 
 export type SupportedLanguageCode = string;
 
+const TRADITIONAL_CHINESE_REGIONS = new Set(["tw", "hk", "mo"]);
+const SIMPLIFIED_CHINESE_REGIONS = new Set(["cn", "sg"]);
+
+const getLocaleSubtags = (langCode: string) =>
+  langCode.trim().toLowerCase().replace(/_/g, "-").split("-");
+
+const findScriptAndRegion = (subtags: string[]) => {
+  let script: string | undefined;
+  let region: string | undefined;
+
+  for (const subtag of subtags.slice(1)) {
+    // A singleton begins a BCP-47 extension, so later values are not part of
+    // the language/script/region identifier.
+    if (subtag.length === 1) break;
+    if (!script && /^[a-z]{4}$/.test(subtag)) script = subtag;
+    if (!region && (/^[a-z]{2}$/.test(subtag) || /^\d{3}$/.test(subtag))) {
+      region = subtag;
+    }
+  }
+
+  return { script, region };
+};
+
 // Check if a language code is supported
 export const getSupportedLanguage = (
   langCode: string | null | undefined,
 ): SupportedLanguageCode | null => {
   if (!langCode) return null;
-  const normalized = langCode.toLowerCase();
-  // Try exact match first
+
+  const subtags = getLocaleSubtags(langCode);
+  const normalized = subtags.join("-");
+
+  // Try an exact, case- and separator-insensitive match first.
   let supported = SUPPORTED_LANGUAGES.find(
-    (lang) => lang.code.toLowerCase() === normalized,
+    (lang) => getLocaleSubtags(lang.code).join("-") === normalized,
   );
+
   if (!supported) {
-    // Script-aware fallback: Traditional-script Chinese locales
-    // (e.g. zh-Hant-TW, zh-Hant-HK) should resolve to zh-TW, not fall
-    // through to the "zh" (Simplified) prefix match below.
-    const subtags = normalized.split("-");
-    if (subtags[0] === "zh" && subtags[1] === "hant") {
+    const language = subtags[0];
+    const { script, region } = findScriptAndRegion(subtags);
+    let fallbackCode: string | undefined;
+
+    if (
+      language === "zh" &&
+      (script === "hant" ||
+        (script !== "hans" &&
+          region !== undefined &&
+          TRADITIONAL_CHINESE_REGIONS.has(region)))
+    ) {
+      // Traditional Chinese may be identified by script or only by region.
+      fallbackCode = "zh-tw";
+    } else if (language === "yue") {
+      // We do not have a Cantonese translation. Use the matching Chinese
+      // script, with Traditional as Cantonese's default writing system.
+      fallbackCode =
+        script === "hans" ||
+        (script !== "hant" &&
+          region !== undefined &&
+          SIMPLIFIED_CHINESE_REGIONS.has(region))
+          ? "zh"
+          : "zh-tw";
+    }
+
+    if (fallbackCode) {
       supported = SUPPORTED_LANGUAGES.find(
-        (lang) => lang.code.toLowerCase() === "zh-tw",
+        (lang) => lang.code.toLowerCase() === fallbackCode,
       );
     }
   }
+
   if (!supported) {
-    // Fall back to prefix match (language only, without region)
-    const prefix = normalized.split("-")[0];
+    // Fall back to the language subtag.
     supported = SUPPORTED_LANGUAGES.find(
-      (lang) => lang.code.toLowerCase() === prefix,
+      (lang) => lang.code.toLowerCase() === subtags[0],
     );
   }
+
   return supported ? supported.code : null;
 };
 
