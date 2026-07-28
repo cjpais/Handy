@@ -4,23 +4,24 @@ use super::model_capabilities::{
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
-use futures_util::StreamExt;
 use hf_hub::api::tokio::{ApiBuilder, CancellationToken, Progress};
 use hf_hub::{Cache, Repo, RepoType};
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use specta::Type;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
-use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
+
+mod download;
+
+use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
@@ -122,6 +123,10 @@ pub struct QuantFile {
     pub filename: String,
     pub quant: String,
     pub size_bytes: u64,
+    /// Content sha256 — the trust anchor for downloads from any source (HF or
+    /// mirror). `None` only for catalogs predating the field.
+    #[serde(default)]
+    pub sha256: Option<String>,
 }
 
 /// Pick the default quant among `files`: the one whose `quant` matches
@@ -184,12 +189,45 @@ impl ModelDescriptor {
     /// Render the frontend-facing [`ModelInfo`] by combining this spec with live
     /// disk `status`.
     pub fn to_model_info(&self, status: &DiskStatus) -> ModelInfo {
-        let file = self.default_file();
+        self.render_model_info(self.default_file(), status)
+    }
+
+    /// [`ModelInfo`] for one specific quant `file` of this catalog model — how
+    /// alternate-quant files found on disk surface with full catalog metadata
+    /// instead of as anonymous customs. The default quant keeps the plain
+    /// catalog name; any other quant appends it ("Name (Q4_K_M)") so two
+    /// quants of one model stay tellable apart, and only the default carries
+    /// the Recommended badge. Identity stays `"{repo_id}/{filename}"`, so the
+    /// default quant renders identically to the seeded entry.
+    pub fn to_model_info_for_file(&self, file: &QuantFile, status: &DiskStatus) -> ModelInfo {
+        self.render_model_info(Some(file), status)
+    }
+
+    fn render_model_info(&self, file: Option<&QuantFile>, status: &DiskStatus) -> ModelInfo {
+        let is_default = match (file, self.default_file()) {
+            (Some(f), Some(d)) => f.filename == d.filename,
+            _ => true,
+        };
+        let id = match (&self.source, file) {
+            (ModelSource::HuggingFace { repo_id, .. }, Some(f)) => {
+                format!("{}/{}", repo_id, f.filename)
+            }
+            _ => self.id.clone(),
+        };
+        let name = if is_default {
+            self.name.clone()
+        } else {
+            format!(
+                "{} ({})",
+                self.name,
+                file.map(|f| f.quant.as_str()).unwrap_or("")
+            )
+        };
         let languages =
             canonicalize_supported_languages(self.caps.languages.clone().unwrap_or_default());
         ModelInfo {
-            id: self.id.clone(),
-            name: self.name.clone(),
+            id,
+            name,
             description: self.description.clone(),
             filename: file.map(|f| f.filename.clone()).unwrap_or_default(),
             source: self.source.clone(),
@@ -202,7 +240,7 @@ impl ModelDescriptor {
             accuracy_score: self.accuracy_score,
             speed_score: self.speed_score,
             supports_translation: self.caps.supports_translation.unwrap_or(false),
-            is_recommended: self.recommended,
+            is_recommended: self.recommended && is_default,
             supports_language_selection: languages.len() > 1,
             supported_languages: languages,
             // Catalog models are always HF-sourced downloads, never user-dropped
@@ -275,14 +313,23 @@ pub struct DownloadProgress {
 /// Resolve a Hugging Face model file in the shared HF cache, if already present.
 /// Uses hf-hub's stock location (HF_HOME or ~/.cache/huggingface/hub) so
 /// downloads are shared with other tools.
+///
+/// hf-hub resolves purely through `refs/<revision>`. Pinned downloads write
+/// `refs/<commit-sha>`, but caches populated before pinning — or by other
+/// tools, which download via `main` — only have `refs/main`, so lookup falls
+/// back to it. Grandfathered `main` copies may predate the pin; per policy a
+/// working local model is never invalidated by routine catalog regeneration.
 fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathBuf> {
-    Cache::from_env()
-        .repo(Repo::with_revision(
-            repo_id.to_string(),
-            RepoType::Model,
-            revision.to_string(),
-        ))
-        .get(filename)
+    let get = |rev: &str| {
+        Cache::from_env()
+            .repo(Repo::with_revision(
+                repo_id.to_string(),
+                RepoType::Model,
+                rev.to_string(),
+            ))
+            .get(filename)
+    };
+    get(revision).or_else(|| (revision != "main").then(|| get("main")).flatten())
 }
 
 /// Friendly name advertised by GGUF metadata, if present. Empty strings are not
@@ -335,6 +382,10 @@ struct HfProgressState {
     total: u64,
     downloaded: u64,
     last_emit: Instant,
+    /// Every callback (even throttled-out ones) bumps this; the stall watchdog
+    /// reads it. Starts at construction so a hang before the first byte —
+    /// e.g. a wedged metadata/resolve request — also counts as a stall.
+    last_activity: Instant,
 }
 
 impl HfDownloadProgress {
@@ -346,8 +397,14 @@ impl HfDownloadProgress {
                 total: 0,
                 downloaded: 0,
                 last_emit: Instant::now(),
+                last_activity: Instant::now(),
             })),
         }
+    }
+
+    /// Instant of the most recent sign of life from the transfer.
+    fn last_activity(&self) -> Instant {
+        self.state.lock().unwrap().last_activity
     }
 
     fn emit(&self, downloaded: u64, total: u64) {
@@ -375,6 +432,7 @@ impl Progress for HfDownloadProgress {
             st.total = size as u64;
             st.downloaded = 0;
             st.last_emit = Instant::now();
+            st.last_activity = Instant::now();
         }
         self.emit(0, size as u64);
     }
@@ -384,6 +442,7 @@ impl Progress for HfDownloadProgress {
             let mut st = self.state.lock().unwrap();
             st.downloaded = st.downloaded.saturating_add(size as u64);
             let now = Instant::now();
+            st.last_activity = now;
             // Throttle to ~10 updates/sec, but always emit the final byte.
             let emit = now.duration_since(st.last_emit) >= Duration::from_millis(100)
                 || (st.total > 0 && st.downloaded >= st.total);
@@ -1303,13 +1362,33 @@ impl ModelManager {
     }
 
     fn update_download_status(&self) -> Result<()> {
+        // Snapshot in-flight download ids before taking the registry lock (the
+        // two locks are never nested) so a mid-download entry is never dropped.
+        let downloading_ids: HashSet<String> =
+            self.cancel_flags.lock().unwrap().keys().cloned().collect();
         let mut models = self.available_models.lock().unwrap();
+        let mut vanished_alternates: Vec<String> = Vec::new();
 
         for model in models.values_mut() {
             if let ModelSource::HuggingFace { repo_id, revision } = &model.source {
-                model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some();
+                // A models-dir copy counts too: mirror-fallback downloads land
+                // there, and it makes manual drop-ins of catalog files work.
+                let local_path = self.models_dir.join(&model.filename);
+                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                model.is_downloaded = hf_cached_path(repo_id, revision, &model.filename).is_some()
+                    || local_path.exists();
                 model.is_downloading = false;
-                model.partial_size = 0;
+                model.partial_size = partial_path.metadata().map(|m| m.len()).unwrap_or(0);
+                // Alternate-quant entries exist only because their file was
+                // discovered on disk — the catalog offers just the default
+                // quant, so they are never presented for download. When the
+                // file is gone, the entry goes with it.
+                if !model.is_downloaded
+                    && !downloading_ids.contains(&model.id)
+                    && Self::is_catalog_alternate_quant(repo_id, &model.filename)
+                {
+                    vanished_alternates.push(model.id.clone());
+                }
                 continue;
             }
             if model.is_directory {
@@ -1357,7 +1436,44 @@ impl ModelManager {
             }
         }
 
+        for id in vanished_alternates {
+            models.remove(&id);
+        }
+
         Ok(())
+    }
+
+    /// Whether `filename` is a catalog-listed quant of `repo_id` other than
+    /// the default — the only quant the catalog seeds and offers for download.
+    fn is_catalog_alternate_quant(repo_id: &str, filename: &str) -> bool {
+        crate::catalog::file_in_catalog(filename, Some(repo_id)).is_some_and(|(desc, file)| {
+            desc.default_file()
+                .is_some_and(|d| d.filename != file.filename)
+        })
+    }
+
+    /// Remove a single file from the shared HF cache: the snapshot pointer for
+    /// the resolved revision and, when the pointer is a symlink, the blob it
+    /// points to. Everything else in the repo (other quants, refs) is left
+    /// untouched. Returns whether anything was removed.
+    fn delete_hf_cache_file(repo_id: &str, revision: &str, filename: &str) -> bool {
+        let Some(pointer) = hf_cached_path(repo_id, revision, filename) else {
+            return false;
+        };
+        // Resolve the blob before the pointer goes away. On Windows the
+        // pointer may be a plain file (hf-hub's symlink fallback renames the
+        // blob into the snapshot), in which case there is no separate blob.
+        let is_symlink = fs::symlink_metadata(&pointer)
+            .map(|m| m.file_type().is_symlink())
+            .unwrap_or(false);
+        if is_symlink {
+            if let Ok(blob) = fs::canonicalize(&pointer) {
+                info!("Deleting HF cache blob at: {:?}", blob);
+                let _ = fs::remove_file(&blob);
+            }
+        }
+        info!("Deleting HF cache file at: {:?}", pointer);
+        fs::remove_file(&pointer).is_ok()
     }
 
     fn auto_select_model_if_needed(&self) -> Result<()> {
@@ -1473,6 +1589,28 @@ impl ModelManager {
 
             // Skip predefined model files
             if predefined_filenames.contains(&filename) {
+                continue;
+            }
+
+            // A file matching ANY catalog-listed quant surfaces as that catalog
+            // model — full name/description/scores, quant-suffixed name for
+            // non-defaults — instead of as an anonymous custom entry. (Default
+            // quants never reach here: they're in `predefined_filenames`.)
+            if let Some((desc, quant_file)) = crate::catalog::file_in_catalog(&filename, None) {
+                let info = desc.to_model_info_for_file(
+                    quant_file,
+                    &DiskStatus {
+                        is_downloaded: true,
+                        ..Default::default()
+                    },
+                );
+                if !available_models.contains_key(&info.id) {
+                    info!(
+                        "Discovered catalog quant in models dir: {} ({})",
+                        info.id, filename
+                    );
+                    available_models.insert(info.id.clone(), info);
+                }
                 continue;
             }
 
@@ -1624,6 +1762,28 @@ impl ModelManager {
                     continue;
                 }
 
+                // Catalog-listed quants (same repo) surface with full catalog
+                // metadata — quant-suffixed name for non-defaults — and skip
+                // the header probe (the catalog is authoritative for its own
+                // models). Everything else keeps the generic probed path.
+                if let Some((desc, quant_file)) =
+                    crate::catalog::file_in_catalog(&fname, Some(&repo_id))
+                {
+                    let info = desc.to_model_info_for_file(
+                        quant_file,
+                        &DiskStatus {
+                            is_downloaded: true,
+                            ..Default::default()
+                        },
+                    );
+                    info!(
+                        "Discovered catalog quant in HF cache: {} ({})",
+                        info.id, repo_id
+                    );
+                    available_models.insert(info.id.clone(), info);
+                    continue;
+                }
+
                 let path = snapshot.join(&fname);
                 let probe = prober.probe_file(&path);
                 // Only surface models transcribe-cpp recognises.
@@ -1686,56 +1846,6 @@ impl ModelManager {
         })
     }
 
-    /// Verifies the SHA256 of `path` against `expected_sha256` (if provided).
-    /// On mismatch or read error the partial file is deleted and an error is returned,
-    /// so the next download attempt always starts from a clean state.
-    /// When `expected_sha256` is `None` (custom user models) verification is skipped.
-    fn verify_sha256(path: &Path, expected_sha256: Option<&str>, model_id: &str) -> Result<()> {
-        let Some(expected) = expected_sha256 else {
-            return Ok(());
-        };
-        match Self::compute_sha256(path) {
-            Ok(actual) if actual == expected => {
-                info!("SHA256 verified for model {}", model_id);
-                Ok(())
-            }
-            Ok(actual) => {
-                warn!(
-                    "SHA256 mismatch for model {}: expected {}, got {}",
-                    model_id, expected, actual
-                );
-                let _ = fs::remove_file(path);
-                Err(anyhow::anyhow!(
-                    "Download verification failed for model {}: file is corrupt. Please retry.",
-                    model_id
-                ))
-            }
-            Err(e) => {
-                let _ = fs::remove_file(path);
-                Err(anyhow::anyhow!(
-                    "Failed to verify download for model {}: {}. Please retry.",
-                    model_id,
-                    e
-                ))
-            }
-        }
-    }
-
-    /// Computes the SHA256 hex digest of a file, reading in 64KB chunks to handle large models.
-    fn compute_sha256(path: &Path) -> Result<String> {
-        let mut file = File::open(path)?;
-        let mut hasher = Sha256::new();
-        let mut buffer = [0u8; 65536];
-        loop {
-            let n = file.read(&mut buffer)?;
-            if n == 0 {
-                break;
-            }
-            hasher.update(&buffer[..n]);
-        }
-        Ok(format!("{:x}", hasher.finalize()))
-    }
-
     /// Download a Hugging Face-sourced model into the shared HF cache via
     /// hf-hub, reporting progress through the same `model-download-progress`
     /// event the URL path uses. Uses hf-hub's stock cache, but deliberately
@@ -1749,8 +1859,11 @@ impl ModelManager {
         let model_id = model_info.id.clone();
         let filename = model_info.filename.clone();
 
-        // Already in the shared cache (possibly from another tool)? Done.
-        if hf_cached_path(&repo_id, &revision, &filename).is_some() {
+        // Already in the shared cache (possibly from another tool), or dropped
+        // into the models dir (mirror fallback / manual install)? Done.
+        if hf_cached_path(&repo_id, &revision, &filename).is_some()
+            || self.models_dir.join(&filename).exists()
+        {
             self.update_download_status()?;
             let _ = self.app_handle.emit("model-download-complete", &model_id);
             return Ok(());
@@ -1784,37 +1897,207 @@ impl ModelManager {
             model_id, repo_id, revision, filename
         );
 
-        // Download chunks in parallel (default is 1 = sequential). Throughput
-        // scales near-linearly with this count because each connection is capped
-        // (~8 MB/s observed per stream), so we stack several to approach the
-        // link's real bandwidth. 8 stays light on CPU/RAM (~80 MB peak buffers)
-        // even on older machines and is browser-like in connection count.
-        let api = ApiBuilder::from_env()
-            // Ignore cached and environment-provided credentials. A stale token
-            // can make otherwise-public downloads fail authentication.
-            .with_token(None)
-            .with_progress(false)
-            .with_max_files(8)
-            .build()
-            .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
-        let repo = api.repo(Repo::with_revision(repo_id, RepoType::Model, revision));
-        let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
-        match repo
-            .download_with_progress_cancellable(&filename, progress, cancel_token)
-            .await
-        {
-            Ok(_) => {}
-            Err(hf_hub::api::tokio::ApiError::Cancelled) => {
-                // User cancelled. hf-hub leaves the partially downloaded
-                // `.sync.part` in the shared cache, so a later attempt resumes
-                // instead of restarting. The guard resets is_downloading and
-                // drops the token; `cancel_download` already emitted
-                // `model-download-cancelled`.
-                info!("HF download cancelled for: {}", model_id);
-                return Ok(());
+        // hf-hub has no working internal retry (its retry knobs are hardcoded
+        // to zero), so a single transient fault — dropped connection, a 429
+        // from the resolve endpoint, a CDN blip — would otherwise fail the
+        // whole download. Each attempt resumes from the `.sync.part`
+        // committed-offset marker, so a retry only re-fetches what the failed
+        // attempt hadn't finished.
+        // Start moderately parallel for normal-network throughput, then stay
+        // sequential after the first failure. Eight simultaneous connections
+        // were all reset on an affected network in #1579, while one stream
+        // succeeded; four is a less aggressive fast path, and every retry uses
+        // the known-compatible request pattern.
+        const ATTEMPT_STREAMS: [usize; 4] = [4, 1, 1, 1];
+        let mut attempt: usize = 1;
+        let hf_error = loop {
+            let stream_count = ATTEMPT_STREAMS[attempt - 1];
+            info!(
+                "HF download attempt {}/{} for {} using {} concurrent stream(s)",
+                attempt,
+                ATTEMPT_STREAMS.len(),
+                model_id,
+                stream_count
+            );
+
+            // Fresh client per attempt so a wedged connection from the previous
+            // try can't poison the retry.
+            let api = ApiBuilder::from_env()
+                // Ignore cached and environment-provided credentials. A stale token
+                // can make otherwise-public downloads fail authentication.
+                .with_token(None)
+                .with_progress(false)
+                .with_max_files(stream_count)
+                .build()
+                .map_err(|e| anyhow::anyhow!("Failed to init Hugging Face API: {}", e))?;
+            let repo = api.repo(Repo::with_revision(
+                repo_id.clone(),
+                RepoType::Model,
+                revision.clone(),
+            ));
+            let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
+
+            // hf-hub has no internal timeouts, so a wedged connection would
+            // otherwise hang this attempt forever and neither the retry loop
+            // nor the mirror fallback would ever fire. The watchdog cancels a
+            // per-attempt child token when progress goes stale; a user cancel
+            // on the parent propagates through the same child.
+            let attempt_token = cancel_token.child_token();
+            let watchdog = tokio::spawn({
+                let probe = progress.clone();
+                let attempt_token = attempt_token.clone();
+                async move {
+                    loop {
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        if attempt_token.is_cancelled() {
+                            break;
+                        }
+                        if probe.last_activity().elapsed() > DOWNLOAD_STALL_TIMEOUT {
+                            attempt_token.cancel();
+                            break;
+                        }
+                    }
+                }
+            });
+            // hf-hub only observes its token inside the chunk loop — the
+            // metadata/resolve request and cache lock run before it, so a hang
+            // there would ignore the cancel entirely. Race the whole future
+            // against the token: on cancel, grant a short grace so an attempt
+            // that IS in the chunk loop can unwind gracefully (committing the
+            // `.sync.part` resume offset), then drop the future outright,
+            // which aborts whatever request it was wedged in.
+            let mut download = std::pin::pin!(repo.download_with_progress_cancellable(
+                &filename,
+                progress,
+                attempt_token.clone()
+            ));
+            let result = tokio::select! {
+                r = &mut download => r,
+                _ = attempt_token.cancelled() => {
+                    match tokio::time::timeout(Duration::from_secs(5), &mut download).await {
+                        Ok(r) => r,
+                        Err(_) => Err(hf_hub::api::tokio::ApiError::Cancelled),
+                    }
+                }
+            };
+            watchdog.abort();
+
+            match result {
+                Ok(_) => break None,
+                Err(hf_hub::api::tokio::ApiError::Cancelled) if cancel_token.is_cancelled() => {
+                    // User cancelled. hf-hub leaves the partially downloaded
+                    // `.sync.part` in the shared cache, so a later attempt resumes
+                    // instead of restarting. The guard resets is_downloading and
+                    // drops the token; `cancel_download` already emitted
+                    // `model-download-cancelled`.
+                    info!("HF download cancelled for: {}", model_id);
+                    return Ok(());
+                }
+                Err(hf_hub::api::tokio::ApiError::Cancelled) => {
+                    let err = anyhow::anyhow!(
+                        "transfer stalled: no progress for {}s",
+                        DOWNLOAD_STALL_TIMEOUT.as_secs()
+                    );
+                    // A parallel attempt may be what wedged the network. Give
+                    // the connection pool a brief pause, then retry once using
+                    // the known-compatible single-stream path. A sequential
+                    // stall already cost DOWNLOAD_STALL_TIMEOUT, so further
+                    // retries would likely just repeat it — use the mirror.
+                    if stream_count == 1 || attempt >= ATTEMPT_STREAMS.len() {
+                        break Some(err);
+                    }
+                    let delay = Duration::from_secs(1_u64 << attempt);
+                    warn!(
+                        "HF download attempt {}/{} stalled for {} using {} concurrent stream(s); retrying with {} stream(s) in {}s",
+                        attempt,
+                        ATTEMPT_STREAMS.len(),
+                        model_id,
+                        stream_count,
+                        ATTEMPT_STREAMS[attempt],
+                        delay.as_secs()
+                    );
+                    tokio::select! {
+                        _ = tokio::time::sleep(delay) => {}
+                        _ = cancel_token.cancelled() => {
+                            info!("HF download cancelled for: {}", model_id);
+                            return Ok(());
+                        }
+                    }
+                    attempt += 1;
+                }
+                Err(e) => {
+                    // {:?} keeps the error source chain (reset vs TLS vs timeout);
+                    // Display truncates it to "error sending request".
+                    let err = anyhow::anyhow!("{:?}", e);
+                    if attempt >= ATTEMPT_STREAMS.len() {
+                        break Some(err);
+                    }
+                    let delay = Duration::from_secs(1_u64 << attempt);
+                    warn!(
+                        "HF download attempt {}/{} failed for {} using {} concurrent stream(s): {}; retrying with {} stream(s) in {}s",
+                        attempt,
+                        ATTEMPT_STREAMS.len(),
+                        model_id,
+                        stream_count,
+                        err,
+                        ATTEMPT_STREAMS[attempt],
+                        delay.as_secs()
+                    );
+                    tokio::select! {
+                        _ = tokio::time::sleep(delay) => {}
+                        _ = cancel_token.cancelled() => {
+                            info!("HF download cancelled for: {}", model_id);
+                            return Ok(());
+                        }
+                    }
+                    attempt += 1;
+                }
             }
-            Err(e) => {
-                return Err(anyhow::anyhow!("Hugging Face download failed: {}", e));
+        };
+
+        if let Some(hf_error) = hf_error {
+            // `attempt`, not the schedule length: a sequential stall breaks out early.
+            error!(
+                "HF download failed for {} after {} attempt(s): {:?}",
+                model_id, attempt, hf_error
+            );
+            let mirrors = crate::catalog::mirror_fallbacks(&model_id);
+            if mirrors.is_empty() {
+                return Err(anyhow::anyhow!(
+                    "Hugging Face download failed after {} attempt(s): {}",
+                    attempt,
+                    hf_error
+                ));
+            }
+            let mut completed = false;
+            for mirror in &mirrors {
+                info!("Falling back to mirror for {}: {}", model_id, mirror.url);
+                match self
+                    .download_from_mirror(&model_id, &filename, mirror, cancel_token.clone())
+                    .await
+                {
+                    Ok(true) => {
+                        completed = true;
+                        break;
+                    }
+                    Ok(false) => {
+                        info!("Mirror download cancelled for: {}", model_id);
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        warn!(
+                            "Mirror download failed for {} from {}: {:?}",
+                            model_id, mirror.url, e
+                        );
+                    }
+                }
+            }
+            if !completed {
+                return Err(anyhow::anyhow!(
+                    "Download failed from Hugging Face ({}) and {} mirror(s)",
+                    hf_error,
+                    mirrors.len()
+                ));
             }
         }
 
@@ -1824,6 +2107,47 @@ impl ModelManager {
         let _ = self.app_handle.emit("model-download-complete", &model_id);
         info!("HF model {} downloaded", model_id);
         Ok(())
+    }
+
+    /// Direct-HTTP download of a catalog model's file from a mirror into the
+    /// models dir (HF-model resolution accepts that location too). Returns
+    /// `Ok(true)` on completion, `Ok(false)` if cancelled (partial kept).
+    async fn download_from_mirror(
+        &self,
+        model_id: &str,
+        filename: &str,
+        mirror: &crate::catalog::MirrorFile,
+        cancel_token: CancellationToken,
+    ) -> Result<bool> {
+        fs::create_dir_all(&self.models_dir)?;
+        let model_path = self.models_dir.join(filename);
+        let partial_path = self.models_dir.join(format!("{}.partial", filename));
+
+        if model_path.exists() {
+            return Ok(true);
+        }
+
+        match self
+            .download_http_resumable(
+                model_id,
+                &mirror.url,
+                &partial_path,
+                Some(mirror.size_bytes),
+                Some(&mirror.sha256),
+                &cancel_token,
+            )
+            .await?
+        {
+            HttpDownloadOutcome::Cancelled => Ok(false),
+            HttpDownloadOutcome::Completed => {
+                fs::rename(&partial_path, &model_path)?;
+                info!(
+                    "Mirror download of {} completed and verified ({:?})",
+                    model_id, model_path
+                );
+                Ok(true)
+            }
+        }
     }
 
     pub async fn download_model(&self, model_id: &str) -> Result<()> {
@@ -1861,16 +2185,6 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Check if we have a partial download to resume
-        let mut resume_from = if partial_path.exists() {
-            let size = partial_path.metadata()?.len();
-            info!("Resuming download of model {} from byte {}", model_id, size);
-            size
-        } else {
-            info!("Starting fresh download of model {} from {}", model_id, url);
-            0
-        };
-
         // Mark as downloading
         {
             let mut models = self.available_models.lock().unwrap();
@@ -1895,167 +2209,27 @@ impl ModelManager {
             disarmed: false,
         };
 
-        // Create HTTP client with range request for resuming
-        let client = reqwest::Client::new();
-        let mut request = client.get(&url);
-
-        if resume_from > 0 {
-            request = request.header("Range", format!("bytes={}-", resume_from));
-        }
-
-        let mut response = request.send().await?;
-
-        // If we tried to resume but server returned 200 (not 206 Partial Content),
-        // the server doesn't support range requests. Delete partial file and restart
-        // fresh to avoid file corruption (appending full file to partial).
-        if resume_from > 0 && response.status() == reqwest::StatusCode::OK {
-            warn!(
-                "Server doesn't support range requests for model {}, restarting download",
-                model_id
-            );
-            drop(response);
-            let _ = fs::remove_file(&partial_path);
-
-            // Reset resume_from since we're starting fresh
-            resume_from = 0;
-
-            // Restart download without range header
-            response = client.get(&url).send().await?;
-        }
-
-        // Check for success or partial content status
-        if !response.status().is_success()
-            && response.status() != reqwest::StatusCode::PARTIAL_CONTENT
+        // URL sources carry no authoritative size, so the helper falls back to
+        // the server's content-length for progress and completeness checks.
+        match self
+            .download_http_resumable(
+                model_id,
+                &url,
+                &partial_path,
+                None,
+                expected_sha256.as_deref(),
+                &cancel_token,
+            )
+            .await?
         {
-            return Err(anyhow::anyhow!(
-                "Failed to download model: HTTP {}",
-                response.status()
-            ));
-        }
-
-        let total_size = if resume_from > 0 {
-            // For resumed downloads, add the resume point to content length
-            resume_from + response.content_length().unwrap_or(0)
-        } else {
-            response.content_length().unwrap_or(0)
-        };
-
-        let mut downloaded = resume_from;
-        let mut stream = response.bytes_stream();
-
-        // Open file for appending if resuming, or create new if starting fresh
-        let mut file = if resume_from > 0 {
-            std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&partial_path)?
-        } else {
-            std::fs::File::create(&partial_path)?
-        };
-
-        // Emit initial progress
-        let initial_progress = DownloadProgress {
-            model_id: model_id.to_string(),
-            downloaded,
-            total: total_size,
-            percentage: if total_size > 0 {
-                (downloaded as f64 / total_size as f64) * 100.0
-            } else {
-                0.0
-            },
-        };
-        let _ = self
-            .app_handle
-            .emit("model-download-progress", &initial_progress);
-
-        // Throttle progress events to max 10/sec (100ms intervals)
-        let mut last_emit = Instant::now();
-        let throttle_duration = Duration::from_millis(100);
-
-        // Download with progress
-        while let Some(chunk) = stream.next().await {
-            // Check if download was cancelled
-            if cancel_token.is_cancelled() {
-                drop(file);
+            HttpDownloadOutcome::Cancelled => {
                 info!("Download cancelled for: {}", model_id);
                 // Keep partial file for resume functionality.
                 // Guard handles is_downloading + cancel_flags cleanup on drop.
                 return Ok(());
             }
-
-            let chunk = chunk?;
-
-            file.write_all(&chunk)?;
-            downloaded += chunk.len() as u64;
-
-            let percentage = if total_size > 0 {
-                (downloaded as f64 / total_size as f64) * 100.0
-            } else {
-                0.0
-            };
-
-            // Emit progress event (throttled to avoid UI freeze)
-            if last_emit.elapsed() >= throttle_duration {
-                let progress = DownloadProgress {
-                    model_id: model_id.to_string(),
-                    downloaded,
-                    total: total_size,
-                    percentage,
-                };
-                let _ = self.app_handle.emit("model-download-progress", &progress);
-                last_emit = Instant::now();
-            }
+            HttpDownloadOutcome::Completed => {}
         }
-
-        // Emit final progress to ensure 100% is shown
-        let final_progress = DownloadProgress {
-            model_id: model_id.to_string(),
-            downloaded,
-            total: total_size,
-            percentage: if total_size > 0 {
-                (downloaded as f64 / total_size as f64) * 100.0
-            } else {
-                100.0
-            },
-        };
-        let _ = self
-            .app_handle
-            .emit("model-download-progress", &final_progress);
-
-        file.flush()?;
-        drop(file); // Ensure file is closed before moving
-
-        // Verify downloaded file size matches expected size
-        if total_size > 0 {
-            let actual_size = partial_path.metadata()?.len();
-            if actual_size != total_size {
-                // Download is incomplete/corrupted - delete partial and return error
-                let _ = fs::remove_file(&partial_path);
-                return Err(anyhow::anyhow!(
-                    "Download incomplete: expected {} bytes, got {} bytes",
-                    total_size,
-                    actual_size
-                ));
-            }
-        }
-
-        // Verify SHA256 checksum. Runs in a blocking thread so the async executor is not
-        // stalled while hashing large model files (up to 1.6 GB). On failure the partial
-        // is deleted inside verify_sha256 so the next attempt always starts fresh.
-        let _ = self.app_handle.emit("model-verification-started", model_id);
-        info!("Verifying SHA256 for model {}...", model_id);
-        let verify_path = partial_path.clone();
-        let verify_expected = expected_sha256.clone();
-        let verify_model_id = model_id.to_string();
-        let verify_result = tokio::task::spawn_blocking(move || {
-            Self::verify_sha256(&verify_path, verify_expected.as_deref(), &verify_model_id)
-        })
-        .await
-        .map_err(|e| anyhow::anyhow!("SHA256 task panicked: {}", e))?;
-        verify_result?;
-        let _ = self
-            .app_handle
-            .emit("model-verification-completed", model_id);
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
@@ -2188,11 +2362,18 @@ impl ModelManager {
         debug!("ModelManager: Found model info: {:?}", model_info);
 
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
-            // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
-            // the whole repo dir (blobs + refs + snapshots). Per product decision,
-            // delete hard-removes from the shared HF cache.
+            let is_alternate_quant =
+                Self::is_catalog_alternate_quant(repo_id, &model_info.filename);
             let mut deleted = false;
-            if let Some(file) = hf_cached_path(repo_id, revision, &model_info.filename) {
+            if is_alternate_quant {
+                // Only this quant's own file: the snapshot pointer and its
+                // blob. The default (and any other quants) survive in the
+                // cache — the entry never owned more than its one file.
+                deleted |= Self::delete_hf_cache_file(repo_id, revision, &model_info.filename);
+            } else if let Some(file) = hf_cached_path(repo_id, revision, &model_info.filename) {
+                // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
+                // the whole repo dir (blobs + refs + snapshots). Per product decision,
+                // delete hard-removes from the shared HF cache.
                 if let Some(repo_dir) = file.ancestors().nth(3) {
                     if repo_dir
                         .file_name()
@@ -2205,8 +2386,27 @@ impl ModelManager {
                     }
                 }
             }
+            // Also remove a models-dir copy (mirror fallback / manual drop-in)
+            // and any resumable partial next to it.
+            for path in [
+                self.models_dir.join(&model_info.filename),
+                self.models_dir
+                    .join(format!("{}.partial", &model_info.filename)),
+            ] {
+                if path.exists() {
+                    info!("Deleting model file at: {:?}", path);
+                    fs::remove_file(&path)?;
+                    deleted = true;
+                }
+            }
             if !deleted {
                 return Err(anyhow::anyhow!("No model files found to delete"));
+            }
+            // Alternate-quant entries are discovery-created (the catalog only
+            // seeds defaults), so deleting one un-discovers it rather than
+            // leaving a permanent "(Q4_K_M)" row in the list.
+            if is_alternate_quant {
+                self.available_models.lock().unwrap().remove(model_id);
             }
             self.update_download_status()?;
             let _ = self.app_handle.emit("model-deleted", model_id);
@@ -2288,9 +2488,27 @@ impl ModelManager {
         }
 
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
-            return hf_cached_path(repo_id, revision, &model_info.filename).ok_or_else(|| {
-                anyhow::anyhow!("Complete model file not found in HF cache: {}", model_id)
-            });
+            if let Some(path) = hf_cached_path(repo_id, revision, &model_info.filename) {
+                return Ok(path);
+            }
+            // Mirror-fallback download or manual drop-in in the models dir.
+            // The complete file only ever appears after verification, so a
+            // stale `.partial` alongside it is leftover noise, not a veto —
+            // clear it rather than declaring the model missing.
+            let local_path = self.models_dir.join(&model_info.filename);
+            if local_path.exists() {
+                let partial_path = self
+                    .models_dir
+                    .join(format!("{}.partial", &model_info.filename));
+                if partial_path.exists() {
+                    let _ = fs::remove_file(&partial_path);
+                }
+                return Ok(local_path);
+            }
+            return Err(anyhow::anyhow!(
+                "Complete model file not found in HF cache or models dir: {}",
+                model_id
+            ));
         }
 
         let model_path = self.models_dir.join(&model_info.filename);
@@ -2560,73 +2778,105 @@ mod tests {
         assert_eq!(models.len(), count_before);
     }
 
-    // ── SHA256 verification tests ─────────────────────────────────────────────
+    #[test]
+    fn test_catalog_quant_rendering() {
+        let desc = ModelDescriptor {
+            id: "org/repo/model-Q8_0.gguf".to_string(),
+            source: ModelSource::HuggingFace {
+                repo_id: "org/repo".to_string(),
+                revision: "main".to_string(),
+            },
+            name: "Model".to_string(),
+            description: "desc".to_string(),
+            engine_type: EngineType::TranscribeCpp,
+            caps: CapabilityProbe::default(),
+            files: vec![
+                QuantFile {
+                    filename: "model-Q4_K_M.gguf".to_string(),
+                    quant: "Q4_K_M".to_string(),
+                    size_bytes: 1,
+                    sha256: None,
+                },
+                QuantFile {
+                    filename: "model-Q8_0.gguf".to_string(),
+                    quant: "Q8_0".to_string(),
+                    size_bytes: 2,
+                    sha256: None,
+                },
+            ],
+            default_quant: Some("Q8_0".to_string()),
+            speed_score: 0.5,
+            accuracy_score: 0.5,
+            recommended_rank: None,
+            recommended: true,
+        };
+        let status = DiskStatus::default();
 
-    /// Helper: write `data` to a temp file and return (TempDir, path).
-    /// TempDir must be kept alive for the duration of the test.
-    fn write_temp_file(data: &[u8]) -> (TempDir, std::path::PathBuf) {
-        let dir = TempDir::new().unwrap();
-        let path = dir.path().join("model.partial");
-        let mut f = File::create(&path).unwrap();
-        f.write_all(data).unwrap();
-        (dir, path)
+        // Default quant: plain name, badge intact.
+        let default_info = desc.to_model_info(&status);
+        assert_eq!(default_info.name, "Model");
+        assert!(default_info.is_recommended);
+
+        // Alternate quant: suffixed name, own id, no badge.
+        let alt_info = desc.to_model_info_for_file(&desc.files[0], &status);
+        assert_eq!(alt_info.id, "org/repo/model-Q4_K_M.gguf");
+        assert_eq!(alt_info.name, "Model (Q4_K_M)");
+        assert_eq!(alt_info.filename, "model-Q4_K_M.gguf");
+        assert!(!alt_info.is_recommended);
+        assert!(!alt_info.is_custom);
+
+        // The default rendered through the per-file path matches to_model_info,
+        // so seeded entries and discovered defaults can never diverge.
+        let same = desc.to_model_info_for_file(&desc.files[1], &status);
+        assert_eq!(same.id, default_info.id);
+        assert_eq!(same.name, default_info.name);
+        assert_eq!(same.is_recommended, default_info.is_recommended);
     }
 
     #[test]
-    fn test_verify_sha256_skipped_when_none() {
-        // Custom models have no expected hash — verification must be a no-op.
-        let (_dir, path) = write_temp_file(b"anything");
-        assert!(ModelManager::verify_sha256(&path, None, "custom").is_ok());
-        assert!(
-            path.exists(),
-            "file must be untouched when verification is skipped"
-        );
-    }
+    fn test_discover_catalog_alternate_quant_in_models_dir() {
+        // A real catalog model with more than one quant.
+        let desc = crate::catalog::CATALOG
+            .iter()
+            .find(|d| d.files.len() > 1)
+            .expect("catalog has multi-quant models");
+        let default_filename = default_quant_file(&desc.files, desc.default_quant.as_deref())
+            .unwrap()
+            .filename
+            .clone();
+        let alt = desc
+            .files
+            .iter()
+            .find(|f| f.filename != default_filename)
+            .unwrap();
 
-    #[test]
-    fn test_verify_sha256_passes_on_correct_hash() {
-        // Compute the real hash so the test is self-consistent.
-        let (_dir, path) = write_temp_file(b"hello world");
-        let actual = ModelManager::compute_sha256(&path).unwrap();
-        assert!(
-            ModelManager::verify_sha256(&path, Some(&actual), "test_model").is_ok(),
-            "should pass when hash matches"
-        );
-        assert!(
-            path.exists(),
-            "file must be kept on successful verification"
-        );
-    }
+        let temp_dir = TempDir::new().unwrap();
+        // Content is never probed for catalog-matched files, so empty files do.
+        fs::write(temp_dir.path().join(&alt.filename), b"").unwrap();
+        fs::write(temp_dir.path().join(&default_filename), b"").unwrap();
 
-    #[test]
-    fn test_verify_sha256_fails_and_deletes_partial_on_mismatch() {
-        let (_dir, path) = write_temp_file(b"this is not the real model");
-        let wrong_hash = "0000000000000000000000000000000000000000000000000000000000000000";
+        let mut models = HashMap::new();
+        ModelManager::seed_catalog_models(&mut models);
+        let seeded = models.len();
+        ModelManager::discover_custom_transcribe_models(temp_dir.path(), &mut models).unwrap();
 
-        let result = ModelManager::verify_sha256(&path, Some(wrong_hash), "bad_model");
+        // The alternate quant surfaces as a catalog-grade HF entry…
+        let ModelSource::HuggingFace { repo_id, .. } = &desc.source else {
+            panic!("catalog descriptors are HF-sourced");
+        };
+        let alt_id = format!("{}/{}", repo_id, alt.filename);
+        let info = models.get(&alt_id).expect("alternate quant discovered");
+        assert_eq!(info.name, format!("{} ({})", desc.name, alt.quant));
+        assert_eq!(info.description, desc.description);
+        assert!(info.is_downloaded);
+        assert!(!info.is_custom);
+        assert!(matches!(info.source, ModelSource::HuggingFace { .. }));
 
-        assert!(result.is_err(), "mismatch must return an error");
-        assert!(
-            result.unwrap_err().to_string().contains("corrupt"),
-            "error message should mention corruption"
-        );
-        assert!(
-            !path.exists(),
-            "partial file must be deleted after hash mismatch"
-        );
-    }
-
-    #[test]
-    fn test_verify_sha256_fails_and_deletes_partial_when_file_missing() {
-        // Simulate a partial file that was already removed (e.g. disk full mid-download).
-        let dir = TempDir::new().unwrap();
-        let missing_path = dir.path().join("gone.partial");
-        // Don't create the file — it should not exist.
-
-        let result =
-            ModelManager::verify_sha256(&missing_path, Some("anyexpectedhash"), "missing_model");
-
-        assert!(result.is_err(), "missing file must return an error");
+        // …while the default-quant file dedups onto its seeded entry: exactly
+        // one new id, and no filename-stem custom entries for either file.
+        assert_eq!(models.len(), seeded + 1);
+        assert!(!models.contains_key(alt.filename.trim_end_matches(".gguf")));
+        assert!(!models.contains_key(default_filename.trim_end_matches(".gguf")));
     }
 
     fn push_gguf_str(out: &mut Vec<u8>, val: &str) {
