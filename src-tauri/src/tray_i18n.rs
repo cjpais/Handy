@@ -20,13 +20,24 @@ include!(concat!(env!("OUT_DIR"), "/tray_translations.rs"));
 
 /// Get localized tray menu strings based on the system locale.
 ///
-/// Lookup order: full locale (e.g. "zh-TW") → language code ("zh") → English.
+/// Lookup order: full locale (e.g. "zh-TW") → script-aware fallback → language code ("zh") → English.
 pub fn get_tray_translations(locale: Option<String>) -> TrayStrings {
     let locale_str = locale.as_deref().unwrap_or("en");
-    let lang_code = locale_str.split(['-', '_']).next().unwrap_or("en");
+    let normalized = locale_str.to_lowercase();
+    let mut subtags = normalized.split(['-', '_']);
+    let lang_code = subtags.next().unwrap_or("en");
+    // Script-aware fallback: Traditional-script Chinese locales
+    // (e.g. zh-Hant-TW, zh-Hant-HK) should resolve to zh-TW, not fall
+    // through to the "zh" (Simplified) language fallback below.
+    let script_fallback = if lang_code == "zh" && subtags.next() == Some("hant") {
+        TRANSLATIONS.get("zh-TW")
+    } else {
+        None
+    };
 
     TRANSLATIONS
         .get(locale_str)
+        .or(script_fallback)
         .or_else(|| TRANSLATIONS.get(lang_code))
         .or_else(|| TRANSLATIONS.get("en"))
         .cloned()

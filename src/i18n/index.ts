@@ -62,6 +62,17 @@ const getSupportedLanguage = (
     (lang) => lang.code.toLowerCase() === normalized,
   );
   if (!supported) {
+    // Script-aware fallback: Traditional-script Chinese locales
+    // (e.g. zh-Hant-TW, zh-Hant-HK) should resolve to zh-TW, not fall
+    // through to the "zh" (Simplified) prefix match below.
+    const subtags = normalized.split("-");
+    if (subtags[0] === "zh" && subtags[1] === "hant") {
+      supported = SUPPORTED_LANGUAGES.find(
+        (lang) => lang.code.toLowerCase() === "zh-tw",
+      );
+    }
+  }
+  if (!supported) {
     // Fall back to prefix match (language only, without region)
     const prefix = normalized.split("-")[0];
     supported = SUPPORTED_LANGUAGES.find(
