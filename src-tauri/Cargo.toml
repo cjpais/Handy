@@ -170,6 +170,9 @@ tao-macros = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08
 
 [dev-dependencies]
 tempfile = "3"
+# Test-only tokio features for the local socket servers exercising the
+# resumable HTTP downloader; normal builds keep the leaner feature set.
+tokio = { version = "1.43.0", features = ["macros", "net", "io-util", "sync", "time", "rt-multi-thread"] }
 
 [profile.release]
 lto = true
