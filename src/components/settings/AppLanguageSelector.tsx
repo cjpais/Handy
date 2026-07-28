@@ -19,10 +19,6 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
     const { t, i18n } = useTranslation();
     const { settings, updateSetting } = useSettings();
 
-    // Until the user picks a language, app_language holds the raw system
-    // locale (e.g. "en-US"), which matches no option and leaves the dropdown
-    // showing its empty-selection placeholder. Resolve it the same way i18n
-    // does so the dropdown shows the language actually in use.
     const currentLanguage = (getSupportedLanguage(settings?.app_language) ||
       i18n.language) as SupportedLanguageCode;
 
