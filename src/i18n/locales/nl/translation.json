@@ -656,14 +656,14 @@
     "processing": "Verwerken..."
   },
   "secureInput": {
-    "title": "Sneltoetsen worden geblokkeerd door Secure Input van macOS",
-    "descriptionWithCulprit": "“{{name}}” (pid {{pid}}) houdt Secure Input actief, waardoor sneltoetsen met een gewone toets Handy niet bereiken.",
-    "descriptionNoCulprit": "Iets houdt Secure Input actief (geen zichtbare veroorzaker — een app is mogelijk afgesloten zonder het vrij te geven), waardoor sneltoetsen met een gewone toets Handy niet bereiken.",
+    "blockedWithCulprit_one": "{{name}} blokkeert mogelijk 1 sneltoets",
+    "blockedWithCulprit_other": "{{name}} blokkeert mogelijk {{count}} sneltoetsen",
+    "blockedNoCulprit_one": "macOS blokkeert tijdelijk 1 sneltoets",
+    "blockedNoCulprit_other": "macOS blokkeert tijdelijk {{count}} sneltoetsen",
+    "recorderBlockedWithCulprit": "{{name}} blokkeert mogelijk wijzigingen aan sneltoetsen",
+    "recorderBlockedNoCulprit": "macOS blokkeert tijdelijk wijzigingen aan sneltoetsen",
     "learnMore": "Hoe je dit oplost",
     "recorderBlocked": "Sneltoetsen kunnen nu niet worden opgenomen — Secure Input van macOS blokkeert toetsgebeurtenissen. Los eerst de Secure Input-waarschuwing op.",
-    "uncovered": "Deze sneltoetsen werken pas als dit is opgelost: {{bindings}}.",
-    "degraded": "Deze sneltoetsen reageren tijdelijk op de linker- of de rechtermodificatietoets: {{bindings}}.",
-    "recorderDisabled": "Het opnemen van nieuwe sneltoetsen is uitgeschakeld totdat dit is opgelost.",
     "dismiss": "Sluiten"
   }
 }

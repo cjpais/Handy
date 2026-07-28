@@ -656,14 +656,14 @@
     "processing": "प्रशोधन गरिँदैछ..."
   },
   "secureInput": {
-    "title": "किबोर्ड सर्टकटहरू macOS Secure Input ले रोकेका छन्",
-    "descriptionWithCulprit": "“{{name}}” (pid {{pid}}) ले Secure Input समातिरहेको छ, त्यसैले सामान्य कुञ्जी समावेश भएका सर्टकटहरू Handy सम्म पुग्दैनन्।",
-    "descriptionNoCulprit": "केहीले Secure Input समातिरहेको छ (देखिने कुनै धारक छैन — कुनै एप त्यसलाई नछाडी बन्द भएको हुन सक्छ), त्यसैले सामान्य कुञ्जी समावेश भएका सर्टकटहरू Handy सम्म पुग्दैनन्।",
+    "blockedWithCulprit_one": "{{name}} ले 1 सर्टकट रोकिरहेको हुन सक्छ",
+    "blockedWithCulprit_other": "{{name}} ले {{count}} सर्टकटहरू रोकिरहेको हुन सक्छ",
+    "blockedNoCulprit_one": "macOS ले अस्थायी रूपमा 1 सर्टकट रोकिरहेको छ",
+    "blockedNoCulprit_other": "macOS ले अस्थायी रूपमा {{count}} सर्टकटहरू रोकिरहेको छ",
+    "recorderBlockedWithCulprit": "{{name}} ले सर्टकट परिवर्तन रोकिरहेको हुन सक्छ",
+    "recorderBlockedNoCulprit": "macOS ले अस्थायी रूपमा सर्टकट परिवर्तन रोकिरहेको छ",
     "learnMore": "यसलाई कसरी ठिक गर्ने",
     "recorderBlocked": "अहिले सर्टकट रेकर्ड गर्न सकिँदैन — macOS Secure Input ले कुञ्जी इभेन्टहरू रोकिरहेको छ। पहिले Secure Input चेतावनी समाधान गर्नुहोस्।",
-    "uncovered": "यो समाधान नभएसम्म यी सर्टकटहरूले काम गर्दैनन्: {{bindings}}।",
-    "degraded": "यी सर्टकटहरूले अस्थायी रूपमा बायाँ वा दायाँ जुनसुकै मोडिफायरलाई प्रतिक्रिया दिन्छन्: {{bindings}}।",
-    "recorderDisabled": "यो समाधान नभएसम्म नयाँ सर्टकट रेकर्ड गर्ने सुविधा बन्द छ।",
     "dismiss": "हटाउनुहोस्"
   }
 }

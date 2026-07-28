@@ -656,14 +656,14 @@
     "title": "الجديد في Handy v{{version}}"
   },
   "secureInput": {
-    "title": "اختصارات لوحة المفاتيح محجوبة بواسطة Secure Input في macOS",
-    "descriptionWithCulprit": "«{{name}}» (pid {{pid}}) يحتجز Secure Input، لذا فإن الاختصارات التي تتضمن مفتاحًا عاديًا لا تصل إلى Handy.",
-    "descriptionNoCulprit": "هناك شيء يحتجز Secure Input (لا يوجد محتجِز ظاهر — ربما أُغلق تطبيق دون تحريره)، لذا فإن الاختصارات التي تتضمن مفتاحًا عاديًا لا تصل إلى Handy.",
-    "learnMore": "كيفية إصلاح ذلك",
+    "blockedWithCulprit_one": "قد يحظر {{name}} اختصارًا واحدًا",
+    "blockedWithCulprit_other": "قد يحظر {{name}} {{count}} اختصارات",
+    "blockedNoCulprit_one": "يحظر macOS مؤقتًا اختصارًا واحدًا",
+    "blockedNoCulprit_other": "يحظر macOS مؤقتًا {{count}} اختصارات",
+    "recorderBlockedWithCulprit": "قد يمنع {{name}} تغيير الاختصارات",
+    "recorderBlockedNoCulprit": "يمنع macOS مؤقتًا تغيير الاختصارات",
+    "learnMore": "كيفية الإصلاح",
     "recorderBlocked": "لا يمكن تسجيل الاختصارات الآن — يحجب Secure Input في macOS أحداث المفاتيح. عالج تحذير Secure Input أولاً.",
-    "uncovered": "لن تعمل هذه الاختصارات حتى تُحلّ المشكلة: {{bindings}}.",
-    "degraded": "تستجيب هذه الاختصارات مؤقتًا لمفتاح التعديل الأيسر أو الأيمن: {{bindings}}.",
-    "recorderDisabled": "تسجيل اختصارات جديدة معطَّل حتى تُحلّ المشكلة.",
     "dismiss": "تجاهل"
   }
 }

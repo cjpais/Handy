@@ -2,9 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { X } from "lucide-react";
+import { ExternalLink, TriangleAlert, X } from "lucide-react";
 import { commands, type SecureInputStatus } from "@/bindings";
-import { Button } from "./ui/Button";
 
 // Detailed remediation steps live in the docs rather than in the banner
 export const SECURE_INPUT_HELP_URL =
@@ -68,56 +67,52 @@ const SecureInputWarning: React.FC = () => {
     return null;
   }
 
-  const bindingNames = (ids: string[]) =>
-    ids
-      .map((id) => t(`settings.general.shortcut.bindings.${id}.name`, id))
-      .join(", ");
-
-  const description =
-    status.culprit_name !== null
-      ? t("secureInput.descriptionWithCulprit", {
-          name: status.culprit_name,
-          pid: status.culprit_pid,
-        })
-      : t("secureInput.descriptionNoCulprit");
-
-  const statusLines = [
-    status.uncovered_bindings.length > 0
-      ? t("secureInput.uncovered", {
-          bindings: bindingNames(status.uncovered_bindings),
-        })
-      : null,
-    status.degraded_bindings.length > 0
-      ? t("secureInput.degraded", {
-          bindings: bindingNames(status.degraded_bindings),
-        })
-      : null,
-    status.recorder_blocked ? t("secureInput.recorderDisabled") : null,
-  ].filter((line): line is string => line !== null);
+  const affectedCount = new Set([
+    ...status.uncovered_bindings,
+    ...status.degraded_bindings,
+  ]).size;
+  const countSuffix = affectedCount === 1 ? "one" : "other";
+  const message =
+    affectedCount > 0
+      ? status.culprit_name !== null
+        ? t(`secureInput.blockedWithCulprit_${countSuffix}`, {
+            name: status.culprit_name,
+            count: affectedCount,
+          })
+        : t(`secureInput.blockedNoCulprit_${countSuffix}`, {
+            count: affectedCount,
+          })
+      : status.culprit_name !== null
+        ? t("secureInput.recorderBlockedWithCulprit", {
+            name: status.culprit_name,
+          })
+        : t("secureInput.recorderBlockedNoCulprit");
 
   return (
-    <div className="p-4 w-full rounded-lg border border-warning/70 bg-warning/10 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold">{t("secureInput.title")}</p>
-        <button
-          onClick={() => setDismissed(true)}
-          aria-label={t("secureInput.dismiss")}
-          className="shrink-0 rounded p-0.5 text-mid-gray hover:text-text cursor-pointer"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-      <p className="text-sm">
-        {description} {statusLines.join(" ")}
-      </p>
-      <div>
-        <Button
-          variant="warning"
-          size="sm"
-          onClick={() => openUrl(SECURE_INPUT_HELP_URL)}
-        >
-          {t("secureInput.learnMore")}
-        </Button>
+    <div className="w-full rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5">
+      <div className="flex items-center gap-3">
+        <TriangleAlert className="h-5 w-5 shrink-0 text-warning" />
+        <p className="min-w-0 flex-1 text-sm font-medium leading-5">
+          {message}
+        </p>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => openUrl(SECURE_INPUT_HELP_URL)}
+            className="cursor-pointer whitespace-nowrap rounded px-2 py-1.5 text-sm font-medium text-text hover:text-warning focus:outline-none focus:ring-1 focus:ring-warning"
+          >
+            <span className="flex items-center gap-1 border-b border-current leading-4">
+              {t("secureInput.learnMore")}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </span>
+          </button>
+          <button
+            onClick={() => setDismissed(true)}
+            aria-label={t("secureInput.dismiss")}
+            className="cursor-pointer rounded p-1.5 text-mid-gray hover:bg-warning/15 hover:text-warning focus:outline-none focus:ring-1 focus:ring-warning"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

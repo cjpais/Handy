@@ -656,14 +656,14 @@
     "title": "Nouveautés de Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Les raccourcis clavier sont bloqués par Secure Input de macOS",
-    "descriptionWithCulprit": "« {{name}} » (pid {{pid}}) maintient Secure Input actif, les raccourcis contenant une touche normale n'atteignent donc pas Handy.",
-    "descriptionNoCulprit": "Quelque chose maintient Secure Input actif (aucun détenteur visible — une app a peut-être quitté sans le libérer), les raccourcis contenant une touche normale n'atteignent donc pas Handy.",
+    "blockedWithCulprit_one": "{{name}} bloque peut-être 1 raccourci",
+    "blockedWithCulprit_other": "{{name}} bloque peut-être {{count}} raccourcis",
+    "blockedNoCulprit_one": "macOS bloque temporairement 1 raccourci",
+    "blockedNoCulprit_other": "macOS bloque temporairement {{count}} raccourcis",
+    "recorderBlockedWithCulprit": "{{name}} bloque peut-être la modification des raccourcis",
+    "recorderBlockedNoCulprit": "macOS bloque temporairement la modification des raccourcis",
     "learnMore": "Comment résoudre ce problème",
     "recorderBlocked": "Impossible d'enregistrer un raccourci pour le moment : Secure Input de macOS bloque les événements clavier. Résolvez d'abord l'avertissement Secure Input.",
-    "uncovered": "Ces raccourcis ne peuvent pas fonctionner tant que ce n'est pas résolu : {{bindings}}.",
-    "degraded": "Ces raccourcis répondent temporairement au modificateur gauche ou droit : {{bindings}}.",
-    "recorderDisabled": "L'enregistrement de nouveaux raccourcis est désactivé tant que ce n'est pas résolu.",
     "dismiss": "Ignorer"
   }
 }

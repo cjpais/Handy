@@ -656,14 +656,14 @@
     "title": "חדש ב-Handy v{{version}}"
   },
   "secureInput": {
-    "title": "קיצורי המקשים חסומים על ידי Secure Input של macOS",
-    "descriptionWithCulprit": "\"{{name}}\" (pid {{pid}}) מחזיק את Secure Input, ולכן קיצורים הכוללים מקש רגיל לא מגיעים ל-Handy.",
-    "descriptionNoCulprit": "משהו מחזיק את Secure Input (אין מחזיק גלוי — ייתכן שאפליקציה נסגרה מבלי לשחרר אותו), ולכן קיצורים הכוללים מקש רגיל לא מגיעים ל-Handy.",
+    "blockedWithCulprit_one": "ייתכן ש-{{name}} חוסם קיצור דרך אחד",
+    "blockedWithCulprit_other": "ייתכן ש-{{name}} חוסם {{count}} קיצורי דרך",
+    "blockedNoCulprit_one": "macOS חוסם זמנית קיצור דרך אחד",
+    "blockedNoCulprit_other": "macOS חוסם זמנית {{count}} קיצורי דרך",
+    "recorderBlockedWithCulprit": "ייתכן ש-{{name}} חוסם שינויים בקיצורי דרך",
+    "recorderBlockedNoCulprit": "macOS חוסם זמנית שינויים בקיצורי דרך",
     "learnMore": "איך לתקן את זה",
     "recorderBlocked": "לא ניתן להקליט קיצורים כרגע — Secure Input של macOS חוסם אירועי מקשים. פתור תחילה את אזהרת Secure Input.",
-    "uncovered": "הקיצורים האלה לא יפעלו עד שהבעיה תיפתר: {{bindings}}.",
-    "degraded": "הקיצורים האלה מגיבים באופן זמני למקש ההחלפה השמאלי או הימני: {{bindings}}.",
-    "recorderDisabled": "הקלטת קיצורים חדשים מושבתת עד שהבעיה תיפתר.",
     "dismiss": "התעלם"
   }
 }

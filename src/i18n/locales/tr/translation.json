@@ -656,14 +656,14 @@
     "title": "Handy v{{version}} yenilikleri"
   },
   "secureInput": {
-    "title": "Klavye kısayolları macOS Secure Input tarafından engelleniyor",
-    "descriptionWithCulprit": "“{{name}}” (pid {{pid}}) Secure Input'u tutuyor, bu yüzden normal tuş içeren kısayollar Handy'ye ulaşamıyor.",
-    "descriptionNoCulprit": "Bir şey Secure Input'u tutuyor (görünür bir sahip yok — bir uygulama serbest bırakmadan kapanmış olabilir), bu yüzden normal tuş içeren kısayollar Handy'ye ulaşamıyor.",
+    "blockedWithCulprit_one": "{{name}} 1 kısayolu engelliyor olabilir",
+    "blockedWithCulprit_other": "{{name}} {{count}} kısayolu engelliyor olabilir",
+    "blockedNoCulprit_one": "macOS geçici olarak 1 kısayolu engelliyor",
+    "blockedNoCulprit_other": "macOS geçici olarak {{count}} kısayolu engelliyor",
+    "recorderBlockedWithCulprit": "{{name}} kısayol değişikliklerini engelliyor olabilir",
+    "recorderBlockedNoCulprit": "macOS geçici olarak kısayol değişikliklerini engelliyor",
     "learnMore": "Bu nasıl düzeltilir",
     "recorderBlocked": "Şu anda kısayol kaydedilemiyor — macOS Secure Input tuş olaylarını engelliyor. Önce Secure Input uyarısını giderin.",
-    "uncovered": "Bu kısayollar sorun çözülene kadar çalışamaz: {{bindings}}.",
-    "degraded": "Bu kısayollar geçici olarak sol veya sağ değiştiriciye yanıt veriyor: {{bindings}}.",
-    "recorderDisabled": "Sorun çözülene kadar yeni kısayol kaydı devre dışıdır.",
     "dismiss": "Kapat"
   }
 }

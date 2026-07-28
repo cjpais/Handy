@@ -656,14 +656,14 @@
     "title": "Nowości w Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Skróty klawiszowe są zablokowane przez Secure Input w macOS",
-    "descriptionWithCulprit": "„{{name}}” (pid {{pid}}) przytrzymuje Secure Input, więc skróty zawierające zwykły klawisz nie docierają do Handy.",
-    "descriptionNoCulprit": "Coś przytrzymuje Secure Input (brak widocznego posiadacza — jakaś aplikacja mogła zakończyć działanie bez zwolnienia go), więc skróty zawierające zwykły klawisz nie docierają do Handy.",
+    "blockedWithCulprit_one": "{{name}} może blokować 1 skrót",
+    "blockedWithCulprit_other": "{{name}} może blokować {{count}} skrótów",
+    "blockedNoCulprit_one": "macOS tymczasowo blokuje 1 skrót",
+    "blockedNoCulprit_other": "macOS tymczasowo blokuje {{count}} skrótów",
+    "recorderBlockedWithCulprit": "{{name}} może blokować zmiany skrótów",
+    "recorderBlockedNoCulprit": "macOS tymczasowo blokuje zmiany skrótów",
     "learnMore": "Jak to naprawić",
     "recorderBlocked": "Nie można teraz nagrać skrótu — Secure Input w macOS blokuje zdarzenia klawiszy. Najpierw rozwiąż ostrzeżenie o Secure Input.",
-    "uncovered": "Te skróty nie zadziałają, dopóki nie zostanie to rozwiązane: {{bindings}}.",
-    "degraded": "Te skróty tymczasowo reagują na lewy lub prawy modyfikator: {{bindings}}.",
-    "recorderDisabled": "Nagrywanie nowych skrótów jest wyłączone, dopóki nie zostanie to rozwiązane.",
     "dismiss": "Odrzuć"
   }
 }

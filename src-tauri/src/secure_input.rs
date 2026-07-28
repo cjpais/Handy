@@ -13,6 +13,8 @@
 //! - while secure input is sustained, shadow-registers vulnerable *keyed*
 //!   bindings through the Carbon-backed Tauri global-shortcut path, which is
 //!   not affected by secure input (modifier-only bindings need no fallback)
+//! - dynamically shadows the Cancel binding while recording, so Escape and
+//!   other keyed cancellation shortcuts remain available under secure input
 //! - exposes a count-only keyboard diagnostic for the debug window. Only
 //!   event *kinds* are counted — key identity is never logged or returned.
 
@@ -82,6 +84,16 @@ pub fn note_recorder_blocked(app: &AppHandle) {
     imp::note_recorder_blocked(app)
 }
 
+/// Register/unregister the dynamic Cancel binding through the Carbon fallback
+/// while a recording and sustained Secure Input overlap.
+pub fn register_cancel_fallback(app: &AppHandle) {
+    imp::register_cancel_fallback(app)
+}
+
+pub fn unregister_cancel_fallback(app: &AppHandle) {
+    imp::unregister_cancel_fallback(app)
+}
+
 /// Managed state + monitor startup. On non-macOS platforms the state exists
 /// but the monitor never runs and everything reports disabled.
 pub fn init(app: &AppHandle) {
@@ -103,11 +115,12 @@ pub fn tray_warning_active(app: &AppHandle) -> bool {
 #[cfg(target_os = "macos")]
 mod imp {
     use super::*;
+    use crate::managers::audio::AudioRecordingManager;
     use crate::settings::{self, KeyboardImplementation, ShortcutBinding};
     use log::{debug, error, info, warn};
     use std::process::Command;
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::Mutex;
+    use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
 
     /// How often the monitor thread polls.
@@ -368,11 +381,97 @@ mod imp {
         Some((carbon_hotkey.to_handy_string(), degraded))
     }
 
+    fn fallback_tracks_id(fallback: &FallbackState, id: &str) -> bool {
+        fallback.registered.iter().any(|binding| binding.id == id)
+            || fallback.covered.iter().any(|binding_id| binding_id == id)
+            || fallback.degraded.iter().any(|binding_id| binding_id == id)
+            || fallback.uncovered.iter().any(|binding_id| binding_id == id)
+    }
+
+    /// Register one vulnerable binding through Carbon. Returns true when the
+    /// binding is immune and therefore did not need to be tracked.
+    fn register_fallback_binding(
+        app: &AppHandle,
+        id: &str,
+        binding: &ShortcutBinding,
+        fallback: &mut FallbackState,
+    ) -> bool {
+        let Ok(hotkey) = binding.current_binding.parse::<handy_keys::Hotkey>() else {
+            warn!(
+                "SecureInput fallback: '{}' has unparseable binding '{}', skipping",
+                id, binding.current_binding
+            );
+            fallback.uncovered.push(id.to_string());
+            return false;
+        };
+
+        match &hotkey.key {
+            None => {
+                debug!(
+                    "SecureInput fallback: '{}' ('{}') is modifier-only — immune, no shadow needed",
+                    id, binding.current_binding
+                );
+                return true;
+            }
+            Some(k) if is_mouse_key(k) => {
+                debug!(
+                    "SecureInput fallback: '{}' ('{}') is mouse-based — immune, no shadow needed",
+                    id, binding.current_binding
+                );
+                return true;
+            }
+            Some(_) => {}
+        }
+
+        let Some((carbon_binding, degraded)) = carbon_equivalent(&hotkey) else {
+            warn!(
+                "SecureInput fallback: '{}' ('{}') cannot be expressed via Carbon",
+                id, binding.current_binding
+            );
+            fallback.uncovered.push(id.to_string());
+            return false;
+        };
+
+        let mut shadow = binding.clone();
+        shadow.current_binding = carbon_binding;
+
+        match crate::shortcut::tauri_impl::register_shortcut(app, shadow.clone()) {
+            Ok(()) => {
+                info!(
+                    "SecureInput fallback: '{}' registered via Carbon as '{}'{}",
+                    id,
+                    shadow.current_binding,
+                    if degraded {
+                        " (widened to either side)"
+                    } else {
+                        ""
+                    }
+                );
+                fallback.registered.push(shadow);
+                if degraded {
+                    fallback.degraded.push(id.to_string());
+                } else {
+                    fallback.covered.push(id.to_string());
+                }
+            }
+            Err(e) => {
+                warn!(
+                    "SecureInput fallback: could not cover '{}' ('{}'): {}",
+                    id, shadow.current_binding, e
+                );
+                fallback.uncovered.push(id.to_string());
+            }
+        }
+
+        false
+    }
+
     /// Shadow-register vulnerable keyed bindings through the Carbon-backed
     /// Tauri path. Modifier-only and mouse bindings are immune (FlagsChanged
     /// and mouse events still flow to the tap) and are skipped. Side-specific
     /// modifiers widen to either side (degraded); fn+key combos cannot be
-    /// expressed and are reported as uncovered.
+    /// expressed and are reported as uncovered. Cancel is included only while
+    /// recording because its global registration is intentionally dynamic.
     fn activate_fallback(app: &AppHandle) {
         let settings = settings::get_settings(app);
         if settings.keyboard_implementation != KeyboardImplementation::HandyKeys {
@@ -387,82 +486,20 @@ mod imp {
             return;
         }
 
+        let recording_active = app
+            .try_state::<Arc<AudioRecordingManager>>()
+            .is_some_and(|manager| manager.is_recording());
         let mut immune = 0usize;
         for (id, binding) in &settings.bindings {
-            if id == "cancel" {
-                continue; // registered dynamically during recording only
+            if id == "cancel" && !recording_active {
+                continue;
             }
             if id == "transcribe_with_post_process" && !settings.post_process_enabled {
                 continue;
             }
 
-            let Ok(hotkey) = binding.current_binding.parse::<handy_keys::Hotkey>() else {
-                // A stored binding handy-keys itself can't parse shouldn't
-                // exist — surface it rather than skipping silently.
-                warn!(
-                    "SecureInput fallback: '{}' has unparseable binding '{}', skipping",
-                    id, binding.current_binding
-                );
-                continue;
-            };
-            match &hotkey.key {
-                None => {
-                    debug!(
-                        "SecureInput fallback: '{}' ('{}') is modifier-only — immune, no shadow needed",
-                        id, binding.current_binding
-                    );
-                    immune += 1;
-                    continue;
-                }
-                Some(k) if is_mouse_key(k) => {
-                    debug!(
-                        "SecureInput fallback: '{}' ('{}') is mouse-based — immune, no shadow needed",
-                        id, binding.current_binding
-                    );
-                    immune += 1;
-                    continue;
-                }
-                Some(_) => {}
-            }
-
-            let Some((carbon_binding, degraded)) = carbon_equivalent(&hotkey) else {
-                warn!(
-                    "SecureInput fallback: '{}' ('{}') cannot be expressed via Carbon",
-                    id, binding.current_binding
-                );
-                fallback.uncovered.push(id.clone());
-                continue;
-            };
-
-            let mut shadow = binding.clone();
-            shadow.current_binding = carbon_binding;
-
-            match crate::shortcut::tauri_impl::register_shortcut(app, shadow.clone()) {
-                Ok(()) => {
-                    info!(
-                        "SecureInput fallback: '{}' registered via Carbon as '{}'{}",
-                        id,
-                        shadow.current_binding,
-                        if degraded {
-                            " (widened to either side)"
-                        } else {
-                            ""
-                        }
-                    );
-                    fallback.registered.push(shadow);
-                    if degraded {
-                        fallback.degraded.push(id.clone());
-                    } else {
-                        fallback.covered.push(id.clone());
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "SecureInput fallback: could not cover '{}' ('{}'): {}",
-                        id, shadow.current_binding, e
-                    );
-                    fallback.uncovered.push(id.clone());
-                }
+            if register_fallback_binding(app, id, binding, &mut fallback) {
+                immune += 1;
             }
         }
 
@@ -475,6 +512,102 @@ mod imp {
             immune,
             !fallback.degraded.is_empty() || !fallback.uncovered.is_empty()
         );
+    }
+
+    /// Add the dynamic Cancel shadow when recording starts after the sustained
+    /// fallback was already activated. The task boundary avoids registering a
+    /// Carbon shortcut from inside another global-shortcut callback.
+    pub fn register_cancel_fallback(app: &AppHandle) {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let state = app.state::<SecureInputState>();
+            if !state.is_sustained() {
+                return;
+            }
+
+            let settings = settings::get_settings(&app);
+            if settings.keyboard_implementation != KeyboardImplementation::HandyKeys {
+                return;
+            }
+            let Some(binding) = settings.bindings.get("cancel") else {
+                return;
+            };
+
+            let mut fallback = state.fallback.lock().unwrap();
+            // Recheck after taking the lock so deactivation cannot finish and
+            // then leave a late Cancel registration behind.
+            let recording_active = app
+                .try_state::<Arc<AudioRecordingManager>>()
+                .is_some_and(|manager| manager.is_recording());
+            if !state.is_sustained() || !recording_active || fallback_tracks_id(&fallback, "cancel")
+            {
+                return;
+            }
+
+            let immune = register_fallback_binding(&app, "cancel", binding, &mut fallback);
+            drop(fallback);
+
+            if !immune {
+                refresh_tray(&app);
+                emit_status(&app);
+            }
+        });
+    }
+
+    /// Remove only the dynamic Cancel shadow when recording ends. Other
+    /// fallback registrations remain until Secure Input itself clears.
+    pub fn unregister_cancel_fallback(app: &AppHandle) {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let state = app.state::<SecureInputState>();
+            let (registered, changed) = {
+                let mut fallback = state.fallback.lock().unwrap();
+                let mut registered = Vec::new();
+                while let Some(index) = fallback
+                    .registered
+                    .iter()
+                    .position(|binding| binding.id == "cancel")
+                {
+                    registered.push(fallback.registered.remove(index));
+                }
+
+                let old_covered = fallback.covered.len();
+                let old_degraded = fallback.degraded.len();
+                let old_uncovered = fallback.uncovered.len();
+                fallback.covered.retain(|id| id != "cancel");
+                fallback.degraded.retain(|id| id != "cancel");
+                fallback.uncovered.retain(|id| id != "cancel");
+                let changed = !registered.is_empty()
+                    || old_covered != fallback.covered.len()
+                    || old_degraded != fallback.degraded.len()
+                    || old_uncovered != fallback.uncovered.len();
+                (registered, changed)
+            };
+
+            // Do not hold fallback state while calling the global-shortcut
+            // plugin. Cancel can arrive from that plugin's own callback, which
+            // continues through tray refresh and reads fallback state.
+            for binding in registered {
+                if let Err(e) =
+                    crate::shortcut::tauri_impl::unregister_shortcut(&app, binding.clone())
+                {
+                    warn!(
+                        "SecureInput fallback: failed to unregister dynamic Cancel '{}': {}",
+                        binding.current_binding, e
+                    );
+                } else {
+                    info!(
+                        "SecureInput fallback: unregistered dynamic Cancel '{}'",
+                        binding.current_binding
+                    );
+                }
+            }
+
+            if changed {
+                refresh_tray(&app);
+                emit_status(&app);
+            }
+        });
     }
 
     fn deactivate_fallback(app: &AppHandle) {
@@ -587,6 +720,10 @@ mod imp {
     }
 
     pub fn note_recorder_blocked(_app: &AppHandle) {}
+
+    pub fn register_cancel_fallback(_app: &AppHandle) {}
+
+    pub fn unregister_cancel_fallback(_app: &AppHandle) {}
 
     pub async fn run_diagnostic(_duration_secs: u32) -> Result<KeyboardDiagnosticReport, String> {
         Err("The keyboard diagnostic is only supported on macOS".to_string())

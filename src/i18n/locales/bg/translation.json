@@ -656,14 +656,14 @@
     "title": "Ново в Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Клавишните комбинации са блокирани от Secure Input на macOS",
-    "descriptionWithCulprit": "„{{name}}“ (pid {{pid}}) задържа Secure Input, затова бързите клавиши, които включват обикновен клавиш, не достигат до Handy.",
-    "descriptionNoCulprit": "Нещо задържа Secure Input (няма видим държател — възможно е приложение да е спряло, без да го освободи), затова бързите клавиши, които включват обикновен клавиш, не достигат до Handy.",
+    "blockedWithCulprit_one": "{{name}} може да блокира 1 бърз клавиш",
+    "blockedWithCulprit_other": "{{name}} може да блокира {{count}} бързи клавиша",
+    "blockedNoCulprit_one": "macOS временно блокира 1 бърз клавиш",
+    "blockedNoCulprit_other": "macOS временно блокира {{count}} бързи клавиша",
+    "recorderBlockedWithCulprit": "{{name}} може да блокира промените на бързите клавиши",
+    "recorderBlockedNoCulprit": "macOS временно блокира промените на бързите клавиши",
     "learnMore": "Как да поправите това",
     "recorderBlocked": "В момента не могат да се записват бързи клавиши — Secure Input на macOS блокира клавишните събития. Първо отстранете предупреждението за Secure Input.",
-    "uncovered": "Тези бързи клавиши няма да работят, докато това не бъде решено: {{bindings}}.",
-    "degraded": "Тези бързи клавиши временно реагират на левия или на десния модификатор: {{bindings}}.",
-    "recorderDisabled": "Записването на нови бързи клавиши е изключено, докато това не бъде решено.",
     "dismiss": "Отхвърляне"
   }
 }

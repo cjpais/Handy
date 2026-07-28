@@ -656,14 +656,14 @@
     "title": "Handy v{{version}}의 새 소식"
   },
   "secureInput": {
-    "title": "macOS Secure Input으로 인해 키보드 단축키가 차단되었습니다",
-    "descriptionWithCulprit": "“{{name}}”(pid {{pid}})이(가) Secure Input을 점유하고 있어 일반 키가 포함된 단축키가 Handy에 도달하지 못합니다.",
-    "descriptionNoCulprit": "무언가가 Secure Input을 점유하고 있습니다(점유 중인 앱을 확인할 수 없음 — 앱이 해제하지 않고 종료했을 수 있습니다). 그래서 일반 키가 포함된 단축키가 Handy에 도달하지 못합니다.",
+    "blockedWithCulprit_one": "{{name}}이(가) 단축키 1개를 차단하고 있을 수 있습니다",
+    "blockedWithCulprit_other": "{{name}}이(가) 단축키 {{count}}개를 차단하고 있을 수 있습니다",
+    "blockedNoCulprit_one": "macOS가 단축키 1개를 일시적으로 차단하고 있습니다",
+    "blockedNoCulprit_other": "macOS가 단축키 {{count}}개를 일시적으로 차단하고 있습니다",
+    "recorderBlockedWithCulprit": "{{name}}이(가) 단축키 변경을 차단하고 있을 수 있습니다",
+    "recorderBlockedNoCulprit": "macOS가 단축키 변경을 일시적으로 차단하고 있습니다",
     "learnMore": "해결 방법",
     "recorderBlocked": "지금은 단축키를 등록할 수 없습니다. macOS Secure Input이 키 이벤트를 차단하고 있습니다. Secure Input 경고를 먼저 해결하세요.",
-    "uncovered": "해결될 때까지 다음 단축키는 작동하지 않습니다: {{bindings}}.",
-    "degraded": "다음 단축키는 일시적으로 왼쪽 또는 오른쪽 조합 키 중 어느 쪽에나 반응합니다: {{bindings}}.",
-    "recorderDisabled": "해결될 때까지 새 단축키 등록이 비활성화됩니다.",
     "dismiss": "닫기"
   }
 }

@@ -656,14 +656,14 @@
     "title": "Handy v{{version}} 新功能"
   },
   "secureInput": {
-    "title": "鍵盤快捷鍵被 macOS 的 Secure Input 阻擋",
-    "descriptionWithCulprit": "「{{name}}」（pid {{pid}}）正占用 Secure Input，因此包含一般按鍵的快捷鍵無法送達 Handy。",
-    "descriptionNoCulprit": "有程式正占用 Secure Input（找不到占用的程式——可能有 App 結束時沒有釋放它），因此包含一般按鍵的快捷鍵無法送達 Handy。",
+    "blockedWithCulprit_one": "{{name}} 可能正在阻擋 1 個快捷鍵",
+    "blockedWithCulprit_other": "{{name}} 可能正在阻擋 {{count}} 個快捷鍵",
+    "blockedNoCulprit_one": "macOS 正在暫時阻擋 1 個快捷鍵",
+    "blockedNoCulprit_other": "macOS 正在暫時阻擋 {{count}} 個快捷鍵",
+    "recorderBlockedWithCulprit": "{{name}} 可能正在阻擋快捷鍵變更",
+    "recorderBlockedNoCulprit": "macOS 正在暫時阻擋快捷鍵變更",
     "learnMore": "如何解決",
     "recorderBlocked": "目前無法錄製快捷鍵——macOS 的 Secure Input 正在阻擋按鍵事件。請先解決 Secure Input 警告。",
-    "uncovered": "在問題解決前，這些快捷鍵無法運作：{{bindings}}。",
-    "degraded": "這些快捷鍵暫時對左右任一修飾鍵都會有反應：{{bindings}}。",
-    "recorderDisabled": "在問題解決前，錄製新快捷鍵已停用。",
     "dismiss": "關閉"
   }
 }

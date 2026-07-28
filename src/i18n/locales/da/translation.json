@@ -656,14 +656,14 @@
     "processing": "Behandler..."
   },
   "secureInput": {
-    "title": "Tastaturgenveje blokeres af macOS Secure Input",
-    "descriptionWithCulprit": "“{{name}}” (pid {{pid}}) holder Secure Input aktivt, så genveje med en almindelig tast når ikke frem til Handy.",
-    "descriptionNoCulprit": "Noget holder Secure Input aktivt (ingen synlig indehaver — en app er måske afsluttet uden at frigive det), så genveje med en almindelig tast når ikke frem til Handy.",
+    "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",
+    "blockedWithCulprit_other": "{{name}} blokerer muligvis {{count}} genveje",
+    "blockedNoCulprit_one": "macOS blokerer midlertidigt 1 genvej",
+    "blockedNoCulprit_other": "macOS blokerer midlertidigt {{count}} genveje",
+    "recorderBlockedWithCulprit": "{{name}} blokerer muligvis ændringer af genveje",
+    "recorderBlockedNoCulprit": "macOS blokerer midlertidigt ændringer af genveje",
     "learnMore": "Sådan løser du det",
     "recorderBlocked": "Genveje kan ikke optages lige nu — macOS Secure Input blokerer tastehændelser. Løs advarslen om Secure Input først.",
-    "uncovered": "Disse genveje virker ikke, før det er løst: {{bindings}}.",
-    "degraded": "Disse genveje reagerer midlertidigt på enten venstre eller højre modifikator: {{bindings}}.",
-    "recorderDisabled": "Optagelse af nye genveje er deaktiveret, indtil det er løst.",
     "dismiss": "Afvis"
   }
 }

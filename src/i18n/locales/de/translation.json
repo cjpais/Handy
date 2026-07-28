@@ -656,14 +656,14 @@
     "title": "Neu in Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Tastenkürzel werden von macOS Secure Input blockiert",
-    "descriptionWithCulprit": "„{{name}}“ (pid {{pid}}) hält Secure Input aktiv, daher erreichen Tastenkürzel mit einer normalen Taste Handy nicht.",
-    "descriptionNoCulprit": "Etwas hält Secure Input aktiv (kein sichtbarer Verursacher — eine App wurde vielleicht beendet, ohne es freizugeben), daher erreichen Tastenkürzel mit einer normalen Taste Handy nicht.",
+    "blockedWithCulprit_one": "{{name}} blockiert möglicherweise 1 Tastenkürzel",
+    "blockedWithCulprit_other": "{{name}} blockiert möglicherweise {{count}} Tastenkürzel",
+    "blockedNoCulprit_one": "macOS blockiert vorübergehend 1 Tastenkürzel",
+    "blockedNoCulprit_other": "macOS blockiert vorübergehend {{count}} Tastenkürzel",
+    "recorderBlockedWithCulprit": "{{name}} blockiert möglicherweise Änderungen an Tastenkürzeln",
+    "recorderBlockedNoCulprit": "macOS blockiert vorübergehend Änderungen an Tastenkürzeln",
     "learnMore": "So behebst du das",
     "recorderBlocked": "Tastenkürzel können gerade nicht aufgezeichnet werden — macOS Secure Input blockiert Tastenereignisse. Behebe zuerst die Secure-Input-Warnung.",
-    "uncovered": "Diese Tastenkürzel funktionieren erst, wenn das behoben ist: {{bindings}}.",
-    "degraded": "Diese Tastenkürzel reagieren vorübergehend auf den linken oder den rechten Modifikator: {{bindings}}.",
-    "recorderDisabled": "Das Aufzeichnen neuer Tastenkürzel ist deaktiviert, bis das behoben ist.",
     "dismiss": "Ausblenden"
   }
 }

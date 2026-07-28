@@ -656,14 +656,14 @@
     "title": "Nuevo en Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Los atajos de teclado están bloqueados por Secure Input de macOS",
-    "descriptionWithCulprit": "«{{name}}» (pid {{pid}}) está reteniendo Secure Input, así que los atajos que incluyen una tecla normal no llegan a Handy.",
-    "descriptionNoCulprit": "Algo está reteniendo Secure Input (sin responsable visible: puede que una app se haya cerrado sin liberarlo), así que los atajos que incluyen una tecla normal no llegan a Handy.",
+    "blockedWithCulprit_one": "{{name}} puede estar bloqueando 1 atajo",
+    "blockedWithCulprit_other": "{{name}} puede estar bloqueando {{count}} atajos",
+    "blockedNoCulprit_one": "macOS está bloqueando temporalmente 1 atajo",
+    "blockedNoCulprit_other": "macOS está bloqueando temporalmente {{count}} atajos",
+    "recorderBlockedWithCulprit": "{{name}} puede estar bloqueando los cambios de atajos",
+    "recorderBlockedNoCulprit": "macOS está bloqueando temporalmente los cambios de atajos",
     "learnMore": "Cómo solucionarlo",
     "recorderBlocked": "Ahora mismo no se pueden grabar atajos: Secure Input de macOS está bloqueando los eventos de teclado. Resuelve primero el aviso de Secure Input.",
-    "uncovered": "Estos atajos no funcionarán hasta que se resuelva: {{bindings}}.",
-    "degraded": "Estos atajos responden temporalmente al modificador izquierdo o al derecho: {{bindings}}.",
-    "recorderDisabled": "La grabación de nuevos atajos está desactivada hasta que se resuelva.",
     "dismiss": "Descartar"
   }
 }

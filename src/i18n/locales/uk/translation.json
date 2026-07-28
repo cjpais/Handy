@@ -656,14 +656,14 @@
     "title": "Нове в Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Комбінації клавіш заблоковано Secure Input у macOS",
-    "descriptionWithCulprit": "«{{name}}» (pid {{pid}}) утримує Secure Input, тому комбінації зі звичайною клавішею не доходять до Handy.",
-    "descriptionNoCulprit": "Щось утримує Secure Input (видимого власника не знайдено — можливо, застосунок завершив роботу, не звільнивши його), тому комбінації зі звичайною клавішею не доходять до Handy.",
+    "blockedWithCulprit_one": "{{name}} може блокувати 1 комбінацію клавіш",
+    "blockedWithCulprit_other": "{{name}} може блокувати {{count}} комбінацій клавіш",
+    "blockedNoCulprit_one": "macOS тимчасово блокує 1 комбінацію клавіш",
+    "blockedNoCulprit_other": "macOS тимчасово блокує {{count}} комбінацій клавіш",
+    "recorderBlockedWithCulprit": "{{name}} може блокувати зміну комбінацій клавіш",
+    "recorderBlockedNoCulprit": "macOS тимчасово блокує зміну комбінацій клавіш",
     "learnMore": "Як це виправити",
     "recorderBlocked": "Зараз неможливо записати комбінацію — Secure Input у macOS блокує події клавіш. Спершу усуньте попередження про Secure Input.",
-    "uncovered": "Ці комбінації не працюватимуть, доки це не буде усунуто: {{bindings}}.",
-    "degraded": "Ці комбінації тимчасово реагують і на лівий, і на правий модифікатор: {{bindings}}.",
-    "recorderDisabled": "Запис нових комбінацій вимкнено, доки це не буде усунуто.",
     "dismiss": "Приховати"
   }
 }

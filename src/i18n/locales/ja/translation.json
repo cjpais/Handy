@@ -656,14 +656,14 @@
     "title": "Handy v{{version}} の新機能"
   },
   "secureInput": {
-    "title": "macOS の Secure Input によりキーボードショートカットがブロックされています",
-    "descriptionWithCulprit": "「{{name}}」(pid {{pid}}) が Secure Input を保持しているため、通常キーを含むショートカットが Handy に届きません。",
-    "descriptionNoCulprit": "何かが Secure Input を保持しています (保持元は不明 — 解放せずに終了したアプリがある可能性があります)。そのため、通常キーを含むショートカットが Handy に届きません。",
+    "blockedWithCulprit_one": "{{name}} が1個のショートカットをブロックしている可能性があります",
+    "blockedWithCulprit_other": "{{name}} が{{count}}個のショートカットをブロックしている可能性があります",
+    "blockedNoCulprit_one": "macOS が一時的に1個のショートカットをブロックしています",
+    "blockedNoCulprit_other": "macOS が一時的に{{count}}個のショートカットをブロックしています",
+    "recorderBlockedWithCulprit": "{{name}} がショートカットの変更をブロックしている可能性があります",
+    "recorderBlockedNoCulprit": "macOS が一時的にショートカットの変更をブロックしています",
     "learnMore": "解決方法",
     "recorderBlocked": "現在ショートカットを記録できません。macOS の Secure Input がキーイベントをブロックしています。先に Secure Input の警告を解消してください。",
-    "uncovered": "解消されるまで、次のショートカットは動作しません: {{bindings}}。",
-    "degraded": "次のショートカットは一時的に左右どちらの修飾キーにも反応します: {{bindings}}。",
-    "recorderDisabled": "解消されるまで、新しいショートカットの記録は無効です。",
     "dismiss": "閉じる"
   }
 }

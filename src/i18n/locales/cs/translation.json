@@ -656,14 +656,14 @@
     "title": "Novinky v Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Klávesové zkratky blokuje Secure Input v macOS",
-    "descriptionWithCulprit": "„{{name}}“ (pid {{pid}}) drží Secure Input, takže zkratky obsahující běžnou klávesu se do Handy nedostanou.",
-    "descriptionNoCulprit": "Něco drží Secure Input (žádný viditelný držitel — některá aplikace mohla skončit, aniž by jej uvolnila), takže zkratky obsahující běžnou klávesu se do Handy nedostanou.",
+    "blockedWithCulprit_one": "{{name}} může blokovat 1 zkratku",
+    "blockedWithCulprit_other": "{{name}} může blokovat {{count}} zkratek",
+    "blockedNoCulprit_one": "macOS dočasně blokuje 1 zkratku",
+    "blockedNoCulprit_other": "macOS dočasně blokuje {{count}} zkratek",
+    "recorderBlockedWithCulprit": "{{name}} může blokovat změny zkratek",
+    "recorderBlockedNoCulprit": "macOS dočasně blokuje změny zkratek",
     "learnMore": "Jak to vyřešit",
     "recorderBlocked": "Zkratky teď nelze nahrát — Secure Input v macOS blokuje události kláves. Nejprve vyřešte upozornění na Secure Input.",
-    "uncovered": "Tyto zkratky nebudou fungovat, dokud se to nevyřeší: {{bindings}}.",
-    "degraded": "Tyto zkratky dočasně reagují na levý i pravý modifikátor: {{bindings}}.",
-    "recorderDisabled": "Nahrávání nových zkratek je vypnuté, dokud se to nevyřeší.",
     "dismiss": "Zavřít"
   }
 }

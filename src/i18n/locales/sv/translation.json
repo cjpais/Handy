@@ -656,14 +656,14 @@
     "title": "Nytt i Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Kortkommandon blockeras av macOS Secure Input",
-    "descriptionWithCulprit": "”{{name}}” (pid {{pid}}) håller Secure Input aktivt, så kortkommandon som innehåller en vanlig tangent når inte Handy.",
-    "descriptionNoCulprit": "Något håller Secure Input aktivt (ingen synlig innehavare — en app kan ha avslutats utan att släppa det), så kortkommandon som innehåller en vanlig tangent når inte Handy.",
+    "blockedWithCulprit_one": "{{name}} kanske blockerar 1 kortkommando",
+    "blockedWithCulprit_other": "{{name}} kanske blockerar {{count}} kortkommandon",
+    "blockedNoCulprit_one": "macOS blockerar tillfälligt 1 kortkommando",
+    "blockedNoCulprit_other": "macOS blockerar tillfälligt {{count}} kortkommandon",
+    "recorderBlockedWithCulprit": "{{name}} kanske blockerar ändringar av kortkommandon",
+    "recorderBlockedNoCulprit": "macOS blockerar tillfälligt ändringar av kortkommandon",
     "learnMore": "Så här löser du det",
     "recorderBlocked": "Det går inte att spela in kortkommandon just nu — macOS Secure Input blockerar tangenthändelser. Lös varningen om Secure Input först.",
-    "uncovered": "Dessa kortkommandon fungerar inte förrän det är löst: {{bindings}}.",
-    "degraded": "Dessa kortkommandon svarar tillfälligt på antingen vänster eller höger modifierare: {{bindings}}.",
-    "recorderDisabled": "Inspelning av nya kortkommandon är inaktiverad tills det är löst.",
     "dismiss": "Avfärda"
   }
 }

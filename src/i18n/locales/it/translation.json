@@ -656,14 +656,14 @@
     "title": "Novità in Handy v{{version}}"
   },
   "secureInput": {
-    "title": "Le scorciatoie da tastiera sono bloccate da Secure Input di macOS",
-    "descriptionWithCulprit": "«{{name}}» (pid {{pid}}) sta trattenendo Secure Input, quindi le scorciatoie che includono un tasto normale non arrivano a Handy.",
-    "descriptionNoCulprit": "Qualcosa sta trattenendo Secure Input (nessun responsabile visibile: un'app potrebbe essere stata chiusa senza rilasciarlo), quindi le scorciatoie che includono un tasto normale non arrivano a Handy.",
+    "blockedWithCulprit_one": "{{name}} potrebbe bloccare 1 scorciatoia",
+    "blockedWithCulprit_other": "{{name}} potrebbe bloccare {{count}} scorciatoie",
+    "blockedNoCulprit_one": "macOS sta bloccando temporaneamente 1 scorciatoia",
+    "blockedNoCulprit_other": "macOS sta bloccando temporaneamente {{count}} scorciatoie",
+    "recorderBlockedWithCulprit": "{{name}} potrebbe bloccare le modifiche alle scorciatoie",
+    "recorderBlockedNoCulprit": "macOS sta bloccando temporaneamente le modifiche alle scorciatoie",
     "learnMore": "Come risolvere",
     "recorderBlocked": "Non è possibile registrare scorciatoie in questo momento: Secure Input di macOS sta bloccando gli eventi dei tasti. Risolvi prima l'avviso di Secure Input.",
-    "uncovered": "Queste scorciatoie non funzioneranno finché non viene risolto: {{bindings}}.",
-    "degraded": "Queste scorciatoie rispondono temporaneamente al modificatore sinistro o a quello destro: {{bindings}}.",
-    "recorderDisabled": "La registrazione di nuove scorciatoie è disabilitata finché non viene risolto.",
     "dismiss": "Ignora"
   }
 }

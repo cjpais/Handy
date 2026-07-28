@@ -61,7 +61,13 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::register_cancel_shortcut(app),
+        KeyboardImplementation::HandyKeys => {
+            handy_keys::register_cancel_shortcut(app);
+            // Secure Input blocks keyed HandyKeys events, including the default
+            // Escape binding. Shadow Cancel through Carbon only while both the
+            // sustained fallback and a recording are active.
+            crate::secure_input::register_cancel_fallback(app);
+        }
     }
 }
 
@@ -70,7 +76,10 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::unregister_cancel_shortcut(app),
+        KeyboardImplementation::HandyKeys => {
+            handy_keys::unregister_cancel_shortcut(app);
+            crate::secure_input::unregister_cancel_fallback(app);
+        }
     }
 }
 
