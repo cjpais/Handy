@@ -210,6 +210,14 @@
         "label": "오디오 피드백",
         "description": "녹음 시작 및 정지 시 소리 재생"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause media playback while recording"
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Resume media playback if Handy paused it"
+      },
       "outputDevice": {
         "title": "출력 장치",
         "description": "피드백 사운드를 위한 오디오 출력 장치를 선택하세요",

@@ -228,6 +228,14 @@
         "label": "聲音回饋",
         "description": "錄製開始和停止時播放聲音"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause media playback while recording"
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Resume media playback if Handy paused it"
+      },
       "outputDevice": {
         "title": "輸出裝置",
         "description": "選擇用於聲音回饋的音訊輸出裝置",

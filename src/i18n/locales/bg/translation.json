@@ -228,6 +228,14 @@
         "label": "Звукова обратна връзка",
         "description": "Възпроизвеждане на звук при старт и край на записа"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause media playback while recording"
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Resume media playback if Handy paused it"
+      },
       "outputDevice": {
         "title": "Изходно устройство",
         "description": "Изберете предпочитано изходно аудио устройство за звуци за обратна връзка",
