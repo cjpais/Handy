@@ -297,23 +297,23 @@ async updateCustomWords(words: string[]) : Promise<Result<null, string>> {
 }
 },
 /**
- * Temporarily unregister a binding while the user is editing it in the UI.
- * This avoids firing the action while keys are being recorded.
+ * Temporarily unregister all bindings while the user is recording a
+ * shortcut in the UI. This avoids firing actions while keys are recorded.
  */
-async suspendBinding(id: string) : Promise<Result<null, string>> {
+async suspendAllBindings() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("suspend_binding", { id }) };
+    return { status: "ok", data: await TAURI_INVOKE("suspend_all_bindings") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
 /**
- * Re-register the binding after the user has finished editing.
+ * Re-register all bindings after the user has finished recording.
  */
-async resumeBinding(id: string) : Promise<Result<null, string>> {
+async resumeAllBindings() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("resume_binding", { id }) };
+    return { status: "ok", data: await TAURI_INVOKE("resume_all_bindings") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

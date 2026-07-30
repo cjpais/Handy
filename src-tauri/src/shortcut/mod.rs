@@ -239,7 +239,10 @@ pub fn suspend_all_shortcuts(app: &AppHandle) {
             continue;
         }
         if let Err(e) = unregister_shortcut(app, binding) {
-            debug!("suspend_all_shortcuts: could not unregister '{}': {}", id, e);
+            debug!(
+                "suspend_all_shortcuts: could not unregister '{}': {}",
+                id, e
+            );
         }
     }
 }
