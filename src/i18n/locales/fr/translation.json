@@ -210,7 +210,7 @@
         "description": "Sélectionnez la langue pour la reconnaissance vocale. Auto déterminera automatiquement la langue, tandis que sélectionner une langue spécifique peut améliorer la précision pour cette langue.",
         "searchPlaceholder": "Rechercher des langues...",
         "noResults": "Aucune langue trouvée",
-        "auto": "Auto"
+        "auto": "Automatique"
       },
       "pushToTalk": {
         "label": "Appuyer pour parler",
@@ -266,7 +266,7 @@
           "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatique"
         }
       },
       "startHidden": {
@@ -334,9 +334,9 @@
         "options": {
           "off": "Désactivé",
           "enter": "Entrée",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "cmdEnter": "Cmd+Entrée",
+          "superEnter": "Super+Entrée",
+          "ctrlEnter": "Ctrl+Entrée"
         }
       },
       "translateToEnglish": {

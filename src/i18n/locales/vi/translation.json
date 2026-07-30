@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Mô hình tương thích",
+    "downloadModelsTitle": "Có sẵn để tải xuống",
+    "showAllModels": "Hiển thị tất cả {{total}} mô hình",
+    "showFewerModels": "Hiển thị ít mô hình hơn",
     "recommended": "Đề xuất",
     "customModelDescription": "Không được hỗ trợ chính thức",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Không thể chọn mô hình"
     },
     "permissions": {
       "title": "Cần cấp quyền",
@@ -143,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Hỗ trợ nhiều ngôn ngữ đầu vào",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} ngôn ngữ",
       "translation": "Có thể dịch sang tiếng Anh",
       "translate": "Dịch sang tiếng Anh",
       "singleLanguage": "Chỉ hỗ trợ ngôn ngữ này",
@@ -283,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Lớp phủ",
+          "description": "Chọn lớp phủ khi ghi âm: 'Không có' sẽ ẩn nó, 'Tối giản' hiển thị một chỉ báo nhỏ gọn, 'Trực tiếp' hiển thị bản chép lời theo thời gian thực khi bạn nói (chỉ với các mô hình hỗ trợ truyền trực tiếp — hãy tìm huy hiệu 'Truyền trực tiếp' trong bộ chọn mô hình). Trên Linux, khuyến nghị chọn 'Không có'.",
           "options": {
             "none": "Không có",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Tối giản",
+            "live": "Trực tiếp"
           }
         },
         "position": {
@@ -304,9 +304,9 @@
         "title": "Phương thức dán",
         "description": "Chọn cách chèn văn bản. Trực tiếp: mô phỏng gõ phím qua đầu vào hệ thống. Không có: bỏ qua dán, chỉ cập nhật lịch sử/clipboard.",
         "options": {
-          "clipboard": "Clipboard ({{modifier}}+V)",
-          "clipboardCtrlShiftV": "Clipboard (Ctrl+Shift+V)",
-          "clipboardShiftInsert": "Clipboard (Shift+Insert)",
+          "clipboard": "Bảng nhớ tạm ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Bảng nhớ tạm (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Bảng nhớ tạm (Shift+Insert)",
           "direct": "Trực tiếp",
           "none": "Không có",
           "externalScript": "Script bên ngoài"
@@ -366,8 +366,8 @@
         "duplicate": "\"{{word}}\" đã tồn tại"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Phát hiện hoạt động giọng nói",
+        "description": "Lọc bỏ khoảng lặng khỏi bản ghi. Các mô hình hỗ trợ truyền trực tiếp dùng đuôi VAD dài hơn; tắt VAD sẽ ghi âm thanh thô."
       }
     },
     "postProcessing": {
@@ -403,7 +403,7 @@
         }
       },
       "prompts": {
-        "title": "Prompt",
+        "title": "Câu lệnh",
         "selectedPrompt": {
           "title": "Prompt đã chọn",
           "description": "Chọn một mẫu để tinh chỉnh bản ghi hoặc tạo mới. Sử dụng ${output} trong văn bản prompt để tham chiếu bản ghi đã chụp."

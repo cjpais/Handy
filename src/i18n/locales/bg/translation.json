@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "За да започнете, изберете модел за транскрипция",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Съвместими модели",
+    "downloadModelsTitle": "Достъпни за изтегляне",
+    "showAllModels": "Показване на всички {{total}} модела",
+    "showFewerModels": "Показване на по-малко модели",
     "recommended": "Препоръчан",
     "customModelDescription": "Не се поддържа официално",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Неуспешно избиране на модел"
     },
     "permissions": {
       "title": "Необходими разрешения",
@@ -146,7 +146,7 @@
     "capabilities": {
       "languageSelection": "Поддържа няколко входни езика",
       "singleLanguage": "Поддържа само този език",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} езика",
       "languageOnly": "Само {{language}}",
       "translation": "Може да превежда на английски",
       "translate": "Превод на английски",
@@ -283,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Наслагване",
+          "description": "Изберете наслагването при запис: «Няма» го скрива, «Минимално» показва компактен индикатор, «На живо» показва транскрипцията в реално време, докато говорите (само модели с поддръжка на стрийминг — потърсете етикета «Стрийминг» в избора на модел). На Linux се препоръчва «Няма».",
           "options": {
             "none": "Няма",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Минимално",
+            "live": "На живо"
           }
         },
         "position": {
@@ -366,8 +366,8 @@
         "duplicate": "„{{word}}“ вече съществува"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Откриване на гласова активност",
+        "description": "Филтрира тишината от записите. Моделите с поддръжка на стрийминг използват по-дълга опашка на VAD; изключването на VAD записва необработен звук."
       }
     },
     "postProcessing": {

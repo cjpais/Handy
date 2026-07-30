@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Kompatibilní modely",
+    "downloadModelsTitle": "Dostupné ke stažení",
+    "showAllModels": "Zobrazit všech {{total}} modelů",
+    "showFewerModels": "Zobrazit méně modelů",
     "recommended": "Doporučeno",
     "customModelDescription": "Oficiálně nepodporováno",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Nepodařilo se vybrat model"
     },
     "permissions": {
       "title": "Vyžadována oprávnění",
@@ -143,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Podporuje více vstupních jazyků",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} jazyků",
       "translation": "Umí překládat do angličtiny",
       "translate": "Přeložit do angličtiny",
       "singleLanguage": "Podporuje pouze tento jazyk",
@@ -210,7 +210,7 @@
         "description": "Vyberte jazyk rozpoznávání řeči. Auto jazyk určí automaticky, zatímco výběr konkrétního jazyka může zlepšit přesnost.",
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",
-        "auto": "Auto"
+        "auto": "Automaticky"
       },
       "pushToTalk": {
         "label": "Stisk a mluv",
@@ -283,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Překryv",
+          "description": "Vyberte překryv při nahrávání: „Žádné“ jej skryje, „Minimální“ zobrazí kompaktní indikátor, „Živě“ zobrazuje přepis v reálném čase, když mluvíte (pouze modely podporující streaming — hledejte odznak „Streaming“ ve výběru modelů). Na Linuxu se doporučuje „Žádné“.",
           "options": {
             "none": "Žádné",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Minimální",
+            "live": "Živě"
           }
         },
         "position": {
@@ -366,8 +366,8 @@
         "duplicate": "\"{{word}}\" již existuje"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Detekce hlasové aktivity",
+        "description": "Odfiltruje ticho z nahrávek. Modely podporující streaming používají delší doběh VAD; vypnutí VAD nahrává surový zvuk."
       }
     },
     "postProcessing": {

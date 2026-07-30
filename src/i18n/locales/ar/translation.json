@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "النماذج المتوافقة",
+    "downloadModelsTitle": "متاح للتنزيل",
+    "showAllModels": "عرض كل النماذج ({{total}})",
+    "showFewerModels": "عرض عدد أقل من النماذج",
     "recommended": "موصى به",
     "customModelDescription": "غير مدعوم رسميًا",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "فشل تحديد النموذج"
     },
     "permissions": {
       "title": "الأذونات المطلوبة",
@@ -146,7 +146,7 @@
     "capabilities": {
       "languageSelection": "يدعم اختيار اللغة",
       "singleLanguage": "يدعم هذه اللغة فقط",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} لغة",
       "languageOnly": "{{language}} فقط",
       "translation": "يدعم الترجمة",
       "translate": "ترجمة",
@@ -262,12 +262,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "التراكب",
+          "description": "اختر تراكب التسجيل: «بلا» يخفيه، و«مبسط» يعرض شارة صغيرة، و«مباشر» يعرض النص المكتوب فوريًا أثناء التحدث (النماذج التي تدعم البث فقط — ابحث عن شارة «البث» في منتقي النماذج). على Linux يُنصح باختيار «بلا».",
           "options": {
             "none": "بلا",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "مبسط",
+            "live": "مباشر"
           }
         },
         "position": {
@@ -345,8 +345,8 @@
         "duplicate": "\"{{word}}\" موجود بالفعل"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "كشف النشاط الصوتي",
+        "description": "تصفية الصمت من التسجيلات. النماذج التي تدعم البث تستخدم فترة VAD أطول؛ وتعطيل VAD يسجّل الصوت الخام."
       }
     },
     "postProcessing": {
@@ -570,7 +570,7 @@
       }
     },
     "modelSettings": {
-      "title": "إعدادات النموذج"
+      "title": "إعدادات {{model}}"
     },
     "models": {
       "title": "نماذج النسخ",

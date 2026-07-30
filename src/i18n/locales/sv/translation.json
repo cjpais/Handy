@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "För att komma igång, välj en transkriptionsmodell",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Kompatibla modeller",
+    "downloadModelsTitle": "Tillgängliga för nedladdning",
+    "showAllModels": "Visa alla {{total}} modeller",
+    "showFewerModels": "Visa färre modeller",
     "recommended": "Rekommenderat",
     "customModelDescription": "Stöds inte officiellt",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Det gick inte att välja modell"
     },
     "permissions": {
       "title": "Behörigheter krävs",
@@ -146,7 +146,7 @@
     "capabilities": {
       "languageSelection": "Stöder flera indataspråk",
       "singleLanguage": "Stöder endast detta språk",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} språk",
       "languageOnly": "Endast {{language}}",
       "translation": "Kan översätta till engelska",
       "translate": "Översätt till engelska",
@@ -192,7 +192,7 @@
         "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",
-        "auto": "Auto"
+        "auto": "Automatiskt"
       },
       "pushToTalk": {
         "label": "Tryck för att tala",
@@ -266,7 +266,7 @@
           "description": "Hårdvaruacceleration för ONNX-modeller (Parakeet, Canary, Moonshine, etc.). DirectML på Windows är experimentellt. Modeller kan misslyckas med att transkribera."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatiskt"
         }
       },
       "startHidden": {
@@ -284,7 +284,7 @@
       "overlay": {
         "style": {
           "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "description": "Välj inspelningsöverlägget: ”Ingen” döljer det, ”Minimal” visar en kompakt indikator, ”Live” visar transkriberingen i realtid medan du talar (endast modeller med streamingstöd — leta efter Streaming-märket i modellväljaren). På Linux rekommenderas ”Ingen”.",
           "options": {
             "none": "Ingen",
             "minimal": "Minimal",
@@ -366,8 +366,8 @@
         "duplicate": "\"{{word}}\" finns redan"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Röstaktivitetsdetektering",
+        "description": "Filtrerar bort tystnad från inspelningar. Modeller med streamingstöd använder en längre VAD-svans; om VAD inaktiveras spelas rått ljud in."
       }
     },
     "postProcessing": {

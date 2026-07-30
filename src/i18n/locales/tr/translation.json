@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Uyumlu Modeller",
+    "downloadModelsTitle": "İndirilebilir",
+    "showAllModels": "{{total}} modelin tümünü göster",
+    "showFewerModels": "Daha az model göster",
     "recommended": "Önerilen",
     "customModelDescription": "Resmi olarak desteklenmiyor",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Model seçilemedi"
     },
     "permissions": {
       "title": "İzinler Gerekli",
@@ -143,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Birden fazla giriş dilini destekler",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} dil",
       "translation": "İngilizce'ye çevirebilir",
       "translate": "İngilizce'ye çevir",
       "singleLanguage": "Yalnızca bu dili destekler",
@@ -283,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Yer Paylaşımı",
+          "description": "Kayıt sırasındaki yer paylaşımını seçin: 'Yok' gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
           "options": {
             "none": "Yok",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Sade",
+            "live": "Canlı"
           }
         },
         "position": {
@@ -366,8 +366,8 @@
         "duplicate": "\"{{word}}\" zaten mevcut"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Ses Etkinliği Algılama",
+        "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
       }
     },
     "postProcessing": {
@@ -403,7 +403,7 @@
         }
       },
       "prompts": {
-        "title": "Prompt",
+        "title": "İstem",
         "selectedPrompt": {
           "title": "Seçili Prompt",
           "description": "Transkripsiyonları iyileştirmek için bir şablon seçin veya yeni bir tane oluşturun. Yakalanan transkripte referans vermek için prompt metni içinde ${output} kullanın."

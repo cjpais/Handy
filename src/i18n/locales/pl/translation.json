@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Zgodne modele",
+    "downloadModelsTitle": "Dostępne do pobrania",
+    "showAllModels": "Pokaż wszystkie modele ({{total}})",
+    "showFewerModels": "Pokaż mniej modeli",
     "recommended": "Polecane",
     "customModelDescription": "Nieoficjalnie wspierane",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Nie udało się wybrać modelu"
     },
     "permissions": {
       "title": "Wymagane uprawnienia",
@@ -143,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Obsługuje wiele języków wejściowych",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} języków",
       "translation": "Może tłumaczyć na angielski",
       "translate": "Tłumacz na angielski",
       "singleLanguage": "Obsługuje tylko ten język",
@@ -210,10 +210,10 @@
         "description": "Wybierz język rozpoznawania mowy. Opcja Auto automatycznie określi język, a wybór konkretnego języka może poprawić dokładność.",
         "searchPlaceholder": "Szukaj języka...",
         "noResults": "Nie znaleziono języków",
-        "auto": "Auto"
+        "auto": "Automatycznie"
       },
       "pushToTalk": {
-        "label": "Push To Talk",
+        "label": "Naciśnij i mów",
         "description": "Przytrzymaj, aby nagrywać, puść, aby zatrzymać"
       }
     },
@@ -266,7 +266,7 @@
           "description": "Akceleracja sprzętowa dla modeli ONNX (Parakeet, Canary, Moonshine itp.). DirectML na Windows jest eksperymentalne. Modele mogą nie transkrybować poprawnie."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatycznie"
         }
       },
       "startHidden": {
@@ -283,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Nakładka",
+          "description": "Wybierz nakładkę nagrywania: „Brak“ ją ukrywa, „Minimalna“ pokazuje kompaktowy wskaźnik, „Na żywo“ wyświetla transkrypcję w czasie rzeczywistym podczas mówienia (tylko modele obsługujące streaming — poszukaj etykiety „Streaming“ w selektorze modeli). W systemie Linux zalecana jest opcja „Brak“.",
           "options": {
             "none": "Brak",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Minimalna",
+            "live": "Na żywo"
           }
         },
         "position": {
@@ -366,8 +366,8 @@
         "duplicate": "\"{{word}}\" już istnieje"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Wykrywanie aktywności głosowej",
+        "description": "Odfiltrowuje ciszę z nagrań. Modele obsługujące streaming używają dłuższego marginesu VAD; wyłączenie VAD nagrywa surowy dźwięk."
       }
     },
     "postProcessing": {

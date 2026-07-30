@@ -210,7 +210,7 @@
         "description": "Selecciona el idioma para el reconocimiento de voz. Auto detectará automáticamente el idioma, mientras que seleccionar un idioma específico puede mejorar la precisión para ese idioma.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "No se encontraron idiomas",
-        "auto": "Auto"
+        "auto": "Automático"
       },
       "pushToTalk": {
         "label": "Presionar para hablar",
@@ -266,7 +266,7 @@
           "description": "Aceleración por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML en Windows es experimental. Los modelos pueden fallar al transcribir."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automático"
         }
       },
       "startHidden": {
@@ -333,10 +333,10 @@
         "description": "Envía automáticamente la combinación de teclas seleccionada después de insertar el texto. Cmd+Enter se aplica en macOS, mientras que Windows/Linux usan Super+Enter.",
         "options": {
           "off": "Desactivado",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "enter": "Intro",
+          "cmdEnter": "Cmd+Intro",
+          "superEnter": "Super+Intro",
+          "ctrlEnter": "Ctrl+Intro"
         }
       },
       "translateToEnglish": {

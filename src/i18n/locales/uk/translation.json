@@ -20,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Сумісні моделі",
+    "downloadModelsTitle": "Доступні для завантаження",
+    "showAllModels": "Показати всі моделі ({{total}})",
+    "showFewerModels": "Показати менше моделей",
     "recommended": "Рекомендовано",
     "customModelDescription": "Офіційно не підтримується",
     "modelCard": {
@@ -97,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Не вдалося вибрати модель"
     },
     "permissions": {
       "title": "Потрібні дозволи",
@@ -143,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Підтримує кілька мов введення",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} мов",
       "translation": "Може перекладати на англійську",
       "translate": "Перекласти на англійську",
       "singleLanguage": "Підтримує лише цю мову",
@@ -283,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Накладка",
+          "description": "Виберіть накладку під час запису: «Немає» приховує її, «Мінімальна» показує компактний індикатор, «У реальному часі» показує транскрипцію під час мовлення (лише моделі з підтримкою потокової обробки — шукайте позначку «Потокове» у списку моделей). У Linux рекомендовано «Немає».",
           "options": {
             "none": "Немає",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Мінімальна",
+            "live": "У реальному часі"
           }
         },
         "position": {
@@ -366,8 +366,8 @@
         "duplicate": "\"{{word}}\" вже існує"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Виявлення голосової активності",
+        "description": "Відфільтровує тишу із записів. Моделі з підтримкою потокової обробки використовують довший «хвіст» VAD; вимкнення VAD записує необроблений звук."
       }
     },
     "postProcessing": {
