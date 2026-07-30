@@ -540,7 +540,16 @@ pub fn start_handy_keys_recording(app: AppHandle, binding_id: String) -> Result<
     let state = app
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
-    state.start_recording(&app, binding_id)
+
+    // Suspend every registered shortcut so a combo that overlaps an existing
+    // binding can't fire it (or have its keys swallowed) mid-capture.
+    super::suspend_all_shortcuts(&app);
+
+    let result = state.start_recording(&app, binding_id);
+    if result.is_err() {
+        super::resume_all_shortcuts(&app);
+    }
+    result
 }
 
 /// Stop key recording mode
@@ -555,5 +564,11 @@ pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
     let state = app
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
-    state.stop_recording()
+
+    // Restore shortcuts from settings regardless of how recording ended.
+    // A commit has already registered the new binding via change_binding;
+    // re-registering it here fails cleanly and is ignored.
+    let result = state.stop_recording();
+    super::resume_all_shortcuts(&app);
+    result
 }
