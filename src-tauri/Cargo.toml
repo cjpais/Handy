@@ -1,6 +1,6 @@
 [package]
 name = "poptart"
-version = "0.9.0"
+version = "0.9.1"
 description = "Poptart"
 authors = ["cjpais"]
 edition = "2021"

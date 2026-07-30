@@ -301,6 +301,61 @@ fn collapse_stutters(text: &str) -> String {
 /// * `custom_filler_words` - Optional user-provided filler word list. `Some(vec)` overrides
 ///   language defaults; `Some(empty vec)` disables filtering; `None` uses language defaults.
 ///
+/// Sentence-opening words that mark the sentence as a question on their own.
+const WH_WORDS: [&str; 9] = [
+    "what", "why", "how", "who", "whom", "whose", "where", "when", "which",
+];
+
+/// Auxiliary verbs that open a question only when followed by a pronoun-like
+/// subject ("Can you..." yes, "Have a great day" no).
+const AUX_WORDS: [&str; 31] = [
+    "is", "are", "was", "were", "am", "do", "does", "did", "can", "could", "should", "would",
+    "will", "shall", "may", "might", "have", "has", "had", "isn't", "aren't", "wasn't", "weren't",
+    "don't", "doesn't", "didn't", "can't", "couldn't", "shouldn't", "wouldn't", "won't",
+];
+
+const SUBJECT_WORDS: [&str; 16] = [
+    "i", "you", "we", "they", "he", "she", "it", "this", "that", "there", "anyone", "anybody",
+    "someone", "somebody", "everyone", "everybody",
+];
+
+/// Append terminal punctuation when the transcription ends bare.
+///
+/// Parakeet commits a sentence's closing mark only once *following* speech
+/// confirms the sentence ended, so the final sentence of a dictation usually
+/// arrives without one. Appends `?` when the last sentence reads like a
+/// question (wh-word, or auxiliary verb + subject), otherwise `.`.
+pub fn ensure_terminal_punctuation(text: &str) -> String {
+    let Some(last) = text.chars().last() else {
+        return text.to_string();
+    };
+    if !last.is_alphanumeric() {
+        return text.to_string();
+    }
+    // ponytail: emails/URLs/paths (snippet expansions) — a trailing dot breaks them
+    if let Some(token) = text.split_whitespace().last() {
+        if token.contains(['@', '/']) {
+            return text.to_string();
+        }
+    }
+
+    let sentence = match text.rfind(['.', '?', '!']) {
+        Some(i) => text[i + 1..].trim_start(),
+        None => text,
+    };
+    let mut words = sentence.split_whitespace().map(|w| {
+        w.replace('\u{2019}', "'")
+            .trim_matches(|c: char| !c.is_alphanumeric() && c != '\'')
+            .to_lowercase()
+    });
+    let first = words.next().unwrap_or_default();
+    let second = words.next().unwrap_or_default();
+    let is_question = WH_WORDS.contains(&first.as_str())
+        || (AUX_WORDS.contains(&first.as_str()) && SUBJECT_WORDS.contains(&second.as_str()));
+
+    format!("{text}{}", if is_question { "?" } else { "." })
+}
+
 /// # Returns
 /// The filtered text with filler words and stutters removed
 pub fn filter_transcription_output(
@@ -389,6 +444,50 @@ mod tests {
         assert_eq!(preserve_case_pattern("HELLO", "world"), "WORLD");
         assert_eq!(preserve_case_pattern("Hello", "world"), "World");
         assert_eq!(preserve_case_pattern("hello", "WORLD"), "WORLD");
+    }
+
+    #[test]
+    fn test_ensure_terminal_punctuation() {
+        // bare statement gets a period
+        assert_eq!(ensure_terminal_punctuation("It works"), "It works.");
+        // last sentence is a question: wh-word
+        assert_eq!(
+            ensure_terminal_punctuation("He asked twice. What time is it"),
+            "He asked twice. What time is it?"
+        );
+        // aux + subject
+        assert_eq!(
+            ensure_terminal_punctuation("Is it a username"),
+            "Is it a username?"
+        );
+        assert_eq!(
+            ensure_terminal_punctuation("Can you send the file"),
+            "Can you send the file?"
+        );
+        // aux without subject is not a question (imperative)
+        assert_eq!(
+            ensure_terminal_punctuation("Have a great day"),
+            "Have a great day."
+        );
+        // already punctuated: untouched
+        assert_eq!(ensure_terminal_punctuation("Done."), "Done.");
+        assert_eq!(ensure_terminal_punctuation("Really?"), "Really?");
+        // emails / URLs / paths: untouched
+        assert_eq!(
+            ensure_terminal_punctuation("send it to brandon@example.com"),
+            "send it to brandon@example.com"
+        );
+        assert_eq!(
+            ensure_terminal_punctuation("see github.com/foo/bar"),
+            "see github.com/foo/bar"
+        );
+        // empty: untouched
+        assert_eq!(ensure_terminal_punctuation(""), "");
+        // curly-apostrophe contraction still detected
+        assert_eq!(
+            ensure_terminal_punctuation("Doesn\u{2019}t it work"),
+            "Doesn\u{2019}t it work?"
+        );
     }
 
     #[test]
