@@ -460,12 +460,27 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 
 fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // Whether the overlay shows at all is governed by overlay_style; position
-    // only chooses Top vs Bottom placement.
+    // only chooses Top vs Bottom placement. Checked here (off the main thread)
+    // so the common overlay-disabled case never pays for a main-thread hop.
     let settings = settings::get_settings(app_handle);
     if settings.overlay_style == OverlayStyle::None {
         return;
     }
 
+    // The rest queries monitors and the cursor and mutates window geometry. On
+    // Linux the monitor/cursor lookups hit GDK/Xlib on the process's shared X11
+    // connection, which is only safe from the GTK main thread — running them on
+    // a background thread corrupts the connection and hard-crashes the app
+    // (issue #227). Hop to the main thread on every platform to keep the
+    // geometry path uniform (a no-op cost on Windows, and it also keeps macOS's
+    // NSScreen access main-thread-correct). run_on_main_thread runs the closure
+    // inline when already on the main thread, so this never deadlocks.
+    let handle = app_handle.clone();
+    let state = state.to_string();
+    let _ = app_handle.run_on_main_thread(move || show_overlay_state_on_main(&handle, &state));
+}
+
+fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
     // Size the overlay for this state (compact vs. streaming), then position it.
     let (width, height) = overlay_dimensions(state);
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -549,6 +564,13 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
 
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
+    // Positioning queries monitors/cursor (GDK/Xlib on Linux) and moves the
+    // window, so it must run on the main thread — see show_overlay_state.
+    let handle = app_handle.clone();
+    let _ = app_handle.run_on_main_thread(move || update_overlay_position_on_main(&handle));
+}
+
+fn update_overlay_position_on_main(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         #[cfg(target_os = "linux")]
         {
