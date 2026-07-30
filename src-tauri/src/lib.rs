@@ -12,6 +12,7 @@ mod input;
 mod llm_client;
 mod managers;
 mod overlay;
+mod paste_tx;
 pub mod portable;
 mod secure_input;
 mod settings;
@@ -624,6 +625,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_extra_recording_buffer_setting,
             shortcut::change_paste_delay_ms_setting,
             shortcut::change_paste_delay_after_ms_setting,
+            shortcut::change_reliable_paste_setting,
             shortcut::change_paste_method_setting,
             shortcut::get_available_typing_tools,
             shortcut::change_typing_tool_setting,

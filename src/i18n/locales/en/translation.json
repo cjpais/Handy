@@ -532,6 +532,10 @@
         "title": "Paste Delay (After)",
         "description": "Delay (in milliseconds) after the paste keystroke, before restoring your previous clipboard. Increase if your old clipboard content is being pasted instead of the transcription."
       },
+      "reliablePaste": {
+        "title": "Reliable Paste (Beta)",
+        "description": "Restore the clipboard only after the target app actually reads the transcription, instead of after a fixed delay. Intended to fix old clipboard content being pasted under system load. Requires a clipboard paste method; macOS and Windows only."
+      },
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
         "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
