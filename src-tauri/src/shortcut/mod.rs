@@ -13,7 +13,7 @@ mod handler;
 pub mod handy_keys;
 pub mod tauri_impl;
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
 use tauri::{AppHandle, Emitter, Manager};
@@ -176,17 +176,19 @@ pub fn change_binding(
     if let Err(e) = validate_shortcut_for_implementation(&binding, settings.keyboard_implementation)
     {
         warn!("change_binding validation error: {}", e);
+        restore_registration(&app, &binding_to_modify);
         return Err(e);
     }
 
     // Create an updated binding
-    let mut updated_binding = binding_to_modify;
+    let mut updated_binding = binding_to_modify.clone();
     updated_binding.current_binding = binding;
 
     // Register the new binding
     if let Err(e) = register_shortcut(&app, updated_binding.clone()) {
         let error_msg = format!("Failed to register shortcut: {}", e);
         error!("change_binding error: {}", error_msg);
+        restore_registration(&app, &binding_to_modify);
         return Ok(BindingResponse {
             success: false,
             binding: None,
@@ -209,6 +211,17 @@ pub fn change_binding(
     })
 }
 
+/// Best-effort re-register of the previous binding after a failed change,
+/// so a failure leaves the user's shortcut working exactly as before.
+fn restore_registration(app: &AppHandle, binding: &ShortcutBinding) {
+    if let Err(e) = register_shortcut(app, binding.clone()) {
+        error!(
+            "Failed to restore previous binding '{}' ({}): {}",
+            binding.id, binding.current_binding, e
+        );
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
@@ -216,30 +229,56 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
     change_binding(app, id, binding.default_binding)
 }
 
-/// Temporarily unregister a binding while the user is editing it in the UI.
-/// This avoids firing the action while keys are being recorded.
-#[tauri::command]
-#[specta::specta]
-pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
-    if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = unregister_shortcut(&app, b) {
-            error!("suspend_binding error for id '{}': {}", id, e);
-            return Err(e);
+/// Unregister every binding while the user is recording a new shortcut in
+/// the UI, so no existing shortcut can fire — or swallow the keystrokes —
+/// mid-capture. The "cancel" binding is untouched: it is managed dynamically
+/// by the recording lifecycle.
+pub fn suspend_all_shortcuts(app: &AppHandle) {
+    for (id, binding) in settings::get_bindings(app) {
+        if id == "cancel" {
+            continue;
+        }
+        if let Err(e) = unregister_shortcut(app, binding) {
+            debug!(
+                "suspend_all_shortcuts: could not unregister '{}': {}",
+                id, e
+            );
         }
     }
+}
+
+/// Re-register every binding from settings after shortcut recording ends.
+/// Registering an already-registered shortcut fails cleanly in both
+/// implementations, so this is idempotent and safe on every exit path.
+pub fn resume_all_shortcuts(app: &AppHandle) {
+    let settings = get_settings(app);
+    for (id, binding) in &settings.bindings {
+        if id == "cancel" {
+            continue;
+        }
+        if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+            continue;
+        }
+        if let Err(e) = register_shortcut(app, binding.clone()) {
+            debug!("resume_all_shortcuts: could not register '{}': {}", id, e);
+        }
+    }
+}
+
+/// Temporarily unregister all bindings while the user is recording a
+/// shortcut in the UI. This avoids firing actions while keys are recorded.
+#[tauri::command]
+#[specta::specta]
+pub fn suspend_all_bindings(app: AppHandle) -> Result<(), String> {
+    suspend_all_shortcuts(&app);
     Ok(())
 }
 
-/// Re-register the binding after the user has finished editing.
+/// Re-register all bindings after the user has finished recording.
 #[tauri::command]
 #[specta::specta]
-pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
-    if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = register_shortcut(&app, b) {
-            error!("resume_binding error for id '{}': {}", id, e);
-            return Err(e);
-        }
-    }
+pub fn resume_all_bindings(app: AppHandle) -> Result<(), String> {
+    resume_all_shortcuts(&app);
     Ok(())
 }
 
