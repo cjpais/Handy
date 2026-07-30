@@ -94,6 +94,12 @@ pub fn unregister_cancel_fallback(app: &AppHandle) {
     imp::unregister_cancel_fallback(app)
 }
 
+/// Rebuild Carbon fallback registrations from the current settings and
+/// lifecycle state. This is called after shortcut-related settings change.
+pub fn reconcile_fallback(app: &AppHandle) {
+    imp::reconcile_fallback(app)
+}
+
 /// Managed state + monitor startup. On non-macOS platforms the state exists
 /// but the monitor never runs and everything reports disabled.
 pub fn init(app: &AppHandle) {
@@ -115,12 +121,11 @@ pub fn tray_warning_active(app: &AppHandle) -> bool {
 #[cfg(target_os = "macos")]
 mod imp {
     use super::*;
-    use crate::managers::audio::AudioRecordingManager;
     use crate::settings::{self, KeyboardImplementation, ShortcutBinding};
     use log::{debug, error, info, warn};
     use std::process::Command;
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::{Arc, Mutex};
+    use std::sync::Mutex;
     use std::time::{Duration, Instant};
 
     /// How often the monitor thread polls.
@@ -165,7 +170,11 @@ mod imp {
         enabled_since: Mutex<Option<Instant>>,
         culprit: Mutex<Option<Culprit>>,
         fallback: Mutex<FallbackState>,
+        /// Serializes fallback registration changes without requiring the
+        /// fallback state lock to be held across global-shortcut plugin calls.
+        fallback_operation: Mutex<()>,
         recorder_blocked: AtomicBool,
+        cancel_requested: AtomicBool,
         monitor_started: AtomicBool,
     }
 
@@ -177,7 +186,9 @@ mod imp {
                 enabled_since: Mutex::new(None),
                 culprit: Mutex::new(None),
                 fallback: Mutex::new(FallbackState::default()),
+                fallback_operation: Mutex::new(()),
                 recorder_blocked: AtomicBool::new(false),
+                cancel_requested: AtomicBool::new(false),
                 monitor_started: AtomicBool::new(false),
             }
         }
@@ -240,12 +251,9 @@ mod imp {
         let enabled = is_enabled();
         let state = app.state::<SecureInputState>();
 
-        // Refresh the culprit on demand while enabled so the "Recheck"
-        // button reflects reality even between monitor ticks.
-        if enabled {
-            *state.culprit.lock().unwrap() = lookup_culprit();
-        }
-
+        // Culprit discovery shells out to ioreg and is intentionally performed
+        // only by the monitor (or the blocking diagnostic), never by this
+        // synchronous Tauri command.
         let culprit = state.culprit.lock().unwrap().clone();
         let fallback = state.fallback.lock().unwrap();
         SecureInputStatus {
@@ -309,24 +317,30 @@ mod imp {
                     }
                     *state.enabled_since.lock().unwrap() = Some(Instant::now());
                     *state.culprit.lock().unwrap() = culprit;
-                } else if !now_enabled && was_enabled {
-                    info!("SecureInput DISABLED");
-                    *state.enabled_since.lock().unwrap() = None;
-                    *state.culprit.lock().unwrap() = None;
-                    let was_blocked = state.recorder_blocked.swap(false, Ordering::SeqCst);
-                    if state.sustained.swap(false, Ordering::SeqCst) {
-                        deactivate_fallback(&app);
-                        refresh_tray(&app);
-                    } else if was_blocked {
-                        // Recorder-blocked warning was showing without the
-                        // fallback (not sustained yet) — clear the tray badge
-                        refresh_tray(&app);
-                    }
-                    emit_status(&app);
                 }
 
-                // Promote to "sustained" after the threshold
-                if now_enabled && !state.sustained.load(Ordering::SeqCst) {
+                if !now_enabled {
+                    // Clear recorder impact on every disabled sample. A short
+                    // Secure Input episode can otherwise occur entirely
+                    // between polls and leave this flag latched indefinitely.
+                    let was_blocked = state.recorder_blocked.swap(false, Ordering::SeqCst);
+                    if was_enabled {
+                        info!("SecureInput DISABLED");
+                        *state.enabled_since.lock().unwrap() = None;
+                        *state.culprit.lock().unwrap() = None;
+                    }
+
+                    if state.sustained.swap(false, Ordering::SeqCst) {
+                        reconcile_fallback(&app);
+                    } else if was_enabled || was_blocked {
+                        refresh_tray(&app);
+                        emit_status(&app);
+                    }
+                    continue;
+                }
+
+                // Promote to "sustained" after the threshold.
+                if !state.sustained.load(Ordering::SeqCst) {
                     let held_long_enough = state
                         .enabled_since
                         .lock()
@@ -339,9 +353,7 @@ mod imp {
                             SUSTAIN_THRESHOLD.as_secs()
                         );
                         state.sustained.store(true, Ordering::SeqCst);
-                        activate_fallback(&app);
-                        refresh_tray(&app);
-                        emit_status(&app);
+                        reconcile_fallback(&app);
                     }
                 }
             }
@@ -381,15 +393,8 @@ mod imp {
         Some((carbon_hotkey.to_handy_string(), degraded))
     }
 
-    fn fallback_tracks_id(fallback: &FallbackState, id: &str) -> bool {
-        fallback.registered.iter().any(|binding| binding.id == id)
-            || fallback.covered.iter().any(|binding_id| binding_id == id)
-            || fallback.degraded.iter().any(|binding_id| binding_id == id)
-            || fallback.uncovered.iter().any(|binding_id| binding_id == id)
-    }
-
-    /// Register one vulnerable binding through Carbon. Returns true when the
-    /// binding is immune and therefore did not need to be tracked.
+    /// Register one vulnerable binding through Carbon. `fallback` is local
+    /// reconciliation state, never the mutex-protected shared state.
     fn register_fallback_binding(
         app: &AppHandle,
         id: &str,
@@ -466,173 +471,95 @@ mod imp {
         false
     }
 
-    /// Shadow-register vulnerable keyed bindings through the Carbon-backed
-    /// Tauri path. Modifier-only and mouse bindings are immune (FlagsChanged
-    /// and mouse events still flow to the tap) and are skipped. Side-specific
-    /// modifiers widen to either side (degraded); fn+key combos cannot be
-    /// expressed and are reported as uncovered. Cancel is included only while
-    /// recording because its global registration is intentionally dynamic.
-    fn activate_fallback(app: &AppHandle) {
-        let settings = settings::get_settings(app);
-        if settings.keyboard_implementation != KeyboardImplementation::HandyKeys {
-            info!("SecureInput fallback: not needed (Tauri implementation already active)");
-            return;
-        }
-
+    /// Rebuild the fallback from current state. The operation mutex serializes
+    /// reconciliations, while the fallback mutex is released before every
+    /// global-shortcut plugin call to avoid lock-order inversion with callbacks.
+    pub fn reconcile_fallback(app: &AppHandle) {
         let state = app.state::<SecureInputState>();
-        let mut fallback = state.fallback.lock().unwrap();
-        if !fallback.registered.is_empty() {
-            warn!("SecureInput fallback: activation requested but shadows already registered");
-            return;
-        }
+        let _operation = state.fallback_operation.lock().unwrap();
 
-        let recording_active = app
-            .try_state::<Arc<AudioRecordingManager>>()
-            .is_some_and(|manager| manager.is_recording());
-        let mut immune = 0usize;
-        for (id, binding) in &settings.bindings {
-            if id == "cancel" && !recording_active {
-                continue;
-            }
-            if id == "transcribe_with_post_process" && !settings.post_process_enabled {
-                continue;
-            }
-
-            if register_fallback_binding(app, id, binding, &mut fallback) {
-                immune += 1;
-            }
-        }
-
-        // Single at-a-glance state line for support/debugging
-        info!(
-            "SecureInput fallback active: {} covered, {} degraded, {} uncovered, {} immune (user impact: {})",
-            fallback.covered.len(),
-            fallback.degraded.len(),
-            fallback.uncovered.len(),
-            immune,
-            !fallback.degraded.is_empty() || !fallback.uncovered.is_empty()
-        );
-    }
-
-    /// Add the dynamic Cancel shadow when recording starts after the sustained
-    /// fallback was already activated. The task boundary avoids registering a
-    /// Carbon shortcut from inside another global-shortcut callback.
-    pub fn register_cancel_fallback(app: &AppHandle) {
-        let app = app.clone();
-        tauri::async_runtime::spawn(async move {
-            let state = app.state::<SecureInputState>();
-            if !state.is_sustained() {
-                return;
-            }
-
-            let settings = settings::get_settings(&app);
-            if settings.keyboard_implementation != KeyboardImplementation::HandyKeys {
-                return;
-            }
-            let Some(binding) = settings.bindings.get("cancel") else {
-                return;
-            };
-
+        let previous = {
             let mut fallback = state.fallback.lock().unwrap();
-            // Recheck after taking the lock so deactivation cannot finish and
-            // then leave a late Cancel registration behind.
-            let recording_active = app
-                .try_state::<Arc<AudioRecordingManager>>()
-                .is_some_and(|manager| manager.is_recording());
-            if !state.is_sustained() || !recording_active || fallback_tracks_id(&fallback, "cancel")
-            {
-                return;
-            }
+            std::mem::take(&mut *fallback)
+        };
 
-            let immune = register_fallback_binding(&app, "cancel", binding, &mut fallback);
-            drop(fallback);
-
-            if !immune {
-                refresh_tray(&app);
-                emit_status(&app);
-            }
-        });
-    }
-
-    /// Remove only the dynamic Cancel shadow when recording ends. Other
-    /// fallback registrations remain until Secure Input itself clears.
-    pub fn unregister_cancel_fallback(app: &AppHandle) {
-        let app = app.clone();
-        tauri::async_runtime::spawn(async move {
-            let state = app.state::<SecureInputState>();
-            let (registered, changed) = {
-                let mut fallback = state.fallback.lock().unwrap();
-                let mut registered = Vec::new();
-                while let Some(index) = fallback
-                    .registered
-                    .iter()
-                    .position(|binding| binding.id == "cancel")
-                {
-                    registered.push(fallback.registered.remove(index));
-                }
-
-                let old_covered = fallback.covered.len();
-                let old_degraded = fallback.degraded.len();
-                let old_uncovered = fallback.uncovered.len();
-                fallback.covered.retain(|id| id != "cancel");
-                fallback.degraded.retain(|id| id != "cancel");
-                fallback.uncovered.retain(|id| id != "cancel");
-                let changed = !registered.is_empty()
-                    || old_covered != fallback.covered.len()
-                    || old_degraded != fallback.degraded.len()
-                    || old_uncovered != fallback.uncovered.len();
-                (registered, changed)
-            };
-
-            // Do not hold fallback state while calling the global-shortcut
-            // plugin. Cancel can arrive from that plugin's own callback, which
-            // continues through tray refresh and reads fallback state.
-            for binding in registered {
-                if let Err(e) =
-                    crate::shortcut::tauri_impl::unregister_shortcut(&app, binding.clone())
-                {
-                    warn!(
-                        "SecureInput fallback: failed to unregister dynamic Cancel '{}': {}",
-                        binding.current_binding, e
-                    );
-                } else {
-                    info!(
-                        "SecureInput fallback: unregistered dynamic Cancel '{}'",
-                        binding.current_binding
-                    );
-                }
-            }
-
-            if changed {
-                refresh_tray(&app);
-                emit_status(&app);
-            }
-        });
-    }
-
-    fn deactivate_fallback(app: &AppHandle) {
-        let state = app.state::<SecureInputState>();
-        let mut fallback = state.fallback.lock().unwrap();
-        info!(
-            "SecureInput fallback deactivating: removing {} Carbon shadow(s)",
-            fallback.registered.len()
-        );
-        for binding in fallback.registered.drain(..) {
+        if !previous.registered.is_empty() {
+            info!(
+                "SecureInput fallback reconciling: removing {} Carbon shadow(s)",
+                previous.registered.len()
+            );
+        }
+        for binding in previous.registered {
             if let Err(e) = crate::shortcut::tauri_impl::unregister_shortcut(app, binding.clone()) {
                 warn!(
                     "SecureInput fallback: failed to unregister '{}': {}",
                     binding.current_binding, e
                 );
-            } else {
-                info!(
-                    "SecureInput fallback: unregistered '{}'",
-                    binding.current_binding
-                );
             }
         }
-        fallback.covered.clear();
-        fallback.degraded.clear();
-        fallback.uncovered.clear();
+
+        let settings = settings::get_settings(app);
+        let eligible = state.is_sustained()
+            && app
+                .try_state::<crate::commands::ShortcutsInitialized>()
+                .is_some()
+            && settings.keyboard_implementation == KeyboardImplementation::HandyKeys;
+
+        let mut next = FallbackState::default();
+        let mut immune = 0usize;
+        if eligible {
+            for (id, binding) in &settings.bindings {
+                if id == "cancel" && !state.cancel_requested.load(Ordering::SeqCst) {
+                    continue;
+                }
+                if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+                    continue;
+                }
+
+                if register_fallback_binding(app, id, binding, &mut next) {
+                    immune += 1;
+                }
+            }
+
+            info!(
+                "SecureInput fallback active: {} covered, {} degraded, {} uncovered, {} immune (user impact: {})",
+                next.covered.len(),
+                next.degraded.len(),
+                next.uncovered.len(),
+                immune,
+                !next.degraded.is_empty() || !next.uncovered.is_empty()
+            );
+        } else if state.is_sustained()
+            && app
+                .try_state::<crate::commands::ShortcutsInitialized>()
+                .is_none()
+        {
+            debug!("SecureInput fallback deferred until shortcuts are initialized");
+        }
+
+        *state.fallback.lock().unwrap() = next;
+        drop(_operation);
+        refresh_tray(app);
+        emit_status(app);
+    }
+
+    fn schedule_reconcile(app: &AppHandle) {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            reconcile_fallback(&app);
+        });
+    }
+
+    pub fn register_cancel_fallback(app: &AppHandle) {
+        let state = app.state::<SecureInputState>();
+        state.cancel_requested.store(true, Ordering::SeqCst);
+        schedule_reconcile(app);
+    }
+
+    pub fn unregister_cancel_fallback(app: &AppHandle) {
+        let state = app.state::<SecureInputState>();
+        state.cancel_requested.store(false, Ordering::SeqCst);
+        schedule_reconcile(app);
     }
 
     /// Count-only capture test for the debug window. Opens a short-lived
@@ -724,6 +651,8 @@ mod imp {
     pub fn register_cancel_fallback(_app: &AppHandle) {}
 
     pub fn unregister_cancel_fallback(_app: &AppHandle) {}
+
+    pub fn reconcile_fallback(_app: &AppHandle) {}
 
     pub async fn run_diagnostic(_duration_secs: u32) -> Result<KeyboardDiagnosticReport, String> {
         Err("The keyboard diagnostic is only supported on macOS".to_string())
