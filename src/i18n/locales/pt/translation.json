@@ -6,7 +6,8 @@
     "unloadModel": "Descarregar modelo",
     "model": "Modelo",
     "quit": "Sair",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "secureInputWarning": "⚠ Atalhos bloqueados pelo Secure Input"
   },
   "sidebar": {
     "general": "Geral",
@@ -528,6 +529,26 @@
         "title": "Buffer de gravação extra",
         "description": "Tempo extra (em milissegundos) para continuar gravando após soltar a tecla, para capturar áudio restante. 0 = sem buffer extra."
       },
+      "keyboardDiagnostic": {
+        "title": "Diagnóstico do teclado",
+        "description": "Verifica se os eventos de teclado chegam ao Handy. Apenas a contagem de eventos é registrada — nunca quais teclas você pressiona.",
+        "run": "Executar diagnóstico de 10 s",
+        "running": "Ouvindo… pressione seu atalho algumas vezes (ex.: Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "ativado",
+        "disabled": "desativado",
+        "holder": "retido por {{name}} (pid {{pid}})",
+        "holderUnknown": "sem responsável visível",
+        "keyDown": "Tecla pressionada",
+        "keyUp": "Tecla liberada",
+        "flagsChanged": "Modificadores",
+        "mouse": "Mouse",
+        "verdictBlocked": "O Secure Input está bloqueando os eventos de tecla — atalhos que incluem uma tecla normal não funcionam até que isso seja resolvido.",
+        "verdictSuspicious": "Chegaram eventos de modificadores, mas nenhum evento de tecla — algo está suprimindo as teclas mesmo com o Secure Input indicando desativado. Por favor, relate isso no GitHub.",
+        "verdictOk": "Os eventos de tecla estão chegando normalmente ao Handy.",
+        "verdictNoEvents": "Nenhum evento capturado — você pressionou alguma tecla durante o teste?",
+        "failed": "Falha no diagnóstico: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Pré-visualizar novidades",
         "description": "Abrir a nota de versão incorporada mais recente sem marcá-la como vista",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Novidades no Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} pode estar bloqueando 1 atalho",
+    "blockedWithCulprit_other": "{{name}} pode estar bloqueando {{count}} atalhos",
+    "blockedNoCulprit_one": "O macOS está bloqueando temporariamente 1 atalho",
+    "blockedNoCulprit_other": "O macOS está bloqueando temporariamente {{count}} atalhos",
+    "recorderBlockedWithCulprit": "{{name}} pode estar bloqueando alterações nos atalhos",
+    "recorderBlockedNoCulprit": "O macOS está bloqueando temporariamente alterações nos atalhos",
+    "learnMore": "Como resolver isso",
+    "recorderBlocked": "Não é possível gravar atalhos agora — o Secure Input do macOS está bloqueando os eventos de tecla. Resolva primeiro o aviso do Secure Input.",
+    "dismiss": "Dispensar"
   }
 }

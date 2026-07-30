@@ -468,6 +468,17 @@ async stopHandyKeysRecording() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getSecureInputStatus() : Promise<SecureInputStatus> {
+    return await TAURI_INVOKE("get_secure_input_status");
+},
+async runKeyboardDiagnostic(durationSecs: number | null) : Promise<Result<KeyboardDiagnosticReport, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("run_keyboard_diagnostic", { durationSecs }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async triggerUpdateCheck() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("trigger_update_check") };
@@ -936,6 +947,11 @@ export type ImplementationChangeResult = { success: boolean;
  * List of binding IDs that were reset to defaults due to incompatibility
  */
 reset_bindings: string[] }
+export type KeyboardDiagnosticReport = { secure_input_enabled: boolean; culprit_pid: number | null; culprit_name: string | null; 
+/**
+ * Counts only — key identity is deliberately never captured.
+ */
+key_down: number; key_up: number; flags_changed: number; mouse: number; duration_ms: number }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
@@ -981,6 +997,38 @@ export type PermissionAccess = "allowed" | "denied" | "unknown"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
 export type SecretMap = Partial<{ [key in string]: string }>
+export type SecureInputStatus = { 
+/**
+ * Secure input is currently enabled (live check)
+ */
+enabled: boolean; 
+/**
+ * Enabled continuously long enough to be considered stuck (not just a
+ * password field gaining momentary focus)
+ */
+sustained: boolean; culprit_pid: number | null; culprit_name: string | null; 
+/**
+ * Carbon fallback registrations are currently active
+ */
+fallback_active: boolean; 
+/**
+ * Binding ids shadow-registered with identical semantics
+ */
+covered_bindings: string[]; 
+/**
+ * Side-specific binding ids widened to match either side while shadowed
+ */
+degraded_bindings: string[]; 
+/**
+ * Binding ids that cannot fire at all (e.g. fn+key, registration failure)
+ */
+uncovered_bindings: string[]; 
+/**
+ * The user tried to record a shortcut while secure input was active.
+ * Treated as user impact even when every binding is covered, so the
+ * warning banner appears and explains why recording refused.
+ */
+recorder_blocked: boolean }
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
 /**

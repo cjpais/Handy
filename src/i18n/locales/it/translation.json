@@ -6,7 +6,8 @@
     "unloadModel": "Rilascia modello",
     "model": "Modello",
     "quit": "Esci",
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input"
   },
   "sidebar": {
     "general": "Generale",
@@ -528,6 +529,26 @@
         "title": "Buffer di registrazione extra",
         "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
       },
+      "keyboardDiagnostic": {
+        "title": "Diagnostica tastiera",
+        "description": "Verifica se gli eventi della tastiera arrivano a Handy. Viene registrato solo il numero di eventi, mai quali tasti premi.",
+        "run": "Esegui diagnostica di 10 s",
+        "running": "In ascolto… premi la tua scorciatoia alcune volte (ad es. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "abilitato",
+        "disabled": "disabilitato",
+        "holder": "trattenuto da {{name}} (pid {{pid}})",
+        "holderUnknown": "nessun responsabile visibile",
+        "keyDown": "Tasto premuto",
+        "keyUp": "Tasto rilasciato",
+        "flagsChanged": "Modificatori",
+        "mouse": "Mouse",
+        "verdictBlocked": "Secure Input sta bloccando gli eventi dei tasti: le scorciatoie che includono un tasto normale non possono funzionare finché non viene risolto.",
+        "verdictSuspicious": "Sono arrivati eventi dei modificatori ma nessun evento dei tasti: qualcosa sta sopprimendo i tasti anche se Secure Input risulta disabilitato. Segnalalo su GitHub.",
+        "verdictOk": "Gli eventi dei tasti arrivano a Handy normalmente.",
+        "verdictNoEvents": "Nessun evento rilevato: hai premuto qualche tasto durante il test?",
+        "failed": "Diagnostica non riuscita: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Anteprima delle novità",
         "description": "Apri le note di rilascio incluse più recenti senza segnarle come viste",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} potrebbe bloccare 1 scorciatoia",
+    "blockedWithCulprit_other": "{{name}} potrebbe bloccare {{count}} scorciatoie",
+    "blockedNoCulprit_one": "macOS sta bloccando temporaneamente 1 scorciatoia",
+    "blockedNoCulprit_other": "macOS sta bloccando temporaneamente {{count}} scorciatoie",
+    "recorderBlockedWithCulprit": "{{name}} potrebbe bloccare le modifiche alle scorciatoie",
+    "recorderBlockedNoCulprit": "macOS sta bloccando temporaneamente le modifiche alle scorciatoie",
+    "learnMore": "Come risolvere",
+    "recorderBlocked": "Non è possibile registrare scorciatoie in questo momento: Secure Input di macOS sta bloccando gli eventi dei tasti. Risolvi prima l'avviso di Secure Input.",
+    "dismiss": "Ignora"
   }
 }

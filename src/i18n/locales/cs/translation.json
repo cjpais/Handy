@@ -6,7 +6,8 @@
     "unloadModel": "Uvolnit model",
     "model": "Model",
     "quit": "Ukončit",
-    "cancel": "Zrušit"
+    "cancel": "Zrušit",
+    "secureInputWarning": "⚠ Zkratky blokuje Secure Input"
   },
   "sidebar": {
     "general": "Obecné",
@@ -528,6 +529,26 @@
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
       },
+      "keyboardDiagnostic": {
+        "title": "Diagnostika klávesnice",
+        "description": "Ověří, zda události klávesnice dorazí do Handy. Zaznamenává se pouze počet událostí — nikdy to, které klávesy stisknete.",
+        "run": "Spustit 10s diagnostiku",
+        "running": "Naslouchání… několikrát stiskněte svou zkratku (např. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "zapnuto",
+        "disabled": "vypnuto",
+        "holder": "drží ji {{name}} (pid {{pid}})",
+        "holderUnknown": "žádný viditelný držitel",
+        "keyDown": "Stisk klávesy",
+        "keyUp": "Uvolnění klávesy",
+        "flagsChanged": "Modifikátory",
+        "mouse": "Myš",
+        "verdictBlocked": "Secure Input blokuje události kláves — zkratky obsahující běžnou klávesu nemohou fungovat, dokud se to nevyřeší.",
+        "verdictSuspicious": "Dorazily události modifikátorů, ale žádné události kláves — něco klávesy potlačuje, přestože Secure Input hlásí, že je vypnutý. Nahlaste to prosím na GitHubu.",
+        "verdictOk": "Události kláves dorazí do Handy normálně.",
+        "verdictNoEvents": "Nebyly zachyceny žádné události — stiskli jste během testu nějaké klávesy?",
+        "failed": "Diagnostika selhala: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Náhled novinek",
         "description": "Otevřít nejnovější přibalené poznámky k vydání bez označení jako zobrazené",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Novinky v Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} může blokovat 1 zkratku",
+    "blockedWithCulprit_other": "{{name}} může blokovat {{count}} zkratek",
+    "blockedNoCulprit_one": "macOS dočasně blokuje 1 zkratku",
+    "blockedNoCulprit_other": "macOS dočasně blokuje {{count}} zkratek",
+    "recorderBlockedWithCulprit": "{{name}} může blokovat změny zkratek",
+    "recorderBlockedNoCulprit": "macOS dočasně blokuje změny zkratek",
+    "learnMore": "Jak to vyřešit",
+    "recorderBlocked": "Zkratky teď nelze nahrát — Secure Input v macOS blokuje události kláves. Nejprve vyřešte upozornění na Secure Input.",
+    "dismiss": "Zavřít"
   }
 }

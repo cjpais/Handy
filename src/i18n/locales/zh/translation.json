@@ -6,7 +6,8 @@
     "unloadModel": "卸载模型",
     "model": "模型",
     "quit": "退出",
-    "cancel": "取消"
+    "cancel": "取消",
+    "secureInputWarning": "⚠ 快捷键被 Secure Input 阻止"
   },
   "sidebar": {
     "general": "通用",
@@ -528,6 +529,26 @@
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
       },
+      "keyboardDiagnostic": {
+        "title": "键盘诊断",
+        "description": "检查键盘事件是否能到达 Handy。仅记录事件数量，绝不记录您按了哪些键。",
+        "run": "运行 10 秒诊断",
+        "running": "正在监听… 请按几次您的快捷键（例如 Option+Space）",
+        "secureInputLabel": "Secure Input",
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "holder": "被 {{name}}（pid {{pid}}）占用",
+        "holderUnknown": "未发现占用方",
+        "keyDown": "按键按下",
+        "keyUp": "按键释放",
+        "flagsChanged": "修饰键",
+        "mouse": "鼠标",
+        "verdictBlocked": "Secure Input 正在阻止按键事件——在问题解决前，包含普通按键的快捷键无法工作。",
+        "verdictSuspicious": "收到了修饰键事件，但没有按键事件——尽管 Secure Input 报告为已禁用，仍有程序在抑制按键。请在 GitHub 上反馈此问题。",
+        "verdictOk": "按键事件正常到达 Handy。",
+        "verdictNoEvents": "未捕获到任何事件——测试期间您按过键吗？",
+        "failed": "诊断失败：{{error}}"
+      },
       "whatsNewPreview": {
         "title": "预览新功能",
         "description": "打开最新内置发行说明，且不标记为已查看",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} 可能正在阻止 1 个快捷键",
+    "blockedWithCulprit_other": "{{name}} 可能正在阻止 {{count}} 个快捷键",
+    "blockedNoCulprit_one": "macOS 正在暂时阻止 1 个快捷键",
+    "blockedNoCulprit_other": "macOS 正在暂时阻止 {{count}} 个快捷键",
+    "recorderBlockedWithCulprit": "{{name}} 可能正在阻止快捷键更改",
+    "recorderBlockedNoCulprit": "macOS 正在暂时阻止快捷键更改",
+    "learnMore": "如何解决",
+    "recorderBlocked": "当前无法录制快捷键——macOS 的 Secure Input 正在阻止按键事件。请先解决 Secure Input 警告。",
+    "dismiss": "关闭"
   }
 }

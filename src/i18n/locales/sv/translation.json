@@ -6,7 +6,8 @@
     "unloadModel": "Avlasta modell",
     "model": "Modell",
     "quit": "Avsluta",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input"
   },
   "sidebar": {
     "general": "Allmänt",
@@ -528,6 +529,26 @@
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
       },
+      "keyboardDiagnostic": {
+        "title": "Tangentbordsdiagnostik",
+        "description": "Kontrollerar om tangentbordshändelser når Handy. Endast antalet händelser registreras — aldrig vilka tangenter du trycker på.",
+        "run": "Kör 10 s diagnostik",
+        "running": "Lyssnar… tryck på ditt kortkommando några gånger (t.ex. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "aktiverat",
+        "disabled": "inaktiverat",
+        "holder": "hålls av {{name}} (pid {{pid}})",
+        "holderUnknown": "ingen synlig innehavare",
+        "keyDown": "Tangent ned",
+        "keyUp": "Tangent upp",
+        "flagsChanged": "Modifierare",
+        "mouse": "Mus",
+        "verdictBlocked": "Secure Input blockerar tangenthändelser — kortkommandon med en vanlig tangent kan inte fungera förrän det är löst.",
+        "verdictSuspicious": "Modifierarhändelser kom fram men inga tangenthändelser — något undertrycker tangenter trots att Secure Input rapporteras som inaktiverat. Rapportera gärna detta på GitHub.",
+        "verdictOk": "Tangenthändelser når Handy som vanligt.",
+        "verdictNoEvents": "Inga händelser fångades — tryckte du på några tangenter under testet?",
+        "failed": "Diagnostiken misslyckades: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Förhandsvisa nyheter",
         "description": "Öppna den senaste medföljande versionsinformationen utan att markera den som visad",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Nytt i Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} kanske blockerar 1 kortkommando",
+    "blockedWithCulprit_other": "{{name}} kanske blockerar {{count}} kortkommandon",
+    "blockedNoCulprit_one": "macOS blockerar tillfälligt 1 kortkommando",
+    "blockedNoCulprit_other": "macOS blockerar tillfälligt {{count}} kortkommandon",
+    "recorderBlockedWithCulprit": "{{name}} kanske blockerar ändringar av kortkommandon",
+    "recorderBlockedNoCulprit": "macOS blockerar tillfälligt ändringar av kortkommandon",
+    "learnMore": "Så här löser du det",
+    "recorderBlocked": "Det går inte att spela in kortkommandon just nu — macOS Secure Input blockerar tangenthändelser. Lös varningen om Secure Input först.",
+    "dismiss": "Avfärda"
   }
 }

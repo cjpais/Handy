@@ -6,7 +6,8 @@
     "unloadModel": "Frigør model",
     "model": "Model",
     "quit": "Afslut",
-    "cancel": "Annuller"
+    "cancel": "Annuller",
+    "secureInputWarning": "⚠ Genveje blokeret af Secure Input"
   },
   "sidebar": {
     "general": "Generelt",
@@ -534,6 +535,26 @@
       "recordingBuffer": {
         "title": "Ekstra optagelsesbuffer",
         "description": "Ekstra tid (i millisekunder) til at fortsætte optagelsen, efter du slipper tasten, for at fange efterfølgende lyd. 0 = ingen ekstra buffer."
+      },
+      "keyboardDiagnostic": {
+        "title": "Tastaturdiagnostik",
+        "description": "Kontrollerer, om tastaturhændelser når frem til Handy. Kun antallet af hændelser registreres — aldrig hvilke taster du trykker på.",
+        "run": "Kør 10 s diagnostik",
+        "running": "Lytter… tryk på din genvej et par gange (f.eks. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "aktiveret",
+        "disabled": "deaktiveret",
+        "holder": "holdes af {{name}} (pid {{pid}})",
+        "holderUnknown": "ingen synlig indehaver",
+        "keyDown": "Tast ned",
+        "keyUp": "Tast op",
+        "flagsChanged": "Modifikatorer",
+        "mouse": "Mus",
+        "verdictBlocked": "Secure Input blokerer tastehændelser — genveje med en almindelig tast kan ikke fungere, før det er løst.",
+        "verdictSuspicious": "Der kom modifikatorhændelser, men ingen tastehændelser — noget undertrykker taster, selvom Secure Input rapporteres som deaktiveret. Rapportér det gerne på GitHub.",
+        "verdictOk": "Tastehændelser når frem til Handy som normalt.",
+        "verdictNoEvents": "Ingen hændelser registreret — trykkede du på nogen taster under testen?",
+        "failed": "Diagnostik mislykkedes: {{error}}"
       }
     },
     "about": {
@@ -633,5 +654,16 @@
   "overlay": {
     "transcribing": "Transskriberer...",
     "processing": "Behandler..."
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",
+    "blockedWithCulprit_other": "{{name}} blokerer muligvis {{count}} genveje",
+    "blockedNoCulprit_one": "macOS blokerer midlertidigt 1 genvej",
+    "blockedNoCulprit_other": "macOS blokerer midlertidigt {{count}} genveje",
+    "recorderBlockedWithCulprit": "{{name}} blokerer muligvis ændringer af genveje",
+    "recorderBlockedNoCulprit": "macOS blokerer midlertidigt ændringer af genveje",
+    "learnMore": "Sådan løser du det",
+    "recorderBlocked": "Genveje kan ikke optages lige nu — macOS Secure Input blokerer tastehændelser. Løs advarslen om Secure Input først.",
+    "dismiss": "Afvis"
   }
 }
