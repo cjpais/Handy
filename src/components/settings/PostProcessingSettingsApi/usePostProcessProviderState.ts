@@ -9,6 +9,7 @@ type PostProcessProviderState = {
   selectedProviderId: string;
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
+  isBaseUrlEditable: boolean;
   isAppleProvider: boolean;
   appleIntelligenceUnavailable: boolean;
   baseUrl: string;
@@ -29,6 +30,7 @@ type PostProcessProviderState = {
 };
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
+const AUTH_OPTIONAL_PROVIDER_IDS = new Set(["custom", "lmstudio"]);
 
 export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
@@ -102,7 +104,11 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
         const hasBaseUrl = (provider?.base_url ?? "").trim() !== "";
         const hasApiKey = apiKey.trim() !== "";
 
-        if (provider?.id === "custom" ? hasBaseUrl : hasApiKey) {
+        if (
+          AUTH_OPTIONAL_PROVIDER_IDS.has(provider?.id ?? "")
+            ? hasBaseUrl
+            : hasApiKey
+        ) {
           void fetchPostProcessModels(providerId);
         }
       }
@@ -118,7 +124,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   const handleBaseUrlChange = useCallback(
     (value: string) => {
-      if (!selectedProvider || selectedProvider.id !== "custom") {
+      if (!selectedProvider?.allow_base_url_edit) {
         return;
       }
       const trimmed = value.trim();
@@ -206,6 +212,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   );
 
   const isCustomProvider = selectedProvider?.id === "custom";
+  const isBaseUrlEditable = selectedProvider?.allow_base_url_edit === true;
 
   // No automatic fetching - user must click refresh button
 
@@ -214,6 +221,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     selectedProviderId,
     selectedProvider,
     isCustomProvider,
+    isBaseUrlEditable,
     isAppleProvider,
     appleIntelligenceUnavailable,
     baseUrl,
