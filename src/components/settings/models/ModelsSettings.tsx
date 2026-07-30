@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { ChevronDown, Globe, RefreshCw, Search } from "lucide-react";
+import { ChevronDown, Globe, RefreshCw, Search, AudioLines, Languages } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
@@ -27,6 +27,8 @@ export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterStreaming, setFilterStreaming] = useState(false);
+  const [filterTranslation, setFilterTranslation] = useState(false);
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
@@ -164,7 +166,7 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
-  // Filter models by search query (name + description) and language filter
+  // Filter models by search query (name + description), language filter, and toggles
   const filteredModels = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return models.filter((model: ModelInfo) => {
@@ -173,13 +175,16 @@ export const ModelsSettings: React.FC = () => {
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }
+      if (filterStreaming && !model.supports_streaming) return false;
+      if (filterTranslation && !model.supports_translation) return false;
+
       if (q) {
         const haystack = `${model.name} ${model.description}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
     });
-  }, [models, languageFilter, searchQuery]);
+  }, [models, languageFilter, filterStreaming, filterTranslation, searchQuery]);
 
   // Split filtered models into downloaded (including custom) and available sections
   const { downloadedModels, availableModels } = useMemo(() => {
@@ -246,7 +251,6 @@ export const ModelsSettings: React.FC = () => {
         />
       </div>
 
-      {filteredModels.length > 0 ? (
         <div className="space-y-6">
           {/* Downloaded Models Section — header always visible so filter stays accessible */}
           <div className="space-y-3">
@@ -267,6 +271,32 @@ export const ModelsSettings: React.FC = () => {
                     className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
                   />
                   <span>{t("settings.models.rescan.label")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStreaming(!filterStreaming)}
+                  title={t("modelSelector.streaming")}
+                  aria-label={t("modelSelector.streaming")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    filterStreaming
+                      ? "bg-logo-primary/20 text-logo-primary"
+                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                  }`}
+                >
+                  <AudioLines className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterTranslation(!filterTranslation)}
+                  title={t("modelSelector.capabilities.translate")}
+                  aria-label={t("modelSelector.capabilities.translate")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    filterTranslation
+                      ? "bg-logo-primary/20 text-logo-primary"
+                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                  }`}
+                >
+                  <Languages className="w-3.5 h-3.5" />
                 </button>
                 {/* Language filter dropdown */}
                 <div className="relative" ref={languageDropdownRef}>
@@ -402,12 +432,12 @@ export const ModelsSettings: React.FC = () => {
               ))}
             </div>
           )}
+          {filteredModels.length === 0 && (
+              <div className="text-center py-8 text-text/50">
+              {t("settings.models.noModelsMatch")}
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="text-center py-8 text-text/50">
-          {t("settings.models.noModelsMatch")}
-        </div>
-      )}
     </div>
   );
 };
