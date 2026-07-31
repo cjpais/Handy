@@ -6,7 +6,8 @@
     "unloadModel": "Выгрузить модель",
     "model": "Модель",
     "quit": "Выход",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input"
   },
   "sidebar": {
     "general": "Общие",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Для начала выберите модель транскрипции",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Совместимые модели",
+    "downloadModelsTitle": "Доступны для загрузки",
+    "showAllModels": "Показать все модели ({{total}})",
+    "showFewerModels": "Показать меньше моделей",
     "recommended": "Рекомендуется",
     "customModelDescription": "Официально не поддерживается",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Не удалось выбрать модель"
     },
     "permissions": {
       "title": "Требуются разрешения",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} МБ/с",
     "capabilities": {
       "languageSelection": "Поддерживает несколько языков ввода",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} языков",
       "translation": "Может переводить на английский",
       "translate": "Перевод на английский",
       "singleLanguage": "Поддерживает только этот язык",
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Наложение",
+          "description": "Выберите наложение при записи: «Нет» скрывает его, «Минимальное» показывает компактный индикатор, «В реальном времени» показывает транскрипцию по мере речи (только модели с поддержкой потоковой обработки — ищите значок «Потоковый» в списке моделей). В Linux рекомендуется «Нет».",
           "options": {
             "none": "Нет",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Минимальное",
+            "live": "В реальном времени"
           }
         },
         "position": {
@@ -332,10 +333,10 @@
         "description": "Автоматически отправляет выбранную комбинацию клавиш после вставки текста. Cmd+Enter применяется на macOS, а Windows/Linux используют Super+Enter.",
         "options": {
           "off": "Выкл.",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "enter": "Ввод",
+          "cmdEnter": "Cmd+Ввод",
+          "superEnter": "Super+Ввод",
+          "ctrlEnter": "Ctrl+Ввод"
         }
       },
       "translateToEnglish": {
@@ -365,8 +366,8 @@
         "duplicate": "\"{{word}}\" уже существует"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Определение голосовой активности",
+        "description": "Отфильтровывает тишину из записей. Модели с поддержкой потоковой обработки используют более длинный «хвост» VAD; отключение VAD записывает необработанный звук."
       }
     },
     "postProcessing": {
@@ -529,6 +530,26 @@
         "title": "Дополнительный буфер записи",
         "description": "Дополнительное время (в миллисекундах) для продолжения записи после отпускания клавиши, чтобы захватить завершающий звук. 0 = без дополнительного буфера."
       },
+      "keyboardDiagnostic": {
+        "title": "Диагностика клавиатуры",
+        "description": "Проверяет, доходят ли события клавиатуры до Handy. Записывается только количество событий — никогда то, какие клавиши вы нажимаете.",
+        "run": "Запустить 10-секундную диагностику",
+        "running": "Прослушивание… нажмите своё сочетание клавиш несколько раз (например, Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "включён",
+        "disabled": "выключен",
+        "holder": "удерживает {{name}} (pid {{pid}})",
+        "holderUnknown": "видимый владелец не найден",
+        "keyDown": "Нажатие клавиши",
+        "keyUp": "Отпускание клавиши",
+        "flagsChanged": "Модификаторы",
+        "mouse": "Мышь",
+        "verdictBlocked": "Secure Input блокирует события клавиш — сочетания с обычной клавишей не смогут работать, пока это не будет устранено.",
+        "verdictSuspicious": "События модификаторов приходят, а события клавиш — нет: что-то подавляет клавиши, хотя Secure Input отмечен как выключенный. Пожалуйста, сообщите об этом на GitHub.",
+        "verdictOk": "События клавиш доходят до Handy нормально.",
+        "verdictNoEvents": "События не зафиксированы — вы нажимали клавиши во время теста?",
+        "failed": "Диагностика не удалась: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Предпросмотр новинок",
         "description": "Открыть последние встроенные примечания к выпуску, не отмечая их как просмотренные",
@@ -634,5 +655,16 @@
   },
   "whatsNew": {
     "title": "Новое в Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} может блокировать 1 сочетание клавиш",
+    "blockedWithCulprit_other": "{{name}} может блокировать {{count}} сочетаний клавиш",
+    "blockedNoCulprit_one": "macOS временно блокирует 1 сочетание клавиш",
+    "blockedNoCulprit_other": "macOS временно блокирует {{count}} сочетаний клавиш",
+    "recorderBlockedWithCulprit": "{{name}} может блокировать изменение сочетаний клавиш",
+    "recorderBlockedNoCulprit": "macOS временно блокирует изменение сочетаний клавиш",
+    "learnMore": "Как это исправить",
+    "recorderBlocked": "Сейчас нельзя записать сочетание клавиш — Secure Input в macOS блокирует события клавиш. Сначала устраните предупреждение о Secure Input.",
+    "dismiss": "Скрыть"
   }
 }

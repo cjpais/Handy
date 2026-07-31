@@ -11,9 +11,9 @@
 
 mod handler;
 pub mod handy_keys;
-mod tauri_impl;
+pub mod tauri_impl;
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
 use tauri::{AppHandle, Emitter, Manager};
@@ -58,6 +58,10 @@ pub fn init_shortcuts(app: &AppHandle) {
 
 /// Register the cancel shortcut (called when recording starts)
 pub fn register_cancel_shortcut(app: &AppHandle) {
+    // Track recording lifecycle independently of the current implementation so
+    // switching implementations mid-recording cannot leave stale fallback state.
+    crate::secure_input::register_cancel_fallback(app);
+
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
@@ -67,6 +71,8 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
 
 /// Unregister the cancel shortcut (called when recording stops)
 pub fn unregister_cancel_shortcut(app: &AppHandle) {
+    crate::secure_input::unregister_cancel_fallback(app);
+
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
@@ -151,6 +157,7 @@ pub fn change_binding(
             b.current_binding = binding;
             settings.bindings.insert(id.clone(), b.clone());
             settings::write_settings(&app, settings);
+            crate::secure_input::reconcile_fallback(&app);
             return Ok(BindingResponse {
                 success: true,
                 binding: Some(b.clone()),
@@ -169,17 +176,19 @@ pub fn change_binding(
     if let Err(e) = validate_shortcut_for_implementation(&binding, settings.keyboard_implementation)
     {
         warn!("change_binding validation error: {}", e);
+        restore_registration(&app, &binding_to_modify);
         return Err(e);
     }
 
     // Create an updated binding
-    let mut updated_binding = binding_to_modify;
+    let mut updated_binding = binding_to_modify.clone();
     updated_binding.current_binding = binding;
 
     // Register the new binding
     if let Err(e) = register_shortcut(&app, updated_binding.clone()) {
         let error_msg = format!("Failed to register shortcut: {}", e);
         error!("change_binding error: {}", error_msg);
+        restore_registration(&app, &binding_to_modify);
         return Ok(BindingResponse {
             success: false,
             binding: None,
@@ -190,8 +199,9 @@ pub fn change_binding(
     // Update the binding in the settings
     settings.bindings.insert(id, updated_binding.clone());
 
-    // Save the settings
+    // Save the settings and synchronize any active Secure Input shadows.
     settings::write_settings(&app, settings);
+    crate::secure_input::reconcile_fallback(&app);
 
     // Return the updated binding
     Ok(BindingResponse {
@@ -201,6 +211,17 @@ pub fn change_binding(
     })
 }
 
+/// Best-effort re-register of the previous binding after a failed change,
+/// so a failure leaves the user's shortcut working exactly as before.
+fn restore_registration(app: &AppHandle, binding: &ShortcutBinding) {
+    if let Err(e) = register_shortcut(app, binding.clone()) {
+        error!(
+            "Failed to restore previous binding '{}' ({}): {}",
+            binding.id, binding.current_binding, e
+        );
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
@@ -208,30 +229,56 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
     change_binding(app, id, binding.default_binding)
 }
 
-/// Temporarily unregister a binding while the user is editing it in the UI.
-/// This avoids firing the action while keys are being recorded.
-#[tauri::command]
-#[specta::specta]
-pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
-    if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = unregister_shortcut(&app, b) {
-            error!("suspend_binding error for id '{}': {}", id, e);
-            return Err(e);
+/// Unregister every binding while the user is recording a new shortcut in
+/// the UI, so no existing shortcut can fire — or swallow the keystrokes —
+/// mid-capture. The "cancel" binding is untouched: it is managed dynamically
+/// by the recording lifecycle.
+pub fn suspend_all_shortcuts(app: &AppHandle) {
+    for (id, binding) in settings::get_bindings(app) {
+        if id == "cancel" {
+            continue;
+        }
+        if let Err(e) = unregister_shortcut(app, binding) {
+            debug!(
+                "suspend_all_shortcuts: could not unregister '{}': {}",
+                id, e
+            );
         }
     }
+}
+
+/// Re-register every binding from settings after shortcut recording ends.
+/// Registering an already-registered shortcut fails cleanly in both
+/// implementations, so this is idempotent and safe on every exit path.
+pub fn resume_all_shortcuts(app: &AppHandle) {
+    let settings = get_settings(app);
+    for (id, binding) in &settings.bindings {
+        if id == "cancel" {
+            continue;
+        }
+        if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+            continue;
+        }
+        if let Err(e) = register_shortcut(app, binding.clone()) {
+            debug!("resume_all_shortcuts: could not register '{}': {}", id, e);
+        }
+    }
+}
+
+/// Temporarily unregister all bindings while the user is recording a
+/// shortcut in the UI. This avoids firing actions while keys are recorded.
+#[tauri::command]
+#[specta::specta]
+pub fn suspend_all_bindings(app: AppHandle) -> Result<(), String> {
+    suspend_all_shortcuts(&app);
     Ok(())
 }
 
-/// Re-register the binding after the user has finished editing.
+/// Re-register all bindings after the user has finished recording.
 #[tauri::command]
 #[specta::specta]
-pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
-    if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = register_shortcut(&app, b) {
-            error!("resume_binding error for id '{}': {}", id, e);
-            return Err(e);
-        }
-    }
+pub fn resume_all_bindings(app: AppHandle) -> Result<(), String> {
+    resume_all_shortcuts(&app);
     Ok(())
 }
 
@@ -282,9 +329,16 @@ pub fn change_keyboard_implementation_setting(
     settings.keyboard_implementation = new_impl;
     settings::write_settings(&app, settings);
 
+    // Carbon fallback registrations use the Tauri plugin. Remove them before
+    // registering the full Tauri implementation to avoid duplicate conflicts.
+    if new_impl == KeyboardImplementation::Tauri {
+        crate::secure_input::reconcile_fallback(&app);
+    }
+
     // Initialize new implementation if needed (HandyKeys needs state)
     if new_impl == KeyboardImplementation::HandyKeys && initialize_handy_keys_with_rollback(&app)? {
-        // Shortcuts already registered during init
+        // Shortcuts already registered during init.
+        crate::secure_input::reconcile_fallback(&app);
         return Ok(ImplementationChangeResult {
             success: true,
             reset_bindings: vec![],
@@ -293,6 +347,7 @@ pub fn change_keyboard_implementation_setting(
 
     // Register all shortcuts with new implementation, resetting invalid ones
     let reset_bindings = register_all_shortcuts_for_implementation(&app, new_impl);
+    crate::secure_input::reconcile_fallback(&app);
 
     // Emit event to notify frontend of the change
     let _ = app.emit(
@@ -454,6 +509,7 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
         let mut settings = settings::get_settings(app);
         settings.keyboard_implementation = KeyboardImplementation::Tauri;
         settings::write_settings(app, settings);
+        crate::secure_input::reconcile_fallback(app);
         tauri_impl::init_shortcuts(app);
         return Err(format!(
             "Failed to initialize HandyKeys: {}. Reverted to Tauri.",
@@ -939,6 +995,7 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
         }
     }
 
+    crate::secure_input::reconcile_fallback(&app);
     Ok(())
 }
 
