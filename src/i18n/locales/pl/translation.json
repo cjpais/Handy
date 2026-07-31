@@ -525,6 +525,10 @@
         "title": "Opóźnienie wklejania (po)",
         "description": "Opóźnienie (w milisekundach) po klawiszu wklejania, przed przywróceniem poprzedniego schowka. Zwiększ, jeśli zamiast transkrypcji wklejana jest stara zawartość schowka."
       },
+      "reliablePaste": {
+        "title": "Niezawodne wklejanie (Beta)",
+        "description": "Przywracaj schowek dopiero po tym, jak docelowa aplikacja faktycznie odczyta transkrypcję, a nie po ustalonym opóźnieniu. Ma naprawić wklejanie starej zawartości schowka przy obciążeniu systemu. Wymaga metody wklejania przez schowek; tylko macOS i Windows."
+      },
       "recordingBuffer": {
         "title": "Dodatkowy bufor nagrywania",
         "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."

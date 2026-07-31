@@ -525,6 +525,10 @@
         "title": "Délai de collage (après)",
         "description": "Délai (en millisecondes) après la touche de collage, avant la restauration de votre presse-papiers précédent. Augmentez si l'ancien contenu du presse-papiers est collé à la place de la transcription."
       },
+      "reliablePaste": {
+        "title": "Collage fiable (Beta)",
+        "description": "Restaure le presse-papiers uniquement après que l'application cible a réellement lu la transcription, au lieu d'attendre un délai fixe. Vise à corriger le collage de l'ancien contenu du presse-papiers lorsque le système est chargé. Nécessite une méthode de collage par presse-papiers ; macOS et Windows uniquement."
+      },
       "recordingBuffer": {
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."

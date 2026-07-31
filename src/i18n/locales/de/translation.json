@@ -525,6 +525,10 @@
         "title": "Einfügeverzögerung (nachher)",
         "description": "Verzögerung (in Millisekunden) nach dem Einfüge-Tastendruck, bevor deine vorherige Zwischenablage wiederhergestellt wird. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
       },
+      "reliablePaste": {
+        "title": "Zuverlässiges Einfügen (Beta)",
+        "description": "Die Zwischenablage erst wiederherstellen, wenn die Ziel-App die Transkription tatsächlich gelesen hat, statt nach einer festen Verzögerung. Soll verhindern, dass bei Systemlast der alte Inhalt der Zwischenablage eingefügt wird. Erfordert eine Einfügemethode über die Zwischenablage; nur macOS und Windows."
+      },
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."

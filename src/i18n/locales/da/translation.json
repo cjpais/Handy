@@ -532,6 +532,10 @@
         "title": "Forsinkelse af indsættelse (efter)",
         "description": "Forsinkelse (i millisekunder) efter tastetrykket for indsætning, før din tidligere udklipsholder gendannes. Øg, hvis dit gamle udklipsholderindhold bliver indsat i stedet for transskriptionen."
       },
+      "reliablePaste": {
+        "title": "Pålidelig indsættelse (Beta)",
+        "description": "Gendan først din udklipsholder, når målappen faktisk har læst transskriptionen, i stedet for efter en fast forsinkelse. Skal afhjælpe, at gammelt udklipsholderindhold indsættes, når systemet er belastet. Kræver en indsætningsmetode via udklipsholderen; kun macOS og Windows."
+      },
       "recordingBuffer": {
         "title": "Ekstra optagelsesbuffer",
         "description": "Ekstra tid (i millisekunder) til at fortsætte optagelsen, efter du slipper tasten, for at fange efterfølgende lyd. 0 = ingen ekstra buffer."

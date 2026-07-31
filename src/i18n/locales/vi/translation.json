@@ -525,6 +525,10 @@
         "title": "Độ trễ dán (sau)",
         "description": "Độ trễ (tính bằng mili giây) sau khi gửi phím dán, trước khi khôi phục bảng nhớ tạm trước đó. Tăng nếu nội dung bảng nhớ tạm cũ được dán thay vì bản chép lời."
       },
+      "reliablePaste": {
+        "title": "Dán đáng tin cậy (Beta)",
+        "description": "Chỉ khôi phục bảng nhớ tạm sau khi ứng dụng đích thực sự đọc bản chép lời, thay vì sau một độ trễ cố định. Nhằm khắc phục việc nội dung bảng nhớ tạm cũ bị dán khi hệ thống bị tải nặng. Cần một phương thức dán qua bảng nhớ tạm; chỉ dành cho macOS và Windows."
+      },
       "recordingBuffer": {
         "title": "Bộ đệm ghi âm thêm",
         "description": "Thời gian thêm (tính bằng mili giây) để tiếp tục ghi âm sau khi nhả phím, để thu âm thanh cuối. 0 = không có bộ đệm thêm."
