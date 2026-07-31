@@ -229,6 +229,14 @@
         "label": "Feedback de Áudio",
         "description": "Reproduzir som quando a gravação iniciar e parar"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause media playback while recording"
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Resume media playback if Handy paused it"
+      },
       "outputDevice": {
         "title": "Dispositivo de Saída",
         "description": "Selecione seu dispositivo de saída de áudio preferido para sons de feedback",

@@ -229,6 +229,14 @@
         "label": "משוב קולי",
         "description": "נגן צליל כשההקלטה מתחילה ומסתיימת"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause media playback while recording"
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Resume media playback if Handy paused it"
+      },
       "outputDevice": {
         "title": "התקן פלט",
         "description": "בחר את התקן השמע המועדף עליך עבור צלילי המשוב",

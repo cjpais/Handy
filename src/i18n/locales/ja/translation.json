@@ -229,6 +229,14 @@
         "label": "オーディオフィードバック",
         "description": "録音の開始と停止時にサウンドを再生"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause media playback while recording"
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Resume media playback if Handy paused it"
+      },
       "outputDevice": {
         "title": "出力デバイス",
         "description": "フィードバック用の音声出力デバイスを選択",

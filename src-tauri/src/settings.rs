@@ -426,6 +426,10 @@ pub struct AppSettings {
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
+    pub pause_while_recording: bool,
+    #[serde(default = "default_play_after_recording")]
+    pub play_after_recording: bool,
+    #[serde(default)]
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
@@ -577,6 +581,10 @@ fn default_theme() -> Theme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_play_after_recording() -> bool {
+    true
 }
 
 fn default_app_language() -> String {
@@ -876,6 +884,8 @@ pub fn get_default_settings() -> AppSettings {
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
+        pause_while_recording: false,
+        play_after_recording: default_play_after_recording(),
         append_trailing_space: false,
         app_language: default_app_language(),
         theme: default_theme(),

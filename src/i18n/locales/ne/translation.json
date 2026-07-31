@@ -229,6 +229,14 @@
         "label": "अडियो फिडब्याक",
         "description": "रेकर्डिङ सुरु र बन्द हुँदा आवाज बजाउनुहोस्"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause media playback while recording"
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Resume media playback if Handy paused it"
+      },
       "outputDevice": {
         "title": "आउटपुट डिभाइस",
         "description": "फिडब्याक आवाजका लागि आफ्नो मनपर्ने अडियो आउटपुट डिभाइस चयन गर्नुहोस्",
