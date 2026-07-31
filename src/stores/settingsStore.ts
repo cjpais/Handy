@@ -125,6 +125,8 @@ const settingUpdaters: {
     commands.changePasteDelayMsSetting(value as number),
   paste_delay_after_ms: (value) =>
     commands.changePasteDelayAfterMsSetting(value as number),
+  reliable_paste: (value) =>
+    commands.changeReliablePasteSetting(value as boolean),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>
