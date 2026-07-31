@@ -73,10 +73,7 @@ export const Slider: React.FC<SliderProps> = ({
             </span>
           )}
           {onReset && (
-            <ResetButton
-              onClick={onReset}
-              disabled={disabled || isResetting}
-            />
+            <ResetButton onClick={onReset} disabled={disabled || isResetting} />
           )}
         </div>
       </div>
