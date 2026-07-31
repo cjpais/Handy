@@ -6,7 +6,8 @@
     "unloadModel": "卸载模型",
     "model": "模型",
     "quit": "退出",
-    "cancel": "取消"
+    "cancel": "取消",
+    "secureInputWarning": "⚠ 快捷键被 Secure Input 阻止"
   },
   "sidebar": {
     "general": "通用",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "兼容的模型",
+    "downloadModelsTitle": "可供下载",
+    "showAllModels": "显示全部 {{total}} 个模型",
+    "showFewerModels": "显示较少模型",
     "recommended": "推荐",
     "customModelDescription": "非官方支持",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "选择模型失败"
     },
     "permissions": {
       "title": "需要权限",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "支持多种输入语言",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} 种语言",
       "translation": "可翻译为英语",
       "translate": "翻译为英语",
       "singleLanguage": "仅支持此语言",
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "悬浮窗",
+          "description": "选择录音悬浮窗的样式：「无」会隐藏悬浮窗，「精简」显示小巧的胶囊状指示，「实时」在您说话时实时显示转录内容（仅限支持流式的模型——请在模型选择器中查找「流式」标签）。在 Linux 上建议选择「无」。",
           "options": {
             "none": "无",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "精简",
+            "live": "实时"
           }
         },
         "position": {
@@ -332,10 +333,10 @@
         "description": "在文本插入后自动发送所选的按键组合。macOS 上使用 Cmd+Enter，Windows/Linux 上使用 Super+Enter。",
         "options": {
           "off": "关闭",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "enter": "回车",
+          "cmdEnter": "Cmd+回车",
+          "superEnter": "Super+回车",
+          "ctrlEnter": "Ctrl+回车"
         }
       },
       "translateToEnglish": {
@@ -358,15 +359,15 @@
       },
       "customWords": {
         "title": "自定义词汇",
-        "description": "添加经常被误听或拼写错误的词汇。系统将自动将发音相似的词汇修正为您列表中的词汇。",
+        "description": "帮助受支持的模型识别名称和专业术语。目前，模糊纠错仅适用于使用 A–Z 字母和数字的词语。",
         "placeholder": "添加词汇",
         "add": "添加",
         "remove": "删除 {{word}}",
         "duplicate": "\"{{word}}\" 已存在"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "语音活动检测",
+        "description": "过滤录音中的静音。支持流式的模型会使用更长的 VAD 尾段；停用 VAD 则会录制原始音频。"
       }
     },
     "postProcessing": {
@@ -528,6 +529,26 @@
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
       },
+      "keyboardDiagnostic": {
+        "title": "键盘诊断",
+        "description": "检查键盘事件是否能到达 Handy。仅记录事件数量，绝不记录您按了哪些键。",
+        "run": "运行 10 秒诊断",
+        "running": "正在监听… 请按几次您的快捷键（例如 Option+Space）",
+        "secureInputLabel": "Secure Input",
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "holder": "被 {{name}}（pid {{pid}}）占用",
+        "holderUnknown": "未发现占用方",
+        "keyDown": "按键按下",
+        "keyUp": "按键释放",
+        "flagsChanged": "修饰键",
+        "mouse": "鼠标",
+        "verdictBlocked": "Secure Input 正在阻止按键事件——在问题解决前，包含普通按键的快捷键无法工作。",
+        "verdictSuspicious": "收到了修饰键事件，但没有按键事件——尽管 Secure Input 报告为已禁用，仍有程序在抑制按键。请在 GitHub 上反馈此问题。",
+        "verdictOk": "按键事件正常到达 Handy。",
+        "verdictNoEvents": "未捕获到任何事件——测试期间您按过键吗？",
+        "failed": "诊断失败：{{error}}"
+      },
       "whatsNewPreview": {
         "title": "预览新功能",
         "description": "打开最新内置发行说明，且不标记为已查看",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} 可能正在阻止 1 个快捷键",
+    "blockedWithCulprit_other": "{{name}} 可能正在阻止 {{count}} 个快捷键",
+    "blockedNoCulprit_one": "macOS 正在暂时阻止 1 个快捷键",
+    "blockedNoCulprit_other": "macOS 正在暂时阻止 {{count}} 个快捷键",
+    "recorderBlockedWithCulprit": "{{name}} 可能正在阻止快捷键更改",
+    "recorderBlockedNoCulprit": "macOS 正在暂时阻止快捷键更改",
+    "learnMore": "如何解决",
+    "recorderBlocked": "当前无法录制快捷键——macOS 的 Secure Input 正在阻止按键事件。请先解决 Secure Input 警告。",
+    "dismiss": "关闭"
   }
 }

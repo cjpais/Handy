@@ -22,7 +22,15 @@ fn paste_via_clipboard(
     paste_delay_after_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
+    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
+    // Only probe for an image when there is no text to restore. Text is by far the
+    // common case, and reading an image decodes the full bitmap, so this keeps the
+    // text path exactly as cheap as it was before.
+    let saved_image = if saved_text.is_none() {
+        clipboard.read_image().ok().map(|image| image.to_owned())
+    } else {
+        None
+    };
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
@@ -64,17 +72,28 @@ fn paste_via_clipboard(
 
     std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
 
-    // Restore original clipboard content
-    // On Wayland, prefer wl-copy for better compatibility
-    #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
-    } else {
-        let _ = clipboard.write_text(&clipboard_content);
-    }
+    // Restore original clipboard content.
+    // Text takes priority so this path stays identical to the previous behavior;
+    // an image is only restored when the clipboard held no text at all, which is
+    // the case that used to silently wipe screenshots.
+    if let Some(clipboard_content) = saved_text {
+        // On Wayland, prefer wl-copy for better compatibility
+        #[cfg(target_os = "linux")]
+        if is_wayland() && is_wl_copy_available() {
+            let _ = write_clipboard_via_wl_copy(&clipboard_content);
+        } else {
+            let _ = clipboard.write_text(&clipboard_content);
+        }
 
-    #[cfg(not(target_os = "linux"))]
-    let _ = clipboard.write_text(&clipboard_content);
+        #[cfg(not(target_os = "linux"))]
+        let _ = clipboard.write_text(&clipboard_content);
+    } else if let Some(image) = saved_image {
+        info!("Restoring image to clipboard");
+        let _ = clipboard.write_image(&image);
+    } else {
+        // Nothing was there to begin with — don't leave the transcription behind.
+        let _ = clipboard.clear();
+    }
 
     Ok(())
 }

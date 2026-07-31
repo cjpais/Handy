@@ -6,7 +6,8 @@
     "unloadModel": "Rilascia modello",
     "model": "Modello",
     "quit": "Esci",
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input"
   },
   "sidebar": {
     "general": "Generale",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Supporta più lingue di input",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} lingue",
       "translation": "Può tradurre in inglese",
       "translate": "Traduci in inglese",
       "singleLanguage": "Supporta solo questa lingua",
@@ -209,7 +210,7 @@
         "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
-        "auto": "Auto"
+        "auto": "Automatico"
       },
       "pushToTalk": {
         "label": "Premi per Parlare",
@@ -265,7 +266,7 @@
           "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). DirectML su Windows è sperimentale. I modelli potrebbero non riuscire a trascrivere."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatico"
         }
       },
       "startHidden": {
@@ -332,10 +333,10 @@
         "description": "Invia automaticamente la combinazione di tasti selezionata dopo l'inserimento del testo. Cmd+Enter si applica su macOS, mentre Windows/Linux usano Super+Enter.",
         "options": {
           "off": "Disattivato",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "enter": "Invio",
+          "cmdEnter": "Cmd+Invio",
+          "superEnter": "Super+Invio",
+          "ctrlEnter": "Ctrl+Invio"
         }
       },
       "translateToEnglish": {
@@ -343,7 +344,7 @@
         "description": "Traduci automaticamente in inglese la voce in altre lingue durante la trascrizione."
       },
       "modelUnload": {
-        "title": "Disattiva Model",
+        "title": "Disattiva modello",
         "description": "Libera automaticamente la memoria della GPU/CPU quando il modello non viene utilizzato per un certo periodo",
         "options": {
           "never": "Mai",
@@ -358,7 +359,7 @@
       },
       "customWords": {
         "title": "Parole personalizzate",
-        "description": "Aggiungi parole che vengono spesso fraintese o scritte in modo errato durante la trascrizione. Il sistema correggerà automaticamente le parole dal suono simile in modo che corrispondano al tuo elenco.",
+        "description": "Aiuta i modelli supportati a riconoscere nomi e termini specialistici. La correzione approssimativa è attualmente limitata alle parole che usano le lettere A–Z e i numeri.",
         "placeholder": "Aggiungi una parola",
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
@@ -491,7 +492,7 @@
         "description": "Tieni il microfono attivo per una risposta più rapida"
       },
       "clamshellMicrophone": {
-        "title": "Microfono a portatile chiuso",
+        "title": "Microfono con coperchio chiuso",
         "description": "Microfono da usare quando il portatile è chiuso"
       },
       "postProcessingToggle": {
@@ -527,6 +528,26 @@
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",
         "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
+      },
+      "keyboardDiagnostic": {
+        "title": "Diagnostica tastiera",
+        "description": "Verifica se gli eventi della tastiera arrivano a Handy. Viene registrato solo il numero di eventi, mai quali tasti premi.",
+        "run": "Esegui diagnostica di 10 s",
+        "running": "In ascolto… premi la tua scorciatoia alcune volte (ad es. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "abilitato",
+        "disabled": "disabilitato",
+        "holder": "trattenuto da {{name}} (pid {{pid}})",
+        "holderUnknown": "nessun responsabile visibile",
+        "keyDown": "Tasto premuto",
+        "keyUp": "Tasto rilasciato",
+        "flagsChanged": "Modificatori",
+        "mouse": "Mouse",
+        "verdictBlocked": "Secure Input sta bloccando gli eventi dei tasti: le scorciatoie che includono un tasto normale non possono funzionare finché non viene risolto.",
+        "verdictSuspicious": "Sono arrivati eventi dei modificatori ma nessun evento dei tasti: qualcosa sta sopprimendo i tasti anche se Secure Input risulta disabilitato. Segnalalo su GitHub.",
+        "verdictOk": "Gli eventi dei tasti arrivano a Handy normalmente.",
+        "verdictNoEvents": "Nessun evento rilevato: hai premuto qualche tasto durante il test?",
+        "failed": "Diagnostica non riuscita: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Anteprima delle novità",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} potrebbe bloccare 1 scorciatoia",
+    "blockedWithCulprit_other": "{{name}} potrebbe bloccare {{count}} scorciatoie",
+    "blockedNoCulprit_one": "macOS sta bloccando temporaneamente 1 scorciatoia",
+    "blockedNoCulprit_other": "macOS sta bloccando temporaneamente {{count}} scorciatoie",
+    "recorderBlockedWithCulprit": "{{name}} potrebbe bloccare le modifiche alle scorciatoie",
+    "recorderBlockedNoCulprit": "macOS sta bloccando temporaneamente le modifiche alle scorciatoie",
+    "learnMore": "Come risolvere",
+    "recorderBlocked": "Non è possibile registrare scorciatoie in questo momento: Secure Input di macOS sta bloccando gli eventi dei tasti. Risolvi prima l'avviso di Secure Input.",
+    "dismiss": "Ignora"
   }
 }

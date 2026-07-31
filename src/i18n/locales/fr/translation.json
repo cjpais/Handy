@@ -6,7 +6,8 @@
     "unloadModel": "Décharger le modèle",
     "model": "Modèle",
     "quit": "Quitter",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input"
   },
   "sidebar": {
     "general": "Général",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Pour commencer, choisissez un modèle de transcription",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Modèles compatibles",
+    "downloadModelsTitle": "Disponibles au téléchargement",
+    "showAllModels": "Afficher tous les {{total}} modèles",
+    "showFewerModels": "Afficher moins de modèles",
     "recommended": "Recommandé",
     "customModelDescription": "Non officiellement pris en charge",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Échec de la sélection du modèle"
     },
     "permissions": {
       "title": "Autorisations requises",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} Mo/s",
     "capabilities": {
       "languageSelection": "Prend en charge plusieurs langues d'entrée",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} langues",
       "translation": "Peut traduire en anglais",
       "translate": "Traduire en anglais",
       "singleLanguage": "Prend en charge uniquement cette langue",
@@ -209,7 +210,7 @@
         "description": "Sélectionnez la langue pour la reconnaissance vocale. Auto déterminera automatiquement la langue, tandis que sélectionner une langue spécifique peut améliorer la précision pour cette langue.",
         "searchPlaceholder": "Rechercher des langues...",
         "noResults": "Aucune langue trouvée",
-        "auto": "Auto"
+        "auto": "Automatique"
       },
       "pushToTalk": {
         "label": "Appuyer pour parler",
@@ -265,7 +266,7 @@
           "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatique"
         }
       },
       "startHidden": {
@@ -283,7 +284,7 @@
       "overlay": {
         "style": {
           "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "description": "Choisissez l'overlay d'enregistrement : « Aucun » le masque, « Minimal » affiche une pilule compacte, « Live » affiche la transcription en temps réel pendant que vous parlez (uniquement pour les modèles compatibles avec le streaming — recherchez le badge Streaming dans le sélecteur de modèle). Sur Linux, « Aucun » est recommandé.",
           "options": {
             "none": "Aucune",
             "minimal": "Minimal",
@@ -333,9 +334,9 @@
         "options": {
           "off": "Désactivé",
           "enter": "Entrée",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "cmdEnter": "Cmd+Entrée",
+          "superEnter": "Super+Entrée",
+          "ctrlEnter": "Ctrl+Entrée"
         }
       },
       "translateToEnglish": {
@@ -358,15 +359,15 @@
       },
       "customWords": {
         "title": "Mots personnalisés",
-        "description": "Ajoutez des mots souvent mal entendus ou mal orthographiés lors de la transcription. Le système corrigera automatiquement les mots similaires pour correspondre à votre liste.",
+        "description": "Aidez les modèles compatibles à reconnaître les noms et les termes spécialisés. La correction approximative est actuellement limitée aux mots utilisant les lettres A à Z et des chiffres.",
         "placeholder": "Ajouter un mot",
         "add": "Ajouter",
         "remove": "Supprimer {{word}}",
         "duplicate": "\"{{word}}\" existe déjà"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Détection d'activité vocale (VAD)",
+        "description": "Filtre le silence des enregistrements. Les modèles compatibles avec le streaming utilisent une marge de détection VAD plus longue ; désactiver le VAD enregistre l'audio brut."
       }
     },
     "postProcessing": {
@@ -528,6 +529,26 @@
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
       },
+      "keyboardDiagnostic": {
+        "title": "Diagnostic du clavier",
+        "description": "Vérifie si les événements clavier atteignent Handy. Seul le nombre d'événements est enregistré, jamais les touches sur lesquelles vous appuyez.",
+        "run": "Lancer un diagnostic de 10 s",
+        "running": "Écoute en cours… appuyez plusieurs fois sur votre raccourci (par ex. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "activé",
+        "disabled": "désactivé",
+        "holder": "détenu par {{name}} (pid {{pid}})",
+        "holderUnknown": "aucun détenteur visible",
+        "keyDown": "Touche enfoncée",
+        "keyUp": "Touche relâchée",
+        "flagsChanged": "Modificateurs",
+        "mouse": "Souris",
+        "verdictBlocked": "Secure Input bloque les événements clavier : les raccourcis contenant une touche normale ne peuvent pas fonctionner tant que ce n'est pas résolu.",
+        "verdictSuspicious": "Des événements de modificateurs sont arrivés, mais aucun événement de touche : quelque chose supprime les touches alors que Secure Input est signalé comme désactivé. Merci de le signaler sur GitHub.",
+        "verdictOk": "Les événements clavier atteignent Handy normalement.",
+        "verdictNoEvents": "Aucun événement capturé : avez-vous appuyé sur des touches pendant le test ?",
+        "failed": "Échec du diagnostic : {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Aperçu des nouveautés",
         "description": "Ouvrir la dernière note de version intégrée sans la marquer comme vue",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Nouveautés de Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} bloque peut-être 1 raccourci",
+    "blockedWithCulprit_other": "{{name}} bloque peut-être {{count}} raccourcis",
+    "blockedNoCulprit_one": "macOS bloque temporairement 1 raccourci",
+    "blockedNoCulprit_other": "macOS bloque temporairement {{count}} raccourcis",
+    "recorderBlockedWithCulprit": "{{name}} bloque peut-être la modification des raccourcis",
+    "recorderBlockedNoCulprit": "macOS bloque temporairement la modification des raccourcis",
+    "learnMore": "Comment résoudre ce problème",
+    "recorderBlocked": "Impossible d'enregistrer un raccourci pour le moment : Secure Input de macOS bloque les événements clavier. Résolvez d'abord l'avertissement Secure Input.",
+    "dismiss": "Ignorer"
   }
 }

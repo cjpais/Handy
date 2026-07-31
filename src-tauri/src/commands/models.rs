@@ -1,6 +1,7 @@
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use log::error;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -48,6 +49,9 @@ pub async fn download_model(
         .map_err(|e| e.to_string());
 
     if let Err(ref error) = result {
+        // Log as well as emit: the toast is transient, and failed downloads have
+        // historically been undiagnosable because logs showed nothing (#1579).
+        error!("Model download failed for {}: {}", model_id, error);
         let _ = app_handle.emit(
             "model-download-failed",
             serde_json::json!({ "model_id": &model_id, "error": error }),
