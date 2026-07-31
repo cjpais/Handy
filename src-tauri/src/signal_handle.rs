@@ -32,7 +32,13 @@ pub fn send_transcription_input(app: &AppHandle, binding_id: &str, source: &str)
 /// GC cycle (#1660). Linux users should use `handy --toggle-post-process`
 /// instead.
 #[cfg(unix)]
-pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
+pub fn setup_signal_handler(app_handle: AppHandle) {
+    #[cfg(target_os = "macos")]
+    let mut signals =
+        Signals::new([SIGUSR1, SIGUSR2]).expect("failed to register transcription signal handlers");
+    #[cfg(not(target_os = "macos"))]
+    let mut signals =
+        Signals::new([SIGUSR2]).expect("failed to register transcription signal handlers");
     #[cfg(target_os = "macos")]
     debug!("Signal handlers registered (SIGUSR1, SIGUSR2)");
     #[cfg(not(target_os = "macos"))]
