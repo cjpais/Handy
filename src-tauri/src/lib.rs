@@ -32,8 +32,10 @@ use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+#[cfg(target_os = "macos")]
+use signal_hook::consts::SIGUSR1;
 #[cfg(unix)]
-use signal_hook::consts::{SIGUSR1, SIGUSR2};
+use signal_hook::consts::SIGUSR2;
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
@@ -188,8 +190,16 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // after permissions are confirmed (on macOS) or after onboarding completes.
     // This matches the pattern used for Enigo initialization.
 
-    #[cfg(unix)]
+    // SIGUSR1 is deliberately NOT handled outside macOS: WebKitGTK's
+    // JavaScriptCore sends SIGUSR1 to its own threads to suspend them for
+    // garbage collection, so listening for it phantom-toggled transcription on
+    // every GC cycle (https://github.com/cjpais/Handy/issues/1660). macOS
+    // WebKit suspends threads via Mach APIs instead, so SIGUSR1 stays safe to
+    // handle there.
+    #[cfg(target_os = "macos")]
     let signals = Signals::new([SIGUSR1, SIGUSR2]).unwrap();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let signals = Signals::new([SIGUSR2]).unwrap();
     // Set up signal handlers for toggling transcription
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone(), signals);
