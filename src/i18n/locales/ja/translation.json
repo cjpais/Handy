@@ -6,7 +6,8 @@
     "unloadModel": "モデルをアンロード",
     "model": "モデル",
     "quit": "終了",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "secureInputWarning": "⚠ Secure Input でショートカットがブロック中"
   },
   "sidebar": {
     "general": "一般",
@@ -528,6 +529,26 @@
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間(ミリ秒)。末尾の音声を捕捉するため。0 = 追加バッファなし。"
       },
+      "keyboardDiagnostic": {
+        "title": "キーボード診断",
+        "description": "キーボードイベントが Handy に届いているかを確認します。記録されるのはイベント数のみで、押したキーの内容は記録されません。",
+        "run": "10 秒間の診断を実行",
+        "running": "待機中… ショートカットを数回押してください (例: Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "有効",
+        "disabled": "無効",
+        "holder": "{{name}} (pid {{pid}}) が保持中",
+        "holderUnknown": "保持元は不明",
+        "keyDown": "キー押下",
+        "keyUp": "キー解放",
+        "flagsChanged": "修飾キー",
+        "mouse": "マウス",
+        "verdictBlocked": "Secure Input がキーイベントをブロックしています。解消されるまで、通常キーを含むショートカットは動作しません。",
+        "verdictSuspicious": "修飾キーのイベントは届いていますが、キーイベントは届いていません。Secure Input は無効と報告されているのに、何かがキーを抑制しています。GitHub で報告してください。",
+        "verdictOk": "キーイベントは Handy に正常に届いています。",
+        "verdictNoEvents": "イベントを検出できませんでした。テスト中にキーを押しましたか？",
+        "failed": "診断に失敗しました: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "新機能をプレビュー",
         "description": "最新の同梱リリースノートを既読にせずに開く",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} が1個のショートカットをブロックしている可能性があります",
+    "blockedWithCulprit_other": "{{name}} が{{count}}個のショートカットをブロックしている可能性があります",
+    "blockedNoCulprit_one": "macOS が一時的に1個のショートカットをブロックしています",
+    "blockedNoCulprit_other": "macOS が一時的に{{count}}個のショートカットをブロックしています",
+    "recorderBlockedWithCulprit": "{{name}} がショートカットの変更をブロックしている可能性があります",
+    "recorderBlockedNoCulprit": "macOS が一時的にショートカットの変更をブロックしています",
+    "learnMore": "解決方法",
+    "recorderBlocked": "現在ショートカットを記録できません。macOS の Secure Input がキーイベントをブロックしています。先に Secure Input の警告を解消してください。",
+    "dismiss": "閉じる"
   }
 }
