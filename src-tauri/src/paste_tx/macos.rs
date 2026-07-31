@@ -58,11 +58,17 @@ define_class!(
         #[unsafe(method(pasteboard:provideDataForType:))]
         fn pasteboard_provide_data_for_type(&self, pasteboard: &NSPasteboard, data_type: &NSString) {
             let ivars = self.ivars();
-            if let Ok(mut state) = ivars.state.lock() {
-                state.record_receipt(Instant::now());
-            }
             // SAFETY: NSPasteboardTypeString is a read-only framework static.
-            let payload = if unsafe { data_type.isEqualToString(NSPasteboardTypeString) } {
+            let is_text = unsafe { data_type.isEqualToString(NSPasteboardTypeString) };
+            // Only a text read counts as a receipt: a request for one of the
+            // concealment marker types is a clipboard manager inspecting the
+            // markers, not the paste target reading the transcript.
+            if is_text {
+                if let Ok(mut state) = ivars.state.lock() {
+                    state.record_receipt(Instant::now());
+                }
+            }
+            let payload = if is_text {
                 NSString::from_str(&ivars.text)
             } else {
                 // Concealment marker types are never handed out.
@@ -95,9 +101,12 @@ struct MacPending {
     provider: Option<Retained<HandyPasteProvider>>,
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
-    /// ClipboardHandling::CopyToClipboard — the user wants the transcript left
-    /// on the clipboard, so the restore is skipped entirely.
+    /// ClipboardHandling::CopyToClipboard — instead of restoring, settle by
+    /// re-writing the transcript as plain text (without the concealment
+    /// markers), so clipboard managers record it and it outlives the promise.
     preserve_transcript: bool,
+    /// The transcript, for the `preserve_transcript` re-write at settle time.
+    transcript: String,
     settled: bool,
 }
 
@@ -147,7 +156,15 @@ fn settle(
 
     let still_ours =
         !ownership_lost && NSPasteboard::generalPasteboard().changeCount() == p.change_count;
-    if still_ours && !p.preserve_transcript {
+    if !still_ours {
+        info!("[reliable-paste] clipboard changed externally; leaving it untouched");
+    } else if p.preserve_transcript {
+        // The user asked for the transcript to stay on the clipboard: replace
+        // the concealed promise with plain text so clipboard managers record
+        // it and it survives this app exiting.
+        let _ = app_handle.clipboard().write_text(&p.transcript);
+        info!("[reliable-paste] left transcript on clipboard as plain text");
+    } else {
         let clipboard = app_handle.clipboard();
         if let Some(text) = &p.saved_text {
             let _ = clipboard.write_text(text);
@@ -157,8 +174,6 @@ fn settle(
             let _ = clipboard.clear();
         }
         info!("[reliable-paste] restored previous clipboard");
-    } else if !still_ours {
-        info!("[reliable-paste] clipboard changed externally; leaving it untouched");
     }
 
     // Release the owner; any outstanding promise dies with the pasteboard
@@ -309,6 +324,7 @@ pub(super) fn run(
         auto_submit,
         auto_submit_key,
         preserve_transcript: clipboard_handling == ClipboardHandling::CopyToClipboard,
+        transcript: text.to_string(),
         settled: false,
     }));
     if let Ok(mut slot) = PENDING.lock() {

@@ -29,7 +29,7 @@ use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
 use windows::Win32::Foundation::GlobalFree;
 use windows::Win32::System::DataExchange::{
-    CloseClipboard, EmptyClipboard, EnumClipboardFormats, GetClipboardData,
+    CloseClipboard, EmptyClipboard, EnumClipboardFormats, GetClipboardData, GetClipboardOwner,
     GetClipboardSequenceNumber, OpenClipboard, RegisterClipboardFormatW, SetClipboardData,
 };
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
@@ -71,7 +71,8 @@ pub(super) struct WinTxShared {
     app_handle: tauri::AppHandle,
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
-    /// ClipboardHandling::CopyToClipboard — leave the transcript behind.
+    /// ClipboardHandling::CopyToClipboard — settle by leaving the transcript
+    /// on the clipboard as plain text instead of restoring the snapshot.
     preserve_transcript: bool,
 }
 
@@ -110,9 +111,9 @@ fn send_auto_submit(shared: &WinTxShared) {
     }
 }
 
-/// Renders the promised transcript in response to WM_RENDERFORMAT /
-/// WM_RENDERALLFORMATS. The clipboard is already open on our behalf; call
-/// SetClipboardData directly.
+/// Renders the promised transcript into the clipboard, which must already be
+/// open: the system opens it on our behalf for WM_RENDERFORMAT; every other
+/// caller has to wrap this in OpenClipboard/CloseClipboard itself.
 unsafe fn render_text(shared: &WinTxShared) {
     let wide_text: Vec<u16> = shared
         .text
@@ -142,14 +143,33 @@ unsafe extern "system" fn paste_wnd_proc(
 ) -> LRESULT {
     let shared = shared_ptr(hwnd);
     match msg {
-        WM_RENDERFORMAT | WM_RENDERALLFORMATS => {
+        WM_RENDERFORMAT => {
             if !shared.is_null() {
                 let shared = &*shared;
                 if let Ok(mut st) = shared.state.lock() {
                     st.record_receipt(Instant::now());
                 }
-                if msg == WM_RENDERALLFORMATS || wparam.0 as u32 == CF_UNICODETEXT.0 as u32 {
+                if wparam.0 as u32 == CF_UNICODETEXT.0 as u32 {
                     render_text(shared);
+                }
+            }
+            LRESULT(0)
+        }
+        WM_RENDERALLFORMATS => {
+            // Sent when the window is destroyed while an unrendered promise is
+            // still on the clipboard — not a consumer read, so no receipt.
+            // Unlike WM_RENDERFORMAT the system does not open the clipboard on
+            // our behalf here: open it and confirm we still own it first.
+            if !shared.is_null() {
+                let shared = &*shared;
+                if OpenClipboard(Some(hwnd)).is_ok() {
+                    if GetClipboardOwner()
+                        .map(|owner| owner == hwnd)
+                        .unwrap_or(false)
+                    {
+                        render_text(shared);
+                    }
+                    let _ = CloseClipboard();
                 }
             }
             LRESULT(0)
@@ -212,9 +232,28 @@ fn flush_pending() {
     }
     let sequence = *previous.sequence.lock().unwrap();
     let still_ours = unsafe { GetClipboardSequenceNumber() } == sequence;
-    if still_ours && !previous.preserve_transcript {
-        unsafe { restore_snapshot(&previous) };
+    if still_ours {
+        unsafe { settle_clipboard(&previous) };
     }
+}
+
+/// Settle-time clipboard handling once we know we still own the clipboard:
+/// restore the snapshot, or — for ClipboardHandling::CopyToClipboard — replace
+/// the concealed promise with plain transcript text, so clipboard history and
+/// managers record it and it survives this transaction's window going away.
+unsafe fn settle_clipboard(shared: &WinTxShared) {
+    if !shared.preserve_transcript {
+        restore_snapshot(shared);
+        return;
+    }
+    if OpenClipboard(None).is_err() {
+        warn!("[reliable-paste] could not open clipboard to leave transcript");
+        return;
+    }
+    let _ = EmptyClipboard();
+    render_text(shared);
+    let _ = CloseClipboard();
+    info!("[reliable-paste] left transcript on clipboard as plain text");
 }
 
 /// Restores the snapshotted clipboard contents. Safe to call from any thread.
@@ -315,6 +354,18 @@ unsafe fn snapshot_clipboard(hwnd: HWND, shared: &WinTxShared) -> Result<(), Str
 /// for Incognito copies). Returns the new clipboard sequence number.
 unsafe fn publish(hwnd: HWND) -> Result<u32, String> {
     OpenClipboard(Some(hwnd)).map_err(|e| format!("OpenClipboard failed: {e}"))?;
+    let published = publish_formats();
+    let closed = CloseClipboard();
+    published?;
+    closed.map_err(|e| format!("CloseClipboard failed: {e}"))?;
+    Ok(GetClipboardSequenceNumber())
+}
+
+/// Everything `publish` does while the clipboard is open, split out so
+/// `publish` closes the clipboard on every path — bailing out while holding it
+/// open (and possibly already emptied) would strand the clipboard and leave
+/// the legacy fallback snapshotting nothing.
+unsafe fn publish_formats() -> Result<(), String> {
     EmptyClipboard().map_err(|e| format!("EmptyClipboard failed: {e}"))?;
 
     for (name, value) in [
@@ -345,8 +396,7 @@ unsafe fn publish(hwnd: HWND) -> Result<u32, String> {
     // WM_RENDERFORMAT) when a consumer actually reads it.
     SetClipboardData(CF_UNICODETEXT.0 as u32, None)
         .map_err(|e| format!("SetClipboardData failed: {e}"))?;
-    CloseClipboard().map_err(|e| format!("CloseClipboard failed: {e}"))?;
-    Ok(GetClipboardSequenceNumber())
+    Ok(())
 }
 
 fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
@@ -401,9 +451,9 @@ fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
 
     let sequence = *shared.sequence.lock().unwrap();
     let still_ours = !ownership_lost && unsafe { GetClipboardSequenceNumber() } == sequence;
-    if still_ours && !shared.preserve_transcript {
-        unsafe { restore_snapshot(shared) };
-    } else if !still_ours {
+    if still_ours {
+        unsafe { settle_clipboard(shared) };
+    } else {
         info!("[reliable-paste] clipboard changed externally; leaving it untouched");
     }
 
@@ -471,7 +521,19 @@ fn pump_thread(shared: Arc<WinTxShared>, ready: Sender<Result<(), String>>) {
             Arc::into_raw(shared.clone()) as *const _ as isize,
         );
 
-        let published = snapshot_clipboard(hwnd, &shared).and_then(|_| publish(hwnd));
+        let published = match snapshot_clipboard(hwnd, &shared) {
+            Ok(()) => match publish(hwnd) {
+                Ok(sequence) => Ok(sequence),
+                Err(e) => {
+                    // publish may have emptied the clipboard before failing;
+                    // put the snapshot back so the legacy fallback's own
+                    // snapshot captures the user's clipboard, not an empty one.
+                    restore_snapshot(&shared);
+                    Err(e)
+                }
+            },
+            Err(e) => Err(e),
+        };
         let sequence = match published {
             Ok(sequence) => sequence,
             Err(e) => {
