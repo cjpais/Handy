@@ -593,6 +593,9 @@ export const useSettingsStore = create<SettingsStore>()(
         set({ updateChecksLocked: locked });
       } catch (error) {
         console.error("Failed to check update checks lock state:", error);
+        // Fail open: an unknown lock state means "not locked", otherwise the
+        // update checker waits for it forever and checks never start.
+        set({ updateChecksLocked: false });
       }
     },
 
