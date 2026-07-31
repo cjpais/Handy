@@ -1,9 +1,10 @@
 use crate::settings::PostProcessProvider;
-use log::{debug, info};
+use log::{debug, error, info};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
+use std::error::Error as StdError;
 use std::sync::{Mutex, OnceLock};
 
 #[derive(Debug, Serialize)]
@@ -176,7 +177,96 @@ fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwes
     reqwest::Client::builder()
         .default_headers(headers)
         .build()
-        .map_err(|e| format!("Failed to build HTTP client: {}", e))
+        .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))
+}
+
+/// Format every available cause without logging request headers or bodies.
+///
+/// `reqwest::Error`'s Display implementation intentionally gives only a short
+/// summary. Nested causes contain the useful transport details, such as a
+/// certificate validation failure, an HTTP/2 error, or a connection reset.
+fn error_source_chain(error: &(dyn StdError + 'static)) -> Vec<String> {
+    let mut causes = Vec::new();
+    let mut source = error.source();
+
+    // Defensive cap in case a third-party error exposes a cyclic source chain.
+    for _ in 0..16 {
+        let Some(cause) = source else {
+            break;
+        };
+        causes.push(cause.to_string());
+        source = cause.source();
+    }
+
+    causes
+}
+
+fn reqwest_error_kinds(error: &reqwest::Error) -> String {
+    let mut kinds = Vec::new();
+
+    if error.is_builder() {
+        kinds.push("builder");
+    }
+    if error.is_connect() {
+        kinds.push("connect");
+    }
+    if error.is_request() {
+        kinds.push("request");
+    }
+    if error.is_redirect() {
+        kinds.push("redirect");
+    }
+    if error.is_timeout() {
+        kinds.push("timeout");
+    }
+    if error.is_status() {
+        kinds.push("status");
+    }
+    if error.is_body() {
+        kinds.push("body");
+    }
+    if error.is_decode() {
+        kinds.push("decode");
+    }
+
+    if kinds.is_empty() {
+        "unknown".to_string()
+    } else {
+        kinds.join(", ")
+    }
+}
+
+fn sanitized_url(url: &reqwest::Url) -> String {
+    let mut url = url.clone();
+
+    // Custom endpoints should not contain credentials or query-string tokens,
+    // but omit them from diagnostics in case one does.
+    let _ = url.set_username("");
+    let _ = url.set_password(None);
+    url.set_query(None);
+    url.set_fragment(None);
+
+    url.to_string()
+}
+
+fn report_reqwest_error(context: &str, error: &reqwest::Error) -> String {
+    let kinds = reqwest_error_kinds(error);
+    let url = error
+        .url()
+        .map(sanitized_url)
+        .map(|url| format!(", url: {url}"))
+        .unwrap_or_default();
+    let causes = error_source_chain(error);
+    let cause_details = if causes.is_empty() {
+        // Builder errors do not always expose a nested source.
+        format!(": {error}")
+    } else {
+        format!(": caused by: {}", causes.join(" -> "))
+    };
+
+    let details = format!("{context} (kind: {kinds}{url}){cause_details}");
+    error!("{details}");
+    details
 }
 
 /// Send a chat completion request to an OpenAI-compatible API
@@ -273,8 +363,14 @@ pub async fn send_chat_completion_with_schema(
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| format!("HTTP request failed: {}", e))?;
+        .map_err(|e| report_reqwest_error("HTTP request failed", &e))?;
     let mut status = response.status();
+    debug!(
+        "Chat completion response received with status {} over {:?} from {}",
+        status,
+        response.version(),
+        sanitized_url(response.url())
+    );
 
     // A 400/422 on a request carrying reasoning-disable fields is almost always
     // the endpoint rejecting those fields — retry once without them.
@@ -282,10 +378,9 @@ pub async fn send_chat_completion_with_schema(
         && matches!(status.as_u16(), 400 | 422)
         && !request_body.reasoning.is_empty()
     {
-        let error_text = response
-            .text()
-            .await
-            .unwrap_or_else(|_| "Failed to read error response".to_string());
+        let error_text = response.text().await.unwrap_or_else(|e| {
+            report_reqwest_error("Failed to read reasoning rejection response", &e)
+        });
         info!(
             "Endpoint rejected request with reasoning disabled (status {}): {}. Retrying without reasoning fields",
             status, error_text
@@ -297,8 +392,14 @@ pub async fn send_chat_completion_with_schema(
             .json(&request_body)
             .send()
             .await
-            .map_err(|e| format!("HTTP request failed: {}", e))?;
+            .map_err(|e| report_reqwest_error("HTTP retry failed", &e))?;
         status = response.status();
+        debug!(
+            "Chat completion retry response received with status {} over {:?} from {}",
+            status,
+            response.version(),
+            sanitized_url(response.url())
+        );
 
         if status.is_success() {
             info!(
@@ -313,7 +414,7 @@ pub async fn send_chat_completion_with_schema(
         let error_text = response
             .text()
             .await
-            .unwrap_or_else(|_| "Failed to read error response".to_string());
+            .unwrap_or_else(|e| report_reqwest_error("Failed to read API error response", &e));
         return Err(format!(
             "API request failed with status {}: {}",
             status, error_text
@@ -323,7 +424,7 @@ pub async fn send_chat_completion_with_schema(
     let completion: ChatCompletionResponse = response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse API response: {}", e))?;
+        .map_err(|e| report_reqwest_error("Failed to parse API response", &e))?;
 
     Ok(completion
         .choices
@@ -348,14 +449,20 @@ pub async fn fetch_models(
         .get(&url)
         .send()
         .await
-        .map_err(|e| format!("Failed to fetch models: {}", e))?;
+        .map_err(|e| report_reqwest_error("Failed to fetch models", &e))?;
 
     let status = response.status();
+    debug!(
+        "Model list response received with status {} over {:?} from {}",
+        status,
+        response.version(),
+        sanitized_url(response.url())
+    );
     if !status.is_success() {
         let error_text = response
             .text()
             .await
-            .unwrap_or_else(|_| "Unknown error".to_string());
+            .unwrap_or_else(|e| report_reqwest_error("Failed to read model list error", &e));
         return Err(format!(
             "Model list request failed ({}): {}",
             status, error_text
@@ -365,7 +472,7 @@ pub async fn fetch_models(
     let parsed: serde_json::Value = response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+        .map_err(|e| report_reqwest_error("Failed to parse model list response", &e))?;
 
     let mut models = Vec::new();
 
@@ -394,6 +501,27 @@ pub async fn fetch_models(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fmt;
+
+    #[derive(Debug)]
+    struct TestError {
+        message: &'static str,
+        source: Option<Box<TestError>>,
+    }
+
+    impl fmt::Display for TestError {
+        fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter.write_str(self.message)
+        }
+    }
+
+    impl StdError for TestError {
+        fn source(&self) -> Option<&(dyn StdError + 'static)> {
+            self.source
+                .as_deref()
+                .map(|source| source as &(dyn StdError + 'static))
+        }
+    }
 
     fn provider(id: &str, base_url: &str) -> PostProcessProvider {
         PostProcessProvider {
@@ -417,6 +545,25 @@ mod tests {
             reasoning,
         };
         serde_json::to_value(&request).unwrap()
+    }
+
+    #[test]
+    fn error_source_chain_includes_all_nested_causes() {
+        let error = TestError {
+            message: "request failed",
+            source: Some(Box::new(TestError {
+                message: "TLS handshake failed",
+                source: Some(Box::new(TestError {
+                    message: "unknown certificate authority",
+                    source: None,
+                })),
+            })),
+        };
+
+        assert_eq!(
+            error_source_chain(&error),
+            vec!["TLS handshake failed", "unknown certificate authority"]
+        );
     }
 
     #[test]
