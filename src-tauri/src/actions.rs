@@ -101,6 +101,257 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
+fn get_language_name(code: &str) -> &str {
+    match code {
+        "en" => "English",
+        "zh" | "zh-Hans" | "zh-Hant" => "Chinese",
+        "yue" => "Cantonese",
+        "de" => "German",
+        "es" => "Spanish",
+        "ru" => "Russian",
+        "ko" => "Korean",
+        "fr" => "French",
+        "ja" => "Japanese",
+        "pt" => "Portuguese",
+        "tr" => "Turkish",
+        "pl" => "Polish",
+        "ca" => "Catalan",
+        "nl" => "Dutch",
+        "ar" => "Arabic",
+        "sv" => "Swedish",
+        "it" => "Italian",
+        "id" => "Indonesian",
+        "hi" => "Hindi",
+        "fi" => "Finnish",
+        "vi" => "Vietnamese",
+        "he" => "Hebrew",
+        "uk" => "Ukrainian",
+        "el" => "Greek",
+        "ms" => "Malay",
+        "cs" => "Czech",
+        "ro" => "Romanian",
+        "da" => "Danish",
+        "hu" => "Hungarian",
+        "ta" => "Tamil",
+        "no" => "Norwegian",
+        "th" => "Thai",
+        "ur" => "Urdu",
+        "hr" => "Croatian",
+        "bg" => "Bulgarian",
+        "lt" => "Lithuanian",
+        "la" => "Latin",
+        "mi" => "Maori",
+        "ml" => "Malayalam",
+        "cy" => "Welsh",
+        "sk" => "Slovak",
+        "te" => "Telugu",
+        "fa" => "Persian",
+        "lv" => "Latvian",
+        "bn" => "Bengali",
+        "sr" => "Serbian",
+        "az" => "Azerbaijani",
+        "sl" => "Slovenian",
+        "kn" => "Kannada",
+        "et" => "Estonian",
+        "mk" => "Macedonian",
+        "br" => "Breton",
+        "eu" => "Basque",
+        "is" => "Icelandic",
+        "hy" => "Armenian",
+        "ne" => "Nepali",
+        "mn" => "Mongolian",
+        "bs" => "Bosnian",
+        "kk" => "Kazakh",
+        "sq" => "Albanian",
+        "sw" => "Swahili",
+        "gl" => "Galician",
+        "mr" => "Marathi",
+        "pa" => "Punjabi",
+        "si" => "Sinhala",
+        "km" => "Khmer",
+        "sn" => "Shona",
+        "yo" => "Yoruba",
+        "so" => "Somali",
+        "af" => "Afrikaans",
+        "oc" => "Occitan",
+        "ka" => "Georgian",
+        "be" => "Belarusian",
+        "tg" => "Tajik",
+        "sd" => "Sindhi",
+        "gu" => "Gujarati",
+        "am" => "Amharic",
+        "yi" => "Yiddish",
+        "lo" => "Lao",
+        "uz" => "Uzbek",
+        "fo" => "Faroese",
+        "ht" => "Haitian Creole",
+        "ps" => "Pashto",
+        "tk" => "Turkmen",
+        "nn" => "Nynorsk",
+        "mt" => "Maltese",
+        "sa" => "Sanskrit",
+        "lb" => "Luxembourgish",
+        "my" => "Myanmar",
+        _ => code,
+    }
+}
+
+async fn translate_text_via_llm(
+    settings: &AppSettings,
+    transcription: &str,
+    target_lang: &str,
+) -> Option<String> {
+    if is_blank_transcription(transcription) {
+        debug!("Translation skipped because the transcription is empty");
+        return None;
+    }
+
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("Translation enabled but no post-processing provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "Translation skipped because provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    let target_lang_name = get_language_name(target_lang);
+    let prompt = format!(
+        "Translate the following text to {target_lang_name}. Return ONLY the translated text. Do not add any introduction, explanation, markdown blocks, or conversational filler.\n\nText:\n{transcription}"
+    );
+
+    let (reasoning_effort, reasoning) = match provider.id.as_str() {
+        "custom" => (Some("none".to_string()), None),
+        "openrouter" => (
+            None,
+            Some(crate::llm_client::ReasoningConfig {
+                effort: Some("none".to_string()),
+                exclude: Some(true),
+            }),
+        ),
+        _ => (None, None),
+    };
+
+    debug!(
+        "Starting LLM translation to {} with provider '{}' (model: {})",
+        target_lang_name, provider.id, model
+    );
+
+    // Handle Apple Intelligence separately since it uses native Swift APIs
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            if !apple_intelligence::check_apple_intelligence_availability() {
+                debug!("Apple Intelligence selected but not currently available on this device");
+                return None;
+            }
+
+            let system_prompt = format!("Translate the text directly to {target_lang_name}. Return ONLY the translated text.");
+            let token_limit = model.trim().parse::<i32>().unwrap_or(0);
+            return match apple_intelligence::process_text_with_system_prompt(
+                &system_prompt,
+                transcription,
+                token_limit,
+            ) {
+                Ok(result) => {
+                    if result.trim().is_empty() {
+                        None
+                    } else {
+                        Some(strip_invisible_chars(&result))
+                    }
+                }
+                Err(err) => {
+                    error!("Apple Intelligence translation failed: {}", err);
+                    None
+                }
+            };
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            debug!("Apple Intelligence provider selected on unsupported platform");
+            return None;
+        }
+    }
+
+    if provider.supports_structured_output {
+        let system_prompt = format!("You are a professional translator translating text directly to {target_lang_name}. Return ONLY the translated text.");
+        let user_content = transcription.to_string();
+        let json_schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "translation": {
+                    "type": "string",
+                    "description": "The translated text"
+                }
+            },
+            "required": ["translation"],
+            "additionalProperties": false
+        });
+
+        match crate::llm_client::send_chat_completion_with_schema(
+            &provider,
+            api_key.clone(),
+            &model,
+            user_content,
+            Some(system_prompt),
+            Some(json_schema),
+            reasoning_effort.clone(),
+            reasoning.clone(),
+        )
+        .await
+        {
+            Ok(Some(content)) => {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(translation_val) = json.get("translation").and_then(|t| t.as_str())
+                    {
+                        let result = strip_invisible_chars(translation_val);
+                        return Some(result);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Fallback to legacy/unstructured mode
+    match crate::llm_client::send_chat_completion(
+        &provider,
+        api_key,
+        &model,
+        prompt,
+        reasoning_effort,
+        reasoning,
+    )
+    .await
+    {
+        Ok(Some(content)) => {
+            let content = strip_invisible_chars(&content);
+            Some(content)
+        }
+        _ => None,
+    }
+}
+
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
@@ -451,6 +702,29 @@ pub(crate) async fn process_transcription_output(
         }
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
+    }
+
+    let model_manager = app.state::<Arc<ModelManager>>();
+    let active_model = model_manager.get_model_info(&settings.selected_model);
+    let model_supports_translation = active_model
+        .map(|m| m.supports_translation)
+        .unwrap_or(false);
+
+    let needs_llm_translation = settings.translation_target_language != "none"
+        && !settings.translation_target_language.is_empty()
+        && !(settings.translation_target_language == "en" && model_supports_translation);
+
+    if needs_llm_translation {
+        if let Some(translated_text) = translate_text_via_llm(
+            &settings,
+            &final_text,
+            &settings.translation_target_language,
+        )
+        .await
+        {
+            post_processed_text = Some(translated_text.clone());
+            final_text = translated_text;
+        }
     }
 
     ProcessedTranscription {

@@ -194,6 +194,13 @@
         "noResults": "No languages found",
         "auto": "Auto"
       },
+      "translation": {
+        "label": "Translate To",
+        "description": "Translate transcribed text to a target language. Gated Whisper models translate to English offline; other languages or models require an LLM API configured in Post-Processing.",
+        "disabled": "None (Disabled)",
+        "warning": "To translate using this model or to this language, please configure and enable an LLM provider in the Post-Processing tab.",
+        "modelWarning": "Your current model does not support translation. Switch to a Whisper model (Small, Medium, or Large) for translation to work."
+      },
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"

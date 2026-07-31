@@ -483,39 +483,52 @@ fn build_apple_intelligence_bridge() {
         .expect("Unable to determine Swift toolchain lib directory");
     let sdk_swift_lib = Path::new(&sdk_path).join("usr/lib/swift");
 
-    // Use macOS 11.0 as deployment target for compatibility
-    // The @available(macOS 26.0, *) checks in Swift handle runtime availability
-    // Weak linking for FoundationModels is handled via cargo:rustc-link-arg below
-    let status = Command::new(&swiftc_path)
-        .args([
-            // Without this flag swiftc treats single-file input as script
-            // mode and emits its own `_main` symbol into the .o, which can
-            // win the link against Rust's main under some linkers (e.g.
-            // open-source ld64 used in nixpkgs' Darwin stdenv), producing a
-            // binary whose main() is a 5-instruction no-op that returns 0.
-            // `-parse-as-library` keeps the compilation in library mode so
-            // no `_main` is emitted. See:
-            //   https://forums.swift.org/t/main-in-a-single-swift-file/63079
-            "-parse-as-library",
-            "-target",
-            "arm64-apple-macosx11.0",
-            "-sdk",
-            &sdk_path,
-            "-O",
-            "-import-objc-header",
-            BRIDGE_HEADER,
-            "-c",
-            source_file,
-            "-o",
-            object_path
-                .to_str()
-                .expect("Failed to convert object path to string"),
-        ])
-        .status()
-        .expect("Failed to invoke swiftc for Apple Intelligence bridge");
+    let compile_status = if source_file == STUB_SWIFT_FILE {
+        println!("cargo:warning=Compiling C stub for Apple Intelligence (bypassing swiftc)...");
+        Command::new("clang")
+            .args([
+                "-O3",
+                "-c",
+                "swift/apple_intelligence_stub.c",
+                "-o",
+                object_path
+                    .to_str()
+                    .expect("Failed to convert object path to string"),
+            ])
+            .status()
+    } else {
+        Command::new(&swiftc_path)
+            .args([
+                // Without this flag swiftc treats single-file input as script
+                // mode and emits its own `_main` symbol into the .o, which can
+                // win the link against Rust's main under some linkers (e.g.
+                // open-source ld64 used in nixpkgs' Darwin stdenv), producing a
+                // binary whose main() is a 5-instruction no-op that returns 0.
+                // `-parse-as-library` keeps the compilation in library mode so
+                // no `_main` is emitted. See:
+                //   https://forums.swift.org/t/main-in-a-single-swift-file/63079
+                "-parse-as-library",
+                "-target",
+                "arm64-apple-macosx11.0",
+                "-sdk",
+                &sdk_path,
+                "-O",
+                "-import-objc-header",
+                BRIDGE_HEADER,
+                "-c",
+                source_file,
+                "-o",
+                object_path
+                    .to_str()
+                    .expect("Failed to convert object path to string"),
+            ])
+            .status()
+    };
+
+    let status = compile_status.expect("Failed to compile Apple Intelligence bridge");
 
     if !status.success() {
-        panic!("swiftc failed to compile {source_file}");
+        panic!("Bridge compilation failed for {source_file}");
     }
 
     let status = Command::new("libtool")

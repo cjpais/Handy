@@ -383,6 +383,8 @@ pub struct AppSettings {
     pub selected_output_device: Option<String>,
     #[serde(default = "default_translate_to_english")]
     pub translate_to_english: bool,
+    #[serde(default = "default_translation_target_language")]
+    pub translation_target_language: String,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
     #[serde(default = "default_overlay_position")]
@@ -486,6 +488,10 @@ fn default_always_on_microphone() -> bool {
 
 fn default_translate_to_english() -> bool {
     false
+}
+
+fn default_translation_target_language() -> String {
+    "none".to_string()
 }
 
 fn default_start_hidden() -> bool {
@@ -855,6 +861,7 @@ pub fn get_default_settings() -> AppSettings {
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
+        translation_target_language: default_translation_target_language(),
         selected_language: "auto".to_string(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
@@ -1077,6 +1084,15 @@ fn apply_settings_migrations(
         } else {
             OverlayStyle::Live
         };
+        updated = true;
+    }
+
+    if settings_value.get("translation_target_language").is_none() {
+        if settings.translate_to_english {
+            settings.translation_target_language = "en".to_string();
+        } else {
+            settings.translation_target_language = "none".to_string();
+        }
         updated = true;
     }
 

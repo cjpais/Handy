@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { LanguageSelector } from "../LanguageSelector";
-import { TranslateToEnglish } from "../TranslateToEnglish";
+import { TranslationSelector } from "../TranslationSelector";
 import { useModelStore } from "../../../stores/modelStore";
 import type { ModelInfo } from "@/bindings";
 import {
@@ -26,11 +26,9 @@ export const ModelSettingsCard: React.FC = () => {
     capabilityLanguages[0] === CHINESE_LANGUAGE_CODE;
   const showLanguageSelector =
     supportsLanguageSelection || supportsChineseOnlyScriptSelection;
-  const supportsTranslation = currentModelInfo?.supports_translation ?? false;
-  const hasAnySettings = showLanguageSelector || supportsTranslation;
 
-  // Don't render anything if no model is selected or no settings available
-  if (!currentModel || !currentModelInfo || !hasAnySettings) {
+  // Don't render anything if no model is selected
+  if (!currentModel || !currentModelInfo) {
     return null;
   }
 
@@ -50,9 +48,7 @@ export const ModelSettingsCard: React.FC = () => {
           }
         />
       )}
-      {supportsTranslation && (
-        <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
-      )}
+      <TranslationSelector descriptionMode="tooltip" grouped={true} />
     </SettingsGroup>
   );
 };
