@@ -349,6 +349,10 @@ Download the models you want from below
 - Turbo (1600 MB): `https://blob.handy.computer/ggml-large-v3-turbo.bin`
 - Large (1100 MB): `https://blob.handy.computer/ggml-large-v3-q5_0.bin`
 
+**Parakeet Unified EN 0.6B (single `.gguf` file, recommended):**
+
+- Q8_0 (731 MB): `https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf/resolve/main/parakeet-unified-en-0.6b-Q8_0.gguf`
+
 **Parakeet Models (compressed archives):**
 
 - V2 (473 MB): `https://blob.handy.computer/parakeet-v2-int8.tar.gz`
@@ -367,6 +371,10 @@ Simply place the `.bin` file directly into the `models` directory:
 ├── ggml-large-v3-turbo.bin
 └── ggml-large-v3-q5_0.bin
 ```
+
+**For GGUF Models (.gguf files):**
+
+Place the `.gguf` file directly into the `models` directory, exactly like the Whisper `.bin` files above. Handy also picks up models already present in the shared Hugging Face cache (`~/.cache/huggingface/hub`), so a copy downloaded by another tool works without being moved.
 
 **For Parakeet Models (.tar.gz archives):**
 
@@ -391,7 +399,7 @@ Final structure should look like:
 **Important Notes:**
 
 - For Parakeet models, the extracted directory name **must** match exactly as shown above
-- Do not rename the `.bin` files for Whisper models—use the exact filenames from the download URLs
+- Do not rename the `.bin` or `.gguf` files—use the exact filenames from the download URLs
 - After placing the files, restart Handy to detect the new models
 
 #### Step 5: Verify Installation
