@@ -1,8 +1,14 @@
 use rustfft::{num_complex::Complex32, Fft, FftPlanner};
 use std::sync::Arc;
 
-const DB_MIN: f32 = -55.0;
-const DB_MAX: f32 = -8.0;
+// `db` below is not true dBFS: it's a per-bin average divided by the FFT
+// window size, which lands ~20 dB low for speech. So this window is calibrated
+// against measured mic audio (dictation ~-32 dBFS, room tone ~-48 dBFS) rather
+// than absolute dBFS. The old -55/-8 left speech ~1 px above the overlay's
+// floor, which reads as a frozen waveform (#1694). Not lowered past -68: at
+// -70 a noisy room starts making the idle waveform twitch.
+const DB_MIN: f32 = -68.0;
+const DB_MAX: f32 = -30.0;
 const GAIN: f32 = 1.3;
 const CURVE_POWER: f32 = 0.7;
 

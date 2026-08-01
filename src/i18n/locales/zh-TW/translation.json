@@ -6,7 +6,8 @@
     "unloadModel": "卸載模型",
     "model": "模型",
     "quit": "結束",
-    "cancel": "取消"
+    "cancel": "取消",
+    "secureInputWarning": "⚠ 快捷鍵被 Secure Input 阻擋"
   },
   "sidebar": {
     "general": "一般",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "首先，請選擇一種模型",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "相容的模型",
+    "downloadModelsTitle": "可供下載",
+    "showAllModels": "顯示全部 {{total}} 個模型",
+    "showFewerModels": "顯示較少模型",
     "recommended": "推薦",
     "customModelDescription": "官方不支援",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "選擇模型失敗"
     },
     "permissions": {
       "title": "需要權限",
@@ -145,7 +146,7 @@
     "capabilities": {
       "languageSelection": "支援多種輸入語言",
       "singleLanguage": "僅支援此語言",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} 種語言",
       "languageOnly": "僅 {{language}}",
       "translation": "可翻譯為英語",
       "translate": "翻譯為英語",
@@ -188,7 +189,7 @@
       },
       "language": {
         "title": "語言",
-        "description": "選擇語音識別的語言。選擇自動將自動判定語言，選擇特定語言可以提高該語言的準確度",
+        "description": "選擇語音辨識的語言。選擇自動將自動判定語言，選擇特定語言可以提高該語言的準確度",
         "searchPlaceholder": "搜尋語言...",
         "noResults": "未找到語言",
         "auto": "自動"
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "懸浮窗",
+          "description": "選擇錄音懸浮窗的樣式：「無」會隱藏懸浮窗，「精簡」顯示小巧的膠囊狀指示，「即時」在您說話時即時顯示轉錄內容（僅限支援串流的模型——請在模型選擇器中尋找「串流」標籤）。在 Linux 上建議選擇「無」",
           "options": {
             "none": "無",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "精簡",
+            "live": "即時"
           }
         },
         "position": {
@@ -358,15 +359,15 @@
       },
       "customWords": {
         "title": "自訂詞彙",
-        "description": "新增經常被誤聽或拼寫錯誤的詞彙。系統會自動將發音相似的詞彙修正為您列表中的詞彙",
+        "description": "協助支援的模型辨識名稱和專業術語。目前，模糊修正僅適用於使用 A–Z 字母和數字的詞語。",
         "placeholder": "新增詞彙",
         "add": "新增",
         "remove": "刪除 {{word}}",
         "duplicate": "「{{word}}」已存在"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "語音活動偵測",
+        "description": "過濾錄音中的靜音。支援串流的模型會使用較長的 VAD 尾段；停用 VAD 則會錄製原始音訊"
       }
     },
     "postProcessing": {
@@ -524,9 +525,33 @@
         "title": "貼上延遲（後）",
         "description": "發送貼上按鍵後、還原先前剪貼簿前的延遲（毫秒）。如果貼上的是舊的剪貼簿內容而非轉錄文字，請增加此值。"
       },
+      "reliablePaste": {
+        "title": "可靠貼上（Beta）",
+        "description": "在目標應用程式真正讀取轉錄文字之後才還原剪貼簿，而不是等待固定延遲。用於解決系統負載較高時貼上舊剪貼簿內容的問題。需要使用剪貼簿類的貼上方式；僅支援 macOS 與 Windows。"
+      },
       "recordingBuffer": {
         "title": "額外錄音緩衝",
         "description": "放開按鍵後繼續錄音的額外時間（毫秒），以捕捉尾音。0 = 無額外緩衝。"
+      },
+      "keyboardDiagnostic": {
+        "title": "鍵盤診斷",
+        "description": "檢查鍵盤事件是否能送達 Handy。只會記錄事件數量，絕不記錄您按了哪些按鍵。",
+        "run": "執行 10 秒診斷",
+        "running": "正在監聽… 請按幾次您的快捷鍵（例如 Option+Space）",
+        "secureInputLabel": "Secure Input",
+        "enabled": "已啟用",
+        "disabled": "已停用",
+        "holder": "被 {{name}}（pid {{pid}}）占用",
+        "holderUnknown": "找不到占用的程式",
+        "keyDown": "按鍵按下",
+        "keyUp": "按鍵放開",
+        "flagsChanged": "修飾鍵",
+        "mouse": "滑鼠",
+        "verdictBlocked": "Secure Input 正在阻擋按鍵事件——在問題解決前，包含一般按鍵的快捷鍵無法運作。",
+        "verdictSuspicious": "收到了修飾鍵事件，但沒有按鍵事件——即使 Secure Input 回報為已停用，仍有程式在抑制按鍵。請在 GitHub 上回報此問題。",
+        "verdictOk": "按鍵事件正常送達 Handy。",
+        "verdictNoEvents": "未擷取到任何事件——測試期間您有按鍵嗎？",
+        "failed": "診斷失敗：{{error}}"
       },
       "whatsNewPreview": {
         "title": "預覽新功能",
@@ -560,7 +585,7 @@
         "title": "致謝",
         "ggml": {
           "title": "ggml",
-          "description": "針對 OpenAI Whisper 自動語音識別模型的高效能推理引擎",
+          "description": "針對 OpenAI Whisper 自動語音辨識模型的高效能推理引擎",
           "details": "Handy 使用 ggml 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
       },
@@ -580,8 +605,10 @@
     "preparing": "準備中...",
     "checkForUpdates": "檢查更新",
     "portableUpdateTitle": "需要手動更新",
-    "portableUpdateMessage": "可攜式安裝無法自動更新。更新方法：從 GitHub Releases 下載最新的 NSIS 安裝程式，安裝到相同資料夾，然後將舊版本的 Data/ 資料夾（設定、模型、錄音）複製到新版本。",
-    "portableUpdateButton": "開啟 GitHub Releases"
+    "portableUpdateMessage": "可攜式安裝無法自動更新。請透過下方按鈕下載適用於你的系統的安裝程式，執行後安裝到相同資料夾，你的 Data/ 資料夾（設定、模型、錄音）會保留在原處。",
+    "portableUpdateButton": "下載安裝程式",
+    "portableUpdateBrowseMessage": "可攜式安裝無法自動更新。請從 GitHub Releases 下載適用於你的系統的最新版本，並安裝到相同資料夾，你的 Data/ 資料夾（設定、模型、錄音）會保留在原處。",
+    "portableUpdateBrowseButton": "開啟 GitHub Releases"
   },
   "common": {
     "loading": "載入中...",
@@ -633,5 +660,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} 可能正在阻擋 1 個快捷鍵",
+    "blockedWithCulprit_other": "{{name}} 可能正在阻擋 {{count}} 個快捷鍵",
+    "blockedNoCulprit_one": "macOS 正在暫時阻擋 1 個快捷鍵",
+    "blockedNoCulprit_other": "macOS 正在暫時阻擋 {{count}} 個快捷鍵",
+    "recorderBlockedWithCulprit": "{{name}} 可能正在阻擋快捷鍵變更",
+    "recorderBlockedNoCulprit": "macOS 正在暫時阻擋快捷鍵變更",
+    "learnMore": "如何解決",
+    "recorderBlocked": "目前無法錄製快捷鍵——macOS 的 Secure Input 正在阻擋按鍵事件。請先解決 Secure Input 警告。",
+    "dismiss": "關閉"
   }
 }

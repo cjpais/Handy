@@ -6,7 +6,8 @@
     "unloadModel": "Uvolnit model",
     "model": "Model",
     "quit": "Ukončit",
-    "cancel": "Zrušit"
+    "cancel": "Zrušit",
+    "secureInputWarning": "⚠ Zkratky blokuje Secure Input"
   },
   "sidebar": {
     "general": "Obecné",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Kompatibilní modely",
+    "downloadModelsTitle": "Dostupné ke stažení",
+    "showAllModels": "Zobrazit všech {{total}} modelů",
+    "showFewerModels": "Zobrazit méně modelů",
     "recommended": "Doporučeno",
     "customModelDescription": "Oficiálně nepodporováno",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Nepodařilo se vybrat model"
     },
     "permissions": {
       "title": "Vyžadována oprávnění",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Podporuje více vstupních jazyků",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} jazyků",
       "translation": "Umí překládat do angličtiny",
       "translate": "Přeložit do angličtiny",
       "singleLanguage": "Podporuje pouze tento jazyk",
@@ -209,7 +210,7 @@
         "description": "Vyberte jazyk rozpoznávání řeči. Auto jazyk určí automaticky, zatímco výběr konkrétního jazyka může zlepšit přesnost.",
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",
-        "auto": "Auto"
+        "auto": "Automaticky"
       },
       "pushToTalk": {
         "label": "Stisk a mluv",
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Překryv",
+          "description": "Vyberte překryv při nahrávání: „Žádné“ jej skryje, „Minimální“ zobrazí kompaktní indikátor, „Živě“ zobrazuje přepis v reálném čase, když mluvíte (pouze modely podporující streaming — hledejte odznak „Streaming“ ve výběru modelů). Na Linuxu se doporučuje „Žádné“.",
           "options": {
             "none": "Žádné",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Minimální",
+            "live": "Živě"
           }
         },
         "position": {
@@ -358,15 +359,15 @@
       },
       "customWords": {
         "title": "Vlastní slova",
-        "description": "Přidejte slova, která jsou při přepisu často špatně rozpoznána nebo napsána. Systém automaticky opraví podobně znějící slova podle vašeho seznamu.",
+        "description": "Pomozte podporovaným modelům rozpoznávat jména a odborné termíny. Přibližné opravy jsou v současnosti omezeny na slova obsahující písmena A–Z a číslice.",
         "placeholder": "Přidat slovo",
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Detekce hlasové aktivity",
+        "description": "Odfiltruje ticho z nahrávek. Modely podporující streaming používají delší doběh VAD; vypnutí VAD nahrává surový zvuk."
       }
     },
     "postProcessing": {
@@ -524,9 +525,33 @@
         "title": "Zpoždění vložení (po)",
         "description": "Zpoždění (v milisekundách) po klávese pro vložení, před obnovením předchozí schránky. Zvyšte, pokud se místo přepisu vkládá starý obsah schránky."
       },
+      "reliablePaste": {
+        "title": "Spolehlivé vložení (Beta)",
+        "description": "Obnoví schránku teprve poté, co cílová aplikace skutečně přečte přepis, místo po pevně daném zpoždění. Má odstranit vkládání starého obsahu schránky při zatížení systému. Vyžaduje způsob vložení přes schránku; pouze macOS a Windows."
+      },
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
+      },
+      "keyboardDiagnostic": {
+        "title": "Diagnostika klávesnice",
+        "description": "Ověří, zda události klávesnice dorazí do Handy. Zaznamenává se pouze počet událostí — nikdy to, které klávesy stisknete.",
+        "run": "Spustit 10s diagnostiku",
+        "running": "Naslouchání… několikrát stiskněte svou zkratku (např. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "zapnuto",
+        "disabled": "vypnuto",
+        "holder": "drží ji {{name}} (pid {{pid}})",
+        "holderUnknown": "žádný viditelný držitel",
+        "keyDown": "Stisk klávesy",
+        "keyUp": "Uvolnění klávesy",
+        "flagsChanged": "Modifikátory",
+        "mouse": "Myš",
+        "verdictBlocked": "Secure Input blokuje události kláves — zkratky obsahující běžnou klávesu nemohou fungovat, dokud se to nevyřeší.",
+        "verdictSuspicious": "Dorazily události modifikátorů, ale žádné události kláves — něco klávesy potlačuje, přestože Secure Input hlásí, že je vypnutý. Nahlaste to prosím na GitHubu.",
+        "verdictOk": "Události kláves dorazí do Handy normálně.",
+        "verdictNoEvents": "Nebyly zachyceny žádné události — stiskli jste během testu nějaké klávesy?",
+        "failed": "Diagnostika selhala: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Náhled novinek",
@@ -580,8 +605,10 @@
     "preparing": "Příprava...",
     "checkForUpdates": "Zkontrolovat aktualizace",
     "portableUpdateTitle": "Vyžadována ruční aktualizace",
-    "portableUpdateMessage": "Přenosné instalace nelze aktualizovat automaticky. Postup aktualizace: stáhněte nejnovější instalátor NSIS z GitHub Releases, nainstalujte jej do stejné složky a poté zkopírujte svou složku Data/ (nastavení, modely, nahrávky) ze staré verze do nové.",
-    "portableUpdateButton": "Otevřít GitHub Releases"
+    "portableUpdateMessage": "Přenosné instalace nelze aktualizovat automaticky. Níže stáhněte instalátor pro svůj systém, spusťte jej a nainstalujte do stejné složky — vaše složka Data/ (nastavení, modely, nahrávky) zůstane na místě.",
+    "portableUpdateButton": "Stáhnout instalátor",
+    "portableUpdateBrowseMessage": "Přenosné instalace nelze aktualizovat automaticky. Stáhněte nejnovější verzi pro svůj systém z GitHub Releases a nainstalujte ji do stejné složky — vaše složka Data/ (nastavení, modely, nahrávky) zůstane na místě.",
+    "portableUpdateBrowseButton": "Otevřít GitHub Releases"
   },
   "common": {
     "loading": "Načítání...",
@@ -633,5 +660,16 @@
   },
   "whatsNew": {
     "title": "Novinky v Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} může blokovat 1 zkratku",
+    "blockedWithCulprit_other": "{{name}} může blokovat {{count}} zkratek",
+    "blockedNoCulprit_one": "macOS dočasně blokuje 1 zkratku",
+    "blockedNoCulprit_other": "macOS dočasně blokuje {{count}} zkratek",
+    "recorderBlockedWithCulprit": "{{name}} může blokovat změny zkratek",
+    "recorderBlockedNoCulprit": "macOS dočasně blokuje změny zkratek",
+    "learnMore": "Jak to vyřešit",
+    "recorderBlocked": "Zkratky teď nelze nahrát — Secure Input v macOS blokuje události kláves. Nejprve vyřešte upozornění na Secure Input.",
+    "dismiss": "Zavřít"
   }
 }

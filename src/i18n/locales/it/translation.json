@@ -6,7 +6,8 @@
     "unloadModel": "Rilascia modello",
     "model": "Modello",
     "quit": "Esci",
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input"
   },
   "sidebar": {
     "general": "Generale",
@@ -209,7 +210,7 @@
         "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
-        "auto": "Auto"
+        "auto": "Automatico"
       },
       "pushToTalk": {
         "label": "Premi per Parlare",
@@ -265,7 +266,7 @@
           "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). DirectML su Windows è sperimentale. I modelli potrebbero non riuscire a trascrivere."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatico"
         }
       },
       "startHidden": {
@@ -332,10 +333,10 @@
         "description": "Invia automaticamente la combinazione di tasti selezionata dopo l'inserimento del testo. Cmd+Enter si applica su macOS, mentre Windows/Linux usano Super+Enter.",
         "options": {
           "off": "Disattivato",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "enter": "Invio",
+          "cmdEnter": "Cmd+Invio",
+          "superEnter": "Super+Invio",
+          "ctrlEnter": "Ctrl+Invio"
         }
       },
       "translateToEnglish": {
@@ -358,7 +359,7 @@
       },
       "customWords": {
         "title": "Parole personalizzate",
-        "description": "Aggiungi parole che vengono spesso fraintese o scritte in modo errato durante la trascrizione. Il sistema correggerà automaticamente le parole dal suono simile in modo che corrispondano al tuo elenco.",
+        "description": "Aiuta i modelli supportati a riconoscere nomi e termini specialistici. La correzione approssimativa è attualmente limitata alle parole che usano le lettere A–Z e i numeri.",
         "placeholder": "Aggiungi una parola",
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
@@ -524,9 +525,33 @@
         "title": "Ritardo incolla (dopo)",
         "description": "Ritardo (in millisecondi) dopo il tasto incolla, prima di ripristinare gli appunti precedenti. Aumentare se viene incollato il vecchio contenuto degli appunti invece della trascrizione."
       },
+      "reliablePaste": {
+        "title": "Incolla affidabile (Beta)",
+        "description": "Ripristina gli appunti solo dopo che l'app di destinazione ha effettivamente letto la trascrizione, anziché dopo un ritardo fisso. Serve a risolvere l'incollaggio del vecchio contenuto degli appunti quando il sistema è sotto carico. Richiede un metodo di incollaggio tramite appunti; solo macOS e Windows."
+      },
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",
         "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
+      },
+      "keyboardDiagnostic": {
+        "title": "Diagnostica tastiera",
+        "description": "Verifica se gli eventi della tastiera arrivano a Handy. Viene registrato solo il numero di eventi, mai quali tasti premi.",
+        "run": "Esegui diagnostica di 10 s",
+        "running": "In ascolto… premi la tua scorciatoia alcune volte (ad es. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "abilitato",
+        "disabled": "disabilitato",
+        "holder": "trattenuto da {{name}} (pid {{pid}})",
+        "holderUnknown": "nessun responsabile visibile",
+        "keyDown": "Tasto premuto",
+        "keyUp": "Tasto rilasciato",
+        "flagsChanged": "Modificatori",
+        "mouse": "Mouse",
+        "verdictBlocked": "Secure Input sta bloccando gli eventi dei tasti: le scorciatoie che includono un tasto normale non possono funzionare finché non viene risolto.",
+        "verdictSuspicious": "Sono arrivati eventi dei modificatori ma nessun evento dei tasti: qualcosa sta sopprimendo i tasti anche se Secure Input risulta disabilitato. Segnalalo su GitHub.",
+        "verdictOk": "Gli eventi dei tasti arrivano a Handy normalmente.",
+        "verdictNoEvents": "Nessun evento rilevato: hai premuto qualche tasto durante il test?",
+        "failed": "Diagnostica non riuscita: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Anteprima delle novità",
@@ -580,8 +605,10 @@
     "preparing": "Preparazione...",
     "checkForUpdates": "Controlla aggiornamenti",
     "portableUpdateTitle": "Aggiornamento manuale necessario",
-    "portableUpdateMessage": "Le installazioni portatili non possono essere aggiornate automaticamente. Per aggiornare: scarica l'ultima versione del programma di installazione NSIS da GitHub Releases, installala nella stessa cartella, quindi copia la cartella Data/ (impostazioni, modelli, registrazioni) dalla vecchia versione a quella nuova..",
-    "portableUpdateButton": "Apri i rilasci su GitHub"
+    "portableUpdateMessage": "Le installazioni portatili non possono essere aggiornate automaticamente. Scarica qui sotto il programma di installazione per il tuo sistema, eseguilo e installalo nella stessa cartella: la cartella Data/ (impostazioni, modelli, registrazioni) viene mantenuta.",
+    "portableUpdateButton": "Scarica il programma di installazione",
+    "portableUpdateBrowseMessage": "Le installazioni portatili non possono essere aggiornate automaticamente. Scarica da GitHub Releases la versione più recente per il tuo sistema e installala nella stessa cartella: la cartella Data/ (impostazioni, modelli, registrazioni) viene mantenuta.",
+    "portableUpdateBrowseButton": "Apri i rilasci su GitHub"
   },
   "common": {
     "loading": "Caricamento...",
@@ -633,5 +660,16 @@
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} potrebbe bloccare 1 scorciatoia",
+    "blockedWithCulprit_other": "{{name}} potrebbe bloccare {{count}} scorciatoie",
+    "blockedNoCulprit_one": "macOS sta bloccando temporaneamente 1 scorciatoia",
+    "blockedNoCulprit_other": "macOS sta bloccando temporaneamente {{count}} scorciatoie",
+    "recorderBlockedWithCulprit": "{{name}} potrebbe bloccare le modifiche alle scorciatoie",
+    "recorderBlockedNoCulprit": "macOS sta bloccando temporaneamente le modifiche alle scorciatoie",
+    "learnMore": "Come risolvere",
+    "recorderBlocked": "Non è possibile registrare scorciatoie in questo momento: Secure Input di macOS sta bloccando gli eventi dei tasti. Risolvi prima l'avviso di Secure Input.",
+    "dismiss": "Ignora"
   }
 }

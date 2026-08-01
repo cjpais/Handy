@@ -388,12 +388,13 @@ jobs:
               cp -L "$f" "$f.real" && mv "$f.real" "$f"
             fi
           done
-          # Add the shared libs to the deb package under /usr/lib
+          # Ship ORT in Handy's private lib dir under its SONAME only — the one
+          # name the loader resolves (handy has NEEDED libonnxruntime.so.1).
+          # Shipping the .so/.so.x.y.z aliases too would triplicate the lib as
+          # real files and draw ldconfig warnings (issue #1639).
           # deb.files key = destination in package, value = source on disk
-          jq --arg so "$ORT_DIR/lib/libonnxruntime.so" \
-             --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
-             --arg sov "$ORT_DIR/lib/libonnxruntime.so.1.24.2" \
-            '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
+          jq --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
+            '.bundle.linux.deb.files["/usr/lib/Handy/libonnxruntime.so.1"] = $so1' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
       # Windows x64 links a BASELINE ONNX Runtime dynamically instead of statically
@@ -659,7 +660,7 @@ jobs:
             # Run under a virtual X server: handy initializes GTK on startup even
             # on the headless --list-devices path, which fails without a display.
             HANDY_NO_GTK_LAYER_SHELL=1 \
-            LD_LIBRARY_PATH="${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+            LD_LIBRARY_PATH="${root}/usr/lib/Handy:${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
               xvfb-run -a "${root}/usr/bin/handy" --list-devices >/tmp/handy-package-smoke.log
             echo "${label} --list-devices smoke passed"
           }
@@ -670,10 +671,18 @@ jobs:
               listing="$(mktemp)"
               dpkg-deb -c "$deb" > "$listing"
               require_pattern "$listing" 'usr/bin/handy$' "handy binary"
-              require_pattern "$listing" 'usr/lib/libtranscribe\.so' "transcribe runtime library"
-              require_pattern "$listing" 'usr/lib/libggml-cpu.*\.so' "ggml CPU backend module"
+              require_pattern "$listing" 'usr/lib/Handy/libtranscribe\.so\.[0-9]+$' "transcribe runtime library (SONAME)"
+              require_pattern "$listing" 'usr/lib/Handy/libggml-cpu.*\.so' "ggml CPU backend module"
               if [[ "${{ inputs.platform }}" == *"ubuntu-22.04"* && "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
-                require_pattern "$listing" 'usr/lib/libonnxruntime\.so' "ONNX Runtime library"
+                require_pattern "$listing" 'usr/lib/Handy/libonnxruntime\.so\.[0-9]+$' "ONNX Runtime library (SONAME)"
+              fi
+              # Handy's libs must stay out of the ldconfig-scanned /usr/lib
+              # (issue #1639): app-private libs belong in /usr/lib/Handy only.
+              # `[^/]+` excludes the Handy/ subdir, so only direct hits match.
+              if grep -Eq 'usr/lib/[^/]+\.so' "$listing"; then
+                echo "ERROR: libraries installed directly into /usr/lib (issue #1639):" >&2
+                grep -E 'usr/lib/[^/]+\.so' "$listing" >&2
+                exit 1
               fi
               root="$(mktemp -d)"
               dpkg-deb -x "$deb" "$root"
@@ -692,8 +701,14 @@ jobs:
               listing="$(mktemp)"
               rpm -qpl "$rpm_pkg" > "$listing"
               require_pattern "$listing" '/usr/bin/handy$' "handy binary"
-              require_pattern "$listing" '/usr/lib/libtranscribe\.so' "transcribe runtime library"
-              require_pattern "$listing" '/usr/lib/libggml-cpu.*\.so' "ggml CPU backend module"
+              require_pattern "$listing" '/usr/lib/Handy/libtranscribe\.so\.[0-9]+$' "transcribe runtime library (SONAME)"
+              require_pattern "$listing" '/usr/lib/Handy/libggml-cpu.*\.so' "ggml CPU backend module"
+              # Same /usr/lib pollution guard as the deb audit (issue #1639).
+              if grep -Eq 'usr/lib/[^/]+\.so' "$listing"; then
+                echo "ERROR: libraries installed directly into /usr/lib (issue #1639):" >&2
+                grep -E 'usr/lib/[^/]+\.so' "$listing" >&2
+                exit 1
+              fi
               rm -f "$listing"
             done
           fi
@@ -708,7 +723,13 @@ jobs:
                 cd "$workdir"
                 ./Handy.AppImage --appimage-extract >/dev/null
                 require_path "squashfs-root/usr/bin/handy" "AppImage handy binary"
-                require_path "squashfs-root/usr/lib/libtranscribe.so" "AppImage transcribe runtime library"
+                # The SONAME (libtranscribe.so.N) is the name the loader
+                # resolves; the bare .so alias may or may not be present.
+                if ! find "squashfs-root/usr/lib" -name 'libtranscribe.so*' | grep -q .; then
+                  echo "ERROR: missing AppImage transcribe runtime library" >&2
+                  find "squashfs-root/usr/lib" -maxdepth 1 -type f >&2
+                  exit 1
+                fi
                 if ! find "squashfs-root/usr/lib" -name 'libggml-cpu*.so*' | grep -q .; then
                   echo "ERROR: missing AppImage ggml CPU backend module" >&2
                   find "squashfs-root/usr/lib" -maxdepth 1 -type f >&2
@@ -782,9 +803,16 @@ jobs:
               }
             }
 
-            & $handy.FullName --list-devices | Out-Host
+            $deviceOutput = (& $handy.FullName --list-devices | Out-String)
+            $deviceOutput | Write-Host
             if ($LASTEXITCODE -ne 0) {
               throw "$Label handy.exe --list-devices failed"
+            }
+            if ("${{ inputs.target }}" -like "aarch64*" -and $deviceOutput -match "kind=(vulkan|cuda|metal|gpu)") {
+              throw "$Label Windows ARM64 package unexpectedly exposed a GPU compute device"
+            }
+            if ("${{ inputs.target }}" -like "aarch64*" -and $deviceOutput -notmatch "kind=cpu") {
+              throw "$Label Windows ARM64 package did not expose its required CPU compute device"
             }
           }
 

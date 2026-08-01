@@ -8,5 +8,6 @@
 
 # Staged by build.rs: transcribe-cpp shared runtime libraries (Windows DLLs /
 # Linux .so), bundled next to the executable — to the install root via
-# tauri.windows.conf.json on Windows, into /usr/lib via tauri.conf.json on Linux.
+# tauri.windows.conf.json on Windows, into /usr/lib/Handy (deb/rpm) via
+# tauri.conf.json on Linux.
 /transcribe-libs/
