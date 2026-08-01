@@ -605,8 +605,10 @@
     "preparing": "準備中…",
     "checkForUpdates": "アップデートを確認",
     "portableUpdateTitle": "手動での更新が必要です",
-    "portableUpdateMessage": "ポータブル版は自動的に更新できません。更新するには、GitHub Releases から最新の NSIS インストーラーをダウンロードし、同じフォルダーにインストールしてから、古いバージョンの Data フォルダー(設定、モデル、録音)を新しいバージョンにコピーしてください。",
-    "portableUpdateButton": "GitHub Releases を開く"
+    "portableUpdateMessage": "ポータブル版は自動的に更新できません。下のボタンからお使いのシステム向けのインストーラーをダウンロードし、実行して同じフォルダーにインストールしてください。Data フォルダー(設定、モデル、録音)はそのまま残ります。",
+    "portableUpdateButton": "インストーラーをダウンロード",
+    "portableUpdateBrowseMessage": "ポータブル版は自動的に更新できません。GitHub Releases からお使いのシステム向けの最新版をダウンロードし、同じフォルダーにインストールしてください。Data フォルダー(設定、モデル、録音)はそのまま残ります。",
+    "portableUpdateBrowseButton": "GitHub Releases を開く"
   },
   "common": {
     "loading": "読み込み中…",

@@ -605,8 +605,10 @@
     "preparing": "Voorbereiden...",
     "checkForUpdates": "Controleren op updates",
     "portableUpdateTitle": "Handmatige update vereist",
-    "portableUpdateMessage": "Draagbare (portable) installaties kunnen niet automatisch worden bijgewerkt. Om bij te werken: download het nieuwste NSIS-installatiebestand van GitHub Releases, installeer het in dezelfde map en kopieer vervolgens je Data/-map (instellingen, modellen, opnames) van de oude versie naar de nieuwe.",
-    "portableUpdateButton": "GitHub Releases openen"
+    "portableUpdateMessage": "Draagbare (portable) installaties kunnen niet automatisch worden bijgewerkt. Download hieronder het installatiebestand voor je systeem, voer het uit en installeer in dezelfde map — je Data/-map (instellingen, modellen, opnames) blijft behouden.",
+    "portableUpdateButton": "Installatiebestand downloaden",
+    "portableUpdateBrowseMessage": "Draagbare (portable) installaties kunnen niet automatisch worden bijgewerkt. Download de nieuwste versie voor je systeem van GitHub Releases en installeer die in dezelfde map — je Data/-map (instellingen, modellen, opnames) blijft behouden.",
+    "portableUpdateBrowseButton": "GitHub Releases openen"
   },
   "whatsNew": {
     "title": "Nieuw in Handy v{{version}}"

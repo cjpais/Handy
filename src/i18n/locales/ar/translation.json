@@ -605,8 +605,10 @@
     "preparing": "...جاري التحضير",
     "checkForUpdates": "التحقق من وجود تحديثات",
     "portableUpdateTitle": "التحديث اليدوي مطلوب",
-    "portableUpdateMessage": "لا يمكن تحديث التثبيتات المحمولة تلقائيًا. للتحديث: نزّل أحدث مثبّت NSIS من GitHub Releases، وثبّته في المجلد نفسه، ثم انسخ مجلد Data/ (الإعدادات والنماذج والتسجيلات) من الإصدار القديم إلى الجديد.",
-    "portableUpdateButton": "فتح GitHub Releases"
+    "portableUpdateMessage": "لا يمكن تحديث التثبيتات المحمولة تلقائيًا. نزّل المثبّت المناسب لنظامك من الزر أدناه، شغّله، وثبّته في المجلد نفسه — يبقى مجلد Data/ (الإعدادات والنماذج والتسجيلات) في مكانه.",
+    "portableUpdateButton": "تنزيل المثبّت",
+    "portableUpdateBrowseMessage": "لا يمكن تحديث التثبيتات المحمولة تلقائيًا. نزّل أحدث إصدار مناسب لنظامك من GitHub Releases وثبّته في المجلد نفسه — يبقى مجلد Data/ (الإعدادات والنماذج والتسجيلات) في مكانه.",
+    "portableUpdateBrowseButton": "فتح GitHub Releases"
   },
   "common": {
     "loading": "...جاري التحميل",
