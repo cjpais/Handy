@@ -6,7 +6,8 @@
     "unloadModel": "Unload Model",
     "model": "Model",
     "quit": "Quit",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
   },
   "sidebar": {
     "general": "General",
@@ -531,9 +532,33 @@
         "title": "Paste Delay (After)",
         "description": "Delay (in milliseconds) after the paste keystroke, before restoring your previous clipboard. Increase if your old clipboard content is being pasted instead of the transcription."
       },
+      "reliablePaste": {
+        "title": "Reliable Paste (Beta)",
+        "description": "Restore the clipboard only after the target app actually reads the transcription, instead of after a fixed delay. Intended to fix old clipboard content being pasted under system load. Requires a clipboard paste method; macOS and Windows only."
+      },
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
         "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
+      },
+      "keyboardDiagnostic": {
+        "title": "Keyboard Diagnostic",
+        "description": "Checks whether keyboard events reach Handy. Only event counts are recorded — never which keys you press.",
+        "run": "Run 10s diagnostic",
+        "running": "Listening… press your shortcut a few times (e.g. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "enabled",
+        "disabled": "disabled",
+        "holder": "held by {{name}} (pid {{pid}})",
+        "holderUnknown": "no visible holder",
+        "keyDown": "Key down",
+        "keyUp": "Key up",
+        "flagsChanged": "Modifiers",
+        "mouse": "Mouse",
+        "verdictBlocked": "Secure Input is blocking key events — keyed shortcuts cannot work until it is resolved.",
+        "verdictSuspicious": "Modifier events arrived but no key events — something is suppressing keys even though Secure Input reports disabled. Please report this on GitHub.",
+        "verdictOk": "Key events are reaching Handy normally.",
+        "verdictNoEvents": "No events captured — did you press any keys during the test?",
+        "failed": "Diagnostic failed: {{error}}"
       }
     },
     "about": {
@@ -633,5 +658,16 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",
+    "blockedWithCulprit_other": "{{name}} may be blocking {{count}} shortcuts",
+    "blockedNoCulprit_one": "macOS is temporarily blocking 1 shortcut",
+    "blockedNoCulprit_other": "macOS is temporarily blocking {{count}} shortcuts",
+    "recorderBlockedWithCulprit": "{{name}} may be blocking shortcut changes",
+    "recorderBlockedNoCulprit": "macOS is temporarily blocking shortcut changes",
+    "learnMore": "How to fix",
+    "recorderBlocked": "Can't record shortcuts right now — macOS Secure Input is blocking key events. Resolve the Secure Input warning first.",
+    "dismiss": "Dismiss"
   }
 }

@@ -63,9 +63,11 @@ fn paste_via_clipboard(
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
         match paste_method {
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo)?,
+            // The legacy path cannot detect a mistimed chord, so it keeps the
+            // conservative 100ms modifier hold.
+            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100)?,
+            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100)?,
+            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100)?,
             _ => return Err("Invalid paste method for clipboard paste".into()),
         }
     }
@@ -561,7 +563,7 @@ fn paste_direct(
     input::paste_text_direct(enigo, text)
 }
 
-fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
+pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
     match key_type {
         AutoSubmitKey::Enter => {
             enigo
@@ -649,6 +651,28 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            // Debug-gated receipt-sequenced paste (#502): restore the clipboard
+            // after the target actually reads the transcript, not on a timer.
+            // On success it fully handles the paste (including auto-submit and
+            // clipboard handling) asynchronously; on failure fall through to
+            // the legacy path untouched.
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            if settings.reliable_paste {
+                match crate::paste_tx::try_reliable_paste(
+                    &text,
+                    &app_handle,
+                    &paste_method,
+                    &mut enigo,
+                    settings.auto_submit,
+                    settings.auto_submit_key,
+                    settings.clipboard_handling,
+                ) {
+                    Ok(()) => return Ok(()),
+                    Err(e) => {
+                        log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
+                    }
+                }
+            }
             paste_via_clipboard(
                 &mut enigo,
                 &text,

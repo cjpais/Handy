@@ -6,7 +6,8 @@
     "unloadModel": "Modell entladen",
     "model": "Modell",
     "quit": "Beenden",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "secureInputWarning": "⚠ Tastenkürzel durch Secure Input blockiert"
   },
   "sidebar": {
     "general": "Allgemein",
@@ -209,7 +210,7 @@
         "description": "Wähle die Sprache für die Spracherkennung. Auto erkennt die Sprache automatisch, die Auswahl einer bestimmten Sprache kann die Genauigkeit verbessern.",
         "searchPlaceholder": "Sprachen suchen...",
         "noResults": "Keine Sprachen gefunden",
-        "auto": "Auto"
+        "auto": "Automatisch"
       },
       "pushToTalk": {
         "label": "Push-to-Talk",
@@ -265,7 +266,7 @@
           "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatisch"
         }
       },
       "startHidden": {
@@ -524,9 +525,33 @@
         "title": "Einfügeverzögerung (nachher)",
         "description": "Verzögerung (in Millisekunden) nach dem Einfüge-Tastendruck, bevor deine vorherige Zwischenablage wiederhergestellt wird. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
       },
+      "reliablePaste": {
+        "title": "Zuverlässiges Einfügen (Beta)",
+        "description": "Die Zwischenablage erst wiederherstellen, wenn die Ziel-App die Transkription tatsächlich gelesen hat, statt nach einer festen Verzögerung. Soll verhindern, dass bei Systemlast der alte Inhalt der Zwischenablage eingefügt wird. Erfordert eine Einfügemethode über die Zwischenablage; nur macOS und Windows."
+      },
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
+      },
+      "keyboardDiagnostic": {
+        "title": "Tastatur-Diagnose",
+        "description": "Prüft, ob Tastaturereignisse Handy erreichen. Es wird nur die Anzahl der Ereignisse erfasst — niemals, welche Tasten du drückst.",
+        "run": "10-Sekunden-Diagnose starten",
+        "running": "Lauscht… drücke dein Tastenkürzel ein paar Mal (z. B. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "aktiviert",
+        "disabled": "deaktiviert",
+        "holder": "gehalten von {{name}} (pid {{pid}})",
+        "holderUnknown": "kein sichtbarer Verursacher",
+        "keyDown": "Taste gedrückt",
+        "keyUp": "Taste losgelassen",
+        "flagsChanged": "Modifikatoren",
+        "mouse": "Maus",
+        "verdictBlocked": "Secure Input blockiert Tastenereignisse — Tastenkürzel mit einer normalen Taste können erst wieder funktionieren, wenn das behoben ist.",
+        "verdictSuspicious": "Es kamen Modifikator-Ereignisse an, aber keine Tastenereignisse — irgendetwas unterdrückt Tasten, obwohl Secure Input als deaktiviert gemeldet wird. Bitte melde das auf GitHub.",
+        "verdictOk": "Tastenereignisse erreichen Handy normal.",
+        "verdictNoEvents": "Keine Ereignisse erfasst — hast du während des Tests Tasten gedrückt?",
+        "failed": "Diagnose fehlgeschlagen: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Vorschau der Neuerungen",
@@ -633,5 +658,16 @@
   },
   "whatsNew": {
     "title": "Neu in Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} blockiert möglicherweise 1 Tastenkürzel",
+    "blockedWithCulprit_other": "{{name}} blockiert möglicherweise {{count}} Tastenkürzel",
+    "blockedNoCulprit_one": "macOS blockiert vorübergehend 1 Tastenkürzel",
+    "blockedNoCulprit_other": "macOS blockiert vorübergehend {{count}} Tastenkürzel",
+    "recorderBlockedWithCulprit": "{{name}} blockiert möglicherweise Änderungen an Tastenkürzeln",
+    "recorderBlockedNoCulprit": "macOS blockiert vorübergehend Änderungen an Tastenkürzeln",
+    "learnMore": "So behebst du das",
+    "recorderBlocked": "Tastenkürzel können gerade nicht aufgezeichnet werden — macOS Secure Input blockiert Tastenereignisse. Behebe zuerst die Secure-Input-Warnung.",
+    "dismiss": "Ausblenden"
   }
 }

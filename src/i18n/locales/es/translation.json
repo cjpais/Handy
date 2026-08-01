@@ -6,7 +6,8 @@
     "unloadModel": "Descargar modelo",
     "model": "Modelo",
     "quit": "Salir",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "secureInputWarning": "⚠ Atajos bloqueados por Secure Input"
   },
   "sidebar": {
     "general": "General",
@@ -209,7 +210,7 @@
         "description": "Selecciona el idioma para el reconocimiento de voz. Auto detectará automáticamente el idioma, mientras que seleccionar un idioma específico puede mejorar la precisión para ese idioma.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "No se encontraron idiomas",
-        "auto": "Auto"
+        "auto": "Automático"
       },
       "pushToTalk": {
         "label": "Presionar para hablar",
@@ -265,7 +266,7 @@
           "description": "Aceleración por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML en Windows es experimental. Los modelos pueden fallar al transcribir."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automático"
         }
       },
       "startHidden": {
@@ -332,10 +333,10 @@
         "description": "Envía automáticamente la combinación de teclas seleccionada después de insertar el texto. Cmd+Enter se aplica en macOS, mientras que Windows/Linux usan Super+Enter.",
         "options": {
           "off": "Desactivado",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "enter": "Intro",
+          "cmdEnter": "Cmd+Intro",
+          "superEnter": "Super+Intro",
+          "ctrlEnter": "Ctrl+Intro"
         }
       },
       "translateToEnglish": {
@@ -524,9 +525,33 @@
         "title": "Retraso de pegado (después)",
         "description": "Retraso (en milisegundos) después de la pulsación de tecla de pegar, antes de restaurar el portapapeles anterior. Auméntelo si se pega el contenido antiguo del portapapeles en lugar de la transcripción."
       },
+      "reliablePaste": {
+        "title": "Pegado fiable (Beta)",
+        "description": "Restaura el portapapeles solo después de que la aplicación de destino lea realmente la transcripción, en lugar de tras un retraso fijo. Pensado para corregir que se pegue el contenido antiguo del portapapeles cuando el sistema está cargado. Requiere un método de pegado por portapapeles; solo macOS y Windows."
+      },
       "recordingBuffer": {
         "title": "Búfer de grabación adicional",
         "description": "Tiempo adicional (en milisegundos) para seguir grabando después de soltar la tecla, para capturar el audio restante. 0 = sin búfer adicional."
+      },
+      "keyboardDiagnostic": {
+        "title": "Diagnóstico del teclado",
+        "description": "Comprueba si los eventos de teclado llegan a Handy. Solo se registra el número de eventos, nunca qué teclas pulsas.",
+        "run": "Ejecutar diagnóstico de 10 s",
+        "running": "Escuchando… pulsa tu atajo varias veces (p. ej. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "activado",
+        "disabled": "desactivado",
+        "holder": "retenido por {{name}} (pid {{pid}})",
+        "holderUnknown": "sin responsable visible",
+        "keyDown": "Tecla pulsada",
+        "keyUp": "Tecla soltada",
+        "flagsChanged": "Modificadores",
+        "mouse": "Ratón",
+        "verdictBlocked": "Secure Input está bloqueando los eventos de teclado: los atajos que incluyen una tecla normal no pueden funcionar hasta que se resuelva.",
+        "verdictSuspicious": "Llegaron eventos de modificadores, pero ningún evento de tecla: algo está suprimiendo las teclas aunque Secure Input aparezca como desactivado. Por favor, repórtalo en GitHub.",
+        "verdictOk": "Los eventos de teclado llegan a Handy con normalidad.",
+        "verdictNoEvents": "No se capturó ningún evento: ¿pulsaste alguna tecla durante la prueba?",
+        "failed": "El diagnóstico falló: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Vista previa de novedades",
@@ -633,5 +658,16 @@
   },
   "whatsNew": {
     "title": "Nuevo en Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} puede estar bloqueando 1 atajo",
+    "blockedWithCulprit_other": "{{name}} puede estar bloqueando {{count}} atajos",
+    "blockedNoCulprit_one": "macOS está bloqueando temporalmente 1 atajo",
+    "blockedNoCulprit_other": "macOS está bloqueando temporalmente {{count}} atajos",
+    "recorderBlockedWithCulprit": "{{name}} puede estar bloqueando los cambios de atajos",
+    "recorderBlockedNoCulprit": "macOS está bloqueando temporalmente los cambios de atajos",
+    "learnMore": "Cómo solucionarlo",
+    "recorderBlocked": "Ahora mismo no se pueden grabar atajos: Secure Input de macOS está bloqueando los eventos de teclado. Resuelve primero el aviso de Secure Input.",
+    "dismiss": "Descartar"
   }
 }

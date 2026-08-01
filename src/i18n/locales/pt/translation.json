@@ -6,7 +6,8 @@
     "unloadModel": "Descarregar modelo",
     "model": "Modelo",
     "quit": "Sair",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "secureInputWarning": "⚠ Atalhos bloqueados pelo Secure Input"
   },
   "sidebar": {
     "general": "Geral",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Para começar, escolha um modelo de transcrição",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Modelos compatíveis",
+    "downloadModelsTitle": "Disponíveis para download",
+    "showAllModels": "Mostrar todos os {{total}} modelos",
+    "showFewerModels": "Mostrar menos modelos",
     "recommended": "Recomendado",
     "customModelDescription": "Não suportado oficialmente",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Falha ao selecionar o modelo"
     },
     "permissions": {
       "title": "Permissões Necessárias",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Suporta vários idiomas de entrada",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} idiomas",
       "translation": "Pode traduzir para inglês",
       "translate": "Traduzir para inglês",
       "singleLanguage": "Suporta apenas este idioma",
@@ -191,7 +192,7 @@
         "description": "Selecione o idioma para reconhecimento de fala. Auto detectará automaticamente o idioma, enquanto selecionar um idioma específico pode melhorar a precisão para esse idioma.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "Nenhum idioma encontrado",
-        "auto": "Auto"
+        "auto": "Automático"
       },
       "pushToTalk": {
         "label": "Pressionar para Falar",
@@ -265,7 +266,7 @@
           "description": "Aceleração por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML no Windows é experimental. Os modelos podem falhar na transcrição."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automático"
         }
       },
       "startHidden": {
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Sobreposição",
+          "description": "Escolha a sobreposição de gravação: 'Nenhum' a oculta, 'Minimalista' mostra um indicador compacto, 'Ao vivo' mostra a transcrição em tempo real enquanto você fala (apenas modelos com suporte a streaming — procure o selo 'Streaming' no seletor de modelos). No Linux, recomenda-se 'Nenhum'.",
           "options": {
             "none": "Nenhum",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Minimalista",
+            "live": "Ao vivo"
           }
         },
         "position": {
@@ -365,8 +366,8 @@
         "duplicate": "\"{{word}}\" já existe"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Detecção de atividade de voz",
+        "description": "Filtra o silêncio das gravações. Modelos com suporte a streaming usam uma cauda de VAD mais longa; desativar o VAD grava o áudio bruto."
       }
     },
     "postProcessing": {
@@ -524,9 +525,33 @@
         "title": "Atraso de colagem (depois)",
         "description": "Atraso (em milissegundos) após a tecla de colar, antes de restaurar a área de transferência anterior. Aumente se o conteúdo antigo da área de transferência estiver sendo colado em vez da transcrição."
       },
+      "reliablePaste": {
+        "title": "Colagem confiável (Beta)",
+        "description": "Restaura a área de transferência somente depois que o aplicativo de destino realmente lê a transcrição, em vez de após um atraso fixo. Serve para corrigir a colagem do conteúdo antigo da área de transferência quando o sistema está sobrecarregado. Requer um método de colar via área de transferência; apenas macOS e Windows."
+      },
       "recordingBuffer": {
         "title": "Buffer de gravação extra",
         "description": "Tempo extra (em milissegundos) para continuar gravando após soltar a tecla, para capturar áudio restante. 0 = sem buffer extra."
+      },
+      "keyboardDiagnostic": {
+        "title": "Diagnóstico do teclado",
+        "description": "Verifica se os eventos de teclado chegam ao Handy. Apenas a contagem de eventos é registrada — nunca quais teclas você pressiona.",
+        "run": "Executar diagnóstico de 10 s",
+        "running": "Ouvindo… pressione seu atalho algumas vezes (ex.: Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "ativado",
+        "disabled": "desativado",
+        "holder": "retido por {{name}} (pid {{pid}})",
+        "holderUnknown": "sem responsável visível",
+        "keyDown": "Tecla pressionada",
+        "keyUp": "Tecla liberada",
+        "flagsChanged": "Modificadores",
+        "mouse": "Mouse",
+        "verdictBlocked": "O Secure Input está bloqueando os eventos de tecla — atalhos que incluem uma tecla normal não funcionam até que isso seja resolvido.",
+        "verdictSuspicious": "Chegaram eventos de modificadores, mas nenhum evento de tecla — algo está suprimindo as teclas mesmo com o Secure Input indicando desativado. Por favor, relate isso no GitHub.",
+        "verdictOk": "Os eventos de tecla estão chegando normalmente ao Handy.",
+        "verdictNoEvents": "Nenhum evento capturado — você pressionou alguma tecla durante o teste?",
+        "failed": "Falha no diagnóstico: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Pré-visualizar novidades",
@@ -633,5 +658,16 @@
   },
   "whatsNew": {
     "title": "Novidades no Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} pode estar bloqueando 1 atalho",
+    "blockedWithCulprit_other": "{{name}} pode estar bloqueando {{count}} atalhos",
+    "blockedNoCulprit_one": "O macOS está bloqueando temporariamente 1 atalho",
+    "blockedNoCulprit_other": "O macOS está bloqueando temporariamente {{count}} atalhos",
+    "recorderBlockedWithCulprit": "{{name}} pode estar bloqueando alterações nos atalhos",
+    "recorderBlockedNoCulprit": "O macOS está bloqueando temporariamente alterações nos atalhos",
+    "learnMore": "Como resolver isso",
+    "recorderBlocked": "Não é possível gravar atalhos agora — o Secure Input do macOS está bloqueando os eventos de tecla. Resolva primeiro o aviso do Secure Input.",
+    "dismiss": "Dispensar"
   }
 }

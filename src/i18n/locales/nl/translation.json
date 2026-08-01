@@ -6,7 +6,8 @@
     "unloadModel": "Model ontladen",
     "model": "Model",
     "quit": "Afsluiten",
-    "cancel": "Annuleren"
+    "cancel": "Annuleren",
+    "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input"
   },
   "sidebar": {
     "general": "Algemeen",
@@ -531,9 +532,33 @@
         "title": "Plakvertraging (na)",
         "description": "Vertraging (in milliseconden) na de plak-toetsaanslag, voordat je vorige klembord wordt hersteld. Verhoog dit als de oude klembordinhoud wordt geplakt in plaats van de transcriptie."
       },
+      "reliablePaste": {
+        "title": "Betrouwbaar plakken (Beta)",
+        "description": "Herstel het klembord pas nadat de doelapp de transcriptie daadwerkelijk heeft gelezen, in plaats van na een vaste vertraging. Bedoeld om te verhelpen dat bij systeembelasting de oude klembordinhoud wordt geplakt. Vereist een plakmethode via het klembord; alleen macOS en Windows."
+      },
       "recordingBuffer": {
         "title": "Extra opnamebuffer",
         "description": "Extra tijd (in milliseconden) om te blijven opnemen nadat je de toets loslaat, om naloopaudio op te vangen. 0 = geen extra buffer."
+      },
+      "keyboardDiagnostic": {
+        "title": "Toetsenborddiagnose",
+        "description": "Controleert of toetsenbordgebeurtenissen Handy bereiken. Alleen het aantal gebeurtenissen wordt vastgelegd — nooit welke toetsen je indrukt.",
+        "run": "Diagnose van 10 s uitvoeren",
+        "running": "Luisteren… druk je sneltoets een paar keer in (bijv. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "ingeschakeld",
+        "disabled": "uitgeschakeld",
+        "holder": "vastgehouden door {{name}} (pid {{pid}})",
+        "holderUnknown": "geen zichtbare veroorzaker",
+        "keyDown": "Toets ingedrukt",
+        "keyUp": "Toets losgelaten",
+        "flagsChanged": "Modificatietoetsen",
+        "mouse": "Muis",
+        "verdictBlocked": "Secure Input blokkeert toetsgebeurtenissen — sneltoetsen met een gewone toets kunnen pas weer werken als dit is opgelost.",
+        "verdictSuspicious": "Er kwamen wel modificatiegebeurtenissen binnen, maar geen toetsgebeurtenissen — iets onderdrukt toetsen terwijl Secure Input als uitgeschakeld wordt gemeld. Meld dit op GitHub.",
+        "verdictOk": "Toetsgebeurtenissen bereiken Handy normaal.",
+        "verdictNoEvents": "Geen gebeurtenissen vastgelegd — heb je tijdens de test toetsen ingedrukt?",
+        "failed": "Diagnose mislukt: {{error}}"
       }
     },
     "about": {
@@ -633,5 +658,16 @@
   "overlay": {
     "transcribing": "Transcriberen...",
     "processing": "Verwerken..."
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} blokkeert mogelijk 1 sneltoets",
+    "blockedWithCulprit_other": "{{name}} blokkeert mogelijk {{count}} sneltoetsen",
+    "blockedNoCulprit_one": "macOS blokkeert tijdelijk 1 sneltoets",
+    "blockedNoCulprit_other": "macOS blokkeert tijdelijk {{count}} sneltoetsen",
+    "recorderBlockedWithCulprit": "{{name}} blokkeert mogelijk wijzigingen aan sneltoetsen",
+    "recorderBlockedNoCulprit": "macOS blokkeert tijdelijk wijzigingen aan sneltoetsen",
+    "learnMore": "Hoe je dit oplost",
+    "recorderBlocked": "Sneltoetsen kunnen nu niet worden opgenomen — Secure Input van macOS blokkeert toetsgebeurtenissen. Los eerst de Secure Input-waarschuwing op.",
+    "dismiss": "Sluiten"
   }
 }
