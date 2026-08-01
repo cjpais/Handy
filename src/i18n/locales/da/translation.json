@@ -605,8 +605,10 @@
     "preparing": "Forbereder...",
     "checkForUpdates": "Tjek for opdateringer",
     "portableUpdateTitle": "Manuel opdatering påkrævet",
-    "portableUpdateMessage": "Flytbare installationer kan ikke opdateres automatisk. For at opdatere: download den nyeste NSIS-installer fra GitHub Releases, installer den i den samme mappe, og kopiér derefter din Data/-mappe (indstillinger, modeller, optagelser) fra den gamle version til den nye.",
-    "portableUpdateButton": "Åbn GitHub Releases"
+    "portableUpdateMessage": "Flytbare installationer kan ikke opdateres automatisk. Download installeren til dit system nedenfor, kør den, og installer i den samme mappe — din Data/-mappe (indstillinger, modeller, optagelser) bliver bevaret.",
+    "portableUpdateButton": "Download installer",
+    "portableUpdateBrowseMessage": "Flytbare installationer kan ikke opdateres automatisk. Download den nyeste version til dit system fra GitHub Releases, og installer den i den samme mappe — din Data/-mappe (indstillinger, modeller, optagelser) bliver bevaret.",
+    "portableUpdateBrowseButton": "Åbn GitHub Releases"
   },
   "whatsNew": {
     "title": "Nyt i Handy v{{version}}"

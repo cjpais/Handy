@@ -605,8 +605,10 @@
     "preparing": "מכין...",
     "checkForUpdates": "בדוק עדכונים",
     "portableUpdateTitle": "נדרש עדכון ידני",
-    "portableUpdateMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. כדי לעדכן, הורד את מתקין ה-NSIS האחרון מ-GitHub Releases, התקן לאותה תיקייה, ואז העתק את תיקיית Data/ (הגדרות, מודלים, הקלטות) מהגרסה הישנה לחדשה.",
-    "portableUpdateButton": "פתח את GitHub Releases"
+    "portableUpdateMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. הורד למטה את המתקין המתאים למערכת שלך, הפעל אותו והתקן לאותה תיקייה — תיקיית Data/ (הגדרות, מודלים, הקלטות) נשמרת במקומה.",
+    "portableUpdateButton": "הורדת המתקין",
+    "portableUpdateBrowseMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. הורד את הגרסה האחרונה המתאימה למערכת שלך מ-GitHub Releases והתקן אותה לאותה תיקייה — תיקיית Data/ (הגדרות, מודלים, הקלטות) נשמרת במקומה.",
+    "portableUpdateBrowseButton": "פתח את GitHub Releases"
   },
   "common": {
     "loading": "טוען...",
