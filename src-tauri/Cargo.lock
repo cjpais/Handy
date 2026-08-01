@@ -2466,6 +2466,8 @@ dependencies = [
  "log",
  "natural",
  "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
  "objc2-service-management",
  "once_cell",
  "rdev",
@@ -2512,9 +2514,9 @@ dependencies = [
 
 [[package]]
 name = "handy-keys"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a8b8e4be98a7cade231df09a8f5625c1044febdf39eb6205325b896034ccc7f"
+checksum = "71f78470c4a23919ba16e6d621fa2c429451faa98b073f4cba679c496b3e8fa2"
 dependencies = [
  "bitflags 2.11.0",
  "block2",

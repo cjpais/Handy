@@ -532,6 +532,10 @@
         "title": "Plakvertraging (na)",
         "description": "Vertraging (in milliseconden) na de plak-toetsaanslag, voordat je vorige klembord wordt hersteld. Verhoog dit als de oude klembordinhoud wordt geplakt in plaats van de transcriptie."
       },
+      "reliablePaste": {
+        "title": "Betrouwbaar plakken (Beta)",
+        "description": "Herstel het klembord pas nadat de doelapp de transcriptie daadwerkelijk heeft gelezen, in plaats van na een vaste vertraging. Bedoeld om te verhelpen dat bij systeembelasting de oude klembordinhoud wordt geplakt. Vereist een plakmethode via het klembord; alleen macOS en Windows."
+      },
       "recordingBuffer": {
         "title": "Extra opnamebuffer",
         "description": "Extra tijd (in milliseconden) om te blijven opnemen nadat je de toets loslaat, om naloopaudio op te vangen. 0 = geen extra buffer."

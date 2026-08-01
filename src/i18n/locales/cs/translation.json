@@ -525,6 +525,10 @@
         "title": "Zpoždění vložení (po)",
         "description": "Zpoždění (v milisekundách) po klávese pro vložení, před obnovením předchozí schránky. Zvyšte, pokud se místo přepisu vkládá starý obsah schránky."
       },
+      "reliablePaste": {
+        "title": "Spolehlivé vložení (Beta)",
+        "description": "Obnoví schránku teprve poté, co cílová aplikace skutečně přečte přepis, místo po pevně daném zpoždění. Má odstranit vkládání starého obsahu schránky při zatížení systému. Vyžaduje způsob vložení přes schránku; pouze macOS a Windows."
+      },
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."

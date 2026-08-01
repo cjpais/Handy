@@ -443,6 +443,11 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_paste_delay_after_ms")]
     pub paste_delay_after_ms: u64,
+    /// Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
+    /// after the target app actually reads the transcript, instead of after a
+    /// fixed delay. See `paste_tx`. macOS and Windows only.
+    #[serde(default)]
+    pub reliable_paste: bool,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     #[serde(default)]
@@ -885,6 +890,7 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         paste_delay_after_ms: default_paste_delay_after_ms(),
+        reliable_paste: false,
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
