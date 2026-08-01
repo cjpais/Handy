@@ -36,4 +36,8 @@ export const LANGUAGE_METADATA: Record<
   he: { name: "Hebrew", nativeName: "עברית", priority: 18, direction: "rtl" },
   sv: { name: "Swedish", nativeName: "Svenska", priority: 19 },
   bg: { name: "Bulgarian", nativeName: "Български", priority: 20 },
+  nl: { name: "Dutch", nativeName: "Nederlands", priority: 21 },
+  ne: { name: "Nepali", nativeName: "नेपाली", priority: 22 },
+  hi: { name: "Hindi", nativeName: "हिन्दी", priority: 23 },
+  da: { name: "Danish", nativeName: "Dansk", priority: 24 },
 };

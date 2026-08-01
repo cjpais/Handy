@@ -22,7 +22,7 @@ pub struct CustomSounds {
 
 fn custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
     crate::portable::resolve_app_data(app, &format!("custom_{}.wav", sound_type))
-        .map_or(false, |path| path.exists())
+        .is_ok_and(|path| path.exists())
 }
 
 #[tauri::command]

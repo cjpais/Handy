@@ -3,19 +3,37 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
-use log::{error, info, warn};
-use std::sync::Arc;
+use log::{debug, error, info, warn};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIcon;
 use tauri::{AppHandle, Manager, Theme};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TrayIconState {
     Idle,
     Recording,
     Transcribing,
+}
+
+/// Tauri managed state holding the last icon state set via `change_tray_icon`.
+pub struct CurrentTrayIconState(pub Mutex<TrayIconState>);
+
+impl CurrentTrayIconState {
+    pub fn new() -> Self {
+        Self(Mutex::new(TrayIconState::Idle))
+    }
+
+    pub fn get(&self) -> TrayIconState {
+        *self.0.lock().unwrap()
+    }
+
+    fn set(&self, state: TrayIconState) {
+        *self.0.lock().unwrap() = state;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,6 +49,16 @@ pub fn get_current_theme(app: &AppHandle) -> AppTheme {
         // On Linux, always use the colored theme
         AppTheme::Colored
     } else {
+        // On Windows the tray icon sits on the taskbar, which follows the
+        // *system* theme (SystemUsesLightTheme), not the app theme. With the
+        // "Custom" personalization mode the two can differ (e.g. dark taskbar
+        // + light apps), and the window theme would pick an icon that is
+        // invisible against the taskbar.
+        #[cfg(target_os = "windows")]
+        if let Some(theme) = windows_taskbar_theme() {
+            return theme;
+        }
+
         // On other platforms, map system theme to our app theme
         if let Some(main_window) = app.get_webview_window("main") {
             match main_window.theme().unwrap_or(Theme::Dark) {
@@ -44,8 +72,42 @@ pub fn get_current_theme(app: &AppHandle) -> AppTheme {
     }
 }
 
-/// Gets the appropriate icon path for the given theme and state
-pub fn get_icon_path(theme: AppTheme, state: TrayIconState) -> &'static str {
+/// Reads the Windows taskbar theme from the registry.
+///
+/// Returns None if the value is missing (older Windows 10 builds default to a
+/// dark taskbar there, but falling back to the window theme is safer than
+/// guessing).
+#[cfg(target_os = "windows")]
+fn windows_taskbar_theme() -> Option<AppTheme> {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+
+    let personalize = RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize")
+        .ok()?;
+    let system_uses_light: u32 = personalize.get_value("SystemUsesLightTheme").ok()?;
+    Some(if system_uses_light == 1 {
+        AppTheme::Light
+    } else {
+        AppTheme::Dark
+    })
+}
+
+/// Gets the appropriate icon path for the given theme and state.
+///
+/// `warning` overlays a badge on the idle icon while keyboard shortcuts are
+/// blocked (macOS Secure Input); recording/transcribing states keep their
+/// normal icons so in-flight activity stays recognizable.
+pub fn get_icon_path(theme: AppTheme, state: TrayIconState, warning: bool) -> &'static str {
+    if warning && state == TrayIconState::Idle {
+        return match theme {
+            AppTheme::Dark => "resources/tray_idle_warning.png",
+            AppTheme::Light => "resources/tray_idle_warning_dark.png",
+            // Linux never sets the warning flag (Secure Input is macOS-only),
+            // but fall back to the normal icon just in case.
+            AppTheme::Colored => "resources/handy.png",
+        };
+    }
     match (theme, state) {
         // Dark theme uses light icons
         (AppTheme::Dark, TrayIconState::Idle) => "resources/tray_idle.png",
@@ -66,19 +128,45 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
     let tray = app.state::<TrayIcon>();
     let theme = get_current_theme(app);
 
-    let icon_path = get_icon_path(theme, icon.clone());
+    // Store current state
+    app.state::<CurrentTrayIconState>().set(icon);
 
-    let _ = tray.set_icon(Some(
-        Image::from_path(
-            app.path()
-                .resolve(icon_path, tauri::path::BaseDirectory::Resource)
-                .expect("failed to resolve"),
-        )
-        .expect("failed to set icon"),
-    ));
+    let warning = crate::secure_input::tray_warning_active(app);
+    let icon_path = get_icon_path(theme, icon, warning);
+
+    let icon_started = std::time::Instant::now();
+    if let Err(err) = load_tray_icon(
+        app.path()
+            .resolve(icon_path, tauri::path::BaseDirectory::Resource),
+    )
+    .and_then(|image| tray.set_icon(Some(image)))
+    {
+        error!("Failed to update tray icon '{icon_path}': {err}");
+    }
+    let icon_elapsed = icon_started.elapsed();
 
     // Update menu based on state
-    update_tray_menu(app, &icon, None);
+    let menu_started = std::time::Instant::now();
+    update_tray_menu(app, None);
+    debug!(
+        "tray icon change ({:?}): icon={} set_icon={:?} menu={:?}",
+        icon,
+        icon_path,
+        icon_elapsed,
+        menu_started.elapsed()
+    );
+}
+
+/// Re-applies the last known tray state — for when only the *theme* changed
+/// and the state itself (idle/recording/transcribing) should be preserved.
+pub fn refresh_tray_icon(app: &AppHandle) {
+    let icon = app.state::<CurrentTrayIconState>().get();
+    change_tray_icon(app, icon);
+}
+
+fn load_tray_icon(resolved_icon_path: tauri::Result<PathBuf>) -> tauri::Result<Image<'static>> {
+    let resolved_icon_path = resolved_icon_path?;
+    Image::from_path(&resolved_icon_path).map(Image::to_owned)
 }
 
 pub fn tray_tooltip() -> String {
@@ -93,11 +181,26 @@ fn version_label() -> String {
     }
 }
 
-pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
+pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
+    let state = app.state::<CurrentTrayIconState>().get();
     let settings = settings::get_settings(app);
 
     let locale = locale.unwrap_or(&settings.app_language);
     let strings = get_tray_translations(Some(locale.to_string()));
+
+    // Secure Input warning entry (macOS): clicking opens the settings window
+    // where the full warning banner explains the situation. Locales that
+    // haven't translated the key yet get the English string rather than a
+    // blank menu item (build.rs emits "" for missing keys).
+    let secure_input_warning = crate::secure_input::tray_warning_active(app).then(|| {
+        let label = if strings.secure_input_warning.is_empty() {
+            get_tray_translations(Some("en".to_string())).secure_input_warning
+        } else {
+            strings.secure_input_warning.clone()
+        };
+        MenuItem::with_id(app, "secure_input_warning", &label, true, None::<&str>)
+            .expect("failed to create secure input warning item")
+    });
 
     // Platform-specific accelerators
     #[cfg(target_os = "macos")]
@@ -217,10 +320,19 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         .expect("failed to create menu"),
     };
 
+    // Both layouts start with [version, separator, ...]; slot the warning in
+    // right below the version line so it's the first actionable thing seen.
+    let mut tooltip = version_label;
+    if let Some(warning_item) = secure_input_warning {
+        let _ = menu.insert(&warning_item, 2);
+        let _ = menu.insert(&separator(), 3);
+        tooltip = format!("{} — {}", tooltip, warning_item.text().unwrap_or_default());
+    }
+
     let tray = app.state::<TrayIcon>();
     let _ = tray.set_menu(Some(menu));
     let _ = tray.set_icon_as_template(true);
-    let _ = tray.set_tooltip(Some(version_label));
+    let _ = tray.set_tooltip(Some(tooltip));
 }
 
 fn last_transcript_text(entry: &HistoryEntry) -> &str {
@@ -272,7 +384,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::last_transcript_text;
+    use super::{last_transcript_text, load_tray_icon};
     use crate::managers::history::HistoryEntry;
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
@@ -299,5 +411,17 @@ mod tests {
     fn falls_back_to_raw_transcription() {
         let entry = build_entry("raw", None);
         assert_eq!(last_transcript_text(&entry), "raw");
+    }
+
+    #[test]
+    fn tray_icon_resolution_failure_is_returned_instead_of_panicking() {
+        assert!(load_tray_icon(Err(tauri::Error::UnknownPath)).is_err());
+    }
+
+    #[test]
+    fn tray_icon_returns_err_when_file_does_not_exist() {
+        let dir = tempfile::tempdir().expect("failed to create tempdir");
+        let missing = dir.path().join("does_not_exist.png");
+        assert!(load_tray_icon(Ok(missing)).is_err());
     }
 }

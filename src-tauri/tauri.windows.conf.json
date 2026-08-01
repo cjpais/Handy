@@ -1,0 +1,8 @@
+{
+  "bundle": {
+    "resources": {
+      "resources": "resources",
+      "transcribe-libs": "."
+    }
+  }
+}

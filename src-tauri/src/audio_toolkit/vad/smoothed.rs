@@ -95,7 +95,12 @@ impl VoiceActivityDetector for SmoothedVad {
         }
     }
 
+    fn set_hangover_frames(&mut self, frames: usize) {
+        self.hangover_frames = frames;
+    }
+
     fn reset(&mut self) {
+        self.inner_vad.reset();
         self.frame_buffer.clear();
         self.hangover_counter = 0;
         self.onset_counter = 0;
