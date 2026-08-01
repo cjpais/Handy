@@ -15,6 +15,7 @@
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
+    "files": "Files",
     "debug": "Debug",
     "about": "About"
   },
@@ -438,6 +439,33 @@
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
       "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+    },
+    "files": {
+      "title": "Transcribe Files",
+      "description": "Transcribe audio files already on your computer using the model you have selected. Everything runs locally and nothing is written next to your source audio.",
+      "chooseFiles": "Choose files…",
+      "audioFilter": "Audio",
+      "transcribe": "Transcribe",
+      "cancel": "Cancel",
+      "cancelHint": "Cancelling after the current file finishes.",
+      "clearAll": "Clear all",
+      "remove": "Remove from queue",
+      "saveZip": "Save results (.zip)",
+      "zipSaved": "Transcripts saved.",
+      "zipError": "Failed to save the transcripts.",
+      "chooseError": "Could not open the file picker.",
+      "startError": "Could not start transcribing.",
+      "shortcutsSuspended": "Global shortcuts are paused while a batch is running.",
+      "postProcess": "Post-process results",
+      "postProcessDescription": "Run each transcript through your configured post-processing prompt, the same way dictation does.",
+      "copyToClipboard": "Copy to clipboard",
+      "empty": "No files queued yet. Choose audio files to get started.",
+      "status": {
+        "queued": "Queued",
+        "transcribing": "Transcribing",
+        "done": "Done",
+        "failed": "Failed"
+      }
     },
     "debug": {
       "title": "Debug",

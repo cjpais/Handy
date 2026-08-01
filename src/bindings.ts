@@ -865,6 +865,41 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
 }
 },
 /**
+ * Start transcribing `paths` sequentially with the currently selected model.
+ *
+ * Returns as soon as the batch is accepted; everything after that is reported
+ * through [`FileTranscriptionEvent`]. All rejections happen synchronously so
+ * the frontend gets an `Err` it can surface immediately.
+ */
+async transcribeAudioFiles(paths: string[], postProcess: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_audio_files", { paths, postProcess }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Ask the running batch to stop. Takes effect after the current file finishes.
+ */
+async cancelFileTranscription() : Promise<void> {
+    await TAURI_INVOKE("cancel_file_transcription");
+},
+/**
+ * Write the completed transcripts to a user-chosen `.zip`.
+ *
+ * Handy never writes next to the user's source audio: nothing lands on disk
+ * until the user picks a destination in the save dialog.
+ */
+async exportTranscriptsZip(dest: string, entries: TranscriptExport[]) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("export_transcripts_zip", { dest, entries }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Checks if the Mac is a laptop by detecting battery presence
  * 
  * This uses pmset to check for battery information.
@@ -884,10 +919,12 @@ async isLaptop() : Promise<Result<boolean, string>> {
 
 
 export const events = __makeEvents__<{
+fileTranscriptionEvent: FileTranscriptionEvent,
 historyUpdatePayload: HistoryUpdatePayload,
 streamPhaseEvent: StreamPhaseEvent,
 streamTextEvent: StreamTextEvent
 }>({
+fileTranscriptionEvent: "file-transcription-event",
 historyUpdatePayload: "history-update-payload",
 streamPhaseEvent: "stream-phase-event",
 streamTextEvent: "stream-text-event"
@@ -950,6 +987,11 @@ export type EngineType =
  * the file, so this one variant covers the whole transcribe-cpp family.
  */
 "TranscribeCpp" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GigaAM" | "Canary" | "Cohere"
+/**
+ * Progress for a batch run. Internally tagged so the frontend can switch on
+ * `status`, following the `HistoryUpdatePayload` precedent.
+ */
+export type FileTranscriptionEvent = { status: "started"; path: string } | { status: "completed"; path: string; text: string } | { status: "failed"; path: string; error: string } | { status: "batchFinished"; cancelled: boolean }
 export type GpuDeviceOption = { id: number; name: string; total_vram_mb: number }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
@@ -1083,6 +1125,11 @@ export type StreamWorkKind = "transcribing" | "polishing"
  */
 export type Theme = "system" | "light" | "dark"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
+/**
+ * One `.txt` entry in the exported archive. `name` is the source file name,
+ * which is sanitised here rather than trusted.
+ */
+export type TranscriptExport = { name: string; text: string }
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 

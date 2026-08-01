@@ -23,6 +23,12 @@ import "./i18n";
 import { useModelStore } from "./stores/modelStore";
 useModelStore.getState().initialize();
 
+// Initialize the file-transcription store here rather than in the Files tab:
+// the tab unmounts on every tab switch, and a batch keeps running in the
+// background, so its progress events must be listened for app-wide.
+import { useFileTranscriptionStore } from "./stores/fileTranscriptionStore";
+useFileTranscriptionStore.getState().initialize();
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <App />

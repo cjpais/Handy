@@ -2484,6 +2484,7 @@ dependencies = [
  "specta",
  "specta-typescript",
  "strsim",
+ "symphonia",
  "tar",
  "tauri",
  "tauri-build",
@@ -2509,6 +2510,7 @@ dependencies = [
  "vad-rs",
  "windows 0.61.3",
  "winreg 0.55.0",
+ "zip",
 ]
 
 [[package]]
@@ -8972,6 +8974,7 @@ checksum = "caa8cd6af31c3b31c6631b8f483848b91589021b28fffe50adada48d4f4d2ed1"
 dependencies = [
  "arbitrary",
  "crc32fast",
+ "flate2",
  "indexmap 2.13.0",
  "memchr",
 ]

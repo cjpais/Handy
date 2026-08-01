@@ -69,6 +69,28 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
 sha2 = "0.10"
+# Decoding for the Files tab (offline batch transcription of user-supplied
+# audio). The feature list maps exactly onto the symphonia sub-crates rodio
+# already pulls into Cargo.lock — adding adpcm/mkv/alac/caf here would mean new
+# downloads. Used directly rather than via `rodio::Decoder`, whose sample type
+# we cannot pin down: the cjpais rodio fork carries 0.21 APIs under a 0.20.1
+# version string.
+symphonia = { version = "0.5.5", default-features = false, features = [
+  "flac",
+  "mp3",
+  "aac",
+  "pcm",
+  "vorbis",
+  "isomp4",
+  "ogg",
+  "wav",
+] }
+# Results export for the Files tab. Already in Cargo.lock at 4.6.1 via
+# tauri-plugin-updater. `deflate-flate2` — not the broader `deflate` — is
+# deliberate: `deflate` also pulls zopfli and switches flate2 to the zlib-rs
+# backend, both new crates. `deflate-flate2` reuses the miniz_oxide backend
+# flate2 (already a direct dep) is compiled with, so this adds nothing.
+zip = { version = "4", default-features = false, features = ["deflate-flate2"] }
 # Whisper-family models run through transcribe-cpp (GGUF/ggml, native backends);
 # transcribe-rs is now ONNX-only (Parakeet, Moonshine, SenseVoice, GigaAM,
 # Canary, Cohere). Per-platform backend features are added in the target tables.

@@ -716,12 +716,16 @@ pub fn run(cli_args: CliArgs) {
             commands::history::retry_history_entry_transcription,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
+            commands::files::transcribe_audio_files,
+            commands::files::cancel_file_transcription,
+            commands::files::export_transcripts_zip,
             helpers::clamshell::is_laptop,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,
             managers::transcription::StreamTextEvent,
             managers::transcription::StreamPhaseEvent,
+            commands::files::FileTranscriptionEvent,
         ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
