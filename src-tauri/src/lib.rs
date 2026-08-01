@@ -33,10 +33,6 @@ use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
-#[cfg(unix)]
-use signal_hook::consts::{SIGUSR1, SIGUSR2};
-#[cfg(unix)]
-use signal_hook::iterator::Signals;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tauri::image::Image;
@@ -189,11 +185,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // after permissions are confirmed (on macOS) or after onboarding completes.
     // This matches the pattern used for Enigo initialization.
 
+    // Set up signal handlers for toggling transcription. On Linux, SIGUSR1 is
+    // deliberately not handled — it belongs to WebKitGTK's garbage collector
+    // (#1660) — see signal_handle.rs.
     #[cfg(unix)]
-    let signals = Signals::new([SIGUSR1, SIGUSR2]).unwrap();
-    // Set up signal handlers for toggling transcription
-    #[cfg(unix)]
-    signal_handle::setup_signal_handler(app_handle.clone(), signals);
+    signal_handle::setup_signal_handler(app_handle.clone());
 
     // Apply macOS Accessory policy if starting hidden and tray is available.
     // If the tray icon is disabled, keep the dock icon so the user can reopen.
