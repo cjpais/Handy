@@ -607,6 +607,55 @@ impl HistoryManager {
         Ok(entry)
     }
 
+    /// Reconciles the database against the recordings directory, removing
+    /// any entry whose audio file no longer exists on disk.
+    ///
+    /// This exists because `save_entry`/`delete_entry` are the only paths
+    /// that normally keep the DB and filesystem in sync — if a recording
+    /// is deleted outside the app (file manager, `rm`, etc.), the DB row
+    /// is left pointing at nothing, and the frontend has no way to tell
+    /// the difference between "still loading" and "gone forever" for that
+    /// entry's audio player.
+    ///
+    /// Returns the number of orphaned entries removed.
+    pub async fn prune_orphaned_entries(&self) -> Result<usize> {
+        let conn = self.get_connection()?;
+
+        let mut stmt = conn.prepare("SELECT id, file_name FROM transcription_history")?;
+        let rows: Vec<(i64, String)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .collect::<rusqlite::Result<_>>()?;
+        drop(stmt);
+
+        let orphaned: Vec<i64> = rows
+            .into_iter()
+            .filter(|(_, file_name)| !self.recordings_dir.join(file_name).exists())
+            .map(|(id, _)| id)
+            .collect();
+
+        if orphaned.is_empty() {
+            return Ok(0);
+        }
+
+        for id in &orphaned {
+            conn.execute(
+                "DELETE FROM transcription_history WHERE id = ?1",
+                params![id],
+            )?;
+        }
+
+        let count = orphaned.len();
+        info!("Pruned {} orphaned history entries (audio file missing)", count);
+
+        for id in &orphaned {
+            if let Err(e) = (HistoryUpdatePayload::Deleted { id: *id }).emit(&self.app_handle) {
+                error!("Failed to emit history-updated event: {}", e);
+            }
+        }
+
+        Ok(count)
+    }
+
     pub async fn delete_entry(&self, id: i64) -> Result<()> {
         let conn = self.get_connection()?;
 
