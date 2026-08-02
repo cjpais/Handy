@@ -518,8 +518,43 @@ impl AudioRecordingManager {
     pub fn start_microphone_stream(&self) -> Result<(), anyhow::Error> {
         let mut open_flag = self.is_open.lock().unwrap();
         if *open_flag {
-            debug!("Microphone stream already active");
-            return Ok(());
+            // `is_open` only records that we opened a stream at some point, not
+            // that one is still running. If the capture worker has since exited
+            // (mic unplugged mid-session, USB dropout), returning Ok here hands
+            // the caller a dead recorder: it captures nothing, then fails in
+            // stop() on the closed channel, and stays wedged until the
+            // on-demand close timeout eventually resets the manager.
+            let worker_dead = self
+                .recorder
+                .lock()
+                .unwrap()
+                .as_ref()
+                .is_some_and(|rec| rec.is_capture_worker_dead());
+
+            if !worker_dead {
+                debug!("Microphone stream already active");
+                return Ok(());
+            }
+
+            warn!("Microphone stream is no longer running (device disconnected?); reopening");
+
+            // Torn down inline rather than via stop_microphone_stream(), which
+            // takes the `is_open` lock we are already holding.
+            {
+                let mut mute_guard = self.mute_state.lock().unwrap();
+                if mute_guard.did_mute {
+                    restore_mute(mute_guard.prev_muted);
+                    mute_guard.did_mute = false;
+                }
+            }
+            if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
+                // Skipping rec.stop() here: the worker is gone, so the command
+                // would only fail on the closed channel.
+                let _ = rec.close();
+            }
+            *self.is_recording.lock().unwrap() = false;
+            *open_flag = false;
+            // Fall through and open a fresh stream.
         }
 
         let start_time = Instant::now();

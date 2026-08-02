@@ -138,7 +138,14 @@ impl AudioRecorder {
 
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
         if self.worker_handle.is_some() {
-            return Ok(()); // already open
+            if !self.is_capture_worker_dead() {
+                return Ok(()); // already open
+            }
+            // The worker exited on its own (see `is_capture_worker_dead`). Reap
+            // it so we rebuild the stream below instead of handing the caller
+            // back a recorder whose channels are already closed.
+            log::warn!("Capture worker exited; rebuilding microphone stream");
+            let _ = self.close();
         }
 
         let (sample_tx, sample_rx) = mpsc::channel::<AudioChunk>();
@@ -331,6 +338,20 @@ impl AudioRecorder {
         Ok(resp_rx.recv()?) // wait for the samples
     }
 
+    /// True once the capture worker has exited without anyone calling `close`.
+    ///
+    /// `run_consumer` is driven entirely by the sample channel, so when cpal
+    /// tears the stream down mid-session (device unplugged, USB/Bluetooth
+    /// dropout) `sample_rx.recv()` returns `Err`, the loop ends and the worker
+    /// thread finishes. `cmd_tx` and `worker_handle` are still populated at
+    /// that point, so the recorder looks open from the outside while every
+    /// command sent to it fails on a closed channel.
+    pub fn is_capture_worker_dead(&self) -> bool {
+        self.worker_handle
+            .as_ref()
+            .is_some_and(|handle| handle.is_finished())
+    }
+
     pub fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = self.cmd_tx.take() {
             let _ = tx.send(Cmd::Shutdown);
@@ -472,7 +493,16 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
+    use super::{is_microphone_access_denied, is_no_input_device_error, AudioRecorder};
+
+    #[test]
+    fn unopened_recorder_is_not_reported_dead() {
+        // No worker has been spawned yet, so there is nothing to reap. Guards
+        // against inverting the "no worker" case, which would make every first
+        // open() take the rebuild path.
+        let recorder = AudioRecorder::new().expect("recorder");
+        assert!(!recorder.is_capture_worker_dead());
+    }
 
     #[test]
     fn detects_access_is_denied() {
