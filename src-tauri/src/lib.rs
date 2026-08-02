@@ -307,6 +307,25 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     tray::update_tray_menu(&app_clone, None);
                 });
             }
+            id if id.starts_with("mic_select:") => {
+                let mic_id = id.strip_prefix("mic_select:").unwrap().to_string();
+                let current_mic = commands::audio::get_selected_microphone(app.clone()).unwrap_or_else(|_| "default".to_string());
+                if mic_id == current_mic {
+                    return;
+                }
+                let app_clone = app.clone();
+                std::thread::spawn(move || {
+                    match commands::audio::set_selected_microphone(app_clone.clone(), mic_id.clone()) {
+                        Ok(()) => {
+                            log::info!("Microphone switched to {} via tray.", mic_id);
+                        }
+                        Err(e) => {
+                            log::error!("Failed to switch microphone via tray: {}", e);
+                        }
+                    }
+                    tray::update_tray_menu(&app_clone, None);
+                });
+            }
             _ => {}
         })
         .build(app_handle)
