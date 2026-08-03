@@ -10,7 +10,7 @@ use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
-use log::{debug, error, info, warn};
+use log::{debug, error, info, trace, warn};
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -532,7 +532,10 @@ impl AudioRecordingManager {
                 .is_some_and(|rec| rec.is_capture_worker_dead());
 
             if !worker_dead {
-                debug!("Microphone stream already active");
+                // trace, not debug: with the aliveness check in
+                // try_start_recording this now fires on every keypress in
+                // always-on mode.
+                trace!("Microphone stream already active");
                 return Ok(());
             }
 
@@ -680,15 +683,18 @@ impl AudioRecordingManager {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
-            // Ensure microphone is open in on-demand mode
-            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
-                // Cancel any pending lazy close
-                self.close_generation.fetch_add(1, Ordering::SeqCst);
-                if let Err(e) = self.start_microphone_stream() {
-                    let msg = format!("{e}");
-                    error!("Failed to open microphone stream: {msg}");
-                    return Err(msg);
-                }
+            // Cancel any pending lazy close (no-op in always-on mode, where
+            // closes are never scheduled).
+            self.close_generation.fetch_add(1, Ordering::SeqCst);
+            // Opens the stream in on-demand mode. In always-on mode the stream
+            // is normally already open and this is a cheap aliveness check —
+            // but if the capture worker died (device disconnect), it rebuilds
+            // the stream instead of leaving every subsequent start wedged on
+            // "Recorder not available".
+            if let Err(e) = self.start_microphone_stream() {
+                let msg = format!("{e}");
+                error!("Failed to open microphone stream: {msg}");
+                return Err(msg);
             }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
