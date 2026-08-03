@@ -15,6 +15,7 @@ mod managers;
 mod overlay;
 mod paste_tx;
 pub mod portable;
+mod remote_control;
 mod secure_input;
 mod settings;
 mod shortcut;
@@ -29,6 +30,7 @@ pub use cli::CliArgs;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
 
+use clap::Parser;
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
@@ -792,14 +794,15 @@ pub fn run(cli_args: CliArgs) {
     // instance instead.
     if !headless_mode {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            if args.iter().any(|a| a == "--toggle-transcription") {
-                signal_handle::send_transcription_input(app, "transcribe", "CLI");
-            } else if args.iter().any(|a| a == "--toggle-post-process") {
-                signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
-            } else if args.iter().any(|a| a == "--cancel") {
-                crate::utils::cancel_current_operation(app);
-            } else {
-                show_main_window(app);
+            match CliArgs::try_parse_from(args) {
+                Ok(cli_args) => match cli_args.remote_command() {
+                    Some(command) => remote_control::dispatch(app, command),
+                    None => show_main_window(app),
+                },
+                Err(err) => {
+                    log::warn!("Failed to parse arguments from second instance: {err}");
+                    show_main_window(app);
+                }
             }
         }));
     }

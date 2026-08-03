@@ -34,6 +34,11 @@ enum Command {
     Cancel {
         recording_was_active: bool,
     },
+    RemoteRecording {
+        action: RecordingControl,
+        binding_id: String,
+        source: String,
+    },
     ProcessingFinished,
 }
 
@@ -42,6 +47,32 @@ enum Stage {
     Idle,
     Recording(String), // binding_id
     Processing,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RecordingControl {
+    Start,
+    Stop,
+    Toggle,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum RecordingDecision {
+    Start,
+    Stop(String),
+    Ignore,
+}
+
+fn decide_recording_control(stage: &Stage, action: RecordingControl) -> RecordingDecision {
+    match (stage, action) {
+        (Stage::Idle, RecordingControl::Start | RecordingControl::Toggle) => {
+            RecordingDecision::Start
+        }
+        (Stage::Recording(binding_id), RecordingControl::Stop | RecordingControl::Toggle) => {
+            RecordingDecision::Stop(binding_id.clone())
+        }
+        _ => RecordingDecision::Ignore,
+    }
 }
 
 fn classify_ptt_event(
@@ -199,6 +230,25 @@ impl TranscriptionCoordinator {
                                 stage = Stage::Idle;
                             }
                         }
+                        Command::RemoteRecording {
+                            action,
+                            binding_id,
+                            source,
+                        } => match decide_recording_control(&stage, action) {
+                            RecordingDecision::Start => {
+                                pending_release = None;
+                                start(&app, &mut stage, &binding_id, &source);
+                            }
+                            RecordingDecision::Stop(active_binding_id) => {
+                                pending_release = None;
+                                stop(&app, &mut stage, &active_binding_id, &source);
+                            }
+                            RecordingDecision::Ignore => {
+                                debug!(
+                                    "Ignoring remote recording command '{action:?}': pipeline busy or already in requested state"
+                                );
+                            }
+                        },
                         Command::ProcessingFinished => {
                             stage = Stage::Idle;
                         }
@@ -242,6 +292,26 @@ impl TranscriptionCoordinator {
             .tx
             .send(Command::Cancel {
                 recording_was_active,
+            })
+            .is_err()
+        {
+            warn!("Transcription coordinator channel closed");
+        }
+    }
+
+    /// Queue an idempotent recording-control command.
+    pub(crate) fn send_recording_control(
+        &self,
+        action: RecordingControl,
+        binding_id: &str,
+        source: &str,
+    ) {
+        if self
+            .tx
+            .send(Command::RemoteRecording {
+                action,
+                binding_id: binding_id.to_string(),
+                source: source.to_string(),
             })
             .is_err()
         {
@@ -344,6 +414,55 @@ mod tests {
         assert_eq!(
             classify_ptt_event(Some("transcribe"), true, true, "transcribe", None),
             PttAction::CancelRelease
+        );
+    }
+
+    #[test]
+    fn remote_start_only_starts_from_idle() {
+        assert_eq!(
+            decide_recording_control(&Stage::Idle, RecordingControl::Start),
+            RecordingDecision::Start
+        );
+        assert_eq!(
+            decide_recording_control(
+                &Stage::Recording("transcribe".to_string()),
+                RecordingControl::Start
+            ),
+            RecordingDecision::Ignore
+        );
+    }
+
+    #[test]
+    fn remote_stop_preserves_the_active_recording_mode() {
+        assert_eq!(
+            decide_recording_control(
+                &Stage::Recording("transcribe_with_post_process".to_string()),
+                RecordingControl::Stop
+            ),
+            RecordingDecision::Stop("transcribe_with_post_process".to_string())
+        );
+        assert_eq!(
+            decide_recording_control(&Stage::Idle, RecordingControl::Stop),
+            RecordingDecision::Ignore
+        );
+    }
+
+    #[test]
+    fn remote_toggle_starts_or_stops_but_not_during_processing() {
+        assert_eq!(
+            decide_recording_control(&Stage::Idle, RecordingControl::Toggle),
+            RecordingDecision::Start
+        );
+        assert_eq!(
+            decide_recording_control(
+                &Stage::Recording("transcribe".to_string()),
+                RecordingControl::Toggle
+            ),
+            RecordingDecision::Stop("transcribe".to_string())
+        );
+        assert_eq!(
+            decide_recording_control(&Stage::Processing, RecordingControl::Toggle),
+            RecordingDecision::Ignore
         );
     }
 
