@@ -21,7 +21,9 @@ use std::time::Instant;
 use log::{error, info, warn};
 use tauri::Manager;
 use windows::core::{w, PCWSTR};
-use windows::Win32::Foundation::{HANDLE, HGLOBAL, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
+use windows::Win32::Foundation::{
+    SetLastError, ERROR_SUCCESS, HANDLE, HGLOBAL, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM,
+};
 
 use super::{evaluate, send_chord, TxState, WaitDecision};
 use crate::clipboard::send_return_key;
@@ -393,9 +395,18 @@ unsafe fn publish_formats() -> Result<(), String> {
     }
 
     // NULL handle = delayed rendering: we are only asked for the data (via
-    // WM_RENDERFORMAT) when a consumer actually reads it.
-    SetClipboardData(CF_UNICODETEXT.0 as u32, None)
-        .map_err(|e| format!("SetClipboardData failed: {e}"))?;
+    // WM_RENDERFORMAT) when a consumer actually reads it. SetClipboardData
+    // returns the handle it was given, so for delayed rendering success is
+    // also NULL and the windows crate reports it as an Err carrying
+    // GetLastError(). Only a nonzero thread error is a real failure, and the
+    // thread error must be cleared first so a stale value from an earlier
+    // call can't masquerade as one.
+    SetLastError(ERROR_SUCCESS);
+    if let Err(e) = SetClipboardData(CF_UNICODETEXT.0 as u32, None) {
+        if e.code().is_err() {
+            return Err(format!("SetClipboardData failed: {e}"));
+        }
+    }
     Ok(())
 }
 
