@@ -95,6 +95,8 @@ tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.10.0"
 
 [target.'cfg(windows)'.dependencies]
+clipboard-win = "5.4.1"
+image = { version = "0.25.9", default-features = false, features = ["png"] }
 # ONNX Runtime on Windows is CPU-only (no ort-directml), matching macOS/Linux.
 # The DirectML EP was experimental and, more importantly, pulled in pyke's
 # prebuilt ONNX Runtime which is compiled with a global /arch:AVX2 baseline that
