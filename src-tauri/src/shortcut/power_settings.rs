@@ -1,18 +1,18 @@
-//! Power-user extra shortcut bindings.
+//! Power-user settings loaded from a JSON file rather than the UI.
 //!
 //! Settings only ever store one physical binding per action (e.g. one
 //! shortcut for "transcribe"). Some devices — a laptop trackpad, for
 //! instance — can't produce the binding a user relies on elsewhere (middle
 //! mouse click), so there is no way to have both work from the UI alone.
 //!
-//! This loads an optional `extra_bindings.json` from the app data directory
-//! and registers each entry under `shortcuts` as an additional trigger for
-//! an existing action, on top of whatever is already configured in
-//! settings. It is intentionally file-only: no UI, not persisted through
+//! This loads an optional `power_settings.json` from the app data directory
+//! and, today, registers each entry under `shortcuts` as an additional
+//! trigger for an existing action, on top of whatever is already configured
+//! in settings. It is intentionally file-only: no UI, not persisted through
 //! `AppSettings`, and only read once at startup.
 //!
-//! The file is a single object so future power-user config can live
-//! alongside `shortcuts` as sibling keys without a format change.
+//! The file is a single object so other power-user config can live
+//! alongside `shortcuts` as sibling keys later without a format change.
 //!
 //! Format:
 //! ```json
@@ -30,35 +30,36 @@ use tauri::AppHandle;
 use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
 
-const EXTRA_BINDINGS_FILE: &str = "extra_bindings.json";
+const POWER_SETTINGS_FILE: &str = "power_settings.json";
 
 #[derive(Debug, Default, Deserialize)]
-struct ExtraConfig {
+struct PowerSettings {
     #[serde(default)]
-    shortcuts: Vec<ExtraBindingEntry>,
+    shortcuts: Vec<ShortcutEntry>,
 }
 
 #[derive(Debug, Deserialize)]
-struct ExtraBindingEntry {
+struct ShortcutEntry {
     action: String,
     binding: String,
 }
 
-/// Load `extra_bindings.json` from the app data directory (if present) and
-/// register each entry alongside the normal settings-driven bindings.
-/// Missing or malformed input is logged and otherwise ignored — this is a
-/// power-user config file, not something that should ever block startup.
-pub fn register_extra_bindings(app: &AppHandle) {
-    let path = match crate::portable::resolve_app_data(app, EXTRA_BINDINGS_FILE) {
+/// Load `power_settings.json` from the app data directory (if present) and
+/// register each `shortcuts` entry alongside the normal settings-driven
+/// bindings. Missing or malformed input is logged and otherwise ignored —
+/// this is a power-user config file, not something that should ever block
+/// startup.
+pub fn apply_power_settings(app: &AppHandle) {
+    let path = match crate::portable::resolve_app_data(app, POWER_SETTINGS_FILE) {
         Ok(path) => path,
         Err(e) => {
-            warn!("Failed to resolve extra_bindings.json path: {}", e);
+            warn!("Failed to resolve power_settings.json path: {}", e);
             return;
         }
     };
 
     if !path.exists() {
-        debug!("No extra_bindings.json found at {}", path.display());
+        debug!("No power_settings.json found at {}", path.display());
         return;
     }
 
@@ -70,7 +71,7 @@ pub fn register_extra_bindings(app: &AppHandle) {
         }
     };
 
-    let config: ExtraConfig = match serde_json::from_str(&contents) {
+    let config: PowerSettings = match serde_json::from_str(&contents) {
         Ok(config) => config,
         Err(e) => {
             warn!("Failed to parse {}: {}", path.display(), e);
@@ -78,12 +79,16 @@ pub fn register_extra_bindings(app: &AppHandle) {
         }
     };
 
+    register_extra_shortcuts(app, &path, config.shortcuts);
+}
+
+fn register_extra_shortcuts(app: &AppHandle, path: &std::path::Path, entries: Vec<ShortcutEntry>) {
     let mut registered = 0;
-    for entry in config.shortcuts {
+    for entry in entries {
         let shortcut = match to_shortcut_binding(&entry) {
             Ok(shortcut) => shortcut,
             Err(e) => {
-                warn!("Skipping entry in {}: {}", path.display(), e);
+                warn!("Skipping shortcuts entry in {}: {}", path.display(), e);
                 continue;
             }
         };
@@ -91,7 +96,7 @@ pub fn register_extra_bindings(app: &AppHandle) {
         match super::register_shortcut(app, shortcut) {
             Ok(()) => registered += 1,
             Err(e) => warn!(
-                "Failed to register extra binding '{}' -> '{}': {}",
+                "Failed to register extra shortcut '{}' -> '{}': {}",
                 entry.action, entry.binding, e
             ),
         }
@@ -106,9 +111,9 @@ pub fn register_extra_bindings(app: &AppHandle) {
     }
 }
 
-/// Validate a single JSON entry and turn it into a registerable
+/// Validate a single `shortcuts` entry and turn it into a registerable
 /// `ShortcutBinding`, or a human-readable reason it was rejected.
-fn to_shortcut_binding(entry: &ExtraBindingEntry) -> Result<ShortcutBinding, String> {
+fn to_shortcut_binding(entry: &ShortcutEntry) -> Result<ShortcutBinding, String> {
     let action = entry.action.trim();
     let binding = entry.binding.trim();
 
@@ -128,7 +133,7 @@ fn to_shortcut_binding(entry: &ExtraBindingEntry) -> Result<ShortcutBinding, Str
     Ok(ShortcutBinding {
         id: action.to_string(),
         name: format!("Extra: {action}"),
-        description: format!("Extra binding for '{action}' from extra_bindings.json"),
+        description: format!("Extra binding for '{action}' from power_settings.json"),
         default_binding: binding.to_string(),
         current_binding: binding.to_string(),
     })
@@ -140,7 +145,7 @@ mod tests {
 
     #[test]
     fn parses_the_documented_example() {
-        let config: ExtraConfig = serde_json::from_str(
+        let config: PowerSettings = serde_json::from_str(
             r#"{ "shortcuts": [{ "action": "transcribe", "binding": "mousemiddle" }] }"#,
         )
         .unwrap();
@@ -155,18 +160,18 @@ mod tests {
 
     #[test]
     fn tolerates_missing_shortcuts_key_and_unknown_sibling_keys() {
-        let config: ExtraConfig = serde_json::from_str(r#"{}"#).unwrap();
+        let config: PowerSettings = serde_json::from_str(r#"{}"#).unwrap();
         assert!(config.shortcuts.is_empty());
 
         // Unknown sibling keys (future power-user config) must not break parsing.
-        let config: ExtraConfig =
+        let config: PowerSettings =
             serde_json::from_str(r#"{ "some_future_feature": { "on": true } }"#).unwrap();
         assert!(config.shortcuts.is_empty());
     }
 
     #[test]
     fn rejects_unknown_action() {
-        let entry = ExtraBindingEntry {
+        let entry = ShortcutEntry {
             action: "not_a_real_action".to_string(),
             binding: "mousemiddle".to_string(),
         };
@@ -175,13 +180,13 @@ mod tests {
 
     #[test]
     fn rejects_empty_fields() {
-        let entry = ExtraBindingEntry {
+        let entry = ShortcutEntry {
             action: "  ".to_string(),
             binding: "mousemiddle".to_string(),
         };
         assert!(to_shortcut_binding(&entry).is_err());
 
-        let entry = ExtraBindingEntry {
+        let entry = ShortcutEntry {
             action: "transcribe".to_string(),
             binding: "  ".to_string(),
         };
@@ -190,7 +195,7 @@ mod tests {
 
     #[test]
     fn trims_whitespace() {
-        let entry = ExtraBindingEntry {
+        let entry = ShortcutEntry {
             action: " transcribe ".to_string(),
             binding: " mousemiddle ".to_string(),
         };
