@@ -6,16 +6,21 @@
 //! mouse click), so there is no way to have both work from the UI alone.
 //!
 //! This loads an optional `extra_bindings.json` from the app data directory
-//! and registers each entry as an additional trigger for an existing
-//! action, on top of whatever is already configured in settings. It is
-//! intentionally file-only: no UI, not persisted through `AppSettings`, and
-//! only read once at startup.
+//! and registers each entry under `shortcuts` as an additional trigger for
+//! an existing action, on top of whatever is already configured in
+//! settings. It is intentionally file-only: no UI, not persisted through
+//! `AppSettings`, and only read once at startup.
+//!
+//! The file is a single object so future power-user config can live
+//! alongside `shortcuts` as sibling keys without a format change.
 //!
 //! Format:
 //! ```json
-//! [
-//!   { "action": "transcribe", "binding": "mousemiddle" }
-//! ]
+//! {
+//!   "shortcuts": [
+//!     { "action": "transcribe", "binding": "mousemiddle" }
+//!   ]
+//! }
 //! ```
 
 use log::{debug, info, warn};
@@ -26,6 +31,12 @@ use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
 
 const EXTRA_BINDINGS_FILE: &str = "extra_bindings.json";
+
+#[derive(Debug, Default, Deserialize)]
+struct ExtraConfig {
+    #[serde(default)]
+    shortcuts: Vec<ExtraBindingEntry>,
+}
 
 #[derive(Debug, Deserialize)]
 struct ExtraBindingEntry {
@@ -59,8 +70,8 @@ pub fn register_extra_bindings(app: &AppHandle) {
         }
     };
 
-    let entries: Vec<ExtraBindingEntry> = match serde_json::from_str(&contents) {
-        Ok(entries) => entries,
+    let config: ExtraConfig = match serde_json::from_str(&contents) {
+        Ok(config) => config,
         Err(e) => {
             warn!("Failed to parse {}: {}", path.display(), e);
             return;
@@ -68,7 +79,7 @@ pub fn register_extra_bindings(app: &AppHandle) {
     };
 
     let mut registered = 0;
-    for entry in entries {
+    for entry in config.shortcuts {
         let shortcut = match to_shortcut_binding(&entry) {
             Ok(shortcut) => shortcut,
             Err(e) => {
@@ -129,16 +140,28 @@ mod tests {
 
     #[test]
     fn parses_the_documented_example() {
-        let entries: Vec<ExtraBindingEntry> =
-            serde_json::from_str(r#"[{ "action": "transcribe", "binding": "mousemiddle" }]"#)
-                .unwrap();
-        assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].action, "transcribe");
-        assert_eq!(entries[0].binding, "mousemiddle");
+        let config: ExtraConfig = serde_json::from_str(
+            r#"{ "shortcuts": [{ "action": "transcribe", "binding": "mousemiddle" }] }"#,
+        )
+        .unwrap();
+        assert_eq!(config.shortcuts.len(), 1);
+        assert_eq!(config.shortcuts[0].action, "transcribe");
+        assert_eq!(config.shortcuts[0].binding, "mousemiddle");
 
-        let shortcut = to_shortcut_binding(&entries[0]).unwrap();
+        let shortcut = to_shortcut_binding(&config.shortcuts[0]).unwrap();
         assert_eq!(shortcut.id, "transcribe");
         assert_eq!(shortcut.current_binding, "mousemiddle");
+    }
+
+    #[test]
+    fn tolerates_missing_shortcuts_key_and_unknown_sibling_keys() {
+        let config: ExtraConfig = serde_json::from_str(r#"{}"#).unwrap();
+        assert!(config.shortcuts.is_empty());
+
+        // Unknown sibling keys (future power-user config) must not break parsing.
+        let config: ExtraConfig =
+            serde_json::from_str(r#"{ "some_future_feature": { "on": true } }"#).unwrap();
+        assert!(config.shortcuts.is_empty());
     }
 
     #[test]
