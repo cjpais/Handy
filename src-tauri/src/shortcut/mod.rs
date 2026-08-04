@@ -9,6 +9,7 @@
 //! The active implementation is determined by the `keyboard_implementation`
 //! setting and can be changed at runtime.
 
+mod extra_bindings;
 mod handler;
 pub mod handy_keys;
 pub mod tauri_impl;
@@ -58,6 +59,8 @@ pub fn init_shortcuts(app: &AppHandle) {
             info!("Built-in keyboard shortcuts disabled; use CLI flags or signals");
         }
     }
+
+    extra_bindings::register_extra_bindings(app);
 }
 
 /// Whether the recording lifecycle currently wants the cancel shortcut.
