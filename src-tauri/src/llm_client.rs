@@ -112,6 +112,7 @@ fn remember_rejection(key: String) {
 struct ChatCompletionRequest {
     model: String,
     messages: Vec<ChatMessage>,
+    stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<ResponseFormat>,
     #[serde(flatten)]
@@ -264,6 +265,7 @@ pub async fn send_chat_completion_with_schema(
     let mut request_body = ChatCompletionRequest {
         model: model.to_string(),
         messages,
+        stream: false,
         response_format,
         reasoning,
     };
@@ -413,10 +415,17 @@ mod tests {
                 role: "user".to_string(),
                 content: "hi".to_string(),
             }],
+            stream: false,
             response_format: None,
             reasoning,
         };
         serde_json::to_value(&request).unwrap()
+    }
+
+    #[test]
+    fn requests_explicitly_disable_streaming() {
+        let json = request_json(ReasoningParams::default());
+        assert_eq!(json["stream"], false);
     }
 
     #[test]
