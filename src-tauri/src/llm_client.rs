@@ -181,11 +181,12 @@ fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwes
         .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))
 }
 
-/// Format every available cause without logging request headers or bodies.
+/// Format a bounded error source chain.
 ///
 /// `reqwest::Error`'s Display implementation intentionally gives only a short
 /// summary. Nested causes contain the useful transport details, such as a
 /// certificate validation failure, an HTTP/2 error, or a connection reset.
+/// Callers must skip source types whose Display text can quote payload data.
 fn error_source_chain(error: &(dyn StdError + 'static)) -> Vec<String> {
     let mut causes = Vec::new();
     let mut source = error.source();
@@ -229,6 +230,9 @@ fn reqwest_error_kinds(error: &reqwest::Error) -> String {
     if error.is_decode() {
         kinds.push("decode");
     }
+    if error.is_upgrade() {
+        kinds.push("upgrade");
+    }
 
     if kinds.is_empty() {
         "unknown".to_string()
@@ -250,6 +254,14 @@ fn sanitized_url(url: &reqwest::Url) -> String {
     url.to_string()
 }
 
+fn sanitized_url_for_log(url: &str) -> String {
+    reqwest::Url::parse(url)
+        .map(|url| sanitized_url(&url))
+        // Do not echo an invalid URL: the parse failure might have been caused
+        // by sensitive data entered in the custom endpoint field.
+        .unwrap_or_else(|_| "<invalid URL>".to_string())
+}
+
 fn report_reqwest_error(context: &str, error: &reqwest::Error) -> String {
     let kinds = reqwest_error_kinds(error);
     let url = error
@@ -257,12 +269,24 @@ fn report_reqwest_error(context: &str, error: &reqwest::Error) -> String {
         .map(sanitized_url)
         .map(|url| format!(", url: {url}"))
         .unwrap_or_default();
-    let causes = error_source_chain(error);
-    let cause_details = if causes.is_empty() {
-        // Builder errors do not always expose a nested source.
+
+    // serde_json's error text can quote values from a malformed response. That
+    // response may contain transcription content, so retain the useful decode
+    // classification but never put its nested source in logs or UI errors.
+    let causes = if error.is_decode() {
+        Vec::new()
+    } else {
+        error_source_chain(error)
+    };
+    let cause_details = if !causes.is_empty() {
+        format!(": caused by: {}", causes.join(" -> "))
+    } else if error.url().is_none() {
+        // Reqwest's short Display text is safe when it cannot append a raw URL.
         format!(": {error}")
     } else {
-        format!(": caused by: {}", causes.join(" -> "))
+        // The sanitized URL is already included above. Avoid formatting the
+        // original error because its Display implementation includes the raw URL.
+        String::new()
     };
 
     let details = format!("{context} (kind: {kinds}{url}){cause_details}");
@@ -314,7 +338,10 @@ pub async fn send_chat_completion_with_schema(
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/chat/completions", base_url);
 
-    debug!("Sending chat completion request to: {}", url);
+    debug!(
+        "Sending chat completion request to: {}",
+        sanitized_url_for_log(&url)
+    );
 
     let client = create_client(provider, &api_key)?;
 
@@ -406,7 +433,7 @@ pub async fn send_chat_completion_with_schema(
         if status.is_success() {
             info!(
                 "Retry without reasoning fields succeeded; '{}' (model '{}') will skip them from now on",
-                base_url, model
+                sanitized_url_for_log(base_url), model
             );
             remember_rejection(key);
         }
@@ -443,7 +470,7 @@ pub async fn fetch_models(
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/models", base_url);
 
-    debug!("Fetching models from: {}", url);
+    debug!("Fetching models from: {}", sanitized_url_for_log(&url));
 
     let client = create_client(provider, &api_key)?;
 
@@ -504,6 +531,7 @@ pub async fn fetch_models(
 mod tests {
     use super::*;
     use std::fmt;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[derive(Debug)]
     struct TestError {
@@ -550,6 +578,24 @@ mod tests {
         serde_json::to_value(&request).unwrap()
     }
 
+    async fn serve_one_response(status: &str, body: &str) -> String {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let response = format!(
+            "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 2048];
+            let _ = stream.read(&mut request).await.unwrap();
+            stream.write_all(response.as_bytes()).await.unwrap();
+        });
+
+        format!("http://{address}")
+    }
+
     #[test]
     fn error_source_chain_includes_all_nested_causes() {
         let error = TestError {
@@ -567,6 +613,53 @@ mod tests {
             error_source_chain(&error),
             vec!["TLS handshake failed", "unknown certificate authority"]
         );
+    }
+
+    #[test]
+    fn log_url_sanitization_removes_credentials_and_tokens() {
+        let url = "https://user:password@example.com/v1/models?api_key=secret#private";
+        assert_eq!(sanitized_url_for_log(url), "https://example.com/v1/models");
+    }
+
+    #[test]
+    fn invalid_log_urls_are_not_echoed() {
+        assert_eq!(
+            sanitized_url_for_log("not a URL containing secret"),
+            "<invalid URL>"
+        );
+    }
+
+    #[tokio::test]
+    async fn decode_error_does_not_echo_response_values() {
+        let base_url =
+            serve_one_response("200 OK", r#"{"choices":"PRIVATE TRANSCRIPTION CONTENT"}"#).await;
+        let error = reqwest::get(base_url)
+            .await
+            .unwrap()
+            .json::<ChatCompletionResponse>()
+            .await
+            .unwrap_err();
+
+        let details = report_reqwest_error("Failed to parse API response", &error);
+        assert!(details.contains("kind: decode"));
+        assert!(!details.contains("PRIVATE TRANSCRIPTION CONTENT"));
+    }
+
+    #[tokio::test]
+    async fn raw_error_url_is_not_reintroduced_without_a_source() {
+        let base_url = serve_one_response("400 Bad Request", "bad request").await;
+        let error = reqwest::get(format!(
+            "{base_url}/private?api_key=SECRET_QUERY_TOKEN#private"
+        ))
+        .await
+        .unwrap()
+        .error_for_status()
+        .unwrap_err();
+
+        let details = report_reqwest_error("Request failed", &error);
+        assert!(details.contains(&format!("url: {base_url}/private")));
+        assert!(!details.contains("SECRET_QUERY_TOKEN"));
+        assert!(!details.contains("#private"));
     }
 
     #[test]
