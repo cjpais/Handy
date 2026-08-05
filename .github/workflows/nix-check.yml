@@ -48,7 +48,7 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - uses: cachix/cachix-action@v15
+      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: handy-computer
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
