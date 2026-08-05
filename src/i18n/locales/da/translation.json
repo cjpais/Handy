@@ -532,6 +532,10 @@
         "title": "Forsinkelse af indsættelse (efter)",
         "description": "Forsinkelse (i millisekunder) efter tastetrykket for indsætning, før din tidligere udklipsholder gendannes. Øg, hvis dit gamle udklipsholderindhold bliver indsat i stedet for transskriptionen."
       },
+      "reliablePaste": {
+        "title": "Pålidelig indsættelse (Beta)",
+        "description": "Gendan først din udklipsholder, når målappen faktisk har læst transskriptionen, i stedet for efter en fast forsinkelse. Skal afhjælpe, at gammelt udklipsholderindhold indsættes, når systemet er belastet. Kræver en indsætningsmetode via udklipsholderen; kun macOS og Windows."
+      },
       "recordingBuffer": {
         "title": "Ekstra optagelsesbuffer",
         "description": "Ekstra tid (i millisekunder) til at fortsætte optagelsen, efter du slipper tasten, for at fange efterfølgende lyd. 0 = ingen ekstra buffer."
@@ -601,8 +605,10 @@
     "preparing": "Forbereder...",
     "checkForUpdates": "Tjek for opdateringer",
     "portableUpdateTitle": "Manuel opdatering påkrævet",
-    "portableUpdateMessage": "Flytbare installationer kan ikke opdateres automatisk. For at opdatere: download den nyeste NSIS-installer fra GitHub Releases, installer den i den samme mappe, og kopiér derefter din Data/-mappe (indstillinger, modeller, optagelser) fra den gamle version til den nye.",
-    "portableUpdateButton": "Åbn GitHub Releases"
+    "portableUpdateMessage": "Flytbare installationer kan ikke opdateres automatisk. Download installeren til dit system nedenfor, kør den, og installer i den samme mappe — din Data/-mappe (indstillinger, modeller, optagelser) bliver bevaret.",
+    "portableUpdateButton": "Download installer",
+    "portableUpdateBrowseMessage": "Flytbare installationer kan ikke opdateres automatisk. Download den nyeste version til dit system fra GitHub Releases, og installer den i den samme mappe — din Data/-mappe (indstillinger, modeller, optagelser) bliver bevaret.",
+    "portableUpdateBrowseButton": "Åbn GitHub Releases"
   },
   "whatsNew": {
     "title": "Nyt i Handy v{{version}}"

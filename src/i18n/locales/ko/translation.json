@@ -520,6 +520,10 @@
         "title": "붙여넣기 지연 (이후)",
         "description": "붙여넣기 키 입력을 보낸 후 이전 클립보드를 복원하기 전의 지연 시간(밀리초). 전사된 텍스트 대신 이전 클립보드 내용이 붙여넣어지면 늘리세요."
       },
+      "reliablePaste": {
+        "title": "안정적인 붙여넣기 (Beta)",
+        "description": "고정된 지연 시간이 아니라 대상 앱이 실제로 전사된 텍스트를 읽은 뒤에만 클립보드를 복원합니다. 시스템 부하가 높을 때 이전 클립보드 내용이 붙여넣어지는 문제를 해결하기 위한 옵션입니다. 클립보드를 사용하는 붙여넣기 방법이 필요하며 macOS와 Windows에서만 지원됩니다."
+      },
       "recordingBuffer": {
         "title": "추가 녹음 버퍼",
         "description": "키를 놓은 후 추가로 녹음을 계속하는 시간(밀리초). 후행 오디오를 캡처하기 위함. 0 = 추가 버퍼 없음."
@@ -601,8 +605,10 @@
     "preparing": "준비 중...",
     "checkForUpdates": "업데이트 확인",
     "portableUpdateTitle": "수동 업데이트 필요",
-    "portableUpdateMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. 업데이트하려면 GitHub Releases에서 최신 NSIS 설치 프로그램을 다운로드하여 같은 폴더에 설치한 다음, 이전 버전의 Data/ 폴더(설정, 모델, 녹음)를 새 버전으로 복사하세요.",
-    "portableUpdateButton": "GitHub Releases 열기"
+    "portableUpdateMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. 아래에서 사용 중인 시스템에 맞는 설치 프로그램을 다운로드해 실행하고 같은 폴더에 설치하세요. Data/ 폴더(설정, 모델, 녹음)는 그대로 유지됩니다.",
+    "portableUpdateButton": "설치 프로그램 다운로드",
+    "portableUpdateBrowseMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. GitHub Releases에서 사용 중인 시스템에 맞는 최신 버전을 다운로드해 같은 폴더에 설치하세요. Data/ 폴더(설정, 모델, 녹음)는 그대로 유지됩니다.",
+    "portableUpdateBrowseButton": "GitHub Releases 열기"
   },
   "common": {
     "loading": "로딩 중...",
