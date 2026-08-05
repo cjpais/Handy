@@ -64,7 +64,7 @@ Handy is built as a Tauri application combining:
 - **Frontend**: React + TypeScript with Tailwind CSS for the settings UI
 - **Backend**: Rust for system integration, audio processing, and ML inference
 - **Core Libraries**:
-  - `whisper-rs`: Local speech recognition with Whisper models
+  - `transcribe-cpp`: Local speech recognition with Whisper-family models (GGML/GGUF)
   - `transcribe-rs`: CPU-optimized speech recognition with Parakeet models
   - `cpal`: Cross-platform audio I/O
   - `vad-rs`: Voice Activity Detection
@@ -194,21 +194,30 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
   bind = $mainMod, O, exec, handy --toggle-transcription
   ```
 
-- You can also manage global shortcuts outside of Handy via Unix signals, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings:
+- You can also trigger Handy externally via Unix signals or the CLI flags, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings:
 
-  | Signal    | Action                                    | Example                |
-  | --------- | ----------------------------------------- | ---------------------- |
-  | `SIGUSR2` | Toggle transcription                      | `pkill -USR2 -n handy` |
-  | `SIGUSR1` | Toggle transcription with post-processing | `pkill -USR1 -n handy` |
+  | Action                                    | Trigger                                                  |
+  | ----------------------------------------- | -------------------------------------------------------- |
+  | Toggle transcription                      | `pkill -USR2 -n handy` or `handy --toggle-transcription` |
+  | Toggle transcription with post-processing | `handy --toggle-post-process`                            |
 
   Example Sway config:
 
   ```ini
   bindsym $mod+o exec pkill -USR2 -n handy
-  bindsym $mod+p exec pkill -USR1 -n handy
+  bindsym $mod+p exec handy --toggle-post-process
   ```
 
   `pkill` here simply delivers the signal—it does not terminate the process.
+
+  > **Behavior change:** older releases also accepted `SIGUSR1` for toggling transcription with post-processing. WebKitGTK — the webview engine embedded in Handy on Linux — uses SIGUSR1 internally to coordinate JavaScript garbage collection, so listening for it caused phantom recordings and interrupted dictations every few minutes ([#1660](https://github.com/cjpais/Handy/issues/1660)). Handy no longer listens for SIGUSR1 on Linux; the post-processing toggle is still available via `handy --toggle-post-process`. **Remove any `pkill -USR1` bindings**: the signal is now delivered straight to WebKit's internal handler and can crash the app.
+
+**Overlay & Pasting Issues (Linux):**
+
+- The recording overlay window can interfere with pasting transcribed text into target applications on Linux (X11)
+- **Solution:** Open **Settings > Advanced** and set **"Overlay Position"** to **"None"** to disable the overlay
+- Enable **"Audio Feedback"** (also in Advanced) if you still want audible confirmation of recording state
+- Users who upgrade from older versions or import settings from other platforms may need to manually apply this change
 
 ### Platform Support
 
@@ -342,6 +351,10 @@ Download the models you want from below
 - Turbo (1600 MB): `https://blob.handy.computer/ggml-large-v3-turbo.bin`
 - Large (1100 MB): `https://blob.handy.computer/ggml-large-v3-q5_0.bin`
 
+**Parakeet Unified EN 0.6B (single `.gguf` file, recommended):**
+
+- Q8_0 (731 MB): `https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf/resolve/main/parakeet-unified-en-0.6b-Q8_0.gguf`
+
 **Parakeet Models (compressed archives):**
 
 - V2 (473 MB): `https://blob.handy.computer/parakeet-v2-int8.tar.gz`
@@ -360,6 +373,10 @@ Simply place the `.bin` file directly into the `models` directory:
 ├── ggml-large-v3-turbo.bin
 └── ggml-large-v3-q5_0.bin
 ```
+
+**For GGUF Models (.gguf files):**
+
+Place the `.gguf` file directly into the `models` directory, exactly like the Whisper `.bin` files above. Handy also picks up models already present in the shared Hugging Face cache (`~/.cache/huggingface/hub`), so a copy downloaded by another tool works without being moved.
 
 **For Parakeet Models (.tar.gz archives):**
 
@@ -384,7 +401,7 @@ Final structure should look like:
 **Important Notes:**
 
 - For Parakeet models, the extracted directory name **must** match exactly as shown above
-- Do not rename the `.bin` files for Whisper models—use the exact filenames from the download URLs
+- Do not rename the `.bin` or `.gguf` files—use the exact filenames from the download URLs
 - After placing the files, restart Handy to detect the new models
 
 #### Step 5: Verify Installation
@@ -453,6 +470,12 @@ Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
 
 If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
 
+### Handy Starts or Stops Recording on Its Own (Linux)
+
+Handy 0.9.4 and earlier listened for `SIGUSR1` as a remote-control trigger. WebKitGTK — the webview engine embedded in Handy on Linux — uses that same signal internally to coordinate JavaScript garbage collection, so GC cycles were misread as hotkey presses: recordings started on their own, or real dictations were cut off mid-sentence (typically ~2 minutes in). See [#1660](https://github.com/cjpais/Handy/issues/1660).
+
+Update to a newer release, and replace any `pkill -USR1 -n handy` keybindings with `handy --toggle-post-process`.
+
 ### How to Contribute
 
 1. **Check existing issues** at [github.com/cjpais/Handy/issues](https://github.com/cjpais/Handy/issues)
@@ -490,10 +513,12 @@ The goal is to create both a useful tool and a foundation for others to build up
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
+Handy is open-source software, but the Handy name, logo, icon, and brand assets are not open-source. Unofficial forks, rewrites, and redistributions must use their own branding and must not imply endorsement or affiliation.
+
 ## Acknowledgments
 
 - **Whisper** by OpenAI for the speech recognition model
-- **whisper.cpp and ggml** for amazing cross-platform whisper inference/acceleration
+- **ggml and transcribe.cpp** for amazing cross-platform speech-to-text inference/acceleration
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
 - **Community contributors** helping make Handy better

@@ -13,72 +13,64 @@ interface ChannelSelectorProps {
 export const ChannelSelector: React.FC<ChannelSelectorProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, isLoading } = useSettings();
-    const [channelCount, setChannelCount] = useState<number>(1);
-    const [selectedChannel, setSelectedChannel] = useState<number | null>(null);
-    const [isUpdating, setIsUpdating] = useState(false);
+    const { getSetting, updateSetting, isUpdating, isLoading } = useSettings();
+    const [channelCount, setChannelCount] = useState(1);
 
     const selectedMicrophone = getSetting("selected_microphone") || "default";
+    const selectedChannel = getSetting("selected_channel");
 
-    // Fetch channel count when the selected microphone changes
     useEffect(() => {
+      let cancelled = false;
+      setChannelCount(1);
+
       const fetchChannels = async () => {
-        const deviceName =
-          selectedMicrophone === "Default" ? "default" : selectedMicrophone;
-        const result = await commands.getMicrophoneChannels(deviceName);
-        if (result.status === "ok") {
-          setChannelCount(result.data);
+        try {
+          const deviceName =
+            selectedMicrophone === "Default" ? "default" : selectedMicrophone;
+          const result = await commands.getMicrophoneChannels(deviceName);
+          if (!cancelled && result.status === "ok") {
+            setChannelCount(result.data);
+          }
+        } catch (error) {
+          console.error("Failed to get microphone channel count:", error);
         }
       };
-      fetchChannels();
+
+      void fetchChannels();
+      return () => {
+        cancelled = true;
+      };
     }, [selectedMicrophone]);
 
-    // Fetch the current selected channel setting
-    useEffect(() => {
-      const fetchSelectedChannel = async () => {
-        const result = await commands.getSelectedChannel();
-        if (result.status === "ok") {
-          setSelectedChannel(result.data);
-        }
-      };
-      fetchSelectedChannel();
-    }, []);
-
-    // Don't render if the device only has 1 channel
+    // Don't render if the device only has one channel.
     if (channelCount <= 1) {
       return null;
     }
 
     const handleChannelSelect = async (value: string) => {
-      setIsUpdating(true);
       const channel = value === "average" ? null : parseInt(value, 10);
-      const result = await commands.setSelectedChannel(channel);
-      if (result.status === "ok") {
-        setSelectedChannel(channel);
-      }
-      setIsUpdating(false);
+      await updateSetting("selected_channel", channel);
     };
 
     const options = [
-      { value: "average", label: t("settings.sound.channel.average", "Average all channels") },
-      ...Array.from({ length: channelCount }, (_, i) => ({
-        value: i.toString(),
-        label: t("settings.sound.channel.channel", "Channel {{n}}", { n: i + 1 }),
+      { value: "average", label: t("settings.sound.channel.average") },
+      ...Array.from({ length: channelCount }, (_, index) => ({
+        value: index.toString(),
+        label: t("settings.sound.channel.channel", { n: index + 1 }),
       })),
     ];
 
+    // An old selection may not exist on a newly selected device. The recorder
+    // also falls back to averaging in that case, so reflect that effective value.
     const currentValue =
-      selectedChannel === null || selectedChannel === undefined
+      selectedChannel == null || selectedChannel >= channelCount
         ? "average"
         : selectedChannel.toString();
 
     return (
       <SettingContainer
-        title={t("settings.sound.channel.title", "Input Channel")}
-        description={t(
-          "settings.sound.channel.description",
-          "Select which input channel to record from. Use this if your audio interface has multiple inputs."
-        )}
+        title={t("settings.sound.channel.title")}
+        description={t("settings.sound.channel.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
@@ -86,7 +78,7 @@ export const ChannelSelector: React.FC<ChannelSelectorProps> = React.memo(
           options={options}
           selectedValue={currentValue}
           onSelect={handleChannelSelect}
-          disabled={isUpdating || isLoading}
+          disabled={isUpdating("selected_channel") || isLoading}
         />
       </SettingContainer>
     );

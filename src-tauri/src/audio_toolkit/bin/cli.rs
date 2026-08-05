@@ -3,8 +3,11 @@ use std::io::{self, Write};
 
 use handy_app_lib::audio_toolkit::{
     audio::{list_input_devices, CpalDeviceInfo},
-    vad::SmoothedVad,
-    AudioRecorder, SileroVad,
+    vad::{
+        SmoothedVad, VAD_OFFLINE_HANGOVER_FRAMES, VAD_ONSET_FRAMES, VAD_PREFILL_FRAMES,
+        VAD_STREAMING_HANGOVER_FRAMES,
+    },
+    AudioRecorder, SileroVad, VadPolicy,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,7 +113,7 @@ impl RecorderState {
                     self.current_device_index = device_index;
                     println!("Opened recorder in Always-On mode");
                 }
-                self.recorder.start()?;
+                self.recorder.start(VadPolicy::Offline)?;
             }
             RecorderMode::OnDemand => {
                 // In on-demand mode, open for each recording
@@ -120,7 +123,7 @@ impl RecorderState {
                 self.recorder.open(device)?;
                 self.is_open = true;
                 self.current_device_index = device_index;
-                self.recorder.start()?;
+                self.recorder.start(VadPolicy::Offline)?;
                 println!("Opened and started recorder in On-Demand mode");
             }
         }
@@ -176,8 +179,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     print_help();
 
     let silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15);
-    let recorder = AudioRecorder::new()?.with_vad(Box::new(smoothed_vad));
+    let smoothed_vad = SmoothedVad::new(
+        Box::new(silero),
+        VAD_PREFILL_FRAMES,
+        VAD_OFFLINE_HANGOVER_FRAMES,
+        VAD_ONSET_FRAMES,
+    );
+    let recorder = AudioRecorder::new()?.with_vad(
+        Box::new(smoothed_vad),
+        VAD_OFFLINE_HANGOVER_FRAMES,
+        VAD_STREAMING_HANGOVER_FRAMES,
+    );
     let mut state = RecorderState::new(recorder);
 
     let mut devices = list_input_devices()?;
