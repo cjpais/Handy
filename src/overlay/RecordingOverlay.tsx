@@ -47,20 +47,10 @@ const RecordingOverlay: React.FC = () => {
   const capRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
   const direction = getLanguageDirection(i18n.language);
-  const isVisibleRef = useRef(isVisible);
-  useEffect(() => {
-    isVisibleRef.current = isVisible;
-  }, [isVisible]);
 
   useEffect(() => {
-    let unlistenShow: (() => void) | null = null;
-    let unlistenHide: (() => void) | null = null;
-    let unlistenLevel: (() => void) | null = null;
-    let unlistenStream: (() => void) | null = null;
-    let unlistenPhase: (() => void) | null = null;
-
-    const setup = async () => {
-      unlistenShow = await listen("show-overlay", async (event) => {
+    const setupEventListeners = async () => {
+      const unlistenShow = await listen("show-overlay", async (event) => {
         await syncLanguageFromSettings();
         // The Live panel flows downward from a top overlay and upward from a
         // bottom one; read the placement so the layout can flip to match.
@@ -88,15 +78,14 @@ const RecordingOverlay: React.FC = () => {
         setIsVisible(true);
       });
 
-      unlistenHide = await listen("hide-overlay", () => {
+      const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
-        setLevels(Array(16).fill(0));
-        setState("recording");
       });
 
-      unlistenLevel = await listen<number[]>("mic-level", (event) => {
-        if (!isVisibleRef.current) return;
+      const unlistenLevel = await listen<number[]>("mic-level", (event) => {
         const newLevels = event.payload as number[];
+        // Exponential smoothing across the 16 buckets, then take the first N
+        // bars for the shared waveform.
         const smoothed = smoothedLevelsRef.current.map((prev, i) => {
           const target = newLevels[i] || 0;
           return prev * 0.7 + target * 0.3;
@@ -105,26 +94,26 @@ const RecordingOverlay: React.FC = () => {
         setLevels(smoothed.slice(0, WAVE_BARS));
       });
 
-      unlistenStream = await events.streamTextEvent.listen((event) => {
+      const unlistenStream = await events.streamTextEvent.listen((event) => {
         setStreamText(event.payload);
       });
 
-      unlistenPhase = await events.streamPhaseEvent.listen((event) => {
+      const unlistenPhase = await events.streamPhaseEvent.listen((event) => {
         const payload: StreamPhaseEvent = event.payload;
         setPhase(payload.phase);
         if (payload.kind) setWorkKind(payload.kind);
       });
+
+      return () => {
+        unlistenShow();
+        unlistenHide();
+        unlistenLevel();
+        unlistenStream();
+        unlistenPhase();
+      };
     };
 
-    setup();
-
-    return () => {
-      unlistenShow?.();
-      unlistenHide?.();
-      unlistenLevel?.();
-      unlistenStream?.();
-      unlistenPhase?.();
-    };
+    setupEventListeners();
   }, []);
 
   // Elapsed timer while the Live overlay is visible.
@@ -149,6 +138,8 @@ const RecordingOverlay: React.FC = () => {
     pinnedRef.current = true;
     setOverflowing(false);
   }, [session]);
+
+  if (!isVisible) return null;
 
   // Re-pin when the user is within ~a line of the bottom; unpin otherwise.
   const handleStreamScroll = () => {
@@ -273,12 +264,6 @@ const RecordingOverlay: React.FC = () => {
   // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
   // spinner + label (transcribing / processing). Never both. The pill animates its
   // width between them; the cancel button is in both rows so it stays put.
-  //
-  // When the overlay is hidden, render nothing — the WebView window sits idle with
-  // zero GPU compositing overhead. CSS opacity:0 alone is not enough because the
-  // compositor still processes the layer tree.
-  if (!isVisible) return null;
-
   const working = state === "transcribing" || state === "processing";
   const workLabel =
     state === "processing"
