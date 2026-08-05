@@ -39,14 +39,16 @@ tauri_panel! {
 // where the card sits — only OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET do. Keep
 // these in sync with the CSS card geometry.
 //
-// Compact overlay (Minimal / transcribing / processing): the 40h pill animates
-// width from 172 (--ov-rest-w) to 216 (--ov-work-w) and expands from center, so
-// the window must fit the widest state plus a little slack.
+// Compact overlay (Minimal / transcribing / processing): the pill animates
+// width from 163 (--ov-rest-w) to 256 (--ov-work-w) and expands from center, so
+// the window must fit the widest state plus a little slack. Those CSS px are
+// authored at 1:1 and drawn through --ov-scale (0.85), so the widest painted
+// state is ~218 — the slack below covers the unscaled value either way.
 const OVERLAY_WIDTH: f64 = 300.0;
 const OVERLAY_HEIGHT: f64 = 52.0;
 
 // Sized to the enlarged Live card (--ov-open-w 448 x ~44 row + 64 text cap), plus
-// a little slack for the pop-in scale.
+// a little slack.
 const OVERLAY_STREAM_WIDTH: f64 = 470.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 128.0;
 

@@ -20,9 +20,11 @@ type OverlayState =
   | "error";
 
 // Number of reactive bars in the canvas waveform — one per FFT band from the
-// backend (BUCKETS in recorder.rs). Each bar's top and bottom animate
-// independently, so the shape reads as a lively, non-mirrored waveform.
-const WAVE_BARS = 28;
+// backend, so keep this equal to BUCKETS in recorder.rs (a mismatch still
+// renders, but the loop below has to resample the bands). Each bar's top and
+// bottom animate independently, so the shape reads as a lively, non-mirrored
+// waveform.
+const WAVE_BARS = 21;
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
@@ -41,7 +43,7 @@ const RecordingOverlay: React.FC = () => {
   const [workKind, setWorkKind] = useState<StreamWorkKind>("transcribing");
   const [elapsed, setElapsed] = useState(0);
   // Bumped on each new streaming session so the Live card remounts fresh (replays
-  // the pop-in, and never animates in from the previous panel's open size).
+  // the slide-in, and never animates in from the previous panel's open size).
   const [session, setSession] = useState(0);
   // Overlay placement (top vs bottom of the screen). The Live panel grows downward
   // from a top overlay (oldest line under the pill) and upward from a bottom one.
@@ -154,7 +156,7 @@ const RecordingOverlay: React.FC = () => {
       if (!cv || !ctx) return;
 
       const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const cssW = cv.clientWidth || 188;
+      const cssW = cv.clientWidth || 141;
       const cssH = cv.clientHeight || 32;
       if (cv.width !== Math.round(cssW * dpr)) cv.width = Math.round(cssW * dpr);
       if (cv.height !== Math.round(cssH * dpr))
@@ -174,6 +176,12 @@ const RecordingOverlay: React.FC = () => {
       const r = bw / 2;
       const mid = cssH / 2;
       const maxAmp = cssH / 2 - 1;
+      // Idle breath: silence settles every bar onto the 1.5px flat line, which
+      // reads as frozen. Swell that resting minimum on a slow 2s cycle so a
+      // silent recording still looks live. Phase comes from performance.now(),
+      // so it's the same whether this frame was pushed by a mic-level event or
+      // pulled by rAF. Loud bars clear the minimum, so this only shows at rest.
+      const minBar = 1.5 + 1.1 * (0.5 + 0.5 * Math.sin(now / 318));
       for (let i = 0; i < n; i++) {
         // Map the band even if the backend sent a different count than WAVE_BARS.
         const raw =
@@ -200,8 +208,8 @@ const RecordingOverlay: React.FC = () => {
         }
         b.top += (b.ttop - b.top) * (b.ttop > b.top ? kAtt : kRel);
         b.bot += (b.tbot - b.bot) * (b.tbot > b.bot ? kAtt : kRel);
-        const up = Math.max(1.5, b.top * maxAmp);
-        const dn = Math.max(1.5, b.bot * maxAmp);
+        const up = Math.max(minBar, b.top * maxAmp);
+        const dn = Math.max(minBar, b.bot * maxAmp);
         const x = i * slot + (slot - bw) / 2;
         ctx.beginPath();
         if (ctx.roundRect) ctx.roundRect(x, mid - up, bw, up + dn, r);
@@ -250,47 +258,27 @@ const RecordingOverlay: React.FC = () => {
   // ---- Shared building blocks (one visual language for every overlay form) ----
   const waveform = <canvas ref={canvasRef} className="swave" aria-hidden="true" />;
 
-  const cancelBtn = (
-    <button
-      className="sx"
-      aria-label="cancel"
-      onClick={() => commands.cancelOperation()}
-    >
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path
-          d="M4 4 L12 12 M12 4 L4 12"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    </button>
-  );
-
-  // dot (left) | waveform (center) | timer + cancel (right) — same structure for
-  // pill & panel, so the Live morph is a pure width change.
-  const listeningRow = (showTimer: boolean, showCancel: boolean) => (
+  // (left) | waveform (center) | timer (right) — same structure for pill &
+  // panel, so the Live morph is a pure width change.
+  const listeningRow = (showTimer: boolean) => (
     <div className="sbase">
-      <div className="sbase-l">
-        <span className="sdot" />
-      </div>
+      <div className="sbase-l" />
       {waveform}
       <div className="sbase-r">
         {showTimer && <span className="stimer">{fmtTime(elapsed)}</span>}
-        {showCancel && cancelBtn}
       </div>
     </div>
   );
 
-  // spinner (left) | label (center) | cancel (right) — same 3-zone grid as the
-  // listening row, so the label is centered.
-  const workingRow = (label: string, showCancel: boolean) => (
+  // spinner (left) | label (center) — same 3-zone grid as the listening row, so
+  // the label is centered.
+  const workingRow = (label: string) => (
     <div className="sbase">
       <div className="sbase-l">
         <span className="sspinner" />
       </div>
       <span className="swork-label">{label}</span>
-      <div className="sbase-r">{showCancel && cancelBtn}</div>
+      <div className="sbase-r" />
     </div>
   );
 
@@ -338,9 +326,8 @@ const RecordingOverlay: React.FC = () => {
                 workKind === "polishing"
                   ? t("overlay.processing")
                   : t("overlay.transcribing"),
-                true,
               )
-            : listeningRow(open, true)}
+            : listeningRow(open)}
         </div>
       </div>
     );
@@ -348,8 +335,7 @@ const RecordingOverlay: React.FC = () => {
 
   // ---- Minimal overlay: exactly one row at a time — waveform (recording), a
   // spinner + label (transcribing / processing), or an error label. Never
-  // several. The pill animates its width between them; the cancel button is in
-  // both active rows so it stays put.
+  // several. The pill animates its width between them.
   const working = state === "transcribing" || state === "processing";
   const errored = state === "error";
   const workLabel =
@@ -376,8 +362,8 @@ const RecordingOverlay: React.FC = () => {
         {errored
           ? errorRow
           : working
-            ? workingRow(workLabel, true)
-            : listeningRow(false, true)}
+            ? workingRow(workLabel)
+            : listeningRow(false)}
       </div>
     </div>
   );

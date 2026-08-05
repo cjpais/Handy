@@ -7,11 +7,6 @@
   --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
   /* Accent = logo pink; flips automatically via --color-logo-primary. */
   --s-accent: var(--color-logo-primary);
-  --s-accent-soft: color-mix(
-    in srgb,
-    var(--color-background-ui) 16%,
-    transparent
-  );
   /* Neutrals. Hairlines reuse the app's mid-gray at low opacity — same vocabulary
      as the app's border-mid-gray/* utilities. muted/faint are overlay-specific
      secondary/tertiary text grays (no theme equivalent). */
@@ -20,14 +15,17 @@
   --s-border: color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
   --s-hair: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
 
-  /* Card geometry — single source of truth for the visible overlay sizes. The
-     native overlay window (overlay.rs) is sized from these: it must be at least
-     the card's max footprint (--ov-work-w for compact, --ov-open-w for Live),
-     since the card is anchored flush to the screen edge in CSS. Keep overlay.rs
-     in sync when these change. */
-  --ov-rest-w: 256px; /* resting compact pill (minimal, recording) -- sized to hold
-                         the bold 188px waveform canvas plus dot + cancel */
-  --ov-pill-w: 256px; /* base width / Live pill before it opens or collapses */
+  /* Card geometry — single source of truth for the visible overlay sizes. Every
+     value below is authored at 1:1 and rendered through `zoom: var(--ov-scale)`
+     on .scard, so the numbers stay readable and only the scale knob moves.
+     The native overlay window (overlay.rs) must fit the card's max *scaled*
+     footprint (--ov-work-w for compact, --ov-open-w for Live), since the card is
+     anchored flush to the screen edge in CSS. Keep overlay.rs in sync when these
+     change — shrinking the scale only leaves the window with more slack. */
+  --ov-scale: 0.85; /* whole-overlay size knob (1 = the authored px below) */
+  --ov-rest-w: 163px; /* resting compact pill (minimal, recording) -- hugs the
+                         141px waveform: + 2x10 row padding + 2x1 card border */
+  --ov-pill-w: 163px; /* base width / Live pill before it opens or collapses */
   --ov-work-w: 256px; /* working pill (transcribing / polishing) -- wide enough to
                          center longer labels; shared by Live (collapsed) + minimal */
   --ov-open-w: 448px; /* Live panel, expanded */
@@ -36,13 +34,6 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Accent uses the lighter logo pink in dark — reads better on the dark
-       surface than the deeper UI pink. */
-    --s-accent-soft: color-mix(
-      in srgb,
-      var(--color-logo-primary) 20%,
-      transparent
-    );
     --s-muted: #a3a09a;
     --s-faint: #6f6c66;
     /* Hairlines flip to the near-white text token for contrast on dark. */
@@ -57,8 +48,8 @@
    anchored flush to the screen-edge side (bottom by default, top when placed up
    top) and centered horizontally, so the visible card sits exactly
    OVERLAY_*_OFFSET from the screen edge regardless of window height — only the
-   offsets in overlay.rs move it. Pops scale from that edge, so the card is never
-   drawn past it (matters for the 4px top offset on Windows/Linux).
+   offsets in overlay.rs move it. Entrances slide out of that edge, so the
+   travelled-away card is clipped by the window rather than drawn past it.
    ============================================================ */
 .ov-stage {
   position: fixed;
@@ -72,14 +63,26 @@
   align-items: flex-start; /* top placement: flush to the top edge */
 }
 
-/* Compact pill: fade the whole container in/out (the pill itself never pops or
-   morphs). */
-.ov-fade {
+/* Compact pill: slides in from (and back out to) the anchored screen edge with
+   the stage's show/hide. It lives on the card rather than the stage because the
+   stage spans the whole window — a percentage translate there would travel the
+   full window height. The compact card never remounts, so its entrance can't be
+   a keyframe like the Live card's. */
+.ov-fade .scard.compact {
   opacity: 0;
-  transition: opacity 200ms ease-out;
+  transform: translateY(100%);
+  transition:
+    opacity 280ms ease-out,
+    transform 280ms ease-out,
+    width 460ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.ov-fade.show {
+.ov-stage.top.ov-fade .scard.compact {
+  transform: translateY(-100%);
+}
+.ov-fade.show .scard.compact,
+.ov-stage.top.ov-fade.show .scard.compact {
   opacity: 1;
+  transform: none;
 }
 
 /* Top placement, Live panel: stack the control pill above the text region so the
@@ -91,6 +94,8 @@
   /* column-reverse stacks the control pill above the text region. */
   flex-direction: column-reverse;
   transform-origin: top center;
+  /* Slide down from the top edge instead of up from the bottom. */
+  animation-name: scard-slide-top;
 }
 .ov-stage.top .stext-cap {
   /* Mirror of the bottom overlay (top: 12 / bottom: 0): the first line sits flush
@@ -117,6 +122,12 @@
 
 /* Shared base card. Flat: theme surface + hairline border, no shadow or blur. */
 .scard {
+  /* Scales layout and text together, so every px below stays authored at 1:1.
+     Transforms still work in the zoomed box (the slide's translateY(100%) is the
+     card's own scaled height) and width transitions animate the unscaled values.
+     The waveform canvas keeps its 141px backing store and paints into a smaller
+     box, so it supersamples rather than blurring. */
+  zoom: var(--ov-scale);
   width: var(--ov-pill-w);
   border-radius: 24px;
   overflow: hidden;
@@ -127,18 +138,29 @@
   background: var(--s-surface);
   border: 1px solid var(--s-border);
   /* Flat: no drop shadow, no backdrop blur/saturate (was a glassy gradient look). */
-  /* pop-in plays on mount; morph (width/radius) is a transition */
-  animation: scard-pop 460ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* slide-in plays on mount; morph (width/radius) is a transition */
+  animation: scard-slide 280ms ease-out;
   transition:
     width 460ms cubic-bezier(0.22, 1, 0.36, 1),
     border-radius 460ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, width, opacity;
 }
-@keyframes scard-pop {
+/* Emerge from the anchored screen edge: the card sits flush against it, so the
+   translated-away state is clipped by the window. */
+@keyframes scard-slide {
   from {
     opacity: 0;
-    /* Scale from the anchored edge (transform-origin) — never translate past it. */
-    transform: scale(0.92);
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes scard-slide-top {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
   }
   to {
     opacity: 1;
@@ -147,10 +169,13 @@
 }
 .scard.leaving {
   opacity: 0;
-  transform: scale(0.96);
+  transform: translateY(100%);
   transition:
-    opacity 240ms ease,
-    transform 300ms ease;
+    opacity 280ms ease-out,
+    transform 280ms ease-out;
+}
+.ov-stage.top .scard.leaving {
+  transform: translateY(-100%);
 }
 .scard.open {
   width: var(--ov-open-w);
@@ -239,16 +264,17 @@
   }
 }
 
-/* base row — dot (left) | waveform (center) | timer + cancel (right).
-   Same structure for pill & panel; the dot stays anchored left in both. */
+/* base row — spinner (left) | waveform or label (center) | timer (right).
+   Same structure for pill & panel. */
 .sbase {
   height: var(--ov-base-h);
   padding: 0 10px;
   display: grid;
-  /* Equal side columns (min 22px to hold the cancel button) keep the center item
-     — waveform or label — centered whether the pill is at min width or content-
-     sized. */
-  grid-template-columns: minmax(22px, 1fr) auto minmax(22px, 1fr);
+  /* Equal side columns keep the center item — waveform or label — centered. They
+     collapse to nothing when empty, so the resting pill hugs the waveform with
+     just the row padding; the wider working / open cards have free space to
+     spare, so their spinner and timer still sit in roomy columns. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
 }
 .sbase-l {
@@ -262,22 +288,6 @@
   align-items: center;
   gap: 10px;
   justify-self: end;
-}
-.sdot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--s-accent);
-  flex: none;
-  animation: sdot-pulse 1.9s infinite;
-}
-@keyframes sdot-pulse {
-  0% {
-    box-shadow: 0 0 0 0 var(--s-accent-soft);
-  }
-  70% {
-    box-shadow: 0 0 0 7px transparent;
-  }
 }
 .stimer {
   font-size: 12px;
@@ -295,45 +305,11 @@
    style); `color` carries the themed accent to the canvas fillStyle. */
 .swave {
   display: block;
-  width: 188px;
+  width: 141px;
   height: 32px;
   color: var(--s-accent);
   flex: none;
 }
-.sx {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  flex: none;
-  padding: 0;
-  border: 0;
-  -webkit-appearance: none;
-  appearance: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--s-muted);
-  background: var(--s-hair);
-  cursor: pointer;
-  transition:
-    background-color 150ms ease,
-    color 150ms ease,
-    transform 100ms ease;
-}
-.sx svg {
-  width: 9px;
-  height: 9px;
-  display: block;
-}
-.sx:hover {
-  background: var(--s-accent-soft);
-  color: var(--color-text);
-  transform: scale(1.05);
-}
-.sx:active {
-  transform: scale(0.95);
-}
-
 /* working state (transcribing / polishing) — spinner + label */
 .sspinner {
   width: 13px;
