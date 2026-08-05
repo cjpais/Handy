@@ -40,6 +40,10 @@ impl Drop for FinishGuard {
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
         }
+        // The pipeline just freed its large transient buffers (captured PCM,
+        // WAV copy, engine scratch); hand the cached pages back to the OS so
+        // they don't sit in malloc arenas until they get swapped out (#1792).
+        crate::memory::trim_freed_memory();
     }
 }
 

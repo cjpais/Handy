@@ -2463,6 +2463,7 @@ dependencies = [
  "handy-keys",
  "hf-hub",
  "hound",
+ "libc",
  "log",
  "natural",
  "objc2",
