@@ -6,7 +6,8 @@
     "unloadModel": "Modeli boşalt",
     "model": "Model",
     "quit": "Çıkış",
-    "cancel": "İptal"
+    "cancel": "İptal",
+    "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor"
   },
   "sidebar": {
     "general": "Genel",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Uyumlu Modeller",
+    "downloadModelsTitle": "İndirilebilir",
+    "showAllModels": "{{total}} modelin tümünü göster",
+    "showFewerModels": "Daha az model göster",
     "recommended": "Önerilen",
     "customModelDescription": "Resmi olarak desteklenmiyor",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Model seçilemedi"
     },
     "permissions": {
       "title": "İzinler Gerekli",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Birden fazla giriş dilini destekler",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} dil",
       "translation": "İngilizce'ye çevirebilir",
       "translate": "İngilizce'ye çevir",
       "singleLanguage": "Yalnızca bu dili destekler",
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Yer Paylaşımı",
+          "description": "Kayıt sırasındaki yer paylaşımını seçin: 'Yok' gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
           "options": {
             "none": "Yok",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Sade",
+            "live": "Canlı"
           }
         },
         "position": {
@@ -365,8 +366,8 @@
         "duplicate": "\"{{word}}\" zaten mevcut"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Ses Etkinliği Algılama",
+        "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
       }
     },
     "postProcessing": {
@@ -402,7 +403,7 @@
         }
       },
       "prompts": {
-        "title": "Prompt",
+        "title": "İstem",
         "selectedPrompt": {
           "title": "Seçili Prompt",
           "description": "Transkripsiyonları iyileştirmek için bir şablon seçin veya yeni bir tane oluşturun. Yakalanan transkripte referans vermek için prompt metni içinde ${output} kullanın."
@@ -528,6 +529,26 @@
         "title": "Ekstra kayıt tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
       },
+      "keyboardDiagnostic": {
+        "title": "Klavye Tanılaması",
+        "description": "Klavye olaylarının Handy'ye ulaşıp ulaşmadığını denetler. Yalnızca olay sayıları kaydedilir — hangi tuşlara bastığınız asla kaydedilmez.",
+        "run": "10 sn'lik tanılamayı çalıştır",
+        "running": "Dinleniyor… kısayolunuza birkaç kez basın (ör. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "etkin",
+        "disabled": "devre dışı",
+        "holder": "{{name}} tarafından tutuluyor (pid {{pid}})",
+        "holderUnknown": "görünür bir sahip yok",
+        "keyDown": "Tuş basma",
+        "keyUp": "Tuş bırakma",
+        "flagsChanged": "Değiştiriciler",
+        "mouse": "Fare",
+        "verdictBlocked": "Secure Input tuş olaylarını engelliyor — normal tuş içeren kısayollar bu sorun çözülene kadar çalışamaz.",
+        "verdictSuspicious": "Değiştirici olayları geldi ancak hiç tuş olayı gelmedi — Secure Input devre dışı görünmesine rağmen bir şey tuşları bastırıyor. Lütfen bunu GitHub'da bildirin.",
+        "verdictOk": "Tuş olayları Handy'ye normal şekilde ulaşıyor.",
+        "verdictNoEvents": "Hiç olay yakalanmadı — test sırasında herhangi bir tuşa bastınız mı?",
+        "failed": "Tanılama başarısız: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Yenilikleri Önizle",
         "description": "En son paketlenmiş sürüm notunu görüldü olarak işaretlemeden aç",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} yenilikleri"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} 1 kısayolu engelliyor olabilir",
+    "blockedWithCulprit_other": "{{name}} {{count}} kısayolu engelliyor olabilir",
+    "blockedNoCulprit_one": "macOS geçici olarak 1 kısayolu engelliyor",
+    "blockedNoCulprit_other": "macOS geçici olarak {{count}} kısayolu engelliyor",
+    "recorderBlockedWithCulprit": "{{name}} kısayol değişikliklerini engelliyor olabilir",
+    "recorderBlockedNoCulprit": "macOS geçici olarak kısayol değişikliklerini engelliyor",
+    "learnMore": "Bu nasıl düzeltilir",
+    "recorderBlocked": "Şu anda kısayol kaydedilemiyor — macOS Secure Input tuş olaylarını engelliyor. Önce Secure Input uyarısını giderin.",
+    "dismiss": "Kapat"
   }
 }

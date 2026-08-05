@@ -6,7 +6,8 @@
     "unloadModel": "Вивантажити модель",
     "model": "Модель",
     "quit": "Вийти",
-    "cancel": "Скасувати"
+    "cancel": "Скасувати",
+    "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input"
   },
   "sidebar": {
     "general": "Загальні",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Сумісні моделі",
+    "downloadModelsTitle": "Доступні для завантаження",
+    "showAllModels": "Показати всі моделі ({{total}})",
+    "showFewerModels": "Показати менше моделей",
     "recommended": "Рекомендовано",
     "customModelDescription": "Офіційно не підтримується",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Не вдалося вибрати модель"
     },
     "permissions": {
       "title": "Потрібні дозволи",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Підтримує кілька мов введення",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} мов",
       "translation": "Може перекладати на англійську",
       "translate": "Перекласти на англійську",
       "singleLanguage": "Підтримує лише цю мову",
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Накладка",
+          "description": "Виберіть накладку під час запису: «Немає» приховує її, «Мінімальна» показує компактний індикатор, «У реальному часі» показує транскрипцію під час мовлення (лише моделі з підтримкою потокової обробки — шукайте позначку «Потокове» у списку моделей). У Linux рекомендовано «Немає».",
           "options": {
             "none": "Немає",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Мінімальна",
+            "live": "У реальному часі"
           }
         },
         "position": {
@@ -365,8 +366,8 @@
         "duplicate": "\"{{word}}\" вже існує"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Виявлення голосової активності",
+        "description": "Відфільтровує тишу із записів. Моделі з підтримкою потокової обробки використовують довший «хвіст» VAD; вимкнення VAD записує необроблений звук."
       }
     },
     "postProcessing": {
@@ -528,6 +529,26 @@
         "title": "Додатковий буфер запису",
         "description": "Додатковий час (у мілісекундах) для продовження запису після відпускання клавіші, щоб захопити завершальний звук. 0 = без додаткового буфера."
       },
+      "keyboardDiagnostic": {
+        "title": "Діагностика клавіатури",
+        "description": "Перевіряє, чи доходять події клавіатури до Handy. Записується лише кількість подій — ніколи те, які клавіші ви натискаєте.",
+        "run": "Запустити 10-секундну діагностику",
+        "running": "Прослуховування… натисніть свою комбінацію кілька разів (наприклад, Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "увімкнено",
+        "disabled": "вимкнено",
+        "holder": "утримує {{name}} (pid {{pid}})",
+        "holderUnknown": "видимого власника не знайдено",
+        "keyDown": "Натискання клавіші",
+        "keyUp": "Відпускання клавіші",
+        "flagsChanged": "Модифікатори",
+        "mouse": "Миша",
+        "verdictBlocked": "Secure Input блокує події клавіш — комбінації зі звичайною клавішею не працюватимуть, доки це не буде усунуто.",
+        "verdictSuspicious": "Події модифікаторів надходять, а події клавіш — ні: щось пригнічує клавіші, хоча Secure Input позначено як вимкнений. Будь ласка, повідомте про це на GitHub.",
+        "verdictOk": "Події клавіш надходять до Handy нормально.",
+        "verdictNoEvents": "Подій не зафіксовано — ви натискали клавіші під час тесту?",
+        "failed": "Не вдалося виконати діагностику: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "Попередній перегляд новин",
         "description": "Відкрити останні вбудовані примітки до випуску, не позначаючи їх як переглянуті",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "Нове в Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} може блокувати 1 комбінацію клавіш",
+    "blockedWithCulprit_other": "{{name}} може блокувати {{count}} комбінацій клавіш",
+    "blockedNoCulprit_one": "macOS тимчасово блокує 1 комбінацію клавіш",
+    "blockedNoCulprit_other": "macOS тимчасово блокує {{count}} комбінацій клавіш",
+    "recorderBlockedWithCulprit": "{{name}} може блокувати зміну комбінацій клавіш",
+    "recorderBlockedNoCulprit": "macOS тимчасово блокує зміну комбінацій клавіш",
+    "learnMore": "Як це виправити",
+    "recorderBlocked": "Зараз неможливо записати комбінацію — Secure Input у macOS блокує події клавіш. Спершу усуньте попередження про Secure Input.",
+    "dismiss": "Приховати"
   }
 }

@@ -6,7 +6,8 @@
     "unloadModel": "פרוק מודל",
     "model": "מודל",
     "quit": "יציאה",
-    "cancel": "ביטול"
+    "cancel": "ביטול",
+    "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input"
   },
   "sidebar": {
     "general": "כללי",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "כדי להתחיל, בחר מודל תמלול",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "מודלים תואמים",
+    "downloadModelsTitle": "זמינים להורדה",
+    "showAllModels": "הצג את כל {{total}} המודלים",
+    "showFewerModels": "הצג פחות מודלים",
     "recommended": "מומלץ",
     "customModelDescription": "לא נתמך באופן רשמי",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "בחירת המודל נכשלה"
     },
     "permissions": {
       "title": "נדרשות הרשאות",
@@ -145,7 +146,7 @@
     "capabilities": {
       "languageSelection": "תומך בכמה שפות קלט",
       "singleLanguage": "תומך רק בשפה הזו",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} שפות",
       "languageOnly": "{{language}} בלבד",
       "translation": "יכול לתרגם לאנגלית",
       "translate": "תרגם לאנגלית",
@@ -282,12 +283,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "שכבת-על",
+          "description": "בחר את שכבת-העל בהקלטה: 'ללא' מסתירה אותה, 'מינימלי' מציג סמן קומפקטי, 'בזמן אמת' מציג תמלול בזמן אמת בזמן הדיבור (מודלים התומכים בסטרימינג בלבד — חפש את התווית 'סטרימינג' בבורר המודלים). ב-Linux מומלץ לבחור 'ללא'.",
           "options": {
             "none": "ללא",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "מינימלי",
+            "live": "בזמן אמת"
           }
         },
         "position": {
@@ -365,8 +366,8 @@
         "duplicate": "\"{{word}}\" כבר קיימת"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "זיהוי פעילות קולית",
+        "description": "סינון שקט מההקלטות. מודלים התומכים בסטרימינג משתמשים בזנב VAD ארוך יותר; ביטול VAD מקליט אודיו גולמי."
       }
     },
     "postProcessing": {
@@ -528,6 +529,26 @@
         "title": "באפר הקלטה נוסף",
         "description": "זמן נוסף (במילישניות) להמשך הקלטה אחרי שחרור המקש, כדי ללכוד סוף דיבור. 0 = בלי באפר נוסף."
       },
+      "keyboardDiagnostic": {
+        "title": "אבחון מקלדת",
+        "description": "בודק אם אירועי מקלדת מגיעים ל-Handy. נרשם רק מספר האירועים — לעולם לא אילו מקשים הקשת.",
+        "run": "הרצת אבחון של 10 שניות",
+        "running": "מאזין… הקש על קיצור המקשים שלך כמה פעמים (למשל Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "מופעל",
+        "disabled": "מושבת",
+        "holder": "מוחזק על ידי {{name}} (pid {{pid}})",
+        "holderUnknown": "אין מחזיק גלוי",
+        "keyDown": "לחיצת מקש",
+        "keyUp": "שחרור מקש",
+        "flagsChanged": "מקשי החלפה",
+        "mouse": "עכבר",
+        "verdictBlocked": "Secure Input חוסם אירועי מקשים — קיצורים הכוללים מקש רגיל לא יוכלו לפעול עד שהבעיה תיפתר.",
+        "verdictSuspicious": "הגיעו אירועים של מקשי החלפה אך לא אירועי מקשים — משהו מדכא מקשים למרות ש-Secure Input מדווח כמושבת. אנא דווח על כך ב-GitHub.",
+        "verdictOk": "אירועי מקשים מגיעים ל-Handy כרגיל.",
+        "verdictNoEvents": "לא נקלטו אירועים — האם הקשת על מקשים במהלך הבדיקה?",
+        "failed": "האבחון נכשל: {{error}}"
+      },
       "whatsNewPreview": {
         "title": "תצוגה מקדימה של מה חדש",
         "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
@@ -633,5 +654,16 @@
   },
   "whatsNew": {
     "title": "חדש ב-Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "ייתכן ש-{{name}} חוסם קיצור דרך אחד",
+    "blockedWithCulprit_other": "ייתכן ש-{{name}} חוסם {{count}} קיצורי דרך",
+    "blockedNoCulprit_one": "macOS חוסם זמנית קיצור דרך אחד",
+    "blockedNoCulprit_other": "macOS חוסם זמנית {{count}} קיצורי דרך",
+    "recorderBlockedWithCulprit": "ייתכן ש-{{name}} חוסם שינויים בקיצורי דרך",
+    "recorderBlockedNoCulprit": "macOS חוסם זמנית שינויים בקיצורי דרך",
+    "learnMore": "איך לתקן את זה",
+    "recorderBlocked": "לא ניתן להקליט קיצורים כרגע — Secure Input של macOS חוסם אירועי מקשים. פתור תחילה את אזהרת Secure Input.",
+    "dismiss": "התעלם"
   }
 }
