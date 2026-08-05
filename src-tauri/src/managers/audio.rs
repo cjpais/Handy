@@ -745,15 +745,19 @@ impl AudioRecordingManager {
     }
 
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
-        // Device or channel settings changed; re-enumerate the device and recreate
-        // the recorder so its capture callback picks up the new selection.
+        // Device or channel settings changed; re-enumerate the device and restart
+        // capture so its callback picks up the new selection. Keep the recorder
+        // itself to avoid unnecessarily reloading the VAD model.
         self.invalidate_device_cache();
         let was_open = *self.is_open.lock().unwrap();
         if was_open {
             self.close_generation.fetch_add(1, Ordering::SeqCst);
             self.stop_microphone_stream();
         }
-        *self.recorder.lock().unwrap() = None;
+        let selected_channel = get_settings(&self.app_handle).selected_channel;
+        if let Some(recorder) = self.recorder.lock().unwrap().as_mut() {
+            recorder.set_selected_channel(selected_channel);
+        }
         if was_open {
             self.start_microphone_stream()?;
         }

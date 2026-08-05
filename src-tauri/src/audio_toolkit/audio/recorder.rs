@@ -140,8 +140,12 @@ impl AudioRecorder {
     }
 
     pub fn with_selected_channel(mut self, channel: Option<u16>) -> Self {
-        self.selected_channel = channel.map(usize::from);
+        self.set_selected_channel(channel);
         self
+    }
+
+    pub fn set_selected_channel(&mut self, channel: Option<u16>) {
+        self.selected_channel = channel.map(usize::from);
     }
 
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
