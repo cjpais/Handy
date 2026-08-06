@@ -293,8 +293,7 @@ export const ModelsSettings: React.FC = () => {
               <h2 className="text-sm font-medium text-text/60">
                 {t("settings.models.yourModels")}
               </h2>
-              <div className="flex items-center gap-2">
-                {/* Rescan local sources for models added outside Handy */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => rescanLocalModels()}
@@ -305,6 +304,7 @@ export const ModelsSettings: React.FC = () => {
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
                   />
+                </button>
                 <div className="relative" ref={capabilityDropdownRef}>
                   <button
                     type="button"
