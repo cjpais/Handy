@@ -172,7 +172,6 @@
       "availableModels": "Dostępne do pobrania",
       "searchPlaceholder": "Szukaj modeli według nazwy…",
       "rescan": {
-        "label": "Skanuj ponownie",
         "tooltip": "Skanuj ponownie w poszukiwaniu modeli dodanych do folderu modeli lub pamięci podręcznej Hugging Face poza Handy"
       }
     },

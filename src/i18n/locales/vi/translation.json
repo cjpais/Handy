@@ -172,7 +172,6 @@
       "availableModels": "Có sẵn để tải xuống",
       "searchPlaceholder": "Tìm mô hình theo tên…",
       "rescan": {
-        "label": "Quét lại",
         "tooltip": "Quét lại các mô hình được thêm vào thư mục mô hình hoặc bộ nhớ đệm Hugging Face bên ngoài Handy"
       }
     },

@@ -213,7 +213,6 @@
       "availableModels": "Disponíveis para download",
       "searchPlaceholder": "Buscar modelos por nome…",
       "rescan": {
-        "label": "Reescanear",
         "tooltip": "Reescaneia em busca de modelos adicionados à pasta de modelos ou ao cache do Hugging Face fora do Handy"
       }
     },

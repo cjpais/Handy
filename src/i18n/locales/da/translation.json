@@ -212,7 +212,6 @@
         "allLanguages": "Alle sprog"
       },
       "rescan": {
-        "label": "Søg igen",
         "tooltip": "Søg igen efter modeller, der er tilføjet til modelmappen eller Hugging Face-cachen uden for Handy"
       },
       "noModelsMatch": "Ingen modeller matcher dette filter."

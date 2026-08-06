@@ -172,7 +172,6 @@
       "availableModels": "İndirilebilir",
       "searchPlaceholder": "Modelleri ada göre ara…",
       "rescan": {
-        "label": "Yeniden tara",
         "tooltip": "Handy dışında modeller klasörüne veya Hugging Face önbelleğine eklenen modelleri yeniden tara"
       }
     },

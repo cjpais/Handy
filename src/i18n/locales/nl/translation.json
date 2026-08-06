@@ -212,7 +212,6 @@
         "allLanguages": "Alle talen"
       },
       "rescan": {
-        "label": "Opnieuw scannen",
         "tooltip": "Scannen naar modellen die buiten Handy om zijn toegevoegd aan de modellenmap of Hugging Face-cache"
       },
       "noModelsMatch": "Geen modellen voldoen aan dit filter."

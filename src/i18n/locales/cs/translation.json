@@ -172,7 +172,6 @@
       "availableModels": "Dostupné ke stažení",
       "searchPlaceholder": "Hledat modely podle názvu…",
       "rescan": {
-        "label": "Znovu prohledat",
         "tooltip": "Znovu prohledat modely přidané do složky modelů nebo mezipaměti Hugging Face mimo Handy"
       }
     },

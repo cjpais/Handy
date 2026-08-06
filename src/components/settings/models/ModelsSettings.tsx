@@ -261,12 +261,12 @@ export const ModelsSettings: React.FC = () => {
                   onClick={() => rescanLocalModels()}
                   disabled={isRescanning}
                   title={t("settings.models.rescan.tooltip")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Rescan"
+                  className="p-2 text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
                   />
-                  <span>{t("settings.models.rescan.label")}</span>
                 </button>
                 {/* Language filter dropdown */}
                 <div className="relative" ref={languageDropdownRef}>

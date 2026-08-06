@@ -172,7 +172,6 @@
       "availableModels": "ダウンロード可能",
       "searchPlaceholder": "モデルを名前で検索…",
       "rescan": {
-        "label": "再スキャン",
         "tooltip": "Handy を使わずに models フォルダーまたは Hugging Face キャッシュに追加されたモデルを再スキャンします"
       }
     },

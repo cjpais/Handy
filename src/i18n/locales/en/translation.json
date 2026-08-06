@@ -212,7 +212,6 @@
         "allLanguages": "All Languages"
       },
       "rescan": {
-        "label": "Rescan",
         "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy"
       },
       "noModelsMatch": "No models match this filter."

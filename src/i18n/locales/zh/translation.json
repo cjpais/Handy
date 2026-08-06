@@ -172,7 +172,6 @@
       "availableModels": "可供下载",
       "searchPlaceholder": "按名称搜索模型…",
       "rescan": {
-        "label": "重新扫描",
         "tooltip": "重新扫描在 Handy 之外添加到模型文件夹或 Hugging Face 缓存中的模型"
       }
     },

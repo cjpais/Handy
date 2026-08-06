@@ -172,7 +172,6 @@
       "availableModels": "Zum Download verfügbar",
       "searchPlaceholder": "Modelle nach Namen suchen…",
       "rescan": {
-        "label": "Neu scannen",
         "tooltip": "Erneut nach Modellen scannen, die außerhalb von Handy zum Modellordner oder Hugging-Face-Cache hinzugefügt wurden"
       }
     },
