@@ -525,7 +525,7 @@ export const ModelsSettings: React.FC = () => {
         )}
 
         {filteredModels.length === 0 && (
-          <div className="bg-background border border-mid-gray/20 rounded-lg p-8 text-center text-text/60">
+          <div className="bg-background border border-mid-gray/20 rounded-lg px-4 py-3 text-center text-text/60">
             {t("settings.models.noModelsMatch")}
           </div>
         )}
