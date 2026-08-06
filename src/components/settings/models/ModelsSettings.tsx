@@ -285,210 +285,229 @@ export const ModelsSettings: React.FC = () => {
         />
       </div>
 
-      {filteredModels.length > 0 ? (
-        <div className="space-y-6">
-          {/* Downloaded Models Section — header always visible so filter stays accessible */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-text/60">
-                {t("settings.models.yourModels")}
-              </h2>
-              <div className="flex items-center gap-2 flex-wrap">
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-text/60">
+              {t("settings.models.yourModels")}
+            </h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => rescanLocalModels()}
+                disabled={isRescanning}
+                title={t("settings.models.rescan.tooltip")}
+                className="h-8 w-8 flex items-center justify-center text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
+                />
+              </button>
+              <div className="relative" ref={capabilityDropdownRef}>
                 <button
                   type="button"
-                  onClick={() => rescanLocalModels()}
-                  disabled={isRescanning}
-                  title={t("settings.models.rescan.tooltip")}
-                  className="h-8 w-8 flex items-center justify-center text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() =>
+                    setCapabilityDropdownOpen(!capabilityDropdownOpen)
+                  }
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    selectedCapabilities.length > 0
+                      ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
+                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                  }`}
                 >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>
+                    {selectedCapabilities.length > 0
+                      ? `${t("settings.models.filters.title")} (${selectedCapabilities.length})`
+                      : t("settings.models.filters.title")}
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      capabilityDropdownOpen ? "rotate-180" : ""
+                    }`}
                   />
                 </button>
-                <div className="relative" ref={capabilityDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCapabilityDropdownOpen(!capabilityDropdownOpen)
-                    }
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                      selectedCapabilities.length > 0
-                        ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                    }`}
-                  >
-                    <Filter className="w-3.5 h-3.5" />
-                    <span>
-                      {selectedCapabilities.length > 0
-                        ? `${t("settings.models.filters.title")} (${selectedCapabilities.length})`
-                        : t("settings.models.filters.title")}
-                    </span>
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 transition-transform ${
-                        capabilityDropdownOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
 
-                  {capabilityDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-1 w-52 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-mid-gray/40">
-                        <span className="text-xs font-semibold text-text/60 uppercase tracking-wider">
-                          {t("settings.models.filters.title")}
-                        </span>
-                        {selectedCapabilities.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={clearCapabilities}
-                            className="text-xs text-logo-primary hover:underline font-medium"
-                          >
-                            {t("settings.models.filters.clearAll")}
-                          </button>
-                        )}
-                      </div>
-                      <div className="p-1 space-y-0.5">
-                        {[
-                          {
-                            id: "translation",
-                            label: t("settings.models.filters.translation"),
-                          },
-                          {
-                            id: "streaming",
-                            label: t("settings.models.filters.streaming"),
-                          },
-                          {
-                            id: "recommended",
-                            label: t("settings.models.filters.recommended"),
-                          },
-                        ].map((cap) => {
-                          const isChecked = selectedCapabilities.includes(
-                            cap.id,
-                          );
-                          return (
-                            <label
-                              key={cap.id}
-                              className="flex items-center gap-2 px-2.5 py-1.5 text-sm rounded-md hover:bg-mid-gray/10 cursor-pointer transition-colors select-none"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleCapability(cap.id)}
-                                className="w-4 h-4 rounded border-mid-gray text-logo-primary focus:ring-logo-primary accent-logo-primary cursor-pointer"
-                              />
-                              <span
-                                className={
-                                  isChecked
-                                    ? "font-semibold text-text"
-                                    : "text-text/80"
-                                }
-                              >
-                                {cap.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Language filter dropdown */}
-                <div className="relative" ref={languageDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setLanguageDropdownOpen(!languageDropdownOpen)
-                    }
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                      languageFilter !== "all"
-                        ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                    }`}
-                  >
-                    <Globe className="w-3.5 h-3.5" />
-                    <span className="max-w-[120px] truncate">
-                      {selectedLanguageLabel}
-                    </span>
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 transition-transform ${
-                        languageDropdownOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {languageDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                      <div className="p-2 border-b border-mid-gray/40">
-                        <input
-                          ref={languageSearchInputRef}
-                          type="text"
-                          value={languageSearch}
-                          onChange={(e) => setLanguageSearch(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (
-                              e.key === "Enter" &&
-                              filteredLanguages.length > 0
-                            ) {
-                              setLanguageFilter(filteredLanguages[0].value);
-                              setLanguageDropdownOpen(false);
-                              setLanguageSearch("");
-                            } else if (e.key === "Escape") {
-                              setLanguageDropdownOpen(false);
-                              setLanguageSearch("");
-                            }
-                          }}
-                          placeholder={t(
-                            "settings.general.language.searchPlaceholder",
-                          )}
-                          className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                        />
-                      </div>
-                      <div className="max-h-48 overflow-y-auto">
+                {capabilityDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-52 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-mid-gray/40">
+                      <span className="text-xs font-semibold text-text/60 uppercase tracking-wider">
+                        {t("settings.models.filters.title")}
+                      </span>
+                      {selectedCapabilities.length > 0 && (
                         <button
                           type="button"
+                          onClick={clearCapabilities}
+                          className="text-xs text-logo-primary hover:underline font-medium"
+                        >
+                          {t("settings.models.filters.clearAll")}
+                        </button>
+                      )}
+                    </div>
+                    <div className="p-1 space-y-0.5">
+                      {[
+                        {
+                          id: "translation",
+                          label: t("settings.models.filters.translation"),
+                        },
+                        {
+                          id: "streaming",
+                          label: t("settings.models.filters.streaming"),
+                        },
+                        {
+                          id: "recommended",
+                          label: t("settings.models.filters.recommended"),
+                        },
+                      ].map((cap) => {
+                        const isChecked = selectedCapabilities.includes(
+                          cap.id,
+                        );
+                        return (
+                          <label
+                            key={cap.id}
+                            className="flex items-center gap-2 px-2.5 py-1.5 text-sm rounded-md hover:bg-mid-gray/10 cursor-pointer transition-colors select-none"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleCapability(cap.id)}
+                              className="w-4 h-4 rounded border-mid-gray text-logo-primary focus:ring-logo-primary accent-logo-primary cursor-pointer"
+                            />
+                            <span
+                              className={
+                                isChecked
+                                  ? "font-semibold text-text"
+                                  : "text-text/80"
+                              }
+                            >
+                              {cap.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative" ref={languageDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLanguageDropdownOpen(!languageDropdownOpen)
+                  }
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    languageFilter !== "all"
+                      ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
+                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                  }`}
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span className="max-w-[120px] truncate">
+                    {selectedLanguageLabel}
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      languageDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {languageDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+                    <div className="p-2 border-b border-mid-gray/40">
+                      <input
+                        ref={languageSearchInputRef}
+                        type="text"
+                        value={languageSearch}
+                        onChange={(e) => setLanguageSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "Enter" &&
+                            filteredLanguages.length > 0
+                          ) {
+                            setLanguageFilter(filteredLanguages[0].value);
+                            setLanguageDropdownOpen(false);
+                            setLanguageSearch("");
+                          } else if (e.key === "Escape") {
+                            setLanguageDropdownOpen(false);
+                            setLanguageSearch("");
+                          }
+                        }}
+                        placeholder={t(
+                          "settings.general.language.searchPlaceholder",
+                        )}
+                        className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLanguageFilter("all");
+                          setLanguageDropdownOpen(false);
+                          setLanguageSearch("");
+                        }}
+                        className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                          languageFilter === "all"
+                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                            : "hover:bg-mid-gray/10"
+                        }`}
+                      >
+                        {t("settings.models.filters.allLanguages")}
+                      </button>
+                      {filteredLanguages.map((lang) => (
+                        <button
+                          key={lang.value}
+                          type="button"
                           onClick={() => {
-                            setLanguageFilter("all");
+                            setLanguageFilter(lang.value);
                             setLanguageDropdownOpen(false);
                             setLanguageSearch("");
                           }}
                           className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                            languageFilter === "all"
+                            languageFilter === lang.value
                               ? "bg-logo-primary/20 text-logo-primary font-semibold"
                               : "hover:bg-mid-gray/10"
                           }`}
                         >
-                          {t("settings.models.filters.allLanguages")}
+                          {lang.label}
                         </button>
-                        {filteredLanguages.map((lang) => (
-                          <button
-                            key={lang.value}
-                            type="button"
-                            onClick={() => {
-                              setLanguageFilter(lang.value);
-                              setLanguageDropdownOpen(false);
-                              setLanguageSearch("");
-                            }}
-                            className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                              languageFilter === lang.value
-                                ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                                : "hover:bg-mid-gray/10"
-                            }`}
-                          >
-                            {lang.label}
-                          </button>
-                        ))}
-                        {filteredLanguages.length === 0 && (
-                          <div className="px-3 py-2 text-sm text-text/50 text-center">
-                            {t("settings.general.language.noResults")}
-                          </div>
-                        )}
-                      </div>
+                      ))}
+                      {filteredLanguages.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-text/50 text-center">
+                          {t("settings.general.language.noResults")}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
-            {downloadedModels.map((model: ModelInfo) => (
+          </div>
+
+          {downloadedModels.map((model: ModelInfo) => (
+            <ModelCard
+              key={model.id}
+              model={model}
+              status={getModelStatus(model.id)}
+              onSelect={handleModelSelect}
+              onDownload={handleModelDownload}
+              onDelete={handleModelDelete}
+              onCancel={handleModelCancel}
+              downloadProgress={getDownloadProgress(model.id)}
+              downloadSpeed={getDownloadSpeed(model.id)}
+              showRecommended={false}
+            />
+          ))}
+        </div>
+
+        {availableModels.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium text-text/60">
+              {t("settings.models.availableModels")}
+            </h2>
+            {availableModels.map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
                 model={model}
@@ -499,39 +518,18 @@ export const ModelsSettings: React.FC = () => {
                 onCancel={handleModelCancel}
                 downloadProgress={getDownloadProgress(model.id)}
                 downloadSpeed={getDownloadSpeed(model.id)}
-                showRecommended={false}
+                showRecommended={true}
               />
             ))}
           </div>
+        )}
 
-          {/* Available Models Section */}
-          {availableModels.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-sm font-medium text-text/60">
-                {t("settings.models.availableModels")}
-              </h2>
-              {availableModels.map((model: ModelInfo) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  status={getModelStatus(model.id)}
-                  onSelect={handleModelSelect}
-                  onDownload={handleModelDownload}
-                  onDelete={handleModelDelete}
-                  onCancel={handleModelCancel}
-                  downloadProgress={getDownloadProgress(model.id)}
-                  downloadSpeed={getDownloadSpeed(model.id)}
-                  showRecommended={true}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-text/50">
-          {t("settings.models.noModelsMatch")}
-        </div>
-      )}
+        {filteredModels.length === 0 && (
+          <div className="bg-background border border-mid-gray/20 rounded-lg p-8 text-center text-text/60">
+            {t("settings.models.noModelsMatch")}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
