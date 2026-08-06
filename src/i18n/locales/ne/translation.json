@@ -209,7 +209,12 @@
       "deleteActiveConfirm": "{{modelName}} तपाईंको सक्रिय मोडेल हो। यसलाई मेटाउँदा नयाँ मोडेल चयन नगरेसम्म ट्रान्सक्रिप्सन रोकिनेछ। के तपाईं साँच्चै मेटाउन चाहनुहुन्छ?",
       "deleteTitle": "मोडेल मेटाउनुहोस्",
       "filters": {
-        "allLanguages": "सबै भाषाहरू"
+        "allLanguages": "सबै भाषाहरू",
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "translation": "Translation",
+        "streaming": "Streaming",
+        "recommended": "Recommended"
       },
       "rescan": {
         "tooltip": "Handy बाहिरबाट मोडेल फोल्डर वा Hugging Face क्यासमा थपिएका मोडेलहरू फेरि स्क्यान गर्नुहोस्"

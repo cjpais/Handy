@@ -165,7 +165,12 @@
       "deleteActiveConfirm": "{{modelName}} aktif modelinizdir. Silmek, yeni bir model seçene kadar transkripsiyonları durduracaktır. Emin misiniz?",
       "deleteTitle": "Modeli Sil",
       "filters": {
-        "allLanguages": "Tüm Diller"
+        "allLanguages": "Tüm Diller",
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "translation": "Translation",
+        "streaming": "Streaming",
+        "recommended": "Recommended"
       },
       "noModelsMatch": "Bu filtreyle eşleşen model yok.",
       "yourModels": "İndirilen modeller",

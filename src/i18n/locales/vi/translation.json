@@ -165,7 +165,12 @@
       "deleteActiveConfirm": "{{modelName}} là mô hình đang hoạt động của bạn. Xóa nó sẽ dừng phiên âm cho đến khi bạn chọn một mô hình mới. Bạn có chắc không?",
       "deleteTitle": "Xóa mô hình",
       "filters": {
-        "allLanguages": "Tất cả ngôn ngữ"
+        "allLanguages": "Tất cả ngôn ngữ",
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "translation": "Translation",
+        "streaming": "Streaming",
+        "recommended": "Recommended"
       },
       "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này.",
       "yourModels": "Mô hình đã tải",

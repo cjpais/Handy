@@ -209,7 +209,12 @@
       "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
       "deleteTitle": "Slet model",
       "filters": {
-        "allLanguages": "Alle sprog"
+        "allLanguages": "Alle sprog",
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "translation": "Translation",
+        "streaming": "Streaming",
+        "recommended": "Recommended"
       },
       "rescan": {
         "tooltip": "Søg igen efter modeller, der er tilføjet til modelmappen eller Hugging Face-cachen uden for Handy"

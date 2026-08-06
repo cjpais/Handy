@@ -591,7 +591,12 @@
       "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
       "deleteTitle": "حذف النموذج",
       "filters": {
-        "allLanguages": "جميع اللغات"
+        "allLanguages": "جميع اللغات",
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "translation": "Translation",
+        "streaming": "Streaming",
+        "recommended": "Recommended"
       },
       "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
       "searchPlaceholder": "ابحث عن النماذج بالاسم…",

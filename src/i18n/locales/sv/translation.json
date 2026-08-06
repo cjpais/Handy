@@ -208,7 +208,12 @@
       "deleteActiveConfirm": "{{modelName}} är din aktiva modell. Om du tar bort den avbryts transkriptioner tills du väljer en ny modell. Är du säker?",
       "deleteTitle": "Ta bort modell",
       "filters": {
-        "allLanguages": "Alla språk"
+        "allLanguages": "Alla språk",
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "translation": "Translation",
+        "streaming": "Streaming",
+        "recommended": "Recommended"
       },
       "noModelsMatch": "Inga modeller matchar detta filter.",
       "searchPlaceholder": "Sök modeller efter namn…",

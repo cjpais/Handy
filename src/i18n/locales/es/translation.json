@@ -165,7 +165,12 @@
       "deleteActiveConfirm": "{{modelName}} es tu modelo activo. Eliminarlo detendrá las transcripciones hasta que selecciones un nuevo modelo. ¿Estás seguro?",
       "deleteTitle": "Eliminar modelo",
       "filters": {
-        "allLanguages": "Todos los idiomas"
+        "allLanguages": "Todos los idiomas",
+        "title": "Filtros",
+        "clearAll": "Borrar todo",
+        "translation": "Traducción",
+        "streaming": "Streaming",
+        "recommended": "Recomendado"
       },
       "noModelsMatch": "Ningún modelo coincide con este filtro.",
       "yourModels": "Modelos descargados",

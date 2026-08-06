@@ -209,7 +209,12 @@
       "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
       "deleteTitle": "Model verwijderen",
       "filters": {
-        "allLanguages": "Alle talen"
+        "allLanguages": "Alle talen",
+        "title": "Filters",
+        "clearAll": "Wis alles",
+        "translation": "Vertaling",
+        "streaming": "Streaming",
+        "recommended": "Aanbevolen"
       },
       "rescan": {
         "tooltip": "Scannen naar modellen die buiten Handy om zijn toegevoegd aan de modellenmap of Hugging Face-cache"

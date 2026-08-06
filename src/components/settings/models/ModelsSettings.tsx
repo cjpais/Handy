@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { ChevronDown, Globe, RefreshCw, Search } from "lucide-react";
+import { ChevronDown, Filter, Globe, RefreshCw, Search } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
@@ -32,6 +32,11 @@ export const ModelsSettings: React.FC = () => {
   const [languageSearch, setLanguageSearch] = useState("");
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
+  const [capabilityDropdownOpen, setCapabilityDropdownOpen] = useState(false);
+  const capabilityDropdownRef = useRef<HTMLDivElement>(null);
+
   const {
     models,
     currentModel,
@@ -49,7 +54,7 @@ export const ModelsSettings: React.FC = () => {
     rescanLocalModels,
   } = useModelStore();
 
-  // click outside handler for language dropdown
+  // click outside handler for dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -59,10 +64,26 @@ export const ModelsSettings: React.FC = () => {
         setLanguageDropdownOpen(false);
         setLanguageSearch("");
       }
+      if (
+        capabilityDropdownRef.current &&
+        !capabilityDropdownRef.current.contains(event.target as Node)
+      ) {
+        setCapabilityDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const toggleCapability = (cap: string) => {
+    setSelectedCapabilities((prev) =>
+      prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap],
+    );
+  };
+
+  const clearCapabilities = () => {
+    setSelectedCapabilities([]);
+  };
 
   // focus search input when dropdown opens
   useEffect(() => {
@@ -164,7 +185,7 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
-  // Filter models by search query (name + description) and language filter
+  // Filter models by search query (name + description), language filter, and capability filters
   const filteredModels = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return models.filter((model: ModelInfo) => {
@@ -173,13 +194,31 @@ export const ModelsSettings: React.FC = () => {
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }
+      if (
+        selectedCapabilities.includes("translation") &&
+        !model.supports_translation
+      ) {
+        return false;
+      }
+      if (
+        selectedCapabilities.includes("streaming") &&
+        !model.supports_streaming
+      ) {
+        return false;
+      }
+      if (
+        selectedCapabilities.includes("recommended") &&
+        !model.is_recommended
+      ) {
+        return false;
+      }
       if (q) {
         const haystack = `${model.name} ${model.description}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
     });
-  }, [models, languageFilter, searchQuery]);
+  }, [models, languageFilter, selectedCapabilities, searchQuery]);
 
   // Split filtered models into downloaded (including custom) and available sections
   const { downloadedModels, availableModels } = useMemo(() => {
@@ -266,7 +305,93 @@ export const ModelsSettings: React.FC = () => {
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
                   />
-                </button>
+                <div className="relative" ref={capabilityDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCapabilityDropdownOpen(!capabilityDropdownOpen)
+                    }
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                      selectedCapabilities.length > 0
+                        ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
+                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                    }`}
+                  >
+                    <Filter className="w-3.5 h-3.5" />
+                    <span>
+                      {selectedCapabilities.length > 0
+                        ? `${t("settings.models.filters.title")} (${selectedCapabilities.length})`
+                        : t("settings.models.filters.title")}
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        capabilityDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {capabilityDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-52 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-mid-gray/40">
+                        <span className="text-xs font-semibold text-text/60 uppercase tracking-wider">
+                          {t("settings.models.filters.title")}
+                        </span>
+                        {selectedCapabilities.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearCapabilities}
+                            className="text-xs text-logo-primary hover:underline font-medium"
+                          >
+                            {t("settings.models.filters.clearAll")}
+                          </button>
+                        )}
+                      </div>
+                      <div className="p-1 space-y-0.5">
+                        {[
+                          {
+                            id: "translation",
+                            label: t("settings.models.filters.translation"),
+                          },
+                          {
+                            id: "streaming",
+                            label: t("settings.models.filters.streaming"),
+                          },
+                          {
+                            id: "recommended",
+                            label: t("settings.models.filters.recommended"),
+                          },
+                        ].map((cap) => {
+                          const isChecked = selectedCapabilities.includes(
+                            cap.id,
+                          );
+                          return (
+                            <label
+                              key={cap.id}
+                              className="flex items-center gap-2 px-2.5 py-1.5 text-sm rounded-md hover:bg-mid-gray/10 cursor-pointer transition-colors select-none"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleCapability(cap.id)}
+                                className="w-4 h-4 rounded border-mid-gray text-logo-primary focus:ring-logo-primary accent-logo-primary cursor-pointer"
+                              />
+                              <span
+                                className={
+                                  isChecked
+                                    ? "font-semibold text-text"
+                                    : "text-text/80"
+                                }
+                              >
+                                {cap.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Language filter dropdown */}
                 <div className="relative" ref={languageDropdownRef}>
                   <button
@@ -276,7 +401,7 @@ export const ModelsSettings: React.FC = () => {
                     }
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                       languageFilter !== "all"
-                        ? "bg-logo-primary/20 text-logo-primary"
+                        ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
                         : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
                     }`}
                   >

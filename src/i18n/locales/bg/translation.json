@@ -208,7 +208,12 @@
       "deleteActiveConfirm": "{{modelName}} е вашият активен модел. Изтриването му ще спре транскрипциите, докато не изберете нов модел. Сигурни ли сте?",
       "deleteTitle": "Изтриване на модел",
       "filters": {
-        "allLanguages": "Всички езици"
+        "allLanguages": "Всички езици",
+        "title": "Filters",
+        "clearAll": "Clear all",
+        "translation": "Translation",
+        "streaming": "Streaming",
+        "recommended": "Recommended"
       },
       "noModelsMatch": "Няма модели, отговарящи на този филтър.",
       "searchPlaceholder": "Търсене на модели по име…",
