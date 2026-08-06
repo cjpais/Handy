@@ -219,8 +219,7 @@ export const formatKeyCombination = (
 };
 
 /**
- * Normalize modifier keys to handle left/right variants, and map legacy
- * spaced compound-key names to the parseable form used by the backends.
+ * Normalize modifier keys to handle left/right variants
  */
 export const normalizeKey = (key: string): string => {
   // Handle left/right variants of modifier keys
@@ -231,12 +230,5 @@ export const normalizeKey = (key: string): string => {
       return parts[1];
     }
   }
-
-  // Legacy spaced names from older builds → backend-parseable tokens
-  const compacted = key.replace(/\s+/g, "").toLowerCase();
-  if (COMPOUND_KEY_DISPLAY[compacted]) {
-    return compacted;
-  }
-
   return key;
 };

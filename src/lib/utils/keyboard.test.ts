@@ -87,15 +87,12 @@ assert.equal(getKeyName(evt({ code: "AudioVolumeUp" })), "audiovolumeup");
 assert.notEqual(getKeyName(evt({ code: "AudioVolumeUp" })), "audio volume up");
 
 // ---------------------------------------------------------------------------
-// normalizeKey: left/right modifiers + legacy spaced compound names
+// normalizeKey: left/right modifier variants only
 // ---------------------------------------------------------------------------
 assert.equal(normalizeKey("left shift"), "shift");
 assert.equal(normalizeKey("right ctrl"), "ctrl");
-assert.equal(normalizeKey("scroll lock"), "scrolllock");
-assert.equal(normalizeKey("page up"), "pageup");
-assert.equal(normalizeKey("caps lock"), "capslock");
-assert.equal(normalizeKey("scrolllock"), "scrolllock");
 assert.equal(normalizeKey("space"), "space");
+assert.equal(normalizeKey("scrolllock"), "scrolllock");
 
 // ---------------------------------------------------------------------------
 // formatKeyCombination: UI still shows friendly compound labels
