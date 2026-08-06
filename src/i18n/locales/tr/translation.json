@@ -225,6 +225,12 @@
         "placeholder": "Mikrofon seçin...",
         "loading": "Yükleniyor..."
       },
+      "channel": {
+        "title": "Giriş Kanalı",
+        "description": "Kayıt yapılacak giriş kanalını seçin. Ses arabiriminizde birden fazla giriş varsa bu seçeneği kullanın.",
+        "average": "Tüm kanalların ortalaması",
+        "channel": "Kanal {{n}}"
+      },
       "audioFeedback": {
         "label": "Sesli Geri Bildirim",
         "description": "Kayıt başladığında ve bittiğinde ses çalar"

@@ -225,6 +225,12 @@
         "placeholder": "Scegli microfono...",
         "loading": "Caricamento..."
       },
+      "channel": {
+        "title": "Canale di ingresso",
+        "description": "Seleziona il canale di ingresso da cui registrare. Usa questa opzione se l'interfaccia audio dispone di più ingressi.",
+        "average": "Media di tutti i canali",
+        "channel": "Canale {{n}}"
+      },
       "audioFeedback": {
         "label": "Feedback Audio",
         "description": "Riproduci un suono quando la registrazione inizia e finisce"

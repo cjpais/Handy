@@ -225,6 +225,12 @@
         "placeholder": "Sélectionner un microphone...",
         "loading": "Chargement..."
       },
+      "channel": {
+        "title": "Canal d’entrée",
+        "description": "Sélectionnez le canal d’entrée à enregistrer. Utilisez cette option si votre interface audio possède plusieurs entrées.",
+        "average": "Moyenne de tous les canaux",
+        "channel": "Canal {{n}}"
+      },
       "audioFeedback": {
         "label": "Signal sonore",
         "description": "Jouer un son au début et à la fin de l'enregistrement"

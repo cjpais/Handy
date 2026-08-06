@@ -225,6 +225,12 @@
         "placeholder": "選擇麥克風...",
         "loading": "載入中..."
       },
+      "channel": {
+        "title": "輸入聲道",
+        "description": "選擇要錄音的輸入聲道。如果您的音訊介面有多個輸入，請使用此選項。",
+        "average": "所有聲道的平均值",
+        "channel": "聲道 {{n}}"
+      },
       "audioFeedback": {
         "label": "聲音回饋",
         "description": "錄製開始和停止時播放聲音"

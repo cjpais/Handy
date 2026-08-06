@@ -99,6 +99,14 @@ const settingUpdaters: {
         ? "default"
         : (value as string),
     ),
+  selected_channel: async (value) => {
+    const result = await commands.setSelectedChannel(
+      (value as number | null | undefined) ?? null,
+    );
+    if (result.status === "error") {
+      throw new Error(result.error);
+    }
+  },
   clamshell_microphone: (value) =>
     commands.setClamshellMicrophone(
       (value as string) === "Default" ? "default" : (value as string),

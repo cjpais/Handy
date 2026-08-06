@@ -225,6 +225,12 @@
         "placeholder": "Vælg mikrofon...",
         "loading": "Indlæser..."
       },
+      "channel": {
+        "title": "Inputkanal",
+        "description": "Vælg, hvilken inputkanal der skal optages fra. Brug dette, hvis din lydgrænseflade har flere indgange.",
+        "average": "Gennemsnit af alle kanaler",
+        "channel": "Kanal {{n}}"
+      },
       "audioFeedback": {
         "label": "Lydfeedback",
         "description": "Afspil lyd, når optagelse starter og stopper"

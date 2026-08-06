@@ -207,6 +207,12 @@
         "placeholder": "마이크 선택...",
         "loading": "로딩 중..."
       },
+      "channel": {
+        "title": "입력 채널",
+        "description": "녹음할 입력 채널을 선택하세요. 오디오 인터페이스에 입력이 여러 개 있는 경우 사용하세요.",
+        "average": "모든 채널 평균",
+        "channel": "채널 {{n}}"
+      },
       "audioFeedback": {
         "label": "오디오 피드백",
         "description": "녹음 시작 및 정지 시 소리 재생"

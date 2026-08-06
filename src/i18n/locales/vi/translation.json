@@ -225,6 +225,12 @@
         "placeholder": "Chọn micrô...",
         "loading": "Đang tải..."
       },
+      "channel": {
+        "title": "Kênh đầu vào",
+        "description": "Chọn kênh đầu vào để ghi âm. Sử dụng tùy chọn này nếu giao diện âm thanh của bạn có nhiều đầu vào.",
+        "average": "Trung bình tất cả các kênh",
+        "channel": "Kênh {{n}}"
+      },
       "audioFeedback": {
         "label": "Phản hồi âm thanh",
         "description": "Phát âm thanh khi bắt đầu và kết thúc ghi âm"

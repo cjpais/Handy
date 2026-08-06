@@ -225,6 +225,12 @@
         "placeholder": "Mikrofon auswählen...",
         "loading": "Wird geladen..."
       },
+      "channel": {
+        "title": "Eingangskanal",
+        "description": "Wähle den Eingangskanal aus, von dem aufgenommen werden soll. Verwende diese Option, wenn dein Audio-Interface mehrere Eingänge hat.",
+        "average": "Alle Kanäle mitteln",
+        "channel": "Kanal {{n}}"
+      },
       "audioFeedback": {
         "label": "Audio-Feedback",
         "description": "Ton bei Start und Ende der Aufnahme abspielen"

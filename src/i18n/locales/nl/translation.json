@@ -225,6 +225,12 @@
         "placeholder": "Microfoon selecteren...",
         "loading": "Laden..."
       },
+      "channel": {
+        "title": "Ingangskanaal",
+        "description": "Selecteer het ingangskanaal waarvan moet worden opgenomen. Gebruik dit als je audio-interface meerdere ingangen heeft.",
+        "average": "Gemiddelde van alle kanalen",
+        "channel": "Kanaal {{n}}"
+      },
       "audioFeedback": {
         "label": "Geluidsfeedback",
         "description": "Geluid afspelen wanneer de opname start en stopt"

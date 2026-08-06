@@ -225,6 +225,12 @@
         "placeholder": "Vyberte mikrofon...",
         "loading": "Načítání..."
       },
+      "channel": {
+        "title": "Vstupní kanál",
+        "description": "Vyberte vstupní kanál, ze kterého se má nahrávat. Tuto možnost použijte, pokud má vaše zvukové rozhraní více vstupů.",
+        "average": "Průměr všech kanálů",
+        "channel": "Kanál {{n}}"
+      },
       "audioFeedback": {
         "label": "Zvuková odezva",
         "description": "Přehrát zvuk při zahájení a ukončení nahrávání"

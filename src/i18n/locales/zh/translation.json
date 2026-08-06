@@ -225,6 +225,12 @@
         "placeholder": "选择麦克风...",
         "loading": "加载中..."
       },
+      "channel": {
+        "title": "输入通道",
+        "description": "选择要录制的输入通道。如果您的音频接口有多个输入，请使用此选项。",
+        "average": "所有通道的平均值",
+        "channel": "通道 {{n}}"
+      },
       "audioFeedback": {
         "label": "音频反馈",
         "description": "录制开始和停止时播放声音"
