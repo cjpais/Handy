@@ -506,12 +506,47 @@ jobs:
           AZURE_TENANT_ID: ${{ inputs.sign-binaries && secrets.AZURE_TENANT_ID || '' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
+          # linuxdeploy passes this to appimagetool, which writes it as
+          # X-AppImage-Version for desktop integration tools such as Gear Lever.
+          LINUXDEPLOY_OUTPUT_VERSION: ${{ contains(inputs.platform, 'ubuntu') && steps.get-version.outputs.version || '' }}
         with:
           tagName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseId: ${{ inputs.release-id }}
           assetNamePattern: ${{ steps.patch-release-name.outputs.platform }}
           args: ${{ inputs.build-args }}
+
+      # tauri-action uploads release assets before returning, so verify the
+      # metadata produced by Tauri itself rather than relying only on the later
+      # post-processing audit.
+      - name: Verify AppImage version metadata before post-processing
+        if: contains(inputs.platform, 'ubuntu')
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROFILE="${{ steps.build-profile.outputs.profile }}"
+          APPIMAGE_PATH="$(find "src-tauri/target/${PROFILE}/bundle/appimage" -name '*.AppImage' -print -quit 2>/dev/null || true)"
+          if [ -z "$APPIMAGE_PATH" ]; then
+            echo "No AppImage produced by this Linux build; skipping metadata verification"
+            exit 0
+          fi
+          APPIMAGE_PATH="$(readlink -f "$APPIMAGE_PATH")"
+          WORKDIR="$(mktemp -d)"
+          trap 'rm -rf "$WORKDIR"' EXIT
+          (
+            cd "$WORKDIR"
+            "$APPIMAGE_PATH" --appimage-extract 'usr/share/applications/*.desktop' >/dev/null
+            DESKTOP_FILE="$(find squashfs-root/usr/share/applications -name '*.desktop' -print -quit)"
+            if [ -z "$DESKTOP_FILE" ]; then
+              echo "ERROR: AppImage desktop metadata is missing" >&2
+              exit 1
+            fi
+            if ! grep -Fqx 'X-AppImage-Version=${{ steps.get-version.outputs.version }}' "$DESKTOP_FILE"; then
+              echo "ERROR: AppImage version metadata is missing or incorrect:" >&2
+              grep -E '^X-AppImage-Version=' "$DESKTOP_FILE" >&2 || true
+              exit 1
+            fi
+          )
 
       - name: Verify macOS dylib bundling
         if: inputs.target == 'x86_64-apple-darwin'
@@ -604,8 +639,10 @@ jobs:
             wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-${APPIMAGETOOL_ARCH}.AppImage"
             chmod +x "appimagetool-${APPIMAGETOOL_ARCH}.AppImage"
 
-            # Repackage AppImage with no-appstream to avoid warnings
-            ARCH="${APPIMAGETOOL_ARCH}" "./appimagetool-${APPIMAGETOOL_ARCH}.AppImage" --no-appstream squashfs-root "$APPIMAGE_NAME"
+            # Repackage AppImage with no-appstream to avoid warnings. VERSION
+            # preserves X-AppImage-Version when appimagetool rewrites metadata.
+            ARCH="${APPIMAGETOOL_ARCH}" VERSION="${{ steps.get-version.outputs.version }}" \
+              "./appimagetool-${APPIMAGETOOL_ARCH}.AppImage" --no-appstream squashfs-root "$APPIMAGE_NAME"
 
             # Clean up
             rm -rf squashfs-root "appimagetool-${APPIMAGETOOL_ARCH}.AppImage"
@@ -723,6 +760,13 @@ jobs:
                 cd "$workdir"
                 ./Handy.AppImage --appimage-extract >/dev/null
                 require_path "squashfs-root/usr/bin/handy" "AppImage handy binary"
+                desktop_file="$(find squashfs-root/usr/share/applications -name '*.desktop' -print -quit)"
+                require_path "$desktop_file" "AppImage desktop metadata"
+                if ! grep -Fqx 'X-AppImage-Version=${{ steps.get-version.outputs.version }}' "$desktop_file"; then
+                  echo "ERROR: AppImage version metadata is missing or incorrect:" >&2
+                  grep -E '^X-AppImage-Version=' "$desktop_file" >&2 || true
+                  exit 1
+                fi
                 # The SONAME (libtranscribe.so.N) is the name the loader
                 # resolves; the bare .so alias may or may not be present.
                 if ! find "squashfs-root/usr/lib" -name 'libtranscribe.so*' | grep -q .; then
