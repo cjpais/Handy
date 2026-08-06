@@ -261,7 +261,6 @@ export const ModelsSettings: React.FC = () => {
                   onClick={() => rescanLocalModels()}
                   disabled={isRescanning}
                   title={t("settings.models.rescan.tooltip")}
-                  aria-label="Rescan"
                   className="p-2 text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RefreshCw
