@@ -226,10 +226,10 @@
         "loading": "Chargement..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Canal d’entrée",
+        "description": "Sélectionnez le canal d’entrée à enregistrer. Utilisez cette option si votre interface audio possède plusieurs entrées.",
+        "average": "Moyenne de tous les canaux",
+        "channel": "Canal {{n}}"
       },
       "audioFeedback": {
         "label": "Signal sonore",

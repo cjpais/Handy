@@ -226,10 +226,10 @@
         "loading": "Wczytywanie..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Kanał wejściowy",
+        "description": "Wybierz kanał wejściowy, z którego chcesz nagrywać. Użyj tej opcji, jeśli interfejs audio ma wiele wejść.",
+        "average": "Uśrednij wszystkie kanały",
+        "channel": "Kanał {{n}}"
       },
       "audioFeedback": {
         "label": "Informacja dźwiękowa",

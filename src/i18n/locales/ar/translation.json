@@ -205,10 +205,10 @@
         "loading": "...جاري التحميل"
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "قناة الإدخال",
+        "description": "اختر قناة الإدخال التي تريد التسجيل منها. استخدم هذا الخيار إذا كانت واجهة الصوت لديك تحتوي على عدة مداخل.",
+        "average": "متوسط جميع القنوات",
+        "channel": "القناة {{n}}"
       },
       "audioFeedback": {
         "label": "تنبيهات صوتية",

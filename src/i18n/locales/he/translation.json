@@ -226,10 +226,10 @@
         "loading": "טוען..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "ערוץ קלט",
+        "description": "בחרו את ערוץ הקלט שממנו תתבצע ההקלטה. השתמשו באפשרות זו אם לממשק השמע שלכם יש מספר כניסות.",
+        "average": "ממוצע של כל הערוצים",
+        "channel": "ערוץ {{n}}"
       },
       "audioFeedback": {
         "label": "משוב קולי",

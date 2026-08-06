@@ -226,10 +226,10 @@
         "loading": "Načítání..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Vstupní kanál",
+        "description": "Vyberte vstupní kanál, ze kterého se má nahrávat. Tuto možnost použijte, pokud má vaše zvukové rozhraní více vstupů.",
+        "average": "Průměr všech kanálů",
+        "channel": "Kanál {{n}}"
       },
       "audioFeedback": {
         "label": "Zvuková odezva",

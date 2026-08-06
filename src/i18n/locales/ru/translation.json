@@ -226,10 +226,10 @@
         "loading": "Загрузка..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Входной канал",
+        "description": "Выберите входной канал для записи. Используйте эту настройку, если у вашего аудиоинтерфейса несколько входов.",
+        "average": "Усреднять все каналы",
+        "channel": "Канал {{n}}"
       },
       "audioFeedback": {
         "label": "Обратная звуковая связь",

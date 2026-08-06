@@ -226,10 +226,10 @@
         "loading": "読み込み中…"
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "入力チャンネル",
+        "description": "録音に使用する入力チャンネルを選択します。オーディオインターフェースに複数の入力がある場合に使用してください。",
+        "average": "すべてのチャンネルの平均",
+        "channel": "チャンネル{{n}}"
       },
       "audioFeedback": {
         "label": "オーディオフィードバック",

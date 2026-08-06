@@ -226,10 +226,10 @@
         "loading": "Laddar..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Ingångskanal",
+        "description": "Välj vilken ingångskanal du vill spela in från. Använd detta om ditt ljudgränssnitt har flera ingångar.",
+        "average": "Medelvärde av alla kanaler",
+        "channel": "Kanal {{n}}"
       },
       "audioFeedback": {
         "label": "Ljudåterkoppling",

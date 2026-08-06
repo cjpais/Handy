@@ -226,10 +226,10 @@
         "loading": "Indlæser..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Inputkanal",
+        "description": "Vælg, hvilken inputkanal der skal optages fra. Brug dette, hvis din lydgrænseflade har flere indgange.",
+        "average": "Gennemsnit af alle kanaler",
+        "channel": "Kanal {{n}}"
       },
       "audioFeedback": {
         "label": "Lydfeedback",

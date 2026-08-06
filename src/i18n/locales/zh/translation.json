@@ -226,10 +226,10 @@
         "loading": "加载中..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "输入通道",
+        "description": "选择要录制的输入通道。如果您的音频接口有多个输入，请使用此选项。",
+        "average": "所有通道的平均值",
+        "channel": "通道 {{n}}"
       },
       "audioFeedback": {
         "label": "音频反馈",

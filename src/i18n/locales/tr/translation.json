@@ -226,10 +226,10 @@
         "loading": "Yükleniyor..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Giriş Kanalı",
+        "description": "Kayıt yapılacak giriş kanalını seçin. Ses arabiriminizde birden fazla giriş varsa bu seçeneği kullanın.",
+        "average": "Tüm kanalların ortalaması",
+        "channel": "Kanal {{n}}"
       },
       "audioFeedback": {
         "label": "Sesli Geri Bildirim",

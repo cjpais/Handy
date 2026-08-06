@@ -226,10 +226,10 @@
         "loading": "Зареждане..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "Входен канал",
+        "description": "Изберете входния канал, от който да записвате. Използвайте тази опция, ако аудио интерфейсът ви има няколко входа.",
+        "average": "Осредняване на всички канали",
+        "channel": "Канал {{n}}"
       },
       "audioFeedback": {
         "label": "Звукова обратна връзка",

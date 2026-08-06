@@ -226,10 +226,10 @@
         "loading": "लोड हो रहा है..."
       },
       "channel": {
-        "title": "Input Channel",
-        "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",
-        "average": "Average all channels",
-        "channel": "Channel {{n}}"
+        "title": "इनपुट चैनल",
+        "description": "रिकॉर्ड करने के लिए इनपुट चैनल चुनें। यदि आपके ऑडियो इंटरफ़ेस में कई इनपुट हैं, तो इसका उपयोग करें।",
+        "average": "सभी चैनलों का औसत",
+        "channel": "चैनल {{n}}"
       },
       "audioFeedback": {
         "label": "ऑडियो फ़ीडबैक",
