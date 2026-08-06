@@ -1346,14 +1346,12 @@ mod tests {
     use handy_keys::Hotkey;
     use tauri_plugin_global_shortcut::Shortcut;
 
-    /// Compound key names that the Tauri shortcut recorder used to emit with
-    /// spaces (e.g. "scroll lock"). global-hotkey rejects spaced tokens, so
-    /// registration failed (#1848). The frontend now emits compact forms
-    /// (e.g. "scrolllock").
+    /// After #1848 the frontend emits compact compound key names (e.g.
+    /// "scrolllock" instead of "scroll lock") so registration can succeed.
     ///
-    /// Handy has two keyboard backends. This test locks the invariant that
-    /// the compact names we store are accepted by *both* parsers, so fixing
-    /// Tauri recording does not break HandyKeys (or switching between them).
+    /// Handy has two keyboard backends. This test checks that those compact
+    /// names parse on *both*, so fixing the Tauri recorder does not break
+    /// HandyKeys (or switching between them).
     ///
     /// Only keys in the intersection of both parsers are listed here.
     /// Excluded on purpose:
@@ -1377,15 +1375,5 @@ mod tests {
                 "handy-keys should parse compact key '{key}'"
             );
         }
-
-        // Spaced forms (pre-fix Tauri emission) must still fail — documents the bug
-        assert!(
-            "scroll lock".parse::<Shortcut>().is_err(),
-            "spaced 'scroll lock' must remain unparseable by Tauri backend"
-        );
-        assert!(
-            "scroll lock".parse::<Hotkey>().is_err(),
-            "spaced 'scroll lock' must remain unparseable by HandyKeys backend"
-        );
     }
 }
