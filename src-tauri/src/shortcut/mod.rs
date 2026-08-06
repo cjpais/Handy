@@ -1340,3 +1340,52 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
         .await
         .expect("get_available_accelerators panicked")
 }
+
+#[cfg(test)]
+mod tests {
+    use handy_keys::Hotkey;
+    use tauri_plugin_global_shortcut::Shortcut;
+
+    /// Compound key names that the Tauri shortcut recorder used to emit with
+    /// spaces (e.g. "scroll lock"). global-hotkey rejects spaced tokens, so
+    /// registration failed (#1848). The frontend now emits compact forms
+    /// (e.g. "scrolllock").
+    ///
+    /// Handy has two keyboard backends. This test locks the invariant that
+    /// the compact names we store are accepted by *both* parsers, so fixing
+    /// Tauri recording does not break HandyKeys (or switching between them).
+    ///
+    /// Only keys in the intersection of both parsers are listed here.
+    /// Excluded on purpose:
+    /// - Menu/ContextMenu: neither backend's string parser accepts it
+    /// - PrintScreen: Tauri yes, handy-keys has no Key variant
+    /// - Numpad keys: backends use different naming (numpad* vs keypad*)
+    #[test]
+    fn compound_shortcut_keys_parse_on_both_backends() {
+        // Compact forms produced by getKeyName after the #1848 fix
+        let keys = ["scrolllock", "capslock", "numlock", "pageup", "pagedown"];
+
+        for key in keys {
+            // Tauri path: tauri_plugin_global_shortcut → global-hotkey
+            assert!(
+                key.parse::<Shortcut>().is_ok(),
+                "tauri/global-hotkey should parse compact key '{key}'"
+            );
+            // HandyKeys path
+            assert!(
+                key.parse::<Hotkey>().is_ok(),
+                "handy-keys should parse compact key '{key}'"
+            );
+        }
+
+        // Spaced forms (pre-fix Tauri emission) must still fail — documents the bug
+        assert!(
+            "scroll lock".parse::<Shortcut>().is_err(),
+            "spaced 'scroll lock' must remain unparseable by Tauri backend"
+        );
+        assert!(
+            "scroll lock".parse::<Hotkey>().is_err(),
+            "spaced 'scroll lock' must remain unparseable by HandyKeys backend"
+        );
+    }
+}
