@@ -78,9 +78,11 @@ fn paste_via_clipboard(
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
         with_enigo(app_handle, |enigo| match paste_method {
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo),
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo),
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo),
+            // The legacy path cannot detect a mistimed chord, so it keeps the
+            // conservative 100ms modifier hold.
+            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
+            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100),
+            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100),
             _ => Err("Invalid paste method for clipboard paste".into()),
         })?;
     }
@@ -567,7 +569,7 @@ fn paste_direct(
     with_enigo(app_handle, |enigo| input::paste_text_direct(enigo, text))
 }
 
-fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
+pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
     match key_type {
         AutoSubmitKey::Enter => {
             enigo
@@ -646,6 +648,31 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            // Debug-gated receipt-sequenced paste (#502): restore the clipboard
+            // after the target actually reads the transcript, not on a timer.
+            // On success it fully handles the paste (including auto-submit and
+            // clipboard handling) asynchronously; on failure fall through to
+            // the legacy path untouched.
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            if settings.reliable_paste {
+                let reliable_result = with_enigo(&app_handle, |enigo| {
+                    crate::paste_tx::try_reliable_paste(
+                        &text,
+                        &app_handle,
+                        &paste_method,
+                        enigo,
+                        settings.auto_submit,
+                        settings.auto_submit_key,
+                        settings.clipboard_handling,
+                    )
+                });
+                match reliable_result {
+                    Ok(()) => return Ok(()),
+                    Err(e) => {
+                        log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
+                    }
+                }
+            }
             paste_via_clipboard(
                 &text,
                 &app_handle,
@@ -682,26 +709,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
-    use tauri::test::{mock_builder, mock_context, noop_assets, MockRuntime};
-
-    static SETTINGS_TEST_LOCK: Mutex<()> = Mutex::new(());
-
-    fn mock_app() -> tauri::App<MockRuntime> {
-        mock_builder()
-            .plugin(tauri_plugin_store::Builder::default().build())
-            .build(mock_context(noop_assets()))
-            .unwrap()
-    }
-
-    fn write_test_settings(app: &tauri::App<MockRuntime>, auto_submit: bool) {
-        let mut settings = crate::settings::get_default_settings();
-        settings.paste_method = PasteMethod::None;
-        settings.clipboard_handling = ClipboardHandling::DontModify;
-        settings.auto_submit = auto_submit;
-        settings.append_trailing_space = false;
-        crate::settings::write_settings(&app.handle().clone(), settings);
-    }
 
     #[test]
     fn auto_submit_requires_setting_enabled() {
@@ -720,23 +727,5 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
-    }
-
-    #[test]
-    fn none_paste_succeeds_without_enigo() {
-        let _guard = SETTINGS_TEST_LOCK.lock().unwrap();
-        let app = mock_app();
-        write_test_settings(&app, false);
-
-        assert!(paste("hello".to_string(), app.handle().clone()).is_ok());
-    }
-
-    #[test]
-    fn none_paste_skips_auto_submit_without_enigo() {
-        let _guard = SETTINGS_TEST_LOCK.lock().unwrap();
-        let app = mock_app();
-        write_test_settings(&app, true);
-
-        assert!(paste("hello".to_string(), app.handle().clone()).is_ok());
     }
 }

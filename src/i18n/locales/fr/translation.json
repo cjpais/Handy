@@ -6,7 +6,8 @@
     "unloadModel": "Décharger le modèle",
     "model": "Modèle",
     "quit": "Quitter",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input"
   },
   "sidebar": {
     "general": "Général",
@@ -209,7 +210,7 @@
         "description": "Sélectionnez la langue pour la reconnaissance vocale. Auto déterminera automatiquement la langue, tandis que sélectionner une langue spécifique peut améliorer la précision pour cette langue.",
         "searchPlaceholder": "Rechercher des langues...",
         "noResults": "Aucune langue trouvée",
-        "auto": "Auto"
+        "auto": "Automatique"
       },
       "pushToTalk": {
         "label": "Appuyer pour parler",
@@ -223,6 +224,12 @@
         "description": "Sélectionnez votre périphérique d'entrée audio",
         "placeholder": "Sélectionner un microphone...",
         "loading": "Chargement..."
+      },
+      "channel": {
+        "title": "Canal d’entrée",
+        "description": "Sélectionnez le canal d’entrée à enregistrer. Utilisez cette option si votre interface audio possède plusieurs entrées.",
+        "average": "Moyenne de tous les canaux",
+        "channel": "Canal {{n}}"
       },
       "audioFeedback": {
         "label": "Signal sonore",
@@ -265,7 +272,7 @@
           "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatique"
         }
       },
       "startHidden": {
@@ -333,9 +340,9 @@
         "options": {
           "off": "Désactivé",
           "enter": "Entrée",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
+          "cmdEnter": "Cmd+Entrée",
+          "superEnter": "Super+Entrée",
+          "ctrlEnter": "Ctrl+Entrée"
         }
       },
       "translateToEnglish": {
@@ -524,9 +531,33 @@
         "title": "Délai de collage (après)",
         "description": "Délai (en millisecondes) après la touche de collage, avant la restauration de votre presse-papiers précédent. Augmentez si l'ancien contenu du presse-papiers est collé à la place de la transcription."
       },
+      "reliablePaste": {
+        "title": "Collage fiable (Beta)",
+        "description": "Restaure le presse-papiers uniquement après que l'application cible a réellement lu la transcription, au lieu d'attendre un délai fixe. Vise à corriger le collage de l'ancien contenu du presse-papiers lorsque le système est chargé. Nécessite une méthode de collage par presse-papiers ; macOS et Windows uniquement."
+      },
       "recordingBuffer": {
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
+      },
+      "keyboardDiagnostic": {
+        "title": "Diagnostic du clavier",
+        "description": "Vérifie si les événements clavier atteignent Handy. Seul le nombre d'événements est enregistré, jamais les touches sur lesquelles vous appuyez.",
+        "run": "Lancer un diagnostic de 10 s",
+        "running": "Écoute en cours… appuyez plusieurs fois sur votre raccourci (par ex. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "activé",
+        "disabled": "désactivé",
+        "holder": "détenu par {{name}} (pid {{pid}})",
+        "holderUnknown": "aucun détenteur visible",
+        "keyDown": "Touche enfoncée",
+        "keyUp": "Touche relâchée",
+        "flagsChanged": "Modificateurs",
+        "mouse": "Souris",
+        "verdictBlocked": "Secure Input bloque les événements clavier : les raccourcis contenant une touche normale ne peuvent pas fonctionner tant que ce n'est pas résolu.",
+        "verdictSuspicious": "Des événements de modificateurs sont arrivés, mais aucun événement de touche : quelque chose supprime les touches alors que Secure Input est signalé comme désactivé. Merci de le signaler sur GitHub.",
+        "verdictOk": "Les événements clavier atteignent Handy normalement.",
+        "verdictNoEvents": "Aucun événement capturé : avez-vous appuyé sur des touches pendant le test ?",
+        "failed": "Échec du diagnostic : {{error}}"
       },
       "whatsNewPreview": {
         "title": "Aperçu des nouveautés",
@@ -580,8 +611,10 @@
     "preparing": "Préparation...",
     "checkForUpdates": "Rechercher des mises à jour",
     "portableUpdateTitle": "Mise à jour manuelle requise",
-    "portableUpdateMessage": "Les installations portables ne peuvent pas être mises à jour automatiquement. Pour mettre à jour : téléchargez le dernier installateur NSIS depuis GitHub Releases, installez-le dans le même dossier, puis copiez votre dossier Data/ (paramètres, modèles, enregistrements) de l’ancienne version vers la nouvelle.",
-    "portableUpdateButton": "Ouvrir GitHub Releases"
+    "portableUpdateMessage": "Les installations portables ne peuvent pas être mises à jour automatiquement. Téléchargez ci-dessous l’installateur correspondant à votre système, exécutez-le et installez-le dans le même dossier : votre dossier Data/ (paramètres, modèles, enregistrements) est conservé.",
+    "portableUpdateButton": "Télécharger l’installateur",
+    "portableUpdateBrowseMessage": "Les installations portables ne peuvent pas être mises à jour automatiquement. Téléchargez la dernière version correspondant à votre système depuis GitHub Releases et installez-la dans le même dossier : votre dossier Data/ (paramètres, modèles, enregistrements) est conservé.",
+    "portableUpdateBrowseButton": "Ouvrir GitHub Releases"
   },
   "common": {
     "loading": "Chargement...",
@@ -633,5 +666,16 @@
   },
   "whatsNew": {
     "title": "Nouveautés de Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} bloque peut-être 1 raccourci",
+    "blockedWithCulprit_other": "{{name}} bloque peut-être {{count}} raccourcis",
+    "blockedNoCulprit_one": "macOS bloque temporairement 1 raccourci",
+    "blockedNoCulprit_other": "macOS bloque temporairement {{count}} raccourcis",
+    "recorderBlockedWithCulprit": "{{name}} bloque peut-être la modification des raccourcis",
+    "recorderBlockedNoCulprit": "macOS bloque temporairement la modification des raccourcis",
+    "learnMore": "Comment résoudre ce problème",
+    "recorderBlocked": "Impossible d'enregistrer un raccourci pour le moment : Secure Input de macOS bloque les événements clavier. Résolvez d'abord l'avertissement Secure Input.",
+    "dismiss": "Ignorer"
   }
 }

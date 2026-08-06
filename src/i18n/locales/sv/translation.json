@@ -6,7 +6,8 @@
     "unloadModel": "Avlasta modell",
     "model": "Modell",
     "quit": "Avsluta",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input"
   },
   "sidebar": {
     "general": "Allmänt",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "För att komma igång, välj en transkriptionsmodell",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Kompatibla modeller",
+    "downloadModelsTitle": "Tillgängliga för nedladdning",
+    "showAllModels": "Visa alla {{total}} modeller",
+    "showFewerModels": "Visa färre modeller",
     "recommended": "Rekommenderat",
     "customModelDescription": "Stöds inte officiellt",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Det gick inte att välja modell"
     },
     "permissions": {
       "title": "Behörigheter krävs",
@@ -145,7 +146,7 @@
     "capabilities": {
       "languageSelection": "Stöder flera indataspråk",
       "singleLanguage": "Stöder endast detta språk",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} språk",
       "languageOnly": "Endast {{language}}",
       "translation": "Kan översätta till engelska",
       "translate": "Översätt till engelska",
@@ -191,7 +192,7 @@
         "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",
-        "auto": "Auto"
+        "auto": "Automatiskt"
       },
       "pushToTalk": {
         "label": "Tryck för att tala",
@@ -223,6 +224,12 @@
         "description": "Välj din föredragna mikrofonenhet",
         "placeholder": "Välj mikrofon...",
         "loading": "Laddar..."
+      },
+      "channel": {
+        "title": "Ingångskanal",
+        "description": "Välj vilken ingångskanal du vill spela in från. Använd detta om ditt ljudgränssnitt har flera ingångar.",
+        "average": "Medelvärde av alla kanaler",
+        "channel": "Kanal {{n}}"
       },
       "audioFeedback": {
         "label": "Ljudåterkoppling",
@@ -265,7 +272,7 @@
           "description": "Hårdvaruacceleration för ONNX-modeller (Parakeet, Canary, Moonshine, etc.). DirectML på Windows är experimentellt. Modeller kan misslyckas med att transkribera."
         },
         "gpuDevice": {
-          "auto": "Auto"
+          "auto": "Automatiskt"
         }
       },
       "startHidden": {
@@ -283,7 +290,7 @@
       "overlay": {
         "style": {
           "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "description": "Välj inspelningsöverlägget: ”Ingen” döljer det, ”Minimal” visar en kompakt indikator, ”Live” visar transkriberingen i realtid medan du talar (endast modeller med streamingstöd — leta efter Streaming-märket i modellväljaren). På Linux rekommenderas ”Ingen”.",
           "options": {
             "none": "Ingen",
             "minimal": "Minimal",
@@ -365,8 +372,8 @@
         "duplicate": "\"{{word}}\" finns redan"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Röstaktivitetsdetektering",
+        "description": "Filtrerar bort tystnad från inspelningar. Modeller med streamingstöd använder en längre VAD-svans; om VAD inaktiveras spelas rått ljud in."
       }
     },
     "postProcessing": {
@@ -524,9 +531,33 @@
         "title": "Fördröjning vid klistra in (efter)",
         "description": "Fördröjning (i millisekunder) efter tangenttryckningen för att klistra in, innan ditt tidigare urklipp återställs. Öka om det gamla urklippsinnehållet klistras in i stället för transkriptionen."
       },
+      "reliablePaste": {
+        "title": "Tillförlitlig inklistring (Beta)",
+        "description": "Återställ urklipp först när målappen faktiskt har läst transkriptionen, i stället för efter en fast fördröjning. Avsett att åtgärda att det gamla urklippsinnehållet klistras in när systemet är belastat. Kräver en klistra-in-metod via urklipp; endast macOS och Windows."
+      },
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
+      },
+      "keyboardDiagnostic": {
+        "title": "Tangentbordsdiagnostik",
+        "description": "Kontrollerar om tangentbordshändelser når Handy. Endast antalet händelser registreras — aldrig vilka tangenter du trycker på.",
+        "run": "Kör 10 s diagnostik",
+        "running": "Lyssnar… tryck på ditt kortkommando några gånger (t.ex. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "aktiverat",
+        "disabled": "inaktiverat",
+        "holder": "hålls av {{name}} (pid {{pid}})",
+        "holderUnknown": "ingen synlig innehavare",
+        "keyDown": "Tangent ned",
+        "keyUp": "Tangent upp",
+        "flagsChanged": "Modifierare",
+        "mouse": "Mus",
+        "verdictBlocked": "Secure Input blockerar tangenthändelser — kortkommandon med en vanlig tangent kan inte fungera förrän det är löst.",
+        "verdictSuspicious": "Modifierarhändelser kom fram men inga tangenthändelser — något undertrycker tangenter trots att Secure Input rapporteras som inaktiverat. Rapportera gärna detta på GitHub.",
+        "verdictOk": "Tangenthändelser når Handy som vanligt.",
+        "verdictNoEvents": "Inga händelser fångades — tryckte du på några tangenter under testet?",
+        "failed": "Diagnostiken misslyckades: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Förhandsvisa nyheter",
@@ -580,8 +611,10 @@
     "preparing": "Förbereder...",
     "checkForUpdates": "Sök efter uppdateringar",
     "portableUpdateTitle": "Manuell uppdatering krävs",
-    "portableUpdateMessage": "Portabla installationer kan inte uppdateras automatiskt. Så här uppdaterar du: ladda ner den senaste NSIS-installeraren från GitHub Releases, installera den i samma mapp och kopiera sedan din Data/-mapp (inställningar, modeller, inspelningar) från den gamla versionen till den nya.",
-    "portableUpdateButton": "Öppna GitHub Releases"
+    "portableUpdateMessage": "Portabla installationer kan inte uppdateras automatiskt. Ladda ner installeraren för ditt system nedan, kör den och installera i samma mapp — din Data/-mapp (inställningar, modeller, inspelningar) behålls.",
+    "portableUpdateButton": "Ladda ner installeraren",
+    "portableUpdateBrowseMessage": "Portabla installationer kan inte uppdateras automatiskt. Ladda ner den senaste versionen för ditt system från GitHub Releases och installera den i samma mapp — din Data/-mapp (inställningar, modeller, inspelningar) behålls.",
+    "portableUpdateBrowseButton": "Öppna GitHub Releases"
   },
   "common": {
     "loading": "Laddar...",
@@ -633,5 +666,16 @@
   },
   "whatsNew": {
     "title": "Nytt i Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} kanske blockerar 1 kortkommando",
+    "blockedWithCulprit_other": "{{name}} kanske blockerar {{count}} kortkommandon",
+    "blockedNoCulprit_one": "macOS blockerar tillfälligt 1 kortkommando",
+    "blockedNoCulprit_other": "macOS blockerar tillfälligt {{count}} kortkommandon",
+    "recorderBlockedWithCulprit": "{{name}} kanske blockerar ändringar av kortkommandon",
+    "recorderBlockedNoCulprit": "macOS blockerar tillfälligt ändringar av kortkommandon",
+    "learnMore": "Så här löser du det",
+    "recorderBlocked": "Det går inte att spela in kortkommandon just nu — macOS Secure Input blockerar tangenthändelser. Lös varningen om Secure Input först.",
+    "dismiss": "Avfärda"
   }
 }

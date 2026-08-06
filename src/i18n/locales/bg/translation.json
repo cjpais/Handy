@@ -6,7 +6,8 @@
     "unloadModel": "Разтоварване на модела",
     "model": "Модел",
     "quit": "Изход",
-    "cancel": "Отказ"
+    "cancel": "Отказ",
+    "secureInputWarning": "⚠ Бързите клавиши са блокирани от Secure Input"
   },
   "sidebar": {
     "general": "Общи",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "За да започнете, изберете модел за транскрипция",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Съвместими модели",
+    "downloadModelsTitle": "Достъпни за изтегляне",
+    "showAllModels": "Показване на всички {{total}} модела",
+    "showFewerModels": "Показване на по-малко модели",
     "recommended": "Препоръчан",
     "customModelDescription": "Не се поддържа официално",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Неуспешно избиране на модел"
     },
     "permissions": {
       "title": "Необходими разрешения",
@@ -145,7 +146,7 @@
     "capabilities": {
       "languageSelection": "Поддържа няколко входни езика",
       "singleLanguage": "Поддържа само този език",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} езика",
       "languageOnly": "Само {{language}}",
       "translation": "Може да превежда на английски",
       "translate": "Превод на английски",
@@ -224,6 +225,12 @@
         "placeholder": "Изберете микрофон...",
         "loading": "Зареждане..."
       },
+      "channel": {
+        "title": "Входен канал",
+        "description": "Изберете входния канал, от който да записвате. Използвайте тази опция, ако аудио интерфейсът ви има няколко входа.",
+        "average": "Осредняване на всички канали",
+        "channel": "Канал {{n}}"
+      },
       "audioFeedback": {
         "label": "Звукова обратна връзка",
         "description": "Възпроизвеждане на звук при старт и край на записа"
@@ -282,12 +289,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Наслагване",
+          "description": "Изберете наслагването при запис: «Няма» го скрива, «Минимално» показва компактен индикатор, «На живо» показва транскрипцията в реално време, докато говорите (само модели с поддръжка на стрийминг — потърсете етикета «Стрийминг» в избора на модел). На Linux се препоръчва «Няма».",
           "options": {
             "none": "Няма",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Минимално",
+            "live": "На живо"
           }
         },
         "position": {
@@ -365,8 +372,8 @@
         "duplicate": "„{{word}}“ вече съществува"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Откриване на гласова активност",
+        "description": "Филтрира тишината от записите. Моделите с поддръжка на стрийминг използват по-дълга опашка на VAD; изключването на VAD записва необработен звук."
       }
     },
     "postProcessing": {
@@ -524,9 +531,33 @@
         "title": "Забавяне при поставяне (след)",
         "description": "Забавяне (в милисекунди) след клавиша за поставяне, преди възстановяване на предишния клипборд. Увеличете, ако вместо транскрипцията се поставя старото съдържание на клипборда."
       },
+      "reliablePaste": {
+        "title": "Надеждно поставяне (Beta)",
+        "description": "Възстановява клипборда само след като целевото приложение действително прочете транскрипцията, вместо след фиксирано забавяне. Предназначено да отстрани поставянето на старото съдържание на клипборда при натоварване на системата. Изисква начин на поставяне през клипборда; само за macOS и Windows."
+      },
       "recordingBuffer": {
         "title": "Допълнителен буфер на записа",
         "description": "Допълнително време (в милисекунди) за запис след пускане на клавиша, за да се улови краят на аудиото. 0 = без допълнителен буфер."
+      },
+      "keyboardDiagnostic": {
+        "title": "Диагностика на клавиатурата",
+        "description": "Проверява дали клавиатурните събития достигат до Handy. Записва се само броят на събитията — никога кои клавиши натискате.",
+        "run": "Стартиране на 10-секундна диагностика",
+        "running": "Слушане… натиснете бързия си клавиш няколко пъти (напр. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "включен",
+        "disabled": "изключен",
+        "holder": "задържан от {{name}} (pid {{pid}})",
+        "holderUnknown": "няма видим държател",
+        "keyDown": "Натиснат клавиш",
+        "keyUp": "Отпуснат клавиш",
+        "flagsChanged": "Модификатори",
+        "mouse": "Мишка",
+        "verdictBlocked": "Secure Input блокира клавишните събития — бързите клавиши с обикновен клавиш не могат да работят, докато това не бъде решено.",
+        "verdictSuspicious": "Пристигнаха събития от модификатори, но нито едно клавишно събитие — нещо потиска клавишите, въпреки че Secure Input се отчита като изключен. Моля, съобщете за това в GitHub.",
+        "verdictOk": "Клавишните събития достигат до Handy нормално.",
+        "verdictNoEvents": "Не са уловени събития — натиснахте ли някакви клавиши по време на теста?",
+        "failed": "Диагностиката е неуспешна: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Преглед на новостите",
@@ -580,8 +611,10 @@
     "preparing": "Подготовка...",
     "checkForUpdates": "Проверка за актуализации",
     "portableUpdateTitle": "Необходима е ръчна актуализация",
-    "portableUpdateMessage": "Преносимите инсталации не могат да бъдат актуализирани автоматично. За актуализация: изтеглете най-новия NSIS инсталатор от GitHub Releases, инсталирайте го в същата папка, след което копирайте папката Data/ (настройки, модели, записи) от старата версия в новата.",
-    "portableUpdateButton": "Отвори GitHub Releases"
+    "portableUpdateMessage": "Преносимите инсталации не могат да бъдат актуализирани автоматично. Изтеглете инсталатора за вашата система от бутона по-долу, стартирайте го и инсталирайте в същата папка — папката Data/ (настройки, модели, записи) остава на мястото си.",
+    "portableUpdateButton": "Изтегляне на инсталатора",
+    "portableUpdateBrowseMessage": "Преносимите инсталации не могат да бъдат актуализирани автоматично. Изтеглете най-новата версия за вашата система от GitHub Releases и я инсталирайте в същата папка — папката Data/ (настройки, модели, записи) остава на мястото си.",
+    "portableUpdateBrowseButton": "Отвори GitHub Releases"
   },
   "common": {
     "loading": "Зареждане...",
@@ -633,5 +666,16 @@
   },
   "whatsNew": {
     "title": "Ново в Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} може да блокира 1 бърз клавиш",
+    "blockedWithCulprit_other": "{{name}} може да блокира {{count}} бързи клавиша",
+    "blockedNoCulprit_one": "macOS временно блокира 1 бърз клавиш",
+    "blockedNoCulprit_other": "macOS временно блокира {{count}} бързи клавиша",
+    "recorderBlockedWithCulprit": "{{name}} може да блокира промените на бързите клавиши",
+    "recorderBlockedNoCulprit": "macOS временно блокира промените на бързите клавиши",
+    "learnMore": "Как да поправите това",
+    "recorderBlocked": "В момента не могат да се записват бързи клавиши — Secure Input на macOS блокира клавишните събития. Първо отстранете предупреждението за Secure Input.",
+    "dismiss": "Отхвърляне"
   }
 }
