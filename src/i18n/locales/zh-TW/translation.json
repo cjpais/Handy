@@ -208,7 +208,9 @@
       "deleteActiveConfirm": "{{modelName}} 是您目前使用的模型。刪除後將停止轉錄，直到您選擇新的模型。確定要刪除嗎？",
       "deleteTitle": "刪除模型",
       "filters": {
-        "allLanguages": "所有語言"
+        "allLanguages": "所有語言",
+        "streaming": "篩選支援即時轉錄的模型",
+        "translation": "篩選支援翻譯為英語的模型"
       },
       "noModelsMatch": "沒有符合此篩選條件的模型",
       "searchPlaceholder": "依名稱搜尋模型…",

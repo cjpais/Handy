@@ -983,7 +983,7 @@ impl TranscriptionManager {
                                     update.audio_committed_ms,
                                     update.buffered_ms,
                                 );
-                                Some(stream.text().display())
+                                Some(stream.text().full)
                             }
                             Err(e) => {
                                 perf.record_compute(finalize_start.elapsed());
@@ -1801,7 +1801,19 @@ fn select_transcribe_backend(setting: TranscribeAcceleratorSetting) -> Backend {
             {
                 Some(b) => b,
                 None => {
-                    warn!("No GPU backend available for transcribe.cpp; falling back to Auto");
+                    #[cfg(target_os = "linux")]
+                    warn!(
+                        "GPU acceleration was requested, but no transcribe.cpp GPU backend is \
+                         registered; falling back to Auto (usually CPU). Run with \
+                         --list-devices to inspect detected devices; VK_LOADER_DEBUG=error can \
+                         reveal Vulkan loader or driver failures"
+                    );
+                    #[cfg(not(target_os = "linux"))]
+                    warn!(
+                        "GPU acceleration was requested, but no transcribe.cpp GPU backend is \
+                         registered; falling back to Auto (usually CPU). Run with \
+                         --list-devices to inspect detected devices"
+                    );
                     Backend::Auto
                 }
             }
