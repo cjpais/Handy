@@ -527,12 +527,13 @@ jobs:
           AZURE_TENANT_ID: ${{ inputs.sign-binaries && secrets.AZURE_TENANT_ID || '' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
-          # Vulkan and Wayland loaders must match the host's graphics drivers.
-          # Bundling Ubuntu's copies ahead of the system libraries can prevent a
-          # newer distro's Vulkan ICD from loading. linuxdeploy reads this
-          # semicolon-separated glob list before it creates (and Tauri signs and
-          # uploads) the AppImage, so the published artifact is already clean.
-          LINUXDEPLOY_EXCLUDED_LIBRARIES: ${{ contains(inputs.platform, 'ubuntu') && 'libvulkan.so*;libwayland-client.so*;libwayland-cursor.so*;libwayland-egl.so*;libwayland-server.so*' || '' }}
+          # The Vulkan loader and Wayland client library must come from the host
+          # graphics stack. Bundling Ubuntu's copies ahead of the system libraries can
+          # prevent a newer distro's Vulkan ICD or Mesa stack from loading.
+          # linuxdeploy reads this semicolon-separated glob list before it creates
+          # (and Tauri signs and uploads) the AppImage, so the published artifact
+          # is already clean.
+          LINUXDEPLOY_EXCLUDED_LIBRARIES: ${{ contains(inputs.platform, 'ubuntu') && 'libvulkan.so*;libwayland-client.so*' || '' }}
           # linuxdeploy passes this to appimagetool, which writes it as
           # X-AppImage-Version for desktop integration tools such as Gear Lever.
           LINUXDEPLOY_OUTPUT_VERSION: ${{ contains(inputs.platform, 'ubuntu') && steps.get-version.outputs.version || '' }}
@@ -746,15 +747,12 @@ jobs:
                 fi
                 require_path "squashfs-root/usr/lib/libggml-vulkan.so" "AppImage ggml Vulkan backend module"
 
-                # These libraries mediate access to host-owned graphics drivers.
+                # These libraries mediate access to the host graphics stack.
                 # Shipping build-host copies ahead of the system versions can
-                # make the system Vulkan ICD fail to load on newer distributions.
+                # break Vulkan ICD or Mesa loading on newer distributions.
                 for pattern in \
                   'libvulkan.so*' \
-                  'libwayland-client.so*' \
-                  'libwayland-cursor.so*' \
-                  'libwayland-egl.so*' \
-                  'libwayland-server.so*'; do
+                  'libwayland-client.so*'; do
                   forbidden="$(find squashfs-root/usr -name "$pattern" -print -quit)"
                   if [ -n "$forbidden" ]; then
                     echo "ERROR: AppImage bundles host graphics loader: $forbidden" >&2
