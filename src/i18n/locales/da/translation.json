@@ -209,7 +209,9 @@
       "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
       "deleteTitle": "Slet model",
       "filters": {
-        "allLanguages": "Alle sprog"
+        "allLanguages": "Alle sprog",
+        "streaming": "Filtrer modeller, der understøtter live transskription",
+        "translation": "Filtrer modeller, der understøtter oversættelse til engelsk"
       },
       "rescan": {
         "label": "Søg igen",
