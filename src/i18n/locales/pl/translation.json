@@ -641,7 +641,14 @@
           "logs": "Logs",
           "logsHint": "Please attach relevant logs to help us diagnose the issue. You can find the log directory by going to Settings > About in the app."
         },
-        "noLogsAvailable": "No logs are available yet. Try reproducing the issue, then report it again."
+        "noLogsAvailable": "No logs are available yet. Try reproducing the issue, then report it again.",
+        "submitMethod": "Send report via",
+        "githubOption": "GitHub issue",
+        "githubDescription": "Best for bug reports without logs.",
+        "emailOption": "Email",
+        "emailDescription": "Send to contact@handy.computer.",
+        "logsEmailOnly": "Reports with logs can only be sent by email. The logs will be included in the email body.",
+        "openEmail": "Open email"
       }
     }
   },

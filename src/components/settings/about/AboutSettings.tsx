@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
@@ -23,6 +22,9 @@ export const AboutSettings: React.FC = () => {
   const [bugTitle, setBugTitle] = useState("");
   const [bugDescription, setBugDescription] = useState("");
   const [includeLogs, setIncludeLogs] = useState(false);
+  const [submitMethod, setSubmitMethod] = useState<"github" | "email">(
+    "github",
+  );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -52,6 +54,7 @@ export const AboutSettings: React.FC = () => {
     setBugTitle("");
     setBugDescription("");
     setIncludeLogs(false);
+    setSubmitMethod("github");
     setSubmitError(null);
     setIsReportBugOpen(true);
   };
@@ -84,7 +87,6 @@ export const AboutSettings: React.FC = () => {
             setSubmitError(t("settings.about.reportBug.noLogsAvailable"));
             return;
           }
-          await writeText(logsText);
         } catch (error) {
           console.error("Failed to copy logs:", error);
           setSubmitError(t("settings.about.reportBug.logsFailed"));
@@ -124,13 +126,18 @@ ${bugDescription}
         includeLogs
           ? `
 
-> ${t("settings.about.reportBug.logsInstruction")}`
+> ${submitMethod === "email" ? t("settings.about.reportBug.logsInstruction") : ""}`
           : ""
       }`;
 
       const title = `[${t("settings.about.reportBug.issueTemplate.titlePrefix")}] ${bugTitle}`;
-      const url = `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
-      await openUrl(url);
+      const destination =
+        submitMethod === "email"
+          ? `mailto:contact@handy.computer?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(
+              includeLogs ? `${bodyTemplate}\n\n${logsText}` : bodyTemplate,
+            )}`
+          : `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
+      await openUrl(destination);
       setIsReportBugOpen(false);
       setBugTitle("");
       setBugDescription("");
@@ -262,7 +269,11 @@ ${bugDescription}
             <input
               type="checkbox"
               checked={includeLogs}
-              onChange={(e) => setIncludeLogs(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setIncludeLogs(checked);
+                if (checked) setSubmitMethod("email");
+              }}
               disabled={isSubmitting}
               className="w-4 h-4 rounded border-mid-gray/80 bg-mid-gray/10 text-logo-primary focus:ring-logo-primary accent-logo-primary"
             />
@@ -270,6 +281,54 @@ ${bugDescription}
               {t("settings.about.reportBug.includeLogs")}
             </span>
           </label>
+
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-semibold uppercase tracking-wider text-mid-gray">
+              {t("settings.about.reportBug.submitMethod")}
+            </legend>
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-mid-gray/20 p-3 text-sm">
+              <input
+                type="radio"
+                name="bug-report-destination"
+                checked={submitMethod === "github"}
+                onChange={() => setSubmitMethod("github")}
+                disabled={includeLogs || isSubmitting}
+                className="mt-0.5 accent-logo-primary"
+              />
+              <span>
+                <span className="block font-semibold text-text">
+                  {t("settings.about.reportBug.githubOption")}
+                </span>
+                <span className="text-mid-gray">
+                  {t("settings.about.reportBug.githubDescription")}
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-mid-gray/20 p-3 text-sm">
+              <input
+                type="radio"
+                name="bug-report-destination"
+                checked={submitMethod === "email"}
+                onChange={() => setSubmitMethod("email")}
+                disabled={isSubmitting}
+                className="mt-0.5 accent-logo-primary"
+              />
+              <span>
+                <span className="block font-semibold text-text">
+                  {t("settings.about.reportBug.emailOption")}
+                </span>
+                <span className="text-mid-gray">
+                  {t("settings.about.reportBug.emailDescription")}
+                </span>
+              </span>
+            </label>
+          </fieldset>
+
+          {includeLogs && (
+            <p className="rounded-md border border-logo-primary/30 bg-logo-primary/10 p-3 text-sm text-mid-gray">
+              {t("settings.about.reportBug.logsEmailOnly")}
+            </p>
+          )}
 
           {includeLogs && (
             <div
