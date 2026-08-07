@@ -154,13 +154,26 @@ pub fn get_system_details() -> SystemDetails {
 #[specta::specta]
 #[tauri::command]
 pub fn read_recent_logs(app: AppHandle) -> Result<String, String> {
+    use std::collections::VecDeque;
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
+
     const MAX_LINES: usize = 100;
     let log_dir = crate::portable::app_log_dir(&app)
         .map_err(|error| format!("Failed to get log directory: {}", error))?;
-    let content = std::fs::read_to_string(log_dir.join("handy.log"))
+    let file = File::open(log_dir.join("handy.log"))
         .map_err(|error| format!("Failed to read Handy logs: {}", error))?;
-    let lines: Vec<_> = content.lines().collect();
-    Ok(lines[lines.len().saturating_sub(MAX_LINES)..].join("\n"))
+    let mut recent_lines = VecDeque::with_capacity(MAX_LINES);
+
+    for line in BufReader::new(file).lines() {
+        let line = line.map_err(|error| format!("Failed to read Handy logs: {}", error))?;
+        if recent_lines.len() == MAX_LINES {
+            recent_lines.pop_front();
+        }
+        recent_lines.push_back(line);
+    }
+
+    Ok(recent_lines.into_iter().collect::<Vec<_>>().join("\n"))
 }
 
 #[specta::specta]

@@ -595,7 +595,22 @@
         "submit": "Open GitHub issue",
         "submitting": "Preparing issue...",
         "failed": "We could not prepare your bug report. {{error}}",
-        "logsFailed": "We could not copy the logs to your clipboard. You can try again or continue without logs."
+        "logsFailed": "We could not copy the logs to your clipboard. You can try again or continue without logs.",
+        "searchPrompt": "Please search",
+        "existingIssuesLink": "existing issues",
+        "searchPromptSuffix": "to avoid duplicates. Your bug may already be reported!",
+        "issueTemplate": {
+          "beforeSubmit": "Before You Submit",
+          "searchExisting": "Please search existing issues to avoid duplicates.",
+          "description": "Bug Description",
+          "systemInformation": "System Information",
+          "appVersion": "App Version",
+          "operatingSystem": "Operating System",
+          "cpu": "CPU",
+          "gpu": "GPU",
+          "unknownVersion": "Unknown Version",
+          "titlePrefix": "Bug"
+        }
       }
     },
     "modelSettings": {

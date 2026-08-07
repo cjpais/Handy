@@ -88,20 +88,20 @@ export const AboutSettings: React.FC = () => {
         }
       }
 
-      const bodyTemplate = `## Before You Submit
+      const bodyTemplate = `## ${t("settings.about.reportBug.issueTemplate.beforeSubmit")}
 
-**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.**
+**${t("settings.about.reportBug.issueTemplate.searchExisting")}**
 
-## Bug Description
+## ${t("settings.about.reportBug.issueTemplate.description")}
 
 ${bugDescription}
 
-## System Information
+## ${t("settings.about.reportBug.issueTemplate.systemInformation")}
 
-**App Version:** ${version || "Unknown Version"}
-**Operating System:** ${sysDetails.os_version}
-**CPU:** ${sysDetails.cpu_model}
-**GPU:** ${sysDetails.gpu_model}
+**${t("settings.about.reportBug.issueTemplate.appVersion")}:** ${version || t("settings.about.reportBug.issueTemplate.unknownVersion")}
+**${t("settings.about.reportBug.issueTemplate.operatingSystem")}:** ${sysDetails.os_version}
+**${t("settings.about.reportBug.issueTemplate.cpu")}:** ${sysDetails.cpu_model}
+**${t("settings.about.reportBug.issueTemplate.gpu")}:** ${sysDetails.gpu_model}
 ${
   includeLogs
     ? `
@@ -110,7 +110,7 @@ ${
     : ""
 }`;
 
-      const title = `[BUG - app] ${bugTitle}`;
+      const title = `[${t("settings.about.reportBug.issueTemplate.titlePrefix")}] ${bugTitle}`;
       const url = `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
       await openUrl(url);
       setIsReportBugOpen(false);
@@ -198,22 +198,22 @@ ${
       >
         <div className="space-y-4 py-2 text-start">
           <div className="text-sm text-mid-gray bg-mid-gray/5 p-3 rounded-md border border-mid-gray/20">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            Please search{" "}
+            {t("settings.about.reportBug.searchPrompt")} {" "}
             <a
               href="https://github.com/cjpais/Handy/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="text-logo-primary hover:underline font-semibold"
             >
-              existing issues
+              {t("settings.about.reportBug.existingIssuesLink")}
             </a>{" "}
-            to avoid duplicates. Your bug may already be reported!
+            {t("settings.about.reportBug.searchPromptSuffix")}
           </div>
 
           <div className="flex flex-col space-y-1.5">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">Title</label>
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.titleLabel")}
+            </label>
             <Input
               value={bugTitle}
               onChange={(e) => setBugTitle(e.target.value)}
@@ -226,8 +226,9 @@ ${
           </div>
 
           <div className="flex flex-col space-y-1.5">
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">Description</label>
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.descriptionLabel")}
+            </label>
             <Textarea
               value={bugDescription}
               onChange={(e) => setBugDescription(e.target.value)}
@@ -247,8 +248,9 @@ ${
               disabled={isSubmitting}
               className="w-4 h-4 rounded border-mid-gray/80 bg-mid-gray/10 text-logo-primary focus:ring-logo-primary accent-logo-primary"
             />
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <span className="font-semibold text-mid-gray">Include recent logs (last 100 lines)</span>
+            <span className="font-semibold text-mid-gray">
+              {t("settings.about.reportBug.includeLogs")}
+            </span>
           </label>
 
           {includeLogs && (
