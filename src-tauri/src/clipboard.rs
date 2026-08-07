@@ -5,6 +5,8 @@ use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMetho
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
+#[cfg(target_os = "linux")]
+use std::sync::OnceLock;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -263,6 +265,80 @@ fn is_dotool_available() -> bool {
         .unwrap_or(false)
 }
 
+#[cfg(target_os = "linux")]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum YdotoolKeySyntax {
+    Symbolic,
+    RawKeycodes,
+}
+
+#[cfg(target_os = "linux")]
+const YDOTOOL_UNKNOWN_HELP_FALLBACK: YdotoolKeySyntax = YdotoolKeySyntax::RawKeycodes;
+
+#[cfg(target_os = "linux")]
+static YDOTOOL_KEY_SYNTAX: OnceLock<YdotoolKeySyntax> = OnceLock::new();
+
+/// Classifies `ydotool key --help` output without relying on version or distro metadata.
+#[cfg(target_os = "linux")]
+fn classify_ydotool_key_syntax(help: &str) -> Option<YdotoolKeySyntax> {
+    let help = help.to_ascii_lowercase();
+
+    // Check modern markers first in case a future help message mentions the legacy syntax.
+    if help.contains("syntax: <keycode>:<pressed>")
+        || help.contains("[keycodes]")
+        || help.contains("using raw keycodes")
+    {
+        Some(YdotoolKeySyntax::RawKeycodes)
+    } else if help.contains("separated by plus (+)")
+        || (help.contains("<key sequence>") && help.contains("alt+r"))
+    {
+        Some(YdotoolKeySyntax::Symbolic)
+    } else {
+        None
+    }
+}
+
+/// Detects and caches a recognized ydotool key syntax. Unknown or failed probes are not cached,
+/// allowing a transient daemon or PATH problem to recover on a later paste attempt.
+#[cfg(target_os = "linux")]
+fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
+    if let Some(syntax) = YDOTOOL_KEY_SYNTAX.get() {
+        return *syntax;
+    }
+
+    match Command::new("ydotool").args(["key", "--help"]).output() {
+        Ok(output) => {
+            // ydotool 0.x writes help to stderr and its exit status varies by build.
+            let mut help = String::from_utf8_lossy(&output.stdout).into_owned();
+            if !help.is_empty() && !output.stderr.is_empty() {
+                help.push('\n');
+            }
+            help.push_str(&String::from_utf8_lossy(&output.stderr));
+
+            if let Some(syntax) = classify_ydotool_key_syntax(&help) {
+                *YDOTOOL_KEY_SYNTAX.get_or_init(|| {
+                    info!("Detected ydotool key syntax: {:?}", syntax);
+                    syntax
+                })
+            } else {
+                // Preserve Handy's existing behavior and compatibility with current ydotool.
+                log::warn!(
+                    "Could not recognize ydotool key --help output (exit status {:?}); using raw-keycode syntax",
+                    output.status.code()
+                );
+                YDOTOOL_UNKNOWN_HELP_FALLBACK
+            }
+        }
+        Err(error) => {
+            log::warn!(
+                "Could not query ydotool key syntax: {}; using raw-keycode syntax",
+                error
+            );
+            YDOTOOL_UNKNOWN_HELP_FALLBACK
+        }
+    }
+}
+
 /// Check if ydotool is available (uinput-based, works on both Wayland and X11)
 #[cfg(target_os = "linux")]
 fn is_ydotool_available() -> bool {
@@ -471,20 +547,38 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
     Ok(())
 }
 
-/// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
 #[cfg(target_os = "linux")]
-fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> {
-    // ydotool uses Linux input event keycodes with format <keycode>:<pressed>
-    // where pressed is 1 for down, 0 for up. Keycodes: ctrl=29, shift=42, v=47, insert=110
-    let args: Vec<&str> = match paste_method {
-        PasteMethod::CtrlV => vec!["key", "29:1", "47:1", "47:0", "29:0"],
-        PasteMethod::ShiftInsert => vec!["key", "42:1", "110:1", "110:0", "42:0"],
-        PasteMethod::CtrlShiftV => vec!["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"],
+fn ydotool_key_args(
+    paste_method: &PasteMethod,
+    syntax: YdotoolKeySyntax,
+) -> Result<&'static [&'static str], String> {
+    let args = match (paste_method, syntax) {
+        (PasteMethod::CtrlV, YdotoolKeySyntax::Symbolic) => &["key", "ctrl+v"][..],
+        (PasteMethod::CtrlShiftV, YdotoolKeySyntax::Symbolic) => &["key", "ctrl+shift+v"][..],
+        (PasteMethod::ShiftInsert, YdotoolKeySyntax::Symbolic) => &["key", "shift+insert"][..],
+        (PasteMethod::CtrlV, YdotoolKeySyntax::RawKeycodes) => {
+            &["key", "29:1", "47:1", "47:0", "29:0"][..]
+        }
+        (PasteMethod::CtrlShiftV, YdotoolKeySyntax::RawKeycodes) => {
+            &["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"][..]
+        }
+        (PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes) => {
+            &["key", "42:1", "110:1", "110:0", "42:0"][..]
+        }
         _ => return Err("Unsupported paste method".into()),
     };
 
+    Ok(args)
+}
+
+/// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
+#[cfg(target_os = "linux")]
+fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> {
+    let syntax = detect_ydotool_key_syntax();
+    let args = ydotool_key_args(paste_method, syntax)?;
+
     let output = Command::new("ydotool")
-        .args(&args)
+        .args(args)
         .output()
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
@@ -711,6 +805,83 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    const YDOTOOL_0_1_8_HELP: &str = r#"
+Usage: key [--delay <ms>] [--key-delay <ms>] [--repeat <times>] [--repeat-delay <ms>] <key sequence> ...
+Each key sequence can be any number of modifiers and keys, separated by plus (+)
+For example: alt+r Alt+F4 CTRL+alt+f3 aLT+1+2+3 ctrl+Backspace
+"#;
+
+    #[cfg(target_os = "linux")]
+    const YDOTOOL_1_0_4_HELP: &str = r#"
+Usage: key [OPTION]... [KEYCODES]...
+Since there's no way to know how many keyboard layouts are there in the world,
+we're using raw keycodes now.
+Syntax: <keycode>:<pressed>
+e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
+"#;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn classifies_ydotool_0_1_8_symbolic_help() {
+        assert_eq!(
+            classify_ydotool_key_syntax(YDOTOOL_0_1_8_HELP),
+            Some(YdotoolKeySyntax::Symbolic)
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn classifies_ydotool_1_0_4_raw_keycode_help() {
+        assert_eq!(
+            classify_ydotool_key_syntax(YDOTOOL_1_0_4_HELP),
+            Some(YdotoolKeySyntax::RawKeycodes)
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn unknown_ydotool_help_falls_back_to_raw_keycodes() {
+        let syntax = classify_ydotool_key_syntax("unrecognized help output")
+            .unwrap_or(YDOTOOL_UNKNOWN_HELP_FALLBACK);
+
+        assert_eq!(syntax, YdotoolKeySyntax::RawKeycodes);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn generates_symbolic_ydotool_arguments_for_all_paste_methods() {
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlV, YdotoolKeySyntax::Symbolic).unwrap(),
+            ["key", "ctrl+v"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlShiftV, YdotoolKeySyntax::Symbolic).unwrap(),
+            ["key", "ctrl+shift+v"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::Symbolic).unwrap(),
+            ["key", "shift+insert"]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn generates_raw_ydotool_arguments_for_all_paste_methods() {
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlV, YdotoolKeySyntax::RawKeycodes).unwrap(),
+            ["key", "29:1", "47:1", "47:0", "29:0"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlShiftV, YdotoolKeySyntax::RawKeycodes).unwrap(),
+            ["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes).unwrap(),
+            ["key", "42:1", "110:1", "110:0", "42:0"]
+        );
+    }
 
     #[test]
     fn auto_submit_requires_setting_enabled() {
