@@ -1,5 +1,6 @@
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
+use crate::utils::cancel_current_operation_from_coordinator;
 use log::{debug, error, warn};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
@@ -34,6 +35,7 @@ enum Command {
     Cancel {
         recording_was_active: bool,
     },
+    CancelOperation,
     ProcessingFinished,
 }
 
@@ -199,6 +201,19 @@ impl TranscriptionCoordinator {
                                 stage = Stage::Idle;
                             }
                         }
+                        Command::CancelOperation => {
+                            pending_release = None;
+                            if matches!(stage, Stage::Processing) {
+                                debug!("Ignoring cancel request while transcription is processing");
+                                continue;
+                            }
+
+                            let recording_was_active =
+                                cancel_current_operation_from_coordinator(&app);
+                            if recording_was_active || matches!(stage, Stage::Recording(_)) {
+                                stage = Stage::Idle;
+                            }
+                        }
                         Command::ProcessingFinished => {
                             stage = Stage::Idle;
                         }
@@ -245,6 +260,13 @@ impl TranscriptionCoordinator {
             })
             .is_err()
         {
+            warn!("Transcription coordinator channel closed");
+        }
+    }
+
+    /// Serialize a full cancellation behind any in-flight start request.
+    pub fn request_cancel_operation(&self) {
+        if self.tx.send(Command::CancelOperation).is_err() {
             warn!("Transcription coordinator channel closed");
         }
     }
