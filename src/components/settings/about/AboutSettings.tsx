@@ -10,10 +10,23 @@ import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ShowWhatsNewOnUpdate } from "../ShowWhatsNewOnUpdate";
 import { ThemeSelector } from "../ThemeSelector";
 import { LogDirectory } from "../debug";
+import { commands } from "@/bindings";
+import { Dialog } from "../../ui/Dialog";
+import { Input } from "../../ui/Input";
+import { Textarea } from "../../ui/Textarea";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
   const [version, setVersion] = useState("");
+  const [isReportBugOpen, setIsReportBugOpen] = useState(false);
+  const [bugTitle, setBugTitle] = useState("");
+  const [bugDescription, setBugDescription] = useState("");
+  const [includeLogs, setIncludeLogs] = useState(false);
+  const [submitMethod, setSubmitMethod] = useState<"github" | "email">(
+    "github",
+  );
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -34,6 +47,104 @@ export const AboutSettings: React.FC = () => {
       await openUrl("https://handy.computer/donate");
     } catch (error) {
       console.error("Failed to open donate link:", error);
+    }
+  };
+
+  const handleReportBugClick = () => {
+    setBugTitle("");
+    setBugDescription("");
+    setIncludeLogs(false);
+    setSubmitMethod("github");
+    setSubmitError(null);
+    setIsReportBugOpen(true);
+  };
+
+  const handleFormSubmit = async () => {
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      let sysDetails = {
+        os_version: "Unknown OS",
+        cpu_model: "Unknown CPU",
+        gpu_model: "Unknown GPU",
+      };
+      try {
+        sysDetails = await commands.getSystemDetails();
+      } catch (error) {
+        console.error("Failed to get system details:", error);
+      }
+
+      let logsText = "";
+      if (includeLogs) {
+        try {
+          const logsResult = await commands.readRecentLogs();
+          if (logsResult.status === "error") {
+            setSubmitError(t("settings.about.reportBug.logsFailed"));
+            return;
+          }
+          logsText = logsResult.data;
+          if (!logsText.trim()) {
+            setSubmitError(t("settings.about.reportBug.noLogsAvailable"));
+            return;
+          }
+        } catch (error) {
+          console.error("Failed to copy logs:", error);
+          setSubmitError(t("settings.about.reportBug.logsFailed"));
+          return;
+        }
+      }
+
+      const bodyTemplate = `## ${t("settings.about.reportBug.issueTemplate.beforeSubmit")}
+
+**${t("settings.about.reportBug.issueTemplate.searchExisting")}** ${t("settings.about.reportBug.issueTemplate.maintainerNote")}
+
+## ${t("settings.about.reportBug.issueTemplate.description")}
+
+${bugDescription}
+
+## ${t("settings.about.reportBug.issueTemplate.systemInformation")}
+
+**${t("settings.about.reportBug.issueTemplate.appVersion")}:** ${version || t("settings.about.reportBug.issueTemplate.unknownVersion")}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.appVersionHint")} -->
+
+**${t("settings.about.reportBug.issueTemplate.operatingSystem")}:** ${sysDetails.os_version}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.operatingSystemHint")} -->
+
+**${t("settings.about.reportBug.issueTemplate.cpu")}:** ${sysDetails.cpu_model}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.cpuHint")} -->
+
+**${t("settings.about.reportBug.issueTemplate.gpu")}:** ${sysDetails.gpu_model}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.gpuHint")} -->
+
+## ${t("settings.about.reportBug.issueTemplate.logs")}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.logsHint")} -->${
+        includeLogs
+          ? `
+
+> ${submitMethod === "email" ? t("settings.about.reportBug.logsInstruction") : ""}`
+          : ""
+      }`;
+
+      const title = `[${t("settings.about.reportBug.issueTemplate.titlePrefix")}] ${bugTitle}`;
+      const destination =
+        submitMethod === "email"
+          ? `mailto:contact@handy.computer?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(
+              includeLogs ? `${bodyTemplate}\n\n${logsText}` : bodyTemplate,
+            )}`
+          : `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
+      await openUrl(destination);
+      setIsReportBugOpen(false);
+      setBugTitle("");
+      setBugDescription("");
+    } catch (error) {
+      console.error("Failed to open bug report link:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -77,6 +188,16 @@ export const AboutSettings: React.FC = () => {
           </Button>
         </SettingContainer>
 
+        <SettingContainer
+          title={t("settings.about.reportBug.title")}
+          description={t("settings.about.reportBug.description")}
+          grouped={true}
+        >
+          <Button variant="primary" size="md" onClick={handleReportBugClick}>
+            {t("settings.about.reportBug.button")}
+          </Button>
+        </SettingContainer>
+
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
         <LogDirectory grouped={true} />
       </SettingsGroup>
@@ -93,6 +214,167 @@ export const AboutSettings: React.FC = () => {
           </div>
         </SettingContainer>
       </SettingsGroup>
+
+      <Dialog
+        open={isReportBugOpen}
+        title={t("settings.about.reportBug.title")}
+        closeLabel={t("common.cancel") || "Cancel"}
+        onOpenChange={setIsReportBugOpen}
+      >
+        <div className="space-y-4 py-2 text-start">
+          <div className="text-sm text-mid-gray bg-mid-gray/5 p-3 rounded-md border border-mid-gray/20">
+            {t("settings.about.reportBug.searchPrompt")}{" "}
+            <a
+              href="https://github.com/cjpais/Handy/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-logo-primary hover:underline font-semibold"
+            >
+              {t("settings.about.reportBug.existingIssuesLink")}
+            </a>{" "}
+            {t("settings.about.reportBug.searchPromptSuffix")}
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.titleLabel")}
+            </label>
+            <Input
+              value={bugTitle}
+              onChange={(e) => setBugTitle(e.target.value)}
+              maxLength={120}
+              placeholder={t("settings.about.reportBug.titlePlaceholder")}
+              className="w-full font-medium"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-semibold text-mid-gray uppercase tracking-wider">
+              {t("settings.about.reportBug.descriptionLabel")}
+            </label>
+            <Textarea
+              value={bugDescription}
+              onChange={(e) => setBugDescription(e.target.value)}
+              maxLength={1500}
+              placeholder={t("settings.about.reportBug.descriptionPlaceholder")}
+              className="w-full min-h-[140px] font-medium"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <label className="flex items-center space-x-2.5 text-sm cursor-pointer select-none py-1">
+            <input
+              type="checkbox"
+              checked={includeLogs}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setIncludeLogs(checked);
+                if (checked) setSubmitMethod("email");
+              }}
+              disabled={isSubmitting}
+              className="w-4 h-4 rounded border-mid-gray/80 bg-mid-gray/10 text-logo-primary focus:ring-logo-primary accent-logo-primary"
+            />
+            <span className="font-semibold text-mid-gray">
+              {t("settings.about.reportBug.includeLogs")}
+            </span>
+          </label>
+
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-semibold uppercase tracking-wider text-mid-gray">
+              {t("settings.about.reportBug.submitMethod")}
+            </legend>
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-mid-gray/20 p-3 text-sm">
+              <input
+                type="radio"
+                name="bug-report-destination"
+                checked={submitMethod === "github"}
+                onChange={() => setSubmitMethod("github")}
+                disabled={includeLogs || isSubmitting}
+                className="mt-0.5 accent-logo-primary"
+              />
+              <span>
+                <span className="block font-semibold text-text">
+                  {t("settings.about.reportBug.githubOption")}
+                </span>
+                <span className="text-mid-gray">
+                  {t("settings.about.reportBug.githubDescription")}
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-mid-gray/20 p-3 text-sm">
+              <input
+                type="radio"
+                name="bug-report-destination"
+                checked={submitMethod === "email"}
+                onChange={() => setSubmitMethod("email")}
+                disabled={isSubmitting}
+                className="mt-0.5 accent-logo-primary"
+              />
+              <span>
+                <span className="block font-semibold text-text">
+                  {t("settings.about.reportBug.emailOption")}
+                </span>
+                <span className="text-mid-gray">
+                  {t("settings.about.reportBug.emailDescription")}
+                </span>
+              </span>
+            </label>
+          </fieldset>
+
+          {includeLogs && (
+            <p className="rounded-md border border-logo-primary/30 bg-logo-primary/10 p-3 text-sm text-mid-gray">
+              {t("settings.about.reportBug.logsEmailOnly")}
+            </p>
+          )}
+
+          {includeLogs && (
+            <div
+              role="alert"
+              className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+            >
+              <p className="font-semibold">
+                {t("settings.about.reportBug.logsWarningTitle")}
+              </p>
+              <p className="mt-1 text-mid-gray">
+                {t("settings.about.reportBug.logsWarning")}
+              </p>
+            </div>
+          )}
+          {submitError && (
+            <p
+              role="alert"
+              className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-400"
+            >
+              {submitError}
+            </p>
+          )}
+          <div className="flex justify-end space-x-3 pt-3 border-t border-mid-gray/20">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setIsReportBugOpen(false)}
+              disabled={isSubmitting}
+            >
+              {t("common.cancel") || "Cancel"}
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleFormSubmit}
+              disabled={
+                !bugTitle.trim() || !bugDescription.trim() || isSubmitting
+              }
+            >
+              {isSubmitting
+                ? t("settings.about.reportBug.submitting")
+                : t("settings.about.reportBug.submit")}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };

@@ -600,6 +600,55 @@
       "whatsNewUpdates": {
         "label": "Neuerungen anzeigen",
         "description": "Versionshinweise nach Handy-Updates anzeigen"
+      },
+      "reportBug": {
+        "title": "Report a Bug",
+        "description": "Create a GitHub issue with details about a problem",
+        "button": "Report a Bug",
+        "dialogDescription": "Describe the problem and we will prepare a GitHub issue for you.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "For example: Recording stops unexpectedly",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What happened? Include steps to reproduce and what you expected instead.",
+        "characterCount": "{{count}} / {{limit}} characters",
+        "includeLogs": "Copy recent logs to clipboard",
+        "logsWarningTitle": "Logs may contain sensitive information",
+        "logsWarning": "Recent logs will be copied to your clipboard, not uploaded automatically. Review them before you paste them into the GitHub issue. They can include file paths, device names, or other information you may not want to share.",
+        "logsInstruction": "The last 100 log lines were copied to your clipboard. Review them, then paste them into the Logs section of the issue if you are comfortable sharing them.",
+        "submit": "Open GitHub issue",
+        "submitting": "Preparing issue...",
+        "failed": "We could not prepare your bug report. {{error}}",
+        "logsFailed": "We could not copy the logs to your clipboard. You can try again or continue without logs.",
+        "searchPrompt": "Please search",
+        "existingIssuesLink": "existing issues",
+        "searchPromptSuffix": "to avoid duplicates. Your bug may already be reported!",
+        "issueTemplate": {
+          "beforeSubmit": "Before You Submit",
+          "searchExisting": "Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.",
+          "description": "Bug Description",
+          "systemInformation": "System Information",
+          "appVersion": "App Version",
+          "operatingSystem": "Operating System",
+          "cpu": "CPU",
+          "gpu": "GPU",
+          "unknownVersion": "Unknown Version",
+          "titlePrefix": "Bug",
+          "maintainerNote": "Your bug may already be reported! Right now it's just me maintaining this project so many issues can be overwhelming! Help me out by checking first.",
+          "appVersionHint": "You can find this in the app settings or about section",
+          "operatingSystemHint": "e.g., macOS 14.1, Windows 11, Ubuntu 22.04",
+          "cpuHint": "e.g., Apple M2, Intel i7-12700K, AMD Ryzen 7 5800X",
+          "gpuHint": "e.g., Apple M2 GPU, NVIDIA RTX 4080, AMD RX 6800 XT, Intel UHD Graphics",
+          "logs": "Logs",
+          "logsHint": "Please attach relevant logs to help us diagnose the issue. You can find the log directory by going to Settings > About in the app."
+        },
+        "noLogsAvailable": "No logs are available yet. Try reproducing the issue, then report it again.",
+        "submitMethod": "Send report via",
+        "githubOption": "GitHub issue",
+        "githubDescription": "Best for bug reports without logs.",
+        "emailOption": "Email",
+        "emailDescription": "Send to contact@handy.computer.",
+        "logsEmailOnly": "Reports with logs can only be sent by email. The logs will be included in the email body.",
+        "openEmail": "Open email"
       }
     }
   },
@@ -625,7 +674,8 @@
     "open": "Öffnen",
     "copy": "Kopieren",
     "clear": "Leeren",
-    "noOptionsFound": "Keine Optionen gefunden"
+    "noOptionsFound": "Keine Optionen gefunden",
+    "cancel": "Cancel"
   },
   "accessibility": {
     "permissionsDescription": "Handy benötigt Bedienungshilfen-Berechtigungen, um transkribierten Text einzugeben.",
