@@ -983,7 +983,7 @@ impl TranscriptionManager {
                                     update.audio_committed_ms,
                                     update.buffered_ms,
                                 );
-                                Some(stream.text().display())
+                                Some(stream.text().full)
                             }
                             Err(e) => {
                                 perf.record_compute(finalize_start.elapsed());
