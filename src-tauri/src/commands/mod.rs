@@ -108,8 +108,12 @@ pub fn get_system_details() -> SystemDetails {
     #[cfg(target_os = "linux")]
     let os_version = std::fs::read_to_string("/etc/os-release")
         .ok()
-        .and_then(|content| content.lines().find_map(|line| line.strip_prefix("PRETTY_NAME=")))
-        .map(|name| name.trim_matches('"').to_string())
+        .and_then(|content| {
+            content
+                .lines()
+                .find_map(|line| line.strip_prefix("PRETTY_NAME="))
+                .map(|name| name.trim_matches('"').to_string())
+        })
         .unwrap_or_else(|| "Unknown OS".to_string());
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let os_version = "Unknown OS".to_string();
