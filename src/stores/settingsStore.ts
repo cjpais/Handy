@@ -610,6 +610,9 @@ export const useSettingsStore = create<SettingsStore>()(
       listen("model-state-changed", () => {
         get().refreshSettings();
       });
+      listen("settings-changed", () => {
+        get().refreshSettings();
+      });
     },
   })),
 );
