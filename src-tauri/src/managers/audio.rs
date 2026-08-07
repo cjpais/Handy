@@ -8,14 +8,14 @@ use crate::audio_toolkit::{
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
-use crate::settings::{get_settings, AppSettings};
+use crate::settings::{get_settings, write_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info, trace, warn};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 const VAD_THRESHOLD: f32 = 0.3;
@@ -532,19 +532,17 @@ impl AudioRecordingManager {
         let mut open_flag = self.is_open.lock().unwrap();
         if *open_flag {
             // `is_open` only records that we opened a stream at some point, not
-            // that one is still running. If the capture worker has since exited
-            // (mic unplugged mid-session, USB dropout), returning Ok here hands
-            // the caller a dead recorder: it captures nothing, then fails in
-            // stop() on the closed channel, and stays wedged until the
-            // on-demand close timeout eventually resets the manager.
-            let worker_dead = self
+            // that one is still running. If capture has since failed (mic
+            // unplugged mid-session, USB dropout), rebuild it before the next
+            // recording instead of handing the caller a stalled recorder.
+            let needs_reopen = self
                 .recorder
                 .lock()
                 .unwrap()
                 .as_ref()
-                .is_some_and(|rec| rec.is_capture_worker_dead());
+                .is_some_and(|rec| rec.needs_reopen());
 
-            if !worker_dead {
+            if !needs_reopen {
                 // trace, not debug: with the aliveness check in
                 // try_start_recording this now fires on every keypress in
                 // always-on mode.
@@ -564,12 +562,28 @@ impl AudioRecordingManager {
                 }
             }
             if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
-                // Skipping rec.stop() here: the worker is gone, so the command
-                // would only fail on the closed channel.
                 let _ = rec.close();
             }
             *self.is_recording.lock().unwrap() = false;
             *open_flag = false;
+            self.invalidate_device_cache();
+
+            // If the failed stream was the user's selected microphone, make
+            // the fallback explicit so the settings UI matches capture.
+            let mut settings = get_settings(&self.app_handle);
+            if settings.selected_microphone.is_some()
+                && self.desired_device_name(&settings) == settings.selected_microphone
+            {
+                settings.selected_microphone = None;
+                write_settings(&self.app_handle, settings);
+                let _ = self.app_handle.emit(
+                    "settings-changed",
+                    serde_json::json!({
+                        "setting": "selected_microphone",
+                        "value": "Default"
+                    }),
+                );
+            }
             // Fall through and open a fresh stream.
         }
 
