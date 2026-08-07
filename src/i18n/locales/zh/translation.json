@@ -165,7 +165,9 @@
       "deleteActiveConfirm": "{{modelName}} 是您当前使用的模型。删除后将停止转录，直到您选择新的模型。确定要删除吗？",
       "deleteTitle": "删除模型",
       "filters": {
-        "allLanguages": "所有语言"
+        "allLanguages": "所有语言",
+        "streaming": "筛选支持实时转录的模型",
+        "translation": "筛选支持翻译为英语的模型"
       },
       "noModelsMatch": "没有符合此筛选条件的模型。",
       "yourModels": "已下载的模型",
@@ -224,6 +226,12 @@
         "description": "选择您偏好的麦克风设备",
         "placeholder": "选择麦克风...",
         "loading": "加载中..."
+      },
+      "channel": {
+        "title": "输入通道",
+        "description": "选择要录制的输入通道。如果您的音频接口有多个输入，请使用此选项。",
+        "average": "所有通道的平均值",
+        "channel": "通道 {{n}}"
       },
       "audioFeedback": {
         "label": "音频反馈",
@@ -525,6 +533,10 @@
         "title": "粘贴延迟（后）",
         "description": "发送粘贴按键后、恢复先前剪贴板前的延迟（毫秒）。如果粘贴的是旧的剪贴板内容而非转录文本，请增加此值。"
       },
+      "reliablePaste": {
+        "title": "可靠粘贴（Beta）",
+        "description": "在目标应用程序真正读取转录文本之后再恢复剪贴板，而不是等待固定延迟。用于解决系统负载较高时粘贴旧剪贴板内容的问题。需要使用剪贴板类的粘贴方式；仅支持 macOS 和 Windows。"
+      },
       "recordingBuffer": {
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
@@ -601,8 +613,10 @@
     "preparing": "准备中...",
     "checkForUpdates": "检查更新",
     "portableUpdateTitle": "需要手动更新",
-    "portableUpdateMessage": "便携版无法自动更新。更新方法：从 GitHub Releases 下载最新的 NSIS 安装程序，安装到同一文件夹，然后将旧版本的 Data/ 文件夹（设置、模型、录音）复制到新版本。",
-    "portableUpdateButton": "打开 GitHub Releases"
+    "portableUpdateMessage": "便携版无法自动更新。请通过下方按钮下载适用于你的系统的安装程序，运行后安装到同一文件夹，你的 Data/ 文件夹（设置、模型、录音）会保留在原处。",
+    "portableUpdateButton": "下载安装程序",
+    "portableUpdateBrowseMessage": "便携版无法自动更新。请从 GitHub Releases 下载适用于你的系统的最新版本，并安装到同一文件夹，你的 Data/ 文件夹（设置、模型、录音）会保留在原处。",
+    "portableUpdateBrowseButton": "打开 GitHub Releases"
   },
   "common": {
     "loading": "加载中...",
