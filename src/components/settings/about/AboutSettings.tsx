@@ -168,7 +168,11 @@ ${
           description={t("settings.about.reportBug.description")}
           grouped={true}
         >
-          <Button variant="primary-soft" size="md" onClick={handleReportBugClick}>
+          <Button
+            variant="primary-soft"
+            size="md"
+            onClick={handleReportBugClick}
+          >
             {t("settings.about.reportBug.button")}
           </Button>
         </SettingContainer>
@@ -198,7 +202,7 @@ ${
       >
         <div className="space-y-4 py-2 text-start">
           <div className="text-sm text-mid-gray bg-mid-gray/5 p-3 rounded-md border border-mid-gray/20">
-            {t("settings.about.reportBug.searchPrompt")} {" "}
+            {t("settings.about.reportBug.searchPrompt")}{" "}
             <a
               href="https://github.com/cjpais/Handy/issues"
               target="_blank"
@@ -254,12 +258,26 @@ ${
           </label>
 
           {includeLogs && (
-            <div role="alert" className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-              <p className="font-semibold">{t("settings.about.reportBug.logsWarningTitle")}</p>
-              <p className="mt-1 text-mid-gray">{t("settings.about.reportBug.logsWarning")}</p>
+            <div
+              role="alert"
+              className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+            >
+              <p className="font-semibold">
+                {t("settings.about.reportBug.logsWarningTitle")}
+              </p>
+              <p className="mt-1 text-mid-gray">
+                {t("settings.about.reportBug.logsWarning")}
+              </p>
             </div>
           )}
-          {submitError && <p role="alert" className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-400">{submitError}</p>}
+          {submitError && (
+            <p
+              role="alert"
+              className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-400"
+            >
+              {submitError}
+            </p>
+          )}
           <div className="flex justify-end space-x-3 pt-3 border-t border-mid-gray/20">
             <Button
               variant="secondary"
@@ -273,9 +291,13 @@ ${
               variant="primary"
               size="md"
               onClick={handleFormSubmit}
-              disabled={!bugTitle.trim() || !bugDescription.trim() || isSubmitting}
+              disabled={
+                !bugTitle.trim() || !bugDescription.trim() || isSubmitting
+              }
             >
-              {isSubmitting ? t("settings.about.reportBug.submitting") : t("settings.about.reportBug.submit")}
+              {isSubmitting
+                ? t("settings.about.reportBug.submitting")
+                : t("settings.about.reportBug.submit")}
             </Button>
           </div>
         </div>

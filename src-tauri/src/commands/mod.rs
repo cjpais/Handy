@@ -132,11 +132,16 @@ pub fn get_system_details() -> SystemDetails {
     #[cfg(target_os = "linux")]
     let cpu_model = std::fs::read_to_string("/proc/cpuinfo")
         .ok()
-        .and_then(|content| content.lines().find_map(|line| {
-            (line.starts_with("model name") || line.starts_with("Model"))
-                .then(|| line.split_once(':').map(|(_, name)| name.trim().to_string()))
-                .flatten()
-        }))
+        .and_then(|content| {
+            content.lines().find_map(|line| {
+                (line.starts_with("model name") || line.starts_with("Model"))
+                    .then(|| {
+                        line.split_once(':')
+                            .map(|(_, name)| name.trim().to_string())
+                    })
+                    .flatten()
+            })
+        })
         .unwrap_or_else(|| "Unknown CPU".to_string());
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let cpu_model = "Unknown CPU".to_string();
@@ -151,7 +156,11 @@ pub fn get_system_details() -> SystemDetails {
     SystemDetails {
         os_version,
         cpu_model,
-        gpu_model: if gpu_model.is_empty() { "Unknown GPU".to_string() } else { gpu_model },
+        gpu_model: if gpu_model.is_empty() {
+            "Unknown GPU".to_string()
+        } else {
+            gpu_model
+        },
     }
 }
 
