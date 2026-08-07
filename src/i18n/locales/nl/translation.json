@@ -209,7 +209,9 @@
       "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
       "deleteTitle": "Model verwijderen",
       "filters": {
-        "allLanguages": "Alle talen"
+        "allLanguages": "Alle talen",
+        "streaming": "Filter modellen die live transcriptie ondersteunen",
+        "translation": "Filter modellen die vertaling naar het Engels ondersteunen"
       },
       "rescan": {
         "label": "Opnieuw scannen",

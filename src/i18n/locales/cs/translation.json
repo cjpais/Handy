@@ -165,7 +165,9 @@
       "deleteActiveConfirm": "{{modelName}} je váš aktivní model. Jeho smazáním se zastaví přepisy, dokud nevyberete nový model. Opravdu chcete pokračovat?",
       "deleteTitle": "Smazat model",
       "filters": {
-        "allLanguages": "Všechny jazyky"
+        "allLanguages": "Všechny jazyky",
+        "streaming": "Filtrovat modely podporující živý přepis",
+        "translation": "Filtrovat modely podporující překlad do angličtiny"
       },
       "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
       "yourModels": "Stažené modely",
