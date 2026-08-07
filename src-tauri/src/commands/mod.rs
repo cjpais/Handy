@@ -8,6 +8,13 @@ use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
+#[derive(serde::Serialize, Clone, specta::Type)]
+pub struct SystemDetails {
+    pub os_version: String,
+    pub cpu_model: String,
+    pub gpu_model: String,
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
@@ -48,6 +55,112 @@ pub fn get_log_dir_path(app: AppHandle) -> Result<String, String> {
         .map_err(|e| format!("Failed to get log directory: {}", e))?;
 
     Ok(log_dir.to_string_lossy().to_string())
+}
+
+#[cfg(target_os = "windows")]
+fn get_windows_os_version() -> String {
+    use winreg::enums::HKEY_LOCAL_MACHINE;
+    use winreg::RegKey;
+
+    let key = match RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion")
+    {
+        Ok(key) => key,
+        Err(_) => return "Unknown OS".to_string(),
+    };
+    let product_name: String = key.get_value("ProductName").unwrap_or_default();
+    let display_version: String = key.get_value("DisplayVersion").unwrap_or_default();
+
+    match (product_name.is_empty(), display_version.is_empty()) {
+        (false, false) => format!("{} (Version {})", product_name, display_version),
+        (false, true) => product_name,
+        _ => "Unknown OS".to_string(),
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn get_windows_cpu_model() -> String {
+    use winreg::enums::HKEY_LOCAL_MACHINE;
+    use winreg::RegKey;
+
+    RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey("HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0")
+        .ok()
+        .and_then(|key| key.get_value::<String, _>("ProcessorNameString").ok())
+        .filter(|name| !name.trim().is_empty())
+        .map(|name| name.trim().to_string())
+        .unwrap_or_else(|| "Unknown CPU".to_string())
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn get_system_details() -> SystemDetails {
+    #[cfg(target_os = "windows")]
+    let os_version = get_windows_os_version();
+    #[cfg(target_os = "macos")]
+    let os_version = std::process::Command::new("sw_vers")
+        .arg("-productVersion")
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| format!("macOS {}", String::from_utf8_lossy(&output.stdout).trim()))
+        .unwrap_or_else(|| "Unknown OS".to_string());
+    #[cfg(target_os = "linux")]
+    let os_version = std::fs::read_to_string("/etc/os-release")
+        .ok()
+        .and_then(|content| content.lines().find_map(|line| line.strip_prefix("PRETTY_NAME=")))
+        .map(|name| name.trim_matches('"').to_string())
+        .unwrap_or_else(|| "Unknown OS".to_string());
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let os_version = "Unknown OS".to_string();
+
+    #[cfg(target_os = "windows")]
+    let cpu_model = get_windows_cpu_model();
+    #[cfg(target_os = "macos")]
+    let cpu_model = std::process::Command::new("sysctl")
+        .args(["-n", "machdep.cpu.brand_string"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "Unknown CPU".to_string());
+    #[cfg(target_os = "linux")]
+    let cpu_model = std::fs::read_to_string("/proc/cpuinfo")
+        .ok()
+        .and_then(|content| content.lines().find_map(|line| {
+            (line.starts_with("model name") || line.starts_with("Model"))
+                .then(|| line.split_once(':').map(|(_, name)| name.trim().to_string()))
+                .flatten()
+        }))
+        .unwrap_or_else(|| "Unknown CPU".to_string());
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let cpu_model = "Unknown CPU".to_string();
+
+    let gpu_model = crate::managers::transcription::get_available_accelerators()
+        .gpu_devices
+        .iter()
+        .map(|device| device.name.clone())
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    SystemDetails {
+        os_version,
+        cpu_model,
+        gpu_model: if gpu_model.is_empty() { "Unknown GPU".to_string() } else { gpu_model },
+    }
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn read_recent_logs(app: AppHandle) -> Result<String, String> {
+    const MAX_LINES: usize = 100;
+    let log_dir = crate::portable::app_log_dir(&app)
+        .map_err(|error| format!("Failed to get log directory: {}", error))?;
+    let content = std::fs::read_to_string(log_dir.join("handy.log"))
+        .map_err(|error| format!("Failed to read Handy logs: {}", error))?;
+    let lines: Vec<_> = content.lines().collect();
+    Ok(lines[lines.len().saturating_sub(MAX_LINES)..].join("\n"))
 }
 
 #[specta::specta]
