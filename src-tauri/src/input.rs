@@ -3,15 +3,39 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
 /// Wrapper for Enigo to store in Tauri's managed state.
-/// Enigo is wrapped in a Mutex since it requires mutable access.
-pub struct EnigoState(pub Mutex<Enigo>);
+/// Enigo is wrapped in a Mutex since it requires mutable access, and in an
+/// Option so the instance can be dropped and recreated (see `refresh_enigo`).
+pub struct EnigoState(pub Mutex<Option<Enigo>>);
 
 impl EnigoState {
     pub fn new() -> Result<Self, String> {
         let enigo = Enigo::new(&Settings::default())
             .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
-        Ok(Self(Mutex::new(enigo)))
+        Ok(Self(Mutex::new(Some(enigo))))
     }
+}
+
+/// Drop and recreate the Enigo instance held in `slot`.
+///
+/// On X11, enigo types characters that are not on the first level of the
+/// active layout (capital letters among them) by binding their keysyms to
+/// spare keycodes, and it trusts those bindings for the lifetime of the
+/// instance. Any external keymap reload (layout re-apply, suspend/resume,
+/// device hotplug) reverts the bindings behind enigo's back, after which
+/// those characters are silently dropped from typed text. Recreating the
+/// instance immediately before an injection rebinds everything against the
+/// server's current keymap.
+///
+/// The old instance must be dropped *before* the new one is created: enigo's
+/// Drop reverts the old instance's bindings, and an instance created earlier
+/// would have captured those bindings in its keymap snapshot and kept firing
+/// the then-dead keycodes.
+pub fn refresh_enigo(slot: &mut Option<Enigo>) -> Result<(), String> {
+    slot.take();
+    let fresh = Enigo::new(&Settings::default())
+        .map_err(|e| format!("Failed to recreate Enigo: {}", e))?;
+    *slot = Some(fresh);
+    Ok(())
 }
 
 /// Get the current mouse cursor position using the managed Enigo instance.
@@ -19,7 +43,7 @@ impl EnigoState {
 pub fn get_cursor_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
     let enigo_state = app_handle.try_state::<EnigoState>()?;
     let enigo = enigo_state.0.lock().ok()?;
-    enigo.location().ok()
+    enigo.as_ref()?.location().ok()
 }
 
 /// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.
