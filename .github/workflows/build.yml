@@ -535,8 +535,10 @@ jobs:
           trap 'rm -rf "$WORKDIR"' EXIT
           (
             cd "$WORKDIR"
-            "$APPIMAGE_PATH" --appimage-extract 'usr/share/applications/*.desktop' >/dev/null
-            DESKTOP_FILE="$(find squashfs-root/usr/share/applications -name '*.desktop' -print -quit)"
+            # AppImage integration tools read the root desktop entry. appimagetool
+            # adds X-AppImage-Version there, not to the source copy under usr/share.
+            "$APPIMAGE_PATH" --appimage-extract '*.desktop' >/dev/null
+            DESKTOP_FILE="$(find squashfs-root -maxdepth 1 -type f -name '*.desktop' -print -quit)"
             if [ -z "$DESKTOP_FILE" ]; then
               echo "ERROR: AppImage desktop metadata is missing" >&2
               exit 1
@@ -760,7 +762,9 @@ jobs:
                 cd "$workdir"
                 ./Handy.AppImage --appimage-extract >/dev/null
                 require_path "squashfs-root/usr/bin/handy" "AppImage handy binary"
-                desktop_file="$(find squashfs-root/usr/share/applications -name '*.desktop' -print -quit)"
+                # Gear Lever and other integration tools consume the root entry;
+                # appimagetool does not update the copy under usr/share/applications.
+                desktop_file="$(find squashfs-root -maxdepth 1 -type f -name '*.desktop' -print -quit)"
                 require_path "$desktop_file" "AppImage desktop metadata"
                 if ! grep -Fqx 'X-AppImage-Version=${{ steps.get-version.outputs.version }}' "$desktop_file"; then
                   echo "ERROR: AppImage version metadata is missing or incorrect:" >&2
