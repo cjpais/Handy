@@ -265,19 +265,22 @@ export const ModelsSettings: React.FC = () => {
                   onClick={() => rescanLocalModels()}
                   disabled={isRescanning}
                   title={t("settings.models.rescan.tooltip")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={t("settings.models.rescan.tooltip")}
+                  className="flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
                   />
-                  <span>{t("settings.models.rescan.label")}</span>
                 </button>
+
+                {/* Vertical divider separating action from filters */}
+                <div className="h-4 w-px bg-mid-gray/30 mx-0.5" />
                 <button
                   type="button"
                   onClick={() => setFilterStreaming(!filterStreaming)}
-                  title={t("modelSelector.streaming")}
-                  aria-label={t("modelSelector.streaming")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  title={t("settings.models.filters.streaming")}
+                  aria-label={t("settings.models.filters.streaming")}
+                  className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
                     filterStreaming
                       ? "bg-logo-primary/20 text-logo-primary"
                       : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
@@ -288,9 +291,9 @@ export const ModelsSettings: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFilterTranslation(!filterTranslation)}
-                  title={t("modelSelector.capabilities.translate")}
-                  aria-label={t("modelSelector.capabilities.translate")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  title={t("settings.models.filters.translation")}
+                  aria-label={t("settings.models.filters.translation")}
+                  className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
                     filterTranslation
                       ? "bg-logo-primary/20 text-logo-primary"
                       : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
@@ -305,7 +308,7 @@ export const ModelsSettings: React.FC = () => {
                     onClick={() =>
                       setLanguageDropdownOpen(!languageDropdownOpen)
                     }
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    className={`flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
                       languageFilter !== "all"
                         ? "bg-logo-primary/20 text-logo-primary"
                         : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
