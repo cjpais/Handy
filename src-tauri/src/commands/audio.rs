@@ -188,11 +188,22 @@ pub fn get_microphone_mode(app: AppHandle) -> Result<bool, String> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
+pub async fn get_available_microphones(app: AppHandle) -> Result<Vec<AudioDevice>, String> {
     // cpal device enumeration can stall — run it off the webview/main run loop.
-    tokio::task::spawn_blocking(|| {
+    let manager = app.state::<Arc<AudioRecordingManager>>().inner().clone();
+    tokio::task::spawn_blocking(move || {
         let devices =
             list_input_devices().map_err(|e| format!("Failed to list audio devices: {}", e))?;
+        let current_default_name = devices
+            .iter()
+            .find(|device| device.is_default)
+            .map(|device| device.name.clone());
+
+        if let Err(error) =
+            manager.refresh_default_device_if_changed(current_default_name.as_deref())
+        {
+            warn!("Failed to refresh the active default microphone: {error}");
+        }
 
         let mut result = vec![AudioDevice {
             index: "default".to_string(),

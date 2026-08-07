@@ -7,9 +7,11 @@ use crate::audio_toolkit::{
     AudioRecorder, SileroVad, VadPolicy,
 };
 use crate::helpers::clamshell;
+use crate::managers::audio_device_refresh::should_reopen_default_microphone;
 use crate::managers::transcription::StreamRouter;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
+use cpal::traits::{DeviceTrait, HostTrait};
 use log::{debug, error, info, trace, warn};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -440,6 +442,35 @@ impl AudioRecordingManager {
         device
     }
 
+    /// Checks whether an open stream that follows the system default is still
+    /// attached to the device the OS currently reports as default.
+    fn default_stream_device_changed(&self) -> bool {
+        let settings = get_settings(&self.app_handle);
+        // Keep the always-on keypress path cheap. A configured selected or
+        // clamshell device has explicit resolution rules and is reconciled by
+        // the UI refresh path instead of probing clamshell state here.
+        if settings.selected_microphone.is_some() || settings.clamshell_microphone.is_some() {
+            return false;
+        }
+        let active_device_name = self
+            .recorder
+            .lock()
+            .unwrap()
+            .as_ref()
+            .and_then(AudioRecorder::active_device_name);
+        let current_default_name = crate::audio_toolkit::get_cpal_host()
+            .default_input_device()
+            .and_then(|device| device.name().ok());
+
+        should_reopen_default_microphone(
+            true,
+            true,
+            None,
+            active_device_name.as_deref(),
+            current_default_name.as_deref(),
+        )
+    }
+
     fn schedule_lazy_close(&self) {
         let gen = self.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
         let app = self.app_handle.clone();
@@ -543,8 +574,9 @@ impl AudioRecordingManager {
                 .unwrap()
                 .as_ref()
                 .is_some_and(|rec| rec.is_capture_worker_dead());
+            let default_device_changed = !worker_dead && self.default_stream_device_changed();
 
-            if !worker_dead {
+            if !worker_dead && !default_device_changed {
                 // trace, not debug: with the aliveness check in
                 // try_start_recording this now fires on every keypress in
                 // always-on mode.
@@ -552,7 +584,11 @@ impl AudioRecordingManager {
                 return Ok(());
             }
 
-            warn!("Microphone stream is no longer running (device disconnected?); reopening");
+            if worker_dead {
+                warn!("Microphone stream is no longer running (device disconnected?); reopening");
+            } else {
+                info!("System default microphone changed; reopening stream before recording");
+            }
 
             // Torn down inline rather than via stop_microphone_stream(), which
             // takes the `is_open` lock we are already holding.
@@ -754,6 +790,48 @@ impl AudioRecordingManager {
             self.start_microphone_stream()?;
         }
         Ok(())
+    }
+
+    /// Reconciles an open system-default stream with the default device found
+    /// by a UI refresh. Always-on capture otherwise stays attached to the
+    /// device that was default when the stream first opened.
+    pub fn refresh_default_device_if_changed(
+        &self,
+        current_default_name: Option<&str>,
+    ) -> Result<bool, anyhow::Error> {
+        // Serialize against recording start/stop so refresh never discards an
+        // active session. The potentially blocking restart runs on the caller's
+        // spawn_blocking thread, not the webview/main run loop.
+        let state = self.state.lock().unwrap();
+        let recording_is_idle = matches!(*state, RecordingState::Idle);
+        let settings = get_settings(&self.app_handle);
+        let desired_device_name = self.desired_device_name(&settings);
+        let stream_is_open = *self.is_open.lock().unwrap();
+        let active_device_name = self
+            .recorder
+            .lock()
+            .unwrap()
+            .as_ref()
+            .and_then(AudioRecorder::active_device_name);
+
+        if !should_reopen_default_microphone(
+            stream_is_open,
+            recording_is_idle,
+            desired_device_name.as_deref(),
+            active_device_name.as_deref(),
+            current_default_name,
+        ) {
+            return Ok(false);
+        }
+
+        info!(
+            "System default microphone changed from {:?} to {:?}; reopening stream",
+            active_device_name, current_default_name
+        );
+        self.close_generation.fetch_add(1, Ordering::SeqCst);
+        self.stop_microphone_stream();
+        self.start_microphone_stream()?;
+        Ok(true)
     }
 
     pub fn update_selected_channel(
