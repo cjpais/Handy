@@ -174,8 +174,11 @@ pub fn read_recent_logs(app: AppHandle) -> Result<String, String> {
     const MAX_LINES: usize = 100;
     let log_dir = crate::portable::app_log_dir(&app)
         .map_err(|error| format!("Failed to get log directory: {}", error))?;
-    let file = File::open(log_dir.join("handy.log"))
-        .map_err(|error| format!("Failed to read Handy logs: {}", error))?;
+    let file = match File::open(log_dir.join("handy.log")) {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(String::new()),
+        Err(error) => return Err(format!("Failed to read Handy logs: {}", error)),
+    };
     let mut recent_lines = VecDeque::with_capacity(MAX_LINES);
 
     for line in BufReader::new(file).lines() {

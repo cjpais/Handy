@@ -624,7 +624,7 @@
         "searchPromptSuffix": "to avoid duplicates. Your bug may already be reported!",
         "issueTemplate": {
           "beforeSubmit": "Before You Submit",
-          "searchExisting": "Please search existing issues to avoid duplicates.",
+          "searchExisting": "Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.",
           "description": "Bug Description",
           "systemInformation": "System Information",
           "appVersion": "App Version",
@@ -632,8 +632,16 @@
           "cpu": "CPU",
           "gpu": "GPU",
           "unknownVersion": "Unknown Version",
-          "titlePrefix": "Bug"
-        }
+          "titlePrefix": "Bug",
+          "maintainerNote": "Your bug may already be reported! Right now it's just me maintaining this project so many issues can be overwhelming! Help me out by checking first.",
+          "appVersionHint": "You can find this in the app settings or about section",
+          "operatingSystemHint": "e.g., macOS 14.1, Windows 11, Ubuntu 22.04",
+          "cpuHint": "e.g., Apple M2, Intel i7-12700K, AMD Ryzen 7 5800X",
+          "gpuHint": "e.g., Apple M2 GPU, NVIDIA RTX 4080, AMD RX 6800 XT, Intel UHD Graphics",
+          "logs": "Logs",
+          "logsHint": "Please attach relevant logs to help us diagnose the issue. You can find the log directory by going to Settings > About in the app."
+        },
+        "noLogsAvailable": "No logs are available yet. Try reproducing the issue, then report it again."
       }
     }
   },

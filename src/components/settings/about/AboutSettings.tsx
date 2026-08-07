@@ -80,6 +80,10 @@ export const AboutSettings: React.FC = () => {
             return;
           }
           logsText = logsResult.data;
+          if (!logsText.trim()) {
+            setSubmitError(t("settings.about.reportBug.noLogsAvailable"));
+            return;
+          }
           await writeText(logsText);
         } catch (error) {
           console.error("Failed to copy logs:", error);
@@ -90,7 +94,7 @@ export const AboutSettings: React.FC = () => {
 
       const bodyTemplate = `## ${t("settings.about.reportBug.issueTemplate.beforeSubmit")}
 
-**${t("settings.about.reportBug.issueTemplate.searchExisting")}**
+**${t("settings.about.reportBug.issueTemplate.searchExisting")}** ${t("settings.about.reportBug.issueTemplate.maintainerNote")}
 
 ## ${t("settings.about.reportBug.issueTemplate.description")}
 
@@ -99,16 +103,30 @@ ${bugDescription}
 ## ${t("settings.about.reportBug.issueTemplate.systemInformation")}
 
 **${t("settings.about.reportBug.issueTemplate.appVersion")}:** ${version || t("settings.about.reportBug.issueTemplate.unknownVersion")}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.appVersionHint")} -->
+
 **${t("settings.about.reportBug.issueTemplate.operatingSystem")}:** ${sysDetails.os_version}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.operatingSystemHint")} -->
+
 **${t("settings.about.reportBug.issueTemplate.cpu")}:** ${sysDetails.cpu_model}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.cpuHint")} -->
+
 **${t("settings.about.reportBug.issueTemplate.gpu")}:** ${sysDetails.gpu_model}
-${
-  includeLogs
-    ? `
+
+<!-- ${t("settings.about.reportBug.issueTemplate.gpuHint")} -->
+
+## ${t("settings.about.reportBug.issueTemplate.logs")}
+
+<!-- ${t("settings.about.reportBug.issueTemplate.logsHint")} -->${
+        includeLogs
+          ? `
 
 > ${t("settings.about.reportBug.logsInstruction")}`
-    : ""
-}`;
+          : ""
+      }`;
 
       const title = `[${t("settings.about.reportBug.issueTemplate.titlePrefix")}] ${bugTitle}`;
       const url = `https://github.com/cjpais/handy/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(bodyTemplate)}`;
@@ -168,11 +186,7 @@ ${
           description={t("settings.about.reportBug.description")}
           grouped={true}
         >
-          <Button
-            variant="primary-soft"
-            size="md"
-            onClick={handleReportBugClick}
-          >
+          <Button variant="primary" size="md" onClick={handleReportBugClick}>
             {t("settings.about.reportBug.button")}
           </Button>
         </SettingContainer>
