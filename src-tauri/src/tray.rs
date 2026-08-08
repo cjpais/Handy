@@ -1,4 +1,4 @@
-use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings;
@@ -335,13 +335,6 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
     let _ = tray.set_tooltip(Some(tooltip));
 }
 
-fn last_transcript_text(entry: &HistoryEntry) -> &str {
-    entry
-        .post_processed_text
-        .as_deref()
-        .unwrap_or(&entry.transcription_text)
-}
-
 pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
     let tray = app.state::<TrayIcon>();
     if let Err(e) = tray.set_visible(visible) {
@@ -353,8 +346,8 @@ pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
 
 pub fn copy_last_transcript(app: &AppHandle) {
     let history_manager = app.state::<Arc<HistoryManager>>();
-    let entry = match history_manager.get_latest_completed_entry() {
-        Ok(Some(entry)) => entry,
+    let text = match history_manager.get_latest_completed_transcript() {
+        Ok(Some(text)) => text,
         Ok(None) => {
             warn!("No completed transcription history entries available for tray copy.");
             return;
@@ -368,13 +361,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
         }
     };
 
-    let text = last_transcript_text(&entry);
-    if text.trim().is_empty() {
-        warn!("Last completed transcription is empty; skipping tray copy.");
-        return;
-    }
-
-    if let Err(err) = app.clipboard().write_text(text) {
+    if let Err(err) = app.clipboard().write_text(&text) {
         error!("Failed to copy last transcript to clipboard: {}", err);
         return;
     }
@@ -384,34 +371,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::{last_transcript_text, load_tray_icon};
-    use crate::managers::history::HistoryEntry;
-
-    fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
-        HistoryEntry {
-            id: 1,
-            file_name: "handy-1.wav".to_string(),
-            timestamp: 0,
-            saved: false,
-            title: "Recording".to_string(),
-            transcription_text: transcription.to_string(),
-            post_processed_text: post_processed.map(|text| text.to_string()),
-            post_process_prompt: None,
-            post_process_requested: false,
-        }
-    }
-
-    #[test]
-    fn uses_post_processed_text_when_available() {
-        let entry = build_entry("raw", Some("processed"));
-        assert_eq!(last_transcript_text(&entry), "processed");
-    }
-
-    #[test]
-    fn falls_back_to_raw_transcription() {
-        let entry = build_entry("raw", None);
-        assert_eq!(last_transcript_text(&entry), "raw");
-    }
+    use super::load_tray_icon;
 
     #[test]
     fn tray_icon_resolution_failure_is_returned_instead_of_panicking() {
