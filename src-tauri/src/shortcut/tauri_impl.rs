@@ -27,6 +27,10 @@ pub fn init_shortcuts(app: &AppHandle) {
         if id == "transcribe_with_post_process" && !user_settings.post_process_enabled {
             continue;
         }
+        // Skip toggle shortcut when the feature is disabled
+        if id == "transcribe_toggle" && !user_settings.transcribe_toggle_enabled {
+            continue;
+        }
         let binding = user_settings
             .bindings
             .get(&id)
