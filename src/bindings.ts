@@ -29,6 +29,14 @@ async changePttSetting(enabled: boolean) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async changeTranscribeToggleEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_transcribe_toggle_enabled_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeAudioFeedbackSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_audio_feedback_setting", { enabled }) };
@@ -933,7 +941,12 @@ settings_schema_version?: number;
  * Defaults to empty on partial stores; the load path merges in the
  * default bindings for any missing keys before the settings are used.
  */
-bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean; audio_feedback?: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; show_whats_new_on_update?: boolean; 
+bindings?: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk?: boolean; 
+/**
+ * Enables the separate "transcribe_toggle" shortcut, which always
+ * operates in toggle mode regardless of `push_to_talk`.
+ */
+transcribe_toggle_enabled?: boolean; audio_feedback?: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; show_whats_new_on_update?: boolean; 
 /**
  * The app version whose What's New the user has already seen. Fresh installs
  * default to the current version (nothing is "new" to them). Existing users

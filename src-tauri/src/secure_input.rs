@@ -515,6 +515,9 @@ mod imp {
                 if id == "transcribe_with_post_process" && !settings.post_process_enabled {
                     continue;
                 }
+                if id == "transcribe_toggle" && !settings.transcribe_toggle_enabled {
+                    continue;
+                }
 
                 if register_fallback_binding(app, id, binding, &mut next) {
                     immune += 1;

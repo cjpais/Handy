@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "transcribe_toggle": {
+            "name": "Toggle Recording Shortcut",
+            "description": "Press once to start recording, press again to stop and transcribe."
           }
         },
         "errors": {
@@ -197,6 +201,10 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "toggleShortcut": {
+        "label": "Toggle Recording",
+        "description": "Adds a second shortcut that always toggles recording, for use alongside Push To Talk"
       }
     },
     "models": {

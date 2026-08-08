@@ -258,6 +258,9 @@ pub fn resume_all_shortcuts(app: &AppHandle) {
         if id == "transcribe_with_post_process" && !settings.post_process_enabled {
             continue;
         }
+        if id == "transcribe_toggle" && !settings.transcribe_toggle_enabled {
+            continue;
+        }
         if let Err(e) = register_shortcut(app, binding.clone()) {
             debug!("resume_all_shortcuts: could not register '{}': {}", id, e);
         }
@@ -451,6 +454,11 @@ fn register_all_shortcuts_for_implementation(
             continue;
         }
 
+        // Skip toggle shortcut when the feature is disabled
+        if id == "transcribe_toggle" && !current_settings.transcribe_toggle_enabled {
+            continue;
+        }
+
         let mut binding = current_settings
             .bindings
             .get(id)
@@ -529,6 +537,15 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.push_to_talk = enabled;
+    // The toggle shortcut is a companion to push-to-talk (without it, the
+    // main transcribe shortcut already toggles), so disabling push-to-talk
+    // disables the toggle shortcut too.
+    if !enabled && settings.transcribe_toggle_enabled {
+        settings.transcribe_toggle_enabled = false;
+        if let Some(binding) = settings.bindings.get("transcribe_toggle").cloned() {
+            let _ = unregister_shortcut(&app, binding);
+        }
+    }
     settings::write_settings(&app, settings);
     Ok(())
 }
@@ -985,6 +1002,29 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
         .get("transcribe_with_post_process")
         .cloned()
     {
+        if enabled {
+            let _ = register_shortcut(&app, binding);
+        } else {
+            let _ = unregister_shortcut(&app, binding);
+        }
+    }
+
+    crate::secure_input::reconcile_fallback(&app);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_transcribe_toggle_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.transcribe_toggle_enabled = enabled;
+    settings::write_settings(&app, settings.clone());
+
+    // Register or unregister the toggle shortcut
+    if let Some(binding) = settings.bindings.get("transcribe_toggle").cloned() {
         if enabled {
             let _ = register_shortcut(&app, binding);
         } else {

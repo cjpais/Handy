@@ -349,6 +349,10 @@ pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     #[serde(default = "default_push_to_talk")]
     pub push_to_talk: bool,
+    /// Enables the separate "transcribe_toggle" shortcut, which always
+    /// operates in toggle mode regardless of `push_to_talk`.
+    #[serde(default)]
+    pub transcribe_toggle_enabled: bool,
     #[serde(default)]
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
@@ -845,10 +849,28 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
 
+    #[cfg(target_os = "macos")]
+    let default_toggle_shortcut = "ctrl+shift+space";
+    #[cfg(not(target_os = "macos"))]
+    let default_toggle_shortcut = "ctrl+alt+space";
+
+    bindings.insert(
+        "transcribe_toggle".to_string(),
+        ShortcutBinding {
+            id: "transcribe_toggle".to_string(),
+            name: "Toggle Recording".to_string(),
+            description: "Press once to start recording, press again to stop and transcribe."
+                .to_string(),
+            default_binding: default_toggle_shortcut.to_string(),
+            current_binding: default_toggle_shortcut.to_string(),
+        },
+    );
+
     AppSettings {
         settings_schema_version: default_settings_schema_version(),
         bindings,
         push_to_talk: default_push_to_talk(),
+        transcribe_toggle_enabled: false,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
