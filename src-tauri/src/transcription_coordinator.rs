@@ -9,6 +9,24 @@ use tauri::{AppHandle, Manager};
 
 const DEBOUNCE: Duration = Duration::from_millis(30);
 const RELEASE_GRACE: Duration = Duration::from_millis(50);
+/// Hold-or-double-tap: a press held at least this long is push-to-talk;
+/// anything shorter is a tap.
+const HOLD_THRESHOLD: Duration = Duration::from_millis(300);
+/// Hold-or-double-tap: how long after a tap's release a second tap may still
+/// lock the session on. When it elapses the recording is discarded.
+const SECOND_TAP_WINDOW: Duration = Duration::from_millis(150);
+
+/// How a transcribe binding's key events drive the recording session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InputMode {
+    /// Press starts recording, pressing again stops it.
+    Toggle,
+    /// Hold to record, release to stop.
+    PushToTalk,
+    /// Hold for push-to-talk; double-tap to start an ongoing session
+    /// (stopped by the next press); a lone tap discards the recording.
+    HoldOrDoubleTap,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PttAction {
@@ -17,10 +35,27 @@ enum PttAction {
     CancelRelease,
 }
 
-struct PendingRelease {
+#[derive(Clone, Copy)]
+enum PendingKind {
+    /// A push-to-talk release deferred by `RELEASE_GRACE` to absorb X11
+    /// auto-repeat.
+    PttRelease,
+    /// A hold-or-double-tap release deferred by `RELEASE_GRACE`; classified
+    /// as hold or tap once the grace elapses.
+    HybridRelease {
+        pressed_at: Instant,
+        released_at: Instant,
+    },
+    /// A tap happened; recording continues until a second tap locks the
+    /// session on or the window elapses and the recording is discarded.
+    SecondTap,
+}
+
+struct Pending {
     binding_id: String,
     hotkey_string: String,
     deadline: Instant,
+    kind: PendingKind,
 }
 
 /// Commands processed sequentially by the coordinator thread.
@@ -29,7 +64,7 @@ enum Command {
         binding_id: String,
         hotkey_string: String,
         is_pressed: bool,
-        push_to_talk: bool,
+        mode: InputMode,
     },
     Cancel {
         recording_was_active: bool,
@@ -87,25 +122,19 @@ impl TranscriptionCoordinator {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let mut stage = Stage::Idle;
                 let mut last_press: Option<Instant> = None;
-                let mut pending_release: Option<PendingRelease> = None;
+                let mut pending: Option<Pending> = None;
+                // Hold-or-double-tap bookkeeping for the current recording.
+                let mut hold_started: Option<Instant> = None;
+                let mut session_locked = false;
 
                 loop {
-                    let cmd = if let Some(pending) = &pending_release {
-                        match rx.recv_timeout(
-                            pending.deadline.saturating_duration_since(Instant::now()),
-                        ) {
+                    let cmd = if let Some(p) = &pending {
+                        match rx.recv_timeout(p.deadline.saturating_duration_since(Instant::now()))
+                        {
                             Ok(cmd) => cmd,
                             Err(mpsc::RecvTimeoutError::Timeout) => {
-                                if let Some(pending) = pending_release.take() {
-                                    if matches!(&stage, Stage::Recording(id) if id == &pending.binding_id)
-                                    {
-                                        stop(
-                                            &app,
-                                            &mut stage,
-                                            &pending.binding_id,
-                                            &pending.hotkey_string,
-                                        );
-                                    }
+                                if let Some(expired) = pending.take() {
+                                    pending = expire_pending(&app, &mut stage, expired);
                                 }
                                 continue;
                             }
@@ -123,36 +152,83 @@ impl TranscriptionCoordinator {
                             binding_id,
                             hotkey_string,
                             is_pressed,
-                            push_to_talk,
+                            mode,
                         } => {
-                            let pending_release_binding = pending_release
-                                .as_ref()
-                                .map(|pending| pending.binding_id.as_str());
                             let recording_binding = match &stage {
                                 Stage::Recording(id) => Some(id.as_str()),
                                 _ => None,
                             };
 
-                            match classify_ptt_event(
-                                pending_release_binding,
-                                is_pressed,
-                                push_to_talk,
-                                &binding_id,
-                                recording_binding,
-                            ) {
-                                PttAction::CancelRelease => {
-                                    pending_release = None;
-                                    continue;
+                            match mode {
+                                InputMode::Toggle | InputMode::PushToTalk => {
+                                    let pending_binding =
+                                        pending.as_ref().map(|p| p.binding_id.as_str());
+                                    match classify_ptt_event(
+                                        pending_binding,
+                                        is_pressed,
+                                        mode == InputMode::PushToTalk,
+                                        &binding_id,
+                                        recording_binding,
+                                    ) {
+                                        PttAction::CancelRelease => {
+                                            pending = None;
+                                            continue;
+                                        }
+                                        PttAction::DeferRelease => {
+                                            pending = Some(Pending {
+                                                binding_id,
+                                                hotkey_string,
+                                                deadline: Instant::now() + RELEASE_GRACE,
+                                                kind: PendingKind::PttRelease,
+                                            });
+                                            continue;
+                                        }
+                                        PttAction::Passthrough => {}
+                                    }
                                 }
-                                PttAction::DeferRelease => {
-                                    pending_release = Some(PendingRelease {
-                                        binding_id,
-                                        hotkey_string,
-                                        deadline: Instant::now() + RELEASE_GRACE,
-                                    });
-                                    continue;
+                                InputMode::HoldOrDoubleTap => {
+                                    let (press_cancels_grace, press_is_second_tap) = match &pending
+                                    {
+                                        Some(p) if is_pressed && p.binding_id == binding_id => (
+                                            matches!(p.kind, PendingKind::HybridRelease { .. }),
+                                            matches!(p.kind, PendingKind::SecondTap),
+                                        ),
+                                        _ => (false, false),
+                                    };
+                                    if press_cancels_grace {
+                                        // Auto-repeat press inside the release
+                                        // grace: the key is still held.
+                                        pending = None;
+                                        continue;
+                                    }
+                                    if press_is_second_tap {
+                                        debug!("Second tap for '{binding_id}': session locked on");
+                                        pending = None;
+                                        session_locked = true;
+                                        continue;
+                                    }
+                                    if !is_pressed {
+                                        if !session_locked
+                                            && pending.is_none()
+                                            && recording_binding == Some(binding_id.as_str())
+                                        {
+                                            // Defer the release; hold vs tap is
+                                            // classified when the grace elapses (an
+                                            // auto-repeat press may cancel it first).
+                                            pending = Some(Pending {
+                                                binding_id,
+                                                hotkey_string,
+                                                deadline: Instant::now() + RELEASE_GRACE,
+                                                kind: PendingKind::HybridRelease {
+                                                    pressed_at: hold_started
+                                                        .unwrap_or_else(Instant::now),
+                                                    released_at: Instant::now(),
+                                                },
+                                            });
+                                        }
+                                        continue;
+                                    }
                                 }
-                                PttAction::Passthrough => {}
                             }
 
                             // Debounce rapid-fire press events (key repeat / double-tap).
@@ -166,24 +242,62 @@ impl TranscriptionCoordinator {
                                 last_press = Some(now);
                             }
 
-                            if push_to_talk {
-                                if is_pressed && matches!(stage, Stage::Idle) {
-                                    start(&app, &mut stage, &binding_id, &hotkey_string);
-                                } else if !is_pressed
-                                    && matches!(&stage, Stage::Recording(id) if id == &binding_id)
-                                {
-                                    stop(&app, &mut stage, &binding_id, &hotkey_string);
-                                }
-                            } else if is_pressed {
-                                match &stage {
-                                    Stage::Idle => {
+                            match mode {
+                                InputMode::PushToTalk => {
+                                    if is_pressed && matches!(stage, Stage::Idle) {
                                         start(&app, &mut stage, &binding_id, &hotkey_string);
-                                    }
-                                    Stage::Recording(id) if id == &binding_id => {
+                                    } else if !is_pressed
+                                        && matches!(&stage, Stage::Recording(id) if id == &binding_id)
+                                    {
                                         stop(&app, &mut stage, &binding_id, &hotkey_string);
                                     }
-                                    _ => {
-                                        debug!("Ignoring press for '{binding_id}': pipeline busy")
+                                }
+                                InputMode::Toggle => {
+                                    if is_pressed {
+                                        match &stage {
+                                            Stage::Idle => {
+                                                start(
+                                                    &app,
+                                                    &mut stage,
+                                                    &binding_id,
+                                                    &hotkey_string,
+                                                );
+                                            }
+                                            Stage::Recording(id) if id == &binding_id => {
+                                                stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                            }
+                                            _ => {
+                                                debug!(
+                                                    "Ignoring press for '{binding_id}': pipeline busy"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                InputMode::HoldOrDoubleTap => {
+                                    // Releases were consumed above; this is a press.
+                                    match &stage {
+                                        Stage::Idle => {
+                                            start(&app, &mut stage, &binding_id, &hotkey_string);
+                                            if matches!(stage, Stage::Recording(_)) {
+                                                hold_started = Some(Instant::now());
+                                                session_locked = false;
+                                            }
+                                        }
+                                        Stage::Recording(id) if id == &binding_id => {
+                                            if session_locked {
+                                                stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                            } else {
+                                                debug!(
+                                                    "Ignoring press for '{binding_id}' while held"
+                                                )
+                                            }
+                                        }
+                                        _ => {
+                                            debug!(
+                                                "Ignoring press for '{binding_id}': pipeline busy"
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -191,7 +305,7 @@ impl TranscriptionCoordinator {
                         Command::Cancel {
                             recording_was_active,
                         } => {
-                            pending_release = None;
+                            pending = None;
                             // Don't reset during processing — wait for the pipeline to finish.
                             if !matches!(stage, Stage::Processing)
                                 && (recording_was_active || matches!(stage, Stage::Recording(_)))
@@ -215,13 +329,13 @@ impl TranscriptionCoordinator {
     }
 
     /// Send a keyboard/signal input event for a transcribe binding.
-    /// For signal-based toggles, use `is_pressed: true` and `push_to_talk: false`.
+    /// For signal-based toggles, use `is_pressed: true` and `InputMode::Toggle`.
     pub fn send_input(
         &self,
         binding_id: &str,
         hotkey_string: &str,
         is_pressed: bool,
-        push_to_talk: bool,
+        mode: InputMode,
     ) {
         if self
             .tx
@@ -229,7 +343,7 @@ impl TranscriptionCoordinator {
                 binding_id: binding_id.to_string(),
                 hotkey_string: hotkey_string.to_string(),
                 is_pressed,
-                push_to_talk,
+                mode,
             })
             .is_err()
         {
@@ -279,6 +393,45 @@ fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &st
     };
     action.stop(app, binding_id, hotkey_string);
     *stage = Stage::Processing;
+}
+
+/// Resolve a pending deadline that elapsed with no cancelling input, returning
+/// the follow-up pending state (a tap awaiting its second press), if any.
+fn expire_pending(app: &AppHandle, stage: &mut Stage, expired: Pending) -> Option<Pending> {
+    match &*stage {
+        Stage::Recording(id) if *id == expired.binding_id => {}
+        _ => return None,
+    }
+    match expired.kind {
+        PendingKind::PttRelease => {
+            stop(app, stage, &expired.binding_id, &expired.hotkey_string);
+            None
+        }
+        PendingKind::HybridRelease {
+            pressed_at,
+            released_at,
+        } => {
+            if released_at.saturating_duration_since(pressed_at) >= HOLD_THRESHOLD {
+                stop(app, stage, &expired.binding_id, &expired.hotkey_string);
+                None
+            } else {
+                Some(Pending {
+                    deadline: released_at + SECOND_TAP_WINDOW,
+                    kind: PendingKind::SecondTap,
+                    ..expired
+                })
+            }
+        }
+        PendingKind::SecondTap => {
+            debug!(
+                "Lone tap for '{}': discarding recording",
+                expired.binding_id
+            );
+            crate::utils::cancel_current_operation(app);
+            *stage = Stage::Idle;
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -517,5 +670,245 @@ mod tests {
             "a genuine release should stop recording exactly once"
         );
         assert_eq!(result.stage, SimStage::Processing);
+    }
+
+    // ---------------------------------------------------------------------
+    // Hold-or-double-tap mode. Like `simulate` above, `simulate_hybrid`
+    // mirrors the coordinator loop's HoldOrDoubleTap arms (pending grace /
+    // tap-window state and stage transitions) on a synthetic millisecond
+    // clock, firing elapsed deadlines exactly as `expire_pending` does.
+    // ---------------------------------------------------------------------
+
+    #[derive(Clone, Copy)]
+    enum HEv {
+        Press,
+        Release,
+    }
+
+    enum HPending {
+        Grace { pressed_at: u64, released_at: u64 },
+        TapWindow,
+    }
+
+    struct HybridResult {
+        starts: u32,
+        stops: u32,
+        cancels: u32,
+        recording: bool,
+    }
+
+    /// Run timestamped press/release events through the hybrid state machine,
+    /// firing pending deadlines that fall due, then flush any remaining
+    /// deadline at `end_ms`.
+    fn simulate_hybrid(events: &[(u64, HEv)], end_ms: u64) -> HybridResult {
+        let grace = RELEASE_GRACE.as_millis() as u64;
+        let hold = HOLD_THRESHOLD.as_millis() as u64;
+        let window = SECOND_TAP_WINDOW.as_millis() as u64;
+        let debounce = DEBOUNCE.as_millis() as u64;
+
+        let mut recording = false;
+        let mut locked = false;
+        let mut hold_started: u64 = 0;
+        let mut pending: Option<(u64, HPending)> = None; // (deadline, kind)
+        let mut last_press: Option<u64> = None;
+        let mut result = HybridResult {
+            starts: 0,
+            stops: 0,
+            cancels: 0,
+            recording: false,
+        };
+
+        // Fire every pending deadline that falls due by `now`. A grace expiry
+        // may arm the tap window, so keep firing until nothing is due — the
+        // real loop gets this for free by re-entering `recv_timeout`.
+        let fire_deadlines = |now: u64,
+                              pending: &mut Option<(u64, HPending)>,
+                              recording: &mut bool,
+                              result: &mut HybridResult| {
+            while let Some((deadline, kind)) = pending.take() {
+                if deadline > now {
+                    *pending = Some((deadline, kind));
+                    return;
+                }
+                if !*recording {
+                    return;
+                }
+                match kind {
+                    HPending::Grace {
+                        pressed_at,
+                        released_at,
+                    } => {
+                        if released_at - pressed_at >= hold {
+                            *recording = false;
+                            result.stops += 1;
+                        } else {
+                            *pending = Some((released_at + window, HPending::TapWindow));
+                        }
+                    }
+                    HPending::TapWindow => {
+                        *recording = false;
+                        result.cancels += 1;
+                    }
+                }
+            }
+        };
+
+        for &(t, ev) in events {
+            fire_deadlines(t, &mut pending, &mut recording, &mut result);
+            match ev {
+                HEv::Press => {
+                    match pending {
+                        Some((_, HPending::Grace { .. })) => {
+                            // Auto-repeat press inside the grace: still held.
+                            pending = None;
+                            continue;
+                        }
+                        Some((_, HPending::TapWindow)) => {
+                            pending = None;
+                            locked = true;
+                            continue;
+                        }
+                        None => {}
+                    }
+                    if last_press.is_some_and(|p| t - p < debounce) {
+                        continue;
+                    }
+                    last_press = Some(t);
+                    if !recording {
+                        recording = true;
+                        locked = false;
+                        hold_started = t;
+                        result.starts += 1;
+                    } else if locked {
+                        recording = false;
+                        result.stops += 1;
+                    }
+                }
+                HEv::Release => {
+                    if recording && !locked && pending.is_none() {
+                        pending = Some((
+                            t + grace,
+                            HPending::Grace {
+                                pressed_at: hold_started,
+                                released_at: t,
+                            },
+                        ));
+                    }
+                }
+            }
+        }
+        fire_deadlines(end_ms, &mut pending, &mut recording, &mut result);
+        result.recording = recording;
+        result
+    }
+
+    /// A press held past HOLD_THRESHOLD is plain push-to-talk: release stops
+    /// and transcribes once the grace elapses.
+    #[test]
+    fn hybrid_hold_stops_on_release() {
+        let r = simulate_hybrid(&[(0, HEv::Press), (500, HEv::Release)], 2000);
+        assert_eq!(r.starts, 1);
+        assert_eq!(r.stops, 1);
+        assert_eq!(r.cancels, 0);
+        assert!(!r.recording);
+    }
+
+    /// A lone tap is an accident: the recording is discarded when the second
+    /// tap window elapses, and nothing is transcribed.
+    #[test]
+    fn hybrid_lone_tap_is_discarded() {
+        let r = simulate_hybrid(&[(0, HEv::Press), (100, HEv::Release)], 2000);
+        assert_eq!(r.starts, 1);
+        assert_eq!(r.stops, 0);
+        assert_eq!(r.cancels, 1);
+        assert!(!r.recording);
+    }
+
+    /// A second-tap press timed to land inside the tap window (past the
+    /// auto-repeat grace, before the window closes), robust to tuning of
+    /// `SECOND_TAP_WINDOW`.
+    fn second_tap_at(released_ms: u64) -> u64 {
+        let grace = RELEASE_GRACE.as_millis() as u64;
+        let window = SECOND_TAP_WINDOW.as_millis() as u64;
+        released_ms + grace + (window - grace) / 2
+    }
+
+    /// Tap-tap locks an ongoing session that a later single press stops.
+    #[test]
+    fn hybrid_double_tap_locks_session_until_next_press() {
+        let tap2 = second_tap_at(100);
+        let r = simulate_hybrid(
+            &[
+                (0, HEv::Press),
+                (100, HEv::Release),
+                (tap2, HEv::Press),        // second tap: session locked on
+                (tap2 + 80, HEv::Release), // ignored while locked
+                (2000, HEv::Press),        // ends the session
+            ],
+            3000,
+        );
+        assert_eq!(r.starts, 1);
+        assert_eq!(r.stops, 1);
+        assert_eq!(r.cancels, 0);
+        assert!(!r.recording);
+    }
+
+    /// A locked session survives arbitrary release events and stays recording
+    /// until the next press.
+    #[test]
+    fn hybrid_locked_session_ignores_releases() {
+        let r = simulate_hybrid(
+            &[
+                (0, HEv::Press),
+                (100, HEv::Release),
+                (second_tap_at(100), HEv::Press),
+                (900, HEv::Release), // long-held second press releasing changes nothing
+            ],
+            3000,
+        );
+        assert_eq!(r.starts, 1);
+        assert_eq!(r.stops, 0);
+        assert_eq!(r.cancels, 0);
+        assert!(r.recording, "locked session must stay recording");
+    }
+
+    /// X11 auto-repeat while holding: synthesized release/press pairs arrive a
+    /// few ms apart and must neither stop the recording nor register as taps.
+    #[test]
+    fn hybrid_autorepeat_during_hold_is_absorbed() {
+        let r = simulate_hybrid(
+            &[
+                (0, HEv::Press),
+                (400, HEv::Release), // synthesized
+                (405, HEv::Press),   // cancels the grace: still held
+                (700, HEv::Release), // synthesized
+                (705, HEv::Press),
+                (1000, HEv::Release), // genuine key-up
+            ],
+            3000,
+        );
+        assert_eq!(r.starts, 1);
+        assert_eq!(r.stops, 1, "only the genuine release stops the recording");
+        assert_eq!(r.cancels, 0);
+        assert!(!r.recording);
+    }
+
+    /// The hold classification uses the initial press, not the last auto-repeat
+    /// press: a tap-length gap between synthesized events must not reclassify a
+    /// long hold as a tap.
+    #[test]
+    fn hybrid_hold_duration_measured_from_initial_press() {
+        let r = simulate_hybrid(
+            &[
+                (0, HEv::Press),
+                (200, HEv::Release), // synthesized before HOLD_THRESHOLD
+                (210, HEv::Press),   // cancels the grace: still held
+                (600, HEv::Release), // genuine key-up: held 600ms total
+            ],
+            3000,
+        );
+        assert_eq!(r.starts, 1);
+        assert_eq!(r.stops, 1, "600ms hold must stop-and-transcribe, not tap");
+        assert_eq!(r.cancels, 0);
     }
 }

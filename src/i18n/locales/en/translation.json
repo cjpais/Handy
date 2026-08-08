@@ -197,6 +197,10 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "doubleTapToggle": {
+        "label": "Double-Tap To Toggle",
+        "description": "Double-tap to start a hands-free session, press again to stop. Holding still records push-to-talk; a lone tap is ignored"
       }
     },
     "models": {
