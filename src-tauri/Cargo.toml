@@ -48,7 +48,7 @@ tauri-plugin-fs = "2.4.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rdev = { git = "https://github.com/rustdesk-org/rdev" }
-cpal = "0.16.0"
+cpal = "0.17"
 anyhow = "1.0.95"
 rubato = "0.16.2"
 hound = "3.5.1"
@@ -57,7 +57,7 @@ env_filter = "0.1.0"
 tokio = "1.43.0"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 enigo = "0.6.1"
-rodio = { git = "https://github.com/cjpais/rodio.git" }
+rodio = "0.22"
 reqwest = { version = "0.12", features = ["json", "stream"] }
 futures-util = "0.3"
 rustfft = "6.4.0"

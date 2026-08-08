@@ -2,7 +2,7 @@ use crate::settings::SoundTheme;
 use crate::settings::{self, AppSettings};
 use cpal::traits::{DeviceTrait, HostTrait};
 use log::{debug, error, warn};
-use rodio::OutputStreamBuilder;
+use rodio::DeviceSinkBuilder;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -102,7 +102,7 @@ fn play_audio_file(
     let stream_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
             debug!("Using default device");
-            OutputStreamBuilder::from_default_device()?
+            DeviceSinkBuilder::from_default_device()?
         } else {
             let host = crate::audio_toolkit::get_cpal_host();
             let devices = host.output_devices()?;
@@ -116,16 +116,16 @@ fn play_audio_file(
             }
 
             match found_device {
-                Some(device) => OutputStreamBuilder::from_device(device)?,
+                Some(device) => DeviceSinkBuilder::from_device(device)?,
                 None => {
                     warn!("Device '{}' not found, using default device", device_name);
-                    OutputStreamBuilder::from_default_device()?
+                    DeviceSinkBuilder::from_default_device()?
                 }
             }
         }
     } else {
         debug!("Using default device");
-        OutputStreamBuilder::from_default_device()?
+        DeviceSinkBuilder::from_default_device()?
     };
 
     let stream_handle = stream_builder.open_stream()?;
