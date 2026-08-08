@@ -12,9 +12,40 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
 
+fn with_enigo<T>(
+    app_handle: &AppHandle,
+    f: impl FnOnce(&mut Enigo) -> Result<T, String>,
+) -> Result<T, String> {
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    let mut enigo = enigo_state
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+    f(&mut enigo)
+}
+
+#[cfg(target_os = "linux")]
+fn should_use_wl_copy(is_wayland_session: bool, wl_copy_available: bool) -> bool {
+    is_wayland_session && wl_copy_available
+}
+
+fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if should_use_wl_copy(is_wayland(), is_wl_copy_available()) {
+        info!("Using wl-copy for clipboard write on Wayland");
+        return write_clipboard_via_wl_copy(text);
+    }
+
+    app_handle
+        .clipboard()
+        .write_text(text)
+        .map_err(|e| format!("Failed to write to clipboard: {}", e))
+}
+
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
-    enigo: &mut Enigo,
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
@@ -33,23 +64,7 @@ fn paste_via_clipboard(
     };
 
     // Write text to clipboard first
-    // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
-    #[cfg(target_os = "linux")]
-    let write_result = if is_wayland() && is_wl_copy_available() {
-        info!("Using wl-copy for clipboard write on Wayland");
-        write_clipboard_via_wl_copy(text)
-    } else {
-        clipboard
-            .write_text(text)
-            .map_err(|e| format!("Failed to write to clipboard: {}", e))
-    };
-
-    #[cfg(not(target_os = "linux"))]
-    let write_result = clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e));
-
-    write_result?;
+    write_text_to_clipboard(app_handle, text)?;
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -62,14 +77,14 @@ fn paste_via_clipboard(
 
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
-        match paste_method {
+        with_enigo(app_handle, |enigo| match paste_method {
             // The legacy path cannot detect a mistimed chord, so it keeps the
             // conservative 100ms modifier hold.
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100)?,
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100)?,
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100)?,
-            _ => return Err("Invalid paste method for clipboard paste".into()),
-        }
+            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
+            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100),
+            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100),
+            _ => Err("Invalid paste method for clipboard paste".into()),
+        })?;
     }
 
     std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
@@ -79,16 +94,7 @@ fn paste_via_clipboard(
     // an image is only restored when the clipboard held no text at all, which is
     // the case that used to silently wipe screenshots.
     if let Some(clipboard_content) = saved_text {
-        // On Wayland, prefer wl-copy for better compatibility
-        #[cfg(target_os = "linux")]
-        if is_wayland() && is_wl_copy_available() {
-            let _ = write_clipboard_via_wl_copy(&clipboard_content);
-        } else {
-            let _ = clipboard.write_text(&clipboard_content);
-        }
-
-        #[cfg(not(target_os = "linux"))]
-        let _ = clipboard.write_text(&clipboard_content);
+        let _ = write_text_to_clipboard(app_handle, &clipboard_content);
     } else if let Some(image) = saved_image {
         info!("Restoring image to clipboard");
         let _ = clipboard.write_image(&image);
@@ -550,8 +556,8 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
 
 /// Types text directly by simulating individual key presses.
 fn paste_direct(
-    enigo: &mut Enigo,
     text: &str,
+    app_handle: &AppHandle,
     #[cfg(target_os = "linux")] typing_tool: TypingTool,
 ) -> Result<(), String> {
     #[cfg(target_os = "linux")]
@@ -562,7 +568,7 @@ fn paste_direct(
         info!("Falling back to enigo for direct text input");
     }
 
-    input::paste_text_direct(enigo, text)
+    with_enigo(app_handle, |enigo| input::paste_text_direct(enigo, text))
 }
 
 pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
@@ -630,15 +636,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
 
-    // Get the managed Enigo instance
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
-
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
@@ -646,8 +643,8 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
         PasteMethod::Direct => {
             paste_direct(
-                &mut enigo,
                 &text,
+                &app_handle,
                 #[cfg(target_os = "linux")]
                 settings.typing_tool,
             )?;
@@ -660,15 +657,18 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             // the legacy path untouched.
             #[cfg(any(target_os = "macos", target_os = "windows"))]
             if settings.reliable_paste {
-                match crate::paste_tx::try_reliable_paste(
-                    &text,
-                    &app_handle,
-                    &paste_method,
-                    &mut enigo,
-                    settings.auto_submit,
-                    settings.auto_submit_key,
-                    settings.clipboard_handling,
-                ) {
+                let reliable_result = with_enigo(&app_handle, |enigo| {
+                    crate::paste_tx::try_reliable_paste(
+                        &text,
+                        &app_handle,
+                        &paste_method,
+                        enigo,
+                        settings.auto_submit,
+                        settings.auto_submit_key,
+                        settings.clipboard_handling,
+                    )
+                });
+                match reliable_result {
                     Ok(()) => return Ok(()),
                     Err(e) => {
                         log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
@@ -676,7 +676,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 }
             }
             paste_via_clipboard(
-                &mut enigo,
                 &text,
                 &app_handle,
                 &paste_method,
@@ -696,15 +695,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
-        send_return_key(&mut enigo, settings.auto_submit_key)?;
+        with_enigo(&app_handle, |enigo| {
+            send_return_key(enigo, settings.auto_submit_key)
+        })?;
     }
 
     // After pasting, optionally copy to clipboard based on settings
     if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
-        let clipboard = app_handle.clipboard();
-        clipboard
-            .write_text(&text)
-            .map_err(|e| format!("Failed to copy to clipboard: {}", e))?;
+        write_text_to_clipboard(&app_handle, &text)?;
     }
 
     Ok(())
