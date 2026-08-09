@@ -6,7 +6,8 @@
     "unloadModel": "モデルをアンロード",
     "model": "モデル",
     "quit": "終了",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "secureInputWarning": "⚠ Secure Input でショートカットがブロック中"
   },
   "sidebar": {
     "general": "一般",
@@ -164,7 +165,9 @@
       "deleteActiveConfirm": "{{modelName}}は現在使用中のモデルです。削除すると、新しいモデルを選択するまで文字起こしが停止します。本当に削除しますか?",
       "deleteTitle": "モデルを削除",
       "filters": {
-        "allLanguages": "すべての言語"
+        "allLanguages": "すべての言語",
+        "streaming": "リアルタイム文字起こしに対応するモデルを絞り込む",
+        "translation": "英語への翻訳に対応するモデルを絞り込む"
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
       "yourModels": "ダウンロード済みモデル",
@@ -223,6 +226,12 @@
         "description": "使用するマイクデバイスを選択",
         "placeholder": "マイクを選択…",
         "loading": "読み込み中…"
+      },
+      "channel": {
+        "title": "入力チャンネル",
+        "description": "録音に使用する入力チャンネルを選択します。オーディオインターフェースに複数の入力がある場合に使用してください。",
+        "average": "すべてのチャンネルの平均",
+        "channel": "チャンネル{{n}}"
       },
       "audioFeedback": {
         "label": "オーディオフィードバック",
@@ -528,9 +537,33 @@
         "title": "貼り付け遅延(後)",
         "description": "貼り付けキーを送信した後、以前のクリップボードを復元する前の遅延(ミリ秒)。文字起こしではなく古いクリップボードの内容が貼り付けられる場合は増やしてください。"
       },
+      "reliablePaste": {
+        "title": "確実な貼り付け(Beta)",
+        "description": "固定の遅延ではなく、対象アプリが実際に文字起こしを読み取った後にのみクリップボードを復元します。システム負荷が高いときに古いクリップボードの内容が貼り付けられる問題を解決するための設定です。クリップボードを使う貼り付け方法が必要です。macOS と Windows のみ。"
+      },
       "recordingBuffer": {
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間(ミリ秒)。末尾の音声を捕捉するため。0 = 追加バッファなし。"
+      },
+      "keyboardDiagnostic": {
+        "title": "キーボード診断",
+        "description": "キーボードイベントが Handy に届いているかを確認します。記録されるのはイベント数のみで、押したキーの内容は記録されません。",
+        "run": "10 秒間の診断を実行",
+        "running": "待機中… ショートカットを数回押してください (例: Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "有効",
+        "disabled": "無効",
+        "holder": "{{name}} (pid {{pid}}) が保持中",
+        "holderUnknown": "保持元は不明",
+        "keyDown": "キー押下",
+        "keyUp": "キー解放",
+        "flagsChanged": "修飾キー",
+        "mouse": "マウス",
+        "verdictBlocked": "Secure Input がキーイベントをブロックしています。解消されるまで、通常キーを含むショートカットは動作しません。",
+        "verdictSuspicious": "修飾キーのイベントは届いていますが、キーイベントは届いていません。Secure Input は無効と報告されているのに、何かがキーを抑制しています。GitHub で報告してください。",
+        "verdictOk": "キーイベントは Handy に正常に届いています。",
+        "verdictNoEvents": "イベントを検出できませんでした。テスト中にキーを押しましたか？",
+        "failed": "診断に失敗しました: {{error}}"
       },
       "whatsNewPreview": {
         "title": "新機能をプレビュー",
@@ -584,8 +617,10 @@
     "preparing": "準備中…",
     "checkForUpdates": "アップデートを確認",
     "portableUpdateTitle": "手動での更新が必要です",
-    "portableUpdateMessage": "ポータブル版は自動的に更新できません。更新するには、GitHub Releases から最新の NSIS インストーラーをダウンロードし、同じフォルダーにインストールしてから、古いバージョンの Data フォルダー(設定、モデル、録音)を新しいバージョンにコピーしてください。",
-    "portableUpdateButton": "GitHub Releases を開く"
+    "portableUpdateMessage": "ポータブル版は自動的に更新できません。下のボタンからお使いのシステム向けのインストーラーをダウンロードし、実行して同じフォルダーにインストールしてください。Data フォルダー(設定、モデル、録音)はそのまま残ります。",
+    "portableUpdateButton": "インストーラーをダウンロード",
+    "portableUpdateBrowseMessage": "ポータブル版は自動的に更新できません。GitHub Releases からお使いのシステム向けの最新版をダウンロードし、同じフォルダーにインストールしてください。Data フォルダー(設定、モデル、録音)はそのまま残ります。",
+    "portableUpdateBrowseButton": "GitHub Releases を開く"
   },
   "common": {
     "loading": "読み込み中…",
@@ -637,5 +672,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} が1個のショートカットをブロックしている可能性があります",
+    "blockedWithCulprit_other": "{{name}} が{{count}}個のショートカットをブロックしている可能性があります",
+    "blockedNoCulprit_one": "macOS が一時的に1個のショートカットをブロックしています",
+    "blockedNoCulprit_other": "macOS が一時的に{{count}}個のショートカットをブロックしています",
+    "recorderBlockedWithCulprit": "{{name}} がショートカットの変更をブロックしている可能性があります",
+    "recorderBlockedNoCulprit": "macOS が一時的にショートカットの変更をブロックしています",
+    "learnMore": "解決方法",
+    "recorderBlocked": "現在ショートカットを記録できません。macOS の Secure Input がキーイベントをブロックしています。先に Secure Input の警告を解消してください。",
+    "dismiss": "閉じる"
   }
 }

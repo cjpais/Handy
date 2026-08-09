@@ -25,7 +25,14 @@ pub fn get_cursor_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
 /// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.
 /// This ensures the paste works regardless of keyboard layout (e.g., Russian, AZERTY, DVORAK).
 /// Note: On Wayland, this may not work - callers should check for Wayland and use alternative methods.
-pub fn send_paste_ctrl_v(enigo: &mut Enigo) -> Result<(), String> {
+///
+/// `hold_ms` is how long the modifier stays held after the V click before being
+/// released. Most applications read the modifier from the V event's flags and
+/// need no hold at all, but applications that poll global keyboard state when
+/// handling the key need the modifier to still be down — the hold insures
+/// against those. Callers that can detect a failed chord (e.g. the
+/// receipt-sequenced paste path) may use a much shorter hold.
+pub fn send_paste_ctrl_v(enigo: &mut Enigo, hold_ms: u64) -> Result<(), String> {
     // Platform-specific key definitions
     #[cfg(target_os = "macos")]
     let (modifier_key, v_key_code) = (Key::Meta, Key::Other(9));
@@ -42,7 +49,7 @@ pub fn send_paste_ctrl_v(enigo: &mut Enigo) -> Result<(), String> {
         .key(v_key_code, enigo::Direction::Click)
         .map_err(|e| format!("Failed to click V key: {}", e))?;
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    std::thread::sleep(std::time::Duration::from_millis(hold_ms));
 
     enigo
         .key(modifier_key, enigo::Direction::Release)
@@ -54,7 +61,7 @@ pub fn send_paste_ctrl_v(enigo: &mut Enigo) -> Result<(), String> {
 /// Sends a Ctrl+Shift+V paste command.
 /// This is commonly used in terminal applications on Linux to paste without formatting.
 /// Note: On Wayland, this may not work - callers should check for Wayland and use alternative methods.
-pub fn send_paste_ctrl_shift_v(enigo: &mut Enigo) -> Result<(), String> {
+pub fn send_paste_ctrl_shift_v(enigo: &mut Enigo, hold_ms: u64) -> Result<(), String> {
     // Platform-specific key definitions
     #[cfg(target_os = "macos")]
     let (modifier_key, v_key_code) = (Key::Meta, Key::Other(9)); // Cmd+Shift+V on macOS
@@ -74,7 +81,7 @@ pub fn send_paste_ctrl_shift_v(enigo: &mut Enigo) -> Result<(), String> {
         .key(v_key_code, enigo::Direction::Click)
         .map_err(|e| format!("Failed to click V key: {}", e))?;
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    std::thread::sleep(std::time::Duration::from_millis(hold_ms));
 
     enigo
         .key(Key::Shift, enigo::Direction::Release)
@@ -89,7 +96,7 @@ pub fn send_paste_ctrl_shift_v(enigo: &mut Enigo) -> Result<(), String> {
 /// Sends a Shift+Insert paste command (Windows and Linux only).
 /// This is more universal for terminal applications and legacy software.
 /// Note: On Wayland, this may not work - callers should check for Wayland and use alternative methods.
-pub fn send_paste_shift_insert(enigo: &mut Enigo) -> Result<(), String> {
+pub fn send_paste_shift_insert(enigo: &mut Enigo, hold_ms: u64) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let insert_key_code = Key::Other(0x2D); // VK_INSERT
     #[cfg(not(target_os = "windows"))]
@@ -103,7 +110,7 @@ pub fn send_paste_shift_insert(enigo: &mut Enigo) -> Result<(), String> {
         .key(insert_key_code, enigo::Direction::Click)
         .map_err(|e| format!("Failed to click Insert key: {}", e))?;
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    std::thread::sleep(std::time::Duration::from_millis(hold_ms));
 
     enigo
         .key(Key::Shift, enigo::Direction::Release)

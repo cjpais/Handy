@@ -1,7 +1,7 @@
 {
   "name": "handy-app",
   "private": true,
-  "version": "0.9.3",
+  "version": "0.9.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,7 +26,7 @@
     "@tauri-apps/plugin-clipboard-manager": "~2.3.2",
     "@tauri-apps/plugin-dialog": "~2.6",
     "@tauri-apps/plugin-fs": "~2.4.4",
-    "@tauri-apps/plugin-global-shortcut": "~2.3.1",
+    "@tauri-apps/plugin-global-shortcut": "~2.3.2",
     "@tauri-apps/plugin-opener": "^2.5.2",
     "@tauri-apps/plugin-os": "~2.3.2",
     "@tauri-apps/plugin-process": "~2.3.1",
@@ -41,7 +41,6 @@
     "react-i18next": "^16.4.1",
     "react-markdown": "^10.1.0",
     "react-select": "^5.8.0",
-    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.1.16",
     "tauri-plugin-macos-permissions-api": "2.3.0",

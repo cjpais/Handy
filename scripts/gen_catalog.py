@@ -18,7 +18,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from huggingface_hub import HfApi, HfFileSystem
 
 ORG = "handy-computer"
-CATALOG_VERSION = 1
+CATALOG_VERSION = 2
+
+# Download sources tried in order after Hugging Face itself. Each entry is a
+# base URL; the full file URL is `{mirror}/{repo_id}/{revision}/{filename}`
+# (the same three values that form the HF resolve URL, so a mirror is a plain
+# static file host). Mirrors are untrusted: every download is verified against
+# the per-file `sha256` below, so listing one only affects availability.
+MIRRORS = ["https://blob.handy.computer"]
 
 # ───────────────────────── scoring (one constant each) ──────────────────────
 SPEED_SCALE = 8.0    # speed = 100·(1 − e^(−rtf/8))     grows toward 100
@@ -49,6 +56,10 @@ CURATION = {
     "Fun-ASR-MLT-Nano-2512":           {"rank": 10, "desc": "A tiny multilingual model"},
     # description-only (unranked, not recommended) — carried over from the legacy .bin entry
     "Breeze-ASR-25":                   {"desc": "Optimized for Taiwanese Mandarin. Code-switching support."},
+    # hidden until the pinned transcribe-cpp ships their arch (has no `moss`/`sortformer`
+    # under src/arch/) — the app would offer a download it cannot load
+    "moss-transcribe-diarize":            {"hidden": True},
+    "diar_streaming_sortformer_4spk-v2.1": {"hidden": True},
 }
 # temporary capability corrections pending a card re-push (remove once cards fixed)
 OVERRIDES = {
@@ -90,13 +101,20 @@ def headline_wer(d):
     for q in ("q8_0","f16","q5_k_m","q6_k","q4_k_m","f32","bf16"):
         if isinstance(d, dict) and q in d: return d[q], q
     return None, None
-def auto_desc(langn, caps):
+LANG_NAMES = {"en":"English","ar":"Arabic","ja":"Japanese","ko":"Korean","ru":"Russian",
+              "uk":"Ukrainian","vi":"Vietnamese","zh":"Chinese"}
+def auto_desc(langs, caps):
     feats = []
     if caps["translate"]:   feats.append("translation")
     if caps["lang_detect"]: feats.append("auto language detection")
     if caps["streaming"]:   feats.append("streaming")
     if caps["timestamps"] != "none": feats.append(f"{caps['timestamps']}-level timestamps")
-    base = f"{langn}-language speech-to-text" if langn > 1 else "English speech-to-text"
+    if len(langs) > 1:
+        base = f"{len(langs)}-language speech-to-text"
+    else:
+        # unknown code falls back to the raw code so it's caught in diff review
+        lang = LANG_NAMES.get(langs[0], langs[0]) if langs else "English"
+        base = f"{lang} speech-to-text"
     return base + (" with " + ", ".join(feats) + "." if feats else ".")
 
 api = HfApi(token=os.environ.get("HF_TOKEN"))
@@ -146,32 +164,46 @@ def probe_header(repo, filename, nbytes=65536):
         pass                      # ran past the buffer (hit tokenizer) — keep what we got
     return out
 
+def lfs_sha256(x):
+    """Content sha256 from the sibling's LFS/Xet info (dataclass or dict by hub version)."""
+    lfs = getattr(x, "lfs", None)
+    if lfs is None: return None
+    return getattr(lfs, "sha256", None) or (lfs.get("sha256") if isinstance(lfs, dict) else None)
+
 def gguf_files(repo, siblings):
-    """Return GGUF files with mandatory size metadata.
+    """Return GGUF files with mandatory size + sha256 metadata.
 
     `QuantFile.size_bytes` is a non-null `u64` in Rust. Failing generation here
     keeps a transient/malformed HF listing from producing a catalog that panics
     at app startup when deserialized by `include_str!("catalog.json")`.
+
+    `sha256` is the trust anchor for downloads (HF or mirror alike), so it is
+    equally mandatory. Every GGUF is LFS/Xet-tracked; a missing hash means the
+    listing is broken, not that the file is small.
     """
     files = []
     invalid = []
     for x in siblings:
         if not x.rfilename.endswith(".gguf"):
             continue
-        if type(x.size) is not int or x.size <= 0:
+        sha = lfs_sha256(x)
+        if type(x.size) is not int or x.size <= 0 or not sha:
             invalid.append(x.rfilename)
             continue
         files.append({
             "filename": x.rfilename,
             "quant": quant_of(x.rfilename),
             "size_bytes": x.size,
+            "sha256": sha,
         })
     if invalid:
-        raise ValueError(f"{repo}: missing/invalid size metadata for {', '.join(invalid)}")
+        raise ValueError(f"{repo}: missing/invalid size or sha256 metadata for {', '.join(invalid)}")
     return sorted(files, key=lambda f: f["size_bytes"])
 
 def build(repo):
     info = api.model_info(repo, files_metadata=True)
+    if not info.sha:
+        raise ValueError(f"{repo}: listing has no commit sha to pin")
     cd = info.card_data.to_dict() if info.card_data else {}
     s = slug(repo)
     cur = CURATION.get(s, {})
@@ -204,12 +236,16 @@ def build(repo):
 
     return {
         "id": repo,
+        # Pinned commit: downloads fetch `resolve/{revision}/{file}` so the bytes
+        # provably match the hashes below even if the repo moves on. Identity
+        # stays repo+filename; the pin only scopes acquisition.
+        "revision": info.sha,
         "slug": s,
         "name": gg.get("general.name") or pretty(s),         # friendly name (from GGUF)
         "architecture": gg.get("general.architecture"),
         "family": family(s, info.tags),
         "parameters": gg.get("general.size_label"),          # "0.6B" / "1.7B" / "62M"
-        "description": cur.get("desc") or auto_desc(len(langs), caps),
+        "description": cur.get("desc") or auto_desc(langs, caps),
         "base_model": cd.get("base_model"),
         "license": cd.get("license"),
         "language_count": len(langs),
@@ -240,16 +276,22 @@ def main():
         print(f"catalog generation failed for {len(failures)} repo(s)", file=sys.stderr)
         raise SystemExit(1)
     models.sort(key=lambda m: (not m["recommended"], m["recommended_rank"] or 1e9,
-                               m["family"], -(m["speed_score"] or 0)))
+                               m["family"], -(m["speed_score"] or 0), m["slug"]))
     catalog = {
         "catalog_version": CATALOG_VERSION,
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "mirrors": MIRRORS,
         "models": models,
     }
     text = json.dumps(catalog, indent=2, ensure_ascii=False)
     # print each `languages` array on a single line for readability
     text = re.sub(r'"languages": \[(.*?)\]',
                   lambda m: '"languages": [' + ", ".join(re.findall(r'"[^"]*"', m.group(1))) + ']',
+                  text, flags=re.S)
+    # one line per `files[]` entry: a file is one diff line, so schema additions
+    # and hash changes don't cascade into per-key comma churn
+    text = re.sub(r'\{\s+("filename":.*?"sha256": "[0-9a-f]{64}")\s+\}',
+                  lambda m: "{" + re.sub(r",\s+", ", ", m.group(1)) + "}",
                   text, flags=re.S)
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "catalog.json")
     open(out, "w").write(text)

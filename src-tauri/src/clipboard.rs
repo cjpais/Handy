@@ -5,6 +5,8 @@ use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMetho
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
+#[cfg(target_os = "linux")]
+use std::sync::OnceLock;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -22,7 +24,15 @@ fn paste_via_clipboard(
     paste_delay_after_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
+    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
+    // Only probe for an image when there is no text to restore. Text is by far the
+    // common case, and reading an image decodes the full bitmap, so this keeps the
+    // text path exactly as cheap as it was before.
+    let saved_image = if saved_text.is_none() {
+        clipboard.read_image().ok().map(|image| image.to_owned())
+    } else {
+        None
+    };
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
@@ -55,26 +65,39 @@ fn paste_via_clipboard(
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
         match paste_method {
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo)?,
+            // The legacy path cannot detect a mistimed chord, so it keeps the
+            // conservative 100ms modifier hold.
+            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100)?,
+            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100)?,
+            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100)?,
             _ => return Err("Invalid paste method for clipboard paste".into()),
         }
     }
 
     std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
 
-    // Restore original clipboard content
-    // On Wayland, prefer wl-copy for better compatibility
-    #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
-    } else {
-        let _ = clipboard.write_text(&clipboard_content);
-    }
+    // Restore original clipboard content.
+    // Text takes priority so this path stays identical to the previous behavior;
+    // an image is only restored when the clipboard held no text at all, which is
+    // the case that used to silently wipe screenshots.
+    if let Some(clipboard_content) = saved_text {
+        // On Wayland, prefer wl-copy for better compatibility
+        #[cfg(target_os = "linux")]
+        if is_wayland() && is_wl_copy_available() {
+            let _ = write_clipboard_via_wl_copy(&clipboard_content);
+        } else {
+            let _ = clipboard.write_text(&clipboard_content);
+        }
 
-    #[cfg(not(target_os = "linux"))]
-    let _ = clipboard.write_text(&clipboard_content);
+        #[cfg(not(target_os = "linux"))]
+        let _ = clipboard.write_text(&clipboard_content);
+    } else if let Some(image) = saved_image {
+        info!("Restoring image to clipboard");
+        let _ = clipboard.write_image(&image);
+    } else {
+        // Nothing was there to begin with — don't leave the transcription behind.
+        let _ = clipboard.clear();
+    }
 
     Ok(())
 }
@@ -242,6 +265,80 @@ fn is_dotool_available() -> bool {
         .unwrap_or(false)
 }
 
+#[cfg(target_os = "linux")]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum YdotoolKeySyntax {
+    Symbolic,
+    RawKeycodes,
+}
+
+#[cfg(target_os = "linux")]
+const YDOTOOL_UNKNOWN_HELP_FALLBACK: YdotoolKeySyntax = YdotoolKeySyntax::RawKeycodes;
+
+#[cfg(target_os = "linux")]
+static YDOTOOL_KEY_SYNTAX: OnceLock<YdotoolKeySyntax> = OnceLock::new();
+
+/// Classifies `ydotool key --help` output without relying on version or distro metadata.
+#[cfg(target_os = "linux")]
+fn classify_ydotool_key_syntax(help: &str) -> Option<YdotoolKeySyntax> {
+    let help = help.to_ascii_lowercase();
+
+    // Check modern markers first in case a future help message mentions the legacy syntax.
+    if help.contains("syntax: <keycode>:<pressed>")
+        || help.contains("[keycodes]")
+        || help.contains("using raw keycodes")
+    {
+        Some(YdotoolKeySyntax::RawKeycodes)
+    } else if help.contains("separated by plus (+)")
+        || (help.contains("<key sequence>") && help.contains("alt+r"))
+    {
+        Some(YdotoolKeySyntax::Symbolic)
+    } else {
+        None
+    }
+}
+
+/// Detects and caches a recognized ydotool key syntax. Unknown or failed probes are not cached,
+/// allowing a transient daemon or PATH problem to recover on a later paste attempt.
+#[cfg(target_os = "linux")]
+fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
+    if let Some(syntax) = YDOTOOL_KEY_SYNTAX.get() {
+        return *syntax;
+    }
+
+    match Command::new("ydotool").args(["key", "--help"]).output() {
+        Ok(output) => {
+            // ydotool 0.x writes help to stderr and its exit status varies by build.
+            let mut help = String::from_utf8_lossy(&output.stdout).into_owned();
+            if !help.is_empty() && !output.stderr.is_empty() {
+                help.push('\n');
+            }
+            help.push_str(&String::from_utf8_lossy(&output.stderr));
+
+            if let Some(syntax) = classify_ydotool_key_syntax(&help) {
+                *YDOTOOL_KEY_SYNTAX.get_or_init(|| {
+                    info!("Detected ydotool key syntax: {:?}", syntax);
+                    syntax
+                })
+            } else {
+                // Preserve Handy's existing behavior and compatibility with current ydotool.
+                log::warn!(
+                    "Could not recognize ydotool key --help output (exit status {:?}); using raw-keycode syntax",
+                    output.status.code()
+                );
+                YDOTOOL_UNKNOWN_HELP_FALLBACK
+            }
+        }
+        Err(error) => {
+            log::warn!(
+                "Could not query ydotool key syntax: {}; using raw-keycode syntax",
+                error
+            );
+            YDOTOOL_UNKNOWN_HELP_FALLBACK
+        }
+    }
+}
+
 /// Check if ydotool is available (uinput-based, works on both Wayland and X11)
 #[cfg(target_os = "linux")]
 fn is_ydotool_available() -> bool {
@@ -406,9 +503,11 @@ fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
 #[cfg(target_os = "linux")]
 fn send_key_combo_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
     let args: Vec<&str> = match paste_method {
-        PasteMethod::CtrlV => vec!["-M", "ctrl", "-k", "v"],
-        PasteMethod::ShiftInsert => vec!["-M", "shift", "-k", "Insert"],
-        PasteMethod::CtrlShiftV => vec!["-M", "ctrl", "-M", "shift", "-k", "v"],
+        PasteMethod::CtrlV => vec!["-M", "ctrl", "-k", "v", "-m", "ctrl"],
+        PasteMethod::ShiftInsert => vec!["-M", "shift", "-k", "Insert", "-m", "shift"],
+        PasteMethod::CtrlShiftV => vec![
+            "-M", "ctrl", "-M", "shift", "-k", "v", "-m", "shift", "-m", "ctrl",
+        ],
         _ => return Err("Unsupported paste method".into()),
     };
 
@@ -450,20 +549,38 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
     Ok(())
 }
 
-/// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
 #[cfg(target_os = "linux")]
-fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> {
-    // ydotool uses Linux input event keycodes with format <keycode>:<pressed>
-    // where pressed is 1 for down, 0 for up. Keycodes: ctrl=29, shift=42, v=47, insert=110
-    let args: Vec<&str> = match paste_method {
-        PasteMethod::CtrlV => vec!["key", "29:1", "47:1", "47:0", "29:0"],
-        PasteMethod::ShiftInsert => vec!["key", "42:1", "110:1", "110:0", "42:0"],
-        PasteMethod::CtrlShiftV => vec!["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"],
+fn ydotool_key_args(
+    paste_method: &PasteMethod,
+    syntax: YdotoolKeySyntax,
+) -> Result<&'static [&'static str], String> {
+    let args = match (paste_method, syntax) {
+        (PasteMethod::CtrlV, YdotoolKeySyntax::Symbolic) => &["key", "ctrl+v"][..],
+        (PasteMethod::CtrlShiftV, YdotoolKeySyntax::Symbolic) => &["key", "ctrl+shift+v"][..],
+        (PasteMethod::ShiftInsert, YdotoolKeySyntax::Symbolic) => &["key", "shift+insert"][..],
+        (PasteMethod::CtrlV, YdotoolKeySyntax::RawKeycodes) => {
+            &["key", "29:1", "47:1", "47:0", "29:0"][..]
+        }
+        (PasteMethod::CtrlShiftV, YdotoolKeySyntax::RawKeycodes) => {
+            &["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"][..]
+        }
+        (PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes) => {
+            &["key", "42:1", "110:1", "110:0", "42:0"][..]
+        }
         _ => return Err("Unsupported paste method".into()),
     };
 
+    Ok(args)
+}
+
+/// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
+#[cfg(target_os = "linux")]
+fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> {
+    let syntax = detect_ydotool_key_syntax();
+    let args = ydotool_key_args(paste_method, syntax)?;
+
     let output = Command::new("ydotool")
-        .args(&args)
+        .args(args)
         .output()
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
@@ -542,7 +659,7 @@ fn paste_direct(
     input::paste_text_direct(enigo, text)
 }
 
-fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
+pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
     match key_type {
         AutoSubmitKey::Enter => {
             enigo
@@ -630,6 +747,28 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            // Debug-gated receipt-sequenced paste (#502): restore the clipboard
+            // after the target actually reads the transcript, not on a timer.
+            // On success it fully handles the paste (including auto-submit and
+            // clipboard handling) asynchronously; on failure fall through to
+            // the legacy path untouched.
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            if settings.reliable_paste {
+                match crate::paste_tx::try_reliable_paste(
+                    &text,
+                    &app_handle,
+                    &paste_method,
+                    &mut enigo,
+                    settings.auto_submit,
+                    settings.auto_submit_key,
+                    settings.clipboard_handling,
+                ) {
+                    Ok(()) => return Ok(()),
+                    Err(e) => {
+                        log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
+                    }
+                }
+            }
             paste_via_clipboard(
                 &mut enigo,
                 &text,
@@ -668,6 +807,83 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    const YDOTOOL_0_1_8_HELP: &str = r#"
+Usage: key [--delay <ms>] [--key-delay <ms>] [--repeat <times>] [--repeat-delay <ms>] <key sequence> ...
+Each key sequence can be any number of modifiers and keys, separated by plus (+)
+For example: alt+r Alt+F4 CTRL+alt+f3 aLT+1+2+3 ctrl+Backspace
+"#;
+
+    #[cfg(target_os = "linux")]
+    const YDOTOOL_1_0_4_HELP: &str = r#"
+Usage: key [OPTION]... [KEYCODES]...
+Since there's no way to know how many keyboard layouts are there in the world,
+we're using raw keycodes now.
+Syntax: <keycode>:<pressed>
+e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
+"#;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn classifies_ydotool_0_1_8_symbolic_help() {
+        assert_eq!(
+            classify_ydotool_key_syntax(YDOTOOL_0_1_8_HELP),
+            Some(YdotoolKeySyntax::Symbolic)
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn classifies_ydotool_1_0_4_raw_keycode_help() {
+        assert_eq!(
+            classify_ydotool_key_syntax(YDOTOOL_1_0_4_HELP),
+            Some(YdotoolKeySyntax::RawKeycodes)
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn unknown_ydotool_help_falls_back_to_raw_keycodes() {
+        let syntax = classify_ydotool_key_syntax("unrecognized help output")
+            .unwrap_or(YDOTOOL_UNKNOWN_HELP_FALLBACK);
+
+        assert_eq!(syntax, YdotoolKeySyntax::RawKeycodes);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn generates_symbolic_ydotool_arguments_for_all_paste_methods() {
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlV, YdotoolKeySyntax::Symbolic).unwrap(),
+            ["key", "ctrl+v"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlShiftV, YdotoolKeySyntax::Symbolic).unwrap(),
+            ["key", "ctrl+shift+v"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::Symbolic).unwrap(),
+            ["key", "shift+insert"]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn generates_raw_ydotool_arguments_for_all_paste_methods() {
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlV, YdotoolKeySyntax::RawKeycodes).unwrap(),
+            ["key", "29:1", "47:1", "47:0", "29:0"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::CtrlShiftV, YdotoolKeySyntax::RawKeycodes).unwrap(),
+            ["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"]
+        );
+        assert_eq!(
+            ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes).unwrap(),
+            ["key", "42:1", "110:1", "110:0", "42:0"]
+        );
+    }
 
     #[test]
     fn auto_submit_requires_setting_enabled() {
