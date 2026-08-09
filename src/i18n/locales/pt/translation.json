@@ -376,6 +376,10 @@
       "voiceActivityDetection": {
         "title": "Detecção de atividade de voz",
         "description": "Filtra o silêncio das gravações. Modelos com suporte a streaming usam uma cauda de VAD mais longa; desativar o VAD grava o áudio bruto."
+      },
+      "fillerWordRemoval": {
+        "title": "Remover palavras de preenchimento",
+        "description": "Remove hesitações comuns das transcrições. Desative para mantê-las."
       }
     },
     "postProcessing": {

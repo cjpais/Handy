@@ -1,4 +1,7 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{
+    apply_custom_words, detect_output_language, normalize_transcription_output,
+    remove_filler_words, OutputLanguageEvidence,
+};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
@@ -99,8 +102,15 @@ enum StreamCmd {
     Feed(Vec<f32>),
     /// Flush the stream and reply with the final text, or `None` if no stream
     /// was ever active (caller should fall back to batch transcription).
-    Finalize(mpsc::Sender<Option<String>>),
+    Finalize(mpsc::Sender<Option<FinalizedStreamText>>),
     Cancel,
+}
+
+struct FinalizedStreamText {
+    text: String,
+    output_language: OutputLanguageEvidence,
+    /// The streaming model's supported languages, for text-based detection.
+    supported_languages: Vec<String>,
 }
 
 /// Routes real-time audio frames to the active streaming worker. Shared between
@@ -900,6 +910,12 @@ impl TranscriptionManager {
             &languages,
             supports_translate,
         );
+        let output_language = resolve_output_language_evidence(
+            &settings,
+            run_plan.language.as_deref(),
+            &languages,
+            run_plan.target_language.as_deref() == Some("en"),
+        );
         let run_options = RunOptions {
             task: run_plan.task,
             language: run_plan.language,
@@ -911,8 +927,8 @@ impl TranscriptionManager {
         // (and thus the engine) for its lifetime, so the feed/finalize loop
         // lives in a labeled block — when it exits, the borrow is released and
         // the engine can be moved into return_engine().
-        let mut finalize_reply: Option<mpsc::Sender<Option<String>>> = None;
-        let mut finalize_result: Option<Option<String>> = None;
+        let mut finalize_reply: Option<mpsc::Sender<Option<FinalizedStreamText>>> = None;
+        let mut finalize_result: Option<Option<FinalizedStreamText>> = None;
         let stream_started = 'stream: {
             let session = match &mut engine {
                 LoadedEngine::TranscribeCpp(s) => s,
@@ -983,7 +999,23 @@ impl TranscriptionManager {
                                     update.audio_committed_ms,
                                     update.buffered_ms,
                                 );
-                                Some(stream.text().display())
+                                // In auto mode the model's own LID is the best
+                                // remaining evidence; the snapshot is only
+                                // materialized when it can change the outcome.
+                                let output_language = match &output_language {
+                                    OutputLanguageEvidence::Unknown => {
+                                        with_model_detected_language(
+                                            OutputLanguageEvidence::Unknown,
+                                            stream.snapshot().language,
+                                        )
+                                    }
+                                    resolved => resolved.clone(),
+                                };
+                                Some(FinalizedStreamText {
+                                    text: stream.text().full,
+                                    output_language,
+                                    supported_languages: languages.clone(),
+                                })
                             }
                             Err(e) => {
                                 perf.record_compute(finalize_start.elapsed());
@@ -995,7 +1027,7 @@ impl TranscriptionManager {
                             }
                         };
                         let chars = match &result {
-                            Some(text) => text.len(),
+                            Some(finalized) => finalized.text.len(),
                             _ => 0,
                         };
                         perf.log_finalized(chars);
@@ -1062,8 +1094,8 @@ impl TranscriptionManager {
         if tx.send(StreamCmd::Finalize(reply_tx)).is_err() {
             return Ok(None);
         }
-        let raw = match reply_rx.recv_timeout(STREAM_FINALIZE_REPLY_TIMEOUT) {
-            Ok(Some(text)) => text,
+        let finalized = match reply_rx.recv_timeout(STREAM_FINALIZE_REPLY_TIMEOUT) {
+            Ok(Some(finalized)) => finalized,
             Ok(None) => return Ok(None),
             Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(None),
             Err(mpsc::RecvTimeoutError::Timeout) => {
@@ -1078,7 +1110,13 @@ impl TranscriptionManager {
         let settings = get_settings(&self.app_handle);
         // Streaming models do not receive a decode prompt, so custom words
         // always go through the shared fuzzy post-correction path.
-        let filtered = post_process_transcription_text(raw, &settings, false);
+        let filtered = post_process_transcription_text(
+            finalized.text,
+            &settings,
+            false,
+            &finalized.output_language,
+            &finalized.supported_languages,
+        );
 
         self.maybe_unload_immediately("streaming transcription");
         Ok(Some(filtered))
@@ -1186,7 +1224,7 @@ impl TranscriptionManager {
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
-        let result = {
+        let (result, output_language, model_languages) = {
             let mut engine_guard = self.lock_engine();
 
             // Take the engine out so we own it during transcription.
@@ -1210,7 +1248,14 @@ impl TranscriptionManager {
             // non-whisper archs (parakeet, voxtral, …) reject it with
             // INVALID_ARG; attach it — and translate — only where supported.
             let mut model_supports_translate = false;
-            let mut model_languages: Vec<String> = Vec::new();
+            let mut model_languages = self
+                .model_manager
+                .get_model_info(&active_model)
+                .map(|info| info.supported_languages)
+                .unwrap_or_default();
+            let mut output_was_translated = false;
+            let mut applied_language_hint: Option<String> = None;
+            let mut model_detected_language: Option<String> = None;
             if let LoadedEngine::TranscribeCpp(session) = &engine {
                 let model = session.model();
                 let caps = model.capabilities();
@@ -1251,6 +1296,8 @@ impl TranscriptionManager {
                             &model_languages,
                             model_supports_translate,
                         );
+                        output_was_translated = run_plan.target_language.as_deref() == Some("en");
+                        applied_language_hint = run_plan.language.clone();
 
                         let run_options = RunOptions {
                             task: run_plan.task,
@@ -1269,7 +1316,12 @@ impl TranscriptionManager {
 
                         session
                             .run(&audio, &run_options)
-                            .map(|t| t.text)
+                            .map(|t| {
+                                // Whisper's audio-based LID (auto mode only;
+                                // `None` when a language hint was passed).
+                                model_detected_language = t.language;
+                                t.text
+                            })
                             .map_err(|e| {
                                 anyhow::anyhow!("transcribe-cpp transcription failed: {}", e)
                             })
@@ -1303,6 +1355,7 @@ impl TranscriptionManager {
                             "yue" => Some("yue".to_string()),
                             _ => None,
                         };
+                        applied_language_hint = language.clone();
                         let params = SenseVoiceParams {
                             language,
                             use_itn: Some(true),
@@ -1317,11 +1370,13 @@ impl TranscriptionManager {
                         .map(|r| r.text)
                         .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
                     LoadedEngine::Canary(canary_engine) => {
+                        output_was_translated = settings.translate_to_english;
                         let lang = if validated_language == "auto" {
                             None
                         } else {
                             Some(validated_language.clone())
                         };
+                        applied_language_hint = lang.clone();
                         let options = TranscribeOptions {
                             language: lang,
                             translate: settings.translate_to_english,
@@ -1338,6 +1393,7 @@ impl TranscriptionManager {
                         } else {
                             Some(normalize_cjk_language(&validated_language).to_string())
                         };
+                        applied_language_hint = lang.clone();
                         let options = TranscribeOptions {
                             language: lang,
                             ..Default::default()
@@ -1350,7 +1406,7 @@ impl TranscriptionManager {
                 }
             }));
 
-            match transcribe_result {
+            let text = match transcribe_result {
                 Ok(inner_result) => {
                     // Success or normal error: return the engine unless a model
                     // switch/unload invalidated it while it was in use.
@@ -1390,7 +1446,20 @@ impl TranscriptionManager {
                         panic_msg
                     ));
                 }
-            }
+            };
+
+            let output_language = with_model_detected_language(
+                resolve_output_language_evidence(
+                    &settings,
+                    applied_language_hint.as_deref(),
+                    &model_languages,
+                    output_was_translated,
+                ),
+                model_detected_language,
+            );
+            debug!("Output language evidence: {:?}", output_language);
+
+            (text, output_language, model_languages)
         };
 
         // Apply fuzzy word correction if custom words are configured — UNLESS the
@@ -1398,7 +1467,13 @@ impl TranscriptionManager {
         // family). We don't pass a prompt to non-whisper models (it requires the
         // whisper-kind run extension), so they still get fuzzy correction here,
         // same as the ONNX engines.
-        let filtered_result = post_process_transcription_text(result, &settings, model_is_whisper);
+        let filtered_result = post_process_transcription_text(
+            result,
+            &settings,
+            model_is_whisper,
+            &output_language,
+            &model_languages,
+        );
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
@@ -1552,6 +1627,10 @@ fn normalize_cjk_language(language: &str) -> &str {
     }
 }
 
+fn base_language_code(language: &str) -> &str {
+    language.split(&['-', '_'][..]).next().unwrap_or(language)
+}
+
 /// Resolve the persisted language intent into the language a specific model can
 /// use without writing the coerced value back to settings.
 fn effective_language_for_model(
@@ -1566,6 +1645,62 @@ fn effective_language_for_model(
             info.supports_language_detection,
         ),
         None => settings.selected_language.clone(),
+    }
+}
+
+/// Resolve how confidently Handy knows the language of the text produced by a
+/// transcription run. The UI language is deliberately not part of this
+/// decision.
+fn resolve_output_language_evidence(
+    settings: &AppSettings,
+    applied_language_hint: Option<&str>,
+    supported_languages: &[String],
+    translated_to_english: bool,
+) -> OutputLanguageEvidence {
+    if translated_to_english {
+        return OutputLanguageEvidence::TranslatedToEnglish;
+    }
+
+    // Stored language intent is only evidence when this specific engine run
+    // actually received the hint. Some multilingual engines (notably Parakeet
+    // V3) always auto-detect and ignore Handy's selection; transcribe-cpp also
+    // drops a requested hint when the loaded model does not advertise it.
+    if let Some(language) = applied_language_hint.filter(|lang| !lang.is_empty() && *lang != "auto")
+    {
+        if settings.selected_language != "auto"
+            && base_language_code(&settings.selected_language) == base_language_code(language)
+        {
+            return OutputLanguageEvidence::UserSelected(language.to_string());
+        }
+
+        // The engine may have required a concrete fallback even though the
+        // user's persisted language was auto or unsupported.
+        return OutputLanguageEvidence::ModelConstrained(language.to_string());
+    }
+
+    // A single-language model has a known output language without needing a
+    // selectable language hint.
+    if let [language] = supported_languages {
+        return OutputLanguageEvidence::ModelConstrained(language.clone());
+    }
+
+    OutputLanguageEvidence::Unknown
+}
+
+/// Upgrade [`OutputLanguageEvidence::Unknown`] with the language the model
+/// itself detected during the run (audio-based LID, e.g. Whisper in auto
+/// mode). Stronger evidence resolved before the run is never overridden.
+fn with_model_detected_language(
+    evidence: OutputLanguageEvidence,
+    detected: Option<String>,
+) -> OutputLanguageEvidence {
+    match (evidence, detected) {
+        (OutputLanguageEvidence::Unknown, Some(language))
+            if !language.is_empty() && language != "auto" =>
+        {
+            OutputLanguageEvidence::ModelDetected(language)
+        }
+        (evidence, _) => evidence,
     }
 }
 
@@ -1609,6 +1744,8 @@ fn post_process_transcription_text(
     raw: String,
     settings: &AppSettings,
     custom_words_already_prompted: bool,
+    output_language: &OutputLanguageEvidence,
+    supported_languages: &[String],
 ) -> String {
     fail_open_text_transform(raw, |raw| {
         let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
@@ -1621,11 +1758,33 @@ fn post_process_transcription_text(
             raw
         };
 
-        filter_transcription_output(
+        // Last-resort language evidence: confidence-gated detection from the
+        // transcribed text itself, constrained to the model's languages. Only
+        // consulted when it can change the outcome (built-in gated fillers).
+        let output_language = match output_language {
+            OutputLanguageEvidence::Unknown
+                if settings.filler_word_removal_enabled
+                    && settings.custom_filler_words.is_none() =>
+            {
+                match detect_output_language(&corrected, supported_languages) {
+                    Some(language) => {
+                        debug!("Text-based language detection resolved '{}'", language);
+                        OutputLanguageEvidence::TextDetected(language)
+                    }
+                    None => OutputLanguageEvidence::Unknown,
+                }
+            }
+            other => other.clone(),
+        };
+
+        let without_fillers = remove_filler_words(
             &corrected,
-            &settings.app_language,
+            &output_language,
             &settings.custom_filler_words,
-        )
+            settings.filler_word_removal_enabled,
+        );
+
+        normalize_transcription_output(&without_fillers)
     })
 }
 
@@ -1801,7 +1960,19 @@ fn select_transcribe_backend(setting: TranscribeAcceleratorSetting) -> Backend {
             {
                 Some(b) => b,
                 None => {
-                    warn!("No GPU backend available for transcribe.cpp; falling back to Auto");
+                    #[cfg(target_os = "linux")]
+                    warn!(
+                        "GPU acceleration was requested, but no transcribe.cpp GPU backend is \
+                         registered; falling back to Auto (usually CPU). Run with \
+                         --list-devices to inspect detected devices; VK_LOADER_DEBUG=error can \
+                         reveal Vulkan loader or driver failures"
+                    );
+                    #[cfg(not(target_os = "linux"))]
+                    warn!(
+                        "GPU acceleration was requested, but no transcribe.cpp GPU backend is \
+                         registered; falling back to Auto (usually CPU). Run with \
+                         --list-devices to inspect detected devices"
+                    );
                     Backend::Auto
                 }
             }
@@ -2021,6 +2192,217 @@ mod tests {
         });
 
         assert_eq!(result, raw);
+    }
+
+    #[test]
+    fn portuguese_transcription_does_not_use_english_ui_filler_words() {
+        let settings = AppSettings {
+            app_language: "en".to_string(),
+            selected_language: "pt-BR".to_string(),
+            ..Default::default()
+        };
+        let supported = languages(&["en", "pt"]);
+        let evidence = resolve_output_language_evidence(&settings, Some("pt"), &supported, false);
+
+        let result = post_process_transcription_text(
+            "eu vi um carro".to_string(),
+            &settings,
+            false,
+            &evidence,
+            &supported,
+        );
+
+        assert_eq!(
+            evidence,
+            OutputLanguageEvidence::UserSelected("pt".to_string())
+        );
+        assert_eq!(result, "eu vi um carro");
+    }
+
+    #[test]
+    fn auto_language_without_detection_skips_gated_filler_removal() {
+        let settings = AppSettings {
+            selected_language: "auto".to_string(),
+            ..Default::default()
+        };
+        let evidence =
+            resolve_output_language_evidence(&settings, None, &languages(&["en", "pt"]), false);
+
+        // Too short for a reliable text detection, so the gated "um" must
+        // survive; the universal "uhm" is removed regardless.
+        let result = post_process_transcription_text(
+            "um uhm ok".to_string(),
+            &settings,
+            false,
+            &evidence,
+            &languages(&["en", "pt"]),
+        );
+
+        assert_eq!(evidence, OutputLanguageEvidence::Unknown);
+        assert_eq!(result, "um ok");
+    }
+
+    #[test]
+    fn unknown_evidence_with_confident_text_detection_removes_gated_fillers() {
+        let settings = AppSettings {
+            selected_language: "auto".to_string(),
+            ..Default::default()
+        };
+
+        let result = post_process_transcription_text(
+            "um so the weather forecast said it would probably rain throughout the whole weekend"
+                .to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::Unknown,
+            &languages(&["en", "pt", "es", "de"]),
+        );
+
+        assert_eq!(
+            result,
+            "so the weather forecast said it would probably rain throughout the whole weekend"
+        );
+    }
+
+    #[test]
+    fn unknown_evidence_with_portuguese_text_preserves_um() {
+        let settings = AppSettings {
+            selected_language: "auto".to_string(),
+            ..Default::default()
+        };
+
+        let result = post_process_transcription_text(
+            "eu vi um carro na rua ontem de manhã quando fui ao mercado".to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::Unknown,
+            &languages(&["en", "pt", "es", "de"]),
+        );
+
+        assert_eq!(
+            result,
+            "eu vi um carro na rua ontem de manhã quando fui ao mercado"
+        );
+    }
+
+    #[test]
+    fn model_detected_language_upgrades_unknown_evidence_only() {
+        assert_eq!(
+            with_model_detected_language(OutputLanguageEvidence::Unknown, Some("en".to_string())),
+            OutputLanguageEvidence::ModelDetected("en".to_string())
+        );
+        assert_eq!(
+            with_model_detected_language(OutputLanguageEvidence::Unknown, Some("auto".to_string())),
+            OutputLanguageEvidence::Unknown
+        );
+        assert_eq!(
+            with_model_detected_language(OutputLanguageEvidence::Unknown, None),
+            OutputLanguageEvidence::Unknown
+        );
+        assert_eq!(
+            with_model_detected_language(
+                OutputLanguageEvidence::UserSelected("pt".to_string()),
+                Some("en".to_string())
+            ),
+            OutputLanguageEvidence::UserSelected("pt".to_string())
+        );
+    }
+
+    #[test]
+    fn auto_language_uses_single_language_model_as_evidence() {
+        let settings = AppSettings {
+            selected_language: "auto".to_string(),
+            ..Default::default()
+        };
+
+        let evidence =
+            resolve_output_language_evidence(&settings, None, &languages(&["en"]), false);
+
+        assert_eq!(
+            evidence,
+            OutputLanguageEvidence::ModelConstrained("en".to_string())
+        );
+    }
+
+    #[test]
+    fn unsupported_explicit_language_uses_model_fallback_as_evidence() {
+        let settings = AppSettings {
+            selected_language: "pt".to_string(),
+            ..Default::default()
+        };
+
+        let evidence = resolve_output_language_evidence(
+            &settings,
+            Some("en"),
+            &languages(&["en", "de"]),
+            false,
+        );
+
+        assert_eq!(
+            evidence,
+            OutputLanguageEvidence::ModelConstrained("en".to_string())
+        );
+    }
+
+    #[test]
+    fn ignored_user_language_is_not_output_evidence() {
+        let settings = AppSettings {
+            // Parakeet V3 ignores language hints and auto-detects even when a
+            // selection from the previously active model remains persisted.
+            selected_language: "en".to_string(),
+            ..Default::default()
+        };
+        let supported = languages(&["en", "de", "pt"]);
+
+        let evidence = resolve_output_language_evidence(&settings, None, &supported, false);
+        assert_eq!(evidence, OutputLanguageEvidence::Unknown);
+
+        let result = post_process_transcription_text(
+            "eu vi um carro".to_string(),
+            &settings,
+            false,
+            &evidence,
+            &supported,
+        );
+        assert_eq!(result, "eu vi um carro");
+    }
+
+    #[test]
+    fn unapplied_transcribe_cpp_language_is_not_output_evidence() {
+        let settings = AppSettings {
+            selected_language: "en".to_string(),
+            ..Default::default()
+        };
+        let supported = languages(&[]);
+        let plan = transcribe_cpp_run_plan(false, "en", &supported, false);
+
+        assert_eq!(plan.language, None);
+        assert_eq!(
+            resolve_output_language_evidence(
+                &settings,
+                plan.language.as_deref(),
+                &supported,
+                false,
+            ),
+            OutputLanguageEvidence::Unknown
+        );
+    }
+
+    #[test]
+    fn translated_output_is_treated_as_english() {
+        let settings = AppSettings {
+            selected_language: "pt".to_string(),
+            ..Default::default()
+        };
+
+        let evidence = resolve_output_language_evidence(
+            &settings,
+            Some("pt"),
+            &languages(&["en", "pt"]),
+            true,
+        );
+
+        assert_eq!(evidence, OutputLanguageEvidence::TranslatedToEnglish);
     }
 
     #[test]

@@ -376,6 +376,10 @@
       "voiceActivityDetection": {
         "title": "Detección de actividad de voz",
         "description": "Filtra el silencio de las grabaciones. Los modelos compatibles con streaming usan una cola de VAD más larga; desactivar el VAD graba audio sin procesar."
+      },
+      "fillerWordRemoval": {
+        "title": "Eliminar muletillas",
+        "description": "Elimina las muletillas más comunes de las transcripciones. Desactívalo para conservarlas."
       }
     },
     "postProcessing": {

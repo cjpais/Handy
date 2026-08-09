@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.9.4"
+version = "0.9.5"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -64,6 +64,10 @@ rustfft = "6.4.0"
 strsim = "0.11.0"
 natural = "0.5.0"
 regex = "1"
+# Text-based language ID (filler-word removal fallback); isolang bridges the
+# ISO 639-1 codes in model metadata to whatlang's 639-3 codes.
+whatlang = "0.16"
+isolang = "2"
 chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
