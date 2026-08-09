@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "移除语气词",
-        "description": "当 Handy 已知转录语言时，移除常见的语气词。如需逐字转录，请关闭此选项。"
+        "description": "从转录中移除常见的语气词。关闭此选项即可保留这些词。"
       }
     },
     "postProcessing": {

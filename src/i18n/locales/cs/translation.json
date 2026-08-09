@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Odstranit výplňová slova",
-        "description": "Odstraní běžná zaváhací slova, pokud Handy zná jazyk přepisu. Vypněte pro doslovný přepis."
+        "description": "Odstraňuje běžná slova vyjadřující váhání z přepisů. Vypnutím je zachováte."
       }
     },
     "postProcessing": {

@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Supprimer les mots de remplissage",
-        "description": "Supprime les hésitations courantes lorsque Handy connaît la langue de la transcription. Désactivez cette option pour une transcription mot à mot."
+        "description": "Supprime les hésitations courantes des transcriptions. Désactivez cette option pour les conserver."
       }
     },
     "postProcessing": {

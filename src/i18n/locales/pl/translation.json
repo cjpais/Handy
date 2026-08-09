@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Usuń wyrazy wypełniające",
-        "description": "Usuwa typowe wtrącenia i wahania, gdy Handy zna język transkrypcji. Wyłącz, aby uzyskać dosłowną transkrypcję."
+        "description": "Usuwa typowe słowa wyrażające wahanie z transkrypcji. Wyłącz, aby je zachować."
       }
     },
     "postProcessing": {

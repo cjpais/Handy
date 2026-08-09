@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Remover palavras de preenchimento",
-        "description": "Remove hesitações comuns quando o Handy reconhece o idioma da transcrição. Desative para uma transcrição literal."
+        "description": "Remove hesitações comuns das transcrições. Desative para mantê-las."
       }
     },
     "postProcessing": {

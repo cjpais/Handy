@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Remove Filler Words",
-        "description": "Remove common hesitation words when Handy knows the transcription language. Disable for verbatim transcription."
+        "description": "Removes common hesitation words from transcriptions. Turn off to keep them."
       }
     },
     "postProcessing": {

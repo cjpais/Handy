@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Loại bỏ từ đệm",
-        "description": "Loại bỏ các từ ngập ngừng phổ biến khi Handy biết ngôn ngữ phiên âm. Tắt để có bản ghi nguyên văn."
+        "description": "Loại bỏ các từ ngập ngừng phổ biến khỏi bản chép lời. Tắt để giữ lại các từ này."
       }
     },
     "postProcessing": {

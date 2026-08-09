@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Eliminar muletillas",
-        "description": "Elimina las muletillas más comunes cuando Handy conoce el idioma de la transcripción. Desactívalo para una transcripción literal."
+        "description": "Elimina las muletillas más comunes de las transcripciones. Desactívalo para conservarlas."
       }
     },
     "postProcessing": {

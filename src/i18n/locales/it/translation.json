@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Rimuovi le parole riempitive",
-        "description": "Rimuove le parole di esitazione più comuni quando Handy conosce la lingua della trascrizione. Disattiva per una trascrizione letterale."
+        "description": "Rimuove le parole di esitazione più comuni dalle trascrizioni. Disattiva per mantenerle."
       }
     },
     "postProcessing": {

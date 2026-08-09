@@ -912,7 +912,7 @@ impl TranscriptionManager {
         );
         let output_language = resolve_output_language_evidence(
             &settings,
-            &effective_language,
+            run_plan.language.as_deref(),
             &languages,
             run_plan.target_language.as_deref() == Some("en"),
         );
@@ -1254,6 +1254,7 @@ impl TranscriptionManager {
                 .map(|info| info.supported_languages)
                 .unwrap_or_default();
             let mut output_was_translated = false;
+            let mut applied_language_hint: Option<String> = None;
             let mut model_detected_language: Option<String> = None;
             if let LoadedEngine::TranscribeCpp(session) = &engine {
                 let model = session.model();
@@ -1296,6 +1297,7 @@ impl TranscriptionManager {
                             model_supports_translate,
                         );
                         output_was_translated = run_plan.target_language.as_deref() == Some("en");
+                        applied_language_hint = run_plan.language.clone();
 
                         let run_options = RunOptions {
                             task: run_plan.task,
@@ -1353,6 +1355,7 @@ impl TranscriptionManager {
                             "yue" => Some("yue".to_string()),
                             _ => None,
                         };
+                        applied_language_hint = language.clone();
                         let params = SenseVoiceParams {
                             language,
                             use_itn: Some(true),
@@ -1373,6 +1376,7 @@ impl TranscriptionManager {
                         } else {
                             Some(validated_language.clone())
                         };
+                        applied_language_hint = lang.clone();
                         let options = TranscribeOptions {
                             language: lang,
                             translate: settings.translate_to_english,
@@ -1389,6 +1393,7 @@ impl TranscriptionManager {
                         } else {
                             Some(normalize_cjk_language(&validated_language).to_string())
                         };
+                        applied_language_hint = lang.clone();
                         let options = TranscribeOptions {
                             language: lang,
                             ..Default::default()
@@ -1446,7 +1451,7 @@ impl TranscriptionManager {
             let output_language = with_model_detected_language(
                 resolve_output_language_evidence(
                     &settings,
-                    &validated_language,
+                    applied_language_hint.as_deref(),
                     &model_languages,
                     output_was_translated,
                 ),
@@ -1648,7 +1653,7 @@ fn effective_language_for_model(
 /// decision.
 fn resolve_output_language_evidence(
     settings: &AppSettings,
-    effective_language: &str,
+    applied_language_hint: Option<&str>,
     supported_languages: &[String],
     translated_to_english: bool,
 ) -> OutputLanguageEvidence {
@@ -1656,27 +1661,27 @@ fn resolve_output_language_evidence(
         return OutputLanguageEvidence::TranslatedToEnglish;
     }
 
-    // An explicit, usable user selection is the strongest source-language
-    // signal. If the selection was unsupported, effective_language is "auto"
-    // (or a model-required fallback), so it must not be treated as selected.
-    if settings.selected_language != "auto"
-        && effective_language != "auto"
-        && base_language_code(&settings.selected_language) == base_language_code(effective_language)
+    // Stored language intent is only evidence when this specific engine run
+    // actually received the hint. Some multilingual engines (notably Parakeet
+    // V3) always auto-detect and ignore Handy's selection; transcribe-cpp also
+    // drops a requested hint when the loaded model does not advertise it.
+    if let Some(language) = applied_language_hint.filter(|lang| !lang.is_empty() && *lang != "auto")
     {
-        return OutputLanguageEvidence::UserSelected(effective_language.to_string());
+        if settings.selected_language != "auto"
+            && base_language_code(&settings.selected_language) == base_language_code(language)
+        {
+            return OutputLanguageEvidence::UserSelected(language.to_string());
+        }
+
+        // The engine may have required a concrete fallback even though the
+        // user's persisted language was auto or unsupported.
+        return OutputLanguageEvidence::ModelConstrained(language.to_string());
     }
 
-    // A single-language model has a known output language even if its metadata
-    // also advertises language detection and effective_language remains auto.
+    // A single-language model has a known output language without needing a
+    // selectable language hint.
     if let [language] = supported_languages {
         return OutputLanguageEvidence::ModelConstrained(language.clone());
-    }
-
-    // Models that cannot auto-detect are coerced to a concrete supported
-    // language. That model-required fallback is still reliable evidence about
-    // the output, but is distinct from the user's persisted intent.
-    if effective_language != "auto" {
-        return OutputLanguageEvidence::ModelConstrained(effective_language.to_string());
     }
 
     OutputLanguageEvidence::Unknown
@@ -2093,7 +2098,7 @@ mod tests {
             ..Default::default()
         };
         let supported = languages(&["en", "pt"]);
-        let evidence = resolve_output_language_evidence(&settings, "pt", &supported, false);
+        let evidence = resolve_output_language_evidence(&settings, Some("pt"), &supported, false);
 
         let result = post_process_transcription_text(
             "eu vi um carro".to_string(),
@@ -2117,7 +2122,7 @@ mod tests {
             ..Default::default()
         };
         let evidence =
-            resolve_output_language_evidence(&settings, "auto", &languages(&["en", "pt"]), false);
+            resolve_output_language_evidence(&settings, None, &languages(&["en", "pt"]), false);
 
         // Too short for a reliable text detection, so the gated "um" must
         // survive; the universal "uhm" is removed regardless.
@@ -2207,7 +2212,7 @@ mod tests {
         };
 
         let evidence =
-            resolve_output_language_evidence(&settings, "auto", &languages(&["en"]), false);
+            resolve_output_language_evidence(&settings, None, &languages(&["en"]), false);
 
         assert_eq!(
             evidence,
@@ -2222,12 +2227,60 @@ mod tests {
             ..Default::default()
         };
 
-        let evidence =
-            resolve_output_language_evidence(&settings, "en", &languages(&["en", "de"]), false);
+        let evidence = resolve_output_language_evidence(
+            &settings,
+            Some("en"),
+            &languages(&["en", "de"]),
+            false,
+        );
 
         assert_eq!(
             evidence,
             OutputLanguageEvidence::ModelConstrained("en".to_string())
+        );
+    }
+
+    #[test]
+    fn ignored_user_language_is_not_output_evidence() {
+        let settings = AppSettings {
+            // Parakeet V3 ignores language hints and auto-detects even when a
+            // selection from the previously active model remains persisted.
+            selected_language: "en".to_string(),
+            ..Default::default()
+        };
+        let supported = languages(&["en", "de", "pt"]);
+
+        let evidence = resolve_output_language_evidence(&settings, None, &supported, false);
+        assert_eq!(evidence, OutputLanguageEvidence::Unknown);
+
+        let result = post_process_transcription_text(
+            "eu vi um carro".to_string(),
+            &settings,
+            false,
+            &evidence,
+            &supported,
+        );
+        assert_eq!(result, "eu vi um carro");
+    }
+
+    #[test]
+    fn unapplied_transcribe_cpp_language_is_not_output_evidence() {
+        let settings = AppSettings {
+            selected_language: "en".to_string(),
+            ..Default::default()
+        };
+        let supported = languages(&[]);
+        let plan = transcribe_cpp_run_plan(false, "en", &supported, false);
+
+        assert_eq!(plan.language, None);
+        assert_eq!(
+            resolve_output_language_evidence(
+                &settings,
+                plan.language.as_deref(),
+                &supported,
+                false,
+            ),
+            OutputLanguageEvidence::Unknown
         );
     }
 
@@ -2238,8 +2291,12 @@ mod tests {
             ..Default::default()
         };
 
-        let evidence =
-            resolve_output_language_evidence(&settings, "pt", &languages(&["en", "pt"]), true);
+        let evidence = resolve_output_language_evidence(
+            &settings,
+            Some("pt"),
+            &languages(&["en", "pt"]),
+            true,
+        );
 
         assert_eq!(evidence, OutputLanguageEvidence::TranslatedToEnglish);
     }

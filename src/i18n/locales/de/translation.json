@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "Füllwörter entfernen",
-        "description": "Entfernt häufige Verzögerungslaute, wenn Handy die Sprache der Transkription kennt. Deaktivieren für eine wortgetreue Transkription."
+        "description": "Entfernt häufige Verzögerungslaute aus Transkriptionen. Deaktivieren Sie diese Option, um sie beizubehalten."
       }
     },
     "postProcessing": {

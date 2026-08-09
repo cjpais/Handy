@@ -370,7 +370,7 @@
       },
       "fillerWordRemoval": {
         "title": "移除語助詞",
-        "description": "當 Handy 已知轉錄語言時，移除常見的語助詞。若需逐字轉錄，請關閉此選項。"
+        "description": "從轉錄中移除常見的語助詞。關閉此選項即可保留這些詞。"
       }
     },
     "postProcessing": {
