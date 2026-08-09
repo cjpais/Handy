@@ -376,6 +376,10 @@
       "voiceActivityDetection": {
         "title": "Wykrywanie aktywności głosowej",
         "description": "Odfiltrowuje ciszę z nagrań. Modele obsługujące streaming używają dłuższego marginesu VAD; wyłączenie VAD nagrywa surowy dźwięk."
+      },
+      "fillerWordRemoval": {
+        "title": "Usuń wyrazy wypełniające",
+        "description": "Usuwa typowe słowa wyrażające wahanie z transkrypcji. Wyłącz, aby je zachować."
       }
     },
     "postProcessing": {

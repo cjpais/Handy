@@ -265,38 +265,58 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
     (prefix, suffix)
 }
 
-/// Returns filler words appropriate for the given language code.
+/// Evidence for the language of the text being cleaned.
 ///
-/// Some words like "um" and "ha" are real words in certain languages
-/// (e.g., Portuguese "um" = "a/an", Spanish "ha" = "has"), so we only
-/// include them as fillers for languages where they are truly fillers.
-fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
+/// This intentionally describes the transcription output, not Handy's UI
+/// language. Unknown output languages fail closed: built-in filler removal is
+/// skipped rather than applying a language profile speculatively.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OutputLanguageEvidence {
+    UserSelected(String),
+    ModelConstrained(String),
+    /// The transcription model itself identified the language (audio-based
+    /// LID, e.g. Whisper in auto mode).
+    ModelDetected(String),
+    /// Detected from the transcribed text with high confidence, constrained to
+    /// the model's supported languages. Weakest accepted evidence.
+    TextDetected(String),
+    TranslatedToEnglish,
+    Unknown,
+}
+
+impl OutputLanguageEvidence {
+    fn language(&self) -> Option<&str> {
+        match self {
+            Self::UserSelected(language)
+            | Self::ModelConstrained(language)
+            | Self::ModelDetected(language)
+            | Self::TextDetected(language) => Some(language),
+            Self::TranslatedToEnglish => Some("en"),
+            Self::Unknown => None,
+        }
+    }
+}
+
+/// Filler tokens that are not lexical words in any language Handy's models can
+/// output, so removing them cannot corrupt text regardless of the (possibly
+/// unknown) output language. Kept deliberately conservative: anything that is a
+/// real word somewhere ("um" pt/de, "ha" es, "ah"/"eh" interjections, "mm"
+/// millimetres) belongs in the language-gated lists instead.
+const UNIVERSAL_FILLER_WORDS: &[&str] = &[
+    "uh", "uhm", "umm", "uhh", "uhhh", "ehh", "ehm", "ahm", "hmm", "hm", "mmm", "хм", "ммм",
+];
+
+/// Filler words that are only safe to remove with evidence for the output
+/// language, because the same token is a real word elsewhere (e.g. Portuguese
+/// "um" = "a/an", German "um" = "at/around", Spanish "ha" = "has").
+fn gated_filler_words_for_language(lang: &str) -> &'static [&'static str] {
     let base_lang = lang.split(&['-', '_'][..]).next().unwrap_or(lang);
 
     match base_lang {
-        "en" => &[
-            "uh", "um", "uhm", "umm", "uhh", "uhhh", "ah", "hmm", "hm", "mmm", "mm", "mh", "eh",
-            "ehh", "ha",
-        ],
-        "es" => &["ehm", "mmm", "hmm", "hm"],
-        "pt" => &["ahm", "hmm", "mmm", "hm"],
-        "fr" => &["euh", "hmm", "hm", "mmm"],
-        "de" => &["äh", "ähm", "hmm", "hm", "mmm"],
-        "it" => &["ehm", "hmm", "mmm", "hm"],
-        "cs" => &["ehm", "hmm", "mmm", "hm"],
-        "pl" => &["hmm", "mmm", "hm"],
-        "tr" => &["hmm", "mmm", "hm"],
-        "ru" => &["хм", "ммм", "hmm", "mmm"],
-        "uk" => &["хм", "ммм", "hmm", "mmm"],
-        "ar" => &["hmm", "mmm"],
-        "ja" => &["hmm", "mmm"],
-        "ko" => &["hmm", "mmm"],
-        "vi" => &["hmm", "mmm", "hm"],
-        "zh" => &["hmm", "mmm"],
-        // Conservative universal fallback (no "um", "eh", "ha")
-        _ => &[
-            "uh", "uhm", "umm", "uhh", "uhhh", "ah", "hmm", "hm", "mmm", "mm", "mh", "ehh",
-        ],
+        "en" => &["um", "ah", "eh", "ha"],
+        "de" => &["äh", "ähm"],
+        "fr" => &["euh"],
+        _ => &[],
     }
 }
 
@@ -341,58 +361,94 @@ fn collapse_stutters(text: &str) -> String {
     result.join(" ")
 }
 
-/// Filters transcription output by removing filler words and stutter artifacts.
+/// Removes filler words from transcription output when enabled.
 ///
-/// This function cleans up raw transcription text by:
-/// 1. Removing filler words based on the app language (or custom list)
-/// 2. Collapsing repeated word stutters (e.g., "wh wh wh" -> "wh")
-/// 3. Cleaning up excess whitespace
+/// Built-in removal is two-tiered: [`UNIVERSAL_FILLER_WORDS`] apply regardless
+/// of language evidence, while [`gated_filler_words_for_language`] tokens are
+/// only removed when the output language is known. A custom list is an
+/// explicit user override and replaces both tiers without requiring language
+/// evidence. `Some(empty vec)` disables removal, preserving the legacy
+/// power-user setting. The master toggle takes precedence over both built-in
+/// and custom lists.
 ///
 /// # Arguments
 /// * `text` - The raw transcription text to filter
-/// * `lang` - The app language code (e.g., "en", "pt-BR") used to select filler words
+/// * `language` - Evidence for the language of the transcription output
 /// * `custom_filler_words` - Optional user-provided filler word list. `Some(vec)` overrides
 ///   language defaults; `Some(empty vec)` disables filtering; `None` uses language defaults.
+/// * `enabled` - Whether filler-word removal is enabled
 ///
 /// # Returns
-/// The filtered text with filler words and stutters removed
-pub fn filter_transcription_output(
+/// The text with configured filler words removed
+pub fn remove_filler_words(
     text: &str,
-    lang: &str,
+    language: &OutputLanguageEvidence,
     custom_filler_words: &Option<Vec<String>>,
+    enabled: bool,
 ) -> String {
-    let mut filtered = text.to_string();
+    if !enabled {
+        return text.to_string();
+    }
 
-    // Build filler patterns from custom list or language defaults
+    // Build filler patterns from custom list or the built-in tiers
     let patterns: Vec<Regex> = match custom_filler_words {
         Some(words) => words
             .iter()
             .filter_map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).ok())
             .collect(),
-        None => get_filler_words_for_language(lang)
+        None => UNIVERSAL_FILLER_WORDS
             .iter()
+            .chain(
+                language
+                    .language()
+                    .map(gated_filler_words_for_language)
+                    .unwrap_or_default(),
+            )
             .map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).unwrap())
             .collect(),
     };
 
     // Remove filler words
+    let mut filtered = text.to_string();
     for pattern in &patterns {
         filtered = pattern.replace_all(&filtered, "").to_string();
     }
 
-    // Collapse repeated 1-2 letter words (stutter artifacts like "wh wh wh wh")
-    filtered = collapse_stutters(&filtered);
+    filtered
+}
+
+/// Applies non-filler transcription cleanup.
+///
+/// Kept separate from [`remove_filler_words`] so disabling filler deletion
+/// does not also disable the existing repeated-word and whitespace cleanup.
+pub fn normalize_transcription_output(text: &str) -> String {
+    let mut normalized = collapse_stutters(text);
 
     // Clean up multiple spaces to single space
-    filtered = MULTI_SPACE_PATTERN.replace_all(&filtered, " ").to_string();
+    normalized = MULTI_SPACE_PATTERN
+        .replace_all(&normalized, " ")
+        .to_string();
 
     // Trim leading/trailing whitespace
-    filtered.trim().to_string()
+    normalized.trim().to_string()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Exercise the complete cleanup sequence with an explicitly selected
+    /// language. Individual tests below predate the split between filler
+    /// removal and non-filler normalization.
+    fn filter_transcription_output(
+        text: &str,
+        language: &str,
+        custom_filler_words: &Option<Vec<String>>,
+    ) -> String {
+        let language = OutputLanguageEvidence::UserSelected(language.to_string());
+        let filtered = remove_filler_words(text, &language, custom_filler_words, true);
+        normalize_transcription_output(&filtered)
+    }
 
     #[test]
     fn test_apply_custom_words_exact_match() {
@@ -572,18 +628,105 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_unknown_language_uses_fallback() {
+    fn test_filter_unknown_language_still_removes_universal_fillers() {
         let text = "uh I think uhm this works";
         let result = filter_transcription_output(text, "xx", &None);
         assert_eq!(result, "I think this works");
     }
 
     #[test]
-    fn test_filter_fallback_does_not_remove_um() {
-        // Fallback (unknown language) should not remove "um" since it's a real word in some languages
+    fn test_filter_unknown_language_does_not_remove_um() {
         let text = "um I think this works";
         let result = filter_transcription_output(text, "xx", &None);
         assert_eq!(result, "um I think this works");
+    }
+
+    #[test]
+    fn test_filter_unknown_evidence_removes_universal_keeps_gated() {
+        let filtered = remove_filler_words(
+            "uhh bueno hmm creo que um ha llegado",
+            &OutputLanguageEvidence::Unknown,
+            &None,
+            true,
+        );
+        assert_eq!(
+            normalize_transcription_output(&filtered),
+            "bueno creo que um ha llegado"
+        );
+
+        let cyrillic = remove_filler_words(
+            "хм я думаю ммм это работает",
+            &OutputLanguageEvidence::Unknown,
+            &None,
+            true,
+        );
+        assert_eq!(
+            normalize_transcription_output(&cyrillic),
+            "я думаю это работает"
+        );
+    }
+
+    #[test]
+    fn test_filter_german_gated_fillers_require_evidence() {
+        let text = "äh ich glaube ähm das passt";
+
+        let unknown = remove_filler_words(text, &OutputLanguageEvidence::Unknown, &None, true);
+        assert_eq!(normalize_transcription_output(&unknown), text);
+
+        let result = filter_transcription_output(text, "de", &None);
+        assert_eq!(result, "ich glaube das passt");
+    }
+
+    #[test]
+    fn test_filter_preserves_millimetre_unit() {
+        // "mm" was removed from the filler lists because it eats units.
+        let text = "the screw is 5 mm long";
+        let result = filter_transcription_output(text, "en", &None);
+        assert_eq!(result, "the screw is 5 mm long");
+    }
+
+    #[test]
+    fn test_filter_detected_evidence_unlocks_gated_fillers() {
+        let model = remove_filler_words(
+            "um I think this works",
+            &OutputLanguageEvidence::ModelDetected("en".to_string()),
+            &None,
+            true,
+        );
+        assert_eq!(normalize_transcription_output(&model), "I think this works");
+
+        let text = remove_filler_words(
+            "euh je pense que ça marche",
+            &OutputLanguageEvidence::TextDetected("fr".to_string()),
+            &None,
+            true,
+        );
+        assert_eq!(
+            normalize_transcription_output(&text),
+            "je pense que ça marche"
+        );
+    }
+
+    #[test]
+    fn test_filter_master_toggle_disables_custom_and_builtin_removal() {
+        let text = "um customword I think";
+        let language = OutputLanguageEvidence::UserSelected("en".to_string());
+        let custom = Some(vec!["customword".to_string()]);
+
+        let result = remove_filler_words(text, &language, &custom, false);
+
+        assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_filter_custom_words_apply_without_language_evidence() {
+        let custom = Some(vec!["customword".to_string()]);
+        let text = "customword should be removed but um should remain";
+
+        let filtered = remove_filler_words(text, &OutputLanguageEvidence::Unknown, &custom, true);
+        let result = normalize_transcription_output(&filtered);
+
+        assert_eq!(result, "should be removed but um should remain");
     }
 
     #[test]
