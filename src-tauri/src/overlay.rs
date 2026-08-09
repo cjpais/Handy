@@ -97,7 +97,6 @@ fn configure_layer_shell_position(gtk_window: &gtk::ApplicationWindow, position:
 #[cfg(target_os = "linux")]
 fn configure_layer_shell_surface(
     gtk_window: &gtk::ApplicationWindow,
-    app_handle: &AppHandle,
     position: OverlayPosition,
     width: f64,
     height: f64,
@@ -105,17 +104,6 @@ fn configure_layer_shell_surface(
     use gtk::prelude::{GtkWindowExt, WidgetExt};
 
     configure_layer_shell_position(gtk_window, position);
-
-    // Prefer the output containing the cursor when global cursor coordinates
-    // are available. On restricted Wayland compositors Enigo may not expose
-    // them; leaving the monitor unset lets the compositor choose instead.
-    if let Some((x, y)) = input::get_cursor_position(app_handle) {
-        if let Some(monitor) =
-            gtk::gdk::Display::default().and_then(|display| display.monitor_at_point(x, y))
-        {
-            gtk_window.set_monitor(&monitor);
-        }
-    }
 
     gtk_window.set_size_request(
         width.round().max(1.0) as i32,
@@ -160,13 +148,7 @@ fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool 
         gtk_window.set_exclusive_zone(0);
 
         let overlay_position = settings::get_settings(overlay_window.app_handle()).overlay_position;
-        configure_layer_shell_surface(
-            &gtk_window,
-            overlay_window.app_handle(),
-            overlay_position,
-            OVERLAY_WIDTH,
-            OVERLAY_HEIGHT,
-        );
+        configure_layer_shell_surface(&gtk_window, overlay_position, OVERLAY_WIDTH, OVERLAY_HEIGHT);
 
         let initialized = gtk_window.is_layer_window();
         LAYER_SHELL_ACTIVE.store(initialized, Ordering::SeqCst);
@@ -527,7 +509,7 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
             let position = settings::get_settings(app_handle).overlay_position;
             match overlay_window.gtk_window() {
                 Ok(gtk_window) => {
-                    configure_layer_shell_surface(&gtk_window, app_handle, position, width, height)
+                    configure_layer_shell_surface(&gtk_window, position, width, height)
                 }
                 Err(error) => log::error!("Failed to access GTK overlay window: {error}"),
             }
