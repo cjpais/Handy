@@ -26,14 +26,9 @@ fn with_enigo<T>(
     f(&mut enigo)
 }
 
-#[cfg(target_os = "linux")]
-fn should_use_wl_copy(is_wayland_session: bool, wl_copy_available: bool) -> bool {
-    is_wayland_session && wl_copy_available
-}
-
 fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
     #[cfg(target_os = "linux")]
-    if should_use_wl_copy(is_wayland(), is_wl_copy_available()) {
+    if is_wayland() && is_wl_copy_available() {
         info!("Using wl-copy for clipboard write on Wayland");
         return write_clipboard_via_wl_copy(text);
     }
@@ -42,6 +37,16 @@ fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), Str
         .clipboard()
         .write_text(text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e))
+}
+
+fn finish_clipboard_paste(
+    paste_result: Result<(), String>,
+    paste_delay_after_ms: u64,
+    restore_clipboard: impl FnOnce(),
+) -> Result<(), String> {
+    std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
+    restore_clipboard();
+    paste_result
 }
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
@@ -68,42 +73,46 @@ fn paste_via_clipboard(
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
-    // Send paste key combo
-    #[cfg(target_os = "linux")]
-    let key_combo_sent = try_send_key_combo_linux(paste_method)?;
+    // Capture key injection errors so the original clipboard is restored before
+    // propagating them to the caller.
+    let paste_result = (|| -> Result<(), String> {
+        // Send paste key combo
+        #[cfg(target_os = "linux")]
+        let key_combo_sent = try_send_key_combo_linux(paste_method)?;
 
-    #[cfg(not(target_os = "linux"))]
-    let key_combo_sent = false;
+        #[cfg(not(target_os = "linux"))]
+        let key_combo_sent = false;
 
-    // Fall back to enigo if no native tool handled it
-    if !key_combo_sent {
-        with_enigo(app_handle, |enigo| match paste_method {
-            // The legacy path cannot detect a mistimed chord, so it keeps the
-            // conservative 100ms modifier hold.
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100),
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100),
-            _ => Err("Invalid paste method for clipboard paste".into()),
-        })?;
-    }
+        // Fall back to enigo if no native tool handled it
+        if !key_combo_sent {
+            with_enigo(app_handle, |enigo| match paste_method {
+                // The legacy path cannot detect a mistimed chord, so it keeps the
+                // conservative 100ms modifier hold.
+                PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
+                PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100),
+                PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100),
+                _ => Err("Invalid paste method for clipboard paste".into()),
+            })?;
+        }
 
-    std::thread::sleep(Duration::from_millis(paste_delay_after_ms));
+        Ok(())
+    })();
 
-    // Restore original clipboard content.
-    // Text takes priority so this path stays identical to the previous behavior;
-    // an image is only restored when the clipboard held no text at all, which is
-    // the case that used to silently wipe screenshots.
-    if let Some(clipboard_content) = saved_text {
-        let _ = write_text_to_clipboard(app_handle, &clipboard_content);
-    } else if let Some(image) = saved_image {
-        info!("Restoring image to clipboard");
-        let _ = clipboard.write_image(&image);
-    } else {
-        // Nothing was there to begin with — don't leave the transcription behind.
-        let _ = clipboard.clear();
-    }
-
-    Ok(())
+    finish_clipboard_paste(paste_result, paste_delay_after_ms, || {
+        // Restore original clipboard content even when key injection failed.
+        // Text takes priority so this path stays identical to the previous behavior;
+        // an image is only restored when the clipboard held no text at all, which is
+        // the case that used to silently wipe screenshots.
+        if let Some(clipboard_content) = saved_text {
+            let _ = write_text_to_clipboard(app_handle, &clipboard_content);
+        } else if let Some(image) = saved_image {
+            info!("Restoring image to clipboard");
+            let _ = clipboard.write_image(&image);
+        } else {
+            // Nothing was there to begin with — don't leave the transcription behind.
+            let _ = clipboard.clear();
+        }
+    })
 }
 
 /// Attempts to send a key combination using Linux-native tools.
@@ -695,9 +704,11 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
-        with_enigo(&app_handle, |enigo| {
+        if let Err(error) = with_enigo(&app_handle, |enigo| {
             send_return_key(enigo, settings.auto_submit_key)
-        })?;
+        }) {
+            log::warn!("Paste succeeded, but auto-submit failed: {error}");
+        }
     }
 
     // After pasting, optionally copy to clipboard based on settings
@@ -711,6 +722,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
 
     #[test]
     fn auto_submit_requires_setting_enabled() {
@@ -729,5 +741,16 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    #[test]
+    fn clipboard_is_restored_before_key_injection_error_is_returned() {
+        let restored = Cell::new(false);
+        let result = finish_clipboard_paste(Err("input failed".into()), 0, || {
+            restored.set(true);
+        });
+
+        assert_eq!(result.unwrap_err(), "input failed");
+        assert!(restored.get());
     }
 }
