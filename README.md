@@ -115,6 +115,10 @@ handy --start-hidden --no-tray
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
 
+### Bluetooth Headset Microphones (macOS)
+
+Using a Bluetooth headset microphone on macOS may temporarily reduce playback quality or volume while recording because Bluetooth switches to bidirectional audio. Keep your headphones as the output device and select your Mac's built-in or an external microphone in Handy to avoid this.
+
 ### Major Issues (Help Wanted)
 
 **Whisper Model Crashes:**

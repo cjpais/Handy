@@ -223,7 +223,7 @@
       "title": "Dźwięk",
       "microphone": {
         "title": "Mikrofon",
-        "description": "Wybierz preferowane urządzenie mikrofonowe",
+        "description": "Wybierz preferowane urządzenie mikrofonowe. Na macOS używanie mikrofonu zestawu Bluetooth może tymczasowo obniżyć jakość lub głośność odtwarzania podczas nagrywania. Aby tego uniknąć, pozostaw słuchawki jako urządzenie wyjściowe i wybierz w Handy wbudowany mikrofon Maca lub mikrofon zewnętrzny.",
         "placeholder": "Wybierz mikrofon...",
         "loading": "Wczytywanie..."
       },

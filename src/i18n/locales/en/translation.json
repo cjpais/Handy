@@ -223,7 +223,7 @@
       "title": "Sound",
       "microphone": {
         "title": "Microphone",
-        "description": "Select your preferred microphone device",
+        "description": "Select your preferred microphone device. On macOS, using a Bluetooth headset microphone may temporarily reduce playback quality or volume while recording because Bluetooth switches to bidirectional audio. Keep your headphones as output and select your Mac's built-in or an external microphone in Handy to avoid this.",
         "placeholder": "Select microphone...",
         "loading": "Loading..."
       },
