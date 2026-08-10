@@ -141,6 +141,7 @@ For reliable text input on Linux, install the appropriate tool for your display 
 | Both           | `dotool`         | `sudo apt install dotool` (requires `input` group) |
 
 - **X11**: Install `xdotool` for both direct typing and clipboard paste shortcuts
+- **Ubuntu 26.04**: Has Wayland display server by default. `wtype` does not works, you need to install `ydotool` and configure systemd as describe [here](https://github.com/cjpais/Handy/pull/557#issuecomment-3781249267).
 - **Wayland**: Install `wtype` (preferred) or `dotool` for text input to work correctly
 - **dotool setup**: Requires adding your user to the `input` group: `sudo usermod -aG input $USER` (then log out and back in)
 

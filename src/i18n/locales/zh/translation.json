@@ -376,6 +376,10 @@
       "voiceActivityDetection": {
         "title": "语音活动检测",
         "description": "过滤录音中的静音。支持流式的模型会使用更长的 VAD 尾段；停用 VAD 则会录制原始音频。"
+      },
+      "fillerWordRemoval": {
+        "title": "移除语气词",
+        "description": "从转录中移除常见的语气词。关闭此选项即可保留这些词。"
       }
     },
     "postProcessing": {
