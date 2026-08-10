@@ -10,11 +10,10 @@ import {
 import type { Theme } from "@/bindings";
 import "@/i18n";
 
-// The overlay is a separate webview from the settings window, so it must set
-// `data-theme` on its own document. Apply the last-known theme synchronously
-// before render (shared localStorage, same origin) to avoid a palette flash,
-// reconcile against the persisted setting in case the overlay booted before the
-// settings window populated localStorage, then re-apply on live changes.
+// A separate webview from the settings window, so the overlay has to set
+// `data-theme` on its own document: last-known theme before render (shared
+// localStorage) to avoid a flash, reconcile with the persisted setting in case
+// the overlay booted first, then follow live changes.
 applyTheme(getStoredTheme());
 syncThemeFromSettings();
 listen<Theme>("theme-changed", (event) => applyTheme(event.payload));

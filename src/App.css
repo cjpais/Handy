@@ -11,6 +11,8 @@
   --color-logo-stroke: var(--color-logo-stroke);
   --color-text-stroke: var(--color-text-stroke);
   --color-mid-gray: var(--color-mid-gray);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
 }
 
 :root {

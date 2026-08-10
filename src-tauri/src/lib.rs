@@ -894,9 +894,8 @@ pub fn run(cli_args: CliArgs) {
 
             // Apply the persisted appearance theme to the native title bar before
             // the window is shown, so it matches the in-app palette without a flash
-            // of the wrong theme. On macOS this sets the app appearance app-wide
-            // (title bar + overlay together), which is the intended behaviour.
-            // Linux is left to CSS `data-theme` alone.
+            // of the wrong theme. See `apply_window_theme` for what this does per
+            // platform.
             #[cfg(any(target_os = "windows", target_os = "macos"))]
             shortcut::apply_window_theme(app.handle(), settings.theme);
 
