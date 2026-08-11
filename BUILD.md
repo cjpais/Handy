@@ -146,6 +146,46 @@ Resources only need re-copying if they change upstream (new icons, sounds, model
 
 ## Troubleshooting
 
+### macOS Accessibility stays enabled but a local rebuild is not trusted
+
+Handy's current `signingIdentity: "-"` configuration produces an ad-hoc signature unless
+you provide a stable signing identity. For an ad-hoc signature, macOS may use the bundle's
+CDHash as its designated requirement. That hash changes when the rebuilt executable's
+signed contents change, even though the app name, install path, and bundle identifier
+(`com.pais.handy`) stay the same.
+
+The old `Handy.app` row can therefore remain enabled in **System Settings > Privacy &
+Security > Accessibility** while the newly built process still reports that Accessibility
+is not granted. This is especially confusing when onboarding remains on `Waiting...`.
+
+First install the final bundle at `/Applications/Handy.app`; do not grant permissions to an
+intermediate build path. Confirm that the current build has a different designated
+requirement from the previously approved build:
+
+```bash
+codesign -dr - /path/to/previous/Handy.app 2>&1
+codesign -dr - /Applications/Handy.app 2>&1
+codesign -dv --verbose=4 /Applications/Handy.app 2>&1 | grep -E 'Signature=|CDHash=|Identifier='
+```
+
+If the app is ad-hoc signed, the CDHash changed, and the installed app still cannot detect
+Accessibility despite the visible enabled row, clear only Handy's stale Accessibility
+record:
+
+```bash
+tccutil reset Accessibility com.pais.handy
+osascript -e 'tell application id "com.pais.handy" to quit'
+open /Applications/Handy.app
+```
+
+Grant Accessibility again when macOS prompts. Do not reset Microphone or unrelated TCC
+services unless those permissions are independently failing. Do not run the reset
+speculatively: official releases signed with the same Developer ID normally retain a
+stable code requirement across updates.
+
+See [issue #1618](https://github.com/cjpais/Handy/issues/1618) for the related onboarding
+and stale-permission report.
+
 ### AppImage build fails on Arch / rolling-release distros
 
 `linuxdeploy` bundles its own `strip` binary which is too old to process system libraries built with newer toolchains on rolling-release distros (Arch, CachyOS, Manjaro, EndeavourOS).
