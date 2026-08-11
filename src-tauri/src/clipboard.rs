@@ -426,6 +426,37 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
         return Err(format!("xdotool failed: {}", stderr));
     }
 
+    // `--clearmodifiers` snapshots any held modifiers, releases them for the
+    // duration of typing, then re-presses the snapshot afterwards. This paste
+    // runs after a multi-second async transcription, so the snapshot can be
+    // stale: the user may have released the modifier (e.g. the Ctrl of a
+    // Ctrl+Space push-to-talk binding) in the meantime. The synthetic re-press
+    // then lands on the XTEST keyboard with no matching release, latching the
+    // modifier system-wide until it is pressed and released again (#1817).
+    //
+    // Release the push-style modifiers explicitly so a stale restore can never
+    // leave anything latched. `xdotool keyup` injects via the XTEST extension
+    // (the same device the restore wrote to), so this clears the latch.
+    //
+    // Two intentional trade-offs:
+    //  - Only ctrl/shift/alt/super are released. `--clearmodifiers` also tracks
+    //    Meta, ISO_Level3_Shift (AltGr), mouse buttons and caps/num/scroll lock;
+    //    the lock keys are skipped on purpose (they toggle on key events) and
+    //    the rest are out of scope for the reported Ctrl-latch bug.
+    //  - The release is unconditional. Because X modifier state is not
+    //    reference-counted per device, this can also drop a modifier the user is
+    //    physically holding across the paste. That case is rare (the common
+    //    workflow is a push-to-talk binding, not a modifier held for subsequent
+    //    typing); if it regresses someone we should switch to querying actual
+    //    state (e.g. xinput) and releasing only latched keys.
+    // Releasing a modifier that is not held is a no-op on X11, so this is safe
+    // when nothing was held. The result is ignored on purpose: the text was
+    // already typed successfully, and a failed cleanup must not fail the paste.
+    let _ = Command::new("xdotool")
+        .arg("keyup")
+        .args(["ctrl", "shift", "alt", "super"])
+        .output();
+
     Ok(())
 }
 
