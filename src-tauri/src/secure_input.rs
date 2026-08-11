@@ -320,6 +320,11 @@ mod imp {
                 }
 
                 if !now_enabled {
+                    // Capture this before clearing the state. Once `sustained`
+                    // becomes false, warning_active() can no longer tell us that
+                    // the tray is still displaying the previous warning.
+                    let warning_was_active = state.warning_active();
+
                     // Clear recorder impact on every disabled sample. A short
                     // Secure Input episode can otherwise occur entirely
                     // between polls and leave this flag latched indefinitely.
@@ -332,6 +337,12 @@ mod imp {
 
                     if state.sustained.swap(false, Ordering::SeqCst) {
                         reconcile_fallback(&app);
+                        // reconcile_fallback snapshots warning state after the
+                        // sustained flag changed, so explicitly clear a warning
+                        // that was visible before deactivation.
+                        if warning_was_active {
+                            refresh_tray(&app);
+                        }
                     } else if was_enabled || was_blocked {
                         refresh_tray(&app);
                         emit_status(&app);
@@ -477,6 +488,7 @@ mod imp {
     pub fn reconcile_fallback(app: &AppHandle) {
         let state = app.state::<SecureInputState>();
         let _operation = state.fallback_operation.lock().unwrap();
+        let warning_was_active = state.warning_active();
 
         let previous = {
             let mut fallback = state.fallback.lock().unwrap();
@@ -538,8 +550,16 @@ mod imp {
         }
 
         *state.fallback.lock().unwrap() = next;
+        let warning_is_active = state.warning_active();
         drop(_operation);
-        refresh_tray(app);
+
+        // The tray only reflects whether user-visible impact exists; covered
+        // bindings and other fallback details are reported through the event.
+        // Avoid rebuilding the native tray menu when its visible state did not
+        // change, especially during recording lifecycle reconciliation.
+        if warning_was_active != warning_is_active {
+            refresh_tray(app);
+        }
         emit_status(app);
     }
 
@@ -553,13 +573,21 @@ mod imp {
     pub fn register_cancel_fallback(app: &AppHandle) {
         let state = app.state::<SecureInputState>();
         state.cancel_requested.store(true, Ordering::SeqCst);
-        schedule_reconcile(app);
+        // Without sustained Secure Input there are no Carbon shadows to
+        // update. The monitor performs reconciliation when sustained mode is
+        // entered or left, so spawning here would only race the normal tray
+        // state transition for every recording start.
+        if state.is_sustained() {
+            schedule_reconcile(app);
+        }
     }
 
     pub fn unregister_cancel_fallback(app: &AppHandle) {
         let state = app.state::<SecureInputState>();
         state.cancel_requested.store(false, Ordering::SeqCst);
-        schedule_reconcile(app);
+        if state.is_sustained() {
+            schedule_reconcile(app);
+        }
     }
 
     /// Count-only capture test for the debug window. Opens a short-lived
