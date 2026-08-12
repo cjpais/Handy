@@ -114,11 +114,14 @@ fn configure_layer_shell_position(gtk_window: &gtk::ApplicationWindow, position:
     gtk_window.set_layer_shell_margin(opposite_edge, 0);
 }
 
-/// Configures a GTK layer surface before it is shown.
+/// Configures a GTK layer surface's position and size.
 ///
 /// Tauri's normal `set_size` path calls `gtk_window_resize`, but layer surfaces
 /// derive their dimensions from GTK's size request. gtk-layer-shell documents
 /// the `set_size_request` + `resize(1, 1)` sequence for forcing a new size.
+///
+/// Also used to "park" the surface back at the compact size before hiding —
+/// see `hide_recording_overlay`.
 #[cfg(target_os = "linux")]
 fn configure_layer_shell_surface(
     gtk_window: &gtk::ApplicationWindow,
@@ -532,6 +535,7 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
 }
 
 fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
+
     // Size the overlay for this state (compact vs. streaming), then position it.
     let (width, height) = overlay_dimensions(state);
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -761,28 +765,67 @@ static OVERLAY_SESSION_SHOWING: AtomicBool = AtomicBool::new(false);
 /// can't say: a model that doesn't stream gets the compact pill under Live too.
 static OVERLAY_SESSION_LIVE: AtomicBool = AtomicBool::new(false);
 
-/// Hides the recording overlay window with fade-out animation
+/// Hides the recording overlay window
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
     OVERLAY_SESSION_SHOWING.store(false, Ordering::SeqCst);
     OVERLAY_SESSION_LIVE.store(false, Ordering::SeqCst);
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Snapshot before doing anything observable, so any show that lands
-        // after this point invalidates the delayed hide below.
-        let scheduled_at = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
-        // Emit event to trigger fade-out animation
+        // Emit event to trigger fade-out animation. Note: the frontend
+        // unmounts the card immediately, so no fade actually plays and there
+        // is no animation delay worth waiting for.
         let _ = overlay_window.emit("hide-overlay", ());
-        // Hide the window after a short delay to allow animation to complete,
-        // unless a newer session has shown the overlay again by then.
+        let generation = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
         let window_clone = overlay_window.clone();
+        #[cfg(target_os = "linux")]
+        let handle = app_handle.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(300));
-            if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
-                log::debug!("Skipping stale overlay hide: a newer session is showing the overlay");
-                return;
+            #[cfg(target_os = "linux")]
+            if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+                // Give the webview a beat to process the hide-overlay event
+                // and unmount the card (it returns null when not visible), so
+                // the parked frame below repaints a clean transparent scene
+                // instead of the old card clipped to the compact viewport.
+                std::thread::sleep(std::time::Duration::from_millis(80));
+
+                // WebKitGTK on Wayland repaints only damaged regions, so a
+                // surface unmapped mid-transition keeps stale pixels in its
+                // reused buffers (the "ghost card" glitch) — or maps again
+                // with no fresh frame at all, showing nothing. Before hiding,
+                // shrink the layer surface back to the compact size while it
+                // is still mapped: a real size change forces a full repaint
+                // with fresh, correct pixels, so the next show can never
+                // resurrect stale large-size content or an empty buffer.
+                let park_window = window_clone.clone();
+                let park_handle = handle.clone();
+                let _ = window_clone.run_on_main_thread(move || {
+                    if generation != OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) {
+                        return;
+                    }
+                    if let Ok(gtk_window) = park_window.gtk_window() {
+                        let position = settings::get_settings(&park_handle).overlay_position;
+                        configure_layer_shell_surface(
+                            &gtk_window,
+                            position,
+                            OVERLAY_WIDTH,
+                            OVERLAY_HEIGHT,
+                        );
+                    }
+                });
+                // Give the GTK main loop a moment to commit the parked frame
+                // before the surface is unmapped. This must happen off the
+                // main thread — sleeping there would block the commit.
+                std::thread::sleep(std::time::Duration::from_millis(130));
             }
-            let _ = window_clone.hide();
+
+            let hide_window = window_clone.clone();
+            let _ = window_clone.run_on_main_thread(move || {
+                if generation != OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) {
+                    return;
+                }
+                let _ = hide_window.hide();
+            });
         });
     }
 }
