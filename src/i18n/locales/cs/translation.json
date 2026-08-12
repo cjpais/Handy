@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Klávesa pro následné zpracování",
             "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
+          },
+          "transcribe_translate": {
+            "name": "Zkratka pro přepis a překlad",
+            "description": "Klávesová zkratka pro nahrávání hlasu a přepis s překladem do angličtiny."
           }
         },
         "errors": {

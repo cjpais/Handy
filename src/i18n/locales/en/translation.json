@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "transcribe_translate": {
+            "name": "Transcribe & Translate Hotkey",
+            "description": "The keyboard shortcut to record and transcribe your voice, translated to English."
           }
         },
         "errors": {

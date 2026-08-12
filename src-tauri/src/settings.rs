@@ -834,6 +834,25 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+    #[cfg(target_os = "windows")]
+    let default_translate_shortcut = "ctrl+alt+space";
+    #[cfg(target_os = "macos")]
+    let default_translate_shortcut = "option+command+space";
+    #[cfg(target_os = "linux")]
+    let default_translate_shortcut = "ctrl+alt+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_translate_shortcut = "alt+command+space";
+
+    bindings.insert(
+        "transcribe_translate".to_string(),
+        ShortcutBinding {
+            id: "transcribe_translate".to_string(),
+            name: "Transcribe and Translate to English".to_string(),
+            description: "Converts your speech into English text.".to_string(),
+            default_binding: default_translate_shortcut.to_string(),
+            current_binding: default_translate_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {

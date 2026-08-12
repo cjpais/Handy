@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "Genvej til efterbehandling",
             "description": "Valgfrit: En dedikeret genvej, der altid anvender AI-efterbehandling på din transskription."
+          },
+          "transcribe_translate": {
+            "name": "Genvej til transskription og oversættelse",
+            "description": "Tastaturgenvejen til at optage din stemme og transskribere den, oversat til engelsk."
           }
         },
         "errors": {

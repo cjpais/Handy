@@ -56,6 +56,10 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    /// Per-invocation "translate to English" override. `Some(true)` forces
+    /// translation for this recording regardless of the persisted setting;
+    /// `None` follows the persisted `translate_to_english` setting.
+    translate_to_english: Option<bool>,
 }
 
 /// Field name for structured output JSON schema
@@ -470,9 +474,11 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
-        // Load model in the background
+        // Apply the per-recording translate override before the model load and
+        // stream kick-off so the transcription pipeline snapshots it in time.
         let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
+        tm.set_translate_override(self.translate_to_english);
 
         // Load ASR model and VAD model in parallel
         let kickoff_started = Instant::now();
@@ -913,11 +919,22 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            translate_to_english: None,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            translate_to_english: None,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_translate".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+            translate_to_english: Some(true),
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),

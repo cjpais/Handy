@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Son İşlem Kısayolu",
             "description": "İsteğe bağlı: Transkripsiyonunuza her zaman AI son işleme uygulayan özel bir kısayol tuşu."
+          },
+          "transcribe_translate": {
+            "name": "Transkripsiyon ve çeviri kısayolu",
+            "description": "Sesinizi kaydedip İngilizceye çevrilmiş metin olarak yazan klavye kısayolu."
           }
         },
         "errors": {

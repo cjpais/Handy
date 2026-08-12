@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
+          },
+          "transcribe_translate": {
+            "name": "Phím tắt phiên âm và dịch thuật",
+            "description": "Phím tắt bàn phím để ghi âm giọng nói và chuyển thành văn bản tiếng Anh."
           }
         },
         "errors": {

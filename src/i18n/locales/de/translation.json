@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Nachbearbeitungs-Tastenkürzel",
             "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf deine Transkription anwendet."
+          },
+          "transcribe_translate": {
+            "name": "Tastenkürzel für Transkription & Übersetzung",
+            "description": "Das Tastenkürzel, um Ihre Stimme aufzunehmen und mit Übersetzung ins Englische zu transkribieren."
           }
         },
         "errors": {

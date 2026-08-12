@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "后处理快捷键",
             "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
+          },
+          "transcribe_translate": {
+            "name": "转录和翻译快捷键",
+            "description": "用于录制语音并将其转写为英文文本的键盘快捷键。"
           }
         },
         "errors": {

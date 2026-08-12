@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "後処理のショートカット",
             "description": "文字起こしに常に AI 後処理を適用するキーボードショートカット。 (任意)"
+          },
+          "transcribe_translate": {
+            "name": "文字起こしと翻訳のホットキー",
+            "description": "音声を録音して、英語に翻訳した文字起こしを行うキーボードショートカット。"
           }
         },
         "errors": {

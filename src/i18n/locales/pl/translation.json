@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Skrót postprocessingu",
             "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
+          },
+          "transcribe_translate": {
+            "name": "Skrót transkrypcji i tłumaczenia",
+            "description": "Skrót klawiaturowy do nagrywania głosu i transkrypcji z tłumaczeniem na angielski."
           }
         },
         "errors": {

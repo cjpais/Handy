@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "Snabbkommando för efterbearbetning",
             "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbearbetning på din transkription."
+          },
+          "transcribe_translate": {
+            "name": "Genväg för transkribering och översättning",
+            "description": "Tangentbordsgenvägen för att spela in din röst och transkribera den översatt till engelska."
           }
         },
         "errors": {

@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "קיצור לעיבוד משלים",
             "description": "אופציונלי: קיצור מקשים ייעודי שתמיד מפעיל עיבוד AI על התמלול."
+          },
+          "transcribe_translate": {
+            "name": "קיצור לתמלול ותרגום",
+            "description": "קיצור המקשים להקלטת קולך ותמלולו עם תרגום לאנגלית."
           }
         },
         "errors": {

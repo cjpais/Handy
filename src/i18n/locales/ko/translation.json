@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
+          },
+          "transcribe_translate": {
+            "name": "전사 및 번역 단축키",
+            "description": "음성을 녹음해 영어로 번역된 텍스트로 변환하는 키보드 단축키입니다."
           }
         },
         "errors": {

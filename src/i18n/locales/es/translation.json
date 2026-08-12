@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Tecla de post procesamiento",
             "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
+          },
+          "transcribe_translate": {
+            "name": "Atajo de transcripción y traducción",
+            "description": "El atajo de teclado para grabar tu voz y transcribirla traducida al inglés."
           }
         },
         "errors": {

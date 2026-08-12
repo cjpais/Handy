@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Raccourci de post-traitement",
             "description": "Facultatif : Un raccourci dédié qui applique toujours le post-traitement IA à votre transcription."
+          },
+          "transcribe_translate": {
+            "name": "Raccourci transcription et traduction",
+            "description": "Le raccourci clavier pour enregistrer votre voix et la transcrire en anglais."
           }
         },
         "errors": {

@@ -267,6 +267,11 @@ pub struct TranscriptionManager {
     /// `is_model_loaded()` consults this so the model still reports "loaded"
     /// while the worker holds it.
     active_engine_lease: Arc<AtomicU64>,
+    /// Per-recording "translate to English" override, set by the translate
+    /// shortcut binding while its recording session is active. `None` means no
+    /// translation. Snapshotted at the start of each run so a later session's
+    /// binding cannot leak into an in-flight transcription.
+    translate_override: Arc<Mutex<Option<bool>>>,
 }
 
 impl TranscriptionManager {
@@ -287,6 +292,7 @@ impl TranscriptionManager {
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
             active_engine_lease: Arc::new(AtomicU64::new(0)),
+            translate_override: Arc::new(Mutex::new(None)),
         };
 
         // Start the idle watcher
@@ -804,6 +810,11 @@ impl TranscriptionManager {
             stream_active: Arc::clone(&self.stream_active),
         };
 
+        // Snapshot the per-recording translate override before any model-load
+        // wait so a later shortcut press cannot change this run's intent.
+        let translate_to_english =
+            self.snapshot_translate_to_english(get_settings(&self.app_handle).translate_to_english);
+
         // Wait for any in-progress model load to finish (start_stream races the
         // background load kicked off when recording starts).
         {
@@ -895,7 +906,7 @@ impl TranscriptionManager {
         let effective_language =
             effective_language_for_model(&settings, self.model_manager.as_ref(), &model_id);
         let run_plan = transcribe_cpp_run_plan(
-            settings.translate_to_english,
+            translate_to_english,
             &effective_language,
             &languages,
             supports_translate,
@@ -1101,6 +1112,31 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
+    /// Set the per-recording "translate to English" override.
+    ///
+    /// The transcribe-and-translate shortcut sets `Some(true)` when its
+    /// recording session starts so the run translates regardless of the
+    /// persisted setting; plain transcribe bindings pass `None` so the
+    /// persisted setting still applies.
+    pub fn set_translate_override(&self, value: Option<bool>) {
+        *self
+            .translate_override
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = value;
+    }
+
+    /// Snapshot the effective "translate to English" flag for a run.
+    ///
+    /// A per-recording override wins; otherwise the persisted setting is used.
+    /// Called at the very start of a run (before any model-load wait) so a
+    /// subsequent session's shortcut press cannot leak into an in-flight run.
+    fn snapshot_translate_to_english(&self, persisted: bool) -> bool {
+        self.translate_override
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .unwrap_or(persisted)
+    }
+
     fn emit_stream_text(&self, committed: &str, tentative: &str) {
         let _ = StreamTextEvent {
             committed: committed.to_string(),
@@ -1120,6 +1156,10 @@ impl TranscriptionManager {
         // Update last activity timestamp
         self.touch_activity();
 
+        // Snapshot the per-recording translate override before any model-load
+        // wait so a later shortcut press cannot change this run's intent.
+        let translate_to_english =
+            self.snapshot_translate_to_english(get_settings(&self.app_handle).translate_to_english);
         let st = std::time::Instant::now();
         let audio_len = audio.len();
 
@@ -1246,7 +1286,7 @@ impl TranscriptionManager {
                         };
 
                         let run_plan = transcribe_cpp_run_plan(
-                            settings.translate_to_english,
+                            translate_to_english,
                             &validated_language,
                             &model_languages,
                             model_supports_translate,
@@ -1324,7 +1364,7 @@ impl TranscriptionManager {
                         };
                         let options = TranscribeOptions {
                             language: lang,
-                            translate: settings.translate_to_english,
+                            translate: translate_to_english,
                             ..Default::default()
                         };
                         canary_engine
@@ -1401,7 +1441,7 @@ impl TranscriptionManager {
         let filtered_result = post_process_transcription_text(result, &settings, model_is_whisper);
 
         let et = std::time::Instant::now();
-        let translation_note = if settings.translate_to_english {
+        let translation_note = if translate_to_english {
             " (translated)"
         } else {
             ""

@@ -199,6 +199,10 @@
           "transcribe_with_post_process": {
             "name": "Tasto di post-elaborazione",
             "description": "Facoltativo: Un tasto di scelta rapida dedicato che applica sempre la post-elaborazione IA alla trascrizione."
+          },
+          "transcribe_translate": {
+            "name": "Scorciatoia trascrizione e traduzione",
+            "description": "La scorciatoia da tastiera per registrare la tua voce e trascriverla tradotta in inglese."
           }
         },
         "errors": {

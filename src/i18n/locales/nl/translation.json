@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "Sneltoets voor naverwerking",
             "description": "Optioneel: Een specifieke sneltoets die altijd AI-naverwerking toepast op je transcriptie."
+          },
+          "transcribe_translate": {
+            "name": "Sneltoets voor transcriptie en vertaling",
+            "description": "De sneltoets om uw stem op te nemen en naar het Engels vertaald te transcriberen."
           }
         },
         "errors": {
