@@ -582,6 +582,23 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
     }
 }
 
+/// Notify the visible recording overlay that the input stream has delivered its
+/// first sample chunk. Audio feedback uses the same backend readiness signal,
+/// but this targeted event is skipped when overlays are disabled.
+pub fn emit_recording_ready(app_handle: &AppHandle) {
+    if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
+        return;
+    }
+
+    // Showing the overlay is also queued onto the main thread. Queue readiness
+    // there as well so a very fast always-on stream cannot overtake show-overlay
+    // and then get reset back to the arming state by the frontend.
+    let handle = app_handle.clone();
+    let _ = app_handle.run_on_main_thread(move || {
+        let _ = handle.emit_to("recording_overlay", "recording-ready", ());
+    });
+}
+
 /// Shows the recording overlay window with fade-in animation
 pub fn show_recording_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "recording");
