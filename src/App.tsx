@@ -20,6 +20,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
+import { getRecordingErrorNotification } from "@/lib/recordingErrorNotification";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
@@ -101,24 +102,23 @@ function App() {
   // Listen for recording errors from the backend and show a toast
   useEffect(() => {
     const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
-      const { error_type, detail } = event.payload;
+      const notification = getRecordingErrorNotification(
+        event.payload,
+        platform(),
+      );
+      const description = notification.descriptionKey
+        ? t(notification.descriptionKey, {
+            defaultValue: notification.descriptionFallbackKey
+              ? t(notification.descriptionFallbackKey)
+              : undefined,
+          })
+        : undefined;
+      const showToast =
+        notification.level === "warning" ? toast.warning : toast.error;
 
-      if (error_type === "microphone_permission_denied") {
-        const currentPlatform = platform();
-        const platformKey = `errors.micPermissionDenied.${currentPlatform}`;
-        const description = t(platformKey, {
-          defaultValue: t("errors.micPermissionDenied.generic"),
-        });
-        toast.error(t("errors.micPermissionDeniedTitle"), { description });
-      } else if (error_type === "no_input_device") {
-        toast.error(t("errors.noInputDeviceTitle"), {
-          description: t("errors.noInputDevice"),
-        });
-      } else {
-        toast.error(
-          t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
-        );
-      }
+      showToast(t(notification.titleKey, notification.titleValues), {
+        description,
+      });
     });
     return () => {
       unlisten.then((fn) => fn());

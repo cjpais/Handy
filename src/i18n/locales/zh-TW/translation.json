@@ -646,6 +646,8 @@
     },
     "noInputDeviceTitle": "找不到麥克風",
     "noInputDevice": "未偵測到音訊輸入裝置。請連接麥克風或耳機後重試。",
+    "silentInputTitle": "未偵測到音訊",
+    "silentInput": "請檢查所選的麥克風或輸入裝置，然後再試一次。",
     "recordingFailed": "錄音啟動失敗: {{error}}",
     "modelLoadFailed": "載入模型失敗: {{model}}",
     "modelLoadFailedUnknown": "未知模型",

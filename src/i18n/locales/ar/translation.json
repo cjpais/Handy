@@ -646,6 +646,8 @@
     },
     "noInputDeviceTitle": "لم يتم العثور على ميكروفون",
     "noInputDevice": "لم يتم اكتشاف أي جهاز إدخال صوتي. يرجى توصيل ميكروفون أو سماعة رأس والمحاولة مرة أخرى.",
+    "silentInputTitle": "لم يتم اكتشاف صوت",
+    "silentInput": "تحقق من الميكروفون أو جهاز الإدخال المحدد، ثم حاول مرة أخرى.",
     "recordingFailed": "فشل في بدء التسجيل: {{error}}",
     "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
     "modelLoadFailedUnknown": "نموذج غير معروف",

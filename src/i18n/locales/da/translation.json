@@ -649,6 +649,8 @@
     },
     "noInputDeviceTitle": "Ingen mikrofon fundet",
     "noInputDevice": "Ingen lydinputenhed blev registreret. Tilslut en mikrofon eller et headset, og prøv igen.",
+    "silentInputTitle": "Der blev ikke registreret lyd",
+    "silentInput": "Kontrollér den valgte mikrofon eller inputenhed, og prøv igen.",
     "recordingFailed": "Kunne ikke starte optagelse: {{error}}",
     "modelLoadFailed": "Kunne ikke indlæse model: {{model}}",
     "modelLoadFailedUnknown": "ukendt model",

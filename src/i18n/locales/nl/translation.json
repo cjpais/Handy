@@ -649,6 +649,8 @@
     },
     "noInputDeviceTitle": "Geen microfoon gevonden",
     "noInputDevice": "Er is geen audio-invoerapparaat gedetecteerd. Sluit een microfoon of headset aan en probeer het opnieuw.",
+    "silentInputTitle": "Geen audio gedetecteerd",
+    "silentInput": "Controleer de geselecteerde microfoon of het invoerapparaat en probeer het opnieuw.",
     "recordingFailed": "Opname starten mislukt: {{error}}",
     "modelLoadFailed": "Model laden mislukt: {{model}}",
     "modelLoadFailedUnknown": "onbekend model",
