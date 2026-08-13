@@ -57,6 +57,13 @@ Control Handy from [Raycast](https://www.raycast.com) — start/stop recording, 
 
 [Source](https://github.com/mattiacolombomc/raycast-handy) · by [@mattiacolombomc](https://github.com/mattiacolombomc)
 
+### Local IPC API
+
+Other applications on your machine can use Handy as their transcription
+service — no bundled models or inference stack — via a local JSON-RPC socket
+(Unix domain socket / Windows named pipe). See [docs/ipc.md](docs/ipc.md) for
+the protocol, error contract, and reference clients (Rust and Python).
+
 ## Architecture
 
 Handy is built as a Tauri application combining:

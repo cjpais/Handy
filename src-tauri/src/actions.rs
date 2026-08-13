@@ -3,6 +3,7 @@ use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error, VadPolicy};
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::engine_gate::EngineReservation;
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
@@ -15,16 +16,78 @@ use crate::utils::{
 };
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::future::Future;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
 
 const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
+
+/// How long a stopped dictation that started in the pending slot waits for
+/// the engine handoff. The pending slot bars new jobs from acquiring first,
+/// so this only ever waits out the single background job that was already
+/// running at recording start. The audio is already captured, so waiting
+/// beats dropping it; the bound keeps a runaway job from wedging dictation
+/// forever (the failure path still saves the WAV and an empty, retryable
+/// history entry).
+const DICTATION_ENGINE_WAIT: Duration = Duration::from_secs(60);
+
+/// Holds the dictation session's engine reservation between
+/// [`TranscribeAction`]'s `start` (recording begins) and `stop`/cancel.
+///
+/// Managed as Tauri state rather than inside the coordinator's `Stage` so the
+/// reservation doesn't have to thread through the `ShortcutAction` trait; the
+/// lifetime is the same as coordinator-held state would be: stored while
+/// recording, moved into the transcription pipeline on stop (released right
+/// after ASR), dropped on cancel (which also deregisters a pending
+/// reservation).
+#[derive(Default)]
+pub struct DictationSession {
+    reservation: Mutex<Option<EngineReservation>>,
+}
+
+impl DictationSession {
+    /// Publish the session's reservation. The slot should always be empty
+    /// here — stop consumes it and cancel clears it — so an occupant means a
+    /// previous session leaked; warn and replace (dropping the stale
+    /// reservation) rather than strand the new session's reservation outside
+    /// the slot.
+    fn begin(&self, reservation: &EngineReservation) {
+        let mut slot = self.reservation.lock().unwrap();
+        if slot.is_some() {
+            warn!("DictationSession::begin found an unconsumed reservation; replacing it");
+        }
+        *slot = Some(reservation.clone());
+    }
+
+    /// Move the reservation out for the stop pipeline.
+    fn take(&self) -> Option<EngineReservation> {
+        self.reservation.lock().unwrap().take()
+    }
+
+    /// Clear the slot only if it still holds `reservation`'s session, so a
+    /// start-path failure releases its own session without racing a cancel
+    /// that already cleared it (or a newer session's publication).
+    fn clear_if(&self, reservation: &EngineReservation) {
+        let mut slot = self.reservation.lock().unwrap();
+        if slot
+            .as_ref()
+            .is_some_and(|held| held.same_session(reservation))
+        {
+            *slot = None;
+        }
+    }
+
+    /// Drop the reservation (cancel path): releases the engine, or removes
+    /// the pending registration if the session never got the handoff.
+    pub fn clear(&self) {
+        drop(self.take());
+    }
+}
 
 #[derive(Clone, serde::Serialize)]
 struct RecordingErrorEvent {
@@ -465,6 +528,58 @@ pub(crate) async fn process_transcription_output(
     }
 }
 
+/// Batch fallback for the stop path: wait (bounded, cancellation-aware) for
+/// the session's engine reservation to become active — it may still be
+/// pending behind the one background job that was running when recording
+/// started — then make sure the selected model is loaded and transcribe.
+///
+/// A `None` reservation means the session was cancelled (cancel clears the
+/// slot) or a lifecycle invariant broke. Never re-reserve here: that could
+/// resurrect a dead session and queue it behind an unrelated job. All errors
+/// (including cancellation aborts) flow to the stop path's error arm, which
+/// checks the cancel generation first and discards silently when cancelled.
+fn batch_transcribe(
+    app: &AppHandle,
+    tm: &TranscriptionManager,
+    rm: &AudioRecordingManager,
+    cancel_generation: u64,
+    reservation: Option<&EngineReservation>,
+    samples: Vec<f32>,
+) -> anyhow::Result<String> {
+    let reservation = reservation.ok_or_else(|| {
+        anyhow::anyhow!("dictation session has no engine reservation (cancelled or raced)")
+    })?;
+
+    let is_cancelled = || rm.was_cancelled_since(cancel_generation);
+    reservation
+        .wait_active_cancellable(DICTATION_ENGINE_WAIT, is_cancelled)
+        .map_err(|busy| {
+            if is_cancelled() {
+                anyhow::anyhow!("dictation was cancelled while waiting for the engine")
+            } else {
+                anyhow::anyhow!(
+                    "Timed out waiting {DICTATION_ENGINE_WAIT:?} for the engine: {busy}"
+                )
+            }
+        })?;
+
+    // The handoff may land long after the user moved on; don't load a model
+    // or start inference that a cancel has already discarded.
+    if is_cancelled() {
+        return Err(anyhow::anyhow!(
+            "dictation was cancelled before transcription"
+        ));
+    }
+    let model_id = get_settings(app).selected_model;
+    tm.ensure_model_loaded(reservation, &model_id)?;
+    if is_cancelled() {
+        return Err(anyhow::anyhow!(
+            "dictation was cancelled before transcription"
+        ));
+    }
+    tm.transcribe(samples, reservation)
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -474,9 +589,41 @@ impl ShortcutAction for TranscribeAction {
         let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
-        // Load ASR model and VAD model in parallel
+        // Reserve the engine for this dictation session — capture-first: if a
+        // background job (retry, IPC) holds the gate, we register in the
+        // pending slot and record anyway; the stop path waits for the atomic
+        // handoff. Err means a previous session's pending registration is
+        // still occupied, which the coordinator's one-session-at-a-time state
+        // machine rules out — abort rather than record with no path to the
+        // engine.
+        let reservation = match tm.reserve_dictation() {
+            Ok(r) => r,
+            Err(busy) => {
+                error!("Cannot start dictation: {busy}");
+                return;
+            }
+        };
+        let engine_ready = reservation.is_active();
+        if !engine_ready {
+            info!("Engine busy at recording start; capturing now, transcribing after handoff");
+        }
+
+        // Publish the session immediately so a concurrent cancel (tray or
+        // frontend command — cancellation does not go through the coordinator
+        // thread) can release the reservation, and snapshot the cancel
+        // generation so a cancel that races the rest of startup is detected
+        // in the epilogue below.
+        let session = app.state::<DictationSession>();
+        session.begin(&reservation);
+        let start_cancel_generation = rm.cancel_generation();
+
+        // Load ASR model and VAD model in parallel. The preload runs under
+        // the session's reservation; when pending it is skipped and the stop
+        // path's ensure_model_loaded covers it after handoff.
         let kickoff_started = Instant::now();
-        tm.initiate_model_load();
+        if engine_ready {
+            tm.initiate_model_load(&reservation);
+        }
         let rm_clone = Arc::clone(&rm);
         std::thread::spawn(move || {
             if let Err(e) = rm_clone.preload_vad() {
@@ -506,15 +653,19 @@ impl ShortcutAction for TranscribeAction {
             .as_ref()
             .map(|m| m.supports_streaming)
             .unwrap_or(false);
+        // Live streaming needs the engine now; a pending reservation means a
+        // background job still owns it, so this session records for batch
+        // transcription instead (no late-start streaming after handoff).
+        let live_streaming = model_supports_streaming && engine_ready;
         let vad_policy = if !settings.vad_enabled {
             VadPolicy::Disabled
-        } else if model_supports_streaming {
+        } else if live_streaming {
             VadPolicy::Streaming
         } else {
             VadPolicy::Offline
         };
-        if model_supports_streaming {
-            tm.start_stream();
+        if live_streaming {
+            tm.start_stream(reservation.clone());
         }
         let plan_elapsed = plan_started.elapsed();
 
@@ -523,7 +674,7 @@ impl ShortcutAction for TranscribeAction {
         // pill instead of an oversized transparent live window.
         let overlay_started = Instant::now();
         match settings.overlay_style {
-            OverlayStyle::Live if model_supports_streaming => utils::show_streaming_overlay(app),
+            OverlayStyle::Live if live_streaming => utils::show_streaming_overlay(app),
             OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
             OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
         }
@@ -582,13 +733,33 @@ impl ShortcutAction for TranscribeAction {
             }
         }
 
-        if recording_error.is_none() {
+        // A cancel may have raced startup: cancel_recording can run before
+        // our recorder actually starts (so capture would continue as a
+        // phantom session) and clear() may hit the slot before or after we
+        // published. Treat that exactly like a failed start.
+        let cancelled_during_start =
+            recording_error.is_none() && rm.was_cancelled_since(start_cancel_generation);
+
+        if recording_error.is_none() && !cancelled_during_start {
+            // The session slot owns the reservation from here: stop() moves
+            // it into the transcription pipeline, cancel clears it.
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
         } else {
-            // Starting failed (for example due to blocked microphone permissions).
-            // Revert UI state so we don't stay stuck in the recording overlay.
+            if cancelled_during_start {
+                debug!("Dictation start raced a cancel; aborting the session");
+                // The recorder may have begun capturing after the cancel ran;
+                // stop it and discard the audio.
+                rm.cancel_recording();
+            }
+            // Starting failed (for example due to blocked microphone
+            // permissions) or was cancelled mid-startup. Revert UI state so
+            // we don't stay stuck in the recording overlay. clear_if releases
+            // only OUR session (a raced cancel may have already cleared the
+            // slot); the local `reservation` drops at scope end, releasing
+            // the engine (or deregistering the pending slot).
             tm.cancel_stream();
+            session.clear_if(&reservation);
             utils::hide_recording_overlay(app);
             change_tray_icon(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
@@ -626,6 +797,12 @@ impl ShortcutAction for TranscribeAction {
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+
+        // The recording phase is over: take ownership of the session's engine
+        // reservation. It rides into the async pipeline and is released right
+        // after ASR — post-processing, history, and paste don't need the
+        // engine.
+        let session_reservation = app.state::<DictationSession>().take();
 
         change_tray_icon(app, TrayIconState::Transcribing);
         // Stop should give immediate visual feedback. Live streaming can keep
@@ -697,17 +874,29 @@ impl ShortcutAction for TranscribeAction {
                     // running, finalize it and use its text (all audio was already
                     // fed to the stream); otherwise batch-transcribe the samples.
                     let transcription_time = Instant::now();
-                    let transcription_result = match tm.finalize_stream() {
-                        // A finalized stream with usable text wins. An empty result
-                        // (no active stream, produced nothing, or a finalize error
-                        // after the engine was returned) falls back to a full batch
-                        // transcription of the same audio. A finalize timeout is
-                        // surfaced instead — the worker may still hold the engine,
-                        // so a batch fallback would contend with it.
-                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
-                        Ok(_) => tm.transcribe(samples),
-                        Err(err) => Err(err),
-                    };
+                    let transcription_result =
+                        match tm.finalize_stream(session_reservation.as_ref()) {
+                            // A finalized stream with usable text wins. An empty result
+                            // (no active stream, produced nothing, or a finalize error
+                            // after the engine was returned) falls back to a full batch
+                            // transcription of the same audio. A finalize timeout is
+                            // surfaced instead — the worker may still hold the engine,
+                            // so a batch fallback would contend with it.
+                            Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
+                            Ok(_) => batch_transcribe(
+                                &ah,
+                                &tm,
+                                &rm,
+                                cancel_generation,
+                                session_reservation.as_ref(),
+                                samples,
+                            ),
+                            Err(err) => Err(err),
+                        };
+                    // ASR is done: release the engine before post-processing,
+                    // history, and paste, so background jobs (or a queued
+                    // handoff) can proceed while we finish up.
+                    drop(session_reservation);
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
@@ -934,8 +1123,9 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 mod tests {
     use super::{
         complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
-        strip_think_block,
+        strip_think_block, DictationSession,
     };
+    use crate::managers::engine_gate::test_reservation;
     use crate::settings::OverlayStyle;
     use std::future;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -1016,5 +1206,47 @@ mod tests {
         assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
         assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
         assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
+    }
+
+    #[test]
+    fn dictation_session_take_consumes_the_reservation() {
+        let session = DictationSession::default();
+        assert!(session.take().is_none());
+        let reservation = test_reservation();
+        session.begin(&reservation);
+        assert!(session.take().is_some());
+        assert!(session.take().is_none());
+    }
+
+    /// A start-path failure must release only its own session: a foreign
+    /// reservation (e.g. a newer session published after a raced cancel)
+    /// stays untouched, while the session's own reservation is removed.
+    #[test]
+    fn dictation_session_clear_if_removes_only_its_own_session() {
+        let session = DictationSession::default();
+        let own = test_reservation();
+        session.begin(&own);
+
+        let other = test_reservation();
+        session.clear_if(&other);
+        assert!(
+            session.take().is_some(),
+            "a different session must not clear the slot"
+        );
+
+        session.begin(&own);
+        session.clear_if(&own);
+        assert!(session.take().is_none(), "own session must clear the slot");
+    }
+
+    /// `clear()` (the cancel path) empties the slot unconditionally; dropping
+    /// the taken reservation is what releases the engine.
+    #[test]
+    fn dictation_session_clear_empties_the_slot() {
+        let session = DictationSession::default();
+        let reservation = test_reservation();
+        session.begin(&reservation);
+        session.clear();
+        assert!(session.take().is_none());
     }
 }

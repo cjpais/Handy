@@ -1,5 +1,6 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
+    engine_gate::EngineJobKind,
     history::{HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
 };
@@ -81,13 +82,23 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording has no audio samples".to_string());
     }
 
-    transcription_manager.initiate_model_load();
+    // Retranscription is a background job: if the engine is busy — a
+    // dictation session (which reserves at recording start), an IPC job,
+    // another retry — report it instead of queueing. The reservation is the
+    // single authority; no separate recording-state check is needed.
+    let reservation = transcription_manager
+        .try_reserve(EngineJobKind::Retry)
+        .map_err(|busy| format!("Cannot retranscribe right now: {}", busy))?;
 
+    let selected_model = crate::settings::get_settings(&app).selected_model;
     let tm = Arc::clone(&transcription_manager);
-    let transcription = tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))
-        .await
-        .map_err(|e| format!("Transcription task panicked: {}", e))?
-        .map_err(|e| e.to_string())?;
+    let transcription = tauri::async_runtime::spawn_blocking(move || -> anyhow::Result<String> {
+        tm.ensure_model_loaded(&reservation, &selected_model)?;
+        tm.transcribe(samples, &reservation)
+    })
+    .await
+    .map_err(|e| format!("Transcription task panicked: {}", e))?
+    .map_err(|e| e.to_string())?;
 
     if transcription.is_empty() {
         return Err("Recording contains no speech".to_string());
