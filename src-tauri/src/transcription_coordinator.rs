@@ -23,6 +23,46 @@ struct PendingRelease {
     deadline: Instant,
 }
 
+/// A press that arrived while the pipeline was still busy processing the
+/// previous transcription. Toggle-style triggers (SIGUSR2, CLI flags, some
+/// pedal setups) flip state on every edge, so dropping a busy press desyncs
+/// the parity: the next edge starts a recording nobody will ever stop.
+struct PendingPress {
+    binding_id: String,
+    hotkey_string: String,
+}
+
+/// What to do with an input that arrives while the pipeline is busy
+/// (`Stage::Processing`). `remembered` is whether a press for the same binding
+/// is already waiting for the pipeline to drain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BusyAction {
+    /// Ignore the input entirely.
+    Ignore,
+    /// Remember the press; start recording when the pipeline finishes.
+    Remember,
+    /// This input cancels a previously remembered press (toggle parity: two
+    /// presses during one busy window net to no-op; PTT: the key was already
+    /// released, so the remembered press must not fire).
+    Forget,
+}
+
+fn classify_busy_input(is_pressed: bool, push_to_talk: bool, remembered: bool) -> BusyAction {
+    match (push_to_talk, is_pressed) {
+        // Toggle: presses alternate remember/forget to preserve parity.
+        (false, true) if remembered => BusyAction::Forget,
+        (false, true) => BusyAction::Remember,
+        // Toggle mode ignores releases.
+        (false, false) => BusyAction::Ignore,
+        // PTT: a press while busy means the user is holding the key — start as
+        // soon as the pipeline drains. A release while busy means the tap is
+        // already over; forget the remembered press (or ignore if none).
+        (true, true) => BusyAction::Remember,
+        (true, false) if remembered => BusyAction::Forget,
+        (true, false) => BusyAction::Ignore,
+    }
+}
+
 /// Commands processed sequentially by the coordinator thread.
 enum Command {
     Input {
@@ -30,6 +70,10 @@ enum Command {
         hotkey_string: String,
         is_pressed: bool,
         push_to_talk: bool,
+        /// External triggers (SIGUSR2, CLI flags) rather than physical keys.
+        /// They fire on every edge by design and must never be debounced —
+        /// dropping one desyncs toggle parity and wedges recording on.
+        external: bool,
     },
     Cancel {
         recording_was_active: bool,
@@ -88,6 +132,7 @@ impl TranscriptionCoordinator {
                 let mut stage = Stage::Idle;
                 let mut last_press: Option<Instant> = None;
                 let mut pending_release: Option<PendingRelease> = None;
+                let mut pending_press: Option<PendingPress> = None;
 
                 loop {
                     let cmd = if let Some(pending) = &pending_release {
@@ -124,6 +169,7 @@ impl TranscriptionCoordinator {
                             hotkey_string,
                             is_pressed,
                             push_to_talk,
+                            external,
                         } => {
                             let pending_release_binding = pending_release
                                 .as_ref()
@@ -157,7 +203,9 @@ impl TranscriptionCoordinator {
 
                             // Debounce rapid-fire press events (key repeat / double-tap).
                             // Push-to-talk releases may be deferred above to absorb X11 auto-repeat.
-                            if is_pressed {
+                            // External triggers are exempt: each one is a deliberate edge from the
+                            // user's own integration, and dropping it desyncs toggle parity.
+                            if is_pressed && !external {
                                 let now = Instant::now();
                                 if last_press.is_some_and(|t| now.duration_since(t) < DEBOUNCE) {
                                     debug!("Debounced press for '{binding_id}'");
@@ -166,11 +214,43 @@ impl TranscriptionCoordinator {
                                 last_press = Some(now);
                             }
 
+                            // A busy pipeline can't accept lifecycle changes now:
+                            // classify the input against any already-remembered
+                            // press instead of dropping it silently.
+                            if let Stage::Processing = stage {
+                                let remembered = pending_press
+                                    .as_ref()
+                                    .is_some_and(|p| p.binding_id == binding_id);
+                                match classify_busy_input(is_pressed, push_to_talk, remembered) {
+                                    BusyAction::Remember => {
+                                        debug!(
+                                            "Remembering press for '{binding_id}': pipeline busy"
+                                        );
+                                        pending_press = Some(PendingPress {
+                                            binding_id,
+                                            hotkey_string,
+                                        });
+                                    }
+                                    BusyAction::Forget => {
+                                        debug!("Forgetting remembered press for '{binding_id}'");
+                                        pending_press = None;
+                                    }
+                                    BusyAction::Ignore => {
+                                        debug!("Ignoring input for '{binding_id}': pipeline busy");
+                                    }
+                                }
+                                continue;
+                            }
+
                             if push_to_talk {
-                                if is_pressed && matches!(stage, Stage::Idle) {
-                                    start(&app, &mut stage, &binding_id, &hotkey_string);
-                                } else if !is_pressed
-                                    && matches!(&stage, Stage::Recording(id) if id == &binding_id)
+                                if is_pressed {
+                                    match &stage {
+                                        Stage::Idle => {
+                                            start(&app, &mut stage, &binding_id, &hotkey_string)
+                                        }
+                                        _ => {}
+                                    }
+                                } else if matches!(&stage, Stage::Recording(id) if id == &binding_id)
                                 {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
                                 }
@@ -192,6 +272,10 @@ impl TranscriptionCoordinator {
                             recording_was_active,
                         } => {
                             pending_release = None;
+                            // An explicit cancel abandons any remembered start
+                            // too — the user asked for silence, not a deferred
+                            // recording.
+                            pending_press = None;
                             // Don't reset during processing — wait for the pipeline to finish.
                             if !matches!(stage, Stage::Processing)
                                 && (recording_was_active || matches!(stage, Stage::Recording(_)))
@@ -201,6 +285,18 @@ impl TranscriptionCoordinator {
                         }
                         Command::ProcessingFinished => {
                             stage = Stage::Idle;
+                            if let Some(pending) = pending_press.take() {
+                                debug!(
+                                    "Pipeline drained; starting remembered press for '{}'",
+                                    pending.binding_id
+                                );
+                                start(
+                                    &app,
+                                    &mut stage,
+                                    &pending.binding_id,
+                                    &pending.hotkey_string,
+                                );
+                            }
                         }
                     }
                 }
@@ -223,6 +319,23 @@ impl TranscriptionCoordinator {
         is_pressed: bool,
         push_to_talk: bool,
     ) {
+        self.send(binding_id, hotkey_string, is_pressed, push_to_talk, false);
+    }
+
+    /// Send an external trigger (SIGUSR2, CLI flag). Always a toggle press,
+    /// always exempt from debounce — see `Command::Input::external`.
+    pub fn send_external_input(&self, binding_id: &str, source: &str) {
+        self.send(binding_id, source, true, false, true);
+    }
+
+    fn send(
+        &self,
+        binding_id: &str,
+        hotkey_string: &str,
+        is_pressed: bool,
+        push_to_talk: bool,
+        external: bool,
+    ) {
         if self
             .tx
             .send(Command::Input {
@@ -230,6 +343,7 @@ impl TranscriptionCoordinator {
                 hotkey_string: hotkey_string.to_string(),
                 is_pressed,
                 push_to_talk,
+                external,
             })
             .is_err()
         {
@@ -345,6 +459,71 @@ mod tests {
             classify_ptt_event(Some("transcribe"), true, true, "transcribe", None),
             PttAction::CancelRelease
         );
+    }
+
+    // ---------------------------------------------------------------------
+    // Busy-pipeline input classification.
+    //
+    // Toggle-style triggers (SIGUSR2, CLI flags, pedals that signal on both
+    // edges) flip state on every edge. Dropping a press that arrives while
+    // the previous pipeline is still processing desyncs the parity: the next
+    // edge then starts a recording no one will stop, leaving the overlay
+    // waiting for input with the button long released.
+    // ---------------------------------------------------------------------
+
+    #[test]
+    fn toggle_press_during_processing_remembers_start() {
+        assert_eq!(
+            classify_busy_input(true, false, false),
+            BusyAction::Remember
+        );
+    }
+
+    #[test]
+    fn second_toggle_press_during_processing_forgets_press() {
+        assert_eq!(classify_busy_input(true, false, true), BusyAction::Forget);
+    }
+
+    #[test]
+    fn toggle_release_during_processing_is_ignored() {
+        assert_eq!(classify_busy_input(false, false, false), BusyAction::Ignore);
+        assert_eq!(classify_busy_input(false, false, true), BusyAction::Ignore);
+    }
+
+    #[test]
+    fn ptt_press_during_processing_remembers_start() {
+        assert_eq!(classify_busy_input(true, true, false), BusyAction::Remember);
+    }
+
+    #[test]
+    fn ptt_release_during_processing_forgets_remembered_press() {
+        assert_eq!(classify_busy_input(false, true, true), BusyAction::Forget);
+        assert_eq!(classify_busy_input(false, true, false), BusyAction::Ignore);
+    }
+
+    /// Toggle parity across a busy window: an odd number of presses remembers
+    /// one start, each further press flips the remembered press off/on again.
+    #[test]
+    fn toggle_presses_alternate_remember_and_forget_while_busy() {
+        let mut remembered = false;
+        for expected in [
+            BusyAction::Remember,
+            BusyAction::Forget,
+            BusyAction::Remember,
+        ] {
+            let action = classify_busy_input(true, false, remembered);
+            assert_eq!(action, expected);
+            remembered = action == BusyAction::Remember;
+        }
+        assert!(remembered);
+    }
+
+    /// A quick PTT tap that lands entirely inside the busy window must net to
+    /// no-op: the press is remembered, the release forgets it, nothing starts.
+    #[test]
+    fn ptt_tap_inside_busy_window_nets_noop() {
+        assert_eq!(classify_busy_input(true, true, false), BusyAction::Remember);
+        assert_eq!(classify_busy_input(false, true, true), BusyAction::Forget);
     }
 
     // ---------------------------------------------------------------------
