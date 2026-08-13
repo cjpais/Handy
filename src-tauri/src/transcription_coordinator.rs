@@ -63,29 +63,46 @@ fn classify_busy_input(is_pressed: bool, push_to_talk: bool, remembered: bool) -
     }
 }
 
-/// Commands processed sequentially by the coordinator thread.
-enum Command {
-    Input {
-        binding_id: String,
-        hotkey_string: String,
-        is_pressed: bool,
-        push_to_talk: bool,
-        /// External triggers (SIGUSR2, CLI flags) rather than physical keys.
-        /// They fire on every edge by design and must never be debounced —
-        /// dropping one desyncs toggle parity and wedges recording on.
-        external: bool,
-    },
-    Cancel {
-        recording_was_active: bool,
-    },
-    ProcessingFinished,
-}
-
-/// Pipeline lifecycle, owned exclusively by the coordinator thread.
+/// Pipeline lifecycle.
+#[derive(Debug, PartialEq, Eq)]
 enum Stage {
     Idle,
     Recording(String), // binding_id
     Processing,
+}
+
+/// A keyboard/signal edge for a transcribe binding.
+struct InputEvent {
+    binding_id: String,
+    hotkey_string: String,
+    is_pressed: bool,
+    push_to_talk: bool,
+    /// External triggers (SIGUSR2, CLI flags) rather than physical keys.
+    /// They fire on every edge by design and must never be debounced —
+    /// dropping one desyncs toggle parity and wedges recording on.
+    external: bool,
+}
+
+/// A side effect decided by [`CoordinatorState`]; the coordinator thread is
+/// the only executor. Keeping decisions pure lets tests drive the exact
+/// production transitions without a Tauri `AppHandle` or real timers.
+#[derive(Debug, PartialEq, Eq)]
+enum Effect {
+    Start {
+        binding_id: String,
+        hotkey_string: String,
+    },
+    Stop {
+        binding_id: String,
+        hotkey_string: String,
+    },
+}
+
+/// Commands processed sequentially by the coordinator thread.
+enum Command {
+    Input(InputEvent),
+    Cancel { recording_was_active: bool },
+    ProcessingFinished,
 }
 
 fn classify_ptt_event(
@@ -112,9 +129,198 @@ fn classify_ptt_event(
     }
 }
 
+/// Pure lifecycle state machine: owns every transition decision (PTT grace,
+/// debounce, busy-pipeline remember/forget, cancel, drain). Produces
+/// [`Effect`]s instead of touching the app, so unit tests exercise the real
+/// production logic.
+struct CoordinatorState {
+    stage: Stage,
+    last_press: Option<Instant>,
+    pending_release: Option<PendingRelease>,
+    pending_press: Option<PendingPress>,
+}
+
+impl CoordinatorState {
+    fn new() -> Self {
+        Self {
+            stage: Stage::Idle,
+            last_press: None,
+            pending_release: None,
+            pending_press: None,
+        }
+    }
+
+    /// Deadline of the deferred release, if any — drives `recv_timeout`.
+    fn grace_deadline(&self) -> Option<Instant> {
+        self.pending_release.as_ref().map(|p| p.deadline)
+    }
+
+    fn on_input(&mut self, input: InputEvent, now: Instant) -> Option<Effect> {
+        let pending_release_binding = self
+            .pending_release
+            .as_ref()
+            .map(|pending| pending.binding_id.as_str());
+        let recording_binding = match &self.stage {
+            Stage::Recording(id) => Some(id.as_str()),
+            _ => None,
+        };
+
+        match classify_ptt_event(
+            pending_release_binding,
+            input.is_pressed,
+            input.push_to_talk,
+            &input.binding_id,
+            recording_binding,
+        ) {
+            PttAction::CancelRelease => {
+                self.pending_release = None;
+                return None;
+            }
+            PttAction::DeferRelease => {
+                self.pending_release = Some(PendingRelease {
+                    binding_id: input.binding_id,
+                    hotkey_string: input.hotkey_string,
+                    deadline: now + RELEASE_GRACE,
+                });
+                return None;
+            }
+            PttAction::Passthrough => {}
+        }
+
+        // Debounce rapid-fire press events (key repeat / double-tap).
+        // Push-to-talk releases may be deferred above to absorb X11 auto-repeat.
+        // External triggers are exempt: each one is a deliberate edge from the
+        // user's own integration, and dropping it desyncs toggle parity.
+        if input.is_pressed && !input.external {
+            if self
+                .last_press
+                .is_some_and(|t| now.duration_since(t) < DEBOUNCE)
+            {
+                debug!("Debounced press for '{}'", input.binding_id);
+                return None;
+            }
+            self.last_press = Some(now);
+        }
+
+        // A busy pipeline can't accept lifecycle changes now: classify the
+        // input against any already-remembered press instead of dropping it
+        // silently.
+        if let Stage::Processing = self.stage {
+            let remembered = self
+                .pending_press
+                .as_ref()
+                .is_some_and(|p| p.binding_id == input.binding_id);
+            match classify_busy_input(input.is_pressed, input.push_to_talk, remembered) {
+                BusyAction::Remember => {
+                    debug!(
+                        "Remembering press for '{}': pipeline busy",
+                        input.binding_id
+                    );
+                    self.pending_press = Some(PendingPress {
+                        binding_id: input.binding_id,
+                        hotkey_string: input.hotkey_string,
+                    });
+                }
+                BusyAction::Forget => {
+                    debug!("Forgetting remembered press for '{}'", input.binding_id);
+                    self.pending_press = None;
+                }
+                BusyAction::Ignore => {
+                    debug!("Ignoring input for '{}': pipeline busy", input.binding_id);
+                }
+            }
+            return None;
+        }
+
+        if input.push_to_talk {
+            if input.is_pressed {
+                if matches!(self.stage, Stage::Idle) {
+                    return Some(self.begin_recording(input.binding_id, input.hotkey_string));
+                }
+            } else if matches!(&self.stage, Stage::Recording(id) if id == &input.binding_id) {
+                return Some(self.begin_processing(input.binding_id, input.hotkey_string));
+            }
+        } else if input.is_pressed {
+            match &self.stage {
+                Stage::Idle => {
+                    return Some(self.begin_recording(input.binding_id, input.hotkey_string));
+                }
+                Stage::Recording(id) if id == &input.binding_id => {
+                    return Some(self.begin_processing(input.binding_id, input.hotkey_string));
+                }
+                _ => debug!("Ignoring press for '{}': pipeline busy", input.binding_id),
+            }
+        }
+        None
+    }
+
+    /// The `RELEASE_GRACE` window elapsed with no cancelling press arriving:
+    /// fire the deferred release iff we are still recording that binding.
+    fn on_grace_expired(&mut self) -> Option<Effect> {
+        let pending = self.pending_release.take()?;
+        if matches!(&self.stage, Stage::Recording(id) if id == &pending.binding_id) {
+            Some(self.begin_processing(pending.binding_id, pending.hotkey_string))
+        } else {
+            None
+        }
+    }
+
+    fn on_cancel(&mut self, recording_was_active: bool) {
+        self.pending_release = None;
+        // An explicit cancel abandons any remembered start too — the user
+        // asked for silence, not a deferred recording.
+        self.pending_press = None;
+        // Don't reset during processing — wait for the pipeline to finish.
+        if !matches!(self.stage, Stage::Processing)
+            && (recording_was_active || matches!(self.stage, Stage::Recording(_)))
+        {
+            self.stage = Stage::Idle;
+        }
+    }
+
+    fn on_processing_finished(&mut self) -> Option<Effect> {
+        self.stage = Stage::Idle;
+        let pending = self.pending_press.take()?;
+        debug!(
+            "Pipeline drained; starting remembered press for '{}'",
+            pending.binding_id
+        );
+        Some(self.begin_recording(pending.binding_id, pending.hotkey_string))
+    }
+
+    /// Reconcile the optimistic `Stage::Recording` after the executor reports
+    /// whether recording actually began (microphone access can be denied).
+    fn on_start_result(&mut self, binding_id: &str, started: bool) {
+        if !started && matches!(&self.stage, Stage::Recording(id) if id == binding_id) {
+            self.stage = Stage::Idle;
+        }
+    }
+
+    /// Optimistic transition to `Recording`; rolled back via
+    /// [`CoordinatorState::on_start_result`] if the effect fails to start
+    /// recording for real.
+    fn begin_recording(&mut self, binding_id: String, hotkey_string: String) -> Effect {
+        self.stage = Stage::Recording(binding_id.clone());
+        Effect::Start {
+            binding_id,
+            hotkey_string,
+        }
+    }
+
+    fn begin_processing(&mut self, binding_id: String, hotkey_string: String) -> Effect {
+        self.stage = Stage::Processing;
+        Effect::Stop {
+            binding_id,
+            hotkey_string,
+        }
+    }
+}
+
 /// Serialises all transcription lifecycle events through a single thread
 /// to eliminate race conditions between keyboard shortcuts, signals, and
-/// the async transcribe-paste pipeline.
+/// the async transcribe-paste pipeline. The thread is a thin shell: it
+/// transports commands to the pure [`CoordinatorState`] and executes the
+/// returned [`Effect`]s.
 pub struct TranscriptionCoordinator {
     tx: Sender<Command>,
 }
@@ -129,28 +335,15 @@ impl TranscriptionCoordinator {
 
         thread::spawn(move || {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let mut stage = Stage::Idle;
-                let mut last_press: Option<Instant> = None;
-                let mut pending_release: Option<PendingRelease> = None;
-                let mut pending_press: Option<PendingPress> = None;
+                let mut state = CoordinatorState::new();
 
                 loop {
-                    let cmd = if let Some(pending) = &pending_release {
-                        match rx.recv_timeout(
-                            pending.deadline.saturating_duration_since(Instant::now()),
-                        ) {
+                    let cmd = if let Some(deadline) = state.grace_deadline() {
+                        match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
                             Ok(cmd) => cmd,
                             Err(mpsc::RecvTimeoutError::Timeout) => {
-                                if let Some(pending) = pending_release.take() {
-                                    if matches!(&stage, Stage::Recording(id) if id == &pending.binding_id)
-                                    {
-                                        stop(
-                                            &app,
-                                            &mut stage,
-                                            &pending.binding_id,
-                                            &pending.hotkey_string,
-                                        );
-                                    }
+                                if let Some(effect) = state.on_grace_expired() {
+                                    run_effect(&app, &mut state, effect);
                                 }
                                 continue;
                             }
@@ -164,138 +357,17 @@ impl TranscriptionCoordinator {
                     };
 
                     match cmd {
-                        Command::Input {
-                            binding_id,
-                            hotkey_string,
-                            is_pressed,
-                            push_to_talk,
-                            external,
-                        } => {
-                            let pending_release_binding = pending_release
-                                .as_ref()
-                                .map(|pending| pending.binding_id.as_str());
-                            let recording_binding = match &stage {
-                                Stage::Recording(id) => Some(id.as_str()),
-                                _ => None,
-                            };
-
-                            match classify_ptt_event(
-                                pending_release_binding,
-                                is_pressed,
-                                push_to_talk,
-                                &binding_id,
-                                recording_binding,
-                            ) {
-                                PttAction::CancelRelease => {
-                                    pending_release = None;
-                                    continue;
-                                }
-                                PttAction::DeferRelease => {
-                                    pending_release = Some(PendingRelease {
-                                        binding_id,
-                                        hotkey_string,
-                                        deadline: Instant::now() + RELEASE_GRACE,
-                                    });
-                                    continue;
-                                }
-                                PttAction::Passthrough => {}
-                            }
-
-                            // Debounce rapid-fire press events (key repeat / double-tap).
-                            // Push-to-talk releases may be deferred above to absorb X11 auto-repeat.
-                            // External triggers are exempt: each one is a deliberate edge from the
-                            // user's own integration, and dropping it desyncs toggle parity.
-                            if is_pressed && !external {
-                                let now = Instant::now();
-                                if last_press.is_some_and(|t| now.duration_since(t) < DEBOUNCE) {
-                                    debug!("Debounced press for '{binding_id}'");
-                                    continue;
-                                }
-                                last_press = Some(now);
-                            }
-
-                            // A busy pipeline can't accept lifecycle changes now:
-                            // classify the input against any already-remembered
-                            // press instead of dropping it silently.
-                            if let Stage::Processing = stage {
-                                let remembered = pending_press
-                                    .as_ref()
-                                    .is_some_and(|p| p.binding_id == binding_id);
-                                match classify_busy_input(is_pressed, push_to_talk, remembered) {
-                                    BusyAction::Remember => {
-                                        debug!(
-                                            "Remembering press for '{binding_id}': pipeline busy"
-                                        );
-                                        pending_press = Some(PendingPress {
-                                            binding_id,
-                                            hotkey_string,
-                                        });
-                                    }
-                                    BusyAction::Forget => {
-                                        debug!("Forgetting remembered press for '{binding_id}'");
-                                        pending_press = None;
-                                    }
-                                    BusyAction::Ignore => {
-                                        debug!("Ignoring input for '{binding_id}': pipeline busy");
-                                    }
-                                }
-                                continue;
-                            }
-
-                            if push_to_talk {
-                                if is_pressed {
-                                    match &stage {
-                                        Stage::Idle => {
-                                            start(&app, &mut stage, &binding_id, &hotkey_string)
-                                        }
-                                        _ => {}
-                                    }
-                                } else if matches!(&stage, Stage::Recording(id) if id == &binding_id)
-                                {
-                                    stop(&app, &mut stage, &binding_id, &hotkey_string);
-                                }
-                            } else if is_pressed {
-                                match &stage {
-                                    Stage::Idle => {
-                                        start(&app, &mut stage, &binding_id, &hotkey_string);
-                                    }
-                                    Stage::Recording(id) if id == &binding_id => {
-                                        stop(&app, &mut stage, &binding_id, &hotkey_string);
-                                    }
-                                    _ => {
-                                        debug!("Ignoring press for '{binding_id}': pipeline busy")
-                                    }
-                                }
+                        Command::Input(input) => {
+                            if let Some(effect) = state.on_input(input, Instant::now()) {
+                                run_effect(&app, &mut state, effect);
                             }
                         }
                         Command::Cancel {
                             recording_was_active,
-                        } => {
-                            pending_release = None;
-                            // An explicit cancel abandons any remembered start
-                            // too — the user asked for silence, not a deferred
-                            // recording.
-                            pending_press = None;
-                            // Don't reset during processing — wait for the pipeline to finish.
-                            if !matches!(stage, Stage::Processing)
-                                && (recording_was_active || matches!(stage, Stage::Recording(_)))
-                            {
-                                stage = Stage::Idle;
-                            }
-                        }
+                        } => state.on_cancel(recording_was_active),
                         Command::ProcessingFinished => {
-                            stage = Stage::Idle;
-                            if let Some(pending) = pending_press.take() {
-                                debug!(
-                                    "Pipeline drained; starting remembered press for '{}'",
-                                    pending.binding_id
-                                );
-                                start(
-                                    &app,
-                                    &mut stage,
-                                    &pending.binding_id,
-                                    &pending.hotkey_string,
-                                );
+                            if let Some(effect) = state.on_processing_finished() {
+                                run_effect(&app, &mut state, effect);
                             }
                         }
                     }
@@ -323,7 +395,7 @@ impl TranscriptionCoordinator {
     }
 
     /// Send an external trigger (SIGUSR2, CLI flag). Always a toggle press,
-    /// always exempt from debounce — see `Command::Input::external`.
+    /// always exempt from debounce — see [`InputEvent::external`].
     pub fn send_external_input(&self, binding_id: &str, source: &str) {
         self.send(binding_id, source, true, false, true);
     }
@@ -338,13 +410,13 @@ impl TranscriptionCoordinator {
     ) {
         if self
             .tx
-            .send(Command::Input {
+            .send(Command::Input(InputEvent {
                 binding_id: binding_id.to_string(),
                 hotkey_string: hotkey_string.to_string(),
                 is_pressed,
                 push_to_talk,
                 external,
-            })
+            }))
             .is_err()
         {
             warn!("Transcription coordinator channel closed");
@@ -370,29 +442,45 @@ impl TranscriptionCoordinator {
     }
 }
 
-fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
-    let Some(action) = ACTION_MAP.get(binding_id) else {
-        warn!("No action in ACTION_MAP for '{binding_id}'");
-        return;
-    };
-    action.start(app, binding_id, hotkey_string);
-    if app
-        .try_state::<Arc<AudioRecordingManager>>()
-        .is_some_and(|a| a.is_recording())
-    {
-        *stage = Stage::Recording(binding_id.to_string());
-    } else {
-        debug!("Start for '{binding_id}' did not begin recording; staying idle");
+fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
+    match effect {
+        Effect::Start {
+            binding_id,
+            hotkey_string,
+        } => {
+            let started = start(app, &binding_id, &hotkey_string);
+            state.on_start_result(&binding_id, started);
+        }
+        Effect::Stop {
+            binding_id,
+            hotkey_string,
+        } => stop(app, &binding_id, &hotkey_string),
     }
 }
 
-fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
+/// Execute a start effect; returns whether recording actually began, so the
+/// state machine can roll back its optimistic transition on failure.
+fn start(app: &AppHandle, binding_id: &str, hotkey_string: &str) -> bool {
+    let Some(action) = ACTION_MAP.get(binding_id) else {
+        warn!("No action in ACTION_MAP for '{binding_id}'");
+        return false;
+    };
+    action.start(app, binding_id, hotkey_string);
+    let recording = app
+        .try_state::<Arc<AudioRecordingManager>>()
+        .is_some_and(|a| a.is_recording());
+    if !recording {
+        debug!("Start for '{binding_id}' did not begin recording; staying idle");
+    }
+    recording
+}
+
+fn stop(app: &AppHandle, binding_id: &str, hotkey_string: &str) {
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!("No action in ACTION_MAP for '{binding_id}'");
         return;
     };
     action.stop(app, binding_id, hotkey_string);
-    *stage = Stage::Processing;
 }
 
 #[cfg(test)]
@@ -537,12 +625,12 @@ mod tests {
     // off. The fix defers each release for a short grace window and cancels it
     // when the matching auto-repeat press arrives.
     //
-    // The unit tests above assert `classify_ptt_event` in isolation. The
-    // simulator below threads that classifier through the same `pending_release`
-    // / `stage` state transitions the coordinator loop performs (lines that
-    // handle `Command::Input` and the `recv_timeout` grace expiry), so a whole
-    // event burst can be exercised deterministically without a Tauri AppHandle
-    // or real timers.
+    // The unit tests above assert the classifiers in isolation. The harness
+    // below drives the real `CoordinatorState` through whole event sequences
+    // — the same `on_input` / `on_grace_expired` handlers the coordinator
+    // thread runs — so a burst can be exercised deterministically without a
+    // Tauri AppHandle or real timers, and the tests can never drift from the
+    // production transitions.
     // ---------------------------------------------------------------------
 
     const BINDING: &str = "transcribe";
@@ -557,95 +645,51 @@ mod tests {
         Grace,
     }
 
-    #[derive(Debug, PartialEq, Eq)]
-    enum SimStage {
-        Idle,
-        Recording,
-        Processing,
-    }
-
-    struct SimResult {
+    struct DriveResult {
         starts: u32,
         stops: u32,
-        stage: SimStage,
+        stage: Stage,
     }
 
-    /// Mirror of the coordinator loop's decision logic for a single push-to-talk
-    /// binding: it calls the real `classify_ptt_event` and applies the exact same
-    /// Defer / Cancel / debounce / start / stop transitions.
-    fn simulate(events: &[Ev]) -> SimResult {
-        let mut stage = SimStage::Idle;
-        let mut pending: Option<String> = None;
-        let mut last_press_ms: Option<u64> = None;
-        let mut clock_ms: u64 = 0;
+    fn ptt_input(is_pressed: bool) -> InputEvent {
+        InputEvent {
+            binding_id: BINDING.to_string(),
+            hotkey_string: BINDING.to_string(),
+            is_pressed,
+            push_to_talk: true,
+            external: false,
+        }
+    }
+
+    /// Feeds an event sequence to a real [`CoordinatorState`] the way the
+    /// coordinator thread would; effects are counted instead of executed.
+    fn drive(events: &[Ev]) -> DriveResult {
+        let mut state = CoordinatorState::new();
+        let mut clock = Instant::now();
         let mut starts = 0u32;
         let mut stops = 0u32;
-        let debounce_ms = DEBOUNCE.as_millis() as u64;
 
         for ev in events {
             // Auto-repeat events arrive a few ms apart, well inside DEBOUNCE.
-            clock_ms += 5;
+            clock += Duration::from_millis(5);
 
-            match ev {
-                Ev::Grace => {
-                    // Coordinator's `RecvTimeoutError::Timeout` arm: fire the
-                    // deferred release iff we are still recording that binding.
-                    if let Some(pending_binding) = pending.take() {
-                        if stage == SimStage::Recording && pending_binding == BINDING {
-                            stage = SimStage::Processing;
-                            stops += 1;
-                        }
-                    }
-                }
+            let effect = match ev {
+                Ev::Grace => state.on_grace_expired(),
                 Ev::Press | Ev::Release => {
-                    let is_pressed = matches!(ev, Ev::Press);
-                    let pending_binding = pending.as_deref();
-                    let recording_binding = if stage == SimStage::Recording {
-                        Some(BINDING)
-                    } else {
-                        None
-                    };
-
-                    match classify_ptt_event(
-                        pending_binding,
-                        is_pressed,
-                        true, // push_to_talk
-                        BINDING,
-                        recording_binding,
-                    ) {
-                        PttAction::CancelRelease => {
-                            pending = None;
-                            continue;
-                        }
-                        PttAction::DeferRelease => {
-                            pending = Some(BINDING.to_string());
-                            continue;
-                        }
-                        PttAction::Passthrough => {}
-                    }
-
-                    if is_pressed {
-                        if last_press_ms.is_some_and(|t| clock_ms - t < debounce_ms) {
-                            continue;
-                        }
-                        last_press_ms = Some(clock_ms);
-                    }
-
-                    if is_pressed && stage == SimStage::Idle {
-                        stage = SimStage::Recording;
-                        starts += 1;
-                    } else if !is_pressed && stage == SimStage::Recording {
-                        stage = SimStage::Processing;
-                        stops += 1;
-                    }
+                    state.on_input(ptt_input(matches!(ev, Ev::Press)), clock)
                 }
+            };
+            match effect {
+                Some(Effect::Start { .. }) => starts += 1,
+                Some(Effect::Stop { .. }) => stops += 1,
+                None => {}
             }
         }
 
-        SimResult {
+        DriveResult {
             starts,
             stops,
-            stage,
+            stage: state.stage,
         }
     }
 
@@ -667,7 +711,7 @@ mod tests {
     /// recording stays continuously active for the whole burst.
     #[test]
     fn x11_autorepeat_burst_does_not_toggle_recording() {
-        let result = simulate(&autorepeat_burst());
+        let result = drive(&autorepeat_burst());
         assert_eq!(result.starts, 1, "recording should start exactly once");
         assert_eq!(
             result.stops, 0,
@@ -675,7 +719,7 @@ mod tests {
         );
         assert_eq!(
             result.stage,
-            SimStage::Recording,
+            Stage::Recording(BINDING.to_string()),
             "recording must remain active across the entire auto-repeat burst"
         );
     }
@@ -689,12 +733,128 @@ mod tests {
         let mut events = autorepeat_burst();
         events.push(Ev::Release); // genuine key-up
         events.push(Ev::Grace); // grace window elapses, no cancelling press
-        let result = simulate(&events);
+        let result = drive(&events);
         assert_eq!(result.starts, 1, "recording should start exactly once");
         assert_eq!(
             result.stops, 1,
             "a genuine release should stop recording exactly once"
         );
-        assert_eq!(result.stage, SimStage::Processing);
+        assert_eq!(result.stage, Stage::Processing);
+    }
+
+    // ---------------------------------------------------------------------
+    // Sequence-level coverage of the busy-pipeline and cancel paths, driven
+    // through the real machine.
+    // ---------------------------------------------------------------------
+
+    /// PTT press while the pipeline is busy is remembered and starts recording
+    /// once the pipeline drains.
+    #[test]
+    fn press_during_processing_starts_after_drain() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+
+        let effect = state.on_input(ptt_input(true), now);
+        assert!(matches!(effect, Some(Effect::Start { .. })));
+
+        let effect = state.on_input(ptt_input(false), now + Duration::from_millis(100));
+        assert!(effect.is_none(), "release should be deferred, not fired");
+
+        let effect = state.on_grace_expired();
+        assert!(matches!(effect, Some(Effect::Stop { .. })));
+
+        let effect = state.on_input(ptt_input(true), now + Duration::from_millis(200));
+        assert!(effect.is_none(), "busy pipeline must remember, not start");
+
+        let effect = state.on_processing_finished();
+        assert!(
+            matches!(effect, Some(Effect::Start { .. })),
+            "remembered press should start once the pipeline drains"
+        );
+    }
+
+    /// Two toggle presses inside one busy window net to no-op: nothing starts
+    /// when the pipeline drains (toggle parity).
+    #[test]
+    fn toggle_presses_during_processing_net_noop_after_drain() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+
+        let effect = state.on_input(ptt_input(true), now);
+        assert!(matches!(effect, Some(Effect::Start { .. })));
+        let effect = state.on_input(ptt_input(false), now + Duration::from_millis(100));
+        assert!(effect.is_none());
+        let effect = state.on_grace_expired();
+        assert!(matches!(effect, Some(Effect::Stop { .. })));
+
+        let toggle = |state: &mut CoordinatorState, at: Instant| {
+            state.on_input(
+                InputEvent {
+                    binding_id: BINDING.to_string(),
+                    hotkey_string: BINDING.to_string(),
+                    is_pressed: true,
+                    push_to_talk: false,
+                    external: true,
+                },
+                at,
+            )
+        };
+
+        let effect = toggle(&mut state, now + Duration::from_millis(200));
+        assert!(effect.is_none());
+        let effect = toggle(&mut state, now + Duration::from_millis(300));
+        assert!(effect.is_none());
+
+        let effect = state.on_processing_finished();
+        assert!(
+            effect.is_none(),
+            "even number of busy toggle presses must not start recording"
+        );
+        assert_eq!(state.stage, Stage::Idle);
+    }
+
+    /// Cancel while processing abandons a remembered press: the pipeline drains
+    /// to idle and nothing starts.
+    #[test]
+    fn cancel_during_processing_drops_remembered_press() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+
+        let effect = state.on_input(ptt_input(true), now);
+        assert!(matches!(effect, Some(Effect::Start { .. })));
+        let effect = state.on_input(ptt_input(false), now + Duration::from_millis(100));
+        assert!(effect.is_none());
+        let effect = state.on_grace_expired();
+        assert!(matches!(effect, Some(Effect::Stop { .. })));
+
+        let effect = state.on_input(ptt_input(true), now + Duration::from_millis(200));
+        assert!(effect.is_none());
+
+        state.on_cancel(false);
+        assert_eq!(
+            state.stage,
+            Stage::Processing,
+            "cancel must not reset mid-processing — the pipeline still finishes"
+        );
+
+        let effect = state.on_processing_finished();
+        assert!(
+            effect.is_none(),
+            "cancelled session must not spawn a deferred recording"
+        );
+        assert_eq!(state.stage, Stage::Idle);
+    }
+
+    /// If the start effect fails to begin recording (e.g. microphone access
+    /// denied), the optimistic transition rolls back to idle.
+    #[test]
+    fn failed_start_rolls_back_to_idle() {
+        let mut state = CoordinatorState::new();
+
+        let effect = state.on_input(ptt_input(true), Instant::now());
+        assert!(matches!(effect, Some(Effect::Start { .. })));
+
+        state.on_start_result(BINDING, false);
+        assert_eq!(state.stage, Stage::Idle);
     }
 }
