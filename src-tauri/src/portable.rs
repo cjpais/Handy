@@ -4,7 +4,7 @@
 //! (settings, models, recordings, database, logs) is stored in a `Data/`
 //! directory alongside the executable instead of `%APPDATA%`.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use tauri::Manager;
 
@@ -37,12 +37,21 @@ pub fn init() {
             if !data_dir.exists() {
                 std::fs::create_dir_all(&data_dir).ok()?;
             }
+            let hf_home = hugging_face_home(&data_dir);
+            std::env::set_var("HF_HOME", &hf_home);
             eprintln!("[portable] data dir: {}", data_dir.display());
+            eprintln!("[portable] Hugging Face home: {}", hf_home.display());
             Some(data_dir)
         } else {
             None
         }
     });
+}
+
+/// Keep hf-hub downloads inside the portable data directory. hf-hub appends
+/// its own `hub` component to `HF_HOME` for model snapshots and blobs.
+fn hugging_face_home(data_dir: &Path) -> PathBuf {
+    data_dir.join("huggingface")
 }
 
 /// Returns `true` if running in portable mode.
@@ -162,5 +171,12 @@ mod tests {
         write!(f, "  Handy Portable Mode\n").unwrap();
         assert!(is_valid_portable_marker(&marker));
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn test_hugging_face_home_is_inside_portable_data() {
+        let data_dir = Path::new("portable-root").join("Data");
+
+        assert_eq!(hugging_face_home(&data_dir), data_dir.join("huggingface"));
     }
 }
