@@ -517,7 +517,27 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        let model_path = self.model_manager.get_model_path(model_id)?;
+        // Emits a "loading_failed" event — shared by every failure path below
+        // (including the on-disk existence check right after) so the frontend
+        // always gets a terminal event and never gets stuck showing "loading"
+        // when the model's files vanish out from under a stale `is_downloaded`
+        // flag (e.g. deleted outside Handy without a rescan).
+        let emit_loading_failed = |error_msg: &str| {
+            let _ = self.app_handle.emit(
+                "model-state-changed",
+                ModelStateEvent {
+                    event_type: "loading_failed".to_string(),
+                    model_id: Some(model_id.to_string()),
+                    model_name: Some(model_info.name.clone()),
+                    error: Some(error_msg.to_string()),
+                },
+            );
+        };
+
+        let model_path = self.model_manager.get_model_path(model_id).map_err(|e| {
+            emit_loading_failed(&e.to_string());
+            e
+        })?;
 
         // Drop the current engine BEFORE building the new one so transcribe-cpp
         // frees the previous native context first — avoids holding two models at
@@ -533,17 +553,6 @@ impl TranscriptionManager {
         }
 
         // Create appropriate engine based on model type
-        let emit_loading_failed = |error_msg: &str| {
-            let _ = self.app_handle.emit(
-                "model-state-changed",
-                ModelStateEvent {
-                    event_type: "loading_failed".to_string(),
-                    model_id: Some(model_id.to_string()),
-                    model_name: Some(model_info.name.clone()),
-                    error: Some(error_msg.to_string()),
-                },
-            );
-        };
 
         let loaded_engine = match model_info.engine_type {
             EngineType::TranscribeCpp => {
