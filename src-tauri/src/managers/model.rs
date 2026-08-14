@@ -2399,8 +2399,14 @@ impl ModelManager {
                     deleted = true;
                 }
             }
+            // Files already missing (e.g. removed outside Handy) is not a failure —
+            // deleting is idempotent, so this still needs to fall through and clear
+            // the stale "Downloaded" entry rather than erroring out and leaving it stuck.
             if !deleted {
-                return Err(anyhow::anyhow!("No model files found to delete"));
+                debug!(
+                    "ModelManager: no HF cache/model files found on disk for {}; clearing stale entry",
+                    model_id
+                );
             }
             // Alternate-quant entries are discovery-created (the catalog only
             // seeds defaults), so deleting one un-discovers it rather than
@@ -2448,8 +2454,14 @@ impl ModelManager {
             deleted_something = true;
         }
 
+        // Files already missing (e.g. removed outside Handy) is not a failure —
+        // deleting is idempotent, so this still needs to fall through and clear
+        // the stale "Downloaded" entry rather than erroring out and leaving it stuck.
         if !deleted_something {
-            return Err(anyhow::anyhow!("No model files found to delete"));
+            debug!(
+                "ModelManager: no files found on disk for {}; clearing stale entry",
+                model_id
+            );
         }
 
         // Custom models should be removed from the list entirely since they
