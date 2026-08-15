@@ -6,7 +6,8 @@
     "unloadModel": "Вивантажити модель",
     "model": "Модель",
     "quit": "Вийти",
-    "cancel": "Скасувати"
+    "cancel": "Скасувати",
+    "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input"
   },
   "sidebar": {
     "general": "Загальні",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "Сумісні моделі",
+    "downloadModelsTitle": "Доступні для завантаження",
+    "showAllModels": "Показати всі моделі ({{total}})",
+    "showFewerModels": "Показати менше моделей",
     "recommended": "Рекомендовано",
     "customModelDescription": "Офіційно не підтримується",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "Не вдалося вибрати модель"
     },
     "permissions": {
       "title": "Потрібні дозволи",
@@ -142,7 +143,7 @@
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Підтримує кілька мов введення",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}} мов",
       "translation": "Може перекладати на англійську",
       "translate": "Перекласти на англійську",
       "singleLanguage": "Підтримує лише цю мову",
@@ -205,7 +206,9 @@
       "deleteActiveConfirm": "{{modelName}} — ваша активна модель. Видалення зупинить транскрипцію, доки ви не оберете нову модель. Ви впевнені?",
       "deleteTitle": "Видалити модель",
       "filters": {
-        "allLanguages": "Усі мови"
+        "allLanguages": "Усі мови",
+        "streaming": "Фільтрувати моделі з підтримкою транскрипції в реальному часі",
+        "translation": "Фільтрувати моделі з підтримкою перекладу англійською"
       },
       "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
       "yourModels": "Завантажені моделі",
@@ -223,6 +226,12 @@
         "description": "Оберіть бажаний мікрофон",
         "placeholder": "Оберіть мікрофон...",
         "loading": "Завантаження..."
+      },
+      "channel": {
+        "title": "Вхідний канал",
+        "description": "Виберіть вхідний канал для запису. Використовуйте цю опцію, якщо ваш аудіоінтерфейс має кілька входів.",
+        "average": "Усереднювати всі канали",
+        "channel": "Канал {{n}}"
       },
       "audioFeedback": {
         "label": "Звукове сповіщення",
@@ -282,12 +291,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "Накладка",
+          "description": "Виберіть накладку під час запису: «Немає» приховує її, «Мінімальна» показує компактний індикатор, «У реальному часі» показує транскрипцію під час мовлення (лише моделі з підтримкою потокової обробки — шукайте позначку «Потокове» у списку моделей). У Linux рекомендовано «Немає».",
           "options": {
             "none": "Немає",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "Мінімальна",
+            "live": "У реальному часі"
           }
         },
         "position": {
@@ -358,15 +367,19 @@
       },
       "customWords": {
         "title": "Власні слова",
-        "description": "Додайте слова, які часто неправильно розпізнаються під час транскрипції. Система автоматично виправлятиме схожі за звучанням слова відповідно до вашого списку.",
+        "description": "Допоможіть підтримуваним моделям розпізнавати імена та спеціалізовані терміни. Нечітке виправлення наразі обмежене словами, що містять літери A–Z і цифри.",
         "placeholder": "Додати слово",
         "add": "Додати",
         "remove": "Видалити {{word}}",
         "duplicate": "\"{{word}}\" вже існує"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "Виявлення голосової активності",
+        "description": "Відфільтровує тишу із записів. Моделі з підтримкою потокової обробки використовують довший «хвіст» VAD; вимкнення VAD записує необроблений звук."
+      },
+      "fillerWordRemoval": {
+        "title": "Видаляти слова-паразити",
+        "description": "Видаляє поширені слова-вагання з транскрипцій. Вимкніть, щоб зберегти їх."
       }
     },
     "postProcessing": {
@@ -524,9 +537,33 @@
         "title": "Затримка вставки (після)",
         "description": "Затримка (у мілісекундах) після натискання клавіші вставки, перед відновленням попереднього буфера обміну. Збільшіть, якщо замість транскрипції вставляється старий вміст буфера обміну."
       },
+      "reliablePaste": {
+        "title": "Надійна вставка (Beta)",
+        "description": "Відновлювати буфер обміну лише після того, як цільова програма справді прочитає транскрипцію, а не через фіксовану затримку. Призначено для усунення вставки старого вмісту буфера обміну під навантаженням на систему. Потрібен метод вставки через буфер обміну; лише macOS і Windows."
+      },
       "recordingBuffer": {
         "title": "Додатковий буфер запису",
         "description": "Додатковий час (у мілісекундах) для продовження запису після відпускання клавіші, щоб захопити завершальний звук. 0 = без додаткового буфера."
+      },
+      "keyboardDiagnostic": {
+        "title": "Діагностика клавіатури",
+        "description": "Перевіряє, чи доходять події клавіатури до Handy. Записується лише кількість подій — ніколи те, які клавіші ви натискаєте.",
+        "run": "Запустити 10-секундну діагностику",
+        "running": "Прослуховування… натисніть свою комбінацію кілька разів (наприклад, Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "увімкнено",
+        "disabled": "вимкнено",
+        "holder": "утримує {{name}} (pid {{pid}})",
+        "holderUnknown": "видимого власника не знайдено",
+        "keyDown": "Натискання клавіші",
+        "keyUp": "Відпускання клавіші",
+        "flagsChanged": "Модифікатори",
+        "mouse": "Миша",
+        "verdictBlocked": "Secure Input блокує події клавіш — комбінації зі звичайною клавішею не працюватимуть, доки це не буде усунуто.",
+        "verdictSuspicious": "Події модифікаторів надходять, а події клавіш — ні: щось пригнічує клавіші, хоча Secure Input позначено як вимкнений. Будь ласка, повідомте про це на GitHub.",
+        "verdictOk": "Події клавіш надходять до Handy нормально.",
+        "verdictNoEvents": "Подій не зафіксовано — ви натискали клавіші під час тесту?",
+        "failed": "Не вдалося виконати діагностику: {{error}}"
       },
       "whatsNewPreview": {
         "title": "Попередній перегляд новин",
@@ -580,11 +617,12 @@
     "preparing": "Підготовка...",
     "checkForUpdates": "Перевірити оновлення",
     "portableUpdateTitle": "Потрібне ручне оновлення",
-    "portableUpdateMessage": "Портативні встановлення не можна оновити автоматично. Щоб оновити: завантажте найновіший інсталятор NSIS зі сторінки GitHub Releases, установіть його в ту саму теку, а потім скопіюйте теку Data/ (налаштування, моделі, записи) зі старої версії до нової.",
-    "portableUpdateButton": "Відкрити GitHub Releases"
+    "portableUpdateMessage": "Портативні встановлення не можна оновити автоматично. Завантажте нижче інсталятор для вашої системи, запустіть його та встановіть у ту саму теку — ваша тека Data/ (налаштування, моделі, записи) залишиться на місці.",
+    "portableUpdateButton": "Завантажити інсталятор",
+    "portableUpdateBrowseMessage": "Портативні встановлення не можна оновити автоматично. Завантажте найновішу версію для вашої системи зі сторінки GitHub Releases та встановіть її в ту саму теку — ваша тека Data/ (налаштування, моделі, записи) залишиться на місці.",
+    "portableUpdateBrowseButton": "Відкрити GitHub Releases"
   },
   "common": {
-    "appName": "Handy",
     "loading": "Завантаження...",
     "delete": "Видалити",
     "close": "Закрити",
@@ -592,11 +630,6 @@
     "copy": "Копіювати",
     "clear": "Очистити",
     "noOptionsFound": "Опцій не знайдено"
-  },
-  "windowControls": {
-    "minimize": "Згорнути вікно",
-    "maximize": "Розгорнути вікно",
-    "close": "Закрити вікно"
   },
   "accessibility": {
     "permissionsDescription": "Handy потребує дозволи доступності для введення транскрибованого тексту.",
@@ -639,5 +672,16 @@
   },
   "whatsNew": {
     "title": "Нове в Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} може блокувати 1 комбінацію клавіш",
+    "blockedWithCulprit_other": "{{name}} може блокувати {{count}} комбінацій клавіш",
+    "blockedNoCulprit_one": "macOS тимчасово блокує 1 комбінацію клавіш",
+    "blockedNoCulprit_other": "macOS тимчасово блокує {{count}} комбінацій клавіш",
+    "recorderBlockedWithCulprit": "{{name}} може блокувати зміну комбінацій клавіш",
+    "recorderBlockedNoCulprit": "macOS тимчасово блокує зміну комбінацій клавіш",
+    "learnMore": "Як це виправити",
+    "recorderBlocked": "Зараз неможливо записати комбінацію — Secure Input у macOS блокує події клавіш. Спершу усуньте попередження про Secure Input.",
+    "dismiss": "Приховати"
   }
 }

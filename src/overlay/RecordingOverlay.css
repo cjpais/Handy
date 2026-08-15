@@ -7,18 +7,43 @@
   --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
   /* Accent = logo pink; flips automatically via --color-logo-primary. */
   --s-accent: var(--color-logo-primary);
-  --s-accent-soft: color-mix(
+  /* Light/dark pairs for the tokens that can't flip through a shared palette
+     variable on their own. Same shape as theme.css: each value is written once
+     here, and the active token below is re-pointed by the media query or by the
+     `data-theme` overrides. */
+  --light-s-accent-soft: color-mix(
     in srgb,
     var(--color-background-ui) 16%,
     transparent
   );
-  /* Neutrals. Hairlines reuse the app's mid-gray at low opacity — same vocabulary
-     as the app's border-mid-gray/* utilities. muted/faint are overlay-specific
-     secondary/tertiary text grays (no theme equivalent). */
-  --s-muted: #6e6e6e;
-  --s-faint: #9a9a9a;
-  --s-border: color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
-  --s-hair: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
+  /* Dark uses the lighter logo pink — reads better on the dark surface than the
+     deeper UI pink. */
+  --dark-s-accent-soft: color-mix(
+    in srgb,
+    var(--color-logo-primary) 20%,
+    transparent
+  );
+  /* Neutrals. muted/faint are overlay-specific secondary/tertiary text grays
+     (no theme equivalent). */
+  --light-s-muted: #6e6e6e;
+  --dark-s-muted: #a3a09a;
+  --light-s-faint: #9a9a9a;
+  --dark-s-faint: #6f6c66;
+  /* Hairlines reuse the app's mid-gray at low opacity in light — same vocabulary
+     as the app's border-mid-gray/* utilities — and flip to the near-white text
+     token for contrast on dark. */
+  --light-s-border: color-mix(in srgb, var(--color-mid-gray) 22%, transparent);
+  --dark-s-border: color-mix(in srgb, var(--color-text) 12%, transparent);
+  --light-s-hair: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
+  --dark-s-hair: color-mix(in srgb, var(--color-text) 8%, transparent);
+
+  /* Active neutrals — default light, flipped by the media query below or forced
+     by `data-theme`. */
+  --s-accent-soft: var(--light-s-accent-soft);
+  --s-muted: var(--light-s-muted);
+  --s-faint: var(--light-s-faint);
+  --s-border: var(--light-s-border);
+  --s-hair: var(--light-s-hair);
 
   /* Card geometry — single source of truth for the visible overlay sizes. The
      native overlay window (overlay.rs) is sized from these: it must be at least
@@ -36,19 +61,37 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Accent uses the lighter logo pink in dark — reads better on the dark
-       surface than the deeper UI pink. */
-    --s-accent-soft: color-mix(
-      in srgb,
-      var(--color-logo-primary) 20%,
-      transparent
-    );
-    --s-muted: #a3a09a;
-    --s-faint: #6f6c66;
-    /* Hairlines flip to the near-white text token for contrast on dark. */
-    --s-border: color-mix(in srgb, var(--color-text) 12%, transparent);
-    --s-hair: color-mix(in srgb, var(--color-text) 8%, transparent);
+    --s-accent-soft: var(--dark-s-accent-soft);
+    --s-muted: var(--dark-s-muted);
+    --s-faint: var(--dark-s-faint);
+    --s-border: var(--dark-s-border);
+    --s-hair: var(--dark-s-hair);
   }
+}
+
+/*
+ * Explicit theme override, matching the `data-theme` blocks in theme.css.
+ * `--s-surface` and `--s-accent` honour the setting for free because they derive
+ * from shared palette tokens, but the neutrals above are chosen here, so without
+ * this block a forced theme on a differently-themed OS mixes the two — e.g. dark
+ * surface with light-theme secondary text at ~2.8:1 contrast. macOS masks that
+ * (setting the app appearance flips the webview's `prefers-color-scheme` to
+ * match), so this is what Windows and Linux need.
+ */
+:root[data-theme="light"] {
+  --s-accent-soft: var(--light-s-accent-soft);
+  --s-muted: var(--light-s-muted);
+  --s-faint: var(--light-s-faint);
+  --s-border: var(--light-s-border);
+  --s-hair: var(--light-s-hair);
+}
+
+:root[data-theme="dark"] {
+  --s-accent-soft: var(--dark-s-accent-soft);
+  --s-muted: var(--dark-s-muted);
+  --s-faint: var(--dark-s-faint);
+  --s-border: var(--dark-s-border);
+  --s-hair: var(--dark-s-hair);
 }
 
 /* ============================================================
@@ -267,9 +310,22 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--s-accent);
   flex: none;
+  box-sizing: border-box;
+  transition:
+    background-color 180ms ease,
+    opacity 180ms ease;
+}
+.sdot.ready {
+  background: var(--s-accent);
+  opacity: 1;
   animation: sdot-pulse 1.9s infinite;
+}
+/* A quiet neutral dot while the host has not delivered its first sample yet. */
+.sdot.arming {
+  background: var(--s-muted);
+  opacity: 0.45;
+  animation: none;
 }
 @keyframes sdot-pulse {
   0% {
@@ -291,7 +347,9 @@
   opacity: 1;
 }
 
-/* Waveform — simple reactive bars, themed; heights set inline from mic levels. */
+/* Waveform — reactive only after the first microphone callback. While arming,
+   a muted travelling pulse acknowledges the shortcut without pretending that
+   audio levels are already being received. */
 .swave {
   display: flex;
   align-items: center;
@@ -306,7 +364,42 @@
   max-height: 18px;
   border-radius: 2px;
   background: var(--s-accent);
-  transition: height 80ms linear;
+  transition:
+    height 80ms linear,
+    background-color 180ms ease,
+    opacity 180ms ease;
+}
+.swave.arming i {
+  height: 6px !important;
+  background: var(--s-muted);
+  opacity: 0.35;
+  animation: swave-arming 900ms ease-in-out infinite;
+}
+.swave.arming i:nth-child(2),
+.swave.arming i:nth-child(8) {
+  animation-delay: 75ms;
+}
+.swave.arming i:nth-child(3),
+.swave.arming i:nth-child(7) {
+  animation-delay: 150ms;
+}
+.swave.arming i:nth-child(4),
+.swave.arming i:nth-child(6) {
+  animation-delay: 225ms;
+}
+.swave.arming i:nth-child(5) {
+  animation-delay: 300ms;
+}
+@keyframes swave-arming {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scaleY(1.5);
+    opacity: 0.7;
+  }
 }
 .sx {
   width: 22px;

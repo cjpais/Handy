@@ -99,6 +99,14 @@ const settingUpdaters: {
         ? "default"
         : (value as string),
     ),
+  selected_channel: async (value) => {
+    const result = await commands.setSelectedChannel(
+      (value as number | null | undefined) ?? null,
+    );
+    if (result.status === "error") {
+      throw new Error(result.error);
+    }
+  },
   clamshell_microphone: (value) =>
     commands.setClamshellMicrophone(
       (value as string) === "Default" ? "default" : (value as string),
@@ -125,6 +133,8 @@ const settingUpdaters: {
     commands.changePasteDelayMsSetting(value as number),
   paste_delay_after_ms: (value) =>
     commands.changePasteDelayAfterMsSetting(value as number),
+  reliable_paste: (value) =>
+    commands.changeReliablePasteSetting(value as boolean),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>
@@ -152,6 +162,8 @@ const settingUpdaters: {
     commands.changeLazyStreamCloseSetting(value as boolean),
   overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
   vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
+  filler_word_removal_enabled: (value) =>
+    commands.changeFillerWordRemovalEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
   transcribe_accelerator: (value) =>

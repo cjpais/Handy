@@ -31,7 +31,11 @@ fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWord
     let primary_key = build_match_key(word);
     let mut keys = Vec::with_capacity(2);
 
-    if !primary_key.is_empty() {
+    // The fallback matcher is intentionally limited to ASCII terms. Its
+    // whitespace tokenization and Soundex scoring are not suitable for CJK
+    // scripts. Unicode custom words remain available to models that accept
+    // them as native decode prompts; they are simply skipped by this fallback.
+    if is_supported_fuzzy_key(&primary_key) {
         keys.push(CustomWordMatchKey {
             word_index,
             key: primary_key.clone(),
@@ -40,7 +44,7 @@ fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWord
 
     if word.contains('&') {
         let expanded_key = build_match_key(&word.replace('&', " and "));
-        if !expanded_key.is_empty() && expanded_key != primary_key {
+        if is_supported_fuzzy_key(&expanded_key) && expanded_key != primary_key {
             keys.push(CustomWordMatchKey {
                 word_index,
                 key: expanded_key,
@@ -49,6 +53,14 @@ fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWord
     }
 
     keys
+}
+
+fn is_supported_fuzzy_key(key: &str) -> bool {
+    !key.is_empty() && key.chars().all(|c| c.is_ascii_alphanumeric())
+}
+
+fn supports_soundex(key: &str) -> bool {
+    !key.is_empty() && key.chars().all(|c| c.is_ascii_alphabetic())
 }
 
 /// Finds the best matching custom word for a candidate string
@@ -70,7 +82,7 @@ fn find_best_match<'a>(
     custom_word_match_keys: &[CustomWordMatchKey],
     threshold: f64,
 ) -> Option<(&'a String, f64)> {
-    if candidate.is_empty() || candidate.len() > 50 {
+    if !is_supported_fuzzy_key(candidate) || candidate.chars().count() > 50 {
         return None;
     }
 
@@ -81,8 +93,10 @@ fn find_best_match<'a>(
         // Skip if lengths are too different (optimization + prevents over-matching)
         // Use percentage-based check: max 25% length difference (prevents n-grams from
         // matching significantly shorter custom words, e.g., "openaigpt" vs "openai")
-        let len_diff = (candidate.len() as i32 - custom_word_key.key.len() as i32).abs() as f64;
-        let max_len = candidate.len().max(custom_word_key.key.len()) as f64;
+        let candidate_len = candidate.chars().count();
+        let custom_word_len = custom_word_key.key.chars().count();
+        let len_diff = candidate_len.abs_diff(custom_word_len) as f64;
+        let max_len = candidate_len.max(custom_word_len) as f64;
         let max_allowed_diff = (max_len * 0.25).max(2.0); // At least 2 chars difference allowed
         if len_diff > max_allowed_diff {
             continue;
@@ -90,15 +104,17 @@ fn find_best_match<'a>(
 
         // Calculate Levenshtein distance (normalized by length)
         let levenshtein_dist = levenshtein(candidate, &custom_word_key.key);
-        let max_len = candidate.len().max(custom_word_key.key.len()) as f64;
         let levenshtein_score = if max_len > 0.0 {
             levenshtein_dist as f64 / max_len
         } else {
             1.0
         };
 
-        // Calculate phonetic similarity using Soundex
-        let phonetic_match = soundex(candidate, &custom_word_key.key);
+        // Soundex is an English/ASCII phonetic algorithm. Numeric terms can
+        // still use edit distance, but must not receive a phonetic boost.
+        let phonetic_match = supports_soundex(candidate)
+            && supports_soundex(&custom_word_key.key)
+            && soundex(candidate, &custom_word_key.key);
 
         // Combine scores: favor phonetic matches, but also consider string similarity
         let combined_score = if phonetic_match {
@@ -149,35 +165,52 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
     let mut i = 0;
 
     while i < words.len() {
-        let mut matched = false;
+        let mut best_match: Option<(usize, &String, f64)> = None;
 
-        // Try n-grams from longest (3) to shortest (1) - greedy matching
+        // Consider n-grams up to three words and choose the closest match. A
+        // longest-first match can consume a following ordinary word when both
+        // candidates happen to share a Soundex code (for example,
+        // "Charge B, che" matching "ChargeBee").
         for n in (1..=3).rev() {
             if i + n > words.len() {
                 continue;
             }
 
             let ngram_words = &words[i..i + n];
+            // Do not consume across a punctuation boundary. In
+            // "Charge B, che", the comma closes the candidate at "B,".
+            if ngram_words[..n.saturating_sub(1)]
+                .iter()
+                .any(|word| !extract_punctuation(word).1.is_empty())
+            {
+                continue;
+            }
             let ngram = build_ngram(ngram_words);
 
-            if let Some((replacement, _score)) =
+            if let Some((replacement, score)) =
                 find_best_match(&ngram, custom_words, &custom_word_match_keys, threshold)
             {
-                // Extract punctuation from first and last words of the n-gram
-                let (prefix, _) = extract_punctuation(ngram_words[0]);
-                let (_, suffix) = extract_punctuation(ngram_words[n - 1]);
-
-                // Preserve case from first word
-                let corrected = preserve_case_pattern(ngram_words[0], replacement);
-
-                result.push(format!("{}{}{}", prefix, corrected, suffix));
-                i += n;
-                matched = true;
-                break;
+                let is_better = best_match
+                    .as_ref()
+                    .is_none_or(|(_, _, best_score)| score < *best_score);
+                if is_better {
+                    best_match = Some((n, replacement, score));
+                }
             }
         }
 
-        if !matched {
+        if let Some((n, replacement, _)) = best_match {
+            let ngram_words = &words[i..i + n];
+            // Extract punctuation from first and last words of the n-gram.
+            let (prefix, _) = extract_punctuation(ngram_words[0]);
+            let (_, suffix) = extract_punctuation(ngram_words[n - 1]);
+
+            // Preserve case from first word.
+            let corrected = preserve_case_pattern(ngram_words[0], replacement);
+
+            result.push(format!("{}{}{}", prefix, corrected, suffix));
+            i += n;
+        } else {
             result.push(words[i].to_string());
             i += 1;
         }
@@ -203,12 +236,19 @@ fn preserve_case_pattern(original: &str, replacement: &str) -> String {
 
 /// Extracts punctuation prefix and suffix from a word
 fn extract_punctuation(word: &str) -> (&str, &str) {
-    let prefix_end = word.chars().take_while(|c| !c.is_alphanumeric()).count();
+    // String slices use byte offsets. Derive both boundaries from char_indices
+    // so multibyte punctuation such as `。` and `「」` can never be split.
+    let prefix_end = word
+        .char_indices()
+        .find(|(_, c)| c.is_alphanumeric())
+        .map(|(index, _)| index)
+        .unwrap_or(word.len());
     let suffix_start = word
         .char_indices()
         .rev()
-        .take_while(|(_, c)| !c.is_alphanumeric())
-        .count();
+        .find(|(_, c)| c.is_alphanumeric())
+        .map(|(index, c)| index + c.len_utf8())
+        .unwrap_or(0);
 
     let prefix = if prefix_end > 0 {
         &word[..prefix_end]
@@ -216,8 +256,8 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
         ""
     };
 
-    let suffix = if suffix_start > 0 {
-        &word[word.len() - suffix_start..]
+    let suffix = if suffix_start < word.len() {
+        &word[suffix_start..]
     } else {
         ""
     };
@@ -225,38 +265,58 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
     (prefix, suffix)
 }
 
-/// Returns filler words appropriate for the given language code.
+/// Evidence for the language of the text being cleaned.
 ///
-/// Some words like "um" and "ha" are real words in certain languages
-/// (e.g., Portuguese "um" = "a/an", Spanish "ha" = "has"), so we only
-/// include them as fillers for languages where they are truly fillers.
-fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
+/// This intentionally describes the transcription output, not Handy's UI
+/// language. Unknown output languages fail closed: built-in filler removal is
+/// skipped rather than applying a language profile speculatively.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OutputLanguageEvidence {
+    UserSelected(String),
+    ModelConstrained(String),
+    /// The transcription model itself identified the language (audio-based
+    /// LID, e.g. Whisper in auto mode).
+    ModelDetected(String),
+    /// Detected from the transcribed text with high confidence, constrained to
+    /// the model's supported languages. Weakest accepted evidence.
+    TextDetected(String),
+    TranslatedToEnglish,
+    Unknown,
+}
+
+impl OutputLanguageEvidence {
+    fn language(&self) -> Option<&str> {
+        match self {
+            Self::UserSelected(language)
+            | Self::ModelConstrained(language)
+            | Self::ModelDetected(language)
+            | Self::TextDetected(language) => Some(language),
+            Self::TranslatedToEnglish => Some("en"),
+            Self::Unknown => None,
+        }
+    }
+}
+
+/// Filler tokens that are not lexical words in any language Handy's models can
+/// output, so removing them cannot corrupt text regardless of the (possibly
+/// unknown) output language. Kept deliberately conservative: anything that is a
+/// real word somewhere ("um" pt/de, "ha" es, "ah"/"eh" interjections, "mm"
+/// millimetres) belongs in the language-gated lists instead.
+const UNIVERSAL_FILLER_WORDS: &[&str] = &[
+    "uh", "uhm", "umm", "uhh", "uhhh", "ehh", "ehm", "ahm", "hmm", "hm", "mmm", "хм", "ммм",
+];
+
+/// Filler words that are only safe to remove with evidence for the output
+/// language, because the same token is a real word elsewhere (e.g. Portuguese
+/// "um" = "a/an", German "um" = "at/around", Spanish "ha" = "has").
+fn gated_filler_words_for_language(lang: &str) -> &'static [&'static str] {
     let base_lang = lang.split(&['-', '_'][..]).next().unwrap_or(lang);
 
     match base_lang {
-        "en" => &[
-            "uh", "um", "uhm", "umm", "uhh", "uhhh", "ah", "hmm", "hm", "mmm", "mm", "mh", "eh",
-            "ehh", "ha",
-        ],
-        "es" => &["ehm", "mmm", "hmm", "hm"],
-        "pt" => &["ahm", "hmm", "mmm", "hm"],
-        "fr" => &["euh", "hmm", "hm", "mmm"],
-        "de" => &["äh", "ähm", "hmm", "hm", "mmm"],
-        "it" => &["ehm", "hmm", "mmm", "hm"],
-        "cs" => &["ehm", "hmm", "mmm", "hm"],
-        "pl" => &["hmm", "mmm", "hm"],
-        "tr" => &["hmm", "mmm", "hm"],
-        "ru" => &["хм", "ммм", "hmm", "mmm"],
-        "uk" => &["хм", "ммм", "hmm", "mmm"],
-        "ar" => &["hmm", "mmm"],
-        "ja" => &["hmm", "mmm"],
-        "ko" => &["hmm", "mmm"],
-        "vi" => &["hmm", "mmm", "hm"],
-        "zh" => &["hmm", "mmm"],
-        // Conservative universal fallback (no "um", "eh", "ha")
-        _ => &[
-            "uh", "uhm", "umm", "uhh", "uhhh", "ah", "hmm", "hm", "mmm", "mm", "mh", "ehh",
-        ],
+        "en" => &["um", "ah", "eh", "ha"],
+        "de" => &["äh", "ähm"],
+        "fr" => &["euh"],
+        _ => &[],
     }
 }
 
@@ -301,58 +361,94 @@ fn collapse_stutters(text: &str) -> String {
     result.join(" ")
 }
 
-/// Filters transcription output by removing filler words and stutter artifacts.
+/// Removes filler words from transcription output when enabled.
 ///
-/// This function cleans up raw transcription text by:
-/// 1. Removing filler words based on the app language (or custom list)
-/// 2. Collapsing repeated word stutters (e.g., "wh wh wh" -> "wh")
-/// 3. Cleaning up excess whitespace
+/// Built-in removal is two-tiered: [`UNIVERSAL_FILLER_WORDS`] apply regardless
+/// of language evidence, while [`gated_filler_words_for_language`] tokens are
+/// only removed when the output language is known. A custom list is an
+/// explicit user override and replaces both tiers without requiring language
+/// evidence. `Some(empty vec)` disables removal, preserving the legacy
+/// power-user setting. The master toggle takes precedence over both built-in
+/// and custom lists.
 ///
 /// # Arguments
 /// * `text` - The raw transcription text to filter
-/// * `lang` - The app language code (e.g., "en", "pt-BR") used to select filler words
+/// * `language` - Evidence for the language of the transcription output
 /// * `custom_filler_words` - Optional user-provided filler word list. `Some(vec)` overrides
 ///   language defaults; `Some(empty vec)` disables filtering; `None` uses language defaults.
+/// * `enabled` - Whether filler-word removal is enabled
 ///
 /// # Returns
-/// The filtered text with filler words and stutters removed
-pub fn filter_transcription_output(
+/// The text with configured filler words removed
+pub fn remove_filler_words(
     text: &str,
-    lang: &str,
+    language: &OutputLanguageEvidence,
     custom_filler_words: &Option<Vec<String>>,
+    enabled: bool,
 ) -> String {
-    let mut filtered = text.to_string();
+    if !enabled {
+        return text.to_string();
+    }
 
-    // Build filler patterns from custom list or language defaults
+    // Build filler patterns from custom list or the built-in tiers
     let patterns: Vec<Regex> = match custom_filler_words {
         Some(words) => words
             .iter()
             .filter_map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).ok())
             .collect(),
-        None => get_filler_words_for_language(lang)
+        None => UNIVERSAL_FILLER_WORDS
             .iter()
+            .chain(
+                language
+                    .language()
+                    .map(gated_filler_words_for_language)
+                    .unwrap_or_default(),
+            )
             .map(|word| Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).unwrap())
             .collect(),
     };
 
     // Remove filler words
+    let mut filtered = text.to_string();
     for pattern in &patterns {
         filtered = pattern.replace_all(&filtered, "").to_string();
     }
 
-    // Collapse repeated 1-2 letter words (stutter artifacts like "wh wh wh wh")
-    filtered = collapse_stutters(&filtered);
+    filtered
+}
+
+/// Applies non-filler transcription cleanup.
+///
+/// Kept separate from [`remove_filler_words`] so disabling filler deletion
+/// does not also disable the existing repeated-word and whitespace cleanup.
+pub fn normalize_transcription_output(text: &str) -> String {
+    let mut normalized = collapse_stutters(text);
 
     // Clean up multiple spaces to single space
-    filtered = MULTI_SPACE_PATTERN.replace_all(&filtered, " ").to_string();
+    normalized = MULTI_SPACE_PATTERN
+        .replace_all(&normalized, " ")
+        .to_string();
 
     // Trim leading/trailing whitespace
-    filtered.trim().to_string()
+    normalized.trim().to_string()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Exercise the complete cleanup sequence with an explicitly selected
+    /// language. Individual tests below predate the split between filler
+    /// removal and non-filler normalization.
+    fn filter_transcription_output(
+        text: &str,
+        language: &str,
+        custom_filler_words: &Option<Vec<String>>,
+    ) -> String {
+        let language = OutputLanguageEvidence::UserSelected(language.to_string());
+        let filtered = remove_filler_words(text, &language, custom_filler_words, true);
+        normalize_transcription_output(&filtered)
+    }
 
     #[test]
     fn test_apply_custom_words_exact_match() {
@@ -382,6 +478,13 @@ mod tests {
         assert_eq!(extract_punctuation("hello"), ("", ""));
         assert_eq!(extract_punctuation("!hello?"), ("!", "?"));
         assert_eq!(extract_punctuation("...hello..."), ("...", "..."));
+    }
+
+    #[test]
+    fn test_extract_punctuation_uses_unicode_boundaries() {
+        assert_eq!(extract_punctuation("你好。"), ("", "。"));
+        assert_eq!(extract_punctuation("「你好」"), ("「", "」"));
+        assert_eq!(extract_punctuation("你好！"), ("", "！"));
     }
 
     #[test]
@@ -525,18 +628,105 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_unknown_language_uses_fallback() {
+    fn test_filter_unknown_language_still_removes_universal_fillers() {
         let text = "uh I think uhm this works";
         let result = filter_transcription_output(text, "xx", &None);
         assert_eq!(result, "I think this works");
     }
 
     #[test]
-    fn test_filter_fallback_does_not_remove_um() {
-        // Fallback (unknown language) should not remove "um" since it's a real word in some languages
+    fn test_filter_unknown_language_does_not_remove_um() {
         let text = "um I think this works";
         let result = filter_transcription_output(text, "xx", &None);
         assert_eq!(result, "um I think this works");
+    }
+
+    #[test]
+    fn test_filter_unknown_evidence_removes_universal_keeps_gated() {
+        let filtered = remove_filler_words(
+            "uhh bueno hmm creo que um ha llegado",
+            &OutputLanguageEvidence::Unknown,
+            &None,
+            true,
+        );
+        assert_eq!(
+            normalize_transcription_output(&filtered),
+            "bueno creo que um ha llegado"
+        );
+
+        let cyrillic = remove_filler_words(
+            "хм я думаю ммм это работает",
+            &OutputLanguageEvidence::Unknown,
+            &None,
+            true,
+        );
+        assert_eq!(
+            normalize_transcription_output(&cyrillic),
+            "я думаю это работает"
+        );
+    }
+
+    #[test]
+    fn test_filter_german_gated_fillers_require_evidence() {
+        let text = "äh ich glaube ähm das passt";
+
+        let unknown = remove_filler_words(text, &OutputLanguageEvidence::Unknown, &None, true);
+        assert_eq!(normalize_transcription_output(&unknown), text);
+
+        let result = filter_transcription_output(text, "de", &None);
+        assert_eq!(result, "ich glaube das passt");
+    }
+
+    #[test]
+    fn test_filter_preserves_millimetre_unit() {
+        // "mm" was removed from the filler lists because it eats units.
+        let text = "the screw is 5 mm long";
+        let result = filter_transcription_output(text, "en", &None);
+        assert_eq!(result, "the screw is 5 mm long");
+    }
+
+    #[test]
+    fn test_filter_detected_evidence_unlocks_gated_fillers() {
+        let model = remove_filler_words(
+            "um I think this works",
+            &OutputLanguageEvidence::ModelDetected("en".to_string()),
+            &None,
+            true,
+        );
+        assert_eq!(normalize_transcription_output(&model), "I think this works");
+
+        let text = remove_filler_words(
+            "euh je pense que ça marche",
+            &OutputLanguageEvidence::TextDetected("fr".to_string()),
+            &None,
+            true,
+        );
+        assert_eq!(
+            normalize_transcription_output(&text),
+            "je pense que ça marche"
+        );
+    }
+
+    #[test]
+    fn test_filter_master_toggle_disables_custom_and_builtin_removal() {
+        let text = "um customword I think";
+        let language = OutputLanguageEvidence::UserSelected("en".to_string());
+        let custom = Some(vec!["customword".to_string()]);
+
+        let result = remove_filler_words(text, &language, &custom, false);
+
+        assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_filter_custom_words_apply_without_language_evidence() {
+        let custom = Some(vec!["customword".to_string()]);
+        let text = "customword should be removed but um should remain";
+
+        let filtered = remove_filler_words(text, &OutputLanguageEvidence::Unknown, &custom, true);
+        let result = normalize_transcription_output(&filtered);
+
+        assert_eq!(result, "should be removed but um should remain");
     }
 
     #[test]
@@ -544,7 +734,7 @@ mod tests {
         let text = "il cui nome è Charge B, che permette";
         let custom_words = vec!["ChargeBee".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
-        assert!(result.contains("ChargeBee,"));
+        assert!(result.contains("ChargeBee,"), "unexpected result: {result}");
         assert!(!result.contains("Charge B"));
     }
 
@@ -618,5 +808,21 @@ mod tests {
         let custom_words = vec!["R&D".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.18);
         assert_eq!(result, "send it to R&D for review");
+    }
+
+    #[test]
+    fn test_apply_custom_words_handles_unicode_punctuation() {
+        let text = "「Handee。」";
+        let custom_words = vec!["Handy".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.5);
+        assert_eq!(result, "「Handy。」");
+    }
+
+    #[test]
+    fn test_apply_custom_words_skips_cjk_fuzzy_matching() {
+        let text = "你好。";
+        let custom_words = vec!["你号".to_string()];
+        let result = apply_custom_words(text, &custom_words, 1.0);
+        assert_eq!(result, text);
     }
 }

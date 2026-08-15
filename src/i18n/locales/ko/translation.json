@@ -6,7 +6,8 @@
     "unloadModel": "모델 언로드",
     "model": "모델",
     "quit": "종료",
-    "cancel": "취소"
+    "cancel": "취소",
+    "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨"
   },
   "sidebar": {
     "general": "일반",
@@ -19,10 +20,10 @@
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
+    "existingModelsTitle": "호환 가능한 모델",
+    "downloadModelsTitle": "다운로드 가능",
+    "showAllModels": "전체 {{total}}개 모델 표시",
+    "showFewerModels": "간략히 표시",
     "recommended": "추천",
     "customModelDescription": "공식 지원되지 않음",
     "modelCard": {
@@ -96,7 +97,7 @@
       }
     },
     "errors": {
-      "selectModel": "Failed to select model"
+      "selectModel": "모델을 선택하지 못했습니다"
     },
     "permissions": {
       "title": "권한 필요",
@@ -145,7 +146,7 @@
     "capabilities": {
       "languageSelection": "여러 입력 언어를 지원합니다",
       "singleLanguage": "이 언어만 지원합니다",
-      "languageCount": "{{total}} languages",
+      "languageCount": "{{total}}개 언어",
       "languageOnly": "{{language}} 전용",
       "translation": "영어로 번역 가능",
       "translate": "영어로 번역",
@@ -206,6 +207,12 @@
         "placeholder": "마이크 선택...",
         "loading": "로딩 중..."
       },
+      "channel": {
+        "title": "입력 채널",
+        "description": "녹음할 입력 채널을 선택하세요. 오디오 인터페이스에 입력이 여러 개 있는 경우 사용하세요.",
+        "average": "모든 채널 평균",
+        "channel": "채널 {{n}}"
+      },
       "audioFeedback": {
         "label": "오디오 피드백",
         "description": "녹음 시작 및 정지 시 소리 재생"
@@ -230,7 +237,9 @@
       "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
       "deleteTitle": "모델 삭제",
       "filters": {
-        "allLanguages": "모든 언어"
+        "allLanguages": "모든 언어",
+        "streaming": "실시간 음성 인식을 지원하는 모델 필터링",
+        "translation": "영어 번역을 지원하는 모델 필터링"
       },
       "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
       "searchPlaceholder": "이름으로 모델 검색…",
@@ -282,12 +291,12 @@
       },
       "overlay": {
         "style": {
-          "title": "Overlay",
-          "description": "Choose the recording overlay: None hides it, Minimal shows a compact pill, Live shows transcription in real time as you speak (streaming-capable models only — look for the Streaming badge in the model picker). On Linux 'None' is recommended.",
+          "title": "오버레이",
+          "description": "녹음 오버레이를 선택하세요. '없음'은 오버레이를 숨기고, '간단'은 작은 알약 모양 표시를 보여주며, '실시간'은 말하는 동안 전사 결과를 실시간으로 표시합니다(스트리밍 지원 모델만 해당 — 모델 선택기에서 '스트리밍' 배지를 확인하세요). Linux에서는 '없음'을 권장합니다.",
           "options": {
             "none": "없음",
-            "minimal": "Minimal",
-            "live": "Live"
+            "minimal": "간단",
+            "live": "실시간"
           }
         },
         "position": {
@@ -358,15 +367,19 @@
       },
       "customWords": {
         "title": "사용자 정의 단어",
-        "description": "녹음 중 자주 잘못 들리거나 철자가 틀리는 단어를 추가하세요. 시스템이 유사한 소리의 단어를 목록과 일치하도록 자동으로 수정합니다.",
+        "description": "지원되는 모델이 이름과 전문 용어를 인식하도록 도와줍니다. 퍼지 교정은 현재 A–Z 문자와 숫자를 사용하는 단어로 제한됩니다.",
         "placeholder": "단어 추가",
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
       },
       "voiceActivityDetection": {
-        "title": "Voice Activity Detection",
-        "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
+        "title": "음성 활동 감지",
+        "description": "녹음에서 무음 구간을 걸러냅니다. 스트리밍 지원 모델은 더 긴 VAD 테일을 사용하며, VAD를 끄면 원본 오디오가 그대로 녹음됩니다."
+      },
+      "fillerWordRemoval": {
+        "title": "군더더기 표현 제거",
+        "description": "전사에서 흔한 머뭇거림 표현을 제거합니다. 그대로 두려면 이 옵션을 끄세요."
       }
     },
     "postProcessing": {
@@ -519,9 +532,33 @@
         "title": "붙여넣기 지연 (이후)",
         "description": "붙여넣기 키 입력을 보낸 후 이전 클립보드를 복원하기 전의 지연 시간(밀리초). 전사된 텍스트 대신 이전 클립보드 내용이 붙여넣어지면 늘리세요."
       },
+      "reliablePaste": {
+        "title": "안정적인 붙여넣기 (Beta)",
+        "description": "고정된 지연 시간이 아니라 대상 앱이 실제로 전사된 텍스트를 읽은 뒤에만 클립보드를 복원합니다. 시스템 부하가 높을 때 이전 클립보드 내용이 붙여넣어지는 문제를 해결하기 위한 옵션입니다. 클립보드를 사용하는 붙여넣기 방법이 필요하며 macOS와 Windows에서만 지원됩니다."
+      },
       "recordingBuffer": {
         "title": "추가 녹음 버퍼",
         "description": "키를 놓은 후 추가로 녹음을 계속하는 시간(밀리초). 후행 오디오를 캡처하기 위함. 0 = 추가 버퍼 없음."
+      },
+      "keyboardDiagnostic": {
+        "title": "키보드 진단",
+        "description": "키보드 이벤트가 Handy에 도달하는지 확인합니다. 이벤트 개수만 기록되며, 어떤 키를 눌렀는지는 절대 기록되지 않습니다.",
+        "run": "10초 진단 실행",
+        "running": "수신 중… 단축키를 몇 번 눌러 보세요 (예: Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "사용 중",
+        "disabled": "사용 안 함",
+        "holder": "{{name}}(pid {{pid}})이(가) 점유 중",
+        "holderUnknown": "점유 중인 앱을 확인할 수 없음",
+        "keyDown": "키 누름",
+        "keyUp": "키 뗌",
+        "flagsChanged": "조합 키",
+        "mouse": "마우스",
+        "verdictBlocked": "Secure Input이 키 이벤트를 차단하고 있습니다. 해결될 때까지 일반 키가 포함된 단축키는 작동할 수 없습니다.",
+        "verdictSuspicious": "조합 키 이벤트는 도착했지만 키 이벤트는 없습니다. Secure Input은 꺼져 있다고 보고되지만 무언가가 키를 가로막고 있습니다. GitHub에 신고해 주세요.",
+        "verdictOk": "키 이벤트가 Handy에 정상적으로 도달하고 있습니다.",
+        "verdictNoEvents": "이벤트가 감지되지 않았습니다. 테스트 중에 키를 누르셨나요?",
+        "failed": "진단 실패: {{error}}"
       },
       "paths": {
         "appData": "앱 데이터:",
@@ -580,11 +617,12 @@
     "preparing": "준비 중...",
     "checkForUpdates": "업데이트 확인",
     "portableUpdateTitle": "수동 업데이트 필요",
-    "portableUpdateMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. 업데이트하려면 GitHub Releases에서 최신 NSIS 설치 프로그램을 다운로드하여 같은 폴더에 설치한 다음, 이전 버전의 Data/ 폴더(설정, 모델, 녹음)를 새 버전으로 복사하세요.",
-    "portableUpdateButton": "GitHub Releases 열기"
+    "portableUpdateMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. 아래에서 사용 중인 시스템에 맞는 설치 프로그램을 다운로드해 실행하고 같은 폴더에 설치하세요. Data/ 폴더(설정, 모델, 녹음)는 그대로 유지됩니다.",
+    "portableUpdateButton": "설치 프로그램 다운로드",
+    "portableUpdateBrowseMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. GitHub Releases에서 사용 중인 시스템에 맞는 최신 버전을 다운로드해 같은 폴더에 설치하세요. Data/ 폴더(설정, 모델, 녹음)는 그대로 유지됩니다.",
+    "portableUpdateBrowseButton": "GitHub Releases 열기"
   },
   "common": {
-    "appName": "Handy",
     "loading": "로딩 중...",
     "delete": "삭제",
     "close": "닫기",
@@ -592,11 +630,6 @@
     "copy": "복사",
     "clear": "지우기",
     "noOptionsFound": "옵션을 찾을 수 없습니다"
-  },
-  "windowControls": {
-    "minimize": "창 최소화",
-    "maximize": "창 최대화",
-    "close": "창 닫기"
   },
   "accessibility": {
     "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
@@ -639,5 +672,16 @@
   },
   "whatsNew": {
     "title": "Handy v{{version}}의 새 소식"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}}이(가) 단축키 1개를 차단하고 있을 수 있습니다",
+    "blockedWithCulprit_other": "{{name}}이(가) 단축키 {{count}}개를 차단하고 있을 수 있습니다",
+    "blockedNoCulprit_one": "macOS가 단축키 1개를 일시적으로 차단하고 있습니다",
+    "blockedNoCulprit_other": "macOS가 단축키 {{count}}개를 일시적으로 차단하고 있습니다",
+    "recorderBlockedWithCulprit": "{{name}}이(가) 단축키 변경을 차단하고 있을 수 있습니다",
+    "recorderBlockedNoCulprit": "macOS가 단축키 변경을 일시적으로 차단하고 있습니다",
+    "learnMore": "해결 방법",
+    "recorderBlocked": "지금은 단축키를 등록할 수 없습니다. macOS Secure Input이 키 이벤트를 차단하고 있습니다. Secure Input 경고를 먼저 해결하세요.",
+    "dismiss": "닫기"
   }
 }
