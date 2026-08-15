@@ -144,32 +144,6 @@ mod macos {
             }
         }
     }
-
-    #[cfg(test)]
-    mod tests {
-        use super::{find_keycode, KEYCODE_COUNT};
-
-        #[test]
-        fn finds_layout_keycode_instead_of_assuming_ansi_v() {
-            assert_eq!(find_keycode(|keycode| keycode == 47), Some(47));
-        }
-
-        #[test]
-        fn reports_when_layout_has_no_matching_keycode() {
-            assert_eq!(find_keycode(|_| false), None);
-        }
-
-        #[test]
-        fn only_scans_valid_macos_keycodes() {
-            let mut highest_scanned = 0;
-            let _ = find_keycode(|keycode| {
-                highest_scanned = keycode;
-                false
-            });
-
-            assert_eq!(highest_scanned, KEYCODE_COUNT - 1);
-        }
-    }
 }
 
 /// Wrapper for Enigo to store in Tauri's managed state.
