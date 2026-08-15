@@ -38,14 +38,18 @@ fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), Str
         return write_clipboard_via_wl_copy(text);
     }
 
-    #[cfg(target_os = "windows")]
-    return windows_clipboard::write_excluded_text(text);
-
-    #[cfg(not(target_os = "windows"))]
     app_handle
         .clipboard()
         .write_text(text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e))
+}
+
+fn write_transient_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    return windows_clipboard::write_excluded_text(text);
+
+    #[cfg(not(target_os = "windows"))]
+    write_text_to_clipboard(app_handle, text)
 }
 
 fn finish_clipboard_paste(
@@ -78,7 +82,7 @@ fn paste_via_clipboard(
     };
 
     // Write text to clipboard first.
-    write_text_to_clipboard(app_handle, text)?;
+    write_transient_text_to_clipboard(app_handle, text)?;
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -113,7 +117,7 @@ fn paste_via_clipboard(
         // an image is only restored when the clipboard held no text at all, which is
         // the case that used to silently wipe screenshots.
         if let Some(clipboard_content) = saved_text {
-            let _ = write_text_to_clipboard(app_handle, &clipboard_content);
+            let _ = write_transient_text_to_clipboard(app_handle, &clipboard_content);
         } else if let Some(image) = saved_image {
             info!("Restoring image to clipboard");
 
