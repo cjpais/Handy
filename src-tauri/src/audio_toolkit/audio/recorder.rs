@@ -394,6 +394,11 @@ impl AudioRecorder {
             .is_some_and(|handle| handle.is_finished())
     }
 
+    /// Name of the device backing the currently open stream.
+    pub fn active_device_name(&self) -> Option<String> {
+        self.device.as_ref().and_then(|device| device.name().ok())
+    }
+
     pub fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = self.cmd_tx.take() {
             let _ = tx.send(Cmd::Shutdown);
