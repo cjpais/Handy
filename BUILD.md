@@ -165,9 +165,15 @@ Grant Accessibility again when prompted. This does not reset Microphone or other
 services, and official releases normally do not need it.
 
 For optional diagnosis, compare the designated requirements of the previous and rebuilt
-bundles with `codesign -dr - /path/to/Handy.app 2>&1`. An ad-hoc requirement contains a
-`cdhash`; a changed requirement confirms the rebuild is not covered by the old grant.
-The reset procedure does not require this check.
+bundles:
+
+```bash
+codesign -dr - /path/to/previous/Handy.app 2>&1
+codesign -dr - /Applications/Handy.app 2>&1
+```
+
+An ad-hoc requirement contains a `cdhash`; a changed requirement confirms the rebuild is
+not covered by the old grant. The reset procedure does not require this check.
 
 See [issue #1618](https://github.com/cjpais/Handy/issues/1618) for the related onboarding
 and stale-permission report.
