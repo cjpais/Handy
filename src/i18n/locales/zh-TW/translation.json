@@ -376,6 +376,10 @@
       "voiceActivityDetection": {
         "title": "語音活動偵測",
         "description": "過濾錄音中的靜音。支援串流的模型會使用較長的 VAD 尾段；停用 VAD 則會錄製原始音訊"
+      },
+      "fillerWordRemoval": {
+        "title": "移除語助詞",
+        "description": "從轉錄中移除常見的語助詞。關閉此選項即可保留這些詞。"
       }
     },
     "postProcessing": {

@@ -13,7 +13,7 @@ use crate::utils;
 use log::{debug, error, info, trace, warn};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager};
 
@@ -306,6 +306,23 @@ fn create_audio_recorder(
 
 /* ──────────────────────────────────────────────────────────────── */
 
+/// One recording session's first-sample notification. Waiting on this never
+/// blocks the shortcut coordinator: callers hand it to a dedicated worker.
+pub struct RecordingReadiness {
+    receiver: mpsc::Receiver<()>,
+    generation: u64,
+}
+
+impl RecordingReadiness {
+    pub fn wait(self) -> bool {
+        self.receiver.recv().is_ok()
+    }
+
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+}
+
 #[derive(Clone)]
 pub struct AudioRecordingManager {
     /// Never assign through this directly — route every write through
@@ -327,6 +344,10 @@ pub struct AudioRecordingManager {
     /// the main/webview thread when a worker holds `state` across a slow
     /// CoreAudio open/close.
     recording_active: Arc<AtomicBool>,
+    /// Invalidates asynchronous first-sample UI/chime work when a recording is
+    /// stopped or cancelled. This prevents a slow device from producing a late
+    /// "ready" indication for a session the user already ended.
+    capture_generation: Arc<AtomicU64>,
     /// Resolution of a *named* microphone (selected or clamshell) to its cpal
     /// device, cached so on-demand recording starts skip the full device
     /// enumeration (~40-110ms). Keyed by the resolved name, so a settings
@@ -363,6 +384,7 @@ impl AudioRecordingManager {
             cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
             recording_active: Arc::new(AtomicBool::new(false)),
+            capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
         };
 
@@ -721,7 +743,7 @@ impl AudioRecordingManager {
         &self,
         binding_id: &str,
         vad_policy: VadPolicy,
-    ) -> Result<(), String> {
+    ) -> Result<RecordingReadiness, String> {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
@@ -740,16 +762,23 @@ impl AudioRecordingManager {
             }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                if rec.start(vad_policy).is_ok() {
-                    *self.is_recording.lock().unwrap() = true;
-                    self.set_state(
-                        &mut state,
-                        RecordingState::Recording {
-                            binding_id: binding_id.to_string(),
-                        },
-                    );
-                    debug!("Recording started for binding {binding_id}");
-                    return Ok(());
+                match rec.start(vad_policy) {
+                    Ok(receiver) => {
+                        let generation = self.capture_generation.fetch_add(1, Ordering::AcqRel) + 1;
+                        *self.is_recording.lock().unwrap() = true;
+                        self.set_state(
+                            &mut state,
+                            RecordingState::Recording {
+                                binding_id: binding_id.to_string(),
+                            },
+                        );
+                        debug!("Recording requested for binding {binding_id}");
+                        return Ok(RecordingReadiness {
+                            receiver,
+                            generation,
+                        });
+                    }
+                    Err(error) => return Err(format!("Failed to start recorder: {error}")),
                 }
             }
             Err("Recorder not available".to_string())
@@ -805,6 +834,16 @@ impl AudioRecordingManager {
         Ok(())
     }
 
+    /// Invalidate pending first-sample UI and audio-feedback work immediately.
+    /// Called at the beginning of stop, before the slower capture drain starts.
+    pub fn invalidate_recording_readiness(&self) {
+        self.capture_generation.fetch_add(1, Ordering::AcqRel);
+    }
+
+    pub fn is_recording_readiness_current(&self, generation: u64) -> bool {
+        self.capture_generation.load(Ordering::Acquire) == generation
+    }
+
     pub fn cancel_generation(&self) -> u64 {
         self.cancel_generation.load(Ordering::Acquire)
     }
@@ -814,6 +853,7 @@ impl AudioRecordingManager {
     }
 
     pub fn stop_recording(&self, binding_id: &str, cancel_generation: u64) -> Option<Vec<f32>> {
+        self.invalidate_recording_readiness();
         let mut state = self.state.lock().unwrap();
 
         match *state {
@@ -900,6 +940,7 @@ impl AudioRecordingManager {
 
     /// Cancel any ongoing recording without returning audio samples
     pub fn cancel_recording(&self) {
+        self.invalidate_recording_readiness();
         self.cancel_generation.fetch_add(1, Ordering::AcqRel);
         let mut state = self.state.lock().unwrap();
 

@@ -588,6 +588,19 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run(cli_args: CliArgs) {
+    // Avoid ggml-metal residency-set teardown assertions when a native engine
+    // outlives the Tauri shutdown sequence (#1902). This must happen before
+    // transcribe-cpp initializes its Metal device. Advanced users can restore
+    // upstream residency behavior with HANDY_METAL_RESIDENCY=1.
+    #[cfg(target_os = "macos")]
+    if std::env::var("HANDY_METAL_RESIDENCY").as_deref() == Ok("1") {
+        // ggml treats GGML_METAL_NO_RESIDENCY as presence-based, so remove an
+        // inherited value as well when explicitly opting back in.
+        std::env::remove_var("GGML_METAL_NO_RESIDENCY");
+    } else {
+        std::env::set_var("GGML_METAL_NO_RESIDENCY", "1");
+    }
+
     // Pin glibc's dynamic mmap threshold before the first large allocation,
     // so per-dictation transient buffers are returned to the OS on free
     // instead of accumulating in malloc arenas (#1792). No-op off Linux/glibc.
@@ -646,6 +659,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_append_trailing_space_setting,
             shortcut::change_lazy_stream_close_setting,
             shortcut::change_vad_enabled_setting,
+            shortcut::change_filler_word_removal_enabled_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,
             shortcut::change_show_whats_new_on_update_setting,
@@ -891,11 +905,11 @@ pub fn run(cli_args: CliArgs) {
 
             let mut settings = get_settings(app.handle());
 
-            // Apply the persisted appearance theme to the Windows title bar before
+            // Apply the persisted appearance theme to the native title bar before
             // the window is shown, so it matches the in-app palette without a flash
-            // of the wrong theme. On macOS/Linux, Tauri themes are app-wide and
-            // would also affect windows that intentionally keep the system theme.
-            #[cfg(target_os = "windows")]
+            // of the wrong theme. See `apply_window_theme` for what this does per
+            // platform.
+            #[cfg(any(target_os = "windows", target_os = "macos"))]
             shortcut::apply_window_theme(app.handle(), settings.theme);
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)

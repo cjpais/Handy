@@ -2,8 +2,8 @@
   "tray": {
     "settings": "Ayarlar...",
     "checkUpdates": "Güncellemeleri Kontrol Et...",
-    "copyLastTranscript": "Son transkripti kopyala",
-    "unloadModel": "Modeli boşalt",
+    "copyLastTranscript": "Son Transkripti Kopyala",
+    "unloadModel": "Modeli Boşalt",
     "model": "Model",
     "quit": "Çıkış",
     "cancel": "İptal",
@@ -170,11 +170,11 @@
         "translation": "İngilizce'ye çeviriyi destekleyen modelleri filtrele"
       },
       "noModelsMatch": "Bu filtreyle eşleşen model yok.",
-      "yourModels": "İndirilen modeller",
+      "yourModels": "İndirilen Modeller",
       "availableModels": "İndirilebilir",
       "searchPlaceholder": "Modelleri ada göre ara…",
       "rescan": {
-        "label": "Yeniden tara",
+        "label": "Yeniden Tara",
         "tooltip": "Handy dışında modeller klasörüne veya Hugging Face önbelleğine eklenen modelleri yeniden tara"
       }
     },
@@ -198,7 +198,7 @@
           },
           "transcribe_with_post_process": {
             "name": "Son İşlem Kısayolu",
-            "description": "İsteğe bağlı: Transkripsiyonunuza her zaman AI son işleme uygulayan özel bir kısayol tuşu."
+            "description": "İsteğe bağlı: Transkripsiyonunuza her zaman yapay zekâ ile son işlem uygulayan özel bir kısayol tuşu."
           }
         },
         "errors": {
@@ -261,13 +261,13 @@
         "description": "Hala geliştirme aşamasında olan deneysel özellikleri etkinleştir."
       },
       "lazyStreamClose": {
-        "label": "Transkripsiyonlar arasında mikrofonu açık tut",
+        "label": "Transkripsiyonlar Arasında Mikrofonu Açık Tut",
         "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper Hızlandırma",
-          "description": "Whisper modelleri için donanım hızlandırma. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
+          "title": "transcribe.cpp Hızlandırması",
+          "description": "transcribe.cpp (Whisper ailesi) modelleri için donanım hızlandırması. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
         },
         "ort": {
           "title": "ONNX Hızlandırma",
@@ -286,13 +286,13 @@
         "description": "Bilgisayara giriş yaptığınızda Handy otomatik olarak başlatılır."
       },
       "showTrayIcon": {
-        "label": "Tepsi simgesini göster",
+        "label": "Tepsi Simgesini Göster",
         "description": "Handy simgesini sistem tepsisinde göster."
       },
       "overlay": {
         "style": {
-          "title": "Yer Paylaşımı",
-          "description": "Kayıt sırasındaki yer paylaşımını seçin: 'Yok' gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
+          "title": "Ekran Katmanı",
+          "description": "Kayıt sırasında gösterilecek ekran katmanını seçin: 'Yok' katmanı gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
           "options": {
             "none": "Yok",
             "minimal": "Sade",
@@ -300,8 +300,8 @@
           }
         },
         "position": {
-          "title": "Overlay Konumu",
-          "description": "Kayıt ve transkripsiyon sırasında görsel geri bildirim kaplamasını gösterir. Linux'ta 'Yok' önerilir.",
+          "title": "Ekran Katmanı Konumu",
+          "description": "Ekran katmanının kayıt ve transkripsiyon sırasında nerede görüneceğini belirler.",
           "options": {
             "bottom": "Alt",
             "top": "Üst"
@@ -323,9 +323,9 @@
       },
       "typingTool": {
         "title": "Yazma Aracı",
-        "description": "Doğrudan yapıştırma yöntemi için hangi Linux yazma aracının kullanılacağını seçin. Auto, sisteminiz için mevcut en iyi aracı otomatik olarak algılar ve kullanır.",
+        "description": "Doğrudan yapıştırma yöntemi için hangi Linux yazma aracının kullanılacağını seçin. Otomatik seçeneği, sisteminiz için mevcut en iyi aracı algılar ve kullanır.",
         "options": {
-          "auto": "Auto (Önerilen)"
+          "auto": "Otomatik (Önerilen)"
         }
       },
       "clipboardHandling": {
@@ -348,8 +348,8 @@
         }
       },
       "translateToEnglish": {
-        "label": "İngilizceye Çevir",
-        "description": "Transkripsiyon sırasında diğer dillerden İngilizceye otomatik olarak çevirir."
+        "label": "İngilizce'ye Çevir",
+        "description": "Transkripsiyon sırasında diğer dillerden İngilizce'ye otomatik olarak çevirir."
       },
       "modelUnload": {
         "title": "Modeli Boşalt",
@@ -376,6 +376,10 @@
       "voiceActivityDetection": {
         "title": "Ses Etkinliği Algılama",
         "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
+      },
+      "fillerWordRemoval": {
+        "title": "Dolgu Sözcüklerini Kaldır",
+        "description": "Transkripsiyonlardaki yaygın duraksama sözcüklerini kaldırır. Bunları korumak için kapatın."
       }
     },
     "postProcessing": {
@@ -411,7 +415,7 @@
         }
       },
       "prompts": {
-        "title": "İstem",
+        "title": "Prompt",
         "selectedPrompt": {
           "title": "Seçili Prompt",
           "description": "Transkripsiyonları iyileştirmek için bir şablon seçin veya yeni bir tane oluşturun. Yakalanan transkripte referans vermek için prompt metni içinde ${output} kullanın."
@@ -429,7 +433,7 @@
         "createPrompt": "Prompt Oluştur",
         "cancel": "İptal",
         "selectToEdit": "Ayrıntılarını görüntülemek ve düzenlemek için yukarıdan bir prompt seçin.",
-        "createFirst": "İlk son işlem prompt'unuzu oluşturmak için yukarıdaki “Yeni Prompt Oluştur” seçeneğine tıklayın."
+        "createFirst": "İlk son işlem promptunuzu oluşturmak için yukarıdaki “Yeni Prompt Oluştur” seçeneğine tıklayın."
       }
     },
     "history": {
@@ -442,10 +446,10 @@
       "unsave": "Kaydedilenlerden kaldır",
       "delete": "Kaydı sil",
       "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
-      "retranscribe": "Yeniden yazıya dök",
-      "retranscribeError": "Yeniden yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
-      "transcribing": "Yazıya döküyor...",
-      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar yazıya dökebilirsiniz."
+      "retranscribe": "Yeniden transkribe et",
+      "retranscribeError": "Yeniden transkripsiyon başarısız oldu. Lütfen tekrar deneyin.",
+      "transcribing": "Transkribe ediliyor...",
+      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz."
     },
     "debug": {
       "title": "Hata Ayıklama",
@@ -526,19 +530,19 @@
         "settings": "Ayarlar:"
       },
       "pasteDelay": {
-        "title": "Yapıştırma gecikmesi (önce)",
+        "title": "Yapıştırma Gecikmesi (Önce)",
         "description": "Metin kopyalandıktan sonra, yapıştırma tuşu gönderilmeden önceki gecikme (milisaniye cinsinden). Hiçbir şey yapıştırılmıyorsa artırın."
       },
       "pasteDelayAfter": {
-        "title": "Yapıştırma gecikmesi (sonra)",
-        "description": "Yapıştırma tuşundan sonra, önceki panonuz geri yüklenmeden önceki gecikme (milisaniye cinsinden). Yazıya dökülen metin yerine eski pano içeriği yapıştırılıyorsa artırın."
+        "title": "Yapıştırma Gecikmesi (Sonra)",
+        "description": "Yapıştırma tuşundan sonra, önceki panonuz geri yüklenmeden önceki gecikme (milisaniye cinsinden). Transkripsiyon yerine eski pano içeriği yapıştırılıyorsa artırın."
       },
       "reliablePaste": {
-        "title": "Güvenilir yapıştırma (Beta)",
-        "description": "Panoyu sabit bir gecikmenin ardından değil, hedef uygulama yazıya dökülen metni gerçekten okuduktan sonra geri yükler. Sistem yükü altında eski pano içeriğinin yapıştırılması sorununu gidermeyi amaçlar. Pano üzerinden çalışan bir yapıştırma yöntemi gerektirir; yalnızca macOS ve Windows."
+        "title": "Güvenilir Yapıştırma (Beta)",
+        "description": "Panoyu sabit bir gecikmenin ardından değil, hedef uygulama transkripsiyonu gerçekten okuduktan sonra geri yükler. Sistem yükü altında eski pano içeriğinin yapıştırılması sorununu gidermeyi amaçlar. Pano üzerinden çalışan bir yapıştırma yöntemi gerektirir; yalnızca macOS ve Windows."
       },
       "recordingBuffer": {
-        "title": "Ekstra kayıt tamponu",
+        "title": "Ekstra Kayıt Tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
       },
       "keyboardDiagnostic": {
@@ -593,8 +597,8 @@
         "title": "Teşekkürler",
         "ggml": {
           "title": "ggml",
-          "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
-          "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için ggml kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
+          "description": "Cihaz üzerinde makine öğrenmesi çıkarımı için yüksek performanslı tensör kütüphanesi",
+          "details": "Handy'nin yerel konuşmadan metne dönüştürme özelliği transcribe.cpp ve ggml üzerine kuruludur. Georgi Gerganov'a ve katkıda bulunanlara harika çalışmaları için teşekkür ederiz."
         }
       },
       "whatsNewUpdates": {
@@ -654,7 +658,7 @@
     "description": "Handy arayüzünün dilini değiştirin"
   },
   "theme": {
-    "title": "Uygulama teması",
+    "title": "Uygulama Teması",
     "description": "Handy'nin sistem temasını izlemesini ya da açık veya koyu kalmasını seçin",
     "options": {
       "system": "Sistem",

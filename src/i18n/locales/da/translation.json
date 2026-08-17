@@ -376,6 +376,10 @@
       "voiceActivityDetection": {
         "title": "Stemmeaktivitetsdetektion",
         "description": "Filtrer stilhed fra optagelser. Streaming-modeller bruger en længere VAD-hale; deaktivering af VAD optager rå lyd."
+      },
+      "fillerWordRemoval": {
+        "title": "Fjern fyldord",
+        "description": "Fjerner almindelige tøveord fra transskriptioner. Slå fra for at beholde dem."
       }
     },
     "postProcessing": {

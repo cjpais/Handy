@@ -21,9 +21,9 @@ use crate::audio_toolkit::{
 
 enum Cmd {
     /// Begin capturing. Carries the send timestamp so the consumer can log how
-    /// long the command sat in the channel (and how much audio was dropped
-    /// before it was seen).
-    Start(VadPolicy, Instant),
+    /// long the command sat in the channel, plus a one-shot acknowledgement
+    /// sent only after the first microphone sample chunk is processed.
+    Start(VadPolicy, Instant, mpsc::Sender<()>),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -363,11 +363,21 @@ impl AudioRecorder {
         }
     }
 
-    pub fn start(&self, vad_policy: VadPolicy) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Start(vad_policy, Instant::now()))?;
-        }
-        Ok(())
+    /// Queue a recording start and return a one-shot receiver that resolves only
+    /// after the first real microphone sample chunk has entered the capture path.
+    /// `Stream::play()` returning is not sufficient: some Bluetooth and USB
+    /// devices take much longer to begin delivering callbacks.
+    pub fn start(
+        &self,
+        vad_policy: VadPolicy,
+    ) -> Result<mpsc::Receiver<()>, Box<dyn std::error::Error>> {
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::other("Recorder is not open"))?;
+        let (ready_tx, ready_rx) = mpsc::channel();
+        tx.send(Cmd::Start(vad_policy, Instant::now(), ready_tx))?;
+        Ok(ready_rx)
     }
 
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
@@ -678,6 +688,7 @@ fn run_consumer(
     // when Cmd::Start lands.
     let mut first_chunk_logged = false;
     let mut awaiting_first_captured_chunk: Option<Instant> = None;
+    let mut capture_ready_tx: Option<mpsc::Sender<()>> = None;
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -750,7 +761,7 @@ fn run_consumer(
         // ~100ms on Bluetooth) at every recording start.
         while let Ok(cmd) = cmd_rx.try_recv() {
             match cmd {
-                Cmd::Start(policy, sent_at) => {
+                Cmd::Start(policy, sent_at, ready_tx) => {
                     log::debug!(
                         "Cmd::Start processed {:?} after send; capture begins with {} chunk",
                         sent_at.elapsed(),
@@ -761,6 +772,7 @@ fn run_consumer(
                         }
                     );
                     awaiting_first_captured_chunk = Some(Instant::now());
+                    capture_ready_tx = Some(ready_tx);
                     stop_flag.store(false, Ordering::Relaxed);
                     vad_policy = policy;
                     processed_samples.clear();
@@ -780,6 +792,10 @@ fn run_consumer(
                 }
                 Cmd::Stop(reply_tx) => {
                     recording = false;
+                    // If Stop was queued before the first chunk, dropping this
+                    // sender prevents a stale ready UI event or start chime.
+                    capture_ready_tx = None;
+                    awaiting_first_captured_chunk = None;
                     stop_flag.store(true, Ordering::Relaxed);
 
                     // The chunk in hand arrived before the stop; it belongs to
@@ -863,24 +879,33 @@ fn run_consumer(
             );
         }
 
-        // ---------- spectrum processing ---------------------------------- //
-        if let Some(buckets) = visualizer.feed(&raw) {
-            if let Some(cb) = &level_cb {
-                cb(buckets);
+        // ---------- recording-time processing ---------------------------- //
+        // In always-on mode the capture stream stays open continuously for
+        // zero-latency start, so while idle (not recording) there is nothing to
+        // do with a chunk: handle_frame returns early when not recording, which
+        // means the resampled output would be discarded, and the level meter has
+        // no idle consumer. Skip both the level-meter FFT and the resampler while
+        // idle to avoid doing unnecessary work whose output is thrown away. Both
+        // are reset on Cmd::Start (visualizer.reset() / frame_resampler.reset()),
+        // so they resume cleanly the moment recording begins.
+        if recording {
+            if let Some(buckets) = visualizer.feed(&raw) {
+                if let Some(cb) = &level_cb {
+                    cb(buckets);
+                }
             }
-        }
 
-        // ---------- existing pipeline ------------------------------------ //
-        frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(
-                frame,
-                recording,
-                vad_policy,
-                &vad,
-                &audio_cb,
-                &mut processed_samples,
-            )
-        });
+            frame_resampler.push(&raw, &mut |frame: &[f32]| {
+                handle_frame(
+                    frame,
+                    recording,
+                    vad_policy,
+                    &vad,
+                    &audio_cb,
+                    &mut processed_samples,
+                )
+            });
+        }
 
         if recording {
             if let Some(started) = awaiting_first_captured_chunk.take() {
@@ -889,6 +914,12 @@ fn run_consumer(
                     chunk_ms,
                     started.elapsed()
                 );
+            }
+            if let Some(ready_tx) = capture_ready_tx.take() {
+                // Signal only after this chunk has passed through the visualizer
+                // and resampler. Silence still counts: readiness means the host
+                // is delivering samples, not that VAD has detected speech.
+                let _ = ready_tx.send(());
             }
         }
     }

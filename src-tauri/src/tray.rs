@@ -139,7 +139,7 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
         app.path()
             .resolve(icon_path, tauri::path::BaseDirectory::Resource),
     )
-    .and_then(|image| tray.set_icon(Some(image)))
+    .and_then(|image| tray.set_icon_with_as_template(Some(image), true))
     {
         error!("Failed to update tray icon '{icon_path}': {err}");
     }
@@ -331,7 +331,6 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
 
     let tray = app.state::<TrayIcon>();
     let _ = tray.set_menu(Some(menu));
-    let _ = tray.set_icon_as_template(true);
     let _ = tray.set_tooltip(Some(tooltip));
 }
 
