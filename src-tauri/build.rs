@@ -205,7 +205,7 @@ fn stage_transcribe_runtime_libs() {
             let src = entry.path();
             let name = src.file_name().and_then(|s| s.to_str()).unwrap_or("");
             // Match by NAME, not extension: Linux versions its libs
-            // (libtranscribe.so.0, .so.0.1.3) and the loader needs the SONAME, so
+            // (libtranscribe.so.0, .so.0.2.0) and the loader needs the SONAME, so
             // an extension-only filter would miss the versioned names entirely.
             let is_lib = name.ends_with(".dll")
                 || name.ends_with(".dylib")
@@ -218,7 +218,7 @@ fn stage_transcribe_runtime_libs() {
     }
 
     // A Linux install dir carries each lib as a symlink chain (libfoo.so ->
-    // libfoo.so.0 -> libfoo.so.0.1.3), and tauri's deb/rpm bundlers flatten
+    // libfoo.so.0 -> libfoo.so.0.2.0), and tauri's deb/rpm bundlers flatten
     // symlinks into real files — staging every name would triplicate each lib
     // on disk and draw "not a symbolic link" warnings from ldconfig (issue
     // #1639). Only one name per lib is ever resolved at runtime: the SONAME
@@ -261,7 +261,7 @@ fn stage_transcribe_runtime_libs() {
 
 /// Split a versioned ELF shared-library name into (stem, version depth):
 /// `libfoo.so` -> ("libfoo", 0), `libfoo.so.0` -> ("libfoo", 1),
-/// `libfoo.so.0.1.3` -> ("libfoo", 3). Returns None for names that aren't a
+/// `libfoo.so.0.2.0` -> ("libfoo", 3). Returns None for names that aren't a
 /// `.so` optionally followed by dot-separated numeric components.
 fn split_versioned_so(name: &str) -> Option<(&str, usize)> {
     let idx = name.find(".so")?;
