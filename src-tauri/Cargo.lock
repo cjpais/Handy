@@ -2565,9 +2565,9 @@ dependencies = [
 
 [[package]]
 name = "handy-keys"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71f78470c4a23919ba16e6d621fa2c429451faa98b073f4cba679c496b3e8fa2"
+checksum = "1a007b6c921d3273fd88aac45b516eee01e5a9dc2d76bb6f1a981500cc0d818a"
 dependencies = [
  "bitflags 2.11.0",
  "block2",
