@@ -421,41 +421,51 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
         .output()
         .map_err(|e| format!("Failed to execute xdotool: {}", e))?;
 
+    // `--clearmodifiers` restores the modifiers that were held when xdotool
+    // started. If the user releases one while xdotool is typing, that synthetic
+    // restore can leave the modifier latched on the XTEST keyboard (#1817).
+    // Release both sides of Handy's supported push-style modifiers to clear any
+    // stale restore. Lock keys are intentionally excluded because key events
+    // toggle them.
+    //
+    // The release is unconditional, so it can make a modifier that is still
+    // physically held appear released until the next physical event. This is
+    // preferable to leaving a synthetic modifier latched system-wide.
+    //
+    // Clean up before checking the typing status because xdotool may have
+    // changed modifier state before returning an error. Cleanup remains
+    // best-effort because the text may already have been partially or fully
+    // typed, but failures are logged so they can be diagnosed.
+    match Command::new("xdotool")
+        .arg("keyup")
+        .args([
+            "Control_L",
+            "Control_R",
+            "Shift_L",
+            "Shift_R",
+            "Alt_L",
+            "Alt_R",
+            "Super_L",
+            "Super_R",
+        ])
+        .output()
+    {
+        Ok(cleanup_output) if !cleanup_output.status.success() => {
+            let stderr = String::from_utf8_lossy(&cleanup_output.stderr);
+            log::warn!(
+                "xdotool modifier cleanup failed with status {:?}: {}",
+                cleanup_output.status.code(),
+                stderr.trim()
+            );
+        }
+        Err(error) => log::warn!("Failed to execute xdotool modifier cleanup: {}", error),
+        _ => {}
+    }
+
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("xdotool failed: {}", stderr));
     }
-
-    // `--clearmodifiers` snapshots any held modifiers, releases them for the
-    // duration of typing, then re-presses the snapshot afterwards. This paste
-    // runs after a multi-second async transcription, so the snapshot can be
-    // stale: the user may have released the modifier (e.g. the Ctrl of a
-    // Ctrl+Space push-to-talk binding) in the meantime. The synthetic re-press
-    // then lands on the XTEST keyboard with no matching release, latching the
-    // modifier system-wide until it is pressed and released again (#1817).
-    //
-    // Release the push-style modifiers explicitly so a stale restore can never
-    // leave anything latched. `xdotool keyup` injects via the XTEST extension
-    // (the same device the restore wrote to), so this clears the latch.
-    //
-    // Two intentional trade-offs:
-    //  - Only ctrl/shift/alt/super are released. `--clearmodifiers` also tracks
-    //    Meta, ISO_Level3_Shift (AltGr), mouse buttons and caps/num/scroll lock;
-    //    the lock keys are skipped on purpose (they toggle on key events) and
-    //    the rest are out of scope for the reported Ctrl-latch bug.
-    //  - The release is unconditional. Because X modifier state is not
-    //    reference-counted per device, this can also drop a modifier the user is
-    //    physically holding across the paste. That case is rare (the common
-    //    workflow is a push-to-talk binding, not a modifier held for subsequent
-    //    typing); if it regresses someone we should switch to querying actual
-    //    state (e.g. xinput) and releasing only latched keys.
-    // Releasing a modifier that is not held is a no-op on X11, so this is safe
-    // when nothing was held. The result is ignored on purpose: the text was
-    // already typed successfully, and a failed cleanup must not fail the paste.
-    let _ = Command::new("xdotool")
-        .arg("keyup")
-        .args(["ctrl", "shift", "alt", "super"])
-        .output();
 
     Ok(())
 }
