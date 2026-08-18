@@ -249,6 +249,17 @@
       }
     },
     "advanced": {
+      "chineseConversion": {
+        "title": "中文簡繁轉換",
+        "description": "在語音辨識後、後處理前轉換中文用字。",
+        "options": {
+          "auto": "自動（依語言設定）",
+          "off": "關閉",
+          "traditionalTaiwan": "簡體 → 繁體（台灣用語）",
+          "traditionalHongKong": "簡體 → 繁體（香港用語）",
+          "simplified": "繁體 → 簡體"
+        }
+      },
       "groups": {
         "app": "應用程式",
         "output": "輸出",
