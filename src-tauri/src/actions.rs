@@ -7,7 +7,9 @@ use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, ChineseConversion, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -19,7 +21,7 @@ use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::future::Future;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
@@ -375,7 +377,32 @@ async fn maybe_convert_chinese_variant(
         BuiltinConfig::S2tw
     };
 
-    match OpenCC::from_config(config) {
+    convert_with_opencc(config, transcription)
+}
+
+static S2TW_CONVERTER: LazyLock<Result<OpenCC, ferrous_opencc::error::OpenCCError>> =
+    LazyLock::new(|| OpenCC::from_config(BuiltinConfig::S2tw));
+static TW2SP_CONVERTER: LazyLock<Result<OpenCC, ferrous_opencc::error::OpenCCError>> =
+    LazyLock::new(|| OpenCC::from_config(BuiltinConfig::Tw2sp));
+static S2TWP_CONVERTER: LazyLock<Result<OpenCC, ferrous_opencc::error::OpenCCError>> =
+    LazyLock::new(|| OpenCC::from_config(BuiltinConfig::S2twp));
+static S2HK_CONVERTER: LazyLock<Result<OpenCC, ferrous_opencc::error::OpenCCError>> =
+    LazyLock::new(|| OpenCC::from_config(BuiltinConfig::S2hk));
+
+fn converter_for_config(
+    config: BuiltinConfig,
+) -> &'static Result<OpenCC, ferrous_opencc::error::OpenCCError> {
+    match config {
+        BuiltinConfig::S2tw => &S2TW_CONVERTER,
+        BuiltinConfig::Tw2sp => &TW2SP_CONVERTER,
+        BuiltinConfig::S2twp => &S2TWP_CONVERTER,
+        BuiltinConfig::S2hk => &S2HK_CONVERTER,
+        _ => unreachable!("unsupported cached OpenCC configuration"),
+    }
+}
+
+fn convert_with_opencc(config: BuiltinConfig, transcription: &str) -> Option<String> {
+    match converter_for_config(config) {
         Ok(converter) => {
             let converted = converter.convert(transcription);
             debug!(
@@ -390,6 +417,29 @@ async fn maybe_convert_chinese_variant(
             None
         }
     }
+}
+
+fn contains_cjk_unified_ideograph(text: &str) -> bool {
+    text.chars()
+        .any(|character| ('\u{4E00}'..='\u{9FFF}').contains(&character))
+}
+
+fn convert_explicit_chinese_variant(
+    conversion: ChineseConversion,
+    transcription: &str,
+) -> Option<String> {
+    let config = match conversion {
+        ChineseConversion::TraditionalTaiwan => BuiltinConfig::S2twp,
+        ChineseConversion::TraditionalHongKong => BuiltinConfig::S2hk,
+        ChineseConversion::Simplified => BuiltinConfig::Tw2sp,
+        ChineseConversion::Auto | ChineseConversion::Off => return None,
+    };
+
+    if !contains_cjk_unified_ideograph(transcription) {
+        return None;
+    }
+
+    convert_with_opencc(config, transcription)
 }
 
 pub(crate) struct ProcessedTranscription {
@@ -429,14 +479,26 @@ pub(crate) async fn process_transcription_output(
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
-    // Resolve the language the transcription actually ran in (the persisted
-    // intent coerced against the loaded model's capabilities) so OpenCC keys off
-    // the effective language rather than a possibly-stale intent.
-    let effective_language = resolve_effective_language(app, &settings);
-    if let Some(converted_text) =
-        maybe_convert_chinese_variant(&effective_language, transcription).await
-    {
-        final_text = converted_text;
+    match settings.chinese_conversion {
+        ChineseConversion::Auto => {
+            // Resolve the language the transcription actually ran in (the persisted
+            // intent coerced against the loaded model's capabilities) so OpenCC keys off
+            // the effective language rather than a possibly-stale intent.
+            let effective_language = resolve_effective_language(app, &settings);
+            if let Some(converted_text) =
+                maybe_convert_chinese_variant(&effective_language, transcription).await
+            {
+                final_text = converted_text;
+            }
+        }
+        ChineseConversion::Off => {}
+        conversion => {
+            if let Some(converted_text) =
+                convert_explicit_chinese_variant(conversion, transcription)
+            {
+                final_text = converted_text;
+            }
+        }
     }
 
     if post_process {
@@ -952,10 +1014,12 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
+        complete_unless_cancelled, convert_explicit_chinese_variant, converter_for_config,
+        is_blank_transcription, maybe_convert_chinese_variant, should_use_streaming_overlay,
         strip_think_block,
     };
-    use crate::settings::OverlayStyle;
+    use crate::settings::{ChineseConversion, OverlayStyle};
+    use ferrous_opencc::config::BuiltinConfig;
     use std::future;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
@@ -1035,5 +1099,87 @@ mod tests {
         assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
         assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
         assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
+    }
+
+    #[test]
+    fn off_conversion_returns_without_output() {
+        assert_eq!(
+            convert_explicit_chinese_variant(ChineseConversion::Off, "这个软件"),
+            None
+        );
+    }
+
+    #[test]
+    fn explicit_conversion_skips_text_without_cjk() {
+        assert_eq!(
+            convert_explicit_chinese_variant(
+                ChineseConversion::TraditionalTaiwan,
+                "pgvector JetPack COM port Qwen3-30B-A3B",
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn taiwan_conversion_uses_regional_vocabulary() {
+        assert_eq!(
+            convert_explicit_chinese_variant(
+                ChineseConversion::TraditionalTaiwan,
+                "这个软件的内存占用",
+            )
+            .as_deref(),
+            Some("這個軟體的記憶體佔用")
+        );
+    }
+
+    #[test]
+    fn mixed_english_terms_are_preserved() {
+        assert_eq!(
+            convert_explicit_chinese_variant(
+                ChineseConversion::TraditionalTaiwan,
+                "用 pgvector 和 JetPack 检查 COM port 与 Qwen3-30B-A3B 的内存占用",
+            )
+            .as_deref(),
+            Some("用 pgvector 和 JetPack 檢查 COM port 與 Qwen3-30B-A3B 的記憶體佔用")
+        );
+    }
+
+    #[test]
+    fn hong_kong_and_simplified_modes_use_expected_configs() {
+        assert_eq!(
+            convert_explicit_chinese_variant(ChineseConversion::TraditionalHongKong, "汉字转换",)
+                .as_deref(),
+            Some("漢字轉換")
+        );
+        assert_eq!(
+            convert_explicit_chinese_variant(ChineseConversion::Simplified, "漢字轉換").as_deref(),
+            Some("汉字转换")
+        );
+    }
+
+    #[test]
+    fn auto_conversion_keeps_upstream_language_mapping() {
+        assert_eq!(
+            tauri::async_runtime::block_on(maybe_convert_chinese_variant("zh-Hans", "漢字"))
+                .as_deref(),
+            Some("汉字")
+        );
+        assert_eq!(
+            tauri::async_runtime::block_on(maybe_convert_chinese_variant("zh-Hant", "汉字"))
+                .as_deref(),
+            Some("漢字")
+        );
+        assert_eq!(
+            tauri::async_runtime::block_on(maybe_convert_chinese_variant("en", "汉字")),
+            None
+        );
+    }
+
+    #[test]
+    fn opencc_instances_are_cached_per_config() {
+        assert!(std::ptr::eq(
+            converter_for_config(BuiltinConfig::S2twp),
+            converter_for_config(BuiltinConfig::S2twp),
+        ));
     }
 }
