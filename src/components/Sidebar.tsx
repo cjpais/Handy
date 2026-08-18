@@ -1,8 +1,17 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
+import {
+  Cog,
+  FlaskConical,
+  History,
+  Info,
+  Sparkles,
+  Cpu,
+  X,
+} from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
+import { commands } from "@/bindings";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
@@ -121,6 +130,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </div>
+      {/* Close affordance: on tiling WMs (i3, sway) the window has no
+          decorations, so without a button there is no mouse way out (#1914) */}
+      <button
+        type="button"
+        className="mt-auto mb-2 flex gap-2 items-center p-2 w-full text-left rounded-lg cursor-pointer transition-colors hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
+        title={t("sidebar.close")}
+        onClick={() => {
+          commands.hideMainWindowCommand().catch((e) => {
+            console.error("Failed to hide main window:", e);
+          });
+        }}
+      >
+        <X width={24} height={24} className="shrink-0" />
+        <span className="text-sm font-medium truncate">
+          {t("sidebar.close")}
+        </span>
+      </button>
     </div>
   );
 };

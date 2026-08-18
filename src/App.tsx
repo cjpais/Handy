@@ -73,7 +73,7 @@ function App() {
     }
   }, [onboardingStep, refreshAudioDevices, refreshOutputDevices]);
 
-  // Handle keyboard shortcuts for debug mode toggle
+  // Handle keyboard shortcuts for debug mode toggle and window close
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Check for Ctrl+Shift+D (Windows/Linux) or Cmd+Shift+D (macOS)
@@ -86,6 +86,34 @@ function App() {
         event.preventDefault();
         const currentDebugMode = settings?.debug_mode ?? false;
         updateSetting("debug_mode", !currentDebugMode);
+        return;
+      }
+
+      // The platform close chord (Ctrl+W on Windows/Linux, Cmd+W on macOS)
+      // closes the window. On tiling WMs (i3, sway) the window has no
+      // decorations, so without this there is no keyboard way out (#1914).
+      // Exact chord only: combinations with extra modifiers (Ctrl+Shift+W
+      // etc.) belong to the user's configurable bindings, not the window.
+      const primaryModifier =
+        platform() === "macos"
+          ? event.metaKey && !event.ctrlKey
+          : event.ctrlKey && !event.metaKey;
+      const isCloseShortcut =
+        primaryModifier &&
+        !event.shiftKey &&
+        !event.altKey &&
+        event.key.toLowerCase() === "w";
+
+      if (isCloseShortcut) {
+        // Skip while any UI is capturing raw keyboard input (shortcut
+        // editors in both implementations, macOS keyboard diagnostic): the
+        // user may be pressing the close chord to record it as their own
+        // shortcut, not to close the window.
+        if (document.querySelector("[data-keyboard-capture]")) return;
+        event.preventDefault();
+        commands.hideMainWindowCommand().catch((e) => {
+          console.error("Failed to hide main window:", e);
+        });
       }
     };
 

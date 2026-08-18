@@ -120,6 +120,40 @@ fn show_main_window(app: &AppHandle) {
     );
 }
 
+/// Post-close tray/dock policy shared by every window "close" path: on macOS,
+/// drop the dock icon when the tray is available so the app lives in the tray;
+/// with no tray, keep the dock icon visible so the user can reopen.
+#[cfg(target_os = "macos")]
+fn hide_dock_if_tray(app: &AppHandle) {
+    let settings = get_settings(app);
+    let tray_visible = settings.show_tray_icon && !app.state::<CliArgs>().no_tray;
+    if tray_visible {
+        if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Accessory) {
+            log::error!("Failed to set activation policy to Accessory: {}", e);
+        }
+    }
+}
+
+/// Hide the main window, keeping the app alive. Same close-to-tray path as
+/// the CloseRequested handler (title bar), the Ctrl+W shortcut and the
+/// sidebar close button all end up here.
+fn hide_main_window(app: &AppHandle) {
+    if let Some(main_window) = app.get_webview_window("main") {
+        if let Err(e) = main_window.hide() {
+            log::error!("Failed to hide webview window: {}", e);
+        }
+        #[cfg(target_os = "macos")]
+        hide_dock_if_tray(app);
+        return;
+    }
+
+    let webview_labels = app.webview_windows().keys().cloned().collect::<Vec<_>>();
+    log::error!(
+        "Main window not found. Webview labels: {:?}",
+        webview_labels
+    );
+}
+
 #[allow(unused_variables)]
 fn should_force_show_permissions_window(app: &AppHandle) -> bool {
     #[cfg(target_os = "windows")]
@@ -353,6 +387,13 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 #[specta::specta]
 fn show_main_window_command(app: AppHandle) -> Result<(), String> {
     show_main_window(&app);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+fn hide_main_window_command(app: AppHandle) -> Result<(), String> {
+    hide_main_window(&app);
     Ok(())
 }
 
@@ -677,6 +718,7 @@ pub fn run(cli_args: CliArgs) {
             secure_input::run_keyboard_diagnostic,
             trigger_update_check,
             show_main_window_command,
+            hide_main_window_command,
             commands::cancel_operation,
             commands::is_portable,
             commands::get_app_dir_path,
@@ -976,24 +1018,11 @@ pub fn run(cli_args: CliArgs) {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
-                let _res = window.hide();
-
-                #[cfg(target_os = "macos")]
-                {
-                    let settings = get_settings(window.app_handle());
-                    let tray_visible =
-                        settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
-                    if tray_visible {
-                        // Tray is available: hide the dock icon, app lives in the tray
-                        let res = window
-                            .app_handle()
-                            .set_activation_policy(tauri::ActivationPolicy::Accessory);
-                        if let Err(e) = res {
-                            log::error!("Failed to set activation policy: {}", e);
-                        }
-                    }
-                    // No tray: keep the dock icon visible so the user can reopen
+                if let Err(e) = window.hide() {
+                    log::error!("Failed to hide webview window: {}", e);
                 }
+                #[cfg(target_os = "macos")]
+                hide_dock_if_tray(window.app_handle());
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);
