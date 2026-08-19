@@ -763,8 +763,17 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
 }
 
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+    paste_with_method_override(text, app_handle, None)
+}
+
+/// Paste text with an optional per-invocation method that does not modify settings.
+pub(crate) fn paste_with_method_override(
+    text: String,
+    app_handle: AppHandle,
+    paste_method_override: Option<PasteMethod>,
+) -> Result<(), String> {
     let settings = get_settings(&app_handle);
-    let paste_method = settings.paste_method;
+    let paste_method = paste_method_override.unwrap_or(settings.paste_method);
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
 

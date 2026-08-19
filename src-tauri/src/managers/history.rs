@@ -532,6 +532,13 @@ impl HistoryManager {
         Self::get_latest_completed_entry_with_conn(&conn)
     }
 
+    /// Get the latest completed transcript, preferring post-processed text.
+    pub fn get_latest_completed_transcript(&self) -> Result<Option<String>> {
+        Ok(self
+            .get_latest_completed_entry()?
+            .and_then(|entry| preferred_transcript_text(&entry).map(str::to_owned)))
+    }
+
     fn get_latest_completed_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
         let mut stmt = conn.prepare(
             "SELECT
@@ -649,6 +656,14 @@ impl HistoryManager {
     }
 }
 
+fn preferred_transcript_text(entry: &HistoryEntry) -> Option<&str> {
+    let text = entry
+        .post_processed_text
+        .as_deref()
+        .unwrap_or(&entry.transcription_text);
+    (!text.trim().is_empty()).then_some(text)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -699,6 +714,20 @@ mod tests {
         .expect("insert history entry");
     }
 
+    fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
+        HistoryEntry {
+            id: 1,
+            file_name: "handy-1.wav".to_string(),
+            timestamp: 0,
+            saved: false,
+            title: "Recording".to_string(),
+            transcription_text: transcription.to_string(),
+            post_processed_text: post_processed.map(str::to_owned),
+            post_process_prompt: None,
+            post_process_requested: post_processed.is_some(),
+        }
+    }
+
     #[test]
     fn get_latest_entry_returns_none_when_empty() {
         let conn = setup_conn();
@@ -733,5 +762,17 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn preferred_transcript_uses_post_processed_text_when_available() {
+        let entry = build_entry("raw", Some("processed"));
+        assert_eq!(preferred_transcript_text(&entry), Some("processed"));
+    }
+
+    #[test]
+    fn preferred_transcript_falls_back_to_raw_text() {
+        let entry = build_entry("raw", None);
+        assert_eq!(preferred_transcript_text(&entry), Some("raw"));
     }
 }

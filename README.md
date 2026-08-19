@@ -82,13 +82,32 @@ Handy includes an advanced debug mode for development and troubleshooting. Acces
 
 Handy supports command-line flags for controlling a running instance and customizing startup behavior. These work on all platforms (macOS, Windows, Linux).
 
-**Remote control flags** (sent to an already-running instance via the single-instance plugin):
+**Remote control commands** (sent to an already-running instance via the single-instance plugin):
 
 ```bash
-handy --toggle-transcription    # Toggle recording on/off
-handy --toggle-post-process     # Toggle recording with post-processing on/off
-handy --cancel                  # Cancel the current operation
+handy recording start                         # Start recording if idle
+handy recording start --post-process          # Start with post-processing if idle
+handy recording stop                          # Stop the active recording
+handy recording toggle                        # Start if idle, otherwise stop
+handy recording toggle --post-process         # Toggle, using post-processing when starting
+handy recording cancel                        # Cancel the current operation
+
+handy transcript clipboard                    # Copy the latest completed transcript
+handy transcript paste                        # Paste with the configured method
+handy transcript paste --method ctrl_shift_v  # Override the method once
 ```
+
+The optional one-shot paste method uses Handy's existing setting names:
+`ctrl_v`, `ctrl_shift_v`, `shift_insert`, `direct`, `none`, or
+`external_script`. Hyphenated spellings are also accepted. Omitting `--method`
+uses the saved setting, and an override never changes it. The existing
+`--toggle-transcription`, `--toggle-post-process`, and `--cancel` flags remain
+available as aliases.
+
+Transcript commands operate on the most recent completed entry and prefer
+post-processed text when available, matching the tray's Copy Last Transcript
+action. Paste commands use Handy's normal paste pipeline and settings;
+`--method` changes only the paste method for that invocation.
 
 **Startup flags:**
 

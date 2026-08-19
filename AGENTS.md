@@ -129,7 +129,7 @@ Settings are stored using Tauri's store plugin with reactive updates:
 
 ### Single Instance Architecture
 
-The app enforces single instance behavior — launching when already running brings the settings window to front rather than creating a new process. Remote control flags (`--toggle-transcription`, etc.) work by launching a second instance that sends args to the running instance via `tauri_plugin_single_instance`, then exits.
+The app enforces single instance behavior — launching when already running brings the settings window to front rather than creating a new process. Remote control commands (`recording ...`, `transcript ...`, and the legacy toggle flags) work by launching a second instance that sends args to the running instance via `tauri_plugin_single_instance`, then exits.
 
 ## Internationalization (i18n)
 
@@ -173,22 +173,29 @@ For translation contribution guidelines, see [CONTRIBUTING_TRANSLATIONS.md](CONT
 
 Handy supports command-line parameters on all platforms for integration with scripts, window managers, and autostart configurations.
 
-**Implementation:** `cli.rs` (definitions), `main.rs` (parsing), `lib.rs` (applying), `signal_handle.rs` (shared logic)
+**Implementation:** `cli.rs` defines the interface; `lib.rs` routes second-instance arguments to `remote_control.rs`, which delegates recording lifecycle work to the coordinator and transcript delivery to history and clipboard services.
 
-| Flag                     | Description                                                |
-| ------------------------ | ---------------------------------------------------------- |
-| `--toggle-transcription` | Toggle recording on/off on a running instance              |
-| `--toggle-post-process`  | Toggle recording with post-processing on/off               |
-| `--cancel`               | Cancel the current operation on a running instance         |
-| `--start-hidden`         | Launch without showing the main window (tray icon visible) |
-| `--no-tray`              | Launch without system tray (closing window quits the app)  |
-| `--debug`                | Enable debug mode with verbose (Trace) logging             |
+| Command/flag                         | Description                                                  |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `recording start [--post-process]`   | Start recording if idle                                      |
+| `recording stop`                     | Stop the active recording                                    |
+| `recording toggle [--post-process]`  | Start if idle, otherwise stop                                |
+| `recording cancel`                   | Cancel the current recording or transcription                |
+| `transcript clipboard`               | Copy the latest completed transcript                         |
+| `transcript paste [--method METHOD]` | Paste the latest transcript with an optional method override |
+| `--toggle-transcription`             | Legacy alias for `recording toggle`                          |
+| `--toggle-post-process`              | Legacy alias for `recording toggle --post-process`           |
+| `--cancel`                           | Legacy alias for `recording cancel`                          |
+| `--start-hidden`                     | Launch without showing the main window (tray icon visible)   |
+| `--no-tray`                          | Launch without system tray (closing window quits the app)    |
+| `--debug`                            | Enable debug mode with verbose (Trace) logging               |
 
 **Key design decisions:**
 
-- CLI flags are runtime-only overrides — they do NOT modify persisted settings
-- Remote control flags work via `tauri_plugin_single_instance`: second instance sends args, then exits
-- `send_transcription_input()` in `signal_handle.rs` is shared between signal handlers and CLI
+- CLI options are runtime-only overrides — they do NOT modify persisted settings
+- Remote control commands work via `tauri_plugin_single_instance`: second instance sends args, then exits
+- `start` and `stop` are idempotent; `stop` preserves the mode used to start the active recording
+- Transcript paste reuses the normal paste pipeline; `--method` only overrides the paste method for that invocation
 
 ## Debug Mode
 
