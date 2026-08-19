@@ -16,7 +16,8 @@
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
-    "about": "概要"
+    "about": "概要",
+    "close": "閉じる"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしのモデルを選択してください",
