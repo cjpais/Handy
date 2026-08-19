@@ -156,6 +156,7 @@ For reliable text input on Linux, install the appropriate tool for your display 
 - **Ubuntu 26.04**: Has Wayland display server by default. `wtype` does not work, you need to install `ydotool` and configure systemd as described [here](https://github.com/cjpais/Handy/pull/557#issuecomment-3781249267).
 - **Wayland**: Install `wtype` (preferred) or `dotool` for text input to work correctly
 - **dotool setup**: Requires adding your user to the `input` group: `sudo usermod -aG input $USER` (then log out and back in)
+- **dotool performance**: For lower paste latency, run `dotoold` in your user session. Handy will automatically use the fast `dotoolc` client when the daemon's pipe is available, and fall back to `dotool` otherwise.
 
 Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
 
