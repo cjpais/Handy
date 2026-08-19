@@ -1,3 +1,4 @@
+use crate::managers::engine_gate::EngineJobKind;
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
@@ -72,8 +73,11 @@ pub async fn delete_model(
     // If deleting the active model, unload it and clear the setting
     let settings = get_settings(&app_handle);
     if settings.selected_model == model_id {
+        let reservation = transcription_manager
+            .try_reserve(EngineJobKind::Maintenance)
+            .map_err(|busy| format!("Cannot delete the active model right now: {}", busy))?;
         transcription_manager
-            .unload_model()
+            .unload_model(&reservation)
             .map_err(|e| format!("Failed to unload model: {}", e))?;
 
         let mut settings = get_settings(&app_handle);
@@ -96,12 +100,13 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let model_manager = app.state::<Arc<ModelManager>>();
     let transcription_manager = app.state::<Arc<TranscriptionManager>>();
 
-    // Atomically claim the loading slot — prevents concurrent model loads
-    // from tray double-clicks or overlapping commands. The guard resets the
-    // flag on drop (including early returns, errors, and panics).
-    let _loading_guard = transcription_manager
-        .try_start_loading()
-        .ok_or_else(|| "Model load already in progress".to_string())?;
+    // Claim the engine for the switch — one authority for all engine
+    // mutation. Rejects concurrent switches (tray double-clicks) and any
+    // in-flight transcription job with a typed busy error. A dictation that
+    // starts during the switch records normally and waits for the handoff.
+    let reservation = transcription_manager
+        .try_reserve(EngineJobKind::Maintenance)
+        .map_err(|busy| format!("Cannot switch models right now: {}", busy))?;
 
     // Check if model exists and is available
     let model_info = model_manager
@@ -147,7 +152,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     }
 
     // Load the model. On failure, revert the persisted selection.
-    if let Err(e) = transcription_manager.load_model(model_id) {
+    if let Err(e) = transcription_manager.load_model(&reservation, model_id) {
         let mut settings = get_settings(app);
         settings.selected_model = old_model;
         settings.onboarding_completed = old_onboarding_completed;

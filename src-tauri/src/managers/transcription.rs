@@ -3,6 +3,7 @@ use crate::audio_toolkit::{
     remove_filler_words, OutputLanguageEvidence,
 };
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::engine_gate::{EngineBusy, EngineGate, EngineJobKind, EngineReservation};
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
     get_settings, AppSettings, ModelUnloadTimeout, OrtAcceleratorSetting,
@@ -190,29 +191,6 @@ enum LoadedEngine {
     Cohere(CohereModel),
 }
 
-/// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
-/// Ensures the loading flag is always reset, even on early returns or panics.
-pub struct LoadingGuard {
-    is_loading: Arc<Mutex<bool>>,
-    loading_condvar: Arc<Condvar>,
-}
-
-impl Drop for LoadingGuard {
-    fn drop(&mut self) {
-        // Recover from a poisoned mutex instead of panicking —
-        // a panic inside Drop calls abort().
-        let mut is_loading = match self.is_loading.lock() {
-            Ok(g) => g,
-            Err(e) => {
-                warn!("Recovered poisoned is_loading mutex during LoadingGuard drop — a panic occurred earlier this session");
-                e.into_inner()
-            }
-        };
-        *is_loading = false;
-        self.loading_condvar.notify_all();
-    }
-}
-
 /// RAII guard that clears the streaming worker/lease flags on any worker exit -
 /// normal return, early return, or a panic in an engine call that unwinds the
 /// detached worker thread. Tokens prevent an older worker from clearing a newer
@@ -247,6 +225,13 @@ impl Drop for StreamWorkerGuard {
 #[derive(Clone)]
 pub struct TranscriptionManager {
     engine: Arc<Mutex<Option<LoadedEngine>>>,
+    /// Single admission authority for every operation that uses or mutates
+    /// the loaded engine (inference, streaming, load/switch/unload). Callers
+    /// obtain an [`EngineReservation`] via [`try_reserve`](Self::try_reserve)
+    /// or [`reserve_dictation`](Self::reserve_dictation); manager methods
+    /// validate it before touching the engine. See
+    /// [`crate::managers::engine_gate`] for the policy.
+    engine_gate: Arc<EngineGate>,
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
     current_model_id: Arc<Mutex<Option<String>>>,
@@ -277,12 +262,17 @@ pub struct TranscriptionManager {
     /// `is_model_loaded()` consults this so the model still reports "loaded"
     /// while the worker holds it.
     active_engine_lease: Arc<AtomicU64>,
+    /// True while a batch `transcribe()` has the engine out of the mutex —
+    /// the batch counterpart of `active_engine_lease`, so `is_model_loaded()`
+    /// (and IPC `status.model_loaded`) stays truthful during inference.
+    batch_engine_out: Arc<AtomicBool>,
 }
 
 impl TranscriptionManager {
     pub fn new(app_handle: &AppHandle, model_manager: Arc<ModelManager>) -> Result<Self> {
         let manager = Self {
             engine: Arc::new(Mutex::new(None)),
+            engine_gate: EngineGate::new(),
             model_manager,
             app_handle: app_handle.clone(),
             current_model_id: Arc::new(Mutex::new(None)),
@@ -297,6 +287,7 @@ impl TranscriptionManager {
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
             active_engine_lease: Arc::new(AtomicU64::new(0)),
+            batch_engine_out: Arc::new(AtomicBool::new(false)),
         };
 
         // Start the idle watcher
@@ -334,32 +325,51 @@ impl TranscriptionManager {
                         continue;
                     }
 
+                    // Same while any job holds the engine gate: the engine is
+                    // in use (possibly checked out of the mutex), so keep the
+                    // idle timer fresh. This is a freshness heuristic only —
+                    // the authoritative exclusion is the maintenance
+                    // reservation taken below before actually unloading.
+                    if manager_cloned.engine_gate.holder_kind().is_some() {
+                        manager_cloned.touch_activity();
+                        continue;
+                    }
+
                     if let Some(limit_seconds) = timeout.to_seconds() {
                         let last = manager_cloned.last_activity.load(Ordering::Relaxed);
                         let now_ms = TranscriptionManager::now_ms();
                         let idle_ms = now_ms.saturating_sub(last);
                         let limit_ms = limit_seconds * 1000;
 
-                        if idle_ms > limit_ms {
-                            // idle -> unload
-                            if manager_cloned.is_model_loaded() {
-                                let unload_start = std::time::Instant::now();
-                                info!(
-                                    "Model idle for {}s (limit: {}s), unloading",
-                                    idle_ms / 1000,
-                                    limit_seconds
-                                );
-                                match manager_cloned.unload_model() {
-                                    Ok(()) => {
-                                        let unload_duration = unload_start.elapsed();
-                                        info!(
-                                            "Model unloaded due to inactivity (took {}ms)",
-                                            unload_duration.as_millis()
-                                        );
+                        if idle_ms > limit_ms && manager_cloned.is_model_loaded() {
+                            // Idle → unload, under a maintenance reservation
+                            // so a job that started since the check above
+                            // cannot lose its engine. Busy = a job is running;
+                            // skip and let the next tick retry.
+                            match manager_cloned.try_reserve(EngineJobKind::Maintenance) {
+                                Ok(_reservation) => {
+                                    let unload_start = std::time::Instant::now();
+                                    info!(
+                                        "Model idle for {}s (limit: {}s), unloading",
+                                        idle_ms / 1000,
+                                        limit_seconds
+                                    );
+                                    match manager_cloned.unload_model_inner() {
+                                        Ok(()) => {
+                                            let unload_duration = unload_start.elapsed();
+                                            info!(
+                                                "Model unloaded due to inactivity (took {}ms)",
+                                                unload_duration.as_millis()
+                                            );
+                                        }
+                                        Err(e) => {
+                                            error!("Failed to unload idle model: {}", e);
+                                        }
                                     }
-                                    Err(e) => {
-                                        error!("Failed to unload idle model: {}", e);
-                                    }
+                                }
+                                Err(busy) => {
+                                    debug!("Skipping idle unload: {busy}");
+                                    manager_cloned.touch_activity();
                                 }
                             }
                         }
@@ -382,9 +392,12 @@ impl TranscriptionManager {
     }
 
     pub fn is_model_loaded(&self) -> bool {
-        // The engine may be leased out to the streaming worker (taken out of
-        // the mutex). It's still loaded, just in use, so report true.
-        self.lock_engine().is_some() || self.active_engine_lease.load(Ordering::Acquire) != 0
+        // The engine may be out of the mutex while in use — leased to the
+        // streaming worker or taken by a batch transcribe. It's still loaded,
+        // just busy, so report true.
+        self.lock_engine().is_some()
+            || self.active_engine_lease.load(Ordering::Acquire) != 0
+            || self.batch_engine_out.load(Ordering::Acquire)
     }
 
     /// Accelerator changes should not disturb the current transcription. Mark
@@ -394,23 +407,58 @@ impl TranscriptionManager {
         self.reload_model_on_next_use.store(true, Ordering::Release);
     }
 
-    /// Atomically check whether a model load is in progress and, if not, mark
-    /// one as starting. Returns a [`LoadingGuard`] whose [`Drop`] impl will
-    /// clear the flag and wake waiters. Returns `None` if a load is already in
-    /// progress.
-    pub fn try_start_loading(&self) -> Option<LoadingGuard> {
-        let mut is_loading = self.is_loading.lock().unwrap();
-        if *is_loading {
-            return None;
-        }
-        *is_loading = true;
-        Some(LoadingGuard {
-            is_loading: self.is_loading.clone(),
-            loading_condvar: self.loading_condvar.clone(),
-        })
+    /// Reserve the engine for a background job (retry, IPC, CLI,
+    /// maintenance). Immediate typed [`EngineBusy`] if any job holds it —
+    /// background work never queues. See [`crate::managers::engine_gate`].
+    pub fn try_reserve(&self, kind: EngineJobKind) -> Result<EngineReservation, EngineBusy> {
+        self.engine_gate.try_reserve(kind)
     }
 
-    pub fn unload_model(&self) -> Result<()> {
+    /// Reserve the engine for a dictation session, capture-first: active
+    /// immediately when the gate is free, otherwise pending with a guaranteed
+    /// handoff when the current job releases. Recording proceeds either way.
+    pub fn reserve_dictation(&self) -> Result<EngineReservation, EngineBusy> {
+        self.engine_gate.reserve_dictation()
+    }
+
+    /// The kind of job currently holding the engine, if any (status/busy
+    /// reporting).
+    pub fn engine_holder(&self) -> Option<EngineJobKind> {
+        self.engine_gate.holder_kind()
+    }
+
+    /// Every engine-touching operation calls this first: the reservation must
+    /// have been issued by this manager's gate and must currently hold it
+    /// (a pending dictation reservation does not authorize engine use).
+    fn validate_reservation(&self, reservation: &EngineReservation) -> Result<()> {
+        if !reservation.belongs_to(&self.engine_gate) {
+            return Err(anyhow::anyhow!(
+                "engine reservation was issued by a different manager"
+            ));
+        }
+        if !reservation.is_active() {
+            return Err(anyhow::anyhow!(
+                "engine reservation is not active (pending behind another job)"
+            ));
+        }
+        Ok(())
+    }
+
+    /// Unload the current engine. Requires an active reservation so the
+    /// engine cannot be pulled out from under a running job.
+    pub fn unload_model(&self, reservation: &EngineReservation) -> Result<()> {
+        self.validate_reservation(reservation)?;
+        self.unload_model_inner()
+    }
+
+    /// Named bypass for process teardown only (app exit, headless run end):
+    /// no reservation, because jobs are being abandoned anyway and the engine
+    /// must be freed before native static destructors run.
+    pub fn unload_for_shutdown(&self) -> Result<()> {
+        self.unload_model_inner()
+    }
+
+    fn unload_model_inner(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
         debug!("Starting to unload model");
 
@@ -455,21 +503,46 @@ impl TranscriptionManager {
         self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
     }
 
-    /// Unloads the model immediately if the setting is enabled and the model is loaded
-    pub fn maybe_unload_immediately(&self, context: &str) {
+    /// Unloads the model immediately if the setting is enabled and the model
+    /// is loaded. Pass the job's reservation when one is in scope (end of a
+    /// transcription); with `None` (e.g. the cancel path) a maintenance
+    /// reservation is attempted and the unload is skipped if the engine is
+    /// busy — the courtesy unload must never contend with a live job.
+    pub fn maybe_unload_immediately(&self, context: &str, reservation: Option<&EngineReservation>) {
         let settings = get_settings(&self.app_handle);
-        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
-            && self.is_model_loaded()
+        if settings.model_unload_timeout != ModelUnloadTimeout::Immediately
+            || !self.is_model_loaded()
         {
-            info!("Immediately unloading model after {}", context);
-            if let Err(e) = self.unload_model() {
-                warn!("Failed to immediately unload model: {}", e);
+            return;
+        }
+
+        // Held only in the reservation-less case; keeps the gate held across
+        // the unload below.
+        let _maintenance: Option<EngineReservation>;
+        match reservation {
+            Some(r) if self.validate_reservation(r).is_ok() => {
+                _maintenance = None;
             }
+            _ => match self.try_reserve(EngineJobKind::Maintenance) {
+                Ok(r) => _maintenance = Some(r),
+                Err(busy) => {
+                    debug!("Skipping immediate unload after {context}: {busy}");
+                    return;
+                }
+            },
+        }
+
+        info!("Immediately unloading model after {}", context);
+        if let Err(e) = self.unload_model_inner() {
+            warn!("Failed to immediately unload model: {}", e);
         }
     }
 
-    pub fn load_model(&self, model_id: &str) -> Result<()> {
-        self.load_model_with_device(model_id, None)
+    /// Load `model_id`, replacing any current engine. Requires an active
+    /// reservation.
+    pub fn load_model(&self, reservation: &EngineReservation, model_id: &str) -> Result<()> {
+        self.validate_reservation(reservation)?;
+        self.load_model_inner(model_id, None)
     }
 
     /// Like [`load_model`](Self::load_model), but lets a caller hard-select the
@@ -479,9 +552,17 @@ impl TranscriptionManager {
     /// transcribe-cpp (whisper-family) models; the selection is not persisted.
     pub fn load_model_with_device(
         &self,
+        reservation: &EngineReservation,
         model_id: &str,
         device_index: Option<usize>,
     ) -> Result<()> {
+        self.validate_reservation(reservation)?;
+        self.load_model_inner(model_id, device_index)
+    }
+
+    /// Reservation-free load body. Callers must hold an active reservation
+    /// (or be an internal path that already validated one).
+    fn load_model_inner(&self, model_id: &str, device_index: Option<usize>) -> Result<()> {
         apply_accelerator_settings(&self.app_handle);
 
         let load_start = std::time::Instant::now();
@@ -730,34 +811,91 @@ impl TranscriptionManager {
         Ok(())
     }
 
-    /// Kicks off the model loading in a background thread if it's not already loaded
-    pub fn initiate_model_load(&self) {
+    /// Kicks off loading the selected model in a background thread if it's
+    /// not already loaded, under the caller's reservation (dictation preload
+    /// overlapping with recording). A pending reservation skips the preload —
+    /// the engine belongs to another job right now, and the stop path's
+    /// [`ensure_model_loaded`](Self::ensure_model_loaded) handles the load
+    /// after handoff (usually a no-op: the departing job used the same
+    /// selected model).
+    pub fn initiate_model_load(&self, reservation: &EngineReservation) {
+        if let Err(e) = self.validate_reservation(reservation) {
+            debug!("Skipping model preload: {e}");
+            return;
+        }
+
+        // Snapshot the selection once: the skip decision and the load below
+        // must agree on the same model even if the selection changes
+        // mid-preload.
+        let model_id = get_settings(&self.app_handle).selected_model;
+
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading {
             return;
         }
 
         let reload_pending = self.reload_model_on_next_use.load(Ordering::Acquire);
-        if !reload_pending && self.is_model_loaded() {
+        if preload_satisfied(
+            reload_pending,
+            self.is_model_loaded(),
+            self.get_current_model().as_deref(),
+            &model_id,
+        ) {
             return;
         }
 
         *is_loading = true;
         let self_clone = self.clone();
+        // The load thread keeps a reservation clone: if the dictation is
+        // cancelled mid-load, the gate stays held until the load finishes, so
+        // no other job can race the engine mutation.
+        let reservation = reservation.clone();
         thread::spawn(move || {
+            let _reservation = reservation;
             if reload_pending {
                 self_clone
                     .reload_model_on_next_use
                     .store(false, Ordering::Release);
             }
-            let settings = get_settings(&self_clone.app_handle);
-            if let Err(e) = self_clone.load_model(&settings.selected_model) {
+            if let Err(e) = self_clone.load_model_inner(&model_id, None) {
                 error!("Failed to load model: {}", e);
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
             *is_loading = false;
             self_clone.loading_condvar.notify_all();
         });
+    }
+
+    /// Synchronously make sure `model_id` is the loaded engine, under the
+    /// caller's active reservation: waits out a background preload started by
+    /// [`initiate_model_load`](Self::initiate_model_load) (same logical job),
+    /// then loads only if the loaded model is missing, different, or marked
+    /// stale by an accelerator change.
+    pub fn ensure_model_loaded(
+        &self,
+        reservation: &EngineReservation,
+        model_id: &str,
+    ) -> Result<()> {
+        self.validate_reservation(reservation)?;
+
+        // Wait for an in-flight preload under this same reservation.
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
+
+        let reload_pending = self.reload_model_on_next_use.swap(false, Ordering::AcqRel);
+        if preload_satisfied(
+            reload_pending,
+            self.is_model_loaded(),
+            self.get_current_model().as_deref(),
+            model_id,
+        ) {
+            return Ok(());
+        }
+        self.load_model_inner(model_id, None)
     }
 
     pub fn get_current_model(&self) -> Option<String> {
@@ -801,7 +939,15 @@ impl TranscriptionManager {
     /// model can't stream, the worker idles until finalize/cancel and reports
     /// `None` so the caller falls back to batch transcription. Frames sent
     /// before the stream begins queue on the channel and are not lost.
-    pub fn start_stream(&self) {
+    /// `reservation` must be an active dictation reservation; the worker keeps
+    /// this clone for its whole lifetime, so the gate stays held until the
+    /// engine has been returned (streaming under a pending reservation is not
+    /// allowed — the caller skips live preview in that case).
+    pub fn start_stream(&self, reservation: EngineReservation) {
+        if let Err(e) = self.validate_reservation(&reservation) {
+            warn!("start_stream refused: {e}");
+            return;
+        }
         if self.router.is_open() || self.active_stream_worker.load(Ordering::Acquire) != 0 {
             warn!("start_stream called while a stream worker is already active");
             return;
@@ -819,10 +965,19 @@ impl TranscriptionManager {
         self.stream_active.store(false, Ordering::Release);
 
         let manager = self.clone();
-        thread::spawn(move || manager.run_stream_worker(rx, worker_id));
+        thread::spawn(move || manager.run_stream_worker(rx, worker_id, reservation));
     }
 
-    fn run_stream_worker(&self, rx: mpsc::Receiver<StreamCmd>, worker_id: u64) {
+    // `_reservation` is held (not read) so the engine gate stays reserved for
+    // this dictation until the worker has returned the engine and exited: as a
+    // parameter it drops after the body's locals, i.e. after return_engine()
+    // and after the StreamWorkerGuard clears the worker flags.
+    fn run_stream_worker(
+        &self,
+        rx: mpsc::Receiver<StreamCmd>,
+        worker_id: u64,
+        _reservation: EngineReservation,
+    ) {
         let _worker = StreamWorkerGuard {
             worker_id,
             active_stream_worker: Arc::clone(&self.active_stream_worker),
@@ -1102,7 +1257,13 @@ impl TranscriptionManager {
     /// to batch transcription. `Err` means finalize itself failed or timed out.
     /// A timeout may still leave the worker holding the engine, so callers
     /// should surface it instead of immediately starting a batch fallback.
-    pub fn finalize_stream(&self) -> Result<Option<String>> {
+    ///
+    /// `reservation` is the dictation's reservation (if the caller still holds
+    /// one), used only for the courtesy immediate-unload at the end.
+    pub fn finalize_stream(
+        &self,
+        reservation: Option<&EngineReservation>,
+    ) -> Result<Option<String>> {
         let Some(tx) = self.router.take() else {
             return Ok(None);
         };
@@ -1134,7 +1295,7 @@ impl TranscriptionManager {
             &finalized.supported_languages,
         );
 
-        self.maybe_unload_immediately("streaming transcription");
+        self.maybe_unload_immediately("streaming transcription", reservation);
         Ok(Some(filtered))
     }
 
@@ -1163,7 +1324,18 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+    /// Batch-transcribe 16 kHz mono samples with the loaded engine.
+    ///
+    /// `reservation` must be an active reservation issued by this manager
+    /// ([`try_reserve`](Self::try_reserve) for background jobs,
+    /// [`reserve_dictation`](Self::reserve_dictation) +
+    /// `wait_active_cancellable` for dictation). Without the gate, two
+    /// concurrent jobs would race to take
+    /// the engine out of its mutex and the loser would fail with a spurious
+    /// "Model is not loaded" error.
+    pub fn transcribe(&self, audio: Vec<f32>, reservation: &EngineReservation) -> Result<String> {
+        self.validate_reservation(reservation)?;
+
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -1181,7 +1353,7 @@ impl TranscriptionManager {
 
         if audio.is_empty() {
             debug!("Empty audio vector");
-            self.maybe_unload_immediately("empty audio");
+            self.maybe_unload_immediately("empty audio", Some(reservation));
             return Ok(String::new());
         }
 
@@ -1257,6 +1429,20 @@ impl TranscriptionManager {
 
             // Release the lock before transcribing — no mutex held during the engine call
             drop(engine_guard);
+
+            // The engine now lives outside the mutex until return_engine();
+            // keep is_model_loaded() truthful for that window (IPC `status`
+            // would otherwise report the model unloaded mid-inference). The
+            // guard clears the flag on every exit from this block, including
+            // the error and panic paths.
+            struct BatchEngineOutFlag<'a>(&'a AtomicBool);
+            impl Drop for BatchEngineOutFlag<'_> {
+                fn drop(&mut self) {
+                    self.0.store(false, Ordering::Release);
+                }
+            }
+            let _engine_out = BatchEngineOutFlag(&self.batch_engine_out);
+            self.batch_engine_out.store(true, Ordering::Release);
 
             // Probe live transcribe-cpp capabilities once (cheap GGUF-metadata
             // reads); the loaded session is the source of truth, not the
@@ -1516,7 +1702,7 @@ impl TranscriptionManager {
             info!("Transcription result: {}", final_result);
         }
 
-        self.maybe_unload_immediately("transcription");
+        self.maybe_unload_immediately("transcription", Some(reservation));
 
         Ok(final_result)
     }
@@ -1849,6 +2035,24 @@ fn cpp_translation_task(
     }
 }
 
+/// Whether a model-ensure/preload can be skipped: the *selected* model must
+/// already be the loaded one, and no accelerator change may be pending.
+///
+/// The identity check is load-bearing for streaming correctness: skipping on
+/// "some model is loaded" alone would let a live stream run against a stale
+/// engine and ship its text as the final result without ever consulting
+/// `ensure_model_loaded`. That state is reachable — a model switch under the
+/// Immediately unload setting updates the selection without an eager load,
+/// leaving the previous engine resident.
+fn preload_satisfied(
+    reload_pending: bool,
+    model_loaded: bool,
+    current_model: Option<&str>,
+    selected_model: &str,
+) -> bool {
+    !reload_pending && model_loaded && current_model == Some(selected_model)
+}
+
 /// Drain a stream command channel, ignoring fed audio, until the caller
 /// finalizes or cancels. Used when streaming can't actually run (model not
 /// loaded / not streaming-capable) so the finalize handshake still completes
@@ -2143,6 +2347,27 @@ mod tests {
 
     fn languages(codes: &[&str]) -> Vec<String> {
         codes.iter().map(|code| (*code).to_string()).collect()
+    }
+
+    /// Regression: a loaded model that is NOT the selected model must not
+    /// satisfy the preload — skipping here would let a live stream run (and
+    /// ship text) from the stale engine. Reachable via a model switch under
+    /// the Immediately unload setting, which changes the selection without an
+    /// eager load.
+    #[test]
+    fn preload_not_satisfied_by_a_different_loaded_model() {
+        assert!(!preload_satisfied(false, true, Some("model-a"), "model-b"));
+    }
+
+    #[test]
+    fn preload_satisfied_only_by_the_selected_model_with_no_pending_reload() {
+        assert!(preload_satisfied(false, true, Some("model-a"), "model-a"));
+        // Pending accelerator change forces a reload even if identity matches.
+        assert!(!preload_satisfied(true, true, Some("model-a"), "model-a"));
+        // Nothing loaded at all.
+        assert!(!preload_satisfied(false, false, None, "model-a"));
+        // "Loaded" flag set but identity unknown (e.g. cleared mid-panic).
+        assert!(!preload_satisfied(false, true, None, "model-a"));
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use crate::managers::engine_gate::EngineJobKind;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use serde::Serialize;
@@ -34,7 +35,10 @@ pub fn get_model_load_status(
 pub fn unload_model_manually(
     transcription_manager: State<TranscriptionManager>,
 ) -> Result<(), String> {
+    let reservation = transcription_manager
+        .try_reserve(EngineJobKind::Maintenance)
+        .map_err(|busy| format!("Cannot unload the model right now: {}", busy))?;
     transcription_manager
-        .unload_model()
+        .unload_model(&reservation)
         .map_err(|e| format!("Failed to unload model: {}", e))
 }

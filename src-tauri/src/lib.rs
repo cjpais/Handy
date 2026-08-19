@@ -10,6 +10,7 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
+mod ipc;
 mod llm_client;
 mod managers;
 mod memory;
@@ -181,6 +182,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(tray::CurrentTrayIconState::new());
+    // Holds the engine reservation for the dictation session between
+    // recording start and stop/cancel — see actions::DictationSession.
+    app_handle.manage(actions::DictationSession::default());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -192,6 +196,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // (#1660) — see signal_handle.rs.
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone());
+
+    // Start the local IPC server (JSON-RPC over a per-user socket) so other
+    // applications can use Handy as the machine's transcription service.
+    // See src/ipc/mod.rs and docs/ipc.md.
+    ipc::start(app_handle);
 
     // Apply macOS Accessory policy if starting hidden and tray is available.
     // If the tray icon is disabled, keep the dock icon so the user can reopen.
@@ -275,9 +284,14 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     log::warn!("No model is currently loaded.");
                     return;
                 }
-                match transcription_manager.unload_model() {
-                    Ok(()) => log::info!("Model unloaded via tray."),
-                    Err(e) => log::error!("Failed to unload model via tray: {}", e),
+                match transcription_manager
+                    .try_reserve(managers::engine_gate::EngineJobKind::Maintenance)
+                {
+                    Ok(reservation) => match transcription_manager.unload_model(&reservation) {
+                        Ok(()) => log::info!("Model unloaded via tray."),
+                        Err(e) => log::error!("Failed to unload model via tray: {}", e),
+                    },
+                    Err(busy) => log::warn!("Cannot unload model via tray: {}", busy),
                 }
             }
             "cancel" => {
@@ -498,6 +512,16 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
 
     let tm = app.state::<Arc<TranscriptionManager>>();
 
+    // Headless one-shot process: the gate is trivially free, but every
+    // engine operation requires a reservation like any other entry point.
+    let reservation = match tm.try_reserve(managers::engine_gate::EngineJobKind::Cli) {
+        Ok(reservation) => reservation,
+        Err(busy) => {
+            eprintln!("error: {}", busy);
+            return 1;
+        }
+    };
+
     let model_id = args
         .model
         .clone()
@@ -518,7 +542,7 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
 
     // Cold load (timed).
     let load_start = Instant::now();
-    if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
+    if let Err(e) = tm.load_model_with_device(&reservation, &model_id, device_index) {
         eprintln!("error: load_model('{}') failed: {}", model_id, e);
         return 1;
     }
@@ -533,13 +557,13 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
         // the engine after each run; reload (untimed) so repeats keep working
         // and the inference timing below stays clean.
         if !tm.is_model_loaded() {
-            if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
+            if let Err(e) = tm.load_model_with_device(&reservation, &model_id, device_index) {
                 eprintln!("error: reload before run {} failed: {}", i + 1, e);
                 return 1;
             }
         }
         let t = Instant::now();
-        match tm.transcribe(samples.clone()) {
+        match tm.transcribe(samples.clone(), &reservation) {
             Ok(out) => text = out,
             Err(e) => {
                 eprintln!("error: transcribe failed: {}", e);
@@ -873,7 +897,7 @@ pub fn run(cli_args: CliArgs) {
                     // device free asserts (SIGABRT) if a model's Metal resources
                     // are still alive at C++ static-destructor time.
                     if let Some(tm) = handle.try_state::<Arc<TranscriptionManager>>() {
-                        let _ = tm.unload_model();
+                        let _ = tm.unload_for_shutdown();
                     }
                     // process::exit (not app.exit, which exits 0 regardless) so the
                     // exit code propagates to the shell for CI gating. Flush first
@@ -1013,7 +1037,7 @@ pub fn run(cli_args: CliArgs) {
             // Teardown transcribe.cpp before exit
             tauri::RunEvent::Exit => {
                 if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
-                    let _ = tm.unload_model();
+                    let _ = tm.unload_for_shutdown();
                 }
             }
             _ => {}
