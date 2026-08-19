@@ -24,17 +24,35 @@ interface AccelerationSelectorProps {
 
 /**
  * transcribe.cpp dropdown encodes accelerator + device in a single value:
+<<<<<<< Updated upstream
  *   "auto"   → accelerator=auto,  gpu_device=-1
  *   "cpu"    → accelerator=cpu,   gpu_device=-1
  *   "gpu:0"  → accelerator=gpu,   gpu_device=0
  *   "gpu:1"  → accelerator=gpu,   gpu_device=1
+||||||| Stash base
+ *   "auto"       → accelerator=auto, gpu_device=null
+ *   "cpu"        → accelerator=cpu,  gpu_device=null
+ *   "gpu"        → accelerator=gpu, auto GPU selection
+ *   "gpu:<id>"   → accelerator=gpu, stable opaque device identity
+=======
+ *   "auto"       → accelerator=auto, gpu_device=null
+ *   "cpu"        → accelerator=cpu,  gpu_device=null
+ *   "gpu:<id>"   → accelerator=gpu, stable opaque device identity
+>>>>>>> Stashed changes
  */
 function encodeTranscribeValue(
   accelerator: TranscribeAcceleratorSetting,
   gpuDevice: number,
 ): string {
   if (accelerator === "cpu") return "cpu";
+<<<<<<< Updated upstream
   if (accelerator === "gpu" && gpuDevice >= 0) return `gpu:${gpuDevice}`;
+||||||| Stash base
+  if (accelerator === "gpu")
+    return gpuDevice === null ? "gpu" : `gpu:${gpuDevice}`;
+=======
+  if (accelerator === "gpu" && gpuDevice !== null) return `gpu:${gpuDevice}`;
+>>>>>>> Stashed changes
   return "auto";
 }
 
@@ -42,7 +60,14 @@ function decodeTranscribeValue(value: string): {
   accelerator: TranscribeAcceleratorSetting;
   gpuDevice: number;
 } {
+<<<<<<< Updated upstream
   if (value === "cpu") return { accelerator: "cpu", gpuDevice: -1 };
+||||||| Stash base
+  if (value === "cpu") return { accelerator: "cpu", gpuDevice: null };
+  if (value === "gpu") return { accelerator: "gpu", gpuDevice: null };
+=======
+  if (value === "cpu") return { accelerator: "cpu", gpuDevice: null };
+>>>>>>> Stashed changes
   if (value.startsWith("gpu:")) {
     const id = parseInt(value.slice(4), 10);
     return { accelerator: "gpu", gpuDevice: id };
@@ -119,8 +144,9 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
 
   const handleTranscribeChange = async (value: string) => {
     const { accelerator, gpuDevice } = decodeTranscribeValue(value);
-    await updateSetting("transcribe_accelerator", accelerator);
+    // Save the device first to avoid `gpu + null` being normalized to Auto.
     await updateSetting("transcribe_gpu_device", gpuDevice);
+    await updateSetting("transcribe_accelerator", accelerator);
   };
 
   return (

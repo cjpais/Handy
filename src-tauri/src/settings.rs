@@ -1076,7 +1076,32 @@ fn apply_settings_migrations(
             settings.transcribe_accelerator = TranscribeAcceleratorSetting::Auto;
             settings.transcribe_gpu_device = default_transcribe_gpu_device();
         }
+<<<<<<< Updated upstream
+||||||| Stash base
+    }
+    if stored_schema_version < 2 {
+        // transcribe.cpp 0.2 replaced integer registry indices with opaque
+        // process-local handles. Clear every old index once; keeping the GPU
+        // accelerator preference for schema-1 users preserves their intent and
+        // lets the backend choose a valid GPU automatically.
+        settings.transcribe_gpu_device = default_transcribe_gpu_device();
+=======
+    }
+    if stored_schema_version < 2 {
+        // transcribe.cpp 0.2 replaced integer registry indices with opaque
+        // process-local handles. Clear every old index once.
+        settings.transcribe_gpu_device = default_transcribe_gpu_device();
+>>>>>>> Stashed changes
         settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
+        updated = true;
+    }
+
+    // The generic GPU choice was removed in favor of Auto or an exact device.
+    // Normalize settings created by builds that exposed that short-lived option.
+    if settings.transcribe_accelerator == TranscribeAcceleratorSetting::Gpu
+        && settings.transcribe_gpu_device.is_none()
+    {
+        settings.transcribe_accelerator = TranscribeAcceleratorSetting::Auto;
         updated = true;
     }
 
@@ -1269,8 +1294,36 @@ mod tests {
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
 
+<<<<<<< Updated upstream
         // A current-format store must not be rewritten on every read.
         assert!(!apply_settings_migrations(&mut settings, &stored));
+||||||| Stash base
+        // The 0.1 integer device index is cleared once for transcribe.cpp 0.2,
+        // while preserving this user's explicit GPU accelerator preference.
+        assert!(apply_settings_migrations(&mut settings, &stored));
+        assert_eq!(
+            settings.settings_schema_version,
+            CURRENT_SETTINGS_SCHEMA_VERSION
+        );
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Gpu
+        );
+        assert_eq!(settings.transcribe_gpu_device, None);
+=======
+        // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
+        // Without an exact device, the retired generic GPU choice becomes Auto.
+        assert!(apply_settings_migrations(&mut settings, &stored));
+        assert_eq!(
+            settings.settings_schema_version,
+            CURRENT_SETTINGS_SCHEMA_VERSION
+        );
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Auto
+        );
+        assert_eq!(settings.transcribe_gpu_device, None);
+>>>>>>> Stashed changes
     }
 
     #[test]
@@ -1454,7 +1507,67 @@ mod tests {
     }
 
     #[test]
+<<<<<<< Updated upstream
     fn gpu_device_migration_keeps_current_schema_positive_selection() {
+||||||| Stash base
+    fn gpu_device_migration_clears_v1_index_but_keeps_gpu_preference() {
+        let raw = serde_json::json!({
+            "settings_schema_version": 1,
+            "transcribe_accelerator": "gpu",
+            "transcribe_gpu_device": 2
+        });
+        let mut settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Gpu
+        );
+        assert_eq!(settings.transcribe_gpu_device, None);
+    }
+
+    #[test]
+    fn gpu_device_migration_keeps_current_stable_selection() {
+=======
+    fn gpu_device_migration_maps_v1_automatic_gpu_to_auto() {
+        let raw = serde_json::json!({
+            "settings_schema_version": 1,
+            "transcribe_accelerator": "gpu",
+            "transcribe_gpu_device": 2
+        });
+        let mut settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Auto
+        );
+        assert_eq!(settings.transcribe_gpu_device, None);
+    }
+
+    #[test]
+    fn gpu_device_migration_maps_current_automatic_gpu_to_auto() {
+        let raw = serde_json::json!({
+            "settings_schema_version": CURRENT_SETTINGS_SCHEMA_VERSION,
+            "onboarding_completed": false,
+            "whats_new_last_seen_version": default_whats_new_last_seen_version(),
+            "overlay_style": "live",
+            "transcribe_accelerator": "gpu",
+            "transcribe_gpu_device": null
+        });
+        let mut settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(
+            settings.transcribe_accelerator,
+            TranscribeAcceleratorSetting::Auto
+        );
+        assert_eq!(settings.transcribe_gpu_device, None);
+    }
+
+    #[test]
+    fn gpu_device_migration_keeps_current_stable_selection() {
+>>>>>>> Stashed changes
         let mut settings = get_default_settings();
         settings.transcribe_accelerator = TranscribeAcceleratorSetting::Gpu;
         settings.transcribe_gpu_device = 2;
