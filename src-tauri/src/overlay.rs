@@ -2,6 +2,7 @@ use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
@@ -89,11 +90,14 @@ fn configure_layer_shell_position(gtk_window: &gtk::ApplicationWindow, position:
     gtk_window.set_layer_shell_margin(opposite_edge, 0);
 }
 
-/// Configures a GTK layer surface before it is shown.
+/// Configures a GTK layer surface's position and size.
 ///
 /// Tauri's normal `set_size` path calls `gtk_window_resize`, but layer surfaces
 /// derive their dimensions from GTK's size request. gtk-layer-shell documents
 /// the `set_size_request` + `resize(1, 1)` sequence for forcing a new size.
+///
+/// Also used to "park" the surface back at the compact size before hiding —
+/// see `hide_recording_overlay`.
 #[cfg(target_os = "linux")]
 fn configure_layer_shell_surface(
     gtk_window: &gtk::ApplicationWindow,
@@ -478,6 +482,152 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+/// Logical visibility of the overlay surface. All transitions are driven
+/// through the controller below instead of fire-and-forget show/hide calls.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum OverlayPhase {
+    Hidden,
+    Visible,
+    /// A hide chain (park + commit, then unmap) is in flight.
+    Hiding,
+}
+
+/// What the overlay should settle into. A show arriving mid-hide rewrites
+/// `want` instead of racing the chain; the chain applies it at the end.
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum Desired {
+    Hidden,
+    Visible(String),
+}
+
+struct OverlayController {
+    phase: OverlayPhase,
+    /// Id of the operation that currently owns the overlay (a transcription
+    /// start). Doubles as the id seed: `begin_operation` increments it in
+    /// place. Hides carrying an older id are ignored, so a stale hide from a
+    /// finished operation can never unmap a newer session's overlay.
+    operation_id: u64,
+    want: Desired,
+}
+
+static OVERLAY: Mutex<OverlayController> = Mutex::new(OverlayController {
+    phase: OverlayPhase::Hidden,
+    operation_id: 0,
+    want: Desired::Hidden,
+});
+
+impl OverlayController {
+    /// A new transcription takes over overlay ownership; hides from older
+    /// operations become no-ops.
+    fn begin_operation(&mut self) -> u64 {
+        self.operation_id += 1;
+        self.operation_id
+    }
+
+    /// Mutation half of `show_overlay_state`: rewrite `want`, then apply
+    /// immediately unless a hide chain is in flight (a deferred show is
+    /// applied by the chain end instead).
+    fn request_show(&mut self, state: &str) -> ShowEffect {
+        self.want = Desired::Visible(state.to_string());
+        let effect = decide_show(self.phase);
+        if effect == ShowEffect::Immediate {
+            self.phase = OverlayPhase::Visible;
+        }
+        effect
+    }
+
+    /// Mutation half of `hide_recording_overlay`: consult `decide_hide` and
+    /// mutate accordingly (chain start / retarget / ignore).
+    fn request_hide(&mut self, operation_id: u64) -> HideDecision {
+        let decision = decide_hide(self.phase, operation_id, self.operation_id);
+        match decision {
+            HideDecision::Ignore => {}
+            HideDecision::RetargetChain => {
+                // A chain is already running (fast stop after a re-trigger):
+                // re-target it, its end will unmap.
+                self.want = Desired::Hidden;
+            }
+            HideDecision::StartChain => {
+                self.phase = OverlayPhase::Hiding;
+                self.want = Desired::Hidden;
+            }
+        }
+        decision
+    }
+
+    /// The hide-chain end: apply `want`. Visible re-shows without unmapping.
+    /// On Hidden the phase flips while the caller still holds the lock across
+    /// the unmap, so a concurrent show cannot slip between the unmap and the
+    /// phase transition.
+    fn settle_chain_end(&mut self) -> Desired {
+        match self.want.clone() {
+            want @ Desired::Visible(_) => {
+                self.phase = OverlayPhase::Visible;
+                want
+            }
+            Desired::Hidden => {
+                self.phase = OverlayPhase::Hidden;
+                Desired::Hidden
+            }
+        }
+    }
+
+    /// The overlay window is gone — settle so future shows apply immediately
+    /// instead of deferring to a chain that will never end.
+    fn reset_to_hidden(&mut self) {
+        self.phase = OverlayPhase::Hidden;
+        self.want = Desired::Hidden;
+    }
+}
+
+/// What a hide request should do, given the controller state.
+#[derive(Debug, PartialEq, Eq)]
+enum HideDecision {
+    /// Stale operation id, duplicate hide, or already hidden.
+    Ignore,
+    /// Overlay is up: start the hide chain.
+    StartChain,
+    /// A chain is already running for this op: just re-target it to Hidden.
+    RetargetChain,
+}
+
+fn decide_hide(phase: OverlayPhase, operation_id: u64, current_operation_id: u64) -> HideDecision {
+    if operation_id != current_operation_id {
+        return HideDecision::Ignore;
+    }
+    match phase {
+        OverlayPhase::Visible => HideDecision::StartChain,
+        OverlayPhase::Hiding => HideDecision::RetargetChain,
+        OverlayPhase::Hidden => HideDecision::Ignore,
+    }
+}
+
+/// Whether a show applies its geometry immediately or is deferred to the
+/// running hide chain's end (which re-shows instead of unmapping).
+#[derive(Debug, PartialEq, Eq)]
+enum ShowEffect {
+    Immediate,
+    Deferred,
+}
+
+fn decide_show(phase: OverlayPhase) -> ShowEffect {
+    match phase {
+        OverlayPhase::Hiding => ShowEffect::Deferred,
+        _ => ShowEffect::Immediate,
+    }
+}
+
+/// Starts a new overlay-owning operation (a transcription start) and returns
+/// its id. Hides from older operations become no-ops.
+pub fn begin_operation() -> u64 {
+    OVERLAY.lock().unwrap().begin_operation()
+}
+
+/// The id of the operation that currently owns the overlay.
+pub fn current_op() -> u64 {
+    OVERLAY.lock().unwrap().operation_id
+}
+
 fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // Whether the overlay shows at all is governed by overlay_style; position
     // only chooses Top vs Bottom placement. Checked here (off the main thread)
@@ -485,6 +635,17 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     let settings = settings::get_settings(app_handle);
     if settings.overlay_style == OverlayStyle::None {
         return;
+    }
+
+    {
+        let mut controller = OVERLAY.lock().unwrap();
+        if controller.request_show(state) == ShowEffect::Deferred {
+            // A hide chain is in flight: it finishes the park repaint, then
+            // re-shows this state at the end without ever unmapping. Emitting
+            // or resizing now would paint the new card into the compact
+            // parked frame; deferring keeps the parked scene transparent.
+            return;
+        }
     }
 
     // The rest queries monitors and the cursor and mutates window geometry. On
@@ -666,19 +827,97 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
     }
 }
 
-/// Hides the recording overlay window with fade-out animation
-pub fn hide_recording_overlay(app_handle: &AppHandle) {
+/// Hides the recording overlay window.
+///
+/// `operation_id` must be the id of the operation that owns the overlay being
+/// hidden (see `begin_operation`). A hide carrying an older id is a no-op, so
+/// a stale hide from a finished transcription can never unmap the overlay of
+/// a newer session that started meanwhile.
+pub fn hide_recording_overlay(app_handle: &AppHandle, operation_id: u64) {
+    {
+        let mut controller = OVERLAY.lock().unwrap();
+        match controller.request_hide(operation_id) {
+            HideDecision::Ignore | HideDecision::RetargetChain => return,
+            HideDecision::StartChain => {}
+        }
+    }
+
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Emit event to trigger fade-out animation
+        // Emit event so the frontend unmounts the card. Note: the frontend
+        // returns null when not visible, so no fade actually plays and there
+        // is no animation delay worth waiting for.
         let _ = overlay_window.emit("hide-overlay", ());
-        // Hide the window after a short delay to allow animation to complete
-        let window_clone = overlay_window.clone();
+        let handle = app_handle.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(300));
-            let _ = window_clone.hide();
+            #[cfg(target_os = "linux")]
+            if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+                // Give the webview a beat to process the hide-overlay event
+                // and unmount the card (it returns null when not visible), so
+                // the parked frame below repaints a clean transparent scene
+                // instead of the old card clipped to the compact viewport.
+                std::thread::sleep(std::time::Duration::from_millis(80));
+
+                // WebKitGTK on Wayland repaints only damaged regions, so a
+                // surface unmapped mid-transition keeps stale pixels in its
+                // reused buffers (the "ghost card" glitch) — or maps again
+                // with no fresh frame at all, showing nothing. Shrink the
+                // layer surface back to the compact size while it is still
+                // mapped: a real size change forces a full repaint with fresh
+                // pixels. This runs UNCONDITIONALLY, even when a re-trigger
+                // will re-show the overlay at the chain end — the park is the
+                // repaint mechanism, skipping it is what brought the ghost
+                // back on mid-chain re-triggers.
+                let park_window = overlay_window.clone();
+                let _ = overlay_window.run_on_main_thread(move || {
+                    if let Ok(gtk_window) = park_window.gtk_window() {
+                        let position =
+                            settings::get_settings(park_window.app_handle()).overlay_position;
+                        configure_layer_shell_surface(
+                            &gtk_window,
+                            position,
+                            OVERLAY_WIDTH,
+                            OVERLAY_HEIGHT,
+                        );
+                    }
+                });
+                // Give the GTK main loop a moment to commit the parked frame
+                // before the surface is unmapped. This must happen off the
+                // main thread — sleeping there would block the commit (and
+                // pumping events manually via gtk::main_iteration_do kills
+                // the layer surface on niri in any visibility state).
+                std::thread::sleep(std::time::Duration::from_millis(130));
+            }
+
+            let end_window = overlay_window.clone();
+            let _ = overlay_window.run_on_main_thread(move || {
+                let want = {
+                    let mut controller = OVERLAY.lock().unwrap();
+                    match controller.settle_chain_end() {
+                        want @ Desired::Visible(_) => want,
+                        Desired::Hidden => {
+                            // settle_chain_end already flipped the phase to
+                            // Hidden; keep holding the lock across hide() so a
+                            // concurrent show cannot slip between the unmap
+                            // and the phase transition.
+                            let _ = end_window.hide();
+                            return;
+                        }
+                    }
+                };
+                // A show arrived while the chain was parking: apply it now.
+                // The surface stayed mapped; resizing compact -> target forces
+                // a full repaint, so no stale pixels can survive.
+                if let Desired::Visible(state) = want {
+                    show_overlay_state_on_main(&handle, &state);
+                }
+            });
         });
+    } else {
+        // Window is gone — settle the controller so future shows apply
+        // immediately instead of waiting for a chain that will never end.
+        OVERLAY.lock().unwrap().reset_to_hidden();
     }
 }
 
@@ -825,5 +1064,251 @@ mod tests {
             ),
             (-1530, 1040, 500, 150)
         );
+    }
+}
+
+/// Exhaustive transition coverage for the overlay visibility controller
+/// (`OverlayPhase` × op freshness → `HideDecision`, `OverlayPhase` →
+/// `ShowEffect`) plus multi-step scenario sequences that mirror the
+/// controller mutations performed by `show_overlay_state`,
+/// `hide_recording_overlay`, and the hide-chain end.
+#[cfg(test)]
+mod visibility_controller_tests {
+    use super::*;
+
+    const OP1: u64 = 1;
+    const OP2: u64 = 2;
+
+    /// A fresh controller in the state the real OVERLAY static is in after
+    /// operation OP1 took ownership. Sequence tests drive the same
+    /// `request_show` / `request_hide` / `settle_chain_end` methods the
+    /// production show/hide paths call, so they cannot drift from them.
+    fn controller() -> OverlayController {
+        OverlayController {
+            phase: OverlayPhase::Hidden,
+            operation_id: OP1,
+            want: Desired::Hidden,
+        }
+    }
+
+    // ---- decide_hide: full (phase x op freshness) matrix ----
+
+    #[test]
+    fn hide_on_visible_with_current_op_starts_chain() {
+        let decision = decide_hide(OverlayPhase::Visible, OP1, OP1);
+        assert_eq!(decision, HideDecision::StartChain);
+    }
+
+    #[test]
+    fn hide_on_hiding_with_current_op_retargets_chain() {
+        let decision = decide_hide(OverlayPhase::Hiding, OP1, OP1);
+        assert_eq!(decision, HideDecision::RetargetChain);
+    }
+
+    #[test]
+    fn hide_on_hidden_with_current_op_is_ignored() {
+        let decision = decide_hide(OverlayPhase::Hidden, OP1, OP1);
+        assert_eq!(decision, HideDecision::Ignore);
+    }
+
+    /// A stale op id must lose to the phase in every phase — otherwise a late
+    /// hide from a finished operation could unmap a newer session's overlay.
+    #[test]
+    fn stale_hide_is_ignored_in_every_phase() {
+        for phase in [
+            OverlayPhase::Hidden,
+            OverlayPhase::Visible,
+            OverlayPhase::Hiding,
+        ] {
+            let decision = decide_hide(phase, OP1, OP2);
+            assert_eq!(decision, HideDecision::Ignore, "phase {phase:?}");
+        }
+    }
+
+    // ---- decide_show: every phase ----
+
+    #[test]
+    fn show_on_hidden_applies_immediately() {
+        let effect = decide_show(OverlayPhase::Hidden);
+        assert_eq!(effect, ShowEffect::Immediate);
+    }
+
+    #[test]
+    fn show_on_visible_applies_immediately() {
+        // A state switch (recording -> streaming) while already up must not
+        // wait for anything.
+        let effect = decide_show(OverlayPhase::Visible);
+        assert_eq!(effect, ShowEffect::Immediate);
+    }
+
+    #[test]
+    fn show_on_hiding_is_deferred_to_chain_end() {
+        let effect = decide_show(OverlayPhase::Hiding);
+        assert_eq!(effect, ShowEffect::Deferred);
+    }
+
+    // ---- scenario sequences ----
+
+    /// The boring common path: show, then hide; the chain end unmaps.
+    #[test]
+    fn normal_lifecycle_show_then_hide_settles_hidden() {
+        let mut c = controller();
+
+        let effect = c.request_show("recording");
+        assert_eq!(effect, ShowEffect::Immediate);
+        assert_eq!(c.phase, OverlayPhase::Visible);
+
+        let decision = c.request_hide(OP1);
+        assert_eq!(decision, HideDecision::StartChain);
+        assert_eq!(c.phase, OverlayPhase::Hiding);
+        assert_eq!(c.want, Desired::Hidden);
+
+        let settled = c.settle_chain_end();
+        assert_eq!(settled, Desired::Hidden);
+        assert_eq!(c.phase, OverlayPhase::Hidden);
+    }
+
+    /// A re-trigger while the hide chain parks the surface: the show defers,
+    /// the chain end re-shows instead of unmapping, and the old operation's
+    /// late hide is powerless.
+    #[test]
+    fn new_operation_mid_chain_reshows_at_chain_end() {
+        let mut c = controller();
+
+        c.request_show("recording");
+        let decision = c.request_hide(OP1);
+        assert_eq!(decision, HideDecision::StartChain);
+
+        // A new transcription starts mid-chain and takes ownership.
+        let op2 = c.begin_operation();
+        let effect = c.request_show("streaming");
+        assert_eq!(effect, ShowEffect::Deferred);
+        assert_eq!(c.phase, OverlayPhase::Hiding);
+
+        // The old operation's pipeline finishes late and tries to hide.
+        let stale = c.request_hide(OP1);
+        assert_eq!(stale, HideDecision::Ignore);
+        assert_eq!(c.want, Desired::Visible("streaming".to_string()));
+
+        let settled = c.settle_chain_end();
+        assert_eq!(settled, Desired::Visible("streaming".to_string()));
+        assert_eq!(c.phase, OverlayPhase::Visible);
+    }
+
+    /// A rapid show -> hide -> show -> hide burst on one operation must
+    /// settle Hidden: the first hide starts the chain, the show re-targets
+    /// `want`, the second hide overwrites it back.
+    #[test]
+    fn rapid_burst_settles_hidden() {
+        let mut c = controller();
+
+        c.request_show("recording");
+
+        let first_hide = c.request_hide(OP1);
+        assert_eq!(first_hide, HideDecision::StartChain);
+
+        let reshow = c.request_show("streaming");
+        assert_eq!(reshow, ShowEffect::Deferred);
+
+        let second_hide = c.request_hide(OP1);
+        assert_eq!(second_hide, HideDecision::RetargetChain);
+        assert_eq!(c.phase, OverlayPhase::Hiding);
+        assert_eq!(c.want, Desired::Hidden);
+
+        let settled = c.settle_chain_end();
+        assert_eq!(settled, Desired::Hidden);
+        assert_eq!(c.phase, OverlayPhase::Hidden);
+    }
+
+    /// Stopping twice in a row mid-chain (double SIGUSR2 / double toggle):
+    /// every extra hide re-targets the same chain; the end still unmaps.
+    #[test]
+    fn duplicate_hides_mid_chain_keep_hidden_target() {
+        let mut c = controller();
+
+        c.request_show("recording");
+
+        let first_hide = c.request_hide(OP1);
+        assert_eq!(first_hide, HideDecision::StartChain);
+
+        let second_hide = c.request_hide(OP1);
+        assert_eq!(second_hide, HideDecision::RetargetChain);
+
+        let third_hide = c.request_hide(OP1);
+        assert_eq!(third_hide, HideDecision::RetargetChain);
+        assert_eq!(c.want, Desired::Hidden);
+
+        let settled = c.settle_chain_end();
+        assert_eq!(settled, Desired::Hidden);
+        assert_eq!(c.phase, OverlayPhase::Hidden);
+    }
+
+    /// Switching the visible state (recording -> streaming) while the overlay
+    /// is up applies immediately and keeps the phase Visible.
+    #[test]
+    fn state_switch_while_visible_is_immediate() {
+        let mut c = controller();
+
+        c.request_show("recording");
+        let effect = c.request_show("streaming");
+
+        assert_eq!(effect, ShowEffect::Immediate);
+        assert_eq!(c.phase, OverlayPhase::Visible);
+        assert_eq!(c.want, Desired::Visible("streaming".to_string()));
+    }
+
+    /// After a completed hide cycle the overlay is fully reusable: a new show
+    /// applies immediately, a new hide starts a fresh chain.
+    #[test]
+    fn overlay_is_reusable_after_chain_completes() {
+        let mut c = controller();
+
+        c.request_show("recording");
+        c.request_hide(OP1);
+        c.settle_chain_end();
+        assert_eq!(c.phase, OverlayPhase::Hidden);
+
+        let op2 = c.begin_operation();
+        let effect = c.request_show("recording");
+        assert_eq!(effect, ShowEffect::Immediate);
+        assert_eq!(c.phase, OverlayPhase::Visible);
+
+        let decision = c.request_hide(op2);
+        assert_eq!(decision, HideDecision::StartChain);
+
+        c.settle_chain_end();
+        assert_eq!(c.phase, OverlayPhase::Hidden);
+    }
+
+    /// A hide for an operation that never showed anything (e.g. recording
+    /// failed to start) must not disturb a settled Hidden controller.
+    #[test]
+    fn hide_without_prior_show_is_a_noop() {
+        let mut c = controller();
+
+        let decision = c.request_hide(OP1);
+        assert_eq!(decision, HideDecision::Ignore);
+        assert_eq!(c.phase, OverlayPhase::Hidden);
+        assert_eq!(c.want, Desired::Hidden);
+    }
+
+    /// If the overlay window is gone mid-chain, the controller settles back
+    /// to Hidden so a later show applies immediately instead of deferring to
+    /// a chain that will never end.
+    #[test]
+    fn gone_window_resets_controller_to_hidden() {
+        let mut c = controller();
+
+        c.request_show("recording");
+        let decision = c.request_hide(OP1);
+        assert_eq!(decision, HideDecision::StartChain);
+        assert_eq!(c.phase, OverlayPhase::Hiding);
+
+        c.reset_to_hidden();
+
+        assert_eq!(c.phase, OverlayPhase::Hidden);
+        assert_eq!(c.want, Desired::Hidden);
+        let effect = c.request_show("recording");
+        assert_eq!(effect, ShowEffect::Immediate);
     }
 }
