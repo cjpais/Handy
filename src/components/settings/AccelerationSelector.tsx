@@ -24,55 +24,28 @@ interface AccelerationSelectorProps {
 
 /**
  * transcribe.cpp dropdown encodes accelerator + device in a single value:
-<<<<<<< Updated upstream
- *   "auto"   → accelerator=auto,  gpu_device=-1
- *   "cpu"    → accelerator=cpu,   gpu_device=-1
- *   "gpu:0"  → accelerator=gpu,   gpu_device=0
- *   "gpu:1"  → accelerator=gpu,   gpu_device=1
-||||||| Stash base
- *   "auto"       → accelerator=auto, gpu_device=null
- *   "cpu"        → accelerator=cpu,  gpu_device=null
- *   "gpu"        → accelerator=gpu, auto GPU selection
- *   "gpu:<id>"   → accelerator=gpu, stable opaque device identity
-=======
  *   "auto"       → accelerator=auto, gpu_device=null
  *   "cpu"        → accelerator=cpu,  gpu_device=null
  *   "gpu:<id>"   → accelerator=gpu, stable opaque device identity
->>>>>>> Stashed changes
  */
 function encodeTranscribeValue(
   accelerator: TranscribeAcceleratorSetting,
-  gpuDevice: number,
+  gpuDevice: string | null,
 ): string {
   if (accelerator === "cpu") return "cpu";
-<<<<<<< Updated upstream
-  if (accelerator === "gpu" && gpuDevice >= 0) return `gpu:${gpuDevice}`;
-||||||| Stash base
-  if (accelerator === "gpu")
-    return gpuDevice === null ? "gpu" : `gpu:${gpuDevice}`;
-=======
   if (accelerator === "gpu" && gpuDevice !== null) return `gpu:${gpuDevice}`;
->>>>>>> Stashed changes
   return "auto";
 }
 
 function decodeTranscribeValue(value: string): {
   accelerator: TranscribeAcceleratorSetting;
-  gpuDevice: number;
+  gpuDevice: string | null;
 } {
-<<<<<<< Updated upstream
-  if (value === "cpu") return { accelerator: "cpu", gpuDevice: -1 };
-||||||| Stash base
   if (value === "cpu") return { accelerator: "cpu", gpuDevice: null };
-  if (value === "gpu") return { accelerator: "gpu", gpuDevice: null };
-=======
-  if (value === "cpu") return { accelerator: "cpu", gpuDevice: null };
->>>>>>> Stashed changes
   if (value.startsWith("gpu:")) {
-    const id = parseInt(value.slice(4), 10);
-    return { accelerator: "gpu", gpuDevice: id };
+    return { accelerator: "gpu", gpuDevice: value.slice(4) };
   }
-  return { accelerator: "auto", gpuDevice: -1 };
+  return { accelerator: "auto", gpuDevice: null };
 }
 
 export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
@@ -130,10 +103,10 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   }, [t]);
 
   const currentAccelerator = getSetting("transcribe_accelerator") ?? "auto";
-  const currentGpuDevice = getSetting("transcribe_gpu_device") ?? -1;
+  const currentGpuDevice = getSetting("transcribe_gpu_device") ?? null;
   const currentTranscribe = encodeTranscribeValue(
     currentAccelerator as TranscribeAcceleratorSetting,
-    currentGpuDevice as number,
+    currentGpuDevice as string | null,
   );
   const displayedTranscribe = transcribeOptions.some(
     (option) => option.value === currentTranscribe,
