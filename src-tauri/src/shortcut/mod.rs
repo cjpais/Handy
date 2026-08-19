@@ -1360,3 +1360,40 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
         .await
         .expect("get_available_accelerators panicked")
 }
+
+#[cfg(test)]
+mod tests {
+    use handy_keys::Hotkey;
+    use tauri_plugin_global_shortcut::Shortcut;
+
+    /// After #1848 the frontend emits compact compound key names (e.g.
+    /// "scrolllock" instead of "scroll lock") so registration can succeed.
+    ///
+    /// Handy has two keyboard backends. This test checks that those compact
+    /// names parse on *both*, so fixing the Tauri recorder does not break
+    /// HandyKeys (or switching between them).
+    ///
+    /// Only keys in the intersection of both parsers are listed here.
+    /// Excluded on purpose:
+    /// - Menu/ContextMenu: neither backend's string parser accepts it
+    /// - PrintScreen: Tauri yes, handy-keys has no Key variant
+    /// - Numpad keys: backends use different naming (numpad* vs keypad*)
+    #[test]
+    fn compound_shortcut_keys_parse_on_both_backends() {
+        // Compact forms produced by getKeyName after the #1848 fix
+        let keys = ["scrolllock", "capslock", "numlock", "pageup", "pagedown"];
+
+        for key in keys {
+            // Tauri path: tauri_plugin_global_shortcut → global-hotkey
+            assert!(
+                key.parse::<Shortcut>().is_ok(),
+                "tauri/global-hotkey should parse compact key '{key}'"
+            );
+            // HandyKeys path
+            assert!(
+                key.parse::<Hotkey>().is_ok(),
+                "handy-keys should parse compact key '{key}'"
+            );
+        }
+    }
+}
