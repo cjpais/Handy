@@ -152,3 +152,15 @@ pub async fn update_recording_retention_period(
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn prune_orphaned_history_entries(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+) -> Result<usize, String> {
+    history_manager
+        .prune_orphaned_entries()
+        .await
+        .map_err(|e| e.to_string())
+}
