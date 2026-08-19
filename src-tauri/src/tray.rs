@@ -271,6 +271,28 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
         submenu
     };
 
+    let microphone_submenu = {
+        let submenu = Submenu::with_id(app, "microphone_submenu", &strings.microphone, true)
+            .expect("failed to create microphone submenu");
+            
+        let available_mics = crate::commands::audio::get_available_microphones().unwrap_or_default();
+        let selected_mic = crate::commands::audio::get_selected_microphone(app.clone()).unwrap_or_else(|_| "default".to_string());
+        
+        for mic in &available_mics {
+            let is_active = if selected_mic == "default" {
+                mic.index == "default"
+            } else {
+                mic.name == selected_mic
+            };
+            
+            let item_id = format!("mic_select:{}", if mic.index == "default" { "default" } else { &mic.name });
+            let item = CheckMenuItem::with_id(app, &item_id, &mic.name, true, is_active, None::<&str>)
+                .expect("failed to create mic item");
+            let _ = submenu.append(&item);
+        }
+        submenu
+    };
+
     let unload_model_i = MenuItem::with_id(
         app,
         "unload_model",
@@ -310,6 +332,7 @@ pub fn update_tray_menu(app: &AppHandle, locale: Option<&str>) {
                 &separator(),
                 &model_submenu,
                 &unload_model_i,
+                &microphone_submenu,
                 &separator(),
                 &settings_i,
                 &check_updates_i,
