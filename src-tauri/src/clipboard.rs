@@ -410,14 +410,27 @@ fn type_text_via_wtype(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
+const XDOTOOL_TYPE_DELAY_MS: &str = "50";
+
+/// Build xdotool arguments with enough time for targets to process temporary Unicode mappings.
+#[cfg(target_os = "linux")]
+fn xdotool_type_args(text: &str) -> [&str; 6] {
+    [
+        "type",
+        "--clearmodifiers",
+        "--delay",
+        XDOTOOL_TYPE_DELAY_MS,
+        "--",
+        text,
+    ]
+}
+
 /// Type text directly via xdotool on X11.
 #[cfg(target_os = "linux")]
 fn type_text_via_xdotool(text: &str) -> Result<(), String> {
     let output = Command::new("xdotool")
-        .arg("type")
-        .arg("--clearmodifiers")
-        .arg("--")
-        .arg(text)
+        .args(xdotool_type_args(text))
         .output()
         .map_err(|e| format!("Failed to execute xdotool: {}", e))?;
 
@@ -874,6 +887,28 @@ we're using raw keycodes now.
 Syntax: <keycode>:<pressed>
 e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
 "#;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn generates_xdotool_arguments_with_delay_for_unicode_text() {
+        let text = "Être ou ne pas être, je l'apprends par cœur";
+
+        assert_eq!(
+            xdotool_type_args(text),
+            ["type", "--clearmodifiers", "--delay", "50", "--", text]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn generates_xdotool_arguments_with_option_terminator_for_leading_hyphen() {
+        let text = "-starts-with-a-hyphen";
+
+        assert_eq!(
+            xdotool_type_args(text),
+            ["type", "--clearmodifiers", "--delay", "50", "--", text]
+        );
+    }
 
     #[cfg(target_os = "linux")]
     #[test]
