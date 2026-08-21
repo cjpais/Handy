@@ -13,7 +13,7 @@ use cpal::{
 };
 
 use crate::audio_toolkit::{
-    audio::{AudioVisualiser, FrameResampler},
+    audio::{AudioVisualiser, FrameResampler, InputPeakMeter},
     constants,
     vad::{self, VadFrame},
     VoiceActivityDetector,
@@ -25,6 +25,8 @@ enum Cmd {
     /// sent only after the first microphone sample chunk is processed.
     Start(VadPolicy, Instant, mpsc::Sender<()>),
     Stop(mpsc::Sender<Vec<f32>>),
+    StartMicrophoneTest,
+    StopMicrophoneTest(mpsc::Sender<()>),
     Shutdown,
 }
 
@@ -77,6 +79,7 @@ pub struct AudioRecorder {
     vad: Option<VadConfig>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
+    microphone_test_level_cb: Option<Arc<dyn Fn(f32) + Send + Sync + 'static>>,
     /// Which input channel to use. None = average all (original behavior).
     selected_channel: Option<usize>,
     /// Preferred stream config cached per device name. The two HAL property
@@ -99,6 +102,7 @@ impl AudioRecorder {
             vad: None,
             level_cb: None,
             audio_cb: None,
+            microphone_test_level_cb: None,
             selected_channel: None,
             config_cache: Arc::new(Mutex::new(None)),
             stream_error: Arc::new(AtomicBool::new(false)),
@@ -142,6 +146,14 @@ impl AudioRecorder {
         self
     }
 
+    pub fn with_microphone_test_level_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(f32) + Send + Sync + 'static,
+    {
+        self.microphone_test_level_cb = Some(Arc::new(cb));
+        self
+    }
+
     pub fn with_selected_channel(mut self, channel: Option<u16>) -> Self {
         self.set_selected_channel(channel);
         self
@@ -180,6 +192,7 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
+        let microphone_test_level_cb = self.microphone_test_level_cb.clone();
         let selected_channel = self.selected_channel;
         let config_cache = Arc::clone(&self.config_cache);
         let stream_error = Arc::clone(&self.stream_error);
@@ -322,6 +335,7 @@ impl AudioRecorder {
                         cmd_rx,
                         level_cb,
                         audio_cb,
+                        microphone_test_level_cb,
                         stop_flag,
                         stream_running_at,
                     );
@@ -386,6 +400,26 @@ impl AudioRecorder {
             tx.send(Cmd::Stop(resp_tx))?;
         }
         Ok(resp_rx.recv()?) // wait for the samples
+    }
+
+    pub fn start_microphone_test(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::other("Recorder is not open"))?;
+        tx.send(Cmd::StartMicrophoneTest)?;
+        Ok(())
+    }
+
+    pub fn stop_microphone_test(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::other("Recorder is not open"))?;
+        let (stopped_tx, stopped_rx) = mpsc::channel();
+        tx.send(Cmd::StopMicrophoneTest(stopped_tx))?;
+        stopped_rx.recv()?;
+        Ok(())
     }
 
     /// True when the active capture stream must be rebuilt.
@@ -567,7 +601,8 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        is_microphone_access_denied, is_no_input_device_error, run_consumer, AudioRecorder, Cmd,
+        is_microphone_access_denied, is_no_input_device_error, run_consumer, AudioChunk,
+        AudioRecorder, Cmd, VadPolicy,
     };
     use std::{
         sync::{
@@ -607,6 +642,7 @@ mod tests {
                 cmd_rx,
                 None,
                 None,
+                None,
                 Arc::new(AtomicBool::new(false)),
                 Instant::now(),
             );
@@ -620,6 +656,96 @@ mod tests {
         drop(sample_tx);
         worker.join().expect("join consumer");
         assert!(stopped.is_ok(), "shutdown waited for an audio sample");
+    }
+
+    #[test]
+    fn microphone_test_emits_levels_until_stopped() {
+        let (sample_tx, sample_rx) = mpsc::channel();
+        let (cmd_tx, cmd_rx) = mpsc::channel();
+        let (level_tx, level_rx) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            run_consumer(
+                30,
+                None,
+                sample_rx,
+                cmd_rx,
+                None,
+                None,
+                Some(Arc::new(move |level| {
+                    let _ = level_tx.send(level);
+                })),
+                Arc::new(AtomicBool::new(false)),
+                Instant::now(),
+            );
+        });
+
+        cmd_tx
+            .send(Cmd::StartMicrophoneTest)
+            .expect("start microphone test");
+        sample_tx
+            .send(AudioChunk::Samples(vec![0.1]))
+            .expect("send sample");
+        let level = level_rx
+            .recv_timeout(Duration::from_secs(1))
+            .expect("receive microphone level");
+        assert!((level - (2.0 / 3.0)).abs() < 0.001);
+
+        let (stopped_tx, stopped_rx) = mpsc::channel();
+        cmd_tx
+            .send(Cmd::StopMicrophoneTest(stopped_tx))
+            .expect("stop microphone test");
+        stopped_rx
+            .recv_timeout(Duration::from_secs(1))
+            .expect("microphone test stopped");
+        sample_tx
+            .send(AudioChunk::Samples(vec![0.1]))
+            .expect("send sample after stop");
+        assert!(level_rx.recv_timeout(Duration::from_millis(100)).is_err());
+
+        cmd_tx.send(Cmd::Shutdown).expect("send shutdown");
+        drop(sample_tx);
+        worker.join().expect("join consumer");
+    }
+
+    #[test]
+    fn recording_start_preempts_microphone_test() {
+        let (sample_tx, sample_rx) = mpsc::channel();
+        let (cmd_tx, cmd_rx) = mpsc::channel();
+        let (level_tx, level_rx) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            run_consumer(
+                30,
+                None,
+                sample_rx,
+                cmd_rx,
+                None,
+                None,
+                Some(Arc::new(move |level| {
+                    let _ = level_tx.send(level);
+                })),
+                Arc::new(AtomicBool::new(false)),
+                Instant::now(),
+            );
+        });
+
+        cmd_tx
+            .send(Cmd::StartMicrophoneTest)
+            .expect("start microphone test");
+        let (ready_tx, ready_rx) = mpsc::channel();
+        cmd_tx
+            .send(Cmd::Start(VadPolicy::Disabled, Instant::now(), ready_tx))
+            .expect("start recording");
+        sample_tx
+            .send(AudioChunk::Samples(vec![0.1]))
+            .expect("send sample");
+        ready_rx
+            .recv_timeout(Duration::from_secs(1))
+            .expect("recording ready");
+        assert!(level_rx.recv_timeout(Duration::from_millis(100)).is_err());
+
+        cmd_tx.send(Cmd::Shutdown).expect("send shutdown");
+        drop(sample_tx);
+        worker.join().expect("join consumer");
     }
 
     #[test]
@@ -669,6 +795,7 @@ fn run_consumer(
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
+    microphone_test_level_cb: Option<Arc<dyn Fn(f32) + Send + Sync + 'static>>,
     stop_flag: Arc<AtomicBool>,
     stream_running_at: Instant,
 ) {
@@ -680,6 +807,7 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut microphone_test_active = false;
     let mut vad_policy = VadPolicy::Offline;
 
     // ---------- latency instrumentation ---------------------------------- //
@@ -710,6 +838,7 @@ fn run_consumer(
         400.0,  // vocal_min_hz
         4000.0, // vocal_max_hz
     );
+    let mut microphone_test_meter = InputPeakMeter::new(in_sample_rate);
 
     fn handle_frame(
         samples: &[f32],
@@ -777,6 +906,8 @@ fn run_consumer(
                     vad_policy = policy;
                     processed_samples.clear();
                     recording = true;
+                    microphone_test_active = false;
+                    microphone_test_meter.reset();
                     visualizer.reset();
                     frame_resampler.reset();
                     // Reconfigure the single VAD engine for this session's policy
@@ -856,6 +987,15 @@ fn run_consumer(
                     // receiving chunks (important for always-on microphone mode).
                     stop_flag.store(false, Ordering::Relaxed);
                 }
+                Cmd::StartMicrophoneTest => {
+                    microphone_test_meter.reset();
+                    microphone_test_active = true;
+                }
+                Cmd::StopMicrophoneTest(stopped_tx) => {
+                    microphone_test_active = false;
+                    microphone_test_meter.reset();
+                    let _ = stopped_tx.send(());
+                }
                 Cmd::Shutdown => {
                     stop_flag.store(true, Ordering::Relaxed);
                     return;
@@ -880,14 +1020,18 @@ fn run_consumer(
         }
 
         // ---------- recording-time processing ---------------------------- //
+        if microphone_test_active {
+            if let Some(level) = microphone_test_meter.feed(&raw) {
+                if let Some(cb) = &microphone_test_level_cb {
+                    cb(level);
+                }
+            }
+        }
+
         // In always-on mode the capture stream stays open continuously for
-        // zero-latency start, so while idle (not recording) there is nothing to
-        // do with a chunk: handle_frame returns early when not recording, which
-        // means the resampled output would be discarded, and the level meter has
-        // no idle consumer. Skip both the level-meter FFT and the resampler while
-        // idle to avoid doing unnecessary work whose output is thrown away. Both
-        // are reset on Cmd::Start (visualizer.reset() / frame_resampler.reset()),
-        // so they resume cleanly the moment recording begins.
+        // zero-latency start. Unless a microphone test is active, idle chunks
+        // need no processing. The recording visualizer and resampler are reset
+        // on Cmd::Start so they resume cleanly when recording begins.
         if recording {
             if let Some(buckets) = visualizer.feed(&raw) {
                 if let Some(cb) = &level_cb {

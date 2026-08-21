@@ -225,7 +225,11 @@
         "title": "מיקרופון",
         "description": "בחר את המיקרופון המועדף עליך",
         "placeholder": "בחר מיקרופון...",
-        "loading": "טוען..."
+        "loading": "טוען...",
+        "test": "בדיקת מיקרופון",
+        "stopTest": "עצירת הבדיקה",
+        "inputLevel": "עוצמת קלט",
+        "testFailed": "בדיקת המיקרופון נכשלה"
       },
       "channel": {
         "title": "ערוץ קלט",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "לא נמצא מיקרופון",
     "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
+    "silentInputTitle": "לא זוהה שמע",
+    "silentInput": "בדוק את המיקרופון או התקן הקלט שנבחר ונסה שוב.",
     "recordingFailed": "הפעלת ההקלטה נכשלה: {{error}}",
     "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
     "modelLoadFailedUnknown": "מודל לא ידוע",

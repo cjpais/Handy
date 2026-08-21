@@ -225,7 +225,11 @@
         "title": "Mikrofon",
         "description": "Vyberte preferované zařízení mikrofonu",
         "placeholder": "Vyberte mikrofon...",
-        "loading": "Načítání..."
+        "loading": "Načítání...",
+        "test": "Otestovat mikrofon",
+        "stopTest": "Zastavit test",
+        "inputLevel": "Úroveň vstupu",
+        "testFailed": "Test mikrofonu se nezdařil"
       },
       "channel": {
         "title": "Vstupní kanál",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "Mikrofon nebyl nalezen",
     "noInputDevice": "Nebylo detekováno žádné zvukové vstupní zařízení. Připojte mikrofon nebo sluchátka a zkuste to znovu.",
+    "silentInputTitle": "Nebyl zjištěn žádný zvuk",
+    "silentInput": "Zkontrolujte vybraný mikrofon nebo vstupní zařízení a zkuste to znovu.",
     "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
     "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
     "modelLoadFailedUnknown": "neznámý model",
