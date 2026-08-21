@@ -58,8 +58,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const handleToggle = () => {
     if (disabled) return;
     if (!isOpen) {
-      onOpen?.();
-      onRefresh?.();
+      (onOpen ?? onRefresh)?.();
     }
     setIsOpen(!isOpen);
   };
