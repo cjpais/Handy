@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import { Button } from "../ui/Button";
 import { Dropdown, DropdownOption } from "../ui/Dropdown";
 import { PlayIcon } from "lucide-react";
@@ -22,36 +22,15 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
     (state) => state.checkCustomSounds,
   );
 
-  const [isChecking, setIsChecking] = useState(false);
-  const [hasChecked, setHasChecked] = useState(false);
-
   const selectedTheme = getSetting("sound_theme") ?? "marimba";
 
   const handleRefresh = useCallback(async () => {
-    setIsChecking(true);
-    try {
-      await checkCustomSounds();
-    } finally {
-      setIsChecking(false);
-      setHasChecked(true);
-    }
+    await checkCustomSounds();
   }, [checkCustomSounds]);
 
   useEffect(() => {
     handleRefresh();
   }, [handleRefresh]);
-
-  // Fall back to "marimba" if "custom" is selected but required sound files do not exist (only after checking)
-  useEffect(() => {
-    if (
-      hasChecked &&
-      !isChecking &&
-      selectedTheme === "custom" &&
-      (!customSounds.start || !customSounds.stop)
-    ) {
-      updateSetting("sound_theme", "marimba");
-    }
-  }, [hasChecked, isChecking, selectedTheme, customSounds, updateSetting]);
 
   const options: DropdownOption[] = [
     { value: "marimba", label: "Marimba" },
@@ -82,7 +61,7 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
             updateSetting("sound_theme", value as "marimba" | "pop" | "custom")
           }
           options={options}
-          onRefresh={handleRefresh}
+          onOpen={handleRefresh}
         />
         <Button
           variant="ghost"
