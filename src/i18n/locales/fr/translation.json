@@ -225,7 +225,11 @@
         "title": "Microphone",
         "description": "Sélectionnez votre périphérique d'entrée audio",
         "placeholder": "Sélectionner un microphone...",
-        "loading": "Chargement..."
+        "loading": "Chargement...",
+        "test": "Tester le microphone",
+        "stopTest": "Arrêter le test",
+        "inputLevel": "Niveau d’entrée",
+        "testFailed": "Échec du test du microphone"
       },
       "channel": {
         "title": "Canal d’entrée",

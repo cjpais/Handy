@@ -225,7 +225,11 @@
         "title": "Mikrofon",
         "description": "Vyberte preferované zařízení mikrofonu",
         "placeholder": "Vyberte mikrofon...",
-        "loading": "Načítání..."
+        "loading": "Načítání...",
+        "test": "Otestovat mikrofon",
+        "stopTest": "Zastavit test",
+        "inputLevel": "Úroveň vstupu",
+        "testFailed": "Test mikrofonu se nezdařil"
       },
       "channel": {
         "title": "Vstupní kanál",

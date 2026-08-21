@@ -225,7 +225,11 @@
         "title": "マイク",
         "description": "使用するマイクデバイスを選択",
         "placeholder": "マイクを選択…",
-        "loading": "読み込み中…"
+        "loading": "読み込み中…",
+        "test": "マイクをテスト",
+        "stopTest": "テストを停止",
+        "inputLevel": "入力レベル",
+        "testFailed": "マイクのテストに失敗しました"
       },
       "channel": {
         "title": "入力チャンネル",

@@ -225,7 +225,11 @@
         "title": "Micrô",
         "description": "Chọn thiết bị micrô ưa thích của bạn",
         "placeholder": "Chọn micrô...",
-        "loading": "Đang tải..."
+        "loading": "Đang tải...",
+        "test": "Kiểm tra micrô",
+        "stopTest": "Dừng kiểm tra",
+        "inputLevel": "Mức đầu vào",
+        "testFailed": "Kiểm tra micrô không thành công"
       },
       "channel": {
         "title": "Kênh đầu vào",

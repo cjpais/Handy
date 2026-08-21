@@ -225,7 +225,11 @@
         "title": "Mikrofon",
         "description": "Wybierz preferowane urządzenie mikrofonowe",
         "placeholder": "Wybierz mikrofon...",
-        "loading": "Wczytywanie..."
+        "loading": "Wczytywanie...",
+        "test": "Testuj mikrofon",
+        "stopTest": "Zatrzymaj test",
+        "inputLevel": "Poziom wejścia",
+        "testFailed": "Test mikrofonu nie powiódł się"
       },
       "channel": {
         "title": "Kanał wejściowy",

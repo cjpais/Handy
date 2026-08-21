@@ -225,7 +225,11 @@
         "title": "Microfone",
         "description": "Selecione seu dispositivo de microfone preferido",
         "placeholder": "Selecionar microfone...",
-        "loading": "Carregando..."
+        "loading": "Carregando...",
+        "test": "Testar microfone",
+        "stopTest": "Parar teste",
+        "inputLevel": "Nível de entrada",
+        "testFailed": "Falha no teste do microfone"
       },
       "channel": {
         "title": "Canal de entrada",

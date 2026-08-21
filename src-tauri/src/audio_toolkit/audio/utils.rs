@@ -10,7 +10,7 @@ use std::path::Path;
 /// (`10^(-60/20)`), not a raw integer sample value. Using peak level keeps the
 /// check conservative: any quiet but usable excursion above the threshold is
 /// still sent to the transcription engine.
-const SILENT_INPUT_PEAK: f32 = 0.001;
+pub(crate) const SILENT_INPUT_PEAK: f32 = 0.001;
 
 /// Return whether a normalized PCM buffer is empty or effectively silent.
 pub(crate) fn is_effectively_silent(samples: &[f32]) -> bool {

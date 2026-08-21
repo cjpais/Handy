@@ -225,7 +225,11 @@
         "title": "麥克風",
         "description": "選擇您偏好的麥克風裝置",
         "placeholder": "選擇麥克風...",
-        "loading": "載入中..."
+        "loading": "載入中...",
+        "test": "測試麥克風",
+        "stopTest": "停止測試",
+        "inputLevel": "輸入音量",
+        "testFailed": "麥克風測試失敗"
       },
       "channel": {
         "title": "輸入聲道",

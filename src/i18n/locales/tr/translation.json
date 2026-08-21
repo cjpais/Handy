@@ -225,7 +225,11 @@
         "title": "Mikrofon",
         "description": "Tercih ettiğiniz mikrofon cihazını seçin",
         "placeholder": "Mikrofon seçin...",
-        "loading": "Yükleniyor..."
+        "loading": "Yükleniyor...",
+        "test": "Mikrofonu test et",
+        "stopTest": "Testi durdur",
+        "inputLevel": "Giriş seviyesi",
+        "testFailed": "Mikrofon testi başarısız"
       },
       "channel": {
         "title": "Giriş Kanalı",

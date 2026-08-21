@@ -244,6 +244,26 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 #[specta::specta]
+pub async fn start_microphone_test(app: AppHandle) -> Result<u64, String> {
+    let manager = app.state::<Arc<AudioRecordingManager>>().inner().clone();
+    tokio::task::spawn_blocking(move || manager.start_microphone_test())
+        .await
+        .map_err(|error| format!("audio task join failed: {error}"))?
+        .map_err(|error| format!("Failed to start microphone test: {error}"))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn stop_microphone_test(app: AppHandle, session_id: u64) -> Result<(), String> {
+    let manager = app.state::<Arc<AudioRecordingManager>>().inner().clone();
+    tokio::task::spawn_blocking(move || manager.stop_microphone_test(session_id))
+        .await
+        .map_err(|error| format!("audio task join failed: {error}"))?
+        .map_err(|error| format!("Failed to stop microphone test: {error}"))
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn get_available_output_devices() -> Result<Vec<AudioDevice>, String> {
     // cpal device enumeration can stall — run it off the webview/main run loop.
     tokio::task::spawn_blocking(|| {

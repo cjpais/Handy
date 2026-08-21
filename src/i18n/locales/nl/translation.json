@@ -225,7 +225,11 @@
         "title": "Microfoon",
         "description": "Selecteer de gewenste microfoon",
         "placeholder": "Microfoon selecteren...",
-        "loading": "Laden..."
+        "loading": "Laden...",
+        "test": "Microfoon testen",
+        "stopTest": "Test stoppen",
+        "inputLevel": "Ingangsniveau",
+        "testFailed": "Microfoontest mislukt"
       },
       "channel": {
         "title": "Ingangskanaal",

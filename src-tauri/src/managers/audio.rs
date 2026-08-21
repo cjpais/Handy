@@ -11,11 +11,14 @@ use crate::managers::transcription::StreamRouter;
 use crate::settings::{get_settings, write_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info, trace, warn};
+use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager};
+use tauri_specta::Event;
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 const VAD_THRESHOLD: f32 = 0.3;
@@ -247,6 +250,32 @@ pub enum MicrophoneMode {
     OnDemand,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct MicrophoneTestLevelEvent {
+    pub session_id: u64,
+    pub level: f32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct MicrophoneTestStoppedEvent {
+    pub session_id: u64,
+}
+
+fn take_microphone_test_session(
+    active_session: &AtomicU64,
+    expected_session: Option<u64>,
+) -> Option<u64> {
+    match expected_session {
+        Some(session_id) => active_session
+            .compare_exchange(session_id, 0, Ordering::AcqRel, Ordering::Acquire)
+            .ok(),
+        None => match active_session.swap(0, Ordering::AcqRel) {
+            0 => None,
+            session_id => Some(session_id),
+        },
+    }
+}
+
 /// Tracks our forced "mute while recording" so we can restore the user's audio
 /// exactly as it was. `did_mute` is true while our mute is active; `prev_muted`
 /// is the system mute state captured just before we muted, used to decide
@@ -282,6 +311,7 @@ fn create_audio_recorder(
     app_handle: &tauri::AppHandle,
     selected_channel: Option<u16>,
     stream_router: Arc<StreamRouter>,
+    active_microphone_test: Arc<AtomicU64>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     // A single Silero engine covers both the offline and streaming policies (never
     // active at once within a recording), so the recorder reconfigures its
@@ -316,6 +346,15 @@ fn create_audio_recorder(
             let router = stream_router;
             move |frame| {
                 router.feed(frame);
+            }
+        })
+        .with_microphone_test_level_callback({
+            let app_handle = app_handle.clone();
+            move |level| {
+                let session_id = active_microphone_test.load(Ordering::Acquire);
+                if session_id != 0 {
+                    let _ = MicrophoneTestLevelEvent { session_id, level }.emit(&app_handle);
+                }
             }
         });
 
@@ -366,6 +405,11 @@ pub struct AudioRecordingManager {
     /// stopped or cancelled. This prevents a slow device from producing a late
     /// "ready" indication for a session the user already ended.
     capture_generation: Arc<AtomicU64>,
+    /// Monotonic identity for UI-started microphone tests. Level events carry
+    /// this value so a late event from an old test cannot update a new meter.
+    microphone_test_generation: Arc<AtomicU64>,
+    /// Zero while inactive; otherwise the currently active test session.
+    active_microphone_test: Arc<AtomicU64>,
     /// Resolution of a *named* microphone (selected or clamshell) to its cpal
     /// device, cached so on-demand recording starts skip the full device
     /// enumeration (~40-110ms). Keyed by the resolved name, so a settings
@@ -403,6 +447,8 @@ impl AudioRecordingManager {
             stream_router,
             recording_active: Arc::new(AtomicBool::new(false)),
             capture_generation: Arc::new(AtomicU64::new(0)),
+            microphone_test_generation: Arc::new(AtomicU64::new(0)),
+            active_microphone_test: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
         };
 
@@ -537,6 +583,7 @@ impl AudioRecordingManager {
             let state = rm.state.lock().unwrap();
             if rm.close_generation.load(Ordering::SeqCst) == gen
                 && matches!(*state, RecordingState::Idle)
+                && rm.active_microphone_test.load(Ordering::Acquire) == 0
             {
                 // stop_microphone_stream does not acquire the state lock,
                 // so holding it here is safe (no deadlock).
@@ -608,6 +655,7 @@ impl AudioRecordingManager {
                 &self.app_handle,
                 settings.selected_channel,
                 Arc::clone(&self.stream_router),
+                Arc::clone(&self.active_microphone_test),
             )?);
         }
         Ok(())
@@ -752,6 +800,108 @@ impl AudioRecordingManager {
         debug!("Microphone stream stopped");
     }
 
+    fn stop_active_microphone_test(
+        &self,
+        expected_session: Option<u64>,
+        notify_frontend: bool,
+    ) -> Result<Option<u64>, anyhow::Error> {
+        let Some(session_id) =
+            take_microphone_test_session(&self.active_microphone_test, expected_session)
+        else {
+            return Ok(None);
+        };
+
+        let stop_result = self
+            .recorder
+            .lock()
+            .unwrap()
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Recorder not available"))
+            .and_then(|recorder| {
+                recorder
+                    .stop_microphone_test()
+                    .map_err(|error| anyhow::anyhow!("Failed to stop microphone test: {error}"))
+            });
+
+        if let Err(error) = stop_result {
+            // The session is already invalidated, so a dead/disconnected
+            // recorder must not strand the UI or prevent the stream cleanup
+            // performed by the caller.
+            warn!("{error}");
+        }
+
+        if notify_frontend {
+            let _ = MicrophoneTestStoppedEvent { session_id }.emit(&self.app_handle);
+        }
+
+        Ok(Some(session_id))
+    }
+
+    pub fn start_microphone_test(&self) -> Result<u64, anyhow::Error> {
+        let state = self.state.lock().unwrap();
+        if !matches!(*state, RecordingState::Idle) {
+            return Err(anyhow::anyhow!(
+                "Cannot test the microphone while recording"
+            ));
+        }
+
+        let existing_session = self.active_microphone_test.load(Ordering::Acquire);
+        if existing_session != 0 {
+            return Ok(existing_session);
+        }
+
+        self.close_generation.fetch_add(1, Ordering::SeqCst);
+        self.start_microphone_stream()?;
+
+        let session_id = self
+            .microphone_test_generation
+            .fetch_add(1, Ordering::AcqRel)
+            .wrapping_add(1)
+            .max(1);
+        self.active_microphone_test
+            .store(session_id, Ordering::Release);
+
+        let start_result = self
+            .recorder
+            .lock()
+            .unwrap()
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Recorder not available"))
+            .and_then(|recorder| {
+                recorder
+                    .start_microphone_test()
+                    .map_err(|error| anyhow::anyhow!("Failed to start microphone test: {error}"))
+            });
+
+        if let Err(error) = start_result {
+            self.active_microphone_test
+                .compare_exchange(session_id, 0, Ordering::AcqRel, Ordering::Acquire)
+                .ok();
+            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
+                self.stop_microphone_stream();
+            }
+            return Err(error);
+        }
+
+        Ok(session_id)
+    }
+
+    pub fn stop_microphone_test(&self, session_id: u64) -> Result<(), anyhow::Error> {
+        let stopped = self.stop_active_microphone_test(Some(session_id), true)?;
+        if stopped.is_none() {
+            return Ok(());
+        }
+
+        let state = self.state.lock().unwrap();
+        if matches!(*state, RecordingState::Idle)
+            && matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand)
+        {
+            self.close_generation.fetch_add(1, Ordering::SeqCst);
+            self.stop_microphone_stream();
+        }
+        Ok(())
+    }
+
     /* ---------- mode switching --------------------------------------------- */
 
     pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {
@@ -759,7 +909,9 @@ impl AudioRecordingManager {
 
         match (cur_mode, &new_mode) {
             (MicrophoneMode::AlwaysOn, MicrophoneMode::OnDemand) => {
-                if matches!(*self.state.lock().unwrap(), RecordingState::Idle) {
+                if matches!(*self.state.lock().unwrap(), RecordingState::Idle)
+                    && self.active_microphone_test.load(Ordering::Acquire) == 0
+                {
                     self.close_generation.fetch_add(1, Ordering::SeqCst);
                     self.stop_microphone_stream();
                 }
@@ -800,6 +952,9 @@ impl AudioRecordingManager {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
+            if let Err(error) = self.stop_active_microphone_test(None, true) {
+                warn!("Failed to stop microphone test before recording: {error}");
+            }
             // Cancel any pending lazy close (no-op in always-on mode, where
             // closes are never scheduled).
             self.close_generation.fetch_add(1, Ordering::SeqCst);
@@ -841,6 +996,9 @@ impl AudioRecordingManager {
     }
 
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
+        if let Err(error) = self.stop_active_microphone_test(None, true) {
+            warn!("Failed to stop microphone test before changing device: {error}");
+        }
         // Device settings changed; re-enumerate the device and restart capture.
         self.invalidate_device_cache();
         let was_open = *self.is_open.lock().unwrap();
@@ -864,6 +1022,10 @@ impl AudioRecordingManager {
             return Err(anyhow::anyhow!(
                 "Cannot change the input channel while recording"
             ));
+        }
+
+        if let Err(error) = self.stop_active_microphone_test(None, true) {
+            warn!("Failed to stop microphone test before changing channel: {error}");
         }
 
         let previous_channel = get_settings(&self.app_handle).selected_channel;
@@ -1022,5 +1184,33 @@ impl AudioRecordingManager {
             }
             RecordingState::Idle => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::take_microphone_test_session;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    #[test]
+    fn stale_microphone_test_stop_cannot_clear_current_session() {
+        let active_session = AtomicU64::new(2);
+
+        assert_eq!(take_microphone_test_session(&active_session, Some(1)), None);
+        assert_eq!(active_session.load(Ordering::Acquire), 2);
+    }
+
+    #[test]
+    fn matching_and_forced_stops_clear_the_active_session() {
+        let active_session = AtomicU64::new(2);
+        assert_eq!(
+            take_microphone_test_session(&active_session, Some(2)),
+            Some(2)
+        );
+        assert_eq!(active_session.load(Ordering::Acquire), 0);
+
+        active_session.store(3, Ordering::Release);
+        assert_eq!(take_microphone_test_session(&active_session, None), Some(3));
+        assert_eq!(active_session.load(Ordering::Acquire), 0);
     }
 }

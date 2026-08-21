@@ -225,7 +225,11 @@
         "title": "麦克风",
         "description": "选择您偏好的麦克风设备",
         "placeholder": "选择麦克风...",
-        "loading": "加载中..."
+        "loading": "加载中...",
+        "test": "测试麦克风",
+        "stopTest": "停止测试",
+        "inputLevel": "输入音量",
+        "testFailed": "麦克风测试失败"
       },
       "channel": {
         "title": "输入通道",

@@ -13,3 +13,4 @@ pub use resampler::FrameResampler;
 pub(crate) use utils::is_effectively_silent;
 pub use utils::{read_wav_samples, save_wav_file, verify_wav_file};
 pub use visualizer::AudioVisualiser;
+pub(crate) use visualizer::InputPeakMeter;

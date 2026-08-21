@@ -225,7 +225,11 @@
         "title": "Mikrofon",
         "description": "Vælg din foretrukne mikrofonenhed",
         "placeholder": "Vælg mikrofon...",
-        "loading": "Indlæser..."
+        "loading": "Indlæser...",
+        "test": "Test mikrofon",
+        "stopTest": "Stop test",
+        "inputLevel": "Inputniveau",
+        "testFailed": "Mikrofontesten mislykkedes"
       },
       "channel": {
         "title": "Inputkanal",

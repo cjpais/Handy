@@ -225,7 +225,11 @@
         "title": "Mikrofon",
         "description": "Bevorzugtes Mikrofon auswählen",
         "placeholder": "Mikrofon auswählen...",
-        "loading": "Wird geladen..."
+        "loading": "Wird geladen...",
+        "test": "Mikrofon testen",
+        "stopTest": "Test stoppen",
+        "inputLevel": "Eingangspegel",
+        "testFailed": "Mikrofontest fehlgeschlagen"
       },
       "channel": {
         "title": "Eingangskanal",

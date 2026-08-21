@@ -205,7 +205,11 @@
         "title": "마이크",
         "description": "선호하는 마이크 장치를 선택하세요",
         "placeholder": "마이크 선택...",
-        "loading": "로딩 중..."
+        "loading": "로딩 중...",
+        "test": "마이크 테스트",
+        "stopTest": "테스트 중지",
+        "inputLevel": "입력 레벨",
+        "testFailed": "마이크 테스트 실패"
       },
       "channel": {
         "title": "입력 채널",
