@@ -1085,6 +1085,55 @@ pub fn change_post_process_model_setting(
     Ok(())
 }
 
+/// Pin (or clear, with an empty slug) the upstream provider `provider_id`
+/// routes `model` to. Only meaningful for providers with `supports_provider_routing`.
+#[tauri::command]
+#[specta::specta]
+pub fn change_post_process_upstream_provider_setting(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+    provider_slug: String,
+) -> Result<(), String> {
+    let model = model.trim().to_string();
+    if model.is_empty() {
+        return Err("Model must not be empty".to_string());
+    }
+    let mut settings = settings::get_settings(&app);
+    validate_provider_exists(&settings, &provider_id)?;
+    let pins = settings
+        .post_process_upstream_providers
+        .entry(provider_id)
+        .or_default();
+    let slug = provider_slug.trim();
+    if slug.is_empty() {
+        pins.remove(&model);
+    } else {
+        pins.insert(model, slug.to_string());
+    }
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+/// List the upstream providers `provider_id` can route `model` to.
+#[tauri::command]
+#[specta::specta]
+pub async fn fetch_post_process_upstream_providers(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+) -> Result<Vec<crate::llm_client::OpenRouterEndpoint>, String> {
+    let settings = settings::get_settings(&app);
+    let (provider, api_key) = resolve_provider_and_key(&settings, &provider_id)?;
+    if !provider.supports_provider_routing {
+        return Err(format!(
+            "{} does not support upstream provider routing",
+            provider.label
+        ));
+    }
+    crate::llm_client::fetch_openrouter_endpoints(provider, api_key, &model).await
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn set_post_process_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
@@ -1171,6 +1220,33 @@ pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), Stri
     Ok(())
 }
 
+/// Look up a post-process provider and its API key. Errors when the key is
+/// missing for providers that need one (everything except Custom and Apple
+/// Intelligence).
+fn resolve_provider_and_key<'a>(
+    settings: &'a settings::AppSettings,
+    provider_id: &str,
+) -> Result<(&'a settings::PostProcessProvider, String), String> {
+    let provider = settings
+        .post_process_provider(provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+    let api_key = settings
+        .post_process_api_keys
+        .get(provider_id)
+        .cloned()
+        .unwrap_or_default();
+    if api_key.trim().is_empty()
+        && provider.id != "custom"
+        && provider.id != APPLE_INTELLIGENCE_PROVIDER_ID
+    {
+        return Err(format!(
+            "API key is required for {}. Please add an API key to list available models.",
+            provider.label
+        ));
+    }
+    Ok((provider, api_key))
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn fetch_post_process_models(
@@ -1179,12 +1255,7 @@ pub async fn fetch_post_process_models(
 ) -> Result<Vec<String>, String> {
     let settings = settings::get_settings(&app);
 
-    // Find the provider
-    let provider = settings
-        .post_process_providers
-        .iter()
-        .find(|p| p.id == provider_id)
-        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+    let (provider, api_key) = resolve_provider_and_key(&settings, &provider_id)?;
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -1196,21 +1267,6 @@ pub async fn fetch_post_process_models(
         {
             return Err("Apple Intelligence is only available on Apple silicon Macs running macOS 15 or later.".to_string());
         }
-    }
-
-    // Get API key
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider_id)
-        .cloned()
-        .unwrap_or_default();
-
-    // Skip fetching if no API key for providers that typically need one
-    if api_key.trim().is_empty() && provider.id != "custom" {
-        return Err(format!(
-            "API key is required for {}. Please add an API key to list available models.",
-            provider.label
-        ));
     }
 
     crate::llm_client::fetch_models(provider, api_key).await

@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
   AudioDevice,
+  OpenRouterEndpoint,
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
 } from "@/bindings";
@@ -53,6 +54,17 @@ interface SettingsStore {
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
+  /** Upstream providers keyed by `${providerId}:${model}`, filled by fetchUpstreamProviders */
+  upstreamProviderOptions: Record<string, OpenRouterEndpoint[]>;
+  fetchUpstreamProviders: (
+    providerId: string,
+    model: string,
+  ) => Promise<OpenRouterEndpoint[]>;
+  updateUpstreamProvider: (
+    providerId: string,
+    model: string,
+    providerSlug: string,
+  ) => Promise<void>;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -71,6 +83,28 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
   index: "default",
   name: "Default",
   is_default: true,
+};
+
+/** Store key for per-(provider, model) upstream provider state. */
+export const upstreamKey = (providerId: string, model: string) =>
+  `${providerId}:${model}`;
+
+/** Run `work` with the `isUpdating(key)` flag set, swallowing thrown errors. */
+const withUpdating = async <T>(
+  get: () => SettingsStore,
+  key: string,
+  work: () => Promise<T>,
+): Promise<T | undefined> => {
+  const { setUpdating } = get();
+  setUpdating(key, true);
+  try {
+    return await work();
+  } catch (error) {
+    console.error(`Failed while updating ${key}:`, error);
+    return undefined;
+  } finally {
+    setUpdating(key, false);
+  }
 };
 
 const settingUpdaters: {
@@ -188,6 +222,7 @@ export const useSettingsStore = create<SettingsStore>()(
     outputDevices: [],
     customSounds: { start: false, stop: false },
     postProcessModelOptions: {},
+    upstreamProviderOptions: {},
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
@@ -569,6 +604,50 @@ export const useSettingsStore = create<SettingsStore>()(
       } finally {
         setUpdating(updateKey, false);
       }
+    },
+
+    fetchUpstreamProviders: async (providerId, model) => {
+      const key = upstreamKey(providerId, model);
+      const data = await withUpdating(
+        get,
+        `upstream_providers_fetch:${key}`,
+        async () => {
+          const result = await commands.fetchPostProcessUpstreamProviders(
+            providerId,
+            model,
+          );
+          if (result.status === "error") {
+            console.error("Failed to fetch upstream providers:", result.error);
+          }
+          // Cache an empty list on failure so the auto-load effect doesn't
+          // retry on every render; the refresh button re-fetches explicitly.
+          const data = result.status === "ok" ? result.data : [];
+          set((state) => ({
+            upstreamProviderOptions: {
+              ...state.upstreamProviderOptions,
+              [key]: data,
+            },
+          }));
+          return data;
+        },
+      );
+      return data ?? [];
+    },
+
+    updateUpstreamProvider: async (providerId, model, providerSlug) => {
+      const key = upstreamKey(providerId, model);
+      await withUpdating(get, `upstream_provider:${key}`, async () => {
+        const result = await commands.changePostProcessUpstreamProviderSetting(
+          providerId,
+          model,
+          providerSlug,
+        );
+        if (result.status === "error") {
+          console.error("Failed to update upstream provider:", result.error);
+          return;
+        }
+        await get().refreshSettings();
+      });
     },
 
     setPostProcessModelOptions: (providerId, models) =>

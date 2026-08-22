@@ -1,6 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSettings } from "../../../hooks/useSettings";
-import { commands, type PostProcessProvider } from "@/bindings";
+import {
+  commands,
+  type OpenRouterEndpoint,
+  type PostProcessProvider,
+} from "@/bindings";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
@@ -26,7 +30,17 @@ type PostProcessProviderState = {
   handleModelSelect: (value: string) => void;
   handleModelCreate: (value: string) => void;
   handleRefreshModels: () => void;
+  // Upstream provider pinning (routing gateways such as OpenRouter)
+  showUpstreamProvider: boolean;
+  upstreamProvider: string;
+  upstreamProviderOptions: OpenRouterEndpoint[];
+  isUpstreamProviderUpdating: boolean;
+  isFetchingUpstreamProviders: boolean;
+  handleUpstreamProviderSelect: (slug: string) => void;
+  handleRefreshUpstreamProviders: () => void;
 };
+
+const NO_ENDPOINTS: OpenRouterEndpoint[] = [];
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
 
@@ -40,6 +54,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     updatePostProcessModel,
     fetchPostProcessModels,
     postProcessModelOptions,
+    upstreamProviderOptions: upstreamProviderOptionsByKey,
+    fetchUpstreamProviders,
+    updateUpstreamProvider,
   } = useSettings();
 
   // Settings are guaranteed to have providers after migration
@@ -207,7 +224,69 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   const isCustomProvider = selectedProvider?.id === "custom";
 
-  // No automatic fetching - user must click refresh button
+  // Upstream provider pinning (per provider + model), only for routing gateways
+  const trimmedModel = model.trim();
+  const showUpstreamProvider =
+    (selectedProvider?.supports_provider_routing ?? false) &&
+    trimmedModel !== "";
+  const upstreamKey = `${selectedProviderId}:${trimmedModel}`;
+  const upstreamProvider =
+    settings?.post_process_upstream_providers?.[selectedProviderId]?.[
+      trimmedModel
+    ] ?? "";
+  const upstreamProviderOptions =
+    upstreamProviderOptionsByKey[upstreamKey] ?? NO_ENDPOINTS;
+  const isUpstreamProviderUpdating = isUpdating(
+    `upstream_provider:${upstreamKey}`,
+  );
+  const isFetchingUpstreamProviders = isUpdating(
+    `upstream_providers_fetch:${upstreamKey}`,
+  );
+
+  const handleUpstreamProviderSelect = useCallback(
+    (slug: string) => {
+      if (!showUpstreamProvider) return;
+      void updateUpstreamProvider(
+        selectedProviderId,
+        trimmedModel,
+        slug.trim(),
+      );
+    },
+    [
+      showUpstreamProvider,
+      selectedProviderId,
+      trimmedModel,
+      updateUpstreamProvider,
+    ],
+  );
+
+  const handleRefreshUpstreamProviders = useCallback(() => {
+    if (!showUpstreamProvider) return;
+    void fetchUpstreamProviders(selectedProviderId, trimmedModel);
+  }, [
+    showUpstreamProvider,
+    selectedProviderId,
+    trimmedModel,
+    fetchUpstreamProviders,
+  ]);
+
+  // Auto-load the upstream list once per (provider, model) so the dropdown is
+  // ready without an extra click. Failed fetches are cached as empty, so this
+  // never loops; the refresh button re-fetches explicitly.
+  const upstreamLoaded = upstreamKey in upstreamProviderOptionsByKey;
+  useEffect(() => {
+    if (!showUpstreamProvider || !apiKey.trim()) return;
+    if (upstreamLoaded || isFetchingUpstreamProviders) return;
+    void fetchUpstreamProviders(selectedProviderId, trimmedModel);
+  }, [
+    apiKey,
+    fetchUpstreamProviders,
+    isFetchingUpstreamProviders,
+    selectedProviderId,
+    showUpstreamProvider,
+    trimmedModel,
+    upstreamLoaded,
+  ]);
 
   return {
     providerOptions,
@@ -231,5 +310,12 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     handleModelSelect,
     handleModelCreate,
     handleRefreshModels,
+    showUpstreamProvider,
+    upstreamProvider,
+    upstreamProviderOptions,
+    isUpstreamProviderUpdating,
+    isFetchingUpstreamProviders,
+    handleUpstreamProviderSelect,
+    handleRefreshUpstreamProviders,
   };
 };
