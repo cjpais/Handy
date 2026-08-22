@@ -422,7 +422,7 @@
             "latency": "Lowest latency (fastest first token)",
             "price": "Cheapest provider"
           },
-          "cached": "cached",
+          "cached": "cache",
           "free": "free",
           "degraded": "degraded",
           "noStructuredOutput": "no structured output",

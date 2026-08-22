@@ -235,26 +235,32 @@ const upstreamDropdownOptions = (
     })),
   ];
   for (const endpoint of endpoints) {
-    const details: string[] = [];
     const free = t(key("free"));
+    const details: string[] = [];
     const prompt = formatPerMillion(endpoint.prompt_price, free);
     const completion = formatPerMillion(endpoint.completion_price, free);
-    if (prompt && completion) details.push(`${prompt} in / ${completion} out`);
+    if (prompt && completion) details.push(`${prompt} / ${completion}`);
     const cached = formatPerMillion(endpoint.cache_read_price, free);
     if (cached) details.push(`${t(key("cached"))} ${cached}`);
     if (endpoint.throughput_tps !== null)
       details.push(`${Math.round(endpoint.throughput_tps)} tok/s`);
     if (endpoint.latency_ms !== null)
       details.push(`${Math.round(endpoint.latency_ms)} ms`);
-    if (endpoint.uptime_pct !== null)
+    // Uptime is only worth the space when it is notably below normal.
+    if (endpoint.uptime_pct !== null && endpoint.uptime_pct < 99.5)
       details.push(`${endpoint.uptime_pct.toFixed(1)}% up`);
     const warnings: string[] = [];
     if ((endpoint.status ?? 0) < 0) warnings.push(t(key("degraded")));
     if (!endpoint.supports_structured_output)
       warnings.push(t(key("noStructuredOutput")));
-    // Names repeat across variants (e.g. "google-ai-studio/flex"), so the
-    // routing slug is always shown.
-    let label = `${endpoint.name} (${endpoint.slug})`;
+    // Slugs are unique and usually self-describing ("google-ai-studio/flex");
+    // prefix the display name only when it adds information.
+    const slugHasName = endpoint.slug
+      .toLowerCase()
+      .includes(endpoint.name.toLowerCase().split(" ")[0]);
+    let label = slugHasName
+      ? endpoint.slug
+      : `${endpoint.name} (${endpoint.slug})`;
     if (details.length) label += ` — ${details.join(", ")}`;
     if (warnings.length) label += ` ⚠ ${warnings.join(", ")}`;
     options.push({ value: endpoint.slug, label });
