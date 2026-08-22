@@ -264,6 +264,29 @@ async fetchPostProcessModels(providerId: string) : Promise<Result<string[], stri
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Pin (or clear, with an empty slug) the upstream provider `provider_id`
+ * routes `model` to. Only meaningful for providers with `supports_provider_routing`.
+ */
+async changePostProcessUpstreamProviderSetting(providerId: string, model: string, providerSlug: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_post_process_upstream_provider_setting", { providerId, model, providerSlug }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * List the upstream providers `provider_id` can route `model` to.
+ */
+async fetchPostProcessUpstreamProviders(providerId: string, model: string) : Promise<Result<OpenRouterEndpoint[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("fetch_post_process_upstream_providers", { providerId, model }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async addPostProcessPrompt(name: string, prompt: string) : Promise<Result<LLMPrompt, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("add_post_process_prompt", { name, prompt }) };
@@ -953,19 +976,26 @@ whats_new_last_seen_version?: string; selected_model?: string; onboarding_comple
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
  */
-selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
+selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; 
+/**
+ * provider id -> (model id -> pinned upstream provider slug, e.g.
+ * "google-ai-studio") for providers with `supports_provider_routing`.
+ * Missing/empty means the gateway's default routing. Pinning keeps every
+ * request on one upstream so its prompt cache hits.
+ */
+post_process_upstream_providers?: Partial<{ [key in string]: Partial<{ [key in string]: string }> }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
 /**
  * Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
  * after the target app actually reads the transcript, instead of after a
  * fixed delay. See `paste_tx`. macOS and Windows only.
  */
-reliable_paste?: boolean; typing_tool?: TypingTool; external_script_path?: string | null; filler_word_removal_enabled?: boolean; custom_filler_words?: string[] | null; transcribe_accelerator?: TranscribeAcceleratorSetting; ort_accelerator?: OrtAcceleratorSetting;
+reliable_paste?: boolean; typing_tool?: TypingTool; external_script_path?: string | null; filler_word_removal_enabled?: boolean; custom_filler_words?: string[] | null; transcribe_accelerator?: TranscribeAcceleratorSetting; ort_accelerator?: OrtAcceleratorSetting; 
 /**
  * Stable transcribe.cpp device selector. This is derived from the backend's
  * `device_id` when available (or its name for backends such as Metal),
  * never from the process-local device registry index.
  */
-transcribe_gpu_device?: string | null; extra_recording_buffer_ms?: number; vad_enabled?: boolean;
+transcribe_gpu_device?: string | null; extra_recording_buffer_ms?: number; vad_enabled?: boolean; 
 /**
  * Which recording overlay to show: None / Minimal / Live. Streaming mode is
  * not gated on this — that follows model capability. Migrated from the old
@@ -1031,6 +1061,55 @@ sha256: string | null } } |
  */
 "Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+/**
+ * One upstream provider serving a model on OpenRouter.
+ */
+export type OpenRouterEndpoint = { 
+/**
+ * Slug accepted by the `provider.order` routing field (e.g. "google-ai-studio").
+ */
+slug: string; 
+/**
+ * Human readable provider name (e.g. "Google AI Studio").
+ */
+name: string; context_length: number | null; 
+/**
+ * USD per input token, as reported by OpenRouter.
+ */
+prompt_price: number | null; 
+/**
+ * USD per output token.
+ */
+completion_price: number | null; 
+/**
+ * USD per cached input token; present when the upstream supports prompt caching.
+ */
+cache_read_price: number | null; 
+/**
+ * Upstream caches the prompt prefix without explicit `cache_control`.
+ */
+supports_implicit_caching: boolean; 
+/**
+ * Accepts `response_format` (structured outputs); without it Handy falls
+ * back to legacy plain-text mode on every request.
+ */
+supports_structured_output: boolean; 
+/**
+ * Uptime over the last 30 minutes, in percent.
+ */
+uptime_pct: number | null; 
+/**
+ * OpenRouter health status; negative means degraded/deranked.
+ */
+status: number | null; 
+/**
+ * Mean time to first token over the last 30 minutes, in ms (when reported).
+ */
+latency_ms: number | null; 
+/**
+ * Mean generation speed over the last 30 minutes, tokens/s (when reported).
+ */
+throughput_tps: number | null }
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "top" | "bottom"
 /**
@@ -1043,7 +1122,12 @@ export type OverlayStyle = "none" | "minimal" | "live"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
-export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
+export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean; 
+/**
+ * Gateway that fronts several upstream providers (OpenRouter): accepts the
+ * `provider` routing object and `cache_control` content-part breakpoints.
+ */
+supports_provider_routing?: boolean }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
 export type SecretMap = Partial<{ [key in string]: string }>
 export type SecureInputStatus = { 

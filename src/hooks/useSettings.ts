@@ -1,6 +1,10 @@
 import { useEffect } from "react";
 import { useSettingsStore } from "../stores/settingsStore";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import type {
+  AppSettings as Settings,
+  AudioDevice,
+  OpenRouterEndpoint,
+} from "@/bindings";
 
 interface UseSettingsReturn {
   // State
@@ -41,6 +45,16 @@ interface UseSettingsReturn {
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  upstreamProviderOptions: Record<string, OpenRouterEndpoint[]>;
+  fetchUpstreamProviders: (
+    providerId: string,
+    model: string,
+  ) => Promise<OpenRouterEndpoint[]>;
+  updateUpstreamProvider: (
+    providerId: string,
+    model: string,
+    providerSlug: string,
+  ) => Promise<void>;
 }
 
 export const useSettings = (): UseSettingsReturn => {
@@ -74,5 +88,8 @@ export const useSettings = (): UseSettingsReturn => {
     updatePostProcessApiKey: store.updatePostProcessApiKey,
     updatePostProcessModel: store.updatePostProcessModel,
     fetchPostProcessModels: store.fetchPostProcessModels,
+    upstreamProviderOptions: store.upstreamProviderOptions,
+    fetchUpstreamProviders: store.fetchUpstreamProviders,
+    updateUpstreamProvider: store.updateUpstreamProvider,
   };
 };

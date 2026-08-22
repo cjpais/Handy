@@ -190,6 +190,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     // field the endpoint understands and retries without it if rejected.
     let disable_reasoning = matches!(provider.id.as_str(), "custom" | "openrouter");
 
+    // Pin the gateway's upstream provider for this model (OpenRouter) so the
+    // request is reliable and always hits the same prompt cache.
+    let pinned_provider = settings.upstream_provider_for(&provider.id, &model);
+    if let Some(slug) = pinned_provider {
+        debug!("Pinning upstream provider '{}'", slug);
+    }
+
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
@@ -261,6 +268,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             Some(system_prompt),
             Some(json_schema),
             disable_reasoning,
+            pinned_provider,
         )
         .await
         {
@@ -317,6 +325,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         &model,
         processed_prompt,
         disable_reasoning,
+        pinned_provider,
     )
     .await
     {

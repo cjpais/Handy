@@ -1,5 +1,5 @@
 use crate::settings::PostProcessProvider;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -10,7 +10,66 @@ use std::sync::{Mutex, OnceLock};
 #[derive(Debug, Serialize)]
 struct ChatMessage {
     role: String,
-    content: String,
+    /// Plain string for most endpoints; OpenRouter gets a content-part array
+    /// so the system prompt can carry a `cache_control` breakpoint.
+    content: Value,
+}
+
+/// Build the system message. On routing gateways the prompt is wrapped as a
+/// text part with an ephemeral `cache_control` breakpoint: the prompt is
+/// identical across dictations and always sits at the top of the request, so
+/// upstreams that need explicit breakpoints (Anthropic) cache it, while
+/// implicit-caching upstreams (OpenAI, Gemini, DeepSeek) ignore the marker.
+fn system_message(provider: &PostProcessProvider, system: String) -> ChatMessage {
+    let content = if provider.supports_provider_routing {
+        serde_json::json!([{
+            "type": "text",
+            "text": system,
+            "cache_control": { "type": "ephemeral" }
+        }])
+    } else {
+        Value::String(system)
+    };
+    ChatMessage {
+        role: "system".to_string(),
+        content,
+    }
+}
+
+/// Prefix for routing strategies stored in place of a provider slug
+/// (`sort:throughput`, `sort:latency`, `sort:price`).
+pub const SORT_PREFIX: &str = "sort:";
+const SORT_STRATEGIES: [&str; 3] = ["throughput", "latency", "price"];
+
+/// OpenRouter-style provider-routing object
+/// (https://openrouter.ai/docs/features/provider-routing).
+///
+/// * `sort:<strategy>` routes each request to whichever upstream currently
+///   leads on throughput (tokens/s), latency (time to first token) or price.
+///   `require_parameters` keeps the router on upstreams that accept the fields
+///   we send (notably `response_format`).
+/// * Any other value is a provider slug pinned with `allow_fallbacks: false`,
+///   so the request never silently lands on a different upstream (which would
+///   also miss that upstream's prompt cache).
+fn provider_routing(provider: &PostProcessProvider, pinned: Option<&str>) -> Option<Value> {
+    let value = pinned.map(str::trim).filter(|s| !s.is_empty())?;
+    if !provider.supports_provider_routing {
+        return None;
+    }
+    if let Some(strategy) = value.strip_prefix(SORT_PREFIX) {
+        if !SORT_STRATEGIES.contains(&strategy) {
+            warn!("Ignoring unknown upstream routing strategy '{}'", value);
+            return None;
+        }
+        return Some(serde_json::json!({
+            "sort": strategy,
+            "require_parameters": true
+        }));
+    }
+    Some(serde_json::json!({
+        "order": [value],
+        "allow_fallbacks": false
+    }))
 }
 
 #[derive(Debug, Serialize)]
@@ -118,6 +177,9 @@ struct ChatCompletionRequest {
     response_format: Option<ResponseFormat>,
     #[serde(flatten)]
     reasoning: ReasoningParams,
+    /// OpenRouter provider routing (https://openrouter.ai/docs/features/provider-routing)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -303,6 +365,7 @@ pub async fn send_chat_completion(
     model: &str,
     prompt: String,
     disable_reasoning: bool,
+    pinned_provider: Option<&str>,
 ) -> Result<Option<String>, String> {
     send_chat_completion_with_schema(
         provider,
@@ -312,6 +375,7 @@ pub async fn send_chat_completion(
         None,
         None,
         disable_reasoning,
+        pinned_provider,
     )
     .await
 }
@@ -326,6 +390,10 @@ pub async fn send_chat_completion(
 /// upstreams reject with 400), so a 400/422 answer to such a request triggers
 /// one retry without the fields, and the rejection is remembered per
 /// (base_url, model) so later requests skip the failing attempt entirely.
+///
+/// `pinned_provider` is an upstream slug (e.g. "google-ai-studio") for
+/// providers with `supports_provider_routing`; ignored for every other provider.
+#[allow(clippy::too_many_arguments)]
 pub async fn send_chat_completion_with_schema(
     provider: &PostProcessProvider,
     api_key: String,
@@ -334,6 +402,7 @@ pub async fn send_chat_completion_with_schema(
     system_prompt: Option<String>,
     json_schema: Option<Value>,
     disable_reasoning: bool,
+    pinned_provider: Option<&str>,
 ) -> Result<Option<String>, String> {
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/chat/completions", base_url);
@@ -349,17 +418,15 @@ pub async fn send_chat_completion_with_schema(
     let mut messages = Vec::new();
 
     // Add system prompt if provided
+    // The system prompt goes first so the stable prefix is cacheable.
     if let Some(system) = system_prompt {
-        messages.push(ChatMessage {
-            role: "system".to_string(),
-            content: system,
-        });
+        messages.push(system_message(provider, system));
     }
 
     // Add user message
     messages.push(ChatMessage {
         role: "user".to_string(),
-        content: user_content,
+        content: Value::String(user_content),
     });
 
     // Build response_format if schema is provided
@@ -385,6 +452,7 @@ pub async fn send_chat_completion_with_schema(
         stream: false,
         response_format,
         reasoning,
+        provider: provider_routing(provider, pinned_provider),
     };
 
     let mut response = client
@@ -461,28 +529,27 @@ pub async fn send_chat_completion_with_schema(
         .and_then(|choice| choice.message.content.clone()))
 }
 
-/// Fetch available models from an OpenAI-compatible API
-/// Returns a list of model IDs
-pub async fn fetch_models(
+/// GET `url` with the provider's auth headers and decode the JSON body.
+/// `what` names the resource for log and error messages.
+async fn get_json(
     provider: &PostProcessProvider,
-    api_key: String,
-) -> Result<Vec<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
-    let url = format!("{}/models", base_url);
+    api_key: &str,
+    url: &str,
+    what: &str,
+) -> Result<Value, String> {
+    debug!("Fetching {} from: {}", what, sanitized_url_for_log(url));
 
-    debug!("Fetching models from: {}", sanitized_url_for_log(&url));
-
-    let client = create_client(provider, &api_key)?;
-
+    let client = create_client(provider, api_key)?;
     let response = client
-        .get(&url)
+        .get(url)
         .send()
         .await
-        .map_err(|e| report_reqwest_error("Failed to fetch models", &e))?;
+        .map_err(|e| report_reqwest_error(&format!("Failed to fetch {what}"), &e))?;
 
     let status = response.status();
     debug!(
-        "Model list response received with status {} over {:?} from {}",
+        "{} response received with status {} over {:?} from {}",
+        what,
         status,
         response.version(),
         sanitized_url(response.url())
@@ -491,17 +558,28 @@ pub async fn fetch_models(
         let error_text = response
             .text()
             .await
-            .unwrap_or_else(|e| report_reqwest_error("Failed to read model list error", &e));
+            .unwrap_or_else(|e| report_reqwest_error(&format!("Failed to read {what} error"), &e));
         return Err(format!(
-            "Model list request failed ({}): {}",
-            status, error_text
+            "{} request failed ({}): {}",
+            what, status, error_text
         ));
     }
 
-    let parsed: serde_json::Value = response
+    response
         .json()
         .await
-        .map_err(|e| report_reqwest_error("Failed to parse model list response", &e))?;
+        .map_err(|e| report_reqwest_error(&format!("Failed to parse {what} response"), &e))
+}
+
+/// Fetch available models from an OpenAI-compatible API
+/// Returns a list of model IDs
+pub async fn fetch_models(
+    provider: &PostProcessProvider,
+    api_key: String,
+) -> Result<Vec<String>, String> {
+    let base_url = provider.base_url.trim_end_matches('/');
+    let url = format!("{}/models", base_url);
+    let parsed = get_json(provider, &api_key, &url, "model list").await?;
 
     let mut models = Vec::new();
 
@@ -525,6 +603,122 @@ pub async fn fetch_models(
     }
 
     Ok(models)
+}
+
+/// One upstream provider serving a model on OpenRouter.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+pub struct OpenRouterEndpoint {
+    /// Slug accepted by the `provider.order` routing field (e.g. "google-ai-studio").
+    pub slug: String,
+    /// Human readable provider name (e.g. "Google AI Studio").
+    pub name: String,
+    pub context_length: Option<f64>,
+    /// USD per input token, as reported by OpenRouter.
+    pub prompt_price: Option<f64>,
+    /// USD per output token.
+    pub completion_price: Option<f64>,
+    /// USD per cached input token; present when the upstream supports prompt caching.
+    pub cache_read_price: Option<f64>,
+    /// Upstream caches the prompt prefix without explicit `cache_control`.
+    pub supports_implicit_caching: bool,
+    /// Accepts `response_format` (structured outputs); without it Handy falls
+    /// back to legacy plain-text mode on every request.
+    pub supports_structured_output: bool,
+    /// Uptime over the last 30 minutes, in percent.
+    pub uptime_pct: Option<f64>,
+    /// OpenRouter health status; negative means degraded/deranked.
+    pub status: Option<f64>,
+    /// Mean time to first token over the last 30 minutes, in ms (when reported).
+    pub latency_ms: Option<f64>,
+    /// Mean generation speed over the last 30 minutes, tokens/s (when reported).
+    pub throughput_tps: Option<f64>,
+}
+
+fn parse_price(value: Option<&Value>) -> Option<f64> {
+    match value? {
+        Value::String(s) => s.trim().parse().ok(),
+        Value::Number(n) => n.as_f64(),
+        _ => None,
+    }
+}
+
+/// Fetch the upstream providers that serve `model` on OpenRouter.
+/// Uses `GET {base_url}/models/{author}/{slug}/endpoints`.
+pub async fn fetch_openrouter_endpoints(
+    provider: &PostProcessProvider,
+    api_key: String,
+    model: &str,
+) -> Result<Vec<OpenRouterEndpoint>, String> {
+    let model = model.trim();
+    if model.is_empty() {
+        return Err("Select a model first".to_string());
+    }
+    // Variant suffixes (":free", ":nitro") are routing hints, not part of the
+    // model path the endpoints API expects.
+    let model_path = model.split(':').next().unwrap_or(model);
+    let base_url = provider.base_url.trim_end_matches('/');
+    let url = format!("{}/models/{}/endpoints", base_url, model_path);
+    let parsed = get_json(provider, &api_key, &url, "endpoint list").await?;
+
+    Ok(parse_openrouter_endpoints(&parsed))
+}
+
+fn parse_openrouter_endpoints(parsed: &Value) -> Vec<OpenRouterEndpoint> {
+    let Some(entries) = parsed
+        .get("data")
+        .and_then(|d| d.get("endpoints"))
+        .and_then(|e| e.as_array())
+    else {
+        return Vec::new();
+    };
+
+    let mut seen: HashSet<&str> = HashSet::new();
+    entries
+        .iter()
+        .filter_map(|entry| {
+            // `tag` is the routing slug; `provider_name` is the display name.
+            let slug = entry
+                .get("tag")
+                .and_then(|t| t.as_str())
+                .map(str::trim)
+                .filter(|t| !t.is_empty())?;
+            if !seen.insert(slug) {
+                return None;
+            }
+            let name = entry
+                .get("provider_name")
+                .and_then(|n| n.as_str())
+                .unwrap_or(slug)
+                .to_string();
+            let pricing = entry.get("pricing");
+            let number = |key: &str| entry.get(key).and_then(|v| v.as_f64());
+            let flag = |key: &str| entry.get(key).and_then(|v| v.as_bool()).unwrap_or(false);
+            let supports_structured_output = entry
+                .get("supported_parameters")
+                .and_then(|p| p.as_array())
+                .map(|params| {
+                    params.iter().any(|p| {
+                        p.as_str() == Some("structured_outputs")
+                            || p.as_str() == Some("response_format")
+                    })
+                })
+                .unwrap_or(false);
+            Some(OpenRouterEndpoint {
+                slug: slug.to_string(),
+                name,
+                context_length: number("context_length"),
+                prompt_price: parse_price(pricing.and_then(|p| p.get("prompt"))),
+                completion_price: parse_price(pricing.and_then(|p| p.get("completion"))),
+                cache_read_price: parse_price(pricing.and_then(|p| p.get("input_cache_read"))),
+                supports_implicit_caching: flag("supports_implicit_caching"),
+                supports_structured_output,
+                uptime_pct: number("uptime_last_30m"),
+                status: number("status"),
+                latency_ms: number("latency_last_30m"),
+                throughput_tps: number("throughput_last_30m"),
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -561,6 +755,7 @@ mod tests {
             allow_base_url_edit: true,
             models_endpoint: None,
             supports_structured_output: false,
+            supports_provider_routing: false,
         }
     }
 
@@ -569,11 +764,12 @@ mod tests {
             model: "test-model".to_string(),
             messages: vec![ChatMessage {
                 role: "user".to_string(),
-                content: "hi".to_string(),
+                content: Value::String("hi".to_string()),
             }],
             stream: false,
             response_format: None,
             reasoning,
+            provider: None,
         };
         serde_json::to_value(&request).unwrap()
     }
@@ -683,6 +879,69 @@ mod tests {
         assert_eq!(json["reasoning_effort"], "none");
         assert!(json.get("reasoning").is_none());
         assert!(json.get("thinking").is_none());
+    }
+
+    fn routing_provider() -> PostProcessProvider {
+        PostProcessProvider {
+            supports_provider_routing: true,
+            ..provider("openrouter", "https://openrouter.ai/api/v1")
+        }
+    }
+
+    #[test]
+    fn routing_gateway_system_prompt_carries_cache_breakpoint() {
+        let msg = system_message(&routing_provider(), "rules".to_string());
+        let json = serde_json::to_value(&msg).unwrap();
+        assert_eq!(json["role"], "system");
+        assert_eq!(json["content"][0]["text"], "rules");
+        assert_eq!(json["content"][0]["cache_control"]["type"], "ephemeral");
+
+        let plain = system_message(
+            &provider("openai", "https://api.openai.com/v1"),
+            "rules".into(),
+        );
+        assert_eq!(serde_json::to_value(&plain).unwrap()["content"], "rules");
+    }
+
+    #[test]
+    fn provider_routing_only_applies_to_routing_gateways_with_a_slug() {
+        let or = routing_provider();
+        let routing = provider_routing(&or, Some("google-ai-studio")).unwrap();
+        assert_eq!(routing["order"][0], "google-ai-studio");
+        assert_eq!(routing["allow_fallbacks"], false);
+        assert!(provider_routing(&or, Some("  ")).is_none());
+        let sorted = provider_routing(&or, Some("sort:throughput")).unwrap();
+        assert_eq!(sorted["sort"], "throughput");
+        assert_eq!(sorted["require_parameters"], true);
+        assert!(sorted.get("order").is_none());
+        assert!(provider_routing(&or, Some("sort:bogus")).is_none());
+        assert!(provider_routing(&or, None).is_none());
+        assert!(provider_routing(&provider("openai", "x"), Some("google-ai-studio")).is_none());
+    }
+
+    #[test]
+    fn endpoints_response_is_parsed_and_deduped() {
+        let body = serde_json::json!({ "data": { "endpoints": [
+            { "tag": "google-ai-studio", "provider_name": "Google AI Studio",
+              "context_length": 1000000, "uptime_last_30m": 99.5, "status": 0,
+              "supports_implicit_caching": true,
+              "supported_parameters": ["response_format", "structured_outputs"],
+              "pricing": { "prompt": "0.0000003", "completion": "0.0000025", "input_cache_read": "0.000000075" } },
+            { "tag": "google-vertex", "provider_name": "Google Vertex", "pricing": { "prompt": "0.0000003" } },
+            { "tag": "google-vertex", "provider_name": "dup" },
+            { "provider_name": "no tag" }
+        ]}});
+        let endpoints = parse_openrouter_endpoints(&body);
+        assert_eq!(endpoints.len(), 2);
+        assert_eq!(endpoints[0].slug, "google-ai-studio");
+        assert_eq!(endpoints[0].name, "Google AI Studio");
+        assert_eq!(endpoints[0].cache_read_price, Some(0.000000075));
+        assert_eq!(endpoints[0].context_length, Some(1000000.0));
+        assert_eq!(endpoints[1].cache_read_price, None);
+        assert!(endpoints[0].supports_structured_output);
+        assert!(endpoints[0].supports_implicit_caching);
+        assert_eq!(endpoints[0].uptime_pct, Some(99.5));
+        assert!(!endpoints[1].supports_structured_output);
     }
 
     #[test]

@@ -104,6 +104,10 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
     #[serde(default)]
     pub supports_structured_output: bool,
+    /// Gateway that fronts several upstream providers (OpenRouter): accepts the
+    /// `provider` routing object and `cache_control` content-part breakpoints.
+    #[serde(default)]
+    pub supports_provider_routing: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -423,6 +427,12 @@ pub struct AppSettings {
     pub post_process_api_keys: SecretMap,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
+    /// provider id -> (model id -> pinned upstream provider slug, e.g.
+    /// "google-ai-studio") for providers with `supports_provider_routing`.
+    /// Missing/empty means the gateway's default routing. Pinning keeps every
+    /// request on one upstream so its prompt cache hits.
+    #[serde(default)]
+    pub post_process_upstream_providers: HashMap<String, HashMap<String, String>>,
     #[serde(default = "default_post_process_prompts")]
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
@@ -623,6 +633,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            supports_provider_routing: false,
         },
         PostProcessProvider {
             id: "zai".to_string(),
@@ -631,6 +642,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            supports_provider_routing: false,
         },
         PostProcessProvider {
             id: "openrouter".to_string(),
@@ -639,6 +651,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            supports_provider_routing: true,
         },
         PostProcessProvider {
             id: "anthropic".to_string(),
@@ -647,6 +660,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
+            supports_provider_routing: false,
         },
         PostProcessProvider {
             id: "groq".to_string(),
@@ -655,6 +669,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
+            supports_provider_routing: false,
         },
         PostProcessProvider {
             id: "cerebras".to_string(),
@@ -663,6 +678,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            supports_provider_routing: false,
         },
     ];
 
@@ -679,6 +695,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: None,
             supports_structured_output: true,
+            supports_provider_routing: false,
         });
     }
 
@@ -690,6 +707,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         allow_base_url_edit: false,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: true,
+        supports_provider_routing: false,
     });
 
     // Custom provider always comes last
@@ -700,6 +718,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         allow_base_url_edit: true,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: false,
+        supports_provider_routing: false,
     });
 
     providers
@@ -783,6 +802,10 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                         provider.supports_structured_output
                     );
                     existing.supports_structured_output = provider.supports_structured_output;
+                    changed = true;
+                }
+                if existing.supports_provider_routing != provider.supports_provider_routing {
+                    existing.supports_provider_routing = provider.supports_provider_routing;
                     changed = true;
                 }
             }
@@ -912,6 +935,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_providers: default_post_process_providers(),
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
+        post_process_upstream_providers: HashMap::new(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
@@ -955,6 +979,15 @@ impl AppSettings {
         self.post_process_providers
             .iter()
             .find(|provider| provider.id == provider_id)
+    }
+
+    /// Pinned upstream provider slug for `model` on `provider_id`, if any.
+    pub fn upstream_provider_for(&self, provider_id: &str, model: &str) -> Option<&str> {
+        self.post_process_upstream_providers
+            .get(provider_id)?
+            .get(model.trim())
+            .map(|slug| slug.trim())
+            .filter(|slug| !slug.is_empty())
     }
 
     pub fn post_process_provider_mut(
