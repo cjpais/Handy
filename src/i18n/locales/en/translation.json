@@ -423,6 +423,7 @@
             "price": "Cheapest provider"
           },
           "cached": "cached",
+          "free": "free",
           "degraded": "degraded",
           "noStructuredOutput": "no structured output",
           "refresh": "Refresh providers"

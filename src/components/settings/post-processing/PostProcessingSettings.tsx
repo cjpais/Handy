@@ -210,8 +210,15 @@ const AUTO_ROUTING = "__auto__";
  */
 const SORT_STRATEGIES = ["throughput", "latency", "price"] as const;
 
-const formatPerMillion = (perToken: number | null): string | null =>
-  perToken === null ? null : `$${(perToken * 1_000_000).toFixed(2)}/M`;
+const formatPerMillion = (
+  perToken: number | null,
+  free: string,
+): string | null => {
+  if (perToken === null) return null;
+  if (perToken === 0) return free;
+  const perMillion = perToken * 1_000_000;
+  return `$${perMillion.toFixed(perMillion < 0.1 ? 3 : 2)}/M`;
+};
 
 const upstreamDropdownOptions = (
   endpoints: OpenRouterEndpoint[],
@@ -229,10 +236,11 @@ const upstreamDropdownOptions = (
   ];
   for (const endpoint of endpoints) {
     const details: string[] = [];
-    const prompt = formatPerMillion(endpoint.prompt_price);
-    const completion = formatPerMillion(endpoint.completion_price);
+    const free = t(key("free"));
+    const prompt = formatPerMillion(endpoint.prompt_price, free);
+    const completion = formatPerMillion(endpoint.completion_price, free);
     if (prompt && completion) details.push(`${prompt} in / ${completion} out`);
-    const cached = formatPerMillion(endpoint.cache_read_price);
+    const cached = formatPerMillion(endpoint.cache_read_price, free);
     if (cached) details.push(`${t(key("cached"))} ${cached}`);
     if (endpoint.throughput_tps !== null)
       details.push(`${Math.round(endpoint.throughput_tps)} tok/s`);
