@@ -179,6 +179,8 @@ impl AudioRecorder {
         };
 
         let thread_device = device.clone();
+        #[cfg(target_os = "macos")]
+        let keepalive_device_name = thread_device.name().unwrap_or_default();
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
@@ -315,6 +317,8 @@ impl AudioRecorder {
             match init_result {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
+                    #[cfg(target_os = "macos")]
+                    let _keepalive_output = open_silent_keepalive_output(&keepalive_device_name);
                     // Timestamp for the play()-returned -> first-samples gap the
                     // init handshake can't see (hardware dependent).
                     let stream_running_at = Instant::now();
@@ -733,6 +737,46 @@ mod tests {
         assert!(!is_no_input_device_error("permission denied"));
         assert!(!is_no_input_device_error("device not found"));
     }
+}
+
+/// Opens a silent output stream on the same physical device as the microphone.
+///
+/// While another Apple device is playing through AirPods, CoreAudio can provide
+/// a live input stream whose samples are all zero. A concurrent output stream
+/// restores microphone audio in that state.
+///
+/// Matched by name because a headset exposes its input and output as separate
+/// devices. Inputs without a same-named output are unchanged.
+#[cfg(target_os = "macos")]
+fn open_silent_keepalive_output(input_device_name: &str) -> Option<cpal::Stream> {
+    let host = crate::audio_toolkit::get_cpal_host();
+    let device = host
+        .output_devices()
+        .ok()?
+        .find(|d| d.name().is_ok_and(|n| n == input_device_name))?;
+    let config = device.default_output_config().ok()?;
+    let on_error = |err| log::warn!("silent keep-alive output stream error: {err}");
+
+    let stream = match config.sample_format() {
+        cpal::SampleFormat::F32 => device.build_output_stream(
+            &config.into(),
+            move |out: &mut [f32], _: &cpal::OutputCallbackInfo| out.fill(0.0),
+            on_error,
+            None,
+        ),
+        cpal::SampleFormat::I16 => device.build_output_stream(
+            &config.into(),
+            move |out: &mut [i16], _: &cpal::OutputCallbackInfo| out.fill(0),
+            on_error,
+            None,
+        ),
+        _ => return None,
+    }
+    .ok()?;
+
+    stream.play().ok()?;
+    log::debug!("silent keep-alive output stream open on '{input_device_name}'");
+    Some(stream)
 }
 
 #[allow(clippy::too_many_arguments)]
