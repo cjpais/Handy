@@ -10,7 +10,38 @@ use std::sync::{Mutex, OnceLock};
 #[derive(Debug, Serialize)]
 struct ChatMessage {
     role: String,
-    content: String,
+    content: Value,
+}
+
+/// Providers whose chat completions endpoint understands Anthropic-style
+/// `cache_control` markers on content parts.
+///
+/// Anthropic (and Qwen via OpenRouter) only cache a prompt when it carries an
+/// explicit breakpoint. OpenRouter strips the marker before forwarding to
+/// upstreams that do not support it, so it is safe to send on every OpenRouter
+/// request. Other direct providers get the plain string they always did.
+fn supports_cache_control(provider: &PostProcessProvider) -> bool {
+    matches!(provider.id.as_str(), "openrouter" | "anthropic")
+}
+
+/// Build the system message. The post-processing prompt is identical across
+/// requests, so on providers that support it the whole message is marked as a
+/// prompt cache breakpoint; subsequent requests then only pay for the
+/// (short) transcript that follows it.
+fn system_message(provider: &PostProcessProvider, system: String) -> ChatMessage {
+    let content = if supports_cache_control(provider) {
+        serde_json::json!([{
+            "type": "text",
+            "text": system,
+            "cache_control": { "type": "ephemeral" },
+        }])
+    } else {
+        Value::String(system)
+    };
+    ChatMessage {
+        role: "system".to_string(),
+        content,
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -350,16 +381,13 @@ pub async fn send_chat_completion_with_schema(
 
     // Add system prompt if provided
     if let Some(system) = system_prompt {
-        messages.push(ChatMessage {
-            role: "system".to_string(),
-            content: system,
-        });
+        messages.push(system_message(provider, system));
     }
 
     // Add user message
     messages.push(ChatMessage {
         role: "user".to_string(),
-        content: user_content,
+        content: Value::String(user_content),
     });
 
     // Build response_format if schema is provided
@@ -569,7 +597,7 @@ mod tests {
             model: "test-model".to_string(),
             messages: vec![ChatMessage {
                 role: "user".to_string(),
-                content: "hi".to_string(),
+                content: Value::String("hi".to_string()),
             }],
             stream: false,
             response_format: None,
@@ -730,5 +758,29 @@ mod tests {
         assert!(is_known_rejected(&key));
         // A different model on the same endpoint is tracked separately
         assert!(!is_known_rejected(&endpoint_key(&deepseek, "other-model")));
+    }
+
+    #[test]
+    fn system_message_marks_cache_breakpoint_on_supported_providers() {
+        for id in ["openrouter", "anthropic"] {
+            let msg = system_message(&provider(id, "https://example.com"), "prompt".to_string());
+            let json = serde_json::to_value(&msg).unwrap();
+            assert_eq!(json["role"], "system");
+            assert_eq!(json["content"][0]["type"], "text", "{id}");
+            assert_eq!(json["content"][0]["text"], "prompt", "{id}");
+            assert_eq!(
+                json["content"][0]["cache_control"]["type"], "ephemeral",
+                "{id}"
+            );
+        }
+    }
+
+    #[test]
+    fn system_message_stays_plain_string_elsewhere() {
+        for id in ["openai", "groq", "custom", "cerebras", "zai"] {
+            let msg = system_message(&provider(id, "https://example.com"), "prompt".to_string());
+            let json = serde_json::to_value(&msg).unwrap();
+            assert_eq!(json["content"], "prompt", "{id}");
+        }
     }
 }
