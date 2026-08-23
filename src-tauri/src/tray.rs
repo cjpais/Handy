@@ -1,18 +1,24 @@
 //! System tray icon and menu.
 //!
 //! The tray is driven by a single *desired state* snapshot ([`TrayDesired`])
-//! that callers update through [`change_tray_icon`], [`refresh_tray_icon`] and
+//! that callers update through [`set_tray_state`], [`refresh_tray_icon`] and
 //! [`update_tray_menu`]. Every such call just records intent and schedules a
 //! single applier on the main thread, which diffs the desired snapshot against
 //! what is currently displayed and touches the native tray only for the parts
-//! that actually changed. Applies are rate limited so that bursts of state
-//! changes (tap-release push-to-talk, model load/unload around a transcription)
-//! collapse into as few native updates as possible.
+//! that actually changed. Requests that arrive while an apply is pending are
+//! coalesced into it, so bursts of state changes never queue up native work.
 //!
 //! Why: native tray updates are the lever we control for the macOS tray
 //! disappearance bug (tauri-apps/tauri#12060, Handy #1948). Before this, every
 //! recording cycle rebuilt the full menu 3-6 times from several threads, and
 //! concurrent rebuilds could interleave and leave a stale menu behind.
+//!
+//! Exception: [`set_tray_visibility`] and [`recreate_tray_icon`] call the tray
+//! directly. Visibility is a separate attribute that never participates in the
+//! icon/menu diff, both are rare and user-initiated, and Tauri marshals them
+//! onto the main thread so they serialize with the applier anyway. Re-showing
+//! a hidden tray relies on tray-icon recreating it from the last applied
+//! icon/menu/tooltip, so those must only ever be set through the applier.
 
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::model::ModelManager;
@@ -23,7 +29,7 @@ use log::{debug, error, info, trace, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIcon;
@@ -44,13 +50,6 @@ impl TrayIconState {
         self != TrayIconState::Idle
     }
 }
-
-/// Minimum spacing between two native tray updates.
-///
-/// The first change after a quiet period is applied immediately (no added
-/// latency for a normal dictation). Changes that arrive inside this window
-/// after an apply are coalesced into one trailing apply of the latest state.
-const APPLY_THROTTLE: Duration = Duration::from_millis(150);
 
 /// Everything the tray *menu* (and tooltip) depends on. When two snapshots
 /// compare equal the menu is not rebuilt.
@@ -73,45 +72,20 @@ struct TrayDesired {
     menu: MenuInputs,
 }
 
-/// What [`sync_tray`] should do after recording a new desired state.
-#[derive(Debug, PartialEq, Eq)]
-enum ApplyPlan {
-    /// An apply is already scheduled; it will pick up the latest state.
-    AlreadyScheduled,
-    /// Outside the throttle window: apply right away.
-    Now,
-    /// Inside the throttle window: apply once it has elapsed.
-    After(Duration),
-}
-
-fn plan_apply(pending: bool, last_applied_at: Option<Instant>, now: Instant) -> ApplyPlan {
-    if pending {
-        return ApplyPlan::AlreadyScheduled;
-    }
-    match last_applied_at {
-        Some(last) => {
-            let since = now.saturating_duration_since(last);
-            if since >= APPLY_THROTTLE {
-                ApplyPlan::Now
-            } else {
-                ApplyPlan::After(APPLY_THROTTLE - since)
-            }
-        }
-        None => ApplyPlan::Now,
-    }
-}
-
 struct TrayInner {
-    /// Intent set by [`change_tray_icon`].
+    /// Intent set by [`set_tray_state`].
     icon_state: TrayIconState,
     /// Latest computed snapshot, waiting to be (or just) applied.
     desired: Option<TrayDesired>,
-    /// Snapshot the native tray currently reflects.
-    applied: Option<TrayDesired>,
-    /// An apply is scheduled on the main thread (or a trailing timer is armed).
+    /// Icon the native tray currently shows. Only updated when `set_icon`
+    /// succeeds, so a failed update is retried on the next sync.
+    applied_icon: Option<&'static str>,
+    /// Inputs the native menu was last successfully built from. The tooltip
+    /// is derived from the same inputs and set best-effort alongside the menu;
+    /// it is not tracked separately.
+    applied_menu: Option<MenuInputs>,
+    /// An apply is scheduled on the main thread.
     pending: bool,
-    /// When the native tray was last mutated; drives the throttle.
-    last_applied_at: Option<Instant>,
     /// Decoded icons by resource path so the main thread never touches disk.
     icons: HashMap<&'static str, Image<'static>>,
     /// Handed out to each sync request in trigger order, so a slow request
@@ -129,9 +103,9 @@ impl TrayState {
         Self(Mutex::new(TrayInner {
             icon_state: TrayIconState::Idle,
             desired: None,
-            applied: None,
+            applied_icon: None,
+            applied_menu: None,
             pending: false,
-            last_applied_at: None,
             icons: HashMap::new(),
             next_seq: 0,
             desired_seq: 0,
@@ -241,8 +215,8 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState, warning: bool) -> &'
 }
 
 /// Sets the recording state shown by the tray (icon + Cancel/model menu).
-pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
-    sync_tray_with(app, |inner| inner.icon_state = icon);
+pub fn set_tray_state(app: &AppHandle, state: TrayIconState) {
+    sync_tray_with(app, |inner| inner.icon_state = state);
 }
 
 /// Re-syncs the tray after something other than the recording state changed
@@ -258,7 +232,8 @@ pub fn update_tray_menu(app: &AppHandle) {
 }
 
 /// Records the current desired tray state and schedules one apply on the main
-/// thread, subject to [`APPLY_THROTTLE`]. Never blocks on the main thread.
+/// thread (or lets an already-pending apply pick it up). Never blocks on the
+/// main thread.
 ///
 /// The snapshot (settings, model list, loaded state) is computed on the
 /// *calling* thread on purpose: the main-thread applier must not take manager
@@ -306,7 +281,7 @@ fn sync_tray_with(app: &AppHandle, update: impl FnOnce(&mut TrayInner)) {
         None
     };
 
-    let plan = {
+    let schedule = {
         let mut inner = state.lock();
         if let Some(image) = loaded_icon {
             inner.icons.insert(desired.icon_path, image);
@@ -322,24 +297,15 @@ fn sync_tray_with(app: &AppHandle, update: impl FnOnce(&mut TrayInner)) {
         }
         inner.desired = Some(desired);
         inner.desired_seq = seq;
-        let plan = plan_apply(inner.pending, inner.last_applied_at, Instant::now());
-        if plan != ApplyPlan::AlreadyScheduled {
-            inner.pending = true;
-        }
-        plan
+        // If an apply is already pending it will read the snapshot we just
+        // stored; otherwise schedule one.
+        !std::mem::replace(&mut inner.pending, true)
     };
 
-    match plan {
-        ApplyPlan::AlreadyScheduled => trace!("tray sync: apply already scheduled"),
-        ApplyPlan::Now => post_apply(app),
-        ApplyPlan::After(delay) => {
-            trace!("tray sync: deferring apply by {delay:?}");
-            let app = app.clone();
-            tauri::async_runtime::spawn(async move {
-                tokio::time::sleep(delay).await;
-                post_apply(&app);
-            });
-        }
+    if schedule {
+        post_apply(app);
+    } else {
+        trace!("tray sync: apply already pending");
     }
 }
 
@@ -400,51 +366,60 @@ fn apply_on_main(app: &AppHandle) {
         let Some(desired) = inner.desired.clone() else {
             return;
         };
-        let icon_changed = inner
-            .applied
-            .as_ref()
-            .is_none_or(|a| a.icon_path != desired.icon_path);
-        let menu_changed = inner
-            .applied
-            .as_ref()
-            .is_none_or(|a| a.menu != desired.menu);
+        let icon_changed = inner.applied_icon != Some(desired.icon_path);
+        let menu_changed = inner.applied_menu.as_ref() != Some(&desired.menu);
         if !icon_changed && !menu_changed {
             trace!("tray apply: nothing changed");
             return;
         }
-        // Stamp before mutating so a request arriving mid-apply is throttled
-        // relative to this apply rather than the previous one.
-        inner.last_applied_at = Some(started);
         let icon = inner.icons.get(desired.icon_path).cloned();
         (desired, icon, icon_changed, menu_changed)
     };
 
+    // Each part is recorded as applied only if its native call succeeded, so a
+    // transient failure is retried on the next sync instead of being
+    // remembered as displayed.
+    let mut icon_ok = false;
     if icon_changed {
         match icon {
-            Some(image) => {
-                if let Err(err) = tray.set_icon_with_as_template(Some(image), true) {
-                    error!("Failed to update tray icon '{}': {err}", desired.icon_path);
-                }
-            }
+            Some(image) => match tray.set_icon_with_as_template(Some(image), true) {
+                Ok(()) => icon_ok = true,
+                Err(err) => error!("Failed to update tray icon '{}': {err}", desired.icon_path),
+            },
             None => error!("Tray icon '{}' is not loaded", desired.icon_path),
         }
     }
 
+    let mut menu_ok = false;
     if menu_changed {
         match build_menu(app, &desired.menu) {
-            Ok((menu, tooltip)) => {
-                if let Err(err) = tray.set_menu(Some(menu)) {
-                    error!("Failed to set tray menu: {err}");
+            Ok((menu, tooltip)) => match tray.set_menu(Some(menu)) {
+                Ok(()) => {
+                    menu_ok = true;
+                    // Best-effort: logged, not retried. The tooltip is cosmetic
+                    // and can only fail on Windows, where a failing
+                    // Shell_NotifyIcon call means the icon is failing too.
+                    // Gating `menu_ok` on it would re-run the full menu
+                    // rebuild on every sync for the cheapest mutation.
+                    if let Err(err) = tray.set_tooltip(Some(tooltip)) {
+                        error!("Failed to set tray tooltip: {err}");
+                    }
                 }
-                if let Err(err) = tray.set_tooltip(Some(tooltip)) {
-                    error!("Failed to set tray tooltip: {err}");
-                }
-            }
+                Err(err) => error!("Failed to set tray menu: {err}"),
+            },
             Err(err) => error!("Failed to build tray menu: {err}"),
         }
     }
 
-    state.lock().applied = Some(desired.clone());
+    {
+        let mut inner = state.lock();
+        if icon_ok {
+            inner.applied_icon = Some(desired.icon_path);
+        }
+        if menu_ok {
+            inner.applied_menu = Some(desired.menu.clone());
+        }
+    }
 
     debug!(
         "tray apply: icon={} menu={} busy={} took={:?}",
@@ -626,9 +601,10 @@ pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
 /// Recovery for the macOS tray-disappearance bug (#1948, tauri-apps/tauri#12060):
 /// the `NSStatusItem` can silently vanish with no error surfaced to the app.
 /// Hiding and re-showing the tray recreates it with its current icon, menu and
-/// tooltip. Called when the user relaunches Handy while it is already running —
-/// the natural "where did my icon go?" moment — so a relaunch brings the icon
-/// back without a full quit.
+/// tooltip. Called when the user "relaunches" Handy while it is already running
+/// (`RunEvent::Reopen` for Spotlight/Finder/Dock, the single-instance callback
+/// for a second process) — the natural "where did my icon go?" moment — so a
+/// relaunch brings the icon back without a full quit.
 #[cfg(target_os = "macos")]
 pub fn recreate_tray_icon(app: &AppHandle) {
     let no_tray = app
@@ -680,12 +656,8 @@ pub fn copy_last_transcript(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        last_transcript_text, load_tray_icon, plan_apply, ApplyPlan, MenuInputs, TrayDesired,
-        TrayIconState, APPLY_THROTTLE,
-    };
+    use super::{last_transcript_text, load_tray_icon, MenuInputs, TrayDesired, TrayIconState};
     use crate::managers::history::HistoryEntry;
-    use std::time::{Duration, Instant};
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
         HistoryEntry {
@@ -756,39 +728,5 @@ mod tests {
     #[test]
     fn idle_and_busy_menus_differ() {
         assert_ne!(inputs(false), inputs(true));
-    }
-
-    #[test]
-    fn first_apply_is_immediate() {
-        assert_eq!(plan_apply(false, None, Instant::now()), ApplyPlan::Now);
-    }
-
-    #[test]
-    fn apply_outside_window_is_immediate() {
-        let now = Instant::now();
-        let last = now - APPLY_THROTTLE - Duration::from_millis(1);
-        assert_eq!(plan_apply(false, Some(last), now), ApplyPlan::Now);
-    }
-
-    #[test]
-    fn apply_inside_window_is_deferred_to_window_end() {
-        let now = Instant::now();
-        let last = now - Duration::from_millis(50);
-        match plan_apply(false, Some(last), now) {
-            ApplyPlan::After(delay) => {
-                assert_eq!(delay, APPLY_THROTTLE - Duration::from_millis(50));
-            }
-            other => panic!("expected deferred apply, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn pending_apply_is_not_rescheduled() {
-        let now = Instant::now();
-        assert_eq!(
-            plan_apply(true, Some(now), now),
-            ApplyPlan::AlreadyScheduled
-        );
-        assert_eq!(plan_apply(true, None, now), ApplyPlan::AlreadyScheduled);
     }
 }

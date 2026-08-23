@@ -286,7 +286,7 @@ mod imp {
     }
 
     fn refresh_tray(app: &AppHandle) {
-        // No-op before the tray is built; otherwise a diffed, throttled,
+        // No-op before the tray is built; otherwise a diffed, coalesced,
         // main-thread apply that never blocks this thread.
         crate::tray::refresh_tray_icon(app);
     }

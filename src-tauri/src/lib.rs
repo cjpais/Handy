@@ -821,10 +821,12 @@ pub fn run(cli_args: CliArgs) {
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
             } else {
-                // Plain relaunch (Spotlight/Finder/Dock) while already running.
-                // Besides raising the window, use it as a recovery point for
-                // the macOS tray-disappearance bug (#1948): recreate the
-                // NSStatusItem so a relaunch restores a vanished icon.
+                // A second process was launched without remote-control flags
+                // (e.g. the binary run from a shell). On macOS, relaunching the
+                // bundle from Spotlight/Finder/Dock does not start a process —
+                // it arrives as RunEvent::Reopen below — but treat this the
+                // same way: raise the window and recreate a possibly vanished
+                // tray icon (#1948).
                 #[cfg(target_os = "macos")]
                 tray::recreate_tray_icon(app);
                 show_main_window(app);
@@ -1014,6 +1016,19 @@ pub fn run(cli_args: CliArgs) {
         .run(|app, event| match &event {
             #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen { .. } => {
+                // Fired when the already-running bundle is launched again from
+                // Spotlight/Finder or the Dock icon is clicked. If the settings
+                // window is hidden, the user is likely looking for a tray icon
+                // that vanished (#1948): recreate it. When the window is
+                // already visible this is just a focus request and the tray is
+                // left alone.
+                let window_visible = app
+                    .get_webview_window("main")
+                    .and_then(|w| w.is_visible().ok())
+                    .unwrap_or(false);
+                if !window_visible {
+                    tray::recreate_tray_icon(app);
+                }
                 show_main_window(app);
             }
             // Teardown transcribe.cpp before exit
