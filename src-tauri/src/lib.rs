@@ -180,7 +180,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
-    app_handle.manage(tray::CurrentTrayIconState::new());
+    app_handle.manage(tray::TrayState::new());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -305,7 +305,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                             log::error!("Failed to switch model via tray: {}", e);
                         }
                     }
-                    tray::update_tray_menu(&app_clone, None);
+                    tray::update_tray_menu(&app_clone);
                 });
             }
             _ => {}
@@ -315,7 +315,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(tray);
 
     // Initialize tray menu with idle state
-    utils::update_tray_menu(app_handle, None);
+    tray::update_tray_menu(app_handle);
 
     // Apply show_tray_icon setting
     let settings = settings::get_settings(app_handle);
@@ -326,7 +326,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Refresh tray menu when model state changes
     let app_handle_for_listener = app_handle.clone();
     app_handle.listen("model-state-changed", move |_| {
-        tray::update_tray_menu(&app_handle_for_listener, None);
+        tray::update_tray_menu(&app_handle_for_listener);
     });
 
     // Apply the autostart preference (SMAppService login item on macOS 13+,
@@ -821,6 +821,14 @@ pub fn run(cli_args: CliArgs) {
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
             } else {
+                // A second process was launched without remote-control flags
+                // (e.g. the binary run from a shell). On macOS, relaunching the
+                // bundle from Spotlight/Finder/Dock does not start a process —
+                // it arrives as RunEvent::Reopen below — but treat this the
+                // same way: raise the window and recreate a possibly vanished
+                // tray icon (#1948).
+                #[cfg(target_os = "macos")]
+                tray::recreate_tray_icon(app);
                 show_main_window(app);
             }
         }));
@@ -1008,6 +1016,19 @@ pub fn run(cli_args: CliArgs) {
         .run(|app, event| match &event {
             #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen { .. } => {
+                // Fired when the already-running bundle is launched again from
+                // Spotlight/Finder or the Dock icon is clicked. If the settings
+                // window is hidden, the user is likely looking for a tray icon
+                // that vanished (#1948): recreate it. When the window is
+                // already visible this is just a focus request and the tray is
+                // left alone.
+                let window_visible = app
+                    .get_webview_window("main")
+                    .and_then(|w| w.is_visible().ok())
+                    .unwrap_or(false);
+                if !window_visible {
+                    tray::recreate_tray_icon(app);
+                }
                 show_main_window(app);
             }
             // Teardown transcribe.cpp before exit

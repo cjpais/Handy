@@ -89,7 +89,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     tm.cancel_stream();
 
     // Update tray icon and hide overlay
-    change_tray_icon(app, crate::tray::TrayIconState::Idle);
+    set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
     // Unload model if immediate unload is enabled
