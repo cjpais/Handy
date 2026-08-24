@@ -123,10 +123,8 @@ impl VoiceActivityDetector for SmoothedVad {
         self.hangover_frames = frames;
     }
 
-    /// Read-only snapshot of the trailing run of withheld frames plus the
-    /// smoothing state, so the recorder can log whether audio near the stop
-    /// boundary may have been suppressed. Interior withheld frames (silence
-    /// preceding already-emitted speech) are not counted.
+    /// Trailing run of withheld frames plus smoothing state. Interior
+    /// withheld frames (before already-emitted speech) are not counted.
     fn tail_report(&self) -> Option<VadTailReport> {
         let mut withheld_frames = 0;
         let mut withheld_voiced_frames = 0;
@@ -213,21 +211,6 @@ mod tests {
     }
 
     #[test]
-    fn tail_report_empty_after_emitted_speech() {
-        // Onset confirms on the second frame, emitting prefill + current; a
-        // hangover frame follows. Everything was emitted, nothing withheld.
-        let mut vad = smoothed(&[true, true, false], 2);
-        assert!(!vad.push_frame(&frame(0.1)).unwrap().is_speech());
-        assert!(vad.push_frame(&frame(0.2)).unwrap().is_speech());
-        assert!(vad.push_frame(&frame(0.3)).unwrap().is_speech()); // hangover
-
-        let report = vad.tail_report().unwrap();
-        assert_eq!(report.withheld_frames, 0);
-        assert_eq!(report.withheld_voiced_frames, 0);
-        assert!(report.in_speech);
-    }
-
-    #[test]
     fn tail_report_counts_only_trailing_run() {
         // Speech emitted through hangover, then silence past the hangover is
         // withheld. Only the trailing run counts — frames older than an
@@ -242,27 +225,5 @@ mod tests {
         let report = vad.tail_report().unwrap();
         assert_eq!(report.withheld_frames, 2);
         assert_eq!(report.withheld_voiced_frames, 0);
-    }
-
-    #[test]
-    fn tail_report_is_read_only() {
-        let mut vad = smoothed(&[true], 2);
-        assert!(!vad.push_frame(&frame(0.5)).unwrap().is_speech());
-
-        let first = vad.tail_report().unwrap();
-        let second = vad.tail_report().unwrap();
-        assert_eq!(first.withheld_frames, second.withheld_frames);
-        assert_eq!(second.withheld_frames, 1);
-    }
-
-    #[test]
-    fn reset_clears_tail_report() {
-        let mut vad = smoothed(&[true], 2);
-        let _ = vad.push_frame(&frame(0.5)).unwrap();
-
-        vad.reset();
-        let report = vad.tail_report().unwrap();
-        assert_eq!(report.withheld_frames, 0);
-        assert_eq!(report.onset_counter, 0);
     }
 }

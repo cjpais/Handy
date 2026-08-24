@@ -31,11 +31,9 @@ pub trait VoiceActivityDetector: Send + Sync {
     /// subsequent frames. Detectors without a smoothing tail can ignore this.
     fn set_hangover_frames(&mut self, _frames: usize) {}
 
-    /// End-of-recording diagnostic snapshot, taken after the final frame was
-    /// pushed. Purely observational — implementations must not change what
-    /// they emit. Lets the recorder log whether trailing audio was still
-    /// being withheld when capture stopped (e.g. a short final word that
-    /// never confirmed onset). Detectors without smoothing state return None.
+    /// End-of-recording diagnostic snapshot, taken after the final frame.
+    /// Purely observational — implementations must not change what they emit.
+    /// Detectors without smoothing state return None.
     fn tail_report(&self) -> Option<VadTailReport> {
         None
     }
@@ -44,10 +42,9 @@ pub trait VoiceActivityDetector: Send + Sync {
 }
 
 /// End-of-recording snapshot of a smoothing detector's state. Voiced frames
-/// in the withheld tail are consistent with a final word the VAD was still
-/// deciding on when capture stopped — not proof of one. The converse also
-/// does not hold: a clean report cannot rule out VAD loss, since the inner
-/// VAD may classify soft trailing speech as noise.
+/// in the withheld tail suggest — but don't prove — a final word cut off at
+/// the stop; a clean report doesn't rule VAD loss out either (soft trailing
+/// speech can be classified as noise).
 #[derive(Debug, Clone, Copy)]
 pub struct VadTailReport {
     /// Trailing frames buffered but never emitted downstream.

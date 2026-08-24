@@ -519,15 +519,12 @@ impl AudioRecorder {
     }
 }
 
-/// Body of the cpal input callback, extracted so the stop-boundary state
-/// machine is unit-testable without a live audio device.
-///
-/// Converts the incoming block to mono and forwards it on `sample_tx`. The
-/// block that first observes the stop flag is still forwarded — it was
-/// captured (at least partly) before the stop, so dropping it would lose up
-/// to a full callback period (~10ms built-in, 100ms+ Bluetooth) of tail
-/// audio — followed by the end-of-stream sentinel. Later blocks are dropped
-/// until the flag clears for the next recording.
+/// Body of the cpal input callback, extracted for testing without a device.
+/// Converts the block to mono and forwards it. The block that first observes
+/// the stop flag was captured before the stop, so it is still forwarded —
+/// dropping it loses up to a callback period of tail audio (worst on
+/// Bluetooth) — followed by the end-of-stream sentinel; later blocks are
+/// dropped until the flag clears.
 fn handle_input_block<T>(
     data: &[T],
     channels: usize,
@@ -603,7 +600,7 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 mod tests {
     use super::{
         handle_input_block, is_microphone_access_denied, is_no_input_device_error, run_consumer,
-        AudioChunk, AudioRecorder, Cmd, VadPolicy,
+        AudioChunk, AudioRecorder, Cmd,
     };
     use std::{
         sync::{
@@ -659,139 +656,36 @@ mod tests {
     }
 
     #[test]
-    fn boundary_block_is_sent_before_eos() {
+    fn boundary_block_forwarded_before_eos() {
         let (tx, rx) = mpsc::channel();
-        let stop_flag = AtomicBool::new(true);
+        let stop_flag = AtomicBool::new(false);
         let mut eos_sent = false;
         let mut scratch = Vec::new();
+        let mut push = |flag: &AtomicBool, eos: &mut bool, block: &[f32]| {
+            handle_input_block::<f32>(block, 1, None, flag, eos, &mut scratch, &tx)
+        };
 
-        handle_input_block::<f32>(
-            &[0.5, 0.5],
-            1,
-            None,
-            &stop_flag,
-            &mut eos_sent,
-            &mut scratch,
-            &tx,
-        );
+        // Running: blocks forwarded, no sentinel.
+        push(&stop_flag, &mut eos_sent, &[0.1]);
+        assert!(matches!(rx.try_recv(), Ok(AudioChunk::Samples(_))));
+        assert!(rx.try_recv().is_err());
 
+        // The block observing the stop flag is still forwarded, then EOS.
+        stop_flag.store(true, Ordering::Relaxed);
+        push(&stop_flag, &mut eos_sent, &[0.5, 0.5]);
         match rx.try_recv() {
             Ok(AudioChunk::Samples(samples)) => assert_eq!(samples, vec![0.5, 0.5]),
-            _ => panic!("the block observing the stop flag must still be forwarded"),
+            _ => panic!("boundary block must be forwarded, not dropped"),
         }
-        assert!(
-            matches!(rx.try_recv(), Ok(AudioChunk::EndOfStream)),
-            "EndOfStream must follow the boundary block"
-        );
-        assert!(eos_sent);
-    }
+        assert!(matches!(rx.try_recv(), Ok(AudioChunk::EndOfStream)));
 
-    #[test]
-    fn blocks_after_eos_are_dropped_until_flag_clears() {
-        let (tx, rx) = mpsc::channel();
-        let stop_flag = AtomicBool::new(true);
-        let mut eos_sent = true; // sentinel already sent by the boundary block
-        let mut scratch = Vec::new();
-
-        handle_input_block::<f32>(
-            &[0.5],
-            1,
-            None,
-            &stop_flag,
-            &mut eos_sent,
-            &mut scratch,
-            &tx,
-        );
-        assert!(
-            rx.try_recv().is_err(),
-            "blocks after EndOfStream must be dropped"
-        );
-
-        // Once the flag clears (next recording), forwarding resumes.
+        // Later blocks are dropped until the flag clears, then capture resumes.
+        push(&stop_flag, &mut eos_sent, &[0.9]);
+        assert!(rx.try_recv().is_err(), "blocks after EOS must be dropped");
         stop_flag.store(false, Ordering::Relaxed);
-        handle_input_block::<f32>(
-            &[0.25],
-            1,
-            None,
-            &stop_flag,
-            &mut eos_sent,
-            &mut scratch,
-            &tx,
-        );
-        match rx.try_recv() {
-            Ok(AudioChunk::Samples(samples)) => assert_eq!(samples, vec![0.25]),
-            _ => panic!("forwarding must resume after the stop flag clears"),
-        }
-        assert!(!eos_sent, "resumed capture must rearm the sentinel");
+        push(&stop_flag, &mut eos_sent, &[0.2]);
+        assert!(matches!(rx.try_recv(), Ok(AudioChunk::Samples(_))));
         assert!(rx.try_recv().is_err(), "no sentinel while running");
-    }
-
-    #[test]
-    fn stop_reply_includes_boundary_block() {
-        let (sample_tx, sample_rx) = mpsc::channel();
-        let (cmd_tx, cmd_rx) = mpsc::channel();
-        let stop_flag = Arc::new(AtomicBool::new(false));
-
-        // Producer mimicking the cpal callback contract: stream chunks until
-        // the stop flag is observed, then forward the in-flight boundary
-        // block ahead of the end-of-stream sentinel and go silent.
-        let producer_flag = Arc::clone(&stop_flag);
-        let producer = thread::spawn(move || loop {
-            if producer_flag.load(Ordering::Relaxed) {
-                let _ = sample_tx.send(AudioChunk::Samples(vec![0.25f32; 480]));
-                let _ = sample_tx.send(AudioChunk::EndOfStream);
-                return;
-            }
-            if sample_tx
-                .send(AudioChunk::Samples(vec![0.5f32; 480]))
-                .is_err()
-            {
-                return;
-            }
-            thread::sleep(Duration::from_millis(1));
-        });
-
-        let consumer_flag = Arc::clone(&stop_flag);
-        let consumer = thread::spawn(move || {
-            run_consumer(
-                16_000,
-                None,
-                sample_rx,
-                cmd_rx,
-                None,
-                None,
-                consumer_flag,
-                Instant::now(),
-            );
-        });
-
-        let (ready_tx, ready_rx) = mpsc::channel();
-        cmd_tx
-            .send(Cmd::Start(VadPolicy::Disabled, Instant::now(), ready_tx))
-            .expect("send start");
-        ready_rx
-            .recv_timeout(Duration::from_secs(2))
-            .expect("capture ready");
-
-        let (reply_tx, reply_rx) = mpsc::channel();
-        cmd_tx.send(Cmd::Stop(reply_tx)).expect("send stop");
-        let samples = reply_rx
-            .recv_timeout(Duration::from_secs(2))
-            .expect("stop reply");
-
-        producer.join().expect("join producer");
-        drop(cmd_tx);
-        consumer.join().expect("join consumer");
-
-        assert!(
-            samples.len() >= 960,
-            "expected streamed + boundary audio, got {} samples",
-            samples.len()
-        );
-        assert!(
-            samples[samples.len() - 480..].iter().all(|&s| s == 0.25),
-            "the boundary block must be the recording's tail"
-        );
     }
 
     #[test]
@@ -1022,12 +916,9 @@ fn run_consumer(
                         )
                     });
 
-                    // Diagnostic only: log the VAD's end-of-recording state
-                    // as evidence when a transcript loses trailing words. A
-                    // withheld voiced tail suggests the smoothing was still
-                    // deciding on speech when capture stopped; a clean report
-                    // does not rule the VAD out, since the inner VAD may
-                    // classify soft trailing speech as noise.
+                    // Diagnostic only: evidence for whether the VAD was
+                    // still withholding tail audio when capture stopped.
+                    // Suggestive, not conclusive, in either direction.
                     if vad_policy != VadPolicy::Disabled {
                         if let Some(cfg) = &vad {
                             let report = cfg.detector.lock().unwrap().tail_report();

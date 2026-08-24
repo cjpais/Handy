@@ -12,11 +12,8 @@ pub struct FrameResampler {
     pending: Vec<f32>,
     in_hz: usize,
     out_hz: usize,
-    /// Samples accepted by / emitted from the inner resampler. `finish()` uses
-    /// the pair to know how much real audio the resampler still holds: FftFixedIn
-    /// buffers up to one FFT of unconsumed input plus half an FFT of overlap
-    /// delay (~10-30 ms combined), which would otherwise be lost at end of
-    /// recording.
+    /// Samples in/out of the inner resampler; `finish()` uses the pair to
+    /// know how much real audio (~10-30ms) its delay line still holds.
     in_count: usize,
     out_count: usize,
 }
@@ -97,11 +94,9 @@ impl FrameResampler {
                 self.in_buf.clear();
             }
 
-            // Drain the resampler's delay line. The output stream lags the
-            // input by output_delay() samples (a startup transient occupies
-            // the front), so all real input has emerged only once
-            // in*ratio + delay samples have been emitted. Feed zero chunks
-            // until then, trimming the synthetic remainder.
+            // Output lags input by output_delay() samples, so all real audio
+            // has emerged only once in*ratio + delay samples are out. Feed
+            // zero chunks until then, trimming the synthetic remainder.
             if self.in_count > 0 {
                 let delay = self.resampler.as_ref().unwrap().output_delay();
                 let expected = self.in_count * self.out_hz / self.in_hz + delay;
@@ -290,19 +285,13 @@ mod tests {
         }
     }
 
-    #[test]
-    fn finish_flushes_resampler_delay() {
-        // 48kHz -> 16kHz. FftFixedIn holds up to one FFT of unconsumed input
-        // plus half an FFT of overlap delay, so a burst in the last ~15ms of
-        // input never emerges from push() alone — finish() must drain it.
-        let mut rs = FrameResampler::new(48000, 16000, Duration::from_millis(30));
-
-        // 4 exact chunks: silence, then a 0.5 burst in the final 200 samples.
-        // Exact chunks keep in_buf empty at finish(), so the burst can only be
-        // recovered by the delay-line flush, not by partial-chunk processing.
-        let mut input = vec![0.0f32; 4 * RESAMPLER_CHUNK_SIZE];
-        let n = input.len();
-        input[n - 200..].fill(0.5);
+    /// Push silence ending in a 200-sample 0.5 burst, then assert finish()
+    /// recovers the burst and emits floor(input*ratio) + output_delay samples,
+    /// padded to whole 480-sample frames.
+    fn assert_tail_burst_flushed(in_hz: usize, input_len: usize, expected_out: usize) {
+        let mut rs = FrameResampler::new(in_hz, 16000, Duration::from_millis(30));
+        let mut input = vec![0.0f32; input_len];
+        input[input_len - 200..].fill(0.5);
 
         let mut out = Vec::new();
         rs.push(&input, |frame| out.extend_from_slice(frame));
@@ -311,65 +300,30 @@ mod tests {
         let max_abs = out.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
         assert!(
             max_abs > 0.3,
-            "tail burst stayed stranded in the resampler delay line, max_abs={}",
-            max_abs
+            "tail burst was lost in the resampler, max_abs={max_abs}"
         );
-        // 4096 in -> floor(4096/3) = 1365 real out + 171 delay = 1536, padded
-        // up to 4 full 480-sample frames.
-        assert_eq!(out.len(), 1920);
+        assert_eq!(out.len(), expected_out);
+    }
+
+    #[test]
+    fn finish_flushes_resampler_delay() {
+        // Exact chunks keep in_buf empty, so the burst survives only via the
+        // delay-line drain. 4096 in -> 1365 real out + 171 delay -> 1920 framed.
+        assert_tail_burst_flushed(48000, 4 * RESAMPLER_CHUNK_SIZE, 1920);
     }
 
     #[test]
     fn finish_flushes_resampler_delay_44100() {
-        // 44.1kHz -> 16kHz sizes the FFT at 1323 input samples — larger than
-        // the 1024 chunk — so process() emits nothing on the first call and
-        // the flush must ride the saved-frames accumulation, including a
-        // round that legitimately produces zero output.
-        let mut rs = FrameResampler::new(44100, 16000, Duration::from_millis(30));
-
-        let mut input = vec![0.0f32; 4 * RESAMPLER_CHUNK_SIZE];
-        let n = input.len();
-        input[n - 200..].fill(0.5);
-
-        let mut out = Vec::new();
-        rs.push(&input, |frame| out.extend_from_slice(frame));
-        rs.finish(|frame| out.extend_from_slice(frame));
-
-        let max_abs = out.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
-        assert!(
-            max_abs > 0.3,
-            "tail burst stayed stranded in the resampler delay line, max_abs={}",
-            max_abs
-        );
-        // 4096 in -> floor(4096*16000/44100) = 1486 real out + 240 delay
-        // = 1726, padded up to 4 full 480-sample frames.
-        assert_eq!(out.len(), 1920);
+        // fft_size_in (1323) exceeds the 1024 chunk, so the drain must survive
+        // a zero-output round. 4096 in -> 1486 real out + 240 delay -> 1920.
+        assert_tail_burst_flushed(44100, 4 * RESAMPLER_CHUNK_SIZE, 1920);
     }
 
     #[test]
     fn finish_flushes_unaligned_tail() {
-        // Input ends mid-chunk (300 samples left in in_buf) with the burst in
-        // the unprocessed remainder, exercising the partial-chunk path and
-        // the delay drain together.
-        let mut rs = FrameResampler::new(48000, 16000, Duration::from_millis(30));
-
-        let mut input = vec![0.0f32; 4 * RESAMPLER_CHUNK_SIZE + 300];
-        let n = input.len();
-        input[n - 200..].fill(0.5);
-
-        let mut out = Vec::new();
-        rs.push(&input, |frame| out.extend_from_slice(frame));
-        rs.finish(|frame| out.extend_from_slice(frame));
-
-        let max_abs = out.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
-        assert!(
-            max_abs > 0.3,
-            "tail burst in the unprocessed remainder was lost, max_abs={}",
-            max_abs
-        );
-        // 4396 in -> floor(4396/3) = 1465 real out + 171 delay = 1636, padded
-        // up to 4 full 480-sample frames.
-        assert_eq!(out.len(), 1920);
+        // Ends mid-chunk: partial-chunk path plus delay drain together.
+        // 4396 in -> 1465 real out + 171 delay -> 1920 framed.
+        assert_tail_burst_flushed(48000, 4 * RESAMPLER_CHUNK_SIZE + 300, 1920);
     }
 
     #[test]
