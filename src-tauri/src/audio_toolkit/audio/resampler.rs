@@ -10,6 +10,15 @@ pub struct FrameResampler {
     in_buf: Vec<f32>,
     frame_samples: usize,
     pending: Vec<f32>,
+    in_hz: usize,
+    out_hz: usize,
+    /// Samples accepted by / emitted from the inner resampler. `finish()` uses
+    /// the pair to know how much real audio the resampler still holds: FftFixedIn
+    /// buffers up to one FFT of unconsumed input plus half an FFT of overlap
+    /// delay (~10-30 ms combined), which would otherwise be lost at end of
+    /// recording.
+    in_count: usize,
+    out_count: usize,
 }
 
 impl FrameResampler {
@@ -31,6 +40,10 @@ impl FrameResampler {
             in_buf: Vec::with_capacity(chunk_in),
             frame_samples,
             pending: Vec::with_capacity(frame_samples),
+            in_hz,
+            out_hz,
+            in_count: 0,
+            out_count: 0,
         }
     }
 
@@ -39,6 +52,7 @@ impl FrameResampler {
             self.emit_frames(src, &mut emit);
             return;
         }
+        self.in_count += src.len();
 
         while !src.is_empty() {
             let space = self.chunk_in - self.in_buf.len();
@@ -56,6 +70,7 @@ impl FrameResampler {
                 {
                     // let duration = start.elapsed();
                     // log::debug!("Resampler took: {:?}", duration);
+                    self.out_count += out[0].len();
                     self.emit_frames(&out[0], &mut emit);
                 }
                 self.in_buf.clear();
@@ -64,18 +79,49 @@ impl FrameResampler {
     }
 
     pub fn finish(&mut self, mut emit: impl FnMut(&[f32])) {
-        // Process any remaining input samples
-        if let Some(ref mut resampler) = self.resampler {
+        if self.resampler.is_some() {
+            // Process any remaining input samples (padded internally).
             if !self.in_buf.is_empty() {
-                // Pad with zeros to reach chunk size
-                self.in_buf.resize(self.chunk_in, 0.0);
-                if let Ok(out) = resampler.process(&[&self.in_buf[..]], None) {
+                let result = self
+                    .resampler
+                    .as_mut()
+                    .unwrap()
+                    .process_partial(Some(&[&self.in_buf[..]]), None);
+                if let Ok(out) = result {
+                    self.out_count += out[0].len();
                     self.emit_frames(&out[0], &mut emit);
                 }
                 // Drop the consumed input: a full in_buf would satisfy the
                 // next push()'s chunk check immediately, re-processing this
                 // padded tail into the following recording.
                 self.in_buf.clear();
+            }
+
+            // Drain the resampler's delay line. The output stream lags the
+            // input by output_delay() samples (a startup transient occupies
+            // the front), so all real input has emerged only once
+            // in*ratio + delay samples have been emitted. Feed zero chunks
+            // until then, trimming the synthetic remainder.
+            if self.in_count > 0 {
+                let delay = self.resampler.as_ref().unwrap().output_delay();
+                let expected = self.in_count * self.out_hz / self.in_hz + delay;
+                let mut rounds = 0;
+                while self.out_count < expected && rounds < 8 {
+                    rounds += 1;
+                    let result = self
+                        .resampler
+                        .as_mut()
+                        .unwrap()
+                        .process_partial::<&[f32]>(None, None);
+                    match result {
+                        Ok(out) => {
+                            let take = (expected - self.out_count).min(out[0].len());
+                            self.out_count += take;
+                            self.emit_frames(&out[0][..take], &mut emit);
+                        }
+                        Err(_) => break,
+                    }
+                }
             }
         }
 
@@ -94,6 +140,8 @@ impl FrameResampler {
     pub fn reset(&mut self) {
         self.in_buf.clear();
         self.pending.clear();
+        self.in_count = 0;
+        self.out_count = 0;
         if let Some(ref mut resampler) = self.resampler {
             resampler.reset();
         }
@@ -240,6 +288,88 @@ mod tests {
                 max_abs
             );
         }
+    }
+
+    #[test]
+    fn finish_flushes_resampler_delay() {
+        // 48kHz -> 16kHz. FftFixedIn holds up to one FFT of unconsumed input
+        // plus half an FFT of overlap delay, so a burst in the last ~15ms of
+        // input never emerges from push() alone — finish() must drain it.
+        let mut rs = FrameResampler::new(48000, 16000, Duration::from_millis(30));
+
+        // 4 exact chunks: silence, then a 0.5 burst in the final 200 samples.
+        // Exact chunks keep in_buf empty at finish(), so the burst can only be
+        // recovered by the delay-line flush, not by partial-chunk processing.
+        let mut input = vec![0.0f32; 4 * RESAMPLER_CHUNK_SIZE];
+        let n = input.len();
+        input[n - 200..].fill(0.5);
+
+        let mut out = Vec::new();
+        rs.push(&input, |frame| out.extend_from_slice(frame));
+        rs.finish(|frame| out.extend_from_slice(frame));
+
+        let max_abs = out.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
+        assert!(
+            max_abs > 0.3,
+            "tail burst stayed stranded in the resampler delay line, max_abs={}",
+            max_abs
+        );
+        // 4096 in -> floor(4096/3) = 1365 real out + 171 delay = 1536, padded
+        // up to 4 full 480-sample frames.
+        assert_eq!(out.len(), 1920);
+    }
+
+    #[test]
+    fn finish_flushes_resampler_delay_44100() {
+        // 44.1kHz -> 16kHz sizes the FFT at 1323 input samples — larger than
+        // the 1024 chunk — so process() emits nothing on the first call and
+        // the flush must ride the saved-frames accumulation, including a
+        // round that legitimately produces zero output.
+        let mut rs = FrameResampler::new(44100, 16000, Duration::from_millis(30));
+
+        let mut input = vec![0.0f32; 4 * RESAMPLER_CHUNK_SIZE];
+        let n = input.len();
+        input[n - 200..].fill(0.5);
+
+        let mut out = Vec::new();
+        rs.push(&input, |frame| out.extend_from_slice(frame));
+        rs.finish(|frame| out.extend_from_slice(frame));
+
+        let max_abs = out.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
+        assert!(
+            max_abs > 0.3,
+            "tail burst stayed stranded in the resampler delay line, max_abs={}",
+            max_abs
+        );
+        // 4096 in -> floor(4096*16000/44100) = 1486 real out + 240 delay
+        // = 1726, padded up to 4 full 480-sample frames.
+        assert_eq!(out.len(), 1920);
+    }
+
+    #[test]
+    fn finish_flushes_unaligned_tail() {
+        // Input ends mid-chunk (300 samples left in in_buf) with the burst in
+        // the unprocessed remainder, exercising the partial-chunk path and
+        // the delay drain together.
+        let mut rs = FrameResampler::new(48000, 16000, Duration::from_millis(30));
+
+        let mut input = vec![0.0f32; 4 * RESAMPLER_CHUNK_SIZE + 300];
+        let n = input.len();
+        input[n - 200..].fill(0.5);
+
+        let mut out = Vec::new();
+        rs.push(&input, |frame| out.extend_from_slice(frame));
+        rs.finish(|frame| out.extend_from_slice(frame));
+
+        let max_abs = out.iter().map(|s| s.abs()).fold(0.0f32, f32::max);
+        assert!(
+            max_abs > 0.3,
+            "tail burst in the unprocessed remainder was lost, max_abs={}",
+            max_abs
+        );
+        // 4396 in -> floor(4396/3) = 1465 real out + 171 delay = 1636, padded
+        // up to 4 full 480-sample frames.
+        assert_eq!(out.len(), 1920);
     }
 
     #[test]
