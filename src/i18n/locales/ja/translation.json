@@ -225,7 +225,11 @@
         "title": "マイク",
         "description": "使用するマイクデバイスを選択",
         "placeholder": "マイクを選択…",
-        "loading": "読み込み中…"
+        "loading": "読み込み中…",
+        "test": "マイクをテスト",
+        "stopTest": "テストを停止",
+        "inputLevel": "入力レベル",
+        "testFailed": "マイクのテストに失敗しました"
       },
       "channel": {
         "title": "入力チャンネル",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "マイクが見つかりません",
     "noInputDevice": "オーディオ入力デバイスが検出されませんでした。マイクまたはヘッドセットを接続してから再試行してください。",
+    "silentInputTitle": "音声が検出されませんでした",
+    "silentInput": "選択したマイクまたは入力デバイスを確認して、もう一度お試しください。",
     "recordingFailed": "録音の開始に失敗しました: {{error}}",
     "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
     "modelLoadFailedUnknown": "不明なモデル",

@@ -225,7 +225,11 @@
         "title": "麦克风",
         "description": "选择您偏好的麦克风设备",
         "placeholder": "选择麦克风...",
-        "loading": "加载中..."
+        "loading": "加载中...",
+        "test": "测试麦克风",
+        "stopTest": "停止测试",
+        "inputLevel": "输入音量",
+        "testFailed": "麦克风测试失败"
       },
       "channel": {
         "title": "输入通道",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "未找到麦克风",
     "noInputDevice": "未检测到音频输入设备。请连接麦克风或耳机后重试。",
+    "silentInputTitle": "未检测到音频",
+    "silentInput": "请检查所选的麦克风或输入设备，然后重试。",
     "recordingFailed": "录音启动失败: {{error}}",
     "modelLoadFailed": "加载模型失败: {{model}}",
     "modelLoadFailedUnknown": "未知模型",

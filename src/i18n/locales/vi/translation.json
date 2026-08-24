@@ -225,7 +225,11 @@
         "title": "Micrô",
         "description": "Chọn thiết bị micrô ưa thích của bạn",
         "placeholder": "Chọn micrô...",
-        "loading": "Đang tải..."
+        "loading": "Đang tải...",
+        "test": "Kiểm tra micrô",
+        "stopTest": "Dừng kiểm tra",
+        "inputLevel": "Mức đầu vào",
+        "testFailed": "Kiểm tra micrô không thành công"
       },
       "channel": {
         "title": "Kênh đầu vào",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "Không tìm thấy micrô",
     "noInputDevice": "Không phát hiện thiết bị đầu vào âm thanh nào. Vui lòng kết nối micrô hoặc tai nghe và thử lại.",
+    "silentInputTitle": "Không phát hiện âm thanh",
+    "silentInput": "Hãy kiểm tra micrô hoặc thiết bị đầu vào đã chọn rồi thử lại.",
     "recordingFailed": "Không thể bắt đầu ghi âm: {{error}}",
     "modelLoadFailed": "Không thể tải mô hình: {{model}}",
     "modelLoadFailedUnknown": "mô hình không xác định",

@@ -1,7 +1,9 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
-use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error, VadPolicy};
+use crate::audio_toolkit::{
+    is_effectively_silent, is_microphone_access_denied, is_no_input_device_error, VadPolicy,
+};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
@@ -30,6 +32,21 @@ const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
 struct RecordingErrorEvent {
     error_type: String,
     detail: Option<String>,
+}
+
+fn emit_silent_input_warning(app: &AppHandle) {
+    warn!(
+        "Captured input was empty or stayed below -60 dBFS peak; skipping transcription. Check the selected microphone/input device."
+    );
+    if let Err(err) = app.emit(
+        "recording-error",
+        RecordingErrorEvent {
+            error_type: "silent_input".to_string(),
+            detail: None,
+        },
+    ) {
+        warn!("Failed to emit silent-input warning: {err}");
+    }
 }
 
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
@@ -695,6 +712,7 @@ impl ShortcutAction for TranscribeAction {
                 }
 
                 if samples.is_empty() {
+                    emit_silent_input_warning(&ah);
                     debug!("Recording produced no audio samples; skipping persistence");
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
@@ -712,20 +730,29 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save. If a live stream was
-                    // running, finalize it and use its text (all audio was already
-                    // fed to the stream); otherwise batch-transcribe the samples.
+                    // Check the completed normalized PCM before starting batch
+                    // transcription. A live stream may already have received frames;
+                    // cancel it when the final buffer proves silent.
+                    let silent_input = is_effectively_silent(&samples);
                     let transcription_time = Instant::now();
-                    let transcription_result = match tm.finalize_stream() {
-                        // A finalized stream with usable text wins. An empty result
-                        // (no active stream, produced nothing, or a finalize error
-                        // after the engine was returned) falls back to a full batch
-                        // transcription of the same audio. A finalize timeout is
-                        // surfaced instead — the worker may still hold the engine,
-                        // so a batch fallback would contend with it.
-                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
-                        Ok(_) => tm.transcribe(samples),
-                        Err(err) => Err(err),
+                    let transcription_result = if silent_input {
+                        tm.cancel_stream();
+                        None
+                    } else {
+                        // Transcribe concurrently with WAV save. If a live stream was
+                        // running, finalize it and use its text (all audio was already
+                        // fed to the stream); otherwise batch-transcribe the samples.
+                        Some(match tm.finalize_stream() {
+                            // A finalized stream with usable text wins. An empty result
+                            // (no active stream, produced nothing, or a finalize error
+                            // after the engine was returned) falls back to a full batch
+                            // transcription of the same audio. A finalize timeout is
+                            // surfaced instead — the worker may still hold the engine,
+                            // so a batch fallback would contend with it.
+                            Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
+                            Ok(_) => tm.transcribe(samples),
+                            Err(err) => Err(err),
+                        })
                     };
 
                     // Await WAV save and verify
@@ -758,6 +785,30 @@ impl ShortcutAction for TranscribeAction {
                         set_tray_state(&ah, TrayIconState::Idle);
                         return;
                     }
+
+                    if silent_input {
+                        emit_silent_input_warning(&ah);
+                        // Preserve the saved-recording/history behavior of a model
+                        // returning no text, while keeping this input failure distinct
+                        // in the UI and avoiding unnecessary model work.
+                        if wav_saved {
+                            if let Err(err) =
+                                hm.save_entry(file_name, String::new(), post_process, None, None)
+                            {
+                                error!("Failed to save silent recording history entry: {err}");
+                            }
+                        }
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        return;
+                    }
+
+                    let Some(transcription_result) = transcription_result else {
+                        error!("Missing transcription result for non-silent input");
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        return;
+                    };
 
                     match transcription_result {
                         Ok(transcription) => {

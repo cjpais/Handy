@@ -225,7 +225,11 @@
         "title": "Micrófono",
         "description": "Selecciona tu dispositivo de micrófono preferido",
         "placeholder": "Seleccionar micrófono...",
-        "loading": "Cargando..."
+        "loading": "Cargando...",
+        "test": "Probar micrófono",
+        "stopTest": "Detener prueba",
+        "inputLevel": "Nivel de entrada",
+        "testFailed": "Error en la prueba del micrófono"
       },
       "channel": {
         "title": "Canal de entrada",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "No se encontró micrófono",
     "noInputDevice": "No se detectó ningún dispositivo de entrada de audio. Conecta un micrófono o auriculares e inténtalo de nuevo.",
+    "silentInputTitle": "No se detectó audio",
+    "silentInput": "Comprueba el micrófono o dispositivo de entrada seleccionado y vuelve a intentarlo.",
     "recordingFailed": "Error al iniciar la grabación: {{error}}",
     "modelLoadFailed": "Error al cargar el modelo: {{model}}",
     "modelLoadFailedUnknown": "modelo desconocido",

@@ -5,6 +5,7 @@ pub mod text;
 pub mod utils;
 pub mod vad;
 
+pub(crate) use audio::is_effectively_silent;
 pub use audio::{
     is_microphone_access_denied, is_no_input_device_error, list_input_devices, list_output_devices,
     read_wav_samples, save_wav_file, verify_wav_file, AudioRecorder, CpalDeviceInfo, VadPolicy,

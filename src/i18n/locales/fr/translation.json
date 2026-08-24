@@ -225,7 +225,11 @@
         "title": "Microphone",
         "description": "Sélectionnez votre périphérique d'entrée audio",
         "placeholder": "Sélectionner un microphone...",
-        "loading": "Chargement..."
+        "loading": "Chargement...",
+        "test": "Tester le microphone",
+        "stopTest": "Arrêter le test",
+        "inputLevel": "Niveau d’entrée",
+        "testFailed": "Échec du test du microphone"
       },
       "channel": {
         "title": "Canal d’entrée",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "Aucun microphone trouvé",
     "noInputDevice": "Aucun périphérique d'entrée audio n'a été détecté. Veuillez connecter un microphone ou un casque et réessayer.",
+    "silentInputTitle": "Aucun signal audio détecté",
+    "silentInput": "Vérifiez le microphone ou le périphérique d’entrée sélectionné, puis réessayez.",
     "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
     "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
     "modelLoadFailedUnknown": "modèle inconnu",

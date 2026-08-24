@@ -225,7 +225,11 @@
         "title": "Mikrofon",
         "description": "Wybierz preferowane urządzenie mikrofonowe",
         "placeholder": "Wybierz mikrofon...",
-        "loading": "Wczytywanie..."
+        "loading": "Wczytywanie...",
+        "test": "Testuj mikrofon",
+        "stopTest": "Zatrzymaj test",
+        "inputLevel": "Poziom wejścia",
+        "testFailed": "Test mikrofonu nie powiódł się"
       },
       "channel": {
         "title": "Kanał wejściowy",
@@ -646,6 +650,8 @@
     },
     "noInputDeviceTitle": "Nie znaleziono mikrofonu",
     "noInputDevice": "Nie wykryto żadnego urządzenia wejściowego audio. Podłącz mikrofon lub słuchawki i spróbuj ponownie.",
+    "silentInputTitle": "Nie wykryto dźwięku",
+    "silentInput": "Sprawdź wybrany mikrofon lub urządzenie wejściowe i spróbuj ponownie.",
     "recordingFailed": "Nie udało się rozpocząć nagrywania: {{error}}",
     "modelLoadFailed": "Nie udało się załadować modelu: {{model}}",
     "modelLoadFailedUnknown": "nieznany model",

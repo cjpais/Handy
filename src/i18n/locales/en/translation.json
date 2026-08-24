@@ -225,7 +225,11 @@
         "title": "Microphone",
         "description": "Select your preferred microphone device",
         "placeholder": "Select microphone...",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "test": "Test Microphone",
+        "stopTest": "Stop Test",
+        "inputLevel": "Input level",
+        "testFailed": "Microphone test failed"
       },
       "channel": {
         "title": "Input Channel",
@@ -649,6 +653,8 @@
     },
     "noInputDeviceTitle": "No Microphone Found",
     "noInputDevice": "No audio input device was detected. Please connect a microphone or headset and try again.",
+    "silentInputTitle": "No Audio Detected",
+    "silentInput": "Check the selected microphone or input device, then try again.",
     "recordingFailed": "Failed to start recording: {{error}}",
     "modelLoadFailed": "Failed to load model: {{model}}",
     "modelLoadFailedUnknown": "unknown model",
