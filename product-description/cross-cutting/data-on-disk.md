@@ -2,7 +2,7 @@
 
 ## Summary
 
-Everything Handy keeps between launches lives in one folder, the app data directory, plus two places it shares with the rest of the system: the Hugging Face cache for catalog models and the system log folder for `handy.log`. The app data directory holds the settings file, the history database, the recordings folder, the models folder, and an optional pair of custom chime files. The user meets these places through three buttons — "App Data Directory" and "Log Directory" on the About section, "Open Recordings Folder" on the History section — through the Models page's "Rescan", and through the README's instructions for installing a model by hand. Nothing is written anywhere else, and nothing is ever sent off the machine. This document says what each file is, when it is written, what removes it, and what happens when it is missing, read-only, or edited while Handy is running. How settings behave is owned by [The settings model](../foundations/the-settings-model.md); model states by [Models](../foundations/models.md); history retention by [The history page](../history/the-history-page.md).
+Everything Handy keeps between launches lives in one folder, the app data directory, plus two places it shares with the rest of the system: the Hugging Face cache for catalog models and the system log folder for `handy.log`. The app data directory holds the settings file, the history database, the recordings folder, the models folder, and an optional pair of custom chime files. The user meets these places through three buttons — "App Data Directory" and "Log Directory" on the About section, "Open Recordings Folder" on the History section — through the Models page's "Rescan", and through the README's instructions for installing a model by hand. Apart from the browser engine's own small cache (the theme, see Tray and overlay below), nothing is written anywhere else, and nothing is ever sent off the machine. This document says what each file is, when it is written, what removes it, and what happens when it is missing, read-only, or edited while Handy is running. How settings behave is owned by [The settings model](../foundations/the-settings-model.md); model states by [Models](../foundations/models.md); history retention by [The history page](../history/the-history-page.md).
 
 ## The simple case
 
@@ -14,7 +14,7 @@ The user installs Handy, finishes onboarding, and dictates a few times. Afterwar
 
 The directory is created on first launch. Handy creates `models` and `recordings` inside it at startup and opens `history.db`; it does not check the directory again until a file is needed.
 
-### settings_store.json
+### The settings file
 
 One JSON file holding a single `settings` object with every setting Handy has. It is the only place settings live; there are no hidden preference files.
 
@@ -24,11 +24,11 @@ One JSON file holding a single `settings` object with every setting Handy has. I
 - **Secrets:** post-processing API keys are stored in this file in plain text alongside everything else.
 - **Hand edits while running:** Handy reads settings from memory and only re-reads the file at launch, so an edit made while it runs is overwritten by the next change the user makes in the window. Deleting the file while running has no visible effect until the next change, which recreates it in full.
 
-### history.db
+### The history database
 
 A SQLite database with one table of history entries: the recording's file name, timestamp, saved flag, title, transcript, and the post-processed text and prompt when post-processing ran. It is created and migrated at startup. Every dictation that captured sound adds a row, including failed transcriptions (empty text so the user can retry); [History Limit and Auto-Delete Recordings](../history/the-history-page.md) delete rows and their files together. Deleting `history.db` while Handy runs is not recovered: the next dictation recreates an empty file without the table, the history entry cannot be saved (logged, not shown), and the History section fails to load until Handy is relaunched, when the table is created again.
 
-### recordings/
+### The recordings folder
 
 One file per dictation, `handy-<unix seconds>.wav`: 16 kHz, mono, 16-bit, holding exactly the capture — after voice activity detection, so silence is already removed, and padded to 1.25 s when the speech was shorter than a second (see [Audio capture](../foundations/audio-capture.md)). The file is written at the stop, in parallel with transcription, and verified before the history entry is created. Two dictations stopped within the same second would get the same name; the second overwrites the first.
 
@@ -40,7 +40,7 @@ Files and entries are deleted together by the History section's delete button an
 
 The "Open Recordings Folder" button at the top of the History section opens this folder in Finder. If the folder was deleted while Handy runs, every later dictation fails to write its file ("Failed to save WAV file" in the log), no history entry is created, and the text is still pasted; the folder is created again at the next launch. Suspected gap: nothing tells the user their history stopped recording.
 
-### models/
+### The models folder
 
 Handy's own models folder, created at startup. What lands here:
 
@@ -54,7 +54,7 @@ Deleting a legacy or custom model from the Models page removes its file or direc
 
 > Technical note: at startup Handy also performs two one-time moves: a bundled `ggml-small.bin`, if the app bundle ships one (current builds do not), is copied here; and an old single-file GigaAM download (`giga-am-v3.int8.onnx`) is moved into the `giga-am-v3-int8` directory layout the current engine expects.
 
-### custom_start.wav and custom_stop.wav
+### The custom chime files
 
 Two optional files in the root of the app data directory. When both exist, the Sound Theme dropdown in the Debug section gains a third option, "Custom", next to "Marimba" and "Pop", and selecting it plays these files as the start and stop chimes (at the Volume setting, through the chosen Output Device). The check runs when the settings window loads, so files added while the window is open need the window reopened (or Handy relaunched) before "Custom" appears. If the theme is "Custom" and one file is later removed, that chime is silently skipped and an error goes to the log; the dropdown keeps showing "Custom" until the window is reloaded, after which it shows the stored value with no matching option.
 

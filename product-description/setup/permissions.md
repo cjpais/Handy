@@ -32,7 +32,7 @@ The step starts when the window shows it: for a new install, right after the pag
 
 ### Ends at once
 
-The step ends without any click when both permissions are already granted at the start: the spinner is replaced by "All set!", the microphone and output device lists are refreshed, and 300 ms later the window moves on — to the model step for a new install, to the main window for a returning user. This is what a reinstall or a returning user whose check failed for some other reason sees. On Linux the step ends before it is drawn: the page skips straight to the next step. On Windows only the microphone card exists, and if the registry consent is not denied (allowed or unknown) the step ends the same way.
+The step ends without any click when both permissions are already granted at the start: the spinner is replaced by "All set!", the microphone and output device lists are refreshed, and 300 ms later the window moves on — to the model step for a new install, to the main window for a returning user. This is what a reinstall sees (onboarding incomplete, permissions already granted from the previous install); a returning user whose launch check fails goes straight to the main window and never reaches this step (see [First launch](first-launch.md)). On Linux the step ends before it is drawn: the page skips straight to the next step. On Windows only the microphone card exists, and if the registry consent is not denied (allowed or unknown) the step ends the same way.
 
 ### Becomes active
 

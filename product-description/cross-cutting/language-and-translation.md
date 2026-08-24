@@ -164,7 +164,7 @@ The columns describe the effect of each event on the language setting and its re
 ## Edge cases
 
 - The chip shows the effective language, not the intent. A user who chose French and then switched to Canary 180M Flash (English, German, Spanish, French) still sees "French"; one who switched to Parakeet Unified EN sees no picker at all; one who switched to Canary 1B v2 (no French) sees "English" and, on switching back, "French" again.
-- On Parakeet V3 the picker lists 25 languages and accepts a choice that changes nothing in the transcript. The choice is not even used as filler evidence, so "um" survives in an English dictation unless the text detector is confident.
+- On the legacy ONNX Parakeet V3 the picker lists 25 languages and accepts a choice that changes nothing in the transcript. The choice is not even used as filler evidence, so "um" survives in an English dictation unless the text detector is confident.
 - "Auto Detect" is hidden for Canary, the catalog Cohere, Fun-ASR, Granite, and every single-language model; a stored "auto" intent silently becomes English on them.
 - Chinese-only models show a two-entry picker with nothing highlighted until one script is chosen, and the chip reads "Chinese" meanwhile.
 - Translate to English with a model set to English does nothing, even if the user speaks Spanish; set the language to Auto or to Spanish first.
@@ -177,7 +177,7 @@ The columns describe the effect of each event on the language setting and its re
 ## Open questions and verification
 
 - Suspected bug: a Chinese Simplified/Traditional conversion is saved in history as *post-processed text* of an entry that was not post-processed, so the History page shows two versions and "Copy Last Transcript" copies the converted one. Probably intentional as a way to keep both scripts, but it mislabels the text and may confuse the History page's post-processing affordances.
-- Suspected bug: the Parakeet V3 picker is fully functional but has no effect on transcription; a user choosing "German" would reasonably expect German output. Either the picker should be hidden for hint-ignoring engines or the choice should at least count as evidence.
+- Suspected bug: on the legacy ONNX Parakeet V3 the picker is fully functional but has no effect on transcription (the catalog GGUF build is believed to honor the hint, see below); a user choosing "German" would reasonably expect German output. Either the picker should be hidden for hint-ignoring engines or the choice should at least count as evidence.
 - Suspected bug: the legacy Canary path runs translation even when the source is English, unlike the GGUF path; whether the engine treats en→en as a no-op was not verified.
 - Whether the chip ever shows the "Auto" fallback label (an effective language outside the language table) was not reproduced; it would require a model advertising a code Handy does not list.
 - The exact language count on each card (99 vs 100 for Whisper variants after Chinese scripts are merged) was read from the catalog, not checked in the UI.

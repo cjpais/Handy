@@ -36,7 +36,7 @@ The forty-one documents raised about ninety suspected problems. Merged by root c
 | B-26 | The Debug page stays open after debug mode is turned off, and its Unload Model value shows "Select an option…" | low | settings | fix |
 | B-27 | Launch on Startup stays on when login-item registration is refused | low | settings | fix |
 | B-28 | The tray menu is not rebuilt when a model is downloaded or deleted from the Models page | low | tray | fix |
-| B-29 | The Parakeet V3 language picker has no effect | low | language | product call |
+| B-29 | The legacy Parakeet V3 language picker has no effect | low | language | product call |
 | B-30 | Model-list fetch failures on the Post Processing page are invisible | low | post-processing | fix |
 | B-31 | The Keyboard Diagnostic's hint starts a real dictation | low | settings | fix |
 | B-32 | The permissions banner's button only requests on its first click and never re-checks by itself | low | setup | fix |
@@ -333,9 +333,9 @@ The forty-one documents raised about ninety suspected problems. Merged by root c
 - **Decision needed:** `fix`. Rebuild on download-complete and delete.
 - **Raised by:** [The tray menu](tray/the-tray-menu.md#open-questions-and-verification), [Downloading a model](models/downloading-a-model.md#open-questions-and-verification)
 
-### B-29: The Parakeet V3 language picker has no effect
+### B-29: The legacy Parakeet V3 language picker has no effect
 
-- **Where the user meets it:** Choosing a language on the General page with Parakeet V3 active.
+- **Where the user meets it:** Choosing a language on the General page with the legacy ONNX Parakeet V3 active (the catalog GGUF Parakeet V3 is believed to honor the hint; not tested).
 - **What happens / what was expected:** The picker is shown because the model advertises 25 languages, but the engine auto-detects regardless; the choice is saved and ignored.
 - **Reproduce:** Parakeet V3 active; choose German; dictate in English — English transcript.
 - **Why (from the code):** The Parakeet path in `src-tauri/src/managers/transcription.rs` does not pass the language to the engine; only Whisper-family and some ONNX engines do.
