@@ -170,11 +170,11 @@ Status is one of `not started`, `drafted`, or `verified`.
 | glossary.md | drafted |
 | bug-triage.md | not started |
 | verification/ (5 checklists) | not started |
-| foundations/triggers-and-shortcuts.md | not started |
-| foundations/audio-capture.md | not started |
-| foundations/models.md | not started |
-| foundations/the-settings-model.md | not started |
-| foundations/windows-and-tray.md | not started |
+| foundations/triggers-and-shortcuts.md | drafted |
+| foundations/audio-capture.md | drafted |
+| foundations/models.md | drafted |
+| foundations/the-settings-model.md | drafted |
+| foundations/windows-and-tray.md | drafted |
 | dictation/starting-and-recording.md | not started |
 | dictation/transcribing.md | not started |
 | dictation/pasting.md | not started |

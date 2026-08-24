@@ -92,7 +92,7 @@ Filled in as the foundations are written. Each line is a fact another document m
 - Do not modify anything outside `product-description/`. The Handy source is read-only reference material.
 - Do not add files outside the README's structure without updating the structure and coverage table to match.
 - When a behavior cannot be determined from code and tests, write down what you could determine, put the rest in "Open questions", and move on. Do not guess and do not block.
-- Depth bar: `settings/shortcut-recorder.md` is roughly 180 lines for a small feature. The dictation documents will be longer; settings-page documents will often be shorter per control but must cover every control on the page. Completeness matters more than length. Every state, every modifier, every cancel/interrupt row must be accounted for, even if the answer is "no effect".
+- Depth bar: `settings/shortcut-recorder.md` is roughly 125 dense lines for a small feature. The dictation documents will be longer; settings-page documents will often be shorter per control but must cover every control on the page. Completeness matters more than length. Every state, every modifier, every cancel/interrupt row must be accounted for, even if the answer is "no effect".
 - If you find that the README's structure is wrong for something you discover (a document that should be split, two that should merge), make the change, update the structure and coverage table, and note why in the commit message.
 
 You are done when the coverage table has no `not started` rows, the consistency pass is complete, and everything is committed.
