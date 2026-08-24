@@ -92,7 +92,7 @@ Cleanup runs at exactly three moments: after each new entry is saved at the end 
 
 | Event | Before active (browsing the list) | While active (copy, star, re-transcribe, delete, or playback in flight) |
 | --- | --- | --- |
-| Cancel | Escape does nothing on the page; the overlay ✕, the tray's Cancel, and `handy --cancel` concern a dictation, not this page. | Same. A re-transcribe cannot be cancelled by any means; it runs to completion. |
+| Cancel | Escape does nothing on the page; the overlay ✕, the tray's Cancel, and `handy --cancel` concern a dictation, not this page. | Same. A re-transcribe cannot be cancelled from the page; only quitting Handy abandons it, leaving the entry as it was. |
 | Another trigger | A dictation runs normally; if the settings window is frontmost, the text is pasted into it (see [Pasting](../dictation/pasting.md)). The new entry appears at the top when it finishes. | Same. A dictation stopped while a re-transcribe is running waits for the model, so its "Transcribing..." lasts longer. Playback is system audio, so "Mute While Recording" silences it during the dictation. |
 | A setting changed mid-way | Switching the active model changes which model the next re-transcribe uses. Changing History Limit or Auto-Delete Recordings runs cleanup at once, but rows already on screen are not removed until the section is reopened. Changing the interface language reformats the dates. | A model switch during a re-transcribe: the retry uses whichever model holds the engine when it gets its turn. Language, custom words, and filler settings are read when the retry's cleanup runs. |
 | Microphone lost | No effect. | No effect. |

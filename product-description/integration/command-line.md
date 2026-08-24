@@ -86,7 +86,7 @@ The process becomes active — begins running as Handy — when no running copy 
 
 **A normal launch.** With no running copy, the process becomes the running Handy and the launch proceeds as in [Windows and the tray](../foundations/windows-and-tray.md#launch). The remote-control flags are not consulted on this path at all: `handy --toggle-transcription` with Handy closed simply starts Handy — window shown per the Start Hidden rule, nothing recording — and `--cancel` likewise. Nothing tells the user the flag was dropped. The startup flags are read here and only here:
 
-- `--start-hidden` hides the settings window for this launch exactly as the Start Hidden setting does, including the rule that a hidden tray icon forces the window to show. It does not change the setting.
+- `--start-hidden` hides the settings window for this launch, including the rule that a hidden tray icon forces the window to show. Unlike the Start Hidden setting it leaves the Dock icon in place, because only the saved setting switches Handy to an accessory (see [Windows and tray](../foundations/windows-and-tray.md)). It does not change the setting.
 - `--no-tray` hides the menu-bar icon for this launch. Because there is then no tray, the window is shown at launch regardless of `--start-hidden`, and closing it later keeps Handy in the Dock.
 - `--debug` raises the log file's level to Trace and turns on live log streaming for this launch. It does not add the Debug section to the sidebar — that still needs Cmd+Shift+D — and the Log Level control keeps showing the stored value.
 

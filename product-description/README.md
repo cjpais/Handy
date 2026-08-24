@@ -169,7 +169,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | --- | --- |
 | glossary.md | drafted |
 | bug-triage.md | drafted |
-| verification/ (5 checklists) | not started |
+| verification/ (5 checklists) | drafted |
 | foundations/triggers-and-shortcuts.md | drafted |
 | foundations/audio-capture.md | drafted |
 | foundations/models.md | drafted |

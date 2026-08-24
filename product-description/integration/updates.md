@@ -141,7 +141,7 @@ The **"Preview"** button under "Preview What's New" on the Debug section opens t
 - The check runs once per process. A copy of Handy left running does not learn about new releases until it is relaunched or asked.
 - The launch-time check starts before the window is visible on a hidden start, so a user who opens the window later may see "Update available" with no "Checking..." phase at all.
 - During onboarding the footer is not on screen, so no check runs; the first check happens the moment onboarding hands over to the main window.
-- A manual check requested while the launch check is still running is merged into it, and the in-flight check then shows "Up to date" as if it had been manual.
+- A manual check requested while the launch check is still running is dropped; the launch check continues as it would have.
 - The What's New title names the note's version, not the running one: after an upgrade from a pre-record build a 0.9.6 install announces "New in Handy v0.9.0".
 - Closing a What's New modal records the note's version, not the running version, so if a later build bundles a note for a version in between the two, it is shown at the next upgrade.
 - Turning Show What's New on (About section) while an unseen note exists opens the modal immediately, in the About section, without a relaunch.
