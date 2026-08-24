@@ -95,6 +95,10 @@ impl VoiceActivityDetector for SmoothedVad {
         }
     }
 
+    fn frame_samples(&self) -> usize {
+        self.inner_vad.frame_samples()
+    }
+
     fn set_hangover_frames(&mut self, frames: usize) {
         self.hangover_frames = frames;
     }
