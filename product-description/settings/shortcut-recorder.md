@@ -6,6 +6,8 @@ The shortcut recorder lets the user replace one of Handy's keyboard shortcuts by
 
 ## The simple case
 
+> Technical note: the chip spells out left/right-specific modifiers when the key reports a side ("Left Option + Space"); the examples below use the plain form for brevity.
+
 The user opens the settings window, goes to General, and clicks the chip showing "Option + Space" next to "Transcribe Shortcut". The chip turns pink-bordered and says "Press keys...". Every one of Handy's own shortcuts stops working for the duration, so the keys about to be pressed cannot start a dictation.
 
 The user holds Control and presses Space. As each key goes down the chip updates: "Ctrl", then "Ctrl + Space". When Space is released, the combination is committed: Handy registers Control+Space as the transcribe shortcut, writes it to settings, the chip returns to its normal look showing "Ctrl + Space", and the other shortcuts come back. From this moment, holding Control+Space anywhere on the Mac starts a dictation.

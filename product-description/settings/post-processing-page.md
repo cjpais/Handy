@@ -142,7 +142,7 @@ The page's own settings are modifiers of a dictation, not of the page: a dictati
 
 - A fresh install has no selected prompt and the page shows only "Select a prompt above to view and edit its details."; post-processing silently does nothing until one is chosen. Suspected bug (also raised from the dictation side in [post-processing](../dictation/post-processing.md)).
 - Model-list fetch failures are invisible, including the backend's own "API key is required for {provider}. Please add an API key to list available models." message, which exists but is never shown. Suspected bug.
-- Choosing a provider while the API Key field is focused: the code path saves the key to the previous provider on blur, whereas [The settings model](../foundations/the-settings-model.md) says the typed key is discarded. One of the two is wrong; needs a hand check.
+- Choosing a provider while the API Key field is focused saves the typed key to the previous provider on blur (the same rule as in [The settings model](../foundations/the-settings-model.md)); whether the blur always lands before the provider change was read from the code, not tried.
 - Whether a focused field blurs and saves when the settings window is hidden or loses focus.
 - Whether handy_keys lets the shortcut's key presses through to a focused text field.
 - The Apple Intelligence alert not reappearing on a return visit. Suspected bug, minor.
