@@ -30,6 +30,29 @@
       cargoToml = fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
       version = cargoToml.package.version;
 
+      # nixpkgs can lag behind Bun releases. Pin the exact Bun runtime used by
+      # package.json and CI so Nix builds and dev shells cannot silently drift.
+      bun_1_4_0 =
+        pkgs:
+        let
+          sources = {
+            "aarch64-linux" = pkgs.fetchurl {
+              url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-aarch64.zip";
+              hash = "sha256-SxozLuhhmD65O8/m93D/+U4+MbLDiL2uo8jtNeWO7Q4=";
+            };
+            "x86_64-linux" = pkgs.fetchurl {
+              url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64-baseline.zip";
+              hash = "sha256-GE+0WV8NQBohfPfHjBvEMLqDMU2reouUgFurv3+nCX8=";
+            };
+          };
+          system = pkgs.stdenv.hostPlatform.system;
+        in
+        pkgs.bun.overrideAttrs (previousAttrs: {
+          version = "1.4.0";
+          src = sources.${system} or (throw "Unsupported Bun 1.4 system: ${system}");
+          passthru = previousAttrs.passthru // { inherit sources; };
+        });
+
       # Shared native library dependencies for both package build and dev shell.
       # Keep in sync: if a native dep is needed for compilation, add it here.
       commonNativeDeps = pkgs: with pkgs; [
@@ -77,6 +100,7 @@
             ];
           };
           lib = pkgs.lib;
+          bun = bun_1_4_0 pkgs;
           combinedAlsaPlugins = pkgs.symlinkJoin {
             name = "combined-alsa-plugins";
             paths = [
@@ -165,6 +189,10 @@
               OPENSSL_NO_VENDOR = "1";
             };
 
+            preBuild = ''
+              test "$(bun --version)" = "1.4.0"
+            '';
+
             preFixup = ''
               gappsWrapperArgs+=(
                 --set WEBKIT_DISABLE_DMABUF_RENDERER 1
@@ -208,6 +236,7 @@
           pkgs = import nixpkgs {
             inherit system;
           };
+          bun = bun_1_4_0 pkgs;
         in
         {
           default = pkgs.mkShell {
@@ -218,7 +247,6 @@
               rust-analyzer
               clippy
               # Frontend
-              nodejs
               bun
               # Build tools
               cargo-tauri
@@ -239,6 +267,7 @@
 
             shellHook = ''
               echo "Handy development environment"
+              test "$(bun --version)" = "1.4.0"
               bun install
               echo "Run 'bun run tauri dev' to start"
             '';

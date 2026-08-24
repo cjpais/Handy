@@ -7,7 +7,7 @@ This file provides guidance to AI coding assistants working with code in this re
 **Prerequisites:**
 
 - [Rust](https://rustup.rs/) (latest stable)
-- [Bun](https://bun.sh/) package manager
+- [Bun 1.4.0](https://bun.sh/) package manager and frontend tool runtime
 
 **Core Development:**
 
@@ -27,6 +27,7 @@ bun run tauri build
 bun run dev        # Start Vite dev server
 bun run build      # Build frontend (TypeScript + Vite)
 bun run preview    # Preview built frontend
+bun run test:playwright  # Playwright coordinator and workers on Bun 1.4.0
 ```
 
 **Linting and Formatting (run before committing):**

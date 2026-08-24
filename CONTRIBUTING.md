@@ -24,7 +24,7 @@ Handy aims to be the most forkable speech-to-text app. The goal is to create bot
 Before you begin, ensure you have the following installed:
 
 - [Rust](https://rustup.rs/) (latest stable)
-- [Bun](https://bun.sh/) package manager
+- [Bun 1.4.0](https://bun.sh/) package manager
 - Platform-specific build tools (see [BUILD.md](BUILD.md))
 
 ### Setting Up Your Development Environment

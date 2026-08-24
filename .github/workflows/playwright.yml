@@ -21,13 +21,13 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.0
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: bunx playwright install chromium
+        run: bun run --bun playwright install chromium
 
       - name: Run Playwright tests
         run: bun run test:playwright

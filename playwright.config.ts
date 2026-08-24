@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+if (process.versions.bun !== "1.4.0") {
+  throw new Error(
+    `Handy Playwright requires Bun 1.4.0; got ${process.versions.bun ?? "Node"}.`,
+  );
+}
+
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
@@ -18,7 +24,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bunx vite dev",
+    command: "bun run dev",
     url: "http://localhost:1420",
     reuseExistingServer: !process.env.CI,
     timeout: 30000,

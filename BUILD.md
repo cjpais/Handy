@@ -7,7 +7,7 @@ This guide covers how to set up the development environment and build Handy from
 ### All Platforms
 
 - [Rust](https://rustup.rs/) (latest stable)
-- [Bun](https://bun.sh/) package manager
+- [Bun 1.4.0](https://bun.sh/) package manager
 - [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
 
 ### Platform-Specific Requirements
