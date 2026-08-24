@@ -167,7 +167,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 
 | Document | Status |
 | --- | --- |
-| glossary.md | not started |
+| glossary.md | drafted |
 | bug-triage.md | not started |
 | verification/ (5 checklists) | not started |
 | foundations/triggers-and-shortcuts.md | not started |
@@ -189,7 +189,7 @@ Status is one of `not started`, `drafted`, or `verified`.
 | models/switching-models.md | not started |
 | models/the-models-page.md | not started |
 | settings/the-settings-window.md | not started |
-| settings/shortcut-recorder.md | not started |
+| settings/shortcut-recorder.md | drafted |
 | settings/general.md | not started |
 | settings/advanced.md | not started |
 | settings/post-processing-page.md | not started |
