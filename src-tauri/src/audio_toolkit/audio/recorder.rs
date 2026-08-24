@@ -43,6 +43,8 @@ const PAUSE_ACK_TIMEOUT: Duration = Duration::from_secs(2);
 #[derive(Default)]
 struct CaptureTransportState {
     pause_requested: AtomicBool,
+    /// Per-request latch reset immediately before requesting a pause. It is
+    /// not a persistent indicator of whether the producer is currently paused.
     pause_acknowledged: AtomicBool,
     overrun_samples: AtomicU64,
 }
@@ -433,9 +435,9 @@ impl AudioRecorder {
         let ring_capacity = config.sample_rate().0 as usize * AUDIO_RING_SECONDS;
         let (mut sample_producer, mut sample_consumer) = RingBuffer::new(ring_capacity);
 
-        // rtrb allocates uninitialized storage. Fill and drain it before CoreAudio
-        // can invoke the callback so the callback never takes first-touch page
-        // faults on ring memory.
+        // rtrb allocates uninitialized storage. Eagerly initialize and drain it
+        // before starting the stream to reduce first-touch page faults in the
+        // audio callback. This does not pin the pages in memory.
         {
             let chunk = sample_producer
                 .write_chunk(ring_capacity)
@@ -948,13 +950,19 @@ fn run_consumer(
                                 "Active recording completed after dropping {total_dropped_samples} microphone samples"
                             );
                         }
-                        let _ = reply_tx.send(std::mem::take(&mut processed_samples));
+                        let samples = std::mem::take(&mut processed_samples);
+                        if !pause_timed_out {
+                            // Re-enable the producer before stop() can return so
+                            // an immediate next recording cannot lose its first
+                            // callback to the previous session's pause request.
+                            transport.pause_acknowledged.store(false, Ordering::Relaxed);
+                            transport.pause_requested.store(false, Ordering::Release);
+                        }
+                        let _ = reply_tx.send(samples);
 
                         if pause_timed_out {
                             return;
                         }
-                        transport.pause_acknowledged.store(false, Ordering::Relaxed);
-                        transport.pause_requested.store(false, Ordering::Release);
                     }
                     Cmd::Shutdown => {
                         transport.pause_requested.store(true, Ordering::Release);

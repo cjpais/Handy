@@ -178,7 +178,7 @@ fn ring_wraparound_preserves_both_read_slices_in_order() {
 }
 
 #[test]
-fn stop_drains_samples_before_replying_and_streaming_sees_the_same_order() {
+fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     let (mut producer, consumer) = RingBuffer::<f32>::new(16_000);
     let transport = Arc::new(CaptureTransportState::default());
     let (cmd_tx, cmd_rx) = mpsc::channel();
@@ -201,34 +201,91 @@ fn stop_drains_samples_before_replying_and_streaming_sees_the_same_order() {
         );
     });
 
+    let wait_for_pause_request = || {
+        let deadline = Instant::now() + Duration::from_secs(1);
+        while !transport.pause_requested.load(Ordering::Acquire) {
+            assert!(Instant::now() < deadline, "pause was not requested");
+            thread::sleep(Duration::from_millis(1));
+        }
+    };
+
+    let first_input = [0.25f32, -0.5, 1.0];
     let (ready_tx, ready_rx) = mpsc::channel();
     cmd_tx
         .send(Cmd::Start(VadPolicy::Disabled, Instant::now(), ready_tx))
-        .expect("start");
-    AudioRecorder::write_input_to_ring(&[0.25f32, -0.5, 1.0], 1, None, &mut producer, &transport);
+        .expect("first start");
+    AudioRecorder::write_input_to_ring(&first_input, 1, None, &mut producer, &transport);
     ready_rx
         .recv_timeout(Duration::from_secs(1))
-        .expect("capture ready");
+        .expect("first capture ready");
 
     let (reply_tx, reply_rx) = mpsc::channel();
-    cmd_tx.send(Cmd::Stop(reply_tx)).expect("stop");
-    let deadline = Instant::now() + Duration::from_secs(1);
-    while !transport.pause_requested.load(Ordering::Acquire) {
-        assert!(Instant::now() < deadline, "pause was not requested");
-        thread::sleep(Duration::from_millis(1));
-    }
+    cmd_tx.send(Cmd::Stop(reply_tx)).expect("first stop");
+    wait_for_pause_request();
     // The first callback after Stop acknowledges the boundary and must not
     // append samples behind it.
     AudioRecorder::write_input_to_ring(&[99.0f32], 1, None, &mut producer, &transport);
 
-    let samples = reply_rx
+    let first_samples = reply_rx
         .recv_timeout(Duration::from_secs(1))
-        .expect("stop reply");
-    assert_eq!(&samples[..3], &[0.25, -0.5, 1.0]);
-    assert!(!samples.contains(&99.0));
-    let streamed = streamed.lock().unwrap();
-    assert_eq!(&streamed[..3], &[0.25, -0.5, 1.0]);
-    assert!(!streamed.contains(&99.0));
+        .expect("first stop reply");
+    assert_eq!(&first_samples[..first_input.len()], &first_input);
+    assert!(first_samples[first_input.len()..]
+        .iter()
+        .all(|&sample| sample == 0.0));
+    assert!(!first_samples.contains(&99.0));
+    assert!(!transport.pause_requested.load(Ordering::Acquire));
+
+    let first_streamed_len = {
+        let streamed = streamed.lock().unwrap();
+        assert_eq!(&streamed[..first_input.len()], &first_input);
+        assert!(!streamed.contains(&99.0));
+        streamed.len()
+    };
+
+    // Start again immediately after stop() would have returned. The producer
+    // must already be re-enabled, and no first-cycle samples may leak through.
+    let second_input = [0.75f32, -0.25, 0.5];
+    let (ready_tx, ready_rx) = mpsc::channel();
+    cmd_tx
+        .send(Cmd::Start(VadPolicy::Disabled, Instant::now(), ready_tx))
+        .expect("second start");
+    AudioRecorder::write_input_to_ring(&second_input, 1, None, &mut producer, &transport);
+    ready_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("second capture ready");
+
+    let (reply_tx, reply_rx) = mpsc::channel();
+    cmd_tx.send(Cmd::Stop(reply_tx)).expect("second stop");
+    wait_for_pause_request();
+    AudioRecorder::write_input_to_ring(&[199.0f32], 1, None, &mut producer, &transport);
+
+    let second_samples = reply_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("second stop reply");
+    assert_eq!(&second_samples[..second_input.len()], &second_input);
+    assert!(second_samples[second_input.len()..]
+        .iter()
+        .all(|&sample| sample == 0.0));
+    assert!(!second_samples.contains(&199.0));
+    assert!(!first_samples
+        .iter()
+        .any(|sample| second_input.contains(sample)));
+    assert!(!second_samples
+        .iter()
+        .any(|sample| first_input.contains(sample)));
+    assert!(!transport.pause_requested.load(Ordering::Acquire));
+
+    {
+        let streamed = streamed.lock().unwrap();
+        assert_eq!(streamed.len(), first_streamed_len + second_samples.len());
+        assert_eq!(
+            &streamed[first_streamed_len..first_streamed_len + second_input.len()],
+            &second_input
+        );
+        assert!(!streamed.contains(&99.0));
+        assert!(!streamed.contains(&199.0));
+    }
 
     cmd_tx.send(Cmd::Shutdown).expect("shutdown");
     worker.join().expect("consumer worker");
