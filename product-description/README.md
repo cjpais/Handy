@@ -175,13 +175,13 @@ Status is one of `not started`, `drafted`, or `verified`.
 | foundations/models.md | drafted |
 | foundations/the-settings-model.md | drafted |
 | foundations/windows-and-tray.md | drafted |
-| dictation/starting-and-recording.md | not started |
-| dictation/transcribing.md | not started |
-| dictation/pasting.md | not started |
-| dictation/cancelling.md | not started |
-| dictation/live-transcription.md | not started |
-| dictation/post-processing.md | not started |
-| dictation/the-overlay.md | not started |
+| dictation/starting-and-recording.md | drafted |
+| dictation/transcribing.md | drafted |
+| dictation/pasting.md | drafted |
+| dictation/cancelling.md | drafted |
+| dictation/live-transcription.md | drafted |
+| dictation/post-processing.md | drafted |
+| dictation/the-overlay.md | drafted |
 | setup/first-launch.md | not started |
 | setup/permissions.md | not started |
 | setup/choosing-a-model.md | not started |
