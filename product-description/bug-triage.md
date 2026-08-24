@@ -4,7 +4,7 @@ A consolidated list of the defects and inconsistencies that the feature document
 
 ## Summary
 
-The forty-one documents raised about ninety suspected problems. Merged by root cause they come to 38 entries: 7 high, 17 medium, 14 low. The high ones share one shape — a feature that silently does nothing, or keeps going after the user has told it to stop: post-processing is inert on a fresh install until a prompt is chosen, a cancel during transcription leaves the shortcut dead until the abandoned work finishes, a request to a slow LLM has no timeout, and the shortcut recorder commits Escape and keys typed into other applications. The largest clusters are *failures that are only logged* (B-10, B-13, B-30, B-36: seven documents raised some form of "the user sees nothing when this fails"), *history housekeeping* (B-03, B-07, B-09, B-20, B-24), and *the Debug section* (B-06, B-26, B-31). Entries B-37 and B-38 gather the copy and cosmetic slips.
+The forty-one documents raised about ninety suspected problems. Merged by root cause they come to 39 entries: 7 high, 17 medium, 15 low. The high ones share one shape — a feature that silently does nothing, or keeps going after the user has told it to stop: post-processing is inert on a fresh install until a prompt is chosen, a cancel during transcription leaves the shortcut dead until the abandoned work finishes, a request to a slow LLM has no timeout, and the shortcut recorder commits Escape and keys typed into other applications. The largest clusters are *failures that are only logged* (B-10, B-13, B-30, B-36: seven documents raised some form of "the user sees nothing when this fails"), *history housekeeping* (B-03, B-07, B-09, B-20, B-24), and *the Debug section* (B-06, B-26, B-31). Entries B-37 and B-38 gather the copy and cosmetic slips.
 
 | ID | Title | Severity | Area | Decision needed |
 | --- | --- | --- | --- | --- |
@@ -46,6 +46,7 @@ The forty-one documents raised about ninety suspected problems. Merged by root c
 | B-36 | A microphone change writes the setting before rebuilding the stream | low | audio | fix |
 | B-37 | Fallback shadow shortcuts stay registered while the recorder is open | low | secure input | fix |
 | B-38 | Small copy and rendering slips | low | various | fix |
+| B-39 | `--start-hidden` hides the window but leaves the Dock icon, unlike the Start Hidden setting | low | command line | fix |
 
 ## High
 
@@ -438,5 +439,15 @@ The forty-one documents raised about ninety suspected problems. Merged by root c
 - **Severity:** `low`.
 - **Decision needed:** `fix`. Each is a one-line change.
 - **Raised by:** [About](settings/about.md#open-questions-and-verification), [The Models page](models/the-models-page.md#open-questions-and-verification), [Platform differences](cross-cutting/platform-differences.md#open-questions-and-verification), [Switching models](models/switching-models.md#open-questions-and-verification), [Debug](settings/debug.md#open-questions-and-verification), [First launch](setup/first-launch.md#open-questions-and-verification), [The Post Processing page](settings/post-processing-page.md#open-questions-and-verification), [The tray menu](tray/the-tray-menu.md#open-questions-and-verification)
+
+### B-39: `--start-hidden` hides the window but leaves the Dock icon, unlike the Start Hidden setting
+
+- **Where the user meets it:** Launching `Handy --start-hidden` from a login script or window-manager config on macOS.
+- **What happens / what was expected:** The window stays hidden and the tray icon appears, but a Dock icon also appears, as if the window were open. The Start Hidden setting, which the README presents as the flag's equivalent, starts Handy as an accessory with no Dock icon.
+- **Reproduce:** Start Hidden off. `open -a Handy --args --start-hidden`. A Dock icon shows.
+- **Why (from the code):** `src-tauri/src/lib.rs:196-204` switches to `ActivationPolicy::Accessory` only when `settings.start_hidden && settings.show_tray_icon`; the CLI flag is checked separately when deciding whether to show the window and never reaches this branch.
+- **Severity:** `low`. Cosmetic, but it is the visible difference between two things documented as the same.
+- **Decision needed:** `fix`. Include `cli_args.start_hidden` in the condition.
+- **Raised by:** [Command line](integration/command-line.md#open-questions-and-verification), [Windows and tray](foundations/windows-and-tray.md#open-questions-and-verification)
 
 Verified against Handy commit `af48dd6`.
