@@ -435,46 +435,15 @@ impl AudioRecorder {
         };
 
         let stream_cb = move |data: &[T], _: &cpal::InputCallbackInfo| {
-            if stop_flag.load(Ordering::Relaxed) {
-                if !eos_sent {
-                    let _ = sample_tx.send(AudioChunk::EndOfStream);
-                    eos_sent = true;
-                }
-                return;
-            }
-            eos_sent = false;
-
-            output_buffer.clear();
-
-            if channels == 1 {
-                output_buffer.extend(data.iter().map(|&sample| sample.to_sample::<f32>()));
-            } else {
-                let frame_count = data.len() / channels;
-                output_buffer.reserve(frame_count);
-
-                if let Some(ch) = use_channel {
-                    for frame in data.chunks_exact(channels) {
-                        let mono_sample = frame[ch].to_sample::<f32>();
-                        output_buffer.push(mono_sample);
-                    }
-                } else {
-                    for frame in data.chunks_exact(channels) {
-                        let mono_sample = frame
-                            .iter()
-                            .map(|&sample| sample.to_sample::<f32>())
-                            .sum::<f32>()
-                            / channels as f32;
-                        output_buffer.push(mono_sample);
-                    }
-                }
-            }
-
-            if sample_tx
-                .send(AudioChunk::Samples(output_buffer.clone()))
-                .is_err()
-            {
-                log::error!("Failed to send samples");
-            }
+            handle_input_block(
+                data,
+                channels,
+                use_channel,
+                &stop_flag,
+                &mut eos_sent,
+                &mut output_buffer,
+                &sample_tx,
+            );
         };
 
         device.build_input_stream(
@@ -550,6 +519,73 @@ impl AudioRecorder {
     }
 }
 
+/// Body of the cpal input callback, extracted for testing without a device.
+/// Converts the block to mono and forwards it. The block that first observes
+/// the stop flag was captured before the stop, so it is still forwarded —
+/// dropping it loses up to a callback period of tail audio (worst on
+/// Bluetooth) — followed by the end-of-stream sentinel; later blocks are
+/// dropped until the flag clears.
+fn handle_input_block<T>(
+    data: &[T],
+    channels: usize,
+    use_channel: Option<usize>,
+    stop_flag: &AtomicBool,
+    eos_sent: &mut bool,
+    output_buffer: &mut Vec<f32>,
+    sample_tx: &mpsc::Sender<AudioChunk>,
+) where
+    T: Sample,
+    f32: cpal::FromSample<T>,
+{
+    let stopping = stop_flag.load(Ordering::Relaxed);
+    if stopping && *eos_sent {
+        return;
+    }
+
+    output_buffer.clear();
+
+    if channels == 1 {
+        output_buffer.extend(data.iter().map(|&sample| sample.to_sample::<f32>()));
+    } else {
+        let frame_count = data.len() / channels;
+        output_buffer.reserve(frame_count);
+
+        if let Some(ch) = use_channel {
+            for frame in data.chunks_exact(channels) {
+                let mono_sample = frame[ch].to_sample::<f32>();
+                output_buffer.push(mono_sample);
+            }
+        } else {
+            for frame in data.chunks_exact(channels) {
+                let mono_sample = frame
+                    .iter()
+                    .map(|&sample| sample.to_sample::<f32>())
+                    .sum::<f32>()
+                    / channels as f32;
+                output_buffer.push(mono_sample);
+            }
+        }
+    }
+
+    // A failed send means the consumer thread is gone. During shutdown that is
+    // expected (the consumer exits before the stream is dropped), so only
+    // report it when capture was supposed to be live.
+    if sample_tx
+        .send(AudioChunk::Samples(output_buffer.clone()))
+        .is_err()
+        && !stopping
+    {
+        log::error!("Failed to send samples");
+    }
+
+    if stopping {
+        let _ = sample_tx.send(AudioChunk::EndOfStream);
+        *eos_sent = true;
+    } else {
+        *eos_sent = false;
+    }
+}
+
 pub fn is_microphone_access_denied(error_message: &str) -> bool {
     let normalized = error_message.to_lowercase();
     normalized.contains("access is denied")
@@ -567,7 +603,8 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        is_microphone_access_denied, is_no_input_device_error, run_consumer, AudioRecorder, Cmd,
+        handle_input_block, is_microphone_access_denied, is_no_input_device_error, run_consumer,
+        AudioChunk, AudioRecorder, Cmd,
     };
     use std::{
         sync::{
@@ -620,6 +657,39 @@ mod tests {
         drop(sample_tx);
         worker.join().expect("join consumer");
         assert!(stopped.is_ok(), "shutdown waited for an audio sample");
+    }
+
+    #[test]
+    fn boundary_block_forwarded_before_eos() {
+        let (tx, rx) = mpsc::channel();
+        let stop_flag = AtomicBool::new(false);
+        let mut eos_sent = false;
+        let mut scratch = Vec::new();
+        let mut push = |flag: &AtomicBool, eos: &mut bool, block: &[f32]| {
+            handle_input_block::<f32>(block, 1, None, flag, eos, &mut scratch, &tx)
+        };
+
+        // Running: blocks forwarded, no sentinel.
+        push(&stop_flag, &mut eos_sent, &[0.1]);
+        assert!(matches!(rx.try_recv(), Ok(AudioChunk::Samples(_))));
+        assert!(rx.try_recv().is_err());
+
+        // The block observing the stop flag is still forwarded, then EOS.
+        stop_flag.store(true, Ordering::Relaxed);
+        push(&stop_flag, &mut eos_sent, &[0.5, 0.5]);
+        match rx.try_recv() {
+            Ok(AudioChunk::Samples(samples)) => assert_eq!(samples, vec![0.5, 0.5]),
+            _ => panic!("boundary block must be forwarded, not dropped"),
+        }
+        assert!(matches!(rx.try_recv(), Ok(AudioChunk::EndOfStream)));
+
+        // Later blocks are dropped until the flag clears, then capture resumes.
+        push(&stop_flag, &mut eos_sent, &[0.9]);
+        assert!(rx.try_recv().is_err(), "blocks after EOS must be dropped");
+        stop_flag.store(false, Ordering::Relaxed);
+        push(&stop_flag, &mut eos_sent, &[0.2]);
+        assert!(matches!(rx.try_recv(), Ok(AudioChunk::Samples(_))));
+        assert!(rx.try_recv().is_err(), "no sentinel while running");
     }
 
     #[test]
@@ -849,6 +919,26 @@ fn run_consumer(
                             &mut processed_samples,
                         )
                     });
+
+                    // Diagnostic only: evidence for whether the VAD was
+                    // still withholding tail audio when capture stopped.
+                    // Suggestive, not conclusive, in either direction.
+                    if vad_policy != VadPolicy::Disabled {
+                        if let Some(cfg) = &vad {
+                            let report = cfg.detector.lock().unwrap().tail_report();
+                            if let Some(report) = report {
+                                log::debug!(
+                                    "VAD at stop: withheld tail {} frames (~{}ms, {} voiced), in_speech={}, onset_counter={}, hangover_counter={}",
+                                    report.withheld_frames,
+                                    report.withheld_frames * 30,
+                                    report.withheld_voiced_frames,
+                                    report.in_speech,
+                                    report.onset_counter,
+                                    report.hangover_counter
+                                );
+                            }
+                        }
+                    }
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
 

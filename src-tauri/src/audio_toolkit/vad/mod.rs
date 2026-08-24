@@ -31,7 +31,30 @@ pub trait VoiceActivityDetector: Send + Sync {
     /// subsequent frames. Detectors without a smoothing tail can ignore this.
     fn set_hangover_frames(&mut self, _frames: usize) {}
 
+    /// End-of-recording diagnostic snapshot, taken after the final frame.
+    /// Purely observational — implementations must not change what they emit.
+    /// Detectors without smoothing state return None.
+    fn tail_report(&self) -> Option<VadTailReport> {
+        None
+    }
+
     fn reset(&mut self) {}
+}
+
+/// End-of-recording snapshot of a smoothing detector's state. Voiced frames
+/// in the withheld tail suggest — but don't prove — a final word cut off at
+/// the stop; a clean report doesn't rule VAD loss out either (soft trailing
+/// speech can be classified as noise).
+#[derive(Debug, Clone, Copy)]
+pub struct VadTailReport {
+    /// Trailing frames buffered but never emitted downstream.
+    pub withheld_frames: usize,
+    /// How many of those withheld frames the inner VAD classified as voiced.
+    pub withheld_voiced_frames: usize,
+    pub in_speech: bool,
+    /// Voiced frames counted toward an unconfirmed speech onset.
+    pub onset_counter: usize,
+    pub hangover_counter: usize,
 }
 
 mod silero;
