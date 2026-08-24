@@ -20,13 +20,33 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Tray icon.** Handy's icon in the macOS menu bar (the notification area on Windows, the system tray on Linux). It has three states — idle, recording, transcribing — and, on macOS, an idle-with-warning variant for *Secure Input*. Clicking it opens the *tray menu* (on Windows, a left click opens the settings window and a right click opens the menu).
 
-**Tray menu.** The menu under the tray icon: version, (a Secure Input warning line when relevant), Copy Last Transcript, the *model submenu* and Unload Model when idle or a Cancel item when busy, Settings…, Check for Updates…, Quit.
+**Tray menu.** The menu under the tray icon: version, (a Secure Input warning line when relevant), Copy Last Transcript, the *model submenu* and Unload Model when idle or a Cancel item when busy, Settings…, Check for Updates…, Quit. The two layouts are the *idle menu* and the *busy menu*; the busy menu is shown from the trigger until the dictation ends.
 
 **Toast.** A transient message in the bottom corner of the settings window used for errors (microphone denied, paste failed, transcription failed, model load failed, download failed). Toasts appear only inside the settings window; if it is hidden the user does not see them.
+
+**Group.** The unit of layout on a settings page: a small uppercase caption ("GENERAL", "SOUND", "{model} Settings") above a bordered card whose rows are separated by hairlines. Each row is a setting's title, its ⓘ, and its control.
+
+**ⓘ tooltip.** The small circled-i beside every setting title. Hovering shows the setting's description in a 200-point tooltip above the row (below if there is no room); clicking pins it until the next click elsewhere; Enter or Space on it does the same from the keyboard.
+
+**Banner.** A full-width notice at the top of the settings window's content column, above the page, shown only while a condition holds: the accessibility banner (macOS, Accessibility access missing: "Handy needs accessibility permissions to type transcribed text." with "Open System Settings") and the Secure Input banner (macOS, sustained *Secure Input* affecting a shortcut, or the recorder refused; a "How to fix" link and a per-episode ✕). Banners are not *toasts*: they stay until the condition clears or they are dismissed.
+
+**Dialog.** A centered modal over a dimmed backdrop (What's New, model deletion confirmation) with a title, an ✕ labelled "Close", focus trapped inside, page scrolling locked, closed by Escape, the ✕, or a click on the backdrop when dismissible.
 
 **Start hidden.** The setting (and `--start-hidden` flag) that launches Handy without showing the settings window. Ignored when the tray icon is disabled, because the window would otherwise be unreachable.
 
 **Debug mode.** A hidden mode toggled with Cmd+Shift+D (Ctrl+Shift+D on Windows and Linux) anywhere in the settings window. It adds the Debug section, a "15 seconds" model-unload option, a quantization label on model cards, and streams log lines to the Debug section.
+
+## Setup
+
+**Onboarding.** The sequence of full-window screens a new install walks through before the settings window appears: the *permissions step* (macOS and Windows) and the *model step*. It has no back, skip, or progress indicator; each step advances itself. It is shown when the `onboarding_completed` setting is false and ends, permanently, the first time a model is successfully selected — the only event that sets the flag. Closing the window mid-onboarding hides it without resetting it; quitting restarts it at the next launch.
+
+**Permissions step.** The onboarding screen headed "Permissions Required": one card per system permission (Microphone Access, Accessibility Access on macOS; microphone only on Windows), each with a "Grant Permission" button that asks the system and then polls once a second until granted. Also reused for a *returning user* whose permission has gone missing at launch. Linux never shows it.
+
+**Model step.** The onboarding screen headed "To get started, choose a transcription model", listing "Compatible Models" (already on disk) and "Available to Download" (the catalog, with the first two recommended models featured and the rest behind "Show all N models"). Clicking a card downloads it if needed, selects it, loads it, and opens the main window.
+
+**Returning user.** A launch whose settings store has `onboarding_completed` true. On macOS and Windows the launch re-checks permissions every time and, if one is missing, forces the window visible and shows the *permissions step* with only that permission outstanding, then goes straight to the main window (the *model step* is skipped).
+
+**What's New.** The dialog titled "New in Handy v{version}" shown over the main window once after an upgrade, when Show What's New is on and a bundled release note is newer than the last version dismissed and not newer than the running app. Dismissing (the Close button, Escape, a click on the backdrop) records that note's version. A fresh install never sees it because the marker is stamped with the installed version.
 
 ## Models
 
@@ -44,13 +64,23 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Streaming model.** A model whose capability flags say it can transcribe live as audio arrives. Only streaming models use the Live overlay's *panel* and the *live transcription* path; every other model uses the *pill* and batch transcription even when the overlay style is Live. The flag is read from the catalog or the model file before loading and corrected from the real model once loaded.
 
-**Supported languages.** The list of language codes a model advertises. A model with one supported language shows "<Language> only" and no language picker; a model with more shows "N languages" and a picker. Empty means language-agnostic.
+**Supported languages.** The list of language codes a model advertises. A model with one supported language shows "<Language> only" and no language picker (except a Chinese-only model, which gets a two-entry Simplified / Traditional picker); a model with more shows "N languages" and a picker. Empty means language-agnostic.
 
 **Language intent.** The `selected_language` setting: "auto" or a language code. It is the user's stated preference, not necessarily what the model receives; see *effective language*.
 
 **Effective language.** The language actually given to the active model for a dictation: the intent if the model supports it, otherwise "auto" if the model can detect languages, otherwise English if supported, otherwise the model's first language. Computed fresh each time and never written back to settings, so switching models and back restores the original intent.
 
+**Translate to English.** The `translate_to_english` setting, shown as a toggle in the "{model} Settings" group only for models that advertise translation. When on, a translation-capable model translates the speech to English instead of transcribing it; an English source is transcribed, not translated; the target is always English.
+
 **Recommended.** A badge on the handful of catalog models curated for new users. Distinct from the catalog's sort rank.
+
+**Mirror.** Handy's own file host (`blob.handy.computer`), tried only after a catalog model's Hugging Face download has failed its four attempts or stalled on a single stream. A mirror download lands in Handy's models folder instead of the shared cache, restarts the progress bar at 0%, and is always hash-verified against the catalog ("Verifying..."), which is what makes the untrusted host safe.
+
+**Partial download.** The bytes of an unfinished download kept on disk so the next attempt resumes instead of restarting: a `.partial` file in the models folder for legacy and mirror downloads, or Hugging Face's own resume marker in the shared cache for catalog downloads. Kept after a cancel, a quit, or a network failure; deleted after a verification, size, or extraction failure so the next attempt starts clean. A partial is invisible on the Models page — the card simply shows as downloadable.
+
+**Alternate quantization.** A catalog model's file in a quantization other than its default (for example Q4_K_M where the default is Q8_0). Never offered for download; if one is found in the models folder or the Hugging Face cache it appears as its own entry named "{Model} ({quant})" with full catalog metadata but no "Recommended" badge, and deleting it removes only that file.
+
+**Rescan.** The refresh button on the Models page that re-reads the models folder and the Hugging Face cache, adds any new custom, cache, or alternate-quantization models, re-checks every model's presence on disk, and — if no model is active and onboarding is complete — selects the first downloaded model in list order without loading it.
 
 ## The dictation
 
@@ -84,7 +114,11 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Text cleanup.** The fixed edits applied to every transcript after the model: custom-word correction (fuzzy, ASCII-only terms, threshold 0.18 by default), filler-word removal (on by default; a universal list plus an English/German/French list gated on knowing the language), collapsing three or more repeated words to one, collapsing runs of spaces, trimming. Then, for Chinese, a Simplified/Traditional conversion when the effective language is zh-Hans or zh-Hant.
 
+**Output-language evidence.** What Handy knows about the language of a transcript when it cleans it, strongest first: translated to English; user-selected (the engine actually received the chosen language); model-constrained (the engine received a language the user did not choose, or the model has one language); model-detected (the model's own audio detection under Auto); text-detected (the transcript's text, constrained to the model's languages, reliable and at or above 0.9 confidence); unknown. Language-gated filler words ("um", "äh", "euh") are removed only when the evidence names their language; the universal fillers are removed regardless.
+
 **Post-processing.** Sending the cleaned transcript to an LLM provider with a prompt and pasting the reply instead. Off by default; enabled under Advanced › Experimental, after which the Post Process section and the second shortcut appear. Runs only for dictations started with the Transcribe with Post-Processing shortcut. Any failure falls back silently to the unprocessed transcript.
+
+**Provider.** One of the LLM endpoints *post-processing* can send a transcript to, chosen on the Post Process page: OpenAI, Z.AI, OpenRouter, Anthropic, Groq, Cerebras, Apple Intelligence (Apple-silicon Macs only), AWS Bedrock (Mantle), or Custom. Each provider has a fixed base URL (editable only for Custom), its own saved API key, and its own saved model name, so switching providers and back finds the previous key and model intact. A fresh install selects OpenAI with no key and no model.
 
 **Deliver.** Getting the final text into the application the user was in: the *paste method* (Cmd+V through the clipboard by default), then optional auto-submit, then optional copy-to-clipboard. A dictation whose final text is empty delivers nothing and shows nothing.
 
@@ -94,13 +128,31 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **History entry.** One row on the History page: a timestamp title, the transcript (and the post-processed text if any), a saved star, and the recording. Written at the end of every dictation that captured sound, including failed transcriptions (with empty text, so the user can retry). Kept to the last 5 unsaved entries by default; saved entries are never auto-deleted.
 
+**Saved entry.** A *history entry* the user has marked with the star ("Save transcription" / "Remove from saved"). Saved entries are exempt from every auto-delete rule — neither counted toward "Keep latest N" nor removed by a time-based period — but can still be deleted by hand with no confirmation.
+
+**Re-transcribe.** The History page action (the retry icon) that reads an entry's *recording* from disk and runs it through the *active model* again with today's language, translation, and *text cleanup* settings, re-running *post-processing* only if the entry was originally made with the post-processing shortcut. It overwrites the entry's text in place, keeps its date, position, and saved flag, shows no overlay and no tray change, and cannot be cancelled.
+
+**Retention.** The pair of Advanced › History controls that decide which unsaved entries are deleted: "History Limit" (0–1000, default 5) and "Auto-Delete Recordings" ("Never", "Keep latest N" by default, "After 3 days", "After 2 weeks", "After 3 months"). Cleanup runs only after a new entry is saved and when either control changes — never at launch or on a timer.
+
 **Recording.** The WAV file (16 kHz mono) of a dictation's captured sound, in the recordings folder, named `handy-<unix seconds>.wav`. Deleted with its history entry.
 
 ## Settings
 
+**App data directory.** The one folder Handy owns for everything it keeps between launches: `settings_store.json`, `history.db`, `recordings/`, `models/`, and the optional `custom_start.wav` / `custom_stop.wav`. Named after the bundle identifier (`~/Library/Application Support/com.pais.handy` on macOS) and shown on the About section's "App Data Directory" row. In *portable mode* it is the `Data` folder beside the executable. Distinct from the log directory and the *Hugging Face cache*, which Handy shares with the system.
+
+**Hugging Face cache.** The shared model cache at `~/.cache/huggingface/hub` (or `$HF_HOME/hub`) where catalog models are downloaded so other tools can reuse them, laid out as `models--<org>--<name>/{blobs,refs,snapshots}`. *Rescan* discovers `.gguf` files there; "Delete" on a catalog model's default file removes the whole repository folder.
+
+**Portable mode.** A Windows-only install layout chosen in the installer ("Portable Installation") and marked by a `portable` file containing `Handy Portable Mode` next to the executable; all data moves into `Data\` beside it and self-update is replaced by a "Manual update required" dialog. Out of scope for this description but named in the cross-cutting documents.
+
 **Setting.** One value in Handy's settings store. Every control in the settings window writes its setting the moment it is changed; there is no Save button and no Cancel. Most controls have a reset arrow that puts the default back.
 
 **Default.** The value a setting has in a fresh install, as defined in `src-tauri/src/settings.rs`. Some defaults depend on platform (the shortcut, the paste method, the keyboard implementation, whether the overlay shows).
+
+**Reset arrow.** The small circular-arrow button to the right of some controls (shortcut chips, the microphone and clamshell dropdowns, the language picker, the Debug sliders) that writes the setting's platform *default* through the same path as any change. Toggles and most dropdowns have none; there is no "reset everything".
+
+**Accelerator.** The compute backend a model runs on: for Whisper-family (transcribe.cpp) models "Auto", a named GPU (Metal on macOS, Vulkan elsewhere), or "CPU"; for ONNX models Auto, CPU, CUDA, DirectML, or ROCm. Chosen under Advanced › Experimental, saved immediately, and applied only at the next model load, which is forced the next time the loaded model is used.
+
+**Clamshell microphone.** A Debug-page setting, shown only on a Mac with a battery, naming the microphone to record from when the lid is closed. When set to anything other than "Default", Handy checks the lid state at every trigger and substitutes this device for the General page's microphone while the lid is closed.
 
 **Overlay style.** The setting that chooses None (no overlay; the Linux default), Minimal (the pill), or Live (the default on macOS and Windows: the panel with a streaming model, the pill otherwise).
 
@@ -109,6 +161,19 @@ The vocabulary used across these documents. When a document uses one of these wo
 **Keyboard implementation.** Which shortcut engine listens for keys: "handy_keys" (default on macOS and Windows; allows modifier-only and fn shortcuts) or "tauri" (default on Linux; needs a main key and rejects fn). Switchable under Advanced › Experimental; shortcuts the new engine cannot express are reset to defaults.
 
 **Experimental.** The Advanced toggle that reveals Post Processing, Keyboard Implementation, acceleration, and Keep Mic Open.
+
+
+## Command line and updates
+
+**Remote-control flag.** One of `--toggle-transcription`, `--toggle-post-process`, or `--cancel`. A second `handy` process started with one hands its arguments to the running Handy over a local socket and exits at once with no output; the running copy treats the toggles as a toggle-mode press of the named binding (regardless of the Push To Talk setting) and the cancel as the same cancel the overlay ✕ performs. With Handy not running, the flag is ignored and Handy simply launches.
+
+**Startup flag.** One of `--start-hidden`, `--no-tray`, or `--debug`: a runtime-only override applied to one launch of Handy and never written to settings. Ignored on a second launch while Handy is running.
+
+**Headless run.** An invocation of the `handy` binary with `--transcribe-file`, `--list-models`, or `--list-devices`. It runs as its own process even when the app is open, initializes only the model store and the transcription engine (no window, tray, overlay, microphone, shortcuts, or signal handlers), prints its result to stdout and log lines to stderr, and exits 0 (success), 1 (runtime failure), or 2 (bad input). It reads the settings store but writes nothing to history, the clipboard, or settings.
+
+**Update check.** The request Handy makes to the latest GitHub release's manifest to learn whether a newer version exists: once at every launch when "Check for Updates" (Debug section, on by default) is on, and on demand from the footer's "Check for updates" link or the tray's "Check for Updates…" item. Its outcome is shown only as the footer's status text.
+
+**Release note.** A Markdown file named by version (`src/content/release-notes/0.9.0.md`) compiled into Handy at build time and shown in the *What's New* dialog. Only versions with a file can ever be shown.
 
 ## Events that end or interrupt
 
@@ -125,6 +190,10 @@ The vocabulary used across these documents. When a document uses one of these wo
 **Checkpoint.** One of the five points in a dictation's processing at which Handy looks for a cancel before continuing: after the capture is collected; after the model returns and the recording file is written; every 25 ms during post-processing; before the history entry is saved; and immediately before the paste keystroke. Work between checkpoints cannot be interrupted.
 
 **Orphaned recording.** A recording file in the recordings folder with no history entry, left by a cancel that arrived while the file was being written or the model was running. The History page never shows it and retention never deletes it.
+
+**Sustained.** A *Secure Input* episode still held at the first 1 s poll 3 s or more after Handy noticed it — in practice 3–4 s after it engaged. Only a sustained episode triggers the fallback registrations and the warning; shorter episodes (a password field gaining focus) are ignored except for the shortcut-recorder refusal, whose check is live.
+
+**Fallback.** The second registration of a keyed shortcut through the immune Carbon-backed global-shortcut engine (the one the "tauri" keyboard implementation uses) while Secure Input is *sustained* and the keyboard implementation is handy_keys. Each keyed binding is *covered* (identical meaning), *degraded* (a side-specific modifier widened to either side), or *uncovered* (includes fn or could not be registered); modifier-only and mouse-button bindings are immune and not shadowed. The Cancel binding is shadowed only while a dictation is recording.
 
 ## Units
 

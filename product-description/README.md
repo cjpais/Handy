@@ -182,27 +182,27 @@ Status is one of `not started`, `drafted`, or `verified`.
 | dictation/live-transcription.md | drafted |
 | dictation/post-processing.md | drafted |
 | dictation/the-overlay.md | drafted |
-| setup/first-launch.md | not started |
-| setup/permissions.md | not started |
-| setup/choosing-a-model.md | not started |
-| models/downloading-a-model.md | not started |
-| models/switching-models.md | not started |
-| models/the-models-page.md | not started |
-| settings/the-settings-window.md | not started |
+| setup/first-launch.md | drafted |
+| setup/permissions.md | drafted |
+| setup/choosing-a-model.md | drafted |
+| models/downloading-a-model.md | drafted |
+| models/switching-models.md | drafted |
+| models/the-models-page.md | drafted |
+| settings/the-settings-window.md | drafted |
 | settings/shortcut-recorder.md | drafted |
-| settings/general.md | not started |
-| settings/advanced.md | not started |
-| settings/post-processing-page.md | not started |
-| settings/debug.md | not started |
-| settings/about.md | not started |
-| history/the-history-page.md | not started |
-| tray/the-tray-menu.md | not started |
-| integration/command-line.md | not started |
-| integration/updates.md | not started |
-| cross-cutting/secure-input.md | not started |
-| cross-cutting/language-and-translation.md | not started |
-| cross-cutting/data-on-disk.md | not started |
-| cross-cutting/platform-differences.md | not started |
+| settings/general.md | drafted |
+| settings/advanced.md | drafted |
+| settings/post-processing-page.md | drafted |
+| settings/debug.md | drafted |
+| settings/about.md | drafted |
+| history/the-history-page.md | drafted |
+| tray/the-tray-menu.md | drafted |
+| integration/command-line.md | drafted |
+| integration/updates.md | drafted |
+| cross-cutting/secure-input.md | drafted |
+| cross-cutting/language-and-translation.md | drafted |
+| cross-cutting/data-on-disk.md | drafted |
+| cross-cutting/platform-differences.md | drafted |
 
 ## Reference
 
