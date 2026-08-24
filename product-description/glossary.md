@@ -122,6 +122,10 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Secure Input.** A macOS state in which some process (a password field, Terminal's Secure Keyboard Entry) stops other apps from seeing key presses. While it is held for 3 s or more Handy re-registers keyed shortcuts through a fallback that still works, shows a warning in the tray and a banner in the settings window when a shortcut cannot be covered, and refuses to open the shortcut recorder.
 
+**Checkpoint.** One of the five points in a dictation's processing at which Handy looks for a cancel before continuing: after the capture is collected; after the model returns and the recording file is written; every 25 ms during post-processing; before the history entry is saved; and immediately before the paste keystroke. Work between checkpoints cannot be interrupted.
+
+**Orphaned recording.** A recording file in the recordings folder with no history entry, left by a cancel that arrived while the file was being written or the model was running. The History page never shows it and retention never deletes it.
+
 ## Units
 
 Times are wall-clock milliseconds unless stated. Audio is measured in 30 ms frames at 16 kHz. Window sizes are in logical points. Model sizes are in megabytes (MiB, shown as MB).
