@@ -92,7 +92,7 @@ For the window lifecycle (the "interaction" being show → use → close):
 ## Edge cases
 
 - Start Hidden with Show Tray Icon off is a combination Handy refuses to honor: the window shows anyway.
-- Hiding the tray icon while the window is hidden on macOS leaves Handy with no Dock icon and no menu-bar icon; relaunching from Spotlight shows the window. Suspected trap.
+- Turning Show Tray Icon off cannot strand the user: the toggle is only reachable with the window shown, and closing the window while the tray is hidden keeps the Dock icon, so the window can always be reopened from the Dock. The only way to end up with neither icon is the tray icon vanishing on its own (see [The tray menu](../tray/the-tray-menu.md)); relaunching from Spotlight recreates it.
 - The overlay appears on the monitor with the mouse pointer, which may not be the monitor with the text field being dictated into.
 - With the window minimized to the Dock, "Settings…" unminimizes it.
 - Cmd+Q only works while the settings window (not the overlay) is focused; the overlay can never be focused.
@@ -103,6 +103,5 @@ For the window lifecycle (the "interaction" being show → use → close):
 - Whether "Check for Updates…" from the tray shows the window before or after the check starts was read from the code (show, then check); not observed.
 - The exact overlay offsets (15 points above the work area, 46 below the top) and whether the bottom placement clears the Dock on the current macOS were not measured.
 - Whether the settings window remembers its size and position between launches (the code does not save them, so it should not) was not confirmed.
-- The combination Show Tray Icon off + window hidden leaving no way back except relaunch may be worth treating as a bug.
 
 Verified against Handy commit `af48dd6`.
