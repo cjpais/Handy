@@ -32,7 +32,7 @@ The vocabulary used across these documents. When a document uses one of these wo
 
 **Dialog.** A centered modal over a dimmed backdrop (What's New, model deletion confirmation) with a title, an ✕ labelled "Close", focus trapped inside, page scrolling locked, closed by Escape, the ✕, or a click on the backdrop when dismissible.
 
-**Start hidden.** The setting (and `--start-hidden` flag) that launches Handy without showing the settings window. Ignored when the tray icon is disabled, because the window would otherwise be unreachable.
+**Start hidden.** The setting (and `--start-hidden` flag) that launches Handy without showing the settings window. Ignored when the tray icon is disabled, because the window would otherwise be unreachable. The setting also keeps Handy out of the Dock on macOS; the flag alone hides the window but leaves the Dock icon.
 
 **Debug mode.** A hidden mode toggled with Cmd+Shift+D (Ctrl+Shift+D on Windows and Linux) anywhere in the settings window. It adds the Debug section, a "15 seconds" model-unload option, a quantization label on model cards, and streams log lines to the Debug section.
 

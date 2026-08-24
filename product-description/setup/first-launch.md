@@ -105,7 +105,7 @@ The What's New gate shows a dialog titled "New in Handy v{version}" when Show Wh
 - Picking a model from the tray's model submenu during onboarding (possible if a compatible file is already on disk) writes `onboarding_completed` and loads the model, but the window stays on whatever onboarding step it was showing; clicking any card under "Compatible Models" then completes normally, and a relaunch goes straight to the main window. Suspected gap.
 - "Check for Updates…" in the tray during onboarding shows the window and asks for a check, but the update checker lives in the footer, which is not mounted during onboarding, so nothing happens. Suspected gap.
 - Deleting the last downloaded model later does not bring onboarding back; the footer reads "No Model - Download Required" and the Models page is the way to get one.
-- `--debug` turns debug mode on for the run without saving it; Cmd+Shift+D saves it. Both are read by the model cards (the quantization label) during onboarding.
+- `--debug` raises the log level for the run without turning debug mode on (the Debug section and the quantization labels follow the saved setting only); Cmd+Shift+D saves debug mode and works during onboarding.
 - The What's New dialog can appear over a forced-visible permissions step only after that step completes; it is evaluated only in the main window.
 - A settings file that cannot be parsed at all resets everything, including `onboarding_completed`, so a damaged store looks like a fresh install even though models are still on disk; they then appear under "Compatible Models".
 

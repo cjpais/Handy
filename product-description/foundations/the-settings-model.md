@@ -57,7 +57,7 @@ If the settings file cannot be read as a whole (a value written by a newer or ol
 
 ## Debug mode and hidden controls
 
-Debug mode (Cmd+Shift+D in the settings window) is itself a saved setting, so it survives relaunch. The `--debug` flag turns it on for one run without saving. Experimental Features (Advanced) and Post Processing (Advanced › Experimental) are ordinary saved toggles that reveal more controls and, for Post Processing, a sidebar section and a shortcut.
+Debug mode (Cmd+Shift+D in the settings window) is itself a saved setting, so it survives relaunch. The `--debug` flag does not turn it on: it raises the log level to Trace and streams log lines for that run only, while the sidebar keeps reading the saved value, so the Debug section does not appear (see [Command line](../integration/command-line.md)). Experimental Features (Advanced) and Post Processing (Advanced › Experimental) are ordinary saved toggles that reveal more controls and, for Post Processing, a sidebar section and a shortcut.
 
 ## Modifiers
 
@@ -77,7 +77,7 @@ For a single control's change:
 | Event | Before active (control opened, no change) | While active (change in flight) |
 | --- | --- | --- |
 | Cancel | Escape closes the language picker and the models-page language filter; other dropdowns close on a click outside. | No way to cancel an in-flight save. |
-| Another trigger | A dictation can start while a dropdown is open; the dropdown stays open. | Same. Changes that need the microphone idle (input channel) are refused with an error. |
+| Another trigger | A dictation can start while a dropdown is open; the dropdown stays open. | Same. Changes that need the microphone idle (input channel) are refused: the control snaps back and the reason goes only to the log. |
 | A setting changed mid-way | Opening one dropdown closes another. | Two controls can be in flight at once; each resolves independently. |
 | Microphone lost | Device dropdowns refresh when opened. | A microphone change that fails to open the device is reported as an error and the control snaps back. |
 | Model or processing failure | None. | A model selection that fails reverts (see [Models](models.md)). |
@@ -107,7 +107,7 @@ For a single control's change:
 
 - Editing the settings file by hand while Handy runs: the next read merges defaults and may rewrite the file; the UI does not watch the file and shows stale values until it next refreshes (model state changes and some setting commands trigger a refresh).
 - Setting the history limit to 0 deletes every unsaved entry at once.
-- The API key fields are saved when the field loses focus; switching provider before blurring discards the typed key.
+- The API key field is saved when it loses focus; clicking the Provider dropdown blurs it first, so a key typed and then followed by a provider switch is saved against the provider that was selected while typing.
 - Two Handy processes cannot run, so there is no concurrent-write case.
 
 ## Open questions and verification

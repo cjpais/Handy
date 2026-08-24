@@ -77,7 +77,7 @@ In on-demand mode (the default) the microphone is closed at this point, so the m
 | --- | --- | --- |
 | Cancel | The stream is stopped and closed (on-demand), readiness is invalidated so no chime or mute fires late, nothing is kept. | The stream is stopped and closed, the capture is discarded, mute is undone. No recording file. |
 | Another trigger | Ignored by the trigger model; capture is unaffected. | A same-binding stop drains and hands on the capture. |
-| A setting changed mid-way | Changing the microphone or channel while a dictation is starting restarts the stream; the input channel change is refused while recording ("Cannot change the input channel while recording"). | Microphone change: the stream is rebuilt and the capture so far is kept only if the recorder survives the restart (not determined). Channel change: refused with an error until idle. |
+| A setting changed mid-way | Changing the microphone or channel while a dictation is starting restarts the stream; the input channel change is refused while recording (the dropdown snaps back; the reason is only logged). | Microphone change: the stream is rebuilt and the capture so far is kept only if the recorder survives the restart (not determined). Channel change: refused until idle; the dropdown snaps back with no message. |
 | Microphone lost | If the device fails during opening, the dictation ends with a toast as in Start. | The stream reports an error and stops delivering; the waveform flattens. The stop still works and hands on whatever was captured. The next trigger rebuilds the stream. |
 | Model or processing failure | No effect on capture; the model loads in parallel. | No effect on capture. |
 | The active application changes | No effect. | No effect. |

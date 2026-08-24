@@ -56,7 +56,8 @@ Filled in as the foundations are written. Each line is a fact another document m
 - A fresh install has no active model; `selected_model` is empty and onboarding must pick one. Once onboarding is complete, a missing selection is auto-filled with the first downloaded model in catalog order.
 - Unload timeout default: 5 minutes of idle (checked every 10 s). "Immediately" unloads after each dictation and skips load-on-select.
 - Selecting a model writes the setting first, then loads; a failed load reverts the setting and shows a toast.
-- Deleting the active model unloads it and clears the selection; the next dictation fails with a "model not loaded" toast until a model is chosen.
+- Deleting the active model unloads it and clears the selection; the next dictation fails with a "model not loaded" toast until a model is chosen. The launch/rescan tidy-up clears a selection only when the model is absent from the list entirely (custom or alternate-quant file removed); a catalog model whose file was removed by hand stays selected and fails at the next dictation.
+- The log file `handy.log` is capped at 500 KB and deleted and restarted at that size; no old copy is kept.
 - Streaming, translation, and language detection are per-model capabilities; the live panel, the Translate to English toggle, and the Auto language option depend on them.
 - Model load is kicked off at every trigger if the model is not loaded; a dictation whose model is still loading waits for it at the stop.
 
@@ -64,6 +65,9 @@ Filled in as the foundations are written. Each line is a fact another document m
 - Every control saves immediately; there is no Save or Cancel. Reset arrows restore the per-platform default.
 - A settings store that fails to parse is salvaged field by field; only invalid fields fall back to defaults.
 - The overlay style default is Live on macOS and Windows, None on Linux.
+- `--debug` raises the log level and streams log lines for one run; it does not turn on the saved `debug_mode`, so the Debug section does not appear. Only Cmd+Shift+D does.
+- A refused setting change (input channel while recording, a microphone that fails to open) snaps the control back with no toast; the reason is only logged.
+- The API key field saves on blur; clicking another control (including the Provider dropdown) blurs it first, so the key is saved against the provider selected while typing.
 
 ### Windows and the tray
 - Closing the settings window hides it and (macOS, tray shown) removes Handy from the Dock. Quit is the tray's Quit item or Cmd+Q in the window.
