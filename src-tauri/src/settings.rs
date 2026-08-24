@@ -301,6 +301,17 @@ pub enum OrtAcceleratorSetting {
     Rocm,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ChineseConversion {
+    #[default]
+    Auto,
+    Off,
+    TraditionalTaiwan,
+    TraditionalHongKong,
+    Simplified,
+}
+
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
 pub(crate) struct SecretMap(HashMap<String, String>);
@@ -389,6 +400,8 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    #[serde(default)]
+    pub chinese_conversion: ChineseConversion,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -895,6 +908,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: "auto".to_string(),
+        chinese_conversion: ChineseConversion::default(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
@@ -1188,6 +1202,7 @@ mod tests {
         assert!(settings.push_to_talk);
         assert!(!settings.audio_feedback);
         assert!(settings.filler_word_removal_enabled);
+        assert_eq!(settings.chinese_conversion, ChineseConversion::Auto);
         // Bindings default to empty; the load path merges the real defaults in.
         assert!(settings.bindings.is_empty());
     }
@@ -1307,6 +1322,7 @@ mod tests {
         assert_eq!(settings.log_level, LogLevel::Debug);
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
+        assert_eq!(settings.chinese_conversion, ChineseConversion::Auto);
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.

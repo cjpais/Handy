@@ -249,6 +249,17 @@
       }
     },
     "advanced": {
+      "chineseConversion": {
+        "title": "Chinese Script Conversion",
+        "description": "Convert Chinese text after speech recognition and before post-processing.",
+        "options": {
+          "auto": "Auto (language-based)",
+          "off": "Off",
+          "traditionalTaiwan": "Simplified → Traditional (Taiwan)",
+          "traditionalHongKong": "Simplified → Traditional (Hong Kong)",
+          "simplified": "Traditional → Simplified"
+        }
+      },
       "groups": {
         "app": "App",
         "output": "Ausgabe",

@@ -6,6 +6,7 @@ import type {
   AudioDevice,
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
+  ChineseConversion,
 } from "@/bindings";
 import { commands } from "@/bindings";
 
@@ -123,6 +124,8 @@ const settingUpdaters: {
     commands.changeTranslateToEnglishSetting(value as boolean),
   selected_language: (value) =>
     commands.changeSelectedLanguageSetting(value as string),
+  chinese_conversion: (value) =>
+    commands.changeChineseConversionSetting(value as ChineseConversion),
   overlay_position: (value) =>
     commands.changeOverlayPositionSetting(value as string),
   debug_mode: (value) => commands.changeDebugModeSetting(value as boolean),
