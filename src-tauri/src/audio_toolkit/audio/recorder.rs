@@ -567,9 +567,13 @@ fn handle_input_block<T>(
         }
     }
 
+    // A failed send means the consumer thread is gone. During shutdown that is
+    // expected (the consumer exits before the stream is dropped), so only
+    // report it when capture was supposed to be live.
     if sample_tx
         .send(AudioChunk::Samples(output_buffer.clone()))
         .is_err()
+        && !stopping
     {
         log::error!("Failed to send samples");
     }
