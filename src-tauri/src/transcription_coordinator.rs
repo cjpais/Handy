@@ -248,7 +248,10 @@ impl CoordinatorState {
                 Stage::Recording(id) if id == &input.binding_id => {
                     return Some(self.begin_processing(input.binding_id, input.hotkey_string));
                 }
-                _ => debug!("Ignoring press for '{}': pipeline busy", input.binding_id),
+                _ => debug!(
+                    "Ignoring press for '{}': another binding is recording",
+                    input.binding_id
+                ),
             }
         }
         None
@@ -843,6 +846,53 @@ mod tests {
             "cancelled session must not spawn a deferred recording"
         );
         assert_eq!(state.stage, Stage::Idle);
+    }
+
+    fn toggle_input(external: bool) -> InputEvent {
+        InputEvent {
+            binding_id: BINDING.to_string(),
+            hotkey_string: BINDING.to_string(),
+            is_pressed: true,
+            push_to_talk: false,
+            external,
+        }
+    }
+
+    /// External triggers fire on every edge by design (e.g. SIGUSR2 sent on
+    /// both key press and release). Two edges inside the debounce window must
+    /// both be honoured, or the parity desyncs and recording wedges on.
+    #[test]
+    fn external_edges_inside_debounce_window_are_not_dropped() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+
+        let effect = state.on_input(toggle_input(true), now);
+        assert!(matches!(effect, Some(Effect::Start { .. })));
+
+        let effect = state.on_input(toggle_input(true), now + Duration::from_millis(5));
+        assert!(
+            matches!(effect, Some(Effect::Stop { .. })),
+            "second external edge inside DEBOUNCE must stop the recording"
+        );
+        assert_eq!(state.stage, Stage::Processing);
+    }
+
+    /// Physical keyboard presses keep the debounce: a repeat inside the window
+    /// is still dropped and recording stays active.
+    #[test]
+    fn keyboard_press_inside_debounce_window_is_still_dropped() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+
+        let effect = state.on_input(toggle_input(false), now);
+        assert!(matches!(effect, Some(Effect::Start { .. })));
+
+        let effect = state.on_input(toggle_input(false), now + Duration::from_millis(5));
+        assert!(
+            effect.is_none(),
+            "keyboard repeat inside DEBOUNCE must be debounced"
+        );
+        assert_eq!(state.stage, Stage::Recording(BINDING.to_string()));
     }
 
     /// If the start effect fails to begin recording (e.g. microphone access
