@@ -377,6 +377,14 @@
         "title": "语音活动检测",
         "description": "过滤录音中的静音。支持流式的模型会使用更长的 VAD 尾段；停用 VAD 则会录制原始音频。"
       },
+      "vadBackend": {
+        "title": "语音活动检测后端",
+        "description": "选择用于过滤静音的检测器。Earshot 为实验性功能；如果语音被截断或噪音被保留，请切换回 Silero。",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "移除语气词",
         "description": "从转录中移除常见的语气词。关闭此选项即可保留这些词。"

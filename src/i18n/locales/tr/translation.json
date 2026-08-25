@@ -377,6 +377,14 @@
         "title": "Ses Etkinliği Algılama",
         "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
       },
+      "vadBackend": {
+        "title": "Ses Etkinliği Arka Ucu",
+        "description": "Sessizliği filtrelemek için kullanılan algılayıcıyı seçin. Earshot deneyseldir; konuşma kesiliyorsa veya gürültü korunuyorsa Silero'ya geri dönün.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Dolgu Sözcüklerini Kaldır",
         "description": "Transkripsiyonlardaki yaygın duraksama sözcüklerini kaldırır. Bunları korumak için kapatın."
