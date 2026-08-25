@@ -39,7 +39,7 @@ pub struct PaginatedHistory {
     pub has_more: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type, tauri_specta::Event)]
 #[serde(tag = "action")]
 pub enum HistoryUpdatePayload {
     #[serde(rename = "added")]
@@ -52,7 +52,7 @@ pub enum HistoryUpdatePayload {
     Toggled { id: i64 },
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 pub struct HistoryEntry {
     pub id: i64,
     pub file_name: String,
@@ -351,20 +351,22 @@ impl HistoryManager {
 
     fn delete_entries_and_files(&self, entries: &[(i64, String)]) -> Result<usize> {
         let conn = self.get_connection()?;
-        Self::delete_entries_and_files_with_conn(
-            &conn,
-            &self.recordings_dir,
-            entries,
-            Some(&self.app_handle),
-        )
+        Self::delete_entries_and_files_with_conn(&conn, &self.recordings_dir, entries, |payload| {
+            if let Err(e) = payload.emit(&self.app_handle) {
+                error!("Failed to emit history-updated event: {}", e);
+            }
+        })
     }
 
-    fn delete_entries_and_files_with_conn(
+    fn delete_entries_and_files_with_conn<F>(
         conn: &Connection,
         recordings_dir: &std::path::Path,
         entries: &[(i64, String)],
-        app_handle: Option<&AppHandle>,
-    ) -> Result<usize> {
+        mut on_event: F,
+    ) -> Result<usize>
+    where
+        F: FnMut(HistoryUpdatePayload),
+    {
         if entries.is_empty() {
             return Ok(0);
         }
@@ -392,11 +394,7 @@ impl HistoryManager {
                 }
 
                 // Emit history updated event
-                if let Some(app) = app_handle {
-                    if let Err(e) = (HistoryUpdatePayload::Deleted { id: *id }).emit(app) {
-                        error!("Failed to emit history-updated event: {}", e);
-                    }
-                }
+                on_event(HistoryUpdatePayload::Deleted { id: *id });
             }
         }
 
@@ -405,15 +403,22 @@ impl HistoryManager {
 
     fn cleanup_by_count(&self, limit: usize) -> Result<usize> {
         let conn = self.get_connection()?;
-        Self::cleanup_by_count_with_conn(&conn, &self.recordings_dir, limit, Some(&self.app_handle))
+        Self::cleanup_by_count_with_conn(&conn, &self.recordings_dir, limit, |payload| {
+            if let Err(e) = payload.emit(&self.app_handle) {
+                error!("Failed to emit history-updated event: {}", e);
+            }
+        })
     }
 
-    fn cleanup_by_count_with_conn(
+    fn cleanup_by_count_with_conn<F>(
         conn: &Connection,
         recordings_dir: &std::path::Path,
         limit: usize,
-        app_handle: Option<&AppHandle>,
-    ) -> Result<usize> {
+        mut on_event: F,
+    ) -> Result<usize>
+    where
+        F: FnMut(HistoryUpdatePayload),
+    {
         // Get all entries that are not saved, ordered by timestamp desc
         let mut stmt = conn.prepare(
             "SELECT id, file_name FROM transcription_history WHERE saved = 0 ORDER BY timestamp DESC",
@@ -434,7 +439,7 @@ impl HistoryManager {
                 conn,
                 recordings_dir,
                 entries_to_delete,
-                app_handle,
+                &mut on_event,
             )?;
 
             if deleted_count > 0 {
@@ -451,20 +456,22 @@ impl HistoryManager {
         retention_period: crate::settings::RecordingRetentionPeriod,
     ) -> Result<usize> {
         let conn = self.get_connection()?;
-        Self::cleanup_by_time_with_conn(
-            &conn,
-            &self.recordings_dir,
-            retention_period,
-            Some(&self.app_handle),
-        )
+        Self::cleanup_by_time_with_conn(&conn, &self.recordings_dir, retention_period, |payload| {
+            if let Err(e) = payload.emit(&self.app_handle) {
+                error!("Failed to emit history-updated event: {}", e);
+            }
+        })
     }
 
-    fn cleanup_by_time_with_conn(
+    fn cleanup_by_time_with_conn<F>(
         conn: &Connection,
         recordings_dir: &std::path::Path,
         retention_period: crate::settings::RecordingRetentionPeriod,
-        app_handle: Option<&AppHandle>,
-    ) -> Result<usize> {
+        mut on_event: F,
+    ) -> Result<usize>
+    where
+        F: FnMut(HistoryUpdatePayload),
+    {
         // Calculate cutoff timestamp (current time minus retention period)
         let now = Utc::now().timestamp();
         let cutoff_timestamp = match retention_period {
@@ -492,7 +499,7 @@ impl HistoryManager {
             conn,
             recordings_dir,
             &entries_to_delete,
-            app_handle,
+            &mut on_event,
         )?;
 
         if deleted_count > 0 {
@@ -794,11 +801,11 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_by_count_removes_oldest_db_entries_and_files() {
+    fn cleanup_by_count_removes_oldest_db_entries_and_files_and_emits_deleted_event() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
         let conn = setup_conn();
 
-        // Create 6 recordings in DB and on disk
+        // Create 6 recordings in DB and on disk (timestamps 100..600 -> IDs 1..6)
         for ts in [100, 200, 300, 400, 500, 600] {
             insert_entry(&conn, ts, &format!("recording {}", ts), None);
             let file_path = temp_dir.path().join(format!("handy-{}.wav", ts));
@@ -806,11 +813,20 @@ mod tests {
             assert!(file_path.exists());
         }
 
+        let mut emitted_events = Vec::new();
+
         // Run count cleanup with limit = 5
-        let deleted = HistoryManager::cleanup_by_count_with_conn(&conn, temp_dir.path(), 5, None)
+        let deleted =
+            HistoryManager::cleanup_by_count_with_conn(&conn, temp_dir.path(), 5, |event| {
+                emitted_events.push(event)
+            })
             .expect("cleanup by count");
 
         assert_eq!(deleted, 1);
+
+        // Verify exactly 1 Deleted event was emitted for the oldest entry (ID 1, timestamp 100)
+        assert_eq!(emitted_events.len(), 1);
+        assert_eq!(emitted_events[0], HistoryUpdatePayload::Deleted { id: 1 });
 
         // Check remaining database entries
         let count: i64 = conn
@@ -868,11 +884,17 @@ mod tests {
             fs::write(&file_path, b"audio").expect("write file");
         }
 
+        let mut emitted_events = Vec::new();
+
         // Unsaved entries count = 5 (timestamps 200..600). With limit = 5, none should be deleted.
-        let deleted = HistoryManager::cleanup_by_count_with_conn(&conn, temp_dir.path(), 5, None)
+        let deleted =
+            HistoryManager::cleanup_by_count_with_conn(&conn, temp_dir.path(), 5, |event| {
+                emitted_events.push(event)
+            })
             .expect("cleanup by count");
 
         assert_eq!(deleted, 0);
+        assert!(emitted_events.is_empty());
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM transcription_history", [], |r| {
@@ -897,15 +919,24 @@ mod tests {
             (2i64, "handy-200.wav".to_string()),
         ];
 
+        let mut emitted_events = Vec::new();
+
         let deleted = HistoryManager::delete_entries_and_files_with_conn(
             &conn,
             temp_dir.path(),
             &entries,
-            None,
+            |event| emitted_events.push(event),
         )
         .expect("delete entries");
 
         assert_eq!(deleted, 2);
+        assert_eq!(
+            emitted_events,
+            vec![
+                HistoryUpdatePayload::Deleted { id: 1 },
+                HistoryUpdatePayload::Deleted { id: 2 },
+            ]
+        );
 
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM transcription_history", [], |r| {
