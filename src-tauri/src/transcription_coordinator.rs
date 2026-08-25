@@ -206,10 +206,20 @@ impl CoordinatorState {
         // input against any already-remembered press instead of dropping it
         // silently.
         if let Stage::Processing = self.stage {
-            let remembered = self
-                .pending_press
-                .as_ref()
-                .is_some_and(|p| p.binding_id == input.binding_id);
+            // Only one press can be remembered. Once a binding has claimed it,
+            // inputs for a different binding are ignored — the same rule as a
+            // different binding pressed while recording — rather than silently
+            // replacing the remembered press and breaking its parity.
+            if let Some(pending) = &self.pending_press {
+                if pending.binding_id != input.binding_id {
+                    debug!(
+                        "Ignoring input for '{}': '{}' is already pending",
+                        input.binding_id, pending.binding_id
+                    );
+                    return None;
+                }
+            }
+            let remembered = self.pending_press.is_some();
             match classify_busy_input(input.is_pressed, input.push_to_talk, remembered) {
                 BusyAction::Remember => {
                     debug!(
@@ -849,12 +859,72 @@ mod tests {
     }
 
     fn toggle_input(external: bool) -> InputEvent {
+        toggle_input_for(BINDING, external)
+    }
+
+    fn toggle_input_for(binding_id: &str, external: bool) -> InputEvent {
         InputEvent {
-            binding_id: BINDING.to_string(),
-            hotkey_string: BINDING.to_string(),
+            binding_id: binding_id.to_string(),
+            hotkey_string: binding_id.to_string(),
             is_pressed: true,
             push_to_talk: false,
             external,
+        }
+    }
+
+    /// Start and stop one toggle recording so the machine sits in `Processing`.
+    fn drive_into_processing(state: &mut CoordinatorState, now: Instant) {
+        let effect = state.on_input(toggle_input(true), now);
+        assert!(matches!(effect, Some(Effect::Start { .. })));
+        let effect = state.on_input(toggle_input(true), now + Duration::from_millis(100));
+        assert!(matches!(effect, Some(Effect::Stop { .. })));
+        assert_eq!(state.stage, Stage::Processing);
+    }
+
+    const OTHER_BINDING: &str = "transcribe_with_post_process";
+
+    /// Only one press can be pending. Once a binding has claimed it, a toggle
+    /// for a different binding is ignored (as it is while recording) instead of
+    /// replacing the remembered press, so the pending binding's parity holds:
+    /// two transcribe toggles still net to no-op.
+    #[test]
+    fn different_binding_does_not_replace_pending_press() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+        drive_into_processing(&mut state, now);
+
+        let at = |ms| now + Duration::from_millis(ms);
+        assert!(state.on_input(toggle_input(true), at(200)).is_none());
+        assert!(state
+            .on_input(toggle_input_for(OTHER_BINDING, true), at(300))
+            .is_none());
+        assert!(state.on_input(toggle_input(true), at(400)).is_none());
+
+        let effect = state.on_processing_finished();
+        assert!(
+            effect.is_none(),
+            "two transcribe toggles net to no-op; the ignored post-process toggle must not start"
+        );
+        assert_eq!(state.stage, Stage::Idle);
+    }
+
+    /// The binding that claimed the pending press is the one that starts on
+    /// drain, regardless of other bindings toggled in between.
+    #[test]
+    fn drain_starts_the_pending_binding_not_a_later_one() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+        drive_into_processing(&mut state, now);
+
+        let at = |ms| now + Duration::from_millis(ms);
+        assert!(state.on_input(toggle_input(true), at(200)).is_none());
+        assert!(state
+            .on_input(toggle_input_for(OTHER_BINDING, true), at(300))
+            .is_none());
+
+        match state.on_processing_finished() {
+            Some(Effect::Start { binding_id, .. }) => assert_eq!(binding_id, BINDING),
+            other => panic!("expected Start for '{BINDING}', got {other:?}"),
         }
     }
 
