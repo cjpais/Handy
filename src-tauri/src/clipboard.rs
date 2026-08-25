@@ -690,6 +690,7 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
     use std::process::Stdio;
     let status = Command::new(script_path)
         .arg(text)
+        .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
