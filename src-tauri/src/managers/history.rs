@@ -338,56 +338,85 @@ impl HistoryManager {
             crate::settings::RecordingRetentionPeriod::PreserveLimit => {
                 // Use the old count-based logic with history_limit
                 let limit = crate::settings::get_history_limit(&self.app_handle);
-                self.cleanup_by_count(limit)
+                self.cleanup_by_count(limit)?;
+                Ok(())
             }
             _ => {
                 // Use time-based logic
-                self.cleanup_by_time(retention_period)
+                self.cleanup_by_time(retention_period)?;
+                Ok(())
             }
         }
     }
 
     fn delete_entries_and_files(&self, entries: &[(i64, String)]) -> Result<usize> {
+        let conn = self.get_connection()?;
+        Self::delete_entries_and_files_with_conn(
+            &conn,
+            &self.recordings_dir,
+            entries,
+            Some(&self.app_handle),
+        )
+    }
+
+    fn delete_entries_and_files_with_conn(
+        conn: &Connection,
+        recordings_dir: &std::path::Path,
+        entries: &[(i64, String)],
+        app_handle: Option<&AppHandle>,
+    ) -> Result<usize> {
         if entries.is_empty() {
             return Ok(0);
         }
 
-        let conn = self.get_connection()?;
         let mut deleted_count = 0;
 
         for (id, file_name) in entries {
             // Delete database entry
-            conn.execute(
+            let deleted = conn.execute(
                 "DELETE FROM transcription_history WHERE id = ?1",
                 params![id],
             )?;
 
-            // Delete WAV file
-            let file_path = self.recordings_dir.join(file_name);
-            if file_path.exists() {
-                if let Err(e) = fs::remove_file(&file_path) {
-                    error!("Failed to delete WAV file {}: {}", file_name, e);
-                } else {
-                    debug!("Deleted old WAV file: {}", file_name);
-                    deleted_count += 1;
-                }
-            }
+            if deleted > 0 {
+                deleted_count += deleted;
 
-            // Emit history updated event
-            if let Err(e) = (HistoryUpdatePayload::Deleted { id: *id }).emit(&self.app_handle) {
-                error!("Failed to emit history-updated event: {}", e);
+                // Delete WAV file
+                let file_path = recordings_dir.join(file_name);
+                if file_path.exists() {
+                    if let Err(e) = fs::remove_file(&file_path) {
+                        error!("Failed to delete WAV file {}: {}", file_name, e);
+                    } else {
+                        debug!("Deleted old WAV file: {}", file_name);
+                    }
+                }
+
+                // Emit history updated event
+                if let Some(app) = app_handle {
+                    if let Err(e) = (HistoryUpdatePayload::Deleted { id: *id }).emit(app) {
+                        error!("Failed to emit history-updated event: {}", e);
+                    }
+                }
             }
         }
 
         Ok(deleted_count)
     }
 
-    fn cleanup_by_count(&self, limit: usize) -> Result<()> {
+    fn cleanup_by_count(&self, limit: usize) -> Result<usize> {
         let conn = self.get_connection()?;
+        Self::cleanup_by_count_with_conn(&conn, &self.recordings_dir, limit, Some(&self.app_handle))
+    }
 
+    fn cleanup_by_count_with_conn(
+        conn: &Connection,
+        recordings_dir: &std::path::Path,
+        limit: usize,
+        app_handle: Option<&AppHandle>,
+    ) -> Result<usize> {
         // Get all entries that are not saved, ordered by timestamp desc
         let mut stmt = conn.prepare(
-            "SELECT id, file_name FROM transcription_history WHERE saved = 0 ORDER BY timestamp DESC"
+            "SELECT id, file_name FROM transcription_history WHERE saved = 0 ORDER BY timestamp DESC",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -401,22 +430,41 @@ impl HistoryManager {
 
         if entries.len() > limit {
             let entries_to_delete = &entries[limit..];
-            let deleted_count = self.delete_entries_and_files(entries_to_delete)?;
+            let deleted_count = Self::delete_entries_and_files_with_conn(
+                conn,
+                recordings_dir,
+                entries_to_delete,
+                app_handle,
+            )?;
 
             if deleted_count > 0 {
                 debug!("Cleaned up {} old history entries by count", deleted_count);
             }
+            Ok(deleted_count)
+        } else {
+            Ok(0)
         }
-
-        Ok(())
     }
 
     fn cleanup_by_time(
         &self,
         retention_period: crate::settings::RecordingRetentionPeriod,
-    ) -> Result<()> {
+    ) -> Result<usize> {
         let conn = self.get_connection()?;
+        Self::cleanup_by_time_with_conn(
+            &conn,
+            &self.recordings_dir,
+            retention_period,
+            Some(&self.app_handle),
+        )
+    }
 
+    fn cleanup_by_time_with_conn(
+        conn: &Connection,
+        recordings_dir: &std::path::Path,
+        retention_period: crate::settings::RecordingRetentionPeriod,
+        app_handle: Option<&AppHandle>,
+    ) -> Result<usize> {
         // Calculate cutoff timestamp (current time minus retention period)
         let now = Utc::now().timestamp();
         let cutoff_timestamp = match retention_period {
@@ -440,7 +488,12 @@ impl HistoryManager {
             entries_to_delete.push(row?);
         }
 
-        let deleted_count = self.delete_entries_and_files(&entries_to_delete)?;
+        let deleted_count = Self::delete_entries_and_files_with_conn(
+            conn,
+            recordings_dir,
+            &entries_to_delete,
+            app_handle,
+        )?;
 
         if deleted_count > 0 {
             debug!(
@@ -449,7 +502,7 @@ impl HistoryManager {
             );
         }
 
-        Ok(())
+        Ok(deleted_count)
     }
 
     pub async fn get_history_entries(
@@ -738,5 +791,127 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn cleanup_by_count_removes_oldest_db_entries_and_files() {
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let conn = setup_conn();
+
+        // Create 6 recordings in DB and on disk
+        for ts in [100, 200, 300, 400, 500, 600] {
+            insert_entry(&conn, ts, &format!("recording {}", ts), None);
+            let file_path = temp_dir.path().join(format!("handy-{}.wav", ts));
+            fs::write(&file_path, b"dummy audio content").expect("write dummy audio file");
+            assert!(file_path.exists());
+        }
+
+        // Run count cleanup with limit = 5
+        let deleted = HistoryManager::cleanup_by_count_with_conn(&conn, temp_dir.path(), 5, None)
+            .expect("cleanup by count");
+
+        assert_eq!(deleted, 1);
+
+        // Check remaining database entries
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM transcription_history", [], |r| {
+                r.get(0)
+            })
+            .expect("count rows");
+        assert_eq!(count, 5);
+
+        // Oldest entry (timestamp 100) must be deleted from DB
+        let oldest_in_db: bool = conn
+            .query_row(
+                "SELECT COUNT(*) > 0 FROM transcription_history WHERE timestamp = 100",
+                [],
+                |r| r.get(0),
+            )
+            .expect("check oldest");
+        assert!(!oldest_in_db);
+
+        // Oldest file must be deleted from disk
+        assert!(!temp_dir.path().join("handy-100.wav").exists());
+
+        // Newer 5 files must still exist on disk
+        for ts in [200, 300, 400, 500, 600] {
+            assert!(temp_dir.path().join(format!("handy-{}.wav", ts)).exists());
+        }
+    }
+
+    #[test]
+    fn cleanup_by_count_preserves_saved_entries() {
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let conn = setup_conn();
+
+        // Insert 6 entries, oldest is saved
+        for ts in [100, 200, 300, 400, 500, 600] {
+            let saved = ts == 100;
+            conn.execute(
+                "INSERT INTO transcription_history (
+                    file_name, timestamp, saved, title, transcription_text,
+                    post_processed_text, post_process_prompt, post_process_requested
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![
+                    format!("handy-{}.wav", ts),
+                    ts,
+                    saved,
+                    format!("Recording {}", ts),
+                    "text",
+                    Option::<String>::None,
+                    Option::<String>::None,
+                    false,
+                ],
+            )
+            .expect("insert history entry");
+            let file_path = temp_dir.path().join(format!("handy-{}.wav", ts));
+            fs::write(&file_path, b"audio").expect("write file");
+        }
+
+        // Unsaved entries count = 5 (timestamps 200..600). With limit = 5, none should be deleted.
+        let deleted = HistoryManager::cleanup_by_count_with_conn(&conn, temp_dir.path(), 5, None)
+            .expect("cleanup by count");
+
+        assert_eq!(deleted, 0);
+
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM transcription_history", [], |r| {
+                r.get(0)
+            })
+            .expect("count rows");
+        assert_eq!(count, 6);
+    }
+
+    #[test]
+    fn delete_entries_and_files_counts_db_deletions_even_when_files_missing() {
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let conn = setup_conn();
+
+        insert_entry(&conn, 100, "entry 1", None);
+        insert_entry(&conn, 200, "entry 2", None);
+
+        // Files are intentionally NOT created on disk in temp_dir
+
+        let entries = vec![
+            (1i64, "handy-100.wav".to_string()),
+            (2i64, "handy-200.wav".to_string()),
+        ];
+
+        let deleted = HistoryManager::delete_entries_and_files_with_conn(
+            &conn,
+            temp_dir.path(),
+            &entries,
+            None,
+        )
+        .expect("delete entries");
+
+        assert_eq!(deleted, 2);
+
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM transcription_history", [], |r| {
+                r.get(0)
+            })
+            .expect("count rows");
+        assert_eq!(count, 0);
     }
 }
