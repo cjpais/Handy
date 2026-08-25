@@ -12,6 +12,16 @@ pub use crate::clipboard::*;
 pub use crate::overlay::*;
 pub use crate::tray::*;
 
+/// Preserve diagnostic text in development builds, but redact it in releases.
+/// Do not use for secrets such as API keys, which must always be redacted.
+pub fn redact_text(text: &str) -> &str {
+    if cfg!(debug_assertions) {
+        text
+    } else {
+        "[REDACTED]"
+    }
+}
+
 #[cfg(any(test, all(target_os = "windows", target_arch = "x86_64")))]
 const IMAGE_FILE_MACHINE_ARM64: u16 = 0xaa64;
 
@@ -89,7 +99,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     tm.cancel_stream();
 
     // Update tray icon and hide overlay
-    change_tray_icon(app, crate::tray::TrayIconState::Idle);
+    set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
     // Unload model if immediate unload is enabled
@@ -125,6 +135,20 @@ pub fn is_kde_plasma() -> bool {
 #[cfg(target_os = "linux")]
 pub fn is_kde_wayland() -> bool {
     is_wayland() && is_kde_plasma()
+}
+
+/// Check if running on GNOME desktop environment
+#[cfg(target_os = "linux")]
+pub fn is_gnome() -> bool {
+    std::env::var("XDG_CURRENT_DESKTOP")
+        .map(|v| v.to_uppercase().contains("GNOME"))
+        .unwrap_or(false)
+}
+
+/// Check if running on GNOME with Wayland
+#[cfg(target_os = "linux")]
+pub fn is_gnome_wayland() -> bool {
+    is_wayland() && is_gnome()
 }
 
 #[cfg(test)]

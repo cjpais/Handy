@@ -24,30 +24,28 @@ interface AccelerationSelectorProps {
 
 /**
  * transcribe.cpp dropdown encodes accelerator + device in a single value:
- *   "auto"   → accelerator=auto,  gpu_device=-1
- *   "cpu"    → accelerator=cpu,   gpu_device=-1
- *   "gpu:0"  → accelerator=gpu,   gpu_device=0
- *   "gpu:1"  → accelerator=gpu,   gpu_device=1
+ *   "auto"       → accelerator=auto, gpu_device=null
+ *   "cpu"        → accelerator=cpu,  gpu_device=null
+ *   "gpu:<id>"   → accelerator=gpu, stable opaque device identity
  */
 function encodeTranscribeValue(
   accelerator: TranscribeAcceleratorSetting,
-  gpuDevice: number,
+  gpuDevice: string | null,
 ): string {
   if (accelerator === "cpu") return "cpu";
-  if (accelerator === "gpu" && gpuDevice >= 0) return `gpu:${gpuDevice}`;
+  if (accelerator === "gpu" && gpuDevice !== null) return `gpu:${gpuDevice}`;
   return "auto";
 }
 
 function decodeTranscribeValue(value: string): {
   accelerator: TranscribeAcceleratorSetting;
-  gpuDevice: number;
+  gpuDevice: string | null;
 } {
-  if (value === "cpu") return { accelerator: "cpu", gpuDevice: -1 };
+  if (value === "cpu") return { accelerator: "cpu", gpuDevice: null };
   if (value.startsWith("gpu:")) {
-    const id = parseInt(value.slice(4), 10);
-    return { accelerator: "gpu", gpuDevice: id };
+    return { accelerator: "gpu", gpuDevice: value.slice(4) };
   }
-  return { accelerator: "auto", gpuDevice: -1 };
+  return { accelerator: "auto", gpuDevice: null };
 }
 
 export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
@@ -105,10 +103,10 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   }, [t]);
 
   const currentAccelerator = getSetting("transcribe_accelerator") ?? "auto";
-  const currentGpuDevice = getSetting("transcribe_gpu_device") ?? -1;
+  const currentGpuDevice = getSetting("transcribe_gpu_device") ?? null;
   const currentTranscribe = encodeTranscribeValue(
     currentAccelerator as TranscribeAcceleratorSetting,
-    currentGpuDevice as number,
+    currentGpuDevice as string | null,
   );
   const displayedTranscribe = transcribeOptions.some(
     (option) => option.value === currentTranscribe,
@@ -119,8 +117,9 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
 
   const handleTranscribeChange = async (value: string) => {
     const { accelerator, gpuDevice } = decodeTranscribeValue(value);
-    await updateSetting("transcribe_accelerator", accelerator);
+    // Save the device first to avoid `gpu + null` being normalized to Auto.
     await updateSetting("transcribe_gpu_device", gpuDevice);
+    await updateSetting("transcribe_accelerator", accelerator);
   };
 
   return (

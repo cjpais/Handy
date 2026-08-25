@@ -232,6 +232,16 @@ mod tests {
     }
 
     #[test]
+    fn pure_diarization_models_are_not_downloadable() {
+        assert!(
+            CATALOG
+                .iter()
+                .all(|model| model.caps.architecture.as_deref() != Some("sortformer")),
+            "Sortformer produces speaker segments, not transcription text"
+        );
+    }
+
+    #[test]
     fn scores_are_normalised_0_to_1() {
         for d in CATALOG.iter() {
             assert!((0.0..=1.0).contains(&d.speed_score), "{} speed", d.id);
