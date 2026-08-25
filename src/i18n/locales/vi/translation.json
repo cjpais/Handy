@@ -377,6 +377,14 @@
         "title": "Phát hiện hoạt động giọng nói",
         "description": "Lọc bỏ khoảng lặng khỏi bản ghi. Các mô hình hỗ trợ truyền trực tiếp dùng đuôi VAD dài hơn; tắt VAD sẽ ghi âm thanh thô."
       },
+      "vadBackend": {
+        "title": "Bộ phát hiện giọng nói",
+        "description": "Chọn bộ phát hiện dùng để lọc khoảng lặng. Earshot đang thử nghiệm; hãy chuyển về Silero nếu giọng nói bị cắt hoặc tiếng ồn vẫn còn.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Loại bỏ từ đệm",
         "description": "Loại bỏ các từ ngập ngừng phổ biến khỏi bản chép lời. Tắt để giữ lại các từ này."

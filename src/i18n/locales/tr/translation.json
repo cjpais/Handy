@@ -266,8 +266,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper Hızlandırma",
-          "description": "Whisper modelleri için donanım hızlandırma. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
+          "title": "transcribe.cpp Hızlandırması",
+          "description": "transcribe.cpp (Whisper ailesi) modelleri için donanım hızlandırması. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
         },
         "ort": {
           "title": "ONNX Hızlandırma",
@@ -291,8 +291,8 @@
       },
       "overlay": {
         "style": {
-          "title": "Yer Paylaşımı",
-          "description": "Kayıt sırasındaki yer paylaşımını seçin: 'Yok' gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
+          "title": "Ekran Katmanı",
+          "description": "Kayıt sırasında gösterilecek ekran katmanını seçin: 'Yok' katmanı gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
           "options": {
             "none": "Yok",
             "minimal": "Sade",
@@ -300,8 +300,8 @@
           }
         },
         "position": {
-          "title": "Yer Paylaşımı Konumu",
-          "description": "Yer paylaşımının kayıt ve transkripsiyon sırasında ekranda nerede görüneceğini belirler.",
+          "title": "Ekran Katmanı Konumu",
+          "description": "Ekran katmanının kayıt ve transkripsiyon sırasında nerede görüneceğini belirler.",
           "options": {
             "bottom": "Alt",
             "top": "Üst"
@@ -376,6 +376,14 @@
       "voiceActivityDetection": {
         "title": "Ses Etkinliği Algılama",
         "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
+      },
+      "vadBackend": {
+        "title": "Ses Etkinliği Arka Ucu",
+        "description": "Sessizliği filtrelemek için kullanılan algılayıcıyı seçin. Earshot deneyseldir; konuşma kesiliyorsa veya gürültü korunuyorsa Silero'ya geri dönün.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
       },
       "fillerWordRemoval": {
         "title": "Dolgu Sözcüklerini Kaldır",
@@ -597,8 +605,8 @@
         "title": "Teşekkürler",
         "ggml": {
           "title": "ggml",
-          "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
-          "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için ggml kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
+          "description": "Cihaz üzerinde makine öğrenmesi çıkarımı için yüksek performanslı tensör kütüphanesi",
+          "details": "Handy'nin yerel konuşmadan metne dönüştürme özelliği transcribe.cpp ve ggml üzerine kuruludur. Georgi Gerganov'a ve katkıda bulunanlara harika çalışmaları için teşekkür ederiz."
         }
       },
       "whatsNewUpdates": {
