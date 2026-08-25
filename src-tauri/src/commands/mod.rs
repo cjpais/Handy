@@ -179,8 +179,9 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     // Initialize shortcuts
     crate::shortcut::init_shortcuts(&app);
 
-    // Mark as initialized
+    // Mark as initialized before reconciling the macOS Secure Input fallback.
     app.manage(ShortcutsInitialized);
+    crate::secure_input::reconcile_fallback(&app);
 
     log::info!("Shortcuts initialized successfully");
     Ok(())

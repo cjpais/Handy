@@ -11,20 +11,19 @@
 
 mod handler;
 pub mod handy_keys;
-mod tauri_impl;
+pub mod tauri_impl;
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
 use tauri::{AppHandle, Emitter, Manager};
-use tauri_plugin_autostart::ManagerExt;
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, Theme, TypingTool,
+    VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -58,6 +57,10 @@ pub fn init_shortcuts(app: &AppHandle) {
 
 /// Register the cancel shortcut (called when recording starts)
 pub fn register_cancel_shortcut(app: &AppHandle) {
+    // Track recording lifecycle independently of the current implementation so
+    // switching implementations mid-recording cannot leave stale fallback state.
+    crate::secure_input::register_cancel_fallback(app);
+
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
@@ -67,6 +70,8 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
 
 /// Unregister the cancel shortcut (called when recording stops)
 pub fn unregister_cancel_shortcut(app: &AppHandle) {
+    crate::secure_input::unregister_cancel_fallback(app);
+
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
@@ -151,6 +156,7 @@ pub fn change_binding(
             b.current_binding = binding;
             settings.bindings.insert(id.clone(), b.clone());
             settings::write_settings(&app, settings);
+            crate::secure_input::reconcile_fallback(&app);
             return Ok(BindingResponse {
                 success: true,
                 binding: Some(b.clone()),
@@ -169,17 +175,19 @@ pub fn change_binding(
     if let Err(e) = validate_shortcut_for_implementation(&binding, settings.keyboard_implementation)
     {
         warn!("change_binding validation error: {}", e);
+        restore_registration(&app, &binding_to_modify);
         return Err(e);
     }
 
     // Create an updated binding
-    let mut updated_binding = binding_to_modify;
+    let mut updated_binding = binding_to_modify.clone();
     updated_binding.current_binding = binding;
 
     // Register the new binding
     if let Err(e) = register_shortcut(&app, updated_binding.clone()) {
         let error_msg = format!("Failed to register shortcut: {}", e);
         error!("change_binding error: {}", error_msg);
+        restore_registration(&app, &binding_to_modify);
         return Ok(BindingResponse {
             success: false,
             binding: None,
@@ -190,8 +198,9 @@ pub fn change_binding(
     // Update the binding in the settings
     settings.bindings.insert(id, updated_binding.clone());
 
-    // Save the settings
+    // Save the settings and synchronize any active Secure Input shadows.
     settings::write_settings(&app, settings);
+    crate::secure_input::reconcile_fallback(&app);
 
     // Return the updated binding
     Ok(BindingResponse {
@@ -201,6 +210,17 @@ pub fn change_binding(
     })
 }
 
+/// Best-effort re-register of the previous binding after a failed change,
+/// so a failure leaves the user's shortcut working exactly as before.
+fn restore_registration(app: &AppHandle, binding: &ShortcutBinding) {
+    if let Err(e) = register_shortcut(app, binding.clone()) {
+        error!(
+            "Failed to restore previous binding '{}' ({}): {}",
+            binding.id, binding.current_binding, e
+        );
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
@@ -208,30 +228,56 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
     change_binding(app, id, binding.default_binding)
 }
 
-/// Temporarily unregister a binding while the user is editing it in the UI.
-/// This avoids firing the action while keys are being recorded.
-#[tauri::command]
-#[specta::specta]
-pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
-    if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = unregister_shortcut(&app, b) {
-            error!("suspend_binding error for id '{}': {}", id, e);
-            return Err(e);
+/// Unregister every binding while the user is recording a new shortcut in
+/// the UI, so no existing shortcut can fire — or swallow the keystrokes —
+/// mid-capture. The "cancel" binding is untouched: it is managed dynamically
+/// by the recording lifecycle.
+pub fn suspend_all_shortcuts(app: &AppHandle) {
+    for (id, binding) in settings::get_bindings(app) {
+        if id == "cancel" {
+            continue;
+        }
+        if let Err(e) = unregister_shortcut(app, binding) {
+            debug!(
+                "suspend_all_shortcuts: could not unregister '{}': {}",
+                id, e
+            );
         }
     }
+}
+
+/// Re-register every binding from settings after shortcut recording ends.
+/// Registering an already-registered shortcut fails cleanly in both
+/// implementations, so this is idempotent and safe on every exit path.
+pub fn resume_all_shortcuts(app: &AppHandle) {
+    let settings = get_settings(app);
+    for (id, binding) in &settings.bindings {
+        if id == "cancel" {
+            continue;
+        }
+        if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+            continue;
+        }
+        if let Err(e) = register_shortcut(app, binding.clone()) {
+            debug!("resume_all_shortcuts: could not register '{}': {}", id, e);
+        }
+    }
+}
+
+/// Temporarily unregister all bindings while the user is recording a
+/// shortcut in the UI. This avoids firing actions while keys are recorded.
+#[tauri::command]
+#[specta::specta]
+pub fn suspend_all_bindings(app: AppHandle) -> Result<(), String> {
+    suspend_all_shortcuts(&app);
     Ok(())
 }
 
-/// Re-register the binding after the user has finished editing.
+/// Re-register all bindings after the user has finished recording.
 #[tauri::command]
 #[specta::specta]
-pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
-    if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = register_shortcut(&app, b) {
-            error!("resume_binding error for id '{}': {}", id, e);
-            return Err(e);
-        }
-    }
+pub fn resume_all_bindings(app: AppHandle) -> Result<(), String> {
+    resume_all_shortcuts(&app);
     Ok(())
 }
 
@@ -282,19 +328,25 @@ pub fn change_keyboard_implementation_setting(
     settings.keyboard_implementation = new_impl;
     settings::write_settings(&app, settings);
 
+    // Carbon fallback registrations use the Tauri plugin. Remove them before
+    // registering the full Tauri implementation to avoid duplicate conflicts.
+    if new_impl == KeyboardImplementation::Tauri {
+        crate::secure_input::reconcile_fallback(&app);
+    }
+
     // Initialize new implementation if needed (HandyKeys needs state)
-    if new_impl == KeyboardImplementation::HandyKeys {
-        if initialize_handy_keys_with_rollback(&app)? {
-            // Shortcuts already registered during init
-            return Ok(ImplementationChangeResult {
-                success: true,
-                reset_bindings: vec![],
-            });
-        }
+    if new_impl == KeyboardImplementation::HandyKeys && initialize_handy_keys_with_rollback(&app)? {
+        // Shortcuts already registered during init.
+        crate::secure_input::reconcile_fallback(&app);
+        return Ok(ImplementationChangeResult {
+            success: true,
+            reset_bindings: vec![],
+        });
     }
 
     // Register all shortcuts with new implementation, resetting invalid ones
     let reset_bindings = register_all_shortcuts_for_implementation(&app, new_impl);
+    crate::secure_input::reconcile_fallback(&app);
 
     // Emit event to notify frontend of the change
     let _ = app.emit(
@@ -456,6 +508,7 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
         let mut settings = settings::get_settings(app);
         settings.keyboard_implementation = KeyboardImplementation::Tauri;
         settings::write_settings(app, settings);
+        crate::secure_input::reconcile_fallback(app);
         tauri_impl::init_shortcuts(app);
         return Err(format!(
             "Failed to initialize HandyKeys: {}. Reverted to Tauri.",
@@ -518,6 +571,52 @@ pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), S
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match theme.as_str() {
+        "system" => Theme::System,
+        "light" => Theme::Light,
+        "dark" => Theme::Dark,
+        other => {
+            warn!("Invalid theme '{}', defaulting to system", other);
+            Theme::System
+        }
+    };
+    settings.theme = parsed;
+    settings::write_settings(&app, settings);
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
+    apply_window_theme(&app, parsed);
+    // Notify other webviews (the recording overlay) so they re-apply the palette
+    // live — they set `data-theme` on their own document and can't see this one.
+    let _ = app.emit("theme-changed", parsed);
+    Ok(())
+}
+
+/// Applies the appearance setting to the native window chrome (title bar), which
+/// CSS `data-theme` cannot reach. `System` clears the override so the window
+/// follows the OS. Call this on startup and whenever the setting changes to keep
+/// the title bar in sync with the in-app palette.
+///
+/// On Windows this themes the title bar only. On macOS `set_theme` sets
+/// `NSApp.appearance` app-wide, which is what we want here: it darkens the title
+/// bar and keeps the overlay in step. Linux is left to `data-theme` alone, since
+/// its window theming is backend-dependent and unreliable.
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+pub fn apply_window_theme(app: &AppHandle, theme: Theme) {
+    let window_theme = match theme {
+        Theme::System => None,
+        Theme::Light => Some(tauri::Theme::Light),
+        Theme::Dark => Some(tauri::Theme::Dark),
+    };
+    if let Some(window) = app.get_webview_window("main") {
+        if let Err(e) = window.set_theme(window_theme) {
+            warn!("Failed to apply window theme: {}", e);
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.translate_to_english = enabled;
@@ -539,9 +638,10 @@ pub fn change_selected_language_setting(app: AppHandle, language: String) -> Res
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {
-        "none" => OverlayPosition::None,
+        // "none" is retired (visibility is overlay_style now); fold legacy callers
+        // onto Bottom rather than warn.
+        "none" | "bottom" => OverlayPosition::Bottom,
         "top" => OverlayPosition::Top,
-        "bottom" => OverlayPosition::Bottom,
         other => {
             warn!("Invalid overlay position '{}', defaulting to bottom", other);
             OverlayPosition::Bottom
@@ -550,7 +650,35 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
     settings.overlay_position = parsed;
     settings::write_settings(&app, settings);
 
+    // Whether the overlay shows at all is owned by overlay_style now; position
+    // only ever toggles Top/Bottom, so the enabled cache is untouched here.
     // Update overlay position without recreating window
+    crate::utils::update_overlay_position(&app);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match style.as_str() {
+        "none" => OverlayStyle::None,
+        "minimal" => OverlayStyle::Minimal,
+        "live" => OverlayStyle::Live,
+        other => {
+            warn!("Invalid overlay style '{}', defaulting to minimal", other);
+            OverlayStyle::Minimal
+        }
+    };
+    settings.overlay_style = parsed;
+    settings::write_settings(&app, settings);
+
+    // Keep the cached overlay-enabled flag in sync so emit_levels stops (or
+    // resumes) emitting on the next audio callback.
+    crate::overlay::update_overlay_enabled_cache(parsed != OverlayStyle::None);
+
+    // Reposition in case the window needs to re-center for the new style.
     crate::utils::update_overlay_position(&app);
 
     Ok(())
@@ -562,6 +690,10 @@ pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), St
     let mut settings = settings::get_settings(&app);
     settings.debug_mode = enabled;
     settings::write_settings(&app, settings);
+
+    // Keep webview log streaming in sync: the live log viewer only exists in
+    // debug mode, so logs are forwarded to the frontend only while it is on.
+    crate::WEBVIEW_LOG_STREAMING.store(enabled, std::sync::atomic::Ordering::Relaxed);
 
     // Emit event to notify frontend of debug mode change
     let _ = app.emit(
@@ -602,12 +734,7 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
     settings::write_settings(&app, settings);
 
     // Apply the autostart setting immediately
-    let autostart_manager = app.autolaunch();
-    if enabled {
-        let _ = autostart_manager.enable();
-    } else {
-        let _ = autostart_manager.disable();
-    }
+    crate::autostart::apply_autostart(&app, enabled);
 
     // Notify frontend
     let _ = app.emit(
@@ -633,6 +760,49 @@ pub fn change_update_checks_setting(app: AppHandle, enabled: bool) -> Result<(),
         serde_json::json!({
             "setting": "update_checks_enabled",
             "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_show_whats_new_on_update_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.show_whats_new_on_update = enabled;
+    settings::write_settings(&app, settings);
+
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "show_whats_new_on_update",
+            "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_whats_new_last_seen_version_setting(
+    app: AppHandle,
+    version: String,
+) -> Result<(), String> {
+    let version = version.trim().to_string();
+    let mut settings = settings::get_settings(&app);
+    settings.whats_new_last_seen_version = version.clone();
+    settings::write_settings(&app, settings);
+
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "whats_new_last_seen_version",
+            "value": version
         }),
     );
 
@@ -674,6 +844,24 @@ pub fn change_extra_recording_buffer_setting(app: AppHandle, ms: u64) -> Result<
 pub fn change_paste_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.paste_delay_ms = ms;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_paste_delay_after_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.paste_delay_after_ms = ms;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_reliable_paste_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.reliable_paste = enabled;
     settings::write_settings(&app, settings);
     Ok(())
 }
@@ -812,6 +1000,7 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
         }
     }
 
+    crate::secure_input::reconcile_fallback(&app);
     Ok(())
 }
 
@@ -1071,13 +1260,59 @@ pub fn change_lazy_stream_close_setting(app: AppHandle, enabled: bool) -> Result
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_vad_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.vad_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn change_vad_backend_setting(app: AppHandle, backend: VadBackend) -> Result<(), String> {
+    if settings::get_settings(&app).vad_backend == backend {
+        return Ok(());
+    }
+
+    // Construct/swap the detector and, when necessary, reopen cpal away from
+    // the webview thread. Persist only after the runtime change succeeds so a
+    // rejected in-progress switch or failed microphone reopen rolls back cleanly.
+    let manager = app
+        .state::<std::sync::Arc<crate::managers::audio::AudioRecordingManager>>()
+        .inner()
+        .clone();
+    tokio::task::spawn_blocking(move || manager.update_vad_backend(backend))
+        .await
+        .map_err(|e| format!("audio task join failed: {e}"))?
+        .map_err(|e| format!("Failed to update VAD backend: {e}"))?;
+
+    let mut current_settings = settings::get_settings(&app);
+    current_settings.vad_backend = backend;
+    settings::write_settings(&app, current_settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_filler_word_removal_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.filler_word_removal_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.app_language = language.clone();
     settings::write_settings(&app, settings);
 
     // Refresh the tray menu with the new language
-    tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
+    tray::update_tray_menu(&app);
 
     Ok(())
 }
@@ -1095,29 +1330,24 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     Ok(())
 }
 
-/// Save accelerator settings, re-apply globals, and unload the model so it
-/// reloads with the new backend on next transcription.
-fn apply_and_reload_accelerator(app: &AppHandle, s: settings::AppSettings) {
+/// Save accelerator settings and make the next model use reload with them.
+/// The currently running transcription, if any, keeps its existing engine.
+fn save_accelerator_and_reload_next_use(app: &AppHandle, s: settings::AppSettings) {
     settings::write_settings(app, s);
-    crate::managers::transcription::apply_accelerator_settings(app);
 
     let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
-    if tm.is_model_loaded() {
-        if let Err(e) = tm.unload_model() {
-            log::warn!("Failed to unload model after accelerator change: {e}");
-        }
-    }
+    tm.reload_model_on_next_use();
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_whisper_accelerator_setting(
+pub fn change_transcribe_accelerator_setting(
     app: AppHandle,
-    accelerator: settings::WhisperAcceleratorSetting,
+    accelerator: settings::TranscribeAcceleratorSetting,
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
-    s.whisper_accelerator = accelerator;
-    apply_and_reload_accelerator(&app, s);
+    s.transcribe_accelerator = accelerator;
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
@@ -1129,23 +1359,23 @@ pub fn change_ort_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.ort_accelerator = accelerator;
-    apply_and_reload_accelerator(&app, s);
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
+pub fn change_transcribe_gpu_device(app: AppHandle, device: Option<String>) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
-    s.whisper_gpu_device = device;
-    apply_and_reload_accelerator(&app, s);
+    s.transcribe_gpu_device = device;
+    save_accelerator_and_reload_next_use(&app, s);
     Ok(())
 }
 
 /// Return which accelerators and GPU devices are available for this build.
 ///
 /// First-call cost is dominated by enumerating GPU devices through the
-/// whisper.cpp Metal/Vulkan backend, which loads dynamic libraries and
+/// transcribe.cpp Metal/Vulkan backend, which loads dynamic libraries and
 /// probes hardware. Run it on the blocking pool so the webview thread
 /// stays responsive — see also the startup pre-warm in `lib.rs`.
 #[tauri::command]
