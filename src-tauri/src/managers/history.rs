@@ -349,15 +349,6 @@ impl HistoryManager {
         }
     }
 
-    fn delete_entries_and_files(&self, entries: &[(i64, String)]) -> Result<usize> {
-        let conn = self.get_connection()?;
-        Self::delete_entries_and_files_with_conn(&conn, &self.recordings_dir, entries, |payload| {
-            if let Err(e) = payload.emit(&self.app_handle) {
-                error!("Failed to emit history-updated event: {}", e);
-            }
-        })
-    }
-
     fn delete_entries_and_files_with_conn<F>(
         conn: &Connection,
         recordings_dir: &std::path::Path,
