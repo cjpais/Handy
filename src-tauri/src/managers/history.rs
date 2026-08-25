@@ -372,6 +372,11 @@ impl HistoryManager {
                     deleted_count += 1;
                 }
             }
+
+            // Emit history updated event
+            if let Err(e) = (HistoryUpdatePayload::Deleted { id: *id }).emit(&self.app_handle) {
+                error!("Failed to emit history-updated event: {}", e);
+            }
         }
 
         Ok(deleted_count)
