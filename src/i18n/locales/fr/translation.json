@@ -214,9 +214,18 @@
         "noResults": "Aucune langue trouvée",
         "auto": "Automatique"
       },
-      "pushToTalk": {
-        "label": "Appuyer pour parler",
-        "description": "Maintenez pour enregistrer, relâchez pour arrêter"
+      "shortcutActivation": {
+        "title": "Comportement du raccourci",
+        "options": {
+          "holdOrToggle": "Maintenir ou appuyer",
+          "pushToTalk": "Appuyer pour parler",
+          "toggle": "Appuyer"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Maintenez pour enregistrer et relâchez pour arrêter, ou appuyez brièvement pour continuer l'enregistrement jusqu'à la prochaine pression",
+          "push_to_talk": "Maintenez pour enregistrer, relâchez pour arrêter",
+          "toggle": "Appuyez pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
+        }
       }
     },
     "sound": {
@@ -544,6 +553,10 @@
       "pasteDelayAfter": {
         "title": "Délai de collage (après)",
         "description": "Délai (en millisecondes) après la touche de collage, avant la restauration de votre presse-papiers précédent. Augmentez si l'ancien contenu du presse-papiers est collé à la place de la transcription."
+      },
+      "holdThreshold": {
+        "title": "Seuil de maintien",
+        "description": "Mode Maintenir ou appuyer uniquement : durée (en millisecondes) pendant laquelle le raccourci doit rester enfoncé pour compter comme un appui maintenu plutôt qu'une pression brève. Diminuez si les enregistrements courts en appui maintenu restent actifs ; augmentez si des pressions brèves volontaires sont traitées comme un maintien."
       },
       "reliablePaste": {
         "title": "Collage fiable (Beta)",

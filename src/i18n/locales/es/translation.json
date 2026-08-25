@@ -214,9 +214,18 @@
         "noResults": "No se encontraron idiomas",
         "auto": "Automático"
       },
-      "pushToTalk": {
-        "label": "Presionar para hablar",
-        "description": "Mantén presionado para grabar, suelta para detener"
+      "shortcutActivation": {
+        "title": "Comportamiento del atajo",
+        "options": {
+          "holdOrToggle": "Mantener o tocar",
+          "pushToTalk": "Presionar para hablar",
+          "toggle": "Tocar"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Mantén pulsado para grabar y suelta para detener, o toca para seguir grabando hasta que vuelvas a pulsar",
+          "push_to_talk": "Mantén presionado para grabar, suelta para detener",
+          "toggle": "Pulsa para empezar a grabar, pulsa de nuevo para detener"
+        }
       }
     },
     "sound": {
@@ -544,6 +553,10 @@
       "pasteDelayAfter": {
         "title": "Retraso de pegado (después)",
         "description": "Retraso (en milisegundos) después de la pulsación de tecla de pegar, antes de restaurar el portapapeles anterior. Auméntelo si se pega el contenido antiguo del portapapeles en lugar de la transcripción."
+      },
+      "holdThreshold": {
+        "title": "Umbral de pulsación",
+        "description": "Solo en el modo Mantener o tocar: cuánto tiempo (en milisegundos) debe mantenerse pulsado el atajo para contar como pulsar para hablar en lugar de un toque. Redúcelo si las grabaciones cortas de pulsar para hablar siguen activas; auméntalo si los toques deliberados se interpretan como mantener."
       },
       "reliablePaste": {
         "title": "Pegado fiable (Beta)",

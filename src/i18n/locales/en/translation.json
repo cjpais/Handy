@@ -194,9 +194,18 @@
         "noResults": "No languages found",
         "auto": "Auto"
       },
-      "pushToTalk": {
-        "label": "Push To Talk",
-        "description": "Hold to record, release to stop"
+      "shortcutActivation": {
+        "title": "Shortcut Behavior",
+        "options": {
+          "holdOrToggle": "Hold or Tap",
+          "pushToTalk": "Push To Talk",
+          "toggle": "Tap"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Hold to record and release to stop, or tap to keep recording until you press again",
+          "push_to_talk": "Hold to record, release to stop",
+          "toggle": "Press to start recording, press again to stop"
+        }
       }
     },
     "models": {
@@ -551,6 +560,10 @@
       "pasteDelayAfter": {
         "title": "Paste Delay (After)",
         "description": "Delay (in milliseconds) after the paste keystroke, before restoring your previous clipboard. Increase if your old clipboard content is being pasted instead of the transcription."
+      },
+      "holdThreshold": {
+        "title": "Hold Threshold",
+        "description": "Hold or Tap mode only: how long (in milliseconds) the shortcut must be held before it counts as push-to-talk instead of a tap. Lower if short push-to-talk recordings keep staying on; raise if deliberate taps get treated as holds."
       },
       "reliablePaste": {
         "title": "Reliable Paste (Beta)",

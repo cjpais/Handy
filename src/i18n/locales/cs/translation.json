@@ -214,9 +214,18 @@
         "noResults": "Žádné jazyky nenalezeny",
         "auto": "Automaticky"
       },
-      "pushToTalk": {
-        "label": "Stisk a mluv",
-        "description": "Podržte pro nahrávání, uvolněte pro zastavení"
+      "shortcutActivation": {
+        "title": "Chování zkratky",
+        "options": {
+          "holdOrToggle": "Podržet nebo klepnout",
+          "pushToTalk": "Stisk a mluv",
+          "toggle": "Klepnout"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Podržte pro nahrávání a pusťte pro zastavení, nebo klepněte pro pokračování nahrávání až do dalšího stisknutí",
+          "push_to_talk": "Podržte pro nahrávání, uvolněte pro zastavení",
+          "toggle": "Stiskněte pro zahájení nahrávání, stiskněte znovu pro zastavení"
+        }
       }
     },
     "sound": {
@@ -544,6 +553,10 @@
       "pasteDelayAfter": {
         "title": "Zpoždění vložení (po)",
         "description": "Zpoždění (v milisekundách) po klávese pro vložení, před obnovením předchozí schránky. Zvyšte, pokud se místo přepisu vkládá starý obsah schránky."
+      },
+      "holdThreshold": {
+        "title": "Práh podržení",
+        "description": "Pouze v režimu Podržet nebo klepnout: jak dlouho (v milisekundách) musí být zkratka držena, aby se počítala jako push-to-talk místo klepnutí. Snižte, pokud krátké push-to-talk nahrávky zůstávají zapnuté; zvyšte, pokud jsou záměrná klepnutí vyhodnocena jako podržení."
       },
       "reliablePaste": {
         "title": "Spolehlivé vložení (Beta)",

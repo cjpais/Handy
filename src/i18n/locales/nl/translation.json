@@ -194,9 +194,18 @@
         "noResults": "Geen talen gevonden",
         "auto": "Automatisch"
       },
-      "pushToTalk": {
-        "label": "Push-to-talk",
-        "description": "Ingedrukt houden om op te nemen, loslaten om te stoppen"
+      "shortcutActivation": {
+        "title": "Gedrag van sneltoets",
+        "options": {
+          "holdOrToggle": "Vasthouden of tikken",
+          "pushToTalk": "Push-to-talk",
+          "toggle": "Tikken"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Houd ingedrukt om op te nemen en laat los om te stoppen, of tik om te blijven opnemen tot je opnieuw drukt",
+          "push_to_talk": "Ingedrukt houden om op te nemen, loslaten om te stoppen",
+          "toggle": "Druk om de opname te starten, druk opnieuw om te stoppen"
+        }
       }
     },
     "models": {
@@ -551,6 +560,10 @@
       "pasteDelayAfter": {
         "title": "Plakvertraging (na)",
         "description": "Vertraging (in milliseconden) na de plak-toetsaanslag, voordat je vorige klembord wordt hersteld. Verhoog dit als de oude klembordinhoud wordt geplakt in plaats van de transcriptie."
+      },
+      "holdThreshold": {
+        "title": "Vasthouddrempel",
+        "description": "Alleen in de modus Vasthouden of tikken: hoe lang (in milliseconden) de sneltoets ingedrukt moet blijven om als push-to-talk te tellen in plaats van als tik. Verlaag dit als korte push-to-talk-opnames blijven doorlopen; verhoog het als bewuste tikken als vasthouden worden gezien."
       },
       "reliablePaste": {
         "title": "Betrouwbaar plakken (Beta)",

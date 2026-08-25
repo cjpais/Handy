@@ -22,8 +22,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, Theme, TypingTool,
-    VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
+    OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding, SoundTheme,
+    Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -526,9 +526,33 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn change_shortcut_activation_setting(
+    app: AppHandle,
+    activation: String,
+) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.push_to_talk = enabled;
+    let parsed = match activation.as_str() {
+        "toggle" => ShortcutActivation::Toggle,
+        "push_to_talk" => ShortcutActivation::PushToTalk,
+        "hold_or_toggle" => ShortcutActivation::HoldOrToggle,
+        other => {
+            warn!(
+                "Invalid shortcut activation '{}', defaulting to hold_or_toggle",
+                other
+            );
+            ShortcutActivation::HoldOrToggle
+        }
+    };
+    settings.shortcut_activation = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_hold_threshold_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.hold_threshold_ms = ms;
     settings::write_settings(&app, settings);
     Ok(())
 }

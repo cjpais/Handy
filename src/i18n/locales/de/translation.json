@@ -214,9 +214,18 @@
         "noResults": "Keine Sprachen gefunden",
         "auto": "Automatisch"
       },
-      "pushToTalk": {
-        "label": "Push-to-Talk",
-        "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      "shortcutActivation": {
+        "title": "Verhalten der Tastenkombination",
+        "options": {
+          "holdOrToggle": "Halten oder Tippen",
+          "pushToTalk": "Push-to-Talk",
+          "toggle": "Tippen"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Gedrückt halten zum Aufnehmen und loslassen zum Stoppen, oder antippen, um weiter aufzunehmen, bis Sie erneut drücken",
+          "push_to_talk": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen",
+          "toggle": "Drücken zum Starten der Aufnahme, erneut drücken zum Stoppen"
+        }
       }
     },
     "sound": {
@@ -544,6 +553,10 @@
       "pasteDelayAfter": {
         "title": "Einfügeverzögerung (nachher)",
         "description": "Verzögerung (in Millisekunden) nach dem Einfüge-Tastendruck, bevor deine vorherige Zwischenablage wiederhergestellt wird. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
+      },
+      "holdThreshold": {
+        "title": "Halte-Schwellenwert",
+        "description": "Nur im Modus „Halten oder Tippen“: wie lange (in Millisekunden) die Tastenkombination gedrückt bleiben muss, damit sie als Push-to-Talk statt als Tippen zählt. Verringern, wenn kurze Push-to-Talk-Aufnahmen weiterlaufen; erhöhen, wenn bewusstes Tippen als Halten gewertet wird."
       },
       "reliablePaste": {
         "title": "Zuverlässiges Einfügen (Beta)",

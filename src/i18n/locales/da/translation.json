@@ -194,9 +194,18 @@
         "noResults": "Ingen sprog fundet",
         "auto": "Automatisk"
       },
-      "pushToTalk": {
-        "label": "Tryk-for-at-tale",
-        "description": "Hold nede for at optage, slip for at stoppe"
+      "shortcutActivation": {
+        "title": "Genvejens adfærd",
+        "options": {
+          "holdOrToggle": "Hold eller tryk",
+          "pushToTalk": "Tryk-for-at-tale",
+          "toggle": "Tryk"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Hold nede for at optage og slip for at stoppe, eller tryk kort for at blive ved med at optage, indtil du trykker igen",
+          "push_to_talk": "Hold nede for at optage, slip for at stoppe",
+          "toggle": "Tryk for at starte optagelsen, tryk igen for at stoppe"
+        }
       }
     },
     "models": {
@@ -551,6 +560,10 @@
       "pasteDelayAfter": {
         "title": "Forsinkelse af indsættelse (efter)",
         "description": "Forsinkelse (i millisekunder) efter tastetrykket for indsætning, før din tidligere udklipsholder gendannes. Øg, hvis dit gamle udklipsholderindhold bliver indsat i stedet for transskriptionen."
+      },
+      "holdThreshold": {
+        "title": "Holdetærskel",
+        "description": "Kun i tilstanden Hold eller tryk: hvor længe (i millisekunder) genvejen skal holdes nede, før den tæller som push-to-talk i stedet for et tryk. Sænk værdien, hvis korte push-to-talk-optagelser bliver ved med at køre; hæv den, hvis bevidste tryk behandles som hold."
       },
       "reliablePaste": {
         "title": "Pålidelig indsættelse (Beta)",

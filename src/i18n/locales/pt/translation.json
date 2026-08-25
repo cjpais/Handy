@@ -194,9 +194,18 @@
         "noResults": "Nenhum idioma encontrado",
         "auto": "Automático"
       },
-      "pushToTalk": {
-        "label": "Pressionar para Falar",
-        "description": "Segure para gravar, solte para parar"
+      "shortcutActivation": {
+        "title": "Comportamento do atalho",
+        "options": {
+          "holdOrToggle": "Segurar ou tocar",
+          "pushToTalk": "Pressionar para Falar",
+          "toggle": "Tocar"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Segure para gravar e solte para parar, ou toque para continuar gravando até pressionar novamente",
+          "push_to_talk": "Segure para gravar, solte para parar",
+          "toggle": "Pressione para começar a gravar, pressione novamente para parar"
+        }
       }
     },
     "models": {
@@ -544,6 +553,10 @@
       "pasteDelayAfter": {
         "title": "Atraso de colagem (depois)",
         "description": "Atraso (em milissegundos) após a tecla de colar, antes de restaurar a área de transferência anterior. Aumente se o conteúdo antigo da área de transferência estiver sendo colado em vez da transcrição."
+      },
+      "holdThreshold": {
+        "title": "Limite de tempo de pressão",
+        "description": "Apenas no modo Segurar ou tocar: por quanto tempo (em milissegundos) o atalho precisa ficar pressionado para contar como pressionar para falar em vez de um toque. Diminua se gravações curtas de pressionar para falar continuarem ativas; aumente se toques intencionais forem tratados como pressão longa."
       },
       "reliablePaste": {
         "title": "Colagem confiável (Beta)",

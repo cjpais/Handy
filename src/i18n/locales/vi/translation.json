@@ -214,9 +214,18 @@
         "noResults": "Không tìm thấy ngôn ngữ",
         "auto": "Tự động"
       },
-      "pushToTalk": {
-        "label": "Nhấn để nói",
-        "description": "Giữ để ghi âm, thả để dừng"
+      "shortcutActivation": {
+        "title": "Hành vi phím tắt",
+        "options": {
+          "holdOrToggle": "Giữ hoặc nhấn",
+          "pushToTalk": "Nhấn để nói",
+          "toggle": "Nhấn"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Giữ để ghi âm và thả ra để dừng, hoặc nhấn nhanh để tiếp tục ghi âm cho đến khi bạn nhấn lại",
+          "push_to_talk": "Giữ để ghi âm, thả để dừng",
+          "toggle": "Nhấn để bắt đầu ghi âm, nhấn lại để dừng"
+        }
       }
     },
     "sound": {
@@ -544,6 +553,10 @@
       "pasteDelayAfter": {
         "title": "Độ trễ dán (sau)",
         "description": "Độ trễ (tính bằng mili giây) sau khi gửi phím dán, trước khi khôi phục bảng nhớ tạm trước đó. Tăng nếu nội dung bảng nhớ tạm cũ được dán thay vì bản chép lời."
+      },
+      "holdThreshold": {
+        "title": "Ngưỡng giữ phím",
+        "description": "Chỉ áp dụng cho chế độ Giữ hoặc nhấn: phím tắt phải được giữ trong bao lâu (mili giây) để được tính là nhấn-để-nói thay vì nhấn nhanh. Giảm xuống nếu các bản ghi nhấn-để-nói ngắn vẫn tiếp tục chạy; tăng lên nếu các lần nhấn nhanh có chủ ý bị coi là giữ phím."
       },
       "reliablePaste": {
         "title": "Dán đáng tin cậy (Beta)",

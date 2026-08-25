@@ -214,9 +214,18 @@
         "noResults": "Nessuna lingua trovata",
         "auto": "Automatico"
       },
-      "pushToTalk": {
-        "label": "Premi per Parlare",
-        "description": "Tieni premuto per parlare, rilascia per interrompere"
+      "shortcutActivation": {
+        "title": "Comportamento della scorciatoia",
+        "options": {
+          "holdOrToggle": "Tieni premuto o tocca",
+          "pushToTalk": "Premi per Parlare",
+          "toggle": "Tocca"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Tieni premuto per registrare e rilascia per fermare, oppure tocca per continuare a registrare finché non premi di nuovo",
+          "push_to_talk": "Tieni premuto per parlare, rilascia per interrompere",
+          "toggle": "Premi per avviare la registrazione, premi di nuovo per fermarla"
+        }
       }
     },
     "sound": {
@@ -544,6 +553,10 @@
       "pasteDelayAfter": {
         "title": "Ritardo incolla (dopo)",
         "description": "Ritardo (in millisecondi) dopo il tasto incolla, prima di ripristinare gli appunti precedenti. Aumentare se viene incollato il vecchio contenuto degli appunti invece della trascrizione."
+      },
+      "holdThreshold": {
+        "title": "Soglia di pressione prolungata",
+        "description": "Solo in modalità Tieni premuto o tocca: per quanto tempo (in millisecondi) la scorciatoia deve restare premuta per contare come premi per parlare invece di un tocco. Riduci se le registrazioni brevi in premi per parlare restano attive; aumenta se i tocchi intenzionali vengono interpretati come pressioni prolungate."
       },
       "reliablePaste": {
         "title": "Incolla affidabile (Beta)",
