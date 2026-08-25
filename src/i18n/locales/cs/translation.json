@@ -377,6 +377,14 @@
         "title": "Detekce hlasové aktivity",
         "description": "Odfiltruje ticho z nahrávek. Modely podporující streaming používají delší doběh VAD; vypnutí VAD nahrává surový zvuk."
       },
+      "vadBackend": {
+        "title": "Backend detekce hlasu",
+        "description": "Vyberte detektor používaný k filtrování ticha. Earshot je experimentální; pokud je řeč ořezávána nebo zůstává šum, přepněte zpět na Silero.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Odstranit výplňová slova",
         "description": "Odstraňuje běžná slova vyjadřující váhání z přepisů. Vypnutím je zachováte."

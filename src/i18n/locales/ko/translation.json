@@ -377,6 +377,14 @@
         "title": "음성 활동 감지",
         "description": "녹음에서 무음 구간을 걸러냅니다. 스트리밍 지원 모델은 더 긴 VAD 테일을 사용하며, VAD를 끄면 원본 오디오가 그대로 녹음됩니다."
       },
+      "vadBackend": {
+        "title": "음성 활동 감지 백엔드",
+        "description": "무음을 필터링하는 데 사용할 감지기를 선택합니다. Earshot은 실험적 기능입니다. 음성이 잘리거나 소음이 남는 경우 Silero로 되돌리세요.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "군더더기 표현 제거",
         "description": "전사에서 흔한 머뭇거림 표현을 제거합니다. 그대로 두려면 이 옵션을 끄세요."

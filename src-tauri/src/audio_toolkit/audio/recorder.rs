@@ -51,12 +51,13 @@ pub enum VadPolicy {
 #[derive(Clone)]
 struct VadConfig {
     detector: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
+    frame_samples: usize,
     offline_hangover_frames: usize,
     streaming_hangover_frames: usize,
 }
 
 impl VadConfig {
-    /// Post-speech hangover tail (in 30 ms frames) for the given policy.
+    /// Post-speech hangover tail (in backend-sized frames) for the given policy.
     /// `Disabled` never reaches the detector, so it maps to the offline value.
     fn hangover_for(&self, policy: VadPolicy) -> usize {
         match policy {
@@ -114,8 +115,11 @@ impl AudioRecorder {
         offline_hangover_frames: usize,
         streaming_hangover_frames: usize,
     ) -> Self {
+        let frame_samples = detector.frame_samples();
+        assert!(frame_samples > 0, "VAD frame size must be non-zero");
         self.vad = Some(VadConfig {
             detector: Arc::new(Mutex::new(detector)),
+            frame_samples,
             offline_hangover_frames,
             streaming_hangover_frames,
         });
@@ -742,10 +746,16 @@ fn run_consumer(
     stop_flag: Arc<AtomicBool>,
     stream_running_at: Instant,
 ) {
+    let frame_samples = vad.as_ref().map_or(
+        (constants::WHISPER_SAMPLE_RATE * 30 / 1000) as usize,
+        |config| config.frame_samples,
+    );
+    let frame_duration =
+        Duration::from_secs_f64(frame_samples as f64 / constants::WHISPER_SAMPLE_RATE as f64);
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
         constants::WHISPER_SAMPLE_RATE as usize,
-        Duration::from_millis(30),
+        frame_duration,
     );
 
     let mut processed_samples = Vec::<f32>::new();
@@ -930,7 +940,8 @@ fn run_consumer(
                                 log::debug!(
                                     "VAD at stop: withheld tail {} frames (~{}ms, {} voiced), in_speech={}, onset_counter={}, hangover_counter={}",
                                     report.withheld_frames,
-                                    report.withheld_frames * 30,
+                                    report.withheld_frames * cfg.frame_samples * 1000
+                                        / constants::WHISPER_SAMPLE_RATE as usize,
                                     report.withheld_voiced_frames,
                                     report.in_speech,
                                     report.onset_counter,
