@@ -377,6 +377,14 @@
         "title": "音声区間検出 (VAD)",
         "description": "録音から無音部分を除去します。ストリーミング対応モデルはより長い音声検出区間を使用します。VAD を無効にすると音声をそのまま録音します。"
       },
+      "vadBackend": {
+        "title": "音声区間検出バックエンド",
+        "description": "無音のフィルタリングに使用する検出器を選択します。Earshot は実験的機能です。音声が途切れたりノイズが残る場合は Silero に戻してください。",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "フィラー語を削除",
         "description": "文字起こしから一般的なフィラー語を削除します。残すにはオフにしてください。"
