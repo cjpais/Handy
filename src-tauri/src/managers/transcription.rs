@@ -633,23 +633,33 @@ impl TranscriptionManager {
                 // --device-index flag) hard-select that registered device;
                 // otherwise re-read the persisted accelerator preference (so an
                 // accelerator change marked for reload takes effect here).
-                let (backend, gpu_device) = match device_index {
+                let (backend, device) = match device_index {
                     Some(index) => resolve_device_index(index).inspect_err(|e| {
                         emit_loading_failed(&e.to_string());
                     })?,
                     None => {
                         let settings = get_settings(&self.app_handle);
                         let accelerator = settings.transcribe_accelerator;
-                        (
-                            select_transcribe_backend(accelerator),
-                            resolve_gpu_device(accelerator, settings.transcribe_gpu_device),
-                        )
+                        let device = resolve_gpu_device(
+                            accelerator,
+                            settings.transcribe_gpu_device.as_deref(),
+                        );
+                        // Backend::Auto accepts an exact GPU device. Without a
+                        // valid exact device, backend selection handles the
+                        // retired generic GPU state and host CPU guard.
+                        let backend = if device.is_some() {
+                            Backend::Auto
+                        } else {
+                            select_transcribe_backend(accelerator)
+                        };
+                        (backend, device)
                     }
                 };
-                let model_options = ModelOptions {
-                    backend,
-                    gpu_device,
-                };
+                let requested_device = device
+                    .as_ref()
+                    .map(transcribe_device_label)
+                    .unwrap_or_else(|| "automatic".to_string());
+                let model_options = ModelOptions { backend, device };
                 let model = Model::load_with(&model_path, &model_options).map_err(|e| {
                     let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
                     emit_loading_failed(&error_msg);
@@ -678,13 +688,19 @@ impl TranscriptionManager {
                     caps.supports_language_detect,
                     caps.languages.clone(),
                 );
+                let bound_device = model
+                    .device()
+                    .map(|device| transcribe_device_label(&device))
+                    .unwrap_or_else(|_| "unknown".to_string());
                 info!(
-                    "Loaded whisper model '{}' (requested {:?}, gpu_device {}, bound backend '{}', \
-                     supports_streaming={}, supports_translate={}, supports_language_detect={})",
+                    "Loaded whisper model '{}' (requested {:?}, requested device '{}', \
+                     bound backend '{}', bound device '{}', supports_streaming={}, \
+                     supports_translate={}, supports_language_detect={})",
                     model_id,
                     backend,
-                    gpu_device,
+                    requested_device,
                     bound_backend,
+                    bound_device,
                     caps.supports_streaming,
                     caps.supports_translate,
                     caps.supports_language_detect
@@ -1683,7 +1699,10 @@ impl TranscriptionManager {
         if final_result.is_empty() {
             info!("Transcription result is empty");
         } else {
-            info!("Transcription result: {}", final_result);
+            info!(
+                "Transcription result: {}",
+                crate::utils::redact_text(&final_result)
+            );
         }
 
         self.maybe_unload_immediately("transcription", Some(reservation));
@@ -2110,107 +2129,92 @@ pub fn describe_compute_devices() -> Vec<String> {
         .collect()
 }
 
-/// Resolve a `--list-devices` registry index to the (backend, gpu_device) pair
-/// for a transcribe-cpp model load (the `--device-index` flag). The
-/// backend is set explicitly from the device's kind, so there's no "index 0 =
-/// auto" ambiguity. Errors if the index isn't a registered, loadable device.
-fn resolve_device_index(index: usize) -> Result<(Backend, i32)> {
+/// Resolve a `--list-devices` registry index to an exact opaque device handle
+/// for a transcribe-cpp model load (the `--device-index` flag). In 0.2 index 0
+/// is an exact selection too; only an omitted index requests automatic device
+/// selection. Errors if the index isn't a registered, loadable primary device.
+fn resolve_device_index(index: usize) -> Result<(Backend, Option<transcribe_cpp::Device>)> {
     let device = transcribe_compute_devices()
         .into_iter()
         .find(|d| d.index == Some(index))
         .ok_or_else(|| {
             anyhow::anyhow!("No compute device with index {index} (see --list-devices)")
         })?;
-    let backend = match device.kind.as_str() {
-        "cpu" => Backend::Cpu,
-        "metal" => Backend::Metal,
-        "cuda" => Backend::Cuda,
-        "vulkan" => Backend::Vulkan,
-        other => {
-            return Err(anyhow::anyhow!(
-                "Device index {index} has kind '{other}', which cannot host a model"
-            ))
-        }
-    };
-    // gpu_device is a registry index used only by GPU backends; CPU ignores it.
-    let gpu_device = if matches!(backend, Backend::Cpu) {
-        0
-    } else {
-        index as i32
-    };
-    Ok((backend, gpu_device))
+    if matches!(
+        device.device_type,
+        transcribe_cpp::DeviceType::Accel | transcribe_cpp::DeviceType::Unknown
+    ) {
+        return Err(anyhow::anyhow!(
+            "Device index {index} ({}) cannot host a model",
+            device.kind
+        ));
+    }
+
+    // 0.2's opaque handle makes every index, including zero, an exact
+    // selection. Backend::Auto accepts any primary device and cannot conflict
+    // with the selected device's vendor backend.
+    Ok((Backend::Auto, Some(device)))
 }
 
 /// Map Handy's whisper accelerator setting to a transcribe-cpp [`Backend`].
 ///
-/// `Auto` lets the library pick the best device (with CPU fallback). `Cpu` forces
-/// strict CPU. `Gpu` requests the platform GPU backend, but only if a device for
-/// it is actually registered — otherwise it falls back to `Auto` so the load
-/// never fails outright on a machine without that GPU backend. An emulated x64
-/// process on Windows ARM64 forces strict CPU for every setting.
+/// `Auto` lets the library pick the best device (with CPU fallback), while
+/// `Cpu` forces strict CPU. `Gpu` only remains as the companion setting for an
+/// exact device; without a valid exact device it has the retired generic GPU
+/// state's new Auto semantics. An emulated x64 process on Windows ARM64 forces
+/// strict CPU for every setting.
 fn select_transcribe_backend(setting: TranscribeAcceleratorSetting) -> Backend {
-    match effective_transcribe_accelerator(setting, transcribe_gpu_disabled_for_host()) {
-        TranscribeAcceleratorSetting::Cpu => Backend::Cpu,
-        TranscribeAcceleratorSetting::Auto => Backend::Auto,
-        TranscribeAcceleratorSetting::Gpu => {
-            #[cfg(target_os = "macos")]
-            let candidates = [Backend::Metal];
-            #[cfg(not(target_os = "macos"))]
-            let candidates = [Backend::Cuda, Backend::Vulkan];
+    select_transcribe_backend_for_host(setting, transcribe_gpu_disabled_for_host())
+}
 
-            match candidates
-                .into_iter()
-                .find(|&b| transcribe_cpp::backend_available(b))
-            {
-                Some(b) => b,
-                None => {
-                    #[cfg(target_os = "linux")]
-                    warn!(
-                        "GPU acceleration was requested, but no transcribe.cpp GPU backend is \
-                         registered; falling back to Auto (usually CPU). Run with \
-                         --list-devices to inspect detected devices; VK_LOADER_DEBUG=error can \
-                         reveal Vulkan loader or driver failures"
-                    );
-                    #[cfg(not(target_os = "linux"))]
-                    warn!(
-                        "GPU acceleration was requested, but no transcribe.cpp GPU backend is \
-                         registered; falling back to Auto (usually CPU). Run with \
-                         --list-devices to inspect detected devices"
-                    );
-                    Backend::Auto
-                }
-            }
-        }
+fn select_transcribe_backend_for_host(
+    setting: TranscribeAcceleratorSetting,
+    gpu_disabled: bool,
+) -> Backend {
+    match effective_transcribe_accelerator(setting, gpu_disabled) {
+        TranscribeAcceleratorSetting::Cpu => Backend::Cpu,
+        TranscribeAcceleratorSetting::Auto | TranscribeAcceleratorSetting::Gpu => Backend::Auto,
     }
 }
 
-/// Resolve the user's stored GPU device choice into a [`ModelOptions::gpu_device`]
-/// registry index for the next model load.
-///
-/// Settings store a registry index into [`transcribe_cpp::devices`] (`-1` is the
-/// UI's auto/CPU sentinel); transcribe-cpp treats `0` as "auto / first match" and
-/// rejects an out-of-range or non-GPU index. So an explicit selection is honored
-/// only when the user chose the GPU accelerator and the stored index still
-/// resolves to a registered GPU device — otherwise fall back to `0` so a stale
-/// selection can never fail the load.
-fn resolve_gpu_device(setting: TranscribeAcceleratorSetting, gpu_device: i32) -> i32 {
-    if transcribe_gpu_disabled_for_host()
-        || setting != TranscribeAcceleratorSetting::Gpu
-        || gpu_device <= 0
-    {
-        return 0;
+/// Resolve the user's persisted GPU identity to a fresh opaque 0.2 device
+/// handle. Registry indices and handles are process-local, so settings store a
+/// key based on the backend's stable `device_id` (falling back to name for
+/// backends such as Metal that do not report one).
+fn resolve_gpu_device(
+    setting: TranscribeAcceleratorSetting,
+    gpu_device: Option<&str>,
+) -> Option<transcribe_cpp::Device> {
+    if transcribe_gpu_disabled_for_host() || setting != TranscribeAcceleratorSetting::Gpu {
+        return None;
     }
-    let still_valid = transcribe_compute_devices()
-        .iter()
-        .any(|d| d.index == Some(gpu_device as usize) && is_transcribe_gpu_device(d));
-    if still_valid {
-        gpu_device
-    } else {
+    let gpu_device = gpu_device?;
+    let resolved = transcribe_compute_devices().into_iter().find(|device| {
+        is_transcribe_gpu_device(device) && transcribe_device_key(device) == gpu_device
+    });
+    if resolved.is_none() {
         warn!(
-            "Stored transcribe GPU device index {} is no longer available; using auto",
+            "Stored transcribe GPU device '{}' is no longer available; using automatic device selection",
             gpu_device
         );
-        0
+    }
+    resolved
+}
+
+fn transcribe_device_key(device: &transcribe_cpp::Device) -> String {
+    let (identity_kind, identity) = match device.device_id.as_deref() {
+        Some(device_id) => ("id", device_id),
+        None => ("name", device.name.as_str()),
+    };
+    serde_json::to_string(&(device.kind.as_str(), identity_kind, identity))
+        .expect("transcribe device identity is always JSON serializable")
+}
+
+fn transcribe_device_label(device: &transcribe_cpp::Device) -> String {
+    if device.description.is_empty() {
+        device.name.clone()
+    } else {
+        device.description.clone()
     }
 }
 
@@ -2243,7 +2247,7 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
 
 #[derive(Serialize, Clone, Debug, Type)]
 pub struct GpuDeviceOption {
-    pub id: i32,
+    pub id: String,
     pub name: String,
     pub total_vram_mb: usize,
 }
@@ -2266,7 +2270,10 @@ fn effective_transcribe_accelerator(
 }
 
 fn is_transcribe_gpu_device(device: &transcribe_cpp::Device) -> bool {
-    device.kind != "cpu" && device.kind != "accel"
+    matches!(
+        device.device_type,
+        transcribe_cpp::DeviceType::Gpu | transcribe_cpp::DeviceType::Igpu
+    )
 }
 
 fn transcribe_device_allowed(kind: &str, gpu_disabled: bool) -> bool {
@@ -2295,22 +2302,17 @@ fn available_transcribe_accelerators(gpu_disabled: bool) -> Vec<String> {
 }
 
 fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
-    // GPU compute devices transcribe-cpp registered at startup. `id` is the
-    // device's registry index (`Device::index`, not a re-counted position) so it
-    // feeds straight back as `ModelOptions::gpu_device` (see `resolve_gpu_device`).
-    // `total_vram_mb` is the backend-reported capacity, 0 when unreported (some
-    // Metal/Vulkan drivers).
+    // GPU compute devices transcribe-cpp registered at startup. `id` is a
+    // persistent identity key, never the process-local registry index. It uses
+    // the backend's device_id where available and its name otherwise (Metal).
+    // `total_vram_mb` is 0 when the backend does not report capacity.
     GPU_DEVICES.get_or_init(|| {
         transcribe_compute_devices()
             .into_iter()
             .filter(is_transcribe_gpu_device)
             .map(|d| GpuDeviceOption {
-                id: d.index.unwrap_or(0) as i32,
-                name: if d.description.is_empty() {
-                    d.name
-                } else {
-                    d.description
-                },
+                id: transcribe_device_key(&d),
+                name: transcribe_device_label(&d),
                 total_vram_mb: (d.memory_total / (1024 * 1024)) as usize,
             })
             .collect()
@@ -2384,6 +2386,18 @@ mod tests {
             available_transcribe_accelerators(false),
             ["auto", "cpu", "gpu"]
         );
+        assert_eq!(
+            select_transcribe_backend_for_host(TranscribeAcceleratorSetting::Auto, false),
+            Backend::Auto
+        );
+        assert_eq!(
+            select_transcribe_backend_for_host(TranscribeAcceleratorSetting::Cpu, false),
+            Backend::Cpu
+        );
+        assert_eq!(
+            select_transcribe_backend_for_host(TranscribeAcceleratorSetting::Gpu, false),
+            Backend::Auto
+        );
         for kind in ["cpu", "accel", "metal", "cuda", "vulkan", "gpu"] {
             assert!(transcribe_device_allowed(kind, false));
         }
@@ -2399,6 +2413,10 @@ mod tests {
             assert_eq!(
                 effective_transcribe_accelerator(setting, true),
                 TranscribeAcceleratorSetting::Cpu
+            );
+            assert_eq!(
+                select_transcribe_backend_for_host(setting, true),
+                Backend::Cpu
             );
         }
         assert_eq!(available_transcribe_accelerators(true), ["cpu"]);

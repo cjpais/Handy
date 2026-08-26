@@ -768,7 +768,7 @@ mod tests {
         let text = "using Mac Book Pro";
         let custom_words = vec!["MacBook Pro".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
-        assert!(result.contains("MacBook"));
+        assert_eq!(result, "using MacBook Pro");
     }
 
     #[test]

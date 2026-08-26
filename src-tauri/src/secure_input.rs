@@ -286,10 +286,9 @@ mod imp {
     }
 
     fn refresh_tray(app: &AppHandle) {
-        // Tray may be absent (--no-tray)
-        if app.try_state::<tauri::tray::TrayIcon>().is_some() {
-            crate::tray::refresh_tray_icon(app);
-        }
+        // No-op before the tray is built; otherwise a diffed, coalesced,
+        // main-thread apply that never blocks this thread.
+        crate::tray::refresh_tray_icon(app);
     }
 
     pub fn start_monitor(app: &AppHandle) {
@@ -320,11 +319,6 @@ mod imp {
                 }
 
                 if !now_enabled {
-                    // Capture this before clearing the state. Once `sustained`
-                    // becomes false, warning_active() can no longer tell us that
-                    // the tray is still displaying the previous warning.
-                    let warning_was_active = state.warning_active();
-
                     // Clear recorder impact on every disabled sample. A short
                     // Secure Input episode can otherwise occur entirely
                     // between polls and leave this flag latched indefinitely.
@@ -337,12 +331,6 @@ mod imp {
 
                     if state.sustained.swap(false, Ordering::SeqCst) {
                         reconcile_fallback(&app);
-                        // reconcile_fallback snapshots warning state after the
-                        // sustained flag changed, so explicitly clear a warning
-                        // that was visible before deactivation.
-                        if warning_was_active {
-                            refresh_tray(&app);
-                        }
                     } else if was_enabled || was_blocked {
                         refresh_tray(&app);
                         emit_status(&app);
@@ -488,7 +476,6 @@ mod imp {
     pub fn reconcile_fallback(app: &AppHandle) {
         let state = app.state::<SecureInputState>();
         let _operation = state.fallback_operation.lock().unwrap();
-        let warning_was_active = state.warning_active();
 
         let previous = {
             let mut fallback = state.fallback.lock().unwrap();
@@ -550,16 +537,12 @@ mod imp {
         }
 
         *state.fallback.lock().unwrap() = next;
-        let warning_is_active = state.warning_active();
         drop(_operation);
 
-        // The tray only reflects whether user-visible impact exists; covered
-        // bindings and other fallback details are reported through the event.
-        // Avoid rebuilding the native tray menu when its visible state did not
-        // change, especially during recording lifecycle reconciliation.
-        if warning_was_active != warning_is_active {
-            refresh_tray(app);
-        }
+        // The tray sync diffs against what is displayed, so this is free when
+        // the warning state did not change. Lock is released first: the sync
+        // reads app state and must not nest under the operation mutex.
+        refresh_tray(app);
         emit_status(app);
     }
 

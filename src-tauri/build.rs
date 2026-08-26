@@ -205,7 +205,7 @@ fn stage_transcribe_runtime_libs() {
             let src = entry.path();
             let name = src.file_name().and_then(|s| s.to_str()).unwrap_or("");
             // Match by NAME, not extension: Linux versions its libs
-            // (libtranscribe.so.0, .so.0.1.3) and the loader needs the SONAME, so
+            // (libtranscribe.so.0, .so.0.2.0) and the loader needs the SONAME, so
             // an extension-only filter would miss the versioned names entirely.
             let is_lib = name.ends_with(".dll")
                 || name.ends_with(".dylib")
@@ -217,23 +217,24 @@ fn stage_transcribe_runtime_libs() {
         }
     }
 
-    // A Linux install dir carries each lib as a symlink chain (libfoo.so ->
-    // libfoo.so.0 -> libfoo.so.0.1.3), and tauri's deb/rpm bundlers flatten
-    // symlinks into real files — staging every name would triplicate each lib
-    // on disk and draw "not a symbolic link" warnings from ldconfig (issue
-    // #1639). Only one name per lib is ever resolved at runtime: the SONAME
-    // (`libfoo.so.N`) for the NEEDED core libs, and the bare unversioned name
-    // for the dlopen'd ggml backend modules. Stage exactly that name;
-    // `fs::copy` dereferences the symlink so the staged file is the real
-    // library.
+    // A Linux install dir carries each lib as a symlink chain (for example,
+    // libfoo.so -> libfoo.so.0.2 -> libfoo.so.0.2.0), and tauri's deb/rpm
+    // bundlers flatten symlinks into real files. Staging every name would
+    // triplicate each lib and draw "not a symbolic link" warnings from ldconfig
+    // (issue #1639). Only one name per lib is needed at runtime: the shortest
+    // versioned name is the SONAME for linked core libs, while a dlopen'd ggml
+    // backend module generally has only its bare unversioned name. Stage that
+    // name; `fs::copy` dereferences the symlink so the staged file is real.
     let mut best: std::collections::BTreeMap<&str, (&str, &PathBuf, usize)> = Default::default();
     for (name, src) in &libs {
         let (stem, rank) = match split_versioned_so(name) {
             // Windows/macOS names (.dll/.dylib) are unversioned: keep as-is.
             None => (name.as_str(), 0),
-            // Prefer the SONAME form (exactly one numeric suffix), then the
-            // bare `.so`; fully-versioned names only as a last resort.
-            Some((stem, depth)) => (stem, if depth == 1 { 0 } else { depth + 1 }),
+            // Prefer the shortest versioned name (`.so.0`, `.so.0.2`, etc.),
+            // then the bare `.so`; a full version is only the fallback when the
+            // install tree did not provide its SONAME symlink.
+            Some((stem, 0)) => (stem, usize::MAX),
+            Some((stem, depth)) => (stem, depth - 1),
         };
         match best.get(stem) {
             Some(&(_, _, existing)) if existing <= rank => {}
@@ -261,7 +262,7 @@ fn stage_transcribe_runtime_libs() {
 
 /// Split a versioned ELF shared-library name into (stem, version depth):
 /// `libfoo.so` -> ("libfoo", 0), `libfoo.so.0` -> ("libfoo", 1),
-/// `libfoo.so.0.1.3` -> ("libfoo", 3). Returns None for names that aren't a
+/// `libfoo.so.0.2.0` -> ("libfoo", 3). Returns None for names that aren't a
 /// `.so` optionally followed by dot-separated numeric components.
 fn split_versioned_so(name: &str) -> Option<(&str, usize)> {
     let idx = name.find(".so")?;
