@@ -286,10 +286,9 @@ mod imp {
     }
 
     fn refresh_tray(app: &AppHandle) {
-        // Tray may be absent (--no-tray)
-        if app.try_state::<tauri::tray::TrayIcon>().is_some() {
-            crate::tray::refresh_tray_icon(app);
-        }
+        // No-op before the tray is built; otherwise a diffed, coalesced,
+        // main-thread apply that never blocks this thread.
+        crate::tray::refresh_tray_icon(app);
     }
 
     pub fn start_monitor(app: &AppHandle) {
@@ -539,6 +538,10 @@ mod imp {
 
         *state.fallback.lock().unwrap() = next;
         drop(_operation);
+
+        // The tray sync diffs against what is displayed, so this is free when
+        // the warning state did not change. Lock is released first: the sync
+        // reads app state and must not nest under the operation mutex.
         refresh_tray(app);
         emit_status(app);
     }
@@ -553,13 +556,21 @@ mod imp {
     pub fn register_cancel_fallback(app: &AppHandle) {
         let state = app.state::<SecureInputState>();
         state.cancel_requested.store(true, Ordering::SeqCst);
-        schedule_reconcile(app);
+        // Without sustained Secure Input there are no Carbon shadows to
+        // update. The monitor performs reconciliation when sustained mode is
+        // entered or left, so spawning here would only race the normal tray
+        // state transition for every recording start.
+        if state.is_sustained() {
+            schedule_reconcile(app);
+        }
     }
 
     pub fn unregister_cancel_fallback(app: &AppHandle) {
         let state = app.state::<SecureInputState>();
         state.cancel_requested.store(false, Ordering::SeqCst);
-        schedule_reconcile(app);
+        if state.is_sustained() {
+            schedule_reconcile(app);
+        }
     }
 
     /// Count-only capture test for the debug window. Opens a short-lived
