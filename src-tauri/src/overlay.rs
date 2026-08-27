@@ -497,7 +497,14 @@ enum OverlayPhase {
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum Desired {
     Hidden,
-    Visible(String),
+    /// The card to present once this takes effect. `mic_ready` rides along so
+    /// readiness observed while the show was deferred is replayed by the very
+    /// application of that show — bundled with the card it belongs to, it can
+    /// neither be overtaken by it nor outlive its session.
+    Visible {
+        state: String,
+        mic_ready: bool,
+    },
 }
 
 struct OverlayController {
@@ -528,7 +535,13 @@ impl OverlayController {
     /// immediately unless a hide chain is in flight (a deferred show is
     /// applied by the chain end instead).
     fn request_show(&mut self, state: &str) -> ShowEffect {
-        self.want = Desired::Visible(state.to_string());
+        // Every show describes a fresh presentation, so the readiness latch
+        // resets here by construction: one session's warm microphone can
+        // never bleed into another card's arming animation.
+        self.want = Desired::Visible {
+            state: state.to_string(),
+            mic_ready: false,
+        };
         let effect = decide_show(self.phase);
         if effect == ShowEffect::Immediate {
             self.phase = OverlayPhase::Visible;
@@ -555,13 +568,28 @@ impl OverlayController {
         decision
     }
 
+    /// The input stream delivered its first samples. Latches readiness onto
+    /// the pending card and reports whether delivery must be withheld: while
+    /// a hide chain defers the show, the chain end re-emits right after its
+    /// deferred `show-overlay`, keeping that order intact on the frontend.
+    fn note_mic_ready(&mut self) -> bool {
+        let latched = match &mut self.want {
+            Desired::Visible { mic_ready, .. } => {
+                *mic_ready = true;
+                true
+            }
+            Desired::Hidden => false,
+        };
+        self.phase == OverlayPhase::Hiding && latched
+    }
+
     /// The hide-chain end: apply `want`. Visible re-shows without unmapping.
     /// On Hidden the phase flips while the caller still holds the lock across
     /// the unmap, so a concurrent show cannot slip between the unmap and the
     /// phase transition.
     fn settle_chain_end(&mut self) -> Desired {
         match self.want.clone() {
-            want @ Desired::Visible(_) => {
+            want @ Desired::Visible { .. } => {
                 self.phase = OverlayPhase::Visible;
                 want
             }
@@ -751,9 +779,16 @@ pub fn emit_recording_ready(app_handle: &AppHandle) {
         return;
     }
 
-    // Showing the overlay is also queued onto the main thread. Queue readiness
-    // there as well so a very fast always-on stream cannot overtake show-overlay
-    // and then get reset back to the arming state by the frontend.
+    // Showing the overlay is queued onto the main thread, and so is readiness
+    // below: queue order makes the frontend see recording-ready strictly after
+    // show-overlay. When a hide chain defers the show instead, latch readiness
+    // onto the pending card — the chain end delivers it right after the
+    // deferred show-overlay, so the just-reset arming state is immediately
+    // re-armed and never left stuck waiting for a sample that already passed.
+    if OVERLAY.lock().unwrap().note_mic_ready() {
+        return;
+    }
+
     let handle = app_handle.clone();
     let _ = app_handle.run_on_main_thread(move || {
         let _ = handle.emit_to("recording_overlay", "recording-ready", ());
@@ -895,22 +930,31 @@ pub fn hide_recording_overlay(app_handle: &AppHandle, operation_id: u64) {
                 let want = {
                     let mut controller = OVERLAY.lock().unwrap();
                     match controller.settle_chain_end() {
-                        want @ Desired::Visible(_) => want,
+                        want @ Desired::Visible { .. } => Some(want),
                         Desired::Hidden => {
                             // settle_chain_end already flipped the phase to
                             // Hidden; keep holding the lock across hide() so a
                             // concurrent show cannot slip between the unmap
                             // and the phase transition.
                             let _ = end_window.hide();
-                            return;
+                            None
                         }
                     }
                 };
-                // A show arrived while the chain was parking: apply it now.
-                // The surface stayed mapped; resizing compact -> target forces
-                // a full repaint, so no stale pixels can survive.
-                if let Desired::Visible(state) = want {
+                if let Some(Desired::Visible { state, mic_ready }) = want {
+                    // A show arrived while the chain was parking: apply it now.
+                    // The surface stayed mapped; resizing compact -> target
+                    // forces a full repaint, so no stale pixels can survive.
                     show_overlay_state_on_main(&handle, &state);
+                    if mic_ready {
+                        // Samples were already flowing while the park hid the
+                        // old card, so recording-ready was withheld. Deliver it
+                        // immediately — this runs after the show-overlay emitted
+                        // above, and it is the last chance: the frontend's show
+                        // handler reset its arming state synchronously and no
+                        // further readiness event will ever come.
+                        let _ = handle.emit_to("recording_overlay", "recording-ready", ());
+                    }
                 }
             });
             if apply_outcome.is_err() {
@@ -1195,10 +1239,22 @@ mod visibility_controller_tests {
         // The old operation's pipeline finishes late and tries to hide.
         let stale = c.request_hide(OP1);
         assert_eq!(stale, HideDecision::Ignore);
-        assert_eq!(c.want, Desired::Visible("streaming".to_string()));
+        assert_eq!(
+            c.want,
+            Desired::Visible {
+                state: "streaming".to_string(),
+                mic_ready: false
+            }
+        );
 
         let settled = c.settle_chain_end();
-        assert_eq!(settled, Desired::Visible("streaming".to_string()));
+        assert_eq!(
+            settled,
+            Desired::Visible {
+                state: "streaming".to_string(),
+                mic_ready: false
+            }
+        );
         assert_eq!(c.phase, OverlayPhase::Visible);
     }
 
@@ -1261,7 +1317,13 @@ mod visibility_controller_tests {
 
         assert_eq!(effect, ShowEffect::Immediate);
         assert_eq!(c.phase, OverlayPhase::Visible);
-        assert_eq!(c.want, Desired::Visible("streaming".to_string()));
+        assert_eq!(
+            c.want,
+            Desired::Visible {
+                state: "streaming".to_string(),
+                mic_ready: false
+            }
+        );
     }
 
     /// After a completed hide cycle the overlay is fully reusable: a new show
@@ -1317,5 +1379,102 @@ mod visibility_controller_tests {
         assert_eq!(c.want, Desired::Hidden);
         let effect = c.request_show("recording");
         assert_eq!(effect, ShowEffect::Immediate);
+    }
+
+    // ---- microphone-readiness latch (carried inside Desired) ----
+
+    /// A recording-ready noted behind a DEFERRED show must surface at the
+    /// chain end inside the very same Desired that gets applied there.
+    /// Backend half of the "show-overlay always precedes its session's
+    /// recording-ready" ordering the frontend's arming reset relies on:
+    /// without this, a warm microphone beats the ~200ms park and the new
+    /// card sits arming forever because no further readiness event comes.
+    #[test]
+    fn ready_latched_by_a_deferred_show_surfaces_at_settle() {
+        let mut c = controller();
+
+        c.request_show("recording");
+        assert_eq!(c.request_hide(OP1), HideDecision::StartChain);
+
+        // The user immediately re-triggers: a new transcription takes
+        // ownership mid-chain and its show defers to the park's end.
+        let _ = c.begin_operation();
+        let effect = c.request_show("streaming");
+        assert_eq!(effect, ShowEffect::Deferred);
+
+        // Warm microphone delivers samples while the park is still in flight.
+        let withheld = c.note_mic_ready();
+        assert!(withheld);
+
+        let settled = c.settle_chain_end();
+        assert_eq!(
+            settled,
+            Desired::Visible {
+                state: "streaming".to_string(),
+                mic_ready: true
+            }
+        );
+    }
+
+    /// Readiness with nowhere to latch (card already hidden by a retarget)
+    /// must not be retained — the emitter falls back to immediate delivery
+    /// and nothing stale resurfaces later.
+    #[test]
+    fn ready_without_a_pending_card_is_delivered_immediately() {
+        let mut c = controller();
+
+        c.request_show("recording");
+        assert_eq!(c.request_hide(OP1), HideDecision::StartChain);
+        // Second hide retargets the running chain back to Hidden: the card
+        // this readiness belonged to is gone.
+        assert_eq!(c.request_hide(OP1), HideDecision::RetargetChain);
+
+        let withheld = c.note_mic_ready();
+        assert!(!withheld);
+        assert_eq!(c.want, Desired::Hidden);
+
+        assert_eq!(
+            c.settle_chain_end(),
+            Desired::Hidden,
+            "a discarded card must not replay a latched readiness"
+        );
+    }
+
+    /// An immediate show never withholds delivery; readiness only rides along
+    /// on the pending card as bookkeeping for a possible later deferral.
+    #[test]
+    fn ready_while_visible_is_emitted_normally() {
+        let mut c = controller();
+        c.request_show("recording");
+
+        assert!(!c.note_mic_ready());
+    }
+
+    /// A mid-chain re-show fully replaces the pending desire: whatever an
+    /// earlier point latched is dropped, so the next session's card starts
+    /// fresh in the arming state.
+    #[test]
+    fn mid_chain_reshow_replaces_stale_readiness() {
+        let mut c = controller();
+
+        c.request_show("recording");
+        // Samples arrive while Visible; bookkeeping only, never delivered late.
+        assert!(!c.note_mic_ready());
+
+        assert_eq!(c.request_hide(OP1), HideDecision::StartChain);
+
+        // A new transcription takes over mid-chain.
+        let _ = c.begin_operation();
+        let effect = c.request_show("streaming");
+        assert_eq!(effect, ShowEffect::Deferred);
+
+        let settled = c.settle_chain_end();
+        match settled {
+            Desired::Visible { state, mic_ready } => {
+                assert_eq!(state, "streaming");
+                assert!(!mic_ready, "new session must start arming, not ready");
+            }
+            other => panic!("expected a Visible outcome, got {other:?}"),
+        }
     }
 }
