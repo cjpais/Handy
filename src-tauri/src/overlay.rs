@@ -891,7 +891,7 @@ pub fn hide_recording_overlay(app_handle: &AppHandle, operation_id: u64) {
             }
 
             let end_window = overlay_window.clone();
-            let _ = overlay_window.run_on_main_thread(move || {
+            let apply_outcome = overlay_window.run_on_main_thread(move || {
                 let want = {
                     let mut controller = OVERLAY.lock().unwrap();
                     match controller.settle_chain_end() {
@@ -913,6 +913,13 @@ pub fn hide_recording_overlay(app_handle: &AppHandle, operation_id: u64) {
                     show_overlay_state_on_main(&handle, &state);
                 }
             });
+            if apply_outcome.is_err() {
+                // Scheduling the chain-end closure failed (e.g. the app is
+                // shutting down). Settle the controller so later shows are not
+                // deferred forever behind a chain that can never finish.
+                log::error!("Failed to schedule overlay hide-chain end; resetting controller");
+                OVERLAY.lock().unwrap().reset_to_hidden();
+            }
         });
     } else {
         // Window is gone — settle the controller so future shows apply
