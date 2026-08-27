@@ -1180,7 +1180,7 @@ mod visibility_controller_tests {
         assert_eq!(decision, HideDecision::StartChain);
 
         // A new transcription starts mid-chain and takes ownership.
-        let op2 = c.begin_operation();
+        let _ = c.begin_operation();
         let effect = c.request_show("streaming");
         assert_eq!(effect, ShowEffect::Deferred);
         assert_eq!(c.phase, OverlayPhase::Hiding);
