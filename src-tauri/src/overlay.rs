@@ -436,6 +436,8 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
                 }
             }
 
+            // The frontend acknowledges the unmount via the overlay_hidden_ack
+            // command (see HIDDEN_ACK / set_hidden_ack).
             debug!("Recording overlay window created successfully (hidden)");
         }
         Err(e) => {
@@ -515,12 +517,19 @@ struct OverlayController {
     /// finished operation can never unmap a newer session's overlay.
     operation_id: u64,
     want: Desired,
+    /// Whether the mapped surface is currently sized for streaming. A show
+    /// targeting the same size class the surface is already mapped at
+    /// produces no resize — and without a resize WebKitGTK repaints
+    /// incrementally, blending the previous card's pixels under the new
+    /// content.
+    mapped_streaming: bool,
 }
 
 static OVERLAY: Mutex<OverlayController> = Mutex::new(OverlayController {
     phase: OverlayPhase::Hidden,
     operation_id: 0,
     want: Desired::Hidden,
+    mapped_streaming: false,
 });
 
 impl OverlayController {
@@ -533,8 +542,12 @@ impl OverlayController {
 
     /// Mutation half of `show_overlay_state`: rewrite `want`, then apply
     /// immediately unless a hide chain is in flight (a deferred show is
-    /// applied by the chain end instead).
-    fn request_show(&mut self, state: &str) -> ShowEffect {
+    /// applied by the chain end instead) or the show targets the size the
+    /// surface is already mapped at. That same-size case is converted into a
+    /// park chain (`ParkShow`): without a resize WebKitGTK repaints
+    /// incrementally, so the previous card's pixels blend under the new
+    /// content — the ghost-card hybrid on the streaming→streaming restart.
+    fn request_show(&mut self, state: &str, mapped_same_size: bool) -> ShowEffect {
         // Every show describes a fresh presentation, so the readiness latch
         // resets here by construction: one session's warm microphone can
         // never bleed into another card's arming animation.
@@ -544,6 +557,12 @@ impl OverlayController {
         };
         let effect = decide_show(self.phase);
         if effect == ShowEffect::Immediate {
+            if self.phase == OverlayPhase::Visible && mapped_same_size {
+                // Park the mapped surface and re-apply this show at the chain
+                // end, after the shrink's forced full repaint.
+                self.phase = OverlayPhase::Hiding;
+                return ShowEffect::ParkShow;
+            }
             self.phase = OverlayPhase::Visible;
         }
         effect
@@ -636,6 +655,9 @@ fn decide_hide(phase: OverlayPhase, operation_id: u64, current_operation_id: u64
 enum ShowEffect {
     Immediate,
     Deferred,
+    /// The show arrived while visible at the same surface size: apply it via
+    /// a park chain (unmount → shrink → re-show) instead of in place.
+    ParkShow,
 }
 
 fn decide_show(phase: OverlayPhase) -> ShowEffect {
@@ -648,7 +670,9 @@ fn decide_show(phase: OverlayPhase) -> ShowEffect {
 /// Starts a new overlay-owning operation (a transcription start) and returns
 /// its id. Hides from older operations become no-ops.
 pub fn begin_operation() -> u64 {
-    OVERLAY.lock().unwrap().begin_operation()
+    let operation_id = OVERLAY.lock().unwrap().begin_operation();
+    log::debug!("overlay: begin_operation -> op{operation_id}");
+    operation_id
 }
 
 /// The id of the operation that currently owns the overlay.
@@ -665,15 +689,43 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         return;
     }
 
-    {
+    let effect = {
         let mut controller = OVERLAY.lock().unwrap();
-        if controller.request_show(state) == ShowEffect::Deferred {
+        // A show whose target size equals the currently mapped size forces no
+        // resize — WebKitGTK then repaints incrementally and the previous
+        // card's pixels blend under the new content (the ghost-card hybrid on
+        // the streaming→streaming restart). request_show converts that case
+        // into a park chain.
+        let mapped_same_size = controller.mapped_streaming == (state == "streaming");
+        controller.request_show(state, mapped_same_size)
+    };
+    match effect {
+        ShowEffect::Deferred => {
+            log::debug!("overlay: show '{state}' deferred to the in-flight hide chain");
             // A hide chain is in flight: it finishes the park repaint, then
             // re-shows this state at the end without ever unmapping. Emitting
             // or resizing now would paint the new card into the compact
             // parked frame; deferring keeps the parked scene transparent.
             return;
         }
+        ShowEffect::ParkShow => {
+            log::debug!(
+                "overlay: show '{state}' while visible at the same size; parking for a full repaint"
+            );
+            if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+                // Fresh ack round: the frontend unmounts on hide-overlay, the
+                // park proceeds once that render is committed.
+                HIDDEN_ACK.store(false, Ordering::Relaxed);
+                log::debug!("overlay: emit hide-overlay");
+                let _ = overlay_window.emit("hide-overlay", ());
+                spawn_park_chain(app_handle, overlay_window);
+                return;
+            }
+            // No window: nothing to park — settle so later shows still work.
+            OVERLAY.lock().unwrap().reset_to_hidden();
+            return;
+        }
+        ShowEffect::Immediate => {}
     }
 
     // The rest queries monitors and the cursor and mutates window geometry. On
@@ -767,7 +819,9 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
             );
         }
 
+        log::debug!("overlay: emit show-overlay '{state}'");
         let _ = overlay_window.emit("show-overlay", state);
+        OVERLAY.lock().unwrap().mapped_streaming = state == "streaming";
     }
 }
 
@@ -786,6 +840,9 @@ pub fn emit_recording_ready(app_handle: &AppHandle) {
     // deferred show-overlay, so the just-reset arming state is immediately
     // re-armed and never left stuck waiting for a sample that already passed.
     if OVERLAY.lock().unwrap().note_mic_ready() {
+        log::debug!(
+            "recording-ready: withheld behind a deferred show; the chain end will replay it"
+        );
         return;
     }
 
@@ -871,7 +928,9 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
 pub fn hide_recording_overlay(app_handle: &AppHandle, operation_id: u64) {
     {
         let mut controller = OVERLAY.lock().unwrap();
-        match controller.request_hide(operation_id) {
+        let decision = controller.request_hide(operation_id);
+        log::debug!("overlay: hide op{operation_id} -> {decision:?}");
+        match decision {
             HideDecision::Ignore | HideDecision::RetargetChain => return,
             HideDecision::StartChain => {}
         }
@@ -880,96 +939,133 @@ pub fn hide_recording_overlay(app_handle: &AppHandle, operation_id: u64) {
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Fresh ack round: the flag is set by the frontend once the card
+        // unmount below has rendered.
+        HIDDEN_ACK.store(false, Ordering::Relaxed);
         // Emit event so the frontend unmounts the card. Note: the frontend
         // returns null when not visible, so no fade actually plays and there
         // is no animation delay worth waiting for.
+        log::debug!("overlay: emit hide-overlay");
         let _ = overlay_window.emit("hide-overlay", ());
-        let handle = app_handle.clone();
-        std::thread::spawn(move || {
-            #[cfg(target_os = "linux")]
-            if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
-                // Give the webview a beat to process the hide-overlay event
-                // and unmount the card (it returns null when not visible), so
-                // the parked frame below repaints a clean transparent scene
-                // instead of the old card clipped to the compact viewport.
-                std::thread::sleep(std::time::Duration::from_millis(80));
-
-                // WebKitGTK on Wayland repaints only damaged regions, so a
-                // surface unmapped mid-transition keeps stale pixels in its
-                // reused buffers (the "ghost card" glitch) — or maps again
-                // with no fresh frame at all, showing nothing. Shrink the
-                // layer surface back to the compact size while it is still
-                // mapped: a real size change forces a full repaint with fresh
-                // pixels. This runs UNCONDITIONALLY, even when a re-trigger
-                // will re-show the overlay at the chain end — the park is the
-                // repaint mechanism, skipping it is what brought the ghost
-                // back on mid-chain re-triggers.
-                let park_window = overlay_window.clone();
-                let _ = overlay_window.run_on_main_thread(move || {
-                    if let Ok(gtk_window) = park_window.gtk_window() {
-                        let position =
-                            settings::get_settings(park_window.app_handle()).overlay_position;
-                        configure_layer_shell_surface(
-                            &gtk_window,
-                            position,
-                            OVERLAY_WIDTH,
-                            OVERLAY_HEIGHT,
-                        );
-                    }
-                });
-                // Give the GTK main loop a moment to commit the parked frame
-                // before the surface is unmapped. This must happen off the
-                // main thread — sleeping there would block the commit (and
-                // pumping events manually via gtk::main_iteration_do kills
-                // the layer surface on niri in any visibility state).
-                std::thread::sleep(std::time::Duration::from_millis(130));
-            }
-
-            let end_window = overlay_window.clone();
-            let apply_outcome = overlay_window.run_on_main_thread(move || {
-                let want = {
-                    let mut controller = OVERLAY.lock().unwrap();
-                    match controller.settle_chain_end() {
-                        want @ Desired::Visible { .. } => Some(want),
-                        Desired::Hidden => {
-                            // settle_chain_end already flipped the phase to
-                            // Hidden; keep holding the lock across hide() so a
-                            // concurrent show cannot slip between the unmap
-                            // and the phase transition.
-                            let _ = end_window.hide();
-                            None
-                        }
-                    }
-                };
-                if let Some(Desired::Visible { state, mic_ready }) = want {
-                    // A show arrived while the chain was parking: apply it now.
-                    // The surface stayed mapped; resizing compact -> target
-                    // forces a full repaint, so no stale pixels can survive.
-                    show_overlay_state_on_main(&handle, &state);
-                    if mic_ready {
-                        // Samples were already flowing while the park hid the
-                        // old card, so recording-ready was withheld. Deliver it
-                        // immediately — this runs after the show-overlay emitted
-                        // above, and it is the last chance: the frontend's show
-                        // handler reset its arming state synchronously and no
-                        // further readiness event will ever come.
-                        let _ = handle.emit_to("recording_overlay", "recording-ready", ());
-                    }
-                }
-            });
-            if apply_outcome.is_err() {
-                // Scheduling the chain-end closure failed (e.g. the app is
-                // shutting down). Settle the controller so later shows are not
-                // deferred forever behind a chain that can never finish.
-                log::error!("Failed to schedule overlay hide-chain end; resetting controller");
-                OVERLAY.lock().unwrap().reset_to_hidden();
-            }
-        });
+        spawn_park_chain(app_handle, overlay_window);
     } else {
-        // Window is gone — settle the controller so future shows apply
-        // immediately instead of waiting for a chain that will never end.
+        // Window is gone — settle the controller so future shows are not
+        // deferred forever behind a chain that can never finish.
         OVERLAY.lock().unwrap().reset_to_hidden();
     }
+}
+
+/// The park chain shared by hide and same-size show: wait for the frontend's
+/// unmount ack, shrink the mapped surface to the compact size (a real resize
+/// forces a full repaint with fresh pixels), then settle — unmap, or re-show
+/// whatever show arrived while the chain was parking.
+fn spawn_park_chain(app_handle: &AppHandle, overlay_window: tauri::WebviewWindow) {
+    let handle = app_handle.clone();
+    std::thread::spawn(move || {
+        #[cfg(target_os = "linux")]
+        if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+            // Wait until the webview actually unmounted the card and the
+            // empty frame rendered (the ack). A blind sleep here raced a
+            // busy GTK main thread: the parked frame then kept the old
+            // card clipped to the compact viewport, and re-show blended
+            // those stale pixels over the next session. Bounded so a dead
+            // webview cannot stall hides forever.
+            let ack_deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+            loop {
+                if HIDDEN_ACK.load(Ordering::Relaxed) {
+                    break;
+                }
+                if std::time::Instant::now() >= ack_deadline {
+                    log::warn!("overlay: hide ack timeout; parking anyway");
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+
+            // WebKitGTK on Wayland repaints only damaged regions, so a
+            // surface unmapped mid-transition keeps stale pixels in its
+            // reused buffers (the "ghost card" glitch) — or maps again
+            // with no fresh frame at all, showing nothing. Shrink the
+            // layer surface back to the compact size while it is still
+            // mapped: a real size change forces a full repaint with fresh
+            // pixels. This runs UNCONDITIONALLY, even when a re-trigger
+            // will re-show the overlay at the chain end — the park is the
+            // repaint mechanism, skipping it is what brought the ghost
+            // back on mid-chain re-triggers.
+            let park_window = overlay_window.clone();
+            let _ = overlay_window.run_on_main_thread(move || {
+                if let Ok(gtk_window) = park_window.gtk_window() {
+                    let position =
+                        settings::get_settings(park_window.app_handle()).overlay_position;
+                    configure_layer_shell_surface(
+                        &gtk_window,
+                        position,
+                        OVERLAY_WIDTH,
+                        OVERLAY_HEIGHT,
+                    );
+                    // The surface is mapped at the compact size now.
+                    OVERLAY.lock().unwrap().mapped_streaming = false;
+                }
+            });
+            // Give the GTK main loop a moment to commit the parked frame
+            // before the surface is unmapped. This must happen off the
+            // main thread — sleeping there would block the commit (and
+            // pumping events manually via gtk::main_iteration_do kills
+            // the layer surface on niri in any visibility state).
+            std::thread::sleep(std::time::Duration::from_millis(130));
+        }
+
+        log::debug!("overlay: hide chain parked; scheduling the chain-end closure");
+        let end_window = overlay_window.clone();
+        let apply_outcome = overlay_window.run_on_main_thread(move || {
+            let want = {
+                let mut controller = OVERLAY.lock().unwrap();
+                match controller.settle_chain_end() {
+                    want @ Desired::Visible { .. } => Some(want),
+                    Desired::Hidden => {
+                        log::debug!("overlay: chain end -> unmap");
+                        // settle_chain_end already flipped the phase to
+                        // Hidden; keep holding the lock across hide() so a
+                        // concurrent show cannot slip between the unmap
+                        // and the phase transition.
+                        controller.mapped_streaming = false;
+                        let _ = end_window.hide();
+                        None
+                    }
+                }
+            };
+            if let Some(Desired::Visible { state, mic_ready }) = want {
+                // A show arrived while the chain was parking: apply it now.
+                // The surface stayed mapped; resizing compact -> target
+                // forces a full repaint, so no stale pixels can survive.
+                log::debug!("overlay: chain end -> re-show '{state}' (mic_ready={mic_ready})");
+                show_overlay_state_on_main(&handle, &state);
+                if mic_ready {
+                    // Samples were already flowing while the park hid the
+                    // old card, so recording-ready was withheld. Deliver it
+                    // immediately — this runs after the show-overlay emitted
+                    // above, and it is the last chance: the frontend's show
+                    // handler reset its arming state synchronously and no
+                    // further readiness event will ever come.
+                    let _ = handle.emit_to("recording_overlay", "recording-ready", ());
+                }
+            }
+        });
+        if apply_outcome.is_err() {
+            // Scheduling the chain-end closure failed (e.g. the app is
+            // shutting down). Settle the controller so later shows are not
+            // deferred forever behind a chain that can never finish.
+            log::error!("Failed to schedule overlay hide-chain end; resetting controller");
+            OVERLAY.lock().unwrap().reset_to_hidden();
+        }
+    });
+}
+
+/// Marks the hide-overlay unmount as committed (see HIDDEN_ACK). Invoked by
+/// the frontend via the `overlay_hidden_ack` command.
+pub fn set_hidden_ack() {
+    log::info!("overlay: hidden-ack received");
+    HIDDEN_ACK.store(true, Ordering::Relaxed);
 }
 
 // Cached "overlay is enabled" flag, kept in sync with overlay_style. Avoids
@@ -982,6 +1078,13 @@ static OVERLAY_ENABLED: AtomicBool = AtomicBool::new(false);
 /// Used to skip layer-shell calls when the window is a regular fallback.
 #[cfg(target_os = "linux")]
 static LAYER_SHELL_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+/// Set by the frontend once the hide-overlay unmount has actually rendered
+/// (see RecordingOverlay.tsx). The hide chain parks the surface only after
+/// this fires: a blind delay lets a busy GTK main thread bake the old card
+/// into the parked frame, and re-show then blends those stale pixels over
+/// the next session (the ghost-card hybrid).
+static HIDDEN_ACK: AtomicBool = AtomicBool::new(false);
 
 /// Update the cached overlay-enabled flag. Called from `lib.rs` at
 /// startup after settings load, and from `change_overlay_style_setting`
@@ -1139,6 +1242,7 @@ mod visibility_controller_tests {
             phase: OverlayPhase::Hidden,
             operation_id: OP1,
             want: Desired::Hidden,
+            mapped_streaming: false,
         }
     }
 
@@ -1205,7 +1309,7 @@ mod visibility_controller_tests {
     fn normal_lifecycle_show_then_hide_settles_hidden() {
         let mut c = controller();
 
-        let effect = c.request_show("recording");
+        let effect = c.request_show("recording", false);
         assert_eq!(effect, ShowEffect::Immediate);
         assert_eq!(c.phase, OverlayPhase::Visible);
 
@@ -1226,13 +1330,13 @@ mod visibility_controller_tests {
     fn new_operation_mid_chain_reshows_at_chain_end() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
         let decision = c.request_hide(OP1);
         assert_eq!(decision, HideDecision::StartChain);
 
         // A new transcription starts mid-chain and takes ownership.
         let _ = c.begin_operation();
-        let effect = c.request_show("streaming");
+        let effect = c.request_show("streaming", false);
         assert_eq!(effect, ShowEffect::Deferred);
         assert_eq!(c.phase, OverlayPhase::Hiding);
 
@@ -1258,6 +1362,55 @@ mod visibility_controller_tests {
         assert_eq!(c.phase, OverlayPhase::Visible);
     }
 
+    /// A restart while the overlay is visible at the same surface size
+    /// (streaming→streaming, hide still in flight upstream) must convert the
+    /// show into a park chain: incremental damage over the mapped surface is
+    /// the ghost-card hybrid. The chain end re-shows the fresh state.
+    #[test]
+    fn same_size_show_while_visible_parks() {
+        let mut c = controller();
+
+        c.request_show("streaming", false);
+        c.mapped_streaming = true; // the surface is mapped at the streaming size
+        let _ = c.begin_operation(); // the new session takes ownership
+        let effect = c.request_show("streaming", true);
+
+        assert_eq!(effect, ShowEffect::ParkShow);
+        assert_eq!(c.phase, OverlayPhase::Hiding);
+        assert_eq!(
+            c.want,
+            Desired::Visible {
+                state: "streaming".to_string(),
+                mic_ready: false
+            }
+        );
+
+        // The park chain ends: the fresh state is applied, mapped as streaming.
+        let settled = c.settle_chain_end();
+        assert_eq!(
+            settled,
+            Desired::Visible {
+                state: "streaming".to_string(),
+                mic_ready: false
+            }
+        );
+        assert_eq!(c.phase, OverlayPhase::Visible);
+    }
+
+    /// A show that changes the surface size (compact pill → streaming panel)
+    /// keeps the immediate path: the resize itself forces the full repaint.
+    #[test]
+    fn size_changing_show_stays_immediate() {
+        let mut c = controller();
+
+        c.request_show("recording", false);
+        c.mapped_streaming = false; // mapped at the compact size
+        let effect = c.request_show("streaming", false);
+
+        assert_eq!(effect, ShowEffect::Immediate);
+        assert_eq!(c.phase, OverlayPhase::Visible);
+    }
+
     /// A rapid show -> hide -> show -> hide burst on one operation must
     /// settle Hidden: the first hide starts the chain, the show re-targets
     /// `want`, the second hide overwrites it back.
@@ -1265,12 +1418,12 @@ mod visibility_controller_tests {
     fn rapid_burst_settles_hidden() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
 
         let first_hide = c.request_hide(OP1);
         assert_eq!(first_hide, HideDecision::StartChain);
 
-        let reshow = c.request_show("streaming");
+        let reshow = c.request_show("streaming", false);
         assert_eq!(reshow, ShowEffect::Deferred);
 
         let second_hide = c.request_hide(OP1);
@@ -1289,7 +1442,7 @@ mod visibility_controller_tests {
     fn duplicate_hides_mid_chain_keep_hidden_target() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
 
         let first_hide = c.request_hide(OP1);
         assert_eq!(first_hide, HideDecision::StartChain);
@@ -1312,8 +1465,8 @@ mod visibility_controller_tests {
     fn state_switch_while_visible_is_immediate() {
         let mut c = controller();
 
-        c.request_show("recording");
-        let effect = c.request_show("streaming");
+        c.request_show("recording", false);
+        let effect = c.request_show("streaming", false);
 
         assert_eq!(effect, ShowEffect::Immediate);
         assert_eq!(c.phase, OverlayPhase::Visible);
@@ -1332,13 +1485,13 @@ mod visibility_controller_tests {
     fn overlay_is_reusable_after_chain_completes() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
         c.request_hide(OP1);
         c.settle_chain_end();
         assert_eq!(c.phase, OverlayPhase::Hidden);
 
         let op2 = c.begin_operation();
-        let effect = c.request_show("recording");
+        let effect = c.request_show("recording", false);
         assert_eq!(effect, ShowEffect::Immediate);
         assert_eq!(c.phase, OverlayPhase::Visible);
 
@@ -1368,7 +1521,7 @@ mod visibility_controller_tests {
     fn gone_window_resets_controller_to_hidden() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
         let decision = c.request_hide(OP1);
         assert_eq!(decision, HideDecision::StartChain);
         assert_eq!(c.phase, OverlayPhase::Hiding);
@@ -1377,7 +1530,7 @@ mod visibility_controller_tests {
 
         assert_eq!(c.phase, OverlayPhase::Hidden);
         assert_eq!(c.want, Desired::Hidden);
-        let effect = c.request_show("recording");
+        let effect = c.request_show("recording", false);
         assert_eq!(effect, ShowEffect::Immediate);
     }
 
@@ -1393,13 +1546,13 @@ mod visibility_controller_tests {
     fn ready_latched_by_a_deferred_show_surfaces_at_settle() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
         assert_eq!(c.request_hide(OP1), HideDecision::StartChain);
 
         // The user immediately re-triggers: a new transcription takes
         // ownership mid-chain and its show defers to the park's end.
         let _ = c.begin_operation();
-        let effect = c.request_show("streaming");
+        let effect = c.request_show("streaming", false);
         assert_eq!(effect, ShowEffect::Deferred);
 
         // Warm microphone delivers samples while the park is still in flight.
@@ -1423,7 +1576,7 @@ mod visibility_controller_tests {
     fn ready_without_a_pending_card_is_delivered_immediately() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
         assert_eq!(c.request_hide(OP1), HideDecision::StartChain);
         // Second hide retargets the running chain back to Hidden: the card
         // this readiness belonged to is gone.
@@ -1445,7 +1598,7 @@ mod visibility_controller_tests {
     #[test]
     fn ready_while_visible_is_emitted_normally() {
         let mut c = controller();
-        c.request_show("recording");
+        c.request_show("recording", false);
 
         assert!(!c.note_mic_ready());
     }
@@ -1457,7 +1610,7 @@ mod visibility_controller_tests {
     fn mid_chain_reshow_replaces_stale_readiness() {
         let mut c = controller();
 
-        c.request_show("recording");
+        c.request_show("recording", false);
         // Samples arrive while Visible; bookkeeping only, never delivered late.
         assert!(!c.note_mic_ready());
 
@@ -1465,7 +1618,7 @@ mod visibility_controller_tests {
 
         // A new transcription takes over mid-chain.
         let _ = c.begin_operation();
-        let effect = c.request_show("streaming");
+        let effect = c.request_show("streaming", false);
         assert_eq!(effect, ShowEffect::Deferred);
 
         let settled = c.settle_chain_end();

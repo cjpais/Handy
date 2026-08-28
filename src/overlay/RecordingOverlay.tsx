@@ -1,4 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
+import { flushSync } from "react-dom";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
@@ -90,8 +92,17 @@ const RecordingOverlay: React.FC = () => {
       });
 
       const unlistenHide = await listen("hide-overlay", () => {
-        setIsVisible(false);
-        setCaptureReady(false);
+        // flushSync commits the unmount to the DOM right here; the ack then
+        // tells the backend it can park (shrink) the surface. A command, not
+        // an event: it must be delivered even while the GTK main thread is
+        // busy with the paste burst. Without this round-trip the parked frame
+        // bakes the old card in and the next session blends over it (the
+        // ghost-card hybrid).
+        flushSync(() => {
+          setIsVisible(false);
+          setCaptureReady(false);
+        });
+        void invoke("overlay_hidden_ack");
       });
 
       const unlistenReady = await listen("recording-ready", () => {

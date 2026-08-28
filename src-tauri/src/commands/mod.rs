@@ -14,6 +14,16 @@ pub fn cancel_operation(app: AppHandle) {
     cancel_current_operation(&app);
 }
 
+/// Frontend acknowledgement that the hide-overlay unmount has been committed
+/// to the DOM. The overlay hide chain waits for this before parking the
+/// surface; a command (not an event) so it is delivered even while the GTK
+/// main thread is busy with the paste burst.
+#[tauri::command]
+#[specta::specta]
+pub fn overlay_hidden_ack() {
+    crate::overlay::set_hidden_ack();
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn is_portable() -> bool {
