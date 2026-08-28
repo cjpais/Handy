@@ -739,88 +739,113 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     let _ = app_handle.run_on_main_thread(move || show_overlay_state_on_main(&handle, &state));
 }
 
+/// Layer-shell show path (Linux + gtk-layer-shell): anchor and size the
+/// surface, then show it. Returns false when layer shell is inactive so the
+/// caller falls through to the default geometry path. Note the preserved
+/// quirk: a failure to access the GTK window logs an error but still shows
+/// the window and reports handled — routing a configured layer surface
+/// through the default `set_size` path would be wrong.
+#[cfg(target_os = "linux")]
+fn show_with_layer_shell(
+    app_handle: &AppHandle,
+    overlay_window: &tauri::WebviewWindow,
+    width: f64,
+    height: f64,
+) -> bool {
+    if !LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
+        return false;
+    }
+    let position = settings::get_settings(app_handle).overlay_position;
+    match overlay_window.gtk_window() {
+        Ok(gtk_window) => configure_layer_shell_surface(&gtk_window, position, width, height),
+        Err(error) => log::error!("Failed to access GTK overlay window: {error}"),
+    }
+    let _ = overlay_window.show();
+    true
+}
+
+/// Default show path: size, position on the cursor's monitor, then show.
+/// The platform mechanics stay inline on purpose — the per-step debug
+/// timings describe exactly this sequence and its cfg boundaries (the
+/// layer-shell path never produced them).
+fn apply_default_geometry(
+    app_handle: &AppHandle,
+    overlay_window: &tauri::WebviewWindow,
+    state: &str,
+    width: f64,
+    height: f64,
+) {
+    let size_started = std::time::Instant::now();
+    #[cfg(not(target_os = "windows"))]
+    let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+    #[cfg(target_os = "windows")]
+    WINDOWS_OVERLAY_IS_STREAMING.store(state == "streaming", Ordering::Relaxed);
+    let size_elapsed = size_started.elapsed();
+
+    let pos_started = std::time::Instant::now();
+    #[cfg(not(target_os = "windows"))]
+    let set_pos_elapsed =
+        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+            let set_pos_started = std::time::Instant::now();
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            set_pos_started.elapsed()
+        } else {
+            std::time::Duration::ZERO
+        };
+    #[cfg(target_os = "windows")]
+    let set_pos_elapsed = {
+        let set_pos_started = std::time::Instant::now();
+        if let Err(error) = place_windows_overlay(app_handle, overlay_window, width, height) {
+            log::error!("Failed to place recording overlay: {error}");
+        }
+        set_pos_started.elapsed()
+    };
+    let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
+
+    let show_started = std::time::Instant::now();
+    let _ = overlay_window.show();
+    let show_elapsed = show_started.elapsed();
+
+    // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
+    #[cfg(target_os = "windows")]
+    force_overlay_topmost(overlay_window);
+
+    // Re-assert bounds after show(): the pre-show move crosses the DPI
+    // boundary, and tao's WM_DPICHANGED reflow clobbers the first placement.
+    #[cfg(target_os = "windows")]
+    if let Err(error) = place_windows_overlay(app_handle, overlay_window, width, height) {
+        log::error!("Failed to re-assert recording overlay position: {error}");
+    }
+
+    log::debug!(
+        "overlay '{}': set_size={:?} pos_calc={:?} set_pos={:?} show={:?}",
+        state,
+        size_elapsed,
+        pos_calc_elapsed,
+        set_pos_elapsed,
+        show_elapsed
+    );
+}
+
 fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
     // Size the overlay for this state (compact vs. streaming), then position it.
     let (width, height) = overlay_dimensions(state);
-    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        #[cfg(target_os = "linux")]
-        let shown_with_layer_shell = if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
-            let position = settings::get_settings(app_handle).overlay_position;
-            match overlay_window.gtk_window() {
-                Ok(gtk_window) => {
-                    configure_layer_shell_surface(&gtk_window, position, width, height)
-                }
-                Err(error) => log::error!("Failed to access GTK overlay window: {error}"),
-            }
-            let _ = overlay_window.show();
-            true
-        } else {
-            false
-        };
-        #[cfg(not(target_os = "linux"))]
-        let shown_with_layer_shell = false;
+    let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") else {
+        return;
+    };
+    #[cfg(target_os = "linux")]
+    let shown_with_layer_shell = show_with_layer_shell(app_handle, &overlay_window, width, height);
+    #[cfg(not(target_os = "linux"))]
+    let shown_with_layer_shell = false;
 
-        if !shown_with_layer_shell {
-            let size_started = std::time::Instant::now();
-            #[cfg(not(target_os = "windows"))]
-            let _ =
-                overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
-            #[cfg(target_os = "windows")]
-            WINDOWS_OVERLAY_IS_STREAMING.store(state == "streaming", Ordering::Relaxed);
-            let size_elapsed = size_started.elapsed();
-
-            let pos_started = std::time::Instant::now();
-            #[cfg(not(target_os = "windows"))]
-            let set_pos_elapsed =
-                if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
-                    let set_pos_started = std::time::Instant::now();
-                    let _ = overlay_window
-                        .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
-                    set_pos_started.elapsed()
-                } else {
-                    std::time::Duration::ZERO
-                };
-            #[cfg(target_os = "windows")]
-            let set_pos_elapsed = {
-                let set_pos_started = std::time::Instant::now();
-                if let Err(error) =
-                    place_windows_overlay(app_handle, &overlay_window, width, height)
-                {
-                    log::error!("Failed to place recording overlay: {error}");
-                }
-                set_pos_started.elapsed()
-            };
-            let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
-
-            let show_started = std::time::Instant::now();
-            let _ = overlay_window.show();
-            let show_elapsed = show_started.elapsed();
-
-            // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
-            #[cfg(target_os = "windows")]
-            force_overlay_topmost(&overlay_window);
-
-            // Re-assert bounds after show(): the pre-show move crosses the DPI
-            // boundary, and tao's WM_DPICHANGED reflow clobbers the first placement.
-            #[cfg(target_os = "windows")]
-            if let Err(error) = place_windows_overlay(app_handle, &overlay_window, width, height) {
-                log::error!("Failed to re-assert recording overlay position: {error}");
-            }
-
-            log::debug!(
-                "overlay '{}': set_size={:?} pos_calc={:?} set_pos={:?} show={:?}",
-                state,
-                size_elapsed,
-                pos_calc_elapsed,
-                set_pos_elapsed,
-                show_elapsed
-            );
-        }
-
-        log::debug!("overlay: emit show-overlay '{state}'");
-        let _ = overlay_window.emit("show-overlay", state);
-        OVERLAY.lock().unwrap().mapped_streaming = state == "streaming";
+    if !shown_with_layer_shell {
+        apply_default_geometry(app_handle, &overlay_window, state, width, height);
     }
+
+    log::debug!("overlay: emit show-overlay '{state}'");
+    let _ = overlay_window.emit("show-overlay", state);
+    OVERLAY.lock().unwrap().mapped_streaming = state == "streaming";
 }
 
 /// Notify the visible recording overlay that the input stream has delivered its
