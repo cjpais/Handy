@@ -1,3 +1,4 @@
+use crate::focus_restore;
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
@@ -788,6 +789,15 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
+
+    // Return focus to whichever application was frontmost when this
+    // recording started, if it isn't anymore (#1995). Skipped for
+    // PasteMethod::None: nothing is about to be typed, so there is nothing
+    // to redirect and stealing focus back would be a pure, unwanted
+    // side effect for users who deliberately disabled auto-paste.
+    if paste_method != PasteMethod::None {
+        focus_restore::restore();
+    }
 
     // Perform the paste operation
     match paste_method {

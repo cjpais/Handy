@@ -470,6 +470,15 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // Remember whichever application is frontmost right now, so the
+        // eventual paste can return to it even if the user clicks elsewhere
+        // (Handy's own window, another app, ...) while still dictating
+        // (#1995). Dispatched to the main thread since querying the
+        // frontmost application is an AppKit call.
+        if let Err(e) = app.run_on_main_thread(crate::focus_restore::capture) {
+            debug!("focus_restore: failed to dispatch capture to main thread: {e:?}");
+        }
+
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
