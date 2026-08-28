@@ -51,6 +51,14 @@ const OVERLAY_HEIGHT: f64 = 46.0;
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
+/// How long the park chain waits after scheduling the compact resize before
+/// it settles. Gives the GTK main loop a moment to commit the parked frame.
+/// The sleep must happen off the main thread — sleeping there would block
+/// the commit (and pumping events manually via gtk::main_iteration_do kills
+/// the layer surface on niri in any visibility state).
+#[cfg(target_os = "linux")]
+const PARK_COMMIT_SETTLE_MS: u64 = 130;
+
 /// Overlay window size (logical) for a given UI state.
 fn overlay_dimensions(state: &str) -> (f64, f64) {
     if state == "streaming" {
@@ -97,7 +105,7 @@ fn configure_layer_shell_position(gtk_window: &gtk::ApplicationWindow, position:
 /// the `set_size_request` + `resize(1, 1)` sequence for forcing a new size.
 ///
 /// Also used to "park" the surface back at the compact size before hiding —
-/// see `hide_recording_overlay`.
+/// see `park_surface_compact`.
 #[cfg(target_os = "linux")]
 fn configure_layer_shell_surface(
     gtk_window: &gtk::ApplicationWindow,
@@ -955,6 +963,97 @@ fn start_park_chain(app_handle: &AppHandle) {
     spawn_park_chain(app_handle, overlay_window);
 }
 
+/// Waits until the webview actually unmounted the card and the empty frame
+/// rendered (the ack). A blind sleep here raced a busy GTK main thread: the
+/// parked frame then kept the old card clipped to the compact viewport, and
+/// re-show blended those stale pixels over the next session. Bounded so a
+/// dead webview cannot stall hides forever.
+#[cfg(target_os = "linux")]
+fn wait_for_hidden_ack() {
+    let started = std::time::Instant::now();
+    let ack_deadline = started + std::time::Duration::from_millis(500);
+    loop {
+        if HIDDEN_ACK.load(Ordering::Relaxed) {
+            return;
+        }
+        if std::time::Instant::now() >= ack_deadline {
+            let want = OVERLAY.lock().unwrap().want.clone();
+            log::warn!(
+                "overlay: hide ack timeout after {}ms (want={want:?}); parking anyway",
+                started.elapsed().as_millis()
+            );
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+}
+
+/// Shrinks the mapped layer surface back to the compact size — the park.
+///
+/// WebKitGTK on Wayland repaints only damaged regions, so a surface unmapped
+/// mid-transition keeps stale pixels in its reused buffers (the "ghost card"
+/// glitch) — or maps again with no fresh frame at all, showing nothing.
+/// Shrinking while the surface is still mapped is a real size change and
+/// forces a full repaint with fresh pixels. This runs UNCONDITIONALLY, even
+/// when a re-trigger will re-show the overlay at the chain end — the park is
+/// the repaint mechanism, skipping it is what brought the ghost back on
+/// mid-chain re-triggers.
+///
+/// The settle sleep after the hop must happen off the main thread (see
+/// `PARK_COMMIT_SETTLE_MS`). A failed hop is no reason to abort the chain:
+/// the chain end below is scheduled regardless.
+#[cfg(target_os = "linux")]
+fn park_surface_compact(overlay_window: &tauri::WebviewWindow) {
+    let park_window = overlay_window.clone();
+    let _ = overlay_window.run_on_main_thread(move || {
+        if let Ok(gtk_window) = park_window.gtk_window() {
+            let position = settings::get_settings(park_window.app_handle()).overlay_position;
+            configure_layer_shell_surface(&gtk_window, position, OVERLAY_WIDTH, OVERLAY_HEIGHT);
+            // The surface is mapped at the compact size now.
+            OVERLAY.lock().unwrap().mapped_streaming = false;
+        }
+    });
+    std::thread::sleep(std::time::Duration::from_millis(PARK_COMMIT_SETTLE_MS));
+}
+
+/// The chain end: settle the controller and apply the outcome. MUST run on
+/// the main thread. On Hidden this unmaps while still holding the OVERLAY
+/// lock, so a concurrent show cannot slip between the unmap and the phase
+/// transition; on Visible it re-shows the state that arrived while the chain
+/// was parking — resizing compact -> target forces the full repaint — and
+/// replays the mic-readiness that was withheld behind the deferred show.
+fn apply_chain_end(app_handle: &AppHandle, overlay_window: &tauri::WebviewWindow) {
+    let want = {
+        let mut controller = OVERLAY.lock().unwrap();
+        match controller.settle_chain_end() {
+            want @ Desired::Visible { .. } => Some(want),
+            Desired::Hidden => {
+                log::debug!("overlay: chain end -> unmap");
+                // settle_chain_end already flipped the phase to
+                // Hidden; keep holding the lock across hide() so a
+                // concurrent show cannot slip between the unmap
+                // and the phase transition.
+                controller.mapped_streaming = false;
+                let _ = overlay_window.hide();
+                None
+            }
+        }
+    };
+    if let Some(Desired::Visible { state, mic_ready }) = want {
+        log::debug!("overlay: chain end -> re-show '{state}' (mic_ready={mic_ready})");
+        show_overlay_state_on_main(app_handle, &state);
+        if mic_ready {
+            // Samples were already flowing while the park hid the
+            // old card, so recording-ready was withheld. Deliver it
+            // immediately — this runs after the show-overlay emitted
+            // above, and it is the last chance: the frontend's show
+            // handler reset its arming state synchronously and no
+            // further readiness event will ever come.
+            let _ = app_handle.emit_to("recording_overlay", "recording-ready", ());
+        }
+    }
+}
+
 /// The park chain shared by hide and same-size show: wait for the frontend's
 /// unmount ack, shrink the mapped surface to the compact size (a real resize
 /// forces a full repaint with fresh pixels), then settle — unmap, or re-show
@@ -962,94 +1061,19 @@ fn start_park_chain(app_handle: &AppHandle) {
 fn spawn_park_chain(app_handle: &AppHandle, overlay_window: tauri::WebviewWindow) {
     let handle = app_handle.clone();
     std::thread::spawn(move || {
+        // The park itself is layer-shell-specific; without it (X11 fallback,
+        // HANDY_NO_GTK_LAYER_SHELL) the chain reduces to an unmount/remount
+        // cycle, which is fine — the ghost bug is layer-surface buffer reuse.
         #[cfg(target_os = "linux")]
         if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
-            // Wait until the webview actually unmounted the card and the
-            // empty frame rendered (the ack). A blind sleep here raced a
-            // busy GTK main thread: the parked frame then kept the old
-            // card clipped to the compact viewport, and re-show blended
-            // those stale pixels over the next session. Bounded so a dead
-            // webview cannot stall hides forever.
-            let ack_deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
-            loop {
-                if HIDDEN_ACK.load(Ordering::Relaxed) {
-                    break;
-                }
-                if std::time::Instant::now() >= ack_deadline {
-                    log::warn!("overlay: hide ack timeout; parking anyway");
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(5));
-            }
-
-            // WebKitGTK on Wayland repaints only damaged regions, so a
-            // surface unmapped mid-transition keeps stale pixels in its
-            // reused buffers (the "ghost card" glitch) — or maps again
-            // with no fresh frame at all, showing nothing. Shrink the
-            // layer surface back to the compact size while it is still
-            // mapped: a real size change forces a full repaint with fresh
-            // pixels. This runs UNCONDITIONALLY, even when a re-trigger
-            // will re-show the overlay at the chain end — the park is the
-            // repaint mechanism, skipping it is what brought the ghost
-            // back on mid-chain re-triggers.
-            let park_window = overlay_window.clone();
-            let _ = overlay_window.run_on_main_thread(move || {
-                if let Ok(gtk_window) = park_window.gtk_window() {
-                    let position =
-                        settings::get_settings(park_window.app_handle()).overlay_position;
-                    configure_layer_shell_surface(
-                        &gtk_window,
-                        position,
-                        OVERLAY_WIDTH,
-                        OVERLAY_HEIGHT,
-                    );
-                    // The surface is mapped at the compact size now.
-                    OVERLAY.lock().unwrap().mapped_streaming = false;
-                }
-            });
-            // Give the GTK main loop a moment to commit the parked frame
-            // before the surface is unmapped. This must happen off the
-            // main thread — sleeping there would block the commit (and
-            // pumping events manually via gtk::main_iteration_do kills
-            // the layer surface on niri in any visibility state).
-            std::thread::sleep(std::time::Duration::from_millis(130));
+            wait_for_hidden_ack();
+            park_surface_compact(&overlay_window);
         }
 
         log::debug!("overlay: hide chain parked; scheduling the chain-end closure");
         let end_window = overlay_window.clone();
         let apply_outcome = overlay_window.run_on_main_thread(move || {
-            let want = {
-                let mut controller = OVERLAY.lock().unwrap();
-                match controller.settle_chain_end() {
-                    want @ Desired::Visible { .. } => Some(want),
-                    Desired::Hidden => {
-                        log::debug!("overlay: chain end -> unmap");
-                        // settle_chain_end already flipped the phase to
-                        // Hidden; keep holding the lock across hide() so a
-                        // concurrent show cannot slip between the unmap
-                        // and the phase transition.
-                        controller.mapped_streaming = false;
-                        let _ = end_window.hide();
-                        None
-                    }
-                }
-            };
-            if let Some(Desired::Visible { state, mic_ready }) = want {
-                // A show arrived while the chain was parking: apply it now.
-                // The surface stayed mapped; resizing compact -> target
-                // forces a full repaint, so no stale pixels can survive.
-                log::debug!("overlay: chain end -> re-show '{state}' (mic_ready={mic_ready})");
-                show_overlay_state_on_main(&handle, &state);
-                if mic_ready {
-                    // Samples were already flowing while the park hid the
-                    // old card, so recording-ready was withheld. Deliver it
-                    // immediately — this runs after the show-overlay emitted
-                    // above, and it is the last chance: the frontend's show
-                    // handler reset its arming state synchronously and no
-                    // further readiness event will ever come.
-                    let _ = handle.emit_to("recording_overlay", "recording-ready", ());
-                }
-            }
+            apply_chain_end(&handle, &end_window);
         });
         if apply_outcome.is_err() {
             // Scheduling the chain-end closure failed (e.g. the app is
@@ -1084,6 +1108,14 @@ static LAYER_SHELL_ACTIVE: AtomicBool = AtomicBool::new(false);
 /// this fires: a blind delay lets a busy GTK main thread bake the old card
 /// into the parked frame, and re-show then blends those stale pixels over
 /// the next session (the ghost-card hybrid).
+///
+/// The flag is payload-less, which is safe only because at most one park
+/// chain is ever in flight (both chain starts transition into `Hiding` under
+/// the OVERLAY lock — see `start_park_chain`). Known limitation: an ack
+/// delayed past a full chain round (reachable only once the 500 ms timeout
+/// has already fired) can land after the next round's reset and falsely
+/// satisfy it — pathological webview-overload territory; correlate rounds
+/// with a payload if this ever needs to change.
 static HIDDEN_ACK: AtomicBool = AtomicBool::new(false);
 
 /// Update the cached overlay-enabled flag. Called from `lib.rs` at

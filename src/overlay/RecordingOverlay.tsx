@@ -98,6 +98,11 @@ const RecordingOverlay: React.FC = () => {
         // busy with the paste burst. Without this round-trip the parked frame
         // bakes the old card in and the next session blends over it (the
         // ghost-card hybrid).
+        //
+        // Contract: nothing async may run between the flushSync commit and
+        // the ack invoke below. The backend starts a bounded 500 ms wait at
+        // emit time; interleaving settings I/O here (as the show handler
+        // does) would start timing out hides during normal use.
         flushSync(() => {
           setIsVisible(false);
           setCaptureReady(false);
