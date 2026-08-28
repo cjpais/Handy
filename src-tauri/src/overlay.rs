@@ -712,17 +712,7 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
             log::debug!(
                 "overlay: show '{state}' while visible at the same size; parking for a full repaint"
             );
-            if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-                // Fresh ack round: the frontend unmounts on hide-overlay, the
-                // park proceeds once that render is committed.
-                HIDDEN_ACK.store(false, Ordering::Relaxed);
-                log::debug!("overlay: emit hide-overlay");
-                let _ = overlay_window.emit("hide-overlay", ());
-                spawn_park_chain(app_handle, overlay_window);
-                return;
-            }
-            // No window: nothing to park — settle so later shows still work.
-            OVERLAY.lock().unwrap().reset_to_hidden();
+            start_park_chain(app_handle);
             return;
         }
         ShowEffect::Immediate => {}
@@ -938,21 +928,31 @@ pub fn hide_recording_overlay(app_handle: &AppHandle, operation_id: u64) {
 
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
-    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Fresh ack round: the flag is set by the frontend once the card
-        // unmount below has rendered.
-        HIDDEN_ACK.store(false, Ordering::Relaxed);
-        // Emit event so the frontend unmounts the card. Note: the frontend
-        // returns null when not visible, so no fade actually plays and there
-        // is no animation delay worth waiting for.
-        log::debug!("overlay: emit hide-overlay");
-        let _ = overlay_window.emit("hide-overlay", ());
-        spawn_park_chain(app_handle, overlay_window);
-    } else {
-        // Window is gone — settle the controller so future shows are not
-        // deferred forever behind a chain that can never finish.
+    start_park_chain(app_handle);
+}
+
+/// Starts a park chain: arm a fresh ack round, ask the frontend to unmount
+/// the card, then spawn the chain thread. Shared by `hide_recording_overlay`
+/// and the same-size `ParkShow` path in `show_overlay_state`; both reach this
+/// only through a transition into `Hiding`, and any further request while
+/// `Hiding` retargets or defers instead, so at most one chain is ever in
+/// flight. When the overlay window is gone, resets the controller so future
+/// shows are not deferred forever behind a chain that can never run.
+fn start_park_chain(app_handle: &AppHandle) {
+    let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") else {
         OVERLAY.lock().unwrap().reset_to_hidden();
-    }
+        return;
+    };
+    // Fresh ack round: the store must precede the emit and the spawn — the
+    // chain thread starts polling immediately, and a stale `true` from a
+    // previous round would park without waiting for this round's unmount.
+    HIDDEN_ACK.store(false, Ordering::Relaxed);
+    // Emit event so the frontend unmounts the card. Note: the frontend
+    // returns null when not visible, so no fade actually plays and there
+    // is no animation delay worth waiting for.
+    log::debug!("overlay: emit hide-overlay");
+    let _ = overlay_window.emit("hide-overlay", ());
+    spawn_park_chain(app_handle, overlay_window);
 }
 
 /// The park chain shared by hide and same-size show: wait for the frontend's
