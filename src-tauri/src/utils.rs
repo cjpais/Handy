@@ -1,4 +1,5 @@
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::s1_mini::S1MiniManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
 use crate::TranscriptionCoordinator;
@@ -97,6 +98,13 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Abandon any live streaming transcription
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.cancel_stream();
+
+    // Native S1-mini generation runs in a blocking Candle worker. Cancelling
+    // the outer async future is not enough, so advance its generation token;
+    // the runtime checks it between every generated token.
+    if let Some(s1_mini) = app.try_state::<Arc<S1MiniManager>>() {
+        s1_mini.cancel_generation();
+    }
 
     // Update tray icon and hide overlay
     set_tray_state(app, crate::tray::TrayIconState::Idle);

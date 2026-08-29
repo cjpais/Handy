@@ -9,6 +9,8 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const S1_MINI_PROVIDER_ID: &str = "s1_mini";
+pub const S1_MINI_LABEL: &str = "S1-mini by Superwhisper";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -104,6 +106,61 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
     #[serde(default)]
     pub supports_structured_output: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum S1Styling {
+    Casual,
+    SemiCasual,
+    #[default]
+    SemiFormal,
+    Formal,
+}
+
+impl S1Styling {
+    pub fn as_control_value(self) -> &'static str {
+        match self {
+            Self::Casual => "casual",
+            Self::SemiCasual => "semi-casual",
+            Self::SemiFormal => "semi-formal",
+            Self::Formal => "formal",
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum S1Structure {
+    #[default]
+    Prose,
+    Lists,
+}
+
+impl S1Structure {
+    pub fn as_control_value(self) -> &'static str {
+        match self {
+            Self::Prose => "prose",
+            Self::Lists => "lists",
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum S1Context {
+    #[default]
+    General,
+    Email,
+}
+
+impl S1Context {
+    pub fn as_control_value(self) -> &'static str {
+        match self {
+            Self::General => "general",
+            Self::Email => "email",
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -436,6 +493,12 @@ pub struct AppSettings {
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
+    pub s1_styling: S1Styling,
+    #[serde(default)]
+    pub s1_structure: S1Structure,
+    #[serde(default)]
+    pub s1_context: S1Context,
+    #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
@@ -627,6 +690,14 @@ fn default_post_process_provider_id() -> String {
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
     let mut providers = vec![
+        PostProcessProvider {
+            id: S1_MINI_PROVIDER_ID.to_string(),
+            label: S1_MINI_LABEL.to_string(),
+            base_url: "s1-mini://local".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: None,
+            supports_structured_output: false,
+        },
         PostProcessProvider {
             id: "openai".to_string(),
             label: "OpenAI".to_string(),
@@ -925,6 +996,9 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        s1_styling: S1Styling::default(),
+        s1_structure: S1Structure::default(),
+        s1_context: S1Context::default(),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -1597,5 +1671,27 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn s1_mini_defaults_match_the_model_card() {
+        let settings = get_default_settings();
+        assert_eq!(settings.s1_styling, S1Styling::SemiFormal);
+        assert_eq!(settings.s1_structure, S1Structure::Prose);
+        assert_eq!(settings.s1_context, S1Context::General);
+        let provider = settings
+            .post_process_provider(S1_MINI_PROVIDER_ID)
+            .expect("S1-mini native provider is present");
+        assert_eq!(provider.label, "S1-mini by Superwhisper");
+        assert_eq!(provider.models_endpoint, None);
+    }
+
+    #[test]
+    fn s1_styling_store_value_is_distinct_from_control_value() {
+        assert_eq!(
+            serde_json::to_value(S1Styling::SemiFormal).unwrap(),
+            serde_json::json!("semi_formal")
+        );
+        assert_eq!(S1Styling::SemiFormal.as_control_value(), "semi-formal");
     }
 }

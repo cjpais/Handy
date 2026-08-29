@@ -395,10 +395,10 @@
         "title": "Tecla de atalho"
       },
       "api": {
-        "title": "API (Compatível com OpenAI)",
+        "title": "Mecanismo",
         "provider": {
-          "title": "Provedor",
-          "description": "Selecione um provedor compatível com OpenAI."
+          "title": "Mecanismo",
+          "description": "Selecione um mecanismo local ou um serviço compatível com OpenAI."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence não está disponível neste dispositivo. Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior com Apple Intelligence habilitado nas Configurações do Sistema."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Buscar ou selecionar um modelo",
           "placeholderNoOptions": "Digite o nome de um modelo",
           "refreshModels": "Atualizar modelos"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "Um normalizador de texto somente em inglês que funciona no dispositivo e limpa a saída de voz para texto. O download tem cerca de 473 MiB, e o refinamento pode usar temporariamente até cerca de 2 GiB de memória.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Detalhes do modelo",
+        "deleteTitle": "Excluir S1-mini",
+        "deleteConfirm": "Excluir os arquivos locais do modelo S1-mini? Você precisará baixá-los novamente para usar este mecanismo.",
+        "actions": {
+          "download": "Baixar",
+          "retry": "Tentar novamente"
+        },
+        "status": {
+          "not_downloaded": "Não baixado",
+          "downloading": "Baixando",
+          "ready": "Pronto no dispositivo",
+          "error": "Falha no download"
+        },
+        "styling": {
+          "title": "Estilo",
+          "description": "Escolha o quanto letras maiúsculas, contrações e expressões coloquiais serão normalizadas.",
+          "options": {
+            "casual": "Casual",
+            "semi_casual": "Semicasual",
+            "semi_formal": "Semiformal (recomendado)",
+            "formal": "Formal"
+          }
+        },
+        "structure": {
+          "title": "Estrutura",
+          "description": "Permite transformar enumerações claras com três ou mais itens em listas Markdown.",
+          "options": {
+            "prose": "Prosa",
+            "lists": "Listas"
+          }
+        },
+        "context": {
+          "title": "Contexto",
+          "description": "Usa convenções de e-mail para saudação, corpo da mensagem e despedida.",
+          "options": {
+            "general": "Geral",
+            "email": "E-mail"
+          }
         }
       },
       "prompts": {

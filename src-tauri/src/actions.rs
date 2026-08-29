@@ -5,9 +5,14 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
-use crate::managers::transcription::StreamWorkKind;
-use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::managers::s1_mini::{control_line as s1_control_line, S1MiniManager};
+use crate::managers::transcription::{
+    InferenceLease, StreamWorkKind, TranscriptionManager, TranscriptionOutput,
+};
+use crate::settings::{
+    get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID, S1_MINI_LABEL,
+    S1_MINI_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
 use crate::utils::{
@@ -118,11 +123,71 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+async fn post_process_transcription(
+    app: &AppHandle,
+    settings: &AppSettings,
+    transcription: &str,
+    inference_lease: Option<InferenceLease>,
+    s1_cancel_generation: u64,
+) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
     }
+
+    // S1-mini is a native fixed-contract normalizer, not an API provider. It
+    // must run before the generic provider/model/prompt requirements below.
+    if settings.post_process_provider_id == S1_MINI_PROVIDER_ID {
+        let inference_lease = inference_lease
+            .expect("S1-mini post-processing requires the originating pipeline lease");
+        let transcription_manager = app.state::<Arc<TranscriptionManager>>();
+        if transcription_manager.is_model_loaded() {
+            if let Err(error) = transcription_manager.unload_model_for_pipeline(&inference_lease) {
+                error!("Could not unload the speech model before S1-mini: {error}");
+                return None;
+            }
+            crate::memory::trim_freed_memory();
+        }
+        let manager = Arc::clone(&app.state::<Arc<S1MiniManager>>());
+        let styling = settings.s1_styling;
+        let structure = settings.s1_structure;
+        let context = settings.s1_context;
+        let transcription = transcription.to_string();
+        // Keep a native-worker-owned handle alive if the cancellable async
+        // wrapper is dropped before Candle observes the cancellation token.
+        let blocking_lease = inference_lease.clone();
+        return match tauri::async_runtime::spawn_blocking(move || {
+            let _inference_lease = blocking_lease;
+            manager.process(
+                &transcription,
+                styling,
+                structure,
+                context,
+                s1_cancel_generation,
+            )
+        })
+        .await
+        {
+            Ok(Ok(output)) => {
+                debug!(
+                    "S1-mini post-processing succeeded. Output length: {} chars",
+                    output.len()
+                );
+                // Empty is a valid S1-mini result for filler/noise-only input.
+                Some(output)
+            }
+            Ok(Err(error)) => {
+                error!("S1-mini post-processing failed: {error}");
+                None
+            }
+            Err(error) => {
+                error!("S1-mini post-processing task panicked: {error}");
+                None
+            }
+        };
+    }
+
+    debug_assert!(inference_lease.is_none());
 
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
@@ -419,11 +484,26 @@ fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String
     }
 }
 
+fn s1_history_provenance(settings: &AppSettings) -> String {
+    format!(
+        "{S1_MINI_LABEL}\n{}",
+        s1_control_line(
+            settings.s1_styling,
+            settings.s1_structure,
+            settings.s1_context
+        )
+    )
+}
+
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
-    transcription: &str,
+    transcription: TranscriptionOutput,
     post_process: bool,
+    s1_cancel_generation: u64,
 ) -> ProcessedTranscription {
+    let s1_output_is_english = transcription.output_language().is_english();
+    let (transcription, inference_lease) = transcription.into_pipeline_parts();
+    let mut inference_lease = Some(inference_lease);
     let settings = get_settings(app);
     let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
@@ -434,17 +514,37 @@ pub(crate) async fn process_transcription_output(
     // the effective language rather than a possibly-stale intent.
     let effective_language = resolve_effective_language(app, &settings);
     if let Some(converted_text) =
-        maybe_convert_chinese_variant(&effective_language, transcription).await
+        maybe_convert_chinese_variant(&effective_language, &transcription).await
     {
         final_text = converted_text;
     }
 
-    if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+    if post_process
+        && (settings.post_process_provider_id != S1_MINI_PROVIDER_ID || s1_output_is_english)
+    {
+        let s1_pipeline_lease = if settings.post_process_provider_id == S1_MINI_PROVIDER_ID {
+            inference_lease.take()
+        } else {
+            // Remote/API post-processing does not use local model memory and
+            // must not serialize later dictations while it waits on the network.
+            drop(inference_lease.take());
+            None
+        };
+        if let Some(processed_text) = post_process_transcription(
+            app,
+            &settings,
+            &final_text,
+            s1_pipeline_lease,
+            s1_cancel_generation,
+        )
+        .await
+        {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+            if settings.post_process_provider_id == S1_MINI_PROVIDER_ID {
+                post_process_prompt = Some(s1_history_provenance(&settings));
+            } else if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
                 if let Some(prompt) = settings
                     .post_process_prompts
                     .iter()
@@ -454,6 +554,10 @@ pub(crate) async fn process_transcription_output(
                 }
             }
         }
+    } else if post_process && settings.post_process_provider_id == S1_MINI_PROVIDER_ID {
+        debug!(
+            "S1-mini skipped because the transcription output language is not confirmed English"
+        );
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
     }
@@ -670,6 +774,10 @@ impl ShortcutAction for TranscribeAction {
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
         let cancel_generation = rm.cancel_generation();
+        // Capture S1's cancellation epoch before entering the cancellable
+        // pipeline. Sampling it after ASR unload could accept a concurrent
+        // cancel as the new baseline and let detached native work continue.
+        let s1_cancel_generation = app.state::<Arc<S1MiniManager>>().cancellation_generation();
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
@@ -723,7 +831,7 @@ impl ShortcutAction for TranscribeAction {
                         // transcription of the same audio. A finalize timeout is
                         // surfaced instead — the worker may still hold the engine,
                         // so a batch fallback would contend with it.
-                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
+                        Ok(Some(output)) if !output.text().trim().is_empty() => Ok(output),
                         Ok(_) => tm.transcribe(samples),
                         Err(err) => Err(err),
                     };
@@ -761,10 +869,11 @@ impl ShortcutAction for TranscribeAction {
 
                     match transcription_result {
                         Ok(transcription) => {
+                            let transcription_text = transcription.text().to_string();
                             debug!(
                                 "Transcription completed in {:?}: '{}'",
                                 transcription_time.elapsed(),
-                                utils::redact_text(&transcription)
+                                utils::redact_text(&transcription_text)
                             );
 
                             if post_process {
@@ -775,7 +884,12 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
                             let Some(processed) = complete_unless_cancelled(
-                                process_transcription_output(&ah, &transcription, post_process),
+                                process_transcription_output(
+                                    &ah,
+                                    transcription,
+                                    post_process,
+                                    s1_cancel_generation,
+                                ),
                                 || rm.was_cancelled_since(cancel_generation),
                             )
                             .await
@@ -797,7 +911,7 @@ impl ShortcutAction for TranscribeAction {
                             if wav_saved {
                                 if let Err(err) = hm.save_entry(
                                     file_name,
-                                    transcription,
+                                    transcription_text,
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),

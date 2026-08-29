@@ -395,10 +395,10 @@
         "title": "快捷键"
       },
       "api": {
-        "title": "API（兼容 OpenAI）",
+        "title": "引擎",
         "provider": {
-          "title": "提供商",
-          "description": "选择一个兼容 OpenAI 的提供商。"
+          "title": "引擎",
+          "description": "选择本地引擎或兼容 OpenAI 的服务。"
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "搜索或选择模型",
           "placeholderNoOptions": "输入模型名称",
           "refreshModels": "刷新模型"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "仅支持英文、在设备端运行的文本规范化模型，可清理语音转文字的输出。下载大小约为 473 MiB，润色期间可能暂时使用最多约 2 GiB 内存。",
+        "modelSize": "~473 MiB",
+        "modelDetails": "模型详情",
+        "deleteTitle": "删除 S1-mini",
+        "deleteConfirm": "要删除本地 S1-mini 模型文件吗？若要再次使用此引擎，必须重新下载。",
+        "actions": {
+          "download": "下载",
+          "retry": "重试"
+        },
+        "status": {
+          "not_downloaded": "尚未下载",
+          "downloading": "正在下载",
+          "ready": "可在设备上使用",
+          "error": "下载失败"
+        },
+        "styling": {
+          "title": "文体",
+          "description": "选择要将大小写、缩略形式和口语表达规范化到何种程度。",
+          "options": {
+            "casual": "随意",
+            "semi_casual": "较随意",
+            "semi_formal": "较正式（推荐）",
+            "formal": "正式"
+          }
+        },
+        "structure": {
+          "title": "结构",
+          "description": "允许将包含三个或更多项目的清晰列举转换为 Markdown 列表。",
+          "options": {
+            "prose": "段落",
+            "lists": "列表"
+          }
+        },
+        "context": {
+          "title": "场景",
+          "description": "对问候语、正文和结尾采用电子邮件的排版惯例。",
+          "options": {
+            "general": "通用",
+            "email": "电子邮件"
+          }
         }
       },
       "prompts": {

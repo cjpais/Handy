@@ -395,10 +395,10 @@
         "title": "Skrót klawiszowy"
       },
       "api": {
-        "title": "API (zgodne z OpenAI)",
+        "title": "Silnik",
         "provider": {
-          "title": "Dostawca",
-          "description": "Wybierz dostawcę zgodnego z OpenAI."
+          "title": "Silnik",
+          "description": "Wybierz lokalny silnik lub usługę zgodną z OpenAI."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence nie jest dostępne na tym urządzeniu. Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym z włączonym Apple Intelligence w Ustawieniach systemowych."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Wyszukaj lub wybierz model",
           "placeholderNoOptions": "Wpisz nazwę modelu",
           "refreshModels": "Odśwież modele"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "Działający na urządzeniu normalizator tekstu wyłącznie w języku angielskim, który oczyszcza wyniki zamiany mowy na tekst. Pliki do pobrania mają około 473 MiB, a podczas redagowania program może tymczasowo używać do około 2 GiB pamięci.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Szczegóły modelu",
+        "deleteTitle": "Usuń S1-mini",
+        "deleteConfirm": "Usunąć lokalne pliki modelu S1-mini? Aby ponownie użyć tego mechanizmu, trzeba będzie pobrać je jeszcze raz.",
+        "actions": {
+          "download": "Pobierz",
+          "retry": "Spróbuj ponownie"
+        },
+        "status": {
+          "not_downloaded": "Nie pobrano",
+          "downloading": "Pobieranie",
+          "ready": "Gotowy na urządzeniu",
+          "error": "Pobieranie nie powiodło się"
+        },
+        "styling": {
+          "title": "Styl",
+          "description": "Wybierz stopień normalizacji wielkich liter, form skróconych i potocznych sformułowań.",
+          "options": {
+            "casual": "Swobodny",
+            "semi_casual": "Raczej swobodny",
+            "semi_formal": "Raczej formalny (zalecany)",
+            "formal": "Formalny"
+          }
+        },
+        "structure": {
+          "title": "Struktura",
+          "description": "Pozwala zamieniać wyraźne wyliczenia z co najmniej trzema pozycjami na listy Markdown.",
+          "options": {
+            "prose": "Tekst ciągły",
+            "lists": "Listy"
+          }
+        },
+        "context": {
+          "title": "Kontekst",
+          "description": "Stosuje układ wiadomości e-mail dla powitania, treści i podpisu.",
+          "options": {
+            "general": "Ogólny",
+            "email": "E-mail"
+          }
         }
       },
       "prompts": {

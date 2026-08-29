@@ -395,10 +395,10 @@
         "title": "Sneltoets"
       },
       "api": {
-        "title": "API (OpenAI-compatibel)",
+        "title": "Engine",
         "provider": {
-          "title": "Provider",
-          "description": "Selecteer een OpenAI-compatibele provider."
+          "title": "Engine",
+          "description": "Selecteer een lokale engine of een OpenAI-compatibele dienst."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence is niet beschikbaar op dit apparaat. Vereist een Apple Silicon Mac met macOS Tahoe (26.0) of nieuwer waarop Apple Intelligence is ingeschakeld via de Systeeminstellingen."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Zoek of selecteer een model",
           "placeholderNoOptions": "Typ een modelnaam",
           "refreshModels": "Modellen verversen"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "Een tekstnormalisator voor alleen Engels die op het apparaat draait en spraak-naar-tekstuitvoer opschoont. De download is ongeveer 473 MiB en tijdens het bijwerken kan tijdelijk tot ongeveer 2 GiB geheugen worden gebruikt.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Modeldetails",
+        "deleteTitle": "S1-mini verwijderen",
+        "deleteConfirm": "De lokale modelbestanden van S1-mini verwijderen? Je moet ze opnieuw downloaden om deze engine weer te gebruiken.",
+        "actions": {
+          "download": "Downloaden",
+          "retry": "Opnieuw proberen"
+        },
+        "status": {
+          "not_downloaded": "Niet gedownload",
+          "downloading": "Bezig met downloaden",
+          "ready": "Klaar op het apparaat",
+          "error": "Download mislukt"
+        },
+        "styling": {
+          "title": "Stijl",
+          "description": "Kies in welke mate hoofdletters, samentrekkingen en spreektaal worden genormaliseerd.",
+          "options": {
+            "casual": "Informeel",
+            "semi_casual": "Vrij informeel",
+            "semi_formal": "Vrij formeel (aanbevolen)",
+            "formal": "Formeel"
+          }
+        },
+        "structure": {
+          "title": "Structuur",
+          "description": "Zet duidelijke opsommingen met drie of meer onderdelen om in Markdown-lijsten.",
+          "options": {
+            "prose": "Doorlopende tekst",
+            "lists": "Lijsten"
+          }
+        },
+        "context": {
+          "title": "Context",
+          "description": "Gebruik e-mailconventies voor aanhef, berichttekst en afsluiting.",
+          "options": {
+            "general": "Algemeen",
+            "email": "E-mail"
+          }
         }
       },
       "prompts": {

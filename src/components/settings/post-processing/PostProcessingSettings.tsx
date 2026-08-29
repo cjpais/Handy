@@ -21,6 +21,7 @@ import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { ShortcutInput } from "../ShortcutInput";
 import { useSettings } from "../../../hooks/useSettings";
+import { S1MiniSettings } from "./S1MiniSettings";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
@@ -44,7 +45,9 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         </div>
       </SettingContainer>
 
-      {state.isAppleProvider ? (
+      {state.isS1MiniProvider ? (
+        <S1MiniSettings />
+      ) : state.isAppleProvider ? (
         state.appleIntelligenceUnavailable ? (
           <Alert variant="error" contained>
             {t("settings.postProcessing.api.appleIntelligence.unavailable")}
@@ -96,7 +99,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         </>
       )}
 
-      {!state.isAppleProvider && (
+      {!state.isAppleProvider && !state.isS1MiniProvider && (
         <SettingContainer
           title={t("settings.postProcessing.api.model.title")}
           description={
@@ -426,6 +429,8 @@ PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
 
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
+  const { getSetting } = useSettings();
+  const isS1MiniProvider = getSetting("post_process_provider_id") === "s1_mini";
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -441,9 +446,11 @@ export const PostProcessingSettings: React.FC = () => {
         <PostProcessingSettingsApi />
       </SettingsGroup>
 
-      <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
-        <PostProcessingSettingsPrompts />
-      </SettingsGroup>
+      {!isS1MiniProvider && (
+        <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
+          <PostProcessingSettingsPrompts />
+        </SettingsGroup>
+      )}
     </div>
   );
 };

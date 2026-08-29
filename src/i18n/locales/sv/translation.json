@@ -395,10 +395,10 @@
         "title": "Snabbkommando"
       },
       "api": {
-        "title": "API (OpenAI-kompatibelt)",
+        "title": "Motor",
         "provider": {
-          "title": "Leverantör",
-          "description": "Välj en OpenAI-kompatibel leverantör."
+          "title": "Motor",
+          "description": "Välj en lokal motor eller en OpenAI-kompatibel tjänst."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence är inte tillgängligt på den här enheten. Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare med Apple Intelligence aktiverat i systeminställningarna."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Sök eller välj en modell",
           "placeholderNoOptions": "Ange ett modellnamn",
           "refreshModels": "Uppdatera modeller"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "En textnormaliserare enbart för engelska som körs på enheten och rensar tal-till-text-resultat. Hämtningen är cirka 473 MiB och bearbetningen kan tillfälligt använda upp till cirka 2 GiB minne.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Modelldetaljer",
+        "deleteTitle": "Ta bort S1-mini",
+        "deleteConfirm": "Vill du ta bort de lokala modellfilerna för S1-mini? Du måste hämta dem igen för att använda den här motorn.",
+        "actions": {
+          "download": "Hämta",
+          "retry": "Försök igen"
+        },
+        "status": {
+          "not_downloaded": "Inte hämtad",
+          "downloading": "Hämtar",
+          "ready": "Klar på enheten",
+          "error": "Hämtningen misslyckades"
+        },
+        "styling": {
+          "title": "Stil",
+          "description": "Välj hur mycket versaler, sammandragningar och vardagliga formuleringar ska normaliseras.",
+          "options": {
+            "casual": "Ledig",
+            "semi_casual": "Ganska ledig",
+            "semi_formal": "Ganska formell (rekommenderas)",
+            "formal": "Formell"
+          }
+        },
+        "structure": {
+          "title": "Struktur",
+          "description": "Tillåt att tydliga uppräkningar med tre eller fler punkter omvandlas till Markdown-listor.",
+          "options": {
+            "prose": "Löptext",
+            "lists": "Listor"
+          }
+        },
+        "context": {
+          "title": "Sammanhang",
+          "description": "Använd e-postformat för hälsningsfras, brödtext och avslutning.",
+          "options": {
+            "general": "Allmänt",
+            "email": "E-post"
+          }
         }
       },
       "prompts": {

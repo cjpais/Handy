@@ -395,10 +395,10 @@
         "title": "Tecla de acceso rápido"
       },
       "api": {
-        "title": "API (compatible con OpenAI)",
+        "title": "Motor",
         "provider": {
-          "title": "Proveedor",
-          "description": "Selecciona un proveedor compatible con OpenAI."
+          "title": "Motor",
+          "description": "Selecciona un motor local o un servicio compatible con OpenAI."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence no está disponible en este dispositivo. Requiere un Mac con Apple Silicon ejecutando macOS Tahoe (26.0) o posterior con Apple Intelligence habilitado en Ajustes del Sistema."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Buscar o seleccionar un modelo",
           "placeholderNoOptions": "Escribe un nombre de modelo",
           "refreshModels": "Actualizar modelos"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "Un normalizador de texto solo para inglés que se ejecuta en el dispositivo y limpia el resultado de voz a texto. La descarga ocupa unos 473 MiB y el pulido puede usar temporalmente hasta unos 2 GiB de memoria.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Detalles del modelo",
+        "deleteTitle": "Eliminar S1-mini",
+        "deleteConfirm": "¿Quieres eliminar los archivos locales del modelo S1-mini? Tendrás que volver a descargarlos para usar este motor.",
+        "actions": {
+          "download": "Descargar",
+          "retry": "Reintentar"
+        },
+        "status": {
+          "not_downloaded": "No descargado",
+          "downloading": "Descargando",
+          "ready": "Listo en el dispositivo",
+          "error": "Error de descarga"
+        },
+        "styling": {
+          "title": "Estilo",
+          "description": "Elige cuánto se normalizan las mayúsculas, las contracciones y las expresiones coloquiales.",
+          "options": {
+            "casual": "Informal",
+            "semi_casual": "Seminformal",
+            "semi_formal": "Semiformal (recomendado)",
+            "formal": "Formal"
+          }
+        },
+        "structure": {
+          "title": "Estructura",
+          "description": "Permite convertir enumeraciones claras de tres o más elementos en listas Markdown.",
+          "options": {
+            "prose": "Prosa",
+            "lists": "Listas"
+          }
+        },
+        "context": {
+          "title": "Contexto",
+          "description": "Usa las convenciones de correo electrónico para saludos, cuerpo y despedidas.",
+          "options": {
+            "general": "General",
+            "email": "Correo electrónico"
+          }
         }
       },
       "prompts": {

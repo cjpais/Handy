@@ -395,10 +395,10 @@
         "title": "हटकी"
       },
       "api": {
-        "title": "API (OpenAI अनुकूल)",
+        "title": "इन्जिन",
         "provider": {
-          "title": "प्रदायक",
-          "description": "OpenAI-अनुकूल प्रदायक चयन गर्नुहोस्।"
+          "title": "इन्जिन",
+          "description": "स्थानीय इन्जिन वा OpenAI-अनुकूल सेवा चयन गर्नुहोस्।"
         },
         "appleIntelligence": {
           "unavailable": "यो डिभाइसमा Apple Intelligence उपलब्ध छैन। macOS Tahoe (26.0) वा पछिको संस्करण चलिरहेको र System Settings मा Apple Intelligence सक्षम गरिएको Apple Silicon Mac आवश्यक छ।"
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "मोडेल खोज्नुहोस् वा चयन गर्नुहोस्",
           "placeholderNoOptions": "मोडेलको नाम टाइप गर्नुहोस्",
           "refreshModels": "मोडेलहरू रिफ्रेस गर्नुहोस्"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "वाणीबाट पाठमा रूपान्तरण भएको नतिजा सफा गर्ने, डिभाइसमा चल्ने अङ्ग्रेजी-मात्र पाठ सामान्यीकरण मोडेल। डाउनलोड करिब 473 MiB छ र परिष्करण गर्दा अस्थायी रूपमा करिब 2 GiB सम्म मेमोरी प्रयोग हुन सक्छ।",
+        "modelSize": "~473 MiB",
+        "modelDetails": "मोडेलको विवरण",
+        "deleteTitle": "S1-mini मेटाउनुहोस्",
+        "deleteConfirm": "स्थानीय S1-mini मोडेल फाइलहरू मेटाउने हो? यो इन्जिन फेरि प्रयोग गर्न तपाईंले तिनलाई पुनः डाउनलोड गर्नुपर्नेछ।",
+        "actions": {
+          "download": "डाउनलोड गर्नुहोस्",
+          "retry": "फेरि प्रयास गर्नुहोस्"
+        },
+        "status": {
+          "not_downloaded": "डाउनलोड गरिएको छैन",
+          "downloading": "डाउनलोड हुँदैछ",
+          "ready": "डिभाइसमा तयार",
+          "error": "डाउनलोड असफल भयो"
+        },
+        "styling": {
+          "title": "शैली",
+          "description": "ठूला अक्षर, सङ्क्षिप्त रूप र बोलचालका अभिव्यक्ति कति सामान्य बनाउने भन्ने छान्नुहोस्।",
+          "options": {
+            "casual": "अनौपचारिक",
+            "semi_casual": "अर्ध-अनौपचारिक",
+            "semi_formal": "अर्ध-औपचारिक (सिफारिस गरिएको)",
+            "formal": "औपचारिक"
+          }
+        },
+        "structure": {
+          "title": "संरचना",
+          "description": "तीन वा बढी वस्तु भएका स्पष्ट गणनालाई Markdown सूचीमा बदल्न दिनुहोस्।",
+          "options": {
+            "prose": "गद्य",
+            "lists": "सूचीहरू"
+          }
+        },
+        "context": {
+          "title": "सन्दर्भ",
+          "description": "अभिवादन, मुख्य पाठ र अन्त्यका लागि इमेलको ढाँचा प्रयोग गर्नुहोस्।",
+          "options": {
+            "general": "सामान्य",
+            "email": "इमेल"
+          }
         }
       },
       "prompts": {

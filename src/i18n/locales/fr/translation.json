@@ -395,10 +395,10 @@
         "title": "Raccourci clavier"
       },
       "api": {
-        "title": "API (Compatible OpenAI)",
+        "title": "Moteur",
         "provider": {
-          "title": "Fournisseur",
-          "description": "Sélectionnez un fournisseur compatible OpenAI."
+          "title": "Moteur",
+          "description": "Sélectionnez un moteur local ou un service compatible OpenAI."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence n'est pas disponible sur cet appareil. Nécessite un Mac Apple Silicon exécutant macOS Tahoe (26.0) ou une version ultérieure avec Apple Intelligence activé dans les Préférences Système."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Rechercher ou sélectionner un modèle",
           "placeholderNoOptions": "Tapez un nom de modèle",
           "refreshModels": "Actualiser les modèles"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "Un normaliseur de texte réservé à l’anglais, exécuté sur l’appareil, qui nettoie les transcriptions. Le téléchargement pèse environ 473 MiB et la correction peut utiliser temporairement jusqu’à environ 2 GiB de mémoire.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Détails du modèle",
+        "deleteTitle": "Supprimer S1-mini",
+        "deleteConfirm": "Supprimer les fichiers locaux du modèle S1-mini ? Vous devrez les télécharger à nouveau pour utiliser ce moteur.",
+        "actions": {
+          "download": "Télécharger",
+          "retry": "Réessayer"
+        },
+        "status": {
+          "not_downloaded": "Non téléchargé",
+          "downloading": "Téléchargement",
+          "ready": "Prêt sur l’appareil",
+          "error": "Échec du téléchargement"
+        },
+        "styling": {
+          "title": "Style",
+          "description": "Choisissez le degré de normalisation des majuscules, des contractions et des tournures familières.",
+          "options": {
+            "casual": "Décontracté",
+            "semi_casual": "Plutôt décontracté",
+            "semi_formal": "Plutôt formel (recommandé)",
+            "formal": "Formel"
+          }
+        },
+        "structure": {
+          "title": "Structure",
+          "description": "Autorise la conversion des énumérations claires de trois éléments ou plus en listes Markdown.",
+          "options": {
+            "prose": "Prose",
+            "lists": "Listes"
+          }
+        },
+        "context": {
+          "title": "Contexte",
+          "description": "Utilise les conventions de mise en page des e-mails pour les salutations, le corps du message et la formule de fin.",
+          "options": {
+            "general": "Général",
+            "email": "E-mail"
+          }
         }
       },
       "prompts": {

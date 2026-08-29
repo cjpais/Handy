@@ -34,6 +34,7 @@ use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
+use managers::s1_mini::S1MiniManager;
 use managers::transcription::TranscriptionManager;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
@@ -167,6 +168,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+    let s1_mini_manager =
+        Arc::new(S1MiniManager::new(app_handle).expect("Failed to initialize S1-mini manager"));
 
     // Initialize the transcribe-cpp native backend (logging + backend module
     // registration) once, before any whisper model is loaded.
@@ -180,6 +183,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(s1_mini_manager);
     app_handle.manage(tray::TrayState::new());
 
     // Note: Shortcuts are NOT initialized here.
@@ -287,6 +291,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 cancel_current_operation(app);
             }
             "quit" => {
+                utils::cancel_current_operation(app);
                 app.exit(0);
             }
             id if id.starts_with("model_select:") => {
@@ -540,7 +545,7 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
         }
         let t = Instant::now();
         match tm.transcribe(samples.clone()) {
-            Ok(out) => text = out,
+            Ok(out) => text = out.into_text(),
             Err(e) => {
                 eprintln!("error: transcribe failed: {}", e);
                 return 1;
@@ -701,6 +706,14 @@ pub fn run(cli_args: CliArgs) {
             commands::models::get_transcription_model_status,
             commands::models::is_model_loading,
             commands::models::rescan_local_models,
+            commands::s1_mini::get_s1_mini_status,
+            commands::s1_mini::download_s1_mini,
+            commands::s1_mini::cancel_s1_mini_download,
+            commands::s1_mini::delete_s1_mini,
+            commands::s1_mini::unload_s1_mini,
+            commands::s1_mini::change_s1_styling_setting,
+            commands::s1_mini::change_s1_structure_setting,
+            commands::s1_mini::change_s1_context_setting,
             commands::audio::update_microphone_mode,
             commands::audio::get_microphone_mode,
             commands::audio::get_windows_microphone_permission_status,
@@ -1034,7 +1047,14 @@ pub fn run(cli_args: CliArgs) {
             }
             // Teardown transcribe.cpp before exit
             tauri::RunEvent::Exit => {
+                if let Some(s1_mini) = app.try_state::<Arc<S1MiniManager>>() {
+                    s1_mini.cancel_generation();
+                }
                 if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
+                    // A live worker owns the shared inference lease while it
+                    // waits for stream commands. Cancel it before the blocking
+                    // unload so quitting cannot deadlock on that lease.
+                    tm.cancel_stream();
                     let _ = tm.unload_model();
                 }
             }

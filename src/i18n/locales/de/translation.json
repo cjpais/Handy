@@ -395,10 +395,10 @@
         "title": "Tastenkürzel"
       },
       "api": {
-        "title": "API (OpenAI-kompatibel)",
+        "title": "Engine",
         "provider": {
-          "title": "Anbieter",
-          "description": "Wähle einen OpenAI-kompatiblen Anbieter."
+          "title": "Engine",
+          "description": "Wähle eine lokale Engine oder einen OpenAI-kompatiblen Dienst."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence ist auf diesem Gerät nicht verfügbar. Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer und aktiviertem Apple Intelligence in den Systemeinstellungen."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Modell suchen oder auswählen",
           "placeholderNoOptions": "Modellnamen eingeben",
           "refreshModels": "Modelle aktualisieren"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "Ein englischsprachiger Textnormalisierer, der direkt auf dem Gerät läuft und Spracherkennungstexte bereinigt. Der Download ist etwa 473 MiB groß; beim Überarbeiten können vorübergehend bis zu etwa 2 GiB Arbeitsspeicher belegt werden.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Modelldetails",
+        "deleteTitle": "S1-mini löschen",
+        "deleteConfirm": "Lokale S1-mini-Modelldateien löschen? Um dieses Modul wieder zu verwenden, müssen sie erneut heruntergeladen werden.",
+        "actions": {
+          "download": "Herunterladen",
+          "retry": "Erneut versuchen"
+        },
+        "status": {
+          "not_downloaded": "Nicht heruntergeladen",
+          "downloading": "Wird heruntergeladen",
+          "ready": "Auf dem Gerät bereit",
+          "error": "Download fehlgeschlagen"
+        },
+        "styling": {
+          "title": "Stil",
+          "description": "Lege fest, wie stark Großschreibung, Kurzformen und umgangssprachliche Formulierungen normalisiert werden.",
+          "options": {
+            "casual": "Locker",
+            "semi_casual": "Eher locker",
+            "semi_formal": "Eher formell (empfohlen)",
+            "formal": "Formell"
+          }
+        },
+        "structure": {
+          "title": "Struktur",
+          "description": "Eindeutige Aufzählungen mit mindestens drei Punkten können in Markdown-Listen umgewandelt werden.",
+          "options": {
+            "prose": "Fließtext",
+            "lists": "Listen"
+          }
+        },
+        "context": {
+          "title": "Kontext",
+          "description": "Verwendet E-Mail-Konventionen für Anrede, Nachrichtentext und Grußformel.",
+          "options": {
+            "general": "Allgemein",
+            "email": "E-Mail"
+          }
         }
       },
       "prompts": {

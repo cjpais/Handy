@@ -395,10 +395,10 @@
         "title": "हॉटकी"
       },
       "api": {
-        "title": "API (OpenAI संगत)",
+        "title": "इंजन",
         "provider": {
-          "title": "प्रोवाइडर",
-          "description": "कोई OpenAI-संगत प्रोवाइडर चुनें."
+          "title": "इंजन",
+          "description": "कोई स्थानीय इंजन या OpenAI-संगत सेवा चुनें."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence इस डिवाइस पर उपलब्ध नहीं है. इसके लिए macOS Tahoe (26.0) या उसके बाद का वर्शन चलाने वाला Apple Silicon Mac चाहिए, जिसमें System Settings में Apple Intelligence चालू हो."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "मॉडल खोजें या चुनें",
           "placeholderNoOptions": "मॉडल का नाम लिखें",
           "refreshModels": "मॉडल रीफ़्रेश करें"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "सिर्फ़ अंग्रेज़ी के लिए, डिवाइस पर चलने वाला टेक्स्ट नॉर्मलाइज़र जो स्पीच-टू-टेक्स्ट आउटपुट को साफ़ करता है। डाउनलोड लगभग 473 MiB है और सुधार के दौरान अस्थायी रूप से लगभग 2 GiB तक मेमोरी इस्तेमाल हो सकती है।",
+        "modelSize": "~473 MiB",
+        "modelDetails": "मॉडल का विवरण",
+        "deleteTitle": "S1-mini हटाएँ",
+        "deleteConfirm": "स्थानीय S1-mini मॉडल फ़ाइलें हटाएँ? इस इंजन को दोबारा इस्तेमाल करने के लिए आपको इन्हें फिर से डाउनलोड करना होगा।",
+        "actions": {
+          "download": "डाउनलोड करें",
+          "retry": "फिर कोशिश करें"
+        },
+        "status": {
+          "not_downloaded": "डाउनलोड नहीं किया गया",
+          "downloading": "डाउनलोड हो रहा है",
+          "ready": "डिवाइस पर तैयार",
+          "error": "डाउनलोड विफल"
+        },
+        "styling": {
+          "title": "शैली",
+          "description": "चुनें कि बड़े अक्षरों, संक्षिप्त रूपों और बोलचाल की भाषा को कितना सामान्य किया जाए।",
+          "options": {
+            "casual": "अनौपचारिक",
+            "semi_casual": "कुछ अनौपचारिक",
+            "semi_formal": "कुछ औपचारिक (अनुशंसित)",
+            "formal": "औपचारिक"
+          }
+        },
+        "structure": {
+          "title": "संरचना",
+          "description": "तीन या अधिक मदों वाली स्पष्ट गणनाओं को Markdown सूचियों में बदलने दें।",
+          "options": {
+            "prose": "गद्य",
+            "lists": "सूचियाँ"
+          }
+        },
+        "context": {
+          "title": "संदर्भ",
+          "description": "अभिवादन, मुख्य संदेश और समापन के लिए ईमेल का लेआउट इस्तेमाल करें।",
+          "options": {
+            "general": "सामान्य",
+            "email": "ईमेल"
+          }
         }
       },
       "prompts": {

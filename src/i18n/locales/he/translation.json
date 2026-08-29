@@ -395,10 +395,10 @@
         "title": "קיצור מקשים"
       },
       "api": {
-        "title": "API (תואם OpenAI)",
+        "title": "מנוע",
         "provider": {
-          "title": "ספק",
-          "description": "בחר ספק שתואם ל-OpenAI."
+          "title": "מנוע",
+          "description": "בחר מנוע מקומי או שירות שתואם ל-OpenAI."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "חפש או בחר מודל",
           "placeholderNoOptions": "הקלד שם מודל",
           "refreshModels": "רענן מודלים"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "מנרמל טקסט באנגלית בלבד שפועל במכשיר ומנקה פלט של דיבור לטקסט. גודל ההורדה הוא כ־473 MiB, ובזמן הליטוש ייתכן שימוש זמני בעד כ־2 GiB של זיכרון.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "פרטי המודל",
+        "deleteTitle": "מחיקת S1-mini",
+        "deleteConfirm": "למחוק את קובצי המודל המקומיים של S1-mini? כדי להשתמש שוב במנוע יהיה צורך להוריד אותם מחדש.",
+        "actions": {
+          "download": "הורדה",
+          "retry": "ניסיון חוזר"
+        },
+        "status": {
+          "not_downloaded": "לא הורד",
+          "downloading": "בהורדה",
+          "ready": "מוכן במכשיר",
+          "error": "ההורדה נכשלה"
+        },
+        "styling": {
+          "title": "סגנון",
+          "description": "בחרו עד כמה לנרמל אותיות רישיות, קיצורים וניסוחים דיבוריים.",
+          "options": {
+            "casual": "יום־יומי",
+            "semi_casual": "יום־יומי למחצה",
+            "semi_formal": "רשמי למחצה (מומלץ)",
+            "formal": "רשמי"
+          }
+        },
+        "structure": {
+          "title": "מבנה",
+          "description": "אפשרו להפוך פירוט ברור של שלושה פריטים או יותר לרשימות Markdown.",
+          "options": {
+            "prose": "טקסט רציף",
+            "lists": "רשימות"
+          }
+        },
+        "context": {
+          "title": "הקשר",
+          "description": "השתמשו במבנה של דוא״ל עבור ברכה, גוף ההודעה וחתימה.",
+          "options": {
+            "general": "כללי",
+            "email": "דוא״ל"
+          }
         }
       },
       "prompts": {

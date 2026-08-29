@@ -1,6 +1,7 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
     history::{HistoryManager, PaginatedHistory},
+    s1_mini::S1MiniManager,
     transcription::TranscriptionManager,
 };
 use std::sync::Arc;
@@ -65,6 +66,7 @@ pub async fn retry_history_entry_transcription(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    s1_mini_manager: State<'_, Arc<S1MiniManager>>,
     id: i64,
 ) -> Result<(), String> {
     let entry = history_manager
@@ -89,16 +91,23 @@ pub async fn retry_history_entry_transcription(
         .map_err(|e| format!("Transcription task panicked: {}", e))?
         .map_err(|e| e.to_string())?;
 
-    if transcription.is_empty() {
+    if transcription.text().is_empty() {
         return Err("Recording contains no speech".to_string());
     }
 
-    let processed =
-        process_transcription_output(&app, &transcription, entry.post_process_requested).await;
+    let transcription_text = transcription.text().to_string();
+    let s1_cancel_generation = s1_mini_manager.cancellation_generation();
+    let processed = process_transcription_output(
+        &app,
+        transcription,
+        entry.post_process_requested,
+        s1_cancel_generation,
+    )
+    .await;
     history_manager
         .update_transcription(
             id,
-            transcription,
+            transcription_text,
             processed.post_processed_text,
             processed.post_process_prompt,
         )

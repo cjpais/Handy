@@ -285,6 +285,15 @@ pub enum OutputLanguageEvidence {
 }
 
 impl OutputLanguageEvidence {
+    pub fn is_english(&self) -> bool {
+        self.language().is_some_and(|language| {
+            language
+                .split(&['-', '_'][..])
+                .next()
+                .is_some_and(|base| base.eq_ignore_ascii_case("en"))
+        })
+    }
+
     fn language(&self) -> Option<&str> {
         match self {
             Self::UserSelected(language)
@@ -705,6 +714,14 @@ mod tests {
             normalize_transcription_output(&text),
             "je pense que ça marche"
         );
+    }
+
+    #[test]
+    fn english_evidence_gate_fails_closed() {
+        assert!(OutputLanguageEvidence::TranslatedToEnglish.is_english());
+        assert!(OutputLanguageEvidence::ModelDetected("en-US".to_string()).is_english());
+        assert!(!OutputLanguageEvidence::ModelDetected("ja".to_string()).is_english());
+        assert!(!OutputLanguageEvidence::Unknown.is_english());
     }
 
     #[test]

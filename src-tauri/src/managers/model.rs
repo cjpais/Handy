@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
-mod download;
+pub(crate) mod download;
 
 use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT};
 

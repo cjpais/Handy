@@ -395,10 +395,10 @@
         "title": "Hotkey"
       },
       "api": {
-        "title": "API (OpenAI Compatible)",
+        "title": "Engine",
         "provider": {
-          "title": "Provider",
-          "description": "Select an OpenAI-compatible provider."
+          "title": "Engine",
+          "description": "Choose a local engine or an OpenAI-compatible service."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence is not available on this device. Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Search or select a model",
           "placeholderNoOptions": "Type a model name",
           "refreshModels": "Refresh models"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "An English-only, on-device text normalizer for cleaning speech-to-text output. The download is about 473 MiB, and polishing can temporarily use up to about 2 GiB of memory.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Model details",
+        "deleteTitle": "Delete S1-mini",
+        "deleteConfirm": "Delete the local S1-mini model files? You will need to download them again to use this engine.",
+        "actions": {
+          "download": "Download",
+          "retry": "Retry"
+        },
+        "status": {
+          "not_downloaded": "Not downloaded",
+          "downloading": "Downloading",
+          "ready": "Ready on device",
+          "error": "Download failed"
+        },
+        "styling": {
+          "title": "Styling",
+          "description": "Choose how much capitalization, contractions, and colloquial phrasing are normalized.",
+          "options": {
+            "casual": "Casual",
+            "semi_casual": "Semi-casual",
+            "semi_formal": "Semi-formal (recommended)",
+            "formal": "Formal"
+          }
+        },
+        "structure": {
+          "title": "Structure",
+          "description": "Allow clear enumerations with three or more items to become Markdown lists.",
+          "options": {
+            "prose": "Prose",
+            "lists": "Lists"
+          }
+        },
+        "context": {
+          "title": "Context",
+          "description": "Use email layout conventions for greetings, body text, and sign-offs.",
+          "options": {
+            "general": "General",
+            "email": "Email"
+          }
         }
       },
       "prompts": {

@@ -6,6 +6,9 @@ import type {
   AudioDevice,
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
+  S1Context,
+  S1Structure,
+  S1Styling,
   VadBackend,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -151,6 +154,10 @@ const settingUpdaters: {
     commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
+  s1_styling: (value) => commands.changeS1StylingSetting(value as S1Styling),
+  s1_structure: (value) =>
+    commands.changeS1StructureSetting(value as S1Structure),
+  s1_context: (value) => commands.changeS1ContextSetting(value as S1Context),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>

@@ -395,10 +395,10 @@
         "title": "Kısayol Tuşu"
       },
       "api": {
-        "title": "API (OpenAI Uyumlu)",
+        "title": "Motor",
         "provider": {
-          "title": "Sağlayıcı",
-          "description": "OpenAI uyumlu bir sağlayıcı seçin."
+          "title": "Motor",
+          "description": "Yerel bir motor veya OpenAI uyumlu bir hizmet seçin."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence bu cihazda kullanılamıyor. macOS Tahoe (26.0) veya üzeri ve Sistem Ayarları'nda Apple Intelligence etkin olan bir Apple Silicon Mac gerektirir."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Model ara veya seç",
           "placeholderNoOptions": "Model adı yazın",
           "refreshModels": "Modelleri Yenile"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "Konuşmayı metne dönüştürme çıktısını temizleyen, cihazda çalışan ve yalnızca İngilizceyi destekleyen bir metin normalleştirici. İndirme boyutu yaklaşık 473 MiB’dir; düzeltme sırasında geçici olarak yaklaşık 2 GiB’ye kadar bellek kullanılabilir.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Model ayrıntıları",
+        "deleteTitle": "S1-mini’yi sil",
+        "deleteConfirm": "Yerel S1-mini model dosyaları silinsin mi? Bu motoru yeniden kullanmak için dosyaları tekrar indirmeniz gerekir.",
+        "actions": {
+          "download": "İndir",
+          "retry": "Yeniden dene"
+        },
+        "status": {
+          "not_downloaded": "İndirilmedi",
+          "downloading": "İndiriliyor",
+          "ready": "Cihazda hazır",
+          "error": "İndirme başarısız"
+        },
+        "styling": {
+          "title": "Üslup",
+          "description": "Büyük harflerin, kısaltmaların ve günlük ifadelerin ne ölçüde normalleştirileceğini seçin.",
+          "options": {
+            "casual": "Gündelik",
+            "semi_casual": "Yarı gündelik",
+            "semi_formal": "Yarı resmî (önerilen)",
+            "formal": "Resmî"
+          }
+        },
+        "structure": {
+          "title": "Yapı",
+          "description": "Üç veya daha fazla öğe içeren açık sıralamaların Markdown listelerine dönüştürülmesine izin verin.",
+          "options": {
+            "prose": "Düz yazı",
+            "lists": "Listeler"
+          }
+        },
+        "context": {
+          "title": "Bağlam",
+          "description": "Selamlama, gövde metni ve kapanış için e-posta düzenini kullanın.",
+          "options": {
+            "general": "Genel",
+            "email": "E-posta"
+          }
         }
       },
       "prompts": {

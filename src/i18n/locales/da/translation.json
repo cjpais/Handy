@@ -395,10 +395,10 @@
         "title": "Genvejstast"
       },
       "api": {
-        "title": "API (OpenAI-kompatibel)",
+        "title": "Motor",
         "provider": {
-          "title": "Udbyder",
-          "description": "Vælg en OpenAI-kompatibel udbyder."
+          "title": "Motor",
+          "description": "Vælg en lokal motor eller en OpenAI-kompatibel tjeneste."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence er ikke tilgængelig på denne enhed. Kræver en Apple Silicon Mac med macOS Tahoe (26.0) eller nyere med Apple Intelligence aktiveret i Systemindstillinger."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "Søg eller vælg en model",
           "placeholderNoOptions": "Skriv et modelnavn",
           "refreshModels": "Opdater modeller"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "En engelsksproget tekstnormalisering, der kører på enheden og renser tale-til-tekst-output. Downloaden er ca. 473 MiB, og finpudsning kan midlertidigt bruge op til ca. 2 GiB hukommelse.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "Modeloplysninger",
+        "deleteTitle": "Slet S1-mini",
+        "deleteConfirm": "Vil du slette de lokale S1-mini-modelfiler? Du skal downloade dem igen for at bruge denne motor.",
+        "actions": {
+          "download": "Download",
+          "retry": "Prøv igen"
+        },
+        "status": {
+          "not_downloaded": "Ikke downloadet",
+          "downloading": "Downloader",
+          "ready": "Klar på enheden",
+          "error": "Download mislykkedes"
+        },
+        "styling": {
+          "title": "Stil",
+          "description": "Vælg, hvor meget brugen af store bogstaver, sammentrækninger og talesprog skal normaliseres.",
+          "options": {
+            "casual": "Uformel",
+            "semi_casual": "Halvuformel",
+            "semi_formal": "Halvformel (anbefalet)",
+            "formal": "Formel"
+          }
+        },
+        "structure": {
+          "title": "Struktur",
+          "description": "Tillad, at tydelige opremsninger med tre eller flere punkter bliver til Markdown-lister.",
+          "options": {
+            "prose": "Prosa",
+            "lists": "Lister"
+          }
+        },
+        "context": {
+          "title": "Kontekst",
+          "description": "Brug e-mailopsætning til hilsner, brødtekst og afslutninger.",
+          "options": {
+            "general": "Generel",
+            "email": "E-mail"
+          }
         }
       },
       "prompts": {

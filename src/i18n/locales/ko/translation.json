@@ -395,10 +395,10 @@
         "title": "단축키"
       },
       "api": {
-        "title": "API (OpenAI 호환)",
+        "title": "엔진",
         "provider": {
-          "title": "제공자",
-          "description": "OpenAI 호환 제공자를 선택하세요."
+          "title": "엔진",
+          "description": "로컬 엔진 또는 OpenAI 호환 서비스를 선택하세요."
         },
         "appleIntelligence": {
           "unavailable": "이 기기에서는 Apple Intelligence를 사용할 수 없습니다. macOS Tahoe (26.0) 이상을 실행하고 시스템 설정에서 Apple Intelligence가 활성화된 Apple Silicon Mac이 필요합니다."
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "모델 검색 또는 선택",
           "placeholderNoOptions": "모델 이름 입력",
           "refreshModels": "모델 새로고침"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "음성 텍스트 변환 결과를 다듬는 영어 전용 온디바이스 텍스트 정규화 모델입니다. 다운로드 크기는 약 473 MiB이며, 다듬는 동안 일시적으로 최대 약 2 GiB의 메모리를 사용할 수 있습니다.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "모델 세부 정보",
+        "deleteTitle": "S1-mini 삭제",
+        "deleteConfirm": "로컬 S1-mini 모델 파일을 삭제할까요? 이 엔진을 다시 사용하려면 파일을 다시 다운로드해야 합니다.",
+        "actions": {
+          "download": "다운로드",
+          "retry": "다시 시도"
+        },
+        "status": {
+          "not_downloaded": "다운로드되지 않음",
+          "downloading": "다운로드 중",
+          "ready": "기기에서 사용 가능",
+          "error": "다운로드 실패"
+        },
+        "styling": {
+          "title": "문체",
+          "description": "대문자 표기, 축약형, 구어체 표현을 어느 정도 정규화할지 선택합니다.",
+          "options": {
+            "casual": "캐주얼",
+            "semi_casual": "약간 캐주얼",
+            "semi_formal": "약간 격식 있음(권장)",
+            "formal": "격식 있음"
+          }
+        },
+        "structure": {
+          "title": "구조",
+          "description": "항목이 세 개 이상인 명확한 열거를 Markdown 목록으로 바꿀 수 있습니다.",
+          "options": {
+            "prose": "문장",
+            "lists": "목록"
+          }
+        },
+        "context": {
+          "title": "문맥",
+          "description": "인사말, 본문, 맺음말에 이메일 형식을 적용합니다.",
+          "options": {
+            "general": "일반",
+            "email": "이메일"
+          }
         }
       },
       "prompts": {

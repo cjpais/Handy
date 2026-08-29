@@ -372,10 +372,10 @@
         "title": "مفتاح الاختصار"
       },
       "api": {
-        "title": "API (متوافق مع OpenAI)",
+        "title": "المحرك",
         "provider": {
-          "title": "المزود",
-          "description": "اختر مزوداً متوافقاً مع OpenAI."
+          "title": "المحرك",
+          "description": "اختر محركاً محلياً أو خدمة متوافقة مع OpenAI."
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence غير متاح على هذا الجهاز. يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث مع تمكين Apple Intelligence في إعدادات النظام."
@@ -397,6 +397,50 @@
           "placeholderWithOptions": "ابحث عن نموذج أو اختره",
           "placeholderNoOptions": "اكتب اسم النموذج",
           "refreshModels": "تحديث النماذج"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "مُطبِّع نصوص يعمل على الجهاز ويدعم الإنجليزية فقط لتنظيف مخرجات تحويل الكلام إلى نص. يبلغ حجم التنزيل نحو 473 MiB، وقد تستخدم عملية التنقيح مؤقتًا ما يصل إلى نحو 2 GiB من الذاكرة.",
+        "modelSize": "~473 MiB",
+        "modelDetails": "تفاصيل النموذج",
+        "deleteTitle": "حذف S1-mini",
+        "deleteConfirm": "هل تريد حذف ملفات نموذج S1-mini المحلية؟ ستحتاج إلى تنزيلها مجددًا لاستخدام هذا المحرك.",
+        "actions": {
+          "download": "تنزيل",
+          "retry": "إعادة المحاولة"
+        },
+        "status": {
+          "not_downloaded": "غير منزّل",
+          "downloading": "جارٍ التنزيل",
+          "ready": "جاهز على الجهاز",
+          "error": "فشل التنزيل"
+        },
+        "styling": {
+          "title": "الأسلوب",
+          "description": "اختر مقدار ضبط الأحرف الكبيرة والاختصارات والصياغة العامية.",
+          "options": {
+            "casual": "غير رسمي",
+            "semi_casual": "شبه غير رسمي",
+            "semi_formal": "شبه رسمي (موصى به)",
+            "formal": "رسمي"
+          }
+        },
+        "structure": {
+          "title": "البنية",
+          "description": "اسمح بتحويل التعدادات الواضحة التي تضم ثلاثة عناصر أو أكثر إلى قوائم Markdown.",
+          "options": {
+            "prose": "نثر",
+            "lists": "قوائم"
+          }
+        },
+        "context": {
+          "title": "السياق",
+          "description": "استخدم تنسيق البريد الإلكتروني للتحيات ونص الرسالة والتوقيعات.",
+          "options": {
+            "general": "عام",
+            "email": "بريد إلكتروني"
+          }
         }
       },
       "prompts": {

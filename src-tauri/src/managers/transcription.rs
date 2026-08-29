@@ -111,6 +111,119 @@ struct FinalizedStreamText {
     output_language: OutputLanguageEvidence,
     /// The streaming model's supported languages, for text-based detection.
     supported_languages: Vec<String>,
+    inference_lease: InferenceLease,
+}
+
+#[derive(Default)]
+struct InferenceGate {
+    active: Mutex<bool>,
+    available: Condvar,
+}
+
+impl InferenceGate {
+    fn acquire(self: &Arc<Self>) -> InferenceLease {
+        let mut active = self
+            .active
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        while *active {
+            active = self
+                .available
+                .wait(active)
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+        }
+        *active = true;
+        InferenceLease {
+            token: Arc::new(InferenceLeaseToken {
+                gate: Arc::clone(self),
+            }),
+        }
+    }
+
+    fn try_acquire(self: &Arc<Self>) -> Option<InferenceLease> {
+        let mut active = self
+            .active
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if *active {
+            return None;
+        }
+        *active = true;
+        Some(InferenceLease {
+            token: Arc::new(InferenceLeaseToken {
+                gate: Arc::clone(self),
+            }),
+        })
+    }
+}
+
+struct InferenceLeaseToken {
+    gate: Arc<InferenceGate>,
+}
+
+impl Drop for InferenceLeaseToken {
+    fn drop(&mut self) {
+        let mut active = self
+            .gate
+            .active
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        *active = false;
+        self.gate.available.notify_one();
+    }
+}
+
+/// Owned, cloneable proof that this pipeline has exclusive access to local
+/// model inference. The gate is released only after the final clone drops, so a
+/// cancelled async wrapper cannot outlive the native worker it spawned.
+#[derive(Clone)]
+pub(crate) struct InferenceLease {
+    token: Arc<InferenceLeaseToken>,
+}
+
+impl InferenceLease {
+    fn belongs_to(&self, gate: &Arc<InferenceGate>) -> bool {
+        Arc::ptr_eq(&self.token.gate, gate)
+    }
+}
+
+/// Text and language evidence produced by one exact ASR run. Its private lease
+/// keeps ASR model loading/inference mutually exclusive with native S1-mini
+/// until output handling transfers or drops the result.
+pub struct TranscriptionOutput {
+    text: String,
+    output_language: OutputLanguageEvidence,
+    inference_lease: InferenceLease,
+}
+
+impl TranscriptionOutput {
+    fn new(
+        text: String,
+        output_language: OutputLanguageEvidence,
+        inference_lease: InferenceLease,
+    ) -> Self {
+        Self {
+            text,
+            output_language,
+            inference_lease,
+        }
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn output_language(&self) -> &OutputLanguageEvidence {
+        &self.output_language
+    }
+
+    pub fn into_text(self) -> String {
+        self.text
+    }
+
+    pub(crate) fn into_pipeline_parts(self) -> (String, InferenceLease) {
+        (self.text, self.inference_lease)
+    }
 }
 
 /// Routes real-time audio frames to the active streaming worker. Shared between
@@ -277,6 +390,7 @@ pub struct TranscriptionManager {
     /// `is_model_loaded()` consults this so the model still reports "loaded"
     /// while the worker holds it.
     active_engine_lease: Arc<AtomicU64>,
+    inference_gate: Arc<InferenceGate>,
 }
 
 impl TranscriptionManager {
@@ -297,6 +411,7 @@ impl TranscriptionManager {
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
             active_engine_lease: Arc::new(AtomicU64::new(0)),
+            inference_gate: Arc::new(InferenceGate::default()),
         };
 
         // Start the idle watcher
@@ -387,6 +502,10 @@ impl TranscriptionManager {
         self.lock_engine().is_some() || self.active_engine_lease.load(Ordering::Acquire) != 0
     }
 
+    fn acquire_inference_lease(&self) -> InferenceLease {
+        self.inference_gate.acquire()
+    }
+
     /// Accelerator changes should not disturb the current transcription. Mark
     /// the cached engine stale; the next model-use path reloads it with the
     /// latest settings.
@@ -411,6 +530,20 @@ impl TranscriptionManager {
     }
 
     pub fn unload_model(&self) -> Result<()> {
+        let _inference_lease = self.acquire_inference_lease();
+        self.unload_model_under_lease()
+    }
+
+    pub(crate) fn unload_model_for_pipeline(&self, lease: &InferenceLease) -> Result<()> {
+        if !lease.belongs_to(&self.inference_gate) {
+            return Err(anyhow::anyhow!(
+                "Transcription output belongs to a different inference pipeline"
+            ));
+        }
+        self.unload_model_under_lease()
+    }
+
+    fn unload_model_under_lease(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
         debug!("Starting to unload model");
 
@@ -457,12 +590,26 @@ impl TranscriptionManager {
 
     /// Unloads the model immediately if the setting is enabled and the model is loaded
     pub fn maybe_unload_immediately(&self, context: &str) {
+        if let Some(_inference_lease) = self.inference_gate.try_acquire() {
+            self.maybe_unload_immediately_under_lease(context);
+        } else {
+            debug!("Deferring immediate model unload after {context}; inference is active");
+            let manager = self.clone();
+            let context = context.to_string();
+            thread::spawn(move || {
+                let _inference_lease = manager.acquire_inference_lease();
+                manager.maybe_unload_immediately_under_lease(&context);
+            });
+        }
+    }
+
+    fn maybe_unload_immediately_under_lease(&self, context: &str) {
         let settings = get_settings(&self.app_handle);
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
             && self.is_model_loaded()
         {
             info!("Immediately unloading model after {}", context);
-            if let Err(e) = self.unload_model() {
+            if let Err(e) = self.unload_model_under_lease() {
                 warn!("Failed to immediately unload model: {}", e);
             }
         }
@@ -478,6 +625,15 @@ impl TranscriptionManager {
     /// persisted accelerator setting (which may be Auto). Only affects
     /// transcribe-cpp (whisper-family) models; the selection is not persisted.
     pub fn load_model_with_device(
+        &self,
+        model_id: &str,
+        device_index: Option<usize>,
+    ) -> Result<()> {
+        let _inference_lease = self.acquire_inference_lease();
+        self.load_model_with_device_under_lease(model_id, device_index)
+    }
+
+    fn load_model_with_device_under_lease(
         &self,
         model_id: &str,
         device_index: Option<usize>,
@@ -839,6 +995,19 @@ impl TranscriptionManager {
             }
         }
 
+        let mut inference_lease = Some(self.acquire_inference_lease());
+
+        if !self.is_model_loaded() {
+            let selected_model = get_settings(&self.app_handle).selected_model;
+            if let Err(error) = self.load_model_with_device_under_lease(&selected_model, None) {
+                error!("Live preview could not load model '{selected_model}': {error}");
+                self.router.clear();
+                drop(inference_lease.take());
+                drain_until_finalize(rx);
+                return;
+            }
+        }
+
         let model_id = self.get_current_model().unwrap_or_default();
 
         // Take the engine out of the mutex so we own it during streaming,
@@ -852,6 +1021,7 @@ impl TranscriptionManager {
         {
             warn!("Live preview: another worker already holds the transcription engine");
             self.router.clear();
+            drop(inference_lease.take());
             drain_until_finalize(rx);
             return;
         }
@@ -870,6 +1040,7 @@ impl TranscriptionManager {
                     Ordering::Acquire,
                 );
                 self.router.clear();
+                drop(inference_lease.take());
                 drain_until_finalize(rx);
                 return;
             }
@@ -911,6 +1082,7 @@ impl TranscriptionManager {
         if !supports_streaming {
             self.return_engine(engine, &model_id);
             self.router.clear();
+            drop(inference_lease.take());
             drain_until_finalize(rx);
             return;
         }
@@ -1031,6 +1203,9 @@ impl TranscriptionManager {
                                     text: stream.text().full,
                                     output_language,
                                     supported_languages: languages.clone(),
+                                    inference_lease: inference_lease
+                                        .take()
+                                        .expect("stream worker owns its inference lease"),
                                 })
                             }
                             Err(e) => {
@@ -1068,6 +1243,7 @@ impl TranscriptionManager {
             // caller falls back to batch transcription. Return the engine first
             // so the fallback can immediately use it.
             self.return_engine(engine, &model_id);
+            drop(inference_lease.take());
             drain_until_finalize(rx);
             return;
         }
@@ -1102,7 +1278,7 @@ impl TranscriptionManager {
     /// to batch transcription. `Err` means finalize itself failed or timed out.
     /// A timeout may still leave the worker holding the engine, so callers
     /// should surface it instead of immediately starting a batch fallback.
-    pub fn finalize_stream(&self) -> Result<Option<String>> {
+    pub fn finalize_stream(&self) -> Result<Option<TranscriptionOutput>> {
         let Some(tx) = self.router.take() else {
             return Ok(None);
         };
@@ -1133,9 +1309,18 @@ impl TranscriptionManager {
             &finalized.output_language,
             &finalized.supported_languages,
         );
+        let output_language = with_text_detected_language(
+            finalized.output_language,
+            &filtered,
+            &finalized.supported_languages,
+        );
 
-        self.maybe_unload_immediately("streaming transcription");
-        Ok(Some(filtered))
+        self.maybe_unload_immediately_under_lease("streaming transcription");
+        Ok(Some(TranscriptionOutput::new(
+            filtered,
+            output_language,
+            finalized.inference_lease,
+        )))
     }
 
     /// Abandon any active stream without producing text (e.g. on cancel).
@@ -1163,7 +1348,7 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+    pub fn transcribe(&self, audio: Vec<f32>) -> Result<TranscriptionOutput> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -1180,23 +1365,33 @@ impl TranscriptionManager {
         debug!("Audio vector length: {}", audio_len);
 
         if audio.is_empty() {
+            let inference_lease = self.acquire_inference_lease();
             debug!("Empty audio vector");
-            self.maybe_unload_immediately("empty audio");
-            return Ok(String::new());
+            self.maybe_unload_immediately_under_lease("empty audio");
+            return Ok(TranscriptionOutput::new(
+                String::new(),
+                OutputLanguageEvidence::Unknown,
+                inference_lease,
+            ));
         }
 
-        // Check if model is loaded, if not try to load it
+        // Wait for an eager background load before claiming the pipeline lease;
+        // the loader itself uses that lease, so waiting after acquisition would
+        // deadlock.
         {
-            // If the model is loading, wait for it to complete.
             let mut is_loading = self.is_loading.lock().unwrap();
             while *is_loading {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }
+        }
 
-            let engine_guard = self.lock_engine();
-            if engine_guard.is_none() {
-                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
-            }
+        let inference_lease = self.acquire_inference_lease();
+
+        // A prior S1-mini pipeline may have unloaded the model after eager load
+        // was skipped as redundant. Re-check under the lease and load on demand.
+        if !self.is_model_loaded() {
+            let selected_model = get_settings(&self.app_handle).selected_model;
+            self.load_model_with_device_under_lease(&selected_model, None)?;
         }
 
         // Get current settings for configuration
@@ -1490,6 +1685,8 @@ impl TranscriptionManager {
             &output_language,
             &model_languages,
         );
+        let output_language =
+            with_text_detected_language(output_language, &filtered_result, &model_languages);
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
@@ -1519,9 +1716,13 @@ impl TranscriptionManager {
             );
         }
 
-        self.maybe_unload_immediately("transcription");
+        self.maybe_unload_immediately_under_lease("transcription");
 
-        Ok(final_result)
+        Ok(TranscriptionOutput::new(
+            final_result,
+            output_language,
+            inference_lease,
+        ))
     }
 }
 
@@ -1720,6 +1921,19 @@ fn with_model_detected_language(
             OutputLanguageEvidence::ModelDetected(language)
         }
         (evidence, _) => evidence,
+    }
+}
+
+fn with_text_detected_language(
+    evidence: OutputLanguageEvidence,
+    text: &str,
+    supported_languages: &[String],
+) -> OutputLanguageEvidence {
+    match evidence {
+        OutputLanguageEvidence::Unknown => detect_output_language(text, supported_languages)
+            .map(OutputLanguageEvidence::TextDetected)
+            .unwrap_or(OutputLanguageEvidence::Unknown),
+        evidence => evidence,
     }
 }
 
@@ -2146,6 +2360,62 @@ mod tests {
 
     fn languages(codes: &[&str]) -> Vec<String> {
         codes.iter().map(|code| (*code).to_string()).collect()
+    }
+
+    #[test]
+    fn inference_gate_waits_for_the_active_pipeline() {
+        let gate = Arc::new(InferenceGate::default());
+        let first = gate.acquire();
+        let contender = Arc::clone(&gate);
+        let (ready_tx, ready_rx) = mpsc::sync_channel(0);
+        let (acquired_tx, acquired_rx) = mpsc::channel();
+        let thread = thread::spawn(move || {
+            ready_tx.send(()).unwrap();
+            let _second = contender.acquire();
+            acquired_tx.send(()).unwrap();
+        });
+
+        ready_rx.recv().unwrap();
+        assert!(matches!(
+            acquired_rx.recv_timeout(Duration::from_millis(50)),
+            Err(mpsc::RecvTimeoutError::Timeout)
+        ));
+        drop(first);
+        acquired_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+        thread.join().unwrap();
+    }
+
+    #[test]
+    fn cloned_inference_lease_holds_gate_until_native_work_exits() {
+        let gate = Arc::new(InferenceGate::default());
+        let output_lease = gate.acquire();
+        let native_worker_lease = output_lease.clone();
+
+        drop(output_lease);
+        assert!(gate.try_acquire().is_none());
+        drop(native_worker_lease);
+        assert!(gate.try_acquire().is_some());
+    }
+
+    #[test]
+    fn transcription_output_owns_its_exact_language_evidence() {
+        let gate = Arc::new(InferenceGate::default());
+        let lease = gate.acquire();
+        let english = TranscriptionOutput::new(
+            "hello".to_string(),
+            OutputLanguageEvidence::ModelDetected("en".to_string()),
+            lease.clone(),
+        );
+        let japanese = TranscriptionOutput::new(
+            "こんにちは".to_string(),
+            OutputLanguageEvidence::ModelDetected("ja".to_string()),
+            lease,
+        );
+
+        assert!(english.output_language().is_english());
+        assert!(!japanese.output_language().is_english());
+        assert_eq!(english.text(), "hello");
+        assert_eq!(japanese.text(), "こんにちは");
     }
 
     #[test]

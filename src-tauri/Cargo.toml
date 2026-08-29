@@ -89,6 +89,11 @@ tauri-plugin-dialog = "2.6"
 hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downloads", features = [
   "tokio",
 ] }
+# Native S1-mini post-processing (quantized Qwen3 GGUF, CPU-only).
+candle-core = "0.11"
+candle-nn = "0.11"
+candle-transformers = "0.11"
+tokenizers = { version = "0.22", default-features = false, features = ["onig"] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"

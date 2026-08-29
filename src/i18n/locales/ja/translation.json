@@ -395,10 +395,10 @@
         "title": "ショートカット"
       },
       "api": {
-        "title": "API (OpenAI 互換)",
+        "title": "エンジン",
         "provider": {
-          "title": "プロバイダー",
-          "description": "OpenAI 互換のプロバイダーを選択。"
+          "title": "エンジン",
+          "description": "ローカルエンジンまたは OpenAI 互換サービスを選択。"
         },
         "appleIntelligence": {
           "unavailable": "このデバイスでは Apple Intelligence を利用できません。macOS Tahoe (26.0) 以降を実行し、システム設定で Apple Intelligence が有効になっている Apple Silicon Mac が必要です。"
@@ -420,6 +420,50 @@
           "placeholderWithOptions": "モデルを検索または選択",
           "placeholderNoOptions": "モデル名を入力",
           "refreshModels": "モデルを更新"
+        }
+      },
+      "s1Mini": {
+        "brand": "S1-mini by Superwhisper",
+        "description": "音声認識の出力を整える、英語専用のオンデバイス・テキスト正規化モデルです。ダウンロードは約 473 MiB で、文章の整形中は一時的に最大約 2 GiB のメモリを使用することがあります。",
+        "modelSize": "~473 MiB",
+        "modelDetails": "モデルの詳細",
+        "deleteTitle": "S1-mini を削除",
+        "deleteConfirm": "ローカルの S1-mini モデルファイルを削除しますか？このエンジンを再び使うには、もう一度ダウンロードする必要があります。",
+        "actions": {
+          "download": "ダウンロード",
+          "retry": "再試行"
+        },
+        "status": {
+          "not_downloaded": "未ダウンロード",
+          "downloading": "ダウンロード中",
+          "ready": "デバイスで利用可能",
+          "error": "ダウンロードに失敗しました"
+        },
+        "styling": {
+          "title": "文体",
+          "description": "大文字表記、短縮形、口語表現をどの程度整えるかを選びます。",
+          "options": {
+            "casual": "カジュアル",
+            "semi_casual": "ややカジュアル",
+            "semi_formal": "ややフォーマル（推奨）",
+            "formal": "フォーマル"
+          }
+        },
+        "structure": {
+          "title": "構成",
+          "description": "3 項目以上の明確な列挙を Markdown のリストに変換します。",
+          "options": {
+            "prose": "文章",
+            "lists": "リスト"
+          }
+        },
+        "context": {
+          "title": "用途",
+          "description": "メールを選ぶと、あいさつ、本文、結びをメール向けに整えます。",
+          "options": {
+            "general": "一般",
+            "email": "メール"
+          }
         }
       },
       "prompts": {
