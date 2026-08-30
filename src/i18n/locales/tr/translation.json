@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Kısayol davranışı",
+        "description": "Transkripsiyon kısayolunun kaydı nasıl başlatıp durduracağını seçin.",
         "options": {
           "holdOrToggle": "Otomatik",
           "pushToTalk": "Basılı tut",

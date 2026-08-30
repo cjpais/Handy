@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "Shortcut Behavior",
+        "description": "Choose how the transcribe shortcut starts and stops recording.",
         "options": {
           "holdOrToggle": "Auto",
           "pushToTalk": "Hold",

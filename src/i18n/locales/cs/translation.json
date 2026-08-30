@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Chování zkratky",
+        "description": "Zvolte, jak má zkratka přepisu spouštět a zastavovat nahrávání.",
         "options": {
           "holdOrToggle": "Automaticky",
           "pushToTalk": "Podržet",

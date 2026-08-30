@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Comportement du raccourci",
+        "description": "Choisissez comment le raccourci de transcription démarre et arrête l’enregistrement.",
         "options": {
           "holdOrToggle": "Auto",
           "pushToTalk": "Maintenir",

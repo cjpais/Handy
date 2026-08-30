@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "단축키 동작",
+        "description": "음성 텍스트 변환 단축키로 녹음을 시작하고 중지하는 방식을 선택합니다.",
         "options": {
           "holdOrToggle": "자동",
           "pushToTalk": "길게 누르기",

@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Comportamiento del atajo",
+        "description": "Elige cómo inicia y detiene la grabación el atajo de transcripción.",
         "options": {
           "holdOrToggle": "Automático",
           "pushToTalk": "Mantener",

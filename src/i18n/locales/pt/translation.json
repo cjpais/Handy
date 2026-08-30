@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "Comportamento do atalho",
+        "description": "Escolha como o atalho de transcrição inicia e para a gravação.",
         "options": {
           "holdOrToggle": "Automático",
           "pushToTalk": "Segurar",

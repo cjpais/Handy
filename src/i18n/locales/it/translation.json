@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Comportamento della scorciatoia",
+        "description": "Scegli come la scorciatoia di trascrizione avvia e interrompe la registrazione.",
         "options": {
           "holdOrToggle": "Automatico",
           "pushToTalk": "Tieni premuto",

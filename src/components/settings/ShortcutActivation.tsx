@@ -45,9 +45,7 @@ export const ShortcutActivationSetting: React.FC<ShortcutActivationProps> =
     return (
       <SettingContainer
         title={t("settings.general.shortcutActivation.title")}
-        description={t(
-          `settings.general.shortcutActivation.descriptions.${selected}`,
-        )}
+        description={t("settings.general.shortcutActivation.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >

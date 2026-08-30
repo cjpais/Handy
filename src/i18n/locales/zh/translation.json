@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "快捷键行为",
+        "description": "选择转录快捷键开始和停止录音的方式。",
         "options": {
           "holdOrToggle": "自动",
           "pushToTalk": "按住",

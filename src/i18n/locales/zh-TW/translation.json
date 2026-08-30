@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "快捷鍵行為",
+        "description": "選擇轉錄快捷鍵開始和停止錄音的方式。",
         "options": {
           "holdOrToggle": "自動",
           "pushToTalk": "按住",

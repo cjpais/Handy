@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Verhalten der Tastenkombination",
+        "description": "Wähle aus, wie das Transkriptions-Tastenkürzel die Aufnahme startet und beendet.",
         "options": {
           "holdOrToggle": "Automatisch",
           "pushToTalk": "Halten",

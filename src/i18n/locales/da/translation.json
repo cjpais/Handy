@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "Genvejens adfærd",
+        "description": "Vælg, hvordan transskriptionsgenvejen starter og stopper optagelsen.",
         "options": {
           "holdOrToggle": "Automatisk",
           "pushToTalk": "Hold",

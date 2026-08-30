@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "התנהגות קיצור הדרך",
+        "description": "בחר כיצד קיצור התמלול מתחיל ומפסיק את ההקלטה.",
         "options": {
           "holdOrToggle": "אוטומטי",
           "pushToTalk": "לחיצה ארוכה",

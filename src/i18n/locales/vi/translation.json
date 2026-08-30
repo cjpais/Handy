@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Hành vi phím tắt",
+        "description": "Chọn cách phím tắt chuyển đổi bắt đầu và dừng ghi âm.",
         "options": {
           "holdOrToggle": "Tự động",
           "pushToTalk": "Giữ",

@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "Gedrag van sneltoets",
+        "description": "Kies hoe de sneltoets voor dicteren de opname start en stopt.",
         "options": {
           "holdOrToggle": "Automatisch",
           "pushToTalk": "Vasthouden",

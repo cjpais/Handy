@@ -193,6 +193,7 @@
       },
       "shortcutActivation": {
         "title": "سلوك الاختصار",
+        "description": "اختر كيفية بدء التسجيل وإيقافه باستخدام اختصار التفريغ الصوتي.",
         "options": {
           "holdOrToggle": "تلقائي",
           "pushToTalk": "ضغط مطوّل",

@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "Zachowanie skrótu",
+        "description": "Wybierz, jak skrót transkrypcji rozpoczyna i zatrzymuje nagrywanie.",
         "options": {
           "holdOrToggle": "Automatycznie",
           "pushToTalk": "Przytrzymaj",

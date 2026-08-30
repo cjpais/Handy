@@ -216,6 +216,7 @@
       },
       "shortcutActivation": {
         "title": "ショートカットの動作",
+        "description": "文字起こしのショートカットで録音を開始・停止する方法を選択します。",
         "options": {
           "holdOrToggle": "自動",
           "pushToTalk": "長押し",

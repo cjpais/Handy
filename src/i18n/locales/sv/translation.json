@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "Genvägens beteende",
+        "description": "Välj hur kortkommandot för transkribering startar och stoppar inspelningen.",
         "options": {
           "holdOrToggle": "Automatiskt",
           "pushToTalk": "Håll",

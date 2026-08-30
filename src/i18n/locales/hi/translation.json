@@ -196,6 +196,7 @@
       },
       "shortcutActivation": {
         "title": "शॉर्टकट का व्यवहार",
+        "description": "चुनें कि ट्रांसक्राइब शॉर्टकट रिकॉर्डिंग को कैसे शुरू और बंद करे।",
         "options": {
           "holdOrToggle": "स्वचालित",
           "pushToTalk": "दबाए रखें",
