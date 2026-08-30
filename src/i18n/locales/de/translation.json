@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "Verhalten der Tastenkombination",
         "options": {
-          "holdOrToggle": "Halten oder Tippen",
-          "pushToTalk": "Push-to-Talk",
-          "toggle": "Tippen"
+          "holdOrToggle": "Automatisch",
+          "pushToTalk": "Halten",
+          "toggle": "Umschalten"
         },
         "descriptions": {
-          "hold_or_toggle": "Gedrückt halten zum Aufnehmen und loslassen zum Stoppen, oder antippen, um weiter aufzunehmen, bis Sie erneut drücken",
-          "push_to_talk": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen",
-          "toggle": "Drücken zum Starten der Aufnahme, erneut drücken zum Stoppen"
+          "hold_or_toggle": "Gedrückt halten zum Aufnehmen oder antippen zum Umschalten",
+          "push_to_talk": "Nimmt auf, solange die Tastenkombination gedrückt bleibt",
+          "toggle": "Tastenkombination antippen, um die Aufnahme zu starten, erneut antippen zum Stoppen"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Halte-Schwellenwert",
-        "description": "Nur im Modus „Halten oder Tippen“: wie lange (in Millisekunden) die Tastenkombination gedrückt bleiben muss, damit sie als Push-to-Talk statt als Tippen zählt. Verringern, wenn kurze Push-to-Talk-Aufnahmen weiterlaufen; erhöhen, wenn bewusstes Tippen als Halten gewertet wird."
+        "description": "Nur im Modus „Automatisch“: wie lange (in Millisekunden) die Tastenkombination gedrückt bleiben muss, damit sie als Halten statt als Tippen zählt. Verringern, wenn die Aufnahme nach kurzem Halten weiterläuft; erhöhen, wenn bewusstes Tippen als Halten gewertet wird."
       },
       "reliablePaste": {
         "title": "Zuverlässiges Einfügen (Beta)",

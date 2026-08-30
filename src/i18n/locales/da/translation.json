@@ -197,14 +197,14 @@
       "shortcutActivation": {
         "title": "Genvejens adfærd",
         "options": {
-          "holdOrToggle": "Hold eller tryk",
-          "pushToTalk": "Tryk-for-at-tale",
-          "toggle": "Tryk"
+          "holdOrToggle": "Automatisk",
+          "pushToTalk": "Hold",
+          "toggle": "Skift"
         },
         "descriptions": {
-          "hold_or_toggle": "Hold nede for at optage og slip for at stoppe, eller tryk kort for at blive ved med at optage, indtil du trykker igen",
-          "push_to_talk": "Hold nede for at optage, slip for at stoppe",
-          "toggle": "Tryk for at starte optagelsen, tryk igen for at stoppe"
+          "hold_or_toggle": "Hold nede for at optage, eller tryk kort for at slå til/fra",
+          "push_to_talk": "Optager, mens du holder genvejen nede",
+          "toggle": "Tryk på genvejen for at starte optagelsen, tryk igen for at stoppe"
         }
       }
     },
@@ -563,7 +563,7 @@
       },
       "holdThreshold": {
         "title": "Holdetærskel",
-        "description": "Kun i tilstanden Hold eller tryk: hvor længe (i millisekunder) genvejen skal holdes nede, før den tæller som push-to-talk i stedet for et tryk. Sænk værdien, hvis korte push-to-talk-optagelser bliver ved med at køre; hæv den, hvis bevidste tryk behandles som hold."
+        "description": "Kun i automatisk tilstand: hvor længe (i millisekunder) genvejen skal holdes nede, før det tæller som et hold i stedet for et tryk. Sænk værdien, hvis korte hold lader optagelsen køre videre; hæv den, hvis bevidste tryk behandles som hold."
       },
       "reliablePaste": {
         "title": "Pålidelig indsættelse (Beta)",

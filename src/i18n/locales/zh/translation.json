@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "快捷键行为",
         "options": {
-          "holdOrToggle": "长按或轻按",
-          "pushToTalk": "按住说话",
-          "toggle": "轻按"
+          "holdOrToggle": "自动",
+          "pushToTalk": "按住",
+          "toggle": "切换"
         },
         "descriptions": {
-          "hold_or_toggle": "长按录音，松开停止；或轻按一下持续录音，直到再次按下",
-          "push_to_talk": "按住录制，松开停止",
-          "toggle": "按下开始录音，再次按下停止"
+          "hold_or_toggle": "按住录音，或轻按切换",
+          "push_to_talk": "按住快捷键期间录音",
+          "toggle": "轻按快捷键开始录音，再次轻按停止"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "长按判定时长",
-        "description": "仅适用于“长按或轻按”模式：快捷键需要按住多长时间（毫秒）才算作按住说话而不是轻按。如果较短的按住说话录音一直不停止，请调低；如果有意的轻按被当作长按，请调高。"
+        "description": "仅适用于“自动”模式：快捷键需要按住多长时间（毫秒）才算作按住而不是轻按。如果短暂按住后录音仍持续，请调低；如果有意的轻按被当作按住，请调高。"
       },
       "reliablePaste": {
         "title": "可靠粘贴（Beta）",

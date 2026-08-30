@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "Zachowanie skrótu",
         "options": {
-          "holdOrToggle": "Przytrzymaj lub dotknij",
-          "pushToTalk": "Naciśnij i mów",
-          "toggle": "Dotknij"
+          "holdOrToggle": "Automatycznie",
+          "pushToTalk": "Przytrzymaj",
+          "toggle": "Przełączaj"
         },
         "descriptions": {
-          "hold_or_toggle": "Przytrzymaj, aby nagrywać, i puść, aby zatrzymać, albo dotknij, aby nagrywać dalej do ponownego naciśnięcia",
-          "push_to_talk": "Przytrzymaj, aby nagrywać, puść, aby zatrzymać",
-          "toggle": "Naciśnij, aby rozpocząć nagrywanie, naciśnij ponownie, aby zatrzymać"
+          "hold_or_toggle": "Przytrzymaj, aby nagrywać, lub dotknij, aby przełączyć",
+          "push_to_talk": "Nagrywa, dopóki trzymasz skrót",
+          "toggle": "Dotknij skrótu, aby rozpocząć nagrywanie, dotknij ponownie, aby zatrzymać"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Próg przytrzymania",
-        "description": "Tylko w trybie Przytrzymaj lub dotknij: jak długo (w milisekundach) skrót musi być przytrzymany, aby liczył się jako push-to-talk, a nie dotknięcie. Zmniejsz, jeśli krótkie nagrania push-to-talk pozostają włączone; zwiększ, jeśli celowe dotknięcia są traktowane jako przytrzymanie."
+        "description": "Tylko w trybie automatycznym: jak długo (w milisekundach) skrót musi być przytrzymany, aby liczył się jako przytrzymanie, a nie dotknięcie. Zmniejsz, jeśli po krótkim przytrzymaniu nagrywanie pozostaje włączone; zwiększ, jeśli celowe dotknięcia są traktowane jako przytrzymanie."
       },
       "reliablePaste": {
         "title": "Niezawodne wklejanie (Beta)",

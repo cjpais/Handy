@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "Comportement du raccourci",
         "options": {
-          "holdOrToggle": "Maintenir ou appuyer",
-          "pushToTalk": "Appuyer pour parler",
-          "toggle": "Appuyer"
+          "holdOrToggle": "Auto",
+          "pushToTalk": "Maintenir",
+          "toggle": "Basculer"
         },
         "descriptions": {
-          "hold_or_toggle": "Maintenez pour enregistrer et relâchez pour arrêter, ou appuyez brièvement pour continuer l'enregistrement jusqu'à la prochaine pression",
-          "push_to_talk": "Maintenez pour enregistrer, relâchez pour arrêter",
-          "toggle": "Appuyez pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
+          "hold_or_toggle": "Maintenez pour enregistrer ou appuyez brièvement pour basculer",
+          "push_to_talk": "Enregistre tant que le raccourci est maintenu",
+          "toggle": "Appuyez sur le raccourci pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Seuil de maintien",
-        "description": "Mode Maintenir ou appuyer uniquement : durée (en millisecondes) pendant laquelle le raccourci doit rester enfoncé pour compter comme un appui maintenu plutôt qu'une pression brève. Diminuez si les enregistrements courts en appui maintenu restent actifs ; augmentez si des pressions brèves volontaires sont traitées comme un maintien."
+        "description": "Mode Auto uniquement : durée (en millisecondes) pendant laquelle le raccourci doit rester enfoncé pour compter comme un maintien plutôt qu'une pression brève. Diminuez si l'enregistrement reste actif après un maintien court ; augmentez si des pressions brèves volontaires sont traitées comme un maintien."
       },
       "reliablePaste": {
         "title": "Collage fiable (Beta)",

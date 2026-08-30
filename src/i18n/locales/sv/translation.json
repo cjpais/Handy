@@ -197,14 +197,14 @@
       "shortcutActivation": {
         "title": "Genvägens beteende",
         "options": {
-          "holdOrToggle": "Håll eller tryck",
-          "pushToTalk": "Tryck för att tala",
-          "toggle": "Tryck"
+          "holdOrToggle": "Automatiskt",
+          "pushToTalk": "Håll",
+          "toggle": "Växla"
         },
         "descriptions": {
-          "hold_or_toggle": "Håll nere för att spela in och släpp för att stoppa, eller tryck kort för att fortsätta spela in tills du trycker igen",
-          "push_to_talk": "Håll ned för att spela in, släpp för att stoppa",
-          "toggle": "Tryck för att starta inspelningen, tryck igen för att stoppa"
+          "hold_or_toggle": "Håll nere för att spela in eller tryck kort för att växla",
+          "push_to_talk": "Spelar in så länge du håller genvägen nedtryckt",
+          "toggle": "Tryck på genvägen för att starta inspelningen, tryck igen för att stoppa"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Tröskel för hållning",
-        "description": "Endast i läget Håll eller tryck: hur länge (i millisekunder) genvägen måste hållas nere för att räknas som push-to-talk i stället för ett tryck. Sänk värdet om korta push-to-talk-inspelningar fortsätter att köra; höj det om avsiktliga tryck tolkas som hållning."
+        "description": "Endast i automatiskt läge: hur länge (i millisekunder) genvägen måste hållas nere för att räknas som hållning i stället för ett tryck. Sänk värdet om inspelningen fortsätter efter korta hållningar; höj det om avsiktliga tryck tolkas som hållning."
       },
       "reliablePaste": {
         "title": "Tillförlitlig inklistring (Beta)",

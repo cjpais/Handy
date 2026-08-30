@@ -197,14 +197,14 @@
       "shortcutActivation": {
         "title": "Shortcut Behavior",
         "options": {
-          "holdOrToggle": "Hold or Tap",
-          "pushToTalk": "Push To Talk",
-          "toggle": "Tap"
+          "holdOrToggle": "Auto",
+          "pushToTalk": "Hold",
+          "toggle": "Toggle"
         },
         "descriptions": {
-          "hold_or_toggle": "Hold to record and release to stop, or tap to keep recording until you press again",
-          "push_to_talk": "Hold to record, release to stop",
-          "toggle": "Press to start recording, press again to stop"
+          "hold_or_toggle": "Hold to record or tap to toggle",
+          "push_to_talk": "Records while you hold the shortcut",
+          "toggle": "Tap the shortcut to start recording, tap again to stop"
         }
       }
     },
@@ -563,7 +563,7 @@
       },
       "holdThreshold": {
         "title": "Hold Threshold",
-        "description": "Hold or Tap mode only: how long (in milliseconds) the shortcut must be held before it counts as push-to-talk instead of a tap. Lower if short push-to-talk recordings keep staying on; raise if deliberate taps get treated as holds."
+        "description": "Auto mode only: how long (in milliseconds) the shortcut must be held before it counts as a hold instead of a tap. Lower if short holds keep leaving recording on; raise if deliberate taps get treated as holds."
       },
       "reliablePaste": {
         "title": "Reliable Paste (Beta)",

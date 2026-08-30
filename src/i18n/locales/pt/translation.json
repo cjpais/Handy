@@ -197,14 +197,14 @@
       "shortcutActivation": {
         "title": "Comportamento do atalho",
         "options": {
-          "holdOrToggle": "Segurar ou tocar",
-          "pushToTalk": "Pressionar para Falar",
-          "toggle": "Tocar"
+          "holdOrToggle": "Automático",
+          "pushToTalk": "Segurar",
+          "toggle": "Alternar"
         },
         "descriptions": {
-          "hold_or_toggle": "Segure para gravar e solte para parar, ou toque para continuar gravando até pressionar novamente",
-          "push_to_talk": "Segure para gravar, solte para parar",
-          "toggle": "Pressione para começar a gravar, pressione novamente para parar"
+          "hold_or_toggle": "Segure para gravar ou toque para alternar",
+          "push_to_talk": "Grava enquanto você mantém o atalho pressionado",
+          "toggle": "Toque no atalho para começar a gravar, toque novamente para parar"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Limite de tempo de pressão",
-        "description": "Apenas no modo Segurar ou tocar: por quanto tempo (em milissegundos) o atalho precisa ficar pressionado para contar como pressionar para falar em vez de um toque. Diminua se gravações curtas de pressionar para falar continuarem ativas; aumente se toques intencionais forem tratados como pressão longa."
+        "description": "Apenas no modo Automático: por quanto tempo (em milissegundos) o atalho precisa ficar pressionado para contar como segurar em vez de um toque. Diminua se a gravação continuar ativa após pressões curtas; aumente se toques intencionais forem tratados como segurar."
       },
       "reliablePaste": {
         "title": "Colagem confiável (Beta)",

@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "Hành vi phím tắt",
         "options": {
-          "holdOrToggle": "Giữ hoặc nhấn",
-          "pushToTalk": "Nhấn để nói",
-          "toggle": "Nhấn"
+          "holdOrToggle": "Tự động",
+          "pushToTalk": "Giữ",
+          "toggle": "Bật/tắt"
         },
         "descriptions": {
-          "hold_or_toggle": "Giữ để ghi âm và thả ra để dừng, hoặc nhấn nhanh để tiếp tục ghi âm cho đến khi bạn nhấn lại",
-          "push_to_talk": "Giữ để ghi âm, thả để dừng",
-          "toggle": "Nhấn để bắt đầu ghi âm, nhấn lại để dừng"
+          "hold_or_toggle": "Giữ để ghi âm hoặc nhấn nhanh để bật/tắt",
+          "push_to_talk": "Ghi âm trong lúc bạn giữ phím tắt",
+          "toggle": "Nhấn phím tắt để bắt đầu ghi âm, nhấn lại để dừng"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Ngưỡng giữ phím",
-        "description": "Chỉ áp dụng cho chế độ Giữ hoặc nhấn: phím tắt phải được giữ trong bao lâu (mili giây) để được tính là nhấn-để-nói thay vì nhấn nhanh. Giảm xuống nếu các bản ghi nhấn-để-nói ngắn vẫn tiếp tục chạy; tăng lên nếu các lần nhấn nhanh có chủ ý bị coi là giữ phím."
+        "description": "Chỉ áp dụng cho chế độ Tự động: phím tắt phải được giữ trong bao lâu (mili giây) để được tính là giữ thay vì nhấn nhanh. Giảm xuống nếu bản ghi vẫn tiếp tục sau khi giữ ngắn; tăng lên nếu các lần nhấn nhanh có chủ ý bị coi là giữ phím."
       },
       "reliablePaste": {
         "title": "Dán đáng tin cậy (Beta)",

@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "Comportamiento del atajo",
         "options": {
-          "holdOrToggle": "Mantener o tocar",
-          "pushToTalk": "Presionar para hablar",
-          "toggle": "Tocar"
+          "holdOrToggle": "Automático",
+          "pushToTalk": "Mantener",
+          "toggle": "Alternar"
         },
         "descriptions": {
-          "hold_or_toggle": "Mantén pulsado para grabar y suelta para detener, o toca para seguir grabando hasta que vuelvas a pulsar",
-          "push_to_talk": "Mantén presionado para grabar, suelta para detener",
-          "toggle": "Pulsa para empezar a grabar, pulsa de nuevo para detener"
+          "hold_or_toggle": "Mantén pulsado para grabar o toca para alternar",
+          "push_to_talk": "Graba mientras mantienes pulsado el atajo",
+          "toggle": "Toca el atajo para empezar a grabar, tócalo de nuevo para detener"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Umbral de pulsación",
-        "description": "Solo en el modo Mantener o tocar: cuánto tiempo (en milisegundos) debe mantenerse pulsado el atajo para contar como pulsar para hablar en lugar de un toque. Redúcelo si las grabaciones cortas de pulsar para hablar siguen activas; auméntalo si los toques deliberados se interpretan como mantener."
+        "description": "Solo en el modo Automático: cuánto tiempo (en milisegundos) debe mantenerse pulsado el atajo para contar como mantener en lugar de un toque. Redúcelo si la grabación sigue activa tras pulsaciones cortas; auméntalo si los toques deliberados se interpretan como mantener."
       },
       "reliablePaste": {
         "title": "Pegado fiable (Beta)",

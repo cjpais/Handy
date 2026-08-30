@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "Kısayol davranışı",
         "options": {
-          "holdOrToggle": "Basılı tut veya dokun",
-          "pushToTalk": "Bas Konuş",
-          "toggle": "Dokun"
+          "holdOrToggle": "Otomatik",
+          "pushToTalk": "Basılı tut",
+          "toggle": "Aç/Kapat"
         },
         "descriptions": {
-          "hold_or_toggle": "Kaydetmek için basılı tutun ve durdurmak için bırakın, ya da tekrar basana kadar kaydetmeye devam etmek için dokunun",
-          "push_to_talk": "Kaydetmek için basılı tutun, durdurmak için bırakın",
-          "toggle": "Kaydı başlatmak için basın, durdurmak için tekrar basın"
+          "hold_or_toggle": "Kaydetmek için basılı tutun veya açıp kapatmak için dokunun",
+          "push_to_talk": "Kısayolu basılı tuttuğunuz sürece kaydeder",
+          "toggle": "Kaydı başlatmak için kısayola dokunun, durdurmak için tekrar dokunun"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Basılı tutma eşiği",
-        "description": "Yalnızca Basılı tut veya dokun modunda: kısayolun dokunma yerine bas-konuş sayılması için ne kadar süre (milisaniye) basılı tutulması gerektiği. Kısa bas-konuş kayıtları açık kalmaya devam ediyorsa azaltın; bilinçli dokunmalar basılı tutma olarak algılanıyorsa artırın."
+        "description": "Yalnızca Otomatik modda: kısayolun dokunma yerine basılı tutma sayılması için ne kadar süre (milisaniye) basılı tutulması gerektiği. Kısa basılı tutmalardan sonra kayıt açık kalmaya devam ediyorsa azaltın; bilinçli dokunmalar basılı tutma olarak algılanıyorsa artırın."
       },
       "reliablePaste": {
         "title": "Güvenilir Yapıştırma (Beta)",

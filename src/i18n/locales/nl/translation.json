@@ -197,14 +197,14 @@
       "shortcutActivation": {
         "title": "Gedrag van sneltoets",
         "options": {
-          "holdOrToggle": "Vasthouden of tikken",
-          "pushToTalk": "Push-to-talk",
-          "toggle": "Tikken"
+          "holdOrToggle": "Automatisch",
+          "pushToTalk": "Vasthouden",
+          "toggle": "Schakelen"
         },
         "descriptions": {
-          "hold_or_toggle": "Houd ingedrukt om op te nemen en laat los om te stoppen, of tik om te blijven opnemen tot je opnieuw drukt",
-          "push_to_talk": "Ingedrukt houden om op te nemen, loslaten om te stoppen",
-          "toggle": "Druk om de opname te starten, druk opnieuw om te stoppen"
+          "hold_or_toggle": "Houd ingedrukt om op te nemen of tik om te schakelen",
+          "push_to_talk": "Neemt op zolang je de sneltoets ingedrukt houdt",
+          "toggle": "Tik op de sneltoets om de opname te starten, tik opnieuw om te stoppen"
         }
       }
     },
@@ -563,7 +563,7 @@
       },
       "holdThreshold": {
         "title": "Vasthouddrempel",
-        "description": "Alleen in de modus Vasthouden of tikken: hoe lang (in milliseconden) de sneltoets ingedrukt moet blijven om als push-to-talk te tellen in plaats van als tik. Verlaag dit als korte push-to-talk-opnames blijven doorlopen; verhoog het als bewuste tikken als vasthouden worden gezien."
+        "description": "Alleen in de modus Automatisch: hoe lang (in milliseconden) de sneltoets ingedrukt moet blijven om als vasthouden te tellen in plaats van als tik. Verlaag dit als de opname na kort vasthouden blijft doorlopen; verhoog het als bewuste tikken als vasthouden worden gezien."
       },
       "reliablePaste": {
         "title": "Betrouwbaar plakken (Beta)",

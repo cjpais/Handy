@@ -217,14 +217,14 @@
       "shortcutActivation": {
         "title": "Chování zkratky",
         "options": {
-          "holdOrToggle": "Podržet nebo klepnout",
-          "pushToTalk": "Stisk a mluv",
-          "toggle": "Klepnout"
+          "holdOrToggle": "Automaticky",
+          "pushToTalk": "Podržet",
+          "toggle": "Přepínat"
         },
         "descriptions": {
-          "hold_or_toggle": "Podržte pro nahrávání a pusťte pro zastavení, nebo klepněte pro pokračování nahrávání až do dalšího stisknutí",
-          "push_to_talk": "Podržte pro nahrávání, uvolněte pro zastavení",
-          "toggle": "Stiskněte pro zahájení nahrávání, stiskněte znovu pro zastavení"
+          "hold_or_toggle": "Podržte pro nahrávání nebo klepněte pro přepnutí",
+          "push_to_talk": "Nahrává, dokud držíte zkratku",
+          "toggle": "Klepněte na zkratku pro zahájení nahrávání, klepněte znovu pro zastavení"
         }
       }
     },
@@ -556,7 +556,7 @@
       },
       "holdThreshold": {
         "title": "Práh podržení",
-        "description": "Pouze v režimu Podržet nebo klepnout: jak dlouho (v milisekundách) musí být zkratka držena, aby se počítala jako push-to-talk místo klepnutí. Snižte, pokud krátké push-to-talk nahrávky zůstávají zapnuté; zvyšte, pokud jsou záměrná klepnutí vyhodnocena jako podržení."
+        "description": "Pouze v automatickém režimu: jak dlouho (v milisekundách) musí být zkratka držena, aby se počítala jako podržení místo klepnutí. Snižte, pokud po krátkém podržení nahrávání zůstává zapnuté; zvyšte, pokud jsou záměrná klepnutí vyhodnocena jako podržení."
       },
       "reliablePaste": {
         "title": "Spolehlivé vložení (Beta)",
