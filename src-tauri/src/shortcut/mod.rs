@@ -528,22 +528,10 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 #[specta::specta]
 pub fn change_shortcut_activation_setting(
     app: AppHandle,
-    activation: String,
+    activation: ShortcutActivation,
 ) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    let parsed = match activation.as_str() {
-        "toggle" => ShortcutActivation::Toggle,
-        "push_to_talk" => ShortcutActivation::PushToTalk,
-        "hold_or_toggle" => ShortcutActivation::HoldOrToggle,
-        other => {
-            warn!(
-                "Invalid shortcut activation '{}', defaulting to hold_or_toggle",
-                other
-            );
-            ShortcutActivation::HoldOrToggle
-        }
-    };
-    settings.shortcut_activation = parsed;
+    settings.shortcut_activation = activation;
     settings::write_settings(&app, settings);
     Ok(())
 }

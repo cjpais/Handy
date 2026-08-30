@@ -6,6 +6,7 @@ import type {
   AudioDevice,
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
+  ShortcutActivation,
   VadBackend,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -95,7 +96,7 @@ const settingUpdaters: {
   whats_new_last_seen_version: (value) =>
     commands.changeWhatsNewLastSeenVersionSetting(value as string),
   shortcut_activation: (value) =>
-    commands.changeShortcutActivationSetting(value as string),
+    commands.changeShortcutActivationSetting(value as ShortcutActivation),
   hold_threshold_ms: (value) =>
     commands.changeHoldThresholdMsSetting(value as number),
   selected_microphone: (value) =>
