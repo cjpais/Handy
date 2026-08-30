@@ -17,6 +17,7 @@
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
+    "check:model-languages": "bun scripts/check-model-language-coverage.ts",
     "postinstall": "bun scripts/check-nix-deps.ts"
   },
   "dependencies": {

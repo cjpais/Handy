@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "src-tauri/src/catalog/catalog.json"
+      - "scripts/**"
       - "package.json"
       - "bun.lock"
       - ".eslintrc*"
@@ -16,6 +18,8 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "src-tauri/src/catalog/catalog.json"
+      - "scripts/**"
       - "package.json"
       - "bun.lock"
       - ".eslintrc*"
@@ -44,6 +48,9 @@ jobs:
 
       - name: Check translation consistency
         run: bun run check:translations
+
+      - name: Check model language coverage
+        run: bun run check:model-languages
 
       - name: Run ESLint
         run: bun run lint
