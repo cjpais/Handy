@@ -452,7 +452,9 @@ fn version_label() -> String {
 }
 
 /// Builds the tray menu and tooltip for the given inputs. Pure with respect
-/// to app state: everything it depends on is in `inputs`.
+/// to app state: everything it depends on is in `inputs`, plus the
+/// process-constant `HANDY_DISABLE_UPDATER` env flag behind
+/// `update_checks_forced_disabled()`, which cannot change during a run.
 fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri::Wry>, String)> {
     let strings = get_tray_translations(Some(inputs.locale.clone()));
 
@@ -569,6 +571,16 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
             ],
         )?
     };
+
+    // When update checks are forced off (e.g. HANDY_DISABLE_UPDATER, set by
+    // the Nix package), the item is dropped from the menu rather than shown
+    // disabled — it can never do anything in that case, and a disabled item
+    // still shifts every entry below it by one position. A manually-disabled
+    // toggle in Debug Settings keeps the old greyed-out behavior via the
+    // enabled flag.
+    if settings::update_checks_forced_disabled() {
+        menu.remove(&check_updates_i)?;
+    }
 
     // Both layouts start with [version, separator, ...]; slot the warning in
     // right below the version line so it's the first actionable thing seen.
