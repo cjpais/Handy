@@ -1646,10 +1646,6 @@ fn normalize_cjk_language(language: &str) -> &str {
     }
 }
 
-fn base_language_code(language: &str) -> &str {
-    language.split(&['-', '_'][..]).next().unwrap_or(language)
-}
-
 /// Resolve the persisted language intent into the language a specific model can
 /// use without writing the coerced value back to settings.
 fn effective_language_for_model(
@@ -1687,7 +1683,8 @@ fn resolve_output_language_evidence(
     if let Some(language) = applied_language_hint.filter(|lang| !lang.is_empty() && *lang != "auto")
     {
         if settings.selected_language != "auto"
-            && base_language_code(&settings.selected_language) == base_language_code(language)
+            && crate::managers::model::canonical_language_code(&settings.selected_language)
+                == crate::managers::model::canonical_language_code(language)
         {
             return OutputLanguageEvidence::UserSelected(language.to_string());
         }
@@ -2235,6 +2232,22 @@ mod tests {
             OutputLanguageEvidence::UserSelected("pt".to_string())
         );
         assert_eq!(result, "eu vi um carro");
+    }
+
+    #[test]
+    fn norwegian_alias_is_recorded_as_user_selected_evidence() {
+        let settings = AppSettings {
+            selected_language: "no".to_string(),
+            ..Default::default()
+        };
+
+        let evidence =
+            resolve_output_language_evidence(&settings, Some("nb"), &languages(&["nb"]), false);
+
+        assert_eq!(
+            evidence,
+            OutputLanguageEvidence::UserSelected("nb".to_string())
+        );
     }
 
     #[test]
