@@ -98,12 +98,21 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.cancel_stream();
 
+    // Drop the dictation session's engine reservation (releases the engine,
+    // or deregisters the pending slot if the session never got the handoff).
+    // The streaming worker's clone, if any, drops when the worker exits.
+    if let Some(session) = app.try_state::<crate::actions::DictationSession>() {
+        session.clear();
+    }
+
     // Update tray icon and hide overlay
     set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
-    // Unload model if immediate unload is enabled
-    tm.maybe_unload_immediately("cancellation");
+    // Unload model if immediate unload is enabled. No reservation is in scope
+    // here; the call takes a maintenance reservation itself and skips if the
+    // engine is still busy (e.g. the stream worker is mid-exit).
+    tm.maybe_unload_immediately("cancellation", None);
 
     // Notify coordinator so it can keep lifecycle state coherent.
     if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
