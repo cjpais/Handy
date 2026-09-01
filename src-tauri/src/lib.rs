@@ -134,9 +134,9 @@ fn hide_dock_if_tray(app: &AppHandle) {
     }
 }
 
-/// Hide the main window, keeping the app alive. Same close-to-tray path as
-/// the CloseRequested handler (title bar), the Ctrl+W shortcut and the
-/// sidebar close button all end up here.
+/// Hide the main window, keeping the app alive. The single close-to-tray
+/// path: the title-bar CloseRequested handler (main window), the Ctrl+W
+/// shortcut and the sidebar close button all end up here.
 fn hide_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         if let Err(e) = main_window.hide() {
@@ -1018,11 +1018,13 @@ pub fn run(cli_args: CliArgs) {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
-                if let Err(e) = window.hide() {
+                if window.label() == "main" {
+                    // Same shared hide-to-tray path as Ctrl+W and the
+                    // sidebar close button, so the entry points cannot drift.
+                    hide_main_window(window.app_handle());
+                } else if let Err(e) = window.hide() {
                     log::error!("Failed to hide webview window: {}", e);
                 }
-                #[cfg(target_os = "macos")]
-                hide_dock_if_tray(window.app_handle());
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);

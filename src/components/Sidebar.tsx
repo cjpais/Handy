@@ -12,6 +12,7 @@ import {
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { commands } from "@/bindings";
+import { platform } from "@tauri-apps/plugin-os";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
@@ -130,23 +131,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </div>
-      {/* Close affordance: on tiling WMs (i3, sway) the window has no
-          decorations, so without a button there is no mouse way out (#1914) */}
-      <button
-        type="button"
-        className="mt-auto mb-2 flex gap-2 items-center p-2 w-full text-left rounded-lg cursor-pointer transition-colors hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
-        title={t("sidebar.close")}
-        onClick={() => {
-          commands.hideMainWindowCommand().catch((e) => {
-            console.error("Failed to hide main window:", e);
-          });
-        }}
-      >
-        <X width={24} height={24} className="shrink-0" />
-        <span className="text-sm font-medium truncate">
-          {t("sidebar.close")}
-        </span>
-      </button>
+      {/* Close affordance, Linux only: on decoration-less WMs (i3, sway)
+          there is no title bar, so without a button there is no mouse way
+          out (#1914). macOS and Windows keep the native title-bar close. */}
+      {platform() === "linux" && (
+        <button
+          type="button"
+          className="mt-auto mb-2 flex gap-2 items-center p-2 w-full text-left rounded-lg cursor-pointer transition-colors hover:bg-mid-gray/20 hover:opacity-100 opacity-85 focus-visible:bg-logo-primary/80 focus-visible:opacity-100 focus-visible:outline-none"
+          title={t("sidebar.close")}
+          onClick={() => {
+            commands.hideMainWindowCommand().catch((e) => {
+              console.error("Failed to hide main window:", e);
+            });
+          }}
+        >
+          <X width={24} height={24} className="shrink-0" />
+          <span className="text-sm font-medium truncate">
+            {t("sidebar.close")}
+          </span>
+        </button>
+      )}
     </div>
   );
 };
