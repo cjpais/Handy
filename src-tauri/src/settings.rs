@@ -371,6 +371,7 @@ pub struct AppSettings {
     /// default bindings for any missing keys before the settings are used.
     #[serde(default)]
     pub bindings: HashMap<String, ShortcutBinding>,
+<<<<<<< HEAD
     /// Replaces the pre-0.10 `push_to_talk` bool; stores missing this key are
     /// migrated from it in `apply_settings_migrations`.
     #[serde(default)]
@@ -380,6 +381,11 @@ pub struct AppSettings {
     #[serde(default = "default_hold_threshold_ms")]
     pub hold_threshold_ms: u64,
     #[serde(default)]
+=======
+    #[serde(default = "default_command_hook_timeout_secs")]
+    pub command_hook_timeout_secs: u64,
+    pub push_to_talk: bool,
+>>>>>>> a4e7896 (feat(settings): add command shortcut binding and hook timeout)
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
     pub audio_feedback_volume: f32,
@@ -601,8 +607,13 @@ fn default_paste_delay_ms() -> u64 {
     60
 }
 
+<<<<<<< HEAD
 fn default_paste_delay_after_ms() -> u64 {
     60
+=======
+fn default_command_hook_timeout_secs() -> u64 {
+    120
+>>>>>>> a4e7896 (feat(settings): add command shortcut binding and hook timeout)
 }
 
 fn default_auto_submit() -> bool {
@@ -907,11 +918,37 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
 
+    #[cfg(target_os = "windows")]
+    let default_command_shortcut = "ctrl+alt+space";
+    #[cfg(target_os = "macos")]
+    let default_command_shortcut = "option+ctrl+space";
+    #[cfg(target_os = "linux")]
+    let default_command_shortcut = "ctrl+alt+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_command_shortcut = "alt+ctrl+space";
+
+    bindings.insert(
+        "command".to_string(),
+        ShortcutBinding {
+            id: "command".to_string(),
+            name: "Command".to_string(),
+            description: "Sends your speech to the hooks/command script instead of typing it."
+                .to_string(),
+            default_binding: default_command_shortcut.to_string(),
+            current_binding: default_command_shortcut.to_string(),
+        },
+    );
+
     AppSettings {
         settings_schema_version: default_settings_schema_version(),
         bindings,
+<<<<<<< HEAD
         shortcut_activation: ShortcutActivation::default(),
         hold_threshold_ms: default_hold_threshold_ms(),
+=======
+        push_to_talk: true,
+        command_hook_timeout_secs: default_command_hook_timeout_secs(),
+>>>>>>> a4e7896 (feat(settings): add command shortcut binding and hook timeout)
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
