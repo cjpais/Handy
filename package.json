@@ -1,7 +1,7 @@
 {
   "name": "handy-app",
   "private": true,
-  "version": "0.9.5",
+  "version": "0.9.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,7 @@
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
+    "check:model-languages": "bun scripts/check-model-language-coverage.ts",
     "postinstall": "bun scripts/check-nix-deps.ts"
   },
   "dependencies": {
@@ -32,7 +33,7 @@
     "@tauri-apps/plugin-process": "~2.3.1",
     "@tauri-apps/plugin-sql": "~2.3.1",
     "@tauri-apps/plugin-store": "~2.4.1",
-    "@tauri-apps/plugin-updater": "~2.10.0",
+    "@tauri-apps/plugin-updater": "~2.10.1",
     "i18next": "^25.7.2",
     "immer": "^11.1.3",
     "lucide-react": "^0.542.0",

@@ -195,9 +195,19 @@
         "noResults": "Geen talen gevonden",
         "auto": "Automatisch"
       },
-      "pushToTalk": {
-        "label": "Push-to-talk",
-        "description": "Ingedrukt houden om op te nemen, loslaten om te stoppen"
+      "shortcutActivation": {
+        "title": "Gedrag van sneltoets",
+        "description": "Kies hoe de sneltoets voor dicteren de opname start en stopt.",
+        "options": {
+          "holdOrToggle": "Automatisch",
+          "pushToTalk": "Vasthouden",
+          "toggle": "Schakelen"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Houd ingedrukt om op te nemen of tik om te schakelen",
+          "push_to_talk": "Neemt op zolang je de sneltoets ingedrukt houdt",
+          "toggle": "Tik op de sneltoets om de opname te starten, tik opnieuw om te stoppen"
+        }
       }
     },
     "models": {
@@ -378,6 +388,14 @@
         "title": "Spraakactiviteitsdetectie (VAD)",
         "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."
       },
+      "vadBackend": {
+        "title": "VAD-backend",
+        "description": "Kies de detector die stilte filtert. Earshot is experimenteel; schakel terug naar Silero als spraak wordt afgekapt of ruis behouden blijft.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Opvulwoorden verwijderen",
         "description": "Verwijdert veelvoorkomende aarzelwoorden uit transcripties. Schakel dit uit om ze te behouden."
@@ -475,7 +493,8 @@
       },
       "updateChecks": {
         "label": "Controleren op updates",
-        "description": "Automatisch controleren op nieuwe versies van Handy"
+        "description": "Automatisch controleren op nieuwe versies van Handy",
+        "lockedDescription": "Uitgeschakeld door systeemconfiguratie (HANDY_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Voorbeeld van release-notes",
@@ -544,6 +563,10 @@
       "pasteDelayAfter": {
         "title": "Plakvertraging (na)",
         "description": "Vertraging (in milliseconden) na de plak-toetsaanslag, voordat je vorige klembord wordt hersteld. Verhoog dit als de oude klembordinhoud wordt geplakt in plaats van de transcriptie."
+      },
+      "holdThreshold": {
+        "title": "Vasthouddrempel",
+        "description": "Alleen in de modus Automatisch: hoe lang (in milliseconden) de sneltoets ingedrukt moet blijven om als vasthouden te tellen in plaats van als tik. Verlaag dit als de opname na kort vasthouden blijft doorlopen; verhoog het als bewuste tikken als vasthouden worden gezien."
       },
       "reliablePaste": {
         "title": "Betrouwbaar plakken (Beta)",

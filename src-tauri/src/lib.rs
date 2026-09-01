@@ -120,20 +120,6 @@ fn show_main_window(app: &AppHandle) {
     );
 }
 
-/// Post-close tray/dock policy shared by every window "close" path: on macOS,
-/// drop the dock icon when the tray is available so the app lives in the tray;
-/// with no tray, keep the dock icon visible so the user can reopen.
-#[cfg(target_os = "macos")]
-fn hide_dock_if_tray(app: &AppHandle) {
-    let settings = get_settings(app);
-    let tray_visible = settings.show_tray_icon && !app.state::<CliArgs>().no_tray;
-    if tray_visible {
-        if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Accessory) {
-            log::error!("Failed to set activation policy to Accessory: {}", e);
-        }
-    }
-}
-
 /// Hide the main window, keeping the app alive. The single close-to-tray
 /// path: the title-bar CloseRequested handler (main window), the Ctrl+W
 /// shortcut and the sidebar close button all end up here.
@@ -143,7 +129,17 @@ fn hide_main_window(app: &AppHandle) {
             log::error!("Failed to hide webview window: {}", e);
         }
         #[cfg(target_os = "macos")]
-        hide_dock_if_tray(app);
+        {
+            let settings = get_settings(app);
+            let tray_visible = settings.show_tray_icon && !app.state::<CliArgs>().no_tray;
+            if tray_visible {
+                // Tray is available: hide the dock icon, app lives in the tray
+                if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Accessory) {
+                    log::error!("Failed to set activation policy: {}", e);
+                }
+            }
+            // No tray: keep the dock icon visible so the user can reopen
+        }
         return;
     }
 
@@ -152,6 +148,42 @@ fn hide_main_window(app: &AppHandle) {
         "Main window not found. Webview labels: {:?}",
         webview_labels
     );
+}
+
+/// Choose the macOS activation policy the process *launches* with.
+///
+/// Must run between `build()` and `run()`: that is the only point where
+/// `App::set_activation_policy` sets tao's initial policy, which
+/// `applicationDidFinishLaunching` then applies directly. Calling the
+/// `AppHandle` variant from `setup` (which Tauri runs on `RunEvent::Ready`,
+/// i.e. after launch) is instead a runtime Regular → Accessory demotion of an
+/// already-activated foreground app — the transition Apple documents as
+/// unreliable, and what left a Dock icon behind for start-hidden and
+/// login-item launches on macOS 26+ (#1787). Launching as Accessory avoids the
+/// transition entirely; showing the window later promotes to Regular, which is
+/// the supported direction.
+///
+/// Mirrors the show-window decision in `setup`: the app launches without a
+/// Dock icon only when it will start hidden (setting or `--start-hidden`) AND a
+/// tray icon is available (setting and not `--no-tray`). With no tray the Dock
+/// icon stays as the only way back into the app (#903). Headless one-shot
+/// runs are left alone.
+#[cfg(target_os = "macos")]
+fn apply_startup_activation_policy(app: &mut tauri::App, headless_mode: bool) {
+    if headless_mode {
+        return;
+    }
+
+    let cli_args = app.state::<CliArgs>().inner().clone();
+    let settings = settings::get_settings(app.handle());
+
+    let should_hide = settings.start_hidden || cli_args.start_hidden;
+    let tray_available = settings.show_tray_icon && !cli_args.no_tray;
+
+    if should_hide && tray_available {
+        log::info!("Starting hidden with tray available: launching as Accessory (no Dock icon)");
+        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
 }
 
 #[allow(unused_variables)]
@@ -214,7 +246,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
-    app_handle.manage(tray::CurrentTrayIconState::new());
+    app_handle.manage(tray::TrayState::new());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -227,15 +259,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone());
 
-    // Apply macOS Accessory policy if starting hidden and tray is available.
-    // If the tray icon is disabled, keep the dock icon so the user can reopen.
-    #[cfg(target_os = "macos")]
-    {
-        let settings = settings::get_settings(app_handle);
-        if settings.start_hidden && settings.show_tray_icon {
-            let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
-        }
-    }
+    // The macOS activation policy for a start-hidden launch is applied before
+    // the event loop runs (see `apply_startup_activation_policy`), not here:
+    // by the time `setup` runs the app has already launched as a Regular
+    // (Dock) app, and demoting it at runtime is unreliable (#1787).
+
     // Get the current theme to set the appropriate initial icon
     let initial_theme = tray::get_current_theme(app_handle);
 
@@ -295,7 +323,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             }
             "check_updates" => {
                 let settings = settings::get_settings(app);
-                if settings.update_checks_enabled {
+                if settings::update_checks_effectively_enabled(&settings) {
                     show_main_window(app);
                     let _ = app.emit("check-for-updates", ());
                 }
@@ -339,7 +367,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                             log::error!("Failed to switch model via tray: {}", e);
                         }
                     }
-                    tray::update_tray_menu(&app_clone, None);
+                    tray::update_tray_menu(&app_clone);
                 });
             }
             _ => {}
@@ -349,7 +377,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(tray);
 
     // Initialize tray menu with idle state
-    utils::update_tray_menu(app_handle, None);
+    tray::update_tray_menu(app_handle);
 
     // Apply show_tray_icon setting
     let settings = settings::get_settings(app_handle);
@@ -360,7 +388,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Refresh tray menu when model state changes
     let app_handle_for_listener = app_handle.clone();
     app_handle.listen("model-state-changed", move |_| {
-        tray::update_tray_menu(&app_handle_for_listener, None);
+        tray::update_tray_menu(&app_handle_for_listener);
     });
 
     // Apply the autostart preference (SMAppService login item on macOS 13+,
@@ -375,7 +403,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 #[specta::specta]
 fn trigger_update_check(app: AppHandle) -> Result<(), String> {
     let settings = settings::get_settings(&app);
-    if !settings.update_checks_enabled {
+    if !settings::update_checks_effectively_enabled(&settings) {
         return Ok(());
     }
     app.emit("check-for-updates", ())
@@ -658,7 +686,8 @@ pub fn run(cli_args: CliArgs) {
         .commands(collect_commands![
             shortcut::change_binding,
             shortcut::reset_binding,
-            shortcut::change_ptt_setting,
+            shortcut::change_shortcut_activation_setting,
+            shortcut::change_hold_threshold_ms_setting,
             shortcut::change_audio_feedback_setting,
             shortcut::change_audio_feedback_volume_setting,
             shortcut::change_sound_theme_setting,
@@ -700,6 +729,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_append_trailing_space_setting,
             shortcut::change_lazy_stream_close_setting,
             shortcut::change_vad_enabled_setting,
+            shortcut::change_vad_backend_setting,
             shortcut::change_filler_word_removal_enabled_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,
@@ -721,6 +751,7 @@ pub fn run(cli_args: CliArgs) {
             hide_main_window_command,
             commands::cancel_operation,
             commands::is_portable,
+            commands::is_update_checks_locked,
             commands::get_app_dir_path,
             commands::get_app_settings,
             commands::get_default_settings,
@@ -863,12 +894,21 @@ pub fn run(cli_args: CliArgs) {
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
             } else {
+                // A second process was launched without remote-control flags
+                // (e.g. the binary run from a shell). On macOS, relaunching the
+                // bundle from Spotlight/Finder/Dock does not start a process —
+                // it arrives as RunEvent::Reopen below — but treat this the
+                // same way: raise the window and recreate a possibly vanished
+                // tray icon (#1948).
+                #[cfg(target_os = "macos")]
+                tray::recreate_tray_icon(app);
                 show_main_window(app);
             }
         }));
     }
 
-    builder
+    #[allow(unused_mut)]
+    let mut app = builder
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -1008,6 +1048,7 @@ pub fn run(cli_args: CliArgs) {
 
             // If start_hidden but tray is disabled, we must show the window
             // anyway. Without a tray icon, the dock is the only way back in.
+            // Keep in sync with `apply_startup_activation_policy` (macOS).
             let tray_available = settings.show_tray_icon && !cli_args.no_tray;
             if should_force_show || !should_hide || !tray_available {
                 show_main_window(&app_handle);
@@ -1023,6 +1064,9 @@ pub fn run(cli_args: CliArgs) {
                     // sidebar close button, so the entry points cannot drift.
                     hide_main_window(window.app_handle());
                 } else if let Err(e) = window.hide() {
+                    // Non-main windows: plain hide only. No Accessory demotion
+                    // here — the settings window may still be up (kvnloo's
+                    // overlay scenario in the #1931 review).
                     log::error!("Failed to hide webview window: {}", e);
                 }
             }
@@ -1035,18 +1079,36 @@ pub fn run(cli_args: CliArgs) {
         })
         .invoke_handler(invoke_handler)
         .build(tauri::generate_context!())
-        .expect("error while building tauri application")
-        .run(|app, event| match &event {
-            #[cfg(target_os = "macos")]
-            tauri::RunEvent::Reopen { .. } => {
-                show_main_window(app);
+        .expect("error while building tauri application");
+
+    // Must sit between build() and run(): see the doc comment.
+    #[cfg(target_os = "macos")]
+    apply_startup_activation_policy(&mut app, headless_mode);
+
+    app.run(|app, event| match &event {
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen { .. } => {
+            // Fired when the already-running bundle is launched again from
+            // Spotlight/Finder or the Dock icon is clicked. If the settings
+            // window is hidden, the user is likely looking for a tray icon
+            // that vanished (#1948): recreate it. When the window is
+            // already visible this is just a focus request and the tray is
+            // left alone.
+            let window_visible = app
+                .get_webview_window("main")
+                .and_then(|w| w.is_visible().ok())
+                .unwrap_or(false);
+            if !window_visible {
+                tray::recreate_tray_icon(app);
             }
-            // Teardown transcribe.cpp before exit
-            tauri::RunEvent::Exit => {
-                if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
-                    let _ = tm.unload_model();
-                }
+            show_main_window(app);
+        }
+        // Teardown transcribe.cpp before exit
+        tauri::RunEvent::Exit => {
+            if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
+                let _ = tm.unload_model();
             }
-            _ => {}
-        });
+        }
+        _ => {}
+    });
 }

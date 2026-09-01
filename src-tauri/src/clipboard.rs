@@ -12,7 +12,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
-use crate::utils::{is_kde_wayland, is_wayland};
+use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 
 fn with_enigo<T>(
     app_handle: &AppHandle,
@@ -122,9 +122,11 @@ fn paste_via_clipboard(
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype (but not on KDE), then dotool, then ydotool
+        // Wayland: prefer wtype (but not on KDE or GNOME), then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
-        if !is_kde_wayland() && is_wtype_available() {
+        // or on GNOME/Mutter (same reason — Mutter deliberately does not implement
+        // the virtual-keyboard-v1 protocol).
+        if !is_kde_wayland() && !is_gnome_wayland() && is_wtype_available() {
             info!("Using wtype for key combo");
             send_key_combo_via_wtype(paste_method)?;
             return Ok(true);
@@ -205,7 +207,9 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
         }
         // Wayland: prefer wtype, then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
-        if !is_kde_wayland() && is_wtype_available() {
+        // or on GNOME/Mutter (same reason — Mutter deliberately does not implement
+        // the virtual-keyboard-v1 protocol).
+        if !is_kde_wayland() && !is_gnome_wayland() && is_wtype_available() {
             info!("Using wtype for direct text input");
             type_text_via_wtype(text)?;
             return Ok(true);
@@ -678,20 +682,25 @@ fn send_key_combo_via_xdotool(paste_method: &PasteMethod) -> Result<(), String> 
 fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String> {
     info!("Pasting via external script: {}", script_path);
 
-    let output = Command::new(script_path)
+    // Do not capture the script's stdio. Wayland clipboard helpers such as
+    // wl-copy may fork a background selection daemon that inherits those file
+    // descriptors; waiting for captured output would then block until the
+    // clipboard selection is replaced instead of returning after the script
+    // itself exits.
+    use std::process::Stdio;
+    let status = Command::new(script_path)
         .arg(text)
-        .output()
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
         .map_err(|e| format!("Failed to execute external script '{}': {}", script_path, e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
+    if !status.success() {
         return Err(format!(
-            "External script '{}' failed with exit code {:?}. stderr: {}, stdout: {}",
+            "External script '{}' failed with exit code {:?}",
             script_path,
-            output.status.code(),
-            stderr.trim(),
-            stdout.trim()
+            status.code()
         ));
     }
 
@@ -964,5 +973,43 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
 
         assert_eq!(result.unwrap_err(), "input failed");
         assert!(restored.get());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn external_script_does_not_wait_for_inherited_stdio() {
+        use std::fs;
+        use std::os::unix::fs::PermissionsExt;
+        use std::sync::mpsc;
+        use std::thread;
+
+        let script_path = std::env::temp_dir().join(format!(
+            "handy-external-script-{}-{}.sh",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock should be after UNIX_EPOCH")
+                .as_nanos()
+        ));
+        fs::write(&script_path, "#!/bin/sh\nsleep 3 &\nexit 0\n").expect("write external script");
+        let mut permissions = fs::metadata(&script_path)
+            .expect("read external script metadata")
+            .permissions();
+        permissions.set_mode(0o700);
+        fs::set_permissions(&script_path, permissions).expect("make external script executable");
+
+        let (sender, receiver) = mpsc::channel();
+        let script_path_for_thread = script_path.clone();
+        thread::spawn(move || {
+            let result =
+                paste_via_external_script("test", script_path_for_thread.to_str().unwrap());
+            sender.send(result).expect("send script result");
+        });
+
+        let result = receiver
+            .recv_timeout(Duration::from_secs(1))
+            .expect("external script should return without waiting for its child");
+        fs::remove_file(script_path).expect("remove external script");
+        assert!(result.is_ok());
     }
 }

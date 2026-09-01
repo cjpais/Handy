@@ -19,23 +19,29 @@ interface LanguageSelectorProps {
   supportsLanguageDetection?: boolean;
 }
 
+// Convert a concrete or aliased code to the picker entry that represents it.
+// Chinese script intents are already selectable and must remain intact; model
+// codes such as `en-US` and `nb` resolve to their canonical `en` / `no` entry.
+const pickerLanguage = (languageCode: string): string =>
+  SELECTABLE_LANGUAGES.some((language) => language.value === languageCode)
+    ? languageCode
+    : recognitionLanguage(languageCode);
+
 // Mirrors the matching logic of `effective_language` in
 // src-tauri/src/managers/model.rs. The Rust function is authoritative for the
-// *concrete* code the engine receives (e.g. "en-US"); this resolves the
-// canonical *base* code ("en") so the highlighted picker item matches an entry
-// in the LANGUAGES list. Matching is base-aware (`supportsLanguageCode` strips
-// region/script subtags), so a model advertising full locales still resolves.
+// *concrete* code the engine receives (e.g. `nb`); this resolves the canonical
+// picker intent (e.g. `no`) so model switches preserve the user's language.
 const effectiveLanguage = (
   intent: string,
   supported: string[],
   supportsDetection: boolean,
 ): string => {
-  if (supported.length === 0) return intent;
+  if (supported.length === 0) return pickerLanguage(intent);
   if (intent !== "auto" && supportsLanguageCode(supported, intent))
-    return intent;
+    return pickerLanguage(intent);
   if (supportsDetection) return "auto";
   if (supportsLanguageCode(supported, "en")) return "en";
-  return recognitionLanguage(supported[0]);
+  return pickerLanguage(supported[0]);
 };
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({

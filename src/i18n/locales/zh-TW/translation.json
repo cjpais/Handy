@@ -195,9 +195,19 @@
         "noResults": "未找到語言",
         "auto": "自動"
       },
-      "pushToTalk": {
-        "label": "按住說話",
-        "description": "按住錄製，放開停止"
+      "shortcutActivation": {
+        "title": "快捷鍵行為",
+        "description": "選擇轉錄快捷鍵開始和停止錄音的方式。",
+        "options": {
+          "holdOrToggle": "自動",
+          "pushToTalk": "按住",
+          "toggle": "切換"
+        },
+        "descriptions": {
+          "hold_or_toggle": "按住錄音，或輕按切換",
+          "push_to_talk": "按住快捷鍵期間錄音",
+          "toggle": "輕按快捷鍵開始錄音，再次輕按停止"
+        }
       }
     },
     "models": {
@@ -378,6 +388,14 @@
         "title": "語音活動偵測",
         "description": "過濾錄音中的靜音。支援串流的模型會使用較長的 VAD 尾段；停用 VAD 則會錄製原始音訊"
       },
+      "vadBackend": {
+        "title": "語音活動偵測後端",
+        "description": "選擇用於過濾靜音的偵測器。Earshot 為實驗性功能；若語音被截斷或雜訊被保留，請切換回 Silero。",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "移除語助詞",
         "description": "從轉錄中移除常見的語助詞。關閉此選項即可保留這些詞。"
@@ -475,7 +493,8 @@
       },
       "updateChecks": {
         "label": "檢查更新",
-        "description": "自動檢查 Handy 的新版本"
+        "description": "自動檢查 Handy 的新版本",
+        "lockedDescription": "已被系統設定停用 (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "聲音主題",
@@ -537,6 +556,10 @@
       "pasteDelayAfter": {
         "title": "貼上延遲（後）",
         "description": "發送貼上按鍵後、還原先前剪貼簿前的延遲（毫秒）。如果貼上的是舊的剪貼簿內容而非轉錄文字，請增加此值。"
+      },
+      "holdThreshold": {
+        "title": "長按判定時長",
+        "description": "僅適用於「自動」模式：快捷鍵需要按住多久（毫秒）才算作按住而不是輕按。如果短暫按住後錄音仍持續，請調低；如果刻意的輕按被視為按住，請調高。"
       },
       "reliablePaste": {
         "title": "可靠貼上（Beta）",

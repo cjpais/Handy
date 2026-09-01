@@ -215,9 +215,19 @@
         "noResults": "Aucune langue trouvée",
         "auto": "Automatique"
       },
-      "pushToTalk": {
-        "label": "Appuyer pour parler",
-        "description": "Maintenez pour enregistrer, relâchez pour arrêter"
+      "shortcutActivation": {
+        "title": "Comportement du raccourci",
+        "description": "Choisissez comment le raccourci de transcription démarre et arrête l’enregistrement.",
+        "options": {
+          "holdOrToggle": "Auto",
+          "pushToTalk": "Maintenir",
+          "toggle": "Basculer"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Maintenez pour enregistrer ou appuyez brièvement pour basculer",
+          "push_to_talk": "Enregistre tant que le raccourci est maintenu",
+          "toggle": "Appuyez sur le raccourci pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
+        }
       }
     },
     "sound": {
@@ -378,6 +388,14 @@
         "title": "Détection d'activité vocale (VAD)",
         "description": "Filtre le silence des enregistrements. Les modèles compatibles avec le streaming utilisent une marge de détection VAD plus longue ; désactiver le VAD enregistre l'audio brut."
       },
+      "vadBackend": {
+        "title": "Backend de détection vocale",
+        "description": "Choisissez le détecteur utilisé pour filtrer le silence. Earshot est expérimental ; revenez à Silero si la parole est coupée ou si le bruit est conservé.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Supprimer les mots de remplissage",
         "description": "Supprime les hésitations courantes des transcriptions. Désactivez cette option pour les conserver."
@@ -475,7 +493,8 @@
       },
       "updateChecks": {
         "label": "Vérifier les mises à jour",
-        "description": "Vérifier automatiquement les nouvelles versions de Handy"
+        "description": "Vérifier automatiquement les nouvelles versions de Handy",
+        "lockedDescription": "Désactivé par la configuration système (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Thème sonore",
@@ -537,6 +556,10 @@
       "pasteDelayAfter": {
         "title": "Délai de collage (après)",
         "description": "Délai (en millisecondes) après la touche de collage, avant la restauration de votre presse-papiers précédent. Augmentez si l'ancien contenu du presse-papiers est collé à la place de la transcription."
+      },
+      "holdThreshold": {
+        "title": "Seuil de maintien",
+        "description": "Mode Auto uniquement : durée (en millisecondes) pendant laquelle le raccourci doit rester enfoncé pour compter comme un maintien plutôt qu'une pression brève. Diminuez si l'enregistrement reste actif après un maintien court ; augmentez si des pressions brèves volontaires sont traitées comme un maintien."
       },
       "reliablePaste": {
         "title": "Collage fiable (Beta)",
