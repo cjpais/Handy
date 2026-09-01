@@ -156,7 +156,11 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "Configurações de {{model}}"
+      "title": "Configurações de {{model}}",
+      "nativePunctuation": {
+        "label": "Native punctuation and ITN",
+        "description": "Use punctuation and inverse text normalization built into the selected model when available."
+      }
     },
     "general": {
       "title": "Geral",

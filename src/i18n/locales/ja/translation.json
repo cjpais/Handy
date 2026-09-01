@@ -156,7 +156,11 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} の設定"
+      "title": "{{model}} の設定",
+      "nativePunctuation": {
+        "label": "Native punctuation and ITN",
+        "description": "Use punctuation and inverse text normalization built into the selected model when available."
+      }
     },
     "models": {
       "title": "文字起こしのモデル",

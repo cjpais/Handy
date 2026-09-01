@@ -417,6 +417,10 @@ pub struct AppSettings {
     pub selected_output_device: Option<String>,
     #[serde(default = "default_translate_to_english")]
     pub translate_to_english: bool,
+    /// Use a model's built-in punctuation and inverse text normalization when
+    /// that model exposes the transcribe-cpp ITN capability.
+    #[serde(default = "default_native_itn")]
+    pub native_itn: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
     #[serde(default = "default_overlay_position")]
@@ -536,6 +540,10 @@ fn default_always_on_microphone() -> bool {
 
 fn default_translate_to_english() -> bool {
     false
+}
+
+fn default_native_itn() -> bool {
+    true
 }
 
 fn default_start_hidden() -> bool {
@@ -928,6 +936,7 @@ pub fn get_default_settings() -> AppSettings {
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
+        native_itn: default_native_itn(),
         selected_language: "auto".to_string(),
         overlay_position: default_overlay_position(),
         debug_mode: false,

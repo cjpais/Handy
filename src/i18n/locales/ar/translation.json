@@ -607,7 +607,11 @@
       }
     },
     "modelSettings": {
-      "title": "إعدادات {{model}}"
+      "title": "إعدادات {{model}}",
+      "nativePunctuation": {
+        "label": "Native punctuation and ITN",
+        "description": "Use punctuation and inverse text normalization built into the selected model when available."
+      }
     },
     "models": {
       "title": "نماذج النسخ",
