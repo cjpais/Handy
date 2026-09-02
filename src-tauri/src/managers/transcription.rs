@@ -1379,7 +1379,7 @@ impl TranscriptionManager {
                         applied_language_hint = language.clone();
                         let params = SenseVoiceParams {
                             language,
-                            use_itn: Some(true),
+                            use_itn: sensevoice_itn_mode(settings.native_itn),
                         };
                         sense_voice_engine
                             .transcribe_with(&audio, &params)
@@ -1774,6 +1774,10 @@ fn transcribe_cpp_itn_mode(native_itn: bool, model_supports_itn: bool) -> Itn {
     } else {
         Itn::Default
     }
+}
+
+fn sensevoice_itn_mode(native_itn: bool) -> Option<bool> {
+    Some(native_itn)
 }
 
 fn post_process_transcription_text(
@@ -2497,6 +2501,12 @@ mod tests {
         assert!(matches!(transcribe_cpp_itn_mode(true, true), Itn::On));
         assert!(matches!(transcribe_cpp_itn_mode(false, true), Itn::Off));
         assert!(matches!(transcribe_cpp_itn_mode(true, false), Itn::Default));
+    }
+
+    #[test]
+    fn sensevoice_itn_mode_preserves_user_choice() {
+        assert_eq!(sensevoice_itn_mode(true), Some(true));
+        assert_eq!(sensevoice_itn_mode(false), Some(false));
     }
 }
 
