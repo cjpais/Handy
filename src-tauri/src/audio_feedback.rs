@@ -105,6 +105,29 @@ fn play_audio_file(
             OutputStreamBuilder::from_default_device()?
         } else {
             let host = crate::audio_toolkit::get_cpal_host();
+
+            // Fast path: check if the selected device is currently the
+            // default output device. This avoids a full enumeration on
+            // every feedback chime, which can take 1-4 seconds on systems
+            // with many virtual or Bluetooth devices (see #703).
+            if let Some(default_device) = host.default_output_device() {
+                if let Ok(default_name) = default_device.name() {
+                    if default_name == device_name {
+                        debug!(
+                            "Selected device '{}' is the current default, using fast path",
+                            device_name
+                        );
+                        return play_on_stream(
+                            OutputStreamBuilder::from_device(default_device)?,
+                            path,
+                            volume,
+                        );
+                    }
+                }
+            }
+
+            // Slow path: selected device is not the default, enumerate to
+            // find it by name.
             let devices = host.output_devices()?;
 
             let mut found_device = None;
@@ -128,6 +151,14 @@ fn play_audio_file(
         OutputStreamBuilder::from_default_device()?
     };
 
+    play_on_stream(stream_builder, path, volume)
+}
+
+fn play_on_stream(
+    stream_builder: OutputStreamBuilder,
+    path: &std::path::Path,
+    volume: f32,
+) -> Result<(), Box<dyn std::error::Error>> {
     let stream_handle = stream_builder.open_stream()?;
     let mixer = stream_handle.mixer();
 
