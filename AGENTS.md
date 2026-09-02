@@ -47,6 +47,21 @@ mkdir -p src-tauri/resources/models
 curl -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
 ```
 
+**Linux container build:**
+
+`docker-build-env/` carries the whole build stack, so the host needs only docker:
+
+```bash
+docker-build-env/shell tauri build --no-sign   # deb + rpm + AppImage, into src-tauri/target/release/bundle/
+docker-build-env/shell bun install
+docker-build-env/shell                         # a bash in there, for anything else
+```
+
+`--no-sign` skips the updater signature, which needs the release key. The repo is
+mounted at its host path so container and host share one `target/`. Don't build
+the repo from two different paths: build scripts cache absolute `OUT_DIR` paths
+that only `cargo clean` clears.
+
 For detailed platform-specific build setup, see [BUILD.md](BUILD.md).
 
 ## Architecture Overview
@@ -84,7 +99,9 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
   - `shared/`, `ui/`, `icons/`, `footer/` - Shared components
 - `hooks/useSettings.ts` - Settings state management hook
 - `stores/settingsStore.ts` - Zustand store for settings
-- `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta)
+- `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta). Regenerated
+  on every backend build, so a Linux build rewrites the doc comments that the
+  committed macOS-generated version carries (e.g. `isLaptop`). Don't commit that churn
 - `overlay/` - Recording overlay window entry point
 - `lib/types.ts` - Shared TypeScript type definitions
 

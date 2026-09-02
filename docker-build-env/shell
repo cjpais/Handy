@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Run a command inside Handy's Linux build environment (see ./Dockerfile), so the
+# host needs no toolchain of its own, just docker:
+#
+#   docker-build-env/shell tauri build --no-sign   # deb + rpm + AppImage
+#   docker-build-env/shell bun install
+#   docker-build-env/shell                         # bash
+set -euo pipefail
+
+repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+docker build -t handy-build-env --build-arg "USER_ID=$(id -u)" - <"$repo/docker-build-env/Dockerfile"
+
+tty=(-i)
+[ -t 0 ] && tty+=(-t)
+
+# The repo is mounted at its host path so container and host agree on every path:
+# build scripts bake absolute OUT_DIR paths into target/, and those dangle if the
+# same tree is ever built from two different locations.
+#
+# libtranscribe.so exists only inside the cargo build tree, from where build.rs
+# stages it into transcribe-libs/. linuxdeploy resolves the app's NEEDED
+# libraries with ldd and hard-fails on any it cannot find, so point it there.
+#
+# node_modules/.bin goes on PATH so the repo's own tools (tauri, vite, ...) run
+# by name.
+exec docker run --rm "${tty[@]}" \
+  -v "$repo:$repo" -w "$repo" \
+  -e "CARGO_HOME=$repo/src-tauri/target/cargo-home" \
+  -e "LD_LIBRARY_PATH=$repo/src-tauri/transcribe-libs" \
+  handy-build-env bash -c 'PATH=$PWD/node_modules/.bin:$PATH exec "${@:-bash}"' -- "$@"

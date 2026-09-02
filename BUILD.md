@@ -116,6 +116,8 @@ bun run tauri build
 
 This compiles a release binary and generates platform-specific bundles (deb, rpm, AppImage on Linux; dmg on macOS; msi on Windows).
 
+On Linux, `docker-build-env/shell tauri build --no-sign` does the same in a container (see [docker-build-env/](docker-build-env/)), needing nothing on the host but docker.
+
 ## Linux Install (from source)
 
 The raw binary (`src-tauri/target/release/handy`) cannot run standalone — it needs Tauri resource files (tray icons, sounds, VAD model) to be co-located at the expected path.
@@ -197,7 +199,9 @@ cd src-tauri/target/release/bundle/appimage
   --appdir Handy.AppDir --plugin gtk --output appimage
 ```
 
-**Workaround:** The binary, deb, and rpm bundles all build fine — only the AppImage step fails. To skip it:
+**Workaround:** Build in the container (`docker-build-env/shell tauri build --no-sign`),
+which ships a linuxdeploy new enough for current toolchains. Or skip the AppImage, since
+the binary, deb, and rpm bundles all build fine:
 
 ```bash
 bun run tauri build -- --bundles deb
