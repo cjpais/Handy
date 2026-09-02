@@ -1020,24 +1020,33 @@ pub fn run(cli_args: CliArgs) {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                api.prevent_close();
-                let _res = window.hide();
+                let no_tray = window.app_handle().state::<CliArgs>().no_tray;
 
-                #[cfg(target_os = "macos")]
-                {
-                    let settings = get_settings(window.app_handle());
-                    let tray_visible =
-                        settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
-                    if tray_visible {
-                        // Tray is available: hide the dock icon, app lives in the tray
-                        let res = window
-                            .app_handle()
-                            .set_activation_policy(tauri::ActivationPolicy::Accessory);
-                        if let Err(e) = res {
-                            log::error!("Failed to set activation policy: {}", e);
+                if no_tray {
+                    // --no-tray: closing the window quits the app, matching the
+                    // documented behavior. Without this, the window is hidden
+                    // with no tray affordance to bring it back — on tiling WMs
+                    // the only recovery is relaunching.
+                    window.app_handle().exit(0);
+                } else {
+                    api.prevent_close();
+                    let _res = window.hide();
+
+                    #[cfg(target_os = "macos")]
+                    {
+                        let settings = get_settings(window.app_handle());
+                        let tray_visible = settings.show_tray_icon;
+                        if tray_visible {
+                            // Tray is available: hide the dock icon, app lives in the tray
+                            let res = window
+                                .app_handle()
+                                .set_activation_policy(tauri::ActivationPolicy::Accessory);
+                            if let Err(e) = res {
+                                log::error!("Failed to set activation policy: {}", e);
+                            }
                         }
+                        // No tray: keep the dock icon visible so the user can reopen
                     }
-                    // No tray: keep the dock icon visible so the user can reopen
                 }
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
