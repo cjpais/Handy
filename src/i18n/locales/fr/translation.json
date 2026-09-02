@@ -335,7 +335,8 @@
         "title": "Outil de frappe",
         "description": "Choisissez quel outil de frappe Linux utiliser pour la méthode de collage direct. Auto détectera et utilisera automatiquement le meilleur outil disponible pour votre système.",
         "options": {
-          "auto": "Auto (Recommandé)"
+          "auto": "Auto (Recommandé)",
+          "utype": "utype (intégré)"
         }
       },
       "clipboardHandling": {

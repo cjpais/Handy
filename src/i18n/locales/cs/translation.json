@@ -335,7 +335,8 @@
         "title": "Nástroj pro psaní",
         "description": "Vyberte, který linuxový nástroj pro psaní použít pro metodu přímého vložení. Auto automaticky zjistí a použije nejlepší dostupný nástroj pro váš systém.",
         "options": {
-          "auto": "Auto (Doporučeno)"
+          "auto": "Auto (Doporučeno)",
+          "utype": "utype (součást aplikace)"
         }
       },
       "clipboardHandling": {

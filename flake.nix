@@ -122,6 +122,12 @@
                   "libayatana-appindicator3.so.1" \
                   "${pkgs.libayatana-appindicator}/lib/libayatana-appindicator3.so.1"
 
+              # Same for the libxkbcommon that the bundled utype dlopens
+              substituteInPlace src-tauri/vendor/utype/utype.c \
+                --replace-fail \
+                  '"libxkbcommon.so.0"' \
+                  '"${pkgs.libxkbcommon}/lib/libxkbcommon.so.0"'
+
               # Disable cbindgen in ferrous-opencc (calls cargo metadata which fails in sandbox)
               # Upstream removed this call in v0.3.1+
               substituteInPlace $cargoDepsCopy/ferrous-opencc-0.2.3/build.rs \

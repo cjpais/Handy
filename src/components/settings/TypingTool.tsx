@@ -12,14 +12,6 @@ interface TypingToolProps {
   grouped?: boolean;
 }
 
-const allToolLabels: Record<string, string> = {
-  wtype: "wtype",
-  kwtype: "kwtype",
-  dotool: "dotool",
-  ydotool: "ydotool",
-  xdotool: "xdotool",
-};
-
 export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
@@ -48,15 +40,16 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
       return null;
     }
 
+    // Only "auto" and the bundled "utype" need naming; the rest are the names
+    // of the command-line tools found on this system.
     const tools = availableTools ?? ["auto"];
-    const typingToolOptions = tools.map((tool) =>
-      tool === "auto"
-        ? {
-            value: "auto",
-            label: t("settings.advanced.typingTool.options.auto"),
-          }
-        : { value: tool, label: allToolLabels[tool] ?? tool },
-    );
+    const typingToolOptions = tools.map((tool) => ({
+      value: tool,
+      label:
+        tool === "auto" || tool === "utype"
+          ? t(`settings.advanced.typingTool.options.${tool}`)
+          : tool,
+    }));
 
     const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
 

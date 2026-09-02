@@ -2,6 +2,8 @@ use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+#[cfg(target_os = "linux")]
+use crate::utype;
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
@@ -80,7 +82,7 @@ fn paste_via_clipboard(
     let paste_result = (|| -> Result<(), String> {
         // Send paste key combo
         #[cfg(target_os = "linux")]
-        let key_combo_sent = try_send_key_combo_linux(paste_method)?;
+        let key_combo_sent = try_send_key_combo_linux(paste_method, app_handle)?;
 
         #[cfg(not(target_os = "linux"))]
         let key_combo_sent = false;
@@ -120,7 +122,19 @@ fn paste_via_clipboard(
 /// Attempts to send a key combination using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
-fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
+fn try_send_key_combo_linux(
+    paste_method: &PasteMethod,
+    app_handle: &AppHandle,
+) -> Result<bool, String> {
+    // The bundled utype covers every protocol the tools below do, so it leads
+    // everywhere; they stay as a backstop for sessions it cannot reach.
+    if utype::try_auto(app_handle, "send the key combo", |app| {
+        utype::send_key_combo(app, paste_method)
+    }) {
+        info!("Using bundled utype for key combo");
+        return Ok(true);
+    }
+
     if is_wayland() {
         // Wayland: prefer wtype (but not on KDE or GNOME), then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
@@ -161,10 +175,19 @@ fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> 
 /// Attempts to type text directly using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
-fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<bool, String> {
+fn try_direct_typing_linux(
+    text: &str,
+    preferred_tool: TypingTool,
+    app_handle: &AppHandle,
+) -> Result<bool, String> {
     // If user specified a tool, try only that one
     if preferred_tool != TypingTool::Auto {
         return match preferred_tool {
+            TypingTool::Utype => {
+                info!("Using user-specified utype");
+                utype::type_text(app_handle, text)?;
+                Ok(true)
+            }
             TypingTool::Wtype if is_wtype_available() => {
                 info!("Using user-specified wtype");
                 type_text_via_wtype(text)?;
@@ -197,7 +220,16 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
         };
     }
 
-    // Auto mode - existing fallback chain
+    // Auto mode: the bundled utype leads, because it speaks every protocol the
+    // tools below do and needs no install. They stay as a backstop for sessions
+    // it cannot reach.
+    if utype::try_auto(app_handle, "type the text", |app| {
+        utype::type_text(app, text)
+    }) {
+        info!("Using bundled utype for direct text input");
+        return Ok(true);
+    }
+
     if is_wayland() {
         // KDE Wayland: prefer kwtype (uses KDE Fake Input protocol, supports umlauts)
         if is_kde_wayland() && is_kwtype_available() {
@@ -244,8 +276,11 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
 /// Returns the list of available typing tools on this system.
 /// Always includes "auto" as the first entry.
 #[cfg(target_os = "linux")]
-pub fn get_available_typing_tools() -> Vec<String> {
+pub fn get_available_typing_tools(app_handle: &AppHandle) -> Vec<String> {
     let mut tools = vec!["auto".to_string()];
+    if utype::is_available(app_handle) {
+        tools.push("utype".to_string());
+    }
     if is_wtype_available() {
         tools.push("wtype".to_string());
     }
@@ -715,7 +750,7 @@ fn paste_direct(
 ) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
-        if try_direct_typing_linux(text, typing_tool)? {
+        if try_direct_typing_linux(text, typing_tool, app_handle)? {
             return Ok(());
         }
         info!("Falling back to enigo for direct text input");

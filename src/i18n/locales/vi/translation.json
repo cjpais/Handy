@@ -335,7 +335,8 @@
         "title": "Công cụ gõ",
         "description": "Chọn công cụ gõ trên Linux cho phương thức dán trực tiếp. Auto sẽ tự động phát hiện và dùng công cụ tốt nhất có sẵn cho hệ thống của bạn.",
         "options": {
-          "auto": "Auto (Khuyến nghị)"
+          "auto": "Auto (Khuyến nghị)",
+          "utype": "utype (đi kèm)"
         }
       },
       "clipboardHandling": {

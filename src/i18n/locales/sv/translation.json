@@ -335,7 +335,8 @@
         "title": "Skrivverktyg",
         "description": "Välj vilket Linux-skrivverktyg som ska användas för metoden Direkt klistra in. Auto kommer automatiskt att upptäcka och använda det bästa tillgängliga verktyget för ditt system.",
         "options": {
-          "auto": "Auto (Rekommenderas)"
+          "auto": "Auto (Rekommenderas)",
+          "utype": "utype (medföljer)"
         }
       },
       "clipboardHandling": {

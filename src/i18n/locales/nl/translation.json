@@ -335,7 +335,8 @@
         "title": "Typgereedschap",
         "description": "Kies welke Linux-typtool gebruikt moet worden voor de 'Directe' plakmethode. 'Automatisch' detecteert zelf de beste optie voor jouw systeem.",
         "options": {
-          "auto": "Automatisch (Aanbevolen)"
+          "auto": "Automatisch (Aanbevolen)",
+          "utype": "utype (meegeleverd)"
         }
       },
       "clipboardHandling": {

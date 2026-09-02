@@ -289,6 +289,8 @@ pub enum Theme {
 pub enum TypingTool {
     #[default]
     Auto,
+    /// The utype bundled with Handy; see `crate::utype`.
+    Utype,
     Wtype,
     Kwtype,
     Dotool,

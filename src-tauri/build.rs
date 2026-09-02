@@ -34,7 +34,58 @@ fn main() {
     // Must run after transcribe staging because that helper recreates transcribe-libs/.
     stage_vc_runtime_dlls();
 
+    // Must run before tauri_build::build(), which copies resources/ for dev runs.
+    build_bundled_utype();
+
     tauri_build::build()
+}
+
+/// Compile the vendored utype (`vendor/utype/`) into `resources/utype`, which
+/// `tauri.conf.json` bundles like any other resource.
+///
+/// utype speaks every fake-keyboard-input protocol Linux desktops offer and
+/// links nothing but libc, so building it here spares users from hunting down
+/// wtype/ydotool/xdotool. Handy runs it as a child process (`src/utype.rs`):
+/// utype reports fatal errors by exiting, which only a separate process can
+/// survive, and its X11 backend restores the keymap it borrowed on the way out.
+///
+/// Linux only; the other platforms have working native input APIs.
+fn build_bundled_utype() {
+    use std::path::PathBuf;
+
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("linux") {
+        return;
+    }
+
+    let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+    let vendor = manifest.join("vendor/utype");
+    let sources = ["utype.c", "cli.c"];
+    for file in sources.iter().chain(["utype.h"].iter()) {
+        println!("cargo:rerun-if-changed={}", vendor.join(file).display());
+    }
+
+    let dest = manifest.join("resources/utype");
+    std::fs::create_dir_all(dest.parent().unwrap()).expect("create resources dir");
+
+    // cc gives us the target's compiler plus the toolchain's own flags, so this
+    // keeps working under cross-compilation and inside the Nix sandbox.
+    let mut command = cc::Build::new()
+        .warnings(false)
+        .opt_level(2)
+        .debug(false)
+        .get_compiler()
+        .to_command();
+    command
+        .args(["-o".as_ref(), dest.as_os_str()])
+        .args(sources.map(|file| vendor.join(file)))
+        // libdl is folded into libc from glibc 2.34 on, but older ones need it
+        // for the libxkbcommon that utype dlopens.
+        .arg("-ldl");
+
+    let status = command
+        .status()
+        .unwrap_or_else(|e| panic!("failed to run the C compiler for utype: {e}"));
+    assert!(status.success(), "compiling vendor/utype failed: {status}");
 }
 
 /// Stage the MSVC runtime DLLs into `transcribe-libs/` for app-local deployment.

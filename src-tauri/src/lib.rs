@@ -24,6 +24,8 @@ mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
+#[cfg(target_os = "linux")]
+mod utype;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]

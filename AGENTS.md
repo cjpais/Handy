@@ -70,6 +70,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `settings.rs` - Application settings management
 - `overlay.rs` - Recording overlay window (platform-specific)
 - `signal_handle.rs` - `send_transcription_input()` reusable function
+- `utype.rs` - Linux keyboard input via the bundled utype (built by `build.rs` from `vendor/utype/`, run as a child process)
 - `utils.rs` - Platform detection helpers
 
 ### Frontend Structure (src/)

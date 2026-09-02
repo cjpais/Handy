@@ -333,9 +333,10 @@
       },
       "typingTool": {
         "title": "Typing Tool",
-        "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
+        "description": "Choose how Handy types text for the Direct paste method. Auto uses the bundled utype, which supports every Linux desktop, and falls back to a typing tool installed on your system if that fails.",
         "options": {
-          "auto": "Auto (Recommended)"
+          "auto": "Auto (Recommended)",
+          "utype": "utype (bundled)"
         }
       },
       "clipboardHandling": {

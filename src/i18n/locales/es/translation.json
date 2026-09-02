@@ -335,7 +335,8 @@
         "title": "Herramienta de escritura",
         "description": "Elige qué herramienta de escritura de Linux usar para el método de pegado directo. Auto detectará y usará automáticamente la mejor herramienta disponible para tu sistema.",
         "options": {
-          "auto": "Auto (recomendado)"
+          "auto": "Auto (recomendado)",
+          "utype": "utype (incluido)"
         }
       },
       "clipboardHandling": {

@@ -11,3 +11,6 @@
 # tauri.windows.conf.json on Windows, into /usr/lib/Handy (deb/rpm) via
 # tauri.conf.json on Linux.
 /transcribe-libs/
+
+# Built by build.rs from vendor/utype and bundled as an app resource.
+/resources/utype
