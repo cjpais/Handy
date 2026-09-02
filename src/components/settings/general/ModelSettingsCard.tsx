@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { LanguageSelector } from "../LanguageSelector";
 import { TranslateToEnglish } from "../TranslateToEnglish";
+import { NativePunctuation } from "../NativePunctuation";
 import { useModelStore } from "../../../stores/modelStore";
 import type { ModelInfo } from "@/bindings";
 import {
@@ -27,7 +28,11 @@ export const ModelSettingsCard: React.FC = () => {
   const showLanguageSelector =
     supportsLanguageSelection || supportsChineseOnlyScriptSelection;
   const supportsTranslation = currentModelInfo?.supports_translation ?? false;
-  const hasAnySettings = showLanguageSelector || supportsTranslation;
+  const supportsNativePunctuation =
+    currentModelInfo?.engine_type === "TranscribeCpp" ||
+    currentModelInfo?.engine_type === "SenseVoice";
+  const hasAnySettings =
+    showLanguageSelector || supportsTranslation || supportsNativePunctuation;
 
   // Don't render anything if no model is selected or no settings available
   if (!currentModel || !currentModelInfo || !hasAnySettings) {
@@ -52,6 +57,9 @@ export const ModelSettingsCard: React.FC = () => {
       )}
       {supportsTranslation && (
         <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
+      )}
+      {supportsNativePunctuation && (
+        <NativePunctuation descriptionMode="tooltip" grouped={true} />
       )}
     </SettingsGroup>
   );

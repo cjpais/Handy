@@ -20,8 +20,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
-    Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
-    WhisperRunOptions,
+    Backend, Feature, Itn, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions,
+    Task, WhisperRunOptions,
 };
 use transcribe_rs::{
     onnx::{
@@ -878,7 +878,7 @@ impl TranscriptionManager {
         // Only transcribe-cpp models expose streaming; ONNX engines fall back to
         // batch. The loaded session (not the ModelManager copy) is the source of
         // truth for run-path capabilities.
-        let (supports_streaming, supports_translate, languages) = match &engine {
+        let (supports_streaming, supports_translate, supports_itn, languages) = match &engine {
             LoadedEngine::TranscribeCpp(session) => {
                 let model = session.model();
                 let caps = model.capabilities();
@@ -895,6 +895,7 @@ impl TranscriptionManager {
                 (
                     caps.supports_streaming,
                     caps.supports_translate,
+                    model.supports(Feature::Itn),
                     caps.languages,
                 )
             }
@@ -904,7 +905,7 @@ impl TranscriptionManager {
                      streaming is unavailable, using batch transcription",
                     model_id
                 );
-                (false, false, Vec::new())
+                (false, false, false, Vec::new())
             }
         };
 
@@ -936,6 +937,7 @@ impl TranscriptionManager {
             task: run_plan.task,
             language: run_plan.language,
             target_language: run_plan.target_language,
+            itn: transcribe_cpp_itn_mode(settings.native_itn, supports_itn),
             ..Default::default()
         };
 
@@ -1236,6 +1238,7 @@ impl TranscriptionManager {
         // with INVALID_ARG, so the whisper extension must be gated on the
         // arch, not on the feature (see #1601).
         let mut model_is_whisper = false;
+        let mut model_supports_itn = false;
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
@@ -1277,6 +1280,7 @@ impl TranscriptionManager {
                 let caps = model.capabilities();
                 model_takes_initial_prompt = model.supports(Feature::InitialPrompt);
                 model_is_whisper = model.arch() == "whisper";
+                model_supports_itn = model.supports(Feature::Itn);
                 model_supports_translate = caps.supports_translate;
                 model_languages = caps.languages;
                 debug!(
@@ -1320,6 +1324,7 @@ impl TranscriptionManager {
                             language: run_plan.language,
                             target_language: run_plan.target_language,
                             family,
+                            itn: transcribe_cpp_itn_mode(settings.native_itn, model_supports_itn),
                             ..Default::default()
                         };
 
@@ -1374,7 +1379,7 @@ impl TranscriptionManager {
                         applied_language_hint = language.clone();
                         let params = SenseVoiceParams {
                             language,
-                            use_itn: Some(true),
+                            use_itn: sensevoice_itn_mode(settings.native_itn),
                         };
                         sense_voice_engine
                             .transcribe_with(&audio, &params)
@@ -1754,6 +1759,25 @@ fn transcribe_cpp_run_plan(
         language,
         target_language,
     }
+}
+
+/// Keep model defaults when a backend does not advertise a runtime ITN toggle.
+/// This lets one persisted setting serve Fun-ASR-Nano and other capable GGUF
+/// models without sending unsupported request fields to unrelated families.
+fn transcribe_cpp_itn_mode(native_itn: bool, model_supports_itn: bool) -> Itn {
+    if model_supports_itn {
+        if native_itn {
+            Itn::On
+        } else {
+            Itn::Off
+        }
+    } else {
+        Itn::Default
+    }
+}
+
+fn sensevoice_itn_mode(native_itn: bool) -> Option<bool> {
+    Some(native_itn)
 }
 
 fn post_process_transcription_text(
@@ -2470,6 +2494,19 @@ mod tests {
         assert!(matches!(plan.task, Task::Transcribe));
         assert_eq!(plan.language.as_deref(), Some("es"));
         assert_eq!(plan.target_language, None);
+    }
+
+    #[test]
+    fn transcribe_cpp_itn_mode_only_overrides_capable_models() {
+        assert!(matches!(transcribe_cpp_itn_mode(true, true), Itn::On));
+        assert!(matches!(transcribe_cpp_itn_mode(false, true), Itn::Off));
+        assert!(matches!(transcribe_cpp_itn_mode(true, false), Itn::Default));
+    }
+
+    #[test]
+    fn sensevoice_itn_mode_preserves_user_choice() {
+        assert_eq!(sensevoice_itn_mode(true), Some(true));
+        assert_eq!(sensevoice_itn_mode(false), Some(false));
     }
 }
 
