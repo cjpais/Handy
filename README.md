@@ -49,6 +49,24 @@ The process is entirely local:
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
+### Nix
+
+Handy ships a [Nix](https://nixos.org) flake (`flake.nix`). The packaged build is **Linux-only** (x86_64-linux and aarch64-linux) — the same platforms covered by the flake's `supportedSystems`.
+
+Prebuilt binaries are published to the **`handy-computer` Cachix cache** (`https://handy-computer.cachix.org`), so most users can skip the ~25 minute local build:
+
+- **Flake builds** (`nix build` / `nix develop` / `nixos-rebuild --flake`) pick up the cache automatically via the flake's `nixConfig` — no extra setup needed.
+- **NixOS**: enabling `programs.handy.enable` also adds the substituter for you.
+- **First build / build problems**: if you want to be explicit (or you are not using the flake's `nixConfig`, e.g. a non-flake build), pass the cache on the command line so the initial build also pulls from Cachix instead of compiling the heavy native dependencies from source:
+
+  ```bash
+  nix build .#handy \
+    --extra-substituters https://handy-computer.cachix.org \
+    --extra-trusted-public-keys handy-computer.cachix.org-1:Sihzctn6DC0CJM5QeL+9nBEL3CL8c33m777C+eIv748=
+  ```
+
+  (Replace `nix build` with `nix develop`/`nix shell` as needed.)
+
 ## Integrations
 
 <a href="https://www.raycast.com/mattiacolombomc/handy" title="Install Handy Raycast Extension"><img src="https://www.raycast.com/mattiacolombomc/handy/install_button@2x.png?v=1.1" height="64" style="height: 64px;" alt="Install handy Raycast Extension" /></a>
