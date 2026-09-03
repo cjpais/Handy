@@ -335,7 +335,8 @@
         "title": "타이핑 도구",
         "description": "직접 붙여넣기 방식에 사용할 Linux 타이핑 도구를 선택하세요. Auto는 시스템에서 사용 가능한 최적의 도구를 자동으로 감지해 사용합니다.",
         "options": {
-          "auto": "Auto (권장)"
+          "auto": "Auto (권장)",
+          "internal": "내장"
         }
       },
       "clipboardHandling": {

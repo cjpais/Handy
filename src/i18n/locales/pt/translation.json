@@ -335,7 +335,8 @@
         "title": "Ferramenta de digitação",
         "description": "Escolha qual ferramenta de digitação do Linux usar para o método de colagem direta. Auto detectará e usará automaticamente a melhor ferramenta disponível para o seu sistema.",
         "options": {
-          "auto": "Auto (Recomendado)"
+          "auto": "Auto (Recomendado)",
+          "internal": "Interno"
         }
       },
       "clipboardHandling": {
