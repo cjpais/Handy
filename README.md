@@ -1,98 +1,176 @@
-
 # Handy
 
 **Handy with continuous dictation using voice activity detection (VAD).**
 
-This fork of [Handy](https://github.com/cjpais/Handy) adds continuous dictation through automatic speech segmentation. Instead of requiring the user to start and stop recording manually for every utterance, Handy continuously listens for speech, detects when a segment begins and ends, and sends completed segments through the existing transcription pipeline.
+This fork of [Handy](https://github.com/cjpais/Handy) adds continuous dictation using Silero VAD. Instead of manually starting and stopping each recording, Handy automatically detects speech, splits it into segments, transcribes each segment, and pastes the result into the active application.
 
-> **Status:** Experimental feature / upstream pull request in progress
+> **Status:** Experimental. This fork contains an implementation currently proposed for upstream Handy in [PR #2026](https://github.com/cjpais/Handy/pull/2026).
 
-## What's Added
+## Continuous Dictation
 
-### Continuous Dictation
+When enabled, Handy continuously monitors microphone input and automatically creates transcription segments based on speech activity.
 
-When enabled, Handy:
+The process is:
 
-1. Continuously captures microphone audio.
-2. Uses Silero VAD to detect speech.
-3. Waits for speech to begin before creating a segment.
-4. Keeps collecting audio while speech continues.
-5. Ends the segment after a period of silence.
-6. Sends the completed segment to Handy's existing transcription system.
-7. Processes and pastes the resulting transcription normally.
+1. Microphone audio is continuously captured.
+2. Silero VAD detects when speech begins.
+3. Audio is collected while speech continues.
+4. Silence marks the end of the segment.
+5. The segment is sent to Handy's existing transcription pipeline.
+6. The resulting text is processed and pasted into the active application.
 
-This allows dictation to feel more like continuous speech input rather than repeated push-to-talk interactions.
+## Enable Continuous Dictation
 
-## Why?
+Continuous Dictation is currently located in Handy's **Debug Settings**.
 
-Handy is already very good at turning speech into text, but traditional push-to-talk dictation requires the user to manually control each recording.
+### 1. Enable Debug Mode
 
-Continuous dictation makes it possible to simply speak naturally while Handy handles the recording boundaries automatically.
+Open Handy's settings and enable **Debug Mode**.
 
-## Implementation
+Once Debug Mode is enabled, the additional Debug settings will appear.
 
-The feature builds on Handy's existing audio and transcription infrastructure rather than introducing a separate transcription system.
+### 2. Enable Continuous Dictation
 
-### Voice Activity Detection
-
-Continuous segmentation uses **Silero VAD** to determine whether incoming audio contains speech.
-
-The segmenter maintains:
-
-* Speech onset detection
-* Silence tracking
-* Audio buffering
-* Segment boundaries
-* Automatic segment callbacks
-
-A small amount of audio from the beginning of speech is retained so the beginning of an utterance is not lost when speech is first detected.
-
-### Transcription
-
-Completed segments are passed through Handy's existing `TranscriptionManager`.
-
-The selected Whisper model is loaded when continuous dictation is enabled, including when the feature is enabled while Handy is already running.
-
-## Configuration
-
-Continuous dictation can be enabled from:
+Go to:
 
 **Settings → Debug → Continuous Dictation**
 
-The setting is persisted with Handy's existing settings system.
+Turn **Continuous Dictation** on.
+
+Handy will then continuously monitor the microphone and automatically split speech into transcription segments.
+
+### 3. Start Speaking
+
+Once enabled, simply speak normally.
+
+You do not need to manually start and stop each recording. Handy will:
+
+* Detect when you start speaking
+* Continue recording while you speak
+* Detect when you stop speaking
+* Transcribe the completed segment
+* Paste the transcription into the active application
+
+> **Note:** Continuous Dictation is currently an experimental feature and is exposed through Debug Settings while it is being tested.
+
+## Installation
+
+### Download a Release
+
+This fork does not currently provide separate release builds.
+
+For the upstream Handy release, see the [official Handy releases](https://github.com/cjpais/Handy/releases).
+
+To use **this fork's continuous dictation implementation**, build Handy from source using the instructions below.
+
+### Build from Source
+
+#### Requirements
+
+You will need:
+
+* [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+* [Bun](https://bun.sh/)
+* Tauri's platform-specific prerequisites
+* A supported operating system:
+
+  * Windows
+  * macOS
+  * Linux
+
+See the upstream [`BUILD.md`](https://github.com/cjpais/Handy/blob/main/BUILD.md) for platform-specific dependencies.
+
+#### 1. Clone this repository
+
+```bash
+git clone https://github.com/siruignaw-sys/Handy-Continuous-Dictation.git
+cd Handy-Continuous-Dictation
+```
+
+#### 2. Install dependencies
+
+```bash
+bun install
+```
+
+#### 3. Start the development build
+
+```bash
+bun tauri dev
+```
+
+This launches Handy with the continuous dictation implementation.
+
+#### 4. Build a production version
+
+```bash
+bun run tauri build
+```
+
+The generated application bundles will be placed under:
+
+```text
+src-tauri/target/release/bundle/
+```
+
+The exact bundle format depends on your operating system.
+
+## How It Works
+
+The continuous dictation feature builds on Handy's existing audio and transcription architecture.
+
+### Voice Activity Detection
+
+Silero VAD is used to identify speech within the continuously captured microphone stream.
+
+The segmenter tracks:
+
+* Speech onset
+* Speech duration
+* Silence duration
+* Audio buffering
+* Segment boundaries
+
+A short onset buffer is retained so the beginning of an utterance is not lost when speech is first detected.
+
+### Transcription
+
+Completed segments are passed to Handy's existing `TranscriptionManager`.
+
+The currently selected transcription model is used, and the resulting text follows Handy's normal processing and paste pipeline.
 
 ## Testing
 
-The feature has been tested locally with:
+The implementation has been tested locally with:
 
 * Normal-volume English speech
 * Continuous speech across multiple segments
 * Automatic VAD segmentation
-* Runtime enabling/disabling of continuous dictation
-* Existing Whisper transcription models
+* Enabling and disabling continuous dictation while Handy is running
+* Whisper transcription models
 * Chinese/English code-switching
-* Automatic insertion of transcribed text into the active application
+* Automatic insertion of transcription into the active application
 
-Transcription quality can vary with very quiet speech and multilingual/code-switched audio because those behaviors depend on the underlying Whisper model.
+Very quiet speech and heavily code-switched audio can produce less reliable transcription depending on the underlying Whisper model.
 
-## Upstream
+## Upstream Contribution
 
-This work is intended as a contribution to the original Handy project:
+This fork was created to develop and test continuous dictation for Handy.
 
-**https://github.com/cjpais/Handy**
+The original feature proposal is documented in [Handy Discussion #1896](https://github.com/cjpais/Handy/discussions/1896).
 
-Related discussion:
-
-**Handy Discussion #1896**
-
-Upstream pull request:
-
-**PR #2026**
+The implementation has been submitted upstream as [PR #2026](https://github.com/cjpais/Handy/pull/2026).
 
 ## Development
 
-This repository follows the development setup and requirements of the upstream Handy project. See the upstream repository and `CONTRIBUTING.md` for build instructions and contribution guidelines.
+For additional development information, platform-specific dependencies, and build details, see the upstream [`BUILD.md`](https://github.com/cjpais/Handy/blob/main/BUILD.md).
+
+## Credits
+
+This project is based on [Handy](https://github.com/cjpais/Handy) by cjpais and contributors.
+
+All original Handy functionality, dependencies, and licensing remain subject to the upstream project.
 
 ## License
 
-See the upstream Handy repository for licensing information.
+See [`LICENSE`](LICENSE) for the license applicable to this repository.
