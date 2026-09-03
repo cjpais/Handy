@@ -274,6 +274,10 @@
         "label": "Giữ micro mở giữa các lần phiên âm",
         "description": "Giữ luồng micro mở trong 30 giây sau khi dừng ghi âm, giảm độ trễ khi phiên âm liên tiếp. Có thể làm giảm chất lượng âm thanh Bluetooth khi đang hoạt động."
       },
+      "airpodsMode": {
+        "label": "Chế độ AirPods",
+        "description": "Tự động chuyển AirPods sang máy Mac để phiên âm khi iPhone đang phát âm thanh. Nếu không, bản ghi có thể bị im lặng."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Tăng tốc Whisper",
