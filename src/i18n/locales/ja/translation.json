@@ -264,6 +264,10 @@
         "label": "文字起こし間でマイクを有効にする",
         "description": "録音停止後マイクを30秒間有効なままにし、連続した文字起こしの遅延を軽減します。Bluetooth 音声品質に影響する場合があります。"
       },
+      "airpodsMode": {
+        "label": "AirPods モード",
+        "description": "iPhone がオーディオを再生しているとき、文字起こしのために AirPods を自動的に Mac へ切り替えます。これがないと録音が無音になることがあります。"
+      },
       "acceleration": {
         "transcribe": {
           "title": "transcribe.cpp アクセラレーション",

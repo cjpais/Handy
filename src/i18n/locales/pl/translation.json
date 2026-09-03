@@ -264,6 +264,10 @@
         "label": "Pozostaw mikrofon otwarty między transkrypcjami",
         "description": "Utrzymuje strumień mikrofonu otwarty przez 30 sekund po zatrzymaniu nagrywania, zmniejszając opóźnienie przy kolejnych transkrypcjach. Może pogorszyć jakość dźwięku Bluetooth."
       },
+      "airpodsMode": {
+        "label": "Tryb AirPods",
+        "description": "Automatycznie przełącza AirPods na Maca do transkrypcji, gdy iPhone odtwarza dźwięk. Bez tego nagrania mogą pozostać ciche."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Akceleracja Whisper",

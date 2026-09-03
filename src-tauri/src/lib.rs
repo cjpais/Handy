@@ -718,6 +718,7 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::is_recording,
             commands::audio::get_microphone_channels,
             commands::audio::set_selected_channel,
+            commands::audio::change_airpods_mode_setting,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,

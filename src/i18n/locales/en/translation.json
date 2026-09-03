@@ -264,6 +264,10 @@
         "label": "Keep Mic Open Between Transcriptions",
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
       },
+      "airpodsMode": {
+        "label": "AirPods Mode",
+        "description": "Automatically switches AirPods to the Mac for transcription when an iPhone is playing audio. Without this, recordings can come back silent."
+      },
       "acceleration": {
         "transcribe": {
           "title": "transcribe.cpp Acceleration",

@@ -264,6 +264,10 @@
         "label": "Hold mikrofon åben mellem transskriptioner",
         "description": "Holder mikrofonstrømmen åben i 30 sekunder, efter at optagelsen stopper, hvilket reducerer ventetid ved transskriptioner lige efter hinanden. Kan forringe Bluetooth-lydkvaliteten, mens den er aktiv."
       },
+      "airpodsMode": {
+        "label": "AirPods-tilstand",
+        "description": "Skifter automatisk AirPods til Mac'en til transskription, når en iPhone afspiller lyd. Uden dette kan optagelser blive helt tavse."
+      },
       "acceleration": {
         "transcribe": {
           "title": "transcribe.cpp-acceleration",

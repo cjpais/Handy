@@ -264,6 +264,10 @@
         "label": "Manter microfone aberto entre transcrições",
         "description": "Mantém o fluxo do microfone aberto por 30 segundos após parar a gravação, reduzindo a latência em transcrições consecutivas. Pode degradar a qualidade do áudio Bluetooth enquanto ativo."
       },
+      "airpodsMode": {
+        "label": "Modo AirPods",
+        "description": "Alterna automaticamente os AirPods para o Mac para a transcrição quando um iPhone está a reproduzir áudio. Sem isto, as gravações podem ficar em silêncio."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Aceleração Whisper",

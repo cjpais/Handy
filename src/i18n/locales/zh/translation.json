@@ -264,6 +264,10 @@
         "label": "在转录之间保持麦克风开启",
         "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
       },
+      "airpodsMode": {
+        "label": "AirPods 模式",
+        "description": "当 iPhone 正在播放音频时，自动将 AirPods 切换到 Mac 进行转录。否则录音可能是静音的。"
+      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper 加速",

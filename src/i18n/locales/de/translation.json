@@ -264,6 +264,10 @@
         "label": "Mikrofon zwischen Transkriptionen offen halten",
         "description": "Hält den Mikrofon-Stream nach dem Aufnahmestopp 30 Sekunden lang offen, um die Latenz bei aufeinanderfolgenden Transkriptionen zu verringern. Kann die Bluetooth-Audioqualität beeinträchtigen."
       },
+      "airpodsMode": {
+        "label": "AirPods-Modus",
+        "description": "Schaltet AirPods für die Transkription automatisch auf den Mac um, wenn ein iPhone Audio wiedergibt. Andernfalls können Aufnahmen stumm bleiben."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper-Beschleunigung",

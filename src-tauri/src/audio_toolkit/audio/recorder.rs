@@ -80,6 +80,10 @@ pub struct AudioRecorder {
     audio_cb: Option<AudioFrameCallback>,
     /// Which input channel to use. None = average all (original behavior).
     selected_channel: Option<usize>,
+    /// Opt-in workaround for AirPods that report a live input stream while
+    /// delivering only zeroes. See `open_silent_keepalive_output`. macOS only.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    airpods_mode: bool,
     /// Preferred stream config cached per device name. The two HAL property
     /// queries in `get_preferred_config` cost ~40-85ms per open (worse on
     /// USB/Bluetooth), which lands on the keypress->capture path in on-demand
@@ -101,6 +105,7 @@ impl AudioRecorder {
             level_cb: None,
             audio_cb: None,
             selected_channel: None,
+            airpods_mode: false,
             config_cache: Arc::new(Mutex::new(None)),
             stream_error: Arc::new(AtomicBool::new(false)),
         })
@@ -155,6 +160,17 @@ impl AudioRecorder {
         self.selected_channel = channel.map(usize::from);
     }
 
+    pub fn with_airpods_mode(mut self, enabled: bool) -> Self {
+        self.set_airpods_mode(enabled);
+        self
+    }
+
+    /// Takes effect on the next `open()`; the keep-alive stream is bound to the
+    /// input stream's lifetime, so a warm stream must be reopened to apply it.
+    pub fn set_airpods_mode(&mut self, enabled: bool) {
+        self.airpods_mode = enabled;
+    }
+
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
         if self.worker_handle.is_some() {
             if !self.needs_reopen() {
@@ -180,7 +196,9 @@ impl AudioRecorder {
 
         let thread_device = device.clone();
         #[cfg(target_os = "macos")]
-        let keepalive_device_name = thread_device.name().unwrap_or_default();
+        let keepalive_device_name = self
+            .airpods_mode
+            .then(|| thread_device.name().unwrap_or_default());
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
@@ -318,7 +336,9 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     #[cfg(target_os = "macos")]
-                    let _keepalive_output = open_silent_keepalive_output(&keepalive_device_name);
+                    let _keepalive_output = keepalive_device_name
+                        .as_deref()
+                        .and_then(open_silent_keepalive_output);
                     // Timestamp for the play()-returned -> first-samples gap the
                     // init handshake can't see (hardware dependent).
                     let stream_running_at = Instant::now();
