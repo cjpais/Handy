@@ -19,6 +19,8 @@ use crate::audio_toolkit::{
     VoiceActivityDetector,
 };
 
+const VAD_SEGMENT_SILENCE_FRAMES: usize = 25;
+
 enum Cmd {
     /// Begin capturing. Carries the send timestamp so the consumer can log how
     /// long the command sat in the channel (and how much audio was dropped
@@ -26,6 +28,8 @@ enum Cmd {
     Start(VadPolicy, Instant),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
+    EnableAutoMode,
+    DisableAutoMode,
 }
 
 enum AudioChunk {
@@ -69,6 +73,7 @@ impl VadConfig {
 /// Callback invoked with each 16 kHz mono frame that passes the active capture
 /// policy while recording. Used to feed a live streaming transcription as audio arrives.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
+pub type SegmentCompleteCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
 
 pub struct AudioRecorder {
     device: Option<Device>,
@@ -77,6 +82,8 @@ pub struct AudioRecorder {
     vad: Option<VadConfig>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
+    audio_seg_cb: Option<SegmentCompleteCallback>,
+    auto_mode_enabled: bool,
     /// Which input channel to use. None = average all (original behavior).
     selected_channel: Option<usize>,
     /// Preferred stream config cached per device name. The two HAL property
@@ -97,6 +104,8 @@ impl AudioRecorder {
             vad: None,
             level_cb: None,
             audio_cb: None,
+            audio_seg_cb: None,
+            auto_mode_enabled: false,
             selected_channel: None,
             config_cache: Arc::new(Mutex::new(None)),
         })
@@ -139,6 +148,14 @@ impl AudioRecorder {
         self
     }
 
+    pub fn with_segment_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(Vec<f32>) + Send + Sync + 'static,
+    {
+        self.audio_seg_cb = Some(Arc::new(cb));
+        self
+    }
+
     pub fn with_selected_channel(mut self, channel: Option<u16>) -> Self {
         self.set_selected_channel(channel);
         self
@@ -178,6 +195,8 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
+        let audio_seg_cb = self.audio_seg_cb.clone();
+        let auto_mode_enabled = self.auto_mode_enabled;
         let selected_channel = self.selected_channel;
         let config_cache = Arc::clone(&self.config_cache);
 
@@ -314,6 +333,8 @@ impl AudioRecorder {
                         cmd_rx,
                         level_cb,
                         audio_cb,
+                        audio_seg_cb,
+                        auto_mode_enabled,
                         stop_flag,
                         stream_running_at,
                     );
@@ -368,6 +389,24 @@ impl AudioRecorder {
             tx.send(Cmd::Stop(resp_tx))?;
         }
         Ok(resp_rx.recv()?) // wait for the samples
+    }
+
+    pub fn enable_auto_mode(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.auto_mode_enabled = true;
+
+        if let Some(tx) = &self.cmd_tx {
+            tx.send(Cmd::EnableAutoMode)?;
+        }
+        Ok(())
+    }
+
+    pub fn disable_auto_mode(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.auto_mode_enabled = false;
+
+        if let Some(tx) = &self.cmd_tx {
+            tx.send(Cmd::DisableAutoMode)?;
+        }
+        Ok(())
     }
 
     /// True once the capture worker has exited without anyone calling `close`.
@@ -604,6 +643,8 @@ fn run_consumer(
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     audio_cb: Option<AudioFrameCallback>,
+    audio_seg_cb: Option<SegmentCompleteCallback>,
+    initial_auto_mode_enabled: bool,
     stop_flag: Arc<AtomicBool>,
     stream_running_at: Instant,
 ) {
@@ -613,7 +654,12 @@ fn run_consumer(
         Duration::from_millis(30),
     );
 
+    let mut auto_mode_enabled = initial_auto_mode_enabled;
+
     let mut processed_samples = Vec::<f32>::new();
+    let mut silent_frame_count: usize = 0;
+    let mut speech_onset_count: usize = 0;
+    let mut onset_buffer = Vec::<f32>::new();
     let mut recording = false;
     let mut vad_policy = VadPolicy::Offline;
 
@@ -651,10 +697,15 @@ fn run_consumer(
         vad_policy: VadPolicy,
         vad: &Option<VadConfig>,
         audio_cb: &Option<AudioFrameCallback>,
+        audio_seg_cb: &Option<SegmentCompleteCallback>,
         out_buf: &mut Vec<f32>,
-    ) {
-        if !recording {
-            return;
+        silent_frame_count: &mut usize,
+        speech_onset_count: &mut usize,
+        onset_buffer: &mut Vec<f32>,
+        auto_mode_enabled: bool,
+    ) -> Option<bool> {
+        if !recording && !auto_mode_enabled {
+            return Some(false);
         }
 
         let mut emit = |buf: &[f32]| {
@@ -666,17 +717,65 @@ fn run_consumer(
 
         if vad_policy == VadPolicy::Disabled {
             emit(samples);
-            return;
+            return None;
         }
+        if !recording {
+            if let Some(cfg) = vad {
+                let mut det = cfg.detector.lock().unwrap();
+                match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
+                    VadFrame::Speech(buf) => {
+                        onset_buffer.extend_from_slice(buf);
+                        *speech_onset_count += 1;
+                        log::debug!("onset watch: speech frame, count={}", *speech_onset_count);
+                        if *speech_onset_count >= 3 {
+                            log::debug!("Onset detected, starting auto recording");
 
+                            emit(&onset_buffer);
+                            onset_buffer.clear();
+
+                            *speech_onset_count = 0;
+                            return Some(true);
+                        }
+                        return None;
+                    }
+                    VadFrame::Noise => {
+                        *speech_onset_count = 0;
+                        onset_buffer.clear();
+                        return None;
+                    }
+                    _ => {
+                        return None;
+                    }
+                }
+            }
+            return None;
+        }
         if let Some(cfg) = vad {
             let mut det = cfg.detector.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => emit(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    *silent_frame_count = 0;
+                    emit(buf);
+                    return None;
+                }
+                VadFrame::Noise => {
+                    *silent_frame_count += 1;
+                    if *silent_frame_count > VAD_SEGMENT_SILENCE_FRAMES {
+                        if let Some(cb) = audio_seg_cb {
+                            let out_buffer = std::mem::take(out_buf);
+                            cb(out_buffer);
+                        }
+
+                        *silent_frame_count = 0;
+                        *speech_onset_count = 0;
+                        return Some(false);
+                    }
+                    return None;
+                }
             }
         } else {
             emit(samples);
+            return None;
         }
     }
 
@@ -698,6 +797,9 @@ fn run_consumer(
                     stop_flag.store(false, Ordering::Relaxed);
                     vad_policy = policy;
                     processed_samples.clear();
+                    onset_buffer.clear();
+                    speech_onset_count = 0;
+                    silent_frame_count = 0;
                     recording = true;
                     visualizer.reset();
                     frame_resampler.reset();
@@ -719,18 +821,24 @@ fn run_consumer(
                     // The chunk in hand arrived before the stop; it belongs to
                     // the recording, so feed it ahead of the drain below.
                     if let Some(AudioChunk::Samples(raw)) = pending.take() {
-                        frame_resampler.push(&raw, &mut |frame: &[f32]| {
-                            handle_frame(
-                                frame,
-                                true,
-                                vad_policy,
-                                &vad,
-                                &audio_cb,
-                                &mut processed_samples,
-                            )
+                        frame_resampler.push(&raw, &mut |frame: &[f32]| match handle_frame(
+                            frame,
+                            true,
+                            vad_policy,
+                            &vad,
+                            &audio_cb,
+                            &audio_seg_cb,
+                            &mut processed_samples,
+                            &mut silent_frame_count,
+                            &mut speech_onset_count,
+                            &mut onset_buffer,
+                            auto_mode_enabled,
+                        ) {
+                            Some(true) => recording = true,
+                            Some(false) => recording = false,
+                            None => {}
                         });
                     }
-
                     // Drain all remaining audio until the producer confirms end-of-stream.
                     // The cpal callback sees the stop flag, sends EndOfStream, and goes
                     // silent — guaranteeing every captured sample is in the channel
@@ -739,14 +847,23 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(
+                                    match handle_frame(
                                         frame,
                                         true,
                                         vad_policy,
                                         &vad,
                                         &audio_cb,
+                                        &audio_seg_cb,
                                         &mut processed_samples,
-                                    )
+                                        &mut silent_frame_count,
+                                        &mut speech_onset_count,
+                                        &mut onset_buffer,
+                                        auto_mode_enabled,
+                                    ) {
+                                        Some(true) => recording = true,
+                                        Some(false) => recording = false,
+                                        None => {}
+                                    }
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -757,15 +874,22 @@ fn run_consumer(
                         }
                     }
 
-                    frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(
-                            frame,
-                            true,
-                            vad_policy,
-                            &vad,
-                            &audio_cb,
-                            &mut processed_samples,
-                        )
+                    frame_resampler.finish(&mut |frame: &[f32]| match handle_frame(
+                        frame,
+                        true,
+                        vad_policy,
+                        &vad,
+                        &audio_cb,
+                        &audio_seg_cb,
+                        &mut processed_samples,
+                        &mut silent_frame_count,
+                        &mut speech_onset_count,
+                        &mut onset_buffer,
+                        auto_mode_enabled,
+                    ) {
+                        Some(true) => recording = true,
+                        Some(false) => recording = false,
+                        None => {}
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
@@ -777,6 +901,20 @@ fn run_consumer(
                 Cmd::Shutdown => {
                     stop_flag.store(true, Ordering::Relaxed);
                     return;
+                }
+                Cmd::EnableAutoMode => {
+                    auto_mode_enabled = true;
+                    speech_onset_count = 0;
+                    silent_frame_count = 0;
+                    onset_buffer.clear();
+                    log::debug!("Auto mode enabled");
+                }
+                Cmd::DisableAutoMode => {
+                    auto_mode_enabled = false;
+                    speech_onset_count = 0;
+                    silent_frame_count = 0;
+                    onset_buffer.clear();
+                    log::debug!("Auto mode disabled");
                 }
             }
         }
@@ -806,22 +944,29 @@ fn run_consumer(
         // idle to avoid doing unnecessary work whose output is thrown away. Both
         // are reset on Cmd::Start (visualizer.reset() / frame_resampler.reset()),
         // so they resume cleanly the moment recording begins.
-        if recording {
+        if recording || auto_mode_enabled {
             if let Some(buckets) = visualizer.feed(&raw) {
                 if let Some(cb) = &level_cb {
                     cb(buckets);
                 }
             }
 
-            frame_resampler.push(&raw, &mut |frame: &[f32]| {
-                handle_frame(
-                    frame,
-                    recording,
-                    vad_policy,
-                    &vad,
-                    &audio_cb,
-                    &mut processed_samples,
-                )
+            frame_resampler.push(&raw, &mut |frame: &[f32]| match handle_frame(
+                frame,
+                recording,
+                vad_policy,
+                &vad,
+                &audio_cb,
+                &audio_seg_cb,
+                &mut processed_samples,
+                &mut silent_frame_count,
+                &mut speech_onset_count,
+                &mut onset_buffer,
+                auto_mode_enabled,
+            ) {
+                Some(true) => recording = true,
+                Some(false) => recording = false,
+                None => {}
             });
         }
 

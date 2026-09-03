@@ -178,12 +178,39 @@ pub async fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(
         .map_err(|e| format!("audio task join failed: {}", e))?
         .map_err(|e| format!("Failed to update microphone mode: {}", e))
 }
+#[tauri::command]
+#[specta::specta]
+pub async fn update_continuous_dictation(
+    app: AppHandle,
+    continuous_dictation_enabled: bool,
+) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.continuous_dictation_enabled = continuous_dictation_enabled;
+    write_settings(&app, settings);
 
+    let rm = app.state::<Arc<AudioRecordingManager>>().inner().clone();
+
+    if continuous_dictation_enabled {
+        rm.initiate_transcription_model_load();
+    }
+
+    tokio::task::spawn_blocking(move || rm.set_auto_mode(continuous_dictation_enabled))
+        .await
+        .map_err(|e| format!("audio task join failed: {}", e))?
+        .map_err(|e| format!("Failed to update continuous dictation mode: {}", e))
+}
 #[tauri::command]
 #[specta::specta]
 pub fn get_microphone_mode(app: AppHandle) -> Result<bool, String> {
     let settings = get_settings(&app);
     Ok(settings.always_on_microphone)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_continuous_dictation(app: AppHandle) -> Result<bool, String> {
+    let settings = get_settings(&app);
+    Ok(settings.continuous_dictation_enabled)
 }
 
 #[tauri::command]

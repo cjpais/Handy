@@ -376,6 +376,8 @@ pub struct AppSettings {
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
+    pub continuous_dictation_enabled: bool,
+    #[serde(default)]
     pub selected_microphone: Option<String>,
     /// Which input channel to use on the selected microphone device.
     /// None means "average all channels" (original behavior).
@@ -866,6 +868,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_model: "".to_string(),
         onboarding_completed: false,
         always_on_microphone: false,
+        continuous_dictation_enabled: false,
         selected_microphone: None,
         selected_channel: None,
         clamshell_microphone: None,

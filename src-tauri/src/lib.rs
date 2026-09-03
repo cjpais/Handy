@@ -162,8 +162,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             .expect("Failed to initialize transcription manager"),
     );
     let recording_manager = Arc::new(
-        AudioRecordingManager::new(app_handle, transcription_manager.stream_router())
-            .expect("Failed to initialize recording manager"),
+        AudioRecordingManager::new(
+            app_handle,
+            transcription_manager.stream_router(),
+            transcription_manager.clone(),
+        )
+        .expect("Failed to initialize recording manager"),
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
@@ -689,6 +693,8 @@ pub fn run(cli_args: CliArgs) {
             commands::models::rescan_local_models,
             commands::audio::update_microphone_mode,
             commands::audio::get_microphone_mode,
+            commands::audio::update_continuous_dictation,
+            commands::audio::get_continuous_dictation,
             commands::audio::get_windows_microphone_permission_status,
             commands::audio::open_microphone_privacy_settings,
             commands::audio::get_available_microphones,

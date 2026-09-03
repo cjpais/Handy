@@ -510,6 +510,10 @@
         "label": "Always-On Microphone",
         "description": "Keep microphone active for faster response"
       },
+      "continuousDictation": {
+        "label": "Continuous Dictation",
+        "description": "Automatically start and stop recording based on when you're speaking"
+      },
       "clamshellMicrophone": {
         "title": "Clamshell Microphone",
         "description": "Microphone to use when laptop lid is closed"

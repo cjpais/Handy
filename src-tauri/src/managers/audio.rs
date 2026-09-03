@@ -1,3 +1,4 @@
+use crate::actions::process_transcription_output;
 use crate::audio_toolkit::{
     list_input_devices,
     vad::{
@@ -8,6 +9,7 @@ use crate::audio_toolkit::{
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
+use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info, trace, warn};
@@ -264,6 +266,7 @@ fn create_audio_recorder(
     app_handle: &tauri::AppHandle,
     selected_channel: Option<u16>,
     stream_router: Arc<StreamRouter>,
+    transcription_manager: Arc<TranscriptionManager>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     // A single Silero engine covers both the offline and streaming policies (never
     // active at once within a recording), so the recorder reconfigures its
@@ -299,6 +302,42 @@ fn create_audio_recorder(
             move |frame| {
                 router.feed(frame);
             }
+        })
+        .with_segment_callback({
+            let app_handle = app_handle.clone();
+            let tm = transcription_manager.clone();
+            move |segment: Vec<f32>| {
+                let app_handle = app_handle.clone();
+                let tm = tm.clone();
+                tauri::async_runtime::spawn(async move {
+                    match tm.transcribe(segment) {
+                        Ok(text) => {
+                            let processed =
+                                process_transcription_output(&app_handle, &text, false).await;
+                            if processed.final_text.is_empty() {
+                            } else {
+                                let app_handle_for_paste = app_handle.clone();
+                                app_handle
+                                    .run_on_main_thread(move || {
+                                        match utils::paste(
+                                            processed.final_text,
+                                            app_handle_for_paste,
+                                        ) {
+                                            Ok(()) => {}
+                                            Err(e) => {
+                                                log::error!("Auto-segement paste failed: {}", e);
+                                            }
+                                        }
+                                    })
+                                    .unwrap_or_else(|e| error!("run on main thread failed: {}", e));
+                            }
+                        }
+                        Err(e) => {
+                            log::error!("Auto-segment transcription failed: {}", e);
+                        }
+                    }
+                });
+            }
         });
 
     Ok(recorder)
@@ -321,6 +360,7 @@ pub struct AudioRecordingManager {
     close_generation: Arc<AtomicU64>,
     cancel_generation: Arc<AtomicU64>,
     stream_router: Arc<StreamRouter>,
+    transcription_manager: Arc<TranscriptionManager>,
     /// Lock-free mirror of "is the state in {Recording, Stopping}",
     /// maintained by `set_state()`. The hot-path `is_recording()` reads THIS
     /// instead of the std `state` mutex, so a UI poll can no longer deadlock
@@ -342,6 +382,7 @@ impl AudioRecordingManager {
     pub fn new(
         app: &tauri::AppHandle,
         stream_router: Arc<StreamRouter>,
+        transcription_manager: Arc<TranscriptionManager>,
     ) -> Result<Self, anyhow::Error> {
         let settings = get_settings(app);
         let mode = if settings.always_on_microphone {
@@ -362,6 +403,7 @@ impl AudioRecordingManager {
             close_generation: Arc::new(AtomicU64::new(0)),
             cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
+            transcription_manager,
             recording_active: Arc::new(AtomicBool::new(false)),
             cached_device: Arc::new(Mutex::new(None)),
         };
@@ -506,6 +548,10 @@ impl AudioRecordingManager {
         }
     }
 
+    pub fn initiate_transcription_model_load(&self) {
+        self.transcription_manager.initiate_model_load();
+    }
+
     pub fn preload_vad(&self) -> Result<(), anyhow::Error> {
         let mut recorder_opt = self.recorder.lock().unwrap();
         if recorder_opt.is_none() {
@@ -518,12 +564,21 @@ impl AudioRecordingManager {
                 )
                 .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {}", e))?;
             let settings = get_settings(&self.app_handle);
-            *recorder_opt = Some(create_audio_recorder(
+            let mut recorder = create_audio_recorder(
                 &vad_path,
                 &self.app_handle,
                 settings.selected_channel,
                 Arc::clone(&self.stream_router),
-            )?);
+                Arc::clone(&self.transcription_manager),
+            )?;
+
+            if settings.continuous_dictation_enabled {
+                recorder
+                    .enable_auto_mode()
+                    .map_err(|e| anyhow::anyhow!("Failed to enable continuous dictation: {}", e))?;
+            }
+
+            *recorder_opt = Some(recorder);
         }
         Ok(())
     }
@@ -601,6 +656,11 @@ impl AudioRecordingManager {
         let vad_started = Instant::now();
         self.preload_vad()?;
         let vad_elapsed = vad_started.elapsed();
+
+        if settings.continuous_dictation_enabled {
+            log::info!("Continuous dictation enabled, initiating transcription model load");
+            self.transcription_manager.initiate_model_load();
+        }
 
         let open_started = Instant::now();
         let mut recorder_opt = self.recorder.lock().unwrap();
@@ -683,6 +743,19 @@ impl AudioRecordingManager {
         }
 
         *self.mode.lock().unwrap() = new_mode;
+        Ok(())
+    }
+
+    pub fn set_auto_mode(&self, enabled: bool) -> Result<(), anyhow::Error> {
+        if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
+            if enabled {
+                rec.enable_auto_mode()
+                    .map_err(|e| anyhow::anyhow!("Error enabling: {}", e))?;
+            } else {
+                rec.disable_auto_mode()
+                    .map_err(|e| anyhow::anyhow!("Error disabling: {}", e))?;
+            }
+        }
         Ok(())
     }
 

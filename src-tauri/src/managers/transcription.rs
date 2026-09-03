@@ -737,6 +737,11 @@ impl TranscriptionManager {
             let settings = get_settings(&self_clone.app_handle);
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
                 error!("Failed to load model: {}", e);
+            } else {
+                log::info!(
+                    "transcription model loaded successfully: {}",
+                    settings.selected_model
+                );
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
             *is_loading = false;
