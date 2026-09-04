@@ -449,7 +449,24 @@
       "retranscribe": "Ri-trascrivere",
       "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
       "transcribing": "Trascrizione in corso...",
-      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione."
+      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione.",
+      "stats": {
+        "title": "Usage",
+        "words": "Words dictated",
+        "timeSaved": "Time saved",
+        "avgSpeed": "Avg speed",
+        "unavailable": "—",
+        "wpm": "{{value}} WPM",
+        "total": "Total dictations",
+        "thisWeekMonth": "This week / this month",
+        "dailyAverage": "Daily average",
+        "streak": "Streak",
+        "streakValue": "{{current}}-day current, {{best}}-day best",
+        "postProcessed": "Post-processed",
+        "postProcessedValue": "{{count}} ({{percent}}%)",
+        "timeSavedHoursMinutes": "{{hours}}h {{minutes}}m",
+        "timeSavedMinutesOnly": "{{minutes}}m"
+      }
     },
     "debug": {
       "title": "Debug",

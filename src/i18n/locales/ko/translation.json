@@ -449,7 +449,24 @@
       "retranscribe": "다시 전사",
       "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "stats": {
+        "title": "Usage",
+        "words": "Words dictated",
+        "timeSaved": "Time saved",
+        "avgSpeed": "Avg speed",
+        "unavailable": "—",
+        "wpm": "{{value}} WPM",
+        "total": "Total dictations",
+        "thisWeekMonth": "This week / this month",
+        "dailyAverage": "Daily average",
+        "streak": "Streak",
+        "streakValue": "{{current}}-day current, {{best}}-day best",
+        "postProcessed": "Post-processed",
+        "postProcessedValue": "{{count}} ({{percent}}%)",
+        "timeSavedHoursMinutes": "{{hours}}h {{minutes}}m",
+        "timeSavedMinutesOnly": "{{minutes}}m"
+      }
     },
     "debug": {
       "title": "디버그",

@@ -1,10 +1,23 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
-    history::{HistoryManager, PaginatedHistory},
+    history::{HistoryManager, HistoryStats, PaginatedHistory},
     transcription::TranscriptionManager,
 };
 use std::sync::Arc;
 use tauri::{AppHandle, State};
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_history_stats(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+) -> Result<HistoryStats, String> {
+    let history_manager = history_manager.inner().clone();
+    tokio::task::spawn_blocking(move || history_manager.get_history_stats())
+        .await
+        .map_err(|e| format!("history stats task panicked: {e}"))?
+        .map_err(|e| e.to_string())
+}
 
 #[tauri::command]
 #[specta::specta]

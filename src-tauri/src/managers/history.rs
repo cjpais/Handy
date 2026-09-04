@@ -65,6 +65,111 @@ pub struct HistoryEntry {
     pub post_process_requested: bool,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct HistoryStats {
+    pub total_dictations: i64,
+    pub total_words: i64,
+    pub this_week: i64,
+    pub this_month: i64,
+    pub daily_average: f64,
+    pub current_streak_days: i64,
+    pub longest_streak_days: i64,
+    pub post_processed: i64,
+    pub post_process_rate: i64,
+    pub time_saved_minutes: f64,
+    pub avg_wpm: Option<f64>,
+}
+
+/// Typing speed baseline and speaking rate used for the "time saved" estimate,
+/// matching the convention used by Willow Voice (words * (1/40 - 1/150) minutes).
+const TYPING_WPM: f64 = 40.0;
+const SPEAKING_WPM: f64 = 150.0;
+
+/// Days since epoch (UTC-midnight bucket) from a "YYYY-MM-DD" local date string.
+fn day_string_to_epoch_days(day: &str) -> Option<i64> {
+    use chrono::TimeZone;
+    chrono::NaiveDate::parse_from_str(day, "%Y-%m-%d")
+        .ok()
+        .and_then(|d| d.and_hms_opt(0, 0, 0))
+        .map(|ndt| chrono::Utc.from_utc_datetime(&ndt).timestamp() / 86_400)
+}
+
+/// Unix timestamp for local midnight on `date`.
+/// Ambiguous DST folds pick the earlier mapping. A DST spring gap falls back
+/// to 01:00 local so week/month bounds never collapse to the epoch.
+fn local_midnight_timestamp(date: chrono::NaiveDate) -> i64 {
+    use chrono::{LocalResult, TimeZone};
+    let midnight = date
+        .and_hms_opt(0, 0, 0)
+        .expect("midnight is a valid naive time");
+    match Local.from_local_datetime(&midnight) {
+        LocalResult::Single(dt) | LocalResult::Ambiguous(dt, _) => dt.timestamp(),
+        LocalResult::None => {
+            let shifted = date
+                .and_hms_opt(1, 0, 0)
+                .expect("01:00 is a valid naive time");
+            match Local.from_local_datetime(&shifted) {
+                LocalResult::Single(dt) | LocalResult::Ambiguous(dt, _) => dt.timestamp(),
+                LocalResult::None => Local::now().timestamp(),
+            }
+        }
+    }
+}
+
+/// Current and longest streak of consecutive days with at least one dictation.
+/// The current streak stays alive if the last active day is today or yesterday.
+fn compute_streaks(days: &[i64], today: i64) -> (i64, i64) {
+    let mut current = 0i64;
+    let start = if days.contains(&today) {
+        Some(today)
+    } else if days.contains(&(today - 1)) {
+        Some(today - 1)
+    } else {
+        None
+    };
+    if let Some(mut d) = start {
+        while days.contains(&d) {
+            current += 1;
+            d -= 1;
+        }
+    }
+
+    let mut longest = 0i64;
+    let mut run = 0i64;
+    let mut prev: Option<i64> = None;
+    for &d in days {
+        run = if prev == Some(d - 1) { run + 1 } else { 1 };
+        longest = longest.max(run);
+        prev = Some(d);
+    }
+
+    (current, longest)
+}
+
+/// Whitespace-separated word count. Consecutive spaces and newlines do not
+/// create extra words.
+fn count_words(text: &str) -> i64 {
+    text.split_whitespace().count() as i64
+}
+
+/// Final text for an entry: post-processed when present and non-empty, else raw.
+fn final_text<'a>(transcription: &'a str, post_processed: Option<&'a str>) -> &'a str {
+    match post_processed {
+        Some(processed) if !processed.trim().is_empty() => processed,
+        _ => transcription,
+    }
+}
+
+/// Audio duration in seconds, read from the WAV header only.
+fn wav_duration_seconds(path: &std::path::Path) -> Result<f64> {
+    let reader = hound::WavReader::open(path)?;
+    let sample_rate = reader.spec().sample_rate;
+    if sample_rate == 0 {
+        anyhow::bail!("WAV file has zero sample rate: {:?}", path);
+    }
+    Ok(reader.duration() as f64 / sample_rate as f64)
+}
+
 pub struct HistoryManager {
     app_handle: AppHandle,
     recordings_dir: PathBuf,
@@ -504,6 +609,145 @@ impl HistoryManager {
         Ok(PaginatedHistory { entries, has_more })
     }
 
+    /// Compute aggregate usage stats over completed history entries.
+    pub fn get_history_stats(&self) -> Result<HistoryStats> {
+        let conn = self.get_connection()?;
+        Self::get_history_stats_with_conn(&conn, &self.recordings_dir)
+    }
+
+    fn get_history_stats_with_conn(
+        conn: &Connection,
+        recordings_dir: &std::path::Path,
+    ) -> Result<HistoryStats> {
+        use chrono::{Datelike, Duration};
+
+        let tx = conn.unchecked_transaction()?;
+        let now_local = Local::now();
+        let now = now_local.timestamp();
+
+        // Start of the local week (Monday 00:00) and month (1st 00:00)
+        let monday = now_local.date_naive()
+            - Duration::days(now_local.weekday().num_days_from_monday() as i64);
+        let week_start = local_midnight_timestamp(monday);
+        let first_of_month = now_local
+            .date_naive()
+            .with_day(1)
+            .unwrap_or_else(|| now_local.date_naive());
+        let month_start = local_midnight_timestamp(first_of_month);
+
+        let (total, this_week, this_month, post_processed) = tx.query_row(
+            "SELECT
+                    COUNT(*),
+                    COALESCE(SUM(CASE WHEN timestamp >= ?1 THEN 1 ELSE 0 END), 0),
+                    COALESCE(SUM(CASE WHEN timestamp >= ?2 THEN 1 ELSE 0 END), 0),
+                    COALESCE(SUM(CASE WHEN NULLIF(TRIM(post_processed_text), '') IS NOT NULL THEN 1 ELSE 0 END), 0)
+                FROM transcription_history
+                WHERE transcription_text != ''",
+            params![week_start, month_start],
+            |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, i64>(1)?,
+                    row.get::<_, i64>(2)?,
+                    row.get::<_, i64>(3)?,
+                ))
+            },
+        )?;
+
+        // Distinct local days with at least one dictation, for streaks and daily average
+        let days: Vec<i64> = {
+            let mut stmt = tx.prepare(
+                "SELECT DISTINCT strftime('%Y-%m-%d', timestamp, 'unixepoch', 'localtime') AS day
+             FROM transcription_history
+             WHERE transcription_text != ''
+             ORDER BY day",
+            )?;
+            let day_strings = stmt
+                .query_map([], |row| row.get::<_, String>("day"))?
+                .collect::<rusqlite::Result<Vec<String>>>()?;
+            day_strings
+                .into_iter()
+                .filter_map(|day| day_string_to_epoch_days(&day))
+                .collect()
+        };
+
+        // Today's bucket derived the same way as the DB rows (local date string)
+        // so streak comparisons are consistent in every timezone.
+        let today_string = now_local.format("%Y-%m-%d").to_string();
+        let today_bucket = day_string_to_epoch_days(&today_string).unwrap_or_else(|| now / 86_400);
+
+        let (current_streak_days, longest_streak_days) = compute_streaks(&days, today_bucket);
+
+        let span_days = if days.is_empty() {
+            1
+        } else {
+            (days[days.len() - 1] - days[0] + 1).max(1)
+        };
+        let daily_average = ((total as f64 / span_days as f64) * 10.0).round() / 10.0;
+
+        let post_process_rate = if total > 0 {
+            post_processed * 100 / total
+        } else {
+            0
+        };
+
+        // Average dictation speed from real audio durations (WAV headers only).
+        // Entries whose recording was removed by retention are skipped.
+        let rows: Vec<(String, String, Option<String>)> = {
+            let mut stmt = tx.prepare(
+                "SELECT file_name, transcription_text, post_processed_text
+             FROM transcription_history
+             WHERE transcription_text != ''",
+            )?;
+            let mapped = stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, String>("file_name")?,
+                    row.get::<_, String>("transcription_text")?,
+                    row.get::<_, Option<String>>("post_processed_text")?,
+                ))
+            })?;
+            let rows = mapped.collect::<rusqlite::Result<Vec<_>>>()?;
+            rows
+        };
+
+        let mut total_words = 0i64;
+        let mut words_with_audio = 0i64;
+        let mut audio_seconds = 0f64;
+        for (file_name, transcription, post_processed_text) in &rows {
+            let words = count_words(final_text(transcription, post_processed_text.as_deref()));
+            total_words += words;
+            let path = recordings_dir.join(file_name);
+            if let Ok(secs) = wav_duration_seconds(&path) {
+                if secs > 0.0 {
+                    words_with_audio += words;
+                    audio_seconds += secs;
+                }
+            }
+        }
+        let time_saved_minutes = total_words as f64 * (1.0 / TYPING_WPM - 1.0 / SPEAKING_WPM);
+        let avg_wpm = if audio_seconds > 0.0 {
+            Some((words_with_audio as f64 / (audio_seconds / 60.0)).round())
+        } else {
+            None
+        };
+
+        let stats = HistoryStats {
+            total_dictations: total,
+            total_words,
+            this_week,
+            this_month,
+            daily_average,
+            current_streak_days,
+            longest_streak_days,
+            post_processed,
+            post_process_rate,
+            time_saved_minutes,
+            avg_wpm,
+        };
+        tx.commit()?;
+        Ok(stats)
+    }
+
     #[cfg(test)]
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
         let mut stmt = conn.prepare(
@@ -733,5 +977,156 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn compute_streaks_handles_gaps_and_yesterday() {
+        // No activity
+        assert_eq!(compute_streaks(&[], 100), (0, 0));
+
+        // Consecutive days ending yesterday: streak still current
+        assert_eq!(compute_streaks(&[97, 98, 99], 100), (3, 3));
+
+        // Consecutive days ending today
+        assert_eq!(compute_streaks(&[98, 99, 100], 100), (3, 3));
+
+        // Gap: current run (2) is shorter than nothing else; longest is 2
+        assert_eq!(compute_streaks(&[97, 99, 100], 100), (2, 2));
+
+        // Longest run in the past beats the current streak
+        assert_eq!(compute_streaks(&[90, 91, 92, 93, 97, 99, 100], 100), (2, 4));
+
+        // Activity stopped two days ago: no current streak
+        assert_eq!(compute_streaks(&[97, 98], 100), (0, 2));
+    }
+
+    #[test]
+    fn stats_count_words_and_exclude_failed_entries() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "hello world  foo\nbar", None);
+        insert_entry(&conn, 200, "", None); // failed transcription, excluded
+        insert_entry(&conn, 300, "raw text ignored", Some("one two")); // final text wins
+
+        let stats = HistoryManager::get_history_stats_with_conn(
+            &conn,
+            std::path::Path::new("/nonexistent"),
+        )
+        .expect("compute stats");
+
+        assert_eq!(stats.total_dictations, 2);
+        assert_eq!(stats.total_words, 6); // 4 + 2
+        assert_eq!(stats.post_processed, 1);
+        assert_eq!(stats.post_process_rate, 50);
+        assert_eq!(stats.avg_wpm, None);
+        let expected_saved = 6.0 * (1.0 / TYPING_WPM - 1.0 / SPEAKING_WPM);
+        assert!((stats.time_saved_minutes - expected_saved).abs() < 1e-9);
+    }
+
+    #[test]
+    fn count_words_collapses_whitespace() {
+        assert_eq!(count_words("hello world  foo\nbar"), 4);
+        assert_eq!(count_words(""), 0);
+        assert_eq!(count_words("  \n\t"), 0);
+        assert_eq!(count_words("one two"), 2);
+    }
+
+    #[test]
+    fn stats_streaks_from_consecutive_days() {
+        use chrono::{Duration, TimeZone};
+
+        let conn = setup_conn();
+        let today = Local::now().date_naive();
+        let noon_ts = |days_ago: i64| {
+            let date = today - Duration::days(days_ago);
+            let noon = date
+                .and_hms_opt(12, 0, 0)
+                .expect("noon is a valid naive time");
+            match Local.from_local_datetime(&noon) {
+                chrono::LocalResult::Single(dt) | chrono::LocalResult::Ambiguous(dt, _) => {
+                    dt.timestamp()
+                }
+                chrono::LocalResult::None => date
+                    .and_hms_opt(13, 0, 0)
+                    .and_then(|shifted| Local.from_local_datetime(&shifted).single())
+                    .map(|dt| dt.timestamp())
+                    .expect("local noon mapping"),
+            }
+        };
+        insert_entry(&conn, noon_ts(0), "today", None);
+        insert_entry(&conn, noon_ts(1), "yesterday", None);
+        insert_entry(&conn, noon_ts(2), "two days ago", None);
+        insert_entry(&conn, noon_ts(4), "gap before", None);
+
+        let stats = HistoryManager::get_history_stats_with_conn(
+            &conn,
+            std::path::Path::new("/nonexistent"),
+        )
+        .expect("compute stats");
+
+        assert_eq!(stats.current_streak_days, 3);
+        assert_eq!(stats.longest_streak_days, 3);
+        assert_eq!(stats.total_dictations, 4);
+    }
+
+    #[test]
+    fn empty_post_processed_text_does_not_count_as_processed() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "hello", Some(""));
+
+        let stats = HistoryManager::get_history_stats_with_conn(
+            &conn,
+            std::path::Path::new("/nonexistent"),
+        )
+        .expect("compute stats");
+
+        assert_eq!(stats.total_dictations, 1);
+        assert_eq!(stats.total_words, 1);
+        assert_eq!(stats.post_processed, 0);
+        assert_eq!(stats.post_process_rate, 0);
+    }
+
+    #[test]
+    fn stats_avg_wpm_from_wav_durations() {
+        let conn = setup_conn();
+        let dir = std::env::temp_dir().join(format!(
+            "handy-stats-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+
+        let wav_path = dir.join("handy-wpm.wav");
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: 16_000,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::create(&wav_path, spec).expect("create wav");
+        for _ in 0..16_000 {
+            writer.write_sample(0i16).expect("write sample");
+        }
+        writer.finalize().expect("finalize wav");
+
+        // 5 words over 1 second of audio = 300 WPM
+        conn.execute(
+            "INSERT INTO transcription_history (
+                file_name, timestamp, saved, title, transcription_text
+            ) VALUES ('handy-wpm.wav', 100, false, 't', 'one two three four five')",
+            [],
+        )
+        .expect("insert entry");
+
+        let stats =
+            HistoryManager::get_history_stats_with_conn(&conn, &dir).expect("compute stats");
+
+        assert_eq!(stats.avg_wpm, Some(300.0));
+        assert_eq!(stats.total_words, 5);
+
+        std::fs::remove_file(&wav_path).ok();
+        std::fs::remove_dir(&dir).ok();
     }
 }

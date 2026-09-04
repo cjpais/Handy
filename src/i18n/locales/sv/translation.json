@@ -449,7 +449,24 @@
       "retranscribe": "Transkribera igen",
       "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
       "transcribing": "Transkriberar...",
-      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök."
+      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök.",
+      "stats": {
+        "title": "Usage",
+        "words": "Words dictated",
+        "timeSaved": "Time saved",
+        "avgSpeed": "Avg speed",
+        "unavailable": "—",
+        "wpm": "{{value}} WPM",
+        "total": "Total dictations",
+        "thisWeekMonth": "This week / this month",
+        "dailyAverage": "Daily average",
+        "streak": "Streak",
+        "streakValue": "{{current}}-day current, {{best}}-day best",
+        "postProcessed": "Post-processed",
+        "postProcessedValue": "{{count}} ({{percent}}%)",
+        "timeSavedHoursMinutes": "{{hours}}h {{minutes}}m",
+        "timeSavedMinutesOnly": "{{minutes}}m"
+      }
     },
     "debug": {
       "title": "Felsökning",

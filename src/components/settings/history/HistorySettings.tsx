@@ -8,12 +8,14 @@ import {
   commands,
   events,
   type HistoryEntry,
+  type HistoryStats,
   type HistoryUpdatePayload,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
+import { SettingsGroup } from "../../ui/SettingsGroup";
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -59,15 +61,45 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   </Button>
 );
 
+const formatTimeSaved = (
+  minutes: number,
+  t: (key: string, options?: Record<string, string | number>) => string,
+): string => {
+  const total = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(total / 60);
+  const remaining = total % 60;
+  if (hours > 0) {
+    return t("settings.history.stats.timeSavedHoursMinutes", {
+      hours,
+      minutes: remaining,
+    });
+  }
+  return t("settings.history.stats.timeSavedMinutesOnly", {
+    minutes: remaining,
+  });
+};
+
+const StatsRow: React.FC<{ title: string; value: string }> = ({
+  title,
+  value,
+}) => (
+  <div className="flex items-center justify-between min-h-12 px-4 p-2">
+    <h3 className="text-sm font-medium">{title}</h3>
+    <p className="text-sm tabular-nums">{value}</p>
+  </div>
+);
+
 export const HistorySettings: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const osType = useOsType();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [stats, setStats] = useState<HistoryStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const entriesRef = useRef<HistoryEntry[]>([]);
   const loadingRef = useRef(false);
+  const statsRequestRef = useRef(0);
 
   // Keep ref in sync for use in IntersectionObserver callback
   useEffect(() => {
@@ -101,10 +133,27 @@ export const HistorySettings: React.FC = () => {
     }
   }, []);
 
+  const loadStats = useCallback(async () => {
+    const requestId = statsRequestRef.current + 1;
+    statsRequestRef.current = requestId;
+    try {
+      const result = await commands.getHistoryStats();
+      if (requestId !== statsRequestRef.current) {
+        return;
+      }
+      if (result.status === "ok") {
+        setStats(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to load history stats:", error);
+    }
+  }, []);
+
   // Initial load
   useEffect(() => {
     loadPage();
-  }, [loadPage]);
+    loadStats();
+  }, [loadPage, loadStats]);
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -136,19 +185,22 @@ export const HistorySettings: React.FC = () => {
       const payload: HistoryUpdatePayload = event.payload;
       if (payload.action === "added") {
         setEntries((prev) => [payload.entry, ...prev]);
+        loadStats();
       } else if (payload.action === "updated") {
         setEntries((prev) =>
           prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
         );
+        loadStats();
+      } else if (payload.action === "deleted") {
+        loadStats();
       }
-      // "deleted" and "toggled" are handled by optimistic updates only,
-      // so we intentionally ignore them here to avoid double-mutation.
+      // "toggled" is handled by optimistic updates only.
     });
 
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, []);
+  }, [loadStats]);
 
   const toggleSaved = async (id: number) => {
     // Optimistic update
@@ -272,8 +324,71 @@ export const HistorySettings: React.FC = () => {
     );
   }
 
+  const numberFormat = new Intl.NumberFormat(i18n.language);
+  const statsCard = stats ? (
+    <SettingsGroup title={t("settings.history.stats.title")}>
+      <dl className="grid grid-cols-3 gap-2 px-4 py-4">
+        <div className="text-center flex flex-col-reverse">
+          <dt className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+            {t("settings.history.stats.words")}
+          </dt>
+          <dd className="text-2xl font-medium tabular-nums">
+            {numberFormat.format(stats.total_words)}
+          </dd>
+        </div>
+        <div className="text-center flex flex-col-reverse">
+          <dt className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+            {t("settings.history.stats.timeSaved")}
+          </dt>
+          <dd className="text-2xl font-medium tabular-nums">
+            {formatTimeSaved(stats.time_saved_minutes, t)}
+          </dd>
+        </div>
+        <div className="text-center flex flex-col-reverse">
+          <dt className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+            {t("settings.history.stats.avgSpeed")}
+          </dt>
+          <dd className="text-2xl font-medium tabular-nums">
+            {stats.avg_wpm === null
+              ? t("settings.history.stats.unavailable")
+              : t("settings.history.stats.wpm", {
+                  value: numberFormat.format(stats.avg_wpm),
+                })}
+          </dd>
+        </div>
+      </dl>
+      <StatsRow
+        title={t("settings.history.stats.total")}
+        value={numberFormat.format(stats.total_dictations)}
+      />
+      <StatsRow
+        title={t("settings.history.stats.thisWeekMonth")}
+        value={`${numberFormat.format(stats.this_week)} / ${numberFormat.format(stats.this_month)}`}
+      />
+      <StatsRow
+        title={t("settings.history.stats.dailyAverage")}
+        value={numberFormat.format(stats.daily_average)}
+      />
+      <StatsRow
+        title={t("settings.history.stats.streak")}
+        value={t("settings.history.stats.streakValue", {
+          current: stats.current_streak_days,
+          best: stats.longest_streak_days,
+        })}
+      />
+      <StatsRow
+        title={t("settings.history.stats.postProcessed")}
+        value={t("settings.history.stats.postProcessedValue", {
+          count: stats.post_processed,
+          percent: stats.post_process_rate,
+        })}
+      />
+    </SettingsGroup>
+  ) : null;
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      {statsCard}
       <div className="space-y-2">
         <div className="px-4 flex items-center justify-between">
           <div>

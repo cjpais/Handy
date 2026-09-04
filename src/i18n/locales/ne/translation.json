@@ -449,7 +449,24 @@
       "retranscribe": "फेरि ट्रान्सक्राइब गर्नुहोस्",
       "retranscribeError": "फेरि ट्रान्सक्राइब गर्न सकिएन। कृपया फेरि प्रयास गर्नुहोस्।",
       "transcribing": "ट्रान्सक्राइब गरिँदैछ...",
-      "transcriptionFailed": "ट्रान्सक्रिप्सन गर्न सकिएन। रिट्राई आइकन प्रयोग गरेर फेरि ट्रान्सक्राइब गर्न सक्नुहुन्छ।"
+      "transcriptionFailed": "ट्रान्सक्रिप्सन गर्न सकिएन। रिट्राई आइकन प्रयोग गरेर फेरि ट्रान्सक्राइब गर्न सक्नुहुन्छ।",
+      "stats": {
+        "title": "Usage",
+        "words": "Words dictated",
+        "timeSaved": "Time saved",
+        "avgSpeed": "Avg speed",
+        "unavailable": "—",
+        "wpm": "{{value}} WPM",
+        "total": "Total dictations",
+        "thisWeekMonth": "This week / this month",
+        "dailyAverage": "Daily average",
+        "streak": "Streak",
+        "streakValue": "{{current}}-day current, {{best}}-day best",
+        "postProcessed": "Post-processed",
+        "postProcessedValue": "{{count}} ({{percent}}%)",
+        "timeSavedHoursMinutes": "{{hours}}h {{minutes}}m",
+        "timeSavedMinutesOnly": "{{minutes}}m"
+      }
     },
     "debug": {
       "title": "डिबग",

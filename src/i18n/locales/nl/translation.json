@@ -449,7 +449,24 @@
       "retranscribe": "Opnieuw transcriberen",
       "retranscribeError": "Opnieuw transcriberen mislukt. Probeer het opnieuw.",
       "transcribing": "Transcriberen...",
-      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram."
+      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram.",
+      "stats": {
+        "title": "Usage",
+        "words": "Words dictated",
+        "timeSaved": "Time saved",
+        "avgSpeed": "Avg speed",
+        "unavailable": "—",
+        "wpm": "{{value}} WPM",
+        "total": "Total dictations",
+        "thisWeekMonth": "This week / this month",
+        "dailyAverage": "Daily average",
+        "streak": "Streak",
+        "streakValue": "{{current}}-day current, {{best}}-day best",
+        "postProcessed": "Post-processed",
+        "postProcessedValue": "{{count}} ({{percent}}%)",
+        "timeSavedHoursMinutes": "{{hours}}h {{minutes}}m",
+        "timeSavedMinutesOnly": "{{minutes}}m"
+      }
     },
     "debug": {
       "title": "Probleemoplossing",
