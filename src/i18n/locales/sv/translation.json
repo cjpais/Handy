@@ -194,9 +194,19 @@
         "noResults": "Inga språk hittades",
         "auto": "Automatiskt"
       },
-      "pushToTalk": {
-        "label": "Tryck för att tala",
-        "description": "Håll ned för att spela in, släpp för att stoppa"
+      "shortcutActivation": {
+        "title": "Genvägens beteende",
+        "description": "Välj hur kortkommandot för transkribering startar och stoppar inspelningen.",
+        "options": {
+          "holdOrToggle": "Automatiskt",
+          "pushToTalk": "Håll",
+          "toggle": "Växla"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Håll nere för att spela in eller tryck kort för att växla",
+          "push_to_talk": "Spelar in så länge du håller genvägen nedtryckt",
+          "toggle": "Tryck på genvägen för att starta inspelningen, tryck igen för att stoppa"
+        }
       }
     },
     "models": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Sök efter uppdateringar",
-        "description": "Sök automatiskt efter nya versioner av Handy"
+        "description": "Sök automatiskt efter nya versioner av Handy",
+        "lockedDescription": "Inaktiverad av systemkonfiguration (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Ljudtema",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "Fördröjning vid klistra in (efter)",
         "description": "Fördröjning (i millisekunder) efter tangenttryckningen för att klistra in, innan ditt tidigare urklipp återställs. Öka om det gamla urklippsinnehållet klistras in i stället för transkriptionen."
+      },
+      "holdThreshold": {
+        "title": "Tröskel för hållning",
+        "description": "Endast i automatiskt läge: hur länge (i millisekunder) genvägen måste hållas nere för att räknas som hållning i stället för ett tryck. Sänk värdet om inspelningen fortsätter efter korta hållningar; höj det om avsiktliga tryck tolkas som hållning."
       },
       "reliablePaste": {
         "title": "Tillförlitlig inklistring (Beta)",

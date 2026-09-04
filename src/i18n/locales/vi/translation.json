@@ -214,9 +214,19 @@
         "noResults": "Không tìm thấy ngôn ngữ",
         "auto": "Tự động"
       },
-      "pushToTalk": {
-        "label": "Nhấn để nói",
-        "description": "Giữ để ghi âm, thả để dừng"
+      "shortcutActivation": {
+        "title": "Hành vi phím tắt",
+        "description": "Chọn cách phím tắt chuyển đổi bắt đầu và dừng ghi âm.",
+        "options": {
+          "holdOrToggle": "Tự động",
+          "pushToTalk": "Giữ",
+          "toggle": "Bật/tắt"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Giữ để ghi âm hoặc nhấn nhanh để bật/tắt",
+          "push_to_talk": "Ghi âm trong lúc bạn giữ phím tắt",
+          "toggle": "Nhấn phím tắt để bắt đầu ghi âm, nhấn lại để dừng"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Kiểm tra cập nhật",
-        "description": "Tự động kiểm tra phiên bản mới của Handy"
+        "description": "Tự động kiểm tra phiên bản mới của Handy",
+        "lockedDescription": "Đã bị vô hiệu hóa bởi cấu hình hệ thống (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Chủ đề âm thanh",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "Độ trễ dán (sau)",
         "description": "Độ trễ (tính bằng mili giây) sau khi gửi phím dán, trước khi khôi phục bảng nhớ tạm trước đó. Tăng nếu nội dung bảng nhớ tạm cũ được dán thay vì bản chép lời."
+      },
+      "holdThreshold": {
+        "title": "Ngưỡng giữ phím",
+        "description": "Chỉ áp dụng cho chế độ Tự động: phím tắt phải được giữ trong bao lâu (mili giây) để được tính là giữ thay vì nhấn nhanh. Giảm xuống nếu bản ghi vẫn tiếp tục sau khi giữ ngắn; tăng lên nếu các lần nhấn nhanh có chủ ý bị coi là giữ phím."
       },
       "reliablePaste": {
         "title": "Dán đáng tin cậy (Beta)",

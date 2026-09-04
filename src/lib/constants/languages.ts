@@ -5,6 +5,11 @@ export interface Language {
 
 export const CHINESE_LANGUAGE_CODE = "zh";
 
+const LANGUAGE_ALIASES = new Map([
+  ["nb", "no"],
+  ["fil", "tl"],
+]);
+
 export const LANGUAGES: Language[] = [
   { value: "auto", label: "Auto Detect" },
   { value: "en", label: "English" },
@@ -63,6 +68,7 @@ export const LANGUAGES: Language[] = [
   { value: "br", label: "Breton" },
   { value: "eu", label: "Basque" },
   { value: "is", label: "Icelandic" },
+  { value: "ga", label: "Irish" },
   { value: "hy", label: "Armenian" },
   { value: "ne", label: "Nepali" },
   { value: "mn", label: "Mongolian" },
@@ -99,7 +105,7 @@ export const LANGUAGES: Language[] = [
   { value: "lb", label: "Luxembourgish" },
   { value: "my", label: "Myanmar" },
   { value: "bo", label: "Tibetan" },
-  { value: "tl", label: "Tagalog" },
+  { value: "tl", label: "Filipino (Tagalog)" },
   { value: "mg", label: "Malagasy" },
   { value: "as", label: "Assamese" },
   { value: "tt", label: "Tatar" },
@@ -133,17 +139,21 @@ export const SELECTABLE_LANGUAGES: Language[] = LANGUAGES.filter(
   (language) => language.value !== CHINESE_LANGUAGE_CODE,
 );
 
-// Collapse a language tag to the base code Handy matches on, dropping any
-// BCP-47 region or script subtag: "en-US" → "en", "zh-CN" → "zh", "zh-Hant" →
-// "zh". Bare and three-letter codes ("haw") pass through unchanged. This lets
-// the picker match a model's *real* codes — which may be full locales like
-// "en-US" (e.g. Nemotron Streaming) — against Handy's canonical bare-code
-// LANGUAGES list without the backend having to mangle the codes the engine needs.
+// Collapse a language tag to the canonical recognition intent Handy exposes in
+// the UI. BCP-47 region/script subtags are dropped ("en-US" → "en",
+// "zh-Hant" → "zh"), and model-specific base-code equivalents are mapped to a
+// stable intent. Norwegian Bokmål (`nb`) maps to Norwegian (`no`), while
+// Nynorsk (`nn`) remains distinct; Filipino (`fil`) maps to Tagalog (`tl`). The
+// backend performs the same equivalence match but returns the model's real code
+// so the engine always receives exactly what it advertises.
 export const recognitionLanguage = (languageCode: string): string => {
   const separatorIndex = languageCode.indexOf("-");
-  return separatorIndex === -1
-    ? languageCode
-    : languageCode.slice(0, separatorIndex);
+  const baseCode =
+    separatorIndex === -1
+      ? languageCode
+      : languageCode.slice(0, separatorIndex);
+
+  return LANGUAGE_ALIASES.get(baseCode) ?? baseCode;
 };
 
 export const supportsLanguageCode = (
@@ -169,4 +179,5 @@ export const getUniqueCapabilityLanguages = (
 };
 
 export const getLanguageLabel = (languageCode: string): string | undefined =>
-  LANGUAGE_LABELS.get(languageCode);
+  LANGUAGE_LABELS.get(languageCode) ??
+  LANGUAGE_LABELS.get(recognitionLanguage(languageCode));

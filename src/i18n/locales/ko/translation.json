@@ -194,9 +194,19 @@
         "noResults": "언어를 찾을 수 없습니다",
         "auto": "자동"
       },
-      "pushToTalk": {
-        "label": "녹음 중 단축키 홀딩",
-        "description": "누르고 있으면 녹음, 놓으면 정지"
+      "shortcutActivation": {
+        "title": "단축키 동작",
+        "description": "음성 텍스트 변환 단축키로 녹음을 시작하고 중지하는 방식을 선택합니다.",
+        "options": {
+          "holdOrToggle": "자동",
+          "pushToTalk": "길게 누르기",
+          "toggle": "전환"
+        },
+        "descriptions": {
+          "hold_or_toggle": "길게 누르면 녹음, 탭하면 전환",
+          "push_to_talk": "단축키를 누르고 있는 동안 녹음합니다",
+          "toggle": "단축키를 탭하면 녹음을 시작하고, 다시 탭하면 중지합니다"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "업데이트 확인",
-        "description": "Handy의 새 버전을 자동으로 확인합니다"
+        "description": "Handy의 새 버전을 자동으로 확인합니다",
+        "lockedDescription": "시스템 구성에 의해 비활성화됨 (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "사운드 테마",
@@ -539,6 +550,10 @@
       "pasteDelayAfter": {
         "title": "붙여넣기 지연 (이후)",
         "description": "붙여넣기 키 입력을 보낸 후 이전 클립보드를 복원하기 전의 지연 시간(밀리초). 전사된 텍스트 대신 이전 클립보드 내용이 붙여넣어지면 늘리세요."
+      },
+      "holdThreshold": {
+        "title": "길게 누르기 기준 시간",
+        "description": "자동 모드 전용: 탭이 아닌 길게 누르기로 인식되려면 단축키를 얼마나 오래(밀리초) 누르고 있어야 하는지 설정합니다. 짧게 누른 뒤에도 녹음이 계속 켜져 있으면 낮추고, 의도한 탭이 길게 누르기로 처리되면 높이세요."
       },
       "reliablePaste": {
         "title": "안정적인 붙여넣기 (Beta)",

@@ -214,9 +214,19 @@
         "noResults": "Keine Sprachen gefunden",
         "auto": "Automatisch"
       },
-      "pushToTalk": {
-        "label": "Push-to-Talk",
-        "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      "shortcutActivation": {
+        "title": "Verhalten der Tastenkombination",
+        "description": "Wähle aus, wie das Transkriptions-Tastenkürzel die Aufnahme startet und beendet.",
+        "options": {
+          "holdOrToggle": "Automatisch",
+          "pushToTalk": "Halten",
+          "toggle": "Umschalten"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Gedrückt halten zum Aufnehmen oder antippen zum Umschalten",
+          "push_to_talk": "Nimmt auf, solange die Tastenkombination gedrückt bleibt",
+          "toggle": "Tastenkombination antippen, um die Aufnahme zu starten, erneut antippen zum Stoppen"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Nach Updates suchen",
-        "description": "Automatisch nach neuen Versionen von Handy suchen"
+        "description": "Automatisch nach neuen Versionen von Handy suchen",
+        "lockedDescription": "Durch Systemkonfiguration deaktiviert (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Sound-Thema",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "Einfügeverzögerung (nachher)",
         "description": "Verzögerung (in Millisekunden) nach dem Einfüge-Tastendruck, bevor deine vorherige Zwischenablage wiederhergestellt wird. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
+      },
+      "holdThreshold": {
+        "title": "Halte-Schwellenwert",
+        "description": "Nur im Modus „Automatisch“: wie lange (in Millisekunden) die Tastenkombination gedrückt bleiben muss, damit sie als Halten statt als Tippen zählt. Verringern, wenn die Aufnahme nach kurzem Halten weiterläuft; erhöhen, wenn bewusstes Tippen als Halten gewertet wird."
       },
       "reliablePaste": {
         "title": "Zuverlässiges Einfügen (Beta)",

@@ -214,9 +214,19 @@
         "noResults": "No se encontraron idiomas",
         "auto": "Automático"
       },
-      "pushToTalk": {
-        "label": "Presionar para hablar",
-        "description": "Mantén presionado para grabar, suelta para detener"
+      "shortcutActivation": {
+        "title": "Comportamiento del atajo",
+        "description": "Elige cómo inicia y detiene la grabación el atajo de transcripción.",
+        "options": {
+          "holdOrToggle": "Automático",
+          "pushToTalk": "Mantener",
+          "toggle": "Alternar"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Mantén pulsado para grabar o toca para alternar",
+          "push_to_talk": "Graba mientras mantienes pulsado el atajo",
+          "toggle": "Toca el atajo para empezar a grabar, tócalo de nuevo para detener"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Buscar actualizaciones",
-        "description": "Buscar automáticamente nuevas versiones de Handy"
+        "description": "Buscar automáticamente nuevas versiones de Handy",
+        "lockedDescription": "Deshabilitado por la configuración del sistema (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Tema de sonido",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "Retraso de pegado (después)",
         "description": "Retraso (en milisegundos) después de la pulsación de tecla de pegar, antes de restaurar el portapapeles anterior. Auméntelo si se pega el contenido antiguo del portapapeles en lugar de la transcripción."
+      },
+      "holdThreshold": {
+        "title": "Umbral de pulsación",
+        "description": "Solo en el modo Automático: cuánto tiempo (en milisegundos) debe mantenerse pulsado el atajo para contar como mantener en lugar de un toque. Redúcelo si la grabación sigue activa tras pulsaciones cortas; auméntalo si los toques deliberados se interpretan como mantener."
       },
       "reliablePaste": {
         "title": "Pegado fiable (Beta)",

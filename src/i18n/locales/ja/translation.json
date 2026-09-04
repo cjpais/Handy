@@ -214,9 +214,19 @@
         "noResults": "言語が見つかりません",
         "auto": "自動"
       },
-      "pushToTalk": {
-        "label": "プッシュツートーク",
-        "description": "押し続けて録音、離して停止"
+      "shortcutActivation": {
+        "title": "ショートカットの動作",
+        "description": "文字起こしのショートカットで録音を開始・停止する方法を選択します。",
+        "options": {
+          "holdOrToggle": "自動",
+          "pushToTalk": "長押し",
+          "toggle": "切り替え"
+        },
+        "descriptions": {
+          "hold_or_toggle": "長押しで録音、タップで切り替え",
+          "push_to_talk": "ショートカットを押している間だけ録音します",
+          "toggle": "ショートカットをタップすると録音を開始し、もう一度タップすると停止します"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "アップデートを確認",
-        "description": "Handy の新しいバージョンを自動的にチェック"
+        "description": "Handy の新しいバージョンを自動的にチェック",
+        "lockedDescription": "システム設定により無効化されています (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "サウンドテーマ",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "貼り付け遅延(後)",
         "description": "貼り付けキーを送信した後、以前のクリップボードを復元する前の遅延(ミリ秒)。文字起こしではなく古いクリップボードの内容が貼り付けられる場合は増やしてください。"
+      },
+      "holdThreshold": {
+        "title": "長押しのしきい値",
+        "description": "「自動」モードのみ: タップではなく長押しとみなすためにショートカットを押し続ける必要がある時間（ミリ秒）。短い長押しの後も録音が続いてしまう場合は下げ、意図したタップが長押しと判定される場合は上げてください。"
       },
       "reliablePaste": {
         "title": "確実な貼り付け(Beta)",

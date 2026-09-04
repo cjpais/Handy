@@ -214,9 +214,19 @@
         "noResults": "Nessuna lingua trovata",
         "auto": "Automatico"
       },
-      "pushToTalk": {
-        "label": "Premi per Parlare",
-        "description": "Tieni premuto per parlare, rilascia per interrompere"
+      "shortcutActivation": {
+        "title": "Comportamento della scorciatoia",
+        "description": "Scegli come la scorciatoia di trascrizione avvia e interrompe la registrazione.",
+        "options": {
+          "holdOrToggle": "Automatico",
+          "pushToTalk": "Tieni premuto",
+          "toggle": "Alterna"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Tieni premuto per registrare o tocca per alternare",
+          "push_to_talk": "Registra finché tieni premuta la scorciatoia",
+          "toggle": "Tocca la scorciatoia per avviare la registrazione, tocca di nuovo per fermarla"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Controlla aggiornamenti",
-        "description": "Controlla automaticamente la disponibilità di nuove versioni di Handy"
+        "description": "Controlla automaticamente la disponibilità di nuove versioni di Handy",
+        "lockedDescription": "Disabilitato dalla configurazione di sistema (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Tema Sonoro",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "Ritardo incolla (dopo)",
         "description": "Ritardo (in millisecondi) dopo il tasto incolla, prima di ripristinare gli appunti precedenti. Aumentare se viene incollato il vecchio contenuto degli appunti invece della trascrizione."
+      },
+      "holdThreshold": {
+        "title": "Soglia di pressione prolungata",
+        "description": "Solo in modalità Automatico: per quanto tempo (in millisecondi) la scorciatoia deve restare premuta per contare come pressione prolungata invece di un tocco. Riduci se la registrazione resta attiva dopo pressioni brevi; aumenta se i tocchi intenzionali vengono interpretati come pressioni prolungate."
       },
       "reliablePaste": {
         "title": "Incolla affidabile (Beta)",

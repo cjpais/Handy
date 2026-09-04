@@ -194,9 +194,19 @@
         "noResults": "Nenhum idioma encontrado",
         "auto": "Automático"
       },
-      "pushToTalk": {
-        "label": "Pressionar para Falar",
-        "description": "Segure para gravar, solte para parar"
+      "shortcutActivation": {
+        "title": "Comportamento do atalho",
+        "description": "Escolha como o atalho de transcrição inicia e para a gravação.",
+        "options": {
+          "holdOrToggle": "Automático",
+          "pushToTalk": "Segurar",
+          "toggle": "Alternar"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Segure para gravar ou toque para alternar",
+          "push_to_talk": "Grava enquanto você mantém o atalho pressionado",
+          "toggle": "Toque no atalho para começar a gravar, toque novamente para parar"
+        }
       }
     },
     "models": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Verificar Atualizações",
-        "description": "Verificar automaticamente novas versões do Handy"
+        "description": "Verificar automaticamente novas versões do Handy",
+        "lockedDescription": "Desativado pela configuração do sistema (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Tema de Som",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "Atraso de colagem (depois)",
         "description": "Atraso (em milissegundos) após a tecla de colar, antes de restaurar a área de transferência anterior. Aumente se o conteúdo antigo da área de transferência estiver sendo colado em vez da transcrição."
+      },
+      "holdThreshold": {
+        "title": "Limite de tempo de pressão",
+        "description": "Apenas no modo Automático: por quanto tempo (em milissegundos) o atalho precisa ficar pressionado para contar como segurar em vez de um toque. Diminua se a gravação continuar ativa após pressões curtas; aumente se toques intencionais forem tratados como segurar."
       },
       "reliablePaste": {
         "title": "Colagem confiável (Beta)",

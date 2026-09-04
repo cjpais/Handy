@@ -214,9 +214,19 @@
         "noResults": "Žádné jazyky nenalezeny",
         "auto": "Automaticky"
       },
-      "pushToTalk": {
-        "label": "Stisk a mluv",
-        "description": "Podržte pro nahrávání, uvolněte pro zastavení"
+      "shortcutActivation": {
+        "title": "Chování zkratky",
+        "description": "Zvolte, jak má zkratka přepisu spouštět a zastavovat nahrávání.",
+        "options": {
+          "holdOrToggle": "Automaticky",
+          "pushToTalk": "Podržet",
+          "toggle": "Přepínat"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Podržte pro nahrávání nebo klepněte pro přepnutí",
+          "push_to_talk": "Nahrává, dokud držíte zkratku",
+          "toggle": "Klepněte na zkratku pro zahájení nahrávání, klepněte znovu pro zastavení"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Kontrolovat aktualizace",
-        "description": "Automaticky kontrolovat nové verze Handy"
+        "description": "Automaticky kontrolovat nové verze Handy",
+        "lockedDescription": "Zakázáno systémovou konfigurací (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Zvukový motiv",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "Zpoždění vložení (po)",
         "description": "Zpoždění (v milisekundách) po klávese pro vložení, před obnovením předchozí schránky. Zvyšte, pokud se místo přepisu vkládá starý obsah schránky."
+      },
+      "holdThreshold": {
+        "title": "Práh podržení",
+        "description": "Pouze v automatickém režimu: jak dlouho (v milisekundách) musí být zkratka držena, aby se počítala jako podržení místo klepnutí. Snižte, pokud po krátkém podržení nahrávání zůstává zapnuté; zvyšte, pokud jsou záměrná klepnutí vyhodnocena jako podržení."
       },
       "reliablePaste": {
         "title": "Spolehlivé vložení (Beta)",

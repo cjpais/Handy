@@ -214,9 +214,19 @@
         "noResults": "未找到语言",
         "auto": "自动"
       },
-      "pushToTalk": {
-        "label": "按住说话",
-        "description": "按住录制，松开停止"
+      "shortcutActivation": {
+        "title": "快捷键行为",
+        "description": "选择转录快捷键开始和停止录音的方式。",
+        "options": {
+          "holdOrToggle": "自动",
+          "pushToTalk": "按住",
+          "toggle": "切换"
+        },
+        "descriptions": {
+          "hold_or_toggle": "按住录音，或轻按切换",
+          "push_to_talk": "按住快捷键期间录音",
+          "toggle": "轻按快捷键开始录音，再次轻按停止"
+        }
       }
     },
     "sound": {
@@ -482,7 +492,8 @@
       },
       "updateChecks": {
         "label": "检查更新",
-        "description": "自动检查 Handy 的新版本"
+        "description": "自动检查 Handy 的新版本",
+        "lockedDescription": "已被系统配置禁用 (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "声音主题",
@@ -544,6 +555,10 @@
       "pasteDelayAfter": {
         "title": "粘贴延迟（后）",
         "description": "发送粘贴按键后、恢复先前剪贴板前的延迟（毫秒）。如果粘贴的是旧的剪贴板内容而非转录文本，请增加此值。"
+      },
+      "holdThreshold": {
+        "title": "长按判定时长",
+        "description": "仅适用于“自动”模式：快捷键需要按住多长时间（毫秒）才算作按住而不是轻按。如果短暂按住后录音仍持续，请调低；如果有意的轻按被当作按住，请调高。"
       },
       "reliablePaste": {
         "title": "可靠粘贴（Beta）",
