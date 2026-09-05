@@ -274,6 +274,10 @@
         "label": "전사 사이에 마이크 열어 두기",
         "description": "녹음 중지 후 30초 동안 마이크 스트림을 열어 두어 연속 전사 시 지연을 줄입니다. 활성화 중 블루투스 오디오 품질이 저하될 수 있습니다."
       },
+      "airpodsMode": {
+        "label": "AirPods 모드",
+        "description": "iPhone에서 오디오를 재생 중일 때 받아쓰기를 위해 AirPods를 자동으로 Mac으로 전환합니다. 이 설정이 없으면 녹음이 무음으로 남을 수 있습니다."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper 가속",

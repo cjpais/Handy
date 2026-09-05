@@ -274,6 +274,10 @@
         "label": "Ponechat mikrofon zapnutý mezi přepisy",
         "description": "Ponechá stream mikrofonu otevřený po dobu 30 sekund po zastavení nahrávání, čímž se sníží latence při opakovaném přepisu. Může zhoršit kvalitu zvuku Bluetooth."
       },
+      "airpodsMode": {
+        "label": "Režim AirPods",
+        "description": "Automaticky přepne AirPods na Mac kvůli přepisu, když iPhone přehrává zvuk. Bez toho mohou nahrávky zůstat tiché."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Akcelerace Whisper",
