@@ -16,7 +16,8 @@
     "postProcessing": "後處理",
     "history": "歷史紀錄",
     "debug": "偵錯",
-    "about": "關於"
+    "about": "關於",
+    "close": "關閉"
   },
   "onboarding": {
     "subtitle": "首先，請選擇一種模型",

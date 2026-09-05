@@ -16,7 +16,8 @@
     "postProcessing": "Post proceso",
     "history": "Historial",
     "debug": "Depuración",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "close": "Cerrar"
   },
   "onboarding": {
     "subtitle": "Para comenzar, elige un modelo de transcripción",
