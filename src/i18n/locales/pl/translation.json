@@ -335,7 +335,8 @@
         "title": "Narzędzie do wpisywania",
         "description": "Wybierz, którego narzędzia do wpisywania w Linuxie użyć dla metody bezpośredniego wklejania. Auto automatycznie wykryje i użyje najlepszego dostępnego narzędzia dla Twojego systemu.",
         "options": {
-          "auto": "Auto (Zalecane)"
+          "auto": "Auto (Zalecane)",
+          "internal": "Wbudowany"
         }
       },
       "clipboardHandling": {

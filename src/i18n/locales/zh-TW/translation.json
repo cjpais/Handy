@@ -335,7 +335,8 @@
         "title": "輸入工具",
         "description": "選擇在直接貼上方式下使用的 Linux 輸入工具。選擇自動會自動偵測並使用系統中可用的最佳工具",
         "options": {
-          "auto": "自動（推薦）"
+          "auto": "自動（推薦）",
+          "internal": "內建"
         }
       },
       "clipboardHandling": {
