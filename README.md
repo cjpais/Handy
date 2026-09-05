@@ -138,7 +138,7 @@ If you switch between a MacBook keyboard and an external one, pick a shortcut bu
 **Wayland Support (Linux):**
 
 - Limited support for Wayland display server
-- Requires [`wtype`](https://github.com/atx/wtype) or [`dotool`](https://sr.ht/~geb/dotool/) for text input to work correctly (see [Linux Notes](#linux-notes) below for installation)
+- Requires [`wtype`](https://github.com/atx/wtype), [`dotool`](https://sr.ht/~geb/dotool/), or [`ydotool`](https://github.com/ReimuNotMoe/ydotool) for text input to work correctly (see [Linux Notes](#linux-notes) below)
 
 ### Linux Notes
 
@@ -146,15 +146,35 @@ If you switch between a MacBook keyboard and an external one, pick a shortcut bu
 
 For reliable text input on Linux, install the appropriate tool for your display server:
 
-| Display Server | Recommended Tool | Install Command                                    |
-| -------------- | ---------------- | -------------------------------------------------- |
-| X11            | `xdotool`        | `sudo apt install xdotool`                         |
-| Wayland        | `wtype`          | `sudo apt install wtype`                           |
-| Both           | `dotool`         | `sudo apt install dotool` (requires `input` group) |
+| Display Server            | Recommended Tool | Install Command                                    |
+| ------------------------- | ---------------- | -------------------------------------------------- |
+| X11                       | `xdotool`        | `sudo apt install xdotool`                         |
+| Wayland (where supported) | `wtype`          | `sudo apt install wtype`                           |
+| Both                      | `dotool`         | `sudo apt install dotool` (requires `input` group) |
 
 - **X11**: Install `xdotool` for both direct typing and clipboard paste shortcuts
-- **Ubuntu 26.04**: Has Wayland display server by default. `wtype` does not work, you need to install `ydotool` and configure systemd as described [here](https://github.com/cjpais/Handy/pull/557#issuecomment-3781249267).
-- **Wayland**: Install `wtype` (preferred) or `dotool` for text input to work correctly
+- **Ubuntu 26.04 with GNOME Wayland**: GNOME does not support the protocol required by `wtype`. The following setup was tested with Handy's `.deb` package:
+
+  ```bash
+  sudo apt install ydotool
+  systemctl --user enable --now ydotool.service
+  ```
+
+  Handy releases from 0.6.11 through 0.9.6 can use `ydotool`, but may select an installed `wtype` first. If the debug log shows `Using wtype for key combo`, uninstall `wtype` if you do not need it elsewhere. This selection issue is fixed on `main` by [#1276](https://github.com/cjpais/Handy/pull/1276).
+
+  For this setup, under **Settings > Advanced**, set **Paste Method** to **Clipboard (Ctrl+V)**. Verify the service and device access with:
+
+  ```bash
+  systemctl --user is-active ydotool.service
+  test -w /dev/uinput || echo "ERROR: /dev/uinput is not writable"
+  ```
+
+  If `/dev/uinput` is not writable, run `sudo usermod -aG input "$(id -un)"`, then log out and back in.
+
+  > **Security:** `ydotool` allows processes with access to its socket to inject system-wide input. Membership in the `input` group also grants broad access to input devices. This trades some of Wayland's isolation for reliable automation; [#689](https://github.com/cjpais/Handy/pull/689) explores a portal-based alternative.
+
+  To confirm Handy used `ydotool` for clipboard paste, enable debug mode and look for `Using ydotool for key combo` and any error immediately after it. If pasting still fails, recheck the commands above and see [#1742](https://github.com/cjpais/Handy/issues/1742).
+- **Wayland**: Install `wtype` (preferred where supported) or `dotool` for text input to work correctly
 - **dotool setup**: Requires adding your user to the `input` group: `sudo usermod -aG input $USER` (then log out and back in)
 
 Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
