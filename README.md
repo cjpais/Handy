@@ -483,6 +483,44 @@ Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
 
 If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
 
+### Recording overlay is an empty outlined window on Hyprland / Omarchy
+
+If the microphone records but the overlay is an empty outlined rectangle or
+extends below the screen, check whether Handy is running through XWayland:
+
+```bash
+hyprctl clients
+```
+
+Find the Handy window and check `xwayland`. When it is `1` (or `true` in
+`hyprctl clients -j`), Handy cannot use GTK layer shell. Its overlay falls back to
+a regular window, which can be resized, decorated, or focused by the compositor.
+On Omarchy with 150% display scaling, this fallback was observed to extend below
+the screen, leaving the microphone bars out of view.
+
+For a native Linux installation with the dependencies in [BUILD.md](BUILD.md#linux),
+fully quit Handy from its tray menu, then launch it with:
+
+```bash
+GDK_BACKEND=wayland handy
+```
+
+Ensure `HANDY_NO_GTK_LAYER_SHELL` is unset and choose **Minimal** or **Live** in the
+overlay settings. During recording, `hyprctl layers` should show a
+`gtk-layer-shell` surface belonging to Handy. The microphone indicator should now
+appear without a normal window border. Launching a second instance without first
+quitting the running one only reopens its window; it does not change its backend.
+
+If this resolves the problem, apply `GDK_BACKEND=wayland` to Handy's launcher
+rather than exporting it globally. Keep global recording shortcuts in Hyprland
+using the [CLI flags](#cli-parameters).
+
+**AppImage caveat:** the 0.9.6 AppImage's generated GTK launch hook forcibly sets
+`GDK_BACKEND=x11`, overriding a value supplied by the shell. Passing the command
+above to that AppImage is therefore insufficient. Use a native installation
+(see [Linux Install](BUILD.md#linux-install-from-source)) to test this workaround.
+This does not require disabling the recording overlay or changing its animation.
+
 ### Handy Starts or Stops Recording on Its Own (Linux)
 
 Handy 0.9.4 and earlier listened for `SIGUSR1` as a remote-control trigger. WebKitGTK — the webview engine embedded in Handy on Linux — uses that same signal internally to coordinate JavaScript garbage collection, so GC cycles were misread as hotkey presses: recordings started on their own, or real dictations were cut off mid-sentence (typically ~2 minutes in). See [#1660](https://github.com/cjpais/Handy/issues/1660).
