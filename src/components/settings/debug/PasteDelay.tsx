@@ -34,7 +34,7 @@ export const PasteDelay: React.FC<PasteDelayProps> = ({
       onReset={() => resetSetting(settingKey)}
       isResetting={isUpdating(settingKey)}
       min={10}
-      max={500}
+      max={5000}
       step={10}
       label={t(labelKey)}
       description={t(descriptionKey)}
