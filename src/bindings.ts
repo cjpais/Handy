@@ -530,6 +530,15 @@ async showMainWindowCommand() : Promise<Result<null, string>> {
 async cancelOperation() : Promise<void> {
     await TAURI_INVOKE("cancel_operation");
 },
+/**
+ * Frontend acknowledgement that the hide-overlay unmount has been committed
+ * to the DOM. The overlay hide chain waits for this before parking the
+ * surface; a command (not an event) so it is delivered even while the GTK
+ * main thread is busy with the paste burst.
+ */
+async overlayHiddenAck() : Promise<void> {
+    await TAURI_INVOKE("overlay_hidden_ack");
+},
 async isPortable() : Promise<boolean> {
     return await TAURI_INVOKE("is_portable");
 },

@@ -26,6 +26,7 @@ mod tray_i18n;
 mod utils;
 
 pub use cli::CliArgs;
+
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
@@ -712,6 +713,7 @@ pub fn run(cli_args: CliArgs) {
             trigger_update_check,
             show_main_window_command,
             commands::cancel_operation,
+            commands::overlay_hidden_ack,
             commands::is_portable,
             commands::is_update_checks_locked,
             commands::get_app_dir_path,
