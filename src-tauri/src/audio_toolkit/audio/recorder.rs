@@ -155,6 +155,7 @@ impl AudioRecorder {
         self.selected_channel = channel.map(usize::from);
     }
 
+    #[allow(deprecated)] // cpal 0.17 deprecated Device::name(); kept for device-name cache key + logging
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
         if self.worker_handle.is_some() {
             if !self.needs_reopen() {
@@ -208,7 +209,7 @@ impl AudioRecorder {
                 };
                 let config_elapsed = config_started.elapsed();
 
-                let sample_rate = config.sample_rate().0;
+                let sample_rate = config.sample_rate();
                 let channels = config.channels() as usize;
 
                 log::info!(
