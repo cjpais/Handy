@@ -483,6 +483,19 @@ Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
 
 If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
 
+### Vulkan Overlays and Capture Tools on Windows (`HANDY_KEEP_VULKAN_IMPLICIT_LAYERS`)
+
+On Windows, Handy asks the Vulkan loader to skip implicit layers to avoid crashes caused by overlay and capture hooks ([#2049](https://github.com/cjpais/Handy/issues/2049)). GPU acceleration remains enabled; this does not change system-wide settings.
+
+To opt out for GPU selection or debugging tools, fully quit Handy (including the tray icon), then run both commands in the same PowerShell window:
+
+```powershell
+$env:HANDY_KEEP_VULKAN_IMPLICIT_LAYERS = "1"
+& "$env:ProgramFiles\Handy\handy.exe"
+```
+
+Adjust the executable path if needed. This override only applies to apps launched from that PowerShell session, not the Start menu. Handy also preserves any existing `VK_LOADER_LAYERS_DISABLE` value.
+
 ### Handy Starts or Stops Recording on Its Own (Linux)
 
 Handy 0.9.4 and earlier listened for `SIGUSR1` as a remote-control trigger. WebKitGTK — the webview engine embedded in Handy on Linux — uses that same signal internally to coordinate JavaScript garbage collection, so GC cycles were misread as hotkey presses: recordings started on their own, or real dictations were cut off mid-sentence (typically ~2 minutes in). See [#1660](https://github.com/cjpais/Handy/issues/1660).
