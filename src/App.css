@@ -61,10 +61,17 @@
   }
 }
 
+/* Keep onboarding centered when classic scrollbars consume layout space.
+   Overlay scrollbars do not reserve a gutter, so this has no effect on them. */
+:root[data-onboarding-active] {
+  scrollbar-gutter: stable both-edges;
+}
+
 /* macOS - tint native overlay scrollbar thumb */
 :root[data-platform="macos"] {
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 14px;
