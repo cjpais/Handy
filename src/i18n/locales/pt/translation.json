@@ -594,6 +594,13 @@
         "button": "Pré-visualizar",
         "noNotes": "Nenhuma nota de versão incorporada encontrada",
         "error": "Falha ao pré-visualizar as notas de versão"
+      },
+      "onboardingPreview": {
+        "title": "Pré-visualizar configuração inicial",
+        "description": "Pré-visualize os ecrãs de configuração sem alterar permissões, modelos ou o estado de conclusão",
+        "permissionsButton": "Permissões",
+        "modelsButton": "Seleção de modelo",
+        "exitButton": "Sair da pré-visualização"
       }
     },
     "about": {

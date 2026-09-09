@@ -15,6 +15,7 @@ import { Keyboard, Mic, Check, Loader2 } from "lucide-react";
 
 interface AccessibilityOnboardingProps {
   onComplete: () => void;
+  preview?: boolean;
 }
 
 type PermissionStatus = "checking" | "needed" | "waiting" | "granted";
@@ -27,6 +28,7 @@ interface PermissionsState {
 
 const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
   onComplete,
+  preview = false,
 }) => {
   const { t } = useTranslation();
   const refreshAudioDevices = useSettingsStore(
@@ -85,6 +87,16 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
           : "other";
 
     setPermissionPlatform(nextPlatform);
+
+    // Debug previews are intentionally inert: show the permission request UI
+    // without checking or changing operating-system permissions.
+    if (preview) {
+      setPermissions({
+        accessibility: nextPlatform === "macos" ? "needed" : "granted",
+        microphone: nextPlatform === "other" ? "granted" : "needed",
+      });
+      return;
+    }
 
     // Skip immediately on unsupported platforms
     if (nextPlatform === "other") {
@@ -156,7 +168,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
     };
 
     checkInitial();
-  }, [completeOnboarding, hasWindowsMicrophoneAccess, onComplete, t]);
+  }, [completeOnboarding, hasWindowsMicrophoneAccess, onComplete, preview, t]);
 
   // Polling for permissions after user clicks a button
   const startPolling = useCallback(() => {
@@ -248,6 +260,8 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
   }, []);
 
   const handleGrantAccessibility = async () => {
+    if (preview) return;
+
     try {
       await requestAccessibilityPermission();
       setPermissions((prev) => ({ ...prev, accessibility: "waiting" }));
@@ -259,6 +273,8 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
   };
 
   const handleGrantMicrophone = async () => {
+    if (preview) return;
+
     try {
       if (isWindows) {
         await commands.openMicrophonePrivacySettings();

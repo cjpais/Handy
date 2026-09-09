@@ -10,9 +10,13 @@ import { useModelStore } from "../../stores/modelStore";
 
 interface OnboardingProps {
   onModelSelected: () => void;
+  preview?: boolean;
 }
 
-const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
+const Onboarding: React.FC<OnboardingProps> = ({
+  onModelSelected,
+  preview = false,
+}) => {
   const { t } = useTranslation();
   const {
     models,
@@ -60,6 +64,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
   // Watch for the selected model to finish downloading + verifying + extracting
   useEffect(() => {
+    // Debug previews are inert: never switch the user's active model. Guarded
+    // here as well as in the handlers because this is where the backend call
+    // actually happens.
+    if (preview) return;
+
     if (!selectedModelId) {
       hasStartedSelection.current = false;
       return;
@@ -98,10 +107,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     extractingModels,
     selectModel,
     onModelSelected,
+    preview,
     t,
   ]);
 
   const handleDownloadModel = async (modelId: string) => {
+    if (preview) return;
+
     setSelectedModelId(modelId);
 
     // Error toast is handled centrally by the model-download-failed event listener
@@ -113,6 +125,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   };
 
   const handleCancelDownload = async (modelId: string) => {
+    if (preview) return;
+
     const success = await cancelDownload(modelId);
     if (success) {
       setSelectedModelId(null);
@@ -120,6 +134,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   };
 
   const handleSelectExistingModel = (modelId: string) => {
+    if (preview) return;
+
     setSelectedModelId(modelId);
   };
 

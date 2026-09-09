@@ -594,6 +594,13 @@
         "button": "Anteprima",
         "noNotes": "Nessuna nota di rilascio inclusa trovata",
         "error": "Impossibile mostrare l'anteprima delle note di rilascio"
+      },
+      "onboardingPreview": {
+        "title": "Anteprima della configurazione iniziale",
+        "description": "Visualizza le schermate di configurazione senza modificare autorizzazioni, modelli o stato di completamento",
+        "permissionsButton": "Autorizzazioni",
+        "modelsButton": "Selezione del modello",
+        "exitButton": "Esci dall’anteprima"
       }
     },
     "about": {
