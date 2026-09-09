@@ -594,6 +594,13 @@
         "button": "Podgląd",
         "noNotes": "Nie znaleziono dołączonych informacji o wydaniu",
         "error": "Nie udało się wyświetlić podglądu informacji o wydaniu"
+      },
+      "onboardingPreview": {
+        "title": "Podgląd konfiguracji początkowej",
+        "description": "Wyświetl ekrany konfiguracji początkowej bez zmiany uprawnień, modeli ani stanu ukończenia",
+        "permissionsButton": "Uprawnienia",
+        "modelsButton": "Wybór modelu",
+        "exitButton": "Zakończ podgląd"
       }
     },
     "about": {

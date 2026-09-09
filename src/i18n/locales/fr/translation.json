@@ -594,6 +594,13 @@
         "button": "Aperçu",
         "noNotes": "Aucune note de version intégrée trouvée",
         "error": "Impossible d’afficher l’aperçu des notes de version"
+      },
+      "onboardingPreview": {
+        "title": "Aperçu de la configuration initiale",
+        "description": "Prévisualisez les écrans de configuration sans modifier les autorisations, les modèles ou l’état d’achèvement",
+        "permissionsButton": "Autorisations",
+        "modelsButton": "Sélection du modèle",
+        "exitButton": "Quitter l’aperçu"
       }
     },
     "about": {

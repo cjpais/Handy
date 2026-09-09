@@ -594,6 +594,13 @@
         "button": "Vista previa",
         "noNotes": "No se encontraron notas de la versión incluidas",
         "error": "No se pudo mostrar la vista previa de las notas de la versión"
+      },
+      "onboardingPreview": {
+        "title": "Vista previa de la configuración inicial",
+        "description": "Previsualiza las pantallas de configuración inicial sin cambiar permisos, modelos ni el estado de finalización",
+        "permissionsButton": "Permisos",
+        "modelsButton": "Selección de modelo",
+        "exitButton": "Salir de la vista previa"
       }
     },
     "about": {

@@ -502,6 +502,13 @@
         "noNotes": "Geen meegeleverde release-notes gevonden",
         "error": "Voorbeeld van release-notes laden mislukt"
       },
+      "onboardingPreview": {
+        "title": "Voorbeeld van onboarding",
+        "description": "Bekijk de onboardingschermen zonder machtigingen, modellen of de voltooiingsstatus te wijzigen",
+        "permissionsButton": "Machtigingen",
+        "modelsButton": "Modelselectie",
+        "exitButton": "Voorbeeld sluiten"
+      },
       "soundTheme": {
         "label": "Geluidsthema",
         "description": "Kies een geluidsthema voor feedback bij het starten en stoppen van opnames"

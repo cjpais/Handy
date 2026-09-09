@@ -594,6 +594,13 @@
         "button": "預覽",
         "noNotes": "找不到內建版本資訊",
         "error": "無法預覽版本資訊"
+      },
+      "onboardingPreview": {
+        "title": "預覽新手引導",
+        "description": "預覽新手引導畫面，而不變更權限、模型或完成狀態",
+        "permissionsButton": "權限",
+        "modelsButton": "模型選擇",
+        "exitButton": "結束預覽"
       }
     },
     "about": {

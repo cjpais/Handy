@@ -594,6 +594,13 @@
         "button": "Xem trước",
         "noNotes": "Không tìm thấy ghi chú phát hành được đóng gói",
         "error": "Không thể xem trước ghi chú phát hành"
+      },
+      "onboardingPreview": {
+        "title": "Xem trước thiết lập ban đầu",
+        "description": "Xem trước các màn hình thiết lập mà không thay đổi quyền, mô hình hoặc trạng thái hoàn tất",
+        "permissionsButton": "Quyền",
+        "modelsButton": "Chọn mô hình",
+        "exitButton": "Thoát xem trước"
       }
     },
     "about": {

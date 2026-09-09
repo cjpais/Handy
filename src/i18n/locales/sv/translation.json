@@ -594,6 +594,13 @@
         "button": "Förhandsvisa",
         "noNotes": "Ingen medföljande versionsinformation hittades",
         "error": "Det gick inte att förhandsvisa versionsinformationen"
+      },
+      "onboardingPreview": {
+        "title": "Förhandsvisa introduktionen",
+        "description": "Förhandsvisa introduktionsskärmarna utan att ändra behörigheter, modeller eller slutförandestatus",
+        "permissionsButton": "Behörigheter",
+        "modelsButton": "Modellval",
+        "exitButton": "Avsluta förhandsvisning"
       }
     },
     "about": {

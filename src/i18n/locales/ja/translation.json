@@ -594,6 +594,13 @@
         "button": "プレビュー",
         "noNotes": "同梱リリースノートが見つかりません",
         "error": "リリースノートのプレビューに失敗しました"
+      },
+      "onboardingPreview": {
+        "title": "オンボーディングをプレビュー",
+        "description": "権限、モデル、完了状態を変更せずにオンボーディング画面をプレビューします",
+        "permissionsButton": "権限",
+        "modelsButton": "モデル選択",
+        "exitButton": "プレビューを終了"
       }
     },
     "about": {
