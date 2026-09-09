@@ -243,6 +243,10 @@
         "average": "Medelvärde av alla kanaler",
         "channel": "Kanal {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Pausa media under inspelning",
+        "description": "Pausa musik- eller videouppspelning under inspelningen och återuppta den efteråt"
+      },
       "audioFeedback": {
         "label": "Ljudåterkoppling",
         "description": "Spela upp ljud när inspelningen startar och stoppar"

@@ -243,6 +243,10 @@
         "average": "Gemiddelde van alle kanalen",
         "channel": "Kanaal {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Media pauzeren tijdens opname",
+        "description": "Muziek- of videoweergave pauzeren tijdens de opname en daarna hervatten"
+      },
       "audioFeedback": {
         "label": "Geluidsfeedback",
         "description": "Geluid afspelen wanneer de opname start en stopt"

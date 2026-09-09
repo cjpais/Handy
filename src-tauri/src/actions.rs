@@ -7,6 +7,7 @@ use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
+use crate::media_control::MediaController;
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
@@ -474,6 +475,12 @@ impl ShortcutAction for TranscribeAction {
         let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
+        // Silence whatever the user was listening to before the mic opens (and
+        // before our own start chime, which would otherwise look like playback
+        // to the "is anything playing?" probe). The controller queues the work
+        // on its own thread, so this is a channel send, not a media round-trip.
+        app.state::<Arc<MediaController>>().pause_playing_media();
+
         // Load ASR model and VAD model in parallel
         let kickoff_started = Instant::now();
         tm.initiate_model_load();
@@ -605,6 +612,8 @@ impl ShortcutAction for TranscribeAction {
             tm.cancel_stream();
             utils::hide_recording_overlay(app);
             set_tray_state(app, TrayIconState::Idle);
+            // Nothing is going to be recorded, so give the media back.
+            app.state::<Arc<MediaController>>().resume_paused_media();
             if let Some(err) = recording_error {
                 let error_type = if is_microphone_access_denied(&err) {
                     "microphone_permission_denied"
@@ -663,6 +672,10 @@ impl ShortcutAction for TranscribeAction {
 
         // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
+
+        // Recording is over, so the user's music can come back; transcription
+        // itself is silent and there is no reason to keep it waiting for that.
+        app.state::<Arc<MediaController>>().resume_paused_media();
 
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);

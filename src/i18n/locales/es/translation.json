@@ -243,6 +243,10 @@
         "average": "Promediar todos los canales",
         "channel": "Canal {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Pausar reproducción durante la grabación",
+        "description": "Pausar la música o el vídeo durante la grabación y reanudarlo después"
+      },
       "audioFeedback": {
         "label": "Retroalimentación de audio",
         "description": "Reproducir sonido cuando la grabación inicia y se detiene"

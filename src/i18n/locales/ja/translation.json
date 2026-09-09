@@ -243,6 +243,10 @@
         "average": "すべてのチャンネルの平均",
         "channel": "チャンネル{{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "録音中にメディアを一時停止",
+        "description": "録音中は音楽や動画の再生を一時停止し、終了後に再開"
+      },
       "audioFeedback": {
         "label": "オーディオフィードバック",
         "description": "録音の開始と停止時にサウンドを再生"

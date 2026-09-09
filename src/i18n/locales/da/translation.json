@@ -243,6 +243,10 @@
         "average": "Gennemsnit af alle kanaler",
         "channel": "Kanal {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Sæt medier på pause under optagelse",
+        "description": "Sæt musik- eller videoafspilning på pause under optagelsen, og genoptag den bagefter"
+      },
       "audioFeedback": {
         "label": "Lydfeedback",
         "description": "Afspil lyd, når optagelse starter og stopper"

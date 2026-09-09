@@ -243,6 +243,10 @@
         "average": "Average all channels",
         "channel": "Channel {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Pause Media While Recording",
+        "description": "Pause music or video playback while recording and resume it afterwards"
+      },
       "audioFeedback": {
         "label": "Audio Feedback",
         "description": "Play sound when recording starts and stops"

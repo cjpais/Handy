@@ -243,6 +243,10 @@
         "average": "所有通道的平均值",
         "channel": "通道 {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "录制时暂停媒体",
+        "description": "录制期间暂停音乐或视频播放，结束后继续播放"
+      },
       "audioFeedback": {
         "label": "音频反馈",
         "description": "录制开始和停止时播放声音"

@@ -243,6 +243,10 @@
         "average": "Průměr všech kanálů",
         "channel": "Kanál {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Pozastavit média při nahrávání",
+        "description": "Pozastavení přehrávání hudby nebo videa během nahrávání a jeho obnovení po skončení"
+      },
       "audioFeedback": {
         "label": "Zvuková odezva",
         "description": "Přehrát zvuk při zahájení a ukončení nahrávání"

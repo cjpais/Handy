@@ -109,6 +109,9 @@ tauri-plugin-updater = "2.10.1"
 # with proper runtime CPU dispatch. Base `transcribe-rs` (features = ["onnx"])
 # is inherited here, so Parakeet/Moonshine/etc. still run on CPU.
 windows = { version = "0.61.3", features = [
+  # System media transport controls, used to pause/resume other applications'
+  # playback around a recording (see `media_control`).
+  "Media_Control",
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
   "Win32_System_DataExchange",

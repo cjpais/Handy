@@ -243,6 +243,10 @@
         "average": "Trung bình tất cả các kênh",
         "channel": "Kênh {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Tạm dừng phương tiện khi ghi âm",
+        "description": "Tạm dừng phát nhạc hoặc video trong khi ghi âm và tiếp tục phát sau đó"
+      },
       "audioFeedback": {
         "label": "Phản hồi âm thanh",
         "description": "Phát âm thanh khi bắt đầu và kết thúc ghi âm"

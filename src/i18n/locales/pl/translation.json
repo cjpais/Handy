@@ -243,6 +243,10 @@
         "average": "Uśrednij wszystkie kanały",
         "channel": "Kanał {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Wstrzymaj multimedia podczas nagrywania",
+        "description": "Wstrzymanie odtwarzania muzyki lub wideo na czas nagrywania i wznowienie go po zakończeniu"
+      },
       "audioFeedback": {
         "label": "Informacja dźwiękowa",
         "description": "Odtwarzaj dźwięk przy rozpoczęciu i zakończeniu nagrywania"

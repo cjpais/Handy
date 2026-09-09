@@ -243,6 +243,10 @@
         "average": "Tüm kanalların ortalaması",
         "channel": "Kanal {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "Kayıt sırasında medyayı duraklat",
+        "description": "Kayıt sırasında müzik veya video oynatmayı duraklatma ve sonrasında devam ettirme"
+      },
       "audioFeedback": {
         "label": "Sesli Geri Bildirim",
         "description": "Kayıt başladığında ve bittiğinde ses çalar"

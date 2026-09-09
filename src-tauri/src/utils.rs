@@ -102,6 +102,10 @@ pub fn cancel_current_operation(app: &AppHandle) {
     set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
+    // Resume any media we paused for this recording
+    app.state::<Arc<crate::media_control::MediaController>>()
+        .resume_paused_media();
+
     // Unload model if immediate unload is enabled
     tm.maybe_unload_immediately("cancellation");
 

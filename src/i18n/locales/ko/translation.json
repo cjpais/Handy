@@ -223,6 +223,10 @@
         "average": "모든 채널 평균",
         "channel": "채널 {{n}}"
       },
+      "pauseMediaWhileRecording": {
+        "label": "녹음 중 미디어 일시정지",
+        "description": "녹음하는 동안 음악이나 동영상 재생을 일시정지하고 녹음이 끝나면 다시 재생"
+      },
       "audioFeedback": {
         "label": "오디오 피드백",
         "description": "녹음 시작 및 정지 시 소리 재생"
