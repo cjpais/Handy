@@ -335,7 +335,8 @@
         "title": "Typing Tool",
         "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
         "options": {
-          "auto": "Auto (Recommended)"
+          "auto": "Auto (Recommended)",
+          "internal": "Internal"
         }
       },
       "clipboardHandling": {

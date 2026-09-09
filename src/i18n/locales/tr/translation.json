@@ -335,7 +335,8 @@
         "title": "Yazma Aracı",
         "description": "Doğrudan yapıştırma yöntemi için hangi Linux yazma aracının kullanılacağını seçin. Otomatik seçeneği, sisteminiz için mevcut en iyi aracı algılar ve kullanır.",
         "options": {
-          "auto": "Otomatik (Önerilen)"
+          "auto": "Otomatik (Önerilen)",
+          "internal": "Dahili"
         }
       },
       "clipboardHandling": {

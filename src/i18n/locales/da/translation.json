@@ -335,7 +335,8 @@
         "title": "Skriveværktøj",
         "description": "Vælg hvilket Linux-skriveværktøj der skal bruges til Direkte indsætningsmetode. Auto registrerer og bruger automatisk det bedste tilgængelige værktøj til dit system.",
         "options": {
-          "auto": "Auto (anbefalet)"
+          "auto": "Auto (anbefalet)",
+          "internal": "Intern"
         }
       },
       "clipboardHandling": {

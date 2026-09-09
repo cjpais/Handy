@@ -23,6 +23,8 @@ mod signal_handle;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
+#[cfg(target_os = "linux")]
+mod typing;
 mod utils;
 
 pub use cli::CliArgs;

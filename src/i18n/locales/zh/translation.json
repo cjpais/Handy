@@ -335,7 +335,8 @@
         "title": "输入工具",
         "description": "选择在直接粘贴方式下使用的 Linux 输入工具。Auto 会自动检测并使用系统中可用的最佳工具。",
         "options": {
-          "auto": "Auto（推荐）"
+          "auto": "Auto（推荐）",
+          "internal": "内置"
         }
       },
       "clipboardHandling": {

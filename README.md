@@ -137,27 +137,26 @@ If you switch between a MacBook keyboard and an external one, pick a shortcut bu
 
 **Wayland Support (Linux):**
 
-- Limited support for Wayland display server
-- Requires [`wtype`](https://github.com/atx/wtype) or [`dotool`](https://sr.ht/~geb/dotool/) for text input to work correctly (see [Linux Notes](#linux-notes) below for installation)
+- Limited support for Wayland display server, mostly around global shortcuts and the recording overlay
 
 ### Linux Notes
 
-**Text Input Tools:**
+**Text Input:**
 
-For reliable text input on Linux, install the appropriate tool for your display server:
+Handy types into whichever window has focus by speaking your display server's own input
+protocol. This works on X11 and on just about any Wayland desktop: KDE Plasma, GNOME and
+its forks, Sway, Hyprland, and so on. Two things to know:
 
-| Display Server | Recommended Tool | Install Command                                    |
-| -------------- | ---------------- | -------------------------------------------------- |
-| X11            | `xdotool`        | `sudo apt install xdotool`                         |
-| Wayland        | `wtype`          | `sudo apt install wtype`                           |
-| Both           | `dotool`         | `sudo apt install dotool` (requires `input` group) |
+- **KDE Plasma** only lets programs fake input if they ask for it in an installed `.desktop`
+  file. Handy installs one for itself the first time it types, which takes about a second.
+  AppImages get a new path on every launch, so they pay that second once per launch.
+- **Desktops with no input protocol at all** are rare, but if your session offers none you
+  can run [`ydotoold`](https://github.com/ReimuNotMoe/ydotool) and Handy will go through that.
 
-- **X11**: Install `xdotool` for both direct typing and clipboard paste shortcuts
-- **Ubuntu 26.04**: Has Wayland display server by default. `wtype` does not work, you need to install `ydotool` and configure systemd as described [here](https://github.com/cjpais/Handy/pull/557#issuecomment-3781249267).
-- **Wayland**: Install `wtype` (preferred) or `dotool` for text input to work correctly
-- **dotool setup**: Requires adding your user to the `input` group: `sudo usermod -aG input $USER` (then log out and back in)
-
-Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
+If the built-in method fails for some reason, install `wtype`, `kwtype`, `dotool`, `ydotool` or
+`xdotool` and Handy will fall back to it, or pick one explicitly under
+_Settings → Advanced → Typing Tool_. When troubleshooting, `HANDY_TYPING_PROTOCOL` pins the
+protocol to `virtual-keyboard`, `fake-input`, `remote-desktop`, `uinput` or `xtest`.
 
 **Other Notes:**
 

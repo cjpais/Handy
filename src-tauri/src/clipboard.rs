@@ -2,6 +2,8 @@ use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+#[cfg(target_os = "linux")]
+use crate::typing;
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
@@ -121,6 +123,13 @@ fn paste_via_clipboard(
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
+    if typing::try_auto("send the key combo", || {
+        typing::send_key_combo(paste_method)
+    }) {
+        info!("Using built-in input for key combo");
+        return Ok(true);
+    }
+
     if is_wayland() {
         // Wayland: prefer wtype (but not on KDE or GNOME), then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
@@ -165,6 +174,11 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
     // If user specified a tool, try only that one
     if preferred_tool != TypingTool::Auto {
         return match preferred_tool {
+            TypingTool::Internal => {
+                info!("Using user-specified built-in input");
+                typing::type_text(text)?;
+                Ok(true)
+            }
             TypingTool::Wtype if is_wtype_available() => {
                 info!("Using user-specified wtype");
                 type_text_via_wtype(text)?;
@@ -197,7 +211,14 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
         };
     }
 
-    // Auto mode - existing fallback chain
+    // Auto mode: the built-in input leads, because it speaks every protocol the
+    // tools below do and needs no install. They stay as a backstop for sessions
+    // it cannot reach.
+    if typing::try_auto("type the text", || typing::type_text(text)) {
+        info!("Using built-in input for direct text input");
+        return Ok(true);
+    }
+
     if is_wayland() {
         // KDE Wayland: prefer kwtype (uses KDE Fake Input protocol, supports umlauts)
         if is_kde_wayland() && is_kwtype_available() {
@@ -245,7 +266,7 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
 /// Always includes "auto" as the first entry.
 #[cfg(target_os = "linux")]
 pub fn get_available_typing_tools() -> Vec<String> {
-    let mut tools = vec!["auto".to_string()];
+    let mut tools = vec!["auto".to_string(), "internal".to_string()];
     if is_wtype_available() {
         tools.push("wtype".to_string());
     }

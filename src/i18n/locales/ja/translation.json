@@ -335,7 +335,8 @@
         "title": "タイピングツール",
         "description": "直接貼り付け方式で使用する Linux のタイピングツールを選択します。Auto は自動的に最適なツールを検出して使用します。",
         "options": {
-          "auto": "自動 (推奨)"
+          "auto": "自動 (推奨)",
+          "internal": "内蔵"
         }
       },
       "clipboardHandling": {

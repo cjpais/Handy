@@ -335,7 +335,8 @@
         "title": "Eingabetool",
         "description": "Wähle, welches Linux-Eingabetool für die Direkt-Einfügen-Methode verwendet werden soll. Auto erkennt und verwendet automatisch das beste verfügbare Tool für dein System.",
         "options": {
-          "auto": "Auto (Empfohlen)"
+          "auto": "Auto (Empfohlen)",
+          "internal": "Intern"
         }
       },
       "clipboardHandling": {
