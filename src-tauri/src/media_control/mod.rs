@@ -15,10 +15,12 @@
 //! - Linux: MPRIS over D-Bus, via `playerctl` when present and plain
 //!   `dbus-send` otherwise. Same coverage as the media keys.
 //! - macOS: AppleScript against the scriptable players (Music, Spotify, TV,
-//!   VLC, QuickTime Player). Browsers cannot be reached this way — macOS has no
-//!   public API to pause another application's media session, and synthetic
-//!   media-key events are no longer delivered — so browser playback is left
-//!   alone rather than half-handled.
+//!   VLC, QuickTime Player), plus Chromium-family browsers through the
+//!   JavaScript their dictionary can run — the browser part only works if the
+//!   user has turned on *View > Developer > Allow JavaScript from Apple
+//!   Events*, which is off by default. macOS offers nothing better: there is no
+//!   public API for another application's media session, and synthetic
+//!   media-key events are no longer delivered.
 //!
 //! The work runs on a dedicated thread: a backend can shell out or block on
 //! IPC, and neither must ever be in the path between the shortcut and the

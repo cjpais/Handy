@@ -4,9 +4,14 @@
 //! macOS: `MediaRemote` is private and gated, and synthetic
 //! `NSEventTypeSystemDefined` media-key events are no longer delivered to the
 //! now-playing application. What is left is AppleScript, so this backend drives
-//! the players that expose a scripting dictionary. Browser playback (YouTube
-//! and friends) is out of reach and is deliberately left alone rather than
-//! half-handled.
+//! the players that expose a scripting dictionary, plus Chromium-family
+//! browsers through the JavaScript their dictionary can run.
+//!
+//! The browser path only works if the user has ticked *View > Developer > Allow
+//! JavaScript from Apple Events* in the browser — Chromium keeps that off by
+//! default, and nothing else reaches a `<video>` from outside the browser. When
+//! it is off the browser simply refuses the call and we move on, so the feature
+//! degrades to "dedicated players only" rather than failing.
 //!
 //! Two things keep that cheap and quiet:
 //!
@@ -83,19 +88,132 @@ const PLAYERS: &[ScriptablePlayer] = &[
     },
 ];
 
+/// Chromium-family browsers. Their scripting dictionary can run JavaScript in a
+/// tab, which is the only way to reach an HTML5 `<video>` from outside the
+/// browser. Safari is absent: its equivalent (`do JavaScript`) is gated behind
+/// *Develop > Allow JavaScript from Apple Events* too, but it additionally
+/// requires the whole Develop menu, and its tab model has no stable id to
+/// resume against.
+const CHROMIUM_BROWSERS: &[&str] = &[
+    "Brave Browser",
+    "Google Chrome",
+    "Chromium",
+    "Microsoft Edge",
+    "Vivaldi",
+];
+
+/// Pauses the media playing in a page and leaves a flag on `window` saying we
+/// did. Written with single quotes only: it is embedded in an AppleScript
+/// string literal.
+///
+/// The flag lives on the page rather than on the elements because players
+/// rebuild their `<video>`: YouTube swaps the element out from under a marked
+/// one, and an attribute would go with it. A page-level flag survives that.
+const PAUSE_MEDIA_JS: &str = "(function(){var n=0;var ms=document.querySelectorAll('video,audio');for(var i=0;i<ms.length;i++){var m=ms[i];if(!m.paused&&!m.ended&&m.currentTime>0){m.pause();n++;}}if(n>0){window.__handyPausedMedia=1;}return n>0;})()";
+
+/// Undoes [`PAUSE_MEDIA_JS`], and does nothing at all in a page we never
+/// touched — which is what makes it safe to run over every tab.
+const RESUME_MEDIA_JS: &str = "(function(){if(!window.__handyPausedMedia)return false;delete window.__handyPausedMedia;var ms=document.querySelectorAll('video,audio');for(var i=0;i<ms.length;i++){var m=ms[i];if(m.paused&&!m.ended&&m.currentTime>0){var p=m.play();if(p&&p.catch){p.catch(function(){});}}}return true;})()";
+
+/// Prefix marking a browser in the paused list, as `browser:<app>`.
+const BROWSER_PREFIX: &str = "browser:";
+
+/// Pauses playing media anywhere in one browser, reporting whether it paused
+/// anything.
+///
+/// Only `http(s)` tabs are scripted, so internal pages and extensions are left
+/// alone. Which tab it was is deliberately not recorded: Chromium's tab `id` is
+/// not stable (it changes as a single-page app navigates), so the resume finds
+/// its way back through the page-level flag instead.
+fn pause_browser_media(browser: &str) -> Option<String> {
+    let script = format!(
+        "with timeout of 4 seconds\n\
+         set didPause to false\n\
+         tell application \"{browser}\"\n\
+         \trepeat with w in windows\n\
+         \t\trepeat with t in tabs of w\n\
+         \t\t\tif URL of t starts with \"http\" then\n\
+         \t\t\t\ttry\n\
+         \t\t\t\t\tif (execute t javascript \"{PAUSE_MEDIA_JS}\") is true then\n\
+         \t\t\t\t\t\tset didPause to true\n\
+         \t\t\t\t\tend if\n\
+         \t\t\t\tend try\n\
+         \t\t\tend if\n\
+         \t\tend repeat\n\
+         \tend repeat\n\
+         end tell\n\
+         end timeout\n\
+         return didPause"
+    );
+
+    // A browser with "Allow JavaScript from Apple Events" off refuses every
+    // `execute`, which the per-tab `try` swallows: the script still succeeds and
+    // simply reports no tab. Only a wholesale failure (no automation permission,
+    // a timeout) lands here.
+    let Some(output) = run_osascript(&script) else {
+        debug!("Could not script {browser}");
+        return None;
+    };
+
+    output
+        .trim()
+        .eq("true")
+        .then(|| format!("{BROWSER_PREFIX}{browser}"))
+}
+
+/// Resumes what we paused in one browser.
+///
+/// The script is offered to every `http(s)` tab; [`RESUME_MEDIA_JS`] no-ops in
+/// any page that does not carry our flag, so this needs no record of which tab
+/// it was — and therefore survives the user moving, closing or navigating tabs
+/// mid-recording.
+fn resume_browser_media(browser: &str) {
+    let script = format!(
+        "with timeout of 4 seconds\n\
+         tell application \"{browser}\"\n\
+         \trepeat with w in windows\n\
+         \t\trepeat with t in tabs of w\n\
+         \t\t\tif URL of t starts with \"http\" then\n\
+         \t\t\t\ttry\n\
+         \t\t\t\t\texecute t javascript \"{RESUME_MEDIA_JS}\"\n\
+         \t\t\t\tend try\n\
+         \t\t\tend if\n\
+         \t\tend repeat\n\
+         \tend repeat\n\
+         end tell\n\
+         end timeout"
+    );
+    run_osascript(&script);
+}
+
 pub fn pause_playing_media() -> Vec<String> {
     if !is_output_audio_active() {
         return Vec::new();
     }
 
-    let running = running_players();
-    if running.is_empty() {
-        debug!("Audio is playing but no scriptable player is running");
+    let Some(processes) = command_output("/bin/ps", &["-Ao", "comm="]) else {
+        warn!("Failed to list running processes; skipping media control");
         return Vec::new();
+    };
+
+    let mut paused = pause_scriptable_players(&processes);
+    for browser in CHROMIUM_BROWSERS
+        .iter()
+        .filter(|browser| is_running(&processes, browser))
+    {
+        paused.extend(pause_browser_media(browser));
     }
 
-    running
-        .into_iter()
+    if paused.is_empty() {
+        debug!("Audio is playing but nothing reachable reported itself as playing");
+    }
+    paused
+}
+
+fn pause_scriptable_players(processes: &str) -> Vec<String> {
+    PLAYERS
+        .iter()
+        .filter(|player| is_running(processes, player.app))
         .filter(|player| {
             let script = format!(
                 "with timeout of 3 seconds\n\
@@ -118,6 +236,14 @@ pub fn pause_playing_media() -> Vec<String> {
 }
 
 pub fn resume_media(players: &[String]) {
+    for browser in players
+        .iter()
+        .filter_map(|entry| entry.strip_prefix(BROWSER_PREFIX))
+        .filter(|browser| CHROMIUM_BROWSERS.contains(browser))
+    {
+        resume_browser_media(browser);
+    }
+
     for app in players {
         let Some(player) = PLAYERS.iter().find(|player| player.app == app) else {
             continue;
@@ -135,23 +261,15 @@ pub fn resume_media(players: &[String]) {
     }
 }
 
-/// The players that are currently running, in [`PLAYERS`] order.
+/// Whether an application is running, given one `ps` listing.
 ///
-/// Matching on the executable path rather than `pgrep -x` keeps this to a
-/// single process spawn on the latency-sensitive pause path.
-fn running_players() -> Vec<&'static ScriptablePlayer> {
-    let Some(processes) = command_output("/bin/ps", &["-Ao", "comm="]) else {
-        warn!("Failed to list running processes; skipping media control");
-        return Vec::new();
-    };
-
-    PLAYERS
-        .iter()
-        .filter(|player| {
-            let executable = format!("/{app}.app/Contents/MacOS/{app}", app = player.app);
-            processes.lines().any(|line| line.ends_with(&executable))
-        })
-        .collect()
+/// Matching the executable path inside the bundle rather than shelling out to
+/// `pgrep` per application keeps the latency-sensitive pause path to a single
+/// process spawn, and sidesteps the 16-character limit on accounting names
+/// ("QuickTime Player" is exactly 16).
+fn is_running(processes: &str, app: &str) -> bool {
+    let executable = format!("/{app}.app/Contents/MacOS/{app}");
+    processes.lines().any(|line| line.ends_with(&executable))
 }
 
 /// Runs a script, killing it if it outstays [`SCRIPT_TIMEOUT`]. Returns its
