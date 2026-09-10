@@ -154,6 +154,11 @@ pub enum PasteMethod {
     ShiftInsert,
     CtrlShiftV,
     ExternalScript,
+    /// POST the transcript to `webhook_url` before pasting. A receiver that
+    /// answers `{"handled": true}` consumes the text and Handy pastes nothing;
+    /// anything else (including an unreachable endpoint) falls back to a
+    /// regular clipboard paste. Available on every platform.
+    Webhook,
 }
 
 /// How the transcribe shortcut's key events drive a recording.
@@ -486,6 +491,14 @@ pub struct AppSettings {
     pub typing_tool: TypingTool,
     #[serde(default)]
     pub external_script_path: Option<String>,
+    /// Endpoint POSTed by `PasteMethod::Webhook`.
+    #[serde(default)]
+    pub webhook_url: Option<String>,
+    /// Total budget for the `PasteMethod::Webhook` round trip. Kept short: the
+    /// request blocks the main thread, so a dead endpoint must not stall the
+    /// paste for longer than a barely perceptible pause.
+    #[serde(default = "default_webhook_timeout_ms")]
+    pub webhook_timeout_ms: u64,
     #[serde(default = "default_filler_word_removal_enabled")]
     pub filler_word_removal_enabled: bool,
     #[serde(default)]
@@ -603,6 +616,10 @@ fn default_paste_delay_ms() -> u64 {
 
 fn default_paste_delay_after_ms() -> u64 {
     60
+}
+
+fn default_webhook_timeout_ms() -> u64 {
+    400
 }
 
 fn default_auto_submit() -> bool {
@@ -961,6 +978,8 @@ pub fn get_default_settings() -> AppSettings {
         reliable_paste: false,
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        webhook_url: None,
+        webhook_timeout_ms: default_webhook_timeout_ms(),
         filler_word_removal_enabled: default_filler_word_removal_enabled(),
         custom_filler_words: None,
         transcribe_accelerator: TranscribeAcceleratorSetting::default(),

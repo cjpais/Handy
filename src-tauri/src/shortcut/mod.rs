@@ -895,6 +895,7 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
         "shift_insert" => PasteMethod::ShiftInsert,
         "ctrl_shift_v" => PasteMethod::CtrlShiftV,
         "external_script" => PasteMethod::ExternalScript,
+        "webhook" => PasteMethod::Webhook,
         other => {
             warn!("Invalid paste method '{}', defaulting to ctrl_v", other);
             PasteMethod::CtrlV
@@ -947,6 +948,24 @@ pub fn change_external_script_path_setting(
 ) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.external_script_path = path;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_webhook_url_setting(app: AppHandle, url: Option<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.webhook_url = url;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_webhook_timeout_ms_setting(app: AppHandle, timeout_ms: u64) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.webhook_timeout_ms = timeout_ms;
     settings::write_settings(&app, settings);
     Ok(())
 }

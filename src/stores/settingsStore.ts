@@ -148,6 +148,10 @@ const settingUpdaters: {
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>
     commands.changeExternalScriptPathSetting(value as string | null),
+  webhook_url: (value) =>
+    commands.changeWebhookUrlSetting(value as string | null),
+  webhook_timeout_ms: (value) =>
+    commands.changeWebhookTimeoutMsSetting(value as number),
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
   auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),

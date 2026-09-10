@@ -74,10 +74,17 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
         });
       }
 
+      // The webhook is a plain HTTP POST, so it works on every platform.
+      options.push({
+        value: "webhook",
+        label: t("settings.advanced.pasteMethod.options.webhook"),
+      });
+
       return options;
     };
 
     const externalScriptPath = getSetting("external_script_path") || "";
+    const webhookUrl = getSetting("webhook_url") || "";
 
     const pasteMethodOptions = getPasteMethodOptions(osType);
 
@@ -109,6 +116,17 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
                 "settings.advanced.pasteMethod.externalScriptPlaceholder",
               )}
               disabled={isUpdating("external_script_path")}
+            />
+          )}
+          {selectedMethod === "webhook" && (
+            <Input
+              type="text"
+              value={webhookUrl}
+              onChange={(e) => updateSetting("webhook_url", e.target.value)}
+              placeholder={t(
+                "settings.advanced.pasteMethod.webhookUrlPlaceholder",
+              )}
+              disabled={isUpdating("webhook_url")}
             />
           )}
         </div>

@@ -4,8 +4,8 @@ use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
+use serde::{Deserialize, Serialize};
 use std::process::Command;
-#[cfg(target_os = "linux")]
 use std::sync::OnceLock;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -707,6 +707,109 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
     Ok(())
 }
 
+/// Request body of the pre-paste webhook. The shape is a wire contract shared
+/// with existing receivers (see the `handy-paste.sh` hook this replaces), so
+/// field names and values must not change.
+#[derive(Serialize)]
+struct PrePasteWebhookRequest<'a> {
+    source: &'a str,
+    event: &'a str,
+    text: &'a str,
+    timestamp: String,
+}
+
+#[derive(Deserialize)]
+struct PrePasteWebhookResponse {
+    #[serde(default)]
+    handled: bool,
+}
+
+/// Shared client for the pre-paste webhook. Built once so each paste pays only
+/// for the request itself; the per-request timeout carries the actual budget.
+fn webhook_client() -> Result<&'static reqwest::Client, String> {
+    static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+    CLIENT
+        .get_or_init(|| {
+            reqwest::Client::builder()
+                // Endpoints are typically on loopback and answer in a few
+                // milliseconds; keep connections warm between phrases.
+                .pool_idle_timeout(Duration::from_secs(60))
+                .build()
+                .map_err(|e| format!("Failed to build webhook HTTP client: {}", e))
+        })
+        .as_ref()
+        .map_err(|e| e.clone())
+}
+
+/// POST the transcript to the configured webhook and report whether the
+/// receiver consumed it.
+///
+/// Returns `true` only for a 2xx response whose body parses as
+/// `{"handled": true}`. Every failure mode - connection refused, timeout,
+/// non-2xx status, unparseable body - returns `false`, which makes the caller
+/// fall back to a normal paste. That mirrors the external-script hook this
+/// replaces: the webhook is an opportunistic hand-off, never a hard dependency.
+fn notify_paste_webhook(text: &str, url: &str, timeout_ms: u64) -> bool {
+    let client = match webhook_client() {
+        Ok(client) => client,
+        Err(e) => {
+            log::warn!("Webhook paste: {e}; falling back to a normal paste");
+            return false;
+        }
+    };
+
+    let body = PrePasteWebhookRequest {
+        source: "handy",
+        event: "pre-paste",
+        text,
+        timestamp: chrono::Local::now().to_rfc3339(),
+    };
+
+    // The request runs to completion on the calling (main) thread, exactly as
+    // the external script did. `timeout` bounds the whole round trip, so an
+    // endpoint that is down or wedged costs at most `timeout_ms` before the
+    // fallback paste happens.
+    let result = tauri::async_runtime::block_on(async {
+        client
+            .post(url)
+            .timeout(Duration::from_millis(timeout_ms))
+            .header(
+                reqwest::header::CONTENT_TYPE,
+                "application/json; charset=utf-8",
+            )
+            .json(&body)
+            .send()
+            .await
+    });
+
+    let response = match result {
+        Ok(response) => response,
+        Err(e) => {
+            log::warn!("Webhook paste: POST to {url} failed ({e}); pasting normally");
+            return false;
+        }
+    };
+
+    if !response.status().is_success() {
+        log::warn!(
+            "Webhook paste: {url} answered {}; pasting normally",
+            response.status()
+        );
+        return false;
+    }
+
+    match tauri::async_runtime::block_on(response.json::<PrePasteWebhookResponse>()) {
+        Ok(parsed) => {
+            info!("Webhook paste: {url} reported handled={}", parsed.handled);
+            parsed.handled
+        }
+        Err(e) => {
+            log::warn!("Webhook paste: unreadable response from {url} ({e}); pasting normally");
+            false
+        }
+    }
+}
+
 /// Types text directly by simulating individual key presses.
 fn paste_direct(
     text: &str,
@@ -832,6 +935,31 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &text,
                 &app_handle,
                 &paste_method,
+                paste_delay_ms,
+                paste_delay_after_ms,
+            )?
+        }
+        PasteMethod::Webhook => {
+            let url = settings
+                .webhook_url
+                .as_ref()
+                .filter(|u| !u.is_empty())
+                .ok_or("Webhook URL is not configured")?;
+            if notify_paste_webhook(&text, url, settings.webhook_timeout_ms) {
+                // The receiver took the text and will insert it itself. Return
+                // before auto-submit and the clipboard write: a Return keystroke
+                // would land in whatever window has focus (the receiving app),
+                // and overwriting the clipboard is a side effect the user did
+                // not get a paste for.
+                info!("Webhook reported the transcript as handled - skipping paste");
+                return Ok(());
+            }
+            // Not handled (or the endpoint was unreachable): paste as usual.
+            // Deliberately reuses the clipboard path rather than duplicating it.
+            paste_via_clipboard(
+                &text,
+                &app_handle,
+                &PasteMethod::CtrlV,
                 paste_delay_ms,
                 paste_delay_after_ms,
             )?
