@@ -154,6 +154,7 @@ Some languages have complex plural rules. For now, use a general form that works
 | Language   | Code | Status            |
 | ---------- | ---- | ----------------- |
 | English    | `en` | Complete (source) |
+| Catalan    | `ca` | Complete          |
 | Chinese    | `zh` | Complete          |
 | French     | `fr` | Complete          |
 | German     | `de` | Complete          |
