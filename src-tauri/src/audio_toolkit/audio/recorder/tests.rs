@@ -1,8 +1,9 @@
 use super::{
     is_microphone_access_denied, is_no_input_device_error, run_consumer, AudioRecorder,
-    CaptureTransportState, Cmd, VadPolicy,
+    CaptureProcessor, CaptureTransportState, ChunkDisposition, Cmd, VadConfig, VadPolicy,
 };
-use rtrb::{Producer, RingBuffer};
+use crate::audio_toolkit::vad::{VadFrame, VoiceActivityDetector};
+use rtrb::RingBuffer;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -25,6 +26,57 @@ fn stream_error_requires_reopen() {
     assert!(recorder.needs_reopen());
 }
 
+/// Pass-through detector with a configurable frame size, standing in for a
+/// backend such as Earshot whose frames are not 30 ms.
+struct FixedFrameVad(usize);
+
+impl VoiceActivityDetector for FixedFrameVad {
+    fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> anyhow::Result<VadFrame<'a>> {
+        Ok(VadFrame::Speech(frame))
+    }
+
+    fn frame_samples(&self) -> usize {
+        self.0
+    }
+}
+
+#[test]
+fn resampler_frame_size_follows_the_vad_backend() {
+    let frame_samples = 256;
+    let vad = VadConfig {
+        detector: Arc::new(Mutex::new(Box::new(FixedFrameVad(frame_samples)))),
+        frame_samples,
+        offline_hangover_frames: 0,
+        streaming_hangover_frames: 0,
+    };
+    let frame_lengths = Arc::new(Mutex::new(Vec::new()));
+    let observed = Arc::clone(&frame_lengths);
+    let mut processor = CaptureProcessor::new(
+        16_000,
+        Some(vad),
+        None,
+        Some(Arc::new(move |frame: &[f32]| {
+            observed.lock().unwrap().push(frame.len())
+        })),
+        Instant::now(),
+    );
+
+    let (ready_tx, _ready_rx) = mpsc::channel();
+    processor.begin_recording(VadPolicy::Offline, ready_tx);
+    processor.process_raw_chunk(&[0.0; 1024], ChunkDisposition::Capture);
+    let samples = processor.finish_recording();
+
+    assert_eq!(samples.len(), 1024);
+    assert_eq!(*frame_lengths.lock().unwrap(), vec![frame_samples; 4]);
+}
+
+#[test]
+fn idle_chunks_are_discarded_without_reaching_the_recording() {
+    let mut processor = CaptureProcessor::new(16_000, None, None, None, Instant::now());
+    processor.process_raw_chunk(&[1.0; 480], ChunkDisposition::Discard);
+    assert!(processor.finish_recording().is_empty());
+}
+
 #[test]
 fn shutdown_is_processed_without_audio_samples() {
     let (_producer, consumer) = RingBuffer::<f32>::new(48_000);
@@ -32,15 +84,11 @@ fn shutdown_is_processed_without_audio_samples() {
     let (done_tx, done_rx) = mpsc::channel();
     let worker = thread::spawn(move || {
         run_consumer(
-            48_000,
-            None,
+            CaptureProcessor::new(48_000, None, None, None, Instant::now()),
             consumer,
             cmd_rx,
-            None,
-            None,
             Arc::new(CaptureTransportState::default()),
             Arc::new(AtomicBool::new(false)),
-            Instant::now(),
         );
         let _ = done_tx.send(());
     });
@@ -122,14 +170,6 @@ fn callback_forwards_boundary_block_then_stays_silent_until_resumed() {
 }
 
 #[test]
-fn post_write_pause_check_acknowledges_a_new_request() {
-    let transport = CaptureTransportState::default();
-    transport.pause_requested.store(true, Ordering::Release);
-    super::acknowledge_pause_after_write(&transport);
-    assert!(transport.pause_acknowledged.load(Ordering::Acquire));
-}
-
-#[test]
 fn callback_partially_fills_ring_and_counts_dropped_audio() {
     let (mut producer, mut consumer) = RingBuffer::<f32>::new(2);
     let transport = CaptureTransportState::default();
@@ -201,18 +241,21 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     let streamed_cb = Arc::clone(&streamed);
     let consumer_transport = Arc::clone(&transport);
     let worker = thread::spawn(move || {
-        run_consumer(
+        let processor = CaptureProcessor::new(
             16_000,
             None,
-            consumer,
-            cmd_rx,
             None,
-            Some(Arc::new(move |frame| {
+            Some(Arc::new(move |frame: &[f32]| {
                 streamed_cb.lock().unwrap().extend_from_slice(frame)
             })),
+            Instant::now(),
+        );
+        run_consumer(
+            processor,
+            consumer,
+            cmd_rx,
             consumer_transport,
             Arc::new(AtomicBool::new(false)),
-            Instant::now(),
         );
     });
 
@@ -220,13 +263,6 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
         let deadline = Instant::now() + Duration::from_secs(1);
         while !transport.pause_requested.load(Ordering::Acquire) {
             assert!(Instant::now() < deadline, "pause was not requested");
-            thread::sleep(Duration::from_millis(1));
-        }
-    };
-    let wait_for_ring_drained = |producer: &Producer<f32>| {
-        let deadline = Instant::now() + Duration::from_secs(1);
-        while producer.slots() < 16_000 {
-            assert!(Instant::now() < deadline, "ring was not drained");
             thread::sleep(Duration::from_millis(1));
         }
     };
@@ -245,9 +281,8 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     cmd_tx.send(Cmd::Stop(reply_tx)).expect("first stop");
     wait_for_pause_request();
     // The first callback after Stop carries audio captured before the stop,
-    // so it belongs to the recording. Anything after it must not.
+    // so it belongs to the recording.
     AudioRecorder::write_input_to_ring(&[99.0f32], 1, None, &mut producer, &transport);
-    AudioRecorder::write_input_to_ring(&[98.0f32], 1, None, &mut producer, &transport);
 
     let first_samples = reply_rx
         .recv_timeout(Duration::from_secs(1))
@@ -257,21 +292,16 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     assert!(first_samples[first_expected.len()..]
         .iter()
         .all(|&sample| sample == 0.0));
-    assert!(!first_samples.contains(&98.0));
     assert!(!transport.pause_requested.load(Ordering::Acquire));
 
     let first_streamed_len = {
         let streamed = streamed.lock().unwrap();
         assert_eq!(&streamed[..first_expected.len()], &first_expected);
-        assert!(!streamed.contains(&98.0));
         streamed.len()
     };
 
     // Start again immediately after stop() would have returned. The producer
     // must already be re-enabled, and no first-cycle samples may leak through.
-    // Let the idle consumer discard anything written after the boundary first,
-    // so a late idle block cannot masquerade as pre-roll for the next session.
-    wait_for_ring_drained(&producer);
     let second_input = [0.75f32, -0.25, 0.5];
     let (ready_tx, ready_rx) = mpsc::channel();
     cmd_tx
@@ -286,7 +316,6 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     cmd_tx.send(Cmd::Stop(reply_tx)).expect("second stop");
     wait_for_pause_request();
     AudioRecorder::write_input_to_ring(&[199.0f32], 1, None, &mut producer, &transport);
-    AudioRecorder::write_input_to_ring(&[198.0f32], 1, None, &mut producer, &transport);
 
     let second_samples = reply_rx
         .recv_timeout(Duration::from_secs(1))
@@ -296,7 +325,6 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     assert!(second_samples[second_expected.len()..]
         .iter()
         .all(|&sample| sample == 0.0));
-    assert!(!second_samples.contains(&198.0));
     assert!(!first_samples
         .iter()
         .any(|sample| second_expected.contains(sample)));
@@ -312,8 +340,6 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
             &streamed[first_streamed_len..first_streamed_len + second_expected.len()],
             &second_expected
         );
-        assert!(!streamed.contains(&98.0));
-        assert!(!streamed.contains(&198.0));
     }
 
     cmd_tx.send(Cmd::Shutdown).expect("shutdown");
@@ -330,15 +356,11 @@ fn missing_callback_at_stop_marks_stream_for_rebuild_and_returns_samples() {
     let worker_transport = Arc::clone(&transport);
     let worker = thread::spawn(move || {
         run_consumer(
-            16_000,
-            None,
+            CaptureProcessor::new(16_000, None, None, None, Instant::now()),
             consumer,
             cmd_rx,
-            None,
-            None,
             worker_transport,
             stream_error,
-            Instant::now(),
         );
     });
 

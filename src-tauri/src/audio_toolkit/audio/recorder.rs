@@ -326,17 +326,20 @@ impl AudioRecorder {
                     // Timestamp for the play()-returned -> first-samples gap the
                     // init handshake can't see (hardware dependent).
                     let stream_running_at = Instant::now();
-                    // Keep the stream alive while we process samples.
-                    run_consumer(
+                    let processor = CaptureProcessor::new(
                         sample_rate,
                         vad,
-                        sample_consumer,
-                        cmd_rx,
                         level_cb,
                         audio_cb,
+                        stream_running_at,
+                    );
+                    // Keep the stream alive while we process samples.
+                    run_consumer(
+                        processor,
+                        sample_consumer,
+                        cmd_rx,
                         transport,
                         Arc::clone(&stream_error),
-                        stream_running_at,
                     );
                     drop(stream);
                 }
@@ -636,18 +639,19 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
             && normalized.contains("coreaudio"))
 }
 
+/// Route one 16 kHz frame through the active VAD policy into the recording
+/// buffer and the optional live audio callback.
+///
+/// Kept as a free function taking individual fields so callers can invoke it
+/// from a closure while `CaptureProcessor::frame_resampler` is mutably
+/// borrowed; a `&mut self` method would conflict with that borrow.
 fn handle_frame(
     samples: &[f32],
-    recording: bool,
     vad_policy: VadPolicy,
     vad: &Option<VadConfig>,
     audio_cb: &Option<AudioFrameCallback>,
     out_buf: &mut Vec<f32>,
 ) {
-    if !recording {
-        return;
-    }
-
     let mut emit = |buf: &[f32]| {
         out_buf.extend_from_slice(buf);
         if let Some(cb) = audio_cb {
@@ -698,125 +702,246 @@ fn drain_available_samples(
     available
 }
 
-#[allow(clippy::too_many_arguments)]
-fn process_raw_chunk(
-    raw: &[f32],
+/// What to do with a chunk drained from the ring.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ChunkDisposition {
+    /// The chunk belongs to the active recording: feed the level meter,
+    /// resampler and VAD. Also used during the final drain of a stop, after
+    /// the consumer's own recording flag has already been cleared.
+    Capture,
+    /// The stream is idle: consume the chunk so the ring does not fill, but
+    /// skip all processing since the output would be thrown away.
+    Discard,
+}
+
+/// Turns raw device-rate samples drained from the ring into 16 kHz frames.
+///
+/// Built once per opened input stream and reused across recordings. The ring
+/// consumer and the callback transport deliberately live outside this struct
+/// so `drain` can borrow the processor mutably while reading the ring.
+struct CaptureProcessor {
+    // ---- stream-scoped: fixed for the life of the input stream ---------- //
     in_sample_rate: u32,
-    recording: bool,
-    vad_policy: VadPolicy,
-    vad: &Option<VadConfig>,
-    audio_cb: &Option<AudioFrameCallback>,
-    level_cb: &Option<LevelCallback>,
-    processed_samples: &mut Vec<f32>,
-    visualizer: &mut AudioVisualiser,
-    frame_resampler: &mut FrameResampler,
-    first_chunk_logged: &mut bool,
+    vad: Option<VadConfig>,
+    level_cb: Option<LevelCallback>,
+    audio_cb: Option<AudioFrameCallback>,
     stream_running_at: Instant,
-    awaiting_first_captured_chunk: &mut Option<Instant>,
-    capture_ready_tx: &mut Option<mpsc::Sender<()>>,
-) {
-    let chunk_ms = raw.len() as f64 * 1000.0 / in_sample_rate as f64;
-    if !*first_chunk_logged {
-        *first_chunk_logged = true;
-        log::debug!(
-            "first audio samples arrived {:?} after stream start ({:.1}ms drained)",
-            stream_running_at.elapsed(),
-            chunk_ms
+    visualizer: AudioVisualiser,
+    frame_resampler: FrameResampler,
+    max_drain_samples: usize,
+    first_chunk_logged: bool,
+
+    // ---- recording-scoped: reset by `begin_recording` ------------------- //
+    vad_policy: VadPolicy,
+    processed_samples: Vec<f32>,
+    awaiting_first_captured_chunk: Option<Instant>,
+    capture_ready_tx: Option<mpsc::Sender<()>>,
+    total_dropped_samples: u64,
+    overrun_warning_logged: bool,
+}
+
+impl CaptureProcessor {
+    fn new(
+        in_sample_rate: u32,
+        vad: Option<VadConfig>,
+        level_cb: Option<LevelCallback>,
+        audio_cb: Option<AudioFrameCallback>,
+        stream_running_at: Instant,
+    ) -> Self {
+        // Resample into frames sized for the active VAD backend (30 ms when
+        // no detector is attached) so the detector never sees a partial frame.
+        let frame_samples = vad.as_ref().map_or(
+            (constants::WHISPER_SAMPLE_RATE * 30 / 1000) as usize,
+            |config| config.frame_samples,
         );
-    }
+        let frame_duration =
+            Duration::from_secs_f64(frame_samples as f64 / constants::WHISPER_SAMPLE_RATE as f64);
+        let frame_resampler = FrameResampler::new(
+            in_sample_rate as usize,
+            constants::WHISPER_SAMPLE_RATE as usize,
+            frame_duration,
+        );
 
-    if !recording {
-        return;
-    }
+        const BUCKETS: usize = 16;
+        let target_window = (f64::from(in_sample_rate) / 30.0).round() as usize;
+        let window_size = [256usize, 512, 1024, 2048]
+            .into_iter()
+            .min_by_key(|w| w.abs_diff(target_window))
+            .unwrap();
+        let visualizer = AudioVisualiser::new(in_sample_rate, window_size, BUCKETS, 400.0, 4000.0);
 
-    if let Some(buckets) = visualizer.feed(raw) {
-        if let Some(callback) = level_cb {
-            callback(buckets);
+        let max_drain_samples =
+            ((in_sample_rate as u128 * MAX_DRAIN_CHUNK.as_millis()) / 1_000).max(1) as usize;
+
+        Self {
+            in_sample_rate,
+            vad,
+            level_cb,
+            audio_cb,
+            stream_running_at,
+            visualizer,
+            frame_resampler,
+            max_drain_samples,
+            first_chunk_logged: false,
+            vad_policy: VadPolicy::Offline,
+            processed_samples: Vec::new(),
+            awaiting_first_captured_chunk: None,
+            capture_ready_tx: None,
+            total_dropped_samples: 0,
+            overrun_warning_logged: false,
         }
     }
 
-    frame_resampler.push(raw, &mut |frame: &[f32]| {
-        handle_frame(frame, true, vad_policy, vad, audio_cb, processed_samples)
-    });
-
-    if let Some(started) = awaiting_first_captured_chunk.take() {
-        log::debug!(
-            "first captured samples ({:.1}ms) processed {:?} after Cmd::Start",
-            chunk_ms,
-            started.elapsed()
-        );
+    /// Reset per-recording state and arm the first-sample acknowledgement.
+    fn begin_recording(&mut self, policy: VadPolicy, ready_tx: mpsc::Sender<()>) {
+        self.awaiting_first_captured_chunk = Some(Instant::now());
+        self.capture_ready_tx = Some(ready_tx);
+        self.total_dropped_samples = 0;
+        self.overrun_warning_logged = false;
+        self.vad_policy = policy;
+        self.processed_samples.clear();
+        self.visualizer.reset();
+        self.frame_resampler.reset();
+        if policy != VadPolicy::Disabled {
+            if let Some(cfg) = &self.vad {
+                let mut detector = cfg.detector.lock().unwrap();
+                detector.set_hangover_frames(cfg.hangover_for(policy));
+                detector.reset();
+            }
+        }
     }
-    if let Some(ready_tx) = capture_ready_tx.take() {
-        // Silence still counts: readiness means the host is delivering samples,
-        // not that VAD has detected speech.
-        let _ = ready_tx.send(());
+
+    /// Drop a pending first-sample acknowledgement. If Stop was queued before
+    /// the first chunk, this prevents a stale ready UI event or start chime.
+    fn cancel_ready_signal(&mut self) {
+        self.capture_ready_tx = None;
+        self.awaiting_first_captured_chunk = None;
+    }
+
+    /// Drain up to one bounded chunk from the ring. Returns the number of
+    /// samples consumed so callers can tell an empty ring from a busy one.
+    fn drain(&mut self, consumer: &mut Consumer<f32>, disposition: ChunkDisposition) -> usize {
+        let max_samples = self.max_drain_samples;
+        drain_available_samples(consumer, max_samples, |raw| {
+            self.process_raw_chunk(raw, disposition)
+        })
+    }
+
+    fn process_raw_chunk(&mut self, raw: &[f32], disposition: ChunkDisposition) {
+        let chunk_ms = raw.len() as f64 * 1000.0 / self.in_sample_rate as f64;
+        if !self.first_chunk_logged {
+            self.first_chunk_logged = true;
+            log::debug!(
+                "first audio samples arrived {:?} after stream start ({:.1}ms drained)",
+                self.stream_running_at.elapsed(),
+                chunk_ms
+            );
+        }
+
+        if disposition == ChunkDisposition::Discard {
+            return;
+        }
+
+        if let Some(buckets) = self.visualizer.feed(raw) {
+            if let Some(callback) = &self.level_cb {
+                callback(buckets);
+            }
+        }
+
+        let vad_policy = self.vad_policy;
+        self.frame_resampler.push(raw, |frame: &[f32]| {
+            handle_frame(
+                frame,
+                vad_policy,
+                &self.vad,
+                &self.audio_cb,
+                &mut self.processed_samples,
+            )
+        });
+
+        if let Some(started) = self.awaiting_first_captured_chunk.take() {
+            log::debug!(
+                "first captured samples ({:.1}ms) processed {:?} after Cmd::Start",
+                chunk_ms,
+                started.elapsed()
+            );
+        }
+        if let Some(ready_tx) = self.capture_ready_tx.take() {
+            // Silence still counts: readiness means the host is delivering samples,
+            // not that VAD has detected speech.
+            let _ = ready_tx.send(());
+        }
+    }
+
+    /// Account for samples the callback could not fit into the ring during
+    /// the active recording. Warns once per recording.
+    fn observe_overrun(&mut self, samples: u64) {
+        if samples == 0 {
+            return;
+        }
+
+        self.total_dropped_samples = self.total_dropped_samples.saturating_add(samples);
+        if !self.overrun_warning_logged {
+            self.overrun_warning_logged = true;
+            log::warn!(
+                "Microphone capture ring dropped {samples} samples; continuing the active recording"
+            );
+        }
+    }
+
+    /// Flush the resampler tail and hand back the finished recording.
+    fn finish_recording(&mut self) -> Vec<f32> {
+        let vad_policy = self.vad_policy;
+        self.frame_resampler.finish(|frame: &[f32]| {
+            handle_frame(
+                frame,
+                vad_policy,
+                &self.vad,
+                &self.audio_cb,
+                &mut self.processed_samples,
+            )
+        });
+
+        // Diagnostic only: evidence for whether the VAD was still withholding
+        // tail audio when capture stopped. Suggestive, not conclusive, in
+        // either direction.
+        if vad_policy != VadPolicy::Disabled {
+            if let Some(cfg) = &self.vad {
+                let report = cfg.detector.lock().unwrap().tail_report();
+                if let Some(report) = report {
+                    log::debug!(
+                        "VAD at stop: withheld tail {} frames (~{}ms, {} voiced), in_speech={}, onset_counter={}, hangover_counter={}",
+                        report.withheld_frames,
+                        report.withheld_frames * cfg.frame_samples * 1000
+                            / constants::WHISPER_SAMPLE_RATE as usize,
+                        report.withheld_voiced_frames,
+                        report.in_speech,
+                        report.onset_counter,
+                        report.hangover_counter
+                    );
+                }
+            }
+        }
+
+        if self.total_dropped_samples > 0 {
+            log::warn!(
+                "Active recording completed after dropping {} microphone samples",
+                self.total_dropped_samples
+            );
+        }
+        std::mem::take(&mut self.processed_samples)
     }
 }
 
-fn observe_recording_overrun(
-    samples: u64,
-    total_dropped_samples: &mut u64,
-    warning_logged: &mut bool,
-) {
-    if samples == 0 {
-        return;
-    }
-
-    *total_dropped_samples = total_dropped_samples.saturating_add(samples);
-    if !*warning_logged {
-        *warning_logged = true;
-        log::warn!(
-            "Microphone capture ring dropped {samples} samples; continuing the active recording"
-        );
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
 fn run_consumer(
-    in_sample_rate: u32,
-    vad: Option<VadConfig>,
+    mut processor: CaptureProcessor,
     mut sample_consumer: Consumer<f32>,
     cmd_rx: mpsc::Receiver<Cmd>,
-    level_cb: Option<LevelCallback>,
-    audio_cb: Option<AudioFrameCallback>,
     transport: Arc<CaptureTransportState>,
     stream_error: Arc<AtomicBool>,
-    stream_running_at: Instant,
 ) {
-    let frame_samples = vad.as_ref().map_or(
-        (constants::WHISPER_SAMPLE_RATE * 30 / 1000) as usize,
-        |config| config.frame_samples,
-    );
-    let frame_duration =
-        Duration::from_secs_f64(frame_samples as f64 / constants::WHISPER_SAMPLE_RATE as f64);
-    let mut frame_resampler = FrameResampler::new(
-        in_sample_rate as usize,
-        constants::WHISPER_SAMPLE_RATE as usize,
-        frame_duration,
-    );
-
-    let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
-    let mut total_dropped_samples = 0u64;
-    let mut overrun_warning_logged = false;
     let mut stream_error_logged = false;
-    let mut vad_policy = VadPolicy::Offline;
-    let max_drain_samples =
-        ((in_sample_rate as u128 * MAX_DRAIN_CHUNK.as_millis()) / 1_000).max(1) as usize;
-
-    // ---------- latency instrumentation ---------------------------------- //
-    let mut first_chunk_logged = false;
-    let mut awaiting_first_captured_chunk: Option<Instant> = None;
-    let mut capture_ready_tx: Option<mpsc::Sender<()>> = None;
-
-    // ---------- spectrum visualisation setup ---------------------------- //
-    const BUCKETS: usize = 16;
-    let target_window = (f64::from(in_sample_rate) / 30.0).round() as usize;
-    let window_size = [256usize, 512, 1024, 2048]
-        .into_iter()
-        .min_by_key(|w| w.abs_diff(target_window))
-        .unwrap();
-    let mut visualizer = AudioVisualiser::new(in_sample_rate, window_size, BUCKETS, 400.0, 4000.0);
 
     loop {
         // Do not sleep while audio is already waiting. Commands are still
@@ -849,67 +974,30 @@ fn run_consumer(
                                 "the next available"
                             }
                         );
-                        awaiting_first_captured_chunk = Some(Instant::now());
-                        capture_ready_tx = Some(ready_tx);
-                        total_dropped_samples = 0;
-                        overrun_warning_logged = false;
                         // Ignore overruns accumulated while the always-on stream
                         // was idle; only active-capture loss is relevant.
                         transport.overrun_samples.store(0, Ordering::Release);
-                        vad_policy = policy;
-                        processed_samples.clear();
+                        processor.begin_recording(policy, ready_tx);
                         recording = true;
-                        visualizer.reset();
-                        frame_resampler.reset();
-                        if vad_policy != VadPolicy::Disabled {
-                            if let Some(cfg) = &vad {
-                                let mut detector = cfg.detector.lock().unwrap();
-                                detector.set_hangover_frames(cfg.hangover_for(vad_policy));
-                                detector.reset();
-                            }
-                        }
                     }
                     Cmd::Stop(reply_tx) => {
-                        observe_recording_overrun(
-                            transport.overrun_samples.swap(0, Ordering::AcqRel),
-                            &mut total_dropped_samples,
-                            &mut overrun_warning_logged,
-                        );
+                        processor
+                            .observe_overrun(transport.overrun_samples.swap(0, Ordering::AcqRel));
                         recording = false;
-                        capture_ready_tx = None;
-                        awaiting_first_captured_chunk = None;
+                        processor.cancel_ready_signal();
 
-                        // Pause the producer before the final drain. The
-                        // post-write acknowledgement in the callback closes the
-                        // race where Stop arrives during a ring write.
+                        // Pause the producer before the final drain. The callback
+                        // forwards the block in hand, then acknowledges, so the
+                        // audio captured just before the stop is still drained
+                        // below as part of this recording.
                         transport.pause_acknowledged.store(false, Ordering::Relaxed);
                         transport.pause_requested.store(true, Ordering::Release);
                         let pause_started = Instant::now();
                         while !transport.pause_acknowledged.load(Ordering::Acquire)
                             && pause_started.elapsed() < PAUSE_ACK_TIMEOUT
                         {
-                            let drained = drain_available_samples(
-                                &mut sample_consumer,
-                                max_drain_samples,
-                                |raw| {
-                                    process_raw_chunk(
-                                        raw,
-                                        in_sample_rate,
-                                        true,
-                                        vad_policy,
-                                        &vad,
-                                        &audio_cb,
-                                        &level_cb,
-                                        &mut processed_samples,
-                                        &mut visualizer,
-                                        &mut frame_resampler,
-                                        &mut first_chunk_logged,
-                                        stream_running_at,
-                                        &mut awaiting_first_captured_chunk,
-                                        &mut capture_ready_tx,
-                                    )
-                                },
-                            );
+                            let drained =
+                                processor.drain(&mut sample_consumer, ChunkDisposition::Capture);
                             if drained == 0 {
                                 std::thread::sleep(Duration::from_millis(1));
                             }
@@ -923,74 +1011,15 @@ fn run_consumer(
                             stream_error.store(true, Ordering::Release);
                         }
 
-                        while drain_available_samples(
-                            &mut sample_consumer,
-                            max_drain_samples,
-                            |raw| {
-                                process_raw_chunk(
-                                    raw,
-                                    in_sample_rate,
-                                    true,
-                                    vad_policy,
-                                    &vad,
-                                    &audio_cb,
-                                    &level_cb,
-                                    &mut processed_samples,
-                                    &mut visualizer,
-                                    &mut frame_resampler,
-                                    &mut first_chunk_logged,
-                                    stream_running_at,
-                                    &mut awaiting_first_captured_chunk,
-                                    &mut capture_ready_tx,
-                                )
-                            },
-                        ) > 0
-                        {}
+                        // Everything still in the ring, including the boundary
+                        // block, belongs to this recording.
+                        while processor.drain(&mut sample_consumer, ChunkDisposition::Capture) > 0 {
+                        }
 
                         // Include drops that raced with the pause request.
-                        observe_recording_overrun(
-                            transport.overrun_samples.swap(0, Ordering::AcqRel),
-                            &mut total_dropped_samples,
-                            &mut overrun_warning_logged,
-                        );
-                        frame_resampler.finish(&mut |frame: &[f32]| {
-                            handle_frame(
-                                frame,
-                                true,
-                                vad_policy,
-                                &vad,
-                                &audio_cb,
-                                &mut processed_samples,
-                            )
-                        });
-
-                        // Diagnostic only: evidence for whether the VAD was
-                        // still withholding tail audio when capture stopped.
-                        // Suggestive, not conclusive, in either direction.
-                        if vad_policy != VadPolicy::Disabled {
-                            if let Some(cfg) = &vad {
-                                let report = cfg.detector.lock().unwrap().tail_report();
-                                if let Some(report) = report {
-                                    log::debug!(
-                                        "VAD at stop: withheld tail {} frames (~{}ms, {} voiced), in_speech={}, onset_counter={}, hangover_counter={}",
-                                        report.withheld_frames,
-                                        report.withheld_frames * cfg.frame_samples * 1000
-                                            / constants::WHISPER_SAMPLE_RATE as usize,
-                                        report.withheld_voiced_frames,
-                                        report.in_speech,
-                                        report.onset_counter,
-                                        report.hangover_counter
-                                    );
-                                }
-                            }
-                        }
-
-                        if total_dropped_samples > 0 {
-                            log::warn!(
-                                "Active recording completed after dropping {total_dropped_samples} microphone samples"
-                            );
-                        }
-                        let samples = std::mem::take(&mut processed_samples);
+                        processor
+                            .observe_overrun(transport.overrun_samples.swap(0, Ordering::AcqRel));
+                        let samples = processor.finish_recording();
                         if !pause_timed_out {
                             // Re-enable the producer before stop() can return so
                             // an immediate next recording cannot lose its first
@@ -1018,33 +1047,16 @@ fn run_consumer(
             };
         }
 
-        let recording_now = recording;
-        drain_available_samples(&mut sample_consumer, max_drain_samples, |raw| {
-            process_raw_chunk(
-                raw,
-                in_sample_rate,
-                recording_now,
-                vad_policy,
-                &vad,
-                &audio_cb,
-                &level_cb,
-                &mut processed_samples,
-                &mut visualizer,
-                &mut frame_resampler,
-                &mut first_chunk_logged,
-                stream_running_at,
-                &mut awaiting_first_captured_chunk,
-                &mut capture_ready_tx,
-            )
-        });
+        let disposition = if recording {
+            ChunkDisposition::Capture
+        } else {
+            ChunkDisposition::Discard
+        };
+        processor.drain(&mut sample_consumer, disposition);
 
         let overrun_samples = transport.overrun_samples.swap(0, Ordering::AcqRel);
         if recording {
-            observe_recording_overrun(
-                overrun_samples,
-                &mut total_dropped_samples,
-                &mut overrun_warning_logged,
-            );
+            processor.observe_overrun(overrun_samples);
         }
 
         // The CPAL error callback may run on the platform audio thread, so it
