@@ -101,6 +101,10 @@ tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.10.1"
 
 [target.'cfg(windows)'.dependencies]
+# Used to reach ICoreWebView2Settings3 through the webview's controller
+# (disabling browser accelerator keys in the main window). Must match the
+# version wry links against so the COM types are identical.
+webview2-com = "0.38"
 # ONNX Runtime on Windows is CPU-only (no ort-directml), matching macOS/Linux.
 # The DirectML EP was experimental and, more importantly, pulled in pyke's
 # prebuilt ONNX Runtime which is compiled with a global /arch:AVX2 baseline that

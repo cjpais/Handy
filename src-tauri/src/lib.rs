@@ -945,7 +945,33 @@ pub fn run(cli_args: CliArgs) {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));
             }
 
-            win_builder.build()?;
+            // Only used on Windows, to disable WebView2 browser accelerators.
+            #[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
+            let main_window = win_builder.build()?;
+
+            // Disable WebView2 browser accelerators (F5, F6, Ctrl+F, F12, ...).
+            // A settings window has no use for them, and pressing F6 while
+            // recording a shortcut was reported to turn the whole window white
+            // (cjpais/Handy#1940), likely by triggering WebView2 focus cycling.
+            // DevTools stays enabled; only the F12 accelerator is lost.
+            #[cfg(target_os = "windows")]
+            {
+                let _ = main_window.with_webview(|webview| unsafe {
+                    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+                    use windows::core::Interface;
+
+                    let result = webview
+                        .controller()
+                        .CoreWebView2()
+                        .and_then(|core| core.Settings())
+                        .and_then(|settings| settings.cast::<ICoreWebView2Settings3>())
+                        .and_then(|settings| settings.SetAreBrowserAcceleratorKeysEnabled(false));
+
+                    if let Err(error) = result {
+                        log::warn!("Failed to disable WebView2 browser accelerators: {error}");
+                    }
+                });
+            }
 
             let mut settings = get_settings(app.handle());
 

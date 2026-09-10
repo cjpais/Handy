@@ -2566,6 +2566,7 @@ dependencies = [
  "transcribe-cpp",
  "transcribe-rs",
  "vad-rs",
+ "webview2-com",
  "whatlang",
  "windows 0.61.3",
  "winreg 0.55.0",
