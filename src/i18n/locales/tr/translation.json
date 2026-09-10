@@ -331,7 +331,7 @@
           "webhook": "Webhook"
         },
         "externalScriptPlaceholder": "/dosya/yolu/betik.sh",
-        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy"
       },
       "typingTool": {
         "title": "Yazma Aracı",

@@ -331,7 +331,7 @@
           "webhook": "Webhook"
         },
         "externalScriptPlaceholder": "/ruta/a/su/script.sh",
-        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy"
       },
       "typingTool": {
         "title": "Herramienta de escritura",

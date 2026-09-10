@@ -308,7 +308,7 @@
           "webhook": "Webhook"
         },
         "externalScriptPlaceholder": "/path/to/your/script.sh",
-        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy"
       },
       "typingTool": {
         "title": "أداة الكتابة",
