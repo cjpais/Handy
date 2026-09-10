@@ -28,25 +28,20 @@ enum Cmd {
     Shutdown,
 }
 
-// Capacity is headroom, not added latency: the consumer normally drains every
-// 10 ms. Two seconds absorbs scheduling stalls without allowing a very large
-// backlog to build up before stop.
+// Two seconds of ring capacity absorbs consumer stalls without adding latency
+// during normal 10 ms drains.
 const AUDIO_RING_SECONDS: usize = 2;
 const CONSUMER_POLL_INTERVAL: Duration = Duration::from_millis(10);
 const MAX_DRAIN_CHUNK: Duration = Duration::from_millis(50);
 const PAUSE_ACK_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// State shared by the real-time input callback and the consumer worker.
-///
-/// Keep this to atomics only: the callback must never allocate, lock, block, or
-/// log. Audio samples themselves travel through the wait-free SPSC ring.
+/// Atomics shared by the callback and consumer; audio uses a wait-free SPSC ring.
+/// The callback must remain allocation-, lock-, logging-, and blocking-free.
 #[derive(Default)]
 struct CaptureTransportState {
     pause_requested: AtomicBool,
-    /// Per-request latch reset immediately before requesting a pause. Set by
-    /// the callback once it has forwarded the boundary block for that request;
-    /// while set, further callbacks drop their input. It is not a persistent
-    /// indicator of whether the producer is currently paused.
+    /// Set after forwarding a pause's boundary block; subsequent callbacks
+    /// remain silent until the consumer clears the request.
     pause_acknowledged: AtomicBool,
     overrun_samples: AtomicU64,
 }
@@ -333,7 +328,6 @@ impl AudioRecorder {
                         audio_cb,
                         stream_running_at,
                     );
-                    // Keep the stream alive while we process samples.
                     run_consumer(
                         processor,
                         sample_consumer,
@@ -444,9 +438,8 @@ impl AudioRecorder {
         let ring_capacity = config.sample_rate().0 as usize * AUDIO_RING_SECONDS;
         let (mut sample_producer, mut sample_consumer) = RingBuffer::new(ring_capacity);
 
-        // rtrb allocates uninitialized storage. Eagerly initialize and drain it
-        // before starting the stream to reduce first-touch page faults in the
-        // audio callback. This does not pin the pages in memory.
+        // Touch rtrb's uninitialized pages before the stream starts to reduce
+        // callback page faults. This does not pin them.
         {
             let chunk = sample_producer
                 .write_chunk(ring_capacity)
@@ -499,11 +492,8 @@ impl AudioRecorder {
         T: Sample + SizedSample + Copy,
         f32: cpal::FromSample<T>,
     {
-        // The first block that observes a pause request was captured before
-        // the stop, so it is forwarded (up to a callback period of tail audio,
-        // worst on Bluetooth) and then acknowledged below. Once acknowledged,
-        // stay silent until the consumer clears the pause. Both flags are
-        // checked because the acknowledgement can outlive the request.
+        // Forward the first block that observes a pause; once acknowledged,
+        // remain silent until the consumer resumes capture.
         if transport.pause_requested.load(Ordering::Acquire)
             && transport.pause_acknowledged.load(Ordering::Acquire)
         {
@@ -551,9 +541,8 @@ impl AudioRecorder {
                 .fetch_add(dropped as u64, Ordering::Relaxed);
         }
 
-        // Acknowledge only after the write commits so the boundary block is
-        // visible to the consumer's final drain. This also covers a request
-        // that lands between the entry check and the write.
+        // Publish the boundary write before acknowledging, including when the
+        // pause request arrives during the write.
         acknowledge_pause_after_write(transport);
     }
 
@@ -639,12 +628,8 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
             && normalized.contains("coreaudio"))
 }
 
-/// Route one 16 kHz frame through the active VAD policy into the recording
-/// buffer and the optional live audio callback.
-///
-/// Kept as a free function taking individual fields so callers can invoke it
-/// from a closure while `CaptureProcessor::frame_resampler` is mutably
-/// borrowed; a `&mut self` method would conflict with that borrow.
+/// Route one 16 kHz frame through VAD to recording and live outputs.
+/// Kept free-standing to permit disjoint borrows around resampler callbacks.
 fn handle_frame(
     samples: &[f32],
     vad_policy: VadPolicy,
@@ -705,20 +690,14 @@ fn drain_available_samples(
 /// What to do with a chunk drained from the ring.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ChunkDisposition {
-    /// The chunk belongs to the active recording: feed the level meter,
-    /// resampler and VAD. Also used during the final drain of a stop, after
-    /// the consumer's own recording flag has already been cleared.
+    /// Process as active recording audio, including during the final stop drain.
     Capture,
-    /// The stream is idle: consume the chunk so the ring does not fill, but
-    /// skip all processing since the output would be thrown away.
+    /// Consume idle audio without processing it.
     Discard,
 }
 
-/// Turns raw device-rate samples drained from the ring into 16 kHz frames.
-///
-/// Built once per opened input stream and reused across recordings. The ring
-/// consumer and the callback transport deliberately live outside this struct
-/// so `drain` can borrow the processor mutably while reading the ring.
+/// Converts raw ring samples into 16 kHz frames across recording sessions.
+/// Ring transport stays outside to avoid conflicting borrows during drains.
 struct CaptureProcessor {
     // ---- stream-scoped: fixed for the life of the input stream ---------- //
     in_sample_rate: u32,
@@ -902,9 +881,8 @@ impl CaptureProcessor {
             )
         });
 
-        // Diagnostic only: evidence for whether the VAD was still withholding
-        // tail audio when capture stopped. Suggestive, not conclusive, in
-        // either direction.
+        // Diagnostic for VAD audio still withheld when capture stopped; it is
+        // not conclusive in either direction.
         if vad_policy != VadPolicy::Disabled {
             if let Some(cfg) = &self.vad {
                 let report = cfg.detector.lock().unwrap().tail_report();
@@ -944,9 +922,8 @@ fn run_consumer(
     let mut stream_error_logged = false;
 
     loop {
-        // Do not sleep while audio is already waiting. Commands are still
-        // checked before each bounded drain chunk, so Stop cannot sit behind a
-        // multi-second ring backlog.
+        // Avoid sleeping with queued audio; check commands before each bounded
+        // drain so Stop cannot sit behind a multi-second backlog.
         let mut command = if sample_consumer.slots() > 0 {
             match cmd_rx.try_recv() {
                 Ok(command) => Some(command),
@@ -986,10 +963,8 @@ fn run_consumer(
                         recording = false;
                         processor.cancel_ready_signal();
 
-                        // Pause the producer before the final drain. The callback
-                        // forwards the block in hand, then acknowledges, so the
-                        // audio captured just before the stop is still drained
-                        // below as part of this recording.
+                        // Request a pause that forwards one boundary block, then drain
+                        // all audio committed before the acknowledgement.
                         transport.pause_acknowledged.store(false, Ordering::Relaxed);
                         transport.pause_requested.store(true, Ordering::Release);
                         let pause_started = Instant::now();
@@ -1021,9 +996,8 @@ fn run_consumer(
                             .observe_overrun(transport.overrun_samples.swap(0, Ordering::AcqRel));
                         let samples = processor.finish_recording();
                         if !pause_timed_out {
-                            // Re-enable the producer before stop() can return so
-                            // an immediate next recording cannot lose its first
-                            // callback to the previous session's pause request.
+                            // Resume before stop() returns so an immediate recording
+                            // cannot lose its first callback to this pause request.
                             transport.pause_acknowledged.store(false, Ordering::Relaxed);
                             transport.pause_requested.store(false, Ordering::Release);
                         }
@@ -1059,9 +1033,8 @@ fn run_consumer(
             processor.observe_overrun(overrun_samples);
         }
 
-        // The CPAL error callback may run on the platform audio thread, so it
-        // only sets an atomic. Keep existing behavior and rebuild on the next
-        // start rather than adding mid-recording watchdog/cancellation policy.
+        // The CPAL error callback only sets an atomic; log here and rebuild the
+        // stream on the next start.
         if stream_error.load(Ordering::Acquire) && !stream_error_logged {
             log::error!("Microphone backend reported a stream error; it will be rebuilt");
             stream_error_logged = true;
