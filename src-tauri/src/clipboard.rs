@@ -1140,4 +1140,124 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
         fs::remove_file(script_path).expect("remove external script");
         assert!(result.is_ok());
     }
+
+    /// Minimal one-shot HTTP server for the webhook tests. Answers the first
+    /// request with `status` and `body`, then shuts down. Returns its URL.
+    fn spawn_webhook_stub(
+        status: &'static str,
+        body: &'static str,
+    ) -> (String, std::thread::JoinHandle<Vec<u8>>) {
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind stub listener");
+        let url = format!("http://{}/handy/pre-paste", listener.local_addr().unwrap());
+        let handle = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept");
+            // The bodies here are small and sent in one write, so a single read
+            // is enough to capture headers plus payload.
+            let mut buf = vec![0u8; 8192];
+            let read = stream.read(&mut buf).expect("read request");
+            buf.truncate(read);
+            let response = format!(
+                "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            let _ = stream.flush();
+            buf
+        });
+        (url, handle)
+    }
+
+    #[test]
+    fn webhook_handled_true_claims_the_transcript() {
+        let (url, server) = spawn_webhook_stub("200 OK", r#"{"handled":true}"#);
+        assert!(notify_paste_webhook("hello world", &url, 2000));
+
+        let request = String::from_utf8(server.join().unwrap()).expect("utf-8 request");
+        // The wire contract existing receivers already speak.
+        assert!(request.starts_with("POST /handy/pre-paste "), "{request}");
+        assert!(
+            request.contains("content-type: application/json; charset=utf-8"),
+            "{request}"
+        );
+        // Expect: 100-continue costs a round trip and must stay off.
+        assert!(!request.to_lowercase().contains("expect:"), "{request}");
+
+        let body = request.split("\r\n\r\n").nth(1).expect("request body");
+        let parsed: serde_json::Value = serde_json::from_str(body).expect("body is JSON");
+        assert_eq!(parsed["source"], "handy");
+        assert_eq!(parsed["event"], "pre-paste");
+        assert_eq!(parsed["text"], "hello world");
+        assert!(parsed["timestamp"]
+            .as_str()
+            .is_some_and(|t| t.contains('T')));
+    }
+
+    #[test]
+    fn webhook_handled_false_falls_back_to_pasting() {
+        let (url, server) = spawn_webhook_stub("200 OK", r#"{"handled":false}"#);
+        assert!(!notify_paste_webhook("hello", &url, 2000));
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn webhook_non_2xx_falls_back_to_pasting() {
+        let (url, server) = spawn_webhook_stub("500 Internal Server Error", r#"{"handled":true}"#);
+        assert!(!notify_paste_webhook("hello", &url, 2000));
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn webhook_unparseable_body_falls_back_to_pasting() {
+        let (url, server) = spawn_webhook_stub("200 OK", "not json at all");
+        assert!(!notify_paste_webhook("hello", &url, 2000));
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn webhook_closed_port_falls_back_without_stalling() {
+        // Bind then drop, so the port is known-closed rather than merely unused.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+        let url = format!("http://{}/handy/pre-paste", listener.local_addr().unwrap());
+        drop(listener);
+
+        let started = std::time::Instant::now();
+        assert!(!notify_paste_webhook("hello", &url, 400));
+        // A refused connection must not cost anything close to the timeout.
+        assert!(
+            started.elapsed() < Duration::from_millis(400),
+            "took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn webhook_slow_endpoint_gives_up_at_the_timeout() {
+        use std::net::TcpListener;
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let url = format!("http://{}/handy/pre-paste", listener.local_addr().unwrap());
+        // Accept but never answer, i.e. the wedged-listener case.
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().expect("accept");
+            std::thread::sleep(Duration::from_secs(2));
+            drop(stream);
+        });
+
+        let started = std::time::Instant::now();
+        assert!(!notify_paste_webhook("hello", &url, 300));
+        let elapsed = started.elapsed();
+        assert!(
+            elapsed >= Duration::from_millis(250),
+            "gave up too early: {elapsed:?}"
+        );
+        assert!(
+            elapsed < Duration::from_millis(1500),
+            "did not honour the timeout: {elapsed:?}"
+        );
+        server.join().unwrap();
+    }
 }
