@@ -18,10 +18,10 @@ use tauri::WebviewUrl;
 use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel, StyleMask};
 
 #[cfg(target_os = "linux")]
-use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+use crate::utils;
 
 #[cfg(target_os = "linux")]
-use std::env;
+use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 #[cfg(target_os = "macos")]
 tauri_panel! {
@@ -112,26 +112,11 @@ fn configure_layer_shell_surface(
     gtk_window.resize(1, 1);
 }
 
-/// Returns true when the environment variable is set to a truthy value
-/// (e.g. "1", "true", "yes", "on").
-/// "0", "false", "no", "off" and empty string are treated as falsy (case-insensitive).
-/// Returns false when the variable is not set.
-#[cfg(target_os = "linux")]
-fn env_flag_enabled(name: &str) -> bool {
-    match env::var(name) {
-        Ok(v) => !matches!(
-            v.trim().to_ascii_lowercase().as_str(),
-            "" | "0" | "false" | "no" | "off"
-        ),
-        Err(_) => false,
-    }
-}
-
 /// Initializes GTK layer shell for Linux overlay window
 /// Returns true if layer shell was successfully initialized, false otherwise
 #[cfg(target_os = "linux")]
 fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
-    if env_flag_enabled("HANDY_NO_GTK_LAYER_SHELL") {
+    if utils::env_flag_enabled("HANDY_NO_GTK_LAYER_SHELL") {
         debug!("Skipping GTK layer shell init (HANDY_NO_GTK_LAYER_SHELL is enabled)");
         return false;
     }
@@ -504,6 +489,10 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
     // Size the overlay for this state (compact vs. streaming), then position it.
     let (width, height) = overlay_dimensions(state);
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Invalidate any delayed hide still in flight from a previous session
+        // (see `hide_recording_overlay`).
+        OVERLAY_SHOW_GENERATION.fetch_add(1, Ordering::SeqCst);
+
         #[cfg(target_os = "linux")]
         let shown_with_layer_shell = if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
             let position = settings::get_settings(app_handle).overlay_position;
@@ -666,17 +655,33 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
     }
 }
 
+/// Generation counter bumped every time the overlay is shown. The delayed
+/// `hide()` below only unmaps the window if no show happened after it was
+/// scheduled, so a hide left over from a finished transcription can never
+/// take down the overlay of a session that started in the meantime — e.g. a
+/// press the coordinator remembered while the pipeline was busy and started
+/// the instant it drained, well inside the 300 ms hide delay.
+static OVERLAY_SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
+
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Snapshot before doing anything observable, so any show that lands
+        // after this point invalidates the delayed hide below.
+        let scheduled_at = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
         // Emit event to trigger fade-out animation
         let _ = overlay_window.emit("hide-overlay", ());
-        // Hide the window after a short delay to allow animation to complete
+        // Hide the window after a short delay to allow animation to complete,
+        // unless a newer session has shown the overlay again by then.
         let window_clone = overlay_window.clone();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(300));
+            if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
+                log::debug!("Skipping stale overlay hide: a newer session is showing the overlay");
+                return;
+            }
             let _ = window_clone.hide();
         });
     }

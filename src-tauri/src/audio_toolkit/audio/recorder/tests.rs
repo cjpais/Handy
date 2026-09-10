@@ -2,7 +2,7 @@ use super::{
     is_microphone_access_denied, is_no_input_device_error, run_consumer, AudioRecorder,
     CaptureTransportState, Cmd, VadPolicy,
 };
-use rtrb::RingBuffer;
+use rtrb::{Producer, RingBuffer};
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -95,15 +95,30 @@ fn callback_downmixes_or_selects_multichannel_input() {
 }
 
 #[test]
-fn callback_acknowledges_pause_without_writing() {
-    let (mut producer, consumer) = RingBuffer::<f32>::new(4);
+fn callback_forwards_boundary_block_then_stays_silent_until_resumed() {
+    let (mut producer, mut consumer) = RingBuffer::<f32>::new(8);
     let transport = CaptureTransportState::default();
+
+    // The block in hand when a pause is first observed was captured before
+    // the stop, so it is forwarded and only then acknowledged.
     transport.pause_requested.store(true, Ordering::Release);
-
     AudioRecorder::write_input_to_ring(&[1.0f32, 2.0], 1, None, &mut producer, &transport);
-
-    assert_eq!(consumer.slots(), 0);
     assert!(transport.pause_acknowledged.load(Ordering::Acquire));
+    assert_eq!(consumer.slots(), 2);
+
+    // Later blocks while paused are dropped and are not counted as overruns.
+    AudioRecorder::write_input_to_ring(&[3.0f32], 1, None, &mut producer, &transport);
+    assert_eq!(consumer.slots(), 2);
+    assert_eq!(transport.overrun_samples.load(Ordering::Relaxed), 0);
+
+    // Clearing the pause, as the consumer does before stop() returns, resumes capture.
+    transport.pause_acknowledged.store(false, Ordering::Relaxed);
+    transport.pause_requested.store(false, Ordering::Release);
+    AudioRecorder::write_input_to_ring(&[4.0f32], 1, None, &mut producer, &transport);
+    let mut output = [0.0; 3];
+    consumer.pop_entire_slice(&mut output).expect("samples");
+    assert_eq!(output, [1.0, 2.0, 4.0]);
+    assert!(!transport.pause_acknowledged.load(Ordering::Acquire));
 }
 
 #[test]
@@ -208,6 +223,13 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
             thread::sleep(Duration::from_millis(1));
         }
     };
+    let wait_for_ring_drained = |producer: &Producer<f32>| {
+        let deadline = Instant::now() + Duration::from_secs(1);
+        while producer.slots() < 16_000 {
+            assert!(Instant::now() < deadline, "ring was not drained");
+            thread::sleep(Duration::from_millis(1));
+        }
+    };
 
     let first_input = [0.25f32, -0.5, 1.0];
     let (ready_tx, ready_rx) = mpsc::channel();
@@ -222,29 +244,34 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     let (reply_tx, reply_rx) = mpsc::channel();
     cmd_tx.send(Cmd::Stop(reply_tx)).expect("first stop");
     wait_for_pause_request();
-    // The first callback after Stop acknowledges the boundary and must not
-    // append samples behind it.
+    // The first callback after Stop carries audio captured before the stop,
+    // so it belongs to the recording. Anything after it must not.
     AudioRecorder::write_input_to_ring(&[99.0f32], 1, None, &mut producer, &transport);
+    AudioRecorder::write_input_to_ring(&[98.0f32], 1, None, &mut producer, &transport);
 
     let first_samples = reply_rx
         .recv_timeout(Duration::from_secs(1))
         .expect("first stop reply");
-    assert_eq!(&first_samples[..first_input.len()], &first_input);
-    assert!(first_samples[first_input.len()..]
+    let first_expected = [0.25f32, -0.5, 1.0, 99.0];
+    assert_eq!(&first_samples[..first_expected.len()], &first_expected);
+    assert!(first_samples[first_expected.len()..]
         .iter()
         .all(|&sample| sample == 0.0));
-    assert!(!first_samples.contains(&99.0));
+    assert!(!first_samples.contains(&98.0));
     assert!(!transport.pause_requested.load(Ordering::Acquire));
 
     let first_streamed_len = {
         let streamed = streamed.lock().unwrap();
-        assert_eq!(&streamed[..first_input.len()], &first_input);
-        assert!(!streamed.contains(&99.0));
+        assert_eq!(&streamed[..first_expected.len()], &first_expected);
+        assert!(!streamed.contains(&98.0));
         streamed.len()
     };
 
     // Start again immediately after stop() would have returned. The producer
     // must already be re-enabled, and no first-cycle samples may leak through.
+    // Let the idle consumer discard anything written after the boundary first,
+    // so a late idle block cannot masquerade as pre-roll for the next session.
+    wait_for_ring_drained(&producer);
     let second_input = [0.75f32, -0.25, 0.5];
     let (ready_tx, ready_rx) = mpsc::channel();
     cmd_tx
@@ -259,32 +286,34 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
     cmd_tx.send(Cmd::Stop(reply_tx)).expect("second stop");
     wait_for_pause_request();
     AudioRecorder::write_input_to_ring(&[199.0f32], 1, None, &mut producer, &transport);
+    AudioRecorder::write_input_to_ring(&[198.0f32], 1, None, &mut producer, &transport);
 
     let second_samples = reply_rx
         .recv_timeout(Duration::from_secs(1))
         .expect("second stop reply");
-    assert_eq!(&second_samples[..second_input.len()], &second_input);
-    assert!(second_samples[second_input.len()..]
+    let second_expected = [0.75f32, -0.25, 0.5, 199.0];
+    assert_eq!(&second_samples[..second_expected.len()], &second_expected);
+    assert!(second_samples[second_expected.len()..]
         .iter()
         .all(|&sample| sample == 0.0));
-    assert!(!second_samples.contains(&199.0));
+    assert!(!second_samples.contains(&198.0));
     assert!(!first_samples
         .iter()
-        .any(|sample| second_input.contains(sample)));
+        .any(|sample| second_expected.contains(sample)));
     assert!(!second_samples
         .iter()
-        .any(|sample| first_input.contains(sample)));
+        .any(|sample| first_expected.contains(sample)));
     assert!(!transport.pause_requested.load(Ordering::Acquire));
 
     {
         let streamed = streamed.lock().unwrap();
         assert_eq!(streamed.len(), first_streamed_len + second_samples.len());
         assert_eq!(
-            &streamed[first_streamed_len..first_streamed_len + second_input.len()],
-            &second_input
+            &streamed[first_streamed_len..first_streamed_len + second_expected.len()],
+            &second_expected
         );
-        assert!(!streamed.contains(&99.0));
-        assert!(!streamed.contains(&199.0));
+        assert!(!streamed.contains(&98.0));
+        assert!(!streamed.contains(&198.0));
     }
 
     cmd_tx.send(Cmd::Shutdown).expect("shutdown");

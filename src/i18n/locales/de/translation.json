@@ -214,9 +214,19 @@
         "noResults": "Keine Sprachen gefunden",
         "auto": "Automatisch"
       },
-      "pushToTalk": {
-        "label": "Push-to-Talk",
-        "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
+      "shortcutActivation": {
+        "title": "Verhalten der Tastenkombination",
+        "description": "Wähle aus, wie das Transkriptions-Tastenkürzel die Aufnahme startet und beendet.",
+        "options": {
+          "holdOrToggle": "Automatisch",
+          "pushToTalk": "Halten",
+          "toggle": "Umschalten"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Gedrückt halten zum Aufnehmen oder antippen zum Umschalten",
+          "push_to_talk": "Nimmt auf, solange die Tastenkombination gedrückt bleibt",
+          "toggle": "Tastenkombination antippen, um die Aufnahme zu starten, erneut antippen zum Stoppen"
+        }
       }
     },
     "sound": {
@@ -377,6 +387,14 @@
         "title": "Sprachaktivitätserkennung (VAD)",
         "description": "Filtert Stille aus Aufnahmen. Streamingfähige Modelle verwenden ein längeres VAD-Ende; das Deaktivieren von VAD nimmt Rohaudio auf."
       },
+      "vadBackend": {
+        "title": "VAD-Backend",
+        "description": "Wählt den Detektor zum Herausfiltern von Stille. Earshot ist experimentell; wechseln Sie zurück zu Silero, wenn Sprache abgeschnitten oder Rauschen beibehalten wird.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Füllwörter entfernen",
         "description": "Entfernt häufige Verzögerungslaute aus Transkriptionen. Deaktivieren Sie diese Option, um sie beizubehalten."
@@ -474,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Nach Updates suchen",
-        "description": "Automatisch nach neuen Versionen von Handy suchen"
+        "description": "Automatisch nach neuen Versionen von Handy suchen",
+        "lockedDescription": "Durch Systemkonfiguration deaktiviert (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Sound-Thema",
@@ -537,6 +556,10 @@
         "title": "Einfügeverzögerung (nachher)",
         "description": "Verzögerung (in Millisekunden) nach dem Einfüge-Tastendruck, bevor deine vorherige Zwischenablage wiederhergestellt wird. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
       },
+      "holdThreshold": {
+        "title": "Halte-Schwellenwert",
+        "description": "Nur im Modus „Automatisch“: wie lange (in Millisekunden) die Tastenkombination gedrückt bleiben muss, damit sie als Halten statt als Tippen zählt. Verringern, wenn die Aufnahme nach kurzem Halten weiterläuft; erhöhen, wenn bewusstes Tippen als Halten gewertet wird."
+      },
       "reliablePaste": {
         "title": "Zuverlässiges Einfügen (Beta)",
         "description": "Die Zwischenablage erst wiederherstellen, wenn die Ziel-App die Transkription tatsächlich gelesen hat, statt nach einer festen Verzögerung. Soll verhindern, dass bei Systemlast der alte Inhalt der Zwischenablage eingefügt wird. Erfordert eine Einfügemethode über die Zwischenablage; nur macOS und Windows."
@@ -571,6 +594,13 @@
         "button": "Vorschau",
         "noNotes": "Keine gebündelten Versionshinweise gefunden",
         "error": "Versionshinweise konnten nicht angezeigt werden"
+      },
+      "onboardingPreview": {
+        "title": "Ersteinrichtung ansehen",
+        "description": "Vorschau der Einrichtungsbildschirme, ohne Berechtigungen, Modelle oder den Abschlussstatus zu ändern",
+        "permissionsButton": "Berechtigungen",
+        "modelsButton": "Modellauswahl",
+        "exitButton": "Vorschau beenden"
       }
     },
     "about": {

@@ -214,9 +214,19 @@
         "noResults": "Dil bulunamadı",
         "auto": "Otomatik"
       },
-      "pushToTalk": {
-        "label": "Bas Konuş",
-        "description": "Kaydetmek için basılı tutun, durdurmak için bırakın"
+      "shortcutActivation": {
+        "title": "Kısayol davranışı",
+        "description": "Transkripsiyon kısayolunun kaydı nasıl başlatıp durduracağını seçin.",
+        "options": {
+          "holdOrToggle": "Otomatik",
+          "pushToTalk": "Basılı tut",
+          "toggle": "Aç/Kapat"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Kaydetmek için basılı tutun veya açıp kapatmak için dokunun",
+          "push_to_talk": "Kısayolu basılı tuttuğunuz sürece kaydeder",
+          "toggle": "Kaydı başlatmak için kısayola dokunun, durdurmak için tekrar dokunun"
+        }
       }
     },
     "sound": {
@@ -377,6 +387,14 @@
         "title": "Ses Etkinliği Algılama",
         "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
       },
+      "vadBackend": {
+        "title": "Ses Etkinliği Arka Ucu",
+        "description": "Sessizliği filtrelemek için kullanılan algılayıcıyı seçin. Earshot deneyseldir; konuşma kesiliyorsa veya gürültü korunuyorsa Silero'ya geri dönün.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Dolgu Sözcüklerini Kaldır",
         "description": "Transkripsiyonlardaki yaygın duraksama sözcüklerini kaldırır. Bunları korumak için kapatın."
@@ -474,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Güncellemeleri Kontrol Et",
-        "description": "Handy için yeni sürümleri otomatik olarak kontrol eder"
+        "description": "Handy için yeni sürümleri otomatik olarak kontrol eder",
+        "lockedDescription": "Sistem yapılandırması tarafından devre dışı bırakıldı (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Ses Teması",
@@ -537,6 +556,10 @@
         "title": "Yapıştırma Gecikmesi (Sonra)",
         "description": "Yapıştırma tuşundan sonra, önceki panonuz geri yüklenmeden önceki gecikme (milisaniye cinsinden). Transkripsiyon yerine eski pano içeriği yapıştırılıyorsa artırın."
       },
+      "holdThreshold": {
+        "title": "Basılı tutma eşiği",
+        "description": "Yalnızca Otomatik modda: kısayolun dokunma yerine basılı tutma sayılması için ne kadar süre (milisaniye) basılı tutulması gerektiği. Kısa basılı tutmalardan sonra kayıt açık kalmaya devam ediyorsa azaltın; bilinçli dokunmalar basılı tutma olarak algılanıyorsa artırın."
+      },
       "reliablePaste": {
         "title": "Güvenilir Yapıştırma (Beta)",
         "description": "Panoyu sabit bir gecikmenin ardından değil, hedef uygulama transkripsiyonu gerçekten okuduktan sonra geri yükler. Sistem yükü altında eski pano içeriğinin yapıştırılması sorununu gidermeyi amaçlar. Pano üzerinden çalışan bir yapıştırma yöntemi gerektirir; yalnızca macOS ve Windows."
@@ -571,6 +594,13 @@
         "button": "Önizle",
         "noNotes": "Paketlenmiş sürüm notu bulunamadı",
         "error": "Sürüm notları önizlenemedi"
+      },
+      "onboardingPreview": {
+        "title": "İlk kurulum önizlemesi",
+        "description": "İzinleri, modelleri veya tamamlanma durumunu değiştirmeden ilk kurulum ekranlarını önizleyin",
+        "permissionsButton": "İzinler",
+        "modelsButton": "Model seçimi",
+        "exitButton": "Önizlemeden çık"
       }
     },
     "about": {

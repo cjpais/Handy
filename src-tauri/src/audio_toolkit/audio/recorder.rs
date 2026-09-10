@@ -43,8 +43,10 @@ const PAUSE_ACK_TIMEOUT: Duration = Duration::from_secs(2);
 #[derive(Default)]
 struct CaptureTransportState {
     pause_requested: AtomicBool,
-    /// Per-request latch reset immediately before requesting a pause. It is
-    /// not a persistent indicator of whether the producer is currently paused.
+    /// Per-request latch reset immediately before requesting a pause. Set by
+    /// the callback once it has forwarded the boundary block for that request;
+    /// while set, further callbacks drop their input. It is not a persistent
+    /// indicator of whether the producer is currently paused.
     pause_acknowledged: AtomicBool,
     overrun_samples: AtomicU64,
 }
@@ -67,12 +69,13 @@ pub enum VadPolicy {
 #[derive(Clone)]
 struct VadConfig {
     detector: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
+    frame_samples: usize,
     offline_hangover_frames: usize,
     streaming_hangover_frames: usize,
 }
 
 impl VadConfig {
-    /// Post-speech hangover tail (in 30 ms frames) for the given policy.
+    /// Post-speech hangover tail (in backend-sized frames) for the given policy.
     /// `Disabled` never reaches the detector, so it maps to the offline value.
     fn hangover_for(&self, policy: VadPolicy) -> usize {
         match policy {
@@ -131,8 +134,11 @@ impl AudioRecorder {
         offline_hangover_frames: usize,
         streaming_hangover_frames: usize,
     ) -> Self {
+        let frame_samples = detector.frame_samples();
+        assert!(frame_samples > 0, "VAD frame size must be non-zero");
         self.vad = Some(VadConfig {
             detector: Arc::new(Mutex::new(detector)),
+            frame_samples,
             offline_hangover_frames,
             streaming_hangover_frames,
         });
@@ -490,8 +496,14 @@ impl AudioRecorder {
         T: Sample + SizedSample + Copy,
         f32: cpal::FromSample<T>,
     {
-        if transport.pause_requested.load(Ordering::Acquire) {
-            transport.pause_acknowledged.store(true, Ordering::Release);
+        // The first block that observes a pause request was captured before
+        // the stop, so it is forwarded (up to a callback period of tail audio,
+        // worst on Bluetooth) and then acknowledged below. Once acknowledged,
+        // stay silent until the consumer clears the pause. Both flags are
+        // checked because the acknowledgement can outlive the request.
+        if transport.pause_requested.load(Ordering::Acquire)
+            && transport.pause_acknowledged.load(Ordering::Acquire)
+        {
             return;
         }
 
@@ -536,9 +548,9 @@ impl AudioRecorder {
                 .fetch_add(dropped as u64, Ordering::Relaxed);
         }
 
-        // Stop may be requested after the entry check but before this write
-        // commits. A post-write acknowledgment makes that write visible before
-        // the consumer's final drain, closing the request-during-write window.
+        // Acknowledge only after the write commits so the boundary block is
+        // visible to the consumer's final drain. This also covers a request
+        // that lands between the entry check and the write.
         acknowledge_pause_after_write(transport);
     }
 
@@ -771,10 +783,16 @@ fn run_consumer(
     stream_error: Arc<AtomicBool>,
     stream_running_at: Instant,
 ) {
+    let frame_samples = vad.as_ref().map_or(
+        (constants::WHISPER_SAMPLE_RATE * 30 / 1000) as usize,
+        |config| config.frame_samples,
+    );
+    let frame_duration =
+        Duration::from_secs_f64(frame_samples as f64 / constants::WHISPER_SAMPLE_RATE as f64);
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
         constants::WHISPER_SAMPLE_RATE as usize,
-        Duration::from_millis(30),
+        frame_duration,
     );
 
     let mut processed_samples = Vec::<f32>::new();
@@ -945,6 +963,28 @@ fn run_consumer(
                                 &mut processed_samples,
                             )
                         });
+
+                        // Diagnostic only: evidence for whether the VAD was
+                        // still withholding tail audio when capture stopped.
+                        // Suggestive, not conclusive, in either direction.
+                        if vad_policy != VadPolicy::Disabled {
+                            if let Some(cfg) = &vad {
+                                let report = cfg.detector.lock().unwrap().tail_report();
+                                if let Some(report) = report {
+                                    log::debug!(
+                                        "VAD at stop: withheld tail {} frames (~{}ms, {} voiced), in_speech={}, onset_counter={}, hangover_counter={}",
+                                        report.withheld_frames,
+                                        report.withheld_frames * cfg.frame_samples * 1000
+                                            / constants::WHISPER_SAMPLE_RATE as usize,
+                                        report.withheld_voiced_frames,
+                                        report.in_speech,
+                                        report.onset_counter,
+                                        report.hangover_counter
+                                    );
+                                }
+                            }
+                        }
+
                         if total_dropped_samples > 0 {
                             log::warn!(
                                 "Active recording completed after dropping {total_dropped_samples} microphone samples"

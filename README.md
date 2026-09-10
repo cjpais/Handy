@@ -19,7 +19,7 @@ Handy isn't trying to be the best speech-to-text app—it's trying to be the mos
 
 ## How It Works
 
-1. **Press** a configurable keyboard shortcut to start/stop recording (or use push-to-talk mode)
+1. **Press** a configurable keyboard shortcut: hold it to record and release to stop, or tap it to toggle recording on and off (Hold-only and Toggle-only modes are also available)
 2. **Speak** your words while the shortcut is active
 3. **Release** and Handy processes your speech using Whisper
 4. **Get** your transcribed text pasted directly into whatever app you're using

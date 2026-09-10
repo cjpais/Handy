@@ -194,9 +194,19 @@
         "noResults": "언어를 찾을 수 없습니다",
         "auto": "자동"
       },
-      "pushToTalk": {
-        "label": "녹음 중 단축키 홀딩",
-        "description": "누르고 있으면 녹음, 놓으면 정지"
+      "shortcutActivation": {
+        "title": "단축키 동작",
+        "description": "음성 텍스트 변환 단축키로 녹음을 시작하고 중지하는 방식을 선택합니다.",
+        "options": {
+          "holdOrToggle": "자동",
+          "pushToTalk": "길게 누르기",
+          "toggle": "전환"
+        },
+        "descriptions": {
+          "hold_or_toggle": "길게 누르면 녹음, 탭하면 전환",
+          "push_to_talk": "단축키를 누르고 있는 동안 녹음합니다",
+          "toggle": "단축키를 탭하면 녹음을 시작하고, 다시 탭하면 중지합니다"
+        }
       }
     },
     "sound": {
@@ -377,6 +387,14 @@
         "title": "음성 활동 감지",
         "description": "녹음에서 무음 구간을 걸러냅니다. 스트리밍 지원 모델은 더 긴 VAD 테일을 사용하며, VAD를 끄면 원본 오디오가 그대로 녹음됩니다."
       },
+      "vadBackend": {
+        "title": "음성 활동 감지 백엔드",
+        "description": "무음을 필터링하는 데 사용할 감지기를 선택합니다. Earshot은 실험적 기능입니다. 음성이 잘리거나 소음이 남는 경우 Silero로 되돌리세요.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
       "fillerWordRemoval": {
         "title": "군더더기 표현 제거",
         "description": "전사에서 흔한 머뭇거림 표현을 제거합니다. 그대로 두려면 이 옵션을 끄세요."
@@ -474,7 +492,8 @@
       },
       "updateChecks": {
         "label": "업데이트 확인",
-        "description": "Handy의 새 버전을 자동으로 확인합니다"
+        "description": "Handy의 새 버전을 자동으로 확인합니다",
+        "lockedDescription": "시스템 구성에 의해 비활성화됨 (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "사운드 테마",
@@ -532,6 +551,10 @@
         "title": "붙여넣기 지연 (이후)",
         "description": "붙여넣기 키 입력을 보낸 후 이전 클립보드를 복원하기 전의 지연 시간(밀리초). 전사된 텍스트 대신 이전 클립보드 내용이 붙여넣어지면 늘리세요."
       },
+      "holdThreshold": {
+        "title": "길게 누르기 기준 시간",
+        "description": "자동 모드 전용: 탭이 아닌 길게 누르기로 인식되려면 단축키를 얼마나 오래(밀리초) 누르고 있어야 하는지 설정합니다. 짧게 누른 뒤에도 녹음이 계속 켜져 있으면 낮추고, 의도한 탭이 길게 누르기로 처리되면 높이세요."
+      },
       "reliablePaste": {
         "title": "안정적인 붙여넣기 (Beta)",
         "description": "고정된 지연 시간이 아니라 대상 앱이 실제로 전사된 텍스트를 읽은 뒤에만 클립보드를 복원합니다. 시스템 부하가 높을 때 이전 클립보드 내용이 붙여넣어지는 문제를 해결하기 위한 옵션입니다. 클립보드를 사용하는 붙여넣기 방법이 필요하며 macOS와 Windows에서만 지원됩니다."
@@ -571,6 +594,13 @@
         "button": "미리보기",
         "noNotes": "내장 릴리스 노트를 찾을 수 없습니다",
         "error": "릴리스 노트를 미리 볼 수 없습니다"
+      },
+      "onboardingPreview": {
+        "title": "온보딩 미리보기",
+        "description": "권한, 모델 또는 완료 상태를 변경하지 않고 온보딩 화면을 미리 봅니다",
+        "permissionsButton": "권한",
+        "modelsButton": "모델 선택",
+        "exitButton": "미리보기 종료"
       }
     },
     "about": {
