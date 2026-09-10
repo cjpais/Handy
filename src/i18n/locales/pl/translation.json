@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "Schowek (Shift+Insert)",
           "direct": "Bezpośrednio",
           "none": "Brak",
-          "externalScript": "Skrypt zewnętrzny"
+          "externalScript": "Skrypt zewnętrzny",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/sciezka/do/twojego/skryptu.sh"
+        "externalScriptPlaceholder": "/sciezka/do/twojego/skryptu.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "Narzędzie do wpisywania",

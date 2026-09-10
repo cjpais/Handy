@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "클립보드 (Shift+Insert)",
           "direct": "직접",
           "none": "없음",
-          "externalScript": "외부 스크립트"
+          "externalScript": "외부 스크립트",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "타이핑 도구",

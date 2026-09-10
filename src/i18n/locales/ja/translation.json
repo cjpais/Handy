@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "クリップボード (Shift+Insert)",
           "direct": "直接",
           "none": "なし",
-          "externalScript": "外部スクリプト"
+          "externalScript": "外部スクリプト",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "タイピングツール",

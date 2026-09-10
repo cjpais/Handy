@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "क्लिपबोर्ड (Shift+Insert)",
           "direct": "डाइरेक्ट",
           "none": "कुनै होइन",
-          "externalScript": "बाह्य स्क्रिप्ट"
+          "externalScript": "बाह्य स्क्रिप्ट",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "टाइपिङ उपकरण",

@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "Klembord (Shift+Insert)",
           "direct": "Direct",
           "none": "Geen",
-          "externalScript": "Extern script"
+          "externalScript": "Extern script",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/pad/naar/je/script.sh"
+        "externalScriptPlaceholder": "/pad/naar/je/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "Typgereedschap",

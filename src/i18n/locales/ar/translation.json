@@ -304,9 +304,11 @@
           "clipboardShiftInsert": "الحافظة (Shift+Insert)",
           "direct": "مباشر",
           "none": "بلا",
-          "externalScript": "نص برمجي خارجي"
+          "externalScript": "نص برمجي خارجي",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "أداة الكتابة",

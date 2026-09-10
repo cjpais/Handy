@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "Área de Transferência (Shift+Insert)",
           "direct": "Direto",
           "none": "Nenhum",
-          "externalScript": "Script externo"
+          "externalScript": "Script externo",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/caminho/para/seu/script.sh"
+        "externalScriptPlaceholder": "/caminho/para/seu/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "Ferramenta de digitação",

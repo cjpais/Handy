@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "לוח (Shift+Insert)",
           "direct": "ישיר",
           "none": "ללא",
-          "externalScript": "סקריפט חיצוני"
+          "externalScript": "סקריפט חיצוני",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "כלי הקלדה",

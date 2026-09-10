@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "Клипборд (Shift+Insert)",
           "direct": "Директно",
           "none": "Няма",
-          "externalScript": "Външен скрипт"
+          "externalScript": "Външен скрипт",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/път/към/вашия/script.sh"
+        "externalScriptPlaceholder": "/път/към/вашия/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "Инструмент за писане",

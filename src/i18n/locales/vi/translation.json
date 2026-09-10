@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "Bảng nhớ tạm (Shift+Insert)",
           "direct": "Trực tiếp",
           "none": "Không có",
-          "externalScript": "Script bên ngoài"
+          "externalScript": "Script bên ngoài",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/duong-dan/toi/script.sh"
+        "externalScriptPlaceholder": "/duong-dan/toi/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "Công cụ gõ",

@@ -327,9 +327,11 @@
           "clipboardShiftInsert": "Udklipsholder (Shift+Insert)",
           "direct": "Direkte",
           "none": "Ingen",
-          "externalScript": "Eksternt script"
+          "externalScript": "Eksternt script",
+          "webhook": "Webhook"
         },
-        "externalScriptPlaceholder": "/sti/til/dit/script.sh"
+        "externalScriptPlaceholder": "/sti/til/dit/script.sh",
+        "webhookUrlPlaceholder": "http://127.0.0.1:5115/handy/pre-paste"
       },
       "typingTool": {
         "title": "Skriveværktøj",
