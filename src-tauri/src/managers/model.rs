@@ -57,6 +57,45 @@ pub enum ModelSource {
     Local,
 }
 
+/// The raw measurements behind `accuracy_score` / `speed_score`, straight from
+/// the model card's `transcribe_cpp` block (via `catalog.json`). The scores are
+/// a single collapsed 0–1 bar; these let the UI show the actual numbers and pick
+/// the evaluation set that matches the user's language instead of the headline
+/// (English, when available) one.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Type)]
+pub struct ModelBenchmarks {
+    /// Word error rate in percent, by evaluation set then quantization:
+    /// `wer["fleurs_ru"]["q8_0"] == 5.36`. Set names are the card key minus the
+    /// `wer_` prefix (`librispeech_test_clean`, `fleurs_en`, `fleurs_ru`, …).
+    pub wer: HashMap<String, HashMap<String, f32>>,
+    /// Real-time factor (audio seconds transcribed per wall second), by
+    /// reference machine then backend: `rtf["ryzen_4750u"]["cpu"] == 7.5`.
+    pub rtf: HashMap<String, HashMap<String, f32>>,
+    /// Per-language WER the model's vendor publishes for the base model
+    /// (`scripts/vendor_benchmarks.json`). Handy measures one eval set per
+    /// model, so this is what lets a Russian or German user see a number for
+    /// their language; the UI labels it "reported by …", never as measured.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reported: Option<ReportedBenchmarks>,
+}
+
+/// Vendor-published per-language error rates for a model's base checkpoint.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Type)]
+pub struct ReportedBenchmarks {
+    /// Who published it — "NVIDIA", "OpenAI", "Qwen", "Mistral", …
+    pub source: String,
+    /// Where the numbers were read from (model card, paper, README chart).
+    pub url: String,
+    /// WER in percent by evaluation set then language code:
+    /// `wer["fleurs"]["ru"] == 5.51`. Set names: `fleurs`, `commonvoice`,
+    /// `commonvoice15`, `covost`, `mls`.
+    pub wer: HashMap<String, HashMap<String, f32>>,
+    /// Character error rate in percent, by evaluation set then language.
+    // Specta processes serde attributes in order; default restores optionality.
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub cer: HashMap<String, HashMap<String, f32>>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct ModelInfo {
     pub id: String,
@@ -70,8 +109,11 @@ pub struct ModelInfo {
     pub partial_size: u64,
     pub is_directory: bool,
     pub engine_type: EngineType,
-    pub accuracy_score: f32,        // 0.0 to 1.0, higher is more accurate
-    pub speed_score: f32,           // 0.0 to 1.0, higher is faster
+    pub accuracy_score: f32, // 0.0 to 1.0, higher is more accurate
+    pub speed_score: f32,    // 0.0 to 1.0, higher is faster
+    /// Raw WER/RTF measurements behind the two scores; `None` for models the
+    /// catalog has no card data for (customs, legacy blobs, HF-cache finds).
+    pub benchmarks: Option<ModelBenchmarks>,
     pub supports_translation: bool, // Whether the model supports translating to English
     pub is_recommended: bool,       // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
@@ -176,6 +218,8 @@ pub struct ModelDescriptor {
     pub default_quant: Option<String>,
     pub speed_score: f32,
     pub accuracy_score: f32,
+    /// Raw measurements behind the scores (see [`ModelBenchmarks`]).
+    pub benchmarks: Option<ModelBenchmarks>,
     /// Editorial sort priority across the whole catalog (lower = higher). Drives
     /// list ordering; independent of `recommended`.
     pub recommended_rank: Option<u32>,
@@ -245,6 +289,7 @@ impl ModelDescriptor {
             engine_type: self.engine_type.clone(),
             accuracy_score: self.accuracy_score,
             speed_score: self.speed_score,
+            benchmarks: self.benchmarks.clone(),
             supports_translation: self.caps.supports_translation.unwrap_or(false),
             is_recommended: self.recommended && is_default,
             supports_language_selection: languages.len() > 1,
@@ -578,6 +623,7 @@ impl ModelManager {
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.60,
                 speed_score: 0.85,
+                benchmarks: None,
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
@@ -611,6 +657,7 @@ impl ModelManager {
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.75,
                 speed_score: 0.60,
+                benchmarks: None,
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
@@ -643,6 +690,7 @@ impl ModelManager {
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.80,
                 speed_score: 0.40,
+                benchmarks: None,
                 supports_translation: false, // Turbo doesn't support translation
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
@@ -675,6 +723,7 @@ impl ModelManager {
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.85,
                 speed_score: 0.30,
+                benchmarks: None,
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
@@ -708,6 +757,7 @@ impl ModelManager {
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.85,
                 speed_score: 0.35,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: whisper_languages,
@@ -741,6 +791,7 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.85,
                 speed_score: 0.85,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
@@ -783,6 +834,7 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.80,
                 speed_score: 0.85,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages,
@@ -815,6 +867,7 @@ impl ModelManager {
                 engine_type: EngineType::Moonshine,
                 accuracy_score: 0.70,
                 speed_score: 0.90,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
@@ -848,6 +901,7 @@ impl ModelManager {
                 engine_type: EngineType::MoonshineStreaming,
                 accuracy_score: 0.55,
                 speed_score: 0.95,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
@@ -881,6 +935,7 @@ impl ModelManager {
                 engine_type: EngineType::MoonshineStreaming,
                 accuracy_score: 0.65,
                 speed_score: 0.90,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
@@ -914,6 +969,7 @@ impl ModelManager {
                 engine_type: EngineType::MoonshineStreaming,
                 accuracy_score: 0.75,
                 speed_score: 0.80,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
@@ -953,6 +1009,7 @@ impl ModelManager {
                 engine_type: EngineType::SenseVoice,
                 accuracy_score: 0.65,
                 speed_score: 0.95,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
@@ -988,6 +1045,7 @@ impl ModelManager {
                 engine_type: EngineType::GigaAM,
                 accuracy_score: 0.85,
                 speed_score: 0.75,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: gigaam_languages,
@@ -1027,6 +1085,7 @@ impl ModelManager {
                 engine_type: EngineType::Canary,
                 accuracy_score: 0.75,
                 speed_score: 0.85,
+                benchmarks: None,
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: canary_flash_languages,
@@ -1070,6 +1129,7 @@ impl ModelManager {
                 engine_type: EngineType::Canary,
                 accuracy_score: 0.85,
                 speed_score: 0.70,
+                benchmarks: None,
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: canary_1b_languages,
@@ -1110,6 +1170,7 @@ impl ModelManager {
                 engine_type: EngineType::Cohere,
                 accuracy_score: 0.90,
                 speed_score: 0.60,
+                benchmarks: None,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: cohere_languages,
@@ -1119,6 +1180,12 @@ impl ModelManager {
                 supports_language_detection: true,
             },
         );
+
+        // Legacy (.bin/ONNX) entries have no card data of their own; borrow the
+        // measurements of the same model's GGUF catalog entry so an already
+        // downloaded legacy model still shows numbers (the UI marks them as
+        // taken from the GGUF build).
+        Self::borrow_legacy_benchmarks(&mut available_models);
 
         // Seed the bundled offline catalog before the on-disk scans, so a model
         // already in the HF cache dedups onto its richer catalog entry (the scans
@@ -1177,6 +1244,40 @@ impl ModelManager {
                 .then_with(|| a.name.cmp(&b.name))
         });
         list
+    }
+
+    /// Legacy table id -> catalog slug of the same model's GGUF build. Only
+    /// for the measurement lookup; ids, files and runtimes stay separate.
+    pub(crate) const LEGACY_CATALOG_SLUG: &'static [(&'static str, &'static str)] = &[
+        ("small", "whisper-small"),
+        ("medium", "whisper-medium"),
+        ("turbo", "whisper-large-v3-turbo"),
+        ("large", "whisper-large-v3"),
+        ("breeze-asr", "Breeze-ASR-25"),
+        ("parakeet-tdt-0.6b-v2", "parakeet-tdt-0.6b-v2"),
+        ("parakeet-tdt-0.6b-v3", "parakeet-tdt-0.6b-v3"),
+        ("moonshine-base", "moonshine-base"),
+        ("moonshine-tiny-streaming-en", "moonshine-streaming-tiny"),
+        ("moonshine-small-streaming-en", "moonshine-streaming-small"),
+        (
+            "moonshine-medium-streaming-en",
+            "moonshine-streaming-medium",
+        ),
+        ("sense-voice-int8", "SenseVoiceSmall"),
+        ("gigaam-v3-e2e-ctc", "gigaam-v3-e2e-ctc"),
+        ("canary-180m-flash", "canary-180m-flash"),
+        ("canary-1b-v2", "canary-1b-v2"),
+        ("cohere-int8", "cohere-transcribe-03-2026"),
+    ];
+
+    fn borrow_legacy_benchmarks(available_models: &mut HashMap<String, ModelInfo>) {
+        for (legacy_id, slug) in Self::LEGACY_CATALOG_SLUG {
+            if let Some(info) = available_models.get_mut(*legacy_id) {
+                if info.benchmarks.is_none() {
+                    info.benchmarks = crate::catalog::benchmarks_for_slug(slug);
+                }
+            }
+        }
     }
 
     /// Seed the bundled catalog ([`crate::catalog::CATALOG`]) into the registry,
@@ -1720,6 +1821,7 @@ impl ModelManager {
                     engine_type: EngineType::TranscribeCpp,
                     accuracy_score: 0.0, // Sentinel: UI hides score bars when both are 0
                     speed_score: 0.0,
+                    benchmarks: None,
                     supports_translation: caps.supports_translation,
                     is_recommended: false,
                     supported_languages: caps.supported_languages,
@@ -1864,6 +1966,7 @@ impl ModelManager {
                         engine_type: EngineType::TranscribeCpp,
                         accuracy_score: 0.0,
                         speed_score: 0.0,
+                        benchmarks: None,
                         supports_translation: caps.supports_translation,
                         is_recommended: false,
                         supported_languages: caps.supported_languages,
@@ -2815,6 +2918,7 @@ mod tests {
                 engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.5,
                 speed_score: 0.5,
+                benchmarks: None,
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
@@ -2921,6 +3025,7 @@ mod tests {
             default_quant: Some("Q8_0".to_string()),
             speed_score: 0.5,
             accuracy_score: 0.5,
+            benchmarks: None,
             recommended_rank: None,
             recommended: true,
         };

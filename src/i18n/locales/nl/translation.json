@@ -28,7 +28,16 @@
     "customModelDescription": "Niet officieel ondersteund",
     "modelCard": {
       "accuracy": "nauwkeurigheid",
-      "speed": "snelheid"
+      "speed": "snelheid",
+      "notMeasured": "Snelheid niet gemeten op de referentiemachine.",
+      "werTooltip": "WER {{value}}: {{value}} van de woorden fout op {{dataset}} bij {{quant}}, door Handy gemeten op het geleverde model ({{accuracy}} goed). De balk vergelijkt modellen: langer is beter.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} van de woorden fout op {{dataset}} volgens {{source}} voor het basismodel ({{accuracy}} goed); Handy heeft deze taal niet zelf gemeten. De balk vergelijkt modellen: langer is beter.",
+      "legacyTooltip": "Gemeten op de GGUF-versie van dit model, niet op deze verouderde download.",
+      "noDataTooltip": "Geen meting voor {{language}}, niet van Handy en niet van de modelaanbieder.",
+      "noDataFallbackTooltip": "* Geen meting voor {{language}}, niet van Handy en niet van de modelaanbieder. Op {{dataset}}: {{accuracy}} van de woorden goed.",
+      "speedTooltip": "Transcribeert {{value}} sneller dan realtime op {{machine}} ({{backend}}).",
+      "characterAccuracy": "tekens",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} van de tekens fout op {{dataset}} volgens {{source}} voor het basismodel ({{accuracy}} goed); Handy heeft deze taal niet zelf gemeten. De balk vergelijkt modellen: langer is beter."
     },
     "models": {
       "small": {

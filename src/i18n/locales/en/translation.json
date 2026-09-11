@@ -28,7 +28,16 @@
     "customModelDescription": "Not officially supported",
     "modelCard": {
       "accuracy": "accuracy",
-      "speed": "speed"
+      "speed": "speed",
+      "notMeasured": "Speed not measured on the reference machine.",
+      "werTooltip": "{{accuracy}} of words right, {{value}} wrong (WER) on {{dataset}} at {{quant}}, measured by Handy on the shipped model.",
+      "reportedTooltip": "≈ {{accuracy}} of words right, {{value}} wrong (WER) on {{dataset}}, as reported by {{source}} for the base model with its own test setup; Handy has not measured this language itself, so compare with Handy's own figures only roughly.",
+      "legacyTooltip": "Measured on the GGUF build of this model, not on this legacy download.",
+      "noDataTooltip": "No benchmark for {{language}} from Handy or the model's vendor.",
+      "noDataFallbackTooltip": "* No benchmark for {{language}} from Handy or the model's vendor. Grey bar and figure are for {{dataset}}: {{accuracy}} of words right.",
+      "speedTooltip": "Transcribes {{value}} faster than real time on {{machine}} ({{backend}}).",
+      "characterAccuracy": "character accuracy",
+      "reportedCerTooltip": "≈ {{accuracy}} character accuracy, {{value}} wrong (CER) on {{dataset}}, as reported by {{source}} for the base model with its own test setup; Handy has not measured this language itself, so compare with Handy's own figures only roughly."
     },
     "models": {
       "small": {

@@ -20,6 +20,19 @@ import {
   getLanguageLabel,
   getUniqueCapabilityLanguages,
 } from "../../lib/constants/languages";
+import {
+  accuracyFromWer,
+  backendLabel,
+  datasetLabel,
+  formatAccuracy,
+  formatRtf,
+  formatWer,
+  languageContext,
+  machineLabel,
+  pickRtf,
+  resolveWer,
+  speedFromRtf,
+} from "../../lib/utils/modelBenchmarks";
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -75,6 +88,8 @@ interface ModelCardProps {
   downloadProgress?: number;
   downloadSpeed?: number; // MB/s
   showRecommended?: boolean;
+  /** Language the surrounding list is filtered to; wins over the transcription-language setting for which WER to show. */
+  languageFilter?: string;
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
@@ -90,10 +105,14 @@ const ModelCard: React.FC<ModelCardProps> = ({
   downloadProgress,
   downloadSpeed,
   showRecommended = true,
+  languageFilter,
 }) => {
   const { t } = useTranslation();
   const debugMode = useSettingsStore(
     (state) => state.settings?.debug_mode ?? false,
+  );
+  const selectedLanguage = useSettingsStore(
+    (state) => state.settings?.selected_language,
   );
   const isFeatured = variant === "featured";
   // The active model is already loaded — re-selecting it just reloads it for no
@@ -110,6 +129,69 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const capabilityLanguages = getUniqueCapabilityLanguages(
     model.supported_languages,
   );
+
+  const language = languageContext(languageFilter, selectedLanguage);
+  const isLegacy = isLegacySource(model);
+  const display = resolveWer(model.benchmarks, language, quantLabel);
+  const wer = display.wer;
+  const fallback = display.missingLanguage ? display.fallback : null;
+  const measurement = wer ?? fallback;
+  const rtf = pickRtf(model.benchmarks);
+  let accuracyFill = display.missingLanguage ? 0 : model.accuracy_score;
+  if (measurement) accuracyFill = accuracyFromWer(measurement.value);
+  const accuracy = measurement ? formatAccuracy(measurement.value) : "";
+  const speedFill = rtf ? speedFromRtf(rtf.value) : model.speed_score;
+  const hasBenchmarks = model.benchmarks != null;
+  const showScores =
+    hasBenchmarks || model.accuracy_score > 0 || model.speed_score > 0;
+
+  let accuracyText: string | null = null;
+  let werTitle: string | undefined;
+  if (wer) {
+    accuracyText = `${wer.source === "reported" ? "≈ " : ""}${accuracy}`;
+    let tooltipKey = "onboarding.modelCard.werTooltip";
+    if (wer.source === "reported") {
+      tooltipKey =
+        wer.metric === "cer"
+          ? "onboarding.modelCard.reportedCerTooltip"
+          : "onboarding.modelCard.reportedTooltip";
+    }
+    werTitle = t(tooltipKey, {
+      accuracy,
+      value: formatWer(wer.value),
+      dataset: datasetLabel(wer),
+      source: wer.sourceName ?? "",
+      quant: (wer.quant ?? "").toUpperCase(),
+    });
+  } else if (display.missingLanguage) {
+    accuracyText = fallback ? `${accuracy}*` : "—";
+    werTitle = t(
+      fallback
+        ? "onboarding.modelCard.noDataFallbackTooltip"
+        : "onboarding.modelCard.noDataTooltip",
+      {
+        language:
+          getLanguageLabel(display.missingLanguage) || display.missingLanguage,
+        dataset: fallback ? datasetLabel(fallback) : "",
+        accuracy,
+      },
+    );
+  }
+  if (isLegacy && measurement?.source === "measured" && werTitle) {
+    werTitle += ` ${t("onboarding.modelCard.legacyTooltip")}`;
+  }
+
+  let rtfTitle: string | undefined;
+  if (rtf) {
+    rtfTitle = t("onboarding.modelCard.speedTooltip", {
+      value: formatRtf(rtf.value),
+      machine: machineLabel(rtf.machine),
+      backend: backendLabel(rtf.backend),
+    });
+    if (isLegacy) rtfTitle += ` ${t("onboarding.modelCard.legacyTooltip")}`;
+  } else if (hasBenchmarks) {
+    rtfTitle = t("onboarding.modelCard.notMeasured");
+  }
 
   const baseClasses =
     "flex flex-col rounded-xl px-4 py-3 gap-2 text-left transition-all duration-200";
@@ -182,7 +264,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             {model.is_custom && (
               <Badge variant="secondary">{t("modelSelector.custom")}</Badge>
             )}
-            {isLegacySource(model) && (
+            {isLegacy && (
               <Badge variant="secondary">{t("modelSelector.legacy")}</Badge>
             )}
             {status === "switching" && (
@@ -196,30 +278,48 @@ const ModelCard: React.FC<ModelCardProps> = ({
             {displayDescription}
           </p>
         </div>
-        {(model.accuracy_score > 0 || model.speed_score > 0) && (
-          <div className="hidden sm:flex items-center ms-4">
+        {showScores && (
+          <div className="hidden sm:flex items-center ms-4 shrink-0">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" title={werTitle}>
                 <p className="text-xs text-text/60 w-24 text-end">
-                  {t("onboarding.modelCard.accuracy")}
+                  {t(
+                    wer?.metric === "cer"
+                      ? "onboarding.modelCard.characterAccuracy"
+                      : "onboarding.modelCard.accuracy",
+                  )}
                 </p>
                 <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-logo-primary rounded-full"
-                    style={{ width: `${model.accuracy_score * 100}%` }}
+                    className={`h-full rounded-full ${fallback ? "bg-mid-gray/60" : "bg-logo-primary"}`}
+                    style={{ width: `${accuracyFill * 100}%` }}
                   />
                 </div>
+                {hasBenchmarks && (
+                  <p
+                    className={`text-xs tabular-nums w-14 ${accuracyText === "—" || fallback ? "text-text/40" : "text-text/60"}`}
+                  >
+                    {accuracyText}
+                  </p>
+                )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" title={rtfTitle}>
                 <p className="text-xs text-text/60 w-24 text-end">
                   {t("onboarding.modelCard.speed")}
                 </p>
                 <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-logo-primary rounded-full"
-                    style={{ width: `${model.speed_score * 100}%` }}
+                    style={{ width: `${speedFill * 100}%` }}
                   />
                 </div>
+                {hasBenchmarks && (
+                  <p
+                    className={`text-xs tabular-nums w-14 ${rtf ? "text-text/60" : "text-text/40"}`}
+                  >
+                    {rtf ? formatRtf(rtf.value) : "—"}
+                  </p>
+                )}
               </div>
             </div>
           </div>

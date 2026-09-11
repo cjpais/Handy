@@ -28,7 +28,16 @@
     "customModelDescription": "공식 지원되지 않음",
     "modelCard": {
       "accuracy": "정확도",
-      "speed": "속도"
+      "speed": "속도",
+      "notMeasured": "참조 머신에서 속도가 측정되지 않았습니다.",
+      "werTooltip": "WER {{value}}: {{dataset}}({{quant}})에서 단어의 {{value}}가 오류. Handy가 배포 모델에서 측정({{accuracy}} 정답). 막대는 모델 간 비교이며 길수록 좋습니다.",
+      "reportedTooltip": "≈ WER {{value}}: {{dataset}}에서 단어의 {{value}}가 오류. 기본 모델에 대해 {{source}}가 보고({{accuracy}} 정답). Handy는 이 언어를 측정하지 않았습니다. 막대는 모델 간 비교이며 길수록 좋습니다.",
+      "legacyTooltip": "이 모델의 GGUF 빌드에서 측정한 값이며, 이 구형 다운로드에서 측정한 것이 아닙니다.",
+      "noDataTooltip": "{{language}}에 대한 측정값이 Handy와 모델 제공자 모두에게 없습니다.",
+      "noDataFallbackTooltip": "* {{language}}에 대한 측정값이 Handy와 모델 제공자 모두에게 없습니다. {{dataset}}: 단어의 {{accuracy}} 정답.",
+      "speedTooltip": "{{machine}}({{backend}})에서 실시간보다 {{value}} 빠르게 전사합니다.",
+      "characterAccuracy": "문자 정확도",
+      "reportedCerTooltip": "≈ CER {{value}}: {{dataset}}에서 문자의 {{value}}가 오류. 기본 모델에 대해 {{source}}가 보고({{accuracy}} 정답). Handy는 이 언어를 측정하지 않았습니다. 막대는 모델 간 비교이며 길수록 좋습니다."
     },
     "models": {
       "small": {

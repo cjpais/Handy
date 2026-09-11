@@ -36,6 +36,43 @@ def speed_from_rtf(rtf):
 def acc_from_wer(wer):
     return None if wer is None else round(100 * math.exp(-wer / ACC_SCALE))
 
+def _num_map(d):
+    """`{key: number}` with non-numeric entries dropped; None if nothing usable."""
+    out = {k: float(v) for k, v in (d or {}).items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    return out or None
+
+# Per-language WER the model vendors publish for the *base* models (FLEURS etc.),
+# curated in scripts/vendor_benchmarks.json. Handy's own runs cover one eval set
+# per model (LibriSpeech for most), so without these a Russian or German user
+# only ever sees an English number. Shown as "reported by <vendor>", never mixed
+# with the measured GGUF numbers.
+VENDOR_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vendor_benchmarks.json")
+VENDOR = json.load(open(VENDOR_PATH)) if os.path.exists(VENDOR_PATH) else {}
+
+def benchmarks_from_card(b, slug=None):
+    """The raw measurements behind the scores, so the UI can show real numbers.
+
+    `wer`: eval set -> quant -> WER %   (`wer_fleurs_ru: {q8_0: 5.36}` -> `fleurs_ru`)
+    `rtf`: machine  -> backend -> RTF   (`rtf_ryzen_4750u: {cpu: 8}`   -> `ryzen_4750u`)
+    The scores above stay as the coarse fallback; the frontend prefers an eval set
+    matching the user's selected language (`fleurs_<lang>`) when one is present.
+    Returns None when the card carries no measurements at all.
+    """
+    def section(prefix):
+        out = {}
+        for k in b:
+            if k.startswith(prefix) and (vals := _num_map(b[k])):
+                out[k[len(prefix):]] = vals
+        return out
+    wer, rtf = section("wer_"), section("rtf_")
+    reported = VENDOR.get(slug) if slug else None
+    if not (wer or rtf or reported):
+        return None
+    out = {"wer": wer, "rtf": rtf}
+    if reported:
+        out["reported"] = reported
+    return out
+
 # ───────────────────────── curation (CJ owns; editorial, not derivable) ──────
 # slug -> {rank?, rec?, desc?, use_case?, default_quant?, hidden?}.  All optional.
 # desc is hand-written UI copy; models without one use factual generated summaries.
@@ -253,6 +290,7 @@ def build(repo):
         "capabilities": caps,
         "speed_score": speed_from_rtf(rtf),
         "accuracy_score": acc_from_wer(hw),
+        "benchmarks": benchmarks_from_card(b, s),       # raw WER/RTF behind the scores + vendor per-language WER
         "files": files,
         "default_quant": default_quant,
         "recommended": bool(cur.get("rec")),         # small badge/onboarding subset
@@ -292,6 +330,10 @@ def main():
     # and hash changes don't cascade into per-key comma churn
     text = re.sub(r'\{\s+("filename":.*?"sha256": "[0-9a-f]{64}")\s+\}',
                   lambda m: "{" + re.sub(r",\s+", ", ", m.group(1)) + "}",
+                  text, flags=re.S)
+    # leaf benchmark maps (`{"q8_0": 1.94, "f16": 1.95}`) on one line each
+    text = re.sub(r'\{\s+((?:"[a-z0-9_\-]+": -?[0-9.]+,?\s+)+)\}',
+                  lambda m: "{" + re.sub(r",\s+", ", ", m.group(1).strip()) + "}",
                   text, flags=re.S)
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "catalog.json")
     open(out, "w").write(text)

@@ -28,7 +28,16 @@
     "customModelDescription": "Non officiellement pris en charge",
     "modelCard": {
       "accuracy": "précision",
-      "speed": "vitesse"
+      "speed": "vitesse",
+      "notMeasured": "Vitesse non mesurée sur la machine de référence.",
+      "werTooltip": "WER {{value}} : {{value}} des mots erronés sur {{dataset}} en {{quant}}, mesuré par Handy sur le modèle livré ({{accuracy}} corrects). La barre compare les modèles : plus longue, mieux c’est.",
+      "reportedTooltip": "≈ WER {{value}} : {{value}} des mots erronés sur {{dataset}} selon {{source}} pour le modèle de base ({{accuracy}} corrects) ; Handy n’a pas mesuré cette langue. La barre compare les modèles : plus longue, mieux c’est.",
+      "legacyTooltip": "Mesuré sur la version GGUF de ce modèle, pas sur ce téléchargement obsolète.",
+      "noDataTooltip": "Aucune mesure pour {{language}}, ni de Handy ni de l’éditeur du modèle.",
+      "noDataFallbackTooltip": "* Aucune mesure pour {{language}}, ni de Handy ni de l’éditeur du modèle. Sur {{dataset}} : {{accuracy}} des mots corrects.",
+      "speedTooltip": "Transcrit {{value}} plus vite que le temps réel sur {{machine}} ({{backend}}).",
+      "characterAccuracy": "caractères",
+      "reportedCerTooltip": "≈ CER {{value}} : {{value}} des caractères erronés sur {{dataset}} selon {{source}} pour le modèle de base ({{accuracy}} corrects) ; Handy n’a pas mesuré cette langue. La barre compare les modèles : plus longue, mieux c’est."
     },
     "models": {
       "small": {

@@ -19,7 +19,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 use crate::managers::model::{
-    default_quant_file, EngineType, ModelDescriptor, ModelSource, QuantFile,
+    default_quant_file, EngineType, ModelBenchmarks, ModelDescriptor, ModelSource, QuantFile,
 };
 use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 
@@ -39,6 +39,10 @@ struct CatalogRoot {
 struct CatalogModel {
     /// HF repo id, e.g. `handy-computer/whisper-small-gguf`.
     id: String,
+    /// Repo name minus org and `-gguf`, e.g. `whisper-small`; the key the
+    /// legacy table and `vendor_benchmarks.json` use.
+    #[serde(default)]
+    slug: String,
     /// Commit sha the catalog's sizes/hashes were generated from. Both HF
     /// acquisition and mirror keys use it, so downloaded bytes provably match
     /// the hashes regardless of source. Cache *lookup* additionally falls back
@@ -52,6 +56,11 @@ struct CatalogModel {
     capabilities: CatalogCaps,
     speed_score: Option<f32>,
     accuracy_score: Option<f32>,
+    /// Raw WER/RTF behind the two scores (`benchmarks` in `catalog.json`).
+    /// Absent (or `null`) for cards without measurements and for catalogs
+    /// predating the field.
+    #[serde(default)]
+    benchmarks: Option<ModelBenchmarks>,
     files: Vec<QuantFile>,
     default_quant: Option<String>,
     recommended_rank: Option<u32>,
@@ -106,6 +115,7 @@ impl From<&CatalogModel> for ModelDescriptor {
             // catalog scores are 0–100; ModelInfo / the UI bars use 0.0–1.0.
             speed_score: m.speed_score.unwrap_or(0.0) / 100.0,
             accuracy_score: m.accuracy_score.unwrap_or(0.0) / 100.0,
+            benchmarks: m.benchmarks.clone(),
             recommended_rank: m.recommended_rank,
             recommended: m.recommended,
         }
@@ -205,6 +215,16 @@ static RANK_BY_ID: Lazy<HashMap<String, u32>> = Lazy::new(|| {
         .collect()
 });
 
+/// The measurements of the catalog model with this `slug` (`whisper-small`,
+/// `gigaam-v3-e2e-ctc`, …), for legacy entries that share the base model but
+/// carry no card data of their own.
+pub fn benchmarks_for_slug(slug: &str) -> Option<ModelBenchmarks> {
+    ROOT.models
+        .iter()
+        .find(|m| m.slug == slug)
+        .and_then(|m| m.benchmarks.clone())
+}
+
 /// Recommended rank for a model id (lower = higher priority). Returns
 /// `u32::MAX` for unranked/unknown ids so they sort last in an ascending sort.
 pub fn rank_of(model_id: &str) -> u32 {
@@ -246,6 +266,54 @@ mod tests {
         for d in CATALOG.iter() {
             assert!((0.0..=1.0).contains(&d.speed_score), "{} speed", d.id);
             assert!((0.0..=1.0).contains(&d.accuracy_score), "{} acc", d.id);
+        }
+    }
+
+    #[test]
+    fn benchmarks_carry_the_measurements_behind_the_scores() {
+        for d in CATALOG.iter() {
+            let b = d
+                .benchmarks
+                .as_ref()
+                .unwrap_or_else(|| panic!("{}: scored model without benchmarks", d.id));
+            assert!(
+                d.accuracy_score == 0.0 || !b.wer.is_empty(),
+                "{}: accuracy score without a WER measurement",
+                d.id
+            );
+            assert!(!b.rtf.is_empty(), "{}: no RTF measurement", d.id);
+        }
+    }
+
+    #[test]
+    fn reported_character_rates_survive_serialization() {
+        let typescript = specta_typescript::export::<crate::managers::model::ReportedBenchmarks>(
+            &Default::default(),
+        )
+        .unwrap();
+        assert!(typescript.contains("cer?:"));
+
+        let qwen = benchmarks_for_slug("Qwen3-ASR-1.7B").expect("Qwen benchmark");
+        let reported = qwen.reported.expect("Qwen vendor data");
+        assert_eq!(reported.cer["fleurs"]["ko"], 2.57);
+        assert!(!reported.wer["fleurs"].contains_key("ko"));
+        let serialized = serde_json::to_value(&reported).expect("serialize benchmarks");
+        assert!(serialized["cer"]["fleurs"]["ko"].is_number());
+
+        let parakeet = benchmarks_for_slug("parakeet-tdt-0.6b-v3").unwrap();
+        let reported = parakeet.reported.unwrap();
+        assert!(reported.cer.is_empty());
+        assert!(serde_json::to_value(reported).unwrap().get("cer").is_none());
+    }
+
+    #[test]
+    fn legacy_benchmark_mappings_resolve() {
+        for (_, slug) in crate::managers::model::ModelManager::LEGACY_CATALOG_SLUG {
+            assert!(
+                benchmarks_for_slug(slug).is_some(),
+                "legacy mapping has no catalog benchmarks for {}",
+                slug
+            );
         }
     }
 

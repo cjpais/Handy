@@ -28,7 +28,16 @@
     "customModelDescription": "आधिकारिक रूपमा समर्थित छैन",
     "modelCard": {
       "accuracy": "शुद्धता",
-      "speed": "गति"
+      "speed": "गति",
+      "notMeasured": "सन्दर्भ मेसिनमा गति मापन गरिएको छैन।",
+      "werTooltip": "WER {{value}}: {{dataset}} मा {{quant}} मा {{value}} शब्द गलत, Handy ले वितरित मोडेलमा मापन गरेको ({{accuracy}} सही)। बारले मोडेलहरू तुलना गर्छ: लम्बा राम्रो हो।",
+      "reportedTooltip": "≈ WER {{value}}: {{dataset}} मा {{value}} शब्द गलत, आधार मोडेलका लागि {{source}} ले रिपोर्ट गरेको ({{accuracy}} सही); Handy ले यो भाषा मापन गरेको छैन। बारले मोडेलहरू तुलना गर्छ: लम्बा राम्रो हो।",
+      "legacyTooltip": "यो मोडेलको GGUF बिल्डमा मापन गरिएको, यो पुरानो डाउनलोडमा होइन।",
+      "noDataTooltip": "{{language}} का लागि Handy वा मोडेल प्रदायकबाट कुनै मापन छैन।",
+      "noDataFallbackTooltip": "* {{language}} का लागि Handy वा मोडेल प्रदायकबाट कुनै मापन छैन। {{dataset}} मा: {{accuracy}} शब्द सही।",
+      "speedTooltip": "{{machine}} ({{backend}}) मा रियल-टाइमभन्दा {{value}} छिटो ट्रान्सक्राइब गर्छ।",
+      "characterAccuracy": "अक्षर",
+      "reportedCerTooltip": "≈ CER {{value}}: {{dataset}} मा {{value}} अक्षर गलत, आधार मोडेलका लागि {{source}} ले रिपोर्ट गरेको ({{accuracy}} सही); Handy ले यो भाषा मापन गरेको छैन। बारले मोडेलहरू तुलना गर्छ: लम्बा राम्रो हो।"
     },
     "models": {
       "small": {

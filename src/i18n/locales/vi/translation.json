@@ -28,7 +28,16 @@
     "customModelDescription": "Không được hỗ trợ chính thức",
     "modelCard": {
       "accuracy": "độ chính xác",
-      "speed": "tốc độ"
+      "speed": "tốc độ",
+      "notMeasured": "Tốc độ chưa được đo trên máy tham chiếu.",
+      "werTooltip": "WER {{value}}: {{value}} số từ bị sai trên {{dataset}} ở {{quant}}, do Handy đo trên mô hình được phân phối ({{accuracy}} đúng). Thanh so sánh các mô hình: dài hơn là tốt hơn.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} số từ bị sai trên {{dataset}} theo {{source}} công bố cho mô hình gốc ({{accuracy}} đúng); Handy chưa đo ngôn ngữ này. Thanh so sánh các mô hình: dài hơn là tốt hơn.",
+      "legacyTooltip": "Đo trên bản GGUF của mô hình này, không phải trên bản tải xuống cũ này.",
+      "noDataTooltip": "Không có đo lường cho {{language}} từ Handy hay nhà cung cấp mô hình.",
+      "noDataFallbackTooltip": "* Không có đo lường cho {{language}} từ Handy hay nhà cung cấp mô hình. Trên {{dataset}}: {{accuracy}} số từ đúng.",
+      "speedTooltip": "Chuyển văn bản nhanh hơn thời gian thực {{value}} trên {{machine}} ({{backend}}).",
+      "characterAccuracy": "ký tự",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} số ký tự bị sai trên {{dataset}} theo {{source}} công bố cho mô hình gốc ({{accuracy}} đúng); Handy chưa đo ngôn ngữ này. Thanh so sánh các mô hình: dài hơn là tốt hơn."
     },
     "models": {
       "small": {

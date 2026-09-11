@@ -28,7 +28,16 @@
     "customModelDescription": "Sense suport oficial",
     "modelCard": {
       "accuracy": "precisió",
-      "speed": "velocitat"
+      "speed": "velocitat",
+      "notMeasured": "Velocitat no mesurada a la màquina de referència.",
+      "werTooltip": "WER {{value}}: {{value}} de les paraules errònies a {{dataset}} amb {{quant}}, mesurat per Handy amb el model distribuït ({{accuracy}} correctes). La barra compara models: més llarga és millor.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} de les paraules errònies a {{dataset}} segons {{source}} per al model base ({{accuracy}} correctes); Handy no ha mesurat aquesta llengua. La barra compara models: més llarga és millor.",
+      "legacyTooltip": "Mesurat amb la versió GGUF d’aquest model, no amb aquesta baixada antiga.",
+      "noDataTooltip": "No hi ha mesura per a {{language}}, ni de Handy ni del proveïdor del model.",
+      "noDataFallbackTooltip": "* No hi ha mesura per a {{language}}, ni de Handy ni del proveïdor del model. A {{dataset}}: {{accuracy}} de paraules correctes.",
+      "speedTooltip": "Transcriu {{value}} més ràpid que el temps real a {{machine}} ({{backend}}).",
+      "characterAccuracy": "caràcters",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} dels caràcters erronis a {{dataset}} segons {{source}} per al model base ({{accuracy}} correctes); Handy no ha mesurat aquesta llengua. La barra compara models: més llarga és millor."
     },
     "models": {
       "small": {

@@ -1037,7 +1037,38 @@ key_down: number; key_up: number; flags_changed: number; mouse: number; duration
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
-export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
+/**
+ * The raw measurements behind `accuracy_score` / `speed_score`, straight from
+ * the model card's `transcribe_cpp` block (via `catalog.json`). The scores are
+ * a single collapsed 0–1 bar; these let the UI show the actual numbers and pick
+ * the evaluation set that matches the user's language instead of the headline
+ * (English, when available) one.
+ */
+export type ModelBenchmarks = {
+/**
+ * Word error rate in percent, by evaluation set then quantization:
+ * `wer["fleurs_ru"]["q8_0"] == 5.36`. Set names are the card key minus the
+ * `wer_` prefix (`librispeech_test_clean`, `fleurs_en`, `fleurs_ru`, …).
+ */
+wer: Partial<{ [key in string]: Partial<{ [key in string]: number }> }>;
+/**
+ * Real-time factor (audio seconds transcribed per wall second), by
+ * reference machine then backend: `rtf["ryzen_4750u"]["cpu"] == 7.5`.
+ */
+rtf: Partial<{ [key in string]: Partial<{ [key in string]: number }> }>;
+/**
+ * Per-language WER the model's vendor publishes for the base model
+ * (`scripts/vendor_benchmarks.json`). Handy measures one eval set per
+ * model, so this is what lets a Russian or German user see a number for
+ * their language; the UI labels it "reported by …", never as measured.
+ */
+reported?: ReportedBenchmarks | null }
+export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number;
+/**
+ * Raw WER/RTF measurements behind the two scores; `None` for models the
+ * catalog has no card data for (customs, legacy blobs, HF-cache finds).
+ */
+benchmarks: ModelBenchmarks | null; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**
  * Where a model comes from and how Handy obtains it — the routing discriminant
@@ -1078,6 +1109,28 @@ export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_
 export type PermissionAccess = "allowed" | "denied" | "unknown"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
+/**
+ * Vendor-published per-language error rates for a model's base checkpoint.
+ */
+export type ReportedBenchmarks = {
+/**
+ * Who published it — "NVIDIA", "OpenAI", "Qwen", "Mistral", …
+ */
+source: string;
+/**
+ * Where the numbers were read from (model card, paper, README chart).
+ */
+url: string;
+/**
+ * WER in percent by evaluation set then language code:
+ * `wer["fleurs"]["ru"] == 5.51`. Set names: `fleurs`, `commonvoice`,
+ * `commonvoice15`, `covost`, `mls`.
+ */
+wer: Partial<{ [key in string]: Partial<{ [key in string]: number }> }>;
+/**
+ * Character error rate in percent, by evaluation set then language.
+ */
+cer?: Partial<{ [key in string]: Partial<{ [key in string]: number }> }> }
 export type SecretMap = Partial<{ [key in string]: string }>
 export type SecureInputStatus = { 
 /**

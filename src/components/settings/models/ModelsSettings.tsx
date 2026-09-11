@@ -418,6 +418,7 @@ export const ModelsSettings: React.FC = () => {
               downloadProgress={getDownloadProgress(model.id)}
               downloadSpeed={getDownloadSpeed(model.id)}
               showRecommended={false}
+              languageFilter={languageFilter}
             />
           ))}
         </div>
@@ -440,6 +441,7 @@ export const ModelsSettings: React.FC = () => {
                 downloadProgress={getDownloadProgress(model.id)}
                 downloadSpeed={getDownloadSpeed(model.id)}
                 showRecommended={true}
+                languageFilter={languageFilter}
               />
             ))}
           </div>

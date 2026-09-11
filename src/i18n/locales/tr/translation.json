@@ -28,7 +28,16 @@
     "customModelDescription": "Resmi olarak desteklenmiyor",
     "modelCard": {
       "accuracy": "doğruluk",
-      "speed": "hız"
+      "speed": "hız",
+      "notMeasured": "Hız referans makinede ölçülmedi.",
+      "werTooltip": "WER {{value}}: {{dataset}} üzerinde {{quant}} ile kelimelerin {{value}}’i hatalı, Handy tarafından dağıtılan modelde ölçüldü ({{accuracy}} doğru). Çubuk modelleri karşılaştırır: uzun olan daha iyidir.",
+      "reportedTooltip": "≈ WER {{value}}: {{dataset}} üzerinde kelimelerin {{value}}’i hatalı, temel model için {{source}} tarafından bildirildi ({{accuracy}} doğru); Handy bu dili ölçmedi. Çubuk modelleri karşılaştırır: uzun olan daha iyidir.",
+      "legacyTooltip": "Bu modelin GGUF sürümünde ölçüldü, bu eski indirmede değil.",
+      "noDataTooltip": "{{language}} için Handy’den de model sağlayıcısından da ölçüm yok.",
+      "noDataFallbackTooltip": "* {{language}} için Handy’den de model sağlayıcısından da ölçüm yok. {{dataset}} üzerinde: kelimelerin {{accuracy}}’i doğru.",
+      "speedTooltip": "{{machine}} ({{backend}}) üzerinde gerçek zamandan {{value}} daha hızlı yazıya döker.",
+      "characterAccuracy": "karakter doğruluğu",
+      "reportedCerTooltip": "≈ CER {{value}}: {{dataset}} üzerinde karakterlerin {{value}}’i hatalı, temel model için {{source}} tarafından bildirildi ({{accuracy}} doğru); Handy bu dili ölçmedi. Çubuk modelleri karşılaştırır: uzun olan daha iyidir."
     },
     "models": {
       "small": {

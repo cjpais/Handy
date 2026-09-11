@@ -28,7 +28,16 @@
     "customModelDescription": "公式サポート対象外",
     "modelCard": {
       "accuracy": "精度",
-      "speed": "速度"
+      "speed": "速度",
+      "notMeasured": "参照マシンでの速度は未測定です。",
+      "werTooltip": "WER {{value}}：{{dataset}}（{{quant}}）で単語の {{value}} が誤り。Handy が配布モデルで測定（{{accuracy}} が正解）。バーはモデル間の比較で、長いほど良い。",
+      "reportedTooltip": "≈ WER {{value}}：{{dataset}}で単語の {{value}} が誤り。ベースモデルについて {{source}} が公表（{{accuracy}} が正解）。Handy はこの言語を測定していません。バーはモデル間の比較で、長いほど良い。",
+      "legacyTooltip": "このモデルの GGUF 版で測定した値で、この旧形式のダウンロードでは測定していません。",
+      "noDataTooltip": "{{language}}の測定値は Handy にもモデル提供元にもありません。",
+      "noDataFallbackTooltip": "* {{language}}の測定値は Handy にもモデル提供元にもありません。{{dataset}}では単語の {{accuracy}} が正解。",
+      "speedTooltip": "{{machine}}（{{backend}}）で実時間の{{value}}の速さで文字起こしします。",
+      "characterAccuracy": "文字精度",
+      "reportedCerTooltip": "≈ CER {{value}}：{{dataset}}で文字の {{value}} が誤り。ベースモデルについて {{source}} が公表（{{accuracy}} が正解）。Handy はこの言語を測定していません。バーはモデル間の比較で、長いほど良い。"
     },
     "models": {
       "small": {

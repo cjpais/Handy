@@ -28,7 +28,16 @@
     "customModelDescription": "Официально не поддерживается",
     "modelCard": {
       "accuracy": "точность",
-      "speed": "скорость"
+      "speed": "скорость",
+      "notMeasured": "Скорость на референсной машине не замерялась.",
+      "werTooltip": "{{accuracy}} слов верно, {{value}} с ошибкой (WER) на {{dataset}}, квант {{quant}}, замер Handy на поставляемой модели.",
+      "reportedTooltip": "≈ {{accuracy}} слов верно, {{value}} с ошибкой (WER) на {{dataset}} по данным {{source}} для базовой модели в их собственной методике; Handy этот язык не замерял, с замерами Handy сравнивайте приблизительно.",
+      "legacyTooltip": "Замерено на GGUF-сборке этой модели, не на этой устаревшей загрузке.",
+      "noDataTooltip": "Для языка «{{language}}» нет замеров ни у Handy, ни у разработчика модели.",
+      "noDataFallbackTooltip": "* Для языка «{{language}}» нет замеров ни у Handy, ни у разработчика модели. Серая полоска и число относятся к {{dataset}}: {{accuracy}} слов верно.",
+      "speedTooltip": "Транскрибирует в {{value}} быстрее реального времени на {{machine}} ({{backend}}).",
+      "characterAccuracy": "по символам",
+      "reportedCerTooltip": "≈ {{accuracy}} точности по символам, {{value}} с ошибкой (CER) на {{dataset}} по данным {{source}} для базовой модели в их собственной методике; Handy этот язык не замерял, с замерами Handy сравнивайте приблизительно."
     },
     "models": {
       "small": {

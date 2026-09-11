@@ -28,7 +28,16 @@
     "customModelDescription": "Nicht offiziell unterstützt",
     "modelCard": {
       "accuracy": "Genauigkeit",
-      "speed": "Geschwindigkeit"
+      "speed": "Geschwindigkeit",
+      "notMeasured": "Geschwindigkeit auf der Referenzmaschine nicht gemessen.",
+      "werTooltip": "WER {{value}}: {{value}} der Wörter falsch auf {{dataset}} bei {{quant}}, von Handy am ausgelieferten Modell gemessen ({{accuracy}} richtig). Der Balken vergleicht Modelle: länger ist besser.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} der Wörter falsch auf {{dataset}} laut {{source}} für das Basismodell ({{accuracy}} richtig); Handy hat diese Sprache nicht selbst gemessen. Der Balken vergleicht Modelle: länger ist besser.",
+      "legacyTooltip": "Am GGUF-Build dieses Modells gemessen, nicht an diesem veralteten Download.",
+      "noDataTooltip": "Keine Messung für {{language}}, weder von Handy noch vom Modellanbieter.",
+      "noDataFallbackTooltip": "* Keine Messung für {{language}}, weder von Handy noch vom Modellanbieter. Auf {{dataset}}: {{accuracy}} der Wörter richtig.",
+      "speedTooltip": "Transkribiert {{value}} schneller als Echtzeit auf {{machine}} ({{backend}}).",
+      "characterAccuracy": "Zeichengenauigkeit",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} der Zeichen falsch auf {{dataset}} laut {{source}} für das Basismodell ({{accuracy}} richtig); Handy hat diese Sprache nicht selbst gemessen. Der Balken vergleicht Modelle: länger ist besser."
     },
     "models": {
       "small": {

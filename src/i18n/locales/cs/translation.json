@@ -28,7 +28,16 @@
     "customModelDescription": "Oficiálně nepodporováno",
     "modelCard": {
       "accuracy": "přesnost",
-      "speed": "rychlost"
+      "speed": "rychlost",
+      "notMeasured": "Rychlost nebyla na referenčním stroji měřena.",
+      "werTooltip": "WER {{value}}: {{value}} slov rozpoznáno chybně na {{dataset}} při {{quant}}, změřeno Handy na dodávaném modelu ({{accuracy}} správně). Pruh porovnává modely: delší je lepší.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} slov rozpoznáno chybně na {{dataset}} podle {{source}} pro základní model ({{accuracy}} správně); Handy tento jazyk neměřil. Pruh porovnává modely: delší je lepší.",
+      "legacyTooltip": "Změřeno na GGUF sestavení tohoto modelu, ne na tomto zastaralém souboru.",
+      "noDataTooltip": "Pro jazyk {{language}} není měření ani od Handy, ani od poskytovatele modelu.",
+      "noDataFallbackTooltip": "* Pro jazyk {{language}} není měření ani od Handy, ani od poskytovatele modelu. Na {{dataset}}: {{accuracy}} slov správně.",
+      "speedTooltip": "Přepisuje {{value}} rychleji než v reálném čase na {{machine}} ({{backend}}).",
+      "characterAccuracy": "znaky",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} znaků rozpoznáno chybně na {{dataset}} podle {{source}} pro základní model ({{accuracy}} správně); Handy tento jazyk neměřil. Pruh porovnává modely: delší je lepší."
     },
     "models": {
       "small": {

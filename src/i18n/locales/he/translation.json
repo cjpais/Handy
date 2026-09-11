@@ -28,7 +28,16 @@
     "customModelDescription": "לא נתמך באופן רשמי",
     "modelCard": {
       "accuracy": "דיוק",
-      "speed": "מהירות"
+      "speed": "מהירות",
+      "notMeasured": "המהירות לא נמדדה על מכונת הייחוס.",
+      "werTooltip": "WER {{value}}: {{value}} מהמילים שגויות על {{dataset}} ב-{{quant}}, נמדד על ידי Handy במודל המסופק ({{accuracy}} נכונות). הפס משווה בין מודלים: ארוך יותר עדיף.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} מהמילים שגויות על {{dataset}} כפי שדיווח {{source}} עבור מודל הבסיס ({{accuracy}} נכונות); Handy לא מדד שפה זו. הפס משווה בין מודלים: ארוך יותר עדיף.",
+      "legacyTooltip": "נמדד על גרסת ה-GGUF של מודל זה, לא על ההורדה הישנה הזו.",
+      "noDataTooltip": "אין מדידה עבור {{language}}, לא מ-Handy ולא מספק המודל.",
+      "noDataFallbackTooltip": "* אין מדידה עבור {{language}}, לא מ-Handy ולא מספק המודל. על {{dataset}}: {{accuracy}} מהמילים נכונות.",
+      "speedTooltip": "מתמלל {{value}} מהר יותר מזמן אמת על {{machine}} ({{backend}}).",
+      "characterAccuracy": "תווים",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} מהתווים שגויות על {{dataset}} כפי שדיווח {{source}} עבור מודל הבסיס ({{accuracy}} נכונות); Handy לא מדד שפה זו. הפס משווה בין מודלים: ארוך יותר עדיף."
     },
     "models": {
       "small": {

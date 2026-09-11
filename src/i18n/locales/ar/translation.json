@@ -28,7 +28,16 @@
     "customModelDescription": "غير مدعوم رسميًا",
     "modelCard": {
       "accuracy": "الدقة",
-      "speed": "السرعة"
+      "speed": "السرعة",
+      "notMeasured": "لم تُقاس السرعة على الجهاز المرجعي.",
+      "werTooltip": "WER {{value}}: {{value}} من الكلمات خاطئة على {{dataset}} عند {{quant}}، قاسها Handy على النموذج المُوزَّع ({{accuracy}} صحيحة). الشريط يقارن النماذج: الأطول أفضل.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} من الكلمات خاطئة على {{dataset}} كما أبلغ {{source}} للنموذج الأساسي ({{accuracy}} صحيحة)؛ لم يقس Handy هذه اللغة. الشريط يقارن النماذج: الأطول أفضل.",
+      "legacyTooltip": "مُقاس على إصدار GGUF من هذا النموذج، لا على هذا التنزيل القديم.",
+      "noDataTooltip": "لا يوجد قياس للغة {{language}} من Handy ولا من مزوّد النموذج.",
+      "noDataFallbackTooltip": "* لا يوجد قياس للغة {{language}} من Handy ولا من مزوّد النموذج. على {{dataset}}: {{accuracy}} من الكلمات صحيحة.",
+      "speedTooltip": "ينسخ بسرعة {{value}} أسرع من الوقت الفعلي على {{machine}} ({{backend}}).",
+      "characterAccuracy": "الأحرف",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} من الأحرف خاطئة على {{dataset}} كما أبلغ {{source}} للنموذج الأساسي ({{accuracy}} صحيحة)؛ لم يقس Handy هذه اللغة. الشريط يقارن النماذج: الأطول أفضل."
     },
     "models": {
       "small": {

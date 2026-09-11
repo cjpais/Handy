@@ -28,7 +28,16 @@
     "customModelDescription": "Не се поддържа официално",
     "modelCard": {
       "accuracy": "точност",
-      "speed": "скорост"
+      "speed": "скорост",
+      "notMeasured": "Скоростта не е измерена на референтната машина.",
+      "werTooltip": "WER {{value}}: {{value}} от думите са разпознати грешно на {{dataset}} при {{quant}}, измерено от Handy върху доставяния модел ({{accuracy}} верни). Лентата сравнява моделите: по-дълга е по-добре.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} от думите са разпознати грешно на {{dataset}} според {{source}} за базовия модел ({{accuracy}} верни); Handy не е измервал този език. Лентата сравнява моделите: по-дълга е по-добре.",
+      "legacyTooltip": "Измерено върху GGUF варианта на този модел, не върху това остаряло изтегляне.",
+      "noDataTooltip": "Няма измерване за {{language}} ни от Handy, ни от разработчика на модела.",
+      "noDataFallbackTooltip": "* Няма измерване за {{language}} ни от Handy, ни от разработчика на модела. На {{dataset}}: {{accuracy}} верни думи.",
+      "speedTooltip": "Транскрибира {{value}} по-бързо от реалното време на {{machine}} ({{backend}}).",
+      "characterAccuracy": "по знаци",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} от знаците са разпознати грешно на {{dataset}} според {{source}} за базовия модел ({{accuracy}} верни); Handy не е измервал този език. Лентата сравнява моделите: по-дълга е по-добре."
     },
     "models": {
       "small": {

@@ -26,6 +26,15 @@
       },
       "speed_score": 79,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.59, "f16": 1.59, "q8_0": 1.6, "q6_k": 1.61, "q5_k_m": 1.58, "q4_k_m": 1.62}
+        },
+        "rtf": {
+          "m4_max": {"metal": 163.0, "cpu": 28.5},
+          "ryzen_4750u": {"vulkan": 12.5, "cpu": 7.5}
+        }
+      },
       "files": [
         {"filename": "parakeet-unified-en-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 477274496, "sha256": "a8bf3de2b393bd14ead5a858c3748d5e3b07a20fdeabdd3b498fba4f463fa929"},
         {"filename": "parakeet-unified-en-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 540795264, "sha256": "f9def6f9b4e83ab7d006df3e1b676dfa1f973a3b6da232a9c99fcaa66bcd2836"},
@@ -59,6 +68,23 @@
       },
       "speed_score": 84,
       "accuracy_score": 82,
+      "benchmarks": {
+        "wer": {
+          "fleurs_en": {"f32": 7.97, "f16": 7.97, "q8_0": 7.88, "q6_k": 8.02, "q5_k_m": 8.15, "q4_k_m": 8.49},
+          "librispeech_test_clean": {"f32": 3.04, "f16": 3.03, "q8_0": 3.06, "q6_k": 3.07, "q5_k_m": 3.1, "q4_k_m": 3.28}
+        },
+        "rtf": {
+          "m4_max": {"metal": 98.0, "cpu": 29.0},
+          "ryzen_4750u": {"vulkan": 14.5, "cpu": 7.5}
+        },
+        "reported": {
+          "source": "NVIDIA",
+          "url": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b",
+          "wer": {
+            "fleurs": {"ar": 12.03, "bg": 20.53, "cs": 20.41, "da": 27.49, "de": 8.31, "en": 7.91, "es": 4.11, "et": 26.35, "fi": 18.34, "fr": 9.03, "hi": 6.81, "hr": 23.97, "hu": 28.68, "it": 4.25, "ja": 11.48, "ko": 7.12, "nl": 11.46, "no": 18.1, "pl": 15.15, "pt": 5.48, "ro": 25.9, "ru": 9.17, "sk": 21.28, "sv": 22.17, "tr": 11.17, "uk": 13.07, "vi": 11.18, "zh": 19.28}
+          }
+        }
+      },
       "files": [
         {"filename": "nemotron-3.5-asr-streaming-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 495831520, "sha256": "41c99fa5fb6f3d35f68e79adc3e755eca2232a8d921178bd647b71194792b8fd"},
         {"filename": "nemotron-3.5-asr-streaming-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 559647200, "sha256": "86429e8c4f7fdcf9b3312269ad1ca6669478ba7805331c4aea7a2e33e9910d65"},
@@ -92,6 +118,15 @@
       },
       "speed_score": 98,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.94, "f16": 1.94, "q8_0": 1.93, "q6_k": 1.93, "q5_k_m": 1.9, "q4_k_m": 1.93}
+        },
+        "rtf": {
+          "m4_max": {"metal": 139.6, "cpu": 74.0},
+          "ryzen_4750u": {"vulkan": 31.9, "cpu": 21.3}
+        }
+      },
       "files": [
         {"filename": "canary-180m-flash-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 139223744, "sha256": "c8ae5758d7d4dc59c48d816474a33544e362ca52c635f96ee0b4b95e1b48f90c"},
         {"filename": "canary-180m-flash-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 158704320, "sha256": "a87992d84aea5329fa5d70f2eb440d3ae4fe47bd774875374ec381472d348299"},
@@ -125,6 +160,15 @@
       },
       "speed_score": 63,
       "accuracy_score": 92,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.26, "f16": 1.26, "q8_0": 1.27, "q6_k": 1.27, "q5_k_m": 1.25, "q4_k_m": 1.25}
+        },
+        "rtf": {
+          "m4_max": {"metal": 73.0, "cpu": 9.0},
+          "ryzen_4750u": {"vulkan": 8.0, "cpu": 3.0}
+        }
+      },
       "files": [
         {"filename": "cohere-transcribe-03-2026-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1558162944, "sha256": "0ea56826d8bd5d74b7143a4a04e022dc1bb75452cfae49d98b6acb0c1d16a1fb"},
         {"filename": "cohere-transcribe-03-2026-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1770270208, "sha256": "14d02f1ad6dd77b3a60f82639879012c3adb4fe25c50a5a47a2c4c661daf1558"},
@@ -158,6 +202,25 @@
       },
       "speed_score": 42,
       "accuracy_score": 84,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.63, "f16": 2.63, "q8_0": 2.64, "q6_k": 2.59, "q5_k_m": 2.62, "q4_k_m": 2.59}
+        },
+        "rtf": {
+          "m4_max": {"metal": 41.6, "cpu": 3.0},
+          "ryzen_4750u": {"vulkan": 4.3, "cpu": 1.1}
+        },
+        "reported": {
+          "source": "OpenAI",
+          "url": "https://arxiv.org/abs/2212.04356",
+          "wer": {
+            "fleurs": {"af": 44.9, "am": 229.3, "ar": 20.4, "as": 102.3, "az": 33.1, "be": 60.4, "bg": 21.4, "bn": 100.6, "bs": 23.9, "ca": 9.6, "cs": 21.3, "cy": 40.8, "da": 19.5, "de": 6.5, "el": 19.0, "en": 4.4, "es": 3.6, "et": 29.8, "fa": 41.0, "fi": 13.9, "fr": 8.7, "gl": 21.2, "gu": 104.8, "ha": 106.6, "he": 33.1, "hi": 26.8, "hr": 19.3, "hu": 24.3, "hy": 60.1, "id": 10.2, "is": 49.9, "it": 5.2, "jw": 67.9, "ka": 117.3, "kk": 48.8, "km": 98.9, "kn": 77.7, "ko": 16.4, "lb": 90.0, "ln": 83.2, "lt": 41.1, "lv": 32.0, "mi": 77.8, "mk": 22.0, "ml": 101.1, "mn": 103.7, "mr": 63.2, "ms": 12.2, "mt": 83.2, "ne": 54.4, "nl": 9.9, "no": 12.9, "oc": 79.5, "pa": 102.0, "pl": 8.0, "ps": 119.4, "pt": 5.0, "ro": 20.0, "ru": 7.2, "sd": 147.0, "sk": 17.3, "sl": 31.9, "sn": 143.9, "so": 104.0, "sr": 44.9, "sv": 11.2, "sw": 52.8, "ta": 23.1, "te": 82.8, "tg": 74.0, "tl": 19.1, "tr": 10.4, "uk": 11.6, "ur": 28.2, "uz": 109.6, "vi": 12.7, "yo": 105.1}
+          },
+          "cer": {
+            "fleurs": {"ja": 7.1, "lo": 101.4, "my": 123.0, "th": 15.4, "zh": 12.1}
+          }
+        }
+      },
       "files": [
         {"filename": "whisper-medium-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 504102848, "sha256": "6c9cad9c41d1fa0fcc624898f7ee3485b66127627878081a5655c6f6f3ce20ab"},
         {"filename": "whisper-medium-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 582746048, "sha256": "4e2a8904a866b3aa7ef70d7640ec6abc5f0a05524cd950ea4b66ace12122bf53"},
@@ -191,6 +254,22 @@
       },
       "speed_score": 11,
       "accuracy_score": 87,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 2.08, "f16": 2.09, "q8_0": 2.07, "q6_k": 2.08, "q5_k_m": 2.08, "q4_k_m": 2.08}
+        },
+        "rtf": {
+          "m4_max": {"metal": 8.6, "cpu": 2.5},
+          "ryzen_4750u": {"vulkan": 0.9, "cpu": 0.6}
+        },
+        "reported": {
+          "source": "Mistral",
+          "url": "https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602",
+          "wer": {
+            "fleurs": {"ar": 22.53, "de": 6.19, "en": 4.9, "es": 3.31, "fr": 6.42, "hi": 12.88, "it": 3.27, "ja": 9.59, "ko": 15.74, "nl": 7.07, "pt": 5.03, "ru": 6.02, "zh": 10.45}
+          }
+        }
+      },
       "files": [
         {"filename": "Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 2830493984, "sha256": "39dc1f65539373a406edea7490505822d77c12edff521744678717eef4da4723"},
         {"filename": "Voxtral-Mini-4B-Realtime-2602-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 3281439008, "sha256": "e20a7582c5cf8159454c909b7f57b184b287cb3d7c3ec85744727a2cec51b08f"},
@@ -224,6 +303,22 @@
       },
       "speed_score": 79,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.95, "f16": 1.95, "q8_0": 1.94, "q6_k": 1.93, "q5_k_m": 1.92, "q4_k_m": 1.98}
+        },
+        "rtf": {
+          "m4_max": {"metal": 151.0, "cpu": 28.0},
+          "ryzen_4750u": {"vulkan": 12.5, "cpu": 7.5}
+        },
+        "reported": {
+          "source": "NVIDIA",
+          "url": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+          "wer": {
+            "fleurs": {"bg": 12.64, "cs": 11.01, "da": 18.41, "de": 5.04, "el": 20.7, "en": 4.85, "es": 3.45, "et": 17.73, "fi": 13.21, "fr": 5.15, "hr": 12.46, "hu": 15.72, "it": 3.0, "lt": 20.35, "lv": 22.84, "mt": 20.46, "nl": 7.48, "pl": 7.31, "pt": 4.76, "ro": 12.44, "ru": 5.51, "sk": 8.82, "sl": 24.03, "sv": 15.08, "uk": 6.79}
+          }
+        }
+      },
       "files": [
         {"filename": "parakeet-tdt-0.6b-v3-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 485425504, "sha256": "b68557be1e3c40207fd7c4bd9d63f1d3316b963f15325bfb0cc16a8bb0ffd181"},
         {"filename": "parakeet-tdt-0.6b-v3-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 548946272, "sha256": "cc722e76adc1a629fc0b2535de879d99b8160d07ad4c0215e2ca7d7ea0ae4b8f"},
@@ -257,6 +352,15 @@
       },
       "speed_score": 85,
       "accuracy_score": 89,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.68, "f16": 1.68, "q8_0": 1.69, "q6_k": 1.7, "q5_k_m": 1.7, "q4_k_m": 1.72}
+        },
+        "rtf": {
+          "ryzen_4750u": {"cpu": 8.0, "vulkan": 15.0},
+          "m4_max": {"cpu": 29.0, "metal": 175.0}
+        }
+      },
       "files": [
         {"filename": "parakeet-tdt-0.6b-v2-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 475491840, "sha256": "4853f9653f641d376e6f7de65d73c7a34a73677704a606727bf51acc83f999f3"},
         {"filename": "parakeet-tdt-0.6b-v2-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 539012608, "sha256": "dfa904520b95451599683613fea47766c378c5fdf5d8cddf48151226b6eaec85"},
@@ -290,6 +394,25 @@
       },
       "speed_score": 63,
       "accuracy_score": 87,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 2.11, "f16": 2.12, "q8_0": 2.11, "q6_k": 2.1, "q5_k_m": 2.21, "q4_k_m": 2.26}
+        },
+        "rtf": {
+          "m4_max": {"metal": 65.0, "cpu": 16.5},
+          "ryzen_4750u": {"vulkan": 8.0, "cpu": 4.3}
+        },
+        "reported": {
+          "source": "Qwen",
+          "url": "https://arxiv.org/abs/2601.21337",
+          "wer": {
+            "fleurs": {"ar": 25.51, "cs": 47.67, "da": 36.36, "de": 6.48, "el": 49.67, "en": 4.39, "es": 4.94, "fa": 53.76, "fi": 46.59, "fr": 7.72, "hi": 19.12, "hu": 59.47, "id": 7.92, "it": 4.99, "mk": 37.26, "ms": 17.66, "nl": 14.02, "pl": 24.71, "pt": 6.21, "ro": 44.26, "ru": 9.91, "sv": 35.87, "tl": 36.1, "tr": 16.18, "vi": 8.52}
+          },
+          "cer": {
+            "fleurs": {"zh": 2.88, "yue": 5.79, "ko": 3.72, "ja": 8.33, "th": 8.34}
+          }
+        }
+      },
       "files": [
         {"filename": "Qwen3-ASR-0.6B-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 589560480, "sha256": "5b58f32a58ffa2c8783e0b0963485623e286e6272d953dfc9e28bc3447dee0c0"},
         {"filename": "Qwen3-ASR-0.6B-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 645356192, "sha256": "062a7bcb18675c2fe5ffd0e8b354eac6a1ceada9b2af9ef7168746ae16b54358"},
@@ -323,6 +446,15 @@
       },
       "speed_score": 68,
       "accuracy_score": 89,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.74, "f16": 1.74, "q8_0": 1.74, "q6_k": 1.69, "q5_k_m": 1.77, "q4_k_m": 1.89}
+        },
+        "rtf": {
+          "m4_max": {"metal": 68.0, "cpu": 16.0},
+          "ryzen_4750u": {"vulkan": 9.0, "cpu": 4.5}
+        }
+      },
       "files": [
         {"filename": "Fun-ASR-MLT-Nano-2512-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 556975168, "sha256": "9232584a27a7dcbcaf13640de8f9c2e7375178ea11e587f90a5328ecf06d58a1"},
         {"filename": "Fun-ASR-MLT-Nano-2512-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 631129152, "sha256": "5906267c6067d254a2681f40d9eac70c4291ae14fb58ffea4c4cd22a307517ec"},
@@ -356,6 +488,15 @@
       },
       "speed_score": 83,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.62, "f16": 1.62, "q8_0": 1.62, "q6_k": 1.65, "q5_k_m": 1.64, "q4_k_m": 1.59}
+        },
+        "rtf": {
+          "m4_max": {"metal": 99.6, "cpu": 20.4},
+          "ryzen_4750u": {"vulkan": 14.4, "cpu": 6.9}
+        }
+      },
       "files": [
         {"filename": "canary-1b-flash-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 677141280, "sha256": "2521a615a2b04ab11900d894e1f5c5a70405d85aa74be0806b569b9cc311a707"},
         {"filename": "canary-1b-flash-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 769563424, "sha256": "7eed3cac92f255a4adbd518c58663d3fbf65984d2619189e593f2d374b05c601"},
@@ -389,6 +530,22 @@
       },
       "speed_score": 81,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.92, "f16": 1.92, "q8_0": 1.91, "q6_k": 1.94, "q5_k_m": 1.93, "q4_k_m": 1.91}
+        },
+        "rtf": {
+          "m4_max": {"metal": 85.2, "cpu": 18.9},
+          "ryzen_4750u": {"vulkan": 13.2, "cpu": 6.7}
+        },
+        "reported": {
+          "source": "NVIDIA",
+          "url": "https://huggingface.co/nvidia/canary-1b-v2",
+          "wer": {
+            "fleurs": {"bg": 9.25, "cs": 7.86, "da": 11.25, "de": 4.4, "el": 9.21, "en": 4.5, "es": 2.9, "et": 12.55, "fi": 8.59, "fr": 5.02, "hr": 8.29, "hu": 12.9, "it": 3.07, "lt": 12.36, "lv": 9.66, "mt": 18.31, "nl": 6.12, "pl": 6.64, "pt": 4.39, "ro": 6.61, "ru": 6.9, "sk": 5.74, "sl": 13.32, "sv": 9.57, "uk": 10.5}
+          }
+        }
+      },
       "files": [
         {"filename": "canary-1b-v2-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 735476448, "sha256": "49e0a67e219bec95a254c2348460b6350e75a7ac6f93a131e48244b4c7cb53b9"},
         {"filename": "canary-1b-v2-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 836664032, "sha256": "9c3a893c93795438baf9b4b1c853c39b60316c3a0d259a3ba6e284712f5ddb71"},
@@ -422,6 +579,15 @@
       },
       "speed_score": 67,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.55, "f16": 1.55, "q8_0": 1.55, "q6_k": 1.57, "q5_k_m": 1.57, "q4_k_m": 1.55}
+        },
+        "rtf": {
+          "m4_max": {"metal": 42.5, "cpu": 19.4},
+          "ryzen_4750u": {"vulkan": 8.9, "cpu": 5.6}
+        }
+      },
       "files": [
         {"filename": "canary-1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 729686848, "sha256": "ded40db7f9d25e992bf35a0c3c3743e1a7c85d0c30bdbbabd46bca932a47353d"},
         {"filename": "canary-1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 837694272, "sha256": "1139f01aad4ed4208d2c0532cfc25939cbc26cea1e160084c83f40d5b6eaed35"},
@@ -455,6 +621,15 @@
       },
       "speed_score": 40,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.63, "f16": 1.63, "q8_0": 1.63, "q6_k": 1.63, "q5_k_m": 1.63, "q4_k_m": 1.63}
+        },
+        "rtf": {
+          "m4_max": {"metal": 39.8, "cpu": 7.3},
+          "ryzen_4750u": {"vulkan": 4.1, "cpu": 2.1}
+        }
+      },
       "files": [
         {"filename": "canary-qwen-2.5b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1737575808, "sha256": "db5162229d6fa22597d06a613bd9b543eddb3ee02e6afc5e759120fde02bebf7"},
         {"filename": "canary-qwen-2.5b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1983729024, "sha256": "d71b1d9ae442dc538665ed4df63a69520eb9be769ec0bc78c7d2f40040928306"},
@@ -488,6 +663,15 @@
       },
       "speed_score": 63,
       "accuracy_score": 48,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ar_test": {"bf16": 11.02, "f16": 11.0, "q8_0": 11.06, "q6_k": 11.07, "q5_k_m": 10.95, "q4_k_m": 11.18}
+        },
+        "rtf": {
+          "m4_max": {"metal": 73.0, "cpu": 9.0},
+          "ryzen_4750u": {"vulkan": 8.0, "cpu": 3.0}
+        }
+      },
       "files": [
         {"filename": "cohere-transcribe-arabic-07-2026-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1558162848, "sha256": "4671080cd10ffc6166e1e1b36216f9b51e1455f170d55c59cff7b81332ad4621"},
         {"filename": "cohere-transcribe-arabic-07-2026-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1770270112, "sha256": "55e61c9b047e36f0e084d367f6b0bfecc71a6a0527da6eea4f0c687f3584775f"},
@@ -521,6 +705,15 @@
       },
       "speed_score": 73,
       "accuracy_score": 89,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.78, "f16": 1.79, "q8_0": 1.79, "q6_k": 1.78, "q5_k_m": 1.82, "q4_k_m": 1.92}
+        },
+        "rtf": {
+          "m4_max": {"metal": 77.5, "cpu": 27.0},
+          "ryzen_4750u": {"vulkan": 10.5, "cpu": 6.5}
+        }
+      },
       "files": [
         {"filename": "Fun-ASR-Nano-2512-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 556974848, "sha256": "444885fb7a16211a721e265dfe08c31b31e81fb9e2c4f21ab1079210cd038408"},
         {"filename": "Fun-ASR-Nano-2512-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 631128832, "sha256": "68de7b48ba46b739254fb57486edf7023943cb0af63767ab795d58d6e482096c"},
@@ -554,6 +747,15 @@
       },
       "speed_score": 98,
       "accuracy_score": 57,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ru": {"f32": 8.42, "f16": 8.42, "q8_0": 8.4, "q6_k": 8.38, "q5_k_m": 8.29, "q4_k_m": 8.42}
+        },
+        "rtf": {
+          "m4_max": {"metal": 146.0, "cpu": 29.0},
+          "ryzen_4750u": {"vulkan": 33.0, "cpu": 9.0}
+        }
+      },
       "files": [
         {"filename": "gigaam-v3-ctc-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 182150080, "sha256": "16b329fed3eaa197f2191506ac3cad72f46502297ed6a0f915c79d2ac08c404e"},
         {"filename": "gigaam-v3-ctc-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 204563392, "sha256": "2002cd7603b99c318b52a88047d6676e69218083014f19b11c84da0223fb2023"},
@@ -587,6 +789,15 @@
       },
       "speed_score": 98,
       "accuracy_score": 69,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ru": {"f32": 5.5, "f16": 5.5, "q8_0": 5.5, "q6_k": 5.56, "q5_k_m": 5.58, "q4_k_m": 5.57}
+        },
+        "rtf": {
+          "m4_max": {"metal": 112.0, "cpu": 27.0},
+          "ryzen_4750u": {"vulkan": 30.0, "cpu": 9.0}
+        }
+      },
       "files": [
         {"filename": "gigaam-v3-e2e-ctc-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 182497888, "sha256": "35581e11e048eef785657cff07e5fced794bba6d9c75143257f6452c8aeea655"},
         {"filename": "gigaam-v3-e2e-ctc-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 204911200, "sha256": "d7c6a729f9bae8714d05cb7e66149e662c5098fe10b66206b70f4917f4f84004"},
@@ -620,6 +831,15 @@
       },
       "speed_score": 96,
       "accuracy_score": 58,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ru": {"f32": 8.08, "f16": 8.08, "q8_0": 8.08, "q6_k": 8.07, "q5_k_m": 8.12, "q4_k_m": 8.12}
+        },
+        "rtf": {
+          "m4_max": {"metal": 110.0, "cpu": 27.0},
+          "ryzen_4750u": {"vulkan": 25.0, "cpu": 9.0}
+        }
+      },
       "files": [
         {"filename": "gigaam-v3-rnnt-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 183246752, "sha256": "33b09558330ccfdc5c156e6d6b57c89759a0ac3b653bcdfcd5f1e13f20fc1e76"},
         {"filename": "gigaam-v3-rnnt-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 205690784, "sha256": "3541b4e6b2c3909e99254bcb7c61565137038f24db5651a779885d0c08257348"},
@@ -653,6 +873,15 @@
       },
       "speed_score": 94,
       "accuracy_score": 70,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ru": {"f32": 5.35, "f16": 5.35, "q8_0": 5.36, "q6_k": 5.37, "q5_k_m": 5.42, "q4_k_m": 5.36}
+        },
+        "rtf": {
+          "m4_max": {"metal": 88.0, "cpu": 25.0},
+          "ryzen_4750u": {"vulkan": 22.0, "cpu": 8.0}
+        }
+      },
       "files": [
         {"filename": "gigaam-v3-e2e-rnnt-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 183948704, "sha256": "7d69952fb431a8d7800ed9910dc61fea37d8406bfe96d10bf24c8bd4b7c68623"},
         {"filename": "gigaam-v3-e2e-rnnt-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 206392736, "sha256": "0f5969b05f7e196e8922e243c64963132025a5ae7ec2f83d028ae120d201594f"},
@@ -686,6 +915,16 @@
       },
       "speed_score": 37,
       "accuracy_score": 92,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.29, "f16": 1.29, "q8_0": 1.29, "q6_k": 1.29, "q5_k_m": 1.25, "q4_k_m": 1.35}
+        },
+        "rtf": {
+          "m4_max": {"metal": 56.0, "cpu": 5.0},
+          "m4": {"metal": 18.0, "cpu": 4.0},
+          "ryzen_4750u": {"vulkan": 3.65, "cpu": 1.5}
+        }
+      },
       "files": [
         {"filename": "granite-speech-4.1-2b-nar-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1560008832, "sha256": "68537a51d4d6d5a6be6e50f735a08af16646afba70fe8ab80dfe60ba7623325f"},
         {"filename": "granite-speech-4.1-2b-nar-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1782089344, "sha256": "88d7c7b5b8b59c95bb6580a1e7d5d81cae63943cef71405ff477527b0bb69fca"},
@@ -719,6 +958,16 @@
       },
       "speed_score": 31,
       "accuracy_score": 91,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.42, "f16": 1.42, "q8_0": 1.44, "q6_k": 1.41, "q5_k_m": 1.42, "q4_k_m": 1.48}
+        },
+        "rtf": {
+          "m4_max": {"metal": 36.5, "cpu": 6.0},
+          "m4": {"metal": 11.0, "cpu": 5.0},
+          "ryzen_4750u": {"vulkan": 2.95, "cpu": 1.6}
+        }
+      },
       "files": [
         {"filename": "granite-4.0-1b-speech-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1602904800, "sha256": "eacd9bc06063a3fdb6bf904a2a82c2646d504922c6e4e5eb1988d61e780884d1"},
         {"filename": "granite-4.0-1b-speech-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1829704544, "sha256": "f5e371d2a894e5b30dce793d573df2a965d7705488750b4ef5a6cad1069e2572"},
@@ -752,6 +1001,16 @@
       },
       "speed_score": 30,
       "accuracy_score": 92,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.31, "f16": 1.32, "q8_0": 1.32, "q6_k": 1.29, "q5_k_m": 1.33, "q4_k_m": 1.37}
+        },
+        "rtf": {
+          "m4_max": {"metal": 33.0, "cpu": 5.8},
+          "m4": {"metal": 12.0, "cpu": 4.0},
+          "ryzen_4750u": {"vulkan": 2.8, "cpu": 1.4}
+        }
+      },
       "files": [
         {"filename": "granite-speech-4.1-2b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1602904800, "sha256": "3171de08a99315481f0eac1979cbc0684911631d59907b2fe1e189dbcdce135f"},
         {"filename": "granite-speech-4.1-2b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1829704544, "sha256": "63e0d3a82fa6f0f4688af0b7d7ee784864d271b7be820f4ea43c8298c59b0ac5"},
@@ -785,6 +1044,16 @@
       },
       "speed_score": 29,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.49, "f16": 1.48, "q8_0": 1.5, "q6_k": 1.46, "q5_k_m": 1.48, "q4_k_m": 1.56}
+        },
+        "rtf": {
+          "m4_max": {"metal": 33.0, "cpu": 5.2},
+          "m4": {"metal": 11.0, "cpu": 5.0},
+          "ryzen_4750u": {"vulkan": 2.75, "cpu": 1.4}
+        }
+      },
       "files": [
         {"filename": "granite-speech-4.1-2b-plus-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1489663424, "sha256": "5d52b6bb9bc2b504120448b4da61aeb383da3c1bcfe88b22c6ed667f2520206f"},
         {"filename": "granite-speech-4.1-2b-plus-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1691297088, "sha256": "3415f2c2d5979ded038dc012e5a875d77602fa5a0699cc75ee7fa47991f42530"},
@@ -818,6 +1087,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 30,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 17.88, "f16": 17.88, "q8_0": 17.86, "q6_k": 17.93, "q5_k_m": 17.91, "q4_k_m": 18.14}
+        },
+        "rtf": {
+          "m4_max": {"metal": 354.5, "cpu": 65.5},
+          "ryzen_4750u": {"vulkan": 71.0, "cpu": 19.5}
+        }
+      },
       "files": [
         {"filename": "medasr-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 83082432, "sha256": "b23b52db7e1e17a5a21c24f3b78add04e1055bbe026b7c7196324c34ab6f3e2f"},
         {"filename": "medasr-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 94239936, "sha256": "873c90a9a78d98446b5e02506073108496df6ff2d062d26f5f7b90f6f1368f1f"},
@@ -851,6 +1129,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 74,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 4.53, "f16": 4.53, "q8_0": 4.52}
+        },
+        "rtf": {
+          "m4_max": {"metal": 159.0, "cpu": 211.0},
+          "ryzen_4750u": {"vulkan": 59.5, "cpu": 54.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-streaming-tiny-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 50462816, "sha256": "930e4622ad3a24158b91406c30c977fa6a26b34cb32d6ac3e57cfb23383a869e"},
         {"filename": "moonshine-streaming-tiny-F16.gguf", "quant": "F16", "size_bytes": 89784416, "sha256": "cfe64aacd68b0c4244369c04dab9828e324f005e4799af5ec33bbc1d37ebd681"},
@@ -881,6 +1168,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 74,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 4.58, "f16": 4.58, "q8_0": 4.6}
+        },
+        "rtf": {
+          "m4_max": {"metal": 127.0, "cpu": 153.5},
+          "ryzen_4750u": {"vulkan": 56.0, "cpu": 45.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-tiny-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466912, "sha256": "2fd348d7b38f97d309cc3ec6848f3f57f537b80244950f07d2637e463f95a3a1"},
         {"filename": "moonshine-tiny-F16.gguf", "quant": "F16", "size_bytes": 59244192, "sha256": "d115694627d146c347ac5209db69db48b3125b07971026a6119b1888db7563d3"},
@@ -911,6 +1207,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 17,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ar": {"f32": 27.11, "f16": 27.11, "q8_0": 26.79}
+        },
+        "rtf": {
+          "m4_max": {"metal": 127.0, "cpu": 153.5},
+          "ryzen_4750u": {"vulkan": 56.0, "cpu": 45.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-tiny-ar-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "e0bfa7c3aad2fe7acce022566daa1bb6140b6b263ba79655241acec7f7e0000b"},
         {"filename": "moonshine-tiny-ar-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "209dd912f51f04a67977d0d93ea7363b0190786c3d7e1a2fbbbd0e94c4001aad"},
@@ -941,6 +1246,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 41,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ja": {"f32": 13.2, "f16": 13.2, "q8_0": 13.36}
+        },
+        "rtf": {
+          "m4_max": {"metal": 127.0, "cpu": 153.5},
+          "ryzen_4750u": {"vulkan": 56.0, "cpu": 45.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-tiny-ja-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "b47da12b2238cd176d9deebf31d49803c9eb4e99de5fd3abf672b4c0e2773c26"},
         {"filename": "moonshine-tiny-ja-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "5a8b7960b119d1d2a947509ca9b4be6e71f6759973d5c200283335bfddd8cb43"},
@@ -971,6 +1285,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 55,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ko": {"f32": 8.97, "f16": 8.97, "q8_0": 8.98}
+        },
+        "rtf": {
+          "m4_max": {"metal": 127.0, "cpu": 153.5},
+          "ryzen_4750u": {"vulkan": 56.0, "cpu": 45.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-tiny-ko-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "3ffe3340ceed10843789e2f7bf580097213c97a3537cae7031dbfe2a409b36b7"},
         {"filename": "moonshine-tiny-ko-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "4228c8e92d6308166f96708de35af09318d624c3c1495e80eb8f6180790edd5d"},
@@ -1001,6 +1324,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 28,
+      "benchmarks": {
+        "wer": {
+          "fleurs_uk": {"f32": 18.83, "f16": 18.82, "q8_0": 18.89}
+        },
+        "rtf": {
+          "m4_max": {"metal": 127.0, "cpu": 153.5},
+          "ryzen_4750u": {"vulkan": 56.0, "cpu": 45.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-tiny-uk-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "61c372f6d99cce6c7b7c45626a51a6c935217368e715d9c4e036ce85f4496338"},
         {"filename": "moonshine-tiny-uk-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "08521642651a398a6c7afac28395ce5cc6938d30f9563bde4c13fe898438ff69"},
@@ -1031,6 +1363,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 42,
+      "benchmarks": {
+        "wer": {
+          "fleurs_vi": {"f32": 13.16, "f16": 13.17, "q8_0": 13.16}
+        },
+        "rtf": {
+          "m4_max": {"metal": 127.0, "cpu": 153.5},
+          "ryzen_4750u": {"vulkan": 56.0, "cpu": 45.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-tiny-vi-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "a42a80ef2e3636104aa2aff87cdde3e251e319e7d0d1acb3fb594cc601d8b95f"},
         {"filename": "moonshine-tiny-vi-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "94464f474fc4a574951e335a731fabaf97a2e517a96bf4fcfd82791a67fa40ce"},
@@ -1061,6 +1402,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 40,
+      "benchmarks": {
+        "wer": {
+          "fleurs_zh": {"f32": 13.7, "f16": 13.7, "q8_0": 13.78}
+        },
+        "rtf": {
+          "m4_max": {"metal": 127.0, "cpu": 153.5},
+          "ryzen_4750u": {"vulkan": 56.0, "cpu": 45.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-tiny-zh-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 35466944, "sha256": "95387abe90625410f8e2bcec43faaaadc0d92ef1e721117eb8a69cd31a7ef692"},
         {"filename": "moonshine-tiny-zh-F16.gguf", "quant": "F16", "size_bytes": 59244224, "sha256": "33c59e565336f1b8d6da86cb6d6321e8797bb65e9bf11947258e7340d3dcd968"},
@@ -1091,6 +1441,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 80,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 3.28, "f16": 3.28, "q8_0": 3.26}
+        },
+        "rtf": {
+          "m4_max": {"metal": 79.5, "cpu": 80.5},
+          "ryzen_4750u": {"vulkan": 34.5, "cpu": 22.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-base-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "7f0027dfd857d310b63a85ef57cadf183da712cc374f85a648f8bc18aaa2efc8"},
         {"filename": "moonshine-base-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "c7a158ae0ad47c887041372e97c874e98c11eb0d8eff01279723dde65b358702"},
@@ -1121,6 +1480,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 20,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ar": {"f32": 24.45, "f16": 24.45, "q8_0": 24.5}
+        },
+        "rtf": {
+          "m4_max": {"metal": 79.5, "cpu": 80.5},
+          "ryzen_4750u": {"vulkan": 34.5, "cpu": 22.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-base-ar-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "1a5b34653dfff0917d5bc7de1aeafca674162a5efa674472358d1b7f1644cf73"},
         {"filename": "moonshine-base-ar-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "9a70242ad42fb130a417c11127f5e7ad227c03b0c4a287fa60757efa3cccd714"},
@@ -1151,6 +1519,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 50,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ja": {"f32": 10.84, "f16": 10.81, "q8_0": 10.53}
+        },
+        "rtf": {
+          "m4_max": {"metal": 79.5, "cpu": 80.5},
+          "ryzen_4750u": {"vulkan": 34.5, "cpu": 22.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-base-ja-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "8ee6e9d7c9df69a3ea654af77659f1c0c08bf90998c2e2a269826096ffafc4f0"},
         {"filename": "moonshine-base-ja-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "a3fb02bb2f6d6b5082818fb60cbc816a20e3865502adca2e1fd94068b29e5d2b"},
@@ -1181,6 +1558,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 58,
+      "benchmarks": {
+        "wer": {
+          "fleurs_ko": {"f32": 8.0, "f16": 8.0, "q8_0": 8.13}
+        },
+        "rtf": {
+          "m4_max": {"metal": 79.5, "cpu": 80.5},
+          "ryzen_4750u": {"vulkan": 34.5, "cpu": 22.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-base-ko-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "b430672cfdde98b894bd98adf1a8b3470308fea39ad1e6bb0f54d8fc9e114471"},
         {"filename": "moonshine-base-ko-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "79b29fd6803723b7884824710aebef743f068e2db0fc3ad0488bc16b05b69c2c"},
@@ -1211,6 +1597,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 38,
+      "benchmarks": {
+        "wer": {
+          "fleurs_uk": {"f32": 14.49, "f16": 14.49, "q8_0": 14.39}
+        },
+        "rtf": {
+          "m4_max": {"metal": 79.5, "cpu": 80.5},
+          "ryzen_4750u": {"vulkan": 34.5, "cpu": 22.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-base-uk-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476512, "sha256": "6dcac8c3905706e8c8416f531a479eccaa38cdaf1eae439f776fda4d4faa88d3"},
         {"filename": "moonshine-base-uk-F16.gguf", "quant": "F16", "size_bytes": 131789472, "sha256": "e603b1e70da31060b0094f34732996156ec8e89cb1068e2f2cf64a91c3ea6cff"},
@@ -1241,6 +1636,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 52,
+      "benchmarks": {
+        "wer": {
+          "fleurs_vi": {"f32": 9.67, "f16": 9.66, "q8_0": 9.79}
+        },
+        "rtf": {
+          "m4_max": {"metal": 79.5, "cpu": 80.5},
+          "ryzen_4750u": {"vulkan": 34.5, "cpu": 22.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-base-vi-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476512, "sha256": "d382ec7ac6aa821d25b921ab982bf1bf29da591cad73372b65209c6a74decb36"},
         {"filename": "moonshine-base-vi-F16.gguf", "quant": "F16", "size_bytes": 131789472, "sha256": "1406f7c80cad755f93d4915d21fbcf5e65f19d4c93e8a3966f970a6a4d6f7068"},
@@ -1271,6 +1675,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 32,
+      "benchmarks": {
+        "wer": {
+          "fleurs_zh": {"f32": 16.65, "f16": 16.65, "q8_0": 17.0}
+        },
+        "rtf": {
+          "m4_max": {"metal": 79.5, "cpu": 80.5},
+          "ryzen_4750u": {"vulkan": 34.5, "cpu": 22.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-base-zh-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 77476480, "sha256": "1bae1d753b29b0c34038585b576d28e4f262ed10c6c7217e023fa5d624dc15ad"},
         {"filename": "moonshine-base-zh-F16.gguf", "quant": "F16", "size_bytes": 131789440, "sha256": "bead0492ab45cee75411d5e59e95a5e796b86ab6cde3bfee4613c02cba9f2e35"},
@@ -1301,6 +1714,15 @@
       },
       "speed_score": 95,
       "accuracy_score": 84,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.53, "f16": 2.53, "q8_0": 2.54}
+        },
+        "rtf": {
+          "m4_max": {"metal": 96.0, "cpu": 57.0},
+          "ryzen_4750u": {"vulkan": 23.5, "cpu": 12.0}
+        }
+      },
       "files": [
         {"filename": "moonshine-streaming-small-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 198506848, "sha256": "d03670f69629b649085d0f44a63d97668b4119117cc9611a4e4ad94341713dfc"},
         {"filename": "moonshine-streaming-small-F16.gguf", "quant": "F16", "size_bytes": 282092128, "sha256": "4e0b872dd11072c3b6ae06a25e832d4eb29281ae0d6931992d1c58889c65eb2f"},
@@ -1331,6 +1753,15 @@
       },
       "speed_score": 83,
       "accuracy_score": 87,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.16, "f16": 2.16, "q8_0": 2.16}
+        },
+        "rtf": {
+          "m4_max": {"metal": 63.0, "cpu": 35.5},
+          "ryzen_4750u": {"vulkan": 14.0, "cpu": 7.5}
+        }
+      },
       "files": [
         {"filename": "moonshine-streaming-medium-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 295793568, "sha256": "f7c9564249b508f6012927ec4f9e536087da53a7047f858ca9975bea5f75299e"},
         {"filename": "moonshine-streaming-medium-F16.gguf", "quant": "F16", "size_bytes": 533781408, "sha256": "cf2ab2c366df44e8885e1c127c23275dc9a0aa0d10557c2fec325506058b9de8"},
@@ -1361,6 +1792,15 @@
       },
       "speed_score": 31,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 2.08, "f16": 2.07, "q8_0": 1.93, "q6_k": 1.96, "q5_k_m": 1.99, "q4_k_m": 2.59}
+        },
+        "rtf": {
+          "m4_max": {"metal": 28.1, "cpu": 5.8},
+          "ryzen_4750u": {"vulkan": 3.0, "cpu": 1.6}
+        }
+      },
       "files": [
         {"filename": "MOSS-Transcribe-Diarize-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 617345184, "sha256": "e371990f2c8f21ded18e18cfac8906b059b5ee7cbce154ed4d3c582c05100b8b"},
         {"filename": "MOSS-Transcribe-Diarize-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 700313760, "sha256": "52deaeff931272f3d49eb437f0f4916e42fce9f42e68db250047408241cf473c"},
@@ -1394,6 +1834,15 @@
       },
       "speed_score": 80,
       "accuracy_score": 86,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.31, "f16": 2.31, "q8_0": 2.31, "q6_k": 2.29, "q5_k_m": 2.34, "q4_k_m": 2.38}
+        },
+        "rtf": {
+          "m4_max": {"metal": 154.5, "cpu": 32.0},
+          "ryzen_4750u": {"vulkan": 13.0, "cpu": 7.5}
+        }
+      },
       "files": [
         {"filename": "nemotron-speech-streaming-en-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 475436032, "sha256": "dc959ca31499b114e395c44eb4f0778968f20e5cfb03305a08a39925b2da8e1e"},
         {"filename": "nemotron-speech-streaming-en-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 538989568, "sha256": "d6b8b36f9aca6a751779d064a29f6583f3e82c0c15646904383c8436a25c1489"},
@@ -1427,6 +1876,15 @@
       },
       "speed_score": 98,
       "accuracy_score": 85,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.43, "f16": 2.43, "q8_0": 2.43, "q6_k": 2.44, "q5_k_m": 2.47, "q4_k_m": 2.53}
+        },
+        "rtf": {
+          "m4_max": {"metal": 347.5, "cpu": 116.0},
+          "ryzen_4750u": {"vulkan": 32.5, "cpu": 23.5}
+        }
+      },
       "files": [
         {"filename": "parakeet-tdt_ctc-110m-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 89989600, "sha256": "486414fd90185a8c8a4ced7c123cfb133ff4f7958426c6b8bd9049946b56b448"},
         {"filename": "parakeet-tdt_ctc-110m-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 101335520, "sha256": "1552e707fddb59e3741b66ea917fc91a9381e336a4730739b1d2d448cb013a2e"},
@@ -1460,6 +1918,15 @@
       },
       "speed_score": 96,
       "accuracy_score": 86,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.19, "f16": 2.19, "q8_0": 2.18, "q6_k": 2.2, "q5_k_m": 2.18, "q4_k_m": 2.18}
+        },
+        "rtf": {
+          "m4_max": {"metal": 178.3, "cpu": 34.6},
+          "ryzen_4750u": {"cpu": 13.0, "vulkan": 25.0}
+        }
+      },
       "files": [
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 477812416, "sha256": "d9f05f95ab70054f37af71aae7bc64d37eabfc2d266935224a827cb0d838bb4f"},
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 541890240, "sha256": "247a14c84dc6d0e7d4f5604b6f2b89b927af2e49eb0ed9fe350b447e849acf01"},
@@ -1499,6 +1966,15 @@
       },
       "speed_score": 94,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.87, "f16": 1.87, "q8_0": 1.87, "q6_k": 1.84, "q5_k_m": 1.87, "q4_k_m": 1.9}
+        },
+        "rtf": {
+          "m4_max": {"metal": 218.5, "cpu": 30.5},
+          "ryzen_4750u": {"vulkan": 22.5, "cpu": 10.0}
+        }
+      },
       "files": [
         {"filename": "parakeet-ctc-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 469302464, "sha256": "2a0dc545d06184b30cd3441a38811f09867a1d6b7b89f008f16bd75c1030ccdb"},
         {"filename": "parakeet-ctc-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 532544704, "sha256": "8837b9489682f870dae15e126940956d4c0a03fbe884d82edcd8b8c8b1dc0f22"},
@@ -1532,6 +2008,15 @@
       },
       "speed_score": 84,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.62, "f16": 1.62, "q8_0": 1.62, "q6_k": 1.62, "q5_k_m": 1.62, "q4_k_m": 1.59}
+        },
+        "rtf": {
+          "m4_max": {"metal": 185.5, "cpu": 30.0},
+          "ryzen_4750u": {"vulkan": 14.5, "cpu": 8.0}
+        }
+      },
       "files": [
         {"filename": "parakeet-rnnt-0.6b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 476390816, "sha256": "70b32229e2b576a3be66176ebc484476f3d715d911c11a4e17167790ce378cf7"},
         {"filename": "parakeet-rnnt-0.6b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 539714976, "sha256": "b2910e4f81f35cc99ce830847040ac469c07aa27d289e9e517d6b73b47a4d7d5"},
@@ -1565,6 +2050,15 @@
       },
       "speed_score": 83,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.85, "f16": 1.85, "q8_0": 1.85, "q6_k": 1.85, "q5_k_m": 1.84, "q4_k_m": 1.9}
+        },
+        "rtf": {
+          "m4_max": {"metal": 139.5, "cpu": 17.5},
+          "ryzen_4750u": {"vulkan": 14.0, "cpu": 6.0}
+        }
+      },
       "files": [
         {"filename": "parakeet-ctc-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 818156576, "sha256": "9e4c104086067ee3afefbf7d41929024261682926cf0a57cc5a1f557fc5b69e5"},
         {"filename": "parakeet-ctc-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 928584736, "sha256": "8b38f60bb1c56b518953a39703068adc09991993b5aab52782e038a86a6c04cc"},
@@ -1598,6 +2092,22 @@
       },
       "speed_score": 79,
       "accuracy_score": 67,
+      "benchmarks": {
+        "wer": {
+          "fleurs_de": {"f32": 6.0, "f16": 6.0, "q8_0": 6.0, "q6_k": 5.96, "q5_k_m": 5.99, "q4_k_m": 5.98}
+        },
+        "rtf": {
+          "m4_max": {"metal": 151.0, "cpu": 28.0},
+          "ryzen_4750u": {"vulkan": 12.5, "cpu": 7.5}
+        },
+        "reported": {
+          "source": "primeline",
+          "url": "https://huggingface.co/primeline/parakeet-primeline",
+          "wer": {
+            "commonvoice": {"de": 3.03}
+          }
+        }
+      },
       "files": [
         {"filename": "parakeet-primeline-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 485425568, "sha256": "8b01f1893fa1db166d8b08375f8300c140fc7f110af7e9b68480a27b145dad7d"},
         {"filename": "parakeet-primeline-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 548946336, "sha256": "a1dd12b7f374c33d5e33a61c8a852035d27064cefe53f8cdfc3410cddf3b31c8"},
@@ -1631,6 +2141,15 @@
       },
       "speed_score": 76,
       "accuracy_score": 91,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.39, "f16": 1.39, "q8_0": 1.38, "q6_k": 1.4, "q5_k_m": 1.39, "q4_k_m": 1.42}
+        },
+        "rtf": {
+          "m4_max": {"metal": 125.5, "cpu": 17.5},
+          "ryzen_4750u": {"vulkan": 11.5, "cpu": 5.5}
+        }
+      },
       "files": [
         {"filename": "parakeet-tdt-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 825248416, "sha256": "38e85773763afe7b79c8538fbd091367b4644123358ea209eeb665879e3fcb13"},
         {"filename": "parakeet-tdt-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 935758496, "sha256": "18c22888fed10676fde72fdd5b833fab9175a6abf4e0cb390eb0a59b0b107cd3"},
@@ -1664,6 +2183,15 @@
       },
       "speed_score": 75,
       "accuracy_score": 91,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.45, "f16": 1.45, "q8_0": 1.46, "q6_k": 1.43, "q5_k_m": 1.43, "q4_k_m": 1.41}
+        },
+        "rtf": {
+          "m4_max": {"metal": 125.5, "cpu": 17.5},
+          "ryzen_4750u": {"vulkan": 11.0, "cpu": 5.5}
+        }
+      },
       "files": [
         {"filename": "parakeet-rnnt-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 825244928, "sha256": "9e8636f491867751ca5b5c18ca91adf52014b1ae406b46516a9a8680ba1049a1"},
         {"filename": "parakeet-rnnt-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 935755008, "sha256": "8ee2ead0c30773440743591cd8a9f8ac180c27f450c9b053805b2bab6bf352cb"},
@@ -1697,6 +2225,15 @@
       },
       "speed_score": 75,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 1.87, "f16": 1.87, "q8_0": 1.87, "q6_k": 1.87, "q5_k_m": 1.87, "q4_k_m": 1.91}
+        },
+        "rtf": {
+          "m4_max": {"metal": 125.5, "cpu": 18.5},
+          "ryzen_4750u": {"vulkan": 11.0, "cpu": 5.5}
+        }
+      },
       "files": [
         {"filename": "parakeet-tdt_ctc-1.1b-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 825248000, "sha256": "5c27d9289e23019c459b1cef87baa5b672343733ccd3762796e68aec447169cd"},
         {"filename": "parakeet-tdt_ctc-1.1b-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 935758080, "sha256": "da23eb8c78fe3813b88f616db85e8191cfbfffdbc2b8bb8bd74a94eb8987caee"},
@@ -1730,6 +2267,25 @@
       },
       "speed_score": 38,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.62, "f16": 1.62, "q8_0": 1.61, "q6_k": 1.65, "q5_k_m": 1.65, "q4_k_m": 1.81}
+        },
+        "rtf": {
+          "m4_max": {"metal": 39.5, "cpu": 8.0},
+          "ryzen_4750u": {"vulkan": 3.8, "cpu": 2.0}
+        },
+        "reported": {
+          "source": "Qwen",
+          "url": "https://arxiv.org/abs/2601.21337",
+          "wer": {
+            "fleurs": {"ar": 16.98, "cs": 22.42, "da": 21.0, "de": 3.92, "el": 28.08, "en": 3.35, "es": 3.36, "fa": 29.9, "fi": 25.23, "fr": 4.75, "hi": 17.15, "hu": 34.22, "id": 5.16, "it": 2.41, "mk": 19.05, "ms": 10.39, "nl": 7.04, "pl": 12.54, "pt": 3.92, "ro": 20.7, "ru": 5.99, "sv": 19.36, "tl": 24.29, "tr": 9.47, "vi": 5.55}
+          },
+          "cer": {
+            "fleurs": {"zh": 2.41, "yue": 3.98, "ko": 2.57, "ja": 5.2, "th": 6.32}
+          }
+        }
+      },
       "files": [
         {"filename": "Qwen3-ASR-1.7B-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 1319830496, "sha256": "b7afe3674f653fa84f712ed2440353c6e7cf7f93697fef76b05a26538b24844e"},
         {"filename": "Qwen3-ASR-1.7B-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1517290464, "sha256": "034c557fe92ff8fcd9a9c041cbdaad347be0a86a58d3a348f63cf3f0180879d0"},
@@ -1763,6 +2319,15 @@
       },
       "speed_score": 98,
       "accuracy_score": 81,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 3.13, "f16": 3.13, "q8_0": 3.13, "q6_k": 3.14, "q5_k_m": 3.18, "q4_k_m": 3.45}
+        },
+        "rtf": {
+          "m4_max": {"metal": 289.5, "cpu": 51.5},
+          "ryzen_4750u": {"vulkan": 32.5, "cpu": 15.5}
+        }
+      },
       "files": [
         {"filename": "SenseVoiceSmall-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 145738304, "sha256": "9d775303e6b4e793d049ef226214c400b2b1746c734ed017146a1a085b13d02b"},
         {"filename": "SenseVoiceSmall-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 172474880, "sha256": "622a819ef9b37dc5506f0079ddedca6ec22e272bb9b4fe950d8f13422d1ccd0b"},
@@ -1796,6 +2361,15 @@
       },
       "speed_score": 14,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.88, "f16": 1.89, "q8_0": 1.87, "q6_k": 1.87, "q5_k_m": 1.91, "q4_k_m": 1.94}
+        },
+        "rtf": {
+          "m4_max": {"metal": 14.9, "cpu": 2.0},
+          "ryzen_4750u": {"vulkan": 1.2, "cpu": 0.5}
+        }
+      },
       "files": [
         {"filename": "Voxtral-Mini-3B-2507-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 2984721056, "sha256": "3a6717aa8f8989108d260cbd237584289eec43cc987e10133c33643515936205"},
         {"filename": "Voxtral-Mini-3B-2507-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 3464182432, "sha256": "9ea2eb85359f7771270715849dc2b0e80381a59dab09d9c5d85352ab9c53f675"},
@@ -1829,6 +2403,14 @@
       },
       "speed_score": 10,
       "accuracy_score": 90,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 1.56, "f16": 1.57, "q8_0": 1.56, "q6_k": 1.58, "q5_k_m": 1.6, "q4_k_m": 2.11}
+        },
+        "rtf": {
+          "m4_max": {"metal": 3.2}
+        }
+      },
       "files": [
         {"filename": "Voxtral-Small-24B-2507-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 14302261728, "sha256": "0da1b866c0eb2ce805678c18a7fb1e413320e4ad3ccbef7160707b65bae937a3"},
         {"filename": "Voxtral-Small-24B-2507-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 17138659808, "sha256": "a53f73a5f63b7663fe155977616a636acac567dac898f6ef82ca519017e8b6e7"},
@@ -1862,6 +2444,25 @@
       },
       "speed_score": 100,
       "accuracy_score": 61,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 7.54, "f16": 7.49, "q8_0": 7.53, "q6_k": 7.63, "q5_k_m": 7.63, "q4_k_m": 7.76}
+        },
+        "rtf": {
+          "m4_max": {"metal": 302.1, "cpu": 76.1},
+          "ryzen_4750u": {"vulkan": 61.0, "cpu": 24.8}
+        },
+        "reported": {
+          "source": "OpenAI",
+          "url": "https://arxiv.org/abs/2212.04356",
+          "wer": {
+            "fleurs": {"af": 91.2, "am": 122.9, "ar": 63.4, "as": 102.0, "az": 93.1, "be": 94.0, "bg": 81.0, "bn": 101.6, "bs": 82.1, "ca": 42.8, "cs": 82.8, "cy": 101.3, "da": 82.0, "de": 27.8, "el": 67.4, "en": 12.4, "es": 15.9, "et": 94.8, "fa": 101.8, "fi": 59.5, "fr": 41.4, "gl": 54.8, "gu": 101.2, "ha": 100.2, "he": 71.6, "hi": 102.3, "hr": 79.0, "hu": 83.8, "hy": 118.6, "id": 51.7, "is": 113.3, "it": 29.8, "jw": 107.3, "ka": 123.0, "kk": 165.2, "km": 100.6, "kn": 100.7, "ko": 36.1, "lb": 99.1, "ln": 105.4, "lt": 98.5, "lv": 91.6, "mi": 94.5, "mk": 73.3, "ml": 101.5, "mn": 113.7, "mr": 100.3, "ms": 51.2, "mt": 100.8, "ne": 101.8, "nl": 49.0, "no": 62.0, "oc": 95.9, "pa": 102.6, "pl": 45.6, "ps": 105.6, "pt": 20.1, "ro": 74.7, "ru": 31.1, "sd": 105.8, "sk": 77.2, "sl": 87.2, "sn": 128.1, "so": 105.6, "sr": 83.7, "sv": 52.7, "sw": 100.9, "ta": 99.9, "te": 105.1, "tg": 101.7, "tl": 65.6, "tr": 42.5, "uk": 51.2, "ur": 65.2, "uz": 105.2, "vi": 60.0, "yo": 106.4}
+          },
+          "cer": {
+            "fleurs": {"ja": 37.0, "lo": 115.1, "my": 124.8, "th": 58.8, "zh": 40.5}
+          }
+        }
+      },
       "files": [
         {"filename": "whisper-tiny-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 43621792, "sha256": "86e1100470df173fa9079f941e33e4d52d11c03923407dd1ec51fd1937d8e609"},
         {"filename": "whisper-tiny-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 44211616, "sha256": "72cfa8ee436a635a5b6fb373cc056a828b9efe96d32d6eb8769ed3cc5b429719"},
@@ -1895,6 +2496,15 @@
       },
       "speed_score": 100,
       "accuracy_score": 68,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 5.77, "f16": 5.77, "q8_0": 5.72, "q6_k": 5.8, "q5_k_m": 5.89, "q4_k_m": 5.99}
+        },
+        "rtf": {
+          "m4_max": {"metal": 279.8, "cpu": 78.7},
+          "ryzen_4750u": {"vulkan": 60.7, "cpu": 26.1}
+        }
+      },
       "files": [
         {"filename": "whisper-tiny.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 43545248, "sha256": "3bfa6200aa12a21409445401f7871b5c733546dc45a29eb4871fcb3c7954e08b"},
         {"filename": "whisper-tiny.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 44135072, "sha256": "610a75700023ffd74df1ab538353525d0a82a3e35702b923e955e69422519740"},
@@ -1928,6 +2538,25 @@
       },
       "speed_score": 99,
       "accuracy_score": 71,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 5.1, "f16": 5.1, "q8_0": 5.12, "q6_k": 5.12, "q5_k_m": 5.19, "q4_k_m": 5.36}
+        },
+        "rtf": {
+          "m4_max": {"metal": 209.4, "cpu": 36.6},
+          "ryzen_4750u": {"vulkan": 34.8, "cpu": 11.9}
+        },
+        "reported": {
+          "source": "OpenAI",
+          "url": "https://arxiv.org/abs/2212.04356",
+          "wer": {
+            "fleurs": {"af": 81.5, "am": 196.8, "ar": 48.8, "as": 102.0, "az": 76.4, "be": 91.3, "bg": 65.1, "bn": 100.6, "bs": 66.7, "ca": 29.0, "cs": 66.0, "cy": 85.3, "da": 57.6, "de": 17.9, "el": 53.5, "en": 8.9, "es": 9.9, "et": 77.9, "fa": 86.1, "fi": 43.1, "fr": 28.5, "gl": 47.4, "gu": 101.4, "ha": 98.6, "he": 61.7, "hi": 101.1, "hr": 59.1, "hu": 65.0, "hy": 126.3, "id": 33.1, "is": 95.5, "it": 17.9, "jw": 89.5, "ka": 114.7, "kk": 109.2, "km": 101.6, "kn": 107.2, "ko": 27.8, "lb": 100.7, "ln": 96.7, "lt": 87.3, "lv": 79.8, "mi": 77.5, "mk": 59.9, "ml": 107.4, "mn": 125.7, "mr": 100.3, "ms": 35.1, "mt": 97.6, "ne": 102.4, "nl": 33.0, "no": 44.0, "oc": 82.9, "pa": 101.5, "pl": 30.8, "ps": 99.0, "pt": 13.0, "ro": 56.0, "ru": 20.5, "sd": 103.9, "sk": 60.6, "sl": 74.6, "sn": 126.0, "so": 109.6, "sr": 64.3, "sv": 37.4, "sw": 92.5, "ta": 58.7, "te": 105.2, "tg": 109.3, "tl": 45.8, "tr": 27.5, "uk": 37.7, "ur": 52.0, "uz": 114.0, "vi": 40.5, "yo": 101.8}
+          },
+          "cer": {
+            "fleurs": {"ja": 22.8, "lo": 105.1, "my": 122.6, "th": 38.2, "zh": 34.1}
+          }
+        }
+      },
       "files": [
         {"filename": "whisper-base-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 58870848, "sha256": "78bc9a8cb7e16a3354b262a4c71c0ed4892f6a66b681068f474dfada0729c0ae"},
         {"filename": "whisper-base-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 63786048, "sha256": "8e0feb7bc35780353cf31821018e601bb7b7cff6c9a0e17ada5a5db23f4db867"},
@@ -1961,6 +2590,15 @@
       },
       "speed_score": 99,
       "accuracy_score": 76,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 4.14, "f16": 4.13, "q8_0": 4.16, "q6_k": 4.15, "q5_k_m": 4.16, "q4_k_m": 4.29}
+        },
+        "rtf": {
+          "m4_max": {"metal": 211.9, "cpu": 38.2},
+          "ryzen_4750u": {"vulkan": 36.2, "cpu": 12.8}
+        }
+      },
       "files": [
         {"filename": "whisper-base.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 58794272, "sha256": "fd19959ff81f96c2b66f26fad97aada090ed6b3af681cf5b569bef3d7a073da5"},
         {"filename": "whisper-base.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 63709472, "sha256": "549e6e991588cd748dc6bf53b8fe47629dc08ed9038b8955270ee98fbc5e4c54"},
@@ -1994,6 +2632,15 @@
       },
       "speed_score": 80,
       "accuracy_score": 81,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 3.09, "f16": 2.97, "q8_0": 3.09, "q6_k": 2.97, "q5_k_m": 3.12, "q4_k_m": 3.08}
+        },
+        "rtf": {
+          "m4_max": {"metal": 104.4, "cpu": 10.3},
+          "ryzen_4750u": {"vulkan": 12.8, "cpu": 3.6}
+        }
+      },
       "files": [
         {"filename": "whisper-small.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 171553856, "sha256": "7bf9ebce1e6332b3d18d4c27032e3097148fc124befed3e70022e0d70539a365"},
         {"filename": "whisper-small.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 193672256, "sha256": "e96a679e57d36f80bb26512f3893185d219ddd8880cdac4c433e5af13a001b47"},
@@ -2027,6 +2674,25 @@
       },
       "speed_score": 78,
       "accuracy_score": 80,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 3.33, "f16": 3.34, "q8_0": 3.33, "q6_k": 3.33, "q5_k_m": 3.37, "q4_k_m": 3.4}
+        },
+        "rtf": {
+          "m4_max": {"metal": 99.2, "cpu": 9.8},
+          "ryzen_4750u": {"vulkan": 12.1, "cpu": 3.4}
+        },
+        "reported": {
+          "source": "OpenAI",
+          "url": "https://arxiv.org/abs/2212.04356",
+          "wer": {
+            "fleurs": {"af": 61.1, "am": 120.2, "ar": 30.6, "as": 108.0, "az": 49.1, "be": 75.1, "bg": 37.3, "bn": 104.4, "bs": 39.4, "ca": 16.2, "cs": 37.6, "cy": 59.3, "da": 32.8, "de": 10.2, "el": 30.8, "en": 6.1, "es": 5.6, "et": 51.3, "fa": 55.8, "fi": 24.0, "fr": 15.0, "gl": 30.2, "gu": 106.4, "ha": 90.1, "he": 44.4, "hi": 38.4, "hr": 33.4, "hu": 38.9, "hy": 86.6, "id": 16.3, "is": 72.6, "it": 9.8, "jw": 88.6, "ka": 118.3, "kk": 70.3, "km": 104.4, "kn": 100.4, "ko": 19.6, "lb": 100.1, "ln": 91.3, "lt": 65.6, "lv": 53.2, "mi": 59.5, "mk": 36.9, "ml": 100.9, "mn": 144.2, "mr": 60.2, "ms": 18.9, "mt": 92.2, "ne": 69.5, "nl": 16.4, "no": 24.2, "oc": 87.3, "pa": 103.6, "pl": 14.7, "ps": 92.9, "pt": 7.3, "ro": 29.8, "ru": 11.4, "sd": 131.7, "sk": 33.3, "sl": 49.3, "sn": 140.0, "so": 105.3, "sr": 42.2, "sv": 20.8, "sw": 73.7, "ta": 35.2, "te": 98.2, "tg": 84.3, "tl": 27.7, "tr": 15.9, "uk": 19.3, "ur": 37.3, "uz": 107.7, "vi": 21.2, "yo": 116.4}
+          },
+          "cer": {
+            "fleurs": {"ja": 12.0, "lo": 102.2, "my": 110.1, "th": 21.9, "zh": 20.8}
+          }
+        }
+      },
       "files": [
         {"filename": "whisper-small-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 171630656, "sha256": "b204d2005a3e5d4fe6153bd61e5e8b32e757ff7b017ac8f61c6f051c2f80e939"},
         {"filename": "whisper-small-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 193749056, "sha256": "326cd00c3e7217c751667c7c1600eaf7e0de174e186ca2c16b4bf590251c3c3b"},
@@ -2060,6 +2726,15 @@
       },
       "speed_score": 44,
       "accuracy_score": 83,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.74, "f16": 2.73, "q8_0": 2.72, "q6_k": 2.83, "q5_k_m": 2.74, "q4_k_m": 2.91}
+        },
+        "rtf": {
+          "m4_max": {"metal": 45.1, "cpu": 3.2},
+          "ryzen_4750u": {"vulkan": 4.6, "cpu": 1.1}
+        }
+      },
       "files": [
         {"filename": "whisper-medium.en-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 504025856, "sha256": "8a0eb0bb20019af88fc0ccda06d97dc949a6a0cdf35d3f2c316b967e76cd4077"},
         {"filename": "whisper-medium.en-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 582669056, "sha256": "8c90b55725036f1362fc5a583432a4e63370304dbf0f96b6245685f8a588174f"},
@@ -2093,6 +2768,15 @@
       },
       "speed_score": 35,
       "accuracy_score": 88,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f16": 2.01, "q8_0": 2.01, "q6_k": 2.01, "q5_k_m": 2.03, "q4_k_m": 2.04}
+        },
+        "rtf": {
+          "m4_max": {"metal": 46.4, "cpu": 1.8},
+          "ryzen_4750u": {"vulkan": 3.4, "cpu": 0.8}
+        }
+      },
       "files": [
         {"filename": "whisper-large-v3-turbo-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 536069728, "sha256": "ecfe9b6beb4ab18fef49187cc968cc74b5168b94629c8830e2ca6b794c6e25ed"},
         {"filename": "whisper-large-v3-turbo-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 619628128, "sha256": "977b5db4e004349dffd1ab9caa10ba5aaba3fc3edd3ba72cadb84328a3203e36"},
@@ -2125,6 +2809,16 @@
       },
       "speed_score": 23,
       "accuracy_score": 86,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"bf16": 2.29, "f16": 2.29, "q8_0": 2.27, "q6_k": 2.29, "q5_k_m": 2.25, "q4_k_m": 2.26},
+          "fleurs_zh": {"bf16": 8.12, "f16": 8.11, "q8_0": 8.1, "q6_k": 8.12, "q5_k_m": 8.12, "q4_k_m": 8.08}
+        },
+        "rtf": {
+          "m4_max": {"metal": 23.7, "cpu": 1.5},
+          "ryzen_4750u": {"vulkan": 2.1, "cpu": 0.6}
+        }
+      },
       "files": [
         {"filename": "Breeze-ASR-25-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 996526080, "sha256": "cb056e63e5606284637c8a9c6d35e3c544f190dd5d26335466c7e584e61815c4"},
         {"filename": "Breeze-ASR-25-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1160366080, "sha256": "c871fc811b33a16a5607c4d4166cfa2c0a1d359f7796e3da255e3e922f59139b"},
@@ -2158,6 +2852,25 @@
       },
       "speed_score": 23,
       "accuracy_score": 83,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.72, "f16": 2.74, "q8_0": 2.74, "q6_k": 2.62, "q5_k_m": 2.7, "q4_k_m": 2.67}
+        },
+        "rtf": {
+          "m4_max": {"metal": 24.9, "cpu": 1.5},
+          "ryzen_4750u": {"vulkan": 2.1, "cpu": 0.5}
+        },
+        "reported": {
+          "source": "OpenAI",
+          "url": "https://arxiv.org/abs/2212.04356",
+          "wer": {
+            "fleurs": {"af": 42.6, "am": 129.3, "ar": 18.1, "as": 105.6, "az": 28.7, "be": 56.6, "bg": 18.4, "bn": 104.9, "bs": 20.7, "ca": 8.0, "cs": 17.4, "cy": 36.6, "da": 16.8, "de": 5.5, "el": 18.7, "en": 4.5, "es": 3.5, "et": 25.5, "fa": 36.1, "fi": 12.2, "fr": 7.7, "gl": 19.0, "gu": 103.9, "ha": 87.0, "he": 30.2, "hi": 26.9, "hr": 16.7, "hu": 21.0, "hy": 53.7, "id": 8.5, "is": 43.0, "it": 4.2, "jw": 87.0, "ka": 100.5, "kk": 43.8, "km": 96.0, "kn": 69.8, "ko": 15.2, "lb": 86.5, "ln": 76.8, "lt": 35.2, "lv": 28.3, "mi": 45.7, "mk": 20.6, "ml": 101.4, "mn": 106.2, "mr": 43.7, "ms": 10.2, "mt": 80.5, "ne": 52.2, "nl": 8.3, "no": 11.4, "oc": 75.9, "pa": 102.8, "pl": 7.2, "ps": 92.7, "pt": 4.8, "ro": 15.4, "ru": 6.4, "sd": 177.9, "sk": 15.7, "sl": 27.8, "sn": 130.0, "so": 103.5, "sr": 29.2, "sv": 10.5, "sw": 47.9, "ta": 20.6, "te": 100.6, "tg": 74.5, "tl": 15.8, "tr": 9.4, "uk": 10.3, "ur": 25.0, "uz": 93.3, "vi": 10.7, "yo": 111.7}
+          },
+          "cer": {
+            "fleurs": {"ja": 6.4, "lo": 101.6, "my": 124.5, "th": 13.2, "zh": 19.6}
+          }
+        }
+      },
       "files": [
         {"filename": "whisper-large-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 996526048, "sha256": "7d7693afc06096de46f2a41309ac479909e131824e78dae4e205f35463aaec09"},
         {"filename": "whisper-large-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1160366048, "sha256": "b1dfb9fa0e9b0574d8c822f51662b8e59915831e1a3ca0d191f18ff8ba742639"},
@@ -2191,6 +2904,25 @@
       },
       "speed_score": 23,
       "accuracy_score": 84,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f32": 2.68, "f16": 2.68, "q8_0": 2.65, "q6_k": 2.83, "q5_k_m": 2.72, "q4_k_m": 2.46}
+        },
+        "rtf": {
+          "m4_max": {"metal": 23.7, "cpu": 1.5},
+          "ryzen_4750u": {"vulkan": 2.1, "cpu": 0.6}
+        },
+        "reported": {
+          "source": "OpenAI",
+          "url": "https://arxiv.org/abs/2212.04356",
+          "wer": {
+            "fleurs": {"af": 36.7, "am": 140.3, "ar": 16.0, "as": 106.2, "az": 23.4, "be": 45.4, "bg": 14.6, "bn": 104.1, "bs": 15.7, "ca": 7.3, "cs": 13.3, "cy": 33.0, "da": 13.8, "de": 4.5, "el": 12.5, "en": 4.2, "es": 3.0, "et": 21.9, "fa": 32.9, "fi": 9.7, "fr": 8.3, "gl": 15.4, "gu": 102.7, "ha": 88.9, "he": 27.1, "hi": 21.5, "hr": 13.4, "hu": 17.0, "hy": 44.6, "id": 7.1, "is": 38.2, "it": 4.0, "ka": 105.0, "kk": 37.7, "km": 99.7, "kn": 37.0, "ko": 14.3, "lb": 88.0, "ln": 75.6, "lt": 28.1, "lv": 23.1, "mi": 38.5, "mk": 16.5, "ml": 100.7, "mn": 110.5, "mr": 38.3, "ms": 8.7, "mt": 76.6, "ne": 47.1, "nl": 6.7, "no": 9.5, "oc": 75.3, "pa": 102.4, "pl": 5.4, "ps": 93.7, "pt": 4.3, "ro": 14.4, "ru": 5.6, "sd": 156.5, "sk": 11.7, "sl": 23.1, "sn": 121.0, "so": 102.9, "sr": 33.9, "sv": 8.5, "sw": 39.3, "ta": 17.5, "te": 99.0, "tg": 85.8, "tl": 13.8, "tr": 8.4, "uk": 8.6, "ur": 22.6, "uz": 90.2, "vi": 10.3, "yo": 94.8}
+          },
+          "cer": {
+            "fleurs": {"ja": 5.3, "lo": 101.5, "my": 115.7, "th": 11.5, "zh": 14.7}
+          }
+        }
+      },
       "files": [
         {"filename": "whisper-large-v2-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 996526080, "sha256": "76aa37b205abc1fb7a9e7aaf0655b8747995b81e6bb72c18f4b1acf59e222f79"},
         {"filename": "whisper-large-v2-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1160366080, "sha256": "94fab1289a98d26bf375174a8daa00f44c7b16a9944726dde05361e5a8bd07ff"},
@@ -2224,6 +2956,26 @@
       },
       "speed_score": 23,
       "accuracy_score": 89,
+      "benchmarks": {
+        "wer": {
+          "librispeech_test_clean": {"f16": 1.81, "q8_0": 1.82, "q6_k": 1.83, "q5_k_m": 1.84, "q4_k_m": 1.86}
+        },
+        "rtf": {
+          "m4_max": {"metal": 23.6, "cpu": 1.5},
+          "ryzen_4750u": {"vulkan": 2.1, "cpu": 0.6}
+        },
+        "reported": {
+          "source": "OpenAI",
+          "url": "https://github.com/openai/whisper/discussions/1762",
+          "wer": {
+            "fleurs": {"af": 32.4, "ar": 9.6, "az": 19.7, "be": 42.5, "bg": 12.5, "bn": 50.0, "bs": 13.0, "ca": 4.8, "cs": 10.1, "cy": 28.6, "da": 12.0, "de": 4.9, "el": 10.9, "en": 4.1, "es": 2.8, "et": 18.1, "fa": 29.4, "fi": 7.7, "fr": 5.3, "gl": 13.1, "gu": 47.4, "he": 26.1, "hi": 17.0, "hr": 10.8, "hu": 12.9, "hy": 42.2, "id": 6.1, "is": 30.4, "it": 3.0, "kk": 32.4, "kn": 33.0, "lt": 23.7, "lv": 19.4, "mi": 39.8, "mk": 14.7, "mr": 34.1, "ms": 7.3, "ne": 40.2, "nl": 5.2, "no": 7.8, "pa": 48.5, "pl": 4.6, "pt": 4.1, "ro": 8.2, "ru": 5.0, "sk": 9.2, "sl": 18.3, "sr": 11.6, "sv": 7.6, "sw": 34.1, "ta": 18.3, "te": 39.3, "tl": 13.0, "tr": 6.7, "uk": 6.4, "ur": 20.6, "vi": 8.6},
+            "commonvoice15": {"eu": 38.9, "nn": 30.7, "sq": 55.7, "yue": 10.9}
+          },
+          "cer": {
+            "fleurs": {"ja": 4.9, "ko": 3.1, "th": 8.4, "zh": 7.7}
+          }
+        }
+      },
       "files": [
         {"filename": "whisper-large-v3-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 997303008, "sha256": "6fe933811cec4cd3159debc46520ecd3aac6c7e322ece2ac61fcfdab184e1fe0"},
         {"filename": "whisper-large-v3-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 1161143008, "sha256": "6053d0fd69a0fd48b8fea5ea7a52b9e0cde389343566fa30e453a1b2b258dc38"},

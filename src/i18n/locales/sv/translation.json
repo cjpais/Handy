@@ -28,7 +28,16 @@
     "customModelDescription": "Stöds inte officiellt",
     "modelCard": {
       "accuracy": "noggrannhet",
-      "speed": "hastighet"
+      "speed": "hastighet",
+      "notMeasured": "Hastighet inte mätt på referensmaskinen.",
+      "werTooltip": "WER {{value}}: {{value}} av orden fel på {{dataset}} vid {{quant}}, mätt av Handy på den levererade modellen ({{accuracy}} rätt). Stapeln jämför modeller: längre är bättre.",
+      "reportedTooltip": "≈ WER {{value}}: {{value}} av orden fel på {{dataset}} enligt {{source}} för basmodellen ({{accuracy}} rätt); Handy har inte mätt detta språk. Stapeln jämför modeller: längre är bättre.",
+      "legacyTooltip": "Mätt på GGUF-versionen av denna modell, inte på denna föråldrade nedladdning.",
+      "noDataTooltip": "Ingen mätning för {{language}}, varken från Handy eller modellens leverantör.",
+      "noDataFallbackTooltip": "* Ingen mätning för {{language}}, varken från Handy eller modellens leverantör. På {{dataset}}: {{accuracy}} av orden rätt.",
+      "speedTooltip": "Transkriberar {{value}} snabbare än realtid på {{machine}} ({{backend}}).",
+      "characterAccuracy": "tecken",
+      "reportedCerTooltip": "≈ CER {{value}}: {{value}} av tecknen fel på {{dataset}} enligt {{source}} för basmodellen ({{accuracy}} rätt); Handy har inte mätt detta språk. Stapeln jämför modeller: längre är bättre."
     },
     "models": {
       "small": {

@@ -28,7 +28,16 @@
     "customModelDescription": "非官方支持",
     "modelCard": {
       "accuracy": "准确度",
-      "speed": "速度"
+      "speed": "速度",
+      "notMeasured": "未在参考机器上测量速度。",
+      "werTooltip": "WER {{value}}：在 {{dataset}}（{{quant}}）上有 {{value}} 的词识别错误，由 Handy 在分发模型上测得（{{accuracy}} 正确）。进度条用于模型间比较，越长越好。",
+      "reportedTooltip": "≈ WER {{value}}：在 {{dataset}} 上有 {{value}} 的词识别错误，为 {{source}} 针对基础模型公布的数据（{{accuracy}} 正确），Handy 未自行测量该语言。进度条用于模型间比较，越长越好。",
+      "legacyTooltip": "在该模型的 GGUF 版本上测得，并非此旧版下载。",
+      "noDataTooltip": "Handy 和模型提供方均没有针对{{language}}的测量数据。",
+      "noDataFallbackTooltip": "* Handy 和模型提供方均没有针对{{language}}的测量数据。在 {{dataset}} 上：{{accuracy}} 的词正确。",
+      "speedTooltip": "在 {{machine}}（{{backend}}）上以实时 {{value}} 的速度转写。",
+      "characterAccuracy": "字符准确率",
+      "reportedCerTooltip": "≈ CER {{value}}：在 {{dataset}} 上有 {{value}} 的字符识别错误，为 {{source}} 针对基础模型公布的数据（{{accuracy}} 正确），Handy 未自行测量该语言。进度条用于模型间比较，越长越好。"
     },
     "models": {
       "small": {
