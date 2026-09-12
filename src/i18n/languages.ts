@@ -41,4 +41,9 @@ export const LANGUAGE_METADATA: Record<
   hi: { name: "Hindi", nativeName: "हिन्दी", priority: 23 },
   da: { name: "Danish", nativeName: "Dansk", priority: 24 },
   ca: { name: "Catalan", nativeName: "Català", priority: 25 },
+  id: {
+    name: "Indonesian",
+    nativeName: "Bahasa Indonesia",
+    priority: 26,
+  },
 };
