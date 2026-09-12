@@ -14,11 +14,12 @@ def file(name, size=1024, sha="a" * 64):
 
 class ExternalCatalogTests(unittest.TestCase):
     def test_mixed_repo_includes_only_compatible_export(self):
-        wanted = "transcribe-cpp/orukeet-Q8_0.gguf"
+        wanted = "orukeet-transcribe-cpp-Q8_0.gguf"
         result = catalog.gguf_files("oruk/orukeet", [
             file("orukeet-v0.1.0-q8.gguf"),
             file("orukeet-v0.1.0-f16.gguf"),
             file(wanted),
+            file("transcribe-cpp/orukeet-Q8_0.gguf"),
             file("onnx/manifest.json"),
         ])
         self.assertEqual([f["filename"] for f in result], [wanted])
@@ -29,8 +30,8 @@ class ExternalCatalogTests(unittest.TestCase):
             catalog.gguf_files("oruk/orukeet", [file("orukeet-v0.1.0-q8.gguf")])
 
     def test_selected_export_requires_integrity_metadata(self):
-        for bad in [file("transcribe-cpp/orukeet-Q8_0.gguf", size=None),
-                    file("transcribe-cpp/orukeet-Q8_0.gguf", sha=None)]:
+        for bad in [file("orukeet-transcribe-cpp-Q8_0.gguf", size=None),
+                    file("orukeet-transcribe-cpp-Q8_0.gguf", sha=None)]:
             with self.subTest(file=bad):
                 with self.assertRaisesRegex(ValueError, "missing/invalid size or sha256"):
                     catalog.gguf_files("oruk/orukeet", [bad])
@@ -49,7 +50,7 @@ class ExternalCatalogTests(unittest.TestCase):
                 "language": ["en", "de"], "license": "cc-by-sa-4.0",
                 "transcribe_cpp": {"lang_detect": True, "timestamps": "token"},
             }),
-            siblings=[file("transcribe-cpp/orukeet-Q8_0.gguf")],
+            siblings=[file("orukeet-transcribe-cpp-Q8_0.gguf")],
         )
         with patch.object(catalog.api, "model_info", return_value=info), \
              patch.object(catalog, "probe_header", return_value={
@@ -69,9 +70,9 @@ class ExternalCatalogTests(unittest.TestCase):
         data = b"GGUF" + struct.pack("<IQQ", 3, 0, 1)
         data += string("general.name") + struct.pack("<I", 8) + string("Orukeet")
         with patch.object(catalog.fs, "open", return_value=io.BytesIO(data)) as opened:
-            result = catalog.probe_header("oruk/orukeet", "transcribe-cpp/orukeet-Q8_0.gguf", revision="b" * 40)
+            result = catalog.probe_header("oruk/orukeet", "orukeet-transcribe-cpp-Q8_0.gguf", revision="b" * 40)
         self.assertEqual(result["general.name"], "Orukeet")
-        opened.assert_called_once_with("oruk/orukeet@" + "b" * 40 + "/transcribe-cpp/orukeet-Q8_0.gguf", "rb", block_size=65536)
+        opened.assert_called_once_with("oruk/orukeet@" + "b" * 40 + "/orukeet-transcribe-cpp-Q8_0.gguf", "rb", block_size=65536)
 
 
 if __name__ == "__main__":

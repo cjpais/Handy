@@ -21,7 +21,8 @@ ORG = "handy-computer"
 # External publishers may ship several incompatible GGUF layouts in one repo.
 # Only these transcribe.cpp exports belong in Handy's catalog.
 EXTERNAL_MODELS = {
-    "oruk/orukeet": {"transcribe-cpp/orukeet-Q8_0.gguf"},
+    # Keep the file at the repo root for Handy's existing cache/delete layout.
+    "oruk/orukeet": {"orukeet-transcribe-cpp-Q8_0.gguf"},
 }
 CATALOG_VERSION = 2
 

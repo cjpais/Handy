@@ -1711,7 +1711,7 @@
     },
     {
       "id": "oruk/orukeet",
-      "revision": "b5f8f874cbab250ecab8c89b82f6409312441e24",
+      "revision": "bc4e7f163fe22158e70fe8fa0cea2ea087537a18",
       "slug": "orukeet",
       "name": "Orukeet",
       "architecture": "parakeet",
@@ -1731,7 +1731,7 @@
       "speed_score": null,
       "accuracy_score": null,
       "files": [
-        {"filename": "transcribe-cpp/orukeet-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 739508608, "sha256": "cad2f52ac91cad829279422301989687c2cf02e19157352ed25ea501b90dbb7e"}
+        {"filename": "orukeet-transcribe-cpp-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 739508608, "sha256": "cad2f52ac91cad829279422301989687c2cf02e19157352ed25ea501b90dbb7e"}
       ],
       "default_quant": "Q8_0",
       "recommended": false,
