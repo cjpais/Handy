@@ -18,6 +18,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from huggingface_hub import HfApi, HfFileSystem
 
 ORG = "handy-computer"
+# External publishers may ship several incompatible GGUF layouts in one repo.
+# Only these transcribe.cpp exports belong in Handy's catalog.
+EXTERNAL_MODELS = {
+    "oruk/orukeet": {"transcribe-cpp/orukeet-Q8_0.gguf"},
+}
 CATALOG_VERSION = 2
 
 # Download sources tried in order after Hugging Face itself. Each entry is a
@@ -121,7 +126,7 @@ api = HfApi(token=os.environ.get("HF_TOKEN"))
 fs  = HfFileSystem(token=os.environ.get("HF_TOKEN"))
 
 GGUF_WANT = {"general.architecture", "general.name", "general.basename", "general.size_label"}
-def probe_header(repo, filename, nbytes=65536):
+def probe_header(repo, filename, nbytes=65536, revision=None):
     """Range-read only friendly general.* labels (no tensors, no capabilities).
 
     Capabilities come from HF card data here and from Rust's GGUF probe at
@@ -130,7 +135,8 @@ def probe_header(repo, filename, nbytes=65536):
     """
     out = {}
     try:
-        with fs.open(f"{repo}/{filename}", "rb", block_size=nbytes) as f:
+        pinned_repo = f"{repo}@{revision}" if revision else repo
+        with fs.open(f"{pinned_repo}/{filename}", "rb", block_size=nbytes) as f:
             buf = f.read(nbytes)
     except Exception:
         return out
@@ -186,6 +192,8 @@ def gguf_files(repo, siblings):
     for x in siblings:
         if not x.rfilename.endswith(".gguf"):
             continue
+        if repo in EXTERNAL_MODELS and x.rfilename not in EXTERNAL_MODELS[repo]:
+            continue
         sha = lfs_sha256(x)
         if type(x.size) is not int or x.size <= 0 or not sha:
             invalid.append(x.rfilename)
@@ -198,6 +206,9 @@ def gguf_files(repo, siblings):
         })
     if invalid:
         raise ValueError(f"{repo}: missing/invalid size or sha256 metadata for {', '.join(invalid)}")
+    missing = EXTERNAL_MODELS.get(repo, set()) - {f["filename"] for f in files}
+    if missing:
+        raise ValueError(f"{repo}: missing catalog exports: {', '.join(sorted(missing))}")
     return sorted(files, key=lambda f: f["size_bytes"])
 
 def build(repo):
@@ -212,7 +223,7 @@ def build(repo):
 
     files = gguf_files(repo, info.siblings)
     q8 = next((f for f in files if "Q8" in f["quant"]), files[-1] if files else None)
-    gg = probe_header(repo, q8["filename"]) if q8 else {}
+    gg = probe_header(repo, q8["filename"], revision=info.sha) if q8 else {}
 
     caps = {"streaming": bool(b.get("streaming")), "translate": bool(b.get("translate")),
             "lang_detect": bool(b.get("lang_detect")), "timestamps": b.get("timestamps", "none")}
@@ -251,7 +262,8 @@ def build(repo):
         "language_count": len(langs),
         "languages": langs,
         "capabilities": caps,
-        "speed_score": speed_from_rtf(rtf),
+        "speed_score": (None if repo in EXTERNAL_MODELS and rtf is None
+                        else speed_from_rtf(rtf)),
         "accuracy_score": acc_from_wer(hw),
         "files": files,
         "default_quant": default_quant,
@@ -261,6 +273,7 @@ def build(repo):
 
 def main():
     repos = [m.id for m in api.list_models(author=ORG, limit=500)]
+    repos = list(dict.fromkeys([*repos, *EXTERNAL_MODELS]))
     models = []
     failures = []
     with ThreadPoolExecutor(max_workers=10) as ex:
