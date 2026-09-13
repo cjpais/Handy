@@ -38,6 +38,9 @@
         glib
         libsoup_3
         alsa-lib
+        # Native PipeWire capture backend: libspa-sys/pipewire-sys probe
+        # libpipewire-0.3 and libspa-0.2 through pkg-config at build time.
+        pipewire
         onnxruntime
         libayatana-appindicator
         libevdev

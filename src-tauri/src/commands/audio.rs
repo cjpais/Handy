@@ -1,5 +1,7 @@
 use crate::audio_feedback;
-use crate::audio_toolkit::audio::{list_input_devices, list_output_devices, AudioRecorder};
+use crate::audio_toolkit::audio::{
+    list_input_devices, list_input_devices_for_backend, list_output_devices, AudioRecorder,
+};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
 use log::warn;
@@ -188,11 +190,19 @@ pub fn get_microphone_mode(app: AppHandle) -> Result<bool, String> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
-    // cpal device enumeration can stall — run it off the webview/main run loop.
-    tokio::task::spawn_blocking(|| {
-        let devices =
-            list_input_devices().map_err(|e| format!("Failed to list audio devices: {}", e))?;
+pub async fn get_available_microphones(app: AppHandle) -> Result<Vec<AudioDevice>, String> {
+    // Enumerate through the backend that is actually capturing. Under cpal's
+    // ALSA host Linux only ever reports "default", so a PipeWire session lists
+    // the graph's real source nodes instead.
+    let backend = app
+        .state::<Arc<AudioRecordingManager>>()
+        .inner()
+        .resolved_backend();
+
+    // Device enumeration can stall — run it off the webview/main run loop.
+    tokio::task::spawn_blocking(move || {
+        let devices = list_input_devices_for_backend(backend)
+            .map_err(|e| format!("Failed to list audio devices: {}", e))?;
 
         let mut result = vec![AudioDevice {
             index: "default".to_string(),
@@ -201,7 +211,7 @@ pub async fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
         }];
 
         result.extend(devices.into_iter().map(|d| AudioDevice {
-            index: d.index,
+            index: d.id,
             name: d.name,
             is_default: false, // The explicit default is handled separately
         }));
@@ -210,6 +220,20 @@ pub async fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
     })
     .await
     .map_err(|e| format!("audio task join failed: {}", e))?
+}
+
+/// The capture backend actually in use, as a stable string (`pipewire` or
+/// `alsa`). Never the raw `Auto` preference — the UI shows what resolution
+/// picked so the user always knows which backend is live.
+#[tauri::command]
+#[specta::specta]
+pub fn get_resolved_audio_backend(app: AppHandle) -> Result<String, String> {
+    Ok(app
+        .state::<Arc<AudioRecordingManager>>()
+        .inner()
+        .resolved_backend()
+        .as_str()
+        .to_string())
 }
 
 #[tauri::command]

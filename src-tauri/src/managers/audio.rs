@@ -1,14 +1,16 @@
+use crate::audio_toolkit::resolve_capture_backend;
 use crate::audio_toolkit::{
     list_input_devices,
     vad::{
         frames_for_duration_ms, EarshotVad, SmoothedVad, VAD_OFFLINE_HANGOVER_MS, VAD_ONSET_MS,
         VAD_PREFILL_MS, VAD_STREAMING_HANGOVER_MS,
     },
-    AudioRecorder, SileroVad, VadPolicy, VoiceActivityDetector,
+    AudioFrameCallback, CaptureBackend, Recorder, SileroVad, VadConfig, VadPolicy,
+    VoiceActivityDetector,
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
-use crate::settings::{get_settings, write_settings, AppSettings, VadBackend};
+use crate::settings::{get_settings, write_settings, AppSettings, AudioBackend, VadBackend};
 use crate::utils;
 use log::{debug, error, info, trace, warn};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -266,13 +268,35 @@ enum DesiredMicrophone {
     Clamshell(String),
 }
 
-/// Result of resolving the persisted preference to a live cpal device.
-/// `device: None` means cpal should open the system default. The unavailable
-/// name is populated only when enumeration succeeded and confirmed that the
-/// user's regular selected microphone is missing.
+/// Result of resolving the persisted preference to a live capture target.
+/// `device: None` means cpal should open the system default, and
+/// `pipewire_target: None` means the PipeWire graph's default source. Exactly
+/// one of the two is meaningful, depending on the resolved backend. The
+/// unavailable name is populated only when enumeration succeeded and confirmed
+/// that the user's regular selected microphone is missing.
 struct MicrophoneResolution {
     device: Option<cpal::Device>,
+    pipewire_target: Option<String>,
     unavailable_selected_microphone: Option<String>,
+}
+
+/// Map the persisted preference to what the `Recorder` seam expects: `None`
+/// means "Auto — resolve it", `Some(..)` pins a backend.
+///
+/// Off Linux there is only cpal, so any stored value resolves to it: a settings
+/// file synced from a Linux machine cannot pin a backend that does not exist.
+fn preferred_capture_backend(setting: AudioBackend) -> Option<CaptureBackend> {
+    #[cfg(target_os = "linux")]
+    match setting {
+        AudioBackend::Auto => None,
+        AudioBackend::Pipewire => Some(CaptureBackend::PipeWire),
+        AudioBackend::Alsa => Some(CaptureBackend::Cpal),
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = setting;
+        Some(CaptureBackend::Cpal)
+    }
 }
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -282,7 +306,7 @@ fn create_audio_recorder(
     app_handle: &tauri::AppHandle,
     selected_channel: Option<u16>,
     stream_router: Arc<StreamRouter>,
-) -> Result<AudioRecorder, anyhow::Error> {
+) -> Result<Recorder, anyhow::Error> {
     let detector: Box<dyn VoiceActivityDetector> = match backend {
         VadBackend::Silero => {
             let vad_path = app_handle
@@ -324,30 +348,37 @@ fn create_audio_recorder(
         backend, frame_samples
     );
 
-    // Recorder with VAD, a spectrum-level callback that forwards level updates to
-    // the frontend, and an audio-frame callback that feeds live streaming via a
-    // shared `StreamRouter` (captured directly, not via Tauri state — see its docs).
-    let recorder = AudioRecorder::new()
-        .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
-        .with_vad(
-            Box::new(smoothed_vad),
-            offline_hangover_frames,
-            streaming_hangover_frames,
-        )
-        .with_selected_channel(selected_channel)
-        .with_level_callback({
-            let app_handle = app_handle.clone();
-            move |levels| {
-                utils::emit_levels(&app_handle, &levels);
-            }
-        })
-        .with_audio_callback({
-            let router = stream_router;
-            move |frame| {
-                router.feed(frame);
-            }
-        });
+    // Build the shared VAD + callbacks once, then hand them to the `Recorder`
+    // seam which distributes them to whichever backend it selects (native
+    // PipeWire on Linux, cpal/ALSA everywhere else). The single detector engine
+    // is shared across backends (only one is ever open at a time).
+    let vad = VadConfig::new(
+        Box::new(smoothed_vad),
+        offline_hangover_frames,
+        streaming_hangover_frames,
+    );
 
+    // Spectrum-level callback forwards level updates to the frontend.
+    let level_cb: Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static> = Arc::new({
+        let app_handle = app_handle.clone();
+        move |levels| {
+            utils::emit_levels(&app_handle, &levels);
+        }
+    });
+
+    // Audio-frame callback feeds live streaming via a shared `StreamRouter`
+    // (captured directly, not via Tauri state — see its docs).
+    let audio_cb: AudioFrameCallback = Arc::new({
+        let router = stream_router;
+        move |frame| {
+            router.feed(frame);
+        }
+    });
+
+    let mut recorder = Recorder::from_parts(Some(vad), Some(level_cb), Some(audio_cb));
+    // Honor the saved input-channel selection from the first capture, matching
+    // the cpal builder's old `with_selected_channel` at construction time.
+    recorder.set_selected_channel(selected_channel);
     Ok(recorder)
 }
 
@@ -378,7 +409,7 @@ pub struct AudioRecordingManager {
     mode: Arc<Mutex<MicrophoneMode>>,
     app_handle: tauri::AppHandle,
 
-    recorder: Arc<Mutex<Option<AudioRecorder>>>,
+    recorder: Arc<Mutex<Option<Recorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
     mute_state: Arc<Mutex<MuteState>>,
@@ -402,6 +433,16 @@ pub struct AudioRecordingManager {
     /// so the retry re-enumerates. The system-default case is never cached —
     /// the recorder resolves the current default itself, cheaply.
     cached_device: Arc<Mutex<Option<(String, cpal::Device)>>>,
+    /// The capture backend actually in use, resolved ONCE at startup from the
+    /// `audio_backend` setting (`Auto` probes PipeWire and falls back to ALSA).
+    /// Device enumeration reads this rather than re-deriving the preference, so
+    /// the picker can never list nodes from a backend that is not running.
+    /// Resolution is deliberately not re-run per recording: a mid-session
+    /// backend flip would invalidate the persisted microphone selection.
+    resolved_backend: CaptureBackend,
+    /// Whether the resolved backend may silently fall back to cpal/ALSA. True
+    /// only for `Auto`; an explicit PipeWire choice fails loudly instead.
+    allow_backend_fallback: bool,
 }
 
 impl AudioRecordingManager {
@@ -418,6 +459,16 @@ impl AudioRecordingManager {
             MicrophoneMode::OnDemand
         };
 
+        // Resolve the capture backend once, here, so every later consumer
+        // (open, enumeration, the frontend) reads the same answer.
+        let preferred = preferred_capture_backend(settings.audio_backend);
+        let resolved_backend = resolve_capture_backend(preferred);
+        info!(
+            "Audio backend: {:?} -> {}",
+            settings.audio_backend,
+            resolved_backend.as_str()
+        );
+
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),
             mode: Arc::new(Mutex::new(mode.clone())),
@@ -433,6 +484,8 @@ impl AudioRecordingManager {
             recording_active: Arc::new(AtomicBool::new(false)),
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
+            resolved_backend,
+            allow_backend_fallback: preferred.is_none(),
         };
 
         // Always-on?  Open immediately.
@@ -471,6 +524,12 @@ impl AudioRecordingManager {
         *self.cached_device.lock().unwrap() = None;
     }
 
+    /// The capture backend actually in use — never the raw `Auto`. Device
+    /// enumeration and the frontend read this.
+    pub fn resolved_backend(&self) -> CaptureBackend {
+        self.resolved_backend
+    }
+
     fn resolve_microphone_device(&self, settings: &AppSettings) -> MicrophoneResolution {
         let desired = self.desired_microphone(settings);
         let (device_name, selected_microphone) = match desired {
@@ -478,12 +537,26 @@ impl AudioRecordingManager {
                 debug!("device resolve: no mic configured -> system default");
                 return MicrophoneResolution {
                     device: None,
+                    pipewire_target: None,
                     unavailable_selected_microphone: None,
                 };
             }
             DesiredMicrophone::Selected(name) => (name.clone(), Some(name)),
             DesiredMicrophone::Clamshell(name) => (name, None),
         };
+
+        // The PipeWire backend targets a graph node by name, so the whole cpal
+        // enumeration/caching path below does not apply. An unresolvable name
+        // degrades to the default source (see `resolve_pipewire_target`) instead
+        // of erasing a preference that may belong to the other backend.
+        #[cfg(target_os = "linux")]
+        if self.resolved_backend == CaptureBackend::PipeWire {
+            return MicrophoneResolution {
+                device: None,
+                pipewire_target: crate::audio_toolkit::audio::resolve_pipewire_target(&device_name),
+                unavailable_selected_microphone: None,
+            };
+        }
 
         // Cache hit: skip the full enumeration. A stale device (unplugged)
         // fails at open, where the caller invalidates and retries fresh.
@@ -492,6 +565,7 @@ impl AudioRecordingManager {
                 debug!("device resolve: cache hit for '{}'", device_name);
                 return MicrophoneResolution {
                     device: Some(device.clone()),
+                    pipewire_target: None,
                     unavailable_selected_microphone: None,
                 };
             }
@@ -530,6 +604,7 @@ impl AudioRecordingManager {
         };
         MicrophoneResolution {
             device,
+            pipewire_target: None,
             unavailable_selected_microphone,
         }
     }
@@ -709,15 +784,25 @@ impl AudioRecordingManager {
         let open_started = Instant::now();
         let mut recorder_opt = self.recorder.lock().unwrap();
         if let Some(rec) = recorder_opt.as_mut() {
-            if let Err(first_err) = rec.open(resolution.device.clone()) {
+            if let Err(first_err) = rec.open(
+                self.resolved_backend,
+                resolution.device.clone(),
+                resolution.pipewire_target.clone(),
+                self.allow_backend_fallback,
+            ) {
                 // A cached device or config may have gone stale (unplugged,
                 // rate/format changed). Re-resolve from a fresh enumeration and
                 // retry once before surfacing the error.
                 warn!("Recorder open failed ({first_err}); re-resolving device and retrying once");
                 self.invalidate_device_cache();
                 resolution = self.resolve_microphone_device(&settings);
-                rec.open(resolution.device.clone())
-                    .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
+                rec.open(
+                    self.resolved_backend,
+                    resolution.device.clone(),
+                    resolution.pipewire_target.clone(),
+                    self.allow_backend_fallback,
+                )
+                .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
             }
         }
         debug!(

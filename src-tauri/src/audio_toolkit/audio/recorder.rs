@@ -20,7 +20,11 @@ use crate::audio_toolkit::{
     VoiceActivityDetector,
 };
 
-enum Cmd {
+/// Control protocol shared by every capture backend. The cpal `AudioRecorder`
+/// and the native `PipeWireRecorder` both drive the SAME `run_consumer` loop, so
+/// this type is `pub(crate)` to let the pipewire backend speak the same protocol
+/// instead of duplicating the consumer/VAD/resampler pipeline.
+pub(crate) enum Cmd {
     /// Begin capturing. Carries the send timestamp so the consumer can log how
     /// long the command sat in the channel, plus a one-shot first-sample acknowledgement.
     Start(VadPolicy, Instant, mpsc::Sender<()>),
@@ -30,20 +34,43 @@ enum Cmd {
 
 // Two seconds of ring capacity absorbs consumer stalls without adding latency
 // during normal 10 ms drains.
-const AUDIO_RING_SECONDS: usize = 2;
+/// `pub(crate)` so every capture backend sizes its ring identically (see the
+/// native PipeWire backend).
+pub(crate) const AUDIO_RING_SECONDS: usize = 2;
 const CONSUMER_POLL_INTERVAL: Duration = Duration::from_millis(10);
 const MAX_DRAIN_CHUNK: Duration = Duration::from_millis(50);
 const PAUSE_ACK_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Atomics shared by the callback and consumer; audio uses a wait-free SPSC ring.
 /// The callback must remain allocation-, lock-, logging-, and blocking-free.
+///
+/// `pub(crate)` (with private fields) so the native PipeWire backend can drive
+/// the SAME pause/overrun protocol through the accessors below instead of
+/// reimplementing it. Every backend shares one `run_consumer`.
 #[derive(Default)]
-struct CaptureTransportState {
+pub(crate) struct CaptureTransportState {
     pause_requested: AtomicBool,
     /// Set after forwarding a pause's boundary block; subsequent callbacks
     /// remain silent until the consumer clears the request.
     pause_acknowledged: AtomicBool,
     overrun_samples: AtomicU64,
+}
+
+impl CaptureTransportState {
+    /// True once the consumer's pause request has been acknowledged, i.e. the
+    /// boundary block was already forwarded and the callback must stay silent.
+    /// Real-time safe: two atomic loads, nothing else.
+    pub(crate) fn is_capture_paused(&self) -> bool {
+        self.pause_requested.load(Ordering::Acquire)
+            && self.pause_acknowledged.load(Ordering::Acquire)
+    }
+
+    /// Record samples the ring had no room for, so the consumer can report the
+    /// loss once recording ends. Real-time safe.
+    pub(crate) fn record_overrun(&self, dropped_samples: u64) {
+        self.overrun_samples
+            .fetch_add(dropped_samples, Ordering::Relaxed);
+    }
 }
 
 /// How 16 kHz mono frames should be filtered for one recording session.
@@ -61,8 +88,12 @@ pub enum VadPolicy {
 /// should use. The offline and streaming policies are never active
 /// concurrently, so one detector is reconfigured per session (see `Cmd::Start`)
 /// rather than kept as two resident engines.
+///
+/// `pub(crate)` + `new` so the native PipeWire backend and the `Recorder` seam
+/// can hold and clone the same config (the detector lives behind
+/// `Arc<Mutex<..>>`, so one ONNX session is shared, never duplicated).
 #[derive(Clone)]
-struct VadConfig {
+pub(crate) struct VadConfig {
     detector: Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>,
     frame_samples: usize,
     offline_hangover_frames: usize,
@@ -70,6 +101,28 @@ struct VadConfig {
 }
 
 impl VadConfig {
+    /// Build a shared VAD config from a detector and the offline/streaming
+    /// hangover tails. The detector is wrapped in `Arc<Mutex<..>>` so a single
+    /// engine can back multiple recorder backends without re-instantiating it.
+    ///
+    /// The frame size is read off the detector here — it is the single place
+    /// a `VadConfig` is constructed, so every backend gets frames sized for the
+    /// active VAD implementation and the detector never sees a partial frame.
+    pub(crate) fn new(
+        detector: Box<dyn VoiceActivityDetector>,
+        offline_hangover_frames: usize,
+        streaming_hangover_frames: usize,
+    ) -> Self {
+        let frame_samples = detector.frame_samples();
+        assert!(frame_samples > 0, "VAD frame size must be non-zero");
+        VadConfig {
+            detector: Arc::new(Mutex::new(detector)),
+            frame_samples,
+            offline_hangover_frames,
+            streaming_hangover_frames,
+        }
+    }
+
     /// Post-speech hangover tail (in backend-sized frames) for the given policy.
     /// `Disabled` never reaches the detector, so it maps to the offline value.
     fn hangover_for(&self, policy: VadPolicy) -> usize {
@@ -83,6 +136,9 @@ impl VadConfig {
 /// Callback invoked with each 16 kHz mono frame that passes the active capture
 /// policy while recording. Used to feed a live streaming transcription as audio arrives.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
+/// Spectrum-level callback type (per-frame frequency buckets forwarded to the
+/// UI). Aliased so both capture backends and the `Recorder` seam can pass the
+/// exact same boxed callback without re-spelling the signature.
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
 
 pub struct AudioRecorder {
@@ -129,15 +185,35 @@ impl AudioRecorder {
         offline_hangover_frames: usize,
         streaming_hangover_frames: usize,
     ) -> Self {
-        let frame_samples = detector.frame_samples();
-        assert!(frame_samples > 0, "VAD frame size must be non-zero");
-        self.vad = Some(VadConfig {
-            detector: Arc::new(Mutex::new(detector)),
-            frame_samples,
+        self.vad = Some(VadConfig::new(
+            detector,
             offline_hangover_frames,
             streaming_hangover_frames,
-        });
+        ));
         self
+    }
+
+    /// Construct a recorder directly from already-built shared parts (VAD +
+    /// callbacks). This is the seam used by `Recorder` so the cpal backend and
+    /// the native pipewire backend can share ONE VAD engine and ONE set of
+    /// callbacks instead of each building its own. Mirrors what the `with_*`
+    /// builder chain assembles, minus the device (resolved later in `open`).
+    pub(crate) fn from_parts(
+        vad: Option<VadConfig>,
+        level_cb: Option<LevelCallback>,
+        audio_cb: Option<AudioFrameCallback>,
+    ) -> Self {
+        AudioRecorder {
+            device: None,
+            cmd_tx: None,
+            worker_handle: None,
+            vad,
+            level_cb,
+            audio_cb,
+            selected_channel: None,
+            config_cache: Arc::new(Mutex::new(None)),
+            stream_error: Arc::new(AtomicBool::new(false)),
+        }
     }
 
     pub fn with_level_callback<F>(mut self, cb: F) -> Self
@@ -494,9 +570,7 @@ impl AudioRecorder {
     {
         // Forward the first block that observes a pause; once acknowledged,
         // remain silent until the consumer resumes capture.
-        if transport.pause_requested.load(Ordering::Acquire)
-            && transport.pause_acknowledged.load(Ordering::Acquire)
-        {
+        if transport.is_capture_paused() {
             return;
         }
 
@@ -536,9 +610,7 @@ impl AudioRecorder {
 
         let dropped = frame_count - written;
         if dropped > 0 {
-            transport
-                .overrun_samples
-                .fetch_add(dropped as u64, Ordering::Relaxed);
+            transport.record_overrun(dropped as u64);
         }
 
         // Publish the boundary write before acknowledging, including when the
@@ -608,7 +680,10 @@ impl AudioRecorder {
     }
 }
 
-fn acknowledge_pause_after_write(transport: &CaptureTransportState) {
+/// Publish a pause acknowledgement once the boundary block has been committed.
+/// `pub(crate)` so every backend's capture callback closes the pause handshake
+/// the same way. Real-time safe.
+pub(crate) fn acknowledge_pause_after_write(transport: &CaptureTransportState) {
     if transport.pause_requested.load(Ordering::Acquire) {
         transport.pause_acknowledged.store(true, Ordering::Release);
     }
@@ -698,7 +773,11 @@ enum ChunkDisposition {
 
 /// Converts raw ring samples into 16 kHz frames across recording sessions.
 /// Ring transport stays outside to avoid conflicting borrows during drains.
-struct CaptureProcessor {
+///
+/// `pub(crate)` so every capture backend can build one and hand it to the
+/// shared `run_consumer` instead of duplicating the resample -> VAD -> buffer
+/// pipeline (see the native PipeWire backend).
+pub(crate) struct CaptureProcessor {
     // ---- stream-scoped: fixed for the life of the input stream ---------- //
     in_sample_rate: u32,
     vad: Option<VadConfig>,
@@ -720,7 +799,7 @@ struct CaptureProcessor {
 }
 
 impl CaptureProcessor {
-    fn new(
+    pub(crate) fn new(
         in_sample_rate: u32,
         vad: Option<VadConfig>,
         level_cb: Option<LevelCallback>,
@@ -911,7 +990,12 @@ impl CaptureProcessor {
     }
 }
 
-fn run_consumer(
+/// Backend-neutral consumer: drain the SPSC ring -> resample -> VAD -> buffer,
+/// driven by the shared `Cmd` protocol and `CaptureTransportState`. Both the
+/// cpal `AudioRecorder` worker and the native `PipeWireRecorder` spawn this on
+/// their own thread, so it is `pub(crate)` and must NOT be duplicated per
+/// backend.
+pub(crate) fn run_consumer(
     mut processor: CaptureProcessor,
     mut sample_consumer: Consumer<f32>,
     cmd_rx: mpsc::Receiver<Cmd>,

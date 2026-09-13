@@ -325,6 +325,23 @@ pub enum VadBackend {
     Earshot,
 }
 
+/// Which microphone capture backend to use. Linux-only; ignored on Windows and
+/// macOS, where cpal is the only backend.
+///
+/// `Auto` resolves once at startup — prefer PipeWire, fall back to ALSA when no
+/// PipeWire session is reachable. `Pipewire` and `Alsa` pin the backend: pinning
+/// PipeWire on a host without it fails loudly instead of silently falling back,
+/// so the app always knows which backend is actually active (device enumeration
+/// depends on it).
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum AudioBackend {
+    #[default]
+    Auto,
+    Pipewire,
+    Alsa,
+}
+
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
 pub(crate) struct SecretMap(HashMap<String, String>);
@@ -407,6 +424,10 @@ pub struct AppSettings {
     pub always_on_microphone: bool,
     #[serde(default)]
     pub selected_microphone: Option<String>,
+    /// Capture backend preference. Linux-only; `Auto` resolves to PipeWire when
+    /// available and to ALSA otherwise.
+    #[serde(default)]
+    pub audio_backend: AudioBackend,
     /// Which input channel to use on the selected microphone device.
     /// None means "average all channels" (original behavior).
     #[serde(default)]
@@ -924,6 +945,7 @@ pub fn get_default_settings() -> AppSettings {
         onboarding_completed: false,
         always_on_microphone: false,
         selected_microphone: None,
+        audio_backend: AudioBackend::default(),
         selected_channel: None,
         clamshell_microphone: None,
         selected_output_device: None,
@@ -1379,6 +1401,9 @@ mod tests {
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
         assert_eq!(settings.vad_backend, VadBackend::Silero);
+        // A store written before the capture-backend setting existed must keep
+        // loading and land on Auto (prefer PipeWire, fall back to ALSA).
+        assert_eq!(settings.audio_backend, AudioBackend::Auto);
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.

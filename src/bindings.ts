@@ -375,6 +375,14 @@ async changeVadBackendSetting(backend: VadBackend) : Promise<Result<null, string
     else return { status: "error", error: e  as any };
 }
 },
+async changeAudioBackendSetting(backend: AudioBackend) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_audio_backend_setting", { backend }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeFillerWordRemovalEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_filler_word_removal_enabled_setting", { enabled }) };
@@ -751,6 +759,14 @@ async getAvailableMicrophones() : Promise<Result<AudioDevice[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getResolvedAudioBackend() : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_resolved_audio_backend") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async setSelectedMicrophone(deviceName: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("set_selected_microphone", { deviceName }) };
@@ -979,6 +995,11 @@ hold_threshold_ms?: number; audio_feedback?: boolean; audio_feedback_volume?: nu
  */
 whats_new_last_seen_version?: string; selected_model?: string; onboarding_completed?: boolean; always_on_microphone?: boolean; selected_microphone?: string | null; 
 /**
+ * Capture backend preference. Linux-only; `Auto` resolves to PipeWire when
+ * available and to ALSA otherwise.
+ */
+audio_backend?: AudioBackend; 
+/**
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
  */
@@ -1005,6 +1026,17 @@ vad_backend?: VadBackend;
  * `overlay_position` (position `none` → style `None`).
  */
 overlay_style?: OverlayStyle }
+/**
+ * Which microphone capture backend to use. Linux-only; ignored on Windows and
+ * macOS, where cpal is the only backend.
+ * 
+ * `Auto` resolves once at startup — prefer PipeWire, fall back to ALSA when no
+ * PipeWire session is reachable. `Pipewire` and `Alsa` pin the backend: pinning
+ * PipeWire on a host without it fails loudly instead of silently falling back,
+ * so the app always knows which backend is actually active (device enumeration
+ * depends on it).
+ */
+export type AudioBackend = "auto" | "pipewire" | "alsa"
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
