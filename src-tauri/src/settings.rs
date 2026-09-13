@@ -897,6 +897,17 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
     bindings.insert(
+        "transcribe_english".to_string(),
+        ShortcutBinding {
+            id: "transcribe_english".to_string(),
+            name: "Transcribe English".to_string(),
+            description: "Converts your speech into text, forcing English for this session only."
+                .to_string(),
+            default_binding: String::new(),
+            current_binding: String::new(),
+        },
+    );
+    bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
             id: "cancel".to_string(),

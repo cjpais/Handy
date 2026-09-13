@@ -165,12 +165,17 @@
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
+        "unset": "Not set",
         "notFound": "Shortcut not found",
         "pressKeys": "Press keys...",
         "bindings": {
           "transcribe": {
             "name": "Transcribe Shortcut",
             "description": "The keyboard shortcut to record and transcribe your voice."
+          },
+          "transcribe_english": {
+            "name": "Transcribe English",
+            "description": "Optional: Same recording behavior as Transcribe, but forces English for this session only. Does not change the language in Settings."
           },
           "cancel": {
             "name": "Cancel Shortcut",

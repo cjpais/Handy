@@ -277,6 +277,9 @@ pub struct TranscriptionManager {
     /// `is_model_loaded()` consults this so the model still reports "loaded"
     /// while the worker holds it.
     active_engine_lease: Arc<AtomicU64>,
+    /// Per-session language intent. When set, this recording uses it instead of
+    /// `settings.selected_language` without writing the override back to disk.
+    language_override: Arc<Mutex<Option<String>>>,
 }
 
 impl TranscriptionManager {
@@ -297,6 +300,7 @@ impl TranscriptionManager {
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
             active_engine_lease: Arc::new(AtomicU64::new(0)),
+            language_override: Arc::new(Mutex::new(None)),
         };
 
         // Start the idle watcher
@@ -801,6 +805,22 @@ impl TranscriptionManager {
         Arc::clone(&self.router)
     }
 
+    pub fn set_language_override(&self, language: Option<String>) {
+        *self.language_override.lock().unwrap() = language;
+    }
+
+    pub fn language_override(&self) -> Option<String> {
+        self.language_override.lock().unwrap().clone()
+    }
+
+    fn settings_with_session_language(&self) -> crate::settings::AppSettings {
+        let mut settings = get_settings(&self.app_handle);
+        if let Some(language) = self.language_override() {
+            settings.selected_language = language;
+        }
+        settings
+    }
+
     /// Begin a live streaming transcription on the held engine's session.
     /// Audio frames pushed via [`StreamRouter::feed`] (captured directly by the
     /// audio recorder) are decoded incrementally and emitted to the overlay as
@@ -927,7 +947,7 @@ impl TranscriptionManager {
 
         // Build run options mirroring the offline transcribe-cpp path: task +
         // language gated against what the model actually advertises.
-        let settings = get_settings(&self.app_handle);
+        let settings = self.settings_with_session_language();
         let effective_language =
             effective_language_for_model(&settings, self.model_manager.as_ref(), &model_id);
         let run_plan = transcribe_cpp_run_plan(
@@ -1209,8 +1229,9 @@ impl TranscriptionManager {
             }
         }
 
-        // Get current settings for configuration
-        let settings = get_settings(&self.app_handle);
+        // Get current settings for configuration. A session language override
+        // (e.g. Transcribe English) is applied only to this local copy.
+        let settings = self.settings_with_session_language();
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.

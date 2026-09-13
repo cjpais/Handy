@@ -115,8 +115,11 @@ pub fn change_binding(
     id: String,
     binding: String,
 ) -> Result<BindingResponse, String> {
-    // Reject empty bindings — every shortcut should have a value
-    if binding.trim().is_empty() {
+    let default_allows_empty = settings::get_default_settings()
+        .bindings
+        .get(&id)
+        .is_some_and(|b| b.default_binding.trim().is_empty());
+    if binding.trim().is_empty() && !default_allows_empty {
         return Err("Binding cannot be empty".to_string());
     }
 
@@ -149,6 +152,23 @@ pub fn change_binding(
         }
     };
 
+    // Optional bindings (empty default) can be cleared: unregister and persist.
+    if binding.trim().is_empty() {
+        if let Err(e) = unregister_shortcut(&app, binding_to_modify.clone()) {
+            debug!("Failed to unregister cleared shortcut '{}': {}", id, e);
+        }
+        let mut updated_binding = binding_to_modify;
+        updated_binding.current_binding = String::new();
+        settings.bindings.insert(id, updated_binding.clone());
+        settings::write_settings(&app, settings);
+        crate::secure_input::reconcile_fallback(&app);
+        return Ok(BindingResponse {
+            success: true,
+            binding: Some(updated_binding),
+            error: None,
+        });
+    }
+
     // If this is the cancel binding, just update the settings and return
     // It's managed dynamically, so we don't register/unregister here
     if id == "cancel" {
@@ -166,9 +186,11 @@ pub fn change_binding(
     }
 
     // Unregister the existing binding
-    if let Err(e) = unregister_shortcut(&app, binding_to_modify.clone()) {
-        let error_msg = format!("Failed to unregister shortcut: {}", e);
-        error!("change_binding error: {}", error_msg);
+    if !binding_to_modify.current_binding.trim().is_empty() {
+        if let Err(e) = unregister_shortcut(&app, binding_to_modify.clone()) {
+            let error_msg = format!("Failed to unregister shortcut: {}", e);
+            error!("change_binding error: {}", error_msg);
+        }
     }
 
     // Validate the new shortcut for the current keyboard implementation
@@ -213,6 +235,9 @@ pub fn change_binding(
 /// Best-effort re-register of the previous binding after a failed change,
 /// so a failure leaves the user's shortcut working exactly as before.
 fn restore_registration(app: &AppHandle, binding: &ShortcutBinding) {
+    if binding.current_binding.trim().is_empty() {
+        return;
+    }
     if let Err(e) = register_shortcut(app, binding.clone()) {
         error!(
             "Failed to restore previous binding '{}' ({}): {}",
@@ -237,6 +262,9 @@ pub fn suspend_all_shortcuts(app: &AppHandle) {
         if id == "cancel" {
             continue;
         }
+        if binding.current_binding.trim().is_empty() {
+            continue;
+        }
         if let Err(e) = unregister_shortcut(app, binding) {
             debug!(
                 "suspend_all_shortcuts: could not unregister '{}': {}",
@@ -256,6 +284,9 @@ pub fn resume_all_shortcuts(app: &AppHandle) {
             continue;
         }
         if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+            continue;
+        }
+        if binding.current_binding.trim().is_empty() {
             continue;
         }
         if let Err(e) = register_shortcut(app, binding.clone()) {
@@ -416,6 +447,9 @@ fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementat
         if id == "cancel" {
             continue;
         }
+        if binding.current_binding.trim().is_empty() {
+            continue;
+        }
 
         let result = match implementation {
             KeyboardImplementation::Tauri => tauri_impl::unregister_shortcut(app, binding),
@@ -448,6 +482,16 @@ fn register_all_shortcuts_for_implementation(
 
         // Skip post-processing shortcut when the feature is disabled
         if id == "transcribe_with_post_process" && !current_settings.post_process_enabled {
+            continue;
+        }
+
+        if default_binding.current_binding.trim().is_empty()
+            && current_settings
+                .bindings
+                .get(id)
+                .map(|b| b.current_binding.trim().is_empty())
+                .unwrap_or(true)
+        {
             continue;
         }
 

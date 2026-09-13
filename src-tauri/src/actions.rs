@@ -40,6 +40,9 @@ impl Drop for FinishGuard {
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
         }
+        if let Some(tm) = self.0.try_state::<Arc<TranscriptionManager>>() {
+            tm.set_language_override(None);
+        }
         // The pipeline just freed its large transient buffers (captured PCM,
         // WAV copy, engine scratch); hand the cached pages back to the OS so
         // they don't sit in malloc arenas until they get swapped out (#1792).
@@ -56,6 +59,7 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    language_override: Option<&'static str>,
 }
 
 /// Field name for structured output JSON schema
@@ -406,16 +410,19 @@ pub(crate) struct ProcessedTranscription {
 fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String {
     let tm = app.state::<Arc<TranscriptionManager>>();
     let model_manager = app.state::<Arc<ModelManager>>();
+    let language_intent = tm
+        .language_override()
+        .unwrap_or_else(|| settings.selected_language.clone());
     let active_model = tm
         .get_current_model()
         .unwrap_or_else(|| settings.selected_model.clone());
     match model_manager.get_model_info(&active_model) {
         Some(info) => crate::managers::model::effective_language(
-            &settings.selected_language,
+            &language_intent,
             &info.supported_languages,
             info.supports_language_detection,
         ),
-        None => settings.selected_language.clone(),
+        None => language_intent,
     }
 }
 
@@ -472,6 +479,7 @@ impl ShortcutAction for TranscribeAction {
 
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
+        tm.set_language_override(self.language_override.map(str::to_string));
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
         // Load ASR model and VAD model in parallel
@@ -603,6 +611,7 @@ impl ShortcutAction for TranscribeAction {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             tm.cancel_stream();
+            tm.set_language_override(None);
             utils::hide_recording_overlay(app);
             set_tray_state(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
@@ -932,11 +941,22 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            language_override: None,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            language_override: None,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_english".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+            language_override: Some("en"),
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
