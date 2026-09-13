@@ -1,14 +1,16 @@
+use crate::audio_toolkit::resolve_capture_backend;
 use crate::audio_toolkit::{
     list_input_devices,
     vad::{
         frames_for_duration_ms, EarshotVad, SmoothedVad, VAD_OFFLINE_HANGOVER_MS, VAD_ONSET_MS,
         VAD_PREFILL_MS, VAD_STREAMING_HANGOVER_MS,
     },
-    AudioFrameCallback, Recorder, SileroVad, VadConfig, VadPolicy, VoiceActivityDetector,
+    AudioFrameCallback, CaptureBackend, Recorder, SileroVad, VadConfig, VadPolicy,
+    VoiceActivityDetector,
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
-use crate::settings::{get_settings, write_settings, AppSettings, VadBackend};
+use crate::settings::{get_settings, write_settings, AppSettings, AudioBackend, VadBackend};
 use crate::utils;
 use log::{debug, error, info, trace, warn};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -275,6 +277,25 @@ struct MicrophoneResolution {
     unavailable_selected_microphone: Option<String>,
 }
 
+/// Map the persisted preference to what the `Recorder` seam expects: `None`
+/// means "Auto — resolve it", `Some(..)` pins a backend.
+///
+/// Off Linux there is only cpal, so any stored value resolves to it: a settings
+/// file synced from a Linux machine cannot pin a backend that does not exist.
+fn preferred_capture_backend(setting: AudioBackend) -> Option<CaptureBackend> {
+    #[cfg(target_os = "linux")]
+    match setting {
+        AudioBackend::Auto => None,
+        AudioBackend::Pipewire => Some(CaptureBackend::PipeWire),
+        AudioBackend::Alsa => Some(CaptureBackend::Cpal),
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = setting;
+        Some(CaptureBackend::Cpal)
+    }
+}
+
 /* ──────────────────────────────────────────────────────────────── */
 
 fn create_audio_recorder(
@@ -409,6 +430,16 @@ pub struct AudioRecordingManager {
     /// so the retry re-enumerates. The system-default case is never cached —
     /// the recorder resolves the current default itself, cheaply.
     cached_device: Arc<Mutex<Option<(String, cpal::Device)>>>,
+    /// The capture backend actually in use, resolved ONCE at startup from the
+    /// `audio_backend` setting (`Auto` probes PipeWire and falls back to ALSA).
+    /// Device enumeration reads this rather than re-deriving the preference, so
+    /// the picker can never list nodes from a backend that is not running.
+    /// Resolution is deliberately not re-run per recording: a mid-session
+    /// backend flip would invalidate the persisted microphone selection.
+    resolved_backend: CaptureBackend,
+    /// Whether the resolved backend may silently fall back to cpal/ALSA. True
+    /// only for `Auto`; an explicit PipeWire choice fails loudly instead.
+    allow_backend_fallback: bool,
 }
 
 impl AudioRecordingManager {
@@ -425,6 +456,16 @@ impl AudioRecordingManager {
             MicrophoneMode::OnDemand
         };
 
+        // Resolve the capture backend once, here, so every later consumer
+        // (open, enumeration, the frontend) reads the same answer.
+        let preferred = preferred_capture_backend(settings.audio_backend);
+        let resolved_backend = resolve_capture_backend(preferred);
+        info!(
+            "Audio backend: {:?} -> {}",
+            settings.audio_backend,
+            resolved_backend.as_str()
+        );
+
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),
             mode: Arc::new(Mutex::new(mode.clone())),
@@ -440,6 +481,8 @@ impl AudioRecordingManager {
             recording_active: Arc::new(AtomicBool::new(false)),
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
+            resolved_backend,
+            allow_backend_fallback: preferred.is_none(),
         };
 
         // Always-on?  Open immediately.
@@ -476,6 +519,12 @@ impl AudioRecordingManager {
 
     pub fn invalidate_device_cache(&self) {
         *self.cached_device.lock().unwrap() = None;
+    }
+
+    /// The capture backend actually in use — never the raw `Auto`. Device
+    /// enumeration and the frontend read this.
+    pub fn resolved_backend(&self) -> CaptureBackend {
+        self.resolved_backend
     }
 
     fn resolve_microphone_device(&self, settings: &AppSettings) -> MicrophoneResolution {
@@ -716,15 +765,23 @@ impl AudioRecordingManager {
         let open_started = Instant::now();
         let mut recorder_opt = self.recorder.lock().unwrap();
         if let Some(rec) = recorder_opt.as_mut() {
-            if let Err(first_err) = rec.open(resolution.device.clone()) {
+            if let Err(first_err) = rec.open(
+                self.resolved_backend,
+                resolution.device.clone(),
+                self.allow_backend_fallback,
+            ) {
                 // A cached device or config may have gone stale (unplugged,
                 // rate/format changed). Re-resolve from a fresh enumeration and
                 // retry once before surfacing the error.
                 warn!("Recorder open failed ({first_err}); re-resolving device and retrying once");
                 self.invalidate_device_cache();
                 resolution = self.resolve_microphone_device(&settings);
-                rec.open(resolution.device.clone())
-                    .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
+                rec.open(
+                    self.resolved_backend,
+                    resolution.device.clone(),
+                    self.allow_backend_fallback,
+                )
+                .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
             }
         }
         debug!(

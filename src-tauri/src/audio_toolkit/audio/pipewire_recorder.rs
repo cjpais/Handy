@@ -69,6 +69,27 @@ const PIPEWIRE_CAPTURE_RATE: u32 = 48_000;
 /// Bytes per interleaved sample; we always negotiate F32LE.
 const SAMPLE_STRIDE: usize = mem::size_of::<f32>();
 
+/// Whether a PipeWire session is reachable. Used to resolve the "Auto" backend
+/// preference without opening a capture stream.
+pub fn check_pipewire_available() -> bool {
+    let probe = (|| -> Result<(), pw::Error> {
+        pw::init();
+        let mainloop = pw::main_loop::MainLoopRc::new(None)?;
+        let context = pw::context::ContextRc::new(&mainloop, None)?;
+        // `connect` fails when no daemon is listening, which is exactly the
+        // "PipeWire is not available here" signal we want.
+        let _core = context.connect_rc(None)?;
+        Ok(())
+    })();
+    match probe {
+        Ok(()) => true,
+        Err(e) => {
+            log::debug!("PipeWire is not available: {e}");
+            false
+        }
+    }
+}
+
 /// Native PipeWire capture backend. Public surface intentionally mirrors the
 /// cpal `AudioRecorder` (`from_parts`/`open`/`start`/`stop`/`close`) so the
 /// `Recorder` seam can drive either backend the same way.
@@ -113,8 +134,7 @@ impl PipeWireRecorder {
 
     /// Open the capture stream. `target_node` optionally pins capture to a
     /// specific source by its `node.name` (via `TARGET_OBJECT`); `None`
-    /// autoconnects to the system default source — reproducing today's cpal
-    /// "default" behaviour.
+    /// autoconnects to the system default source.
     ///
     /// Returns `Err` if the PipeWire connection/stream setup fails (e.g. no
     /// PipeWire session running), which is the signal the `Recorder` seam uses

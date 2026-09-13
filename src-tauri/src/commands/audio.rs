@@ -212,6 +212,20 @@ pub async fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
     .map_err(|e| format!("audio task join failed: {}", e))?
 }
 
+/// The capture backend actually in use, as a stable string (`pipewire` or
+/// `alsa`). Never the raw `Auto` preference — the UI shows what resolution
+/// picked so the user always knows which backend is live.
+#[tauri::command]
+#[specta::specta]
+pub fn get_resolved_audio_backend(app: AppHandle) -> Result<String, String> {
+    Ok(app
+        .state::<Arc<AudioRecordingManager>>()
+        .inner()
+        .resolved_backend()
+        .as_str()
+        .to_string())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<(), String> {

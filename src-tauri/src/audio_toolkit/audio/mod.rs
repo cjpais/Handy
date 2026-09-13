@@ -14,7 +14,7 @@ pub use recorder::{
 };
 // Shared parts used by the `Recorder` seam / manager to build backends.
 pub(crate) use recorder::{AudioFrameCallback, VadConfig};
-pub use recorder_backend::Recorder;
+pub use recorder_backend::{resolve_capture_backend, CaptureBackend, Recorder};
 pub use resampler::FrameResampler;
 pub use utils::{read_wav_samples, save_wav_file, verify_wav_file};
 pub use visualizer::AudioVisualiser;

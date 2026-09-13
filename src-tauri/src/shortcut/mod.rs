@@ -21,9 +21,9 @@ use tauri::{AppHandle, Emitter, Manager};
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
-    self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding, SoundTheme,
-    Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AudioBackend, AutoSubmitKey, ClipboardHandling, KeyboardImplementation,
+    LLMPrompt, OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding,
+    SoundTheme, Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -1307,6 +1307,18 @@ pub async fn change_vad_backend_setting(app: AppHandle, backend: VadBackend) -> 
     let mut current_settings = settings::get_settings(&app);
     current_settings.vad_backend = backend;
     settings::write_settings(&app, current_settings);
+    Ok(())
+}
+
+/// Persist the capture-backend preference. The change takes effect on the next
+/// launch: the resolved backend is fixed at startup precisely so enumeration and
+/// the persisted microphone selection cannot disagree mid-session.
+#[tauri::command]
+#[specta::specta]
+pub fn change_audio_backend_setting(app: AppHandle, backend: AudioBackend) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.audio_backend = backend;
+    settings::write_settings(&app, settings);
     Ok(())
 }
 

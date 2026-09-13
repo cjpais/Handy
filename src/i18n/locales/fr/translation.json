@@ -395,6 +395,16 @@
           "earshot": "Earshot"
         }
       },
+      "audioBackend": {
+        "title": "Audio Backend",
+        "description": "Choose how Handy captures the microphone on Linux. Auto prefers PipeWire and falls back to ALSA when no PipeWire session is running.",
+        "active": "Currently using {{backend}}.",
+        "options": {
+          "auto": "Auto",
+          "pipewire": "PipeWire",
+          "alsa": "ALSA"
+        }
+      },
       "fillerWordRemoval": {
         "title": "Supprimer les mots de remplissage",
         "description": "Supprime les hésitations courantes des transcriptions. Désactivez cette option pour les conserver."
