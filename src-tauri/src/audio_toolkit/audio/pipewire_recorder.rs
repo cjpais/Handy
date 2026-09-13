@@ -30,13 +30,15 @@
 //! Targets the `pipewire` crate 0.10 with the `v0_3_44` feature (for
 //! `TARGET_OBJECT`). Non-obvious calls are commented inline.
 
+use std::cell::RefCell;
 use std::io::Cursor;
 use std::mem;
+use std::rc::Rc;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc, Arc,
 };
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use pipewire as pw;
 use pw::{properties::properties, spa};
@@ -69,6 +71,25 @@ const PIPEWIRE_CAPTURE_RATE: u32 = 48_000;
 /// Bytes per interleaved sample; we always negotiate F32LE.
 const SAMPLE_STRIDE: usize = mem::size_of::<f32>();
 
+/// Upper bound on a registry round-trip. A wedged or half-started daemon must
+/// not hang microphone enumeration (it runs on the settings UI's path), so the
+/// loop is quit on this timer and we report whatever arrived.
+const GRAPH_QUERY_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// `media.class` values that represent a capture source in the PipeWire graph.
+/// Sink monitors are deliberately excluded — they are loopbacks of output, not
+/// microphones, and would only clutter the picker.
+const SOURCE_MEDIA_CLASSES: [&str; 2] = ["Audio/Source", "Audio/Source/Virtual"];
+
+/// One capture-capable node in the PipeWire graph.
+#[derive(Clone, Debug)]
+pub struct PipeWireSourceInfo {
+    /// Stable graph identity, and what `TARGET_OBJECT` expects.
+    pub node_name: String,
+    /// Human-readable label (`node.description`, falling back to `node.name`).
+    pub description: String,
+}
+
 /// Whether a PipeWire session is reachable. Used to resolve the "Auto" backend
 /// preference without opening a capture stream.
 pub fn check_pipewire_available() -> bool {
@@ -88,6 +109,96 @@ pub fn check_pipewire_available() -> bool {
             false
         }
     }
+}
+
+/// Enumerate the graph's capture sources.
+///
+/// This is the PipeWire answer to cpal's `host.input_devices()`, which under the
+/// ALSA host only ever reports "default". It runs a short-lived main loop,
+/// collects the registry's initial dump, and returns once the server answers our
+/// `sync` (or the timeout fires).
+pub fn list_pipewire_sources() -> Result<Vec<PipeWireSourceInfo>, Box<dyn std::error::Error>> {
+    // All pw objects are created, used and dropped inside this function, so
+    // nothing non-`Send` escapes the calling thread.
+    let sources: Rc<RefCell<Vec<PipeWireSourceInfo>>> = Rc::new(RefCell::new(Vec::new()));
+
+    let result = (|| -> Result<(), pw::Error> {
+        pw::init();
+        let mainloop = pw::main_loop::MainLoopRc::new(None)?;
+        let context = pw::context::ContextRc::new(&mainloop, None)?;
+        let core = context.connect_rc(None)?;
+        let registry = core.get_registry_rc()?;
+
+        // Ask for a sync BEFORE running the loop: the answer is processed once
+        // the loop starts, so the registry dump is complete when `done` fires.
+        let pending = core.sync(0)?;
+
+        let _core_listener = core
+            .add_listener_local()
+            .done({
+                let mainloop = mainloop.clone();
+                move |id, seq| {
+                    if id == pw::core::PW_ID_CORE && seq == pending {
+                        mainloop.quit();
+                    }
+                }
+            })
+            .register();
+
+        let _registry_listener = registry
+            .add_listener_local()
+            .global({
+                let sources = Rc::clone(&sources);
+                move |global| {
+                    if global.type_ != pw::types::ObjectType::Node {
+                        return;
+                    }
+                    let Some(props) = global.props else {
+                        return;
+                    };
+                    let media_class = props.get(*pw::keys::MEDIA_CLASS).unwrap_or_default();
+                    if !SOURCE_MEDIA_CLASSES.contains(&media_class) {
+                        return;
+                    }
+                    let Some(node_name) = props.get(*pw::keys::NODE_NAME) else {
+                        // Without node.name there is nothing to target.
+                        return;
+                    };
+                    let description = props
+                        .get(*pw::keys::NODE_DESCRIPTION)
+                        .filter(|d| !d.is_empty())
+                        .unwrap_or(node_name);
+                    sources.borrow_mut().push(PipeWireSourceInfo {
+                        node_name: node_name.to_string(),
+                        description: description.to_string(),
+                    });
+                }
+            })
+            .register();
+
+        // Safety net: quit even if the server never answers the sync.
+        let timer = mainloop.loop_().add_timer({
+            let mainloop = mainloop.clone();
+            move |_| mainloop.quit()
+        });
+        let _ = timer.update_timer(Some(GRAPH_QUERY_TIMEOUT), None);
+
+        mainloop.run();
+        Ok(())
+    })();
+
+    result?;
+    let mut sources = Rc::try_unwrap(sources)
+        .map(RefCell::into_inner)
+        .unwrap_or_else(|shared| shared.borrow().clone());
+    // Stable, human-friendly order for the picker.
+    sources.sort_by(|a, b| {
+        a.description
+            .to_lowercase()
+            .cmp(&b.description.to_lowercase())
+    });
+    sources.dedup_by(|a, b| a.node_name == b.node_name);
+    Ok(sources)
 }
 
 /// Native PipeWire capture backend. Public surface intentionally mirrors the

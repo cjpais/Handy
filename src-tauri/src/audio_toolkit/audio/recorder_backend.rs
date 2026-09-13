@@ -110,7 +110,8 @@ impl Recorder {
     /// `backend` is the already-resolved choice (see `resolve_capture_backend`)
     /// — the seam does not re-derive it, so the backend the app reports is the
     /// backend it opens. `device` is the cpal-resolved device for the cpal path;
-    /// the PipeWire path captures the graph's default source.
+    /// `pipewire_target` is the PipeWire `node.name` to capture from, `None`
+    /// meaning the graph's default source.
     ///
     /// A PipeWire failure falls back to cpal only when the caller allows it
     /// (`allow_fallback`, i.e. the "Auto" preference). With the backend pinned
@@ -120,12 +121,13 @@ impl Recorder {
         &mut self,
         backend: CaptureBackend,
         device: Option<cpal::Device>,
+        pipewire_target: Option<String>,
         allow_fallback: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(target_os = "linux")]
         {
             if backend == CaptureBackend::PipeWire {
-                match self.pipewire.open(None) {
+                match self.pipewire.open(pipewire_target) {
                     Ok(()) => {
                         self.active = Some(CaptureBackend::PipeWire);
                         log::info!("Microphone capture using native PipeWire backend");
@@ -152,7 +154,7 @@ impl Recorder {
         {
             // cpal is the only backend off Linux; the PipeWire-specific inputs
             // are inert there.
-            let _ = (backend, allow_fallback);
+            let _ = (backend, pipewire_target, allow_fallback);
             self.cpal.open(device)?;
             self.active = Some(CaptureBackend::Cpal);
             Ok(())

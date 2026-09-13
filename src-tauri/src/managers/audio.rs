@@ -268,12 +268,15 @@ enum DesiredMicrophone {
     Clamshell(String),
 }
 
-/// Result of resolving the persisted preference to a live cpal device.
-/// `device: None` means cpal should open the system default. The unavailable
-/// name is populated only when enumeration succeeded and confirmed that the
-/// user's regular selected microphone is missing.
+/// Result of resolving the persisted preference to a live capture target.
+/// `device: None` means cpal should open the system default, and
+/// `pipewire_target: None` means the PipeWire graph's default source. Exactly
+/// one of the two is meaningful, depending on the resolved backend. The
+/// unavailable name is populated only when enumeration succeeded and confirmed
+/// that the user's regular selected microphone is missing.
 struct MicrophoneResolution {
     device: Option<cpal::Device>,
+    pipewire_target: Option<String>,
     unavailable_selected_microphone: Option<String>,
 }
 
@@ -534,12 +537,26 @@ impl AudioRecordingManager {
                 debug!("device resolve: no mic configured -> system default");
                 return MicrophoneResolution {
                     device: None,
+                    pipewire_target: None,
                     unavailable_selected_microphone: None,
                 };
             }
             DesiredMicrophone::Selected(name) => (name.clone(), Some(name)),
             DesiredMicrophone::Clamshell(name) => (name, None),
         };
+
+        // The PipeWire backend targets a graph node by name, so the whole cpal
+        // enumeration/caching path below does not apply. An unresolvable name
+        // degrades to the default source (see `resolve_pipewire_target`) instead
+        // of erasing a preference that may belong to the other backend.
+        #[cfg(target_os = "linux")]
+        if self.resolved_backend == CaptureBackend::PipeWire {
+            return MicrophoneResolution {
+                device: None,
+                pipewire_target: crate::audio_toolkit::audio::resolve_pipewire_target(&device_name),
+                unavailable_selected_microphone: None,
+            };
+        }
 
         // Cache hit: skip the full enumeration. A stale device (unplugged)
         // fails at open, where the caller invalidates and retries fresh.
@@ -548,6 +565,7 @@ impl AudioRecordingManager {
                 debug!("device resolve: cache hit for '{}'", device_name);
                 return MicrophoneResolution {
                     device: Some(device.clone()),
+                    pipewire_target: None,
                     unavailable_selected_microphone: None,
                 };
             }
@@ -586,6 +604,7 @@ impl AudioRecordingManager {
         };
         MicrophoneResolution {
             device,
+            pipewire_target: None,
             unavailable_selected_microphone,
         }
     }
@@ -768,6 +787,7 @@ impl AudioRecordingManager {
             if let Err(first_err) = rec.open(
                 self.resolved_backend,
                 resolution.device.clone(),
+                resolution.pipewire_target.clone(),
                 self.allow_backend_fallback,
             ) {
                 // A cached device or config may have gone stale (unplugged,
@@ -779,6 +799,7 @@ impl AudioRecordingManager {
                 rec.open(
                     self.resolved_backend,
                     resolution.device.clone(),
+                    resolution.pipewire_target.clone(),
                     self.allow_backend_fallback,
                 )
                 .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
