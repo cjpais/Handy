@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "General",
     "models": "Models",
+    "dictionary": "Diccionari",
     "advanced": "Avançat",
     "postProcessing": "Postprocessament",
     "history": "Historial",
@@ -602,6 +603,70 @@
         "verdictOk": "Els esdeveniments de tecla arriben al Handy amb normalitat.",
         "verdictNoEvents": "No s'ha capturat cap esdeveniment. Heu premut alguna tecla durant la prova?",
         "failed": "El diagnòstic ha fallat: {{error}}"
+      }
+    },
+    "dictionary": {
+      "title": "Diccionari",
+      "search": {
+        "placeholder": "Cerca al diccionari...",
+        "label": "Cerca al diccionari",
+        "noResults": "No hi ha entrades coincidents"
+      },
+      "import": "Importa",
+      "export": "Exporta",
+      "exportOptions": {
+        "json": "JSON — Diccionari complet",
+        "txt": "TXT — Paraules personalitzades",
+        "csv": "CSV — Substitucions"
+      },
+      "exportSuccess": "Diccionari exportat",
+      "customWords": {
+        "title": "Paraules personalitzades",
+        "description": "Ajuda Handy a reconèixer noms, marques i termes especialitzats.",
+        "placeholder": "Afegeix una paraula o una frase",
+        "add": "Afegeix",
+        "remove": "Elimina {{word}}",
+        "duplicate": "\"{{word}}\" ja existeix al teu diccionari",
+        "count": "{{count}} paraules",
+        "empty": "Encara no hi ha paraules personalitzades. Afegeix noms, marques o termes especialitzats que Handy hauria de reconèixer.",
+        "count_one": "{{count}} paraules",
+        "count_other": "{{count}} paraules"
+      },
+      "replacements": {
+        "title": "Substitucions",
+        "description": "Fes que un text de transcripció concret esdevingui el text desitjat.",
+        "from": "Sentit / Transcrit",
+        "to": "Substitueix per",
+        "add": "Afegeix una substitució",
+        "delete": "Suprimeix la regla de {{from}}",
+        "duplicate": "Ja existeix una regla per a \"{{from}}\"",
+        "invalid": "Tots dos camps són obligatoris",
+        "count": "{{count}} regles",
+        "empty": "Encara no hi ha regles de substitució. Afegeix-ne una quan Handy transcrigui sistemàticament alguna cosa de manera incorrecta.",
+        "count_one": "{{count}} regles",
+        "count_other": "{{count}} regles"
+      },
+      "importResults": {
+        "summary": "S'han importat {{words}} paraules personalitzades i {{replacements}} substitucions",
+        "skipped": "S'han omès {{count}} duplicats",
+        "conflicts": "{{count}} regles en conflicte han mantingut els valors existents",
+        "malformedRows": "S'han omès {{count}} files mal formades",
+        "skipped_one": "S'han omès {{count}} duplicats",
+        "skipped_other": "S'han omès {{count}} duplicats",
+        "conflicts_one": "{{count}} regles en conflicte han mantingut els valors existents",
+        "conflicts_other": "{{count}} regles en conflicte han mantingut els valors existents",
+        "malformedRows_one": "S'han omès {{count}} files mal formades",
+        "malformedRows_other": "S'han omès {{count}} files mal formades",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "No s'ha pogut llegir el fitxer seleccionat",
+        "parseFailed": "No s'ha pogut analitzar el fitxer: {{message}}",
+        "invalidFormat": "Aquest no és un fitxer de diccionari Handy vàlid",
+        "unsupportedVersion": "Versió del diccionari no compatible: {{version}}",
+        "writeFailed": "No s'ha pogut desar el fitxer del diccionari: {{message}}"
       }
     },
     "about": {

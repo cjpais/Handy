@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "General",
     "models": "Models",
+    "dictionary": "Dictionary",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -602,6 +603,70 @@
         "verdictOk": "Key events are reaching Handy normally.",
         "verdictNoEvents": "No events captured — did you press any keys during the test?",
         "failed": "Diagnostic failed: {{error}}"
+      }
+    },
+    "dictionary": {
+      "title": "Dictionary",
+      "search": {
+        "placeholder": "Search dictionary...",
+        "label": "Search dictionary",
+        "noResults": "No matching entries"
+      },
+      "import": "Import",
+      "export": "Export",
+      "exportOptions": {
+        "json": "JSON — Full Dictionary",
+        "txt": "TXT — Custom Words",
+        "csv": "CSV — Replacements"
+      },
+      "exportSuccess": "Dictionary exported",
+      "customWords": {
+        "title": "Custom Words",
+        "description": "Help Handy recognize names, brands, and specialized terms.",
+        "placeholder": "Add a word or phrase",
+        "add": "Add",
+        "remove": "Remove {{word}}",
+        "duplicate": "\"{{word}}\" already exists in your dictionary",
+        "count": "{{count}} words",
+        "empty": "No custom words yet. Add names, brands, or specialized terms that Handy should recognize.",
+        "count_one": "{{count}} word",
+        "count_other": "{{count}} words"
+      },
+      "replacements": {
+        "title": "Replacements",
+        "description": "Force specific transcription text to become the desired text.",
+        "from": "Heard / Transcribed",
+        "to": "Replace With",
+        "add": "Add replacement",
+        "delete": "Delete rule for {{from}}",
+        "duplicate": "A rule for \"{{from}}\" already exists",
+        "invalid": "Both fields are required",
+        "count": "{{count}} rules",
+        "empty": "No replacement rules yet. Add a rule when Handy consistently transcribes something the wrong way.",
+        "count_one": "{{count}} rule",
+        "count_other": "{{count}} rules"
+      },
+      "importResults": {
+        "summary": "Imported {{words}} custom words and {{replacements}} replacements",
+        "skipped": "{{count}} duplicates skipped",
+        "conflicts": "{{count}} conflicting rules kept existing values",
+        "malformedRows": "{{count}} malformed rows skipped",
+        "skipped_one": "{{count}} duplicate skipped",
+        "skipped_other": "{{count}} duplicates skipped",
+        "conflicts_one": "{{count}} conflicting rule kept its existing value",
+        "conflicts_other": "{{count}} conflicting rules kept existing values",
+        "malformedRows_one": "{{count}} malformed row skipped",
+        "malformedRows_other": "{{count}} malformed rows skipped",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entry skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Could not read the selected file",
+        "parseFailed": "Could not parse the file: {{message}}",
+        "invalidFormat": "This is not a valid Handy dictionary file",
+        "unsupportedVersion": "Unsupported dictionary version: {{version}}",
+        "writeFailed": "Could not save the dictionary file: {{message}}"
       }
     },
     "about": {

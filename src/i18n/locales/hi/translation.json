@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "सामान्य",
     "models": "मॉडल",
+    "dictionary": "शब्दकोश",
     "advanced": "ऐडवांस",
     "postProcessing": "पोस्ट प्रोसेस",
     "history": "इतिहास",
@@ -602,6 +603,70 @@
         "verdictOk": "कुंजी इवेंट Handy तक सामान्य रूप से पहुँच रहे हैं.",
         "verdictNoEvents": "कोई इवेंट कैप्चर नहीं हुआ — क्या आपने टेस्ट के दौरान कोई कुंजी दबाई थी?",
         "failed": "डायग्नोस्टिक विफल: {{error}}"
+      }
+    },
+    "dictionary": {
+      "title": "शब्दकोश",
+      "search": {
+        "placeholder": "शब्दकोश खोजें...",
+        "label": "शब्दकोश खोजें",
+        "noResults": "कोई मिलती-जुलती प्रविष्टियाँ नहीं"
+      },
+      "import": "आयात करें",
+      "export": "निर्यात करें",
+      "exportOptions": {
+        "json": "JSON — पूर्ण शब्दकोश",
+        "txt": "TXT — कस्टम शब्द",
+        "csv": "CSV — प्रतिस्थापन"
+      },
+      "exportSuccess": "शब्दकोश निर्यात हो गया",
+      "customWords": {
+        "title": "कस्टम शब्द",
+        "description": "Handy को नाम, ब्रांड और विशेष शब्द पहचानने में मदद करें।",
+        "placeholder": "कोई शब्द या वाक्यांश जोड़ें",
+        "add": "जोड़ें",
+        "remove": "{{word}} हटाएँ",
+        "duplicate": "\"{{word}}\" आपके शब्दकोश में पहले से मौजूद है",
+        "count": "{{count}} शब्द",
+        "empty": "अभी कोई कस्टम शब्द नहीं हैं। नाम, ब्रांड या विशेष शब्द जोड़ें जिन्हें Handy को पहचानना चाहिए।",
+        "count_one": "{{count}} शब्द",
+        "count_other": "{{count}} शब्द"
+      },
+      "replacements": {
+        "title": "प्रतिस्थापन",
+        "description": "किसी विशेष ट्रांसक्रिप्शन टेक्स्ट को वांछित टेक्स्ट में बदलने के लिए बाध्य करें।",
+        "from": "सुना गया / ट्रांसक्राइब किया गया",
+        "to": "इससे बदलें",
+        "add": "प्रतिस्थापन जोड़ें",
+        "delete": "{{from}} के लिए नियम हटाएँ",
+        "duplicate": "\"{{from}}\" के लिए एक नियम पहले से मौजूद है",
+        "invalid": "दोनों फ़ील्ड आवश्यक हैं",
+        "count": "{{count}} नियम",
+        "empty": "अभी कोई प्रतिस्थापन नियम नहीं हैं। जब Handy लगातार किसी चीज़ को गलत तरीके से ट्रांसक्राइब करे तो एक नियम जोड़ें।",
+        "count_one": "{{count}} नियम",
+        "count_other": "{{count}} नियम"
+      },
+      "importResults": {
+        "summary": "{{words}} कस्टम शब्द और {{replacements}} प्रतिस्थापन आयात किए गए",
+        "skipped": "{{count}} डुप्लिकेट छोड़े गए",
+        "conflicts": "{{count}} विरोधाभासी नियमों ने मौजूदा मान बनाए रखे",
+        "malformedRows": "{{count}} गलत पंक्तियाँ छोड़ी गईं",
+        "skipped_one": "{{count}} डुप्लिकेट छोड़े गए",
+        "skipped_other": "{{count}} डुप्लिकेट छोड़े गए",
+        "conflicts_one": "{{count}} विरोधाभासी नियमों ने मौजूदा मान बनाए रखे",
+        "conflicts_other": "{{count}} विरोधाभासी नियमों ने मौजूदा मान बनाए रखे",
+        "malformedRows_one": "{{count}} गलत पंक्तियाँ छोड़ी गईं",
+        "malformedRows_other": "{{count}} गलत पंक्तियाँ छोड़ी गईं",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "चयनित फ़ाइल पढ़ी नहीं जा सकी",
+        "parseFailed": "फ़ाइल पार्स नहीं की जा सकी: {{message}}",
+        "invalidFormat": "यह मान्य Handy शब्दकोश फ़ाइल नहीं है",
+        "unsupportedVersion": "असमर्थित शब्दकोश संस्करण: {{version}}",
+        "writeFailed": "शब्दकोश फ़ाइल सहेजी नहीं जा सकी: {{message}}"
       }
     },
     "about": {

@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Algemeen",
     "models": "Modellen",
+    "dictionary": "Woordenboek",
     "advanced": "Geavanceerd",
     "postProcessing": "Naverwerking",
     "history": "Geschiedenis",
@@ -602,6 +603,70 @@
         "verdictOk": "Toetsgebeurtenissen bereiken Handy normaal.",
         "verdictNoEvents": "Geen gebeurtenissen vastgelegd — heb je tijdens de test toetsen ingedrukt?",
         "failed": "Diagnose mislukt: {{error}}"
+      }
+    },
+    "dictionary": {
+      "title": "Woordenboek",
+      "search": {
+        "placeholder": "Woordenboek doorzoeken...",
+        "label": "Woordenboek doorzoeken",
+        "noResults": "Geen overeenkomende items"
+      },
+      "import": "Importeren",
+      "export": "Exporteren",
+      "exportOptions": {
+        "json": "JSON — volledig woordenboek",
+        "txt": "TXT — aangepaste woorden",
+        "csv": "CSV — vervangingen"
+      },
+      "exportSuccess": "Woordenboek geëxporteerd",
+      "customWords": {
+        "title": "Aangepaste woorden",
+        "description": "Help Handy namen, merken en vaktermen te herkennen.",
+        "placeholder": "Voeg een woord of zin toe",
+        "add": "Toevoegen",
+        "remove": "{{word}} verwijderen",
+        "duplicate": "'{{word}}' staat al in je woordenboek",
+        "count": "{{count}} woorden",
+        "empty": "Nog geen aangepaste woorden. Voeg namen, merken of vaktermen toe die Handy moet herkennen.",
+        "count_one": "{{count}} woord",
+        "count_other": "{{count}} woorden"
+      },
+      "replacements": {
+        "title": "Vervangingen",
+        "description": "Dwingt af dat bepaalde transcriptietekst wordt vervangen door de gewenste tekst.",
+        "from": "Gehoord / getranscribeerd",
+        "to": "Vervangen door",
+        "add": "Vervanging toevoegen",
+        "delete": "Regel voor {{from}} verwijderen",
+        "duplicate": "Er bestaat al een regel voor '{{from}}'",
+        "invalid": "Beide velden zijn verplicht",
+        "count": "{{count}} regels",
+        "empty": "Nog geen vervangingsregels. Voeg een regel toe als Handy iets stelselmatig verkeerd transcribeert.",
+        "count_one": "{{count}} regel",
+        "count_other": "{{count}} regels"
+      },
+      "importResults": {
+        "summary": "{{words}} woorden en {{replacements}} vervangingen geïmporteerd",
+        "skipped": "{{count}} duplicaten overgeslagen",
+        "conflicts": "{{count}} conflicterende regels behielden bestaande waarden",
+        "malformedRows": "{{count}} ongeldige rijen overgeslagen",
+        "skipped_one": "{{count}} duplicaten overgeslagen",
+        "skipped_other": "{{count}} duplicaten overgeslagen",
+        "conflicts_one": "{{count}} conflicterende regels behielden bestaande waarden",
+        "conflicts_other": "{{count}} conflicterende regels behielden bestaande waarden",
+        "malformedRows_one": "{{count}} ongeldige rijen overgeslagen",
+        "malformedRows_other": "{{count}} ongeldige rijen overgeslagen",
+        "invalid": "{{count}} lege of te lange items overgeslagen",
+        "invalid_one": "{{count}} lege of te lange items overgeslagen",
+        "invalid_other": "{{count}} lege of te lange items overgeslagen"
+      },
+      "errors": {
+        "readFailed": "Kan het geselecteerde bestand niet lezen",
+        "parseFailed": "Kan het bestand niet verwerken: {{message}}",
+        "invalidFormat": "Dit is geen geldig Handy-woordenboekbestand",
+        "unsupportedVersion": "Niet-ondersteunde woordenboekversie: {{version}}",
+        "writeFailed": "Kan het woordenboekbestand niet opslaan: {{message}}"
       }
     },
     "about": {

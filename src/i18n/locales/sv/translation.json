@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Allmänt",
     "models": "Modeller",
+    "dictionary": "Ordbok",
     "advanced": "Avancerat",
     "postProcessing": "Efterbearbetning",
     "history": "Historik",
@@ -602,6 +603,70 @@
         "permissionsButton": "Behörigheter",
         "modelsButton": "Modellval",
         "exitButton": "Avsluta förhandsvisning"
+      }
+    },
+    "dictionary": {
+      "title": "Ordbok",
+      "search": {
+        "placeholder": "Sök i ordboken...",
+        "label": "Sök i ordboken",
+        "noResults": "Inga matchande poster"
+      },
+      "import": "Importera",
+      "export": "Exportera",
+      "exportOptions": {
+        "json": "JSON — Fullständig ordbok",
+        "txt": "TXT — Anpassade ord",
+        "csv": "CSV — Ersättningar"
+      },
+      "exportSuccess": "Ordboken exporterades",
+      "customWords": {
+        "title": "Anpassade ord",
+        "description": "Hjälp Handy att känna igen namn, varumärken och specialiserade termer.",
+        "placeholder": "Lägg till ett ord eller en fras",
+        "add": "Lägg till",
+        "remove": "Ta bort {{word}}",
+        "duplicate": "\"{{word}}\" finns redan i din ordbok",
+        "count": "{{count}} ord",
+        "empty": "Inga anpassade ord ännu. Lägg till namn, varumärken eller specialiserade termer som Handy bör känna igen.",
+        "count_one": "{{count}} ord",
+        "count_other": "{{count}} ord"
+      },
+      "replacements": {
+        "title": "Ersättningar",
+        "description": "Tvinga specifik transkriberad text att bli den önskade texten.",
+        "from": "Hört / Transkriberat",
+        "to": "Ersätt med",
+        "add": "Lägg till ersättning",
+        "delete": "Ta bort regel för {{from}}",
+        "duplicate": "Det finns redan en regel för \"{{from}}\"",
+        "invalid": "Båda fälten är obligatoriska",
+        "count": "{{count}} regler",
+        "empty": "Inga ersättningsregler ännu. Lägg till en regel när Handy konsekvent transkriberar något på fel sätt.",
+        "count_one": "{{count}} regler",
+        "count_other": "{{count}} regler"
+      },
+      "importResults": {
+        "summary": "Importerade {{words}} anpassade ord och {{replacements}} ersättningar",
+        "skipped": "{{count}} dubbletter hoppades över",
+        "conflicts": "{{count}} motstridiga regler behöll befintliga värden",
+        "malformedRows": "{{count}} felaktiga rader hoppades över",
+        "skipped_one": "{{count}} dubbletter hoppades över",
+        "skipped_other": "{{count}} dubbletter hoppades över",
+        "conflicts_one": "{{count}} motstridiga regler behöll befintliga värden",
+        "conflicts_other": "{{count}} motstridiga regler behöll befintliga värden",
+        "malformedRows_one": "{{count}} felaktiga rader hoppades över",
+        "malformedRows_other": "{{count}} felaktiga rader hoppades över",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Det gick inte att läsa den valda filen",
+        "parseFailed": "Det gick inte att tolka filen: {{message}}",
+        "invalidFormat": "Det här är inte en giltig Handy-ordboksfil",
+        "unsupportedVersion": "Ordboksversionen stöds inte: {{version}}",
+        "writeFailed": "Det gick inte att spara ordboksfilen: {{message}}"
       }
     },
     "about": {

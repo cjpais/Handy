@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "सामान्य",
     "models": "मोडेलहरू",
+    "dictionary": "शब्दकोश",
     "advanced": "उन्नत",
     "postProcessing": "पोस्ट प्रोसेस",
     "history": "हिस्ट्री",
@@ -602,6 +603,70 @@
         "verdictOk": "कुञ्जी इभेन्टहरू Handy सम्म सामान्य रूपमा पुगिरहेका छन्।",
         "verdictNoEvents": "कुनै इभेन्ट कैद भएन — के तपाईंले परीक्षणको क्रममा कुनै कुञ्जी थिच्नुभयो?",
         "failed": "डायग्नोस्टिक असफल: {{error}}"
+      }
+    },
+    "dictionary": {
+      "title": "शब्दकोश",
+      "search": {
+        "placeholder": "शब्दकोशमा खोज्नुहोस्...",
+        "label": "शब्दकोशमा खोज्नुहोस्",
+        "noResults": "मिल्ने कुनै प्रविष्टिहरू छैनन्"
+      },
+      "import": "आयात गर्नुहोस्",
+      "export": "निर्यात गर्नुहोस्",
+      "exportOptions": {
+        "json": "JSON — पूर्ण शब्दकोश",
+        "txt": "TXT — अनुकूलित शब्दहरू",
+        "csv": "CSV — प्रतिस्थापनहरू"
+      },
+      "exportSuccess": "शब्दकोश निर्यात भयो",
+      "customWords": {
+        "title": "अनुकूलित शब्दहरू",
+        "description": "Handy लाई नाम, ब्रान्ड र विशेष शब्दहरू चिन्न मद्दत गर्नुहोस्।",
+        "placeholder": "शब्द वा वाक्यांश थप्नुहोस्",
+        "add": "थप्नुहोस्",
+        "remove": "{{word}} हटाउनुहोस्",
+        "duplicate": "\"{{word}}\" तपाईंको शब्दकोशमा पहिले नै छ",
+        "count": "{{count}} शब्दहरू",
+        "empty": "अहिलेसम्म कुनै अनुकूलित शब्दहरू छैनन्। Handy ले चिन्नुपर्ने नाम, ब्रान्ड वा विशेष शब्दहरू थप्नुहोस्।",
+        "count_one": "{{count}} शब्दहरू",
+        "count_other": "{{count}} शब्दहरू"
+      },
+      "replacements": {
+        "title": "प्रतिस्थापनहरू",
+        "description": "कुनै विशेष ट्रान्सक्रिप्शन पाठलाई चाहिएको पाठ बनाउन बाध्य गर्नुहोस्।",
+        "from": "सुनिएको / ट्रान्सक्राइब गरिएको",
+        "to": "यसले बदल्नुहोस्",
+        "add": "प्रतिस्थापन थप्नुहोस्",
+        "delete": "{{from}} को लागि नियम मेटाउनुहोस्",
+        "duplicate": "\"{{from}}\" को लागि नियम पहिले नै छ",
+        "invalid": "दुवै फिल्ड आवश्यक छन्",
+        "count": "{{count}} नियमहरू",
+        "empty": "अहिलेसम्म कुनै प्रतिस्थापन नियमहरू छैनन्। जब Handy ले कुनै कुरा निरन्तर गलत तरिकाले ट्रान्सक्राइब गर्छ तब नियम थप्नुहोस्।",
+        "count_one": "{{count}} नियमहरू",
+        "count_other": "{{count}} नियमहरू"
+      },
+      "importResults": {
+        "summary": "{{words}} अनुकूलित शब्दहरू र {{replacements}} प्रतिस्थापनहरू आयात भए",
+        "skipped": "{{count}} डुप्लिकेटहरू छाडिए",
+        "conflicts": "{{count}} विरोधाभासी नियमहरूले विद्यमान मानहरू राखे",
+        "malformedRows": "{{count}} गलत पङ्क्तिहरू छाडिए",
+        "skipped_one": "{{count}} डुप्लिकेटहरू छाडिए",
+        "skipped_other": "{{count}} डुप्लिकेटहरू छाडिए",
+        "conflicts_one": "{{count}} विरोधाभासी नियमहरूले विद्यमान मानहरू राखे",
+        "conflicts_other": "{{count}} विरोधाभासी नियमहरूले विद्यमान मानहरू राखे",
+        "malformedRows_one": "{{count}} गलत पङ्क्तिहरू छाडिए",
+        "malformedRows_other": "{{count}} गलत पङ्क्तिहरू छाडिए",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "चयन गरिएको फाइल पढ्न सकिएन",
+        "parseFailed": "फाइल पार्स गर्न सकिएन: {{message}}",
+        "invalidFormat": "यो मान्य Handy शब्दकोश फाइल होइन",
+        "unsupportedVersion": "असमर्थित शब्दकोश संस्करण: {{version}}",
+        "writeFailed": "शब्दकोश फाइल बचत गर्न सकिएन: {{message}}"
       }
     },
     "about": {

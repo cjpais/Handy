@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Obecné",
     "models": "Modely",
+    "dictionary": "Slovník",
     "advanced": "Pokročilé",
     "postProcessing": "Následné zpracování",
     "history": "Historie",
@@ -602,6 +603,70 @@
         "permissionsButton": "Oprávnění",
         "modelsButton": "Výběr modelu",
         "exitButton": "Ukončit náhled"
+      }
+    },
+    "dictionary": {
+      "title": "Slovník",
+      "search": {
+        "placeholder": "Hledat ve slovníku...",
+        "label": "Hledat ve slovníku",
+        "noResults": "Žádné odpovídající položky"
+      },
+      "import": "Importovat",
+      "export": "Exportovat",
+      "exportOptions": {
+        "json": "JSON — Celý slovník",
+        "txt": "TXT — Vlastní slova",
+        "csv": "CSV — Náhrady"
+      },
+      "exportSuccess": "Slovník byl exportován",
+      "customWords": {
+        "title": "Vlastní slova",
+        "description": "Pomozte Handy rozpoznávat jména, značky a odborné termíny.",
+        "placeholder": "Přidat slovo nebo frázi",
+        "add": "Přidat",
+        "remove": "Odebrat {{word}}",
+        "duplicate": "\"{{word}}\" už ve vašem slovníku existuje",
+        "count": "{{count}} slov",
+        "empty": "Zatím nejsou žádná vlastní slova. Přidejte jména, značky nebo odborné termíny, které by Handy měl rozpoznávat.",
+        "count_one": "{{count}} slov",
+        "count_other": "{{count}} slov"
+      },
+      "replacements": {
+        "title": "Náhrady",
+        "description": "Vynuťte, aby se konkrétní přepsaný text stal požadovaným textem.",
+        "from": "Slyšeno / Přepsáno",
+        "to": "Nahradit za",
+        "add": "Přidat náhradu",
+        "delete": "Smazat pravidlo pro {{from}}",
+        "duplicate": "Pravidlo pro \"{{from}}\" už existuje",
+        "invalid": "Obě pole jsou povinná",
+        "count": "{{count}} pravidel",
+        "empty": "Zatím nejsou žádná pravidla náhrad. Přidejte pravidlo, když Handy soustavně přepisuje něco špatně.",
+        "count_one": "{{count}} pravidel",
+        "count_other": "{{count}} pravidel"
+      },
+      "importResults": {
+        "summary": "Importováno {{words}} vlastních slov a {{replacements}} náhrad",
+        "skipped": "Přeskočeno {{count}} duplikátů",
+        "conflicts": "{{count}} konfliktních pravidel ponechalo stávající hodnoty",
+        "malformedRows": "Přeskočeno {{count}} poškozených řádků",
+        "skipped_one": "Přeskočeno {{count}} duplikátů",
+        "skipped_other": "Přeskočeno {{count}} duplikátů",
+        "conflicts_one": "{{count}} konfliktních pravidel ponechalo stávající hodnoty",
+        "conflicts_other": "{{count}} konfliktních pravidel ponechalo stávající hodnoty",
+        "malformedRows_one": "Přeskočeno {{count}} poškozených řádků",
+        "malformedRows_other": "Přeskočeno {{count}} poškozených řádků",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Vybraný soubor nelze přečíst",
+        "parseFailed": "Soubor nelze analyzovat: {{message}}",
+        "invalidFormat": "Toto není platný soubor slovníku Handy",
+        "unsupportedVersion": "Nepodporovaná verze slovníku: {{version}}",
+        "writeFailed": "Soubor slovníku nelze uložit: {{message}}"
       }
     },
     "about": {

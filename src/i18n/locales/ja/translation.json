@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "一般",
     "models": "モデル",
+    "dictionary": "辞書",
     "advanced": "詳細設定",
     "postProcessing": "後処理",
     "history": "履歴",
@@ -602,6 +603,70 @@
         "permissionsButton": "権限",
         "modelsButton": "モデル選択",
         "exitButton": "プレビューを終了"
+      }
+    },
+    "dictionary": {
+      "title": "辞書",
+      "search": {
+        "placeholder": "辞書を検索...",
+        "label": "辞書を検索",
+        "noResults": "一致する項目がありません"
+      },
+      "import": "インポート",
+      "export": "エクスポート",
+      "exportOptions": {
+        "json": "JSON — 辞書全体",
+        "txt": "TXT — カスタム単語",
+        "csv": "CSV — 置換"
+      },
+      "exportSuccess": "辞書をエクスポートしました",
+      "customWords": {
+        "title": "カスタム単語",
+        "description": "Handy が人名・ブランド名・専門用語を認識できるようにします。",
+        "placeholder": "単語またはフレーズを追加",
+        "add": "追加",
+        "remove": "{{word}} を削除",
+        "duplicate": "「{{word}}」はすでに辞書にあります",
+        "count": "{{count}} 単語",
+        "empty": "カスタム単語はまだありません。Handy に認識させる人名・ブランド名・専門用語を追加してください。",
+        "count_one": "{{count}} 単語",
+        "count_other": "{{count}} 単語"
+      },
+      "replacements": {
+        "title": "置換",
+        "description": "文字起こしの特定のテキストを指定したテキストに強制的に置き換えます。",
+        "from": "認識されたテキスト",
+        "to": "置換後のテキスト",
+        "add": "置換を追加",
+        "delete": "{{from}} のルールを削除",
+        "duplicate": "「{{from}}」のルールはすでに存在します",
+        "invalid": "両方のフィールドが必須です",
+        "count": "{{count}} 件のルール",
+        "empty": "置換ルールはまだありません。Handy がいつも同じように聞き間違える場合にルールを追加してください。",
+        "count_one": "{{count}} 件のルール",
+        "count_other": "{{count}} 件のルール"
+      },
+      "importResults": {
+        "summary": "カスタム単語 {{words}} 件と置換 {{replacements}} 件をインポートしました",
+        "skipped": "重複 {{count}} 件をスキップしました",
+        "conflicts": "競合した {{count}} 件のルールは既存の値を保持しました",
+        "malformedRows": "不正な行 {{count}} 件をスキップしました",
+        "skipped_one": "重複 {{count}} 件をスキップしました",
+        "skipped_other": "重複 {{count}} 件をスキップしました",
+        "conflicts_one": "競合した {{count}} 件のルールは既存の値を保持しました",
+        "conflicts_other": "競合した {{count}} 件のルールは既存の値を保持しました",
+        "malformedRows_one": "不正な行 {{count}} 件をスキップしました",
+        "malformedRows_other": "不正な行 {{count}} 件をスキップしました",
+        "invalid": "空または長すぎる項目 {{count}} 件をスキップしました",
+        "invalid_one": "空または長すぎる項目 {{count}} 件をスキップしました",
+        "invalid_other": "空または長すぎる項目 {{count}} 件をスキップしました"
+      },
+      "errors": {
+        "readFailed": "選択したファイルを読み込めませんでした",
+        "parseFailed": "ファイルを解析できませんでした: {{message}}",
+        "invalidFormat": "有効な Handy 辞書ファイルではありません",
+        "unsupportedVersion": "サポートされていない辞書バージョン: {{version}}",
+        "writeFailed": "辞書ファイルを保存できませんでした: {{message}}"
       }
     },
     "about": {

@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Chung",
     "models": "Mô hình",
+    "dictionary": "Từ điển",
     "advanced": "Nâng cao",
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
@@ -602,6 +603,70 @@
         "permissionsButton": "Quyền",
         "modelsButton": "Chọn mô hình",
         "exitButton": "Thoát xem trước"
+      }
+    },
+    "dictionary": {
+      "title": "Từ điển",
+      "search": {
+        "placeholder": "Tìm trong từ điển...",
+        "label": "Tìm trong từ điển",
+        "noResults": "Không có mục nào khớp"
+      },
+      "import": "Nhập",
+      "export": "Xuất",
+      "exportOptions": {
+        "json": "JSON — Toàn bộ từ điển",
+        "txt": "TXT — Từ tùy chỉnh",
+        "csv": "CSV — Thay thế"
+      },
+      "exportSuccess": "Đã xuất từ điển",
+      "customWords": {
+        "title": "Từ tùy chỉnh",
+        "description": "Giúp Handy nhận diện tên, thương hiệu và thuật ngữ chuyên ngành.",
+        "placeholder": "Thêm một từ hoặc cụm từ",
+        "add": "Thêm",
+        "remove": "Xóa {{word}}",
+        "duplicate": "\"{{word}}\" đã tồn tại trong từ điển của bạn",
+        "count": "{{count}} từ",
+        "empty": "Chưa có từ tùy chỉnh nào. Thêm tên, thương hiệu hoặc thuật ngữ chuyên ngành mà Handy cần nhận diện.",
+        "count_one": "{{count}} từ",
+        "count_other": "{{count}} từ"
+      },
+      "replacements": {
+        "title": "Thay thế",
+        "description": "Buộc văn bản phiên âm cụ thể trở thành văn bản mong muốn.",
+        "from": "Đã nghe / Đã phiên âm",
+        "to": "Thay thế bằng",
+        "add": "Thêm thay thế",
+        "delete": "Xóa quy tắc cho {{from}}",
+        "duplicate": "Đã tồn tại quy tắc cho \"{{from}}\"",
+        "invalid": "Cả hai trường đều bắt buộc",
+        "count": "{{count}} quy tắc",
+        "empty": "Chưa có quy tắc thay thế nào. Thêm quy tắc khi Handy liên tục phiên âm sai một điều gì đó.",
+        "count_one": "{{count}} quy tắc",
+        "count_other": "{{count}} quy tắc"
+      },
+      "importResults": {
+        "summary": "Đã nhập {{words}} từ tùy chỉnh và {{replacements}} thay thế",
+        "skipped": "Đã bỏ qua {{count}} mục trùng lặp",
+        "conflicts": "{{count}} quy tắc xung đột đã giữ giá trị hiện có",
+        "malformedRows": "Đã bỏ qua {{count}} hàng không hợp lệ",
+        "skipped_one": "Đã bỏ qua {{count}} mục trùng lặp",
+        "skipped_other": "Đã bỏ qua {{count}} mục trùng lặp",
+        "conflicts_one": "{{count}} quy tắc xung đột đã giữ giá trị hiện có",
+        "conflicts_other": "{{count}} quy tắc xung đột đã giữ giá trị hiện có",
+        "malformedRows_one": "Đã bỏ qua {{count}} hàng không hợp lệ",
+        "malformedRows_other": "Đã bỏ qua {{count}} hàng không hợp lệ",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Không thể đọc tệp đã chọn",
+        "parseFailed": "Không thể phân tích tệp: {{message}}",
+        "invalidFormat": "Đây không phải là tệp từ điển Handy hợp lệ",
+        "unsupportedVersion": "Phiên bản từ điển không được hỗ trợ: {{version}}",
+        "writeFailed": "Không thể lưu tệp từ điển: {{message}}"
       }
     },
     "about": {

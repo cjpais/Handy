@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Allgemein",
     "models": "Modelle",
+    "dictionary": "Wörterbuch",
     "advanced": "Erweitert",
     "postProcessing": "Nachbearbeitung",
     "history": "Verlauf",
@@ -602,6 +603,70 @@
         "permissionsButton": "Berechtigungen",
         "modelsButton": "Modellauswahl",
         "exitButton": "Vorschau beenden"
+      }
+    },
+    "dictionary": {
+      "title": "Wörterbuch",
+      "search": {
+        "placeholder": "Wörterbuch durchsuchen...",
+        "label": "Wörterbuch durchsuchen",
+        "noResults": "Keine passenden Einträge"
+      },
+      "import": "Importieren",
+      "export": "Exportieren",
+      "exportOptions": {
+        "json": "JSON — vollständiges Wörterbuch",
+        "txt": "TXT — benutzerdefinierte Wörter",
+        "csv": "CSV — Ersetzungen"
+      },
+      "exportSuccess": "Wörterbuch exportiert",
+      "customWords": {
+        "title": "Benutzerdefinierte Wörter",
+        "description": "Unterstützt Handy beim Erkennen von Namen, Marken und Fachbegriffen.",
+        "placeholder": "Wort oder Ausdruck hinzufügen",
+        "add": "Hinzufügen",
+        "remove": "{{word}} entfernen",
+        "duplicate": "„{{word}}“ ist bereits im Wörterbuch vorhanden",
+        "count": "{{count}} Wörter",
+        "empty": "Noch keine eigenen Wörter. Füge Namen, Marken oder Fachbegriffe hinzu, die Handy erkennen soll.",
+        "count_one": "{{count}} Wort",
+        "count_other": "{{count}} Wörter"
+      },
+      "replacements": {
+        "title": "Ersetzungen",
+        "description": "Erzwingt, dass ein bestimmter Transkriptionstext durch den gewünschten Text ersetzt wird.",
+        "from": "Gehört / transkribiert",
+        "to": "Ersetzen durch",
+        "add": "Ersetzung hinzufügen",
+        "delete": "Regel für {{from}} löschen",
+        "duplicate": "Für „{{from}}“ existiert bereits eine Regel",
+        "invalid": "Beide Felder sind erforderlich",
+        "count": "{{count}} Regeln",
+        "empty": "Noch keine Ersetzungsregeln. Füge eine Regel hinzu, wenn Handy etwas immer falsch transkribiert.",
+        "count_one": "{{count}} Regel",
+        "count_other": "{{count}} Regeln"
+      },
+      "importResults": {
+        "summary": "{{words}} eigene Wörter und {{replacements}} Ersetzungen importiert",
+        "skipped": "{{count}} Duplikate übersprungen",
+        "conflicts": "{{count}} widersprüchliche Regeln behielten bestehende Werte",
+        "malformedRows": "{{count}} fehlerhafte Zeilen übersprungen",
+        "skipped_one": "{{count}} Duplikate übersprungen",
+        "skipped_other": "{{count}} Duplikate übersprungen",
+        "conflicts_one": "{{count}} widersprüchliche Regeln behielten bestehende Werte",
+        "conflicts_other": "{{count}} widersprüchliche Regeln behielten bestehende Werte",
+        "malformedRows_one": "{{count}} fehlerhafte Zeilen übersprungen",
+        "malformedRows_other": "{{count}} fehlerhafte Zeilen übersprungen",
+        "invalid": "{{count}} leere oder zu lange Einträge übersprungen",
+        "invalid_one": "{{count}} leere oder zu lange Einträge übersprungen",
+        "invalid_other": "{{count}} leere oder zu lange Einträge übersprungen"
+      },
+      "errors": {
+        "readFailed": "Die ausgewählte Datei konnte nicht gelesen werden",
+        "parseFailed": "Die Datei konnte nicht verarbeitet werden: {{message}}",
+        "invalidFormat": "Dies ist keine gültige Handy-Wörterbuchdatei",
+        "unsupportedVersion": "Nicht unterstützte Wörterbuchversion: {{version}}",
+        "writeFailed": "Die Wörterbuchdatei konnte nicht gespeichert werden: {{message}}"
       }
     },
     "about": {

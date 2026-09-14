@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Genel",
     "models": "Modeller",
+    "dictionary": "Sözlük",
     "advanced": "Gelişmiş",
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
@@ -602,6 +603,70 @@
         "permissionsButton": "İzinler",
         "modelsButton": "Model seçimi",
         "exitButton": "Önizlemeden çık"
+      }
+    },
+    "dictionary": {
+      "title": "Sözlük",
+      "search": {
+        "placeholder": "Sözlükte ara...",
+        "label": "Sözlükte ara",
+        "noResults": "Eşleşen kayıt yok"
+      },
+      "import": "İçe aktar",
+      "export": "Dışa aktar",
+      "exportOptions": {
+        "json": "JSON — tam sözlük",
+        "txt": "TXT — özel kelimeler",
+        "csv": "CSV — değiştirmeler"
+      },
+      "exportSuccess": "Sözlük dışa aktarıldı",
+      "customWords": {
+        "title": "Özel kelimeler",
+        "description": "Handy'nin adları, markaları ve özel terimleri tanımasına yardımcı olun.",
+        "placeholder": "Bir kelime veya ifade ekleyin",
+        "add": "Ekle",
+        "remove": "{{word}} öğesini kaldır",
+        "duplicate": "'{{word}}' zaten sözlüğünüzde var",
+        "count": "{{count}} kelime",
+        "empty": "Henüz özel kelime yok. Handy'nin tanıması gereken adları, markaları veya özel terimleri ekleyin.",
+        "count_one": "{{count}} kelime",
+        "count_other": "{{count}} kelime"
+      },
+      "replacements": {
+        "title": "Değiştirmeler",
+        "description": "Belirli bir deşifre metnini istediğiniz metne dönüştürmeye zorlar.",
+        "from": "Duyulan / deşifre edilen",
+        "to": "Şununla değiştir",
+        "add": "Değiştirme ekle",
+        "delete": "{{from}} için kuralı sil",
+        "duplicate": "'{{from}}' için zaten bir kural var",
+        "invalid": "Her iki alan da zorunludur",
+        "count": "{{count}} kural",
+        "empty": "Henüz değiştirme kuralı yok. Handy bir şeyi sürekli yanlış deşifre ediyorsa bir kural ekleyin.",
+        "count_one": "{{count}} kural",
+        "count_other": "{{count}} kural"
+      },
+      "importResults": {
+        "summary": "{{words}} özel kelime ve {{replacements}} değiştirme içe aktarıldı",
+        "skipped": "{{count}} yinelenen atlandı",
+        "conflicts": "{{count}} çakışan kural mevcut değerleri korudu",
+        "malformedRows": "{{count}} bozuk satır atlandı",
+        "skipped_one": "{{count}} yinelenen atlandı",
+        "skipped_other": "{{count}} yinelenen atlandı",
+        "conflicts_one": "{{count}} çakışan kural mevcut değerleri korudu",
+        "conflicts_other": "{{count}} çakışan kural mevcut değerleri korudu",
+        "malformedRows_one": "{{count}} bozuk satır atlandı",
+        "malformedRows_other": "{{count}} bozuk satır atlandı",
+        "invalid": "{{count}} boş veya çok uzun girdi atlandı",
+        "invalid_one": "{{count}} boş veya çok uzun girdi atlandı",
+        "invalid_other": "{{count}} boş veya çok uzun girdi atlandı"
+      },
+      "errors": {
+        "readFailed": "Seçilen dosya okunamadı",
+        "parseFailed": "Dosya ayrıştırılamadı: {{message}}",
+        "invalidFormat": "Bu geçerli bir Handy sözlük dosyası değil",
+        "unsupportedVersion": "Desteklenmeyen sözlük sürümü: {{version}}",
+        "writeFailed": "Sözlük dosyası kaydedilemedi: {{message}}"
       }
     },
     "about": {

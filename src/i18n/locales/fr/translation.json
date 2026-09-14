@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Général",
     "models": "Modèles",
+    "dictionary": "Dictionnaire",
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "history": "Historique",
@@ -602,6 +603,70 @@
         "permissionsButton": "Autorisations",
         "modelsButton": "Sélection du modèle",
         "exitButton": "Quitter l’aperçu"
+      }
+    },
+    "dictionary": {
+      "title": "Dictionnaire",
+      "search": {
+        "placeholder": "Rechercher dans le dictionnaire...",
+        "label": "Rechercher dans le dictionnaire",
+        "noResults": "Aucune entrée correspondante"
+      },
+      "import": "Importer",
+      "export": "Exporter",
+      "exportOptions": {
+        "json": "JSON — dictionnaire complet",
+        "txt": "TXT — mots personnalisés",
+        "csv": "CSV — remplacements"
+      },
+      "exportSuccess": "Dictionnaire exporté",
+      "customWords": {
+        "title": "Mots personnalisés",
+        "description": "Aidez Handy à reconnaître les noms, les marques et les termes spécialisés.",
+        "placeholder": "Ajouter un mot ou une expression",
+        "add": "Ajouter",
+        "remove": "Supprimer {{word}}",
+        "duplicate": "« {{word}} » existe déjà dans votre dictionnaire",
+        "count": "{{count}} mots",
+        "empty": "Aucun mot personnalisé pour l'instant. Ajoutez des noms, des marques ou des termes spécialisés que Handy doit reconnaître.",
+        "count_one": "{{count}} mot",
+        "count_other": "{{count}} mots"
+      },
+      "replacements": {
+        "title": "Remplacements",
+        "description": "Force un texte transcrit à devenir le texte souhaité.",
+        "from": "Entendu / transcrit",
+        "to": "Remplacer par",
+        "add": "Ajouter un remplacement",
+        "delete": "Supprimer la règle pour {{from}}",
+        "duplicate": "Une règle pour « {{from}} » existe déjà",
+        "invalid": "Les deux champs sont obligatoires",
+        "count": "{{count}} règles",
+        "empty": "Aucune règle de remplacement pour l'instant. Ajoutez-en une quand Handy transcrit systématiquement quelque chose de travers.",
+        "count_one": "{{count}} règle",
+        "count_other": "{{count}} règles"
+      },
+      "importResults": {
+        "summary": "{{words}} mots personnalisés et {{replacements}} remplacements importés",
+        "skipped": "{{count}} doublons ignorés",
+        "conflicts": "{{count}} règles en conflit ont conservé les valeurs existantes",
+        "malformedRows": "{{count}} lignes mal formées ignorées",
+        "skipped_one": "{{count}} doublons ignorés",
+        "skipped_other": "{{count}} doublons ignorés",
+        "conflicts_one": "{{count}} règles en conflit ont conservé les valeurs existantes",
+        "conflicts_other": "{{count}} règles en conflit ont conservé les valeurs existantes",
+        "malformedRows_one": "{{count}} lignes mal formées ignorées",
+        "malformedRows_other": "{{count}} lignes mal formées ignorées",
+        "invalid": "{{count}} entrées vides ou trop longues ignorées",
+        "invalid_one": "{{count}} entrées vides ou trop longues ignorées",
+        "invalid_other": "{{count}} entrées vides ou trop longues ignorées"
+      },
+      "errors": {
+        "readFailed": "Impossible de lire le fichier sélectionné",
+        "parseFailed": "Impossible d'analyser le fichier : {{message}}",
+        "invalidFormat": "Ce n'est pas un fichier de dictionnaire Handy valide",
+        "unsupportedVersion": "Version de dictionnaire non prise en charge : {{version}}",
+        "writeFailed": "Impossible d'enregistrer le fichier du dictionnaire : {{message}}"
       }
     },
     "about": {

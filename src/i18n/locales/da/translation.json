@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Generelt",
     "models": "Modeller",
+    "dictionary": "Ordbog",
     "advanced": "Avanceret",
     "postProcessing": "Efterbehandling",
     "history": "Historik",
@@ -602,6 +603,70 @@
         "verdictOk": "Tastehændelser når frem til Handy som normalt.",
         "verdictNoEvents": "Ingen hændelser registreret — trykkede du på nogen taster under testen?",
         "failed": "Diagnostik mislykkedes: {{error}}"
+      }
+    },
+    "dictionary": {
+      "title": "Ordbog",
+      "search": {
+        "placeholder": "Søg i ordbogen...",
+        "label": "Søg i ordbogen",
+        "noResults": "Ingen matchende poster"
+      },
+      "import": "Importer",
+      "export": "Eksporter",
+      "exportOptions": {
+        "json": "JSON — Fuld ordbog",
+        "txt": "TXT — Brugerdefinerede ord",
+        "csv": "CSV — Erstatninger"
+      },
+      "exportSuccess": "Ordbogen blev eksporteret",
+      "customWords": {
+        "title": "Brugerdefinerede ord",
+        "description": "Hjælp Handy med at genkende navne, mærker og specialiserede udtryk.",
+        "placeholder": "Tilføj et ord eller en sætning",
+        "add": "Tilføj",
+        "remove": "Fjern {{word}}",
+        "duplicate": "\"{{word}}\" findes allerede i din ordbog",
+        "count": "{{count}} ord",
+        "empty": "Ingen brugerdefinerede ord endnu. Tilføj navne, mærker eller specialiserede udtryk, som Handy bør genkende.",
+        "count_one": "{{count}} ord",
+        "count_other": "{{count}} ord"
+      },
+      "replacements": {
+        "title": "Erstatninger",
+        "description": "Tving bestemt transskriberet tekst til at blive den ønskede tekst.",
+        "from": "Hørt / Transskriberet",
+        "to": "Erstat med",
+        "add": "Tilføj erstatning",
+        "delete": "Slet regel for {{from}}",
+        "duplicate": "Der findes allerede en regel for \"{{from}}\"",
+        "invalid": "Begge felter er påkrævet",
+        "count": "{{count}} regler",
+        "empty": "Ingen erstatningsregler endnu. Tilføj en regel, når Handy konsekvent transskriberer noget forkert.",
+        "count_one": "{{count}} regler",
+        "count_other": "{{count}} regler"
+      },
+      "importResults": {
+        "summary": "Importerede {{words}} brugerdefinerede ord og {{replacements}} erstatninger",
+        "skipped": "{{count}} dubletter sprunget over",
+        "conflicts": "{{count}} modstridende regler beholdt eksisterende værdier",
+        "malformedRows": "{{count}} ugyldige rækker sprunget over",
+        "skipped_one": "{{count}} dubletter sprunget over",
+        "skipped_other": "{{count}} dubletter sprunget over",
+        "conflicts_one": "{{count}} modstridende regler beholdt eksisterende værdier",
+        "conflicts_other": "{{count}} modstridende regler beholdt eksisterende værdier",
+        "malformedRows_one": "{{count}} ugyldige rækker sprunget over",
+        "malformedRows_other": "{{count}} ugyldige rækker sprunget over",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Kunne ikke læse den valgte fil",
+        "parseFailed": "Kunne ikke analysere filen: {{message}}",
+        "invalidFormat": "Dette er ikke en gyldig Handy-ordbogsfil",
+        "unsupportedVersion": "Ikke-understøttet ordbogsversion: {{version}}",
+        "writeFailed": "Kunne ikke gemme ordbogsfilen: {{message}}"
       }
     },
     "about": {

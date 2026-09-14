@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "일반",
     "models": "모델",
+    "dictionary": "사전",
     "advanced": "고급",
     "postProcessing": "후처리",
     "history": "히스토리",
@@ -602,6 +603,70 @@
         "permissionsButton": "권한",
         "modelsButton": "모델 선택",
         "exitButton": "미리보기 종료"
+      }
+    },
+    "dictionary": {
+      "title": "사전",
+      "search": {
+        "placeholder": "사전 검색...",
+        "label": "사전 검색",
+        "noResults": "일치하는 항목이 없습니다"
+      },
+      "import": "가져오기",
+      "export": "내보내기",
+      "exportOptions": {
+        "json": "JSON — 전체 사전",
+        "txt": "TXT — 사용자 지정 단어",
+        "csv": "CSV — 치환"
+      },
+      "exportSuccess": "사전을 내보냈습니다",
+      "customWords": {
+        "title": "사용자 지정 단어",
+        "description": "Handy가 이름, 브랜드 및 전문 용어를 인식하도록 돕습니다.",
+        "placeholder": "단어나 구문 추가",
+        "add": "추가",
+        "remove": "{{word}} 삭제",
+        "duplicate": "'{{word}}'은(는) 이미 사전에 있습니다",
+        "count": "단어 {{count}}개",
+        "empty": "아직 사용자 지정 단어가 없습니다. Handy가 인식해야 할 이름, 브랜드 또는 전문 용어를 추가하세요.",
+        "count_one": "단어 {{count}}개",
+        "count_other": "단어 {{count}}개"
+      },
+      "replacements": {
+        "title": "치환",
+        "description": "받아쓴 특정 텍스트를 원하는 텍스트로 강제 변환합니다.",
+        "from": "인식된 텍스트",
+        "to": "바꿀 텍스트",
+        "add": "치환 추가",
+        "delete": "{{from}} 규칙 삭제",
+        "duplicate": "'{{from}}' 규칙이 이미 있습니다",
+        "invalid": "두 필드 모두 필수입니다",
+        "count": "규칙 {{count}}개",
+        "empty": "아직 치환 규칙이 없습니다. Handy가 무언가를 항상 잘못 받아쓴다면 규칙을 추가하세요.",
+        "count_one": "규칙 {{count}}개",
+        "count_other": "규칙 {{count}}개"
+      },
+      "importResults": {
+        "summary": "사용자 지정 단어 {{words}}개와 치환 {{replacements}}개를 가져왔습니다",
+        "skipped": "중복 {{count}}개를 건너뛰었습니다",
+        "conflicts": "충돌하는 규칙 {{count}}개는 기존 값을 유지했습니다",
+        "malformedRows": "잘못된 행 {{count}}개를 건너뛰었습니다",
+        "skipped_one": "중복 {{count}}개를 건너뛰었습니다",
+        "skipped_other": "중복 {{count}}개를 건너뛰었습니다",
+        "conflicts_one": "충돌하는 규칙 {{count}}개는 기존 값을 유지했습니다",
+        "conflicts_other": "충돌하는 규칙 {{count}}개는 기존 값을 유지했습니다",
+        "malformedRows_one": "잘못된 행 {{count}}개를 건너뛰었습니다",
+        "malformedRows_other": "잘못된 행 {{count}}개를 건너뛰었습니다",
+        "invalid": "비어 있거나 너무 긴 항목 {{count}}개를 건너뛰었습니다",
+        "invalid_one": "비어 있거나 너무 긴 항목 {{count}}개를 건너뛰었습니다",
+        "invalid_other": "비어 있거나 너무 긴 항목 {{count}}개를 건너뛰었습니다"
+      },
+      "errors": {
+        "readFailed": "선택한 파일을 읽을 수 없습니다",
+        "parseFailed": "파일을 구문 분석할 수 없습니다: {{message}}",
+        "invalidFormat": "올바른 Handy 사전 파일이 아닙니다",
+        "unsupportedVersion": "지원되지 않는 사전 버전: {{version}}",
+        "writeFailed": "사전 파일을 저장할 수 없습니다: {{message}}"
       }
     },
     "about": {

@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Umum",
     "models": "Model",
+    "dictionary": "Kamus",
     "advanced": "Lanjutan",
     "postProcessing": "Pascaproses",
     "history": "Riwayat",
@@ -602,6 +603,70 @@
         "verdictOk": "Peristiwa tombol mencapai Handy secara normal.",
         "verdictNoEvents": "Tidak ada peristiwa yang tertangkap — apakah Anda menekan tombol selama pengujian?",
         "failed": "Diagnostik gagal: {{error}}"
+      }
+    },
+    "dictionary": {
+      "title": "Kamus",
+      "search": {
+        "placeholder": "Cari di kamus...",
+        "label": "Cari di kamus",
+        "noResults": "Tidak ada entri yang cocok"
+      },
+      "import": "Impor",
+      "export": "Ekspor",
+      "exportOptions": {
+        "json": "JSON — Kamus Lengkap",
+        "txt": "TXT — Kata Kustom",
+        "csv": "CSV — Penggantian"
+      },
+      "exportSuccess": "Kamus berhasil diekspor",
+      "customWords": {
+        "title": "Kata Kustom",
+        "description": "Bantu Handy mengenali nama, merek, dan istilah khusus.",
+        "placeholder": "Tambahkan kata atau frasa",
+        "add": "Tambah",
+        "remove": "Hapus {{word}}",
+        "duplicate": "\"{{word}}\" sudah ada di kamus Anda",
+        "count": "{{count}} kata",
+        "empty": "Belum ada kata kustom. Tambahkan nama, merek, atau istilah khusus yang harus dikenali Handy.",
+        "count_one": "{{count}} kata",
+        "count_other": "{{count}} kata"
+      },
+      "replacements": {
+        "title": "Penggantian",
+        "description": "Paksa teks transkripsi tertentu menjadi teks yang diinginkan.",
+        "from": "Terdengar / Ditranskripsikan",
+        "to": "Ganti Dengan",
+        "add": "Tambah penggantian",
+        "delete": "Hapus aturan untuk {{from}}",
+        "duplicate": "Aturan untuk \"{{from}}\" sudah ada",
+        "invalid": "Kedua kolom wajib diisi",
+        "count": "{{count}} aturan",
+        "empty": "Belum ada aturan penggantian. Tambahkan aturan saat Handy secara konsisten mentranskripsikan sesuatu dengan cara yang salah.",
+        "count_one": "{{count}} aturan",
+        "count_other": "{{count}} aturan"
+      },
+      "importResults": {
+        "summary": "Mengimpor {{words}} kata kustom dan {{replacements}} penggantian",
+        "skipped": "{{count}} duplikat dilewati",
+        "conflicts": "{{count}} aturan yang bertentangan mempertahankan nilai yang ada",
+        "malformedRows": "{{count}} baris yang tidak valid dilewati",
+        "skipped_one": "{{count}} duplikat dilewati",
+        "skipped_other": "{{count}} duplikat dilewati",
+        "conflicts_one": "{{count}} aturan yang bertentangan mempertahankan nilai yang ada",
+        "conflicts_other": "{{count}} aturan yang bertentangan mempertahankan nilai yang ada",
+        "malformedRows_one": "{{count}} baris yang tidak valid dilewati",
+        "malformedRows_other": "{{count}} baris yang tidak valid dilewati",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Tidak dapat membaca file yang dipilih",
+        "parseFailed": "Tidak dapat mengurai file: {{message}}",
+        "invalidFormat": "Ini bukan file kamus Handy yang valid",
+        "unsupportedVersion": "Versi kamus tidak didukung: {{version}}",
+        "writeFailed": "Tidak dapat menyimpan file kamus: {{message}}"
       }
     },
     "about": {

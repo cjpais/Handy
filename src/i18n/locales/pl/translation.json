@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Ogólne",
     "models": "Modele",
+    "dictionary": "Słownik",
     "advanced": "Zaawansowane",
     "postProcessing": "Postproces",
     "history": "Historia",
@@ -602,6 +603,70 @@
         "permissionsButton": "Uprawnienia",
         "modelsButton": "Wybór modelu",
         "exitButton": "Zakończ podgląd"
+      }
+    },
+    "dictionary": {
+      "title": "Słownik",
+      "search": {
+        "placeholder": "Szukaj w słowniku...",
+        "label": "Szukaj w słowniku",
+        "noResults": "Brak pasujących wpisów"
+      },
+      "import": "Importuj",
+      "export": "Eksportuj",
+      "exportOptions": {
+        "json": "JSON — pełny słownik",
+        "txt": "TXT — własne słowa",
+        "csv": "CSV — zamiany"
+      },
+      "exportSuccess": "Słownik wyeksportowany",
+      "customWords": {
+        "title": "Własne słowa",
+        "description": "Pomóż Handy rozpoznawać nazwy, marki i terminy specjalistyczne.",
+        "placeholder": "Dodaj słowo lub wyrażenie",
+        "add": "Dodaj",
+        "remove": "Usuń {{word}}",
+        "duplicate": "„{{word}}” już istnieje w słowniku",
+        "count": "{{count}} słów",
+        "empty": "Brak własnych słów. Dodaj nazwy, marki lub terminy specjalistyczne, które Handy ma rozpoznawać.",
+        "count_one": "{{count}} słowo",
+        "count_other": "{{count}} słów"
+      },
+      "replacements": {
+        "title": "Zamiany",
+        "description": "Wymusza zastąpienie rozpoznanego tekstu wybranym tekstem.",
+        "from": "Usłyszane / rozpoznane",
+        "to": "Zamień na",
+        "add": "Dodaj zamianę",
+        "delete": "Usuń regułę dla {{from}}",
+        "duplicate": "Reguła dla „{{from}}” już istnieje",
+        "invalid": "Oba pola są wymagane",
+        "count": "{{count}} reguł",
+        "empty": "Brak reguł zamiany. Dodaj regułę, gdy Handy stale rozpoznaje coś błędnie.",
+        "count_one": "{{count}} reguła",
+        "count_other": "{{count}} reguł"
+      },
+      "importResults": {
+        "summary": "Zaimportowano {{words}} własnych słów i {{replacements}} zamian",
+        "skipped": "Pominięto duplikaty: {{count}}",
+        "conflicts": "{{count}} sprzecznych reguł zachowało dotychczasowe wartości",
+        "malformedRows": "Pominięto błędne wiersze: {{count}}",
+        "skipped_one": "Pominięto duplikaty: {{count}}",
+        "skipped_other": "Pominięto duplikaty: {{count}}",
+        "conflicts_one": "{{count}} sprzecznych reguł zachowało dotychczasowe wartości",
+        "conflicts_other": "{{count}} sprzecznych reguł zachowało dotychczasowe wartości",
+        "malformedRows_one": "Pominięto błędne wiersze: {{count}}",
+        "malformedRows_other": "Pominięto błędne wiersze: {{count}}",
+        "invalid": "{{count}} pustych lub zbyt długich wpisów pominięto",
+        "invalid_one": "{{count}} pustych lub zbyt długich wpisów pominięto",
+        "invalid_other": "{{count}} pustych lub zbyt długich wpisów pominięto"
+      },
+      "errors": {
+        "readFailed": "Nie udało się odczytać wybranego pliku",
+        "parseFailed": "Nie udało się przetworzyć pliku: {{message}}",
+        "invalidFormat": "To nie jest prawidłowy plik słownika Handy",
+        "unsupportedVersion": "Nieobsługiwana wersja słownika: {{version}}",
+        "writeFailed": "Nie udało się zapisać pliku słownika: {{message}}"
       }
     },
     "about": {

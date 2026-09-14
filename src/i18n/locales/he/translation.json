@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "כללי",
     "models": "מודלים",
+    "dictionary": "מילון",
     "advanced": "מתקדם",
     "postProcessing": "עיבוד משלים",
     "history": "היסטוריה",
@@ -602,6 +603,70 @@
         "permissionsButton": "הרשאות",
         "modelsButton": "בחירת מודל",
         "exitButton": "יציאה מהתצוגה המקדימה"
+      }
+    },
+    "dictionary": {
+      "title": "מילון",
+      "search": {
+        "placeholder": "חיפוש במילון...",
+        "label": "חיפוש במילון",
+        "noResults": "אין ערכים תואמים"
+      },
+      "import": "ייבוא",
+      "export": "ייצוא",
+      "exportOptions": {
+        "json": "JSON — מילון מלא",
+        "txt": "TXT — מילים מותאמות אישית",
+        "csv": "CSV — החלפות"
+      },
+      "exportSuccess": "המילון יוצא",
+      "customWords": {
+        "title": "מילים מותאמות אישית",
+        "description": "עזרו ל-Handy לזהות שמות, מותגים ומונחים מקצועיים.",
+        "placeholder": "הוסיפו מילה או ביטוי",
+        "add": "הוספה",
+        "remove": "הסרת {{word}}",
+        "duplicate": "\"{{word}}\" כבר קיים במילון שלך",
+        "count": "{{count}} מילים",
+        "empty": "אין עדיין מילים מותאמות אישית. הוסיפו שמות, מותגים או מונחים מקצועיים ש-Handy אמור לזהות.",
+        "count_one": "{{count}} מילים",
+        "count_other": "{{count}} מילים"
+      },
+      "replacements": {
+        "title": "החלפות",
+        "description": "אילצו טקסט תמלול מסוים להפוך לטקסט הרצוי.",
+        "from": "נשמע / תומלל",
+        "to": "החליפו ב-",
+        "add": "הוספת החלפה",
+        "delete": "מחיקת כלל עבור {{from}}",
+        "duplicate": "כבר קיים כלל עבור \"{{from}}\"",
+        "invalid": "שני השדות נדרשים",
+        "count": "{{count}} כללים",
+        "empty": "אין עדיין כללי החלפה. הוסיפו כלל כאשר Handy מתמלל משהו בצורה שגויה באופן עקבי.",
+        "count_one": "{{count}} כללים",
+        "count_other": "{{count}} כללים"
+      },
+      "importResults": {
+        "summary": "יובאו {{words}} מילים מותאמות אישית ו-{{replacements}} החלפות",
+        "skipped": "דולגו {{count}} כפילויות",
+        "conflicts": "{{count}} כללים סותרים שמרו על הערכים הקיימים",
+        "malformedRows": "דולגו {{count}} שורות פגומות",
+        "skipped_one": "דולגו {{count}} כפילויות",
+        "skipped_other": "דולגו {{count}} כפילויות",
+        "conflicts_one": "{{count}} כללים סותרים שמרו על הערכים הקיימים",
+        "conflicts_other": "{{count}} כללים סותרים שמרו על הערכים הקיימים",
+        "malformedRows_one": "דולגו {{count}} שורות פגומות",
+        "malformedRows_other": "דולגו {{count}} שורות פגומות",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "לא ניתן היה לקרוא את הקובץ שנבחר",
+        "parseFailed": "לא ניתן היה לנתח את הקובץ: {{message}}",
+        "invalidFormat": "זהו אינו קובץ מילון Handy תקין",
+        "unsupportedVersion": "גרסת מילון לא נתמכת: {{version}}",
+        "writeFailed": "לא ניתן היה לשמור את קובץ המילון: {{message}}"
       }
     },
     "about": {

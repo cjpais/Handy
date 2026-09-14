@@ -16,7 +16,8 @@
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
     "about": "حول",
-    "models": "النماذج"
+    "models": "النماذج",
+    "dictionary": "القاموس"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
@@ -579,6 +580,70 @@
         "permissionsButton": "الأذونات",
         "modelsButton": "اختيار النموذج",
         "exitButton": "إنهاء المعاينة"
+      }
+    },
+    "dictionary": {
+      "title": "القاموس",
+      "search": {
+        "placeholder": "ابحث في القاموس...",
+        "label": "ابحث في القاموس",
+        "noResults": "لا توجد إدخالات مطابقة"
+      },
+      "import": "استيراد",
+      "export": "تصدير",
+      "exportOptions": {
+        "json": "JSON — القاموس الكامل",
+        "txt": "TXT — كلمات مخصصة",
+        "csv": "CSV — الاستبدالات"
+      },
+      "exportSuccess": "تم تصدير القاموس",
+      "customWords": {
+        "title": "كلمات مخصصة",
+        "description": "ساعد Handy على التعرف على الأسماء والعلامات التجارية والمصطلحات المتخصصة.",
+        "placeholder": "أضف كلمة أو عبارة",
+        "add": "إضافة",
+        "remove": "إزالة {{word}}",
+        "duplicate": "\"{{word}}\" موجودة بالفعل في قاموسك",
+        "count": "{{count}} كلمات",
+        "empty": "لا توجد كلمات مخصصة بعد. أضف أسماء أو علامات تجارية أو مصطلحات متخصصة يجب على Handy التعرف عليها.",
+        "count_one": "{{count}} كلمات",
+        "count_other": "{{count}} كلمات"
+      },
+      "replacements": {
+        "title": "الاستبدالات",
+        "description": "اجعل نصًا محددًا من النسخ يتحول إلى النص المطلوب.",
+        "from": "ما سُمع / ما تم نسخه",
+        "to": "استبدل بـ",
+        "add": "إضافة استبدال",
+        "delete": "حذف قاعدة {{from}}",
+        "duplicate": "توجد قاعدة بالفعل لـ \"{{from}}\"",
+        "invalid": "كلا الحقلين مطلوبان",
+        "count": "{{count}} قواعد",
+        "empty": "لا توجد قواعد استبدال بعد. أضف قاعدة عندما ينسخ Handy شيئًا بطريقة خاطئة باستمرار.",
+        "count_one": "{{count}} قواعد",
+        "count_other": "{{count}} قواعد"
+      },
+      "importResults": {
+        "summary": "تم استيراد {{words}} كلمات مخصصة و{{replacements}} استبدالات",
+        "skipped": "تم تخطي {{count}} عناصر مكررة",
+        "conflicts": "احتفظت {{count}} قواعد متعارضة بالقيم الحالية",
+        "malformedRows": "تم تخطي {{count}} صفوف غير صالحة",
+        "skipped_one": "تم تخطي {{count}} عناصر مكررة",
+        "skipped_other": "تم تخطي {{count}} عناصر مكررة",
+        "conflicts_one": "احتفظت {{count}} قواعد متعارضة بالقيم الحالية",
+        "conflicts_other": "احتفظت {{count}} قواعد متعارضة بالقيم الحالية",
+        "malformedRows_one": "تم تخطي {{count}} صفوف غير صالحة",
+        "malformedRows_other": "تم تخطي {{count}} صفوف غير صالحة",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "تعذرت قراءة الملف المحدد",
+        "parseFailed": "تعذر تحليل الملف: {{message}}",
+        "invalidFormat": "هذا ليس ملف قاموس Handy صالحًا",
+        "unsupportedVersion": "إصدار قاموس غير مدعوم: {{version}}",
+        "writeFailed": "تعذر حفظ ملف القاموس: {{message}}"
       }
     },
     "about": {

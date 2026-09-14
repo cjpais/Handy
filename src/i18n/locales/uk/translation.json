@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Загальні",
     "models": "Моделі",
+    "dictionary": "Словник",
     "advanced": "Розширені",
     "postProcessing": "Постобробка",
     "history": "Історія",
@@ -602,6 +603,70 @@
         "permissionsButton": "Дозволи",
         "modelsButton": "Вибір моделі",
         "exitButton": "Вийти з перегляду"
+      }
+    },
+    "dictionary": {
+      "title": "Словник",
+      "search": {
+        "placeholder": "Пошук у словнику...",
+        "label": "Пошук у словнику",
+        "noResults": "Немає відповідних записів"
+      },
+      "import": "Імпортувати",
+      "export": "Експортувати",
+      "exportOptions": {
+        "json": "JSON — Повний словник",
+        "txt": "TXT — Власні слова",
+        "csv": "CSV — Заміни"
+      },
+      "exportSuccess": "Словник експортовано",
+      "customWords": {
+        "title": "Власні слова",
+        "description": "Допоможіть Handy розпізнавати імена, бренди та спеціалізовані терміни.",
+        "placeholder": "Додайте слово або фразу",
+        "add": "Додати",
+        "remove": "Видалити {{word}}",
+        "duplicate": "\"{{word}}\" вже існує у вашому словнику",
+        "count": "{{count}} слів",
+        "empty": "Поки що немає власних слів. Додайте імена, бренди або спеціалізовані терміни, які Handy має розпізнавати.",
+        "count_one": "{{count}} слів",
+        "count_other": "{{count}} слів"
+      },
+      "replacements": {
+        "title": "Заміни",
+        "description": "Примусьте певний транскрибований текст стати бажаним текстом.",
+        "from": "Почуте / Транскрибоване",
+        "to": "Замінити на",
+        "add": "Додати заміну",
+        "delete": "Видалити правило для {{from}}",
+        "duplicate": "Правило для \"{{from}}\" вже існує",
+        "invalid": "Обидва поля обов'язкові",
+        "count": "{{count}} правил",
+        "empty": "Поки що немає правил заміни. Додайте правило, коли Handy стабільно транскрибує щось неправильно.",
+        "count_one": "{{count}} правил",
+        "count_other": "{{count}} правил"
+      },
+      "importResults": {
+        "summary": "Імпортовано {{words}} власних слів і {{replacements}} замін",
+        "skipped": "Пропущено {{count}} дублікатів",
+        "conflicts": "{{count}} конфліктних правил зберегли наявні значення",
+        "malformedRows": "Пропущено {{count}} некоректних рядків",
+        "skipped_one": "Пропущено {{count}} дублікатів",
+        "skipped_other": "Пропущено {{count}} дублікатів",
+        "conflicts_one": "{{count}} конфліктних правил зберегли наявні значення",
+        "conflicts_other": "{{count}} конфліктних правил зберегли наявні значення",
+        "malformedRows_one": "Пропущено {{count}} некоректних рядків",
+        "malformedRows_other": "Пропущено {{count}} некоректних рядків",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Не вдалося прочитати вибраний файл",
+        "parseFailed": "Не вдалося розібрати файл: {{message}}",
+        "invalidFormat": "Це недійсний файл словника Handy",
+        "unsupportedVersion": "Непідтримувана версія словника: {{version}}",
+        "writeFailed": "Не вдалося зберегти файл словника: {{message}}"
       }
     },
     "about": {

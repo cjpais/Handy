@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "一般",
     "models": "模型",
+    "dictionary": "詞典",
     "advanced": "進階",
     "postProcessing": "後處理",
     "history": "歷史紀錄",
@@ -602,6 +603,70 @@
         "permissionsButton": "權限",
         "modelsButton": "模型選擇",
         "exitButton": "結束預覽"
+      }
+    },
+    "dictionary": {
+      "title": "詞典",
+      "search": {
+        "placeholder": "搜尋詞典...",
+        "label": "搜尋詞典",
+        "noResults": "沒有符合的項目"
+      },
+      "import": "匯入",
+      "export": "匯出",
+      "exportOptions": {
+        "json": "JSON — 完整詞典",
+        "txt": "TXT — 自訂詞彙",
+        "csv": "CSV — 取代"
+      },
+      "exportSuccess": "詞典已匯出",
+      "customWords": {
+        "title": "自訂詞彙",
+        "description": "協助 Handy 辨識姓名、品牌與專業術語。",
+        "placeholder": "新增單詞或詞組",
+        "add": "新增",
+        "remove": "刪除 {{word}}",
+        "duplicate": "「{{word}}」已存在於詞典中",
+        "count": "{{count}} 個詞彙",
+        "empty": "尚無自訂詞彙。新增 Handy 應辨識的姓名、品牌或專業術語。",
+        "count_one": "{{count}} 個詞彙",
+        "count_other": "{{count}} 個詞彙"
+      },
+      "replacements": {
+        "title": "取代",
+        "description": "將轉錄文字強制取代為指定內容。",
+        "from": "聽到的內容",
+        "to": "取代為",
+        "add": "新增取代規則",
+        "delete": "刪除 {{from}} 的規則",
+        "duplicate": "「{{from}}」的規則已存在",
+        "invalid": "兩個欄位皆為必填",
+        "count": "{{count}} 條規則",
+        "empty": "尚無取代規則。如果 Handy 總是轉寫錯誤，可以新增一條規則。",
+        "count_one": "{{count}} 條規則",
+        "count_other": "{{count}} 條規則"
+      },
+      "importResults": {
+        "summary": "已匯入 {{words}} 個自訂詞彙與 {{replacements}} 條取代規則",
+        "skipped": "已略過 {{count}} 個重複項目",
+        "conflicts": "{{count}} 條衝突規則保留了現有值",
+        "malformedRows": "已略過 {{count}} 行格式錯誤的內容",
+        "skipped_one": "已略過 {{count}} 個重複項目",
+        "skipped_other": "已略過 {{count}} 個重複項目",
+        "conflicts_one": "{{count}} 條衝突規則保留了現有值",
+        "conflicts_other": "{{count}} 條衝突規則保留了現有值",
+        "malformedRows_one": "已略過 {{count}} 行格式錯誤的內容",
+        "malformedRows_other": "已略過 {{count}} 行格式錯誤的內容",
+        "invalid": "已略過 {{count}} 個空白或過長的項目",
+        "invalid_one": "已略過 {{count}} 個空白或過長的項目",
+        "invalid_other": "已略過 {{count}} 個空白或過長的項目"
+      },
+      "errors": {
+        "readFailed": "無法讀取所選檔案",
+        "parseFailed": "無法解析檔案：{{message}}",
+        "invalidFormat": "這不是有效的 Handy 詞典檔案",
+        "unsupportedVersion": "不支援的詞典版本：{{version}}",
+        "writeFailed": "無法儲存詞典檔案：{{message}}"
       }
     },
     "about": {

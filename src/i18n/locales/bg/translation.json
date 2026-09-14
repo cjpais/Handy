@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Общи",
     "models": "Модели",
+    "dictionary": "Речник",
     "advanced": "Разширени",
     "postProcessing": "Постобработка",
     "history": "История",
@@ -602,6 +603,70 @@
         "permissionsButton": "Разрешения",
         "modelsButton": "Избор на модел",
         "exitButton": "Изход от прегледа"
+      }
+    },
+    "dictionary": {
+      "title": "Речник",
+      "search": {
+        "placeholder": "Търсене в речника...",
+        "label": "Търсене в речника",
+        "noResults": "Няма съвпадащи записи"
+      },
+      "import": "Импортиране",
+      "export": "Експортиране",
+      "exportOptions": {
+        "json": "JSON — Пълен речник",
+        "txt": "TXT — Персонализирани думи",
+        "csv": "CSV — Замени"
+      },
+      "exportSuccess": "Речникът е експортиран",
+      "customWords": {
+        "title": "Персонализирани думи",
+        "description": "Помогнете на Handy да разпознава имена, марки и специализирани термини.",
+        "placeholder": "Добавете дума или фраза",
+        "add": "Добавяне",
+        "remove": "Премахване на {{word}}",
+        "duplicate": "\"{{word}}\" вече съществува във вашия речник",
+        "count": "{{count}} думи",
+        "empty": "Все още няма персонализирани думи. Добавете имена, марки или специализирани термини, които Handy трябва да разпознава.",
+        "count_one": "{{count}} думи",
+        "count_other": "{{count}} думи"
+      },
+      "replacements": {
+        "title": "Замени",
+        "description": "Накарайте определен транскрибиран текст да стане желаният текст.",
+        "from": "Чуто / Транскрибирано",
+        "to": "Замени с",
+        "add": "Добавяне на замяна",
+        "delete": "Изтриване на правилото за {{from}}",
+        "duplicate": "Вече съществува правило за \"{{from}}\"",
+        "invalid": "И двете полета са задължителни",
+        "count": "{{count}} правила",
+        "empty": "Все още няма правила за замяна. Добавете правило, когато Handy постоянно транскрибира нещо по грешен начин.",
+        "count_one": "{{count}} правила",
+        "count_other": "{{count}} правила"
+      },
+      "importResults": {
+        "summary": "Импортирани са {{words}} персонализирани думи и {{replacements}} замени",
+        "skipped": "Пропуснати са {{count}} дубликати",
+        "conflicts": "{{count}} конфликтни правила запазиха съществуващите стойности",
+        "malformedRows": "Пропуснати са {{count}} неправилни реда",
+        "skipped_one": "Пропуснати са {{count}} дубликати",
+        "skipped_other": "Пропуснати са {{count}} дубликати",
+        "conflicts_one": "{{count}} конфликтни правила запазиха съществуващите стойности",
+        "conflicts_other": "{{count}} конфликтни правила запазиха съществуващите стойности",
+        "malformedRows_one": "Пропуснати са {{count}} неправилни реда",
+        "malformedRows_other": "Пропуснати са {{count}} неправилни реда",
+        "invalid": "{{count}} blank or over-long entries skipped",
+        "invalid_one": "{{count}} blank or over-long entries skipped",
+        "invalid_other": "{{count}} blank or over-long entries skipped"
+      },
+      "errors": {
+        "readFailed": "Не можа да се прочете избраният файл",
+        "parseFailed": "Не можа да се анализира файлът: {{message}}",
+        "invalidFormat": "Това не е валиден файл с речник на Handy",
+        "unsupportedVersion": "Неподдържана версия на речника: {{version}}",
+        "writeFailed": "Не можа да се запази файлът с речника: {{message}}"
       }
     },
     "about": {

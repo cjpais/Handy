@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "通用",
     "models": "模型",
+    "dictionary": "词典",
     "advanced": "高级",
     "postProcessing": "后处理",
     "history": "历史记录",
@@ -602,6 +603,70 @@
         "permissionsButton": "权限",
         "modelsButton": "模型选择",
         "exitButton": "退出预览"
+      }
+    },
+    "dictionary": {
+      "title": "词典",
+      "search": {
+        "placeholder": "搜索词典...",
+        "label": "搜索词典",
+        "noResults": "没有匹配的条目"
+      },
+      "import": "导入",
+      "export": "导出",
+      "exportOptions": {
+        "json": "JSON — 完整词典",
+        "txt": "TXT — 自定义词",
+        "csv": "CSV — 替换"
+      },
+      "exportSuccess": "词典已导出",
+      "customWords": {
+        "title": "自定义词汇",
+        "description": "帮助 Handy 识别姓名、品牌和专业术语。",
+        "placeholder": "添加单词或短语",
+        "add": "添加",
+        "remove": "删除 {{word}}",
+        "duplicate": "“{{word}}”已存在于词典中",
+        "count": "{{count}} 个词",
+        "empty": "还没有自定义词汇。添加 Handy 应当识别的姓名、品牌或专业术语。",
+        "count_one": "{{count}} 个词",
+        "count_other": "{{count}} 个词"
+      },
+      "replacements": {
+        "title": "替换",
+        "description": "将转录文本强制替换为指定内容。",
+        "from": "听到的内容",
+        "to": "替换为",
+        "add": "添加替换规则",
+        "delete": "删除 {{from}} 的规则",
+        "duplicate": "“{{from}}”的规则已存在",
+        "invalid": "两个字段均为必填",
+        "count": "{{count}} 条规则",
+        "empty": "还没有替换规则。如果 Handy 总是把某个词转写错，可以添加一条规则。",
+        "count_one": "{{count}} 条规则",
+        "count_other": "{{count}} 条规则"
+      },
+      "importResults": {
+        "summary": "已导入 {{words}} 个自定义词和 {{replacements}} 条替换规则",
+        "skipped": "已跳过 {{count}} 个重复项",
+        "conflicts": "{{count}} 条冲突规则保留了现有值",
+        "malformedRows": "已跳过 {{count}} 行格式错误的内容",
+        "skipped_one": "已跳过 {{count}} 个重复项",
+        "skipped_other": "已跳过 {{count}} 个重复项",
+        "conflicts_one": "{{count}} 条冲突规则保留了现有值",
+        "conflicts_other": "{{count}} 条冲突规则保留了现有值",
+        "malformedRows_one": "已跳过 {{count}} 行格式错误的内容",
+        "malformedRows_other": "已跳过 {{count}} 行格式错误的内容",
+        "invalid": "已跳过 {{count}} 个空白或过长的条目",
+        "invalid_one": "已跳过 {{count}} 个空白或过长的条目",
+        "invalid_other": "已跳过 {{count}} 个空白或过长的条目"
+      },
+      "errors": {
+        "readFailed": "无法读取所选文件",
+        "parseFailed": "无法解析文件：{{message}}",
+        "invalidFormat": "这不是有效的 Handy 词典文件",
+        "unsupportedVersion": "不支持的词典版本：{{version}}",
+        "writeFailed": "无法保存词典文件：{{message}}"
       }
     },
     "about": {

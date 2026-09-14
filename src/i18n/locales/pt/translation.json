@@ -12,6 +12,7 @@
   "sidebar": {
     "general": "Geral",
     "models": "Modelos",
+    "dictionary": "Dicionário",
     "advanced": "Avançado",
     "postProcessing": "Pós-Processamento",
     "history": "Histórico",
@@ -602,6 +603,70 @@
         "permissionsButton": "Permissões",
         "modelsButton": "Seleção de modelo",
         "exitButton": "Sair da pré-visualização"
+      }
+    },
+    "dictionary": {
+      "title": "Dicionário",
+      "search": {
+        "placeholder": "Pesquisar no dicionário...",
+        "label": "Pesquisar no dicionário",
+        "noResults": "Nenhuma entrada correspondente"
+      },
+      "import": "Importar",
+      "export": "Exportar",
+      "exportOptions": {
+        "json": "JSON — dicionário completo",
+        "txt": "TXT — palavras personalizadas",
+        "csv": "CSV — substituições"
+      },
+      "exportSuccess": "Dicionário exportado",
+      "customWords": {
+        "title": "Palavras personalizadas",
+        "description": "Ajuda o Handy a reconhecer nomes, marcas e termos especializados.",
+        "placeholder": "Adicione uma palavra ou frase",
+        "add": "Adicionar",
+        "remove": "Remover {{word}}",
+        "duplicate": "'{{word}}' já existe no seu dicionário",
+        "count": "{{count}} palavras",
+        "empty": "Ainda não há palavras personalizadas. Adicione nomes, marcas ou termos especializados que o Handy deve reconhecer.",
+        "count_one": "{{count}} palavra",
+        "count_other": "{{count}} palavras"
+      },
+      "replacements": {
+        "title": "Substituições",
+        "description": "Força um texto transcrito a se tornar o texto desejado.",
+        "from": "Ouvido / transcrito",
+        "to": "Substituir por",
+        "add": "Adicionar substituição",
+        "delete": "Excluir a regra de {{from}}",
+        "duplicate": "Já existe uma regra para '{{from}}'",
+        "invalid": "Ambos os campos são obrigatórios",
+        "count": "{{count}} regras",
+        "empty": "Ainda não há regras de substituição. Adicione uma regra quando o Handy transcrever algo sempre errado.",
+        "count_one": "{{count}} regra",
+        "count_other": "{{count}} regras"
+      },
+      "importResults": {
+        "summary": "{{words}} palavras personalizadas e {{replacements}} substituições importadas",
+        "skipped": "{{count}} duplicatas ignoradas",
+        "conflicts": "{{count}} regras em conflito mantiveram os valores existentes",
+        "malformedRows": "{{count}} linhas malformadas ignoradas",
+        "skipped_one": "{{count}} duplicatas ignoradas",
+        "skipped_other": "{{count}} duplicatas ignoradas",
+        "conflicts_one": "{{count}} regras em conflito mantiveram os valores existentes",
+        "conflicts_other": "{{count}} regras em conflito mantiveram os valores existentes",
+        "malformedRows_one": "{{count}} linhas malformadas ignoradas",
+        "malformedRows_other": "{{count}} linhas malformadas ignoradas",
+        "invalid": "{{count}} entradas vazias ou longas demais ignoradas",
+        "invalid_one": "{{count}} entradas vazias ou longas demais ignoradas",
+        "invalid_other": "{{count}} entradas vazias ou longas demais ignoradas"
+      },
+      "errors": {
+        "readFailed": "Não foi possível ler o arquivo selecionado",
+        "parseFailed": "Não foi possível analisar o arquivo: {{message}}",
+        "invalidFormat": "Este não é um arquivo de dicionário do Handy válido",
+        "unsupportedVersion": "Versão de dicionário não suportada: {{version}}",
+        "writeFailed": "Não foi possível salvar o arquivo do dicionário: {{message}}"
       }
     },
     "about": {
