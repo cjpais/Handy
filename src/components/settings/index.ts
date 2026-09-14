@@ -7,6 +7,7 @@ export { HistorySettings } from "./history/HistorySettings";
 export { AboutSettings } from "./about/AboutSettings";
 export { PostProcessingSettings } from "./post-processing/PostProcessingSettings";
 export { ModelsSettings } from "./models/ModelsSettings";
+export { InsightsSettings } from "./insights/InsightsSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";

@@ -152,3 +152,22 @@ pub async fn update_recording_retention_period(
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_total_words(
+    history_manager: State<'_, Arc<HistoryManager>>,
+) -> Result<i64, String> {
+    history_manager.get_total_words().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_daily_words(
+    history_manager: State<'_, Arc<HistoryManager>>,
+    days: u32,
+) -> Result<Vec<crate::managers::history::DailyWordCount>, String> {
+    history_manager
+        .get_daily_words(days as usize)
+        .map_err(|e| e.to_string())
+}

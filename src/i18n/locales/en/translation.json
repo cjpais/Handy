@@ -16,7 +16,9 @@
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "lifetimeWords": "Lifetime words",
+    "insights": "Insights"
   },
   "onboarding": {
     "subtitle": "To get started, choose a transcription model",
@@ -698,6 +700,18 @@
       "light": "Light",
       "dark": "Dark"
     }
+  },
+  "insights": {
+    "title": "Insights",
+    "today": "Today",
+    "lifetime": "Lifetime",
+    "chartTitle": "Words per day",
+    "words": "words",
+    "less": "Less",
+    "more": "More",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "tooltipFuture": "No activity yet"
   },
   "overlay": {
     "transcribing": "Transcribing...",

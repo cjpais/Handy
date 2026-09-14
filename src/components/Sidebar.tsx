@@ -1,9 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
+import {
+  Cog,
+  FlaskConical,
+  History,
+  Info,
+  Sparkles,
+  Cpu,
+  Mic2,
+  BarChart3,
+} from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
+import { commands, events } from "@/bindings";
 import {
   GeneralSettings,
   AdvancedSettings,
@@ -12,6 +22,7 @@ import {
   AboutSettings,
   PostProcessingSettings,
   ModelsSettings,
+  InsightsSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -42,6 +53,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.history",
     icon: History,
     component: HistorySettings,
+    enabled: () => true,
+  },
+  insights: {
+    labelKey: "sidebar.insights",
+    icon: BarChart3,
+    component: InsightsSettings,
     enabled: () => true,
   },
   models: {
@@ -87,6 +104,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const [totalWords, setTotalWords] = useState(0);
+
+  useEffect(() => {
+    const refreshWordCount = () => {
+      commands.getTotalWords().then((result) => {
+        if (result.status === "ok") {
+          setTotalWords(result.data);
+        }
+      });
+    };
+
+    refreshWordCount();
+    const unlisten = events.wordCountChanged.listen((event) => {
+      setTotalWords(event.payload.total_words);
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
     .filter(([_, config]) => config.enabled(settings))
@@ -120,6 +157,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           );
         })}
+      </div>
+      {/* Lifetime word counter */}
+      <div className="mt-auto w-full pb-2" title={t("sidebar.lifetimeWords")}>
+        <div className="flex items-center gap-2 p-2 w-full rounded-lg border border-mid-gray/20 bg-background-ui/30">
+          <Mic2 width={16} height={16} className="shrink-0 text-mid-gray" />
+          <div className="flex flex-col leading-tight">
+            <span className="text-[10px] uppercase tracking-wide text-text/50 truncate">
+              {t("sidebar.lifetimeWords")}
+            </span>
+            <span className="text-sm font-semibold">
+              {totalWords.toLocaleString()}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

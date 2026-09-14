@@ -31,6 +31,14 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
+    M::up("CREATE TABLE IF NOT EXISTS stats (
+        key TEXT PRIMARY KEY,
+        value INTEGER NOT NULL
+    );"),
+    M::up("CREATE TABLE IF NOT EXISTS daily_words (
+        date TEXT PRIMARY KEY,
+        words INTEGER NOT NULL
+    );"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -50,6 +58,21 @@ pub enum HistoryUpdatePayload {
     Deleted { id: i64 },
     #[serde(rename = "toggled")]
     Toggled { id: i64 },
+}
+
+/// A single day's dictated-word total, keyed by local date in `YYYY-MM-DD`.
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct DailyWordCount {
+    pub date: String,
+    pub words: i64,
+}
+
+/// Emitted whenever the lifetime dictated-word counter increases, so the
+/// frontend can update its display live.
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct WordCountChanged {
+    pub total_words: i64,
+    pub today_words: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -214,6 +237,94 @@ impl HistoryManager {
         &self.recordings_dir
     }
 
+    /// Count the number of words in a transcribed string.
+    fn count_words(text: &str) -> i64 {
+        text.split_whitespace().count() as i64
+    }
+
+    /// Today's local date as `YYYY-MM-DD`, the key used by the daily table.
+    fn today_date() -> String {
+        chrono::Local::now().format("%Y-%m-%d").to_string()
+    }
+
+    /// Accumulate newly dictated words into both the lifetime counter and the
+    /// current day's count. Returns the new lifetime total. Both counters live
+    /// in their own tables so they are never reduced by history cleanup,
+    /// retention, or manual deletions.
+    fn record_words(&self, words: i64) -> Result<i64> {
+        if words > 0 {
+            let conn = self.get_connection()?;
+            conn.execute(
+                "INSERT INTO stats (key, value) VALUES ('total_words', ?1)
+                 ON CONFLICT(key) DO UPDATE SET value = value + ?1",
+                params![words],
+            )?;
+            conn.execute(
+                "INSERT INTO daily_words (date, words) VALUES (?1, ?2)
+                 ON CONFLICT(date) DO UPDATE SET words = words + ?2",
+                params![Self::today_date(), words],
+            )?;
+        }
+        let total = self.get_total_words()?;
+        if words > 0 {
+            let today_words = self.get_today_word_count()?;
+            if let Err(e) = (WordCountChanged {
+                total_words: total,
+                today_words,
+            })
+            .emit(&self.app_handle)
+            {
+                error!("Failed to emit word-count-changed event: {}", e);
+            }
+        }
+        Ok(total)
+    }
+
+    /// The number of words dictated in the lifetime of this installation.
+    pub fn get_total_words(&self) -> Result<i64> {
+        let conn = self.get_connection()?;
+        let total: Option<i64> = conn
+            .query_row(
+                "SELECT value FROM stats WHERE key = 'total_words'",
+                [],
+                |row| row.get(0),
+            )
+            .optional()?;
+        Ok(total.unwrap_or(0))
+    }
+
+    /// The number of words dictated so far today (in the local timezone).
+    pub fn get_today_word_count(&self) -> Result<i64> {
+        let conn = self.get_connection()?;
+        let words: Option<i64> = conn
+            .query_row(
+                "SELECT words FROM daily_words WHERE date = ?1",
+                params![Self::today_date()],
+                |row| row.get(0),
+            )
+            .optional()?;
+        Ok(words.unwrap_or(0))
+    }
+
+    /// Daily dictated-word counts for the last `days` days (including today),
+    /// oldest first. Days with no dictation are omitted; the frontend fills
+    /// the gaps when rendering the calendar.
+    pub fn get_daily_words(&self, days: usize) -> Result<Vec<DailyWordCount>> {
+        let cutoff_date = (chrono::Local::now() - chrono::Duration::days(days as i64 - 1))
+            .format("%Y-%m-%d")
+            .to_string();
+        let conn = self.get_connection()?;
+        let mut stmt =
+            conn.prepare("SELECT date, words FROM daily_words WHERE date >= ?1 ORDER BY date")?;
+        let rows = stmt.query_map(params![cutoff_date], |row| {
+            Ok(DailyWordCount {
+                date: row.get("date")?,
+                words: row.get("words")?,
+            })
+        })?;
+        Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
+    }
+
     /// Save a new history entry to the database.
     /// The WAV file should already have been written to the recordings directory.
     pub fn save_entry(
@@ -257,7 +368,7 @@ impl HistoryManager {
             timestamp,
             saved: false,
             title,
-            transcription_text,
+            transcription_text: transcription_text.clone(),
             post_processed_text,
             post_process_prompt,
             post_process_requested,
@@ -266,6 +377,11 @@ impl HistoryManager {
         debug!("Saved history entry with id {}", entry.id);
 
         self.cleanup_old_entries()?;
+
+        // Track the lifetime and daily dictated-word totals. Runs for every
+        // saved transcription so the counts stay accurate even if history is
+        // cleared or pruned.
+        self.record_words(Self::count_words(&transcription_text))?;
 
         // Emit typed event for real-time frontend updates
         if let Err(e) = (HistoryUpdatePayload::Added {
@@ -667,6 +783,14 @@ mod tests {
                 post_processed_text TEXT,
                 post_process_prompt TEXT,
                 post_process_requested BOOLEAN NOT NULL DEFAULT 0
+            );
+            CREATE TABLE stats (
+                key TEXT PRIMARY KEY,
+                value INTEGER NOT NULL
+            );
+            CREATE TABLE daily_words (
+                date TEXT PRIMARY KEY,
+                words INTEGER NOT NULL
             );",
         )
         .expect("create transcription_history table");
@@ -733,5 +857,82 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn count_words_ignores_whitespace() {
+        assert_eq!(HistoryManager::count_words(""), 0);
+        assert_eq!(HistoryManager::count_words("   "), 0);
+        assert_eq!(HistoryManager::count_words("hello world"), 2);
+        assert_eq!(HistoryManager::count_words("hello, world!"), 2);
+        assert_eq!(HistoryManager::count_words("one two\nthree\tfour"), 4);
+    }
+
+    #[test]
+    fn total_words_accumulates_across_inserts() {
+        let conn = setup_conn();
+        let increment = |conn: &Connection, words: i64| {
+            if words > 0 {
+                conn.execute(
+                    "INSERT INTO stats (key, value) VALUES ('total_words', ?1)
+                     ON CONFLICT(key) DO UPDATE SET value = value + ?1",
+                    params![words],
+                )
+                .expect("increment total words");
+            }
+            conn.query_row(
+                "SELECT value FROM stats WHERE key = 'total_words'",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or(0)
+        };
+
+        assert_eq!(increment(&conn, 2), 2);
+        assert_eq!(increment(&conn, 5), 7);
+        assert_eq!(
+            increment(&conn, 0),
+            7,
+            "zero-word transcriptions must not change the total"
+        );
+    }
+
+    #[test]
+    fn daily_words_accumulate_per_date() {
+        let conn = setup_conn();
+        conn.execute(
+            "INSERT INTO daily_words (date, words) VALUES (?1, ?2)
+             ON CONFLICT(date) DO UPDATE SET words = words + ?2",
+            params!["2026-09-13", 10],
+        )
+        .expect("insert day count");
+        conn.execute(
+            "INSERT INTO daily_words (date, words) VALUES (?1, ?2)
+             ON CONFLICT(date) DO UPDATE SET words = words + ?2",
+            params!["2026-09-13", 5],
+        )
+        .expect("accumulate same day");
+        conn.execute(
+            "INSERT INTO daily_words (date, words) VALUES (?1, ?2)
+             ON CONFLICT(date) DO UPDATE SET words = words + ?2",
+            params!["2026-09-14", 3],
+        )
+        .expect("insert other day");
+
+        let rows: Vec<(String, i64)> = conn
+            .prepare("SELECT date, words FROM daily_words ORDER BY date")
+            .expect("prepare")
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .expect("query")
+            .collect::<std::result::Result<_, _>>()
+            .expect("collect");
+
+        assert_eq!(
+            rows,
+            vec![
+                ("2026-09-13".to_string(), 15),
+                ("2026-09-14".to_string(), 3)
+            ]
+        );
     }
 }
