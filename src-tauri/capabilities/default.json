@@ -16,6 +16,7 @@
     "global-shortcut:allow-unregister-all",
     "macos-permissions:default",
     "fs:read-files",
+    "fs:allow-write-text-file",
     "fs:allow-resource-read-recursive",
     {
       "identifier": "fs:scope",
