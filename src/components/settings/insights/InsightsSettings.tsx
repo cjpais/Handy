@@ -69,6 +69,7 @@ export const InsightsSettings: React.FC = () => {
           map[entry.date] = entry.words;
         }
         setDailyMap(map);
+        setTodayWords(map[toDateKey(new Date())] ?? 0);
       }
       if (totalResult.status === "ok") {
         setTotalWords(totalResult.data);
