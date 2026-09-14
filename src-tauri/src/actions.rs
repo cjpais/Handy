@@ -1,6 +1,7 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_toolkit::dictionary::apply_dictionary_replacements;
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error, VadPolicy};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
@@ -458,6 +459,23 @@ pub(crate) async fn process_transcription_output(
     } else if final_text != transcription {
         post_processed_text = Some(final_text.clone());
     }
+
+    // Dictionary replacements (fork feature) run last, after Chinese-variant
+    // conversion and optional LLM post-processing, so the text the user
+    // receives is always the corrected text. The stored post-processed text is
+    // corrected identically so History and paste stay consistent; the raw
+    // transcription is preserved separately by the history manager.
+    if !settings.dictionary_replacements.is_empty() {
+        if let Some(processed) = post_processed_text.as_mut() {
+            *processed =
+                apply_dictionary_replacements(processed, &settings.dictionary_replacements);
+        }
+    }
+    let final_text = if settings.dictionary_replacements.is_empty() {
+        final_text
+    } else {
+        apply_dictionary_replacements(&final_text, &settings.dictionary_replacements)
+    };
 
     ProcessedTranscription {
         final_text,

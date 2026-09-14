@@ -18,6 +18,7 @@ use serde::Serialize;
 use specta::Type;
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::audio_toolkit::dictionary::{normalize_dictionary_replacements, DictionaryReplacement};
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
@@ -832,6 +833,18 @@ pub fn change_whats_new_last_seen_version_setting(
 pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.custom_words = words;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn update_dictionary_replacements(
+    app: AppHandle,
+    replacements: Vec<DictionaryReplacement>,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.dictionary_replacements = normalize_dictionary_replacements(replacements);
     settings::write_settings(&app, settings);
     Ok(())
 }

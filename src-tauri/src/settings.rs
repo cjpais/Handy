@@ -1,3 +1,4 @@
+use crate::audio_toolkit::dictionary::DictionaryReplacement;
 use crate::utils;
 use log::{debug, warn};
 use serde::de::{self, Visitor};
@@ -427,6 +428,12 @@ pub struct AppSettings {
     pub log_level: LogLevel,
     #[serde(default)]
     pub custom_words: Vec<String>,
+    /// Deterministic final-output replacement rules (fork feature): applied to
+    /// the finished transcript after post-processing. Absent from stores written
+    /// by upstream Handy, where the container-level `serde(default)` above
+    /// supplies an empty list so those settings load unchanged.
+    #[serde(default)]
+    pub dictionary_replacements: Vec<DictionaryReplacement>,
     #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
@@ -933,6 +940,7 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
+        dictionary_replacements: Vec::new(),
         model_unload_timeout: ModelUnloadTimeout::default(),
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
