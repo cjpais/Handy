@@ -1,6 +1,6 @@
 use crate::audio_toolkit::{
-    apply_custom_words, detect_output_language, normalize_transcription_output,
-    remove_filler_words, OutputLanguageEvidence,
+    apply_custom_words, constants::WHISPER_SAMPLE_RATE, detect_output_language,
+    normalize_transcription_output, remove_filler_words, OutputLanguageEvidence,
 };
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
@@ -20,8 +20,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{
-    Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
-    WhisperRunOptions,
+    Backend, Error as TranscribeCppError, Feature, Model, ModelOptions, RunExtension, RunOptions,
+    Session, StreamOptions, Task, WhisperRunOptions,
 };
 use transcribe_rs::{
     onnx::{
@@ -38,6 +38,10 @@ use transcribe_rs::{
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 const STREAM_FINALIZE_REPLY_TIMEOUT: Duration = Duration::from_secs(30);
+const FUNASR_MIN_SPLIT_CHUNK_SAMPLES: usize = 5 * WHISPER_SAMPLE_RATE as usize;
+const FUNASR_SPLIT_SEARCH_RADIUS_SAMPLES: usize = 5 * WHISPER_SAMPLE_RATE as usize;
+const FUNASR_SPLIT_WINDOW_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize / 10;
+const FUNASR_SPLIT_STEP_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize / 50;
 
 fn panic_payload_message(payload: &(dyn std::any::Any + Send)) -> String {
     if let Some(message) = payload.downcast_ref::<&str>() {
@@ -1246,6 +1250,7 @@ impl TranscriptionManager {
         // with INVALID_ARG, so the whisper extension must be gated on the
         // arch, not on the feature (see #1601).
         let mut model_is_whisper = false;
+        let mut model_is_funasr_nano = false;
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
@@ -1287,6 +1292,7 @@ impl TranscriptionManager {
                 let caps = model.capabilities();
                 model_takes_initial_prompt = model.supports(Feature::InitialPrompt);
                 model_is_whisper = model.arch() == "whisper";
+                model_is_funasr_nano = model.arch() == "funasr_nano";
                 model_supports_translate = caps.supports_translate;
                 model_languages = caps.languages;
                 debug!(
@@ -1340,17 +1346,24 @@ impl TranscriptionManager {
                             run_options.family.is_some()
                         );
 
-                        session
-                            .run(&audio, &run_options)
-                            .map(|t| {
-                                // Whisper's audio-based LID (auto mode only;
-                                // `None` when a language hint was passed).
-                                model_detected_language = t.language;
-                                t.text
-                            })
-                            .map_err(|e| {
-                                anyhow::anyhow!("transcribe-cpp transcription failed: {}", e)
-                            })
+                        if model_is_funasr_nano {
+                            transcribe_funasr_with_truncation_retry(session, &audio, &run_options)
+                                .map_err(|e| {
+                                    anyhow::anyhow!("transcribe-cpp transcription failed: {}", e)
+                                })
+                        } else {
+                            session
+                                .run(&audio, &run_options)
+                                .map(|t| {
+                                    // Whisper's audio-based LID (auto mode only;
+                                    // `None` when a language hint was passed).
+                                    model_detected_language = t.language;
+                                    t.text
+                                })
+                                .map_err(|e| {
+                                    anyhow::anyhow!("transcribe-cpp transcription failed: {}", e)
+                                })
+                        }
                     }
                     LoadedEngine::Parakeet(parakeet_engine) => {
                         let params = ParakeetParams {
@@ -1532,6 +1545,92 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+}
+
+fn transcribe_funasr_with_truncation_retry(
+    session: &mut Session,
+    audio: &[f32],
+    run_options: &RunOptions,
+) -> std::result::Result<String, TranscribeCppError> {
+    match session.run(audio, run_options) {
+        Ok(transcript) => Ok(transcript.text),
+        Err(error @ TranscribeCppError::OutputTruncated { .. }) => {
+            let Some(split) = find_funasr_split_point(audio) else {
+                return Err(error);
+            };
+
+            warn!(
+                "Fun-ASR output truncated for {:.1}s of audio; retrying as {:.1}s + {:.1}s chunks",
+                audio.len() as f64 / WHISPER_SAMPLE_RATE as f64,
+                split as f64 / WHISPER_SAMPLE_RATE as f64,
+                (audio.len() - split) as f64 / WHISPER_SAMPLE_RATE as f64,
+            );
+
+            let left =
+                transcribe_funasr_with_truncation_retry(session, &audio[..split], run_options)?;
+            let right =
+                transcribe_funasr_with_truncation_retry(session, &audio[split..], run_options)?;
+            Ok(join_transcription_parts(&left, &right))
+        }
+        Err(error) => Err(error),
+    }
+}
+
+fn find_funasr_split_point(audio: &[f32]) -> Option<usize> {
+    if audio.len() < FUNASR_MIN_SPLIT_CHUNK_SAMPLES * 2 {
+        return None;
+    }
+
+    let midpoint = audio.len() / 2;
+    let search_start = midpoint
+        .saturating_sub(FUNASR_SPLIT_SEARCH_RADIUS_SAMPLES)
+        .max(FUNASR_MIN_SPLIT_CHUNK_SAMPLES);
+    let search_end = (midpoint + FUNASR_SPLIT_SEARCH_RADIUS_SAMPLES)
+        .min(audio.len() - FUNASR_MIN_SPLIT_CHUNK_SAMPLES);
+    if search_start > search_end {
+        return Some(midpoint);
+    }
+
+    let half_window = FUNASR_SPLIT_WINDOW_SAMPLES / 2;
+    let mut best_split = midpoint;
+    let mut best_energy = f64::INFINITY;
+
+    for split in (search_start..=search_end).step_by(FUNASR_SPLIT_STEP_SAMPLES.max(1)) {
+        let window_start = split.saturating_sub(half_window);
+        let window_end = (split + half_window).min(audio.len());
+        let energy: f64 = audio[window_start..window_end]
+            .iter()
+            .map(|sample| f64::from(*sample) * f64::from(*sample))
+            .sum();
+        if energy < best_energy {
+            best_energy = energy;
+            best_split = split;
+        }
+    }
+
+    Some(best_split)
+}
+
+fn join_transcription_parts(left: &str, right: &str) -> String {
+    let left = left.trim_end();
+    let right = right.trim_start();
+    if left.is_empty() {
+        return right.to_string();
+    }
+    if right.is_empty() {
+        return left.to_string();
+    }
+
+    let needs_space = left
+        .chars()
+        .last()
+        .zip(right.chars().next())
+        .is_some_and(|(last, first)| last.is_ascii() && first.is_ascii_alphanumeric());
+    if needs_space {
+        format!("{left} {right}")
+    } else {
+        format!("{left}{right}")
     }
 }
 
@@ -2480,6 +2579,34 @@ mod tests {
         assert!(matches!(plan.task, Task::Transcribe));
         assert_eq!(plan.language.as_deref(), Some("es"));
         assert_eq!(plan.target_language, None);
+    }
+
+    #[test]
+    fn funasr_split_prefers_quiet_audio_near_midpoint() {
+        let sample_rate = WHISPER_SAMPLE_RATE as usize;
+        let mut audio = vec![0.5; sample_rate * 30];
+        let quiet_center = sample_rate * 17;
+        let quiet_half_width = FUNASR_SPLIT_WINDOW_SAMPLES;
+        audio[quiet_center - quiet_half_width..quiet_center + quiet_half_width].fill(0.0);
+
+        let split = find_funasr_split_point(&audio).expect("30s audio should be splittable");
+
+        assert!(split.abs_diff(quiet_center) <= FUNASR_SPLIT_WINDOW_SAMPLES);
+    }
+
+    #[test]
+    fn funasr_split_refuses_too_short_chunks() {
+        let audio = vec![0.0; FUNASR_MIN_SPLIT_CHUNK_SAMPLES * 2 - 1];
+        assert_eq!(find_funasr_split_point(&audio), None);
+    }
+
+    #[test]
+    fn chunk_join_preserves_chinese_and_spaces_english() {
+        assert_eq!(join_transcription_parts("前半段", "后半段"), "前半段后半段");
+        assert_eq!(
+            join_transcription_parts("first half,", "second half"),
+            "first half, second half"
+        );
     }
 }
 
