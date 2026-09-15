@@ -121,8 +121,8 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   // Horizontal layout (default)
   const horizontalContainerClasses = grouped
-    ? "flex items-center justify-between px-4 p-2"
-    : "flex items-center justify-between px-4 p-2 rounded-lg border border-mid-gray/20";
+    ? "flex items-center justify-between min-h-12 px-4 p-2"
+    : "flex items-center justify-between min-h-12 px-4 p-2 rounded-lg border border-mid-gray/20";
 
   if (descriptionMode === "tooltip") {
     return (

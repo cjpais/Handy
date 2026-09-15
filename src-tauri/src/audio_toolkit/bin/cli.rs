@@ -3,8 +3,11 @@ use std::io::{self, Write};
 
 use handy_app_lib::audio_toolkit::{
     audio::{list_input_devices, CpalDeviceInfo},
-    vad::SmoothedVad,
-    AudioRecorder, SileroVad,
+    vad::{
+        frames_for_duration_ms, SmoothedVad, VAD_OFFLINE_HANGOVER_MS, VAD_ONSET_MS,
+        VAD_PREFILL_MS, VAD_STREAMING_HANGOVER_MS,
+    },
+    AudioRecorder, SileroVad, VadPolicy, VoiceActivityDetector,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,7 +113,7 @@ impl RecorderState {
                     self.current_device_index = device_index;
                     println!("Opened recorder in Always-On mode");
                 }
-                self.recorder.start()?;
+                self.recorder.start(VadPolicy::Offline)?;
             }
             RecorderMode::OnDemand => {
                 // In on-demand mode, open for each recording
@@ -120,7 +123,7 @@ impl RecorderState {
                 self.recorder.open(device)?;
                 self.is_open = true;
                 self.current_device_index = device_index;
-                self.recorder.start()?;
+                self.recorder.start(VadPolicy::Offline)?;
                 println!("Opened and started recorder in On-Demand mode");
             }
         }
@@ -176,8 +179,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     print_help();
 
     let silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15);
-    let recorder = AudioRecorder::new()?.with_vad(Box::new(smoothed_vad));
+    let frame_samples = silero.frame_samples();
+    let offline_hangover_frames = frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, frame_samples);
+    let smoothed_vad = SmoothedVad::new(
+        Box::new(silero),
+        frames_for_duration_ms(VAD_PREFILL_MS, frame_samples),
+        offline_hangover_frames,
+        frames_for_duration_ms(VAD_ONSET_MS, frame_samples),
+    );
+    let recorder = AudioRecorder::new()?.with_vad(
+        Box::new(smoothed_vad),
+        offline_hangover_frames,
+        frames_for_duration_ms(VAD_STREAMING_HANGOVER_MS, frame_samples),
+    );
     let mut state = RecorderState::new(recorder);
 
     let mut devices = list_input_devices()?;

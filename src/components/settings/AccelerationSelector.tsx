@@ -5,7 +5,7 @@ import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { useSettings } from "../../hooks/useSettings";
 import { commands } from "@/bindings";
 import type {
-  WhisperAcceleratorSetting,
+  TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
 } from "@/bindings";
 
@@ -23,31 +23,29 @@ interface AccelerationSelectorProps {
 }
 
 /**
- * Whisper dropdown encodes accelerator + device in a single value:
- *   "auto"   → accelerator=auto,  gpu_device=-1
- *   "cpu"    → accelerator=cpu,   gpu_device=-1
- *   "gpu:0"  → accelerator=gpu,   gpu_device=0
- *   "gpu:1"  → accelerator=gpu,   gpu_device=1
+ * transcribe.cpp dropdown encodes accelerator + device in a single value:
+ *   "auto"       → accelerator=auto, gpu_device=null
+ *   "cpu"        → accelerator=cpu,  gpu_device=null
+ *   "gpu:<id>"   → accelerator=gpu, stable opaque device identity
  */
-function encodeWhisperValue(
-  accelerator: WhisperAcceleratorSetting,
-  gpuDevice: number,
+function encodeTranscribeValue(
+  accelerator: TranscribeAcceleratorSetting,
+  gpuDevice: string | null,
 ): string {
   if (accelerator === "cpu") return "cpu";
-  if (accelerator === "gpu" && gpuDevice >= 0) return `gpu:${gpuDevice}`;
+  if (accelerator === "gpu" && gpuDevice !== null) return `gpu:${gpuDevice}`;
   return "auto";
 }
 
-function decodeWhisperValue(value: string): {
-  accelerator: WhisperAcceleratorSetting;
-  gpuDevice: number;
+function decodeTranscribeValue(value: string): {
+  accelerator: TranscribeAcceleratorSetting;
+  gpuDevice: string | null;
 } {
-  if (value === "cpu") return { accelerator: "cpu", gpuDevice: -1 };
+  if (value === "cpu") return { accelerator: "cpu", gpuDevice: null };
   if (value.startsWith("gpu:")) {
-    const id = parseInt(value.slice(4), 10);
-    return { accelerator: "gpu", gpuDevice: id };
+    return { accelerator: "gpu", gpuDevice: value.slice(4) };
   }
-  return { accelerator: "auto", gpuDevice: -1 };
+  return { accelerator: "auto", gpuDevice: null };
 }
 
 export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
@@ -57,32 +55,39 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
 
-  const [whisperOptions, setWhisperOptions] = useState<DropdownOption[]>([]);
+  const [transcribeOptions, setTranscribeOptions] = useState<DropdownOption[]>(
+    [],
+  );
   const [ortOptions, setOrtOptions] = useState<DropdownOption[]>([]);
 
   useEffect(() => {
     commands.getAvailableAccelerators().then((available) => {
-      // Build combined Whisper options: Auto, [GPU devices...], CPU
-      const opts: DropdownOption[] = [
-        {
+      // Build combined transcribe.cpp options: Auto, [GPU devices...], CPU
+      const opts: DropdownOption[] = [];
+      if (available.transcribe.includes("auto")) {
+        opts.push({
           value: "auto",
           label: t("settings.advanced.acceleration.gpuDevice.auto"),
-        },
-      ];
-
-      for (const dev of available.gpu_devices) {
-        const vramLabel =
-          dev.total_vram_mb >= 1024
-            ? `${(dev.total_vram_mb / 1024).toFixed(1)} GB`
-            : `${dev.total_vram_mb} MB`;
-        opts.push({
-          value: `gpu:${dev.id}`,
-          label: `${dev.name} (${vramLabel})`,
         });
       }
 
-      opts.push({ value: "cpu", label: "CPU" });
-      setWhisperOptions(opts);
+      if (available.transcribe.includes("gpu")) {
+        for (const dev of available.gpu_devices) {
+          const vramLabel =
+            dev.total_vram_mb >= 1024
+              ? `${(dev.total_vram_mb / 1024).toFixed(1)} GB`
+              : `${dev.total_vram_mb} MB`;
+          opts.push({
+            value: `gpu:${dev.id}`,
+            label: `${dev.name} (${vramLabel})`,
+          });
+        }
+      }
+
+      if (available.transcribe.includes("cpu")) {
+        opts.push({ value: "cpu", label: "CPU" });
+      }
+      setTranscribeOptions(opts);
 
       // ORT options (unchanged)
       const ortVals = available.ort.includes("auto")
@@ -97,36 +102,42 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
     });
   }, [t]);
 
-  const currentAccelerator = getSetting("whisper_accelerator") ?? "auto";
-  const currentGpuDevice = getSetting("whisper_gpu_device") ?? -1;
-  const currentWhisper = encodeWhisperValue(
-    currentAccelerator as WhisperAcceleratorSetting,
-    currentGpuDevice as number,
+  const currentAccelerator = getSetting("transcribe_accelerator") ?? "auto";
+  const currentGpuDevice = getSetting("transcribe_gpu_device") ?? null;
+  const currentTranscribe = encodeTranscribeValue(
+    currentAccelerator as TranscribeAcceleratorSetting,
+    currentGpuDevice as string | null,
   );
+  const displayedTranscribe = transcribeOptions.some(
+    (option) => option.value === currentTranscribe,
+  )
+    ? currentTranscribe
+    : (transcribeOptions[0]?.value ?? null);
   const currentOrt = getSetting("ort_accelerator") ?? "auto";
 
-  const handleWhisperChange = async (value: string) => {
-    const { accelerator, gpuDevice } = decodeWhisperValue(value);
-    await updateSetting("whisper_accelerator", accelerator);
-    await updateSetting("whisper_gpu_device", gpuDevice);
+  const handleTranscribeChange = async (value: string) => {
+    const { accelerator, gpuDevice } = decodeTranscribeValue(value);
+    // Save the device first to avoid `gpu + null` being normalized to Auto.
+    await updateSetting("transcribe_gpu_device", gpuDevice);
+    await updateSetting("transcribe_accelerator", accelerator);
   };
 
   return (
     <>
       <SettingContainer
-        title={t("settings.advanced.acceleration.whisper.title")}
-        description={t("settings.advanced.acceleration.whisper.description")}
+        title={t("settings.advanced.acceleration.transcribe.title")}
+        description={t("settings.advanced.acceleration.transcribe.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
         layout="horizontal"
       >
         <Dropdown
-          options={whisperOptions}
-          selectedValue={currentWhisper}
-          onSelect={handleWhisperChange}
+          options={transcribeOptions}
+          selectedValue={displayedTranscribe}
+          onSelect={handleTranscribeChange}
           disabled={
-            isUpdating("whisper_accelerator") ||
-            isUpdating("whisper_gpu_device")
+            isUpdating("transcribe_accelerator") ||
+            isUpdating("transcribe_gpu_device")
           }
         />
       </SettingContainer>

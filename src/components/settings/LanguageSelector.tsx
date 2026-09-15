@@ -3,18 +3,52 @@ import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
-import { LANGUAGES } from "../../lib/constants/languages";
+import {
+  getLanguageLabel,
+  recognitionLanguage,
+  SELECTABLE_LANGUAGES,
+  supportsLanguageCode,
+} from "../../lib/constants/languages";
 
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
   supportedLanguages?: string[];
+  // Whether the model can auto-detect language. Gates the "Auto" option:
+  // must-pick models (no detection) omit it and force a concrete choice.
+  supportsLanguageDetection?: boolean;
 }
+
+// Convert a concrete or aliased code to the picker entry that represents it.
+// Chinese script intents are already selectable and must remain intact; model
+// codes such as `en-US` and `nb` resolve to their canonical `en` / `no` entry.
+const pickerLanguage = (languageCode: string): string =>
+  SELECTABLE_LANGUAGES.some((language) => language.value === languageCode)
+    ? languageCode
+    : recognitionLanguage(languageCode);
+
+// Mirrors the matching logic of `effective_language` in
+// src-tauri/src/managers/model.rs. The Rust function is authoritative for the
+// *concrete* code the engine receives (e.g. `nb`); this resolves the canonical
+// picker intent (e.g. `no`) so model switches preserve the user's language.
+const effectiveLanguage = (
+  intent: string,
+  supported: string[],
+  supportsDetection: boolean,
+): string => {
+  if (supported.length === 0) return pickerLanguage(intent);
+  if (intent !== "auto" && supportsLanguageCode(supported, intent))
+    return pickerLanguage(intent);
+  if (supportsDetection) return "auto";
+  if (supportsLanguageCode(supported, "en")) return "en";
+  return pickerLanguage(supported[0]);
+};
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
   supportedLanguages,
+  supportsLanguageDetection = true,
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
@@ -23,7 +57,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedLanguage = getSetting("selected_language") || "auto";
+  // The persisted *intent* (auto | code). What's actually used/shown is the
+  // effective value resolved against the current model's capabilities.
+  const intent = getSetting("selected_language") || "auto";
+  const selectedLanguage = effectiveLanguage(
+    intent,
+    supportedLanguages ?? [],
+    supportsLanguageDetection,
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,12 +91,13 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const availableLanguages = useMemo(() => {
     if (!supportedLanguages || supportedLanguages.length === 0)
-      return LANGUAGES;
-    return LANGUAGES.filter(
-      (lang) =>
-        lang.value === "auto" || supportedLanguages.includes(lang.value),
+      return SELECTABLE_LANGUAGES;
+    return SELECTABLE_LANGUAGES.filter((lang) =>
+      lang.value === "auto"
+        ? supportsLanguageDetection
+        : supportsLanguageCode(supportedLanguages, lang.value),
     );
-  }, [supportedLanguages]);
+  }, [supportedLanguages, supportsLanguageDetection]);
 
   const filteredLanguages = useMemo(
     () =>
@@ -66,8 +108,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   );
 
   const selectedLanguageName =
-    LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
-    t("settings.general.language.auto");
+    getLanguageLabel(selectedLanguage) || t("settings.general.language.auto");
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);

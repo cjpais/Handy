@@ -1,4 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  type ReactNode,
+} from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
@@ -10,9 +16,16 @@ import {
 import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
+import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
+import {
+  DebugSettings,
+  type OnboardingPreviewStep,
+} from "./components/settings";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
+import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
@@ -20,7 +33,17 @@ import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
-const renderSettingsContent = (section: SidebarSection) => {
+// Stable identity so preview effects do not re-run due to callback changes.
+const NOOP = () => {};
+
+const renderSettingsContent = (
+  section: SidebarSection,
+  onPreviewOnboarding: (step: OnboardingPreviewStep) => void,
+) => {
+  if (section === "debug") {
+    return <DebugSettings onPreviewOnboarding={onPreviewOnboarding} />;
+  }
+
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
   return <ActiveComponent />;
@@ -31,6 +54,8 @@ function App() {
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
+  const [onboardingPreview, setOnboardingPreview] =
+    useState<OnboardingPreviewStep | null>(null);
   // Track if this is a returning user who just needs to grant permissions
   // (vs a new user who needs full onboarding including model selection)
   const [isReturningUser, setIsReturningUser] = useState(false);
@@ -45,6 +70,19 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const isShowingOnboarding =
+    onboardingPreview !== null ||
+    onboardingStep === "accessibility" ||
+    onboardingStep === "model";
+
+  // Classic scrollbars consume layout space. Reserve a matching gutter on the
+  // opposite edge while onboarding is visible so its content stays centered in
+  // the physical window. Overlay scrollbars ignore scrollbar-gutter.
+  useLayoutEffect(() => {
+    const attribute = "data-onboarding-active";
+    document.documentElement.toggleAttribute(attribute, isShowingOnboarding);
+    return () => document.documentElement.removeAttribute(attribute);
+  }, [isShowingOnboarding]);
 
   useEffect(() => {
     checkOnboardingStatus();
@@ -137,6 +175,19 @@ function App() {
     };
   }, [t]);
 
+  // Listen for transcription failures and show a toast.
+  // The payload is the backend error message (also logged to handy.log).
+  useEffect(() => {
+    const unlisten = listen<string>("transcription-error", (event) => {
+      toast.error(t("errors.transcriptionFailedTitle"), {
+        description: event.payload,
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   // Listen for model loading failures and show a toast
   useEffect(() => {
     const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
@@ -167,12 +218,13 @@ function App() {
 
   const checkOnboardingStatus = async () => {
     try {
-      // Check if they have any models available
-      const result = await commands.hasAnyModelsAvailable();
-      const hasModels = result.status === "ok" && result.data;
+      const settingsResult = await commands.getAppSettings();
+      const hasCompletedOnboarding =
+        settingsResult.status === "ok" &&
+        settingsResult.data.onboarding_completed === true;
       const currentPlatform = platform();
 
-      if (hasModels) {
+      if (hasCompletedOnboarding) {
         // Returning user - check if they need to grant permissions first
         setIsReturningUser(true);
 
@@ -234,55 +286,100 @@ function App() {
     setOnboardingStep("done");
   };
 
+  // Rendered once around every step below (including onboarding) so
+  // toast.error() calls surface to the user. sonner renders via a portal, so
+  // its position in the tree doesn't affect layout. Without this, errors during
+  // onboarding (e.g. a model download failing because blob.handy.computer is
+  // unreachable) are silently swallowed and the wizard just appears to "blink".
+  const toaster = (
+    <Toaster
+      theme="system"
+      toastOptions={{
+        unstyled: true,
+        classNames: {
+          toast:
+            "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
+          title: "font-medium",
+          description: "text-mid-gray",
+          actionButton:
+            "px-2 py-1 text-xs font-medium rounded-lg border bg-mid-gray/10 border-mid-gray/20 hover:bg-background-ui/30 hover:border-logo-primary cursor-pointer whitespace-nowrap",
+        },
+      }}
+    />
+  );
+
   // Still checking onboarding status
   if (onboardingStep === null) {
     return null;
   }
 
-  if (onboardingStep === "accessibility") {
-    return <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
-  }
-
-  if (onboardingStep === "model") {
-    return <Onboarding onModelSelected={handleModelSelected} />;
-  }
-
-  return (
-    <div
-      dir={direction}
-      className="h-screen flex flex-col select-none cursor-default"
-    >
-      <Toaster
-        theme="system"
-        toastOptions={{
-          unstyled: true,
-          classNames: {
-            toast:
-              "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-            title: "font-medium",
-            description: "text-mid-gray",
-          },
-        }}
-      />
-      {/* Main content area that takes remaining space */}
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          activeSection={currentSection}
-          onSectionChange={setCurrentSection}
-        />
-        {/* Scrollable content area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col items-center p-4 gap-4">
-              <AccessibilityPermissions />
-              {renderSettingsContent(currentSection)}
+  // Select the content for the current step. The Toaster is rendered once, in a
+  // stable wrapper around this node, so crossing between onboarding steps and
+  // the main app never remounts it (which would drop any in-flight toast).
+  let content: ReactNode;
+  if (onboardingPreview) {
+    // Render previews in the same top-level slot as real onboarding. Keeping
+    // the settings layout unmounted ensures viewport overflow behaves exactly
+    // as it does during first-run onboarding.
+    content = (
+      <>
+        {onboardingPreview === "accessibility" ? (
+          <AccessibilityOnboarding onComplete={NOOP} preview />
+        ) : (
+          <Onboarding onModelSelected={NOOP} preview />
+        )}
+        <button
+          type="button"
+          onClick={() => setOnboardingPreview(null)}
+          className="fixed top-4 end-4 z-50 rounded-lg border border-mid-gray/20 bg-background px-4 py-2 text-sm font-medium text-text shadow-lg hover:bg-background-ui/30 cursor-pointer"
+        >
+          {t("settings.debug.onboardingPreview.exitButton")}
+        </button>
+      </>
+    );
+  } else if (onboardingStep === "accessibility") {
+    content = (
+      <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
+    );
+  } else if (onboardingStep === "model") {
+    content = <Onboarding onModelSelected={handleModelSelected} />;
+  } else {
+    content = (
+      <div
+        dir={direction}
+        className="h-screen flex flex-col select-none cursor-default"
+      >
+        <ErrorBoundary context="What's New">
+          <WhatsNewGate />
+        </ErrorBoundary>
+        {/* Main content area that takes remaining space */}
+        <div className="flex-1 flex overflow-hidden">
+          <Sidebar
+            activeSection={currentSection}
+            onSectionChange={setCurrentSection}
+          />
+          {/* Scrollable content area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
+              <div className="flex flex-col items-center p-4 gap-4">
+                <AccessibilityPermissions />
+                <SecureInputWarning />
+                {renderSettingsContent(currentSection, setOnboardingPreview)}
+              </div>
             </div>
           </div>
         </div>
+        {/* Fixed footer at bottom */}
+        <Footer />
       </div>
-      {/* Fixed footer at bottom */}
-      <Footer />
-    </div>
+    );
+  }
+
+  return (
+    <>
+      {toaster}
+      {content}
+    </>
   );
 }
 

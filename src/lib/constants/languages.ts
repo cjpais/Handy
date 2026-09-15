@@ -3,11 +3,19 @@ export interface Language {
   label: string;
 }
 
+export const CHINESE_LANGUAGE_CODE = "zh";
+
+const LANGUAGE_ALIASES = new Map([
+  ["nb", "no"],
+  ["fil", "tl"],
+]);
+
 export const LANGUAGES: Language[] = [
   { value: "auto", label: "Auto Detect" },
   { value: "en", label: "English" },
-  { value: "zh-Hans", label: "Simplified Chinese" },
-  { value: "zh-Hant", label: "Traditional Chinese" },
+  { value: CHINESE_LANGUAGE_CODE, label: "Chinese" },
+  { value: "zh-Hans", label: "Chinese (Simplified)" },
+  { value: "zh-Hant", label: "Chinese (Traditional)" },
   { value: "yue", label: "Cantonese" },
   { value: "de", label: "German" },
   { value: "es", label: "Spanish" },
@@ -60,6 +68,7 @@ export const LANGUAGES: Language[] = [
   { value: "br", label: "Breton" },
   { value: "eu", label: "Basque" },
   { value: "is", label: "Icelandic" },
+  { value: "ga", label: "Irish" },
   { value: "hy", label: "Armenian" },
   { value: "ne", label: "Nepali" },
   { value: "mn", label: "Mongolian" },
@@ -96,7 +105,7 @@ export const LANGUAGES: Language[] = [
   { value: "lb", label: "Luxembourgish" },
   { value: "my", label: "Myanmar" },
   { value: "bo", label: "Tibetan" },
-  { value: "tl", label: "Tagalog" },
+  { value: "tl", label: "Filipino (Tagalog)" },
   { value: "mg", label: "Malagasy" },
   { value: "as", label: "Assamese" },
   { value: "tt", label: "Tatar" },
@@ -107,3 +116,68 @@ export const LANGUAGES: Language[] = [
   { value: "jw", label: "Javanese" },
   { value: "su", label: "Sundanese" },
 ];
+
+const CHINESE_OUTPUT_INTENTS = new Set(["zh-Hans", "zh-Hant"]);
+
+const LANGUAGE_LABELS = new Map(
+  LANGUAGES.map((language) => [language.value, language.label] as const),
+);
+
+export const MODEL_CAPABILITY_LANGUAGES: Language[] = LANGUAGES.filter(
+  (language) =>
+    language.value !== "auto" && !CHINESE_OUTPUT_INTENTS.has(language.value),
+);
+
+// Languages offered in the transcription-language picker. We surface the two
+// explicit Chinese *output* variants (Simplified / Traditional) and hide the
+// bare recognition code `zh` ("Chinese"): all three recognize identically, so
+// the plain option only adds ambiguity about which script you get. `zh` stays in
+// LANGUAGES — it's still a valid *effective* language (auto-detect and must-pick
+// fallback can resolve to it) and its label is needed to render that state — it
+// just isn't directly selectable.
+export const SELECTABLE_LANGUAGES: Language[] = LANGUAGES.filter(
+  (language) => language.value !== CHINESE_LANGUAGE_CODE,
+);
+
+// Collapse a language tag to the canonical recognition intent Handy exposes in
+// the UI. BCP-47 region/script subtags are dropped ("en-US" → "en",
+// "zh-Hant" → "zh"), and model-specific base-code equivalents are mapped to a
+// stable intent. Norwegian Bokmål (`nb`) maps to Norwegian (`no`), while
+// Nynorsk (`nn`) remains distinct; Filipino (`fil`) maps to Tagalog (`tl`). The
+// backend performs the same equivalence match but returns the model's real code
+// so the engine always receives exactly what it advertises.
+export const recognitionLanguage = (languageCode: string): string => {
+  const separatorIndex = languageCode.indexOf("-");
+  const baseCode =
+    separatorIndex === -1
+      ? languageCode
+      : languageCode.slice(0, separatorIndex);
+
+  return LANGUAGE_ALIASES.get(baseCode) ?? baseCode;
+};
+
+export const supportsLanguageCode = (
+  supportedLanguages: string[],
+  languageCode: string,
+): boolean => {
+  const recognitionCode = recognitionLanguage(languageCode);
+  return supportedLanguages.some(
+    (supportedLanguage) =>
+      recognitionLanguage(supportedLanguage) === recognitionCode,
+  );
+};
+
+export const getUniqueCapabilityLanguages = (
+  supportedLanguages: string[],
+): string[] => {
+  const seen = new Set<string>();
+  return supportedLanguages.map(recognitionLanguage).filter((languageCode) => {
+    if (seen.has(languageCode)) return false;
+    seen.add(languageCode);
+    return true;
+  });
+};
+
+export const getLanguageLabel = (languageCode: string): string | undefined =>
+  LANGUAGE_LABELS.get(languageCode) ??
+  LANGUAGE_LABELS.get(recognitionLanguage(languageCode));
