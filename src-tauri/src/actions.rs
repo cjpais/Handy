@@ -1,3 +1,4 @@
+use crate::accessory_mute;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
@@ -538,6 +539,10 @@ impl ShortcutAction for TranscribeAction {
         );
         debug!("Microphone mode - always_on: {}", is_always_on);
 
+        // Clear any input-mute flag a previous headset gesture left behind
+        // before the capture session opens (silent while no session is active).
+        accessory_mute::prepare_for_recording();
+
         let mut recording_error: Option<String> = None;
         let recording_start_time = Instant::now();
         match rm.try_start_recording(&binding_id, vad_policy) {
@@ -549,6 +554,7 @@ impl ShortcutAction for TranscribeAction {
                 let generation = readiness.generation();
                 let app_clone = app.clone();
                 let rm_clone = Arc::clone(&rm);
+                let mute_binding_id = binding_id.clone();
                 std::thread::spawn(move || {
                     if !readiness.wait() {
                         debug!("Microphone readiness wait ended without receiving samples");
@@ -577,6 +583,10 @@ impl ShortcutAction for TranscribeAction {
 
                     debug!("Microphone is receiving samples; recording is ready");
                     utils::emit_recording_ready(&app_clone);
+
+                    // Capture is running, so the process is now eligible to
+                    // receive the headset press-to-mute gesture.
+                    accessory_mute::recording_started(&app_clone, &mute_binding_id);
 
                     // The start chime is a readiness cue, so it must follow the
                     // first real input callback rather than Stream::play() or a
