@@ -449,8 +449,12 @@ impl AudioRecordingManager {
         }
 
         // If hands-free capture is enabled in settings, start the continuous loop.
+        // A failure here (mic not yet available, permission not granted) must not
+        // crash app startup; log and let the user retry from Settings.
         if settings.hands_free_capture {
-            manager.start_hands_free();
+            if let Err(e) = manager.start_hands_free() {
+                warn!("Hands-free: failed to auto-start at launch: {e}");
+            }
         }
 
         Ok(manager)
@@ -791,20 +795,26 @@ impl AudioRecordingManager {
 
     /// Start the hands-free continuous capture loop. Ensures the microphone stream is
     /// open (so VAD frames flow even with no shortcut press) and spins up the worker.
-    pub fn start_hands_free(&self) {
+    ///
+    /// Returns an error when the microphone stream fails to open, instead of silently
+    /// leaving the loop not-running while a caller (or the persisted setting) believes
+    /// it started successfully — see the "toggle shows on but wake word never fires"
+    /// reports on upstream PR #1469.
+    pub fn start_hands_free(&self) -> Result<(), anyhow::Error> {
         if self.hands_free.is_running() {
             debug!("Hands-free: already running");
-            return;
+            return Ok(());
         }
         // Keep the stream open for the duration of hands-free; cancel any pending
         // lazy close so the mic isn't torn down under us.
         self.close_generation.fetch_add(1, Ordering::SeqCst);
         if let Err(e) = self.start_microphone_stream() {
             error!("Hands-free: failed to open microphone stream: {}", e);
-            return;
+            return Err(e);
         }
         self.hands_free.start(&self.app_handle);
         info!("Hands-free capture started");
+        Ok(())
     }
 
     /// Stop the hands-free loop. In on-demand mode, also closes the microphone stream

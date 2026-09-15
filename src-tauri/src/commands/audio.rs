@@ -381,16 +381,20 @@ pub async fn set_selected_channel(app: AppHandle, channel: Option<u16>) -> Resul
 
 /* ---------- hands-free continuous capture ------------------------------ */
 
-/// Enable hands-free continuous capture, persist the setting, and start the loop.
+/// Enable hands-free continuous capture and start the loop. Only persists the
+/// setting once the loop has actually started — a failed start (mic busy,
+/// permission not granted) must not leave `hands_free_capture: true` on disk
+/// with nothing actually listening.
 #[tauri::command]
 #[specta::specta]
 pub fn start_hands_free(app: AppHandle) -> Result<(), String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.start_hands_free()
+        .map_err(|e| format!("Failed to start hands-free capture: {e}"))?;
+
     let mut settings = get_settings(&app);
     settings.hands_free_capture = true;
     write_settings(&app, settings);
-
-    let rm = app.state::<Arc<AudioRecordingManager>>();
-    rm.start_hands_free();
     Ok(())
 }
 
