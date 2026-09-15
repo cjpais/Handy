@@ -23,7 +23,7 @@ export const HandsFreeToggle: React.FC<HandsFreeToggleProps> = ({
     (async () => {
       try {
         const res = await commands.isHandsFreeRunning();
-        if (!cancelled) setEnabled(res.status === "ok" ? !!res.data : false);
+        if (!cancelled) setEnabled(res);
       } catch {
         if (!cancelled) setEnabled(false);
       }
