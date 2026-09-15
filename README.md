@@ -6,6 +6,8 @@
 
 Handy is a cross-platform desktop application that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field. This happens on your own computer without sending any information to the cloud.
 
+![Handy settings — transcribe shortcut, push-to-talk, model language, microphone and audio feedback](screenshots/general.png)
+
 ## Why Handy?
 
 Handy was created to fill the gap for a truly open source, extensible speech-to-text tool. As stated on [handy.computer](https://handy.computer):
@@ -31,6 +33,20 @@ The process is entirely local:
   - **Whisper models** (Small/Medium/Turbo/Large) with GPU acceleration when available
   - **Parakeet V3** - CPU-optimized model with excellent performance and automatic language detection
 - Works on Windows, macOS, and Linux
+
+## Screenshots
+
+Download, switch and delete transcription models from inside the app — nothing leaves your machine.
+
+![Transcription Models — the active model, downloaded models, and models available to download with accuracy and speed ratings](screenshots/models.png)
+
+Advanced settings cover startup behaviour, the recording overlay, model unloading, and how transcribed text is delivered to the focused application.
+
+![Advanced settings — start hidden, launch on startup, tray icon, overlay, unload model, paste method, clipboard handling](screenshots/advanced.png)
+
+While you speak, an unobtrusive overlay shows that Handy is listening.
+
+<img src="screenshots/recording-overlay.png" alt="The recording overlay: a small pill with a record indicator, a live audio waveform, and a cancel button" width="325">
 
 ## Quick Start
 
