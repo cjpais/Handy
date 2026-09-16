@@ -108,14 +108,16 @@ export const ModelsSettings: React.FC = () => {
     if (switchingModelId === modelId) {
       return "switching";
     }
+    const model = models.find((m: ModelInfo) => m.id === modelId);
+    // A stale persisted selection must never make a missing model look Active.
+    // Catalog models without files should offer their recovery action instead.
+    if (!model?.is_downloaded) {
+      return "downloadable";
+    }
     if (modelId === currentModel) {
       return "active";
     }
-    const model = models.find((m: ModelInfo) => m.id === modelId);
-    if (model?.is_downloaded) {
-      return "available";
-    }
-    return "downloadable";
+    return "available";
   };
 
   const getDownloadProgress = (modelId: string): number | undefined => {

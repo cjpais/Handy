@@ -19,7 +19,7 @@ Handy isn't trying to be the best speech-to-text app—it's trying to be the mos
 
 ## How It Works
 
-1. **Press** a configurable keyboard shortcut to start/stop recording (or use push-to-talk mode)
+1. **Press** a configurable keyboard shortcut: hold it to record and release to stop, or tap it to toggle recording on and off (Hold-only and Toggle-only modes are also available)
 2. **Speak** your words while the shortcut is active
 3. **Release** and Handy processes your speech using Whisper
 4. **Get** your transcribed text pasted directly into whatever app you're using
@@ -40,6 +40,11 @@ The process is entirely local:
    - **macOS**: Also available via [Homebrew cask](https://formulae.brew.sh/cask/handy): `brew install --cask handy`
    - **Windows**: Also available via [winget](https://github.com/microsoft/winget-pkgs): `winget install cjpais.Handy` \
      **Note:** The Homebrew cask and winget package are not maintained by the Handy developers.
+   - **Debian/Ubuntu**: Install the downloaded `.deb` with APT so required dependencies are installed automatically:
+     ```bash
+     sudo apt install ./Handy_*.deb
+     ```
+     Do not use `dpkg -i` unless the dependencies are already installed. If you already used it, run `sudo apt --fix-broken install`.
 2. Install the application
 3. Launch Handy and grant necessary system permissions (microphone, accessibility)
 4. Configure your preferred keyboard shortcuts in Settings
@@ -114,6 +119,18 @@ handy --start-hidden --no-tray
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
+
+### Bluetooth Headset Microphones (macOS)
+
+Using a Bluetooth headset microphone on macOS may temporarily reduce playback quality or volume while recording because Bluetooth switches to bidirectional audio. Keep your headphones as the output device and select your Mac's built-in or an external microphone in Handy to avoid this.
+
+### fn and Globe Key Shortcuts (macOS)
+
+Shortcuts that include the `fn` (Globe) key **only work on Apple keyboards** — your Mac's built-in keyboard or an Apple external keyboard. They will never trigger on a third-party keyboard, even while it is connected to the same Mac.
+
+This is a hardware limitation rather than a Handy bug. `fn` is not part of the standard USB HID keyboard specification: Apple reports it through a vendor-specific usage that macOS honors only from Apple devices, while third-party keyboards handle their `Fn` key entirely in firmware and send nothing to the computer. There is no event for Handy to listen for.
+
+If you switch between a MacBook keyboard and an external one, pick a shortcut built from standard modifiers (`ctrl`, `option`, `shift`, `command`) or a regular key instead.
 
 ### Major Issues (Help Wanted)
 
@@ -311,6 +328,16 @@ Do not use `gpg` for these `.sig` files.
 
 ## Troubleshooting
 
+### Previous Clipboard Content Is Pasted Instead of the Transcription
+
+If the transcription is correct in **History** but Handy inserts text you copied earlier, see [issue #502](https://github.com/cjpais/Handy/issues/502). With the standard clipboard paste method, Handy restores your previous clipboard after a fixed delay. Under load, the receiving application may read the clipboard only after that restoration.
+
+1. Open Handy's settings window and press `Cmd+Shift+D` (macOS) or `Ctrl+Shift+D` (Windows/Linux) to reveal **Debug**.
+2. On **macOS and Windows**, try **Reliable Paste (Beta)** in Debug with a clipboard paste method selected. It uses clipboard read notifications to delay restoration instead of relying on the standard fixed delay. Test it in the application where the problem occurs; it is still experimental.
+3. If Reliable Paste is disabled or unavailable, increase **Paste Delay (After)** in Debug and test again. This controls the wait before restoring your previous clipboard. **Paste Delay (Before)** controls the wait before sending the paste keystroke and addresses a different part of the operation. These delay settings apply to the standard paste path, not Reliable Paste.
+
+If the problem persists, add your Handy version, operating system, receiving application, paste method, Reliable Paste setting, and before/after delays to the existing issue. Redact private dictated text before sharing logs.
+
 ### Manual Model Installation (For Proxy Users or Network Restrictions)
 
 If you're behind a proxy, firewall, or in a restricted network environment where Handy cannot download models automatically, you can manually download and install them. The URLs are publicly accessible from any browser.
@@ -470,6 +497,19 @@ Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
 ```
 
 If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
+
+### Vulkan Overlays and Capture Tools on Windows (`HANDY_KEEP_VULKAN_IMPLICIT_LAYERS`)
+
+On Windows, Handy asks the Vulkan loader to skip implicit layers to avoid crashes caused by overlay and capture hooks ([#2049](https://github.com/cjpais/Handy/issues/2049)). GPU acceleration remains enabled; this does not change system-wide settings.
+
+To opt out for GPU selection or debugging tools, fully quit Handy (including the tray icon), then run both commands in the same PowerShell window:
+
+```powershell
+$env:HANDY_KEEP_VULKAN_IMPLICIT_LAYERS = "1"
+& "$env:ProgramFiles\Handy\handy.exe"
+```
+
+Adjust the executable path if needed. This override only applies to apps launched from that PowerShell session, not the Start menu. Handy also preserves any existing `VK_LOADER_LAYERS_DISABLE` value.
 
 ### Handy Starts or Stops Recording on Its Own (Linux)
 

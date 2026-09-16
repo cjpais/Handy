@@ -115,7 +115,8 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
-          key: ${{ inputs.platform }}-${{ inputs.target }}
+          key: ${{ inputs.platform }}-${{ inputs.target }}-no-bin-v1
+          cache-bin: false
 
       - name: install dependencies (ubuntu 24.04 x64)
         if: contains(inputs.platform, 'ubuntu-24.04') && !contains(inputs.platform, 'arm')
@@ -172,7 +173,7 @@ jobs:
 
       - name: Install trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries && steps.cache-tsc.outputs.cache-hit != 'true'
-        run: cargo install trusted-signing-cli@${{ env.TSC_VERSION }}
+        run: cargo install --locked --force trusted-signing-cli@${{ env.TSC_VERSION }}
 
       - name: Prepare Vulkan SDK for Ubuntu 24.04
         if: contains(inputs.platform, 'ubuntu-24.04') && !contains(inputs.platform, 'arm')
@@ -672,7 +673,7 @@ jobs:
               listing="$(mktemp)"
               dpkg-deb -c "$deb" > "$listing"
               require_pattern "$listing" 'usr/bin/handy$' "handy binary"
-              require_pattern "$listing" 'usr/lib/Handy/libtranscribe\.so\.[0-9]+$' "transcribe runtime library (SONAME)"
+              require_pattern "$listing" 'usr/lib/Handy/libtranscribe\.so(\.[0-9]+)+$' "transcribe runtime library (SONAME)"
               require_pattern "$listing" 'usr/lib/Handy/libggml-cpu.*\.so' "ggml CPU backend module"
               if [[ "${{ inputs.platform }}" == *"ubuntu-22.04"* && "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
                 require_pattern "$listing" 'usr/lib/Handy/libonnxruntime\.so\.[0-9]+$' "ONNX Runtime library (SONAME)"
@@ -702,7 +703,7 @@ jobs:
               listing="$(mktemp)"
               rpm -qpl "$rpm_pkg" > "$listing"
               require_pattern "$listing" '/usr/bin/handy$' "handy binary"
-              require_pattern "$listing" '/usr/lib/Handy/libtranscribe\.so\.[0-9]+$' "transcribe runtime library (SONAME)"
+              require_pattern "$listing" '/usr/lib/Handy/libtranscribe\.so(\.[0-9]+)+$' "transcribe runtime library (SONAME)"
               require_pattern "$listing" '/usr/lib/Handy/libggml-cpu.*\.so' "ggml CPU backend module"
               # Same /usr/lib pollution guard as the deb audit (issue #1639).
               if grep -Eq 'usr/lib/[^/]+\.so' "$listing"; then

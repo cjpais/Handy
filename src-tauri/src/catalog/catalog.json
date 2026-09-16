@@ -1,6 +1,6 @@
 {
   "catalog_version": 2,
-  "generated_at": "2026-07-23T10:15:59+00:00",
+  "generated_at": "2026-08-17T11:27:14+00:00",
   "mirrors": [
     "https://blob.handy.computer"
   ],
@@ -1341,6 +1341,39 @@
       "recommended_rank": null
     },
     {
+      "id": "handy-computer/moss-transcribe-diarize-gguf",
+      "revision": "6fdfa33aed776bbb0ac11a1a9835634fe6d75dd7",
+      "slug": "moss-transcribe-diarize",
+      "name": "MOSS-Transcribe-Diarize 0.9B",
+      "architecture": "moss",
+      "family": "moss",
+      "parameters": "909M",
+      "description": "2-language speech-to-text with segment-level timestamps.",
+      "base_model": "OpenMOSS-Team/MOSS-Transcribe-Diarize",
+      "license": "apache-2.0",
+      "language_count": 2,
+      "languages": ["en", "zh"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": false,
+        "timestamps": "segment"
+      },
+      "speed_score": 31,
+      "accuracy_score": 88,
+      "files": [
+        {"filename": "MOSS-Transcribe-Diarize-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 617345184, "sha256": "e371990f2c8f21ded18e18cfac8906b059b5ee7cbce154ed4d3c582c05100b8b"},
+        {"filename": "MOSS-Transcribe-Diarize-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 700313760, "sha256": "52deaeff931272f3d49eb437f0f4916e42fce9f42e68db250047408241cf473c"},
+        {"filename": "MOSS-Transcribe-Diarize-Q6_K.gguf", "quant": "Q6_K", "size_bytes": 768151712, "sha256": "f36e6edd7cae9d9c280b8bc48b4bfd10d9ccfe17995cf8daa9517a94329e2bbd"},
+        {"filename": "MOSS-Transcribe-Diarize-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 986899616, "sha256": "64ec654dc6ffcfdfe180422dffce1d33422b0c30959b7edfd131bad77ee35039"},
+        {"filename": "MOSS-Transcribe-Diarize-BF16.gguf", "quant": "BF16", "size_bytes": 1826882720, "sha256": "ccf9aa138e18beb295ec69e1979206c6e48f872fbc3a8c887d6a1fee9dbe7712"},
+        {"filename": "MOSS-Transcribe-Diarize-F16.gguf", "quant": "F16", "size_bytes": 1833665696, "sha256": "fee2e436f7a6e768756446cf31e34bbf4223c4448fa2073d2f424d46f83d7f4b"}
+      ],
+      "default_quant": "Q8_0",
+      "recommended": false,
+      "recommended_rank": null
+    },
+    {
       "id": "handy-computer/nemotron-speech-streaming-en-0.6b-gguf",
       "revision": "7d9b719206789e4068d87c6398262ab4dfd4e45d",
       "slug": "nemotron-speech-streaming-en-0.6b",
@@ -1408,7 +1441,7 @@
     },
     {
       "id": "handy-computer/multitalker-parakeet-streaming-0.6b-v1-gguf",
-      "revision": "0314bc0d2f4be9a0d79fa5eeb36ad1f3962cfcbb",
+      "revision": "31042fb4b5018be38240018492bdbde1923789dc",
       "slug": "multitalker-parakeet-streaming-0.6b-v1",
       "name": "Multitalker Parakeet Streaming EN",
       "architecture": "parakeet",
@@ -1431,9 +1464,15 @@
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 477812416, "sha256": "d9f05f95ab70054f37af71aae7bc64d37eabfc2d266935224a827cb0d838bb4f"},
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 541890240, "sha256": "247a14c84dc6d0e7d4f5604b6f2b89b927af2e49eb0ed9fe350b447e849acf01"},
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q6_K.gguf", "quant": "Q6_K", "size_bytes": 603878080, "sha256": "c5ad23c5e59e3f73d5adebc963992818109d1ecb272f5c862b2355bc41950dac"},
+        {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 617132032, "sha256": "f3ea86dd8415b10ddb6cd7df12bed2798b72e8c1f09b83d227a3892ab7d2cd8a"},
+        {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 681209856, "sha256": "6914abb66959caede909df26ec63d930d5becdb66cc7dc3409d805f275b8727c"},
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 734123712, "sha256": "4748deea0222eb9057ebdac1679eebb970bbe882ee10a96ae34596ffe83615c7"},
+        {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q6_K.gguf", "quant": "Q6_K", "size_bytes": 743197696, "sha256": "771673b7266ff6f79d8b1f5cde01c114eb7e575179160c8a046f4c78b90bc743"},
+        {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 873443328, "sha256": "847df2b5b7576ee69801d74d60f5863df1503d09a790a57f0609323c15f26d64"},
         {"filename": "multitalker-parakeet-streaming-0.6b-v1-F16.gguf", "quant": "F16", "size_bytes": 1246058304, "sha256": "d2b3cbd7d202f97dd7d91da228a70cc47d5f60ba57c8431a37462b2c2d035ba7"},
-        {"filename": "multitalker-parakeet-streaming-0.6b-v1-F32.gguf", "quant": "F32", "size_bytes": 2489180480, "sha256": "a73ea5c34cffd714e97ef6de22db8e9437b6c0265f86f8bd31825fd2b0f49e6c"}
+        {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-F16.gguf", "quant": "F16", "size_bytes": 1482674144, "sha256": "a8c2b0172b3a8963bef52501eaaf628df194374e494b01973b8098f085ba0827"},
+        {"filename": "multitalker-parakeet-streaming-0.6b-v1-F32.gguf", "quant": "F32", "size_bytes": 2489180480, "sha256": "a73ea5c34cffd714e97ef6de22db8e9437b6c0265f86f8bd31825fd2b0f49e6c"},
+        {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-F32.gguf", "quant": "F32", "size_bytes": 2960100320, "sha256": "e94fa869969470a4434b38d551f444c22d545bb65a48e640d4f5c7439720251a"}
       ],
       "default_quant": "Q8_0",
       "recommended": false,
@@ -1535,6 +1574,39 @@
         {"filename": "parakeet-ctc-1.1b-F32.gguf", "quant": "F32", "size_bytes": 4250639392, "sha256": "dbbc3ed2ccf7a0633b4aaa18e930113973f79dd98a2f2f79b5d4f1ef0db4ff05"}
       ],
       "default_quant": "Q5_K_M",
+      "recommended": false,
+      "recommended_rank": null
+    },
+    {
+      "id": "handy-computer/parakeet-primeline-gguf",
+      "revision": "90880dc372f8cc0025ae7a08d2c887278124a538",
+      "slug": "parakeet-primeline",
+      "name": "Parakeet TDT 0.6B primeLine (German-tuned)",
+      "architecture": "parakeet",
+      "family": "parakeet",
+      "parameters": "0.6B",
+      "description": "25-language speech-to-text with auto language detection, token-level timestamps.",
+      "base_model": "primeline/parakeet-primeline",
+      "license": "cc-by-4.0",
+      "language_count": 25,
+      "languages": ["de", "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "el", "hu", "it", "lv", "lt", "mt", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "uk"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": true,
+        "timestamps": "token"
+      },
+      "speed_score": 79,
+      "accuracy_score": 67,
+      "files": [
+        {"filename": "parakeet-primeline-Q4_K_M.gguf", "quant": "Q4_K_M", "size_bytes": 485425568, "sha256": "8b01f1893fa1db166d8b08375f8300c140fc7f110af7e9b68480a27b145dad7d"},
+        {"filename": "parakeet-primeline-Q5_K_M.gguf", "quant": "Q5_K_M", "size_bytes": 548946336, "sha256": "a1dd12b7f374c33d5e33a61c8a852035d27064cefe53f8cdfc3410cddf3b31c8"},
+        {"filename": "parakeet-primeline-Q6_K.gguf", "quant": "Q6_K", "size_bytes": 610342304, "sha256": "62301f4a2c393421a4162864718e85edac7eb85ce8ed82c343a4b994b6d85594"},
+        {"filename": "parakeet-primeline-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 739508640, "sha256": "dbd1ec2985aea64d16550a0068ea9153c0bc01955bf2a5c18b74ca213546d3cd"},
+        {"filename": "parakeet-primeline-F16.gguf", "quant": "F16", "size_bytes": 1255869920, "sha256": "a6f626fa7263cf55a27eda312d1f91dfe6edfeb8de85a5536fbb3cb93af064e1"},
+        {"filename": "parakeet-primeline-F32.gguf", "quant": "F32", "size_bytes": 2508435680, "sha256": "6075ededee05ad520b3402bf089d00cd87819025b8509f746587c822d99a9a2d"}
+      ],
+      "default_quant": "Q8_0",
       "recommended": false,
       "recommended_rank": null
     },

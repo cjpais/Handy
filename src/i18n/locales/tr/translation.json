@@ -214,9 +214,19 @@
         "noResults": "Dil bulunamadı",
         "auto": "Otomatik"
       },
-      "pushToTalk": {
-        "label": "Bas Konuş",
-        "description": "Kaydetmek için basılı tutun, durdurmak için bırakın"
+      "shortcutActivation": {
+        "title": "Kısayol davranışı",
+        "description": "Transkripsiyon kısayolunun kaydı nasıl başlatıp durduracağını seçin.",
+        "options": {
+          "holdOrToggle": "Otomatik",
+          "pushToTalk": "Basılı tut",
+          "toggle": "Aç/Kapat"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Kaydetmek için basılı tutun veya açıp kapatmak için dokunun",
+          "push_to_talk": "Kısayolu basılı tuttuğunuz sürece kaydeder",
+          "toggle": "Kaydı başlatmak için kısayola dokunun, durdurmak için tekrar dokunun"
+        }
       }
     },
     "sound": {
@@ -266,8 +276,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper Hızlandırma",
-          "description": "Whisper modelleri için donanım hızlandırma. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
+          "title": "transcribe.cpp Hızlandırması",
+          "description": "transcribe.cpp (Whisper ailesi) modelleri için donanım hızlandırması. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
         },
         "ort": {
           "title": "ONNX Hızlandırma",
@@ -291,8 +301,8 @@
       },
       "overlay": {
         "style": {
-          "title": "Yer Paylaşımı",
-          "description": "Kayıt sırasındaki yer paylaşımını seçin: 'Yok' gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
+          "title": "Ekran Katmanı",
+          "description": "Kayıt sırasında gösterilecek ekran katmanını seçin: 'Yok' katmanı gizler, 'Sade' küçük bir gösterge gösterir, 'Canlı' siz konuşurken transkripsiyonu gerçek zamanlı gösterir (yalnızca akış destekli modeller — model seçicide 'Akış' rozetini arayın). Linux'ta 'Yok' önerilir.",
           "options": {
             "none": "Yok",
             "minimal": "Sade",
@@ -300,8 +310,8 @@
           }
         },
         "position": {
-          "title": "Yer Paylaşımı Konumu",
-          "description": "Yer paylaşımının kayıt ve transkripsiyon sırasında ekranda nerede görüneceğini belirler.",
+          "title": "Ekran Katmanı Konumu",
+          "description": "Ekran katmanının kayıt ve transkripsiyon sırasında nerede görüneceğini belirler.",
           "options": {
             "bottom": "Alt",
             "top": "Üst"
@@ -376,6 +386,14 @@
       "voiceActivityDetection": {
         "title": "Ses Etkinliği Algılama",
         "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
+      },
+      "vadBackend": {
+        "title": "Ses Etkinliği Arka Ucu",
+        "description": "Sessizliği filtrelemek için kullanılan algılayıcıyı seçin. Earshot deneyseldir; konuşma kesiliyorsa veya gürültü korunuyorsa Silero'ya geri dönün.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
       },
       "fillerWordRemoval": {
         "title": "Dolgu Sözcüklerini Kaldır",
@@ -474,7 +492,8 @@
       },
       "updateChecks": {
         "label": "Güncellemeleri Kontrol Et",
-        "description": "Handy için yeni sürümleri otomatik olarak kontrol eder"
+        "description": "Handy için yeni sürümleri otomatik olarak kontrol eder",
+        "lockedDescription": "Sistem yapılandırması tarafından devre dışı bırakıldı (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Ses Teması",
@@ -537,6 +556,10 @@
         "title": "Yapıştırma Gecikmesi (Sonra)",
         "description": "Yapıştırma tuşundan sonra, önceki panonuz geri yüklenmeden önceki gecikme (milisaniye cinsinden). Transkripsiyon yerine eski pano içeriği yapıştırılıyorsa artırın."
       },
+      "holdThreshold": {
+        "title": "Basılı tutma eşiği",
+        "description": "Yalnızca Otomatik modda: kısayolun dokunma yerine basılı tutma sayılması için ne kadar süre (milisaniye) basılı tutulması gerektiği. Kısa basılı tutmalardan sonra kayıt açık kalmaya devam ediyorsa azaltın; bilinçli dokunmalar basılı tutma olarak algılanıyorsa artırın."
+      },
       "reliablePaste": {
         "title": "Güvenilir Yapıştırma (Beta)",
         "description": "Panoyu sabit bir gecikmenin ardından değil, hedef uygulama transkripsiyonu gerçekten okuduktan sonra geri yükler. Sistem yükü altında eski pano içeriğinin yapıştırılması sorununu gidermeyi amaçlar. Pano üzerinden çalışan bir yapıştırma yöntemi gerektirir; yalnızca macOS ve Windows."
@@ -571,6 +594,13 @@
         "button": "Önizle",
         "noNotes": "Paketlenmiş sürüm notu bulunamadı",
         "error": "Sürüm notları önizlenemedi"
+      },
+      "onboardingPreview": {
+        "title": "İlk kurulum önizlemesi",
+        "description": "İzinleri, modelleri veya tamamlanma durumunu değiştirmeden ilk kurulum ekranlarını önizleyin",
+        "permissionsButton": "İzinler",
+        "modelsButton": "Model seçimi",
+        "exitButton": "Önizlemeden çık"
       }
     },
     "about": {
@@ -597,8 +627,8 @@
         "title": "Teşekkürler",
         "ggml": {
           "title": "ggml",
-          "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
-          "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için ggml kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
+          "description": "Cihaz üzerinde makine öğrenmesi çıkarımı için yüksek performanslı tensör kütüphanesi",
+          "details": "Handy'nin yerel konuşmadan metne dönüştürme özelliği transcribe.cpp ve ggml üzerine kuruludur. Georgi Gerganov'a ve katkıda bulunanlara harika çalışmaları için teşekkür ederiz."
         }
       },
       "whatsNewUpdates": {

@@ -1,0 +1,717 @@
+{
+  "tray": {
+    "settings": "Pengaturan...",
+    "checkUpdates": "Periksa Pembaruan...",
+    "copyLastTranscript": "Salin Transkripsi Terakhir",
+    "unloadModel": "Keluarkan Model dari Memori",
+    "model": "Model",
+    "quit": "Keluar",
+    "cancel": "Batal",
+    "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input"
+  },
+  "sidebar": {
+    "general": "Umum",
+    "models": "Model",
+    "advanced": "Lanjutan",
+    "postProcessing": "Pascaproses",
+    "history": "Riwayat",
+    "debug": "Debug",
+    "about": "Tentang"
+  },
+  "onboarding": {
+    "subtitle": "Untuk memulai, pilih model transkripsi",
+    "existingModelsTitle": "Model yang Kompatibel",
+    "downloadModelsTitle": "Tersedia untuk Diunduh",
+    "showAllModels": "Tampilkan semua {{total}} model",
+    "showFewerModels": "Tampilkan lebih sedikit model",
+    "recommended": "Direkomendasikan",
+    "customModelDescription": "Tidak didukung secara resmi",
+    "modelCard": {
+      "accuracy": "akurasi",
+      "speed": "kecepatan"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Cepat dan cukup akurat."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Akurasi baik, kecepatan sedang"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Seimbang antara akurasi dan kecepatan."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Akurasi baik, tetapi lambat."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Hanya bahasa Inggris. Model terbaik untuk penutur bahasa Inggris."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Cepat dan akurat"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Sangat cepat, hanya bahasa Inggris. Mengenali aksen dengan baik."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Sangat cepat, hanya bahasa Inggris"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Cepat, hanya bahasa Inggris. Keseimbangan yang baik antara kecepatan dan akurasi."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Hanya bahasa Inggris. Kualitas tinggi."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Dioptimalkan untuk Mandarin Taiwan. Mendukung alih kode."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Sangat cepat. Bahasa Mandarin, Inggris, Jepang, Korea, dan Kanton."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Pengenalan ucapan bahasa Rusia. Cepat dan akurat."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Sangat cepat. Bahasa Inggris, Jerman, Spanyol, dan Prancis. Mendukung penerjemahan."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Akurat dan multibahasa. Mendukung 25 bahasa Eropa serta penerjemahan."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Model multibahasa yang besar dan lebih lambat, tetapi sangat akurat."
+      }
+    },
+    "errors": {
+      "selectModel": "Gagal memilih model"
+    },
+    "permissions": {
+      "title": "Izin Diperlukan",
+      "description": "Handy memerlukan beberapa izin agar dapat berfungsi dengan baik.",
+      "microphone": {
+        "title": "Akses Mikrofon",
+        "description": "Diperlukan untuk menangkap suara Anda agar dapat ditranskripsikan."
+      },
+      "accessibility": {
+        "title": "Izin Aksesibilitas",
+        "description": "Diperlukan untuk mengetik teks hasil transkripsi ke aplikasi Anda."
+      },
+      "grant": "Berikan Izin",
+      "granted": "Diizinkan",
+      "waiting": "Menunggu...",
+      "allGranted": "Semua siap!",
+      "errors": {
+        "checkFailed": "Gagal memeriksa izin. Silakan coba lagi.",
+        "requestFailed": "Gagal meminta izin. Silakan coba lagi."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "Kustom",
+    "legacy": "Legacy",
+    "streaming": "Streaming",
+    "active": "Aktif",
+    "switching": "Beralih...",
+    "noModelsAvailable": "Tidak ada model yang tersedia",
+    "verifying": "Memverifikasi {{modelName}}...",
+    "verifyingGeneric": "Memverifikasi...",
+    "extracting": "Mengekstrak {{modelName}}...",
+    "extractingMultiple": "Mengekstrak {{count}} model...",
+    "extractingGeneric": "Mengekstrak...",
+    "downloading": "Mengunduh {{percentage}}%",
+    "downloadingMultiple": "Mengunduh {{count}} model...",
+    "modelReady": "Model Siap",
+    "loading": "Memuat {{modelName}}...",
+    "loadingGeneric": "Memuat...",
+    "modelError": "Kesalahan Model",
+    "modelUnloaded": "Model Dikeluarkan dari Memori",
+    "noModelDownloadRequired": "Model Belum Tersedia — Perlu Diunduh",
+    "deleteModel": "Hapus {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "Batal",
+    "cancelDownload": "Batalkan unduhan",
+    "capabilities": {
+      "languageSelection": "Mendukung beberapa bahasa masukan",
+      "singleLanguage": "Hanya mendukung bahasa ini",
+      "languageCount": "{{total}} bahasa",
+      "languageOnly": "Hanya {{language}}",
+      "translation": "Dapat menerjemahkan ke bahasa Inggris",
+      "translate": "Terjemahkan",
+      "streaming": "Menampilkan transkripsi langsung saat Anda berbicara"
+    }
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "Pengaturan {{model}}"
+    },
+    "general": {
+      "title": "Umum",
+      "shortcut": {
+        "title": "Pintasan Handy",
+        "description": "Atur pintasan keyboard untuk memulai perekaman ucapan-ke-teks",
+        "loading": "Memuat pintasan...",
+        "none": "Belum ada pintasan yang diatur",
+        "notFound": "Pintasan tidak ditemukan",
+        "pressKeys": "Tekan tombol...",
+        "bindings": {
+          "transcribe": {
+            "name": "Pintasan Transkripsi",
+            "description": "Pintasan keyboard untuk merekam dan mentranskripsikan suara Anda."
+          },
+          "cancel": {
+            "name": "Pintasan Batal",
+            "description": "Pintasan keyboard untuk membatalkan perekaman saat ini."
+          },
+          "transcribe_with_post_process": {
+            "name": "Pintasan Pascaproses",
+            "description": "Opsional: pintasan khusus yang selalu menerapkan pascaproses AI pada transkripsi Anda."
+          }
+        },
+        "errors": {
+          "restore": "Gagal memulihkan pintasan asli",
+          "set": "Gagal mengatur pintasan: {{error}}",
+          "reset": "Gagal mengembalikan pintasan ke nilai awal"
+        }
+      },
+      "language": {
+        "title": "Bahasa",
+        "description": "Pilih bahasa untuk pengenalan ucapan. Opsi Otomatis akan mendeteksi bahasa, sedangkan memilih bahasa tertentu dapat meningkatkan akurasi untuk bahasa tersebut.",
+        "searchPlaceholder": "Cari bahasa...",
+        "noResults": "Bahasa tidak ditemukan",
+        "auto": "Otomatis"
+      },
+      "shortcutActivation": {
+        "title": "Perilaku Pintasan",
+        "description": "Pilih cara pintasan transkripsi memulai dan menghentikan perekaman.",
+        "options": {
+          "holdOrToggle": "Otomatis",
+          "pushToTalk": "Tahan",
+          "toggle": "Tekan"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Tahan untuk merekam atau tekan untuk mulai/berhenti",
+          "push_to_talk": "Merekam selama Anda menahan pintasan",
+          "toggle": "Ketuk pintasan untuk mulai merekam, lalu ketuk lagi untuk berhenti"
+        }
+      }
+    },
+    "models": {
+      "title": "Model Transkripsi",
+      "description": "Pilih model transkripsi atau unduh model tambahan. Setiap model menawarkan tingkat akurasi dan kecepatan yang berbeda.",
+      "searchPlaceholder": "Cari model berdasarkan nama…",
+      "yourModels": "Model yang Diunduh",
+      "availableModels": "Tersedia untuk Diunduh",
+      "deleteConfirm": "Yakin ingin menghapus {{modelName}}? Anda harus mengunduhnya lagi untuk menggunakannya.",
+      "deleteActiveConfirm": "{{modelName}} adalah model aktif Anda. Menghapusnya akan menghentikan transkripsi sampai Anda memilih model baru. Yakin ingin melanjutkan?",
+      "deleteTitle": "Hapus Model",
+      "filters": {
+        "allLanguages": "Semua Bahasa",
+        "streaming": "Saring model yang mendukung transkripsi waktu nyata",
+        "translation": "Saring model yang mendukung penerjemahan ke bahasa Inggris"
+      },
+      "rescan": {
+        "label": "Pindai Ulang",
+        "tooltip": "Pindai ulang model yang ditambahkan ke folder model atau cache Hugging Face dari luar Handy"
+      },
+      "noModelsMatch": "Tidak ada model yang cocok dengan kriteria ini."
+    },
+    "sound": {
+      "title": "Suara",
+      "microphone": {
+        "title": "Mikrofon",
+        "description": "Pilih perangkat mikrofon yang Anda inginkan",
+        "placeholder": "Pilih mikrofon...",
+        "loading": "Memuat..."
+      },
+      "channel": {
+        "title": "Kanal Masukan",
+        "description": "Pilih kanal masukan yang akan direkam. Gunakan ini jika antarmuka audio Anda memiliki beberapa masukan.",
+        "average": "Rata-ratakan semua kanal",
+        "channel": "Kanal {{n}}"
+      },
+      "audioFeedback": {
+        "label": "Umpan Balik Audio",
+        "description": "Putar suara saat perekaman dimulai dan dihentikan"
+      },
+      "outputDevice": {
+        "title": "Perangkat Keluaran",
+        "description": "Pilih perangkat keluaran audio yang Anda inginkan untuk suara umpan balik",
+        "placeholder": "Pilih perangkat keluaran...",
+        "loading": "Memuat..."
+      },
+      "volume": {
+        "title": "Volume",
+        "description": "Sesuaikan volume suara umpan balik audio"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "Aplikasi",
+        "output": "Keluaran",
+        "transcription": "Transkripsi",
+        "history": "Riwayat",
+        "experimental": "Eksperimental"
+      },
+      "experimentalToggle": {
+        "label": "Fitur Eksperimental",
+        "description": "Aktifkan fitur eksperimental yang masih dalam pengembangan."
+      },
+      "lazyStreamClose": {
+        "label": "Biarkan Mikrofon Tetap Aktif di Antara Transkripsi",
+        "description": "Membiarkan aliran mikrofon tetap terbuka selama 30 detik setelah perekaman berhenti untuk mengurangi latensi pada transkripsi beruntun. Dapat menurunkan kualitas audio Bluetooth saat aktif."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "Akselerasi transcribe.cpp",
+          "description": "Akselerasi perangkat keras untuk model transcribe.cpp (keluarga Whisper). Otomatis menggunakan GPU jika tersedia (Metal di macOS, Vulkan di Windows/Linux)."
+        },
+        "ort": {
+          "title": "Akselerasi ONNX",
+          "description": "Akselerasi perangkat keras untuk model ONNX (Parakeet, Canary, Moonshine, dll.). DirectML di Windows bersifat eksperimental. Model mungkin gagal mentranskripsikan."
+        },
+        "gpuDevice": {
+          "auto": "Otomatis"
+        }
+      },
+      "startHidden": {
+        "label": "Mulai dalam Keadaan Tersembunyi",
+        "description": "Jalankan ke baki sistem tanpa membuka jendela."
+      },
+      "autostart": {
+        "label": "Jalankan saat Komputer Dinyalakan",
+        "description": "Mulai Handy secara otomatis saat Anda masuk ke komputer."
+      },
+      "showTrayIcon": {
+        "label": "Tampilkan Ikon Baki Sistem",
+        "description": "Tampilkan ikon Handy di baki sistem."
+      },
+      "overlay": {
+        "style": {
+          "title": "Overlay",
+          "description": "Pilih overlay perekaman: Tidak Ada menyembunyikannya, Minimal menampilkan indikator ringkas, dan Langsung menampilkan transkripsi secara waktu nyata saat Anda berbicara (hanya model yang mendukung streaming — cari lencana Streaming di pemilih model). Di Linux, 'Tidak Ada' direkomendasikan.",
+          "options": {
+            "none": "Tidak Ada",
+            "minimal": "Minimal",
+            "live": "Waktu Nyata"
+          }
+        },
+        "position": {
+          "title": "Posisi Overlay",
+          "description": "Lokasi overlay muncul di layar selama perekaman dan transkripsi.",
+          "options": {
+            "bottom": "Bawah",
+            "top": "Atas"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "Metode Tempel",
+        "description": "Pilih cara teks dimasukkan. Langsung: mensimulasikan pengetikan melalui masukan sistem. Tidak Ada: melewati proses tempel dan hanya memperbarui riwayat/papan klip.",
+        "options": {
+          "clipboard": "Papan klip ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Papan klip (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Papan klip (Shift+Insert)",
+          "direct": "Langsung",
+          "none": "Tidak Ada",
+          "externalScript": "Skrip Eksternal"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
+      },
+      "typingTool": {
+        "title": "Alat Pengetikan",
+        "description": "Pilih alat pengetikan Linux yang digunakan untuk metode tempel Langsung. Otomatis akan mendeteksi dan menggunakan alat terbaik yang tersedia untuk sistem Anda.",
+        "options": {
+          "auto": "Otomatis (Direkomendasikan)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Penanganan Papan Klip",
+        "description": "Jangan Ubah Papan Klip akan mempertahankan isi papan klip saat ini setelah transkripsi. Salin ke Papan Klip akan membiarkan hasil transkripsi tetap berada di papan klip setelah ditempel.",
+        "options": {
+          "dontModify": "Jangan Ubah Papan Klip",
+          "copyToClipboard": "Salin ke Papan Klip"
+        }
+      },
+      "autoSubmit": {
+        "title": "Kirim Otomatis",
+        "description": "Kirim kombinasi tombol yang dipilih secara otomatis setelah teks dimasukkan. Cmd+Enter berlaku di macOS, sedangkan Windows/Linux menggunakan Super+Enter.",
+        "options": {
+          "off": "Nonaktif",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Terjemahkan ke Bahasa Inggris",
+        "description": "Terjemahkan ucapan dari bahasa lain ke bahasa Inggris secara otomatis selama transkripsi."
+      },
+      "modelUnload": {
+        "title": "Keluarkan Model dari Memori",
+        "description": "Bebaskan memori GPU/CPU secara otomatis jika model tidak digunakan selama waktu yang ditentukan",
+        "options": {
+          "never": "Tidak Pernah",
+          "immediately": "Segera",
+          "min2": "Setelah 2 menit",
+          "min5": "Setelah 5 menit",
+          "min10": "Setelah 10 menit",
+          "min15": "Setelah 15 menit",
+          "hour1": "Setelah 1 jam",
+          "sec15": "Setelah 15 detik (Debug)"
+        }
+      },
+      "customWords": {
+        "title": "Kata Khusus",
+        "description": "Bantu model yang didukung mengenali nama dan istilah khusus. Koreksi fuzzy saat ini terbatas pada kata yang menggunakan huruf A–Z dan angka.",
+        "placeholder": "Tambahkan kata",
+        "add": "Tambah",
+        "remove": "Hapus {{word}}",
+        "duplicate": "\"{{word}}\" sudah ada"
+      },
+      "voiceActivityDetection": {
+        "title": "Deteksi Aktivitas Suara",
+        "description": "Saring keheningan dari rekaman. Model yang mendukung streaming menggunakan ekor VAD yang lebih panjang; menonaktifkan VAD akan merekam audio mentah."
+      },
+      "vadBackend": {
+        "title": "Backend Deteksi Aktivitas Suara",
+        "description": "Pilih detektor yang digunakan untuk menyaring keheningan. Earshot bersifat eksperimental; kembali ke Silero jika ucapan terpotong atau kebisingan tetap terekam.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
+      "fillerWordRemoval": {
+        "title": "Hapus Kata Pengisi",
+        "description": "Menghapus kata pengisi umum dari transkripsi. Nonaktifkan untuk mempertahankannya."
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "Pintasan"
+      },
+      "api": {
+        "title": "API (Kompatibel dengan OpenAI)",
+        "provider": {
+          "title": "Penyedia",
+          "description": "Pilih penyedia yang kompatibel dengan OpenAI."
+        },
+        "appleIntelligence": {
+          "unavailable": "Apple Intelligence tidak tersedia di perangkat ini. Memerlukan Mac Apple Silicon yang menjalankan macOS Tahoe (26.0) atau yang lebih baru dengan Apple Intelligence diaktifkan di Pengaturan Sistem."
+        },
+        "baseUrl": {
+          "title": "URL Dasar",
+          "description": "URL dasar API untuk penyedia yang dipilih. Hanya penyedia kustom yang dapat diedit.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Kunci API",
+          "description": "Kunci API untuk penyedia yang dipilih.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionCustom": "Masukkan pengenal model yang diharapkan oleh endpoint kustom Anda.",
+          "descriptionDefault": "Pilih model yang disediakan oleh penyedia yang dipilih.",
+          "placeholderWithOptions": "Cari atau pilih model",
+          "placeholderNoOptions": "Ketik nama model",
+          "refreshModels": "Segarkan model"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Prompt Terpilih",
+          "description": "Pilih templat untuk menyempurnakan transkripsi atau buat yang baru. Gunakan ${output} dalam teks prompt untuk merujuk ke hasil transkripsi."
+        },
+        "noPrompts": "Tidak ada prompt yang tersedia",
+        "selectPrompt": "Pilih prompt",
+        "createNew": "Buat Prompt Baru",
+        "promptLabel": "Label Prompt",
+        "promptLabelPlaceholder": "Masukkan nama prompt",
+        "promptInstructions": "Instruksi Prompt",
+        "promptInstructionsPlaceholder": "Tulis instruksi yang dijalankan setelah transkripsi. Contoh: Perbaiki tata bahasa dan kejelasan teks berikut: ${output}",
+        "promptTip": "Tips: Gunakan <code>${output}</code> untuk menyisipkan teks hasil transkripsi ke prompt Anda.",
+        "updatePrompt": "Perbarui Prompt",
+        "deletePrompt": "Hapus Prompt",
+        "createPrompt": "Buat Prompt",
+        "cancel": "Batal",
+        "selectToEdit": "Pilih prompt di atas untuk melihat dan mengedit detailnya.",
+        "createFirst": "Klik 'Buat Prompt Baru' di atas untuk membuat prompt pascaproses pertama Anda."
+      }
+    },
+    "history": {
+      "title": "Riwayat",
+      "openFolder": "Buka Folder Rekaman",
+      "loading": "Memuat riwayat...",
+      "empty": "Belum ada transkripsi. Mulai merekam untuk mengisi riwayat Anda!",
+      "copyToClipboard": "Salin transkripsi ke papan klip",
+      "save": "Simpan transkripsi",
+      "unsave": "Hapus dari daftar tersimpan",
+      "delete": "Hapus entri",
+      "deleteError": "Gagal menghapus entri. Silakan coba lagi.",
+      "retranscribe": "Transkripsikan ulang",
+      "retranscribeError": "Gagal mentranskripsikan ulang. Silakan coba lagi.",
+      "transcribing": "Mentranskripsikan...",
+      "transcriptionFailed": "Transkripsi gagal. Anda dapat mentranskripsikan ulang menggunakan ikon coba lagi."
+    },
+    "debug": {
+      "title": "Debug",
+      "logDirectory": {
+        "title": "Direktori Log",
+        "description": "Lokasi penyimpanan file log"
+      },
+      "logLevel": {
+        "title": "Tingkat Log",
+        "description": "Atur tingkat detail pencatatan log"
+      },
+      "liveLogs": {
+        "title": "Log Waktu Nyata",
+        "description": "Tampilkan log aplikasi secara waktu nyata untuk mendiagnosis masalah tanpa membuka file log. Hanya log yang dihasilkan saat panel ini terbuka yang ditampilkan; mengikuti pengaturan Tingkat Log di atas.",
+        "live": "Waktu Nyata",
+        "paused": "Dijeda",
+        "pause": "Jeda",
+        "resume": "Lanjutkan",
+        "copied": "Disalin",
+        "lineCount": "{{count}} baris",
+        "empty": "Menunggu log… Entri akan muncul di sini saat aplikasi menghasilkannya."
+      },
+      "updateChecks": {
+        "label": "Periksa Pembaruan",
+        "description": "Periksa versi baru Handy secara otomatis",
+        "lockedDescription": "Dinonaktifkan oleh konfigurasi sistem (HANDY_DISABLE_UPDATER)"
+      },
+      "whatsNewPreview": {
+        "title": "Pratinjau Yang Baru",
+        "description": "Buka catatan rilis terbaru yang disertakan tanpa menandainya sebagai telah dilihat",
+        "button": "Pratinjau",
+        "noNotes": "Tidak ada catatan rilis yang disertakan",
+        "error": "Gagal menampilkan pratinjau catatan rilis"
+      },
+      "onboardingPreview": {
+        "title": "Pratinjau Penyiapan Awal",
+        "description": "Pratinjau layar penyiapan awal tanpa mengubah izin, model, atau status penyelesaian",
+        "permissionsButton": "Izin",
+        "modelsButton": "Pemilihan Model",
+        "exitButton": "Keluar dari Pratinjau"
+      },
+      "soundTheme": {
+        "label": "Tema Suara",
+        "description": "Pilih tema suara untuk umpan balik saat perekaman dimulai dan dihentikan"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Ambang Koreksi Kata",
+        "description": "Sensitivitas untuk koreksi kata khusus"
+      },
+      "historyLimit": {
+        "title": "Batas Riwayat",
+        "description": "Jumlah maksimum entri riwayat yang disimpan",
+        "entries": "entri"
+      },
+      "recordingRetention": {
+        "title": "Hapus Rekaman Secara Otomatis",
+        "description": "Hapus rekaman lama secara otomatis untuk menghemat ruang",
+        "never": "Tidak Pernah",
+        "preserveLimit": "Simpan {{count}} terbaru",
+        "days3": "Setelah 3 hari",
+        "weeks2": "Setelah 2 minggu",
+        "months3": "Setelah 3 bulan",
+        "placeholder": "Pilih masa penyimpanan..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Mikrofon Selalu Aktif",
+        "description": "Biarkan mikrofon aktif agar respons lebih cepat"
+      },
+      "clamshellMicrophone": {
+        "title": "Mikrofon Saat Laptop Ditutup",
+        "description": "Mikrofon yang digunakan saat laptop ditutup"
+      },
+      "postProcessingToggle": {
+        "label": "Pascaproses",
+        "description": "Aktifkan penyempurnaan teks berbasis AI setelah transkripsi"
+      },
+      "muteWhileRecording": {
+        "label": "Bisukan Saat Merekam",
+        "description": "Bisukan audio sistem selama perekaman"
+      },
+      "appendTrailingSpace": {
+        "label": "Tambahkan Spasi di Akhir",
+        "description": "Tambahkan spasi setelah transkripsi ditempel"
+      },
+      "keyboardImplementation": {
+        "title": "Implementasi Keyboard",
+        "description": "Pilih backend pintasan keyboard.",
+        "bindingsReset": "Pintasan keyboard tidak kompatibel dan telah dikembalikan ke nilai awal"
+      },
+      "paths": {
+        "appData": "Data Aplikasi:",
+        "models": "Model:",
+        "settings": "Pengaturan:"
+      },
+      "pasteDelay": {
+        "title": "Jeda Tempel (Sebelum)",
+        "description": "Jeda (dalam milidetik) setelah menyalin teks sebelum mengirim perintah tempel. Tingkatkan jika tidak ada yang ditempel."
+      },
+      "pasteDelayAfter": {
+        "title": "Jeda Tempel (Sesudah)",
+        "description": "Jeda (dalam milidetik) setelah perintah tempel dikirim sebelum mengembalikan isi papan klip sebelumnya. Tingkatkan jika isi papan klip lama yang ditempel alih-alih transkripsi."
+      },
+      "holdThreshold": {
+        "title": "Ambang Waktu Tahan",
+        "description": "Hanya mode Otomatis: berapa lama (dalam milidetik) pintasan harus ditahan agar dianggap ditahan, bukan ditekan singkat. Turunkan jika penahanan singkat membuat perekaman tetap aktif; naikkan jika ketukan yang disengaja dianggap sebagai penahanan."
+      },
+      "reliablePaste": {
+        "title": "Tempel Lebih Andal (Beta)",
+        "description": "Kembalikan papan klip hanya setelah aplikasi target benar-benar membaca transkripsi, bukan setelah jeda tetap. Ditujukan untuk memperbaiki kasus isi papan klip lama yang tertempel saat sistem sedang terbebani. Memerlukan metode tempel papan klip; hanya macOS dan Windows."
+      },
+      "recordingBuffer": {
+        "title": "Buffer Perekaman Tambahan",
+        "description": "Waktu tambahan (dalam milidetik) untuk terus merekam setelah Anda melepas tombol agar audio di bagian akhir tetap tertangkap. 0 = tanpa buffer tambahan."
+      },
+      "keyboardDiagnostic": {
+        "title": "Diagnostik Keyboard",
+        "description": "Memeriksa apakah peristiwa keyboard mencapai Handy. Hanya jumlah peristiwa yang dicatat — bukan tombol yang Anda tekan.",
+        "run": "Jalankan diagnostik 10 dtk",
+        "running": "Mendengarkan… tekan pintasan Anda beberapa kali (mis. Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "aktif",
+        "disabled": "nonaktif",
+        "holder": "ditahan oleh {{name}} (pid {{pid}})",
+        "holderUnknown": "tidak ada aplikasi penahan yang terdeteksi",
+        "keyDown": "Tombol ditekan",
+        "keyUp": "Tombol dilepas",
+        "flagsChanged": "Tombol pengubah",
+        "mouse": "Mouse",
+        "verdictBlocked": "Secure Input memblokir peristiwa tombol — pintasan keyboard tidak dapat berfungsi sampai masalah ini diselesaikan.",
+        "verdictSuspicious": "Peristiwa tombol pengubah diterima, tetapi tidak ada peristiwa tombol — sesuatu memblokir input tombol meskipun Secure Input dilaporkan nonaktif. Harap laporkan ini di GitHub.",
+        "verdictOk": "Peristiwa tombol mencapai Handy secara normal.",
+        "verdictNoEvents": "Tidak ada peristiwa yang tertangkap — apakah Anda menekan tombol selama pengujian?",
+        "failed": "Diagnostik gagal: {{error}}"
+      }
+    },
+    "about": {
+      "title": "Tentang",
+      "version": {
+        "title": "Versi",
+        "description": "Versi Handy saat ini"
+      },
+      "whatsNewUpdates": {
+        "label": "Tampilkan Yang Baru",
+        "description": "Tampilkan catatan rilis setelah Handy diperbarui"
+      },
+      "appDataDirectory": {
+        "title": "Direktori Data Aplikasi",
+        "description": "Lokasi Handy menyimpan datanya"
+      },
+      "sourceCode": {
+        "title": "Kode Sumber",
+        "description": "Lihat kode sumber dan berkontribusi",
+        "button": "Lihat di GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Dukung Pengembangan",
+        "description": "Bantu kami terus mengembangkan Handy",
+        "button": "Donasi"
+      },
+      "acknowledgments": {
+        "title": "Ucapan Terima Kasih",
+        "ggml": {
+          "title": "ggml",
+          "description": "Pustaka tensor berkinerja tinggi untuk inferensi pembelajaran mesin di perangkat",
+          "details": "Fitur ucapan-ke-teks lokal Handy dibangun menggunakan transcribe.cpp dan ggml. Terima kasih kepada Georgi Gerganov dan para kontributor atas karya luar biasa mereka."
+        }
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "Memeriksa pembaruan...",
+    "updateAvailableShort": "Pembaruan tersedia",
+    "upToDate": "Sudah versi terbaru",
+    "updateCheckingDisabled": "Pemeriksaan Pembaruan Dinonaktifkan",
+    "downloading": "Mengunduh... {{progress}}%",
+    "installing": "Menginstal...",
+    "preparing": "Menyiapkan...",
+    "checkForUpdates": "Periksa pembaruan",
+    "portableUpdateTitle": "Pembaruan manual diperlukan",
+    "portableUpdateMessage": "Instalasi portabel tidak dapat diperbarui secara otomatis. Unduh penginstal untuk sistem Anda di bawah ini, jalankan, lalu instal ke folder yang sama — folder Data/ Anda (pengaturan, model, rekaman) tetap dipertahankan.",
+    "portableUpdateButton": "Unduh penginstal",
+    "portableUpdateBrowseMessage": "Instalasi portabel tidak dapat diperbarui secara otomatis. Unduh versi terbaru untuk sistem Anda dari GitHub Releases dan instal ke folder yang sama — folder Data/ Anda (pengaturan, model, rekaman) tetap dipertahankan.",
+    "portableUpdateBrowseButton": "Buka GitHub Releases"
+  },
+  "whatsNew": {
+    "title": "Baru di Handy v{{version}}"
+  },
+  "common": {
+    "loading": "Memuat...",
+    "delete": "Hapus",
+    "close": "Tutup",
+    "open": "Buka",
+    "copy": "Salin",
+    "clear": "Bersihkan",
+    "noOptionsFound": "Tidak ada opsi yang ditemukan"
+  },
+  "accessibility": {
+    "permissionsDescription": "Handy memerlukan izin aksesibilitas untuk mengetik teks hasil transkripsi.",
+    "openSettings": "Buka Pengaturan Sistem"
+  },
+  "errors": {
+    "loadDirectory": "Kesalahan saat memuat direktori: {{error}}",
+    "micPermissionDeniedTitle": "Akses Mikrofon Ditolak",
+    "micPermissionDenied": {
+      "generic": "Akses mikrofon ditolak oleh sistem operasi. Berikan izin mikrofon di pengaturan sistem Anda.",
+      "windows": "Aktifkan akses mikrofon di Settings → Privacy & security → Microphone (termasuk akses aplikasi desktop).",
+      "macos": "Berikan akses mikrofon di System Settings → Privacy & Security → Microphone.",
+      "linux": "Berikan akses mikrofon di pengaturan suara atau privasi sistem Anda."
+    },
+    "noInputDeviceTitle": "Mikrofon Tidak Ditemukan",
+    "noInputDevice": "Tidak ada perangkat masukan audio yang terdeteksi. Hubungkan mikrofon atau headset lalu coba lagi.",
+    "recordingFailed": "Gagal memulai perekaman: {{error}}",
+    "modelLoadFailed": "Gagal memuat model: {{model}}",
+    "modelLoadFailedUnknown": "model tidak dikenal",
+    "pasteFailedTitle": "Gagal Menempelkan Teks",
+    "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
+    "transcriptionFailedTitle": "Transkripsi Gagal"
+  },
+  "appLanguage": {
+    "title": "Bahasa Aplikasi",
+    "description": "Ubah bahasa antarmuka Handy"
+  },
+  "theme": {
+    "title": "Tema Aplikasi",
+    "description": "Pilih apakah Handy mengikuti tema sistem atau selalu menggunakan tema terang atau gelap",
+    "options": {
+      "system": "Sistem",
+      "light": "Terang",
+      "dark": "Gelap"
+    }
+  },
+  "overlay": {
+    "transcribing": "Mentranskripsikan...",
+    "processing": "Memproses..."
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} mungkin memblokir 1 pintasan",
+    "blockedWithCulprit_other": "{{name}} mungkin memblokir {{count}} pintasan",
+    "blockedNoCulprit_one": "macOS untuk sementara memblokir 1 pintasan",
+    "blockedNoCulprit_other": "macOS untuk sementara memblokir {{count}} pintasan",
+    "recorderBlockedWithCulprit": "{{name}} mungkin memblokir perubahan pintasan",
+    "recorderBlockedNoCulprit": "macOS untuk sementara memblokir perubahan pintasan",
+    "learnMore": "Cara memperbaiki",
+    "recorderBlocked": "Pintasan tidak dapat direkam saat ini — macOS Secure Input memblokir peristiwa tombol. Selesaikan peringatan Secure Input terlebih dahulu.",
+    "dismiss": "Tutup"
+  }
+}

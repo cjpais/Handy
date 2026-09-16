@@ -56,9 +56,8 @@ CURATION = {
     "Fun-ASR-MLT-Nano-2512":           {"rank": 10, "desc": "A tiny multilingual model"},
     # description-only (unranked, not recommended) — carried over from the legacy .bin entry
     "Breeze-ASR-25":                   {"desc": "Optimized for Taiwanese Mandarin. Code-switching support."},
-    # hidden until the pinned transcribe-cpp ships their arch (has no `moss`/`sortformer`
-    # under src/arch/) — the app would offer a download it cannot load
-    "moss-transcribe-diarize":            {"hidden": True},
+    # Sortformer emits speaker segments only; Handy's catalog is for models
+    # that produce transcription text.
     "diar_streaming_sortformer_4spk-v2.1": {"hidden": True},
 }
 # temporary capability corrections pending a card re-push (remove once cards fixed)
@@ -69,7 +68,8 @@ OVERRIDES = {
 
 # ───────────────────────── helpers ──────────────────────────────────────────
 ARCH = ["whisper","moonshine-streaming","moonshine","parakeet","canary-qwen","canary","voxtral",
-        "granite-speech","granite","qwen3","gigaam","sensevoice","cohere","fun-asr","nemotron","medasr"]
+        "granite-speech","granite","qwen3","gigaam","sensevoice","cohere","fun-asr","nemotron","medasr",
+        "moss","sortformer"]
 ACR = {"asr":"ASR","ctc":"CTC","rnnt":"RNNT","tdt":"TDT","nar":"NAR","mlt":"MLT"}
 SCALAR = {0:("<B",1),1:("<b",1),2:("<H",2),3:("<h",2),4:("<I",4),5:("<i",4),
           6:("<f",4),7:("<?",1),10:("<Q",8),11:("<q",8),12:("<d",8)}
