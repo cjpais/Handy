@@ -1274,6 +1274,91 @@ mod tests {
         assert!(!is_shouted(&["A"]));
     }
 
+    /// Corpus check that custom-word correction leaves ordinary English alone.
+    ///
+    /// Custom-word matching is a trade: a matcher loose enough to reach the
+    /// word you wanted will sometimes rewrite a word you did not. This
+    /// measures the second half of that trade over a large corpus, so a future
+    /// change that buys recall by spending precision is visible rather than
+    /// silent.
+    ///
+    /// Ignored by default because it needs the system word list, which is
+    /// present on macOS and on Linux via the `words` / `wamerican` package.
+    /// Run it with:
+    ///
+    /// ```text
+    /// cargo test --lib false_positive_sweep -- --ignored --nocapture
+    /// ```
+    ///
+    /// The ceilings sit between what Double Metaphone produces and what the
+    /// Soundex implementation this replaced produced (149 unigram / 97 bigram
+    /// on the same inputs), so a regression to that behaviour fails the test.
+    #[test]
+    #[ignore = "requires the system word list at /usr/share/dict/words"]
+    fn false_positive_sweep() {
+        const WORD_LIST: &str = "/usr/share/dict/words";
+
+        let Ok(raw) = std::fs::read_to_string(WORD_LIST) else {
+            eprintln!("skipping sweep: {WORD_LIST} not available");
+            return;
+        };
+
+        // A representative mix: intercapped brands, an acronym-led term, a
+        // vowel-dropped name, a short common word and an ampersand entry.
+        let custom_words: Vec<String> = [
+            "ChargeBee",
+            "SQLAlchemy",
+            "OpenAI",
+            "FlitePath",
+            "HiTek",
+            "ThruPut",
+            "KwkSrv",
+            "NiteLite",
+            "dict",
+            "R&D",
+        ]
+        .iter()
+        .map(|word| word.to_string())
+        .collect();
+
+        let words: Vec<String> = raw
+            .lines()
+            .filter(|word| word.len() >= 3)
+            .map(str::to_lowercase)
+            .collect();
+
+        let unigram_hits = words
+            .iter()
+            .filter(|word| apply_custom_words(word, &custom_words, 0.18) != **word)
+            .count();
+
+        // Consecutive dictionary pairs rather than hand-picked leading words,
+        // so the sample is not selected around a known collision.
+        let mut bigram_hits = 0;
+        let mut bigrams = 0;
+        for pair in words.windows(2).step_by(3) {
+            let phrase = format!("{} {}", pair[0], pair[1]);
+            bigrams += 1;
+            if apply_custom_words(&phrase, &custom_words, 0.18) != phrase {
+                bigram_hits += 1;
+            }
+        }
+
+        println!(
+            "corpus {} words: {unigram_hits} unigram, {bigram_hits} bigram (of {bigrams}) spurious corrections",
+            words.len()
+        );
+
+        assert!(
+            unigram_hits < 120,
+            "unigram false positives regressed: {unigram_hits}"
+        );
+        assert!(
+            bigram_hits < 70,
+            "bigram false positives regressed: {bigram_hits}"
+        );
+    }
+
     #[test]
     fn test_apply_custom_words_skips_cjk_fuzzy_matching() {
         let text = "你好。";
