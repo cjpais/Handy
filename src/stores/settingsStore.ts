@@ -16,6 +16,9 @@ interface SettingsStore {
   settings: Settings | null;
   defaultSettings: Settings | null;
   isLoading: boolean;
+  // Set synchronously on the first initialize() call; useSettings effects in
+  // many components can fire in the same commit, before any IPC resolves.
+  initialized: boolean;
   isUpdating: Record<string, boolean>;
   audioDevices: AudioDevice[];
   outputDevices: AudioDevice[];
@@ -201,6 +204,7 @@ export const useSettingsStore = create<SettingsStore>()(
     settings: null,
     defaultSettings: null,
     isLoading: true,
+    initialized: false,
     isUpdating: {},
     audioDevices: [],
     outputDevices: [],
@@ -628,35 +632,52 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
-      const {
-        refreshSettings,
-        checkCustomSounds,
-        loadDefaultSettings,
-        loadUpdateChecksLocked,
-      } = get();
+      // Guard synchronously before any await: every component using
+      // useSettings() calls initialize() from its first effect, and several
+      // effects can run in one commit before the IPC round-trips below
+      // resolve. Without the flag each call would register another pair of
+      // backend event listeners that are never removed.
+      if (get().initialized) return;
+      set({ initialized: true });
 
-      // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
-      // is responsible for calling refreshAudioDevices/refreshOutputDevices
-      // after onboarding completes. This avoids triggering permission dialogs
-      // on macOS before the user is ready.
-      await Promise.all([
-        loadDefaultSettings(),
-        refreshSettings(),
-        checkCustomSounds(),
-        loadUpdateChecksLocked(),
-      ]);
+      try {
+        const {
+          refreshSettings,
+          checkCustomSounds,
+          loadDefaultSettings,
+          loadUpdateChecksLocked,
+        } = get();
 
-      // Re-fetch settings when the backend changes them (e.g. language
-      // reset during model switch). The backend is the source of truth.
-      listen("model-state-changed", () => {
-        get().refreshSettings();
-      });
-      listen<{ setting?: string }>("settings-changed", (event) => {
-        get().refreshSettings();
-        if (event.payload.setting === "selected_microphone") {
-          get().refreshAudioDevices();
-        }
-      });
+        // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
+        // is responsible for calling refreshAudioDevices/refreshOutputDevices
+        // after onboarding completes. This avoids triggering permission dialogs
+        // on macOS before the user is ready.
+        await Promise.all([
+          loadDefaultSettings(),
+          refreshSettings(),
+          checkCustomSounds(),
+          loadUpdateChecksLocked(),
+        ]);
+
+        // Re-fetch settings when the backend changes them (e.g. language
+        // reset during model switch). The backend is the source of truth.
+        // Awaited so a failed subscription fails init (and resets the guard
+        // below) instead of leaving a half-registered listener pair.
+        await listen("model-state-changed", () => {
+          get().refreshSettings();
+        });
+        await listen<{ setting?: string }>("settings-changed", (event) => {
+          get().refreshSettings();
+          if (event.payload.setting === "selected_microphone") {
+            get().refreshAudioDevices();
+          }
+        });
+      } catch (error) {
+        // Reset the guard so a later initialize() can retry instead of
+        // leaving the store permanently uninitialized with no listeners.
+        set({ initialized: false });
+        throw error;
+      }
     },
   })),
 );
