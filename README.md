@@ -68,6 +68,10 @@ For detailed build instructions including platform-specific requirements, see [B
   <a href="https://boltai.com?utm_source=handy">
     <img src="sponsor-images/boltai.jpg" alt="Bolt AI" width="120" height="120">
   </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://cantydigital.com.au/">
+    <img src="sponsor-images/cantydigital.png" alt="Canty Digital" width="120" height="120">
+  </a>
 </div>
 
 ## Integrations
