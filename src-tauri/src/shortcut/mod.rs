@@ -686,6 +686,7 @@ pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(),
     };
     settings.overlay_style = parsed;
     settings::write_settings(&app, settings);
+    let _ = app.emit_to("recording_overlay", "overlay-style-changed", parsed);
 
     // Keep the cached overlay-enabled flag in sync so emit_levels stops (or
     // resumes) emitting on the next audio callback.

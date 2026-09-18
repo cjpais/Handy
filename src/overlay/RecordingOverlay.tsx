@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
 import { commands, events } from "@/bindings";
 import type {
+  OverlayStyle,
   StreamPhase,
   StreamPhaseEvent,
   StreamTextEvent,
@@ -96,6 +97,11 @@ const RecordingOverlay: React.FC = () => {
         setCaptureReady(false);
       });
 
+      const unlistenStyle = await listen<OverlayStyle>(
+        "overlay-style-changed",
+        (event) => setMonochrome(event.payload === "monochrome"),
+      );
+
       const unlistenReady = await listen("recording-ready", () => {
         setElapsed(0);
         setCaptureReady(true);
@@ -126,6 +132,7 @@ const RecordingOverlay: React.FC = () => {
       return () => {
         unlistenShow();
         unlistenHide();
+        unlistenStyle();
         unlistenReady();
         unlistenLevel();
         unlistenStream();
