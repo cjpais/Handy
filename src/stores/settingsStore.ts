@@ -640,35 +640,44 @@ export const useSettingsStore = create<SettingsStore>()(
       if (get().initialized) return;
       set({ initialized: true });
 
-      const {
-        refreshSettings,
-        checkCustomSounds,
-        loadDefaultSettings,
-        loadUpdateChecksLocked,
-      } = get();
+      try {
+        const {
+          refreshSettings,
+          checkCustomSounds,
+          loadDefaultSettings,
+          loadUpdateChecksLocked,
+        } = get();
 
-      // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
-      // is responsible for calling refreshAudioDevices/refreshOutputDevices
-      // after onboarding completes. This avoids triggering permission dialogs
-      // on macOS before the user is ready.
-      await Promise.all([
-        loadDefaultSettings(),
-        refreshSettings(),
-        checkCustomSounds(),
-        loadUpdateChecksLocked(),
-      ]);
+        // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
+        // is responsible for calling refreshAudioDevices/refreshOutputDevices
+        // after onboarding completes. This avoids triggering permission dialogs
+        // on macOS before the user is ready.
+        await Promise.all([
+          loadDefaultSettings(),
+          refreshSettings(),
+          checkCustomSounds(),
+          loadUpdateChecksLocked(),
+        ]);
 
-      // Re-fetch settings when the backend changes them (e.g. language
-      // reset during model switch). The backend is the source of truth.
-      listen("model-state-changed", () => {
-        get().refreshSettings();
-      });
-      listen<{ setting?: string }>("settings-changed", (event) => {
-        get().refreshSettings();
-        if (event.payload.setting === "selected_microphone") {
-          get().refreshAudioDevices();
-        }
-      });
+        // Re-fetch settings when the backend changes them (e.g. language
+        // reset during model switch). The backend is the source of truth.
+        // Awaited so a failed subscription fails init (and resets the guard
+        // below) instead of leaving a half-registered listener pair.
+        await listen("model-state-changed", () => {
+          get().refreshSettings();
+        });
+        await listen<{ setting?: string }>("settings-changed", (event) => {
+          get().refreshSettings();
+          if (event.payload.setting === "selected_microphone") {
+            get().refreshAudioDevices();
+          }
+        });
+      } catch (error) {
+        // Reset the guard so a later initialize() can retry instead of
+        // leaving the store permanently uninitialized with no listeners.
+        set({ initialized: false });
+        throw error;
+      }
     },
   })),
 );
