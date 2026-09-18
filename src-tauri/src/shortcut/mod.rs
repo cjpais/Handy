@@ -677,7 +677,6 @@ pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(),
     let parsed = match style.as_str() {
         "none" => OverlayStyle::None,
         "minimal" => OverlayStyle::Minimal,
-        "monochrome" => OverlayStyle::Monochrome,
         "live" => OverlayStyle::Live,
         other => {
             warn!("Invalid overlay style '{}', defaulting to minimal", other);
@@ -695,6 +694,16 @@ pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(),
     // Reposition in case the window needs to re-center for the new style.
     crate::utils::update_overlay_position(&app);
 
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_monochrome_overlay_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.monochrome_overlay = enabled;
+    settings::write_settings(&app, settings);
+    let _ = app.emit_to("recording_overlay", "overlay-monochrome-changed", enabled);
     Ok(())
 }
 

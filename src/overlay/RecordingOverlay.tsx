@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
 import { commands, events } from "@/bindings";
 import type {
-  OverlayStyle,
   StreamPhase,
   StreamPhaseEvent,
   StreamTextEvent,
@@ -77,7 +76,7 @@ const RecordingOverlay: React.FC = () => {
             setPosition(
               settings.data.overlay_position === "top" ? "top" : "bottom",
             );
-            setMonochrome(settings.data.overlay_style === "monochrome");
+            setMonochrome(settings.data.monochrome_overlay ?? false);
           }
         } catch {
           // Keep the previous/default placement if settings can't be read.
@@ -97,9 +96,9 @@ const RecordingOverlay: React.FC = () => {
         setCaptureReady(false);
       });
 
-      const unlistenStyle = await listen<OverlayStyle>(
-        "overlay-style-changed",
-        (event) => setMonochrome(event.payload === "monochrome"),
+      const unlistenMonochrome = await listen<boolean>(
+        "overlay-monochrome-changed",
+        (event) => setMonochrome(event.payload),
       );
 
       const unlistenReady = await listen("recording-ready", () => {
@@ -132,7 +131,7 @@ const RecordingOverlay: React.FC = () => {
       return () => {
         unlistenShow();
         unlistenHide();
-        unlistenStyle();
+        unlistenMonochrome();
         unlistenReady();
         unlistenLevel();
         unlistenStream();
@@ -249,7 +248,7 @@ const RecordingOverlay: React.FC = () => {
     const collapsed = working && !hasText;
 
     return (
-      <div dir={direction} className={`ov-stage ${position}`}>
+      <div dir={direction} className={`ov-stage ${position} ${monochrome ? "monochrome" : ""}`}>
         <div
           key={session}
           className={`scard ${open ? "open" : ""} ${collapsed ? "working" : ""} ${

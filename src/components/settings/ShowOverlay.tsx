@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
+import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 import type { OverlayPosition, OverlayStyle } from "@/bindings";
 
@@ -23,10 +24,6 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
       {
         value: "minimal",
         label: t("settings.advanced.overlay.style.options.minimal"),
-      },
-      {
-        value: "monochrome",
-        label: t("settings.advanced.overlay.style.options.monochrome"),
       },
       {
         value: "live",
@@ -69,6 +66,18 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
             disabled={isUpdating("overlay_style")}
           />
         </SettingContainer>
+
+        {selectedStyle !== "none" && (
+          <ToggleSwitch
+            checked={getSetting("monochrome_overlay") ?? false}
+            onChange={(enabled) => updateSetting("monochrome_overlay", enabled)}
+            isUpdating={isUpdating("monochrome_overlay")}
+            label={t("settings.advanced.overlay.monochrome.label")}
+            description={t("settings.advanced.overlay.monochrome.description")}
+            descriptionMode={descriptionMode}
+            grouped={grouped}
+          />
+        )}
 
         {selectedStyle !== "none" && (
           <SettingContainer
