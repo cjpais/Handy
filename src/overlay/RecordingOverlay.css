@@ -111,6 +111,10 @@
   align-items: flex-end; /* bottom placement: flush to the bottom edge */
   font-family: var(--s-font);
 }
+.ov-stage.monochrome {
+  --s-accent: color-mix(in srgb, var(--color-text) 72%, var(--color-background));
+  --s-accent-soft: color-mix(in srgb, var(--color-text) 18%, transparent);
+}
 .ov-stage.top {
   align-items: flex-start; /* top placement: flush to the top edge */
 }

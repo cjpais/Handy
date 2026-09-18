@@ -25,6 +25,10 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
         label: t("settings.advanced.overlay.style.options.minimal"),
       },
       {
+        value: "monochrome",
+        label: t("settings.advanced.overlay.style.options.monochrome"),
+      },
+      {
         value: "live",
         label: t("settings.advanced.overlay.style.options.live"),
       },

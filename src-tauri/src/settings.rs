@@ -119,8 +119,8 @@ pub enum OverlayPosition {
     Bottom,
 }
 
-/// Which recording overlay to display. `Minimal` and `Live` share one base
-/// (the pill); `Live` grows into the panel that shows live transcription text.
+/// Which recording overlay to display. `Minimal`, `Monochrome`, and `Live`
+/// share one pill; `Live` grows into the live transcription panel.
 /// `None` hides the overlay entirely. Decoupled from whether the model runs in
 /// streaming mode (that is driven purely by model capability).
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -128,6 +128,7 @@ pub enum OverlayPosition {
 pub enum OverlayStyle {
     None,
     Minimal,
+    Monochrome,
     Live,
 }
 
@@ -509,7 +510,7 @@ pub struct AppSettings {
     /// Experimental detector implementation. Silero remains the stable default.
     #[serde(default)]
     pub vad_backend: VadBackend,
-    /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
+    /// Which recording overlay to show: None / Minimal / Monochrome / Live. Streaming mode is
     /// not gated on this — that follows model capability. Migrated from the old
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]

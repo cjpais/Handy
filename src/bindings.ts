@@ -1067,12 +1067,12 @@ export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "top" | "bottom"
 /**
- * Which recording overlay to display. `Minimal` and `Live` share one base
- * (the pill); `Live` grows into the panel that shows live transcription text.
+ * Which recording overlay to display. `Minimal`, `Monochrome`, and `Live`
+ * share one pill; `Live` grows into the live transcription panel.
  * `None` hides the overlay entirely. Decoupled from whether the model runs in
  * streaming mode (that is driven purely by model capability).
  */
-export type OverlayStyle = "none" | "minimal" | "live"
+export type OverlayStyle = "none" | "minimal" | "monochrome" | "live"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
