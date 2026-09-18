@@ -16,6 +16,9 @@ interface SettingsStore {
   settings: Settings | null;
   defaultSettings: Settings | null;
   isLoading: boolean;
+  // Set synchronously on the first initialize() call; useSettings effects in
+  // many components can fire in the same commit, before any IPC resolves.
+  initialized: boolean;
   isUpdating: Record<string, boolean>;
   audioDevices: AudioDevice[];
   outputDevices: AudioDevice[];
@@ -201,6 +204,7 @@ export const useSettingsStore = create<SettingsStore>()(
     settings: null,
     defaultSettings: null,
     isLoading: true,
+    initialized: false,
     isUpdating: {},
     audioDevices: [],
     outputDevices: [],
@@ -628,6 +632,14 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
+      // Guard synchronously before any await: every component using
+      // useSettings() calls initialize() from its first effect, and several
+      // effects can run in one commit before the IPC round-trips below
+      // resolve. Without the flag each call would register another pair of
+      // backend event listeners that are never removed.
+      if (get().initialized) return;
+      set({ initialized: true });
+
       const {
         refreshSettings,
         checkCustomSounds,
