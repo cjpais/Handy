@@ -94,6 +94,12 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let recording_was_active = audio_manager.is_recording();
     audio_manager.cancel_recording();
 
+    // Restore the system mute state recording may have applied. Cancel paths
+    // never run the stop pipeline that otherwise removes it, and in AlwaysOn
+    // mode the stream is never closed, so the output would otherwise stay
+    // muted indefinitely.
+    audio_manager.remove_mute();
+
     // Abandon any live streaming transcription
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.cancel_stream();
