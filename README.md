@@ -48,6 +48,10 @@ The process is entirely local:
 4. Configure your preferred keyboard shortcuts in Settings
 5. Start transcribing!
 
+### Development Setup
+
+For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
+
 ## Sponsors
 
 <div align="center">
@@ -65,10 +69,6 @@ The process is entirely local:
     <img src="sponsor-images/boltai.jpg" alt="Bolt AI" width="120" height="120">
   </a>
 </div>
-
-### Development Setup
-
-For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
 ## Integrations
 
