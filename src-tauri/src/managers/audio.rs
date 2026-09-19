@@ -435,9 +435,18 @@ impl AudioRecordingManager {
             cached_device: Arc::new(Mutex::new(None)),
         };
 
-        // Always-on?  Open immediately.
+        // Always-on?  Open immediately. A failed open (no input device, audio
+        // daemon unreachable) must not abort startup: the app would never show a
+        // window or tray, and the setting could only be reset by editing the store
+        // by hand. try_start_recording retries the open on every recording start
+        // and the shortcut path surfaces the error to the user, so stay in
+        // always-on mode with the stream closed until then.
         if matches!(mode, MicrophoneMode::AlwaysOn) {
-            manager.start_microphone_stream()?;
+            if let Err(e) = manager.start_microphone_stream() {
+                warn!(
+                    "Failed to open always-on microphone stream at startup ({e}); will retry on the next recording start"
+                );
+            }
         }
 
         Ok(manager)
