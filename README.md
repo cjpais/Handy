@@ -416,6 +416,18 @@ Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
 
 If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
 
+### Empty recording overlay on Hyprland / Omarchy
+
+If the recording overlay is empty or bordered, fully quit Handy and launch a
+[native installation](BUILD.md#linux-install-from-source) with Wayland enabled:
+
+```bash
+env -u HANDY_NO_GTK_LAYER_SHELL GDK_BACKEND=wayland handy
+```
+
+If this works, apply `GDK_BACKEND=wayland` only to Handy's launcher. This
+workaround does not work with the 0.9.6 AppImage, which forces X11.
+
 ### Vulkan Overlays and Capture Tools on Windows (`HANDY_KEEP_VULKAN_IMPLICIT_LAYERS`)
 
 On Windows, Handy asks the Vulkan loader to skip implicit layers to avoid crashes caused by overlay and capture hooks ([#2049](https://github.com/cjpais/Handy/issues/2049)). GPU acceleration remains enabled; this does not change system-wide settings.
