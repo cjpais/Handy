@@ -169,6 +169,7 @@ impl AudioRecorder {
         self.selected_channel = channel.map(usize::from);
     }
 
+    #[allow(deprecated)] // cpal 0.17 deprecated Device::name(); kept for device-name cache key + logging
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
         if self.worker_handle.is_some() {
             if !self.needs_reopen() {
@@ -220,7 +221,7 @@ impl AudioRecorder {
                 };
                 let config_elapsed = config_started.elapsed();
 
-                let sample_rate = config.sample_rate().0;
+                let sample_rate = config.sample_rate();
                 let channels = config.channels() as usize;
 
                 log::info!(
@@ -435,7 +436,7 @@ impl AudioRecorder {
         T: Sample + SizedSample + Copy + Send + 'static,
         f32: cpal::FromSample<T>,
     {
-        let ring_capacity = config.sample_rate().0 as usize * AUDIO_RING_SECONDS;
+        let ring_capacity = config.sample_rate() as usize * AUDIO_RING_SECONDS;
         let (mut sample_producer, mut sample_consumer) = RingBuffer::new(ring_capacity);
 
         // Touch rtrb's uninitialized pages before the stream starts to reduce
