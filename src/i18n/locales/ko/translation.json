@@ -194,9 +194,19 @@
         "noResults": "언어를 찾을 수 없습니다",
         "auto": "자동"
       },
-      "pushToTalk": {
-        "label": "녹음 중 단축키 홀딩",
-        "description": "누르고 있으면 녹음, 놓으면 정지"
+      "shortcutActivation": {
+        "title": "단축키 동작",
+        "description": "음성 텍스트 변환 단축키로 녹음을 시작하고 중지하는 방식을 선택합니다.",
+        "options": {
+          "holdOrToggle": "자동",
+          "pushToTalk": "길게 누르기",
+          "toggle": "전환"
+        },
+        "descriptions": {
+          "hold_or_toggle": "길게 누르면 녹음, 탭하면 전환",
+          "push_to_talk": "단축키를 누르고 있는 동안 녹음합니다",
+          "toggle": "단축키를 탭하면 녹음을 시작하고, 다시 탭하면 중지합니다"
+        }
       }
     },
     "sound": {
@@ -206,6 +216,12 @@
         "description": "선호하는 마이크 장치를 선택하세요",
         "placeholder": "마이크 선택...",
         "loading": "로딩 중..."
+      },
+      "channel": {
+        "title": "입력 채널",
+        "description": "녹음할 입력 채널을 선택하세요. 오디오 인터페이스에 입력이 여러 개 있는 경우 사용하세요.",
+        "average": "모든 채널 평균",
+        "channel": "채널 {{n}}"
       },
       "audioFeedback": {
         "label": "오디오 피드백",
@@ -231,7 +247,9 @@
       "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
       "deleteTitle": "모델 삭제",
       "filters": {
-        "allLanguages": "모든 언어"
+        "allLanguages": "모든 언어",
+        "streaming": "실시간 음성 인식을 지원하는 모델 필터링",
+        "translation": "영어 번역을 지원하는 모델 필터링"
       },
       "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
       "searchPlaceholder": "이름으로 모델 검색…",
@@ -368,6 +386,18 @@
       "voiceActivityDetection": {
         "title": "음성 활동 감지",
         "description": "녹음에서 무음 구간을 걸러냅니다. 스트리밍 지원 모델은 더 긴 VAD 테일을 사용하며, VAD를 끄면 원본 오디오가 그대로 녹음됩니다."
+      },
+      "vadBackend": {
+        "title": "음성 활동 감지 백엔드",
+        "description": "무음을 필터링하는 데 사용할 감지기를 선택합니다. Earshot은 실험적 기능입니다. 음성이 잘리거나 소음이 남는 경우 Silero로 되돌리세요.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
+      "fillerWordRemoval": {
+        "title": "군더더기 표현 제거",
+        "description": "전사에서 흔한 머뭇거림 표현을 제거합니다. 그대로 두려면 이 옵션을 끄세요."
       }
     },
     "postProcessing": {
@@ -430,6 +460,7 @@
       "loading": "히스토리 로딩 중...",
       "empty": "아직 변환된 내용이 없습니다. 녹음을 시작하여 히스토리를 만드세요!",
       "copyToClipboard": "녹음 내용을 클립보드에 복사",
+      "copyError": "전사 내용을 클립보드에 복사하지 못했습니다.",
       "save": "변환된 텍스트 저장",
       "unsave": "저장에서 제거",
       "delete": "항목 삭제",
@@ -462,7 +493,8 @@
       },
       "updateChecks": {
         "label": "업데이트 확인",
-        "description": "Handy의 새 버전을 자동으로 확인합니다"
+        "description": "Handy의 새 버전을 자동으로 확인합니다",
+        "lockedDescription": "시스템 구성에 의해 비활성화됨 (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "사운드 테마",
@@ -520,6 +552,10 @@
         "title": "붙여넣기 지연 (이후)",
         "description": "붙여넣기 키 입력을 보낸 후 이전 클립보드를 복원하기 전의 지연 시간(밀리초). 전사된 텍스트 대신 이전 클립보드 내용이 붙여넣어지면 늘리세요."
       },
+      "holdThreshold": {
+        "title": "길게 누르기 기준 시간",
+        "description": "자동 모드 전용: 탭이 아닌 길게 누르기로 인식되려면 단축키를 얼마나 오래(밀리초) 누르고 있어야 하는지 설정합니다. 짧게 누른 뒤에도 녹음이 계속 켜져 있으면 낮추고, 의도한 탭이 길게 누르기로 처리되면 높이세요."
+      },
       "reliablePaste": {
         "title": "안정적인 붙여넣기 (Beta)",
         "description": "고정된 지연 시간이 아니라 대상 앱이 실제로 전사된 텍스트를 읽은 뒤에만 클립보드를 복원합니다. 시스템 부하가 높을 때 이전 클립보드 내용이 붙여넣어지는 문제를 해결하기 위한 옵션입니다. 클립보드를 사용하는 붙여넣기 방법이 필요하며 macOS와 Windows에서만 지원됩니다."
@@ -559,6 +595,13 @@
         "button": "미리보기",
         "noNotes": "내장 릴리스 노트를 찾을 수 없습니다",
         "error": "릴리스 노트를 미리 볼 수 없습니다"
+      },
+      "onboardingPreview": {
+        "title": "온보딩 미리보기",
+        "description": "권한, 모델 또는 완료 상태를 변경하지 않고 온보딩 화면을 미리 봅니다",
+        "permissionsButton": "권한",
+        "modelsButton": "모델 선택",
+        "exitButton": "미리보기 종료"
       }
     },
     "about": {

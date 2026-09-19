@@ -165,7 +165,9 @@
       "deleteActiveConfirm": "{{modelName}} je váš aktivní model. Jeho smazáním se zastaví přepisy, dokud nevyberete nový model. Opravdu chcete pokračovat?",
       "deleteTitle": "Smazat model",
       "filters": {
-        "allLanguages": "Všechny jazyky"
+        "allLanguages": "Všechny jazyky",
+        "streaming": "Filtrovat modely podporující živý přepis",
+        "translation": "Filtrovat modely podporující překlad do angličtiny"
       },
       "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
       "yourModels": "Stažené modely",
@@ -212,9 +214,19 @@
         "noResults": "Žádné jazyky nenalezeny",
         "auto": "Automaticky"
       },
-      "pushToTalk": {
-        "label": "Stisk a mluv",
-        "description": "Podržte pro nahrávání, uvolněte pro zastavení"
+      "shortcutActivation": {
+        "title": "Chování zkratky",
+        "description": "Zvolte, jak má zkratka přepisu spouštět a zastavovat nahrávání.",
+        "options": {
+          "holdOrToggle": "Automaticky",
+          "pushToTalk": "Podržet",
+          "toggle": "Přepínat"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Podržte pro nahrávání nebo klepněte pro přepnutí",
+          "push_to_talk": "Nahrává, dokud držíte zkratku",
+          "toggle": "Klepněte na zkratku pro zahájení nahrávání, klepněte znovu pro zastavení"
+        }
       }
     },
     "sound": {
@@ -224,6 +236,12 @@
         "description": "Vyberte preferované zařízení mikrofonu",
         "placeholder": "Vyberte mikrofon...",
         "loading": "Načítání..."
+      },
+      "channel": {
+        "title": "Vstupní kanál",
+        "description": "Vyberte vstupní kanál, ze kterého se má nahrávat. Tuto možnost použijte, pokud má vaše zvukové rozhraní více vstupů.",
+        "average": "Průměr všech kanálů",
+        "channel": "Kanál {{n}}"
       },
       "audioFeedback": {
         "label": "Zvuková odezva",
@@ -368,6 +386,18 @@
       "voiceActivityDetection": {
         "title": "Detekce hlasové aktivity",
         "description": "Odfiltruje ticho z nahrávek. Modely podporující streaming používají delší doběh VAD; vypnutí VAD nahrává surový zvuk."
+      },
+      "vadBackend": {
+        "title": "Backend detekce hlasu",
+        "description": "Vyberte detektor používaný k filtrování ticha. Earshot je experimentální; pokud je řeč ořezávána nebo zůstává šum, přepněte zpět na Silero.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
+      "fillerWordRemoval": {
+        "title": "Odstranit výplňová slova",
+        "description": "Odstraňuje běžná slova vyjadřující váhání z přepisů. Vypnutím je zachováte."
       }
     },
     "postProcessing": {
@@ -430,6 +460,7 @@
       "loading": "Načítám historii...",
       "empty": "Zatím žádné přepisy. Začněte nahrávat a vytvořte si historii!",
       "copyToClipboard": "Kopírovat přepis do schránky",
+      "copyError": "Přepis se nepodařilo zkopírovat do schránky.",
       "save": "Uložit přepis",
       "unsave": "Odebrat z uložených",
       "delete": "Smazat záznam",
@@ -462,7 +493,8 @@
       },
       "updateChecks": {
         "label": "Kontrolovat aktualizace",
-        "description": "Automaticky kontrolovat nové verze Handy"
+        "description": "Automaticky kontrolovat nové verze Handy",
+        "lockedDescription": "Zakázáno systémovou konfigurací (HANDY_DISABLE_UPDATER)"
       },
       "soundTheme": {
         "label": "Zvukový motiv",
@@ -525,6 +557,10 @@
         "title": "Zpoždění vložení (po)",
         "description": "Zpoždění (v milisekundách) po klávese pro vložení, před obnovením předchozí schránky. Zvyšte, pokud se místo přepisu vkládá starý obsah schránky."
       },
+      "holdThreshold": {
+        "title": "Práh podržení",
+        "description": "Pouze v automatickém režimu: jak dlouho (v milisekundách) musí být zkratka držena, aby se počítala jako podržení místo klepnutí. Snižte, pokud po krátkém podržení nahrávání zůstává zapnuté; zvyšte, pokud jsou záměrná klepnutí vyhodnocena jako podržení."
+      },
       "reliablePaste": {
         "title": "Spolehlivé vložení (Beta)",
         "description": "Obnoví schránku teprve poté, co cílová aplikace skutečně přečte přepis, místo po pevně daném zpoždění. Má odstranit vkládání starého obsahu schránky při zatížení systému. Vyžaduje způsob vložení přes schránku; pouze macOS a Windows."
@@ -559,6 +595,13 @@
         "button": "Náhled",
         "noNotes": "Nebyly nalezeny žádné přibalené poznámky k vydání",
         "error": "Nepodařilo se zobrazit náhled poznámek k vydání"
+      },
+      "onboardingPreview": {
+        "title": "Náhled úvodního nastavení",
+        "description": "Prohlédněte si obrazovky úvodního nastavení beze změny oprávnění, modelů nebo stavu dokončení",
+        "permissionsButton": "Oprávnění",
+        "modelsButton": "Výběr modelu",
+        "exitButton": "Ukončit náhled"
       }
     },
     "about": {

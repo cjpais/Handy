@@ -28,7 +28,7 @@
   --color-mid-gray: #808080;
 
   /* Active palette — defaults to light, follows the OS via the media query
-     below, or is forced by `data-theme` (see App.css). */
+     below, or is forced by `data-theme` (see the overrides below). */
   --color-text: var(--light-color-text);
   --color-background: var(--light-color-background);
   --color-logo-primary: var(--light-color-logo-primary);
@@ -46,4 +46,32 @@
     --color-warning: var(--dark-color-warning);
     --color-error: var(--dark-color-error);
   }
+}
+
+/*
+ * Explicit theme override, driven by the `theme` setting via
+ * `document.documentElement.dataset.theme`. When set, the higher-specificity
+ * attribute selectors win over the `prefers-color-scheme` media query above,
+ * so a user can keep Handy light or dark regardless of the OS setting.
+ * `system` (or no attribute) leaves the OS in charge.
+ *
+ * Lives here (not in App.css) so every window that imports the shared palette —
+ * the settings window and the recording overlay alike — honours the override.
+ */
+:root[data-theme="light"] {
+  --color-text: var(--light-color-text);
+  --color-background: var(--light-color-background);
+  --color-logo-primary: var(--light-color-logo-primary);
+  --color-logo-stroke: var(--light-color-logo-stroke);
+  --color-warning: var(--light-color-warning);
+  --color-error: var(--light-color-error);
+}
+
+:root[data-theme="dark"] {
+  --color-text: var(--dark-color-text);
+  --color-background: var(--dark-color-background);
+  --color-logo-primary: var(--dark-color-logo-primary);
+  --color-logo-stroke: var(--dark-color-logo-stroke);
+  --color-warning: var(--dark-color-warning);
+  --color-error: var(--dark-color-error);
 }

@@ -1,5 +1,5 @@
 use crate::audio_feedback;
-use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
+use crate::audio_toolkit::audio::{list_input_devices, list_output_devices, AudioRecorder};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
 use log::warn;
@@ -331,4 +331,50 @@ pub fn get_clamshell_microphone(app: AppHandle) -> Result<String, String> {
 pub fn is_recording(app: AppHandle) -> bool {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.is_recording()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_microphone_channels(device_name: String) -> Result<u16, String> {
+    // cpal device enumeration and config queries can stall, so keep them off
+    // the webview/main run loop.
+    tokio::task::spawn_blocking(move || {
+        use cpal::traits::HostTrait;
+
+        let device = if device_name.eq_ignore_ascii_case("default") {
+            crate::audio_toolkit::get_cpal_host().default_input_device()
+        } else {
+            list_input_devices()
+                .map_err(|e| format!("Failed to list audio devices: {e}"))?
+                .into_iter()
+                .find(|device| device.name == device_name)
+                .map(|device| device.device)
+        };
+
+        match device {
+            Some(device) => AudioRecorder::preferred_input_channel_count(&device)
+                .map_err(|e| format!("Failed to get microphone config: {e}")),
+            None => Ok(1),
+        }
+    })
+    .await
+    .map_err(|e| format!("audio task join failed: {e}"))?
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_selected_channel(app: AppHandle, channel: Option<u16>) -> Result<(), String> {
+    // Restarting cpal can block, so keep it off the webview/main run loop. Apply
+    // the runtime change before persisting it so a rejected active-recording
+    // change does not become effective on the next launch.
+    let manager = app.state::<Arc<AudioRecordingManager>>().inner().clone();
+    tokio::task::spawn_blocking(move || manager.update_selected_channel(channel))
+        .await
+        .map_err(|e| format!("audio task join failed: {e}"))?
+        .map_err(|e| format!("Failed to update channel selection: {e}"))?;
+
+    let mut settings = get_settings(&app);
+    settings.selected_channel = channel;
+    write_settings(&app, settings);
+    Ok(())
 }

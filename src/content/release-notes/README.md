@@ -11,9 +11,9 @@ persisted `whats_new_last_seen_version` and not newer than the running app
 version.
 
 Keep these files focused on headline user-facing changes. Release notes support
-paragraphs, headings, lists, links, code, quotes, strikethrough, tables, task
-lists, separators, hard line breaks, and local images under
-`/release-notes/...`. Raw HTML is ignored before rendering.
+paragraphs, headings, lists, links, code, quotes, separators, hard line breaks,
+and local images under `/release-notes/...`. Raw HTML is ignored before
+rendering.
 
 Place image assets in `public/release-notes/{version}/` and reference them from
 Markdown with absolute paths:

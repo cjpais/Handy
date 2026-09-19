@@ -61,29 +61,10 @@
   }
 }
 
-/*
- * Explicit theme override, driven by the `theme` setting via
- * `document.documentElement.dataset.theme`. When set, the higher-specificity
- * attribute selectors win over the `prefers-color-scheme` media query above,
- * so a user can keep Handy light or dark regardless of the OS setting.
- * `system` (or no attribute) leaves the OS in charge.
- */
-:root[data-theme="light"] {
-  --color-text: var(--light-color-text);
-  --color-background: var(--light-color-background);
-  --color-logo-primary: var(--light-color-logo-primary);
-  --color-logo-stroke: var(--light-color-logo-stroke);
-  --color-warning: var(--light-color-warning);
-  --color-error: var(--light-color-error);
-}
-
-:root[data-theme="dark"] {
-  --color-text: var(--dark-color-text);
-  --color-background: var(--dark-color-background);
-  --color-logo-primary: var(--dark-color-logo-primary);
-  --color-logo-stroke: var(--dark-color-logo-stroke);
-  --color-warning: var(--dark-color-warning);
-  --color-error: var(--dark-color-error);
+/* Keep onboarding centered when classic scrollbars consume layout space.
+   Overlay scrollbars do not reserve a gutter, so this has no effect on them. */
+:root[data-onboarding-active] {
+  scrollbar-gutter: stable both-edges;
 }
 
 /* macOS - tint native overlay scrollbar thumb */
@@ -91,17 +72,15 @@
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
-/* Custom Scrollbar - only on Windows/Linux; macOS uses native overlay scrollbars */
-:root:not([data-platform="macos"]) ::-webkit-scrollbar {
+/* Custom Scrollbar */
+::-webkit-scrollbar {
   width: 14px;
   height: 14px;
 }
-
-:root:not([data-platform="macos"]) ::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
-
-:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb);
   border-radius: 20px;
   border: 3px solid transparent;
@@ -110,8 +89,7 @@
   background-clip: content-box;
   min-height: 32px;
 }
-
-:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background-color: var(--scrollbar-thumb-hover);
 }
 

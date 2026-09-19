@@ -194,9 +194,19 @@
         "noResults": "Ingen sprog fundet",
         "auto": "Automatisk"
       },
-      "pushToTalk": {
-        "label": "Tryk-for-at-tale",
-        "description": "Hold nede for at optage, slip for at stoppe"
+      "shortcutActivation": {
+        "title": "Genvejens adfærd",
+        "description": "Vælg, hvordan transskriptionsgenvejen starter og stopper optagelsen.",
+        "options": {
+          "holdOrToggle": "Automatisk",
+          "pushToTalk": "Hold",
+          "toggle": "Skift"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Hold nede for at optage, eller tryk kort for at slå til/fra",
+          "push_to_talk": "Optager, mens du holder genvejen nede",
+          "toggle": "Tryk på genvejen for at starte optagelsen, tryk igen for at stoppe"
+        }
       }
     },
     "models": {
@@ -209,7 +219,9 @@
       "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
       "deleteTitle": "Slet model",
       "filters": {
-        "allLanguages": "Alle sprog"
+        "allLanguages": "Alle sprog",
+        "streaming": "Filtrer modeller, der understøtter live transskription",
+        "translation": "Filtrer modeller, der understøtter oversættelse til engelsk"
       },
       "rescan": {
         "label": "Søg igen",
@@ -224,6 +236,12 @@
         "description": "Vælg din foretrukne mikrofonenhed",
         "placeholder": "Vælg mikrofon...",
         "loading": "Indlæser..."
+      },
+      "channel": {
+        "title": "Inputkanal",
+        "description": "Vælg, hvilken inputkanal der skal optages fra. Brug dette, hvis din lydgrænseflade har flere indgange.",
+        "average": "Gennemsnit af alle kanaler",
+        "channel": "Kanal {{n}}"
       },
       "audioFeedback": {
         "label": "Lydfeedback",
@@ -368,6 +386,18 @@
       "voiceActivityDetection": {
         "title": "Stemmeaktivitetsdetektion",
         "description": "Filtrer stilhed fra optagelser. Streaming-modeller bruger en længere VAD-hale; deaktivering af VAD optager rå lyd."
+      },
+      "vadBackend": {
+        "title": "Stemmedetektions-backend",
+        "description": "Vælg den detektor, der bruges til at filtrere stilhed. Earshot er eksperimentel; skift tilbage til Silero, hvis tale klippes eller støj bevares.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
+      "fillerWordRemoval": {
+        "title": "Fjern fyldord",
+        "description": "Fjerner almindelige tøveord fra transskriptioner. Slå fra for at beholde dem."
       }
     },
     "postProcessing": {
@@ -430,6 +460,7 @@
       "loading": "Indlæser historik...",
       "empty": "Ingen transskriptioner endnu. Start optagelse for at opbygge din historik!",
       "copyToClipboard": "Kopiér transskription til udklipsholder",
+      "copyError": "Kunne ikke kopiere transskriptionen til udklipsholderen.",
       "save": "Gem transskription",
       "unsave": "Fjern fra gemte",
       "delete": "Slet post",
@@ -462,7 +493,8 @@
       },
       "updateChecks": {
         "label": "Tjek for opdateringer",
-        "description": "Tjek automatisk for nye versioner af Handy"
+        "description": "Tjek automatisk for nye versioner af Handy",
+        "lockedDescription": "Deaktiveret af systemkonfiguration (HANDY_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Forhåndsvisning af nyheder",
@@ -470,6 +502,13 @@
         "button": "Forhåndsvisning",
         "noNotes": "Ingen medfølgende udgivelsesnoter fundet",
         "error": "Kunne ikke forhåndsvise udgivelsesnoter"
+      },
+      "onboardingPreview": {
+        "title": "Forhåndsvis introduktion",
+        "description": "Forhåndsvis introduktionsskærmene uden at ændre tilladelser, modeller eller fuldførelsesstatus",
+        "permissionsButton": "Tilladelser",
+        "modelsButton": "Modelvalg",
+        "exitButton": "Afslut forhåndsvisning"
       },
       "soundTheme": {
         "label": "Lydtema",
@@ -531,6 +570,10 @@
       "pasteDelayAfter": {
         "title": "Forsinkelse af indsættelse (efter)",
         "description": "Forsinkelse (i millisekunder) efter tastetrykket for indsætning, før din tidligere udklipsholder gendannes. Øg, hvis dit gamle udklipsholderindhold bliver indsat i stedet for transskriptionen."
+      },
+      "holdThreshold": {
+        "title": "Holdetærskel",
+        "description": "Kun i automatisk tilstand: hvor længe (i millisekunder) genvejen skal holdes nede, før det tæller som et hold i stedet for et tryk. Sænk værdien, hvis korte hold lader optagelsen køre videre; hæv den, hvis bevidste tryk behandles som hold."
       },
       "reliablePaste": {
         "title": "Pålidelig indsættelse (Beta)",
