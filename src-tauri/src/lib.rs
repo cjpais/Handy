@@ -29,6 +29,7 @@ pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
+pub use utils::env_flag_enabled;
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
@@ -886,6 +887,13 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
+            #[cfg(target_os = "windows")]
+            log::info!(
+                "Vulkan layer policy: VK_LOADER_LAYERS_DISABLE={:?}, HANDY_KEEP_VULKAN_IMPLICIT_LAYERS={}",
+                std::env::var_os("VK_LOADER_LAYERS_DISABLE"),
+                utils::env_flag_enabled("HANDY_KEEP_VULKAN_IMPLICIT_LAYERS"),
+            );
+
             specta_builder.mount_events(app);
 
             // Headless one-shot path (`--transcribe-file` / `--list-devices` /
@@ -945,7 +953,33 @@ pub fn run(cli_args: CliArgs) {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));
             }
 
-            win_builder.build()?;
+            // Only used on Windows, to disable WebView2 browser accelerators.
+            #[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
+            let main_window = win_builder.build()?;
+
+            // Disable WebView2 browser accelerators (F5, F6, Ctrl+F, F12, ...).
+            // A settings window has no use for them, and pressing F6 while
+            // recording a shortcut was reported to turn the whole window white
+            // (cjpais/Handy#1940), likely by triggering WebView2 focus cycling.
+            // DevTools stays enabled; only the F12 accelerator is lost.
+            #[cfg(target_os = "windows")]
+            {
+                let _ = main_window.with_webview(|webview| unsafe {
+                    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+                    use windows::core::Interface;
+
+                    let result = webview
+                        .controller()
+                        .CoreWebView2()
+                        .and_then(|core| core.Settings())
+                        .and_then(|settings| settings.cast::<ICoreWebView2Settings3>())
+                        .and_then(|settings| settings.SetAreBrowserAcceleratorKeysEnabled(false));
+
+                    if let Err(error) = result {
+                        log::warn!("Failed to disable WebView2 browser accelerators: {error}");
+                    }
+                });
+            }
 
             let mut settings = get_settings(app.handle());
 

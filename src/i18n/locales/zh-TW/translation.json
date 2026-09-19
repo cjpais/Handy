@@ -460,6 +460,7 @@
       "loading": "載入歷史紀錄中...",
       "empty": "還沒有轉錄紀錄。開始錄製以建立您的歷史紀錄！",
       "copyToClipboard": "複製轉錄到剪貼簿",
+      "copyError": "無法將轉錄複製到剪貼簿。",
       "save": "儲存轉錄",
       "unsave": "從已儲存中移除",
       "delete": "刪除條目",
@@ -594,6 +595,13 @@
         "button": "預覽",
         "noNotes": "找不到內建版本資訊",
         "error": "無法預覽版本資訊"
+      },
+      "onboardingPreview": {
+        "title": "預覽新手引導",
+        "description": "預覽新手引導畫面，而不變更權限、模型或完成狀態",
+        "permissionsButton": "權限",
+        "modelsButton": "模型選擇",
+        "exitButton": "結束預覽"
       }
     },
     "about": {

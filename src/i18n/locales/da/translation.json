@@ -460,6 +460,7 @@
       "loading": "Indlæser historik...",
       "empty": "Ingen transskriptioner endnu. Start optagelse for at opbygge din historik!",
       "copyToClipboard": "Kopiér transskription til udklipsholder",
+      "copyError": "Kunne ikke kopiere transskriptionen til udklipsholderen.",
       "save": "Gem transskription",
       "unsave": "Fjern fra gemte",
       "delete": "Slet post",
@@ -501,6 +502,13 @@
         "button": "Forhåndsvisning",
         "noNotes": "Ingen medfølgende udgivelsesnoter fundet",
         "error": "Kunne ikke forhåndsvise udgivelsesnoter"
+      },
+      "onboardingPreview": {
+        "title": "Forhåndsvis introduktion",
+        "description": "Forhåndsvis introduktionsskærmene uden at ændre tilladelser, modeller eller fuldførelsesstatus",
+        "permissionsButton": "Tilladelser",
+        "modelsButton": "Modelvalg",
+        "exitButton": "Afslut forhåndsvisning"
       },
       "soundTheme": {
         "label": "Lydtema",
