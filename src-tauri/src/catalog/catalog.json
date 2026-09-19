@@ -1,6 +1,6 @@
 {
   "catalog_version": 2,
-  "generated_at": "2026-08-17T11:27:14+00:00",
+  "generated_at": "2026-09-12T16:42:55+00:00",
   "mirrors": [
     "https://blob.handy.computer"
   ],
@@ -1706,6 +1706,34 @@
         {"filename": "parakeet-tdt_ctc-1.1b-F32.gguf", "quant": "F32", "size_bytes": 4282202176, "sha256": "16bdd9ecd6ae993e2b89edfa103ddc7ffc6e63a63d07e4f858038b8190a5972c"}
       ],
       "default_quant": "Q5_K_M",
+      "recommended": false,
+      "recommended_rank": null
+    },
+    {
+      "id": "oruk/orukeet",
+      "revision": "bc4e7f163fe22158e70fe8fa0cea2ea087537a18",
+      "slug": "orukeet",
+      "name": "Orukeet",
+      "architecture": "parakeet",
+      "family": "parakeet",
+      "parameters": "0.6B",
+      "description": "25-language speech-to-text with auto language detection, token-level timestamps.",
+      "base_model": "nvidia/parakeet-tdt-0.6b-v3",
+      "license": "cc-by-sa-4.0",
+      "language_count": 25,
+      "languages": ["bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt", "mt", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "uk"],
+      "capabilities": {
+        "streaming": false,
+        "translate": false,
+        "lang_detect": true,
+        "timestamps": "token"
+      },
+      "speed_score": null,
+      "accuracy_score": null,
+      "files": [
+        {"filename": "orukeet-transcribe-cpp-Q8_0.gguf", "quant": "Q8_0", "size_bytes": 739508608, "sha256": "cad2f52ac91cad829279422301989687c2cf02e19157352ed25ea501b90dbb7e"}
+      ],
+      "default_quant": "Q8_0",
       "recommended": false,
       "recommended_rank": null
     },
