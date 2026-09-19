@@ -4,9 +4,7 @@
 
 export type OSType = "macos" | "windows" | "linux" | "unknown";
 
-// Compound keys are stored without spaces so both backends can parse them
-// (global-hotkey: "SCROLLLOCK", handy-keys: "scrolllock"). UI labels are
-// separate so the settings display still shows "Scroll Lock".
+// Shortcut parsers require compact tokens; keep display labels separate.
 const COMPOUND_KEY_DISPLAY: Record<string, string> = {
   capslock: "Caps Lock",
   numlock: "Num Lock",
@@ -78,7 +76,6 @@ export const getKeyName = (
       MetaRight: getModifierName("meta"),
       OSLeft: getModifierName("meta"),
       OSRight: getModifierName("meta"),
-      // Compound keys: no spaces (see COMPOUND_KEY_DISPLAY)
       CapsLock: "capslock",
       Tab: "tab",
       Enter: "enter",
@@ -130,8 +127,7 @@ export const getKeyName = (
       return punctuationMap[code];
     }
 
-    // Lowercase without inserting spaces so names stay parseable
-    // (e.g. AudioVolumeUp -> "audiovolumeup", not "audio volume up")
+    // Parser names mirror KeyboardEvent.code without spaces.
     return code.toLowerCase();
   }
 
@@ -178,7 +174,6 @@ const capitalizeKey = (key: string): string => {
   if (/^f\d+$/.test(key)) return key.toUpperCase();
   // Single char: a -> A
   if (key.length === 1) return key.toUpperCase();
-  // Known compound keys stored without spaces
   if (COMPOUND_KEY_DISPLAY[key]) return COMPOUND_KEY_DISPLAY[key];
   // Multi-word: capitalize first letter of each word
   return key.replace(/\b\w/g, (c) => c.toUpperCase());
