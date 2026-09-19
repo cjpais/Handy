@@ -455,7 +455,7 @@ impl TranscriptionManager {
         self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
     }
 
-    /// Unloads the model immediately if the setting is enabled and the model is loaded.
+    /// Unloads the model immediately if the setting is enabled and the model is loaded
     pub fn maybe_unload_immediately(&self, context: &str) {
         let settings = get_settings(&self.app_handle);
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
@@ -468,29 +468,12 @@ impl TranscriptionManager {
         }
     }
 
-    /// Like [`maybe_unload_immediately`](Self::maybe_unload_immediately), but waits
-    /// for an in-progress background load first. Session cleanup uses this before
-    /// releasing the coordinator so a late load cannot repopulate the model after
-    /// the immediate-unload check or race with the next recording.
-    pub(crate) fn maybe_unload_immediately_after_loading(&self, context: &str) {
-        if get_settings(&self.app_handle).model_unload_timeout != ModelUnloadTimeout::Immediately {
-            return;
-        }
-
-        let mut is_loading = self
-            .is_loading
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+    /// Blocks until any in-progress background model load finishes.
+    pub fn wait_for_model_load(&self) {
+        let mut is_loading = self.is_loading.lock().unwrap();
         while *is_loading {
-            is_loading = self
-                .loading_condvar
-                .wait(is_loading)
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            is_loading = self.loading_condvar.wait(is_loading).unwrap();
         }
-        drop(is_loading);
-
-        // Re-read the setting in case it changed while the model was loading.
-        self.maybe_unload_immediately(context);
     }
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
@@ -867,12 +850,7 @@ impl TranscriptionManager {
 
         // Wait for any in-progress model load to finish (start_stream races the
         // background load kicked off when recording starts).
-        {
-            let mut is_loading = self.is_loading.lock().unwrap();
-            while *is_loading {
-                is_loading = self.loading_condvar.wait(is_loading).unwrap();
-            }
-        }
+        self.wait_for_model_load();
 
         let model_id = self.get_current_model().unwrap_or_default();
 
