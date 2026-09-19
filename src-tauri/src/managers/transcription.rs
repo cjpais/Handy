@@ -468,14 +468,6 @@ impl TranscriptionManager {
         }
     }
 
-    /// Blocks until any in-progress background model load finishes.
-    pub fn wait_for_model_load(&self) {
-        let mut is_loading = self.is_loading.lock().unwrap();
-        while *is_loading {
-            is_loading = self.loading_condvar.wait(is_loading).unwrap();
-        }
-    }
-
     pub fn load_model(&self, model_id: &str) -> Result<()> {
         self.load_model_with_device(model_id, None)
     }
@@ -850,7 +842,12 @@ impl TranscriptionManager {
 
         // Wait for any in-progress model load to finish (start_stream races the
         // background load kicked off when recording starts).
-        self.wait_for_model_load();
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
 
         let model_id = self.get_current_model().unwrap_or_default();
 

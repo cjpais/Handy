@@ -7,9 +7,7 @@ use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{
-    get_settings, AppSettings, ModelUnloadTimeout, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID,
-};
+use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
 use crate::utils::{
@@ -34,16 +32,11 @@ struct RecordingErrorEvent {
     detail: Option<String>,
 }
 
-/// Drop guard that notifies the [`TranscriptionCoordinator`] when the
-/// transcription pipeline finishes — whether it completes normally or panics.
+/// Drop guard that finishes the transcription pipeline, including immediate
+/// model unloading on early exits.
 struct FinishGuard(AppHandle, Arc<TranscriptionManager>);
 impl Drop for FinishGuard {
     fn drop(&mut self) {
-        // Wait out an in-flight load so it can't land after the unload check.
-        // Runs before releasing the coordinator so the next session can't load first.
-        if get_settings(&self.0).model_unload_timeout == ModelUnloadTimeout::Immediately {
-            self.1.wait_for_model_load();
-        }
         self.1.maybe_unload_immediately("transcription session");
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
