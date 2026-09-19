@@ -363,6 +363,24 @@ pub async fn get_microphone_channels(device_name: String) -> Result<u16, String>
 
 #[tauri::command]
 #[specta::specta]
+pub async fn change_airpods_mode_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    // Reopening cpal can block, so keep it off the webview/main run loop. Apply
+    // the runtime change before persisting it so a rejected change (mid-recording,
+    // or a failed reopen) does not become effective on the next launch.
+    let manager = app.state::<Arc<AudioRecordingManager>>().inner().clone();
+    tokio::task::spawn_blocking(move || manager.update_airpods_mode(enabled))
+        .await
+        .map_err(|e| format!("audio task join failed: {e}"))?
+        .map_err(|e| format!("Failed to update AirPods mode: {e}"))?;
+
+    let mut settings = get_settings(&app);
+    settings.airpods_mode = enabled;
+    write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn set_selected_channel(app: AppHandle, channel: Option<u16>) -> Result<(), String> {
     // Restarting cpal can block, so keep it off the webview/main run loop. Apply
     // the runtime change before persisting it so a rejected active-recording

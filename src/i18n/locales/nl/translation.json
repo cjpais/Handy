@@ -274,6 +274,10 @@
         "label": "Microfoon openhouden tussen transcripties",
         "description": "Houdt de microfoonstream tot 30 seconden open nadat een opname stopt. Dit vermindert de vertraging bij opeenvolgende opnames, maar kan de Bluetooth-audiokwaliteit tijdelijk verminderen."
       },
+      "airpodsMode": {
+        "label": "AirPods-modus",
+        "description": "Schakelt AirPods automatisch over naar de Mac voor transcriptie wanneer een iPhone audio afspeelt. Zonder dit kunnen opnamen stil blijven."
+      },
       "acceleration": {
         "transcribe": {
           "title": "transcribe.cpp-versnelling",
