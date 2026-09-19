@@ -1,7 +1,80 @@
-use natural::phonetics::soundex;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use rphonetic::{DoubleMetaphone, Encoder};
 use strsim::levenshtein;
+
+/// Double Metaphone encoder used for phonetic custom-word matching.
+///
+/// The code length is deliberately left unbounded. Apache commons-codec (and
+/// rphonetic, which ports it) defaults to a 4-character code, which truncates
+/// long compounds into collisions: `flitepath` and `flatpack` both encode to
+/// `FLTP` at length 4, but to `FLTP0` and `FLTPK` in full. Custom words are
+/// overwhelmingly multi-syllable brand names, so truncation is the difference
+/// between a useful signal and a dangerous one.
+static DOUBLE_METAPHONE: Lazy<DoubleMetaphone> = Lazy::new(|| DoubleMetaphone::new(Some(64)));
+
+/// A word's primary and alternate Double Metaphone codes.
+///
+/// Double Metaphone emits two codes for words whose pronunciation is
+/// genuinely ambiguous in English (e.g. a trailing `th` -> `0` or `T`). Two
+/// words are phonetic equivalents when any of their codes agree.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PhoneticCode {
+    primary: String,
+    alternate: String,
+}
+
+impl PhoneticCode {
+    /// Returns `None` for input Double Metaphone cannot meaningfully encode.
+    ///
+    /// Codes shorter than [`MIN_PHONETIC_CODE_LEN`] are rejected: a one- or
+    /// two-character code carries too little information to justify the
+    /// phonetic score boost, and short codes collide readily (`rd` and `rt`
+    /// both encode to `RT`).
+    fn encode(word: &str) -> Option<Self> {
+        if !supports_phonetics(word) {
+            return None;
+        }
+
+        let primary = DOUBLE_METAPHONE.encode(word);
+        let alternate = DOUBLE_METAPHONE.encode_alternate(word);
+
+        if primary.chars().count() < MIN_PHONETIC_CODE_LEN {
+            return None;
+        }
+
+        Some(Self { primary, alternate })
+    }
+
+    fn matches(&self, other: &Self) -> bool {
+        self.primary == other.primary
+            || self.primary == other.alternate
+            || self.alternate == other.primary
+            || self.alternate == other.alternate
+    }
+
+    fn len(&self) -> usize {
+        self.primary.chars().count()
+    }
+}
+
+/// Shortest Double Metaphone code that may drive a phonetic match.
+const MIN_PHONETIC_CODE_LEN: usize = 3;
+
+/// Code length at which exact phonetic agreement is treated as strong evidence
+/// on its own, rather than merely a hint that edit distance should confirm.
+///
+/// Five encoded sounds agreeing end to end is well past the range where
+/// unrelated English words collide, so spelling may diverge freely underneath
+/// it — "easylinks" and "ezlynx" share ASLNKS but are 6 edits apart.
+const STRONG_PHONETIC_CODE_LEN: usize = 5;
+
+/// Weight applied to edit distance when phonetic codes agree.
+const PHONETIC_SCORE_WEIGHT: f64 = 0.3;
+
+/// Weight applied when the agreeing codes are also long (see
+/// [`STRONG_PHONETIC_CODE_LEN`]).
+const STRONG_PHONETIC_SCORE_WEIGHT: f64 = 0.2;
 
 /// Builds an n-gram string by cleaning and concatenating words
 ///
@@ -25,6 +98,20 @@ fn build_match_key(word: &str) -> String {
 struct CustomWordMatchKey {
     word_index: usize,
     key: String,
+    /// Precomputed so each candidate n-gram costs one encode, not one per
+    /// dictionary entry.
+    phonetic: Option<PhoneticCode>,
+}
+
+impl CustomWordMatchKey {
+    fn new(word_index: usize, key: String) -> Self {
+        let phonetic = PhoneticCode::encode(&key);
+        Self {
+            word_index,
+            key,
+            phonetic,
+        }
+    }
 }
 
 fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWordMatchKey> {
@@ -32,23 +119,17 @@ fn build_custom_word_match_keys(word: &str, word_index: usize) -> Vec<CustomWord
     let mut keys = Vec::with_capacity(2);
 
     // The fallback matcher is intentionally limited to ASCII terms. Its
-    // whitespace tokenization and Soundex scoring are not suitable for CJK
-    // scripts. Unicode custom words remain available to models that accept
+    // whitespace tokenization and Double Metaphone scoring are not suitable for
+    // CJK scripts. Unicode custom words remain available to models that accept
     // them as native decode prompts; they are simply skipped by this fallback.
     if is_supported_fuzzy_key(&primary_key) {
-        keys.push(CustomWordMatchKey {
-            word_index,
-            key: primary_key.clone(),
-        });
+        keys.push(CustomWordMatchKey::new(word_index, primary_key.clone()));
     }
 
     if word.contains('&') {
         let expanded_key = build_match_key(&word.replace('&', " and "));
         if is_supported_fuzzy_key(&expanded_key) && expanded_key != primary_key {
-            keys.push(CustomWordMatchKey {
-                word_index,
-                key: expanded_key,
-            });
+            keys.push(CustomWordMatchKey::new(word_index, expanded_key));
         }
     }
 
@@ -59,13 +140,13 @@ fn is_supported_fuzzy_key(key: &str) -> bool {
     !key.is_empty() && key.chars().all(|c| c.is_ascii_alphanumeric())
 }
 
-fn supports_soundex(key: &str) -> bool {
+fn supports_phonetics(key: &str) -> bool {
     !key.is_empty() && key.chars().all(|c| c.is_ascii_alphabetic())
 }
 
 /// Finds the best matching custom word for a candidate string
 ///
-/// Uses Levenshtein distance and Soundex phonetic matching to find
+/// Uses Levenshtein distance and Double Metaphone phonetic matching to find
 /// the best match above the given threshold.
 ///
 /// # Arguments
@@ -89,15 +170,32 @@ fn find_best_match<'a>(
     let mut best_match: Option<&String> = None;
     let mut best_score = f64::MAX;
 
+    // Double Metaphone is an English/ASCII algorithm. Numeric terms can still
+    // use edit distance, but must not receive a phonetic boost.
+    let candidate_phonetic = PhoneticCode::encode(candidate);
+
     for custom_word_key in custom_word_match_keys {
-        // Skip if lengths are too different (optimization + prevents over-matching)
-        // Use percentage-based check: max 25% length difference (prevents n-grams from
-        // matching significantly shorter custom words, e.g., "openaigpt" vs "openai")
+        let phonetic_match = match (&candidate_phonetic, &custom_word_key.phonetic) {
+            (Some(candidate_code), Some(key_code)) => candidate_code.matches(key_code),
+            _ => false,
+        };
+
+        // Skip if lengths are too different (optimization + prevents over-matching).
+        // Use a percentage-based check: max 25% length difference (prevents n-grams
+        // from matching significantly shorter custom words, e.g. "openaigpt" vs
+        // "openai"), widened to 50% behind an exact phonetic agreement.
+        //
+        // The wider gate is what lets a spelling shed or gain several letters
+        // without changing its sound ("hightech" -> "HiTek", "throughput" ->
+        // "ThruPut"). Agreement is only reachable for codes of at least
+        // MIN_PHONETIC_CODE_LEN, which keeps the gate off short, collision-prone
+        // terms.
         let candidate_len = candidate.chars().count();
         let custom_word_len = custom_word_key.key.chars().count();
         let len_diff = candidate_len.abs_diff(custom_word_len) as f64;
         let max_len = candidate_len.max(custom_word_len) as f64;
-        let max_allowed_diff = (max_len * 0.25).max(2.0); // At least 2 chars difference allowed
+        let len_ratio = if phonetic_match { 0.5 } else { 0.25 };
+        let max_allowed_diff = (max_len * len_ratio).max(2.0); // At least 2 chars difference allowed
         if len_diff > max_allowed_diff {
             continue;
         }
@@ -110,15 +208,19 @@ fn find_best_match<'a>(
             1.0
         };
 
-        // Soundex is an English/ASCII phonetic algorithm. Numeric terms can
-        // still use edit distance, but must not receive a phonetic boost.
-        let phonetic_match = supports_soundex(candidate)
-            && supports_soundex(&custom_word_key.key)
-            && soundex(candidate, &custom_word_key.key);
-
-        // Combine scores: favor phonetic matches, but also consider string similarity
+        // Combine scores: favor phonetic matches, but also consider string
+        // similarity. The longer the agreeing code, the less the remaining
+        // spelling difference should count against the match.
         let combined_score = if phonetic_match {
-            levenshtein_score * 0.3 // Give significant boost to phonetic matches
+            let strong = candidate_phonetic
+                .as_ref()
+                .is_some_and(|code| code.len() >= STRONG_PHONETIC_CODE_LEN);
+            let weight = if strong {
+                STRONG_PHONETIC_SCORE_WEIGHT
+            } else {
+                PHONETIC_SCORE_WEIGHT
+            };
+            levenshtein_score * weight
         } else {
             levenshtein_score
         };
@@ -205,13 +307,22 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
             let (prefix, _) = extract_punctuation(ngram_words[0]);
             let (_, suffix) = extract_punctuation(ngram_words[n - 1]);
 
-            // Preserve case from first word.
-            let corrected = preserve_case_pattern(ngram_words[0], replacement);
+            // Case is judged across the whole span, not just its first word.
+            let corrected = preserve_case_pattern_for_span(ngram_words, replacement);
 
             result.push(format!("{}{}{}", prefix, corrected, suffix));
             i += n;
         } else {
-            result.push(words[i].to_string());
+            // No whole-token match. The token may still be a compound whose
+            // separator the n-gram key threw away ("brightcore.com"), so retry
+            // against its individual alphanumeric runs.
+            let rewritten = apply_custom_words_within_token(
+                words[i],
+                custom_words,
+                &custom_word_match_keys,
+                threshold,
+            );
+            result.push(rewritten.unwrap_or_else(|| words[i].to_string()));
             i += 1;
         }
     }
@@ -219,11 +330,62 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
     result.join(" ")
 }
 
+/// True when a dictionary entry carries capitalization that the speaker cannot
+/// convey and that the transcript therefore must not overwrite.
+///
+/// A brand name like `FlitePath`, `ChargeBee` or `SQLAlchemy` is the entire
+/// reason the user added the entry; rebuilding its case from the spoken words
+/// would yield `Flitepath`, which is exactly the spelling they were fixing.
+/// An entry that is uniformly lower- or upper-case expresses no such intent, so
+/// it keeps following the surrounding sentence.
+fn has_intentional_case(replacement: &str) -> bool {
+    let mut chars = replacement.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+
+    // Uppercase after the first character (`FlitePath`, `SQLAlchemy`), or a
+    // lowercase lead-in before one (`iPhone`, `eBay`).
+    chars.any(|c| c.is_uppercase()) && (first.is_lowercase() || chars.any(|c| c.is_lowercase()))
+}
+
+/// True when an entire matched span is capitalized, i.e. the transcript is
+/// shouting rather than merely leading with an acronym.
+///
+/// Judged across every word in the span. Inspecting only the first word reads
+/// "SQL Alchemy" as a shout and yields SQLALCHEMY, destroying exactly the
+/// capitalization the dictionary entry exists to supply.
+fn is_shouted(words: &[&str]) -> bool {
+    let letters: usize = words
+        .iter()
+        .flat_map(|word| word.chars())
+        .filter(|c| c.is_alphabetic())
+        .count();
+
+    letters > 1
+        && words
+            .iter()
+            .flat_map(|word| word.chars())
+            .filter(|c| c.is_alphabetic())
+            .all(char::is_uppercase)
+}
+
 /// Preserves the case pattern of the original word when applying a replacement
 fn preserve_case_pattern(original: &str, replacement: &str) -> String {
-    if original.chars().all(|c| c.is_uppercase()) {
+    preserve_case_pattern_for_span(&[original], replacement)
+}
+
+/// Chooses the casing for `replacement` given the whole span it replaces.
+fn preserve_case_pattern_for_span(original: &[&str], replacement: &str) -> String {
+    let first = original.first().copied().unwrap_or("");
+
+    // An all-caps utterance is an explicit emphasis signal in the transcript,
+    // so it still wins over the entry's own casing.
+    if is_shouted(original) {
         replacement.to_uppercase()
-    } else if original.chars().next().is_some_and(|c| c.is_uppercase()) {
+    } else if has_intentional_case(replacement) {
+        replacement.to_string()
+    } else if first.chars().next().is_some_and(|c| c.is_uppercase()) {
         let mut chars: Vec<char> = replacement.chars().collect();
         if let Some(first_char) = chars.get_mut(0) {
             *first_char = first_char.to_uppercase().next().unwrap_or(*first_char);
@@ -232,6 +394,80 @@ fn preserve_case_pattern(original: &str, replacement: &str) -> String {
     } else {
         replacement.to_string()
     }
+}
+
+/// Splits a token into alphanumeric runs and the separators between them.
+///
+/// `"brightcore.com"` becomes `["brightcore", ".", "com"]`. Runs sit at even
+/// indices, separators at odd ones, so a caller can rewrite individual runs and
+/// rejoin without losing the punctuation between them.
+fn split_token_segments(token: &str) -> Vec<String> {
+    let mut segments: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut current_is_alnum = true;
+
+    for c in token.chars() {
+        let is_alnum = c.is_alphanumeric();
+        if is_alnum != current_is_alnum && !current.is_empty() {
+            segments.push(std::mem::take(&mut current));
+            current_is_alnum = is_alnum;
+        } else if current.is_empty() {
+            current_is_alnum = is_alnum;
+        }
+        current.push(c);
+    }
+
+    if !current.is_empty() {
+        segments.push(current);
+    }
+
+    // Normalize so runs are always at even indices.
+    if segments
+        .first()
+        .is_some_and(|segment| !segment.chars().next().is_some_and(char::is_alphanumeric))
+    {
+        segments.insert(0, String::new());
+    }
+
+    segments
+}
+
+/// Applies custom words to the alphanumeric runs inside a single token.
+///
+/// Handles compounds the whole-token matcher cannot express, such as
+/// `flightpath.com` -> `FlitePath.com`, where the replacement has to land on
+/// part of the token and leave the rest — including the separator — intact.
+/// Returns `None` when no run matched, so the caller can keep the original.
+fn apply_custom_words_within_token(
+    token: &str,
+    custom_words: &[String],
+    custom_word_match_keys: &[CustomWordMatchKey],
+    threshold: f64,
+) -> Option<String> {
+    let mut segments = split_token_segments(token);
+    // Nothing to gain unless the token has an internal separator, i.e. at
+    // least two alphanumeric runs.
+    if segments.len() < 3 {
+        return None;
+    }
+
+    let mut matched = false;
+    for index in (0..segments.len()).step_by(2) {
+        let run = &segments[index];
+        let key = build_match_key(run);
+        if key.is_empty() {
+            continue;
+        }
+
+        if let Some((replacement, _)) =
+            find_best_match(&key, custom_words, custom_word_match_keys, threshold)
+        {
+            segments[index] = preserve_case_pattern(run, replacement);
+            matched = true;
+        }
+    }
+
+    matched.then(|| segments.concat())
 }
 
 /// Extracts punctuation prefix and suffix from a word
@@ -816,6 +1052,311 @@ mod tests {
         let custom_words = vec!["Handy".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
         assert_eq!(result, "「Handy。」");
+    }
+
+    /// Soundex cannot see a silent `gh`. It encodes the `g` in "flight" using
+    /// its `cgjkqsxz` -> `2` group *before* the `t`'s `3`, giving FL23, while
+    /// "flite" goes straight to FL30. The two disagree, so the phonetic boost
+    /// never fired and raw edit distance alone could not clear the threshold —
+    /// the single most common silent digraph in English defeated the matcher.
+    /// Double Metaphone silences it: both "flightpath" and "flitepath" encode
+    /// to FLTP0/FLTPT.
+    #[test]
+    fn test_apply_custom_words_matches_silent_gh_compound() {
+        let custom_words = vec!["FlitePath".to_string()];
+
+        for text in [
+            "flight path",
+            "Flight Path",
+            "the flight path is clear",
+            "flight path, the shortest route",
+        ] {
+            let result = apply_custom_words(text, &custom_words, 0.18);
+            assert!(
+                result.contains("FlitePath"),
+                "expected FlitePath in {result:?} (from {text:?})"
+            );
+            assert!(!result.to_lowercase().contains("flight"));
+        }
+    }
+
+    /// Exact phonetic agreement widens the length guard, so a spelling may shed
+    /// several letters without changing its sound. "hightech" (8) against
+    /// "hitek" (5) exceeds the default 25% gate and would otherwise be skipped
+    /// before it was ever scored.
+    #[test]
+    fn test_apply_custom_words_matches_across_length_gap() {
+        let custom_words = vec!["HiTek".to_string(), "ThruPut".to_string()];
+
+        assert_eq!(
+            apply_custom_words("high tech", &custom_words, 0.18),
+            "HiTek"
+        );
+        assert_eq!(
+            apply_custom_words("through put", &custom_words, 0.18),
+            "ThruPut"
+        );
+    }
+
+    #[test]
+    fn test_apply_custom_words_preserves_entry_casing() {
+        let custom_words = vec!["FlitePath".to_string()];
+
+        // Speech carries no case information, so the entry's own
+        // capitalization must survive rather than being rebuilt from the
+        // spoken words into "Flitepath" — the intercap is the whole reason the
+        // user added the entry.
+        assert_eq!(
+            apply_custom_words("flight path", &custom_words, 0.18),
+            "FlitePath"
+        );
+        assert_eq!(
+            apply_custom_words("Flight path", &custom_words, 0.18),
+            "FlitePath"
+        );
+
+        // An all-caps utterance is explicit emphasis and still wins.
+        assert_eq!(
+            apply_custom_words("FLIGHT PATH", &custom_words, 0.18),
+            "FLITEPATH"
+        );
+    }
+
+    #[test]
+    fn test_apply_custom_words_rewrites_run_inside_token() {
+        let custom_words = vec!["FlitePath".to_string()];
+
+        // The n-gram key drops the separator, so a whole-token match would
+        // return "FlitePath" and silently eat the ".com".
+        assert_eq!(
+            apply_custom_words("visit flightpath.com today", &custom_words, 0.18),
+            "visit FlitePath.com today"
+        );
+        assert_eq!(
+            apply_custom_words("the flight-path planner", &custom_words, 0.18),
+            "the FlitePath planner"
+        );
+    }
+
+    #[test]
+    fn test_apply_custom_words_matches_sibling_entries() {
+        let custom_words = vec!["FlitePath".to_string(), "FliteOps".to_string()];
+
+        assert_eq!(
+            apply_custom_words("flight path and flight ops", &custom_words, 0.18),
+            "FlitePath and FliteOps"
+        );
+    }
+
+    /// The flip side of a more permissive matcher: ordinary English that merely
+    /// shares a prefix — or a whole Soundex code — with an entry must survive
+    /// untouched. Every phrase here encodes to FLT under Soundex, the same as
+    /// "flite".
+    #[test]
+    fn test_apply_custom_words_does_not_swallow_ordinary_words() {
+        let custom_words = vec!["FlitePath".to_string(), "HiTek".to_string()];
+
+        for text in [
+            "flat pack",
+            "the fleet",
+            "a flightless bird",
+            "flight deck",
+            "she took flight",
+            "float plane",
+            "the light path",
+            "high tea",
+        ] {
+            let result = apply_custom_words(text, &custom_words, 0.18);
+            assert_eq!(result, text, "unexpected correction of {text:?}");
+        }
+    }
+
+    /// Double Metaphone truncated to commons-codec's 4-character default would
+    /// collide "flitepath" (FLTP) with "flatpack" (FLTP). Full-length codes keep
+    /// them apart as FLTP0 and FLTPK.
+    #[test]
+    fn test_phonetic_codes_are_not_truncated() {
+        let flitepath = PhoneticCode::encode("flitepath").expect("encodable");
+        let flightpath = PhoneticCode::encode("flightpath").expect("encodable");
+        let flatpack = PhoneticCode::encode("flatpack").expect("encodable");
+
+        assert!(flitepath.matches(&flightpath));
+        assert!(!flitepath.matches(&flatpack));
+        assert!(flitepath.len() > 4 && flatpack.len() > 4);
+    }
+
+    #[test]
+    fn test_phonetic_code_rejects_short_and_non_alphabetic() {
+        // Two-character codes collide freely ("rd" and "rt" both encode RT),
+        // so they must not earn the phonetic boost.
+        assert!(PhoneticCode::encode("rd").is_none());
+        assert!(PhoneticCode::encode("gpt4").is_none());
+        assert!(PhoneticCode::encode("").is_none());
+    }
+
+    #[test]
+    fn test_split_token_segments() {
+        assert_eq!(
+            split_token_segments("flightpath.com"),
+            vec!["flightpath", ".", "com"]
+        );
+        assert_eq!(split_token_segments("plain"), vec!["plain"]);
+        assert_eq!(
+            split_token_segments("(flight-path)"),
+            vec!["", "(", "flight", "-", "path", ")"]
+        );
+    }
+
+    #[test]
+    fn test_has_intentional_case() {
+        assert!(has_intentional_case("FlitePath"));
+        assert!(has_intentional_case("ChargeBee"));
+        assert!(has_intentional_case("SQLAlchemy"));
+        assert!(has_intentional_case("iPhone"));
+        assert!(!has_intentional_case("flitepath"));
+        assert!(!has_intentional_case("ACORD"));
+        assert!(!has_intentional_case("Handy"));
+    }
+
+    /// A span that merely *starts* with an acronym is not a shout. Judging
+    /// case from the first word alone read "SQL Alchemy" as shouting and
+    /// returned SQLALCHEMY, destroying the very capitalization the entry
+    /// exists to supply.
+    #[test]
+    fn test_apply_custom_words_acronym_lead_is_not_a_shout() {
+        let custom_words = vec!["SQLAlchemy".to_string(), "XMLParser".to_string()];
+
+        assert_eq!(
+            apply_custom_words("SQL Alchemy", &custom_words, 0.18),
+            "SQLAlchemy"
+        );
+        assert_eq!(
+            apply_custom_words("XML parser", &custom_words, 0.18),
+            "XMLParser"
+        );
+        // Lower-case speech reaches the same entry by sound alone.
+        assert_eq!(
+            apply_custom_words("sequel alchemy", &custom_words, 0.18),
+            "SQLAlchemy"
+        );
+        // A genuine shout — every letter in the span — still wins.
+        assert_eq!(
+            apply_custom_words("SQL ALCHEMY", &custom_words, 0.18),
+            "SQLALCHEMY"
+        );
+    }
+
+    /// Vowel-dropped brand spellings sit far apart in edit distance while
+    /// sounding identical: "quickserve" and "kwksrv" share KKSRF but are 6
+    /// edits apart (ratio 0.600), which scores 0.180 at the ordinary phonetic
+    /// weight and just misses a 0.18 threshold. Agreement across a code this
+    /// long is strong enough to carry the match on its own.
+    #[test]
+    fn test_apply_custom_words_strong_phonetic_agreement_outweighs_spelling() {
+        let custom_words = vec!["KwkSrv".to_string()];
+
+        assert_eq!(
+            apply_custom_words("quick serve", &custom_words, 0.18),
+            "KwkSrv"
+        );
+    }
+
+    #[test]
+    fn test_is_shouted() {
+        assert!(is_shouted(&["BRIGHT", "CORE"]));
+        assert!(is_shouted(&["SHOUT"]));
+        assert!(is_shouted(&["CHARGE", "B"]));
+        // A leading acronym with ordinary words after it is not a shout.
+        assert!(!is_shouted(&["SQL", "Alchemy"]));
+        assert!(!is_shouted(&["PL", "rating"]));
+        assert!(!is_shouted(&["quiet"]));
+        // A single letter carries no case signal.
+        assert!(!is_shouted(&["A"]));
+    }
+
+    /// Corpus check that custom-word correction leaves ordinary English alone.
+    ///
+    /// Custom-word matching is a trade: a matcher loose enough to reach the
+    /// word you wanted will sometimes rewrite a word you did not. This
+    /// measures the second half of that trade over a large corpus, so a future
+    /// change that buys recall by spending precision is visible rather than
+    /// silent.
+    ///
+    /// Ignored by default because it needs the system word list, which is
+    /// present on macOS and on Linux via the `words` / `wamerican` package.
+    /// Run it with:
+    ///
+    /// ```text
+    /// cargo test --lib false_positive_sweep -- --ignored --nocapture
+    /// ```
+    ///
+    /// The ceilings sit between what Double Metaphone produces and what the
+    /// Soundex implementation this replaced produced (149 unigram / 97 bigram
+    /// on the same inputs), so a regression to that behaviour fails the test.
+    #[test]
+    #[ignore = "requires the system word list at /usr/share/dict/words"]
+    fn false_positive_sweep() {
+        const WORD_LIST: &str = "/usr/share/dict/words";
+
+        let Ok(raw) = std::fs::read_to_string(WORD_LIST) else {
+            eprintln!("skipping sweep: {WORD_LIST} not available");
+            return;
+        };
+
+        // A representative mix: intercapped brands, an acronym-led term, a
+        // vowel-dropped name, a short common word and an ampersand entry.
+        let custom_words: Vec<String> = [
+            "ChargeBee",
+            "SQLAlchemy",
+            "OpenAI",
+            "FlitePath",
+            "HiTek",
+            "ThruPut",
+            "KwkSrv",
+            "NiteLite",
+            "dict",
+            "R&D",
+        ]
+        .iter()
+        .map(|word| word.to_string())
+        .collect();
+
+        let words: Vec<String> = raw
+            .lines()
+            .filter(|word| word.len() >= 3)
+            .map(str::to_lowercase)
+            .collect();
+
+        let unigram_hits = words
+            .iter()
+            .filter(|word| apply_custom_words(word, &custom_words, 0.18) != **word)
+            .count();
+
+        // Consecutive dictionary pairs rather than hand-picked leading words,
+        // so the sample is not selected around a known collision.
+        let mut bigram_hits = 0;
+        let mut bigrams = 0;
+        for pair in words.windows(2).step_by(3) {
+            let phrase = format!("{} {}", pair[0], pair[1]);
+            bigrams += 1;
+            if apply_custom_words(&phrase, &custom_words, 0.18) != phrase {
+                bigram_hits += 1;
+            }
+        }
+
+        println!(
+            "corpus {} words: {unigram_hits} unigram, {bigram_hits} bigram (of {bigrams}) spurious corrections",
+            words.len()
+        );
+
+        assert!(
+            unigram_hits < 120,
+            "unigram false positives regressed: {unigram_hits}"
+        );
+        assert!(
+            bigram_hits < 70,
+            "bigram false positives regressed: {bigram_hits}"
+        );
     }
 
     #[test]
