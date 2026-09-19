@@ -282,6 +282,7 @@ fn create_audio_recorder(
     app_handle: &tauri::AppHandle,
     selected_channel: Option<u16>,
     stream_router: Arc<StreamRouter>,
+    hands_free: Arc<crate::managers::hands_free::HandsFreeManager>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let detector: Box<dyn VoiceActivityDetector> = match backend {
         VadBackend::Silero => {
@@ -325,8 +326,10 @@ fn create_audio_recorder(
     );
 
     // Recorder with VAD, a spectrum-level callback that forwards level updates to
-    // the frontend, and an audio-frame callback that feeds live streaming via a
-    // shared `StreamRouter` (captured directly, not via Tauri state — see its docs).
+    // the frontend, an audio-frame callback that feeds live streaming via a
+    // shared `StreamRouter` (captured directly, not via Tauri state — see its
+    // docs), and a hands-free speech-frame tap used by the continuous capture
+    // loop. The tap is a no-op unless the hands-free loop is running.
     let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(
@@ -346,6 +349,9 @@ fn create_audio_recorder(
             move |frame| {
                 router.feed(frame);
             }
+        })
+        .with_speech_frame_callback(move |frame: Option<&[f32]>| {
+            hands_free.on_speech_frame(frame);
         });
 
     Ok(recorder)
@@ -383,6 +389,7 @@ pub struct AudioRecordingManager {
     is_recording: Arc<Mutex<bool>>,
     mute_state: Arc<Mutex<MuteState>>,
     close_generation: Arc<AtomicU64>,
+    hands_free: Arc<crate::managers::hands_free::HandsFreeManager>,
     cancel_generation: Arc<AtomicU64>,
     stream_router: Arc<StreamRouter>,
     /// Lock-free mirror of "is the state in {Recording, Stopping}",
@@ -428,6 +435,7 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
             mute_state: Arc::new(Mutex::new(MuteState::default())),
             close_generation: Arc::new(AtomicU64::new(0)),
+            hands_free: Arc::new(crate::managers::hands_free::HandsFreeManager::new()),
             cancel_generation: Arc::new(AtomicU64::new(0)),
             stream_router,
             recording_active: Arc::new(AtomicBool::new(false)),
@@ -438,6 +446,15 @@ impl AudioRecordingManager {
         // Always-on?  Open immediately.
         if matches!(mode, MicrophoneMode::AlwaysOn) {
             manager.start_microphone_stream()?;
+        }
+
+        // If hands-free capture is enabled in settings, start the continuous loop.
+        // A failure here (mic not yet available, permission not granted) must not
+        // crash app startup; log and let the user retry from Settings.
+        if settings.hands_free_capture {
+            if let Err(e) = manager.start_hands_free() {
+                warn!("Hands-free: failed to auto-start at launch: {e}");
+            }
         }
 
         Ok(manager)
@@ -629,6 +646,7 @@ impl AudioRecordingManager {
                 &self.app_handle,
                 settings.selected_channel,
                 Arc::clone(&self.stream_router),
+                self.hands_free.clone(),
             )?);
         }
         Ok(())
@@ -773,6 +791,63 @@ impl AudioRecordingManager {
         debug!("Microphone stream stopped");
     }
 
+    /* ---------- hands-free continuous capture ------------------------------ */
+
+    /// Start the hands-free continuous capture loop. Ensures the microphone stream is
+    /// open (so VAD frames flow even with no shortcut press) and spins up the worker.
+    ///
+    /// Returns an error when the microphone stream fails to open, instead of silently
+    /// leaving the loop not-running while a caller (or the persisted setting) believes
+    /// it started successfully — see the "toggle shows on but wake word never fires"
+    /// reports on upstream PR #1469.
+    pub fn start_hands_free(&self) -> Result<(), anyhow::Error> {
+        if self.hands_free.is_running() {
+            debug!("Hands-free: already running");
+            return Ok(());
+        }
+        // Keep the stream open for the duration of hands-free; cancel any pending
+        // lazy close so the mic isn't torn down under us.
+        self.close_generation.fetch_add(1, Ordering::SeqCst);
+        if let Err(e) = self.start_microphone_stream() {
+            error!("Hands-free: failed to open microphone stream: {}", e);
+            return Err(e);
+        }
+        self.hands_free.start(&self.app_handle);
+        info!("Hands-free capture started");
+        Ok(())
+    }
+
+    /// Stop the hands-free loop. In on-demand mode, also closes the microphone stream
+    /// (unless a manual recording is in progress).
+    pub fn stop_hands_free(&self) {
+        if !self.hands_free.is_running() {
+            return;
+        }
+        self.hands_free.stop();
+
+        // In on-demand mode, release the mic if nothing else needs it.
+        if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand)
+            && matches!(*self.state.lock().unwrap(), RecordingState::Idle)
+        {
+            self.close_generation.fetch_add(1, Ordering::SeqCst);
+            self.stop_microphone_stream();
+        }
+        info!("Hands-free capture stopped");
+    }
+
+    /// Toggle pause on the hands-free loop. Returns the new paused state.
+    pub fn toggle_hands_free_pause(&self) -> bool {
+        self.hands_free.toggle_pause()
+    }
+
+    pub fn is_hands_free_running(&self) -> bool {
+        self.hands_free.is_running()
+    }
+
+    pub fn is_hands_free_paused(&self) -> bool {
+        self.hands_free.is_paused()
+    }
+
     /* ---------- mode switching --------------------------------------------- */
 
     pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {
@@ -879,6 +954,7 @@ impl AudioRecordingManager {
             &self.app_handle,
             settings.selected_channel,
             Arc::clone(&self.stream_router),
+            self.hands_free.clone(),
         )?;
         let was_open = *self.is_open.lock().unwrap();
 
