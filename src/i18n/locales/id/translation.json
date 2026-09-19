@@ -460,6 +460,7 @@
       "loading": "Memuat riwayat...",
       "empty": "Belum ada transkripsi. Mulai merekam untuk mengisi riwayat Anda!",
       "copyToClipboard": "Salin transkripsi ke papan klip",
+      "copyError": "Gagal menyalin transkripsi ke papan klip.",
       "save": "Simpan transkripsi",
       "unsave": "Hapus dari daftar tersimpan",
       "delete": "Hapus entri",
