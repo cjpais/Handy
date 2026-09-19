@@ -85,10 +85,6 @@ function App() {
     return () => document.documentElement.removeAttribute(attribute);
   }, [isShowingOnboarding]);
 
-  // The settings pages all render inside one persistent scrollable container
-  // (see `content` below), so switching sections swaps the child content
-  // without unmounting/remounting that container — its scrollTop otherwise
-  // carries over from whichever page was scrolled last (e.g. History -> Models).
   // Reset the scroll position whenever the active section changes.
   useLayoutEffect(() => {
     settingsScrollRef.current?.scrollTo({ top: 0 });
