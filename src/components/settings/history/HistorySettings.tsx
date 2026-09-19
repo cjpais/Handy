@@ -322,6 +322,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
     const copied = await onCopyText();
     if (!copied) {
+      toast.error(t("settings.history.copyError"));
       return;
     }
 
