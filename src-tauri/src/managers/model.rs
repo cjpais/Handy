@@ -325,24 +325,52 @@ pub struct DownloadProgress {
     pub percentage: f64,
 }
 
-/// Resolve a Hugging Face model file in the shared HF cache, if already present.
-/// Uses hf-hub's stock location (HF_HOME or ~/.cache/huggingface/hub) so
-/// downloads are shared with other tools.
+/// Return the active HF cache followed by the pre-v0.9.6 cache for portable
+/// upgrades. Downloads still use `Cache::from_env()` and therefore only write
+/// to the active portable cache.
+fn hf_caches() -> Vec<Cache> {
+    let current = Cache::from_env();
+    let mut caches = vec![current.clone()];
+
+    if crate::portable::is_portable() {
+        let legacy = crate::portable::previous_hf_home()
+            .map(|home| Cache::new(home.join("hub")))
+            .unwrap_or_default();
+        if legacy.path() != current.path() {
+            caches.push(legacy);
+        }
+    }
+
+    caches
+}
+
+fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathBuf> {
+    hf_cached_path_in(&hf_caches(), repo_id, revision, filename)
+}
+
+/// Resolve a Hugging Face model file in the supplied caches, if already present.
 ///
 /// hf-hub resolves purely through `refs/<revision>`. Pinned downloads write
 /// `refs/<commit-sha>`, but caches populated before pinning — or by other
 /// tools, which download via `main` — only have `refs/main`, so lookup falls
 /// back to it. Grandfathered `main` copies may predate the pin; per policy a
 /// working local model is never invalidated by routine catalog regeneration.
-fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathBuf> {
+fn hf_cached_path_in(
+    caches: &[Cache],
+    repo_id: &str,
+    revision: &str,
+    filename: &str,
+) -> Option<PathBuf> {
     let get = |rev: &str| {
-        Cache::from_env()
-            .repo(Repo::with_revision(
-                repo_id.to_string(),
-                RepoType::Model,
-                rev.to_string(),
-            ))
-            .get(filename)
+        caches.iter().find_map(|cache| {
+            cache
+                .repo(Repo::with_revision(
+                    repo_id.to_string(),
+                    RepoType::Model,
+                    rev.to_string(),
+                ))
+                .get(filename)
+        })
     };
     get(revision).or_else(|| (revision != "main").then(|| get("main")).flatten())
 }
@@ -1740,7 +1768,9 @@ impl ModelManager {
     /// transcribe-cpp recognises are surfaced; arbitrary (e.g. LLM) GGUFs that
     /// share the cache are ignored.
     fn discover_hf_cache_models(available_models: &mut HashMap<String, ModelInfo>) {
-        Self::discover_hf_cache_models_in(Cache::from_env().path(), available_models);
+        for cache in hf_caches() {
+            Self::discover_hf_cache_models_in(cache.path(), available_models);
+        }
     }
 
     /// Scan a Hugging Face cache root (`<cache>/models--*`) for GGUF snapshots.
@@ -2676,6 +2706,74 @@ mod tests {
     use super::*;
     use std::io::Write;
     use tempfile::TempDir;
+
+    fn add_cached_model(cache: &Path, repo_id: &str, revision: &str, filename: &str) -> PathBuf {
+        let repo_dir = cache.join(format!("models--{}", repo_id.replace('/', "--")));
+        let snapshot = repo_dir.join("snapshots").join(revision).join(filename);
+        fs::create_dir_all(snapshot.parent().unwrap()).unwrap();
+        fs::create_dir_all(repo_dir.join("refs")).unwrap();
+        fs::write(repo_dir.join("refs").join(revision), revision).unwrap();
+        fs::write(&snapshot, b"model").unwrap();
+        snapshot
+    }
+
+    #[test]
+    fn test_hf_cached_path_falls_back_to_legacy_cache() {
+        let active = TempDir::new().unwrap();
+        let legacy = TempDir::new().unwrap();
+        let expected = add_cached_model(
+            legacy.path(),
+            "handy-computer/test-model",
+            "old-revision",
+            "model.gguf",
+        );
+        let caches = vec![
+            Cache::new(active.path().to_path_buf()),
+            Cache::new(legacy.path().to_path_buf()),
+        ];
+
+        assert_eq!(
+            hf_cached_path_in(
+                &caches,
+                "handy-computer/test-model",
+                "old-revision",
+                "model.gguf"
+            ),
+            Some(expected)
+        );
+    }
+
+    #[test]
+    fn test_hf_cached_path_prefers_active_cache() {
+        let active = TempDir::new().unwrap();
+        let legacy = TempDir::new().unwrap();
+        let expected = add_cached_model(
+            active.path(),
+            "handy-computer/test-model",
+            "revision",
+            "model.gguf",
+        );
+        add_cached_model(
+            legacy.path(),
+            "handy-computer/test-model",
+            "revision",
+            "model.gguf",
+        );
+        let caches = vec![
+            Cache::new(active.path().to_path_buf()),
+            Cache::new(legacy.path().to_path_buf()),
+        ];
+
+        assert_eq!(
+            hf_cached_path_in(
+                &caches,
+                "handy-computer/test-model",
+                "revision",
+                "model.gguf"
+            ),
+            Some(expected)
+        );
+    }
 
     #[test]
     fn test_effective_language_accepts_chinese_script_intent_for_zh_capability() {

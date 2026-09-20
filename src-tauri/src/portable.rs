@@ -9,10 +9,14 @@ use std::sync::OnceLock;
 use tauri::Manager;
 
 static PORTABLE_DATA_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
+static PREVIOUS_HF_HOME: OnceLock<Option<PathBuf>> = OnceLock::new();
 
 /// Detect portable mode by looking for a `portable` marker file next to the exe.
 /// Must be called once at startup before Tauri initializes.
 pub fn init() {
+    let previous_hf_home = std::env::var_os("HF_HOME").map(PathBuf::from);
+    let _ = PREVIOUS_HF_HOME.set(previous_hf_home);
+
     PORTABLE_DATA_DIR.get_or_init(|| {
         let exe_path = std::env::current_exe().ok()?;
         let exe_dir = exe_path.parent()?;
@@ -46,6 +50,16 @@ pub fn init() {
             None
         }
     });
+}
+
+/// Return the Hugging Face home configured before portable mode redirected it.
+///
+/// Portable releases before v0.9.6 downloaded models to this location (or to
+/// hf-hub's default cache when it is `None`). Keeping it lets the model manager
+/// recognize those downloads after an upgrade without copying multi-gigabyte
+/// files or modifying a cache shared with other applications.
+pub fn previous_hf_home() -> Option<&'static PathBuf> {
+    PREVIOUS_HF_HOME.get().and_then(|path| path.as_ref())
 }
 
 /// Keep hf-hub downloads inside the portable data directory. hf-hub appends
