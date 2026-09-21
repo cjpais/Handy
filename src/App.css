@@ -9,6 +9,7 @@
   --color-background-ui: var(--color-background-ui);
   --color-logo-primary: var(--color-logo-primary);
   --color-logo-stroke: var(--color-logo-stroke);
+  --color-titlebar-active: var(--color-titlebar-active);
   --color-text-stroke: var(--color-text-stroke);
   --color-mid-gray: var(--color-mid-gray);
   --color-warning: var(--color-warning);
@@ -40,6 +41,9 @@
      block (matching other surfaces); the dark theme overrides it below. */
   --color-log-surface: color-mix(in srgb, var(--color-background), black 6%);
 
+  /* Height of the custom title bar. Only Windows draws one (see below). */
+  --titlebar-height: 0px;
+
   /* Apply colors */
   color: var(--color-text);
   background-color: var(--color-background);
@@ -61,9 +65,44 @@
   }
 }
 
+/* Windows: the main window is undecorated and TitleBar.tsx draws the title bar
+   above #root. The document itself no longer scrolls; #root fills the space
+   below the bar and scrolls instead, so the bar spans the full window width.
+   Keep the height in sync with `title_bar_height` in lib.rs. */
+:root[data-platform="windows"] {
+  --titlebar-height: 32px;
+}
+:root[data-platform="windows"],
+:root[data-platform="windows"] body {
+  height: 100%;
+  overflow: hidden;
+}
+:root[data-platform="windows"] body {
+  display: flex;
+  flex-direction: column;
+}
+:root[data-platform="windows"] #root {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Full window height below the custom title bar. Use instead of h-screen for
+   top-level layouts. */
+@utility h-app {
+  height: calc(100vh - var(--titlebar-height));
+}
+
 /* Keep onboarding centered when classic scrollbars consume layout space.
    Overlay scrollbars do not reserve a gutter, so this has no effect on them. */
 :root[data-onboarding-active] {
+  scrollbar-gutter: stable both-edges;
+}
+/* On Windows #root is the scroller, so reserve the gutter there instead. */
+:root[data-platform="windows"][data-onboarding-active] {
+  scrollbar-gutter: auto;
+}
+:root[data-platform="windows"][data-onboarding-active] #root {
   scrollbar-gutter: stable both-edges;
 }
 
