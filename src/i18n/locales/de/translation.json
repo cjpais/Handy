@@ -714,5 +714,11 @@
     "learnMore": "So behebst du das",
     "recorderBlocked": "Tastenkürzel können gerade nicht aufgezeichnet werden — macOS Secure Input blockiert Tastenereignisse. Behebe zuerst die Secure-Input-Warnung.",
     "dismiss": "Ausblenden"
+  },
+  "titleBar": {
+    "minimize": "Minimieren",
+    "maximize": "Maximieren",
+    "restore": "Verkleinern",
+    "close": "Schließen"
   }
 }

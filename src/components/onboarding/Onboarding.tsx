@@ -160,7 +160,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
   };
 
   return (
-    <div className="h-screen w-full flex flex-col p-6 gap-4">
+    <div className="h-app w-full flex flex-col p-6 gap-4">
       <div className="flex flex-col items-center gap-2 shrink-0">
         <HandyTextLogo width={200} />
         <p className="text-text/70 max-w-md font-medium mx-auto">

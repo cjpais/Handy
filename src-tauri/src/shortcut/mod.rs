@@ -609,7 +609,8 @@ pub fn change_theme_setting(app: AppHandle, theme: String) -> Result<(), String>
 /// follows the OS. Call this on startup and whenever the setting changes to keep
 /// the title bar in sync with the in-app palette.
 ///
-/// On Windows this themes the title bar only. On macOS `set_theme` sets
+/// On Windows this themes the window frame only (the title bar itself is drawn
+/// by the frontend, see TitleBar.tsx). On macOS `set_theme` sets
 /// `NSApp.appearance` app-wide, which is what we want here: it darkens the title
 /// bar and keeps the overlay in step. Linux is left to `data-theme` alone, since
 /// its window theming is backend-dependent and unreliable.

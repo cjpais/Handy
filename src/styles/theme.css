@@ -14,6 +14,12 @@
   --dark-color-logo-primary: #f28cbb;
   --dark-color-logo-stroke: #fad1ed;
 
+  /* Custom title bar (Windows only, see TitleBar.tsx) while the window is
+     active: a shade darker than the background, where Windows would use pure
+     black. An inactive window's bar uses the plain background. */
+  --light-color-titlebar-active: #eeeeee;
+  --dark-color-titlebar-active: #222120;
+
   /* Semantic status colors. First used by SecureInputWarning; intended to
      replace the ad-hoc yellow-500/red-500 usages (e.g. ui/Alert.tsx) over
      time so status styling is themeable from one place. */
@@ -33,6 +39,7 @@
   --color-background: var(--light-color-background);
   --color-logo-primary: var(--light-color-logo-primary);
   --color-logo-stroke: var(--light-color-logo-stroke);
+  --color-titlebar-active: var(--light-color-titlebar-active);
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
 }
@@ -43,6 +50,7 @@
     --color-background: var(--dark-color-background);
     --color-logo-primary: var(--dark-color-logo-primary);
     --color-logo-stroke: var(--dark-color-logo-stroke);
+    --color-titlebar-active: var(--dark-color-titlebar-active);
     --color-warning: var(--dark-color-warning);
     --color-error: var(--dark-color-error);
   }
@@ -63,6 +71,7 @@
   --color-background: var(--light-color-background);
   --color-logo-primary: var(--light-color-logo-primary);
   --color-logo-stroke: var(--light-color-logo-stroke);
+  --color-titlebar-active: var(--light-color-titlebar-active);
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
 }
@@ -72,6 +81,7 @@
   --color-background: var(--dark-color-background);
   --color-logo-primary: var(--dark-color-logo-primary);
   --color-logo-stroke: var(--dark-color-logo-stroke);
+  --color-titlebar-active: var(--dark-color-titlebar-active);
   --color-warning: var(--dark-color-warning);
   --color-error: var(--dark-color-error);
 }

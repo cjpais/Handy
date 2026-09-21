@@ -938,16 +938,35 @@ pub fn run(cli_args: CliArgs) {
                 return Ok(());
             }
 
+            // On Windows the frontend draws its own title bar (TitleBar.tsx) so the
+            // active window gets a gently darker bar rather than the pure black
+            // Windows 10 paints for dark title bars. That bar lives inside the
+            // inner size, so grow the window to keep the content area unchanged.
+            // Keep in sync with `--titlebar-height` in App.css.
+            let title_bar_height = if cfg!(target_os = "windows") {
+                32.0
+            } else {
+                0.0
+            };
+
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                     .title("Handy")
-                    .inner_size(680.0, 570.0)
-                    .min_inner_size(680.0, 570.0)
+                    .inner_size(680.0, 570.0 + title_bar_height)
+                    .min_inner_size(680.0, 570.0 + title_bar_height)
                     .resizable(true)
                     .maximizable(true)
                     .visible(false);
+
+            // tao keeps the native frame styles on undecorated windows and only
+            // trims the caption, so resizing, Aero Snap, Alt+Space and the
+            // minimize/maximize animations keep working.
+            #[cfg(target_os = "windows")]
+            {
+                win_builder = win_builder.decorations(false);
+            }
 
             if let Some(data_dir) = portable::data_dir() {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));

@@ -714,5 +714,11 @@
     "learnMore": "Jak to vyřešit",
     "recorderBlocked": "Zkratky teď nelze nahrát — Secure Input v macOS blokuje události kláves. Nejprve vyřešte upozornění na Secure Input.",
     "dismiss": "Zavřít"
+  },
+  "titleBar": {
+    "minimize": "Minimalizovat",
+    "maximize": "Maximalizovat",
+    "restore": "Obnovit z maximalizace",
+    "close": "Zavřít"
   }
 }

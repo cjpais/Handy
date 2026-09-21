@@ -714,5 +714,11 @@
     "learnMore": "इसे कैसे ठीक करें",
     "recorderBlocked": "अभी शॉर्टकट रिकॉर्ड नहीं किए जा सकते — macOS Secure Input कुंजी इवेंट ब्लॉक कर रहा है. पहले Secure Input चेतावनी हल करें.",
     "dismiss": "खारिज करें"
+  },
+  "titleBar": {
+    "minimize": "छोटा करें",
+    "maximize": "बड़ा करें",
+    "restore": "पुनर्स्थापित करें",
+    "close": "बंद करें"
   }
 }

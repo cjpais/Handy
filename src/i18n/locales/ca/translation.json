@@ -714,5 +714,11 @@
     "learnMore": "Com es resol",
     "recorderBlocked": "Ara no se'n poden enregistrar dreceres: l'entrada segura del macOS bloca els esdeveniments de tecla. Resol primer l'avís d'entrada segura.",
     "dismiss": "Descarta"
+  },
+  "titleBar": {
+    "minimize": "Minimitza",
+    "maximize": "Maximitza",
+    "restore": "Restaura",
+    "close": "Tanca"
   }
 }
