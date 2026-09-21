@@ -92,6 +92,11 @@ pub struct AudioRecorder {
     vad: Option<VadConfig>,
     level_cb: Option<LevelCallback>,
     audio_cb: Option<AudioFrameCallback>,
+    // Hands-free speech-frame tap: invoked for every VAD-classified frame
+    // (independent of the manual recording gate) so a continuous capture loop can
+    // segment utterances. `Some(frame)` is a speech frame; `None` signals a
+    // silence/noise frame (used to detect the end of an utterance).
+    speech_frame_cb: Option<Arc<dyn Fn(Option<&[f32]>) + Send + Sync + 'static>>,
     /// Which input channel to use. None = average all (original behavior).
     selected_channel: Option<usize>,
     /// Preferred stream config cached per device name. The two HAL property
@@ -114,10 +119,22 @@ impl AudioRecorder {
             vad: None,
             level_cb: None,
             audio_cb: None,
+            speech_frame_cb: None,
             selected_channel: None,
             config_cache: Arc::new(Mutex::new(None)),
             stream_error: Arc::new(AtomicBool::new(false)),
         })
+    }
+
+    /// Attach a hands-free speech-frame callback. It receives `Some(frame)` for each
+    /// VAD-classified speech frame and `None` for silence/noise frames, even when
+    /// the manual recording gate is off. Used by the continuous hands-free capture loop.
+    pub fn with_speech_frame_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(Option<&[f32]>) + Send + Sync + 'static,
+    {
+        self.speech_frame_cb = Some(Arc::new(cb));
+        self
     }
 
     /// Attach a single VAD engine, reconfigured per session for the offline vs
@@ -197,6 +214,7 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
+        let speech_cb = self.speech_frame_cb.clone();
         let selected_channel = self.selected_channel;
         let config_cache = Arc::clone(&self.config_cache);
         let stream_error = Arc::clone(&self.stream_error);
@@ -326,6 +344,7 @@ impl AudioRecorder {
                         vad,
                         level_cb,
                         audio_cb,
+                        speech_cb,
                         stream_running_at,
                     );
                     run_consumer(
@@ -630,17 +649,28 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 
 /// Route one 16 kHz frame through VAD to recording and live outputs.
 /// Kept free-standing to permit disjoint borrows around resampler callbacks.
+///
+/// `capture` gates whether the frame is added to the active manual recording
+/// (`out_buf`/`audio_cb`). `speech_cb`, when set, is invoked independently of
+/// `capture` so the hands-free tap keeps segmenting utterances even while the
+/// manual recording gate is off. Callers that flush trailing audio after a
+/// manual `Stop` pass `speech_cb: &None` so that tail is never double-fed to
+/// the hands-free segmenter.
 fn handle_frame(
     samples: &[f32],
     vad_policy: VadPolicy,
     vad: &Option<VadConfig>,
     audio_cb: &Option<AudioFrameCallback>,
+    speech_cb: &Option<Arc<dyn Fn(Option<&[f32]>) + Send + Sync + 'static>>,
+    capture: bool,
     out_buf: &mut Vec<f32>,
 ) {
     let mut emit = |buf: &[f32]| {
-        out_buf.extend_from_slice(buf);
-        if let Some(cb) = audio_cb {
-            cb(buf);
+        if capture {
+            out_buf.extend_from_slice(buf);
+            if let Some(cb) = audio_cb {
+                cb(buf);
+            }
         }
     };
 
@@ -655,8 +685,17 @@ fn handle_frame(
             .push_frame(samples)
             .unwrap_or(VadFrame::Speech(samples))
         {
-            VadFrame::Speech(buf) => emit(buf),
-            VadFrame::Noise => {}
+            VadFrame::Speech(buf) => {
+                emit(buf);
+                if let Some(cb) = speech_cb {
+                    cb(Some(buf));
+                }
+            }
+            VadFrame::Noise => {
+                if let Some(cb) = speech_cb {
+                    cb(None);
+                }
+            }
         }
     } else {
         emit(samples);
@@ -704,6 +743,8 @@ struct CaptureProcessor {
     vad: Option<VadConfig>,
     level_cb: Option<LevelCallback>,
     audio_cb: Option<AudioFrameCallback>,
+    // Hands-free speech-frame tap; see `handle_frame`.
+    speech_frame_cb: Option<Arc<dyn Fn(Option<&[f32]>) + Send + Sync + 'static>>,
     stream_running_at: Instant,
     visualizer: AudioVisualiser,
     frame_resampler: FrameResampler,
@@ -725,6 +766,7 @@ impl CaptureProcessor {
         vad: Option<VadConfig>,
         level_cb: Option<LevelCallback>,
         audio_cb: Option<AudioFrameCallback>,
+        speech_frame_cb: Option<Arc<dyn Fn(Option<&[f32]>) + Send + Sync + 'static>>,
         stream_running_at: Instant,
     ) -> Self {
         // Resample into frames sized for the active VAD backend (30 ms when
@@ -757,6 +799,7 @@ impl CaptureProcessor {
             vad,
             level_cb,
             audio_cb,
+            speech_frame_cb,
             stream_running_at,
             visualizer,
             frame_resampler,
@@ -799,14 +842,29 @@ impl CaptureProcessor {
 
     /// Drain up to one bounded chunk from the ring. Returns the number of
     /// samples consumed so callers can tell an empty ring from a busy one.
-    fn drain(&mut self, consumer: &mut Consumer<f32>, disposition: ChunkDisposition) -> usize {
+    ///
+    /// `feed_speech_tap` gates whether the hands-free speech-frame callback
+    /// sees this chunk; callers draining a manual recording's tail after
+    /// `Stop` pass `false` so that audio is never double-fed to the
+    /// hands-free segmenter (see `handle_frame`).
+    fn drain(
+        &mut self,
+        consumer: &mut Consumer<f32>,
+        disposition: ChunkDisposition,
+        feed_speech_tap: bool,
+    ) -> usize {
         let max_samples = self.max_drain_samples;
         drain_available_samples(consumer, max_samples, |raw| {
-            self.process_raw_chunk(raw, disposition)
+            self.process_raw_chunk(raw, disposition, feed_speech_tap)
         })
     }
 
-    fn process_raw_chunk(&mut self, raw: &[f32], disposition: ChunkDisposition) {
+    fn process_raw_chunk(
+        &mut self,
+        raw: &[f32],
+        disposition: ChunkDisposition,
+        feed_speech_tap: bool,
+    ) {
         let chunk_ms = raw.len() as f64 * 1000.0 / self.in_sample_rate as f64;
         if !self.first_chunk_logged {
             self.first_chunk_logged = true;
@@ -817,13 +875,17 @@ impl CaptureProcessor {
             );
         }
 
-        if disposition == ChunkDisposition::Discard {
+        let capture = disposition == ChunkDisposition::Capture;
+        let speech_tap_active = feed_speech_tap && self.speech_frame_cb.is_some();
+        if !capture && !speech_tap_active {
             return;
         }
 
-        if let Some(buckets) = self.visualizer.feed(raw) {
-            if let Some(callback) = &self.level_cb {
-                callback(buckets);
+        if capture {
+            if let Some(buckets) = self.visualizer.feed(raw) {
+                if let Some(callback) = &self.level_cb {
+                    callback(buckets);
+                }
             }
         }
 
@@ -834,9 +896,19 @@ impl CaptureProcessor {
                 vad_policy,
                 &self.vad,
                 &self.audio_cb,
+                if speech_tap_active {
+                    &self.speech_frame_cb
+                } else {
+                    &None
+                },
+                capture,
                 &mut self.processed_samples,
             )
         });
+
+        if !capture {
+            return;
+        }
 
         if let Some(started) = self.awaiting_first_captured_chunk.take() {
             log::debug!(
@@ -868,7 +940,10 @@ impl CaptureProcessor {
         }
     }
 
-    /// Flush the resampler tail and hand back the finished recording.
+    /// Flush the resampler tail and hand back the finished recording. The
+    /// trailing flush is never fed to the hands-free tap (`speech_cb: &None`)
+    /// so a manual recording's tail is not double-counted as an ambient
+    /// hands-free utterance.
     fn finish_recording(&mut self) -> Vec<f32> {
         let vad_policy = self.vad_policy;
         self.frame_resampler.finish(|frame: &[f32]| {
@@ -877,6 +952,8 @@ impl CaptureProcessor {
                 vad_policy,
                 &self.vad,
                 &self.audio_cb,
+                &None,
+                true,
                 &mut self.processed_samples,
             )
         });
@@ -971,8 +1048,11 @@ fn run_consumer(
                         while !transport.pause_acknowledged.load(Ordering::Acquire)
                             && pause_started.elapsed() < PAUSE_ACK_TIMEOUT
                         {
-                            let drained =
-                                processor.drain(&mut sample_consumer, ChunkDisposition::Capture);
+                            let drained = processor.drain(
+                                &mut sample_consumer,
+                                ChunkDisposition::Capture,
+                                false,
+                            );
                             if drained == 0 {
                                 std::thread::sleep(Duration::from_millis(1));
                             }
@@ -988,8 +1068,12 @@ fn run_consumer(
 
                         // Everything still in the ring, including the boundary
                         // block, belongs to this recording.
-                        while processor.drain(&mut sample_consumer, ChunkDisposition::Capture) > 0 {
-                        }
+                        while processor.drain(
+                            &mut sample_consumer,
+                            ChunkDisposition::Capture,
+                            false,
+                        ) > 0
+                        {}
 
                         // Include drops that raced with the pause request.
                         processor
@@ -1026,7 +1110,7 @@ fn run_consumer(
         } else {
             ChunkDisposition::Discard
         };
-        processor.drain(&mut sample_consumer, disposition);
+        processor.drain(&mut sample_consumer, disposition, true);
 
         let overrun_samples = transport.overrun_samples.swap(0, Ordering::AcqRel);
         if recording {

@@ -405,6 +405,14 @@ pub struct AppSettings {
     pub onboarding_completed: bool,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
+    #[serde(default = "default_hands_free_capture")]
+    pub hands_free_capture: bool,
+    #[serde(default = "default_wake_word")]
+    pub wake_word: String,
+    #[serde(default = "default_wake_word_required_for_paste")]
+    pub wake_word_required_for_paste: bool,
+    #[serde(default = "default_capture_all_to_history")]
+    pub capture_all_to_history: bool,
     #[serde(default)]
     pub selected_microphone: Option<String>,
     /// Which input channel to use on the selected microphone device.
@@ -532,6 +540,22 @@ fn default_hold_threshold_ms() -> u64 {
 
 fn default_always_on_microphone() -> bool {
     false
+}
+
+fn default_hands_free_capture() -> bool {
+    false
+}
+
+fn default_wake_word() -> String {
+    "dude".to_string()
+}
+
+fn default_wake_word_required_for_paste() -> bool {
+    true
+}
+
+fn default_capture_all_to_history() -> bool {
+    true
 }
 
 fn default_translate_to_english() -> bool {
@@ -923,6 +947,10 @@ pub fn get_default_settings() -> AppSettings {
         selected_model: "".to_string(),
         onboarding_completed: false,
         always_on_microphone: false,
+        hands_free_capture: default_hands_free_capture(),
+        wake_word: default_wake_word(),
+        wake_word_required_for_paste: default_wake_word_required_for_paste(),
+        capture_all_to_history: default_capture_all_to_history(),
         selected_microphone: None,
         selected_channel: None,
         clamshell_microphone: None,
