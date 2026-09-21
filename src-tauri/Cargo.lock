@@ -2504,6 +2504,7 @@ name = "handy"
 version = "0.9.7"
 dependencies = [
  "anyhow",
+ "block2",
  "chrono",
  "clap",
  "cpal",
@@ -2524,6 +2525,7 @@ dependencies = [
  "natural",
  "objc2",
  "objc2-app-kit",
+ "objc2-avf-audio",
  "objc2-foundation",
  "objc2-service-management",
  "once_cell",
@@ -3858,6 +3860,17 @@ dependencies = [
  "objc2-core-audio",
  "objc2-core-audio-types",
  "objc2-core-foundation",
+ "objc2-foundation",
+]
+
+[[package]]
+name = "objc2-avf-audio"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13a380031deed8e99db00065c45937da434ca987c034e13b87e4441f9e4090be"
+dependencies = [
+ "block2",
+ "objc2",
  "objc2-foundation",
 ]
 
