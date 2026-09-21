@@ -44,7 +44,10 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
           disabled={disabled || isUpdating}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <div className="relative w-11 h-6 bg-mid-gray/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-background-ui peer-disabled:opacity-50"></div>
+        {/* Sized in px so the knob keeps an even 3px inset on every side; the
+            15px root font size skews rem-based sizes against a px inset.
+            Travel = track width - knob size - 2 * inset = 40 - 16 - 6 = 18px. */}
+        <div className="relative w-[40px] h-[22px] bg-mid-gray/20 peer-focus:outline-none peer-focus-visible:ring-4 peer-focus-visible:ring-logo-primary rounded-full peer peer-checked:after:translate-x-[18px] rtl:peer-checked:after:-translate-x-[18px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:size-[16px] after:transition-all peer-checked:bg-background-ui peer-disabled:opacity-50"></div>
       </label>
       {isUpdating && (
         <div className="absolute inset-0 flex items-center justify-center">
