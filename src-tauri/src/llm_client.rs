@@ -149,7 +149,7 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
         USER_AGENT,
         HeaderValue::from_static("Handy/1.0 (+https://github.com/cjpais/Handy)"),
     );
-    headers.insert("X-Title", HeaderValue::from_static("Handy"));
+    headers.insert("X-Title", HeaderValue::from_static("Tolkovo"));
 
     // Provider-specific auth headers
     if !api_key.is_empty() {

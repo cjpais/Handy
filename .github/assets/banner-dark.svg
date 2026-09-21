@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" width="1280" height="420">
+  <rect width="1280" height="420" rx="28" fill="#0E0E11"/>
+  <!-- vertical mic pill -->
+  <g transform="translate(250 70)">
+    <rect x="0" y="0" width="120" height="280" rx="60" fill="#1A1A1F" stroke="#34343C" stroke-width="2"/>
+    <g transform="translate(60 92)" fill="#ffffff">
+      <rect x="-16" y="-34" width="32" height="54" rx="16"/>
+      <path d="M-28 4 a28 28 0 0 0 56 0" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+      <rect x="-3" y="30" width="6" height="16" rx="3"/>
+    </g>
+    <!-- level bar -->
+    <rect x="54" y="170" width="12" height="80" rx="6" fill="#ffffff" fill-opacity="0.18"/>
+    <rect x="54" y="206" width="12" height="44" rx="6" fill="#ffffff"/>
+  </g>
+  <!-- recording dot -->
+  <circle cx="392" cy="96" r="12" fill="#E5484D"/>
+  <text x="460" y="205" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="108" font-weight="700" letter-spacing="-3" fill="#F2F2F4">Tolkovo</text>
+  <text x="464" y="262" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="34" fill="#9A9CA5">Говоришь — пишется толково.</text>
+  <text x="464" y="312" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Inter, Helvetica, Arial, sans-serif" font-size="24" fill="#9A9CA5" fill-opacity="0.8">Голосовой ввод для macOS · локально · бесплатно · по-русски</text>
+</svg>
