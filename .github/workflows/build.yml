@@ -373,14 +373,28 @@ jobs:
             '.bundle.macOS.frameworks = [$lib]' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      # Linux x64 links a BASELINE ONNX Runtime sourced from Microsoft's official
+      # GitHub releases (not blob.handy.computer). The previous Linux build pulled
+      # a prebuilt from blob.handy.computer that executes AVX instructions in a
+      # C++ static initializer — crashing with SIGILL at process startup on any
+      # pre-AVX x86-64 CPU (e.g. Intel Celeron N5095). Microsoft's release build
+      # uses an SSE2 baseline with MLAS runtime CPU dispatch, so it runs everywhere
+      # and dispatches to AVX2/AVX-512 kernels when present. The tarball is pinned
+      # by SHA-256, and check-no-avx-in-init.sh proves at build time that no VEX/
+      # EVEX instruction is reachable from .init/.init_array (guarded regardless
+      # of dispatchers deeper in the library).
+      # NOTE: URL/SHA must be bumped together on ORT upgrades; if re-hosting on
+      # blob.handy.computer, keep the same baseline provenance.
       - name: Install ONNX Runtime (x86_64 Linux, Ubuntu 22.04)
         if: contains(inputs.platform, 'ubuntu-22.04') && inputs.target == 'x86_64-unknown-linux-gnu'
         shell: bash
         run: |
           ORT_VERSION="1.24.2"
-          curl -L -o ort.tgz "https://blob.handy.computer/onnxruntime-linux-x86_64-${ORT_VERSION}.tgz"
+          ORT_LINUX_X64_SHA256="43725474ba5663642e17684717946693850e2005efbd724ac72da278fead25e6"
+          curl -fL --retry 3 -o ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz"
+          echo "$ORT_LINUX_X64_SHA256  ort.tgz" | sha256sum -c -
           tar xzf ort.tgz
-          ORT_DIR="$(pwd)/onnxruntime-linux-x86_64-${ORT_VERSION}"
+          ORT_DIR="$(pwd)/onnxruntime-linux-x64-${ORT_VERSION}"
           echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
           echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
           # Resolve symlinks so the deb bundler gets real files (not broken symlinks)
@@ -389,6 +403,8 @@ jobs:
               cp -L "$f" "$f.real" && mv "$f.real" "$f"
             fi
           done
+          # Fail the build if the shipped ORT executes AVX during process startup.
+          bash scripts/check-no-avx-in-init.sh "$ORT_DIR/lib/libonnxruntime.so.1"
           # Ship ORT in Handy's private lib dir under its SONAME only — the one
           # name the loader resolves (handy has NEEDED libonnxruntime.so.1).
           # Shipping the .so/.so.x.y.z aliases too would triplicate the lib as
@@ -409,7 +425,8 @@ jobs:
       # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static
       # ORT posture).
       # NOTE: sourced from Microsoft's GitHub release; can be re-hosted on
-      # blob.handy.computer to match the macOS/Linux steps.
+      # blob.handy.computer to match the macOS step (Linux x64 follows the same
+      # baseline posture as Windows).
       - name: Install ONNX Runtime (Windows x64)
         if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
         shell: pwsh
@@ -667,6 +684,40 @@ jobs:
             echo "${label} --list-devices smoke passed"
           }
 
+          # Run the packaged binary under qemu-user with the whole AVX family
+          # disabled (qemu emits SIGILL for any AVX/EVEX instruction then, on
+          # the exact pre-AVX CPUs our baseline must support) while keeping the
+          # rest of the host feature set (see check-no-avx-in-init.sh). This
+          # catches regressions the static init-path scan cannot: an AVX
+          # instruction reached during startup from anywhere — static
+          # initializers, constructor-dtors, or the loader itself.
+          smoke_binary_noavx() {
+            local root="$1"
+            local label="$2"
+            if ! command -v qemu-x86_64 >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y qemu-user
+            fi
+            HANDY_NO_GTK_LAYER_SHELL=1 \
+            LD_LIBRARY_PATH="${root}/usr/lib/Handy:${root}/usr/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+              timeout 240 xvfb-run -a qemu-x86_64 \
+                -cpu max,avx=off,avx2=off,fma=off,avx512f=off,avx512vl=off,avx512bw=off,avx512dq=off \
+                "${root}/usr/bin/handy" --list-devices \
+                >/tmp/handy-package-smoke-noavx.log 2>&1
+            local rc=$?
+            if [ "$rc" -eq 132 ]; then
+              echo "ERROR: ${label} crashed with SIGILL under a non-AVX CPU (qemu: AVX disabled)" >&2
+              tail -100 /tmp/handy-package-smoke-noavx.log >&2 || true
+              exit 1
+            fi
+            if [ "$rc" -ne 0 ]; then
+              echo "ERROR: ${label} non-AVX smoke failed (rc=${rc})" >&2
+              tail -100 /tmp/handy-package-smoke-noavx.log >&2 || true
+              exit 1
+            fi
+            echo "${label} non-AVX smoke passed"
+          }
+
           if compgen -G "${BUNDLE_DIR}/deb/*.deb" > /dev/null; then
             for deb in "${BUNDLE_DIR}"/deb/*.deb; do
               echo "Auditing deb package: ${deb}"
@@ -689,6 +740,9 @@ jobs:
               root="$(mktemp -d)"
               dpkg-deb -x "$deb" "$root"
               smoke_binary "$root" "deb"
+              if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+                smoke_binary_noavx "$root" "deb"
+              fi
               rm -rf "$root" "$listing"
             done
           fi
