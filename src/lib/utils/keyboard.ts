@@ -12,6 +12,12 @@ const COMPOUND_KEY_DISPLAY: Record<string, string> = {
   pagedown: "Page Down",
   printscreen: "Print Screen",
   scrolllock: "Scroll Lock",
+  numpadenter: "Numpad Enter",
+  numpadmultiply: "Numpad *",
+  numpadadd: "Numpad +",
+  numpadsubtract: "Numpad -",
+  numpaddecimal: "Numpad .",
+  numpaddivide: "Numpad /",
 };
 
 /**
@@ -42,9 +48,9 @@ export const getKeyName = (
       return code.replace("Digit", "");
     }
 
-    // Handle numpad digit keys (Numpad0 -> numpad 0)
+    // Handle numpad digit keys (Numpad0 -> numpad0)
     if (code.match(/^Numpad\d$/)) {
-      return code.replace("Numpad", "numpad ").toLowerCase();
+      return code.toLowerCase();
     }
 
     // Handle modifier keys - OS-specific naming
@@ -96,11 +102,11 @@ export const getKeyName = (
       ScrollLock: "scrolllock",
       Pause: "pause",
       ContextMenu: "menu",
-      NumpadMultiply: "numpad *",
-      NumpadAdd: "numpad +",
-      NumpadSubtract: "numpad -",
-      NumpadDecimal: "numpad .",
-      NumpadDivide: "numpad /",
+      NumpadMultiply: "numpadmultiply",
+      NumpadAdd: "numpadadd",
+      NumpadSubtract: "numpadsubtract",
+      NumpadDecimal: "numpaddecimal",
+      NumpadDivide: "numpaddivide",
       NumLock: "numlock",
     };
 
@@ -175,6 +181,7 @@ const capitalizeKey = (key: string): string => {
   // Single char: a -> A
   if (key.length === 1) return key.toUpperCase();
   if (COMPOUND_KEY_DISPLAY[key]) return COMPOUND_KEY_DISPLAY[key];
+  if (/^numpad\d$/.test(key)) return key.replace("numpad", "Numpad ");
   // Multi-word: capitalize first letter of each word
   return key.replace(/\b\w/g, (c) => c.toUpperCase());
 };
