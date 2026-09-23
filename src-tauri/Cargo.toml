@@ -188,6 +188,9 @@ transcribe-cpp = { version = "0.2.3", default-features = false, features = [
 [patch.crates-io]
 tao = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6f8d4bde052b876" }
 tao-macros = { git = "https://github.com/cjpais/tao", rev = "c3bee28c1d446d95f08c95c3b6f8d4bde052b876" }
+# Temporary review dependency until the allowlist API is published on crates.io.
+transcribe-cpp = { git = "https://github.com/luantak/transcribe.cpp", rev = "a2b3e9ed68c1dc9ec08475d41e33db34442f7c5f" }
+transcribe-cpp-sys = { git = "https://github.com/luantak/transcribe.cpp", rev = "a2b3e9ed68c1dc9ec08475d41e33db34442f7c5f" }
 
 [dev-dependencies]
 tempfile = "3"
