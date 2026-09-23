@@ -946,6 +946,7 @@ impl TranscriptionManager {
             task: run_plan.task,
             language: run_plan.language,
             target_language: run_plan.target_language,
+            allowed_languages: nemotron_allowed_languages(&settings, &languages),
             ..Default::default()
         };
 
@@ -1329,6 +1330,10 @@ impl TranscriptionManager {
                             task: run_plan.task,
                             language: run_plan.language,
                             target_language: run_plan.target_language,
+                            allowed_languages: nemotron_allowed_languages(
+                                &settings,
+                                &model_languages,
+                            ),
                             family,
                             ..Default::default()
                         };
@@ -1738,6 +1743,15 @@ struct TranscribeCppRunPlan {
 
 /// Build the transcribe-cpp language/task options shared by batch and live
 /// streaming paths.
+fn nemotron_allowed_languages(settings: &AppSettings, model_languages: &[String]) -> Vec<String> {
+    if settings.selected_language != "auto"
+        || !model_languages.iter().any(|code| code.contains('-'))
+    {
+        return Vec::new();
+    }
+    settings.allowed_languages.clone()
+}
+
 fn transcribe_cpp_run_plan(
     translate_to_english: bool,
     effective_language: &str,
@@ -2453,6 +2467,41 @@ mod tests {
         assert!(matches!(plan.task, Task::Transcribe));
         assert_eq!(plan.language.as_deref(), Some("zh"));
         assert_eq!(plan.target_language, None);
+    }
+
+    #[test]
+    fn nemotron_allowlist_only_applies_to_automatic_mode() {
+        let supported = languages(&["en-US", "de-DE", "fr-FR"]);
+        let mut settings = AppSettings::default();
+        assert!(nemotron_allowed_languages(&settings, &supported).is_empty());
+        settings.allowed_languages = languages(&["en-US", "de-DE"]);
+        assert_eq!(
+            nemotron_allowed_languages(&settings, &supported),
+            settings.allowed_languages
+        );
+        settings.selected_language = "de-DE".to_string();
+        assert!(nemotron_allowed_languages(&settings, &supported).is_empty());
+        assert_eq!(
+            transcribe_cpp_run_plan(false, "de-DE", &supported, false)
+                .language
+                .as_deref(),
+            Some("de-DE")
+        );
+        settings.selected_language = "en-US".to_string();
+        assert!(nemotron_allowed_languages(&settings, &supported).is_empty());
+        assert_eq!(
+            transcribe_cpp_run_plan(false, "en-US", &supported, false)
+                .language
+                .as_deref(),
+            Some("en-US")
+        );
+        settings.selected_language = "auto".to_string();
+        settings.allowed_languages = languages(&["unknown"]);
+        assert_eq!(
+            nemotron_allowed_languages(&settings, &supported),
+            languages(&["unknown"])
+        );
+        assert!(nemotron_allowed_languages(&settings, &languages(&["en", "de"])).is_empty());
     }
 
     #[test]

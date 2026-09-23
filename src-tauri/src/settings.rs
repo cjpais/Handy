@@ -419,6 +419,8 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    #[serde(default)]
+    pub allowed_languages: Vec<String>,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -929,6 +931,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: "auto".to_string(),
+        allowed_languages: Vec::new(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
@@ -1262,6 +1265,16 @@ mod tests {
 
     fn default_settings_json() -> serde_json::Value {
         serde_json::to_value(get_default_settings()).unwrap()
+    }
+
+    #[test]
+    fn legacy_language_setting_loads_without_allowlist() {
+        let settings: AppSettings = serde_json::from_value(serde_json::json!({
+            "selected_language": "auto"
+        }))
+        .unwrap();
+        assert_eq!(settings.selected_language, "auto");
+        assert!(settings.allowed_languages.is_empty());
     }
 
     /// Every field must survive a partial store: a missing key must never fail

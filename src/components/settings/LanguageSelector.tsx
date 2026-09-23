@@ -27,6 +27,9 @@ const pickerLanguage = (languageCode: string): string =>
     ? languageCode
     : recognitionLanguage(languageCode);
 
+const languageName = (code: string): string =>
+  `${getLanguageLabel(code) || code} (${code})`;
+
 // Mirrors the matching logic of `effective_language` in
 // src-tauri/src/managers/model.rs. The Rust function is authoritative for the
 // *concrete* code the engine receives (e.g. `nb`); this resolves the canonical
@@ -65,6 +68,25 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     supportedLanguages ?? [],
     supportsLanguageDetection,
   );
+  const allowedLanguages = getSetting("allowed_languages") ?? [];
+  const allowlistChoices = useMemo(
+    () => (supportedLanguages ?? []).filter((code) => code.includes("-")),
+    [supportedLanguages],
+  );
+  const multiSelectAvailable =
+    supportsLanguageDetection && allowlistChoices.length > 1;
+  const forcedCode = allowlistChoices.includes(intent)
+    ? intent
+    : allowlistChoices.find(
+        (code) => recognitionLanguage(code) === recognitionLanguage(intent),
+      );
+  const selectedCodes = !multiSelectAvailable
+    ? []
+    : intent === "auto"
+      ? allowedLanguages
+      : forcedCode
+        ? [forcedCode]
+        : [];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -90,6 +112,18 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }, [isOpen]);
 
   const availableLanguages = useMemo(() => {
+    if (multiSelectAvailable) {
+      const autoOption = SELECTABLE_LANGUAGES.find(
+        (language) => language.value === "auto",
+      );
+      return [
+        ...(autoOption ? [autoOption] : []),
+        ...allowlistChoices.map((code) => ({
+          value: code,
+          label: languageName(code),
+        })),
+      ];
+    }
     if (!supportedLanguages || supportedLanguages.length === 0)
       return SELECTABLE_LANGUAGES;
     return SELECTABLE_LANGUAGES.filter((lang) =>
@@ -97,7 +131,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         ? supportsLanguageDetection
         : supportsLanguageCode(supportedLanguages, lang.value),
     );
-  }, [supportedLanguages, supportsLanguageDetection]);
+  }, [
+    supportedLanguages,
+    supportsLanguageDetection,
+    multiSelectAvailable,
+    allowlistChoices,
+  ]);
 
   const filteredLanguages = useMemo(
     () =>
@@ -108,20 +147,45 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   );
 
   const selectedLanguageName =
-    getLanguageLabel(selectedLanguage) || t("settings.general.language.auto");
+    multiSelectAvailable && selectedCodes.length > 0
+      ? selectedCodes.map(languageName).join(", ")
+      : getLanguageLabel(selectedLanguage) ||
+        t("settings.general.language.auto");
 
   const handleLanguageSelect = async (languageCode: string) => {
-    await updateSetting("selected_language", languageCode);
-    setIsOpen(false);
+    if (!multiSelectAvailable) {
+      await updateSetting("selected_language", languageCode);
+      setIsOpen(false);
+    } else if (languageCode === "auto") {
+      await updateSetting("selected_language", "auto");
+      await updateSetting("allowed_languages", []);
+      setIsOpen(false);
+    } else {
+      const current = selectedCodes.filter((code) =>
+        allowlistChoices.includes(code),
+      );
+      const next = current.includes(languageCode)
+        ? current.filter((code) => code !== languageCode)
+        : [...current, languageCode];
+      if (next.length === 1) {
+        await updateSetting("selected_language", next[0]);
+        await updateSetting("allowed_languages", []);
+      } else {
+        await updateSetting("allowed_languages", next);
+        await updateSetting("selected_language", "auto");
+      }
+    }
     setSearchQuery("");
   };
 
   const handleReset = async () => {
     await resetSetting("selected_language");
+    await resetSetting("allowed_languages");
   };
 
   const handleToggle = () => {
-    if (isUpdating("selected_language")) return;
+    if (isUpdating("selected_language") || isUpdating("allowed_languages"))
+      return;
     setIsOpen(!isOpen);
   };
 
@@ -150,15 +214,19 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
-            className={`px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded min-w-[200px] text-start flex items-center justify-between transition-all duration-150 ${
-              isUpdating("selected_language")
+            className={`px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded min-w-[200px] max-w-[320px] text-start flex items-center justify-between transition-all duration-150 ${
+              isUpdating("selected_language") || isUpdating("allowed_languages")
                 ? "opacity-50 cursor-not-allowed"
                 : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
             }`}
             onClick={handleToggle}
-            disabled={isUpdating("selected_language")}
+            disabled={
+              isUpdating("selected_language") || isUpdating("allowed_languages")
+            }
           >
-            <span className="truncate">{selectedLanguageName}</span>
+            <span className="min-w-0 flex-1 truncate">
+              {selectedLanguageName}
+            </span>
             <svg
               className={`w-4 h-4 ms-2 transition-transform duration-200 ${
                 isOpen ? "transform rotate-180" : ""
@@ -176,7 +244,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             </svg>
           </button>
 
-          {isOpen && !isUpdating("selected_language") && (
+          {isOpen && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-mid-gray/80 rounded shadow-lg z-50 max-h-60 overflow-hidden">
               {/* Search input */}
               <div className="p-2 border-b border-mid-gray/80">
@@ -197,22 +265,52 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                     {t("settings.general.language.noResults")}
                   </div>
                 ) : (
-                  filteredLanguages.map((language) => (
-                    <button
-                      key={language.value}
-                      type="button"
-                      className={`w-full px-2 py-1 text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
-                        selectedLanguage === language.value
-                          ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                          : ""
-                      }`}
-                      onClick={() => handleLanguageSelect(language.value)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="truncate">{language.label}</span>
-                      </div>
-                    </button>
-                  ))
+                  filteredLanguages.map((language) => {
+                    const isSelected = multiSelectAvailable
+                      ? language.value === "auto"
+                        ? selectedCodes.length === 0
+                        : selectedCodes.includes(language.value)
+                      : selectedLanguage === language.value;
+                    return (
+                      <button
+                        key={language.value}
+                        type="button"
+                        aria-pressed={
+                          multiSelectAvailable ? isSelected : undefined
+                        }
+                        disabled={
+                          isUpdating("selected_language") ||
+                          isUpdating("allowed_languages")
+                        }
+                        className={`w-full px-2 py-1 text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
+                          isSelected
+                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                            : ""
+                        }`}
+                        onClick={() => handleLanguageSelect(language.value)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">{language.label}</span>
+                          {multiSelectAvailable && isSelected && (
+                            <svg
+                              aria-hidden="true"
+                              className="w-4 h-4 ms-2 shrink-0"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 12l4 4L19 6"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -220,7 +318,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         </div>
         <ResetButton
           onClick={handleReset}
-          disabled={isUpdating("selected_language")}
+          disabled={
+            isUpdating("selected_language") || isUpdating("allowed_languages")
+          }
         />
       </div>
       {isUpdating("selected_language") && (

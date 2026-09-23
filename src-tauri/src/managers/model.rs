@@ -282,6 +282,9 @@ pub fn effective_language(
     }
 
     if intent != "auto" {
+        let exact_match = supported_languages
+            .iter()
+            .find(|language| language.as_str() == intent);
         // Prefer the same base code before considering an equivalence alias. If
         // a future model advertises both `no` and `nb`, an explicit `nb` intent
         // must select `nb`, regardless of capability-list order.
@@ -294,7 +297,7 @@ pub fn effective_language(
             })
         };
 
-        if let Some(code) = exact_base_match.or_else(equivalent_match) {
+        if let Some(code) = exact_match.or(exact_base_match).or_else(equivalent_match) {
             if intent == "zh-Hans" || intent == "zh-Hant" {
                 return intent.to_string();
             }
@@ -2706,6 +2709,7 @@ mod tests {
         ];
 
         assert_eq!(effective_language("en", &languages, true), "en-US");
+        assert_eq!(effective_language("en-GB", &languages, true), "en-GB");
         assert_eq!(effective_language("es", &languages, true), "es-ES");
         // `zh`/`ja` have no bare entry in this model's table; resolve to locale.
         assert_eq!(effective_language("zh", &languages, true), "zh-CN");
