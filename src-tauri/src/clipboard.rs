@@ -358,6 +358,103 @@ fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
     }
 }
 
+/// Returns a usable ydotool daemon socket, if one can be found.
+///
+/// Distro-packaged `ydotoold` system services (e.g. on Fedora) listen on
+/// `/tmp/.ydotool_socket`, while the ydotool client defaults to
+/// `$XDG_RUNTIME_DIR/.ydotool_socket`. When the two disagree the client fails
+/// with `failed to connect socket`, breaking paste on Wayland (#2079). Resolving
+/// the socket here lets Handy advertise it to the client via `YDOTOOL_SOCKET`.
+#[cfg(any(target_os = "linux", all(test, unix)))]
+fn resolve_ydotool_socket_in(
+    env_socket: Option<&std::ffi::OsStr>,
+    runtime_dir: Option<&std::ffi::OsStr>,
+    fallback_socket: &std::path::Path,
+) -> Option<std::path::PathBuf> {
+    use std::path::PathBuf;
+
+    // An explicitly set variable always wins: the user knows where the daemon
+    // is, and ydotool already honours it verbatim.
+    if let Some(socket) = env_socket.filter(|s| !s.is_empty()) {
+        return Some(PathBuf::from(socket));
+    }
+
+    // The client's own default location, checked first on purpose.
+    if let Some(dir) = runtime_dir {
+        let candidate = PathBuf::from(dir).join(".ydotool_socket");
+        if is_accessible_ydotool_socket(&candidate) {
+            return Some(candidate);
+        }
+    }
+
+    // System `ydotoold` services that listen in the world-writable dir.
+    if is_accessible_ydotool_socket(fallback_socket) {
+        return Some(fallback_socket.to_path_buf());
+    }
+
+    None
+}
+
+#[cfg(any(target_os = "linux", all(test, unix)))]
+fn resolve_ydotool_socket() -> Option<std::path::PathBuf> {
+    resolve_ydotool_socket_in(
+        std::env::var_os("YDOTOOL_SOCKET").as_deref(),
+        std::env::var_os("XDG_RUNTIME_DIR").as_deref(),
+        std::path::Path::new("/tmp/.ydotool_socket"),
+    )
+}
+
+/// Whether `path` is a Unix socket the current user may be able to connect to.
+///
+/// `ydotoold` creates its socket with mode 0600 by default. When it runs as a
+/// system service owned by another user the socket exists but is not
+/// connectable, so existing alone is not enough to advertise it.
+#[cfg(any(target_os = "linux", all(test, unix)))]
+fn is_accessible_ydotool_socket(path: &std::path::Path) -> bool {
+    use std::os::unix::fs::{FileTypeExt, PermissionsExt};
+    #[cfg(target_os = "linux")]
+    use std::os::unix::fs::MetadataExt;
+
+    let Ok(metadata) = std::fs::metadata(path) else {
+        return false;
+    };
+    if !metadata.file_type().is_socket() {
+        return false;
+    }
+
+    let mode = metadata.permissions().mode();
+
+    // ydotoold may run as a system service owned by another user; its 0600
+    // socket then exists but cannot be connected to.
+    #[cfg(target_os = "linux")]
+    let owned_by_us = metadata.uid() == unsafe { libc::geteuid() };
+
+    // Non-Linux builds only evaluate this in #[cfg(test)] on Unix, where our
+    // test sockets are always created by this process (and therefore owned by
+    // the current user). The ownership check only matters on Linux.
+    #[cfg(not(target_os = "linux"))]
+    let owned_by_us = true;
+
+    if owned_by_us {
+        return true;
+    }
+
+    // Not our socket: only usable if the group/other permission bits grant
+    // read+write. The kernel performs the real check when we connect.
+    (mode & 0o066) == 0o066 || (mode & 0o006) == 0o006
+}
+
+/// Builds a `ydotool` command, pointing `YDOTOOL_SOCKET` at the daemon socket.
+#[cfg(target_os = "linux")]
+fn ydotool_command() -> Command {
+    let mut command = Command::new("ydotool");
+    if let Some(socket) = resolve_ydotool_socket() {
+        log::debug!("Using ydotool socket: {}", socket.display());
+        command.env("YDOTOOL_SOCKET", socket);
+    }
+    command
+}
+
 /// Check if ydotool is available (uinput-based, works on both Wayland and X11)
 #[cfg(target_os = "linux")]
 fn is_ydotool_available() -> bool {
@@ -506,7 +603,7 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
 /// Type text directly via ydotool (uinput-based, requires ydotoold daemon).
 #[cfg(target_os = "linux")]
 fn type_text_via_ydotool(text: &str) -> Result<(), String> {
-    let output = Command::new("ydotool")
+    let output = ydotool_command()
         .arg("type")
         .arg("--")
         .arg(text)
@@ -639,7 +736,7 @@ fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> 
     let syntax = detect_ydotool_key_syntax();
     let args = ydotool_key_args(paste_method, syntax)?;
 
-    let output = Command::new("ydotool")
+    let output = ydotool_command()
         .args(args)
         .output()
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
@@ -867,6 +964,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 mod tests {
     use super::*;
     use std::cell::Cell;
+    use std::path::{Path, PathBuf};
 
     #[cfg(target_os = "linux")]
     const YDOTOOL_0_1_8_HELP: &str = r#"
@@ -973,6 +1071,134 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
 
         assert_eq!(result.unwrap_err(), "input failed");
         assert!(restored.get());
+    }
+
+    #[cfg(unix)]
+    fn temp_test_dir(label: &str) -> PathBuf {
+        // Keep paths short: Unix socket paths must stay under SUN_LEN.
+        let dir = std::env::temp_dir().join(format!(
+            "hy-{}-{}-{}",
+            label,
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock should be after UNIX_EPOCH")
+                .as_millis()
+        ));
+        std::fs::create_dir_all(&dir).expect("create temp test dir");
+        dir
+    }
+
+    #[cfg(unix)]
+    fn bind_test_socket(dir: &Path, name: &str) -> PathBuf {
+        let path = dir.join(name);
+        let _listener =
+            std::os::unix::net::UnixListener::bind(&path).expect("bind test socket");
+        path
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn explicit_ydotool_socket_env_is_respected() {
+        let dir = temp_test_dir("env");
+        let custom_socket = bind_test_socket(&dir, "custom.sock");
+        let runtime_socket = bind_test_socket(&dir, ".ydotool_socket");
+
+        let resolved = resolve_ydotool_socket_in(
+            Some(custom_socket.as_os_str()),
+            Some(dir.as_os_str()),
+            &runtime_socket,
+        );
+        assert_eq!(resolved, Some(custom_socket));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn prefers_xdg_runtime_dir_socket_over_fallback() {
+        let runtime_dir = temp_test_dir("runtime");
+        let runtime_socket = bind_test_socket(&runtime_dir, ".ydotool_socket");
+        let fallback_dir = temp_test_dir("fallback-present");
+        let fallback_socket = bind_test_socket(&fallback_dir, "other.sock");
+
+        let resolved = resolve_ydotool_socket_in(
+            None,
+            Some(runtime_dir.as_os_str()),
+            &fallback_socket,
+        );
+        assert_eq!(resolved, Some(runtime_socket));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn falls_back_to_tmp_socket_when_runtime_dir_has_none() {
+        let runtime_dir = temp_test_dir("runtime-empty");
+        let fallback_dir = temp_test_dir("fallback");
+        let fallback_socket = bind_test_socket(&fallback_dir, "other.sock");
+
+        let resolved = resolve_ydotool_socket_in(
+            None,
+            Some(runtime_dir.as_os_str()),
+            &fallback_socket,
+        );
+        assert_eq!(resolved, Some(fallback_socket));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn returns_none_when_no_ydotool_socket_is_usable() {
+        let runtime_dir = temp_test_dir("runtime-none");
+        let fallback_dir = temp_test_dir("fallback-none");
+
+        let resolved = resolve_ydotool_socket_in(
+            None,
+            Some(runtime_dir.as_os_str()),
+            &fallback_dir.join("absent.sock"),
+        );
+        assert_eq!(resolved, None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ignores_plain_files_that_are_not_sockets() {
+        let runtime_dir = temp_test_dir("runtime-file");
+        std::fs::write(runtime_dir.join(".ydotool_socket"), b"not a socket").expect("write file");
+        let fallback_dir = temp_test_dir("fallback-file");
+        let fallback_path = fallback_dir.join("other.sock");
+        std::fs::write(&fallback_path, b"not a socket").expect("write file");
+
+        let resolved = resolve_ydotool_socket_in(
+            None,
+            Some(runtime_dir.as_os_str()),
+            &fallback_path,
+        );
+        assert_eq!(resolved, None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn resolve_ydotool_socket_reads_environment() {
+        use std::sync::{Mutex, MutexGuard};
+        static ENV_LOCK: Mutex<()> = Mutex::new(());
+        let _guard: MutexGuard<()> = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+
+        let previous_socket = std::env::var_os("YDOTOOL_SOCKET");
+        let previous_runtime_dir = std::env::var_os("XDG_RUNTIME_DIR");
+
+        let runtime_dir = temp_test_dir("env-runtime");
+        let runtime_socket = bind_test_socket(&runtime_dir, ".ydotool_socket");
+        std::env::remove_var("YDOTOOL_SOCKET");
+        std::env::set_var("XDG_RUNTIME_DIR", &runtime_dir);
+
+        assert_eq!(resolve_ydotool_socket(), Some(runtime_socket));
+
+        match previous_socket {
+            Some(value) => std::env::set_var("YDOTOOL_SOCKET", value),
+            None => std::env::remove_var("YDOTOOL_SOCKET"),
+        }
+        match previous_runtime_dir {
+            Some(value) => std::env::set_var("XDG_RUNTIME_DIR", value),
+            None => std::env::remove_var("XDG_RUNTIME_DIR"),
+        }
     }
 
     #[cfg(unix)]
