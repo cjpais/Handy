@@ -94,13 +94,6 @@ pub struct AudioRecorder {
     audio_cb: Option<AudioFrameCallback>,
     /// Which input channel to use. None = average all (original behavior).
     selected_channel: Option<usize>,
-    /// Preferred stream config cached per device name. The two HAL property
-    /// queries in `get_preferred_config` cost ~40-85ms per open (worse on
-    /// USB/Bluetooth), which lands on the keypress->capture path in on-demand
-    /// mode. Keyed by name so a system-default change misses naturally;
-    /// cleared whenever an open fails so a stale rate/format self-heals on the
-    /// caller's retry.
-    config_cache: Arc<Mutex<Option<(String, cpal::SupportedStreamConfig)>>>,
     /// Set by cpal when the active input stream can no longer capture.
     stream_error: Arc<AtomicBool>,
 }
@@ -115,7 +108,6 @@ impl AudioRecorder {
             level_cb: None,
             audio_cb: None,
             selected_channel: None,
-            config_cache: Arc::new(Mutex::new(None)),
             stream_error: Arc::new(AtomicBool::new(false)),
         })
     }
@@ -198,26 +190,16 @@ impl AudioRecorder {
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
         let selected_channel = self.selected_channel;
-        let config_cache = Arc::clone(&self.config_cache);
         let stream_error = Arc::clone(&self.stream_error);
 
         let worker = std::thread::spawn(move || {
             let transport = Arc::new(CaptureTransportState::default());
             let init_result = (|| -> Result<(cpal::Stream, u32, Consumer<f32>), String> {
                 let config_started = Instant::now();
-                let device_name = thread_device.name().unwrap_or_default();
-                let cached_config = config_cache
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .filter(|(name, _)| !device_name.is_empty() && *name == device_name)
-                    .map(|(_, cfg)| cfg.clone());
-                let config_was_cached = cached_config.is_some();
-                let config = match cached_config {
-                    Some(cfg) => cfg,
-                    None => AudioRecorder::get_preferred_config(&thread_device)
-                        .map_err(|e| format!("Failed to fetch preferred config: {e}"))?,
-                };
+                // Use the OS default input config
+                let config = thread_device
+                    .default_input_config()
+                    .map_err(|e| format!("Failed to fetch default input config: {e}"))?;
                 let config_elapsed = config_started.elapsed();
 
                 let sample_rate = config.sample_rate().0;
@@ -271,6 +253,14 @@ impl AudioRecorder {
                         Arc::clone(&transport),
                         Arc::clone(&stream_error),
                     ),
+                    cpal::SampleFormat::I24 => AudioRecorder::build_stream::<cpal::I24>(
+                        &thread_device,
+                        &config,
+                        channels,
+                        selected_channel,
+                        Arc::clone(&transport),
+                        Arc::clone(&stream_error),
+                    ),
                     cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
                         &thread_device,
                         &config,
@@ -279,7 +269,47 @@ impl AudioRecorder {
                         Arc::clone(&transport),
                         Arc::clone(&stream_error),
                     ),
+                    cpal::SampleFormat::I64 => AudioRecorder::build_stream::<i64>(
+                        &thread_device,
+                        &config,
+                        channels,
+                        selected_channel,
+                        Arc::clone(&transport),
+                        Arc::clone(&stream_error),
+                    ),
+                    cpal::SampleFormat::U16 => AudioRecorder::build_stream::<u16>(
+                        &thread_device,
+                        &config,
+                        channels,
+                        selected_channel,
+                        Arc::clone(&transport),
+                        Arc::clone(&stream_error),
+                    ),
+                    cpal::SampleFormat::U32 => AudioRecorder::build_stream::<u32>(
+                        &thread_device,
+                        &config,
+                        channels,
+                        selected_channel,
+                        Arc::clone(&transport),
+                        Arc::clone(&stream_error),
+                    ),
+                    cpal::SampleFormat::U64 => AudioRecorder::build_stream::<u64>(
+                        &thread_device,
+                        &config,
+                        channels,
+                        selected_channel,
+                        Arc::clone(&transport),
+                        Arc::clone(&stream_error),
+                    ),
                     cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
+                        &thread_device,
+                        &config,
+                        channels,
+                        selected_channel,
+                        Arc::clone(&transport),
+                        Arc::clone(&stream_error),
+                    ),
+                    cpal::SampleFormat::F64 => AudioRecorder::build_stream::<f64>(
                         &thread_device,
                         &config,
                         channels,
@@ -299,18 +329,11 @@ impl AudioRecorder {
                     .play()
                     .map_err(|e| format!("Failed to start microphone stream: {e}"))?;
                 log::debug!(
-                    "mic worker init: fetch_config={:?} (cached={}) build_stream={:?} play={:?}",
+                    "mic worker init: fetch_config={:?} build_stream={:?} play={:?}",
                     config_elapsed,
-                    config_was_cached,
                     build_elapsed,
                     play_started.elapsed()
                 );
-
-                // The device accepted this config; remember it so the next
-                // open skips the HAL property queries entirely.
-                if !config_was_cached && !device_name.is_empty() {
-                    *config_cache.lock().unwrap() = Some((device_name, config));
-                }
 
                 Ok((stream, sample_rate, sample_consumer))
             })();
@@ -338,10 +361,6 @@ impl AudioRecorder {
                     drop(stream);
                 }
                 Err(error_message) => {
-                    // A failed open may mean the cached config went stale
-                    // (device re-plugged, rate/format changed in the OS).
-                    // Drop it so the next attempt re-queries the device.
-                    *config_cache.lock().unwrap() = None;
                     log::error!("{error_message}");
                     let _ = init_tx.send(Err(error_message));
                 }
@@ -546,65 +565,10 @@ impl AudioRecorder {
         acknowledge_pause_after_write(transport);
     }
 
-    pub fn preferred_input_channel_count(
+    pub fn default_input_channel_count(
         device: &cpal::Device,
     ) -> Result<u16, Box<dyn std::error::Error>> {
-        Ok(Self::get_preferred_config(device)?.channels())
-    }
-
-    fn get_preferred_config(
-        device: &cpal::Device,
-    ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
-        // Use the device's native/default sample rate and let the FrameResampler
-        // in run_consumer() downsample to 16kHz. This avoids forcing hardware into
-        // a non-native rate which can cause issues on some devices (Bluetooth
-        // codecs, certain ALSA drivers, etc.).
-        let default_config = device.default_input_config()?;
-        let target_rate = default_config.sample_rate();
-
-        // Try to find the best sample format at the device's default rate
-        let supported_configs = match device.supported_input_configs() {
-            Ok(configs) => configs,
-            Err(e) => {
-                log::warn!("Could not enumerate input configs ({e}), using device default");
-                return Ok(default_config);
-            }
-        };
-        let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
-
-        for config_range in supported_configs {
-            if config_range.min_sample_rate() <= target_rate
-                && config_range.max_sample_rate() >= target_rate
-            {
-                match best_config {
-                    None => best_config = Some(config_range),
-                    Some(ref current) => {
-                        // Prioritize F32 > I16 > I32 > others
-                        let score = |fmt: cpal::SampleFormat| match fmt {
-                            cpal::SampleFormat::F32 => 4,
-                            cpal::SampleFormat::I16 => 3,
-                            cpal::SampleFormat::I32 => 2,
-                            _ => 1,
-                        };
-
-                        if score(config_range.sample_format()) > score(current.sample_format()) {
-                            best_config = Some(config_range);
-                        }
-                    }
-                }
-            }
-        }
-
-        if let Some(config) = best_config {
-            return Ok(config.with_sample_rate(target_rate));
-        }
-
-        // Fall back to device default if no config matched (exotic/virtual devices)
-        log::warn!(
-            "No supported config matched device default rate {:?}, using default config",
-            target_rate
-        );
-        Ok(default_config)
+        Ok(device.default_input_config()?.channels())
     }
 }
 
@@ -624,7 +588,7 @@ pub fn is_microphone_access_denied(error_message: &str) -> bool {
 pub fn is_no_input_device_error(error_message: &str) -> bool {
     let normalized = error_message.to_lowercase();
     normalized.contains("no input device found")
-        || (normalized.contains("failed to fetch preferred config")
+        || (normalized.contains("failed to fetch default input config")
             && normalized.contains("coreaudio"))
 }
 
