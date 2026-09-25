@@ -196,9 +196,7 @@ impl AudioRecorder {
             let transport = Arc::new(CaptureTransportState::default());
             let init_result = (|| -> Result<(cpal::Stream, u32, Consumer<f32>), String> {
                 let config_started = Instant::now();
-                // Use the OS default rather than a reported supported format: #2141
-                // saw a Windows mic deliver zeros as F32, and #1163 saw macOS
-                // fail to open a non-default config. run_consumer() resamples to 16kHz.
+                // Use the OS default input config
                 let config = thread_device
                     .default_input_config()
                     .map_err(|e| format!("Failed to fetch default input config: {e}"))?;
