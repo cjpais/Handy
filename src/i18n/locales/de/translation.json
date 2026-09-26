@@ -186,6 +186,7 @@
         "loading": "Tastenkürzel werden geladen...",
         "none": "Keine Tastenkürzel konfiguriert",
         "notFound": "Tastenkürzel nicht gefunden",
+        "unassigned": "Nicht festgelegt",
         "pressKeys": "Tasten drücken...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Nachbearbeitungsprofile",
+        "add": "Profil hinzufügen",
+        "delete": "Profil {{name}} löschen",
+        "deleteTitle": "Profil löschen",
+        "deleteConfirm": "Profil „{{name}}“ löschen? Seine Einstellungen werden entfernt und sein Tastenkürzel funktioniert nicht mehr.",
+        "defaultName": "Standard",
+        "renameHint": "Doppelklicken zum Umbenennen",
+        "nameLabel": "Profilname",
+        "shortcutTitle": "Nachbearbeitungs-Tastenkürzel ({{name}})",
+        "errors": {
+          "add": "Profil konnte nicht hinzugefügt werden",
+          "rename": "Profil konnte nicht umbenannt werden",
+          "delete": "Profil konnte nicht gelöscht werden"
+        }
+      },
       "hotkey": {
         "title": "Tastenkürzel"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Erneut transkribieren",
       "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
       "transcribing": "Transkribiere...",
-      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren.",
+      "postProcessProfile": "Profil: {{name}}",
+      "deletedProfile": "Profil gelöscht"
     },
     "debug": {
       "title": "Debug",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Transkribiere...",
-    "processing": "Verarbeite..."
+    "processing": "Verarbeite...",
+    "processingProfile": "Verarbeite ({{name}})..."
   },
   "whatsNew": {
     "title": "Neu in Handy v{{version}}"

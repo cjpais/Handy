@@ -186,6 +186,7 @@
         "loading": "Kısayollar yükleniyor...",
         "none": "Kısayol yapılandırılmadı",
         "notFound": "Kısayol bulunamadı",
+        "unassigned": "Ayarlanmadı",
         "pressKeys": "Tuşlara basın...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Son işleme profilleri",
+        "add": "Profil ekle",
+        "delete": "{{name}} profilini sil",
+        "deleteTitle": "Profili Sil",
+        "deleteConfirm": "\"{{name}}\" profili silinsin mi? Ayarları kaldırılacak ve kısayolu çalışmayı durduracak.",
+        "defaultName": "Varsayılan",
+        "renameHint": "Yeniden adlandırmak için çift tıklayın",
+        "nameLabel": "Profil adı",
+        "shortcutTitle": "Son İşlem Kısayolu ({{name}})",
+        "errors": {
+          "add": "Profil eklenemedi",
+          "rename": "Profil yeniden adlandırılamadı",
+          "delete": "Profil silinemedi"
+        }
+      },
       "hotkey": {
         "title": "Kısayol Tuşu"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Yeniden transkribe et",
       "retranscribeError": "Yeniden transkripsiyon başarısız oldu. Lütfen tekrar deneyin.",
       "transcribing": "Transkribe ediliyor...",
-      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz."
+      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz.",
+      "postProcessProfile": "Profil: {{name}}",
+      "deletedProfile": "Profil silindi"
     },
     "debug": {
       "title": "Hata Ayıklama",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
-    "processing": "İşleniyor..."
+    "processing": "İşleniyor...",
+    "processingProfile": "İşleniyor ({{name}})..."
   },
   "whatsNew": {
     "title": "Handy v{{version}} yenilikleri"

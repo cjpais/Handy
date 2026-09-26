@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSettings } from "../../../hooks/useSettings";
 import { commands, type PostProcessProvider } from "@/bindings";
+import { postProcessKey } from "../../../stores/settingsStore";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
@@ -30,7 +31,9 @@ type PostProcessProviderState = {
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
 
-export const usePostProcessProviderState = (): PostProcessProviderState => {
+export const usePostProcessProviderState = (
+  profileId: string,
+): PostProcessProviderState => {
   const {
     settings,
     isUpdating,
@@ -42,12 +45,16 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     postProcessModelOptions,
   } = useSettings();
 
+  const profile = settings?.post_process_profiles?.find(
+    (p) => p.id === profileId,
+  );
+
   // Settings are guaranteed to have providers after migration
-  const providers = settings?.post_process_providers || [];
+  const providers = profile?.providers || [];
 
   const selectedProviderId = useMemo(() => {
-    return settings?.post_process_provider_id || providers[0]?.id || "openai";
-  }, [providers, settings?.post_process_provider_id]);
+    return profile?.provider_id || providers[0]?.id || "openai";
+  }, [providers, profile?.provider_id]);
 
   const selectedProvider = useMemo(() => {
     return (
@@ -62,8 +69,8 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
-  const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
-  const model = settings?.post_process_models?.[selectedProviderId] ?? "";
+  const apiKey = profile?.api_keys?.[selectedProviderId] ?? "";
+  const model = profile?.models?.[selectedProviderId] ?? "";
 
   const providerOptions = useMemo<DropdownOption[]>(() => {
     return providers.map((provider) => ({
@@ -89,7 +96,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
         }
       }
 
-      await setPostProcessProvider(providerId);
+      await setPostProcessProvider(profileId, providerId);
 
       // Auto-fetch available models for the new provider so the model dropdown
       // reflects what's actually valid. Without this, a stale model value from
@@ -98,21 +105,22 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       // to avoid unnecessary backend errors.
       if (providerId !== APPLE_PROVIDER_ID) {
         const provider = providers.find((p) => p.id === providerId);
-        const apiKey = settings?.post_process_api_keys?.[providerId] ?? "";
+        const apiKey = profile?.api_keys?.[providerId] ?? "";
         const hasBaseUrl = (provider?.base_url ?? "").trim() !== "";
         const hasApiKey = apiKey.trim() !== "";
 
         if (provider?.id === "custom" ? hasBaseUrl : hasApiKey) {
-          void fetchPostProcessModels(providerId);
+          void fetchPostProcessModels(profileId, providerId);
         }
       }
     },
     [
+      profileId,
       selectedProviderId,
       setPostProcessProvider,
       fetchPostProcessModels,
       providers,
-      settings,
+      profile,
     ],
   );
 
@@ -123,52 +131,53 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       }
       const trimmed = value.trim();
       if (trimmed && trimmed !== baseUrl) {
-        void updatePostProcessBaseUrl(selectedProvider.id, trimmed);
+        void updatePostProcessBaseUrl(profileId, selectedProvider.id, trimmed);
       }
     },
-    [selectedProvider, baseUrl, updatePostProcessBaseUrl],
+    [profileId, selectedProvider, baseUrl, updatePostProcessBaseUrl],
   );
 
   const handleApiKeyChange = useCallback(
     (value: string) => {
       const trimmed = value.trim();
       if (trimmed !== apiKey) {
-        void updatePostProcessApiKey(selectedProviderId, trimmed);
+        void updatePostProcessApiKey(profileId, selectedProviderId, trimmed);
       }
     },
-    [apiKey, selectedProviderId, updatePostProcessApiKey],
+    [profileId, apiKey, selectedProviderId, updatePostProcessApiKey],
   );
 
   const handleModelChange = useCallback(
     (value: string) => {
       const trimmed = value.trim();
       if (trimmed !== model) {
-        void updatePostProcessModel(selectedProviderId, trimmed);
+        void updatePostProcessModel(profileId, selectedProviderId, trimmed);
       }
     },
-    [model, selectedProviderId, updatePostProcessModel],
+    [profileId, model, selectedProviderId, updatePostProcessModel],
   );
 
   const handleModelSelect = useCallback(
     (value: string) => {
-      void updatePostProcessModel(selectedProviderId, value.trim());
+      void updatePostProcessModel(profileId, selectedProviderId, value.trim());
     },
-    [selectedProviderId, updatePostProcessModel],
+    [profileId, selectedProviderId, updatePostProcessModel],
   );
 
   const handleModelCreate = useCallback(
     (value: string) => {
-      void updatePostProcessModel(selectedProviderId, value);
+      void updatePostProcessModel(profileId, selectedProviderId, value);
     },
-    [selectedProviderId, updatePostProcessModel],
+    [profileId, selectedProviderId, updatePostProcessModel],
   );
 
   const handleRefreshModels = useCallback(() => {
     if (isAppleProvider) return;
-    void fetchPostProcessModels(selectedProviderId);
-  }, [fetchPostProcessModels, isAppleProvider, selectedProviderId]);
+    void fetchPostProcessModels(profileId, selectedProviderId);
+  }, [fetchPostProcessModels, isAppleProvider, profileId, selectedProviderId]);
 
-  const availableModelsRaw = postProcessModelOptions[selectedProviderId] || [];
+  const providerKey = postProcessKey(profileId, selectedProviderId);
+  const availableModelsRaw = postProcessModelOptions[providerKey] || [];
 
   const modelOptions = useMemo<ModelOption[]>(() => {
     const seen = new Set<string>();
@@ -192,17 +201,11 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     return options;
   }, [availableModelsRaw, model]);
 
-  const isBaseUrlUpdating = isUpdating(
-    `post_process_base_url:${selectedProviderId}`,
-  );
-  const isApiKeyUpdating = isUpdating(
-    `post_process_api_key:${selectedProviderId}`,
-  );
-  const isModelUpdating = isUpdating(
-    `post_process_model:${selectedProviderId}`,
-  );
+  const isBaseUrlUpdating = isUpdating(`post_process_base_url:${providerKey}`);
+  const isApiKeyUpdating = isUpdating(`post_process_api_key:${providerKey}`);
+  const isModelUpdating = isUpdating(`post_process_model:${providerKey}`);
   const isFetchingModels = isUpdating(
-    `post_process_models_fetch:${selectedProviderId}`,
+    `post_process_models_fetch:${providerKey}`,
   );
 
   const isCustomProvider = selectedProvider?.id === "custom";

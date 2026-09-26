@@ -7,7 +7,9 @@ use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, OverlayStyle, PostProcessProfile, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
 use crate::utils::{
@@ -119,13 +121,16 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+async fn post_process_transcription(
+    profile: &PostProcessProfile,
+    transcription: &str,
+) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
     }
 
-    let provider = match settings.active_post_process_provider().cloned() {
+    let provider = match profile.active_provider().cloned() {
         Some(provider) => provider,
         None => {
             debug!("Post-processing enabled but no provider is selected");
@@ -133,8 +138,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     };
 
-    let model = settings
-        .post_process_models
+    let model = profile
+        .models
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
@@ -147,7 +152,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         return None;
     }
 
-    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
+    let selected_prompt_id = match &profile.selected_prompt_id {
         Some(id) => id.clone(),
         None => {
             debug!("Post-processing skipped because no prompt is selected");
@@ -155,8 +160,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     };
 
-    let prompt = match settings
-        .post_process_prompts
+    let prompt = match profile
+        .prompts
         .iter()
         .find(|prompt| prompt.id == selected_prompt_id)
     {
@@ -176,12 +181,12 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 
     debug!(
-        "Starting LLM post-processing with provider '{}' (model: {})",
-        provider.id, model
+        "Starting LLM post-processing with profile '{}' ({}), provider '{}' (model: {})",
+        profile.name, profile.id, provider.id, model
     );
 
-    let api_key = settings
-        .post_process_api_keys
+    let api_key = profile
+        .api_keys
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
@@ -420,10 +425,12 @@ fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String
     }
 }
 
+/// `post_process_profile` is the profile to post-process with, or `None` to
+/// skip post-processing.
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
-    post_process: bool,
+    post_process_profile: Option<&PostProcessProfile>,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
     let mut final_text = transcription.to_string();
@@ -440,14 +447,14 @@ pub(crate) async fn process_transcription_output(
         final_text = converted_text;
     }
 
-    if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+    if let Some(profile) = post_process_profile {
+        if let Some(processed_text) = post_process_transcription(profile, &final_text).await {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
+            if let Some(prompt_id) = &profile.selected_prompt_id {
+                if let Some(prompt) = profile
+                    .prompts
                     .iter()
                     .find(|prompt| &prompt.id == prompt_id)
                 {
@@ -678,6 +685,22 @@ impl ShortcutAction for TranscribeAction {
                 "Starting async transcription task for binding: {}",
                 binding_id
             );
+            // Resolved once for the whole run and recorded with the history
+            // entry so a retry reuses this profile. A profile deleted while
+            // recording means no post-processing (not a silent Default run).
+            let post_process_profile = if post_process {
+                let profile = get_settings(&ah)
+                    .post_process_profile_for_binding(&binding_id)
+                    .cloned();
+                if profile.is_none() {
+                    warn!("No post-processing profile for binding '{binding_id}'");
+                }
+                profile
+            } else {
+                None
+            };
+            let post_process = post_process_profile.is_some();
+            let post_process_profile_id = post_process_profile.as_ref().map(|p| p.id.clone());
 
             let stop_recording_time = Instant::now();
             if let Some(samples) = rm.stop_recording(&binding_id, cancel_generation) {
@@ -768,7 +791,11 @@ impl ShortcutAction for TranscribeAction {
                                 utils::redact_text(&transcription)
                             );
 
-                            if post_process {
+                            if let Some(profile) = &post_process_profile {
+                                crate::overlay::set_overlay_post_process_profile(
+                                    &ah,
+                                    Some(profile.name.as_str()),
+                                );
                                 if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
@@ -776,7 +803,11 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
                             let Some(processed) = complete_unless_cancelled(
-                                process_transcription_output(&ah, &transcription, post_process),
+                                process_transcription_output(
+                                    &ah,
+                                    &transcription,
+                                    post_process_profile.as_ref(),
+                                ),
                                 || rm.was_cancelled_since(cancel_generation),
                             )
                             .await
@@ -802,6 +833,7 @@ impl ShortcutAction for TranscribeAction {
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
+                                    post_process_profile_id.clone(),
                                 ) {
                                     error!("Failed to save history entry: {}", err);
                                 }
@@ -865,6 +897,7 @@ impl ShortcutAction for TranscribeAction {
                                     post_process,
                                     None,
                                     None,
+                                    post_process_profile_id.clone(),
                                 ) {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
@@ -926,19 +959,19 @@ impl ShortcutAction for TestAction {
     }
 }
 
-// Static Action Map
+/// The action for a transcribe binding. Transcribe bindings are routed to the
+/// coordinator rather than `ACTION_MAP`, since post-processing profile
+/// bindings are created at runtime; every transcribe binding other than plain
+/// "transcribe" post-processes with its own profile.
+pub fn transcribe_action(binding_id: &str) -> Arc<dyn ShortcutAction> {
+    Arc::new(TranscribeAction {
+        post_process: binding_id != "transcribe",
+    })
+}
+
+// Static Action Map for the non-transcribe bindings (see `transcribe_action`).
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
-    map.insert(
-        "transcribe".to_string(),
-        Arc::new(TranscribeAction {
-            post_process: false,
-        }) as Arc<dyn ShortcutAction>,
-    );
-    map.insert(
-        "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
-    );
     map.insert(
         "cancel".to_string(),
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,

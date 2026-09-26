@@ -186,6 +186,7 @@
         "loading": "ショートカットを読み込み中…",
         "none": "ショートカットが設定されていません",
         "notFound": "ショートカットが見つかりません",
+        "unassigned": "未設定",
         "pressKeys": "キーを押してください…",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "後処理プロファイル",
+        "add": "プロファイルを追加",
+        "delete": "プロファイル「{{name}}」を削除",
+        "deleteTitle": "プロファイルを削除",
+        "deleteConfirm": "プロファイル「{{name}}」を削除しますか？設定は削除され、ショートカットは機能しなくなります。",
+        "defaultName": "デフォルト",
+        "renameHint": "ダブルクリックで名前を変更",
+        "nameLabel": "プロファイル名",
+        "shortcutTitle": "後処理のショートカット（{{name}}）",
+        "errors": {
+          "add": "プロファイルを追加できませんでした",
+          "rename": "プロファイル名を変更できませんでした",
+          "delete": "プロファイルを削除できませんでした"
+        }
+      },
       "hotkey": {
         "title": "ショートカット"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "再文字起こし",
       "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
       "transcribing": "文字起こし中…",
-      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。",
+      "postProcessProfile": "プロファイル: {{name}}",
+      "deletedProfile": "削除されたプロファイル"
     },
     "debug": {
       "title": "デバッグ",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "文字起こし中…",
-    "processing": "処理中…"
+    "processing": "処理中…",
+    "processingProfile": "処理中（{{name}}）…"
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"

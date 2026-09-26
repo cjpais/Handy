@@ -107,6 +107,72 @@ pub struct PostProcessProvider {
     pub supports_structured_output: bool,
 }
 
+/// Id of the built-in post-processing profile, which always exists.
+pub const DEFAULT_POST_PROCESS_PROFILE_ID: &str = "default";
+/// Binding of the built-in profile: the pre-profiles post-processing shortcut.
+pub const DEFAULT_POST_PROCESS_BINDING_ID: &str = "transcribe_with_post_process";
+/// Binding ids of user-created profiles start with this prefix, which is how
+/// bindings left behind by deleted profiles are recognised.
+const PROFILE_BINDING_PREFIX: &str = "post_process_profile_";
+
+/// One post-processing configuration with its own global shortcut. Each
+/// profile is a full, independent copy of the post-processing settings.
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct PostProcessProfile {
+    pub id: String,
+    /// Tab label. Empty for the built-in profile until the user renames it,
+    /// so the UI can show "Default" in the current language.
+    #[serde(default)]
+    pub name: String,
+    /// Key into `AppSettings::bindings`.
+    pub binding_id: String,
+    #[serde(default = "default_post_process_provider_id")]
+    pub provider_id: String,
+    #[serde(default = "default_post_process_providers")]
+    pub providers: Vec<PostProcessProvider>,
+    #[serde(default = "default_post_process_api_keys")]
+    pub api_keys: SecretMap,
+    #[serde(default = "default_post_process_models")]
+    pub models: HashMap<String, String>,
+    #[serde(default = "default_post_process_prompts")]
+    pub prompts: Vec<LLMPrompt>,
+    #[serde(default)]
+    pub selected_prompt_id: Option<String>,
+}
+
+impl PostProcessProfile {
+    /// A profile with the same post-processing defaults as a fresh install.
+    fn with_defaults(id: String, name: String, binding_id: String) -> Self {
+        PostProcessProfile {
+            id,
+            name,
+            binding_id,
+            provider_id: default_post_process_provider_id(),
+            providers: default_post_process_providers(),
+            api_keys: default_post_process_api_keys(),
+            models: default_post_process_models(),
+            prompts: default_post_process_prompts(),
+            selected_prompt_id: None,
+        }
+    }
+
+    pub fn active_provider(&self) -> Option<&PostProcessProvider> {
+        self.provider(&self.provider_id)
+    }
+
+    pub fn provider(&self, provider_id: &str) -> Option<&PostProcessProvider> {
+        self.providers
+            .iter()
+            .find(|provider| provider.id == provider_id)
+    }
+
+    pub fn provider_mut(&mut self, provider_id: &str) -> Option<&mut PostProcessProvider> {
+        self.providers
+            .iter_mut()
+            .find(|provider| provider.id == provider_id)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
@@ -445,18 +511,13 @@ pub struct AppSettings {
     pub auto_submit_key: AutoSubmitKey,
     #[serde(default = "default_post_process_enabled")]
     pub post_process_enabled: bool,
-    #[serde(default = "default_post_process_provider_id")]
-    pub post_process_provider_id: String,
-    #[serde(default = "default_post_process_providers")]
-    pub post_process_providers: Vec<PostProcessProvider>,
-    #[serde(default = "default_post_process_api_keys")]
-    pub post_process_api_keys: SecretMap,
-    #[serde(default = "default_post_process_models")]
-    pub post_process_models: HashMap<String, String>,
-    #[serde(default = "default_post_process_prompts")]
-    pub post_process_prompts: Vec<LLMPrompt>,
-    #[serde(default)]
-    pub post_process_selected_prompt_id: Option<String>,
+    /// Replaces the pre-profiles flat `post_process_*` fields, which are
+    /// migrated into the `Default` profile in `apply_settings_migrations`.
+    #[serde(
+        default = "default_post_process_profiles",
+        deserialize_with = "deserialize_post_process_profiles"
+    )]
+    pub post_process_profiles: Vec<PostProcessProfile>,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -520,7 +581,7 @@ fn default_model() -> String {
     "".to_string()
 }
 
-const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 2;
+const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 3;
 
 fn default_settings_schema_version() -> u32 {
     CURRENT_SETTINGS_SCHEMA_VERSION
@@ -772,6 +833,59 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
+/// Longest profile (tab) name accepted, in characters.
+pub const MAX_POST_PROCESS_PROFILE_NAME_LEN: usize = 40;
+/// English base name of new profiles, used when the UI supplies none.
+const FALLBACK_PROFILE_BASE_NAME: &str = "Default";
+
+fn default_post_process_profile() -> PostProcessProfile {
+    PostProcessProfile::with_defaults(
+        DEFAULT_POST_PROCESS_PROFILE_ID.to_string(),
+        String::new(),
+        DEFAULT_POST_PROCESS_BINDING_ID.to_string(),
+    )
+}
+
+/// Reads the profile list one profile at a time, so a single malformed
+/// profile is dropped instead of failing the whole list (which would lose
+/// every profile and its API keys).
+fn deserialize_post_process_profiles<'de, D>(
+    deserializer: D,
+) -> Result<Vec<PostProcessProfile>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let values = Vec::<serde_json::Value>::deserialize(deserializer)?;
+    Ok(values
+        .into_iter()
+        .filter_map(|value| match serde_json::from_value(value) {
+            Ok(profile) => Some(profile),
+            Err(e) => {
+                warn!("Dropping invalid post-processing profile: {e}");
+                None
+            }
+        })
+        .collect())
+}
+
+fn default_post_process_profiles() -> Vec<PostProcessProfile> {
+    vec![default_post_process_profile()]
+}
+
+/// Shortcut entry for a user-created profile. It starts unassigned, so a new
+/// profile never collides with an existing shortcut.
+fn profile_binding(binding_id: &str, profile_name: &str) -> ShortcutBinding {
+    ShortcutBinding {
+        id: binding_id.to_string(),
+        name: format!("Transcribe with Post-Processing ({profile_name})"),
+        description: format!(
+            "Converts your speech into text and applies the '{profile_name}' post-processing profile."
+        ),
+        default_binding: String::new(),
+        current_binding: String::new(),
+    }
+}
+
 fn default_transcribe_gpu_device() -> Option<String> {
     None // automatic device selection
 }
@@ -799,13 +913,19 @@ fn default_typing_tool() -> TypingTool {
 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
+    for profile in &mut settings.post_process_profiles {
+        if ensure_profile_provider_defaults(profile) {
+            changed = true;
+        }
+    }
+    changed
+}
+
+fn ensure_profile_provider_defaults(profile: &mut PostProcessProfile) -> bool {
+    let mut changed = false;
     for provider in default_post_process_providers() {
         // Use match to do a single lookup - either sync existing or add new
-        match settings
-            .post_process_providers
-            .iter_mut()
-            .find(|p| p.id == provider.id)
-        {
+        match profile.providers.iter_mut().find(|p| p.id == provider.id) {
             Some(existing) => {
                 // Sync supports_structured_output field for existing providers (migration)
                 if existing.supports_structured_output != provider.supports_structured_output {
@@ -821,20 +941,18 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
             }
             None => {
                 // Provider doesn't exist, add it
-                settings.post_process_providers.push(provider.clone());
+                profile.providers.push(provider.clone());
                 changed = true;
             }
         }
 
-        if !settings.post_process_api_keys.contains_key(&provider.id) {
-            settings
-                .post_process_api_keys
-                .insert(provider.id.clone(), String::new());
+        if !profile.api_keys.contains_key(&provider.id) {
+            profile.api_keys.insert(provider.id.clone(), String::new());
             changed = true;
         }
 
         let default_model = default_model_for_provider(&provider.id);
-        match settings.post_process_models.get_mut(&provider.id) {
+        match profile.models.get_mut(&provider.id) {
             Some(existing) => {
                 if existing.is_empty() && !default_model.is_empty() {
                     *existing = default_model.clone();
@@ -842,15 +960,205 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                 }
             }
             None => {
-                settings
-                    .post_process_models
-                    .insert(provider.id.clone(), default_model);
+                profile.models.insert(provider.id.clone(), default_model);
                 changed = true;
             }
         }
     }
 
     changed
+}
+
+/// Enforces the profile invariants: exactly one `default` profile (bound to
+/// the original post-processing shortcut), unique profile ids and binding
+/// ids, a binding entry for every profile, and no bindings left behind by
+/// deleted profiles.
+fn ensure_post_process_profiles(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+
+    // Settle the default profile's binding and drop any other profile that
+    // claims it *before* deduplicating, so a stray profile listed ahead of
+    // Default can never evict the user's real Default configuration.
+    for profile in &mut settings.post_process_profiles {
+        if profile.id == DEFAULT_POST_PROCESS_PROFILE_ID
+            && profile.binding_id != DEFAULT_POST_PROCESS_BINDING_ID
+        {
+            profile.binding_id = DEFAULT_POST_PROCESS_BINDING_ID.to_string();
+            changed = true;
+        }
+    }
+    let mut seen_ids = std::collections::HashSet::new();
+    let mut seen_bindings = std::collections::HashSet::new();
+    let before = settings.post_process_profiles.len();
+    settings.post_process_profiles.retain(|profile| {
+        (profile.id == DEFAULT_POST_PROCESS_PROFILE_ID
+            || profile.binding_id != DEFAULT_POST_PROCESS_BINDING_ID)
+            && seen_ids.insert(profile.id.clone())
+            && seen_bindings.insert(profile.binding_id.clone())
+    });
+    changed |= settings.post_process_profiles.len() != before;
+
+    match settings
+        .post_process_profiles
+        .iter()
+        .position(|p| p.id == DEFAULT_POST_PROCESS_PROFILE_ID)
+    {
+        Some(0) => {}
+        Some(index) => {
+            let profile = settings.post_process_profiles.remove(index);
+            settings.post_process_profiles.insert(0, profile);
+            changed = true;
+        }
+        None => {
+            settings
+                .post_process_profiles
+                .insert(0, default_post_process_profile());
+            changed = true;
+        }
+    }
+
+    for profile in &settings.post_process_profiles {
+        if profile.binding_id == DEFAULT_POST_PROCESS_BINDING_ID {
+            continue; // Built-in binding, merged from the defaults on load.
+        }
+        if !settings.bindings.contains_key(&profile.binding_id) {
+            settings.bindings.insert(
+                profile.binding_id.clone(),
+                profile_binding(&profile.binding_id, &profile.name),
+            );
+            changed = true;
+        }
+    }
+
+    let profiles = &settings.post_process_profiles;
+    let before = settings.bindings.len();
+    settings.bindings.retain(|id, _| {
+        !id.starts_with(PROFILE_BINDING_PREFIX) || profiles.iter().any(|p| &p.binding_id == id)
+    });
+    changed |= settings.bindings.len() != before;
+
+    changed
+}
+
+/// Adds a new profile named `Default N` (lowest free N) with fresh-install
+/// post-processing defaults, plus its (unassigned) shortcut binding.
+pub fn add_post_process_profile(settings: &mut AppSettings, base_name: &str) -> PostProcessProfile {
+    let base_name = match base_name.trim() {
+        "" => FALLBACK_PROFILE_BASE_NAME,
+        trimmed => trimmed,
+    };
+    let number = (1..)
+        .find(|n| {
+            let name = format!("{base_name} {n}");
+            !settings
+                .post_process_profiles
+                .iter()
+                .any(|p| p.name == name)
+        })
+        .expect("an unused profile number always exists");
+    let name = format!("{base_name} {number}");
+
+    let mut stamp = chrono::Utc::now().timestamp_millis();
+    while settings
+        .post_process_profiles
+        .iter()
+        .any(|p| p.id == format!("profile_{stamp}"))
+    {
+        stamp += 1;
+    }
+    let id = format!("profile_{stamp}");
+    // Must carry the prefix, or `ensure_post_process_profiles` cannot tell
+    // this binding apart from built-in ones once the profile is deleted.
+    let binding_id = format!("{PROFILE_BINDING_PREFIX}{stamp}");
+
+    let profile = PostProcessProfile::with_defaults(id, name, binding_id);
+    settings.bindings.insert(
+        profile.binding_id.clone(),
+        profile_binding(&profile.binding_id, &profile.name),
+    );
+    settings.post_process_profiles.push(profile.clone());
+    profile
+}
+
+/// Renames a profile. Clearing the built-in profile's name restores its
+/// localized default label; other profiles need a non-empty name.
+pub fn rename_post_process_profile(
+    settings: &mut AppSettings,
+    profile_id: &str,
+    name: &str,
+) -> Result<PostProcessProfile, String> {
+    let name = name.trim();
+    if name.chars().count() > MAX_POST_PROCESS_PROFILE_NAME_LEN {
+        return Err(format!(
+            "Profile names can be at most {MAX_POST_PROCESS_PROFILE_NAME_LEN} characters"
+        ));
+    }
+    if name.is_empty() && profile_id != DEFAULT_POST_PROCESS_PROFILE_ID {
+        return Err("Profile name cannot be empty".to_string());
+    }
+    let profile = settings
+        .post_process_profile_mut(profile_id)
+        .ok_or_else(|| format!("Post-processing profile '{}' not found", profile_id))?;
+    profile.name = name.to_string();
+    let profile = profile.clone();
+
+    if profile_id != DEFAULT_POST_PROCESS_PROFILE_ID {
+        if let Some(binding) = settings.bindings.get_mut(&profile.binding_id) {
+            let renamed = profile_binding(&profile.binding_id, &profile.name);
+            binding.name = renamed.name;
+            binding.description = renamed.description;
+        }
+    }
+    Ok(profile)
+}
+
+/// Removes a user-created profile and its binding, returning the binding so
+/// the caller can unregister it. The `default` profile cannot be removed.
+pub fn remove_post_process_profile(
+    settings: &mut AppSettings,
+    profile_id: &str,
+) -> Result<Option<ShortcutBinding>, String> {
+    if profile_id == DEFAULT_POST_PROCESS_PROFILE_ID {
+        return Err("The default post-processing profile cannot be deleted".to_string());
+    }
+    let index = settings
+        .post_process_profiles
+        .iter()
+        .position(|p| p.id == profile_id)
+        .ok_or_else(|| format!("Post-processing profile '{}' not found", profile_id))?;
+    let profile = settings.post_process_profiles.remove(index);
+    Ok(settings.bindings.remove(&profile.binding_id))
+}
+
+/// Builds the `Default` profile from the pre-profiles flat settings keys.
+/// Missing or invalid values fall back to their fresh-install defaults.
+fn legacy_post_process_profile(settings_value: &serde_json::Value) -> PostProcessProfile {
+    fn field<T: serde::de::DeserializeOwned>(value: &serde_json::Value, key: &str) -> Option<T> {
+        value
+            .get(key)
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+    }
+
+    let mut profile = default_post_process_profile();
+    if let Some(v) = field(settings_value, "post_process_provider_id") {
+        profile.provider_id = v;
+    }
+    if let Some(v) = field(settings_value, "post_process_providers") {
+        profile.providers = v;
+    }
+    if let Some(v) = field(settings_value, "post_process_api_keys") {
+        profile.api_keys = v;
+    }
+    if let Some(v) = field(settings_value, "post_process_models") {
+        profile.models = v;
+    }
+    if let Some(v) = field(settings_value, "post_process_prompts") {
+        profile.prompts = v;
+    }
+    if let Some(v) = field(settings_value, "post_process_selected_prompt_id") {
+        profile.selected_prompt_id = v;
+    }
+    profile
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -942,12 +1250,7 @@ pub fn get_default_settings() -> AppSettings {
         auto_submit: default_auto_submit(),
         auto_submit_key: AutoSubmitKey::default(),
         post_process_enabled: default_post_process_enabled(),
-        post_process_provider_id: default_post_process_provider_id(),
-        post_process_providers: default_post_process_providers(),
-        post_process_api_keys: default_post_process_api_keys(),
-        post_process_models: default_post_process_models(),
-        post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: None,
+        post_process_profiles: default_post_process_profiles(),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -980,25 +1283,78 @@ impl Default for AppSettings {
 }
 
 impl AppSettings {
-    pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
-        self.post_process_providers
+    pub fn post_process_profile(&self, profile_id: &str) -> Option<&PostProcessProfile> {
+        self.post_process_profiles
             .iter()
-            .find(|provider| provider.id == self.post_process_provider_id)
+            .find(|profile| profile.id == profile_id)
     }
 
-    pub fn post_process_provider(&self, provider_id: &str) -> Option<&PostProcessProvider> {
-        self.post_process_providers
-            .iter()
-            .find(|provider| provider.id == provider_id)
-    }
-
-    pub fn post_process_provider_mut(
+    pub fn post_process_profile_mut(
         &mut self,
-        provider_id: &str,
-    ) -> Option<&mut PostProcessProvider> {
-        self.post_process_providers
+        profile_id: &str,
+    ) -> Option<&mut PostProcessProfile> {
+        self.post_process_profiles
             .iter_mut()
-            .find(|provider| provider.id == provider_id)
+            .find(|profile| profile.id == profile_id)
+    }
+
+    /// The profile a post-processing shortcut belongs to.
+    pub fn post_process_profile_for_binding(
+        &self,
+        binding_id: &str,
+    ) -> Option<&PostProcessProfile> {
+        self.post_process_profiles
+            .iter()
+            .find(|profile| profile.binding_id == binding_id)
+    }
+
+    /// The profile that should post-process a retried history entry: the one
+    /// recorded with it. History migration assigns Default to entries from
+    /// before profiles, and deleting a profile clears its id, so a missing id
+    /// means the profile is gone — a retry then skips post-processing rather
+    /// than silently sending the transcript to a different provider.
+    pub fn retry_post_process_profile(
+        &self,
+        post_process_requested: bool,
+        profile_id: Option<&str>,
+    ) -> Option<&PostProcessProfile> {
+        if !post_process_requested {
+            return None;
+        }
+        profile_id.and_then(|id| self.post_process_profile(id))
+    }
+
+    pub fn is_post_process_binding(&self, binding_id: &str) -> bool {
+        self.post_process_profile_for_binding(binding_id).is_some()
+    }
+
+    /// Whether a binding should currently be registered as a global shortcut:
+    /// cancel is registered only while recording, post-processing bindings
+    /// only while post-processing is enabled, and unassigned ones never.
+    pub fn should_register_binding(&self, binding: &ShortcutBinding) -> bool {
+        binding.id != "cancel"
+            && !binding.current_binding.trim().is_empty()
+            && (self.post_process_enabled || !self.is_post_process_binding(&binding.id))
+    }
+
+    /// Every built-in binding (as customised by the user) plus each profile's
+    /// binding, filtered to those that should currently be registered.
+    pub fn registrable_bindings(&self) -> Vec<ShortcutBinding> {
+        let mut bindings: Vec<ShortcutBinding> = get_default_settings()
+            .bindings
+            .into_iter()
+            .map(|(id, default)| self.bindings.get(&id).cloned().unwrap_or(default))
+            .collect();
+        for profile in &self.post_process_profiles {
+            if bindings.iter().any(|b| b.id == profile.binding_id) {
+                continue;
+            }
+            if let Some(binding) = self.bindings.get(&profile.binding_id) {
+                bindings.push(binding.clone());
+            }
+        }
+        bindings.retain(|binding| self.should_register_binding(binding));
+        bindings
     }
 }
 
@@ -1052,7 +1408,8 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let profiles_changed = ensure_post_process_profiles(&mut settings);
+    if ensure_post_process_defaults(&mut settings) || profiles_changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -1155,8 +1512,18 @@ fn apply_settings_migrations(
         // transcribe.cpp 0.2 replaced integer registry indices with opaque
         // process-local handles. Clear every old index once.
         settings.transcribe_gpu_device = default_transcribe_gpu_device();
-        settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
         updated = true;
+    }
+    if stored_schema_version < 3 {
+        // Post-processing profiles replaced the flat `post_process_*` keys.
+        // Carry the user's existing configuration over as the Default profile.
+        if settings_value.get("post_process_profiles").is_none() {
+            settings.post_process_profiles = vec![legacy_post_process_profile(settings_value)];
+        }
+        updated = true;
+    }
+    if stored_schema_version < u64::from(CURRENT_SETTINGS_SCHEMA_VERSION) {
+        settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
     }
 
     // The generic GPU choice was removed in favor of Auto or an exact device.
@@ -1413,6 +1780,385 @@ mod tests {
         // matching legacy mode rather than the new hold-or-toggle default.
         assert_eq!(settings.shortcut_activation, ShortcutActivation::Toggle);
         assert_eq!(settings.transcribe_gpu_device, None);
+
+        // The flat post-processing keys become the Default profile.
+        assert_eq!(settings.post_process_profiles.len(), 1);
+        let profile = &settings.post_process_profiles[0];
+        assert_eq!(profile.id, DEFAULT_POST_PROCESS_PROFILE_ID);
+        assert_eq!(profile.binding_id, DEFAULT_POST_PROCESS_BINDING_ID);
+        assert_eq!(profile.models["openai"], "gpt-4o-mini");
+        assert_eq!(profile.prompts[0].prompt, "Clean up the transcript.");
+    }
+
+    /// A pre-profiles store with a customised post-processing setup (the
+    /// Custom provider pointed at a local server, keys, models, prompts and
+    /// a selected prompt) must land in the Default profile unchanged.
+    #[test]
+    fn profiles_migration_moves_flat_settings_into_default_profile() {
+        let stored = serde_json::json!({
+            "settings_schema_version": 2,
+            "post_process_enabled": true,
+            "post_process_provider_id": "custom",
+            "post_process_providers": [
+                {
+                    "id": "custom",
+                    "label": "Custom",
+                    "base_url": "http://localhost:11434/v1",
+                    "allow_base_url_edit": true,
+                    "models_endpoint": "/models",
+                    "supports_structured_output": false
+                }
+            ],
+            "post_process_api_keys": { "custom": "local-key", "openai": "sk-test" },
+            "post_process_models": { "custom": "qwen3.6-rewrite", "openai": "gpt-5.6-luna" },
+            "post_process_prompts": [
+                { "id": "local", "name": "Local", "prompt": "Rewrite: ${output}" },
+                { "id": "cloud", "name": "Cloud", "prompt": "Polish: ${output}" }
+            ],
+            "post_process_selected_prompt_id": "local"
+        });
+        let mut settings: AppSettings = serde_json::from_value(stored.clone()).unwrap();
+
+        assert!(apply_settings_migrations(&mut settings, &stored));
+        assert_eq!(
+            settings.settings_schema_version,
+            CURRENT_SETTINGS_SCHEMA_VERSION
+        );
+        assert!(settings.post_process_enabled);
+        assert_eq!(settings.post_process_profiles.len(), 1);
+
+        let profile = &settings.post_process_profiles[0];
+        assert_eq!(profile.id, "default");
+        // Empty: the UI shows "Default" in the current language.
+        assert_eq!(profile.name, "");
+        assert_eq!(profile.binding_id, "transcribe_with_post_process");
+        assert_eq!(profile.provider_id, "custom");
+        assert_eq!(profile.providers.len(), 1);
+        assert_eq!(
+            profile.active_provider().unwrap().base_url,
+            "http://localhost:11434/v1"
+        );
+        assert_eq!(profile.api_keys["custom"], "local-key");
+        assert_eq!(profile.api_keys["openai"], "sk-test");
+        assert_eq!(profile.models["custom"], "qwen3.6-rewrite");
+        assert_eq!(profile.models["openai"], "gpt-5.6-luna");
+        assert_eq!(
+            profile
+                .prompts
+                .iter()
+                .map(|p| p.id.as_str())
+                .collect::<Vec<_>>(),
+            ["local", "cloud"]
+        );
+        assert_eq!(profile.selected_prompt_id.as_deref(), Some("local"));
+
+        // Backfill afterwards adds the missing providers without touching
+        // the migrated values.
+        let mut profile = profile.clone();
+        assert!(ensure_profile_provider_defaults(&mut profile));
+        assert_eq!(profile.providers[0].id, "custom");
+        assert_eq!(profile.models["custom"], "qwen3.6-rewrite");
+        assert!(profile.provider("anthropic").is_some());
+
+        // Migration is one-time: a store already at the current schema is
+        // left alone.
+        let current = serde_json::to_value(&settings).unwrap();
+        let mut again: AppSettings = serde_json::from_value(current.clone()).unwrap();
+        assert!(!apply_settings_migrations(&mut again, &current));
+        assert_eq!(
+            again.post_process_profiles[0].models["custom"],
+            "qwen3.6-rewrite"
+        );
+    }
+
+    #[test]
+    fn profiles_migration_without_legacy_keys_creates_default_profile() {
+        let stored = serde_json::json!({ "settings_schema_version": 2 });
+        let mut settings: AppSettings = serde_json::from_value(stored.clone()).unwrap();
+
+        apply_settings_migrations(&mut settings, &stored);
+        assert_eq!(settings.post_process_profiles.len(), 1);
+        let profile = &settings.post_process_profiles[0];
+        assert_eq!(profile.id, DEFAULT_POST_PROCESS_PROFILE_ID);
+        assert_eq!(profile.provider_id, default_post_process_provider_id());
+        assert_eq!(profile.prompts[0].id, "default_improve_transcriptions");
+    }
+
+    #[test]
+    fn fresh_settings_have_only_the_default_profile() {
+        let mut settings = get_default_settings();
+        assert_eq!(settings.post_process_profiles.len(), 1);
+        assert_eq!(settings.post_process_profiles[0].name, "");
+        assert!(!ensure_post_process_profiles(&mut settings));
+    }
+
+    #[test]
+    fn added_profiles_use_lowest_free_number_and_fresh_defaults() {
+        let mut settings = get_default_settings();
+        settings.post_process_profiles[0].provider_id = "custom".to_string();
+
+        let first = add_post_process_profile(&mut settings, "Default");
+        let second = add_post_process_profile(&mut settings, "Default");
+        assert_eq!(first.name, "Default 1");
+        assert_eq!(second.name, "Default 2");
+        assert_ne!(first.id, second.id);
+        // Not a copy of another tab: fresh-install post-processing defaults.
+        assert_eq!(first.provider_id, default_post_process_provider_id());
+        assert_eq!(first.prompts.len(), default_post_process_prompts().len());
+
+        // Each profile gets its own binding, unassigned by default.
+        let binding = &settings.bindings[&first.binding_id];
+        assert_eq!(binding.id, first.binding_id);
+        assert!(binding.current_binding.is_empty());
+        assert!(!settings.should_register_binding(binding));
+
+        remove_post_process_profile(&mut settings, &first.id).unwrap();
+        assert!(!settings.bindings.contains_key(&first.binding_id));
+        let third = add_post_process_profile(&mut settings, "Default");
+        assert_eq!(third.name, "Default 1");
+        assert_eq!(settings.post_process_profiles.len(), 3);
+        assert!(!ensure_post_process_profiles(&mut settings));
+    }
+
+    #[test]
+    fn added_profiles_use_the_localized_base_name() {
+        let mut settings = get_default_settings();
+        assert_eq!(
+            add_post_process_profile(&mut settings, "Standard").name,
+            "Standard 1"
+        );
+        assert_eq!(
+            add_post_process_profile(&mut settings, " Standard ").name,
+            "Standard 2"
+        );
+        // Numbering is per base name: another language starts again at 1.
+        assert_eq!(
+            add_post_process_profile(&mut settings, "Par défaut").name,
+            "Par défaut 1"
+        );
+        assert_eq!(
+            add_post_process_profile(&mut settings, "").name,
+            "Default 1"
+        );
+    }
+
+    #[test]
+    fn profiles_can_be_renamed() {
+        let mut settings = get_default_settings();
+        let extra = add_post_process_profile(&mut settings, "Default");
+
+        let renamed = rename_post_process_profile(&mut settings, &extra.id, "  Cloud  ").unwrap();
+        assert_eq!(renamed.name, "Cloud");
+        assert_eq!(
+            settings.post_process_profile(&extra.id).unwrap().name,
+            "Cloud"
+        );
+        assert!(settings.bindings[&extra.binding_id].name.contains("Cloud"));
+
+        assert!(rename_post_process_profile(&mut settings, &extra.id, "   ").is_err());
+        assert!(rename_post_process_profile(&mut settings, &extra.id, &"x".repeat(41)).is_err());
+        assert!(rename_post_process_profile(&mut settings, "missing", "Name").is_err());
+
+        // The built-in profile can be renamed, and cleared back to its
+        // localized default label; its built-in binding is left alone.
+        let before = settings.bindings[DEFAULT_POST_PROCESS_BINDING_ID]
+            .name
+            .clone();
+        rename_post_process_profile(&mut settings, DEFAULT_POST_PROCESS_PROFILE_ID, "Local")
+            .unwrap();
+        assert_eq!(settings.post_process_profiles[0].name, "Local");
+        rename_post_process_profile(&mut settings, DEFAULT_POST_PROCESS_PROFILE_ID, "").unwrap();
+        assert_eq!(settings.post_process_profiles[0].name, "");
+        assert_eq!(
+            settings.bindings[DEFAULT_POST_PROCESS_BINDING_ID].name,
+            before
+        );
+    }
+
+    #[test]
+    fn one_malformed_profile_does_not_drop_the_others() {
+        let mut stored = default_settings_json();
+        let mut extra = get_default_settings();
+        let profile = add_post_process_profile(&mut extra, "Default");
+        let mut good = serde_json::to_value(&profile).unwrap();
+        good["api_keys"]["openai"] = serde_json::json!("sk-keep-me");
+        stored["post_process_profiles"] = serde_json::json!([
+            serde_json::to_value(&extra.post_process_profiles[0]).unwrap(),
+            { "id": 42, "name": ["broken"] },
+            good
+        ]);
+
+        let settings: AppSettings = serde_json::from_value(stored)
+            .expect("a malformed profile must not fail the whole settings load");
+        assert_eq!(settings.post_process_profiles.len(), 2);
+        assert_eq!(
+            settings.post_process_profiles[1].api_keys["openai"],
+            "sk-keep-me"
+        );
+    }
+
+    #[test]
+    fn history_retry_reuses_the_recorded_profile() {
+        let mut settings = get_default_settings();
+        let extra = add_post_process_profile(&mut settings, "Default");
+
+        let retry_id = |s: &AppSettings, requested: bool, id: Option<&str>| {
+            s.retry_post_process_profile(requested, id)
+                .map(|profile| profile.id.clone())
+        };
+        assert_eq!(retry_id(&settings, false, Some(&extra.id)), None);
+        assert_eq!(
+            retry_id(&settings, true, Some(&extra.id)),
+            Some(extra.id.clone())
+        );
+        // No recorded profile (it was deleted): no fallback to Default.
+        assert_eq!(retry_id(&settings, true, None), None);
+        // A deleted profile never falls back to another provider.
+        remove_post_process_profile(&mut settings, &extra.id).unwrap();
+        assert_eq!(retry_id(&settings, true, Some(&extra.id)), None);
+    }
+
+    #[test]
+    fn default_profile_cannot_be_removed() {
+        let mut settings = get_default_settings();
+        assert!(
+            remove_post_process_profile(&mut settings, DEFAULT_POST_PROCESS_PROFILE_ID).is_err()
+        );
+        assert!(remove_post_process_profile(&mut settings, "missing").is_err());
+        assert_eq!(settings.post_process_profiles.len(), 1);
+        assert!(settings
+            .bindings
+            .contains_key(DEFAULT_POST_PROCESS_BINDING_ID));
+    }
+
+    #[test]
+    fn profile_invariants_are_restored_on_load() {
+        let mut settings = get_default_settings();
+        let extra = add_post_process_profile(&mut settings, "Default");
+
+        // Lose the default profile, the extra profile's binding, and leave an
+        // orphan binding from a profile that no longer exists.
+        settings
+            .post_process_profiles
+            .retain(|p| p.id != DEFAULT_POST_PROCESS_PROFILE_ID);
+        settings.bindings.remove(&extra.binding_id);
+        settings.bindings.insert(
+            "post_process_profile_gone".to_string(),
+            profile_binding("post_process_profile_gone", "Gone"),
+        );
+
+        assert!(ensure_post_process_profiles(&mut settings));
+        assert_eq!(
+            settings.post_process_profiles[0].id,
+            DEFAULT_POST_PROCESS_PROFILE_ID
+        );
+        assert_eq!(
+            settings
+                .post_process_profiles
+                .iter()
+                .filter(|p| p.id == DEFAULT_POST_PROCESS_PROFILE_ID)
+                .count(),
+            1
+        );
+        assert!(settings.bindings.contains_key(&extra.binding_id));
+        assert!(!settings.bindings.contains_key("post_process_profile_gone"));
+        // Built-in bindings are never treated as orphans.
+        assert!(settings.bindings.contains_key("transcribe"));
+        assert!(settings.bindings.contains_key("cancel"));
+        assert!(!ensure_post_process_profiles(&mut settings));
+    }
+
+    #[test]
+    fn a_profile_claiming_the_default_binding_never_evicts_default() {
+        let mut settings = get_default_settings();
+        settings.post_process_profiles[0]
+            .api_keys
+            .insert("openai".to_string(), "sk-keep-me".to_string());
+        let mut hijack = settings.post_process_profiles[0].clone();
+        hijack.id = "hijack".to_string();
+        settings.post_process_profiles.insert(0, hijack);
+
+        assert!(ensure_post_process_profiles(&mut settings));
+        assert_eq!(settings.post_process_profiles.len(), 1);
+        let default = &settings.post_process_profiles[0];
+        assert_eq!(default.id, DEFAULT_POST_PROCESS_PROFILE_ID);
+        assert_eq!(default.api_keys["openai"], "sk-keep-me");
+    }
+
+    #[test]
+    fn duplicate_profiles_are_dropped() {
+        let mut settings = get_default_settings();
+        let extra = add_post_process_profile(&mut settings, "Default");
+        settings.post_process_profiles.push(extra.clone());
+        let mut hijack = extra.clone();
+        hijack.id = "hijack".to_string();
+        hijack.binding_id = DEFAULT_POST_PROCESS_BINDING_ID.to_string();
+        settings.post_process_profiles.push(hijack);
+
+        assert!(ensure_post_process_profiles(&mut settings));
+        assert_eq!(settings.post_process_profiles.len(), 2);
+        assert_eq!(
+            settings
+                .post_process_profile_for_binding(DEFAULT_POST_PROCESS_BINDING_ID)
+                .unwrap()
+                .id,
+            DEFAULT_POST_PROCESS_PROFILE_ID
+        );
+    }
+
+    #[test]
+    fn profiles_resolve_by_binding_id() {
+        let mut settings = get_default_settings();
+        let mut extra = add_post_process_profile(&mut settings, "Default");
+        extra.provider_id = "custom".to_string();
+        *settings.post_process_profile_mut(&extra.id).unwrap() = extra.clone();
+
+        let resolved = settings
+            .post_process_profile_for_binding(&extra.binding_id)
+            .unwrap();
+        assert_eq!(resolved.id, extra.id);
+        assert_eq!(resolved.provider_id, "custom");
+        assert_eq!(
+            settings
+                .post_process_profile_for_binding(DEFAULT_POST_PROCESS_BINDING_ID)
+                .unwrap()
+                .id,
+            DEFAULT_POST_PROCESS_PROFILE_ID
+        );
+        assert!(settings
+            .post_process_profile_for_binding("transcribe")
+            .is_none());
+        assert!(settings.is_post_process_binding(&extra.binding_id));
+        assert!(!settings.is_post_process_binding("cancel"));
+    }
+
+    #[test]
+    fn registrable_bindings_follow_post_process_toggle() {
+        let mut settings = get_default_settings();
+        let extra = add_post_process_profile(&mut settings, "Default");
+        settings
+            .bindings
+            .get_mut(&extra.binding_id)
+            .unwrap()
+            .current_binding = "f6".to_string();
+
+        let ids = |s: &AppSettings| {
+            let mut ids: Vec<String> = s.registrable_bindings().into_iter().map(|b| b.id).collect();
+            ids.sort();
+            ids
+        };
+
+        settings.post_process_enabled = false;
+        assert_eq!(ids(&settings), ["transcribe"]);
+
+        settings.post_process_enabled = true;
+        let mut expected = vec![
+            "transcribe".to_string(),
+            DEFAULT_POST_PROCESS_BINDING_ID.to_string(),
+            extra.binding_id.clone(),
+        ];
+        expected.sort();
+        assert_eq!(ids(&settings), expected);
     }
 
     #[test]
@@ -1706,16 +2452,13 @@ mod tests {
     #[test]
     fn debug_output_redacts_api_keys() {
         let mut settings = get_default_settings();
-        settings
-            .post_process_api_keys
-            .insert("openai".to_string(), "sk-proj-secret-key-12345".to_string());
-        settings.post_process_api_keys.insert(
+        let api_keys = &mut settings.post_process_profiles[0].api_keys;
+        api_keys.insert("openai".to_string(), "sk-proj-secret-key-12345".to_string());
+        api_keys.insert(
             "anthropic".to_string(),
             "sk-ant-secret-key-67890".to_string(),
         );
-        settings
-            .post_process_api_keys
-            .insert("empty_provider".to_string(), "".to_string());
+        api_keys.insert("empty_provider".to_string(), "".to_string());
 
         let debug_output = format!("{:?}", settings);
 

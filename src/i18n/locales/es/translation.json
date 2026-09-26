@@ -186,6 +186,7 @@
         "loading": "Cargando atajos...",
         "none": "No hay atajos configurados",
         "notFound": "Atajo no encontrado",
+        "unassigned": "Sin asignar",
         "pressKeys": "Presiona teclas...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Perfiles de posprocesamiento",
+        "add": "Añadir perfil",
+        "delete": "Eliminar el perfil {{name}}",
+        "deleteTitle": "Eliminar perfil",
+        "deleteConfirm": "¿Eliminar el perfil «{{name}}»? Se borrará su configuración y su atajo dejará de funcionar.",
+        "defaultName": "Predeterminado",
+        "renameHint": "Haz doble clic para cambiar el nombre",
+        "nameLabel": "Nombre del perfil",
+        "shortcutTitle": "Tecla de post procesamiento ({{name}})",
+        "errors": {
+          "add": "No se pudo añadir el perfil",
+          "rename": "No se pudo cambiar el nombre del perfil",
+          "delete": "No se pudo eliminar el perfil"
+        }
+      },
       "hotkey": {
         "title": "Tecla de acceso rápido"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Re-transcribir",
       "retranscribeError": "No se pudo re-transcribir. Por favor, inténtalo de nuevo.",
       "transcribing": "Transcribiendo...",
-      "transcriptionFailed": "La transcripción falló. Puedes re-transcribir usando el icono de reintentar."
+      "transcriptionFailed": "La transcripción falló. Puedes re-transcribir usando el icono de reintentar.",
+      "postProcessProfile": "Perfil: {{name}}",
+      "deletedProfile": "Perfil eliminado"
     },
     "debug": {
       "title": "Depuración",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Transcribiendo...",
-    "processing": "Procesando..."
+    "processing": "Procesando...",
+    "processingProfile": "Procesando ({{name}})..."
   },
   "whatsNew": {
     "title": "Nuevo en Handy v{{version}}"

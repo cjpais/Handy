@@ -166,6 +166,7 @@
         "loading": "טוען קיצורי מקשים...",
         "none": "לא הוגדרו קיצורי מקשים",
         "notFound": "קיצור הדרך לא נמצא",
+        "unassigned": "לא הוגדר",
         "pressKeys": "לחץ על המקשים...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "פרופילי עיבוד המשך",
+        "add": "הוסף פרופיל",
+        "delete": "מחק את הפרופיל {{name}}",
+        "deleteTitle": "מחיקת פרופיל",
+        "deleteConfirm": "למחוק את הפרופיל \"{{name}}\"? ההגדרות שלו יימחקו וקיצור המקשים שלו יפסיק לפעול.",
+        "defaultName": "ברירת מחדל",
+        "renameHint": "לחץ פעמיים כדי לשנות שם",
+        "nameLabel": "שם הפרופיל",
+        "shortcutTitle": "קיצור לעיבוד משלים ({{name}})",
+        "errors": {
+          "add": "לא ניתן להוסיף את הפרופיל",
+          "rename": "לא ניתן לשנות את שם הפרופיל",
+          "delete": "לא ניתן למחוק את הפרופיל"
+        }
+      },
       "hotkey": {
         "title": "קיצור מקשים"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "תמלל מחדש",
       "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
       "transcribing": "מתמלל...",
-      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר."
+      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
+      "postProcessProfile": "פרופיל: {{name}}",
+      "deletedProfile": "הפרופיל נמחק"
     },
     "debug": {
       "title": "ניפוי שגיאות",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "מתמלל...",
-    "processing": "מעבד..."
+    "processing": "מעבד...",
+    "processingProfile": "מעבד ({{name}})..."
   },
   "whatsNew": {
     "title": "חדש ב-Handy v{{version}}"

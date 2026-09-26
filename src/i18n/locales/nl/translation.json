@@ -166,6 +166,7 @@
         "loading": "Sneltoetsen laden...",
         "none": "Geen sneltoetsen geconfigureerd",
         "notFound": "Sneltoets niet gevonden",
+        "unassigned": "Niet ingesteld",
         "pressKeys": "Druk op toetsen...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Nabewerkingsprofielen",
+        "add": "Profiel toevoegen",
+        "delete": "Profiel {{name}} verwijderen",
+        "deleteTitle": "Profiel verwijderen",
+        "deleteConfirm": "Profiel \"{{name}}\" verwijderen? De instellingen worden verwijderd en de sneltoets werkt niet meer.",
+        "defaultName": "Standaard",
+        "renameHint": "Dubbelklik om te hernoemen",
+        "nameLabel": "Profielnaam",
+        "shortcutTitle": "Sneltoets voor naverwerking ({{name}})",
+        "errors": {
+          "add": "Profiel kon niet worden toegevoegd",
+          "rename": "Profiel kon niet worden hernoemd",
+          "delete": "Profiel kon niet worden verwijderd"
+        }
+      },
       "hotkey": {
         "title": "Sneltoets"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Opnieuw transcriberen",
       "retranscribeError": "Opnieuw transcriberen mislukt. Probeer het opnieuw.",
       "transcribing": "Transcriberen...",
-      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram."
+      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram.",
+      "postProcessProfile": "Profiel: {{name}}",
+      "deletedProfile": "Profiel verwijderd"
     },
     "debug": {
       "title": "Probleemoplossing",
@@ -702,7 +721,8 @@
   },
   "overlay": {
     "transcribing": "Transcriberen...",
-    "processing": "Verwerken..."
+    "processing": "Verwerken...",
+    "processingProfile": "Verwerken ({{name}})..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokkeert mogelijk 1 sneltoets",

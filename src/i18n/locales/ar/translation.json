@@ -163,6 +163,7 @@
         "loading": "...جاري تحميل الاختصارات",
         "none": "لا توجد اختصارات مجهزة",
         "notFound": "الاختصار غير موجود",
+        "unassigned": "غير معيّن",
         "pressKeys": "...اضغط على المفاتيح",
         "bindings": {
           "transcribe": {
@@ -378,6 +379,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "ملفات المعالجة اللاحقة",
+        "add": "إضافة ملف تعريف",
+        "delete": "حذف ملف التعريف {{name}}",
+        "deleteTitle": "حذف ملف التعريف",
+        "deleteConfirm": "هل تريد حذف ملف التعريف \"{{name}}\"؟ ستُزال إعداداته ويتوقف اختصاره عن العمل.",
+        "defaultName": "افتراضي",
+        "renameHint": "انقر نقرًا مزدوجًا لإعادة التسمية",
+        "nameLabel": "اسم ملف التعريف",
+        "shortcutTitle": "مفتاح المعالجة اللاحقة ({{name}})",
+        "errors": {
+          "add": "تعذّرت إضافة ملف التعريف",
+          "rename": "تعذّرت إعادة تسمية ملف التعريف",
+          "delete": "تعذّر حذف ملف التعريف"
+        }
+      },
       "hotkey": {
         "title": "مفتاح الاختصار"
       },
@@ -445,7 +462,9 @@
       "retranscribe": "إعادة النسخ",
       "retranscribeError": "فشلت إعادة النسخ. يرجى المحاولة مرة أخرى.",
       "transcribing": "جارٍ النسخ...",
-      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة."
+      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة.",
+      "postProcessProfile": "ملف التعريف: {{name}}",
+      "deletedProfile": "ملف التعريف محذوف"
     },
     "debug": {
       "title": "تصحيح الأخطاء",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "...جاري التفريغ",
-    "processing": "...جاري المعالجة"
+    "processing": "...جاري المعالجة",
+    "processingProfile": "...جاري المعالجة ({{name}})"
   },
   "whatsNew": {
     "title": "الجديد في Handy v{{version}}"

@@ -1,4 +1,4 @@
-use crate::actions::ACTION_MAP;
+use crate::actions::transcribe_action;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutActivation;
 use log::{debug, error, warn};
@@ -534,8 +534,10 @@ pub struct TranscriptionCoordinator {
     tx: Sender<Command>,
 }
 
-pub fn is_transcribe_binding(id: &str) -> bool {
-    id == "transcribe" || id == "transcribe_with_post_process"
+/// Whether a binding starts a recording: plain "transcribe" or the shortcut
+/// of any post-processing profile.
+pub fn is_transcribe_binding(id: &str, settings: &crate::settings::AppSettings) -> bool {
+    id == "transcribe" || settings.is_post_process_binding(id)
 }
 
 impl TranscriptionCoordinator {
@@ -687,10 +689,7 @@ fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
 /// Execute a start effect; returns whether recording actually began, so the
 /// state machine can roll back its optimistic transition on failure.
 fn start(app: &AppHandle, binding_id: &str, hotkey_string: &str) -> bool {
-    let Some(action) = ACTION_MAP.get(binding_id) else {
-        warn!("No action in ACTION_MAP for '{binding_id}'");
-        return false;
-    };
+    let action = transcribe_action(binding_id);
     action.start(app, binding_id, hotkey_string);
     let recording = app
         .try_state::<Arc<AudioRecordingManager>>()
@@ -702,10 +701,7 @@ fn start(app: &AppHandle, binding_id: &str, hotkey_string: &str) -> bool {
 }
 
 fn stop(app: &AppHandle, binding_id: &str, hotkey_string: &str) {
-    let Some(action) = ACTION_MAP.get(binding_id) else {
-        warn!("No action in ACTION_MAP for '{binding_id}'");
-        return;
-    };
+    let action = transcribe_action(binding_id);
     action.stop(app, binding_id, hotkey_string);
 }
 

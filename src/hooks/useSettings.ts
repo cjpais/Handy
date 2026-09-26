@@ -31,17 +31,29 @@ interface UseSettingsReturn {
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
 
   // Post-processing helpers
-  setPostProcessProvider: (providerId: string) => Promise<void>;
+  setPostProcessProvider: (
+    profileId: string,
+    providerId: string,
+  ) => Promise<void>;
   updatePostProcessBaseUrl: (
+    profileId: string,
     providerId: string,
     baseUrl: string,
   ) => Promise<void>;
   updatePostProcessApiKey: (
+    profileId: string,
     providerId: string,
     apiKey: string,
   ) => Promise<void>;
-  updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
-  fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  updatePostProcessModel: (
+    profileId: string,
+    providerId: string,
+    model: string,
+  ) => Promise<void>;
+  fetchPostProcessModels: (
+    profileId: string,
+    providerId: string,
+  ) => Promise<string[]>;
 }
 
 export const useSettings = (): UseSettingsReturn => {

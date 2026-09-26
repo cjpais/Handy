@@ -186,6 +186,7 @@
         "loading": "加载快捷键中...",
         "none": "未配置快捷键",
         "notFound": "未找到快捷键",
+        "unassigned": "未设置",
         "pressKeys": "请按键...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "后处理配置",
+        "add": "添加配置",
+        "delete": "删除配置 {{name}}",
+        "deleteTitle": "删除配置",
+        "deleteConfirm": "删除配置“{{name}}”？其设置将被移除，快捷键也将失效。",
+        "defaultName": "默认",
+        "renameHint": "双击重命名",
+        "nameLabel": "配置名称",
+        "shortcutTitle": "后处理快捷键（{{name}}）",
+        "errors": {
+          "add": "无法添加配置",
+          "rename": "无法重命名配置",
+          "delete": "无法删除配置"
+        }
+      },
       "hotkey": {
         "title": "快捷键"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "重新转录",
       "retranscribeError": "重新转录失败。请重试。",
       "transcribing": "转录中...",
-      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。"
+      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。",
+      "postProcessProfile": "配置：{{name}}",
+      "deletedProfile": "配置已删除"
     },
     "debug": {
       "title": "调试",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "正在转录...",
-    "processing": "处理中..."
+    "processing": "处理中...",
+    "processingProfile": "处理中（{{name}}）..."
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"

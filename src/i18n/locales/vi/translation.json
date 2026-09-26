@@ -186,6 +186,7 @@
         "loading": "Đang tải phím tắt...",
         "none": "Chưa cấu hình phím tắt",
         "notFound": "Không tìm thấy phím tắt",
+        "unassigned": "Chưa đặt",
         "pressKeys": "Nhấn phím...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Hồ sơ hậu xử lý",
+        "add": "Thêm hồ sơ",
+        "delete": "Xóa hồ sơ {{name}}",
+        "deleteTitle": "Xóa hồ sơ",
+        "deleteConfirm": "Xóa hồ sơ \"{{name}}\"? Cài đặt của hồ sơ sẽ bị xóa và phím tắt của nó sẽ ngừng hoạt động.",
+        "defaultName": "Mặc định",
+        "renameHint": "Nhấp đúp để đổi tên",
+        "nameLabel": "Tên hồ sơ",
+        "shortcutTitle": "Phím tắt xử lý sau ({{name}})",
+        "errors": {
+          "add": "Không thể thêm hồ sơ",
+          "rename": "Không thể đổi tên hồ sơ",
+          "delete": "Không thể xóa hồ sơ"
+        }
+      },
       "hotkey": {
         "title": "Phím tắt"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Phiên âm lại",
       "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
       "transcribing": "Đang phiên âm...",
-      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại."
+      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại.",
+      "postProcessProfile": "Hồ sơ: {{name}}",
+      "deletedProfile": "Hồ sơ đã bị xóa"
     },
     "debug": {
       "title": "Gỡ lỗi",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
-    "processing": "Đang xử lý..."
+    "processing": "Đang xử lý...",
+    "processingProfile": "Đang xử lý ({{name}})..."
   },
   "whatsNew": {
     "title": "Điểm mới trong Handy v{{version}}"

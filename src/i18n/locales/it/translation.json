@@ -186,6 +186,7 @@
         "loading": "Caricamento delle scorciatoie...",
         "none": "Nessuna scorciatoia configurata",
         "notFound": "Scorciatoia non trovata",
+        "unassigned": "Non impostata",
         "pressKeys": "Premi i tasti...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Profili di post-elaborazione",
+        "add": "Aggiungi profilo",
+        "delete": "Elimina il profilo {{name}}",
+        "deleteTitle": "Elimina profilo",
+        "deleteConfirm": "Eliminare il profilo \"{{name}}\"? Le sue impostazioni verranno rimosse e la sua scorciatoia smetterà di funzionare.",
+        "defaultName": "Predefinito",
+        "renameHint": "Fai doppio clic per rinominare",
+        "nameLabel": "Nome del profilo",
+        "shortcutTitle": "Tasto di post-elaborazione ({{name}})",
+        "errors": {
+          "add": "Impossibile aggiungere il profilo",
+          "rename": "Impossibile rinominare il profilo",
+          "delete": "Impossibile eliminare il profilo"
+        }
+      },
       "hotkey": {
         "title": "Tasto di scelta rapida"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Ri-trascrivere",
       "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
       "transcribing": "Trascrizione in corso...",
-      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione."
+      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione.",
+      "postProcessProfile": "Profilo: {{name}}",
+      "deletedProfile": "Profilo eliminato"
     },
     "debug": {
       "title": "Debug",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Trascrizione...",
-    "processing": "Elaborazione..."
+    "processing": "Elaborazione...",
+    "processingProfile": "Elaborazione ({{name}})..."
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"

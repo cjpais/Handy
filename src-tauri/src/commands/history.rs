@@ -93,8 +93,19 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording contains no speech".to_string());
     }
 
-    let processed =
-        process_transcription_output(&app, &transcription, entry.post_process_requested).await;
+    // Reuse the profile that originally processed the entry.
+    let settings = crate::settings::get_settings(&app);
+    let post_process_profile = settings.retry_post_process_profile(
+        entry.post_process_requested,
+        entry.post_process_profile_id.as_deref(),
+    );
+    if entry.post_process_requested && post_process_profile.is_none() {
+        log::warn!(
+            "Post-processing profile of history entry {} was deleted; retrying without post-processing",
+            id
+        );
+    }
+    let processed = process_transcription_output(&app, &transcription, post_process_profile).await;
     history_manager
         .update_transcription(
             id,

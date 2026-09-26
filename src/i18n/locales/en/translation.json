@@ -166,6 +166,7 @@
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
         "notFound": "Shortcut not found",
+        "unassigned": "Not set",
         "pressKeys": "Press keys...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Post-processing profiles",
+        "add": "Add profile",
+        "delete": "Delete profile {{name}}",
+        "deleteTitle": "Delete profile",
+        "deleteConfirm": "Delete the \"{{name}}\" profile? Its settings are removed and its shortcut stops working.",
+        "defaultName": "Default",
+        "renameHint": "Double-click to rename",
+        "nameLabel": "Profile name",
+        "shortcutTitle": "Post-Processing Hotkey ({{name}})",
+        "errors": {
+          "add": "Couldn't add the profile",
+          "rename": "Couldn't rename the profile",
+          "delete": "Couldn't delete the profile"
+        }
+      },
       "hotkey": {
         "title": "Hotkey"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+      "postProcessProfile": "Profile: {{name}}",
+      "deletedProfile": "Profile deleted"
     },
     "debug": {
       "title": "Debug",
@@ -702,7 +721,8 @@
   },
   "overlay": {
     "transcribing": "Transcribing...",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "processingProfile": "Processing ({{name}})..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

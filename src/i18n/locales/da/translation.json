@@ -166,6 +166,7 @@
         "loading": "Indlæser genveje...",
         "none": "Ingen genveje konfigureret",
         "notFound": "Genvej ikke fundet",
+        "unassigned": "Ikke angivet",
         "pressKeys": "Tryk på ønskede taster...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Efterbehandlingsprofiler",
+        "add": "Tilføj profil",
+        "delete": "Slet profilen {{name}}",
+        "deleteTitle": "Slet profil",
+        "deleteConfirm": "Vil du slette profilen \"{{name}}\"? Dens indstillinger fjernes, og dens genvej holder op med at virke.",
+        "defaultName": "Standard",
+        "renameHint": "Dobbeltklik for at omdøbe",
+        "nameLabel": "Profilnavn",
+        "shortcutTitle": "Genvej til efterbehandling ({{name}})",
+        "errors": {
+          "add": "Profilen kunne ikke tilføjes",
+          "rename": "Profilen kunne ikke omdøbes",
+          "delete": "Profilen kunne ikke slettes"
+        }
+      },
       "hotkey": {
         "title": "Genvejstast"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Transskribér igen",
       "retranscribeError": "Kunne ikke transskribere igen. Prøv igen.",
       "transcribing": "Transskriberer...",
-      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet."
+      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet.",
+      "postProcessProfile": "Profil: {{name}}",
+      "deletedProfile": "Profil slettet"
     },
     "debug": {
       "title": "Fejlfinding",
@@ -702,7 +721,8 @@
   },
   "overlay": {
     "transcribing": "Transskriberer...",
-    "processing": "Behandler..."
+    "processing": "Behandler...",
+    "processingProfile": "Behandler ({{name}})..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",

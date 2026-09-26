@@ -166,6 +166,7 @@
         "loading": "S'estan carregant les dreceres...",
         "none": "No hi ha cap drecera configurada",
         "notFound": "No s'ha trobat la drecera",
+        "unassigned": "Sense assignar",
         "pressKeys": "Premeu les tecles...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Perfils de postprocessament",
+        "add": "Afegeix un perfil",
+        "delete": "Suprimeix el perfil {{name}}",
+        "deleteTitle": "Suprimeix el perfil",
+        "deleteConfirm": "Voleu suprimir el perfil «{{name}}»? Se n'eliminaran els paràmetres i la drecera deixarà de funcionar.",
+        "defaultName": "Per defecte",
+        "renameHint": "Feu doble clic per canviar el nom",
+        "nameLabel": "Nom del perfil",
+        "shortcutTitle": "Drecera de postprocessament ({{name}})",
+        "errors": {
+          "add": "No s'ha pogut afegir el perfil",
+          "rename": "No s'ha pogut canviar el nom del perfil",
+          "delete": "No s'ha pogut suprimir el perfil"
+        }
+      },
       "hotkey": {
         "title": "Drecera de teclat"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Torneu a transcriure",
       "retranscribeError": "No s'ha pogut tornar a transcriure. Torneu-ho a provar.",
       "transcribing": "S'està transcrivint...",
-      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent."
+      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent.",
+      "postProcessProfile": "Perfil: {{name}}",
+      "deletedProfile": "Perfil suprimit"
     },
     "debug": {
       "title": "Depuració",
@@ -702,7 +721,8 @@
   },
   "overlay": {
     "transcribing": "S'està transcrivint...",
-    "processing": "S'està processant..."
+    "processing": "S'està processant...",
+    "processingProfile": "S'està processant ({{name}})..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} pot estar blocant 1 drecera",

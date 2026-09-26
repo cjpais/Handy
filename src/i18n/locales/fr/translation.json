@@ -186,6 +186,7 @@
         "loading": "Chargement des raccourcis...",
         "none": "Aucun raccourci configuré",
         "notFound": "Raccourci non trouvé",
+        "unassigned": "Non défini",
         "pressKeys": "Appuyez sur les touches...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Profils de post-traitement",
+        "add": "Ajouter un profil",
+        "delete": "Supprimer le profil {{name}}",
+        "deleteTitle": "Supprimer le profil",
+        "deleteConfirm": "Supprimer le profil « {{name}} » ? Ses paramètres seront supprimés et son raccourci cessera de fonctionner.",
+        "defaultName": "Par défaut",
+        "renameHint": "Double-cliquez pour renommer",
+        "nameLabel": "Nom du profil",
+        "shortcutTitle": "Raccourci de post-traitement ({{name}})",
+        "errors": {
+          "add": "Impossible d'ajouter le profil",
+          "rename": "Impossible de renommer le profil",
+          "delete": "Impossible de supprimer le profil"
+        }
+      },
       "hotkey": {
         "title": "Raccourci clavier"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Re-transcrire",
       "retranscribeError": "Impossible de re-transcrire. Veuillez réessayer.",
       "transcribing": "Transcription en cours...",
-      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai."
+      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai.",
+      "postProcessProfile": "Profil : {{name}}",
+      "deletedProfile": "Profil supprimé"
     },
     "debug": {
       "title": "Débogage",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Transcription...",
-    "processing": "Traitement..."
+    "processing": "Traitement...",
+    "processingProfile": "Traitement ({{name}})..."
   },
   "whatsNew": {
     "title": "Nouveautés de Handy v{{version}}"

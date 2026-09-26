@@ -166,6 +166,7 @@
         "loading": "단축키 로딩 중...",
         "none": "설정된 단축키 없음",
         "notFound": "단축키를 찾을 수 없음",
+        "unassigned": "설정 안 됨",
         "pressKeys": "키를 눌러주세요...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "후처리 프로필",
+        "add": "프로필 추가",
+        "delete": "{{name}} 프로필 삭제",
+        "deleteTitle": "프로필 삭제",
+        "deleteConfirm": "\"{{name}}\" 프로필을 삭제할까요? 설정이 제거되고 단축키가 더 이상 작동하지 않습니다.",
+        "defaultName": "기본",
+        "renameHint": "두 번 클릭하여 이름 변경",
+        "nameLabel": "프로필 이름",
+        "shortcutTitle": "후처리 단축키 ({{name}})",
+        "errors": {
+          "add": "프로필을 추가하지 못했습니다",
+          "rename": "프로필 이름을 변경하지 못했습니다",
+          "delete": "프로필을 삭제하지 못했습니다"
+        }
+      },
       "hotkey": {
         "title": "단축키"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "다시 전사",
       "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "postProcessProfile": "프로필: {{name}}",
+      "deletedProfile": "삭제된 프로필"
     },
     "debug": {
       "title": "디버그",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
-    "processing": "처리 중..."
+    "processing": "처리 중...",
+    "processingProfile": "처리 중 ({{name}})..."
   },
   "whatsNew": {
     "title": "Handy v{{version}}의 새 소식"

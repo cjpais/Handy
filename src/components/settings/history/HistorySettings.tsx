@@ -11,6 +11,8 @@ import {
   type HistoryUpdatePayload,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { getProfileDisplayName } from "@/lib/utils/postProcessProfile";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
@@ -305,8 +307,27 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   retryTranscription,
 }) => {
   const { t, i18n } = useTranslation();
+  // Selector subscription: rows re-render only when the profiles change, not
+  // on every settings store update.
+  const profiles = useSettingsStore(
+    (state) => state.settings?.post_process_profiles,
+  );
   const [showCopied, setShowCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
+
+  // Which post-processing profile processed this entry.
+  let profileLabel: string | null = null;
+  if (entry.post_process_requested) {
+    // No profile id: the profile that processed it was deleted.
+    const profile = profiles?.find(
+      (p) => p.id === entry.post_process_profile_id,
+    );
+    profileLabel = profile
+      ? t("settings.history.postProcessProfile", {
+          name: getProfileDisplayName(profile, t),
+        })
+      : t("settings.history.deletedProfile");
+  }
 
   const hasTranscription = entry.transcription_text.trim().length > 0;
 
@@ -356,7 +377,14 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
+        <p className="text-sm font-medium">
+          {formattedDate}
+          {profileLabel && (
+            <span className="ms-2 text-xs font-normal text-mid-gray">
+              {profileLabel}
+            </span>
+          )}
+        </p>
         <div className="flex items-center">
           <IconButton
             onClick={handleCopyText}

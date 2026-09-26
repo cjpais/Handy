@@ -166,6 +166,7 @@
         "loading": "Laddar kortkommandon...",
         "none": "Inga kortkommandon konfigurerade",
         "notFound": "Kortkommando hittades inte",
+        "unassigned": "Inte angivet",
         "pressKeys": "Tryck på tangenter...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Efterbearbetningsprofiler",
+        "add": "Lägg till profil",
+        "delete": "Ta bort profilen {{name}}",
+        "deleteTitle": "Ta bort profil",
+        "deleteConfirm": "Ta bort profilen \"{{name}}\"? Dess inställningar tas bort och dess kortkommando slutar fungera.",
+        "defaultName": "Standard",
+        "renameHint": "Dubbelklicka för att byta namn",
+        "nameLabel": "Profilnamn",
+        "shortcutTitle": "Snabbkommando för efterbearbetning ({{name}})",
+        "errors": {
+          "add": "Det gick inte att lägga till profilen",
+          "rename": "Det gick inte att byta namn på profilen",
+          "delete": "Det gick inte att ta bort profilen"
+        }
+      },
       "hotkey": {
         "title": "Snabbkommando"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Transkribera igen",
       "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
       "transcribing": "Transkriberar...",
-      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök."
+      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök.",
+      "postProcessProfile": "Profil: {{name}}",
+      "deletedProfile": "Profilen har tagits bort"
     },
     "debug": {
       "title": "Felsökning",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Transkriberar...",
-    "processing": "Bearbetar..."
+    "processing": "Bearbetar...",
+    "processingProfile": "Bearbetar ({{name}})..."
   },
   "whatsNew": {
     "title": "Nytt i Handy v{{version}}"

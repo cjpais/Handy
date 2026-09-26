@@ -630,6 +630,16 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "processing");
 }
 
+/// Tells the overlay which post-processing profile is running so its
+/// processing label can name it; `None` falls back to the plain label.
+pub fn set_overlay_post_process_profile(app_handle: &AppHandle, profile_name: Option<&str>) {
+    let _ = app_handle.emit_to(
+        "recording_overlay",
+        "overlay-post-process-profile",
+        profile_name,
+    );
+}
+
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
     // Positioning queries monitors/cursor (GDK/Xlib on Linux) and moves the

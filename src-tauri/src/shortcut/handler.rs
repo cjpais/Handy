@@ -35,7 +35,7 @@ pub fn handle_shortcut_event(
     let settings = get_settings(app);
 
     // Transcribe bindings are handled by the coordinator.
-    if is_transcribe_binding(binding_id) {
+    if is_transcribe_binding(binding_id, &settings) {
         if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
             coordinator.send_input(
                 binding_id,

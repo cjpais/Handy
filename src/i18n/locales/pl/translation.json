@@ -186,6 +186,7 @@
         "loading": "Wczytywanie skrótów...",
         "none": "Brak skonfigurowanych skrótów",
         "notFound": "Nie znaleziono skrótu",
+        "unassigned": "Nie ustawiono",
         "pressKeys": "Naciśnij klawisze...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Profile przetwarzania końcowego",
+        "add": "Dodaj profil",
+        "delete": "Usuń profil {{name}}",
+        "deleteTitle": "Usuń profil",
+        "deleteConfirm": "Usunąć profil „{{name}}”? Jego ustawienia zostaną usunięte, a skrót przestanie działać.",
+        "defaultName": "Domyślny",
+        "renameHint": "Kliknij dwukrotnie, aby zmienić nazwę",
+        "nameLabel": "Nazwa profilu",
+        "shortcutTitle": "Skrót postprocessingu ({{name}})",
+        "errors": {
+          "add": "Nie udało się dodać profilu",
+          "rename": "Nie udało się zmienić nazwy profilu",
+          "delete": "Nie udało się usunąć profilu"
+        }
+      },
       "hotkey": {
         "title": "Skrót klawiszowy"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Transkrybuj ponownie",
       "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
       "transcribing": "Transkrybuję...",
-      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia."
+      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia.",
+      "postProcessProfile": "Profil: {{name}}",
+      "deletedProfile": "Profil usunięty"
     },
     "debug": {
       "title": "Debugowanie",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Transkrypcja...",
-    "processing": "Przetwarzanie..."
+    "processing": "Przetwarzanie...",
+    "processingProfile": "Przetwarzanie ({{name}})..."
   },
   "whatsNew": {
     "title": "Nowości w Handy v{{version}}"

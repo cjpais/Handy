@@ -166,6 +166,7 @@
         "loading": "Memuat pintasan...",
         "none": "Belum ada pintasan yang diatur",
         "notFound": "Pintasan tidak ditemukan",
+        "unassigned": "Belum diatur",
         "pressKeys": "Tekan tombol...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Profil pascapemrosesan",
+        "add": "Tambah profil",
+        "delete": "Hapus profil {{name}}",
+        "deleteTitle": "Hapus Profil",
+        "deleteConfirm": "Hapus profil \"{{name}}\"? Pengaturannya akan dihapus dan pintasannya tidak akan berfungsi lagi.",
+        "defaultName": "Bawaan",
+        "renameHint": "Klik dua kali untuk mengganti nama",
+        "nameLabel": "Nama profil",
+        "shortcutTitle": "Pintasan Pascaproses ({{name}})",
+        "errors": {
+          "add": "Tidak dapat menambahkan profil",
+          "rename": "Tidak dapat mengganti nama profil",
+          "delete": "Tidak dapat menghapus profil"
+        }
+      },
       "hotkey": {
         "title": "Pintasan"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Transkripsikan ulang",
       "retranscribeError": "Gagal mentranskripsikan ulang. Silakan coba lagi.",
       "transcribing": "Mentranskripsikan...",
-      "transcriptionFailed": "Transkripsi gagal. Anda dapat mentranskripsikan ulang menggunakan ikon coba lagi."
+      "transcriptionFailed": "Transkripsi gagal. Anda dapat mentranskripsikan ulang menggunakan ikon coba lagi.",
+      "postProcessProfile": "Profil: {{name}}",
+      "deletedProfile": "Profil dihapus"
     },
     "debug": {
       "title": "Debug",
@@ -702,7 +721,8 @@
   },
   "overlay": {
     "transcribing": "Mentranskripsikan...",
-    "processing": "Memproses..."
+    "processing": "Memproses...",
+    "processingProfile": "Memproses ({{name}})..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} mungkin memblokir 1 pintasan",

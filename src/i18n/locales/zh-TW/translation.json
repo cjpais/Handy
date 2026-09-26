@@ -166,6 +166,7 @@
         "loading": "載入快捷鍵中...",
         "none": "未設定快捷鍵",
         "notFound": "未找到快捷鍵",
+        "unassigned": "未設定",
         "pressKeys": "請按鍵...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "後處理設定檔",
+        "add": "新增設定檔",
+        "delete": "刪除設定檔 {{name}}",
+        "deleteTitle": "刪除設定檔",
+        "deleteConfirm": "要刪除設定檔「{{name}}」嗎？其設定將被移除，快捷鍵也將失效。",
+        "defaultName": "預設",
+        "renameHint": "按兩下以重新命名",
+        "nameLabel": "設定檔名稱",
+        "shortcutTitle": "後處理快捷鍵（{{name}}）",
+        "errors": {
+          "add": "無法新增設定檔",
+          "rename": "無法重新命名設定檔",
+          "delete": "無法刪除設定檔"
+        }
+      },
       "hotkey": {
         "title": "快捷鍵"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "重新轉錄",
       "retranscribeError": "重新轉錄失敗，請重試。",
       "transcribing": "轉錄中...",
-      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。"
+      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。",
+      "postProcessProfile": "設定檔：{{name}}",
+      "deletedProfile": "設定檔已刪除"
     },
     "debug": {
       "title": "偵錯",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "正在轉錄...",
-    "processing": "處理中..."
+    "processing": "處理中...",
+    "processingProfile": "處理中（{{name}}）..."
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"

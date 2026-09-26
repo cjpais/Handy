@@ -31,6 +31,14 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
+    // Everything post-processed before profiles existed used what is now the
+    // Default profile. NULL afterwards means "not post-processed", or that the
+    // profile was deleted (see `clear_post_process_profile`).
+    M::up(
+        "ALTER TABLE transcription_history ADD COLUMN post_process_profile_id TEXT;
+         UPDATE transcription_history SET post_process_profile_id = 'default'
+             WHERE post_process_requested = 1;",
+    ),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -63,6 +71,11 @@ pub struct HistoryEntry {
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
     pub post_process_requested: bool,
+    /// Post-processing profile that processed this entry; `None` for entries
+    /// from before profiles, which used what is now the Default profile.
+    /// Post-processing profile that processed this entry. `None` if it was
+    /// not post-processed or its profile has since been deleted.
+    pub post_process_profile_id: Option<String>,
 }
 
 pub struct HistoryManager {
@@ -207,6 +220,7 @@ impl HistoryManager {
             post_processed_text: row.get("post_processed_text")?,
             post_process_prompt: row.get("post_process_prompt")?,
             post_process_requested: row.get("post_process_requested")?,
+            post_process_profile_id: row.get("post_process_profile_id")?,
         })
     }
 
@@ -223,6 +237,7 @@ impl HistoryManager {
         post_process_requested: bool,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
+        post_process_profile_id: Option<String>,
     ) -> Result<HistoryEntry> {
         let timestamp = Utc::now().timestamp();
         let title = self.format_timestamp_title(timestamp);
@@ -237,8 +252,9 @@ impl HistoryManager {
                 transcription_text,
                 post_processed_text,
                 post_process_prompt,
-                post_process_requested
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                post_process_requested,
+                post_process_profile_id
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             params![
                 &file_name,
                 timestamp,
@@ -248,6 +264,7 @@ impl HistoryManager {
                 &post_processed_text,
                 &post_process_prompt,
                 post_process_requested,
+                &post_process_profile_id,
             ],
         )?;
 
@@ -261,6 +278,7 @@ impl HistoryManager {
             post_processed_text,
             post_process_prompt,
             post_process_requested,
+            post_process_profile_id,
         };
 
         debug!("Saved history entry with id {}", entry.id);
@@ -308,7 +326,7 @@ impl HistoryManager {
 
         let entry = conn
             .query_row(
-                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested, post_process_profile_id
                  FROM transcription_history WHERE id = ?1",
                 params![id],
                 Self::map_history_entry,
@@ -459,7 +477,7 @@ impl HistoryManager {
             (Some(cursor_id), Some(lim)) => {
                 let fetch_count = (lim + 1) as i64;
                 let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested, post_process_profile_id
                      FROM transcription_history
                      WHERE id < ?1
                      ORDER BY id DESC
@@ -473,7 +491,7 @@ impl HistoryManager {
             (None, Some(lim)) => {
                 let fetch_count = (lim + 1) as i64;
                 let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested, post_process_profile_id
                      FROM transcription_history
                      ORDER BY id DESC
                      LIMIT ?1",
@@ -485,7 +503,7 @@ impl HistoryManager {
             }
             (_, None) => {
                 let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested, post_process_profile_id
                      FROM transcription_history
                      ORDER BY id DESC",
                 )?;
@@ -504,6 +522,22 @@ impl HistoryManager {
         Ok(PaginatedHistory { entries, has_more })
     }
 
+    /// Detaches entries from a deleted post-processing profile — the
+    /// equivalent of `ON DELETE SET NULL`, which SQLite cannot express because
+    /// profiles live in the settings store rather than in this database.
+    pub fn clear_post_process_profile(&self, profile_id: &str) -> Result<usize> {
+        let conn = self.get_connection()?;
+        Self::clear_post_process_profile_with_conn(&conn, profile_id)
+    }
+
+    fn clear_post_process_profile_with_conn(conn: &Connection, profile_id: &str) -> Result<usize> {
+        Ok(conn.execute(
+            "UPDATE transcription_history SET post_process_profile_id = NULL
+             WHERE post_process_profile_id = ?1",
+            params![profile_id],
+        )?)
+    }
+
     #[cfg(test)]
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
         let mut stmt = conn.prepare(
@@ -516,7 +550,8 @@ impl HistoryManager {
                 transcription_text,
                 post_processed_text,
                 post_process_prompt,
-                post_process_requested
+                post_process_requested,
+                post_process_profile_id
              FROM transcription_history
              ORDER BY timestamp DESC
              LIMIT 1",
@@ -543,7 +578,8 @@ impl HistoryManager {
                 transcription_text,
                 post_processed_text,
                 post_process_prompt,
-                post_process_requested
+                post_process_requested,
+                post_process_profile_id
              FROM transcription_history
              WHERE transcription_text != ''
              ORDER BY timestamp DESC
@@ -597,7 +633,8 @@ impl HistoryManager {
                 transcription_text,
                 post_processed_text,
                 post_process_prompt,
-                post_process_requested
+                post_process_requested,
+                post_process_profile_id
              FROM transcription_history
              WHERE id = ?1",
         )?;
@@ -666,7 +703,8 @@ mod tests {
                 transcription_text TEXT NOT NULL,
                 post_processed_text TEXT,
                 post_process_prompt TEXT,
-                post_process_requested BOOLEAN NOT NULL DEFAULT 0
+                post_process_requested BOOLEAN NOT NULL DEFAULT 0,
+                post_process_profile_id TEXT
             );",
         )
         .expect("create transcription_history table");
@@ -733,5 +771,68 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn profile_migration_assigns_default_to_post_processed_entries() {
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        // A database as the release before profiles left it.
+        Migrations::new(MIGRATIONS[..4].to_vec())
+            .to_latest(&mut conn)
+            .expect("apply pre-profile migrations");
+        for (file, requested) in [("plain.wav", false), ("processed.wav", true)] {
+            conn.execute(
+                "INSERT INTO transcription_history
+                    (file_name, timestamp, saved, title, transcription_text, post_process_requested)
+                 VALUES (?1, 0, 0, 'Recording', 'text', ?2)",
+                params![file, requested],
+            )
+            .expect("insert entry");
+        }
+
+        Migrations::new(MIGRATIONS.to_vec())
+            .to_latest(&mut conn)
+            .expect("apply profile migration");
+
+        let profile_of = |file: &str| -> Option<String> {
+            conn.query_row(
+                "SELECT post_process_profile_id FROM transcription_history WHERE file_name = ?1",
+                [file],
+                |row| row.get(0),
+            )
+            .expect("entry exists")
+        };
+        assert_eq!(profile_of("plain.wav"), None);
+        assert_eq!(profile_of("processed.wav").as_deref(), Some("default"));
+    }
+
+    #[test]
+    fn deleting_a_profile_detaches_only_its_entries() {
+        let conn = setup_conn();
+        for (file, profile) in [("a.wav", "profile_a"), ("b.wav", "profile_b")] {
+            conn.execute(
+                "INSERT INTO transcription_history
+                    (file_name, timestamp, saved, title, transcription_text,
+                     post_process_requested, post_process_profile_id)
+                 VALUES (?1, 0, 0, 'Recording', 'text', 1, ?2)",
+                params![file, profile],
+            )
+            .expect("insert entry");
+        }
+
+        let cleared = HistoryManager::clear_post_process_profile_with_conn(&conn, "profile_a")
+            .expect("clear profile");
+        assert_eq!(cleared, 1);
+
+        let profile_of = |file: &str| -> Option<String> {
+            conn.query_row(
+                "SELECT post_process_profile_id FROM transcription_history WHERE file_name = ?1",
+                [file],
+                |row| row.get(0),
+            )
+            .expect("entry exists")
+        };
+        assert_eq!(profile_of("a.wav"), None);
+        assert_eq!(profile_of("b.wav").as_deref(), Some("profile_b"));
     }
 }

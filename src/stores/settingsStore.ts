@@ -42,23 +42,40 @@ interface SettingsStore {
   isUpdatingKey: (key: string) => boolean;
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
-  setPostProcessProvider: (providerId: string) => Promise<void>;
+  setPostProcessProvider: (
+    profileId: string,
+    providerId: string,
+  ) => Promise<void>;
   updatePostProcessSetting: (
     settingType: "base_url" | "api_key" | "model",
+    profileId: string,
     providerId: string,
     value: string,
   ) => Promise<void>;
   updatePostProcessBaseUrl: (
+    profileId: string,
     providerId: string,
     baseUrl: string,
   ) => Promise<void>;
   updatePostProcessApiKey: (
+    profileId: string,
     providerId: string,
     apiKey: string,
   ) => Promise<void>;
-  updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
-  fetchPostProcessModels: (providerId: string) => Promise<string[]>;
-  setPostProcessModelOptions: (providerId: string, models: string[]) => void;
+  updatePostProcessModel: (
+    profileId: string,
+    providerId: string,
+    model: string,
+  ) => Promise<void>;
+  fetchPostProcessModels: (
+    profileId: string,
+    providerId: string,
+  ) => Promise<string[]>;
+  setPostProcessModelOptions: (
+    profileId: string,
+    providerId: string,
+    models: string[],
+  ) => void;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -78,6 +95,24 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
   name: "Default",
   is_default: true,
 };
+
+// Post-processing state is per profile, so cached model lists and in-flight
+// update flags are keyed by profile as well as provider.
+export const postProcessKey = (profileId: string, providerId: string) =>
+  `${profileId}:${providerId}`;
+
+const withProfileProvider = (
+  settings: Settings,
+  profileId: string,
+  providerId: string,
+): Settings => ({
+  ...settings,
+  post_process_profiles: settings.post_process_profiles?.map((profile) =>
+    profile.id === profileId
+      ? { ...profile, provider_id: providerId }
+      : profile,
+  ),
+});
 
 const settingUpdaters: {
   [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
@@ -156,8 +191,6 @@ const settingUpdaters: {
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),
-  post_process_selected_prompt_id: (value) =>
-    commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
@@ -433,39 +466,41 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-    setPostProcessProvider: async (providerId) => {
+    setPostProcessProvider: async (profileId, providerId) => {
       const {
         settings,
         setUpdating,
         refreshSettings,
         setPostProcessModelOptions,
       } = get();
-      const updateKey = "post_process_provider_id";
-      const previousId = settings?.post_process_provider_id ?? null;
+      const updateKey = `post_process_provider_id:${profileId}`;
+      const previousId =
+        settings?.post_process_profiles?.find((p) => p.id === profileId)
+          ?.provider_id ?? null;
 
       setUpdating(updateKey, true);
 
       if (settings) {
         set((state) => ({
           settings: state.settings
-            ? { ...state.settings, post_process_provider_id: providerId }
+            ? withProfileProvider(state.settings, profileId, providerId)
             : null,
         }));
       }
 
       // Clear cached model options for the new provider so the dropdown
       // doesn't show stale models from a previous fetch or base_url.
-      setPostProcessModelOptions(providerId, []);
+      setPostProcessModelOptions(profileId, providerId, []);
 
       try {
-        await commands.setPostProcessProvider(providerId);
+        await commands.setPostProcessProvider(profileId, providerId);
         await refreshSettings();
       } catch (error) {
         console.error("Failed to set post-process provider:", error);
         if (previousId !== null) {
           set((state) => ({
             settings: state.settings
-              ? { ...state.settings, post_process_provider_id: previousId }
+              ? withProfileProvider(state.settings, profileId, previousId)
               : null,
           }));
         }
@@ -477,21 +512,34 @@ export const useSettingsStore = create<SettingsStore>()(
     // Generic updater for post-processing provider settings
     updatePostProcessSetting: async (
       settingType: "base_url" | "api_key" | "model",
+      profileId: string,
       providerId: string,
       value: string,
     ) => {
       const { setUpdating, refreshSettings } = get();
-      const updateKey = `post_process_${settingType}:${providerId}`;
+      const updateKey = `post_process_${settingType}:${postProcessKey(profileId, providerId)}`;
 
       setUpdating(updateKey, true);
 
       try {
         if (settingType === "base_url") {
-          await commands.changePostProcessBaseUrlSetting(providerId, value);
+          await commands.changePostProcessBaseUrlSetting(
+            profileId,
+            providerId,
+            value,
+          );
         } else if (settingType === "api_key") {
-          await commands.changePostProcessApiKeySetting(providerId, value);
+          await commands.changePostProcessApiKeySetting(
+            profileId,
+            providerId,
+            value,
+          );
         } else if (settingType === "model") {
-          await commands.changePostProcessModelSetting(providerId, value);
+          await commands.changePostProcessModelSetting(
+            profileId,
+            providerId,
+            value,
+          );
         }
         await refreshSettings();
       } catch (error) {
@@ -504,15 +552,17 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-    updatePostProcessBaseUrl: async (providerId, baseUrl) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = `post_process_base_url:${providerId}`;
+    updatePostProcessBaseUrl: async (profileId, providerId, baseUrl) => {
+      const { setUpdating, refreshSettings, setPostProcessModelOptions } =
+        get();
+      const updateKey = `post_process_base_url:${postProcessKey(profileId, providerId)}`;
 
       setUpdating(updateKey, true);
 
       try {
         // Persist the new base URL first.
         const urlResult = await commands.changePostProcessBaseUrlSetting(
+          profileId,
           providerId,
           baseUrl,
         );
@@ -525,6 +575,7 @@ export const useSettingsStore = create<SettingsStore>()(
         // invalid for the new endpoint (e.g. switching Custom from Groq to
         // Cerebras). Only proceed if the reset succeeds.
         const modelResult = await commands.changePostProcessModelSetting(
+          profileId,
           providerId,
           "",
         );
@@ -534,12 +585,7 @@ export const useSettingsStore = create<SettingsStore>()(
         }
 
         // Clear cached model options only after both backend writes succeed.
-        set((state) => ({
-          postProcessModelOptions: {
-            ...state.postProcessModelOptions,
-            [providerId]: [],
-          },
-        }));
+        setPostProcessModelOptions(profileId, providerId, []);
 
         // Single refresh after both backend writes.
         await refreshSettings();
@@ -550,32 +596,40 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-    updatePostProcessApiKey: async (providerId, apiKey) => {
+    updatePostProcessApiKey: async (profileId, providerId, apiKey) => {
       // Clear cached models when API key changes - user should click refresh after
-      set((state) => ({
-        postProcessModelOptions: {
-          ...state.postProcessModelOptions,
-          [providerId]: [],
-        },
-      }));
-      return get().updatePostProcessSetting("api_key", providerId, apiKey);
+      get().setPostProcessModelOptions(profileId, providerId, []);
+      return get().updatePostProcessSetting(
+        "api_key",
+        profileId,
+        providerId,
+        apiKey,
+      );
     },
 
-    updatePostProcessModel: async (providerId, model) => {
-      return get().updatePostProcessSetting("model", providerId, model);
+    updatePostProcessModel: async (profileId, providerId, model) => {
+      return get().updatePostProcessSetting(
+        "model",
+        profileId,
+        providerId,
+        model,
+      );
     },
 
-    fetchPostProcessModels: async (providerId) => {
-      const updateKey = `post_process_models_fetch:${providerId}`;
+    fetchPostProcessModels: async (profileId, providerId) => {
+      const updateKey = `post_process_models_fetch:${postProcessKey(profileId, providerId)}`;
       const { setUpdating, setPostProcessModelOptions } = get();
 
       setUpdating(updateKey, true);
 
       try {
         // Call Tauri backend command instead of fetch
-        const result = await commands.fetchPostProcessModels(providerId);
+        const result = await commands.fetchPostProcessModels(
+          profileId,
+          providerId,
+        );
         if (result.status === "ok") {
-          setPostProcessModelOptions(providerId, result.data);
+          setPostProcessModelOptions(profileId, providerId, result.data);
           return result.data;
         } else {
           console.error("Failed to fetch models:", result.error);
@@ -590,11 +644,11 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-    setPostProcessModelOptions: (providerId, models) =>
+    setPostProcessModelOptions: (profileId, providerId, models) =>
       set((state) => ({
         postProcessModelOptions: {
           ...state.postProcessModelOptions,
-          [providerId]: models,
+          [postProcessKey(profileId, providerId)]: models,
         },
       })),
 

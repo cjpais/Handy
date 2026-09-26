@@ -186,6 +186,7 @@
         "loading": "Načítám zkratky...",
         "none": "Žádné zkratky nejsou nastavené",
         "notFound": "Zkratka nenalezena",
+        "unassigned": "Nenastaveno",
         "pressKeys": "Stiskněte klávesy...",
         "bindings": {
           "transcribe": {
@@ -401,6 +402,22 @@
       }
     },
     "postProcessing": {
+      "profiles": {
+        "title": "Profily následného zpracování",
+        "add": "Přidat profil",
+        "delete": "Smazat profil {{name}}",
+        "deleteTitle": "Smazat profil",
+        "deleteConfirm": "Smazat profil „{{name}}“? Jeho nastavení budou odstraněna a jeho zkratka přestane fungovat.",
+        "defaultName": "Výchozí",
+        "renameHint": "Dvojitým kliknutím přejmenujete",
+        "nameLabel": "Název profilu",
+        "shortcutTitle": "Klávesa pro následné zpracování ({{name}})",
+        "errors": {
+          "add": "Profil se nepodařilo přidat",
+          "rename": "Profil se nepodařilo přejmenovat",
+          "delete": "Profil se nepodařilo smazat"
+        }
+      },
       "hotkey": {
         "title": "Klávesová zkratka"
       },
@@ -468,7 +485,9 @@
       "retranscribe": "Přepsat znovu",
       "retranscribeError": "Opětovný přepis se nezdařil. Zkuste to prosím znovu.",
       "transcribing": "Přepisuji...",
-      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování."
+      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování.",
+      "postProcessProfile": "Profil: {{name}}",
+      "deletedProfile": "Profil smazán"
     },
     "debug": {
       "title": "Ladění",
@@ -699,7 +718,8 @@
   },
   "overlay": {
     "transcribing": "Přepisuji...",
-    "processing": "Zpracovávám..."
+    "processing": "Zpracovávám...",
+    "processingProfile": "Zpracovávám ({{name}})..."
   },
   "whatsNew": {
     "title": "Novinky v Handy v{{version}}"

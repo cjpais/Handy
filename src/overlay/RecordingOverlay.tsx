@@ -11,6 +11,7 @@ import type {
 } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+import { getProfileDisplayName } from "@/lib/utils/postProcessProfile";
 
 type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
 
@@ -33,6 +34,8 @@ const RecordingOverlay: React.FC = () => {
   });
   const [phase, setPhase] = useState<StreamPhase>("listening");
   const [workKind, setWorkKind] = useState<StreamWorkKind>("transcribing");
+  // Name of the post-processing profile being applied, if any.
+  const [profileName, setProfileName] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   // Bumped on each new streaming session so the Live card remounts fresh (replays
   // the pop-in, and never animates in from the previous panel's open size).
@@ -64,6 +67,7 @@ const RecordingOverlay: React.FC = () => {
           smoothedLevelsRef.current = Array(16).fill(0);
           setLevels(Array(WAVE_BARS).fill(0));
           setStreamText({ committed: "", tentative: "" });
+          setProfileName(null);
         }
 
         await syncLanguageFromSettings();
@@ -88,6 +92,11 @@ const RecordingOverlay: React.FC = () => {
         }
         setIsVisible(true);
       });
+
+      const unlistenProfile = await listen<string | null>(
+        "overlay-post-process-profile",
+        (event) => setProfileName(event.payload),
+      );
 
       const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
@@ -123,6 +132,7 @@ const RecordingOverlay: React.FC = () => {
 
       return () => {
         unlistenShow();
+        unlistenProfile();
         unlistenHide();
         unlistenReady();
         unlistenLevel();
@@ -217,6 +227,14 @@ const RecordingOverlay: React.FC = () => {
 
   // spinner (left) | label (center) | cancel (right) — same 3-zone grid as the
   // listening row, so the label is centered.
+  // null: no profile known (plain label); "": the unrenamed Default profile.
+  const processingLabel =
+    profileName === null
+      ? t("overlay.processing")
+      : t("overlay.processingProfile", {
+          name: getProfileDisplayName({ name: profileName }, t),
+        });
+
   const workingRow = (label: string, showCancel: boolean) => (
     <div className="sbase">
       <div className="sbase-l">
@@ -269,7 +287,7 @@ const RecordingOverlay: React.FC = () => {
           {working
             ? workingRow(
                 workKind === "polishing"
-                  ? t("overlay.processing")
+                  ? processingLabel
                   : t("overlay.transcribing"),
                 true,
               )
@@ -284,9 +302,7 @@ const RecordingOverlay: React.FC = () => {
   // width between them; the cancel button is in both rows so it stays put.
   const working = state === "transcribing" || state === "processing";
   const workLabel =
-    state === "processing"
-      ? t("overlay.processing")
-      : t("overlay.transcribing");
+    state === "processing" ? processingLabel : t("overlay.transcribing");
 
   return (
     <div

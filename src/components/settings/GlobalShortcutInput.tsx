@@ -17,6 +17,10 @@ interface GlobalShortcutInputProps {
   grouped?: boolean;
   shortcutId: string;
   disabled?: boolean;
+  /** Overrides the binding's translated name, e.g. for runtime bindings. */
+  title?: string;
+  /** Overrides the binding's translated description. */
+  description?: string;
 }
 
 export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
@@ -24,6 +28,8 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
   grouped = false,
   shortcutId,
   disabled = false,
+  title,
+  description,
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
@@ -257,14 +263,15 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
   }
 
   // Get translated name and description for the binding
-  const translatedName = t(
-    `settings.general.shortcut.bindings.${shortcutId}.name`,
-    binding.name,
-  );
-  const translatedDescription = t(
-    `settings.general.shortcut.bindings.${shortcutId}.description`,
-    binding.description,
-  );
+  const translatedName =
+    title ??
+    t(`settings.general.shortcut.bindings.${shortcutId}.name`, binding.name);
+  const translatedDescription =
+    description ??
+    t(
+      `settings.general.shortcut.bindings.${shortcutId}.description`,
+      binding.description,
+    );
 
   return (
     <SettingContainer
@@ -288,7 +295,9 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={() => startRecording(shortcutId)}
           >
-            {formatKeyCombination(binding.current_binding, osType)}
+            {binding.current_binding
+              ? formatKeyCombination(binding.current_binding, osType)
+              : t("settings.general.shortcut.unassigned")}
           </div>
         )}
         <ResetButton
