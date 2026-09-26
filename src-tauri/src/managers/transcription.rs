@@ -1,6 +1,7 @@
 use crate::audio_toolkit::{
-    apply_custom_words, detect_output_language, normalize_transcription_output,
-    remove_filler_words, OutputLanguageEvidence,
+    apply_custom_words, detect_output_language, is_effectively_silent,
+    normalize_transcription_output, peak_dbfs, remove_filler_words, OutputLanguageEvidence,
+    SILENCE_THRESHOLD_DBFS,
 };
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
@@ -1193,6 +1194,18 @@ impl TranscriptionManager {
             debug!("Empty audio vector");
             self.maybe_unload_immediately("empty audio");
             return Ok(String::new());
+        }
+
+        // A muted, wrong, or dead input device delivers an essentially all-zero
+        // signal, which transcribes to nothing. Surface that distinctly so the
+        // logs explain the empty result instead of leaving it a mystery.
+        // See https://github.com/cjpais/Handy/issues/1899
+        if is_effectively_silent(&audio, SILENCE_THRESHOLD_DBFS) {
+            warn!(
+                "Captured audio is effectively silent (peak {:.1} dBFS, below the {:.0} dBFS threshold): the selected input device may be muted or wrong. Transcription will likely be empty.",
+                peak_dbfs(&audio),
+                SILENCE_THRESHOLD_DBFS
+            );
         }
 
         // Check if model is loaded, if not try to load it
