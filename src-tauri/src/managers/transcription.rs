@@ -1891,19 +1891,29 @@ pub fn init_transcribe_backend() {
                      disabling transcribe.cpp GPU acceleration and using CPU"
                 );
             }
-            let devices = transcribe_compute_devices();
-            info!(
-                "transcribe-cpp initialized with {} compute device(s): [{}]",
-                devices.len(),
-                devices
-                    .iter()
-                    .map(|d| format!("{} ({})", d.name, d.kind))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            );
         }
         Err(e) => warn!("Failed to initialize transcribe-cpp backends: {}", e),
     }
+}
+
+/// Log the compute devices [`init_transcribe_backend`] registered.
+///
+/// Listing devices is what first opens the GPU. On macOS that loads ggml's
+/// Metal library, which is compiled from source whenever the system's shader
+/// cache does not hold it yet (the first launch after an install or update),
+/// so the app calls this from a background thread instead of its startup
+/// path. A model load that comes first waits on the same one-time compile.
+pub fn report_compute_devices() {
+    let devices = transcribe_compute_devices();
+    info!(
+        "transcribe-cpp initialized with {} compute device(s): [{}]",
+        devices.len(),
+        devices
+            .iter()
+            .map(|d| format!("{} ({})", d.name, d.kind))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
 }
 
 /// Human-readable list of the transcribe-cpp compute devices registered at
