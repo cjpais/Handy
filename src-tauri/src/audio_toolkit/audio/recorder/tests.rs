@@ -1,6 +1,6 @@
 use super::{
     is_microphone_access_denied, is_no_input_device_error, run_consumer, AudioRecorder,
-    CaptureProcessor, CaptureTransportState, ChunkDisposition, Cmd, VadConfig, VadPolicy,
+    CaptureProcessor, CaptureTransportState, ChunkDisposition, Cmd, ReadyOn, VadConfig, VadPolicy,
 };
 use crate::audio_toolkit::vad::{VadFrame, VoiceActivityDetector};
 use rtrb::RingBuffer;
@@ -59,6 +59,7 @@ fn resampler_frame_size_follows_the_vad_backend() {
             observed.lock().unwrap().push(frame.len())
         })),
         Instant::now(),
+        ReadyOn::FirstBuffer,
     );
 
     let (ready_tx, _ready_rx) = mpsc::channel();
@@ -72,9 +73,38 @@ fn resampler_frame_size_follows_the_vad_backend() {
 
 #[test]
 fn idle_chunks_are_discarded_without_reaching_the_recording() {
-    let mut processor = CaptureProcessor::new(16_000, None, None, None, Instant::now());
+    let mut processor = CaptureProcessor::new(
+        16_000,
+        None,
+        None,
+        None,
+        Instant::now(),
+        ReadyOn::FirstBuffer,
+    );
     processor.process_raw_chunk(&[1.0; 480], ChunkDisposition::Discard);
     assert!(processor.finish_recording().is_empty());
+}
+
+/// AirPods playing audio from an iPhone hand this Mac buffers of exact zeros.
+/// A start cue on those buffers tells the user to talk into a dead microphone.
+#[test]
+fn bluetooth_input_is_not_ready_until_it_delivers_sound() {
+    let mut processor = CaptureProcessor::new(
+        16_000,
+        None,
+        None,
+        None,
+        Instant::now(),
+        ReadyOn::FirstSound,
+    );
+    let (ready_tx, ready_rx) = mpsc::channel();
+    processor.begin_recording(VadPolicy::Disabled, ready_tx);
+
+    processor.process_raw_chunk(&[0.0; 480], ChunkDisposition::Capture);
+    assert_eq!(ready_rx.try_recv(), Err(mpsc::TryRecvError::Empty));
+
+    processor.process_raw_chunk(&[0.0, 0.01, 0.0], ChunkDisposition::Capture);
+    assert_eq!(ready_rx.try_recv(), Ok(()));
 }
 
 #[test]
@@ -84,7 +114,14 @@ fn shutdown_is_processed_without_audio_samples() {
     let (done_tx, done_rx) = mpsc::channel();
     let worker = thread::spawn(move || {
         run_consumer(
-            CaptureProcessor::new(48_000, None, None, None, Instant::now()),
+            CaptureProcessor::new(
+                48_000,
+                None,
+                None,
+                None,
+                Instant::now(),
+                ReadyOn::FirstBuffer,
+            ),
             consumer,
             cmd_rx,
             Arc::new(CaptureTransportState::default()),
@@ -249,6 +286,7 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
                 streamed_cb.lock().unwrap().extend_from_slice(frame)
             })),
             Instant::now(),
+            ReadyOn::FirstBuffer,
         );
         run_consumer(
             processor,
@@ -356,7 +394,14 @@ fn missing_callback_at_stop_marks_stream_for_rebuild_and_returns_samples() {
     let worker_transport = Arc::clone(&transport);
     let worker = thread::spawn(move || {
         run_consumer(
-            CaptureProcessor::new(16_000, None, None, None, Instant::now()),
+            CaptureProcessor::new(
+                16_000,
+                None,
+                None,
+                None,
+                Instant::now(),
+                ReadyOn::FirstBuffer,
+            ),
             consumer,
             cmd_rx,
             worker_transport,

@@ -159,6 +159,10 @@ objc2 = "0.6"
 objc2-foundation = "0.3"
 objc2-app-kit = "0.3"
 objc2-service-management = "0.3.2"
+# Reads an input's CoreAudio transport type to tell a Bluetooth microphone
+# apart. cpal already pulls both in at these versions.
+coreaudio-rs = { version = "0.13", default-features = false, features = ["audio_toolbox"] }
+objc2-core-audio = { version = "0.3.2", default-features = false, features = ["std", "AudioHardware"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }

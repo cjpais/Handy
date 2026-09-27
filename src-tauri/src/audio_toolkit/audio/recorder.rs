@@ -57,6 +57,35 @@ pub enum VadPolicy {
     Streaming,
 }
 
+/// What counts as the microphone being live, the point where the start cue plays.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ReadyOn {
+    /// The first captured buffer, silent or not: readiness means the host is
+    /// delivering samples, not that VAD has detected speech.
+    FirstBuffer,
+    /// The first buffer holding a nonzero sample. A Bluetooth headset that is
+    /// playing audio from another device (AirPods with an iPhone) still hands
+    /// this Mac buffers, but they are exact zeros.
+    FirstSound,
+}
+
+impl ReadyOn {
+    fn for_device(device: &Device) -> Self {
+        if device.name().is_ok_and(|name| is_bluetooth_input(&name)) {
+            ReadyOn::FirstSound
+        } else {
+            ReadyOn::FirstBuffer
+        }
+    }
+
+    fn is_met_by(self, samples: &[f32]) -> bool {
+        match self {
+            ReadyOn::FirstBuffer => true,
+            ReadyOn::FirstSound => samples.iter().any(|&sample| sample != 0.0),
+        }
+    }
+}
+
 /// A single VAD engine plus the two hangover-tail lengths its smoothing wrapper
 /// should use. The offline and streaming policies are never active
 /// concurrently, so one detector is reconfigured per session (see `Cmd::Start`)
@@ -318,6 +347,14 @@ impl AudioRecorder {
             match init_result {
                 Ok((stream, sample_rate, sample_consumer)) => {
                     let _ = init_tx.send(Ok(()));
+                    // After the handshake, so the device lookup never delays
+                    // `open()`; samples wait in the ring meanwhile.
+                    let ready_on = ReadyOn::for_device(&thread_device);
+                    if ready_on == ReadyOn::FirstSound {
+                        log::info!(
+                            "Bluetooth input: recording becomes ready at its first nonzero sample"
+                        );
+                    }
                     // Timestamp for the play()-returned -> first-samples gap the
                     // init handshake can't see (hardware dependent).
                     let stream_running_at = Instant::now();
@@ -327,6 +364,7 @@ impl AudioRecorder {
                         level_cb,
                         audio_cb,
                         stream_running_at,
+                        ready_on,
                     );
                     run_consumer(
                         processor,
@@ -376,7 +414,9 @@ impl AudioRecorder {
     /// Queue a recording start and return a one-shot receiver that resolves only
     /// after the first real microphone sample chunk has entered the capture path.
     /// `Stream::play()` returning is not sufficient: some Bluetooth and USB
-    /// devices take much longer to begin delivering callbacks.
+    /// devices take much longer to begin delivering callbacks. A Bluetooth
+    /// input resolves at its first nonzero sample instead, since it delivers
+    /// exact zeros while another device holds the headset.
     pub fn start(
         &self,
         vad_policy: VadPolicy,
@@ -628,6 +668,50 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
             && normalized.contains("coreaudio"))
 }
 
+/// True when CoreAudio reports the named input as a Bluetooth device. cpal
+/// exposes only the device name, which it reads through this same helper.
+#[cfg(target_os = "macos")]
+fn is_bluetooth_input(device_name: &str) -> bool {
+    use coreaudio::audio_unit::macos_helpers::get_device_id_from_name;
+    use objc2_core_audio::{
+        kAudioDevicePropertyTransportType, kAudioDeviceTransportTypeBluetooth,
+        kAudioDeviceTransportTypeBluetoothLE, kAudioObjectPropertyElementMain,
+        kAudioObjectPropertyScopeGlobal, AudioObjectGetPropertyData, AudioObjectPropertyAddress,
+    };
+    use std::ptr::NonNull;
+
+    let Some(device_id) = get_device_id_from_name(device_name, true) else {
+        return false;
+    };
+    let address = AudioObjectPropertyAddress {
+        mSelector: kAudioDevicePropertyTransportType,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain,
+    };
+    let mut transport_type: u32 = 0;
+    let mut size = std::mem::size_of::<u32>() as u32;
+    // SAFETY: `address`, `size` and `transport_type` outlive the call, and
+    // `size` is the exact byte length of `transport_type`.
+    let status = unsafe {
+        AudioObjectGetPropertyData(
+            device_id,
+            NonNull::from(&address),
+            0,
+            std::ptr::null(),
+            NonNull::from(&mut size),
+            NonNull::from(&mut transport_type).cast(),
+        )
+    };
+    status == 0
+        && (transport_type == kAudioDeviceTransportTypeBluetooth
+            || transport_type == kAudioDeviceTransportTypeBluetoothLE)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn is_bluetooth_input(_device_name: &str) -> bool {
+    false
+}
+
 /// Route one 16 kHz frame through VAD to recording and live outputs.
 /// Kept free-standing to permit disjoint borrows around resampler callbacks.
 fn handle_frame(
@@ -709,6 +793,7 @@ struct CaptureProcessor {
     frame_resampler: FrameResampler,
     max_drain_samples: usize,
     first_chunk_logged: bool,
+    ready_on: ReadyOn,
 
     // ---- recording-scoped: reset by `begin_recording` ------------------- //
     vad_policy: VadPolicy,
@@ -726,6 +811,7 @@ impl CaptureProcessor {
         level_cb: Option<LevelCallback>,
         audio_cb: Option<AudioFrameCallback>,
         stream_running_at: Instant,
+        ready_on: ReadyOn,
     ) -> Self {
         // Resample into frames sized for the active VAD backend (30 ms when
         // no detector is attached) so the detector never sees a partial frame.
@@ -762,6 +848,7 @@ impl CaptureProcessor {
             frame_resampler,
             max_drain_samples,
             first_chunk_logged: false,
+            ready_on,
             vad_policy: VadPolicy::Offline,
             processed_samples: Vec::new(),
             awaiting_first_captured_chunk: None,
@@ -845,10 +932,10 @@ impl CaptureProcessor {
                 started.elapsed()
             );
         }
-        if let Some(ready_tx) = self.capture_ready_tx.take() {
-            // Silence still counts: readiness means the host is delivering samples,
-            // not that VAD has detected speech.
-            let _ = ready_tx.send(());
+        if self.ready_on.is_met_by(raw) {
+            if let Some(ready_tx) = self.capture_ready_tx.take() {
+                let _ = ready_tx.send(());
+            }
         }
     }
 
