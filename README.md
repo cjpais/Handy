@@ -2,6 +2,21 @@
 
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
 
+<!-- BEGIN FORK-LOCAL NOTICE (Voize) — added by this fork; delete this block to
+     restore the upstream README verbatim. See docs/voize.md. -->
+> ## Fork notice — Voize
+>
+> This is a private fork of Handy being adapted into a **fully local English voice
+> conversation agent**, keeping dictation as a separate mode. The conversation
+> pipeline is **planned, not implemented**; the code below is upstream Handy.
+>
+> - Start here: [`docs/voize.md`](docs/voize.md) — what this fork is, status, and quick start
+> - Folder guides: [`docs/README.md`](docs/README.md) — every significant directory has a `README.md`
+> - Architecture reference (local only): [`context/references/codebase-v1.md`](context/references/codebase-v1.md)
+>
+> Everything below this block is upstream documentation and applies unchanged.
+<!-- END FORK-LOCAL NOTICE -->
+
 **A free, open source, and extensible speech-to-text application that works completely offline.**
 
 Handy is a cross-platform desktop application that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field. This happens on your own computer without sending any information to the cloud.
