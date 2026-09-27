@@ -19,6 +19,7 @@ use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::future::Future;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tauri::Manager;
@@ -117,6 +118,19 @@ where
 
 fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool {
     style == OverlayStyle::Live && is_streaming
+}
+
+/// Whether a recording started now can be transcribed. A loaded model always
+/// can; otherwise the load `start` kicks off needs the selected model's files,
+/// which `model_path` looks up only in that case.
+fn ensure_model_available(
+    model_loaded: bool,
+    model_path: impl FnOnce() -> anyhow::Result<PathBuf>,
+) -> anyhow::Result<()> {
+    if model_loaded {
+        return Ok(());
+    }
+    model_path().map(|_| ())
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -485,6 +499,19 @@ impl ShortcutAction for TranscribeAction {
             }
         });
         let kickoff_elapsed = kickoff_started.elapsed();
+
+        // Only open the microphone if something can transcribe the recording.
+        // With no model loaded and the selected model's files missing (nothing
+        // selected, not downloaded, or deleted), the load kicked off above
+        // fails and reports why, so a recording could only fail to transcribe.
+        if let Err(e) = ensure_model_available(tm.is_model_loaded(), || {
+            let selected_model = get_settings(app).selected_model;
+            app.state::<Arc<ModelManager>>()
+                .get_model_path(&selected_model)
+        }) {
+            warn!("Not starting recording: no model can transcribe it ({})", e);
+            return;
+        }
 
         let binding_id = binding_id.to_string();
         let tray_started = Instant::now();
@@ -953,11 +980,12 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
-        strip_think_block,
+        complete_unless_cancelled, ensure_model_available, is_blank_transcription,
+        should_use_streaming_overlay, strip_think_block,
     };
     use crate::settings::OverlayStyle;
     use std::future;
+    use std::path::PathBuf;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
     use std::thread;
@@ -1036,5 +1064,19 @@ mod tests {
         assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
         assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
         assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
+    }
+
+    /// Recording starts only when something can transcribe it: a model that
+    /// is already loaded, or the selected model's files on disk for the load
+    /// `start` kicks off. A missing model is refused, while a loaded model
+    /// keeps working even if its files were removed since it loaded.
+    #[test]
+    fn recording_requires_a_model_that_can_transcribe_it() {
+        let missing = || Err(anyhow::anyhow!("Complete model file not found: small"));
+        let on_disk = || Ok(PathBuf::from("/models/ggml-small.bin"));
+
+        assert!(ensure_model_available(false, missing).is_err());
+        assert!(ensure_model_available(false, on_disk).is_ok());
+        assert!(ensure_model_available(true, missing).is_ok());
     }
 }
