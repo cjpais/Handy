@@ -816,6 +816,46 @@ async getClamshellMicrophone() : Promise<Result<string, string>> {
 async isRecording() : Promise<boolean> {
     return await TAURI_INVOKE("is_recording");
 },
+/**
+ * Enable hands-free continuous capture, persist the setting, and start the loop.
+ */
+async startHandsFree() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_hands_free") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Disable hands-free continuous capture, persist the setting, and stop the loop.
+ */
+async stopHandsFree() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_hands_free") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Toggle pause on the hands-free loop without disabling it. Returns the new
+ * paused state (true = paused).
+ */
+async toggleHandsFreePause() : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("toggle_hands_free_pause") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async isHandsFreeRunning() : Promise<boolean> {
+    return await TAURI_INVOKE("is_hands_free_running");
+},
+async isHandsFreePaused() : Promise<boolean> {
+    return await TAURI_INVOKE("is_hands_free_paused");
+},
 async getMicrophoneChannels(deviceName: string) : Promise<Result<number, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_microphone_channels", { deviceName }) };
@@ -977,7 +1017,7 @@ hold_threshold_ms?: number; audio_feedback?: boolean; audio_feedback_volume?: nu
  * upgrading from before this key existed are blanked by the migration so they
  * see the current release's notes — see `apply_settings_migrations`.
  */
-whats_new_last_seen_version?: string; selected_model?: string; onboarding_completed?: boolean; always_on_microphone?: boolean; selected_microphone?: string | null; 
+whats_new_last_seen_version?: string; selected_model?: string; onboarding_completed?: boolean; always_on_microphone?: boolean; hands_free_capture?: boolean; wake_word?: string; wake_word_required_for_paste?: boolean; capture_all_to_history?: boolean; selected_microphone?: string | null; 
 /**
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
