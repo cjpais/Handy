@@ -915,6 +915,7 @@ pub fn run(cli_args: CliArgs) {
                 app_handle.manage(model_manager);
                 app_handle.manage(transcription_manager);
                 managers::transcription::init_transcribe_backend();
+                managers::transcription::report_compute_devices();
                 managers::transcription::apply_accelerator_settings(&app_handle);
 
                 let handle = app_handle.clone();
@@ -1023,11 +1024,14 @@ pub fn run(cli_args: CliArgs) {
             );
 
             // Pre-warm GPU/accelerator enumeration on a background thread. The first
-            // get_available_accelerators call enumerates ORT execution providers and
-            // transcribe-cpp compute devices, which can take a moment; without this
+            // device listing opens the GPU, which on macOS loads ggml's Metal library
+            // and compiles it when the system shader cache does not have it yet, so it
+            // stays off the startup path. get_available_accelerators then enumerates
+            // ORT execution providers and transcribe-cpp compute devices; without this
             // the cost is paid synchronously when the user first opens Advanced
             // settings, freezing the UI. Result is cached in a OnceLock.
             std::thread::spawn(|| {
+                crate::managers::transcription::report_compute_devices();
                 let _ = crate::managers::transcription::get_available_accelerators();
             });
 
