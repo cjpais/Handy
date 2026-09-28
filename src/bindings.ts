@@ -851,9 +851,9 @@ async unloadModelManually() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getHistoryEntries(cursor: number | null, limit: number | null) : Promise<Result<PaginatedHistory, string>> {
+async getHistoryEntries(cursor: number | null, limit: number | null, search: string | null) : Promise<Result<PaginatedHistory, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_history_entries", { cursor, limit }) };
+    return { status: "ok", data: await TAURI_INVOKE("get_history_entries", { cursor, limit, search }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
