@@ -194,3 +194,18 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }
+
+// Reset macOS Accessibility permissions for Handy using tccutil.
+// Clears stale code signature requirements left by prior installs.
+#[specta::specta]
+#[tauri::command]
+pub fn reset_accessibility_permission() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let _ = Command::new("tccutil")
+            .args(["reset", "Accessibility", "com.pais.handy"])
+            .output();
+    }
+    Ok(())
+}
