@@ -313,7 +313,7 @@ fn gated_filler_words_for_language(lang: &str) -> &'static [&'static str] {
     let base_lang = lang.split(&['-', '_'][..]).next().unwrap_or(lang);
 
     match base_lang {
-        "en" => &["um", "ah", "eh", "ha"],
+        "en" => &["um", "ah", "eh"],
         "de" => &["äh", "ähm"],
         "fr" => &["euh"],
         _ => &[],
