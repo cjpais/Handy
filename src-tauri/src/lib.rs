@@ -1059,7 +1059,6 @@ pub fn run(cli_args: CliArgs) {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
-                let _res = window.hide();
 
                 #[cfg(target_os = "macos")]
                 {
@@ -1067,7 +1066,8 @@ pub fn run(cli_args: CliArgs) {
                     let tray_visible =
                         settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
-                        // Tray is available: hide the dock icon, app lives in the tray
+                        // Demote before hiding the window so macOS removes the Dock item
+                        // while the app still has a visible window to transition from.
                         let res = window
                             .app_handle()
                             .set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -1077,6 +1077,8 @@ pub fn run(cli_args: CliArgs) {
                     }
                     // No tray: keep the dock icon visible so the user can reopen
                 }
+
+                let _res = window.hide();
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);
