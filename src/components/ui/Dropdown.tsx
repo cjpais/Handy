@@ -1,5 +1,27 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+
+// Gap between the trigger and the menu (matches the mt-1/mb-1 spacing).
+const MENU_GAP = 4;
+
+// The region the menu can be seen in: the viewport, narrowed by every
+// ancestor that clips its content (e.g. the scrollable settings pane).
+const getVisibleBounds = (element: HTMLElement) => {
+  let top = 0;
+  let bottom = window.innerHeight;
+  for (
+    let parent = element.parentElement;
+    parent;
+    parent = parent.parentElement
+  ) {
+    if (window.getComputedStyle(parent).overflowY !== "visible") {
+      const rect = parent.getBoundingClientRect();
+      top = Math.max(top, rect.top);
+      bottom = Math.min(bottom, rect.bottom);
+    }
+  }
+  return { top, bottom };
+};
 
 export interface DropdownOption {
   value: string;
@@ -31,7 +53,28 @@ export const Dropdown: React.FC<DropdownProps> = ({
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Flip the menu above the trigger when it would be clipped below, e.g. for
+  // dropdowns near the bottom of the settings pane. Runs before paint, so the
+  // menu never flashes in the wrong place.
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setOpenUpward(false);
+      return;
+    }
+    if (!dropdownRef.current || !menuRef.current) return;
+
+    const triggerRect = dropdownRef.current.getBoundingClientRect();
+    const menuHeight = menuRef.current.offsetHeight;
+    const { top, bottom } = getVisibleBounds(dropdownRef.current);
+    const spaceBelow = bottom - triggerRect.bottom - MENU_GAP;
+    const spaceAbove = triggerRect.top - top - MENU_GAP;
+
+    setOpenUpward(spaceBelow < menuHeight && spaceAbove > spaceBelow);
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -90,7 +133,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </button>
       {isOpen && !disabled && (
         <div
-          className={`absolute top-full mt-1 bg-background border border-mid-gray/80 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
+          ref={menuRef}
+          className={`absolute ${
+            openUpward ? "bottom-full mb-1" : "top-full mt-1"
+          } bg-background border border-mid-gray/80 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
             menuClassName ?? "left-0 right-0"
           }`}
         >
