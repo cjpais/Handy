@@ -771,8 +771,11 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
-    let settings = get_settings(&app_handle);
+/// Outputs `text` with the settings of the shortcut that recorded it
+/// (`binding_id`), falling back to the global settings for anything the
+/// shortcut does not set itself.
+pub fn paste(text: String, app_handle: AppHandle, binding_id: &str) -> Result<(), String> {
+    let settings = get_settings(&app_handle).for_binding(binding_id);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;

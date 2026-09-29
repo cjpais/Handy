@@ -185,7 +185,8 @@
           "restore": "無法還原原始快捷鍵",
           "set": "無法設定快捷鍵: {{error}}",
           "reset": "無法將快捷鍵重設為原始值"
-        }
+        },
+        "unset": "點擊設定"
       },
       "language": {
         "title": "語言",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "按住錄音，或輕按切換",
           "push_to_talk": "按住快捷鍵期間錄音",
           "toggle": "輕按快捷鍵開始錄音，再次輕按停止"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "開始轉錄。展開以設定此快捷鍵的錄音方式和文字插入方式。",
+        "add": "新增快捷鍵",
+        "remove": "移除快捷鍵",
+        "expand": "顯示快捷鍵設定",
+        "collapse": "隱藏快捷鍵設定",
+        "summary": {
+          "submit": "傳送：{{key}}",
+          "noSubmit": "不傳送",
+          "noPaste": "不貼上",
+          "postProcess": "已後處理"
+        },
+        "postProcess": {
+          "title": "後處理",
+          "description": "對此快捷鍵的文字套用 AI 後處理。"
         }
       }
     },

@@ -205,7 +205,8 @@
           "restore": "无法恢复原始快捷键",
           "set": "无法设置快捷键: {{error}}",
           "reset": "无法将快捷键重置为原始值"
-        }
+        },
+        "unset": "点击设置"
       },
       "language": {
         "title": "语言",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "按住录音，或轻按切换",
           "push_to_talk": "按住快捷键期间录音",
           "toggle": "轻按快捷键开始录音，再次轻按停止"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "开始转录。展开以设置此快捷键的录音方式和文本插入方式。",
+        "add": "添加快捷键",
+        "remove": "删除快捷键",
+        "expand": "显示快捷键设置",
+        "collapse": "隐藏快捷键设置",
+        "summary": {
+          "submit": "发送：{{key}}",
+          "noSubmit": "不发送",
+          "noPaste": "不粘贴",
+          "postProcess": "已后处理"
+        },
+        "postProcess": {
+          "title": "后处理",
+          "description": "对此快捷键的文本应用 AI 后处理。"
         }
       }
     },

@@ -2,18 +2,20 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import { useShortcutSetting } from "../../hooks/useShortcutSetting";
 import type { ClipboardHandling } from "@/bindings";
 
 interface ClipboardHandlingProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  /** Edit this transcribe shortcut's own setting instead of the global one. */
+  bindingId?: string;
 }
 
 export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
-  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+  React.memo(({ descriptionMode = "tooltip", grouped = false, bindingId }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const handling = useShortcutSetting(bindingId, "clipboard_handling");
 
     const clipboardHandlingOptions = [
       {
@@ -26,7 +28,7 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
       },
     ];
 
-    const selectedHandling = (getSetting("clipboard_handling") ||
+    const selectedHandling = (handling.value ||
       "dont_modify") as ClipboardHandling;
 
     return (
@@ -39,10 +41,8 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
         <Dropdown
           options={clipboardHandlingOptions}
           selectedValue={selectedHandling}
-          onSelect={(value) =>
-            updateSetting("clipboard_handling", value as ClipboardHandling)
-          }
-          disabled={isUpdating("clipboard_handling")}
+          onSelect={(value) => handling.update(value as ClipboardHandling)}
+          disabled={handling.isUpdating}
         />
       </SettingContainer>
     );

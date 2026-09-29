@@ -4,22 +4,25 @@ import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
 import { useSettings } from "../../hooks/useSettings";
+import { useShortcutSetting } from "../../hooks/useShortcutSetting";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
 
 interface PasteMethodProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  /** Edit this transcribe shortcut's own method instead of the global one. */
+  bindingId?: string;
 }
 
 export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "tooltip", grouped = false, bindingId }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
+    const pasteMethod = useShortcutSetting(bindingId, "paste_method");
     const osType = useOsType();
 
-    const selectedMethod = (getSetting("paste_method") ||
-      "ctrl_v") as PasteMethod;
+    const selectedMethod = (pasteMethod.value || "ctrl_v") as PasteMethod;
 
     const getPasteMethodOptions = (osType: string) => {
       const mod = osType === "macos" ? "Cmd" : "Ctrl";
@@ -93,10 +96,8 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
           <Dropdown
             options={pasteMethodOptions}
             selectedValue={selectedMethod}
-            onSelect={(value) =>
-              updateSetting("paste_method", value as PasteMethod)
-            }
-            disabled={isUpdating("paste_method")}
+            onSelect={(value) => pasteMethod.update(value as PasteMethod)}
+            disabled={pasteMethod.isUpdating}
           />
           {selectedMethod === "external_script" && (
             <Input

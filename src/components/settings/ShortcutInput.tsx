@@ -8,6 +8,9 @@ interface ShortcutInputProps {
   grouped?: boolean;
   shortcutId: string;
   disabled?: boolean;
+  title?: string;
+  description?: string;
+  actions?: React.ReactNode;
 }
 
 /**

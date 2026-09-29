@@ -185,7 +185,8 @@
           "restore": "Kunne ikke gendanne den oprindelige genvej",
           "set": "Kunne ikke indstille genvej: {{error}}",
           "reset": "Kunne ikke nulstille genvej til oprindelig indstilling"
-        }
+        },
+        "unset": "Klik for at angive"
       },
       "language": {
         "title": "Sprog",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "Hold nede for at optage, eller tryk kort for at slå til/fra",
           "push_to_talk": "Optager, mens du holder genvejen nede",
           "toggle": "Tryk på genvejen for at starte optagelsen, tryk igen for at stoppe"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Starter en transskription. Udvid for at angive, hvordan denne genvej optager og indsætter tekst.",
+        "add": "Tilføj genvej",
+        "remove": "Fjern genvej",
+        "expand": "Vis genvejsindstillinger",
+        "collapse": "Skjul genvejsindstillinger",
+        "summary": {
+          "submit": "Send: {{key}}",
+          "noSubmit": "Send ikke",
+          "noPaste": "Indsæt ikke",
+          "postProcess": "Efterbehandlet"
+        },
+        "postProcess": {
+          "title": "Efterbehandling",
+          "description": "Anvend AI-efterbehandling på tekst fra denne genvej."
         }
       }
     },

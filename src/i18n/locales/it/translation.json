@@ -205,7 +205,8 @@
           "restore": "Errore nel ripristino della scorciatoia originale",
           "set": "Errore nella configurazione della scorciatoia: {{error}}",
           "reset": "Errore nella reinizializzazione della scorciatoia al valore originale"
-        }
+        },
+        "unset": "Fai clic per impostare"
       },
       "language": {
         "title": "Lingua",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Tieni premuto per registrare o tocca per alternare",
           "push_to_talk": "Registra finché tieni premuta la scorciatoia",
           "toggle": "Tocca la scorciatoia per avviare la registrazione, tocca di nuovo per fermarla"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Avvia una trascrizione. Espandi per scegliere come questa scorciatoia registra e inserisce il testo.",
+        "add": "Aggiungi scorciatoia",
+        "remove": "Rimuovi scorciatoia",
+        "expand": "Mostra impostazioni scorciatoia",
+        "collapse": "Nascondi impostazioni scorciatoia",
+        "summary": {
+          "submit": "Invio: {{key}}",
+          "noSubmit": "Nessun invio",
+          "noPaste": "Nessun incolla",
+          "postProcess": "Post-elaborato"
+        },
+        "postProcess": {
+          "title": "Post-elaborazione",
+          "description": "Applica la post-elaborazione IA al testo di questa scorciatoia."
         }
       }
     },

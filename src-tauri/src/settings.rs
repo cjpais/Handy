@@ -84,7 +84,38 @@ pub struct ShortcutBinding {
     pub name: String,
     pub description: String,
     pub default_binding: String,
+    /// Empty for a user-added transcribe shortcut that has no key yet; such a
+    /// binding is kept but never registered.
     pub current_binding: String,
+    /// Per-shortcut settings for transcribe bindings. Stores written before
+    /// this field existed load it as all-`None`, which keeps the global
+    /// settings in effect.
+    #[serde(default)]
+    pub overrides: ShortcutOverrides,
+}
+
+/// Settings a transcribe shortcut can carry for itself, so one key can send
+/// with Enter while another only pastes. Each `None` falls back to the global
+/// setting of the same name.
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, Type)]
+#[serde(default)]
+pub struct ShortcutOverrides {
+    pub activation: Option<ShortcutActivation>,
+    pub post_process: Option<bool>,
+    pub paste_method: Option<PasteMethod>,
+    pub clipboard_handling: Option<ClipboardHandling>,
+    pub auto_submit: Option<bool>,
+    pub auto_submit_key: Option<AutoSubmitKey>,
+}
+
+/// Id prefix of user-added transcribe shortcuts (`transcribe_custom_1`, ...).
+pub const CUSTOM_TRANSCRIBE_PREFIX: &str = "transcribe_custom_";
+
+/// Whether a binding id starts a transcription (built-in or user-added).
+pub fn is_transcribe_binding(id: &str) -> bool {
+    id == "transcribe"
+        || id == "transcribe_with_post_process"
+        || id.starts_with(CUSTOM_TRANSCRIBE_PREFIX)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -874,6 +905,7 @@ pub fn get_default_settings() -> AppSettings {
             description: "Converts your speech into text.".to_string(),
             default_binding: default_shortcut.to_string(),
             current_binding: default_shortcut.to_string(),
+            overrides: ShortcutOverrides::default(),
         },
     );
     #[cfg(target_os = "windows")]
@@ -894,6 +926,7 @@ pub fn get_default_settings() -> AppSettings {
                 .to_string(),
             default_binding: default_post_process_shortcut.to_string(),
             current_binding: default_post_process_shortcut.to_string(),
+            overrides: ShortcutOverrides::default(),
         },
     );
     bindings.insert(
@@ -904,6 +937,7 @@ pub fn get_default_settings() -> AppSettings {
             description: "Cancels the current recording.".to_string(),
             default_binding: "escape".to_string(),
             current_binding: "escape".to_string(),
+            overrides: ShortcutOverrides::default(),
         },
     );
 
@@ -980,6 +1014,55 @@ impl Default for AppSettings {
 }
 
 impl AppSettings {
+    /// The settings a shortcut runs with: its overrides applied over the
+    /// global values. Unknown ids get the global settings unchanged.
+    pub fn for_binding(&self, binding_id: &str) -> AppSettings {
+        let mut settings = self.clone();
+        let Some(o) = self.bindings.get(binding_id).map(|b| &b.overrides) else {
+            return settings;
+        };
+        if let Some(activation) = o.activation {
+            settings.shortcut_activation = activation;
+        }
+        if let Some(paste_method) = o.paste_method {
+            settings.paste_method = paste_method;
+        }
+        if let Some(clipboard_handling) = o.clipboard_handling {
+            settings.clipboard_handling = clipboard_handling;
+        }
+        if let Some(auto_submit) = o.auto_submit {
+            settings.auto_submit = auto_submit;
+        }
+        if let Some(auto_submit_key) = o.auto_submit_key {
+            settings.auto_submit_key = auto_submit_key;
+        }
+        settings
+    }
+
+    /// Whether a transcribe shortcut post-processes its output. The built-in
+    /// post-processing shortcut does by default, every other one does not, and
+    /// a per-shortcut override applies only while post-processing is enabled.
+    pub fn binding_post_processes(&self, binding_id: &str) -> bool {
+        let default = binding_id == "transcribe_with_post_process";
+        if !self.post_process_enabled {
+            return default;
+        }
+        self.bindings
+            .get(binding_id)
+            .and_then(|b| b.overrides.post_process)
+            .unwrap_or(default)
+    }
+
+    /// Whether a binding belongs in the global shortcut registry right now.
+    /// Cancel is registered only while recording, the post-processing shortcut
+    /// only while post-processing is enabled, and a shortcut without a key
+    /// never.
+    pub fn should_register_binding(&self, id: &str, binding: &ShortcutBinding) -> bool {
+        id != "cancel"
+            && !(id == "transcribe_with_post_process" && !self.post_process_enabled)
+            && !binding.current_binding.is_empty()
+    }
+
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
         self.post_process_providers
             .iter()
@@ -1722,6 +1805,124 @@ mod tests {
         assert!(!debug_output.contains("sk-proj-secret-key-12345"));
         assert!(!debug_output.contains("sk-ant-secret-key-67890"));
         assert!(debug_output.contains("[REDACTED]"));
+    }
+
+    fn custom_binding(id: &str, key: &str, overrides: ShortcutOverrides) -> ShortcutBinding {
+        ShortcutBinding {
+            id: id.to_string(),
+            name: "Transcribe".to_string(),
+            description: String::new(),
+            default_binding: String::new(),
+            current_binding: key.to_string(),
+            overrides,
+        }
+    }
+
+    #[test]
+    fn binding_without_overrides_uses_global_settings() {
+        let mut settings = get_default_settings();
+        settings.paste_method = PasteMethod::Direct;
+        settings.auto_submit = true;
+
+        let effective = settings.for_binding("transcribe");
+        assert_eq!(effective.paste_method, PasteMethod::Direct);
+        assert!(effective.auto_submit);
+        assert_eq!(effective.shortcut_activation, settings.shortcut_activation);
+    }
+
+    #[test]
+    fn binding_overrides_replace_only_what_they_set() {
+        let mut settings = get_default_settings();
+        settings.clipboard_handling = ClipboardHandling::CopyToClipboard;
+        let id = format!("{}1", CUSTOM_TRANSCRIBE_PREFIX);
+        settings.bindings.insert(
+            id.clone(),
+            custom_binding(
+                &id,
+                "f13",
+                ShortcutOverrides {
+                    activation: Some(ShortcutActivation::Toggle),
+                    auto_submit: Some(true),
+                    auto_submit_key: Some(AutoSubmitKey::CmdEnter),
+                    ..Default::default()
+                },
+            ),
+        );
+
+        let effective = settings.for_binding(&id);
+        assert_eq!(effective.shortcut_activation, ShortcutActivation::Toggle);
+        assert!(effective.auto_submit);
+        assert_eq!(effective.auto_submit_key, AutoSubmitKey::CmdEnter);
+        // Not overridden: the global value still applies.
+        assert_eq!(
+            effective.clipboard_handling,
+            ClipboardHandling::CopyToClipboard
+        );
+        // Other shortcuts are unaffected.
+        assert!(!settings.for_binding("transcribe").auto_submit);
+    }
+
+    #[test]
+    fn post_processing_follows_the_shortcut_only_while_enabled() {
+        let mut settings = get_default_settings();
+        let id = format!("{}1", CUSTOM_TRANSCRIBE_PREFIX);
+        settings.bindings.insert(
+            id.clone(),
+            custom_binding(
+                &id,
+                "f13",
+                ShortcutOverrides {
+                    post_process: Some(true),
+                    ..Default::default()
+                },
+            ),
+        );
+
+        settings.post_process_enabled = false;
+        assert!(!settings.binding_post_processes(&id));
+        assert!(settings.binding_post_processes("transcribe_with_post_process"));
+
+        settings.post_process_enabled = true;
+        assert!(settings.binding_post_processes(&id));
+        assert!(!settings.binding_post_processes("transcribe"));
+        assert!(settings.binding_post_processes("transcribe_with_post_process"));
+    }
+
+    #[test]
+    fn shortcuts_without_a_key_are_not_registered() {
+        let mut settings = get_default_settings();
+        settings.post_process_enabled = false;
+        let unset = custom_binding("transcribe_custom_1", "", ShortcutOverrides::default());
+        let set = custom_binding("transcribe_custom_2", "f13", ShortcutOverrides::default());
+
+        assert!(!settings.should_register_binding(&unset.id, &unset));
+        assert!(settings.should_register_binding(&set.id, &set));
+        assert!(!settings.should_register_binding("cancel", &settings.bindings["cancel"]));
+        assert!(!settings.should_register_binding(
+            "transcribe_with_post_process",
+            &settings.bindings["transcribe_with_post_process"]
+        ));
+    }
+
+    #[test]
+    fn custom_binding_ids_are_transcribe_bindings() {
+        assert!(is_transcribe_binding("transcribe"));
+        assert!(is_transcribe_binding("transcribe_with_post_process"));
+        assert!(is_transcribe_binding("transcribe_custom_3"));
+        assert!(!is_transcribe_binding("cancel"));
+    }
+
+    #[test]
+    fn stored_binding_without_overrides_loads() {
+        let stored = serde_json::json!({
+            "id": "transcribe",
+            "name": "Transcribe",
+            "description": "",
+            "default_binding": "f13",
+            "current_binding": "f13"
+        });
+        let binding: ShortcutBinding = serde_json::from_value(stored).unwrap();
+        assert_eq!(binding.overrides, ShortcutOverrides::default());
     }
 
     #[test]

@@ -205,7 +205,8 @@
           "restore": "Nie udało się przywrócić oryginalnego skrótu",
           "set": "Nie udało się ustawić skrótu: {{error}}",
           "reset": "Nie udało się zresetować skrótu do wartości domyślnej"
-        }
+        },
+        "unset": "Kliknij, aby ustawić"
       },
       "language": {
         "title": "Język",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Przytrzymaj, aby nagrywać, lub dotknij, aby przełączyć",
           "push_to_talk": "Nagrywa, dopóki trzymasz skrót",
           "toggle": "Dotknij skrótu, aby rozpocząć nagrywanie, dotknij ponownie, aby zatrzymać"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Rozpoczyna transkrypcję. Rozwiń, aby ustawić, jak ten skrót nagrywa i wstawia tekst.",
+        "add": "Dodaj skrót",
+        "remove": "Usuń skrót",
+        "expand": "Pokaż ustawienia skrótu",
+        "collapse": "Ukryj ustawienia skrótu",
+        "summary": {
+          "submit": "Wyślij: {{key}}",
+          "noSubmit": "Bez wysyłania",
+          "noPaste": "Bez wklejania",
+          "postProcess": "Przetworzone"
+        },
+        "postProcess": {
+          "title": "Przetwarzanie końcowe",
+          "description": "Zastosuj przetwarzanie końcowe AI do tekstu z tego skrótu."
         }
       }
     },

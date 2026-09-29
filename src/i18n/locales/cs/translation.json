@@ -205,7 +205,8 @@
           "restore": "Nepodařilo se obnovit původní zkratku",
           "set": "Nepodařilo se nastavit zkratku: {{error}}",
           "reset": "Nepodařilo se vrátit zkratku na původní hodnotu"
-        }
+        },
+        "unset": "Klikněte pro nastavení"
       },
       "language": {
         "title": "Jazyk",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Podržte pro nahrávání nebo klepněte pro přepnutí",
           "push_to_talk": "Nahrává, dokud držíte zkratku",
           "toggle": "Klepněte na zkratku pro zahájení nahrávání, klepněte znovu pro zastavení"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Spustí přepis. Rozbalte pro nastavení, jak tato zkratka nahrává a vkládá text.",
+        "add": "Přidat zkratku",
+        "remove": "Odebrat zkratku",
+        "expand": "Zobrazit nastavení zkratky",
+        "collapse": "Skrýt nastavení zkratky",
+        "summary": {
+          "submit": "Odeslat: {{key}}",
+          "noSubmit": "Bez odeslání",
+          "noPaste": "Bez vložení",
+          "postProcess": "Následně zpracováno"
+        },
+        "postProcess": {
+          "title": "Následné zpracování",
+          "description": "Použít následné zpracování AI na text z této zkratky."
         }
       }
     },

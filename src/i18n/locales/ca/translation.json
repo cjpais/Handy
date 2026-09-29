@@ -185,7 +185,8 @@
           "restore": "No s'ha pogut restaurar la drecera original",
           "set": "No s'ha pogut definir la drecera: {{error}}",
           "reset": "No s'ha pogut restablir la drecera al valor original"
-        }
+        },
+        "unset": "Feu clic per definir"
       },
       "language": {
         "title": "Llengua",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "Manteniu-la premuda per enregistrar o feu una pulsació breu per iniciar o aturar l'enregistrament",
           "push_to_talk": "Enregistreu mentre manteniu premuda la drecera",
           "toggle": "Premeu la drecera per iniciar l'enregistrament i torneu-la a prémer per aturar-lo"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Inicia una transcripció. Desplegueu per definir com aquesta drecera enregistra i insereix el text.",
+        "add": "Afegeix una drecera",
+        "remove": "Elimina la drecera",
+        "expand": "Mostra la configuració de la drecera",
+        "collapse": "Amaga la configuració de la drecera",
+        "summary": {
+          "submit": "Envia: {{key}}",
+          "noSubmit": "Sense enviament",
+          "noPaste": "Sense enganxar",
+          "postProcess": "Postprocessat"
+        },
+        "postProcess": {
+          "title": "Postprocessament",
+          "description": "Aplica el postprocessament amb IA al text d'aquesta drecera."
         }
       }
     },

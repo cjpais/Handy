@@ -2,26 +2,28 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import { useShortcutSetting } from "../../hooks/useShortcutSetting";
 import { useOsType } from "../../hooks/useOsType";
 import type { AutoSubmitKey } from "@/bindings";
 
 interface AutoSubmitProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  /** Edit this transcribe shortcut's own setting instead of the global one. */
+  bindingId?: string;
 }
 
 type AutoSubmitOptionValue = AutoSubmitKey | "off";
 
 export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "tooltip", grouped = false, bindingId }) => {
     const { t } = useTranslation();
     const osType = useOsType();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const autoSubmit = useShortcutSetting(bindingId, "auto_submit");
+    const autoSubmitKey = useShortcutSetting(bindingId, "auto_submit_key");
 
-    const enabled = getSetting("auto_submit") ?? false;
-    const selectedKey = (getSetting("auto_submit_key") ||
-      "enter") as AutoSubmitKey;
+    const enabled = autoSubmit.value ?? false;
+    const selectedKey = (autoSubmitKey.value || "enter") as AutoSubmitKey;
     const selectedValue: AutoSubmitOptionValue = enabled ? selectedKey : "off";
     const submitWithMetaLabel =
       osType === "macos"
@@ -51,13 +53,13 @@ export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
       const selected = value as AutoSubmitOptionValue;
 
       if (selected === "off") {
-        await updateSetting("auto_submit", false);
+        await autoSubmit.update(false);
         return;
       }
 
-      await updateSetting("auto_submit_key", selected as AutoSubmitKey);
+      await autoSubmitKey.update(selected as AutoSubmitKey);
       if (!enabled) {
-        await updateSetting("auto_submit", true);
+        await autoSubmit.update(true);
       }
     };
 
@@ -72,7 +74,7 @@ export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
           options={autoSubmitOptions}
           selectedValue={selectedValue}
           onSelect={handleAutoSubmitSelect}
-          disabled={isUpdating("auto_submit") || isUpdating("auto_submit_key")}
+          disabled={autoSubmit.isUpdating || autoSubmitKey.isUpdating}
         />
       </SettingContainer>
     );

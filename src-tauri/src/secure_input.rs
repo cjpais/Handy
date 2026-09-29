@@ -477,10 +477,12 @@ mod imp {
         let mut wanted: Vec<(String, ShortcutBinding, bool)> = Vec::new();
         if eligible {
             for (id, binding) in &settings.bindings {
-                if id == "cancel" && !state.cancel_requested.load(Ordering::SeqCst) {
-                    continue;
-                }
-                if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+                let wanted_now = if id == "cancel" {
+                    state.cancel_requested.load(Ordering::SeqCst)
+                } else {
+                    settings.should_register_binding(id, binding)
+                };
+                if !wanted_now {
                     continue;
                 }
 

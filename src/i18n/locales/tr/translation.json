@@ -205,7 +205,8 @@
           "restore": "Orijinal kısayol geri yüklenemedi",
           "set": "Kısayol ayarlanamadı: {{error}}",
           "reset": "Kısayol orijinal değerine sıfırlanamadı"
-        }
+        },
+        "unset": "Ayarlamak için tıklayın"
       },
       "language": {
         "title": "Dil",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Kaydetmek için basılı tutun veya açıp kapatmak için dokunun",
           "push_to_talk": "Kısayolu basılı tuttuğunuz sürece kaydeder",
           "toggle": "Kaydı başlatmak için kısayola dokunun, durdurmak için tekrar dokunun"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Bir transkripsiyon başlatır. Bu kısayolun nasıl kayıt yapıp metin eklediğini ayarlamak için genişletin.",
+        "add": "Kısayol ekle",
+        "remove": "Kısayolu kaldır",
+        "expand": "Kısayol ayarlarını göster",
+        "collapse": "Kısayol ayarlarını gizle",
+        "summary": {
+          "submit": "Gönder: {{key}}",
+          "noSubmit": "Gönderme yok",
+          "noPaste": "Yapıştırma yok",
+          "postProcess": "Son işlemden geçti"
+        },
+        "postProcess": {
+          "title": "Son İşleme",
+          "description": "Bu kısayolun metnine yapay zeka son işlemesi uygula."
         }
       }
     },

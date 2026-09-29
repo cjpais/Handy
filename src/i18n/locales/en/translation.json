@@ -185,7 +185,8 @@
           "restore": "Failed to restore original shortcut",
           "set": "Failed to set shortcut: {{error}}",
           "reset": "Failed to reset shortcut to original value"
-        }
+        },
+        "unset": "Click to set"
       },
       "language": {
         "title": "Language",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "Hold to record or tap to toggle",
           "push_to_talk": "Records while you hold the shortcut",
           "toggle": "Tap the shortcut to start recording, tap again to stop"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Starts a transcription. Expand to set how this shortcut records and inserts text.",
+        "add": "Add shortcut",
+        "remove": "Remove shortcut",
+        "expand": "Show shortcut settings",
+        "collapse": "Hide shortcut settings",
+        "summary": {
+          "submit": "Submit: {{key}}",
+          "noSubmit": "No submit",
+          "noPaste": "No paste",
+          "postProcess": "Post-processed"
+        },
+        "postProcess": {
+          "title": "Post-Process",
+          "description": "Apply AI post-processing to text from this shortcut."
         }
       }
     },

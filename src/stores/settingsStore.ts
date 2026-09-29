@@ -7,6 +7,7 @@ import type {
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
   ShortcutActivation,
+  ShortcutOverrides,
   VadBackend,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -38,6 +39,12 @@ interface SettingsStore {
   refreshOutputDevices: () => Promise<void>;
   updateBinding: (id: string, binding: string) => Promise<void>;
   resetBinding: (id: string) => Promise<void>;
+  updateBindingOverrides: (
+    id: string,
+    patch: Partial<ShortcutOverrides>,
+  ) => Promise<void>;
+  addTranscribeBinding: () => Promise<string | null>;
+  removeTranscribeBinding: (id: string) => Promise<void>;
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
   isUpdatingKey: (key: string) => boolean;
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
@@ -392,7 +399,7 @@ export const useSettingsStore = create<SettingsStore>()(
         console.error(`Failed to update binding ${id}:`, error);
 
         // Rollback on error
-        if (originalBinding && get().settings) {
+        if (originalBinding !== undefined && get().settings) {
           set((state) => ({
             settings: state.settings
               ? {
@@ -428,6 +435,89 @@ export const useSettingsStore = create<SettingsStore>()(
         await refreshSettings();
       } catch (error) {
         console.error(`Failed to reset binding ${id}:`, error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    // Change some of a transcribe shortcut's own settings
+    updateBindingOverrides: async (id, patch) => {
+      const { settings, setUpdating } = get();
+      const binding = settings?.bindings?.[id];
+      if (!binding) return;
+      const updateKey = `binding_overrides_${id}`;
+      const previous = binding.overrides;
+      const next: ShortcutOverrides = {
+        activation: null,
+        post_process: null,
+        paste_method: null,
+        clipboard_handling: null,
+        auto_submit: null,
+        auto_submit_key: null,
+        ...previous,
+        ...patch,
+      };
+
+      const setOverrides = (overrides: ShortcutOverrides | undefined) =>
+        set((state) => {
+          const current = state.settings?.bindings?.[id];
+          if (!state.settings || !current) return {};
+          return {
+            settings: {
+              ...state.settings,
+              bindings: {
+                ...state.settings.bindings,
+                [id]: { ...current, overrides },
+              },
+            },
+          };
+        });
+
+      setUpdating(updateKey, true);
+      setOverrides(next);
+      try {
+        const result = await commands.changeBindingOverrides(id, next);
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+      } catch (error) {
+        console.error(`Failed to update shortcut settings ${id}:`, error);
+        setOverrides(previous);
+        toast.error(String(error));
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    // Add a transcribe shortcut; resolves to its id
+    addTranscribeBinding: async () => {
+      try {
+        const result = await commands.addTranscribeBinding();
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+        await get().refreshSettings();
+        return result.data.id;
+      } catch (error) {
+        console.error("Failed to add shortcut:", error);
+        toast.error(String(error));
+        return null;
+      }
+    },
+
+    removeTranscribeBinding: async (id) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `binding_${id}`;
+      setUpdating(updateKey, true);
+      try {
+        const result = await commands.removeTranscribeBinding(id);
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error(`Failed to remove shortcut ${id}:`, error);
+        toast.error(String(error));
       } finally {
         setUpdating(updateKey, false);
       }

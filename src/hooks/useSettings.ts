@@ -1,6 +1,10 @@
 import { useEffect } from "react";
 import { useSettingsStore } from "../stores/settingsStore";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import type {
+  AppSettings as Settings,
+  AudioDevice,
+  ShortcutOverrides,
+} from "@/bindings";
 
 interface UseSettingsReturn {
   // State
@@ -26,6 +30,12 @@ interface UseSettingsReturn {
   // Binding-specific actions
   updateBinding: (id: string, binding: string) => Promise<void>;
   resetBinding: (id: string) => Promise<void>;
+  updateBindingOverrides: (
+    id: string,
+    patch: Partial<ShortcutOverrides>,
+  ) => Promise<void>;
+  addTranscribeBinding: () => Promise<string | null>;
+  removeTranscribeBinding: (id: string) => Promise<void>;
 
   // Convenience getters
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
@@ -70,6 +80,9 @@ export const useSettings = (): UseSettingsReturn => {
     refreshOutputDevices: store.refreshOutputDevices,
     updateBinding: store.updateBinding,
     resetBinding: store.resetBinding,
+    updateBindingOverrides: store.updateBindingOverrides,
+    addTranscribeBinding: store.addTranscribeBinding,
+    removeTranscribeBinding: store.removeTranscribeBinding,
     getSetting: store.getSetting,
     setPostProcessProvider: store.setPostProcessProvider,
     updatePostProcessBaseUrl: store.updatePostProcessBaseUrl,

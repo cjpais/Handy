@@ -205,7 +205,8 @@
           "restore": "Error al restaurar el atajo original",
           "set": "Error al configurar el atajo: {{error}}",
           "reset": "Error al restablecer el atajo al valor original"
-        }
+        },
+        "unset": "Haz clic para asignar"
       },
       "language": {
         "title": "Idioma",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Mantén pulsado para grabar o toca para alternar",
           "push_to_talk": "Graba mientras mantienes pulsado el atajo",
           "toggle": "Toca el atajo para empezar a grabar, tócalo de nuevo para detener"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Inicia una transcripción. Despliega para configurar cómo este atajo graba e inserta el texto.",
+        "add": "Añadir atajo",
+        "remove": "Eliminar atajo",
+        "expand": "Mostrar ajustes del atajo",
+        "collapse": "Ocultar ajustes del atajo",
+        "summary": {
+          "submit": "Enviar: {{key}}",
+          "noSubmit": "Sin envío",
+          "noPaste": "Sin pegar",
+          "postProcess": "Posprocesado"
+        },
+        "postProcess": {
+          "title": "Posprocesamiento",
+          "description": "Aplica el posprocesamiento con IA al texto de este atajo."
         }
       }
     },

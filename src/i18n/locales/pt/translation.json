@@ -185,7 +185,8 @@
           "restore": "Falha ao restaurar atalho original",
           "set": "Falha ao definir atalho: {{error}}",
           "reset": "Falha ao redefinir atalho para o valor original"
-        }
+        },
+        "unset": "Clique para definir"
       },
       "language": {
         "title": "Idioma",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "Segure para gravar ou toque para alternar",
           "push_to_talk": "Grava enquanto você mantém o atalho pressionado",
           "toggle": "Toque no atalho para começar a gravar, toque novamente para parar"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Inicia uma transcrição. Expanda para definir como este atalho grava e insere o texto.",
+        "add": "Adicionar atalho",
+        "remove": "Remover atalho",
+        "expand": "Mostrar configurações do atalho",
+        "collapse": "Ocultar configurações do atalho",
+        "summary": {
+          "submit": "Enviar: {{key}}",
+          "noSubmit": "Sem envio",
+          "noPaste": "Sem colar",
+          "postProcess": "Pós-processado"
+        },
+        "postProcess": {
+          "title": "Pós-processamento",
+          "description": "Aplicar pós-processamento com IA ao texto deste atalho."
         }
       }
     },

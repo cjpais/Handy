@@ -21,6 +21,40 @@ async resetBinding(id: string) : Promise<Result<BindingResponse, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Add a transcribe shortcut with no key yet. It starts from the global
+ * settings made explicit, so later changes to either side stay independent.
+ */
+async addTranscribeBinding() : Promise<Result<ShortcutBinding, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("add_transcribe_binding") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Remove a user-added transcribe shortcut. Built-in bindings cannot be removed.
+ */
+async removeTranscribeBinding(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("remove_transcribe_binding", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Replace a transcribe shortcut's per-shortcut settings.
+ */
+async changeBindingOverrides(id: string, overrides: ShortcutOverrides) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_binding_overrides", { id, overrides }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeShortcutActivationSetting(activation: ShortcutActivation) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_shortcut_activation_setting", { activation }) };
@@ -1129,7 +1163,24 @@ export type ShortcutActivation =
  * (`hold_threshold_ms`).
  */
 "hold_or_toggle"
-export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
+export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; 
+/**
+ * Empty for a user-added transcribe shortcut that has no key yet; such a
+ * binding is kept but never registered.
+ */
+current_binding: string; 
+/**
+ * Per-shortcut settings for transcribe bindings. Stores written before
+ * this field existed load it as all-`None`, which keeps the global
+ * settings in effect.
+ */
+overrides?: ShortcutOverrides }
+/**
+ * Settings a transcribe shortcut can carry for itself, so one key can send
+ * with Enter while another only pastes. Each `None` falls back to the global
+ * setting of the same name.
+ */
+export type ShortcutOverrides = { activation: ShortcutActivation | null; post_process: boolean | null; paste_method: PasteMethod | null; clipboard_handling: ClipboardHandling | null; auto_submit: boolean | null; auto_submit_key: AutoSubmitKey | null }
 export type SoundTheme = "marimba" | "pop" | "custom"
 /**
  * Phase of the streaming overlay card, emitted to drive its UI state.

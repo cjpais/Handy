@@ -185,7 +185,8 @@
           "restore": "Gagal memulihkan pintasan asli",
           "set": "Gagal mengatur pintasan: {{error}}",
           "reset": "Gagal mengembalikan pintasan ke nilai awal"
-        }
+        },
+        "unset": "Klik untuk mengatur"
       },
       "language": {
         "title": "Bahasa",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "Tahan untuk merekam atau tekan untuk mulai/berhenti",
           "push_to_talk": "Merekam selama Anda menahan pintasan",
           "toggle": "Ketuk pintasan untuk mulai merekam, lalu ketuk lagi untuk berhenti"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Memulai transkripsi. Buka untuk mengatur cara pintasan ini merekam dan menyisipkan teks.",
+        "add": "Tambah pintasan",
+        "remove": "Hapus pintasan",
+        "expand": "Tampilkan pengaturan pintasan",
+        "collapse": "Sembunyikan pengaturan pintasan",
+        "summary": {
+          "submit": "Kirim: {{key}}",
+          "noSubmit": "Tanpa kirim",
+          "noPaste": "Tanpa tempel",
+          "postProcess": "Diproses lanjut"
+        },
+        "postProcess": {
+          "title": "Pemrosesan Lanjut",
+          "description": "Terapkan pemrosesan lanjut AI pada teks dari pintasan ini."
         }
       }
     },

@@ -185,7 +185,8 @@
           "restore": "Herstellen van originele sneltoets mislukt",
           "set": "Instellen van sneltoets mislukt: {{error}}",
           "reset": "Sneltoets terugzetten naar standaardwaarde mislukt"
-        }
+        },
+        "unset": "Klik om in te stellen"
       },
       "language": {
         "title": "Taal",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "Houd ingedrukt om op te nemen of tik om te schakelen",
           "push_to_talk": "Neemt op zolang je de sneltoets ingedrukt houdt",
           "toggle": "Tik op de sneltoets om de opname te starten, tik opnieuw om te stoppen"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Start een transcriptie. Klap uit om in te stellen hoe deze sneltoets opneemt en tekst invoegt.",
+        "add": "Sneltoets toevoegen",
+        "remove": "Sneltoets verwijderen",
+        "expand": "Sneltoetsinstellingen tonen",
+        "collapse": "Sneltoetsinstellingen verbergen",
+        "summary": {
+          "submit": "Verzenden: {{key}}",
+          "noSubmit": "Niet verzenden",
+          "noPaste": "Niet plakken",
+          "postProcess": "Nabewerkt"
+        },
+        "postProcess": {
+          "title": "Nabewerking",
+          "description": "AI-nabewerking toepassen op tekst van deze sneltoets."
         }
       }
     },

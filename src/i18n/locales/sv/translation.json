@@ -185,7 +185,8 @@
           "restore": "Misslyckades med att återställa ursprungligt kortkommando",
           "set": "Misslyckades med att ställa in kortkommando: {{error}}",
           "reset": "Misslyckades med att återställa kortkommando till ursprungsvärdet"
-        }
+        },
+        "unset": "Klicka för att ange"
       },
       "language": {
         "title": "Språk",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "Håll nere för att spela in eller tryck kort för att växla",
           "push_to_talk": "Spelar in så länge du håller genvägen nedtryckt",
           "toggle": "Tryck på genvägen för att starta inspelningen, tryck igen för att stoppa"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Startar en transkribering. Expandera för att ange hur kortkommandot spelar in och infogar text.",
+        "add": "Lägg till kortkommando",
+        "remove": "Ta bort kortkommando",
+        "expand": "Visa inställningar för kortkommando",
+        "collapse": "Dölj inställningar för kortkommando",
+        "summary": {
+          "submit": "Skicka: {{key}}",
+          "noSubmit": "Skicka inte",
+          "noPaste": "Klistra inte in",
+          "postProcess": "Efterbehandlad"
+        },
+        "postProcess": {
+          "title": "Efterbehandling",
+          "description": "Tillämpa AI-efterbehandling på text från detta kortkommando."
         }
       }
     },

@@ -425,26 +425,15 @@ pub fn validate_shortcut(raw: &str) -> Result<(), String> {
 pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
     let state = HandyKeysState::new(app.clone())?;
 
-    let default_bindings = settings::get_default_settings().bindings;
+    // The load path has already merged in any missing default bindings, so
+    // this covers the defaults and every user-added shortcut.
     let user_settings = settings::load_or_create_app_settings(app);
 
-    // Register all bindings except cancel (which is dynamic)
-    for (id, default_binding) in default_bindings {
-        if id == "cancel" {
+    for (id, binding) in &user_settings.bindings {
+        if !user_settings.should_register_binding(id, binding) {
             continue;
         }
-        // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !user_settings.post_process_enabled {
-            continue;
-        }
-
-        let binding = user_settings
-            .bindings
-            .get(&id)
-            .cloned()
-            .unwrap_or(default_binding);
-
-        if let Err(e) = state.register(&binding) {
+        if let Err(e) = state.register(binding) {
             error!(
                 "Failed to register handy-keys shortcut {} during init: {}",
                 id, e

@@ -205,7 +205,8 @@
           "restore": "Ursprüngliches Tastenkürzel konnte nicht wiederhergestellt werden",
           "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}",
           "reset": "Tastenkürzel konnte nicht auf Originalwert zurückgesetzt werden"
-        }
+        },
+        "unset": "Zum Festlegen klicken"
       },
       "language": {
         "title": "Sprache",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Gedrückt halten zum Aufnehmen oder antippen zum Umschalten",
           "push_to_talk": "Nimmt auf, solange die Tastenkombination gedrückt bleibt",
           "toggle": "Tastenkombination antippen, um die Aufnahme zu starten, erneut antippen zum Stoppen"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Startet eine Transkription. Aufklappen, um festzulegen, wie dieses Tastenkürzel aufnimmt und Text einfügt.",
+        "add": "Tastenkürzel hinzufügen",
+        "remove": "Tastenkürzel entfernen",
+        "expand": "Tastenkürzel-Einstellungen anzeigen",
+        "collapse": "Tastenkürzel-Einstellungen ausblenden",
+        "summary": {
+          "submit": "Senden: {{key}}",
+          "noSubmit": "Nicht senden",
+          "noPaste": "Nicht einfügen",
+          "postProcess": "Nachbearbeitet"
+        },
+        "postProcess": {
+          "title": "Nachbearbeitung",
+          "description": "KI-Nachbearbeitung auf den Text dieses Tastenkürzels anwenden."
         }
       }
     },

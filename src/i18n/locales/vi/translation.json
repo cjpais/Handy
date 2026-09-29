@@ -205,7 +205,8 @@
           "restore": "Không thể khôi phục phím tắt gốc",
           "set": "Không thể đặt phím tắt: {{error}}",
           "reset": "Không thể đặt lại phím tắt về giá trị gốc"
-        }
+        },
+        "unset": "Nhấn để đặt"
       },
       "language": {
         "title": "Ngôn ngữ",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Giữ để ghi âm hoặc nhấn nhanh để bật/tắt",
           "push_to_talk": "Ghi âm trong lúc bạn giữ phím tắt",
           "toggle": "Nhấn phím tắt để bắt đầu ghi âm, nhấn lại để dừng"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Bắt đầu chép lời. Mở rộng để đặt cách phím tắt này ghi âm và chèn văn bản.",
+        "add": "Thêm phím tắt",
+        "remove": "Xóa phím tắt",
+        "expand": "Hiện cài đặt phím tắt",
+        "collapse": "Ẩn cài đặt phím tắt",
+        "summary": {
+          "submit": "Gửi: {{key}}",
+          "noSubmit": "Không gửi",
+          "noPaste": "Không dán",
+          "postProcess": "Đã hậu xử lý"
+        },
+        "postProcess": {
+          "title": "Hậu xử lý",
+          "description": "Áp dụng hậu xử lý AI cho văn bản từ phím tắt này."
         }
       }
     },

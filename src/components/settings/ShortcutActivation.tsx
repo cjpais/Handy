@@ -2,18 +2,20 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import { useSettings } from "../../hooks/useSettings";
+import { useShortcutSetting } from "../../hooks/useShortcutSetting";
 import type { ShortcutActivation } from "@/bindings";
 
 interface ShortcutActivationProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  /** Edit this transcribe shortcut's own mode instead of the global one. */
+  bindingId?: string;
 }
 
 export const ShortcutActivationSetting: React.FC<ShortcutActivationProps> =
-  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+  React.memo(({ descriptionMode = "tooltip", grouped = false, bindingId }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const activation = useShortcutSetting(bindingId, "shortcut_activation");
 
     const options = [
       {
@@ -39,7 +41,7 @@ export const ShortcutActivationSetting: React.FC<ShortcutActivationProps> =
       },
     ];
 
-    const selected = (getSetting("shortcut_activation") ||
+    const selected = (activation.value ||
       "hold_or_toggle") as ShortcutActivation;
 
     return (
@@ -53,10 +55,8 @@ export const ShortcutActivationSetting: React.FC<ShortcutActivationProps> =
           options={options}
           menuClassName="right-0 w-80 max-w-[calc(100vw-2rem)]"
           selectedValue={selected}
-          onSelect={(value) =>
-            updateSetting("shortcut_activation", value as ShortcutActivation)
-          }
-          disabled={isUpdating("shortcut_activation")}
+          onSelect={(value) => activation.update(value as ShortcutActivation)}
+          disabled={activation.isUpdating}
         />
       </SettingContainer>
     );

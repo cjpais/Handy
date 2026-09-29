@@ -205,7 +205,8 @@
           "restore": "Échec de la restauration du raccourci original",
           "set": "Échec de la définition du raccourci : {{error}}",
           "reset": "Échec de la réinitialisation du raccourci à sa valeur d'origine"
-        }
+        },
+        "unset": "Cliquez pour définir"
       },
       "language": {
         "title": "Langue",
@@ -226,6 +227,23 @@
           "hold_or_toggle": "Maintenez pour enregistrer ou appuyez brièvement pour basculer",
           "push_to_talk": "Enregistre tant que le raccourci est maintenu",
           "toggle": "Appuyez sur le raccourci pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "Lance une transcription. Développez pour choisir comment ce raccourci enregistre et insère le texte.",
+        "add": "Ajouter un raccourci",
+        "remove": "Supprimer le raccourci",
+        "expand": "Afficher les réglages du raccourci",
+        "collapse": "Masquer les réglages du raccourci",
+        "summary": {
+          "submit": "Envoi : {{key}}",
+          "noSubmit": "Pas d'envoi",
+          "noPaste": "Pas de collage",
+          "postProcess": "Post-traité"
+        },
+        "postProcess": {
+          "title": "Post-traitement",
+          "description": "Appliquer le post-traitement IA au texte de ce raccourci."
         }
       }
     },

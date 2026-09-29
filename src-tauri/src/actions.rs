@@ -682,7 +682,14 @@ impl ShortcutAction for TranscribeAction {
         play_feedback_sound(app, SoundType::Stop);
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
-        let post_process = self.post_process;
+        let settings = get_settings(app);
+        // The built-in bindings keep their fixed behavior unless the shortcut
+        // carries its own post-processing setting.
+        let post_process = if settings.bindings.contains_key(&binding_id) {
+            settings.binding_post_processes(&binding_id)
+        } else {
+            self.post_process
+        };
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
@@ -836,7 +843,7 @@ impl ShortcutAction for TranscribeAction {
                                         return;
                                     }
 
-                                    match utils::paste(final_text, ah_clone.clone()) {
+                                    match utils::paste(final_text, ah_clone.clone(), &binding_id) {
                                         Ok(()) => debug!(
                                             "Text pasted successfully in {:?}",
                                             paste_time.elapsed()
@@ -962,6 +969,17 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+/// The action a binding runs. User-added transcribe shortcuts share the plain
+/// transcribe action; whether they post-process is a per-shortcut setting.
+pub fn action_for_binding(binding_id: &str) -> Option<&'static Arc<dyn ShortcutAction>> {
+    ACTION_MAP.get(binding_id).or_else(|| {
+        binding_id
+            .starts_with(crate::settings::CUSTOM_TRANSCRIBE_PREFIX)
+            .then(|| ACTION_MAP.get("transcribe"))
+            .flatten()
+    })
+}
 
 #[cfg(test)]
 mod tests {

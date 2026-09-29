@@ -17,6 +17,11 @@ interface GlobalShortcutInputProps {
   grouped?: boolean;
   shortcutId: string;
   disabled?: boolean;
+  /** Replace the binding's name and description, e.g. with a summary. */
+  title?: string;
+  description?: string;
+  /** Extra controls after the reset button. */
+  actions?: React.ReactNode;
 }
 
 export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
@@ -24,6 +29,9 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
   grouped = false,
   shortcutId,
   disabled = false,
+  title,
+  description,
+  actions,
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
@@ -268,8 +276,8 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
 
   return (
     <SettingContainer
-      title={translatedName}
-      description={translatedDescription}
+      title={title ?? translatedName}
+      description={description ?? translatedDescription}
       descriptionMode={descriptionMode}
       grouped={grouped}
       disabled={disabled}
@@ -288,13 +296,19 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={() => startRecording(shortcutId)}
           >
-            {formatKeyCombination(binding.current_binding, osType)}
+            {binding.current_binding
+              ? formatKeyCombination(binding.current_binding, osType)
+              : t("settings.general.shortcut.unset")}
           </div>
         )}
-        <ResetButton
-          onClick={() => resetBinding(shortcutId)}
-          disabled={isUpdating(`binding_${shortcutId}`)}
-        />
+        {/* A user-added shortcut has no default to reset to. */}
+        {binding.default_binding && (
+          <ResetButton
+            onClick={() => resetBinding(shortcutId)}
+            disabled={isUpdating(`binding_${shortcutId}`)}
+          />
+        )}
+        {actions}
       </div>
     </SettingContainer>
   );

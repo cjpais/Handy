@@ -15,25 +15,15 @@ use super::handler::handle_shortcut_event;
 
 /// Initialize shortcuts using Tauri's global-shortcut plugin
 pub fn init_shortcuts(app: &AppHandle) {
-    let default_bindings = settings::get_default_settings().bindings;
+    // The load path has already merged in any missing default bindings, so
+    // this covers the defaults and every user-added shortcut.
     let user_settings = settings::load_or_create_app_settings(app);
 
-    // Register all default shortcuts, applying user customizations
-    for (id, default_binding) in default_bindings {
-        if id == "cancel" {
-            continue; // Skip cancel shortcut, it will be registered dynamically
-        }
-        // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !user_settings.post_process_enabled {
+    for (id, binding) in &user_settings.bindings {
+        if !user_settings.should_register_binding(id, binding) {
             continue;
         }
-        let binding = user_settings
-            .bindings
-            .get(&id)
-            .cloned()
-            .unwrap_or(default_binding);
-
-        if let Err(e) = register_shortcut(app, binding) {
+        if let Err(e) = register_shortcut(app, binding.clone()) {
             error!("Failed to register shortcut {} during init: {}", id, e);
         }
     }

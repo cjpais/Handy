@@ -185,7 +185,8 @@
           "restore": "원래 단축키 복원에 실패했습니다",
           "set": "단축키 설정 실패: {{error}}",
           "reset": "단축키를 원래 값으로 재설정하는데 실패했습니다"
-        }
+        },
+        "unset": "클릭하여 설정"
       },
       "language": {
         "title": "언어",
@@ -206,6 +207,23 @@
           "hold_or_toggle": "길게 누르면 녹음, 탭하면 전환",
           "push_to_talk": "단축키를 누르고 있는 동안 녹음합니다",
           "toggle": "단축키를 탭하면 녹음을 시작하고, 다시 탭하면 중지합니다"
+        }
+      },
+      "transcribeShortcuts": {
+        "description": "받아쓰기를 시작합니다. 펼쳐서 이 단축키의 녹음 및 텍스트 입력 방식을 설정하세요.",
+        "add": "단축키 추가",
+        "remove": "단축키 제거",
+        "expand": "단축키 설정 표시",
+        "collapse": "단축키 설정 숨기기",
+        "summary": {
+          "submit": "전송: {{key}}",
+          "noSubmit": "전송 안 함",
+          "noPaste": "붙여넣기 안 함",
+          "postProcess": "후처리됨"
+        },
+        "postProcess": {
+          "title": "후처리",
+          "description": "이 단축키의 텍스트에 AI 후처리를 적용합니다."
         }
       }
     },
