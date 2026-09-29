@@ -459,6 +459,10 @@ pub struct AppSettings {
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
+    // Mute as soon as recording starts instead of after the start sound, so
+    // no system audio leaks into the recording. Skips the start sound.
+    #[serde(default)]
+    pub mute_immediately: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
@@ -949,6 +953,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
+        mute_immediately: false,
         append_trailing_space: false,
         app_language: default_app_language(),
         theme: default_theme(),

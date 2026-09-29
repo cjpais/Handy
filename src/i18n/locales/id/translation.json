@@ -549,6 +549,10 @@
         "label": "Bisukan Saat Merekam",
         "description": "Bisukan audio sistem selama perekaman"
       },
+      "muteImmediately": {
+        "label": "Bisukan Segera",
+        "description": "Bisukan segera saat perekaman dimulai, bukan setelah suara mulai, agar tidak ada audio latar yang terekam. Suara mulai dilewati."
+      },
       "appendTrailingSpace": {
         "label": "Tambahkan Spasi di Akhir",
         "description": "Tambahkan spasi setelah transkripsi ditempel"

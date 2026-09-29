@@ -535,6 +535,10 @@
         "label": "녹음 중 음소거",
         "description": "녹음 중 시스템 오디오 음소거"
       },
+      "muteImmediately": {
+        "label": "즉시 음소거",
+        "description": "시작음 이후가 아니라 녹음이 시작되자마자 음소거하여 배경 오디오가 녹음되지 않도록 합니다. 시작음은 재생되지 않습니다."
+      },
       "appendTrailingSpace": {
         "label": "끝 공백 추가",
         "description": "붙여넣은 텍스트 끝에 공백 추가"

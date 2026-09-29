@@ -535,6 +535,10 @@
         "label": "錄製時靜音",
         "description": "錄製期間靜音系統音訊"
       },
+      "muteImmediately": {
+        "label": "立即靜音",
+        "description": "在錄製開始時立即靜音，而不是在提示音之後，以免錄進背景音訊。將略過開始提示音。"
+      },
       "appendTrailingSpace": {
         "label": "附加尾部空格",
         "description": "在貼上的轉錄後新增空格"

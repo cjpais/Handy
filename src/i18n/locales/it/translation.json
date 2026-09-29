@@ -535,6 +535,10 @@
         "label": "Silenzia durante la registrazione",
         "description": "Silenzia l'audio di sistema durante la registrazione"
       },
+      "muteImmediately": {
+        "label": "Silenzia subito",
+        "description": "Silenzia non appena inizia la registrazione invece che dopo il suono di avvio, così da non registrare audio di sottofondo. Il suono di avvio viene saltato."
+      },
       "appendTrailingSpace": {
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"

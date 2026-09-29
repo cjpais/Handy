@@ -549,6 +549,10 @@
         "label": "Mute under optagelse",
         "description": "Sluk for systemlyd under optagelse"
       },
+      "muteImmediately": {
+        "label": "Slå lyd fra med det samme",
+        "description": "Slå lyden fra, så snart optagelsen starter, i stedet for efter startlyden, så der ikke optages baggrundslyd. Startlyden springes over."
+      },
       "appendTrailingSpace": {
         "label": "Tilføj efterfølgende mellemrum",
         "description": "Tilføj et mellemrum efter indsat transskription"

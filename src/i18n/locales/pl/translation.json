@@ -535,6 +535,10 @@
         "label": "Wycisz podczas nagrywania",
         "description": "Wycisz dźwięk systemu podczas nagrywania"
       },
+      "muteImmediately": {
+        "label": "Wycisz natychmiast",
+        "description": "Wycisz od razu po rozpoczęciu nagrywania zamiast po dźwięku startu, aby nie nagrywać dźwięku w tle. Dźwięk startu jest pomijany."
+      },
       "appendTrailingSpace": {
         "label": "Dodaj spację na końcu",
         "description": "Dodaj spację po wklejonej transkrypcji"

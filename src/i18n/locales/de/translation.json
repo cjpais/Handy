@@ -535,6 +535,10 @@
         "label": "Während Aufnahme stummschalten",
         "description": "Systemaudio während der Aufnahme stummschalten"
       },
+      "muteImmediately": {
+        "label": "Sofort stummschalten",
+        "description": "Stummschalten, sobald die Aufnahme beginnt, statt erst nach dem Startton, damit kein Hintergrundton aufgenommen wird. Der Startton entfällt."
+      },
       "appendTrailingSpace": {
         "label": "Leerzeichen anhängen",
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
