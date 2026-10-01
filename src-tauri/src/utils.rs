@@ -12,6 +12,16 @@ pub use crate::clipboard::*;
 pub use crate::overlay::*;
 pub use crate::tray::*;
 
+/// Preserve diagnostic text in development builds, but redact it in releases.
+/// Do not use for secrets such as API keys, which must always be redacted.
+pub fn redact_text(text: &str) -> &str {
+    if cfg!(debug_assertions) {
+        text
+    } else {
+        "[REDACTED]"
+    }
+}
+
 #[cfg(any(test, all(target_os = "windows", target_arch = "x86_64")))]
 const IMAGE_FILE_MACHINE_ARM64: u16 = 0xaa64;
 
@@ -89,7 +99,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     tm.cancel_stream();
 
     // Update tray icon and hide overlay
-    change_tray_icon(app, crate::tray::TrayIconState::Idle);
+    set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
     // Unload model if immediate unload is enabled
@@ -127,6 +137,34 @@ pub fn is_kde_wayland() -> bool {
     is_wayland() && is_kde_plasma()
 }
 
+/// Check if running on GNOME desktop environment
+#[cfg(target_os = "linux")]
+pub fn is_gnome() -> bool {
+    std::env::var("XDG_CURRENT_DESKTOP")
+        .map(|v| v.to_uppercase().contains("GNOME"))
+        .unwrap_or(false)
+}
+
+/// Check if running on GNOME with Wayland
+#[cfg(target_os = "linux")]
+pub fn is_gnome_wayland() -> bool {
+    is_wayland() && is_gnome()
+}
+
+/// Returns true when the environment variable is set to a truthy value
+/// (e.g. "1", "true", "yes", "on").
+/// "0", "false", "no", "off" and empty string are treated as falsy (case-insensitive).
+/// Returns false when the variable is not set.
+pub fn env_flag_enabled(name: &str) -> bool {
+    match std::env::var(name) {
+        Ok(v) => !matches!(
+            v.trim().to_ascii_lowercase().as_str(),
+            "" | "0" | "false" | "no" | "off"
+        ),
+        Err(_) => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,5 +175,25 @@ mod tests {
         assert!(!native_machine_is_arm64(Some(0x8664))); // AMD64
         assert!(!native_machine_is_arm64(Some(0x014c))); // I386
         assert!(!native_machine_is_arm64(None)); // API unavailable or failed
+    }
+
+    #[test]
+    fn env_flag_enabled_true_for_truthy_values() {
+        for value in ["1", "true", "TRUE", "yes", "on", " 1 "] {
+            std::env::set_var("HANDY_TEST_FLAG_TRUTHY", value);
+            assert!(env_flag_enabled("HANDY_TEST_FLAG_TRUTHY"), "{value:?}");
+        }
+        std::env::remove_var("HANDY_TEST_FLAG_TRUTHY");
+    }
+
+    #[test]
+    fn env_flag_enabled_false_for_falsy_or_unset() {
+        assert!(!env_flag_enabled("HANDY_TEST_FLAG_UNSET"));
+
+        for value in ["0", "false", "FALSE", "no", "off", ""] {
+            std::env::set_var("HANDY_TEST_FLAG_FALSY", value);
+            assert!(!env_flag_enabled("HANDY_TEST_FLAG_FALSY"), "{value:?}");
+        }
+        std::env::remove_var("HANDY_TEST_FLAG_FALSY");
     }
 }

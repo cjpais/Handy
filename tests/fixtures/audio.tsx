@@ -15,11 +15,15 @@ let nextSession = 1;
 const settings = {
   selected_microphone: "Default",
   selected_channel: null,
-  onboarding_completed: false,
+  onboarding_completed: new URLSearchParams(location.search).has("app"),
   app_language: "en",
 } as AppSettings;
 Object.assign(window, {
-  __TAURI_OS_PLUGIN_INTERNALS__: { platform: "linux" },
+  __TAURI_OS_PLUGIN_INTERNALS__: {
+    platform: "linux",
+    os_type: "linux",
+    family: "unix",
+  },
   audioTest: {
     calls,
     emit,
@@ -48,6 +52,16 @@ mockIPC(
         return nextSession++;
       case "get_microphone_channels":
         return 2;
+      case "get_available_microphones":
+      case "get_available_output_devices":
+        return [{ index: "default", name: "Default", is_default: true }];
+      case "show_main_window_command":
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          value: "visible",
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+        return null;
       case "get_app_settings":
       case "get_default_settings":
         return settings;
@@ -58,7 +72,7 @@ mockIPC(
       case "plugin:os|locale":
         return "en-US";
       case "plugin:app|version":
-        return "0.9.5";
+        return "0.9.7";
       default:
         return null;
     }

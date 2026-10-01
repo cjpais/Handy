@@ -50,6 +50,10 @@ impl VoiceActivityDetector for SileroVad {
         }
     }
 
+    fn frame_samples(&self) -> usize {
+        SILERO_FRAME_SAMPLES
+    }
+
     fn reset(&mut self) {
         // Clear the Silero LSTM hidden/cell state so a new session doesn't
         // inherit recurrent context from the previous recording.

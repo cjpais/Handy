@@ -246,18 +246,31 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
 #[specta::specta]
 pub async fn start_microphone_test(app: AppHandle) -> Result<u64, String> {
     let manager = app.state::<Arc<AudioRecordingManager>>().inner().clone();
-    let visible = app
-        .get_webview_window("main")
-        .and_then(|window| window.is_visible().ok())
-        .unwrap_or(false);
-    if !visible {
+    let generation = manager.microphone_test_lifecycle_generation();
+    let settings_visible = || {
+        app.get_webview_window("main")
+            .and_then(|window| window.is_visible().ok())
+            .unwrap_or(false)
+    };
+    if !settings_visible() {
         return Err("Cannot test the microphone while settings are hidden".to_string());
     }
-    let generation = manager.microphone_test_lifecycle_generation();
-    tokio::task::spawn_blocking(move || manager.start_microphone_test(generation))
-        .await
-        .map_err(|error| format!("audio task join failed: {error}"))?
-        .map_err(|error| format!("Failed to start microphone test: {error}"))
+    let start_manager = manager.clone();
+    let session_id =
+        tokio::task::spawn_blocking(move || start_manager.start_microphone_test(generation))
+            .await
+            .map_err(|error| format!("audio task join failed: {error}"))?
+            .map_err(|error| format!("Failed to start microphone test: {error}"))?;
+    // Close/hide can race with a slow device open even if the webview no longer
+    // handles events. Do not return a live session to an invisible window.
+    if !settings_visible() {
+        tokio::task::spawn_blocking(move || manager.stop_microphone_test(session_id))
+            .await
+            .map_err(|error| format!("audio task join failed: {error}"))?
+            .map_err(|error| format!("Failed to stop hidden microphone test: {error}"))?;
+        return Err("Settings closed while the microphone test started".to_string());
+    }
+    Ok(session_id)
 }
 
 #[tauri::command]

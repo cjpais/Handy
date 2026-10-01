@@ -1554,6 +1554,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
+name = "earshot"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afea66474c4036a7e5fa4b072a3b0a09cd0b01f00134da3115d76b7cc5899f03"
+
+[[package]]
 name = "embed-resource"
 version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2495,12 +2501,13 @@ dependencies = [
 
 [[package]]
 name = "handy"
-version = "0.9.5"
+version = "0.9.7"
 dependencies = [
  "anyhow",
  "chrono",
  "clap",
  "cpal",
+ "earshot",
  "enigo",
  "env_filter",
  "ferrous-opencc",
@@ -2524,6 +2531,7 @@ dependencies = [
  "regex",
  "reqwest 0.12.28",
  "rodio",
+ "rtrb",
  "rubato",
  "rusqlite",
  "rusqlite_migration",
@@ -2558,6 +2566,7 @@ dependencies = [
  "transcribe-cpp",
  "transcribe-rs",
  "vad-rs",
+ "webview2-com",
  "whatlang",
  "windows 0.61.3",
  "winreg 0.55.0",
@@ -5237,6 +5246,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtrb"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9278fb35b3e730abe136e9b395b5b81b96d06b9f5478a50f0c8430a2237b22de"
+
+[[package]]
 name = "rubato"
 version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6717,9 +6732,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-updater"
-version = "2.10.0"
+version = "2.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fe8e9bebd88fc222938ffdfbdcfa0307081423bd01e3252fc337d8bde81fc61"
+checksum = "806d9dac662c2e4594ff03c647a552f2c9bd544e7d0f683ec58f872f952ce4af"
 dependencies = [
  "base64 0.22.1",
  "dirs 6.0.0",
@@ -7270,9 +7285,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp"
-version = "0.2.0"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cff7b2aaacac97e5f7abb3898d91ad885c87c15dc433907b8045ff5c4ca8440"
+checksum = "8afa3f82415ece32f944e0d5ad347716c7e86d41ee8727ad8143afb080a6a60c"
 dependencies = [
  "log",
  "thiserror 2.0.18",
@@ -7281,9 +7296,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp-sys"
-version = "0.2.0"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02f9a1f1be01b78806a3546a751aa094b8144ac3032474a1e8e783d22bd26281"
+checksum = "1c6946c7bf90046fc51e5bc25373a4f6270ca10fdcf4f35b1174075e43c535b5"
 dependencies = [
  "cmake",
  "serde_json",

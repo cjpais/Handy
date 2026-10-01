@@ -115,7 +115,8 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
-          key: ${{ inputs.platform }}-${{ inputs.target }}
+          key: ${{ inputs.platform }}-${{ inputs.target }}-no-bin-v1
+          cache-bin: false
 
       - name: install dependencies (ubuntu 24.04 x64)
         if: contains(inputs.platform, 'ubuntu-24.04') && !contains(inputs.platform, 'arm')
@@ -172,7 +173,7 @@ jobs:
 
       - name: Install trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries && steps.cache-tsc.outputs.cache-hit != 'true'
-        run: cargo install trusted-signing-cli@${{ env.TSC_VERSION }}
+        run: cargo install --locked --force trusted-signing-cli@${{ env.TSC_VERSION }}
 
       - name: Prepare Vulkan SDK for Ubuntu 24.04
         if: contains(inputs.platform, 'ubuntu-24.04') && !contains(inputs.platform, 'arm')

@@ -1,3 +1,4 @@
+use crate::utils;
 use log::{debug, warn};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -155,6 +156,21 @@ pub enum PasteMethod {
     ExternalScript,
 }
 
+/// How the transcribe shortcut's key events drive a recording.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ShortcutActivation {
+    /// Press to start, press again to stop.
+    Toggle,
+    /// Hold to record, release to stop.
+    PushToTalk,
+    /// Hold to record and release to stop, or tap to keep recording until the
+    /// next press. Which one it was is decided by how long the key was held
+    /// (`hold_threshold_ms`).
+    #[default]
+    HoldOrToggle,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ClipboardHandling {
@@ -301,6 +317,14 @@ pub enum OrtAcceleratorSetting {
     Rocm,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum VadBackend {
+    #[default]
+    Silero,
+    Earshot,
+}
+
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
 pub(crate) struct SecretMap(HashMap<String, String>);
@@ -347,8 +371,14 @@ pub struct AppSettings {
     /// default bindings for any missing keys before the settings are used.
     #[serde(default)]
     pub bindings: HashMap<String, ShortcutBinding>,
-    #[serde(default = "default_push_to_talk")]
-    pub push_to_talk: bool,
+    /// Replaces the pre-0.10 `push_to_talk` bool; stores missing this key are
+    /// migrated from it in `apply_settings_migrations`.
+    #[serde(default)]
+    pub shortcut_activation: ShortcutActivation,
+    /// Hold-or-toggle only: a press held at least this long is push-to-talk,
+    /// anything shorter is a tap that locks recording on.
+    #[serde(default = "default_hold_threshold_ms")]
+    pub hold_threshold_ms: u64,
     #[serde(default)]
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
@@ -476,6 +506,9 @@ pub struct AppSettings {
     pub extra_recording_buffer_ms: u64,
     #[serde(default = "default_vad_enabled")]
     pub vad_enabled: bool,
+    /// Experimental detector implementation. Silero remains the stable default.
+    #[serde(default)]
+    pub vad_backend: VadBackend,
     /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
     /// not gated on this — that follows model capability. Migrated from the old
     /// `overlay_position` (position `none` → style `None`).
@@ -493,8 +526,8 @@ fn default_settings_schema_version() -> u32 {
     CURRENT_SETTINGS_SCHEMA_VERSION
 }
 
-fn default_push_to_talk() -> bool {
-    true
+fn default_hold_threshold_ms() -> u64 {
+    300
 }
 
 fn default_always_on_microphone() -> bool {
@@ -877,7 +910,8 @@ pub fn get_default_settings() -> AppSettings {
     AppSettings {
         settings_schema_version: default_settings_schema_version(),
         bindings,
-        push_to_talk: default_push_to_talk(),
+        shortcut_activation: ShortcutActivation::default(),
+        hold_threshold_ms: default_hold_threshold_ms(),
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
@@ -934,6 +968,7 @@ pub fn get_default_settings() -> AppSettings {
         transcribe_gpu_device: default_transcribe_gpu_device(),
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
+        vad_backend: VadBackend::default(),
         overlay_style: default_overlay_style(),
     }
 }
@@ -1086,6 +1121,21 @@ fn apply_settings_migrations(
         updated = true;
     }
 
+    // One-time shortcut activation migration (only while the new key is
+    // absent): the retired `push_to_talk` bool maps onto the two legacy modes so
+    // upgrading users keep exactly the behavior they had. Only fresh installs
+    // get the hold-or-toggle default.
+    if settings_value.get("shortcut_activation").is_none() {
+        if let Some(push_to_talk) = settings_value.get("push_to_talk").and_then(|v| v.as_bool()) {
+            settings.shortcut_activation = if push_to_talk {
+                ShortcutActivation::PushToTalk
+            } else {
+                ShortcutActivation::Toggle
+            };
+            updated = true;
+        }
+    }
+
     let stored_schema_version = settings_value
         .get("settings_schema_version")
         .and_then(|v| v.as_u64())
@@ -1139,6 +1189,23 @@ fn apply_settings_migrations(
     updated
 }
 
+/// Update checks are forced off (without touching the persisted setting) when
+/// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
+/// can't work against an immutable /nix/store install.
+pub fn update_checks_forced_disabled() -> bool {
+    use std::sync::OnceLock;
+    static IS_UPDATER_DISABLED: OnceLock<bool> = OnceLock::new();
+    *IS_UPDATER_DISABLED.get_or_init(|| utils::env_flag_enabled("HANDY_DISABLE_UPDATER"))
+}
+
+/// Effective updater state: the user's stored preference, overridden to `false`
+/// while `HANDY_DISABLE_UPDATER` is set. Callers deciding whether to actually
+/// check for updates must use this rather than reading `update_checks_enabled`
+/// directly, so the forced-off state never leaks into the persisted setting.
+pub fn update_checks_effectively_enabled(settings: &AppSettings) -> bool {
+    settings.update_checks_enabled && !update_checks_forced_disabled()
+}
+
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
     let store = app
         .store(crate::portable::store_path(SETTINGS_STORE_PATH))
@@ -1153,12 +1220,12 @@ pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
     settings.bindings
 }
 
-pub fn get_stored_binding(app: &AppHandle, id: &str) -> ShortcutBinding {
-    let bindings = get_bindings(app);
-
-    let binding = bindings.get(id).unwrap().clone();
-
-    binding
+pub fn get_stored_binding(settings: &AppSettings, id: &str) -> Result<ShortcutBinding, String> {
+    settings
+        .bindings
+        .get(id)
+        .cloned()
+        .ok_or_else(|| format!("Binding with id '{}' not found", id))
 }
 
 pub fn get_history_limit(app: &AppHandle) -> usize {
@@ -1175,6 +1242,24 @@ pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeri
 mod tests {
     use super::*;
 
+    #[test]
+    fn stored_binding_returns_the_requested_binding() {
+        let settings = get_default_settings();
+
+        let result = get_stored_binding(&settings, "transcribe");
+
+        assert_eq!(result.unwrap().id, "transcribe");
+    }
+
+    #[test]
+    fn unknown_stored_binding_returns_an_error() {
+        let settings = get_default_settings();
+
+        let result = get_stored_binding(&settings, "unknown");
+
+        assert_eq!(result.unwrap_err(), "Binding with id 'unknown' not found");
+    }
+
     fn default_settings_json() -> serde_json::Value {
         serde_json::to_value(get_default_settings()).unwrap()
     }
@@ -1185,7 +1270,11 @@ mod tests {
     fn empty_store_parses_with_defaults() {
         let settings: AppSettings = serde_json::from_value(serde_json::json!({}))
             .expect("all AppSettings fields need serde defaults");
-        assert!(settings.push_to_talk);
+        assert_eq!(
+            settings.shortcut_activation,
+            ShortcutActivation::HoldOrToggle
+        );
+        assert_eq!(settings.hold_threshold_ms, default_hold_threshold_ms());
         assert!(!settings.audio_feedback);
         assert!(settings.filler_word_removal_enabled);
         // Bindings default to empty; the load path merges the real defaults in.
@@ -1307,6 +1396,7 @@ mod tests {
         assert_eq!(settings.log_level, LogLevel::Debug);
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
+        assert_eq!(settings.vad_backend, VadBackend::Silero);
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.
@@ -1319,6 +1409,9 @@ mod tests {
             settings.transcribe_accelerator,
             TranscribeAcceleratorSetting::Auto
         );
+        // The retired push_to_talk bool (false in this fixture) becomes the
+        // matching legacy mode rather than the new hold-or-toggle default.
+        assert_eq!(settings.shortcut_activation, ShortcutActivation::Toggle);
         assert_eq!(settings.transcribe_gpu_device, None);
     }
 
@@ -1474,6 +1567,59 @@ mod tests {
         assert!(apply_settings_migrations(&mut settings, &raw));
         assert_eq!(settings.overlay_style, OverlayStyle::Live);
         assert_eq!(settings.overlay_position, OverlayPosition::Top);
+    }
+
+    #[test]
+    fn shortcut_activation_migration_maps_push_to_talk_true() {
+        let mut settings = get_default_settings();
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "push_to_talk": true
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.shortcut_activation, ShortcutActivation::PushToTalk);
+    }
+
+    #[test]
+    fn shortcut_activation_migration_maps_push_to_talk_false() {
+        let mut settings = get_default_settings();
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "push_to_talk": false
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.shortcut_activation, ShortcutActivation::Toggle);
+    }
+
+    #[test]
+    fn shortcut_activation_migration_respects_explicit_new_key() {
+        let mut settings = get_default_settings();
+        settings.shortcut_activation = ShortcutActivation::HoldOrToggle;
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "push_to_talk": true,
+            "shortcut_activation": "hold_or_toggle"
+        });
+
+        apply_settings_migrations(&mut settings, &raw);
+        assert_eq!(
+            settings.shortcut_activation,
+            ShortcutActivation::HoldOrToggle
+        );
+    }
+
+    #[test]
+    fn shortcut_activation_defaults_to_hold_or_toggle_without_legacy_key() {
+        let mut settings = get_default_settings();
+        let raw = serde_json::json!({ "selected_model": "" });
+
+        apply_settings_migrations(&mut settings, &raw);
+        assert_eq!(
+            settings.shortcut_activation,
+            ShortcutActivation::HoldOrToggle
+        );
     }
 
     #[test]

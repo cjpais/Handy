@@ -58,6 +58,9 @@ test("hiding the still-mounted settings window stops capture and clears its mete
     level: 0.7,
   });
   await expect(page.getByRole("meter")).toHaveAttribute("aria-valuenow", "70");
+  await page.screenshot({
+    path: test.info().outputPath("microphone-meter.png"),
+  });
   await page.evaluate(() => window.audioTest.hide());
   await expect
     .poll(() =>
@@ -170,6 +173,9 @@ test("background recording failure reveals a visible warning", async ({
   page,
 }) => {
   await page.goto("/tests/fixtures/audio.html?app");
+  await expect(
+    page.getByRole("button", { name: "Test Microphone", exact: true }),
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -192,6 +198,11 @@ test("background recording failure reveals a visible warning", async ({
   await expect(
     page.getByText("No Audio Detected", { exact: true }),
   ).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.visibilityState))
+    .toBe("visible");
+  await expect(page.locator("[data-sonner-toast]")).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: test.info().outputPath("silent-warning.png") });
 });
 
 test("native close event stops an active test even without a visibility event", async ({

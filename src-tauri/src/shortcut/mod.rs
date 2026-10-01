@@ -22,8 +22,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, OverlayStyle, PasteMethod, ShortcutBinding, SoundTheme, Theme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding, SoundTheme,
+    Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -224,7 +224,7 @@ fn restore_registration(app: &AppHandle, binding: &ShortcutBinding) {
 #[tauri::command]
 #[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
-    let binding = settings::get_stored_binding(&app, &id);
+    let binding = settings::get_stored_binding(&settings::get_settings(&app), &id)?;
     change_binding(app, id, binding.default_binding)
 }
 
@@ -526,9 +526,21 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn change_shortcut_activation_setting(
+    app: AppHandle,
+    activation: ShortcutActivation,
+) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.push_to_talk = enabled;
+    settings.shortcut_activation = activation;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_hold_threshold_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.hold_threshold_ms = ms;
     settings::write_settings(&app, settings);
     Ok(())
 }
@@ -751,6 +763,12 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
 #[tauri::command]
 #[specta::specta]
 pub fn change_update_checks_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    if settings::update_checks_forced_disabled() {
+        return Err(
+            "Update checks are disabled by system configuration (HANDY_DISABLE_UPDATER)".into(),
+        );
+    }
+
     let mut settings = settings::get_settings(&app);
     settings.update_checks_enabled = enabled;
     settings::write_settings(&app, settings);
@@ -1269,6 +1287,31 @@ pub fn change_vad_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), S
 
 #[tauri::command]
 #[specta::specta]
+pub async fn change_vad_backend_setting(app: AppHandle, backend: VadBackend) -> Result<(), String> {
+    if settings::get_settings(&app).vad_backend == backend {
+        return Ok(());
+    }
+
+    // Construct/swap the detector and, when necessary, reopen cpal away from
+    // the webview thread. Persist only after the runtime change succeeds so a
+    // rejected in-progress switch or failed microphone reopen rolls back cleanly.
+    let manager = app
+        .state::<std::sync::Arc<crate::managers::audio::AudioRecordingManager>>()
+        .inner()
+        .clone();
+    tokio::task::spawn_blocking(move || manager.update_vad_backend(backend))
+        .await
+        .map_err(|e| format!("audio task join failed: {e}"))?
+        .map_err(|e| format!("Failed to update VAD backend: {e}"))?;
+
+    let mut current_settings = settings::get_settings(&app);
+    current_settings.vad_backend = backend;
+    settings::write_settings(&app, current_settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_filler_word_removal_enabled_setting(
     app: AppHandle,
     enabled: bool,
@@ -1287,7 +1330,7 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     settings::write_settings(&app, settings);
 
     // Refresh the tray menu with the new language
-    tray::update_tray_menu(&app, Some(&language));
+    tray::update_tray_menu(&app);
 
     Ok(())
 }
@@ -1359,4 +1402,25 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
     tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
         .await
         .expect("get_available_accelerators panicked")
+}
+
+#[cfg(test)]
+mod tests {
+    use handy_keys::Hotkey;
+    use tauri_plugin_global_shortcut::Shortcut;
+
+    #[test]
+    fn compound_shortcut_keys_parse_on_both_backends() {
+        for key in [
+            "scrolllock",
+            "capslock",
+            "numlock",
+            "pageup",
+            "pagedown",
+            "printscreen",
+        ] {
+            assert!(key.parse::<Shortcut>().is_ok(), "Tauri rejected {key}");
+            assert!(key.parse::<Hotkey>().is_ok(), "HandyKeys rejected {key}");
+        }
+    }
 }

@@ -161,6 +161,9 @@
 /* Shared base card. Flat: theme surface + hairline border, no shadow or blur. */
 .scard {
   width: var(--ov-pill-w);
+  /* Never wider than the window: an unaccounted content zoom degrades to a
+     narrower card instead of clipping. 2px = our border (no border-box reset). */
+  max-width: calc(100vw - 2px);
   border-radius: 24px;
   overflow: hidden;
   display: flex;
@@ -235,7 +238,9 @@
   min-height: 0;
 }
 .stext-cap {
-  max-height: var(--ov-cap-max-h);
+  /* Vertical counterpart of the .scard clamp: show fewer lines rather than clip.
+     20px = cap padding (12) + card borders (2) + 6px slack for zoom rounding. */
+  max-height: min(var(--ov-cap-max-h), calc(100vh - var(--ov-base-h) - 20px));
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -286,6 +291,7 @@
    Same structure for pill & panel; the dot stays anchored left in both. */
 .sbase {
   height: var(--ov-base-h);
+  flex: none; /* the control row never squashes; only the text region gives */
   padding: 0 10px;
   display: grid;
   /* Equal side columns (min 22px to hold the cancel button) keep the center item

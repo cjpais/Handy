@@ -169,6 +169,10 @@
               gappsWrapperArgs+=(
                 --set WEBKIT_DISABLE_DMABUF_RENDERER 1
                 --set ALSA_PLUGIN_DIR "${combinedAlsaPlugins}"
+                # Self-update can't work against an immutable /nix/store install
+                # (downloadAndInstall would try to overwrite the store path), so
+                # the Nix-built package always disables the updater.
+                --set HANDY_DISABLE_UPDATER 1
               )
             '';
 

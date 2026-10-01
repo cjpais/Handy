@@ -423,6 +423,7 @@ export const useModelStore = create<ModelsStore>()(
 
       listen("models-updated", () => {
         get().loadModels();
+        get().loadCurrentModel();
       });
 
       set({ initialized: true });
