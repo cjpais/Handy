@@ -101,25 +101,37 @@ function App() {
 
   // Listen for recording errors from the backend and show a toast
   useEffect(() => {
-    const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
-      const notification = getRecordingErrorNotification(
-        event.payload,
-        platform(),
-      );
-      const description = notification.descriptionKey
-        ? t(notification.descriptionKey, {
-            defaultValue: notification.descriptionFallbackKey
-              ? t(notification.descriptionFallbackKey)
-              : undefined,
-          })
-        : undefined;
-      const showToast =
-        notification.level === "warning" ? toast.warning : toast.error;
+    const unlisten = listen<RecordingErrorEvent>(
+      "recording-error",
+      async (event) => {
+        if (event.payload.error_type === "silent_input") {
+          // Dictation commonly runs from the tray with settings hidden. Reveal
+          // its existing localized warning so the user can correct the input.
+          try {
+            await commands.showMainWindowCommand();
+          } catch (error) {
+            console.error("Failed to reveal the recording warning:", error);
+          }
+        }
+        const notification = getRecordingErrorNotification(
+          event.payload,
+          platform(),
+        );
+        const description = notification.descriptionKey
+          ? t(notification.descriptionKey, {
+              defaultValue: notification.descriptionFallbackKey
+                ? t(notification.descriptionFallbackKey)
+                : undefined,
+            })
+          : undefined;
+        const showToast =
+          notification.level === "warning" ? toast.warning : toast.error;
 
-      showToast(t(notification.titleKey, notification.titleValues), {
-        description,
-      });
-    });
+        showToast(t(notification.titleKey, notification.titleValues), {
+          description,
+        });
+      },
+    );
     return () => {
       unlisten.then((fn) => fn());
     };

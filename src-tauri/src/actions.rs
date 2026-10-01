@@ -1,9 +1,7 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
-use crate::audio_toolkit::{
-    is_effectively_silent, is_microphone_access_denied, is_no_input_device_error, VadPolicy,
-};
+use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error, VadPolicy};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
@@ -696,7 +694,9 @@ impl ShortcutAction for TranscribeAction {
             );
 
             let stop_recording_time = Instant::now();
-            if let Some(samples) = rm.stop_recording(&binding_id, cancel_generation) {
+            if let Some(captured) = rm.stop_recording(&binding_id, cancel_generation) {
+                let silent_input = captured.input_is_silent;
+                let samples = captured.samples;
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
@@ -712,7 +712,9 @@ impl ShortcutAction for TranscribeAction {
                 }
 
                 if samples.is_empty() {
-                    emit_silent_input_warning(&ah);
+                    if silent_input {
+                        emit_silent_input_warning(&ah);
+                    }
                     debug!("Recording produced no audio samples; skipping persistence");
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
@@ -730,10 +732,8 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Check the completed normalized PCM before starting batch
-                    // transcription. A live stream may already have received frames;
-                    // cancel it when the final buffer proves silent.
-                    let silent_input = is_effectively_silent(&samples);
+                    // The recorder classified input before VAD filtering. Empty
+                    // speech output alone is not evidence of a silent microphone.
                     let transcription_time = Instant::now();
                     let transcription_result = if silent_input {
                         tm.cancel_stream();

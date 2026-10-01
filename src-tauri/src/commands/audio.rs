@@ -246,7 +246,15 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
 #[specta::specta]
 pub async fn start_microphone_test(app: AppHandle) -> Result<u64, String> {
     let manager = app.state::<Arc<AudioRecordingManager>>().inner().clone();
-    tokio::task::spawn_blocking(move || manager.start_microphone_test())
+    let visible = app
+        .get_webview_window("main")
+        .and_then(|window| window.is_visible().ok())
+        .unwrap_or(false);
+    if !visible {
+        return Err("Cannot test the microphone while settings are hidden".to_string());
+    }
+    let generation = manager.microphone_test_lifecycle_generation();
+    tokio::task::spawn_blocking(move || manager.start_microphone_test(generation))
         .await
         .map_err(|error| format!("audio task join failed: {error}"))?
         .map_err(|error| format!("Failed to start microphone test: {error}"))

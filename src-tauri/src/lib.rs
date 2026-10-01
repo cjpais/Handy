@@ -980,6 +980,12 @@ pub fn run(cli_args: CliArgs) {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
+                if window.label() == "main" {
+                    window
+                        .app_handle()
+                        .state::<Arc<AudioRecordingManager>>()
+                        .stop_microphone_test_on_window_close();
+                }
                 let _res = window.hide();
 
                 #[cfg(target_os = "macos")]

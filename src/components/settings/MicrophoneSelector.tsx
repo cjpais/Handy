@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { commands, events } from "@/bindings";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { Button } from "../ui/Button";
 import { useSettings } from "../../hooks/useSettings";
+
+const isWindowHidden = () => document.visibilityState === "hidden";
 
 interface MicrophoneSelectorProps {
   descriptionMode?: "inline" | "tooltip";
@@ -32,6 +35,10 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
     const [isChangingTestState, setIsChangingTestState] = useState(false);
     const microphoneTestSessionRef = useRef<number | null>(null);
     const mountedRef = useRef(true);
+    const lifecycleGenerationRef = useRef(0);
+    const startingRef = useRef(false);
+    const stoppedWhileStartingRef = useRef(new Map<number, boolean>());
+    const listenersReadyRef = useRef<Promise<unknown>>(Promise.resolve());
 
     useEffect(() => {
       mountedRef.current = true;
@@ -44,25 +51,60 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
       const stoppedUnlisten = events.microphoneTestStoppedEvent.listen(
         (event) => {
           if (!mountedRef.current) return;
+          if (startingRef.current) {
+            stoppedWhileStartingRef.current.set(
+              event.payload.session_id,
+              event.payload.failed ?? false,
+            );
+          }
           if (event.payload.session_id === microphoneTestSessionRef.current) {
             microphoneTestSessionRef.current = null;
             setMicrophoneTestSession(null);
             setMicrophoneLevel(0);
+            if (event.payload.failed) {
+              toast.error(t("settings.sound.microphone.testFailed"));
+            }
           }
         },
       );
 
-      return () => {
-        mountedRef.current = false;
-        levelUnlisten.then((unlisten) => unlisten());
-        stoppedUnlisten.then((unlisten) => unlisten());
+      const stopForHiddenWindow = () => {
+        lifecycleGenerationRef.current += 1;
         const sessionId = microphoneTestSessionRef.current;
         microphoneTestSessionRef.current = null;
+        if (mountedRef.current) {
+          setMicrophoneTestSession(null);
+          setMicrophoneLevel(0);
+        }
         if (sessionId !== null) {
-          void commands.stopMicrophoneTest(sessionId);
+          void commands.stopMicrophoneTest(sessionId).catch(console.error);
         }
       };
-    }, []);
+      const onVisibilityChange = () => {
+        if (isWindowHidden()) stopForHiddenWindow();
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      const closeUnlisten =
+        getCurrentWindow().onCloseRequested(stopForHiddenWindow);
+      listenersReadyRef.current = Promise.all([
+        levelUnlisten,
+        stoppedUnlisten,
+        closeUnlisten,
+      ]);
+
+      return () => {
+        mountedRef.current = false;
+        stopForHiddenWindow();
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        for (const unlisten of [
+          levelUnlisten,
+          stoppedUnlisten,
+          closeUnlisten,
+        ]) {
+          void unlisten.then((fn) => fn()).catch(console.error);
+        }
+      };
+    }, [t]);
 
     const selectedMicrophone =
       getSetting("selected_microphone") === "default"
@@ -94,13 +136,35 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
           return;
         }
 
+        const generation = lifecycleGenerationRef.current;
+        startingRef.current = true;
+        stoppedWhileStartingRef.current.clear();
+        // Install event listeners before invoking: a backend stop can precede
+        // the command response, including a disconnect during initialization.
+        await listenersReadyRef.current;
+        if (
+          !mountedRef.current ||
+          generation !== lifecycleGenerationRef.current ||
+          isWindowHidden()
+        )
+          return;
         const result = await commands.startMicrophoneTest();
         if (result.status === "error") {
           toast.error(t("settings.sound.microphone.testFailed"));
           return;
         }
-        if (!mountedRef.current) {
-          void commands.stopMicrophoneTest(result.data);
+        if (
+          !mountedRef.current ||
+          generation !== lifecycleGenerationRef.current ||
+          isWindowHidden()
+        ) {
+          void commands.stopMicrophoneTest(result.data).catch(console.error);
+          return;
+        }
+        if (stoppedWhileStartingRef.current.has(result.data)) {
+          if (stoppedWhileStartingRef.current.get(result.data)) {
+            toast.error(t("settings.sound.microphone.testFailed"));
+          }
           return;
         }
         microphoneTestSessionRef.current = result.data;
@@ -110,6 +174,8 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
         console.error("Failed to change microphone test state:", error);
         toast.error(t("settings.sound.microphone.testFailed"));
       } finally {
+        startingRef.current = false;
+        stoppedWhileStartingRef.current.clear();
         if (mountedRef.current) {
           setIsChangingTestState(false);
         }
