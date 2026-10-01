@@ -131,6 +131,14 @@ test.describe("CSV parsing", () => {
     expect(malformedRows).toBe(3);
   });
 
+  test("invalid CSV quoting rejects the whole import instead of changing rules", () => {
+    for (const row of ['say "hi",x\n', '"a"oops,b\n', '"a" "b",c\n']) {
+      expect(() => parseReplacementsCsv("valid,Valid\n" + row)).toThrow(
+        DictionaryParseError,
+      );
+    }
+  });
+
   test("unterminated quote rejects the whole file", () => {
     expect(() => parseReplacementsCsv('a,"oops\n')).toThrow(
       DictionaryParseError,
@@ -140,6 +148,35 @@ test.describe("CSV parsing", () => {
     } catch (error) {
       expect((error as DictionaryParseError).code).toBe("malformedCsv");
     }
+  });
+
+  test("a from,to data rule after a malformed row is not mistaken for a header", () => {
+    expect(parseReplacementsCsv("broken-row\nfrom,to\n")).toEqual({
+      rules: [{ from: "from", to: "to" }],
+      malformedRows: 1,
+    });
+  });
+
+  test("empty exports stay empty and BOM-prefixed quoted headers are accepted", () => {
+    expect(parseReplacementsCsv(serializeReplacementsCsv([]))).toEqual({
+      rules: [],
+      malformedRows: 0,
+    });
+    expect(parseReplacementsCsv('\uFEFF"from","to"\r\na,b\r\n')).toEqual({
+      rules: [{ from: "a", to: "b" }],
+      malformedRows: 0,
+    });
+  });
+
+  test("large mixed CSV roundtrips preserve every rule and its order", () => {
+    const rules = Array.from({ length: 10_000 }, (_, index) => ({
+      from: `word ${index}`,
+      to: index % 2 === 0 ? `value, "${index}"` : `שלום\n${index}`,
+    }));
+    expect(parseReplacementsCsv(serializeReplacementsCsv(rules))).toEqual({
+      rules,
+      malformedRows: 0,
+    });
   });
 
   test("csv roundtrip: serialize then parse", () => {
@@ -170,6 +207,17 @@ test.describe("JSON parsing", () => {
     const parsed = parseDictionaryJson(json);
     expect(parsed.words).toEqual(["OpenRouter", "Tauri"]);
     expect(parsed.replacements).toEqual([{ from: "n eight n", to: "n8n" }]);
+  });
+
+  test("UTF-8 BOM from Windows editors is accepted without changing data", () => {
+    const json = buildDictionaryJson(
+      ["OpenRouter"],
+      [{ from: "open router", to: "OpenRouter" }],
+    );
+    expect(parseDictionaryFile("dictionary.json", "\uFEFF" + json)).toEqual({
+      ...parseDictionaryJson(json),
+      malformedRows: 0,
+    });
   });
 
   test("empty dictionary parses", () => {

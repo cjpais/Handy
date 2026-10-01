@@ -155,18 +155,45 @@ export function parseWordsTxt(content: string): string[] {
  * Minimal RFC 4180-style CSV reader: comma separated, double quotes with `""`
  * escapes, and CRLF/LF line endings (newlines allowed inside quotes).
  * Rows that are not exactly two non-empty columns are skipped and counted.
- * Throws on an unterminated quoted field (the whole file is rejected so a
+ * Throws on malformed quoting (the whole file is rejected so a
  * broken import can never be applied partially).
  */
 export function parseReplacementsCsv(content: string): {
   rules: DictionaryRule[];
   malformedRows: number;
 } {
-  const rows: string[][] = [];
+  const rules: DictionaryRule[] = [];
+  let malformedRows = 0;
+  let firstRow = true;
+  // Consume each row immediately instead of retaining a second copy of the
+  // entire file as a string[][] alongside the final rules.
+  const acceptRow = (columns: string[]) => {
+    if (columns.length === 1 && columns[0].trim() === "") return;
+    const isHeader =
+      firstRow &&
+      columns.length === 2 &&
+      columns[0].trim().toLowerCase() === "from" &&
+      columns[1].trim().toLowerCase() === "to";
+    firstRow = false;
+    if (isHeader) return;
+    if (columns.length !== 2) {
+      malformedRows += 1;
+      return;
+    }
+    const from = columns[0].trim();
+    const to = columns[1].trim();
+    if (!from || !to) {
+      malformedRows += 1;
+      return;
+    }
+    rules.push({ from, to });
+  };
   let row: string[] = [];
   let field = "";
   let inQuotes = false;
-  let index = 0;
+  let afterClosingQuote = false;
+  let fieldStarted = false;
+  let index = content.startsWith("\uFEFF") ? 1 : 0;
 
   while (index < content.length) {
     const char = content[index];
@@ -178,6 +205,7 @@ export function parseReplacementsCsv(content: string): {
           continue;
         }
         inQuotes = false;
+        afterClosingQuote = true;
         index += 1;
         continue;
       }
@@ -185,14 +213,29 @@ export function parseReplacementsCsv(content: string): {
       index += 1;
       continue;
     }
+    if (afterClosingQuote && char !== "," && char !== "\n" && char !== "\r") {
+      throw new DictionaryParseError(
+        "malformedCsv",
+        "unexpected character after closing quote",
+      );
+    }
     if (char === '"') {
+      if (fieldStarted) {
+        throw new DictionaryParseError(
+          "malformedCsv",
+          "quote in unquoted field",
+        );
+      }
       inQuotes = true;
+      fieldStarted = true;
       index += 1;
       continue;
     }
     if (char === ",") {
       row.push(field);
       field = "";
+      fieldStarted = false;
+      afterClosingQuote = false;
       index += 1;
       continue;
     }
@@ -200,46 +243,23 @@ export function parseReplacementsCsv(content: string): {
       if (char === "\r" && content[index + 1] === "\n") index += 1;
       row.push(field);
       field = "";
-      rows.push(row);
+      acceptRow(row);
       row = [];
+      fieldStarted = false;
+      afterClosingQuote = false;
       index += 1;
       continue;
     }
     field += char;
+    fieldStarted = true;
     index += 1;
   }
   if (inQuotes) {
     throw new DictionaryParseError("malformedCsv", "unterminated quoted field");
   }
-  if (field.length > 0 || row.length > 0) {
+  if (fieldStarted || row.length > 0) {
     row.push(field);
-    rows.push(row);
-  }
-
-  const rules: DictionaryRule[] = [];
-  let malformedRows = 0;
-  for (const columns of rows) {
-    if (columns.length === 1 && columns[0].trim() === "") continue; // blank line
-    if (columns.length !== 2) {
-      malformedRows += 1;
-      continue;
-    }
-    const from = columns[0].trim();
-    const to = columns[1].trim();
-    if (!from || !to) {
-      malformedRows += 1;
-      continue;
-    }
-    rules.push({ from, to });
-  }
-
-  // Tolerate the optional "from,to" header line written by the CSV export.
-  if (
-    rules.length > 0 &&
-    rules[0].from.toLowerCase() === "from" &&
-    rules[0].to.toLowerCase() === "to"
-  ) {
-    rules.shift();
+    acceptRow(row);
   }
 
   return { rules, malformedRows };
@@ -249,7 +269,8 @@ export function parseReplacementsCsv(content: string): {
 export function parseDictionaryJson(content: string): DictionaryFileData {
   let data: unknown;
   try {
-    data = JSON.parse(content);
+    // A UTF-8 signature is file metadata, not part of the JSON document.
+    data = JSON.parse(content.replace(/^\uFEFF/, ""));
   } catch (error) {
     throw new DictionaryParseError(
       "invalidJson",
