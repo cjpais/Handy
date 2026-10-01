@@ -137,27 +137,22 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
         }
 
         const generation = lifecycleGenerationRef.current;
+        const canAdoptSession = () =>
+          mountedRef.current &&
+          generation === lifecycleGenerationRef.current &&
+          !isWindowHidden();
         startingRef.current = true;
         stoppedWhileStartingRef.current.clear();
         // Install event listeners before invoking: a backend stop can precede
         // the command response, including a disconnect during initialization.
         await listenersReadyRef.current;
-        if (
-          !mountedRef.current ||
-          generation !== lifecycleGenerationRef.current ||
-          isWindowHidden()
-        )
-          return;
+        if (!canAdoptSession()) return;
         const result = await commands.startMicrophoneTest();
         if (result.status === "error") {
           toast.error(t("settings.sound.microphone.testFailed"));
           return;
         }
-        if (
-          !mountedRef.current ||
-          generation !== lifecycleGenerationRef.current ||
-          isWindowHidden()
-        ) {
+        if (!canAdoptSession()) {
           void commands.stopMicrophoneTest(result.data).catch(console.error);
           return;
         }

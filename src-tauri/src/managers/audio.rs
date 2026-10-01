@@ -873,22 +873,15 @@ impl AudioRecordingManager {
         debug!("Microphone stream stopped");
     }
 
-    fn stop_active_microphone_test(
-        &self,
-        expected_session: Option<u64>,
-        notify_frontend: bool,
-    ) -> Result<Option<u64>, anyhow::Error> {
-        let Some(session_id) =
+    fn stop_active_microphone_test(&self, expected_session: Option<u64>) {
+        if let Some(session_id) =
             take_microphone_test_session(&self.active_microphone_test, expected_session)
-        else {
-            return Ok(None);
-        };
-
-        self.stop_microphone_test_capture(session_id, notify_frontend, false);
-        Ok(Some(session_id))
+        {
+            self.stop_microphone_test_capture(session_id, false);
+        }
     }
 
-    fn stop_microphone_test_capture(&self, session_id: u64, notify_frontend: bool, failed: bool) {
+    fn stop_microphone_test_capture(&self, session_id: u64, failed: bool) {
         let stop_result = self
             .recorder
             .lock()
@@ -908,9 +901,7 @@ impl AudioRecordingManager {
             warn!("{error}");
         }
 
-        if notify_frontend {
-            let _ = MicrophoneTestStoppedEvent { session_id, failed }.emit(&self.app_handle);
-        }
+        let _ = MicrophoneTestStoppedEvent { session_id, failed }.emit(&self.app_handle);
     }
 
     pub fn microphone_test_lifecycle_generation(&self) -> u64 {
@@ -980,7 +971,7 @@ impl AudioRecordingManager {
         }
 
         if self.microphone_test_lifecycle_generation() != lifecycle_generation {
-            self.stop_active_microphone_test(Some(session_id), true)?;
+            self.stop_active_microphone_test(Some(session_id));
             if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
                 self.stop_microphone_stream();
             }
@@ -1002,7 +993,7 @@ impl AudioRecordingManager {
             &self.active_microphone_test,
             Some(session_id),
             |state, session_id| {
-                self.stop_microphone_test_capture(session_id, true, failed);
+                self.stop_microphone_test_capture(session_id, failed);
                 if matches!(state, RecordingState::Idle)
                     && (failed || matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand))
                 {
@@ -1063,9 +1054,7 @@ impl AudioRecordingManager {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
-            if let Err(error) = self.stop_active_microphone_test(None, true) {
-                warn!("Failed to stop microphone test before recording: {error}");
-            }
+            self.stop_active_microphone_test(None);
             // Cancel any pending lazy close (no-op in always-on mode, where
             // closes are never scheduled).
             self.close_generation.fetch_add(1, Ordering::SeqCst);
@@ -1126,7 +1115,7 @@ impl AudioRecordingManager {
             Arc::clone(&self.stream_router),
             Arc::clone(&self.active_microphone_test),
         )?;
-        self.stop_active_microphone_test(None, true)?;
+        self.stop_active_microphone_test(None);
         let was_open = *self.is_open.lock().unwrap();
 
         // Invalidate any delayed close before swapping the recorder it targets.
@@ -1169,7 +1158,7 @@ impl AudioRecordingManager {
                 "Cannot change the input device while recording"
             ));
         }
-        self.stop_active_microphone_test(None, true)?;
+        self.stop_active_microphone_test(None);
         self.invalidate_device_cache();
         let was_open = *self.is_open.lock().unwrap();
         let mode = self.mode.lock().unwrap().clone();
@@ -1199,9 +1188,7 @@ impl AudioRecordingManager {
             ));
         }
 
-        if let Err(error) = self.stop_active_microphone_test(None, true) {
-            warn!("Failed to stop microphone test before changing channel: {error}");
-        }
+        self.stop_active_microphone_test(None);
 
         let previous_channel = get_settings(&self.app_handle).selected_channel;
         let was_open = *self.is_open.lock().unwrap();

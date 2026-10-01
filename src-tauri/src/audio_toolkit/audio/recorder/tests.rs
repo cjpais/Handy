@@ -432,6 +432,10 @@ struct TestMicrophoneCapture {
 
 impl TestMicrophoneCapture {
     fn new(sample_rate: u32) -> Self {
+        Self::with_vad(sample_rate, None)
+    }
+
+    fn with_vad(sample_rate: u32, vad: Option<VadConfig>) -> Self {
         let (producer, consumer) = RingBuffer::new(sample_rate as usize * 2);
         let (commands, command_rx) = mpsc::channel();
         let (level_tx, levels) = mpsc::channel();
@@ -443,7 +447,7 @@ impl TestMicrophoneCapture {
         let worker = thread::spawn(move || {
             let mut processor = CaptureProcessor::new(
                 sample_rate,
-                None,
+                vad,
                 None,
                 Some(Arc::new(move |frame| {
                     let _ = frame_tx.send(frame.to_vec());
@@ -558,53 +562,40 @@ impl VoiceActivityDetector for RejectAllAudio {
 }
 
 fn capture_rejected_input(input: &[f32], drained: &[f32]) -> super::CapturedAudio {
-    let (mut producer, consumer) = RingBuffer::new(16_000);
-    let (command_tx, command_rx) = mpsc::channel();
-    let transport = Arc::new(CaptureTransportState::default());
-    let worker_transport = transport.clone();
-    let worker = thread::spawn(move || {
-        let processor = CaptureProcessor::new(
-            16_000,
-            Some(VadConfig {
-                detector: Arc::new(Mutex::new(Box::new(RejectAllAudio))),
-                frame_samples: 480,
-                offline_hangover_frames: 0,
-                streaming_hangover_frames: 0,
-            }),
-            None,
-            None,
-            Instant::now(),
-        );
-        run_consumer(
-            processor,
-            consumer,
-            command_rx,
-            worker_transport,
-            Arc::new(AtomicBool::new(false)),
-        );
-    });
+    let mut capture = TestMicrophoneCapture::with_vad(
+        16_000,
+        Some(VadConfig {
+            detector: Arc::new(Mutex::new(Box::new(RejectAllAudio))),
+            frame_samples: 480,
+            offline_hangover_frames: 0,
+            streaming_hangover_frames: 0,
+        }),
+    );
     let (ready_tx, ready_rx) = mpsc::channel();
-    command_tx
+    capture
+        .commands
         .send(Cmd::Start(VadPolicy::Offline, Instant::now(), ready_tx))
         .unwrap();
-    AudioRecorder::write_input_to_ring(input, 1, None, &mut producer, &transport);
+    capture.feed(input);
     if !input.is_empty() {
         ready_rx.recv_timeout(Duration::from_secs(1)).unwrap();
     }
     let (reply_tx, reply_rx) = mpsc::channel();
-    command_tx.send(Cmd::Stop(reply_tx)).unwrap();
+    capture.commands.send(Cmd::Stop(reply_tx)).unwrap();
     let deadline = Instant::now() + Duration::from_secs(1);
-    while !transport.pause_requested.load(Ordering::Acquire) {
+    while !capture.transport.pause_requested.load(Ordering::Acquire) {
         assert!(Instant::now() < deadline);
         thread::sleep(Duration::from_millis(1));
     }
-    AudioRecorder::write_input_to_ring(drained, 1, None, &mut producer, &transport);
+    capture.feed(drained);
     let captured = reply_rx.recv_timeout(Duration::from_secs(1)).unwrap();
-    command_tx.send(Cmd::Shutdown).unwrap();
-    worker.join().unwrap();
     assert!(
         captured.samples.is_empty(),
         "the VAD must actually reject this input"
+    );
+    assert!(
+        capture.frames.try_recv().is_err(),
+        "VAD-rejected audio reached transcription"
     );
     captured
 }

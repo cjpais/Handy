@@ -800,32 +800,27 @@ impl ShortcutAction for TranscribeAction {
                         return;
                     }
 
-                    if silent_input {
-                        emit_silent_input_warning(&ah);
-                        // Preserve the saved-recording/history behavior of a model
-                        // returning no text, while keeping this input failure distinct
-                        // in the UI and avoiding unnecessary model work.
-                        if wav_saved {
-                            if let Err(err) =
-                                hm.save_entry(file_name, String::new(), post_process, None, None)
-                            {
-                                error!("Failed to save silent recording history entry: {err}");
-                            }
-                        }
-                        utils::hide_recording_overlay(&ah);
-                        set_tray_state(&ah, TrayIconState::Idle);
-                        return;
-                    }
-
-                    let Some(transcription_result) = transcription_result else {
-                        error!("Missing transcription result for non-silent input");
-                        utils::hide_recording_overlay(&ah);
-                        set_tray_state(&ah, TrayIconState::Idle);
-                        return;
-                    };
-
                     match transcription_result {
-                        Ok(transcription) => {
+                        None => {
+                            emit_silent_input_warning(&ah);
+                            // Preserve the saved-recording/history behavior of a model
+                            // returning no text, while keeping this input failure distinct
+                            // in the UI and avoiding unnecessary model work.
+                            if wav_saved {
+                                if let Err(err) = hm.save_entry(
+                                    file_name,
+                                    String::new(),
+                                    post_process,
+                                    None,
+                                    None,
+                                ) {
+                                    error!("Failed to save silent recording history entry: {err}");
+                                }
+                            }
+                            utils::hide_recording_overlay(&ah);
+                            set_tray_state(&ah, TrayIconState::Idle);
+                        }
+                        Some(Ok(transcription)) => {
                             debug!(
                                 "Transcription completed in {:?}: '{}'",
                                 transcription_time.elapsed(),
@@ -907,7 +902,7 @@ impl ShortcutAction for TranscribeAction {
                                 });
                             }
                         }
-                        Err(err) => {
+                        Some(Err(err)) => {
                             if rm.was_cancelled_since(cancel_generation) {
                                 debug!(
                                     "Transcription operation cancelled after transcription error"
