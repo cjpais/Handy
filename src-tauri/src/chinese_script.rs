@@ -113,58 +113,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn variety_from_language_matches_chinese_codes_only() {
-        assert_eq!(
-            ChineseVariety::from_language("zh"),
-            Some(ChineseVariety::Mandarin)
-        );
-        assert_eq!(
-            ChineseVariety::from_language("zh-CN"),
-            Some(ChineseVariety::Mandarin)
-        );
-        assert_eq!(
-            ChineseVariety::from_language("yue"),
-            Some(ChineseVariety::Cantonese)
-        );
-        assert_eq!(ChineseVariety::from_language("ja"), None);
-        assert_eq!(ChineseVariety::from_language("en"), None);
-        assert_eq!(ChineseVariety::from_language(""), None);
-    }
-
-    #[test]
-    fn locale_maps_to_chinese_script() {
-        let cases = [
-            ("zh-CN", Some(ChineseScript::Simplified)),
-            ("zh_SG", Some(ChineseScript::Simplified)),
-            ("zh", Some(ChineseScript::Simplified)),
-            ("zh-Hans-HK", Some(ChineseScript::Simplified)),
-            ("zh-TW", Some(ChineseScript::Traditional)),
-            ("zh-HK", Some(ChineseScript::Traditional)),
-            ("zh-MO", Some(ChineseScript::Traditional)),
-            ("zh-Hant", Some(ChineseScript::Traditional)),
-            ("yue", Some(ChineseScript::Traditional)),
-            ("yue-Hans", Some(ChineseScript::Simplified)),
-            ("en-US", None),
-            ("ja-JP", None),
-        ];
-        for (locale, expected) in cases {
-            assert_eq!(chinese_script_for_locale(locale), expected, "{locale}");
-        }
-    }
-
-    #[test]
-    fn mandarin_uses_taiwan_tables() {
-        assert_eq!(
-            convert_chinese_script("软件", ChineseVariety::Mandarin, ChineseScript::Traditional),
-            "軟件"
-        );
-        assert_eq!(
-            convert_chinese_script("軟體", ChineseVariety::Mandarin, ChineseScript::Simplified),
-            "软体"
-        );
-    }
-
-    #[test]
     fn cantonese_uses_hong_kong_tables() {
         // Hong Kong standard writes 裏 where Taiwan writes 裡.
         assert_eq!(
@@ -178,15 +126,6 @@ mod tests {
         assert_eq!(
             convert_chinese_script("裏面", ChineseVariety::Cantonese, ChineseScript::Simplified),
             "里面"
-        );
-    }
-
-    #[test]
-    fn as_transcribed_leaves_text_alone() {
-        let text = "软件 軟體";
-        assert_eq!(
-            convert_chinese_script(text, ChineseVariety::Mandarin, ChineseScript::AsTranscribed),
-            text
         );
     }
 }

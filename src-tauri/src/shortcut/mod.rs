@@ -1324,21 +1324,9 @@ pub fn change_filler_word_removal_enabled_setting(
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_chinese_script_setting(app: AppHandle, script: String) -> Result<(), String> {
+pub fn change_chinese_script_setting(app: AppHandle, script: ChineseScript) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    let parsed = match script.as_str() {
-        "as_transcribed" => ChineseScript::AsTranscribed,
-        "simplified" => ChineseScript::Simplified,
-        "traditional" => ChineseScript::Traditional,
-        other => {
-            warn!(
-                "Invalid Chinese script '{}', defaulting to as_transcribed",
-                other
-            );
-            ChineseScript::AsTranscribed
-        }
-    };
-    settings.chinese_script = parsed;
+    settings.chinese_script = script;
     settings::write_settings(&app, settings);
     Ok(())
 }

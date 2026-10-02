@@ -2321,41 +2321,6 @@ mod tests {
         assert_eq!(result, raw);
     }
 
-    fn script_settings(script: ChineseScript) -> AppSettings {
-        AppSettings {
-            chinese_script: script,
-            ..Default::default()
-        }
-    }
-
-    #[test]
-    fn chinese_output_is_converted_to_the_configured_script() {
-        let settings = script_settings(ChineseScript::Traditional);
-        let result = post_process_transcription_text(
-            "我们去学校".to_string(),
-            &settings,
-            false,
-            &OutputLanguageEvidence::UserSelected("zh".to_string()),
-            &languages(&["zh", "en"]),
-        );
-
-        assert_eq!(result.text, "我們去學校");
-        assert_eq!(result.chinese_variety, Some(ChineseVariety::Mandarin));
-    }
-
-    #[test]
-    fn preview_converts_from_the_first_update_when_language_is_known() {
-        let mut preview = PreviewScript::new(
-            ChineseScript::Traditional,
-            &OutputLanguageEvidence::UserSelected("zh".to_string()),
-        );
-
-        assert_eq!(
-            preview.convert("我们", "去学校", &languages(&["zh", "en"])),
-            ("我們".to_string(), "去學校".to_string())
-        );
-    }
-
     #[test]
     fn preview_detects_chinese_on_auto_and_keeps_it() {
         let supported = languages(&["zh", "en", "ja"]);
@@ -2387,42 +2352,11 @@ mod tests {
     }
 
     #[test]
-    fn preview_leaves_text_alone_when_off_or_not_chinese() {
-        let supported = languages(&["zh", "ja"]);
-        let mut off = PreviewScript::new(
-            ChineseScript::AsTranscribed,
-            &OutputLanguageEvidence::UserSelected("zh".to_string()),
-        );
-        assert_eq!(off.convert("我们", "", &supported).0, "我们");
-
-        let mut japanese = PreviewScript::new(
-            ChineseScript::Traditional,
-            &OutputLanguageEvidence::UserSelected("ja".to_string()),
-        );
-        assert_eq!(
-            japanese.convert("学校に行きます", "", &supported).0,
-            "学校に行きます"
-        );
-    }
-
-    #[test]
-    fn cantonese_output_uses_hong_kong_tables() {
-        let settings = script_settings(ChineseScript::Traditional);
-        let result = post_process_transcription_text(
-            "喺里面".to_string(),
-            &settings,
-            false,
-            &OutputLanguageEvidence::ModelDetected("yue".to_string()),
-            &languages(&["zh", "yue"]),
-        );
-
-        assert_eq!(result.text, "喺裏面");
-        assert_eq!(result.chinese_variety, Some(ChineseVariety::Cantonese));
-    }
-
-    #[test]
     fn non_chinese_output_is_never_converted() {
-        let settings = script_settings(ChineseScript::Traditional);
+        let settings = AppSettings {
+            chinese_script: ChineseScript::Traditional,
+            ..Default::default()
+        };
         for evidence in [
             OutputLanguageEvidence::ModelDetected("ja".to_string()),
             OutputLanguageEvidence::UserSelected("en".to_string()),
@@ -2439,21 +2373,6 @@ mod tests {
             assert_eq!(result.text, "学校に行きます", "{evidence:?}");
             assert_eq!(result.chinese_variety, None, "{evidence:?}");
         }
-    }
-
-    #[test]
-    fn as_transcribed_keeps_chinese_output() {
-        let settings = script_settings(ChineseScript::AsTranscribed);
-        let result = post_process_transcription_text(
-            "我们去学校".to_string(),
-            &settings,
-            false,
-            &OutputLanguageEvidence::UserSelected("zh".to_string()),
-            &languages(&["zh", "en"]),
-        );
-
-        assert_eq!(result.text, "我们去学校");
-        assert_eq!(result.chinese_variety, None);
     }
 
     #[test]

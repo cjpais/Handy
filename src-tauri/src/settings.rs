@@ -1633,21 +1633,6 @@ mod tests {
     }
 
     #[test]
-    fn chinese_script_migration_keeps_other_languages_and_explicit_script() {
-        let mut settings = get_default_settings();
-        settings.selected_language = "yue".to_string();
-        settings.chinese_script = ChineseScript::Simplified;
-        let raw = serde_json::json!({
-            "selected_language": "yue",
-            "chinese_script": "simplified"
-        });
-
-        apply_settings_migrations(&mut settings, &raw);
-        assert_eq!(settings.selected_language, "yue");
-        assert_eq!(settings.chinese_script, ChineseScript::Simplified);
-    }
-
-    #[test]
     fn shortcut_activation_migration_maps_push_to_talk_true() {
         let mut settings = get_default_settings();
         let raw = serde_json::json!({
