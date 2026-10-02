@@ -316,6 +316,10 @@
             "bottom": "Alt",
             "top": "Üst"
           }
+        },
+        "notch": {
+          "label": "Çentikte göster",
+          "description": "Kamera çentiği olan MacBook'larda göstergeyi ekranın üstündeki çentiğin çevresinde gösterir. Çentiği olmayan ekranlar normal göstergeyi kullanmaya devam eder."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
-    "processing": "İşleniyor..."
+    "processing": "İşleniyor...",
+    "recording": "Kaydediliyor",
+    "cancel": "İptal"
   },
   "whatsNew": {
     "title": "Handy v{{version}} yenilikleri"

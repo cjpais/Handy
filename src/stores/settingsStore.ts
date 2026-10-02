@@ -170,6 +170,8 @@ const settingUpdaters: {
   lazy_stream_close: (value) =>
     commands.changeLazyStreamCloseSetting(value as boolean),
   overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
+  overlay_notch: (value) =>
+    commands.changeOverlayNotchSetting(value as boolean),
   vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
   vad_backend: async (value) => {
     const result = await commands.changeVadBackendSetting(value as VadBackend);

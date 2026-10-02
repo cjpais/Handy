@@ -316,6 +316,10 @@
             "bottom": "In basso",
             "top": "In alto"
           }
+        },
+        "notch": {
+          "label": "Mostra nel notch",
+          "description": "Sui MacBook con notch, mostra l'indicatore attorno al notch nella parte superiore dello schermo. Gli schermi senza notch mantengono l'indicatore normale."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Trascrizione...",
-    "processing": "Elaborazione..."
+    "processing": "Elaborazione...",
+    "recording": "Registrazione",
+    "cancel": "Annulla"
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"

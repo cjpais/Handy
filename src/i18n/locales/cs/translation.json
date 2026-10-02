@@ -316,6 +316,10 @@
             "bottom": "Dole",
             "top": "Nahoře"
           }
+        },
+        "notch": {
+          "label": "Zobrazit ve výřezu",
+          "description": "Na MacBoocích s výřezem pro kameru se překryv zobrazí kolem výřezu v horní části obrazovky. Obrazovky bez výřezu si ponechají běžný překryv."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Přepisuji...",
-    "processing": "Zpracovávám..."
+    "processing": "Zpracovávám...",
+    "recording": "Nahrávání",
+    "cancel": "Zrušit"
   },
   "whatsNew": {
     "title": "Novinky v Handy v{{version}}"

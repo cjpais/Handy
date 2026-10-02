@@ -316,6 +316,10 @@
             "bottom": "Dół",
             "top": "Góra"
           }
+        },
+        "notch": {
+          "label": "Pokaż w wycięciu",
+          "description": "Na MacBookach z wycięciem na kamerę nakładka jest wyświetlana wokół wycięcia u góry ekranu. Ekrany bez wycięcia zachowują zwykłą nakładkę."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Transkrypcja...",
-    "processing": "Przetwarzanie..."
+    "processing": "Przetwarzanie...",
+    "recording": "Nagrywanie",
+    "cancel": "Anuluj"
   },
   "whatsNew": {
     "title": "Nowości w Handy v{{version}}"

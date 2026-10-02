@@ -17,6 +17,11 @@ use tauri::WebviewUrl;
 #[cfg(target_os = "macos")]
 use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel, StyleMask};
 
+#[cfg(target_os = "macos")]
+use crate::overlay_notch::{self, NotchLayout};
+#[cfg(target_os = "macos")]
+use std::sync::Mutex;
+
 #[cfg(target_os = "linux")]
 use crate::utils;
 
@@ -515,6 +520,14 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
         // (see `hide_recording_overlay`).
         OVERLAY_SHOW_GENERATION.fetch_add(1, Ordering::SeqCst);
 
+        // Notch mode replaces the pill only when the target screen has a notch;
+        // otherwise this falls through to the regular placement below.
+        #[cfg(target_os = "macos")]
+        if place_notch_overlay(app_handle, &overlay_window, state) {
+            let _ = overlay_window.emit("show-overlay", state);
+            return;
+        }
+
         #[cfg(target_os = "linux")]
         let shown_with_layer_shell = if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
             let position = settings::get_settings(app_handle).overlay_position;
@@ -639,6 +652,12 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
 }
 
 fn update_overlay_position_on_main(app_handle: &AppHandle) {
+    // A visible notch overlay is placed by its own tracker, not by position.
+    #[cfg(target_os = "macos")]
+    if notch_session().is_some() {
+        return;
+    }
+
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         #[cfg(target_os = "linux")]
         if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
@@ -677,6 +696,164 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
     }
 }
 
+/// A notch overlay that is currently shown: the state it shows, where it sits,
+/// and which tracker thread owns it.
+#[cfg(target_os = "macos")]
+#[derive(Clone)]
+struct NotchSession {
+    state: String,
+    layout: NotchLayout,
+    tracker: u64,
+}
+
+#[cfg(target_os = "macos")]
+static NOTCH_SESSION: Mutex<Option<NotchSession>> = Mutex::new(None);
+
+#[cfg(target_os = "macos")]
+static NOTCH_TRACKER_ID: AtomicU64 = AtomicU64::new(0);
+
+/// How often a visible notch overlay re-checks the pointer (for click-through)
+/// and its screen (for display changes).
+#[cfg(target_os = "macos")]
+const NOTCH_TRACK_INTERVAL_MS: u64 = 33;
+
+#[cfg(target_os = "macos")]
+fn notch_session() -> Option<NotchSession> {
+    NOTCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|session| session.clone())
+}
+
+#[cfg(target_os = "macos")]
+fn end_notch_session() {
+    if let Ok(mut session) = NOTCH_SESSION.lock() {
+        *session = None;
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn overlay_ns_window(
+    overlay_window: &tauri::webview::WebviewWindow,
+) -> Option<&objc2_app_kit::NSWindow> {
+    let ptr = overlay_window.ns_window().ok()?;
+    // SAFETY: Tauri returns the live NSWindow (here our NSPanel) backing the
+    // overlay; it outlives this borrow, which only lives within the current
+    // main-thread call.
+    unsafe { (ptr as *const objc2_app_kit::NSWindow).as_ref() }
+}
+
+/// Shows the overlay around the notch when notch mode is enabled and the screen
+/// under the cursor has one. Returns false (after restoring regular pill
+/// behavior) when the regular overlay should be shown instead.
+#[cfg(target_os = "macos")]
+fn place_notch_overlay(
+    app_handle: &AppHandle,
+    overlay_window: &tauri::webview::WebviewWindow,
+    state: &str,
+) -> bool {
+    let layout = if settings::get_settings(app_handle).overlay_notch {
+        objc2::MainThreadMarker::new().and_then(overlay_notch::layout_for_cursor_screen)
+    } else {
+        None
+    };
+    let Some(ns_window) = overlay_ns_window(overlay_window) else {
+        return false;
+    };
+
+    let Some(layout) = layout else {
+        end_notch_session();
+        ns_window.setIgnoresMouseEvents(false);
+        let _ = overlay_window.emit("overlay-notch", None::<overlay_notch::NotchGeometry>);
+        return false;
+    };
+
+    let _ = overlay_window.emit("overlay-notch", Some(layout.geometry));
+    overlay_notch::set_window_frame(ns_window, layout.window);
+    overlay_notch::update_mouse_passthrough(ns_window, &layout.cancel_hit);
+    let _ = overlay_window.show();
+
+    let Ok(mut session) = NOTCH_SESSION.lock() else {
+        return true;
+    };
+    let tracker = match session.as_ref() {
+        Some(existing) => existing.tracker,
+        None => {
+            let id = NOTCH_TRACKER_ID.fetch_add(1, Ordering::SeqCst) + 1;
+            spawn_notch_tracker(app_handle.clone(), id);
+            id
+        }
+    };
+    *session = Some(NotchSession {
+        state: state.to_string(),
+        layout,
+        tracker,
+    });
+    true
+}
+
+/// While a notch overlay is visible, keeps clicks passing through to the menu
+/// bar except over the cancel button, and follows display changes (resolution,
+/// arrangement, the notched screen going away) without re-announcing the state.
+#[cfg(target_os = "macos")]
+fn spawn_notch_tracker(app_handle: AppHandle, id: u64) {
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_millis(NOTCH_TRACK_INTERVAL_MS));
+        match notch_session() {
+            Some(session) if session.tracker == id => {}
+            _ => return,
+        }
+        let handle = app_handle.clone();
+        let _ = app_handle.run_on_main_thread(move || track_notch_overlay(&handle, id));
+    });
+}
+
+#[cfg(target_os = "macos")]
+fn track_notch_overlay(app_handle: &AppHandle, id: u64) {
+    let Some(session) = notch_session().filter(|session| session.tracker == id) else {
+        return;
+    };
+    let Some(mtm) = objc2::MainThreadMarker::new() else {
+        return;
+    };
+    let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") else {
+        return;
+    };
+    let Some(ns_window) = overlay_ns_window(&overlay_window) else {
+        return;
+    };
+
+    match overlay_notch::layout_for_window_screen(mtm, &session.layout.window) {
+        Some(layout) if layout == session.layout => {
+            overlay_notch::update_mouse_passthrough(ns_window, &layout.cancel_hit);
+        }
+        Some(layout) => {
+            let _ = overlay_window.emit("overlay-notch", Some(layout.geometry));
+            overlay_notch::set_window_frame(ns_window, layout.window);
+            overlay_notch::update_mouse_passthrough(ns_window, &layout.cancel_hit);
+            if let Ok(mut current) = NOTCH_SESSION.lock() {
+                if let Some(current) = current.as_mut().filter(|s| s.tracker == id) {
+                    current.layout = layout;
+                }
+            }
+        }
+        None => {
+            // The notched screen is gone or lost its notch: fall back to the
+            // regular pill on the cursor's screen, keeping the current state.
+            end_notch_session();
+            ns_window.setIgnoresMouseEvents(false);
+            let _ = overlay_window.emit("overlay-notch", None::<overlay_notch::NotchGeometry>);
+            let (width, height) = overlay_dimensions(&session.state);
+            let _ =
+                overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+            if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+                let _ = overlay_window
+                    .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            }
+        }
+    }
+}
+
 /// Generation counter bumped every time the overlay is shown. The delayed
 /// `hide()` below only unmaps the window if no show happened after it was
 /// scheduled, so a hide left over from a finished transcription can never
@@ -693,6 +870,8 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
         // Snapshot before doing anything observable, so any show that lands
         // after this point invalidates the delayed hide below.
         let scheduled_at = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+        #[cfg(target_os = "macos")]
+        end_notch_session();
         // Emit event to trigger fade-out animation
         let _ = overlay_window.emit("hide-overlay", ());
         // Hide the window after a short delay to allow animation to complete,

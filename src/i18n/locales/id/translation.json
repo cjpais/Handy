@@ -316,6 +316,10 @@
             "bottom": "Bawah",
             "top": "Atas"
           }
+        },
+        "notch": {
+          "label": "Tampilkan di notch",
+          "description": "Di MacBook dengan notch kamera, overlay ditampilkan di sekitar notch di bagian atas layar. Layar tanpa notch tetap memakai overlay biasa."
         }
       },
       "pasteMethod": {
@@ -702,7 +706,9 @@
   },
   "overlay": {
     "transcribing": "Mentranskripsikan...",
-    "processing": "Memproses..."
+    "processing": "Memproses...",
+    "recording": "Merekam",
+    "cancel": "Batal"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} mungkin memblokir 1 pintasan",

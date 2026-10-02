@@ -466,3 +466,219 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ============================================================
+   Notch form (macOS, `overlay_notch`). The window spans the notch plus a side
+   region and an ear on each side (sizes come from overlay_notch.rs through
+   --n-* vars). The black body grows out of the notch, leaves the camera
+   housing empty, and shrinks back into it when hidden. Always black so it
+   blends with the hardware, whatever the app theme.
+   ============================================================ */
+.nstage {
+  /* Handy's logo pink as used on dark surfaces; the notch is always black. */
+  --n-accent: var(--dark-color-logo-primary);
+  --n-halo: color-mix(in srgb, var(--n-accent) 13%, #000);
+  --n-radius: min(22px, calc(var(--n-h) * 0.58));
+  position: fixed;
+  inset: 0;
+}
+.nbody {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: var(--n-h);
+  width: var(--n-notch-w);
+  transform: translateX(-50%);
+  background: #000;
+  border-radius: 0 0 var(--n-radius) var(--n-radius);
+  transition: width 0.45s cubic-bezier(0.3, 0.8, 0.3, 1);
+}
+.nstage.open .nbody {
+  width: calc(var(--n-notch-w) + 2 * var(--n-side-w));
+}
+/* Concave ears: widen the top corners into the menu bar like the notch does. */
+.nbody::before,
+.nbody::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: var(--n-ear-w);
+  height: var(--n-ear-w);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.nbody::before {
+  left: calc(-1 * var(--n-ear-w));
+  background: radial-gradient(
+    circle at 0 100%,
+    transparent calc(var(--n-ear-w) - 0.5px),
+    #000 var(--n-ear-w)
+  );
+}
+.nbody::after {
+  right: calc(-1 * var(--n-ear-w));
+  background: radial-gradient(
+    circle at 100% 100%,
+    transparent calc(var(--n-ear-w) - 0.5px),
+    #000 var(--n-ear-w)
+  );
+}
+.nstage.open .nbody::before,
+.nstage.open .nbody::after {
+  opacity: 1;
+}
+
+.nside {
+  position: absolute;
+  top: 0;
+  width: var(--n-side-w);
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.nstage.open .nside {
+  opacity: 1;
+  transition-delay: 0.12s;
+}
+.nleft {
+  left: 0;
+  border-bottom-left-radius: var(--n-radius);
+  /* Subtle pink halo that fades to black before the camera housing and edges. */
+  background: radial-gradient(
+    54px calc(var(--n-h) / 2) at 56px 50%,
+    var(--n-halo),
+    #000
+  );
+}
+.nright {
+  right: 0;
+}
+
+.nrecording,
+.nworking {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.3s ease;
+}
+.nworking,
+.nleft.working .nrecording {
+  opacity: 0;
+}
+.nleft.working .nworking {
+  opacity: 1;
+}
+
+.ndot {
+  position: absolute;
+  left: 16px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--n-accent);
+}
+.ndot.ready {
+  animation: ndot-breathe 1.8s ease-in-out infinite;
+}
+/* Shortcut acknowledged, microphone not delivering samples yet. */
+.ndot.arming {
+  opacity: 0.35;
+}
+@keyframes ndot-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.nbars {
+  position: absolute;
+  left: 38px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 16px;
+}
+.nbars i {
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--n-accent);
+  transition: transform 80ms linear;
+}
+.nbars.arming i {
+  opacity: 0.35;
+}
+
+.nworking {
+  padding-left: 18px;
+  gap: 6px;
+}
+.nworking i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--n-accent);
+  opacity: 0.22;
+  animation: nwave 1.4s ease-in-out infinite;
+}
+@keyframes nwave {
+  50% {
+    opacity: 1;
+  }
+}
+
+.nx {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a9a9ae;
+  background: #1c1c1e;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+.nx svg {
+  width: 9px;
+  height: 9px;
+  display: block;
+}
+.nx:hover {
+  color: #e5e5e8;
+  background: #2a2a2d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nbody,
+  .nbody::before,
+  .nbody::after,
+  .nside,
+  .nrecording,
+  .nworking,
+  .nbars i {
+    transition: none;
+  }
+  .ndot.ready,
+  .nworking i {
+    animation: none;
+  }
+  .nworking i {
+    opacity: 0.6;
+  }
+  /* Level-driven motion too: hold the bars at a fixed height. */
+  .nbars i {
+    transform: scaleY(0.6) !important;
+  }
+}

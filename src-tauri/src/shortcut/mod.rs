@@ -672,6 +672,15 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_overlay_notch_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_notch = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match style.as_str() {

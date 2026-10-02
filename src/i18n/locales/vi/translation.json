@@ -316,6 +316,10 @@
             "bottom": "Dưới",
             "top": "Trên"
           }
+        },
+        "notch": {
+          "label": "Hiển thị ở tai thỏ",
+          "description": "Trên MacBook có tai thỏ, lớp phủ được hiển thị quanh tai thỏ ở đầu màn hình. Màn hình không có tai thỏ vẫn dùng lớp phủ thông thường."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
-    "processing": "Đang xử lý..."
+    "processing": "Đang xử lý...",
+    "recording": "Đang ghi",
+    "cancel": "Hủy"
   },
   "whatsNew": {
     "title": "Điểm mới trong Handy v{{version}}"

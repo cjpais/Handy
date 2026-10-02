@@ -316,6 +316,10 @@
             "bottom": "底部",
             "top": "顶部"
           }
+        },
+        "notch": {
+          "label": "在刘海中显示",
+          "description": "在带摄像头刘海的 MacBook 上，将浮层显示在屏幕顶部的刘海周围。没有刘海的屏幕仍使用常规浮层。"
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "正在转录...",
-    "processing": "处理中..."
+    "processing": "处理中...",
+    "recording": "正在录音",
+    "cancel": "取消"
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"

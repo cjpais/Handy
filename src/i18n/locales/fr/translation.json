@@ -316,6 +316,10 @@
             "bottom": "Bas",
             "top": "Haut"
           }
+        },
+        "notch": {
+          "label": "Afficher dans l'encoche",
+          "description": "Sur les MacBook avec encoche, affiche l'indicateur autour de l'encoche en haut de l'écran. Les écrans sans encoche conservent l'indicateur habituel."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Transcription...",
-    "processing": "Traitement..."
+    "processing": "Traitement...",
+    "recording": "Enregistrement",
+    "cancel": "Annuler"
   },
   "whatsNew": {
     "title": "Nouveautés de Handy v{{version}}"

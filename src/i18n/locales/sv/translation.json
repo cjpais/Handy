@@ -316,6 +316,10 @@
             "bottom": "Nederst",
             "top": "Överst"
           }
+        },
+        "notch": {
+          "label": "Visa i kamerahacket",
+          "description": "På MacBook-datorer med kamerahack visas överlägget runt hacket högst upp på skärmen. Skärmar utan hack behåller det vanliga överlägget."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Transkriberar...",
-    "processing": "Bearbetar..."
+    "processing": "Bearbetar...",
+    "recording": "Spelar in",
+    "cancel": "Avbryt"
   },
   "whatsNew": {
     "title": "Nytt i Handy v{{version}}"

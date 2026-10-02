@@ -316,6 +316,10 @@
             "bottom": "למטה",
             "top": "למעלה"
           }
+        },
+        "notch": {
+          "label": "הצגה במגרעת",
+          "description": "במחשבי MacBook עם מגרעת מצלמה, המחוון יוצג סביב המגרעת בראש המסך. מסכים ללא מגרעת ישמרו על המחוון הרגיל."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "מתמלל...",
-    "processing": "מעבד..."
+    "processing": "מעבד...",
+    "recording": "מקליט",
+    "cancel": "ביטול"
   },
   "whatsNew": {
     "title": "חדש ב-Handy v{{version}}"

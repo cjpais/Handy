@@ -14,6 +14,15 @@ import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
 
+// Sent by the backend (macOS only) when the overlay is drawn around the camera
+// notch; null when the regular pill is shown. Sizes are in points.
+interface NotchGeometry {
+  notch_width: number;
+  height: number;
+  side_width: number;
+  ear_width: number;
+}
+
 // Number of reactive bars in the waveform (the simple, smoothed style shared by
 // every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
 const WAVE_BARS = 9;
@@ -43,6 +52,7 @@ const RecordingOverlay: React.FC = () => {
   // True once live text overflows the cap. A top overlay fades its top edge only
   // while overflowing, so the resting first line stays crisp flush under the pill.
   const [overflowing, setOverflowing] = useState(false);
+  const [notch, setNotch] = useState<NotchGeometry | null>(null);
 
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   // Live-text scroll-back: the text region "sticks" to the newest line while the
@@ -54,6 +64,13 @@ const RecordingOverlay: React.FC = () => {
 
   useEffect(() => {
     const setupEventListeners = async () => {
+      // Always emitted right before show-overlay on macOS, so the notch layout
+      // is in place by the time the state arrives.
+      const unlistenNotch = await listen<NotchGeometry | null>(
+        "overlay-notch",
+        (event) => setNotch(event.payload),
+      );
+
       const unlistenShow = await listen("show-overlay", async (event) => {
         const overlayState = event.payload as OverlayState;
         // Reset synchronously before settings I/O. A fast microphone can emit
@@ -122,6 +139,7 @@ const RecordingOverlay: React.FC = () => {
       });
 
       return () => {
+        unlistenNotch();
         unlistenShow();
         unlistenHide();
         unlistenReady();
@@ -156,6 +174,74 @@ const RecordingOverlay: React.FC = () => {
     pinnedRef.current = true;
     setOverflowing(false);
   }, [session]);
+
+  // The notch form stays mounted while hidden so it can shrink back into the
+  // notch; the native window is hidden once that animation has finished.
+  if (notch) {
+    const working =
+      state === "transcribing" ||
+      state === "processing" ||
+      (state === "streaming" && phase === "working");
+    const label = !working
+      ? t("overlay.recording")
+      : state === "processing" ||
+          (state === "streaming" && workKind === "polishing")
+        ? t("overlay.processing")
+        : t("overlay.transcribing");
+
+    return (
+      <div
+        className={`nstage ${isVisible ? "open" : ""}`}
+        style={
+          {
+            "--n-notch-w": `${notch.notch_width}px`,
+            "--n-h": `${notch.height}px`,
+            "--n-side-w": `${notch.side_width}px`,
+            "--n-ear-w": `${notch.ear_width}px`,
+          } as React.CSSProperties
+        }
+      >
+        <div className="nbody" role="status" aria-label={label}>
+          <div className={`nside nleft ${working ? "working" : ""}`}>
+            <div className="nrecording">
+              <span className={`ndot ${captureReady ? "ready" : "arming"}`} />
+              <div className={`nbars ${captureReady ? "ready" : "arming"}`}>
+                {levels.map((v, i) => (
+                  <i
+                    key={i}
+                    style={{
+                      transform: `scaleY(${Math.max(0.25, Math.min(1, Math.pow(v, 0.7) * 1.4))})`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="nworking">
+              {levels.map((_, i) => (
+                <i key={i} style={{ animationDelay: `${i * 0.14}s` }} />
+              ))}
+            </div>
+          </div>
+          <div className="nside nright">
+            <button
+              className="nx"
+              aria-label={t("overlay.cancel")}
+              onClick={() => commands.cancelOperation()}
+            >
+              <svg viewBox="0 0 9 9" aria-hidden="true">
+                <path
+                  d="M1 1 L8 8 M8 1 L1 8"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isVisible) return null;
 

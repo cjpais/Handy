@@ -14,6 +14,8 @@ mod llm_client;
 mod managers;
 mod memory;
 mod overlay;
+#[cfg(target_os = "macos")]
+mod overlay_notch;
 mod paste_tx;
 pub mod portable;
 mod secure_input;
@@ -662,6 +664,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,
             shortcut::change_overlay_style_setting,
+            shortcut::change_overlay_notch_setting,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_extra_recording_buffer_setting,

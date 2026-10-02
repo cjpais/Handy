@@ -316,6 +316,10 @@
             "bottom": "下",
             "top": "上"
           }
+        },
+        "notch": {
+          "label": "ノッチに表示",
+          "description": "カメラのノッチがある MacBook では、画面上部のノッチの周りにオーバーレイを表示します。ノッチのない画面では通常のオーバーレイが使われます。"
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "文字起こし中…",
-    "processing": "処理中…"
+    "processing": "処理中…",
+    "recording": "録音中",
+    "cancel": "キャンセル"
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"

@@ -316,6 +316,10 @@
             "bottom": "Bottom",
             "top": "Top"
           }
+        },
+        "notch": {
+          "label": "Show in the notch",
+          "description": "On MacBooks with a camera notch, show the overlay around the notch at the top of the screen. Screens without a notch keep the regular overlay."
         }
       },
       "pasteMethod": {
@@ -702,7 +706,9 @@
   },
   "overlay": {
     "transcribing": "Transcribing...",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "recording": "Recording",
+    "cancel": "Cancel"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

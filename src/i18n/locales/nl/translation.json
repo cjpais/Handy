@@ -316,6 +316,10 @@
             "bottom": "Onderkant",
             "top": "Bovenkant"
           }
+        },
+        "notch": {
+          "label": "Tonen in de notch",
+          "description": "Op MacBooks met een cameranotch wordt de overlay rond de notch bovenaan het scherm getoond. Schermen zonder notch houden de gewone overlay."
         }
       },
       "pasteMethod": {
@@ -702,7 +706,9 @@
   },
   "overlay": {
     "transcribing": "Transcriberen...",
-    "processing": "Verwerken..."
+    "processing": "Verwerken...",
+    "recording": "Opnemen",
+    "cancel": "Annuleren"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokkeert mogelijk 1 sneltoets",

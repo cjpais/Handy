@@ -316,6 +316,10 @@
             "bottom": "Inferior",
             "top": "Superior"
           }
+        },
+        "notch": {
+          "label": "Mostrar no notch",
+          "description": "Em MacBooks com notch, mostra o indicador à volta do notch no topo do ecrã. Ecrãs sem notch mantêm o indicador habitual."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Transcrevendo...",
-    "processing": "Processando..."
+    "processing": "Processando...",
+    "recording": "A gravar",
+    "cancel": "Cancelar"
   },
   "whatsNew": {
     "title": "Novidades no Handy v{{version}}"

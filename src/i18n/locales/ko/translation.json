@@ -316,6 +316,10 @@
             "bottom": "하단",
             "top": "상단"
           }
+        },
+        "notch": {
+          "label": "노치에 표시",
+          "description": "카메라 노치가 있는 MacBook에서는 화면 상단의 노치 주변에 오버레이를 표시합니다. 노치가 없는 화면에서는 기존 오버레이가 유지됩니다."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
-    "processing": "처리 중..."
+    "processing": "처리 중...",
+    "recording": "녹음 중",
+    "cancel": "취소"
   },
   "whatsNew": {
     "title": "Handy v{{version}}의 새 소식"

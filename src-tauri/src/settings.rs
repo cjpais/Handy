@@ -514,6 +514,10 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    /// macOS only: draw the overlay around the camera notch on screens that
+    /// have one. Screens without a notch keep the regular overlay.
+    #[serde(default)]
+    pub overlay_notch: bool,
 }
 
 fn default_model() -> String {
@@ -970,6 +974,7 @@ pub fn get_default_settings() -> AppSettings {
         vad_enabled: default_vad_enabled(),
         vad_backend: VadBackend::default(),
         overlay_style: default_overlay_style(),
+        overlay_notch: false,
     }
 }
 
@@ -1397,6 +1402,8 @@ mod tests {
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
         assert_eq!(settings.vad_backend, VadBackend::Silero);
+        // Stores written before the notch option keep the regular overlay.
+        assert!(!settings.overlay_notch);
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.

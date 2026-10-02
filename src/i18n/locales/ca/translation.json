@@ -316,6 +316,10 @@
             "bottom": "A baix",
             "top": "A dalt"
           }
+        },
+        "notch": {
+          "label": "Mostra al notch",
+          "description": "Als MacBook amb notch, mostra l'indicador al voltant del notch a la part superior de la pantalla. Les pantalles sense notch mantenen l'indicador habitual."
         }
       },
       "pasteMethod": {
@@ -702,7 +706,9 @@
   },
   "overlay": {
     "transcribing": "S'està transcrivint...",
-    "processing": "S'està processant..."
+    "processing": "S'està processant...",
+    "recording": "Enregistrant",
+    "cancel": "Cancel·la"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} pot estar blocant 1 drecera",

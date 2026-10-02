@@ -316,6 +316,10 @@
             "bottom": "Unten",
             "top": "Oben"
           }
+        },
+        "notch": {
+          "label": "In der Notch anzeigen",
+          "description": "Auf MacBooks mit Kamera-Notch wird das Overlay um die Notch am oberen Bildschirmrand angezeigt. Bildschirme ohne Notch behalten das normale Overlay."
         }
       },
       "pasteMethod": {
@@ -699,7 +703,9 @@
   },
   "overlay": {
     "transcribing": "Transkribiere...",
-    "processing": "Verarbeite..."
+    "processing": "Verarbeite...",
+    "recording": "Aufnahme",
+    "cancel": "Abbrechen"
   },
   "whatsNew": {
     "title": "Neu in Handy v{{version}}"
