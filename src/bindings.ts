@@ -998,9 +998,8 @@ selected_channel?: number | null; clamshell_microphone?: string | null; selected
  */
 reliable_paste?: boolean; typing_tool?: TypingTool; external_script_path?: string | null; filler_word_removal_enabled?: boolean; custom_filler_words?: string[] | null; 
 /**
- * Stores missing this key get a default from the OS locale; legacy
- * `zh-Hans`/`zh-Hant` language intents are migrated into it in
- * `apply_settings_migrations`.
+ * Fresh installs default from the OS locale; existing stores are migrated
+ * in `apply_settings_migrations`.
  */
 chinese_script?: ChineseScript; transcribe_accelerator?: TranscribeAcceleratorSetting; ort_accelerator?: OrtAcceleratorSetting; 
 /**

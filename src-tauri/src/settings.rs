@@ -502,10 +502,9 @@ pub struct AppSettings {
     pub filler_word_removal_enabled: bool,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
-    /// Stores missing this key get a default from the OS locale; legacy
-    /// `zh-Hans`/`zh-Hant` language intents are migrated into it in
-    /// `apply_settings_migrations`.
-    #[serde(default = "default_chinese_script")]
+    /// Fresh installs default from the OS locale; existing stores are migrated
+    /// in `apply_settings_migrations`.
+    #[serde(default)]
     pub chinese_script: ChineseScript,
     #[serde(default)]
     pub transcribe_accelerator: TranscribeAcceleratorSetting,
@@ -1164,21 +1163,19 @@ fn apply_settings_migrations(
         }
     }
 
-    // Chinese script used to be chosen through `zh-Hans`/`zh-Hant` language
-    // intents. Split them into the recognition language and the script setting
-    // so the explicit choice carries over.
-    let legacy_script = match settings.selected_language.as_str() {
-        "zh-Hans" => Some(ChineseScript::Simplified),
-        "zh-Hant" => Some(ChineseScript::Traditional),
-        _ => None,
-    };
-    if let Some(script) = legacy_script {
-        settings.selected_language = "zh".to_string();
-        settings.chinese_script = script;
-        updated = true;
-    } else if settings_value.get("chinese_script").is_none() {
-        // Persist the locale-derived default so it stays put if the OS locale
-        // changes later.
+    // One-time Chinese script migration: the script used to be chosen through
+    // `zh-Hans`/`zh-Hant` language intents. Split those into the recognition
+    // language and the script setting; every other upgrading user keeps the
+    // unconverted output they had. Only fresh installs get the locale default.
+    if settings_value.get("chinese_script").is_none() {
+        settings.chinese_script = match settings.selected_language.as_str() {
+            "zh-Hans" => ChineseScript::Simplified,
+            "zh-Hant" => ChineseScript::Traditional,
+            _ => ChineseScript::AsTranscribed,
+        };
+        if settings.chinese_script != ChineseScript::AsTranscribed {
+            settings.selected_language = "zh".to_string();
+        }
         updated = true;
     }
 
@@ -1616,18 +1613,19 @@ mod tests {
     }
 
     #[test]
-    fn chinese_script_migration_splits_legacy_language_intents() {
-        for (intent, script) in [
-            ("zh-Hans", ChineseScript::Simplified),
-            ("zh-Hant", ChineseScript::Traditional),
+    fn chinese_script_migration_only_carries_over_legacy_intents() {
+        for (intent, language, script) in [
+            ("zh-Hans", "zh", ChineseScript::Simplified),
+            ("zh-Hant", "zh", ChineseScript::Traditional),
+            ("auto", "auto", ChineseScript::AsTranscribed),
         ] {
             let mut settings = get_default_settings();
             settings.selected_language = intent.to_string();
-            settings.chinese_script = ChineseScript::AsTranscribed;
+            settings.chinese_script = ChineseScript::Traditional;
             let raw = serde_json::json!({ "selected_language": intent });
 
             assert!(apply_settings_migrations(&mut settings, &raw));
-            assert_eq!(settings.selected_language, "zh");
+            assert_eq!(settings.selected_language, language);
             assert_eq!(settings.chinese_script, script);
         }
     }

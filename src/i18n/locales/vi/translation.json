@@ -400,7 +400,7 @@
         "description": "Loại bỏ các từ ngập ngừng phổ biến khỏi bản chép lời. Tắt để giữ lại các từ này."
       },
       "chineseScript": {
-        "title": "Chữ Hán",
+        "title": "Chữ Hán giản thể/phồn thể",
         "description": "Ghi bản chép tiếng Quan Thoại và tiếng Quảng Đông bằng chữ Giản thể hoặc Phồn thể. Các ngôn ngữ khác không bị thay đổi.",
         "options": {
           "asTranscribed": "Giữ nguyên bản chép",

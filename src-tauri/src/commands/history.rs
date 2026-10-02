@@ -89,7 +89,7 @@ pub async fn retry_history_entry_transcription(
         .map_err(|e| format!("Transcription task panicked: {}", e))?
         .map_err(|e| e.to_string())?;
 
-    if transcription.text.is_empty() {
+    if transcription.is_empty() {
         return Err("Recording contains no speech".to_string());
     }
 
@@ -98,7 +98,7 @@ pub async fn retry_history_entry_transcription(
     history_manager
         .update_transcription(
             id,
-            transcription.text,
+            transcription,
             processed.post_processed_text,
             processed.post_process_prompt,
         )

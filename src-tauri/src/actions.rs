@@ -2,12 +2,11 @@
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error, VadPolicy};
-use crate::chinese_script::convert_chinese_script;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
-use crate::managers::transcription::{TranscriptionManager, TranscriptionOutput};
+use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
@@ -353,24 +352,16 @@ pub(crate) struct ProcessedTranscription {
 
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
-    transcription: &TranscriptionOutput,
+    transcription: &str,
     post_process: bool,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
-    let mut final_text = transcription.text.clone();
+    let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
     if post_process {
         if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
-            // The LLM may answer in either script; hold it to the same script
-            // the transcription was converted to.
-            let processed_text = match transcription.chinese_variety {
-                Some(variety) => {
-                    convert_chinese_script(&processed_text, variety, settings.chinese_script)
-                }
-                None => processed_text,
-            };
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
@@ -664,7 +655,7 @@ impl ShortcutAction for TranscribeAction {
                         // transcription of the same audio. A finalize timeout is
                         // surfaced instead — the worker may still hold the engine,
                         // so a batch fallback would contend with it.
-                        Ok(Some(output)) if !output.text.trim().is_empty() => Ok(output),
+                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
                         Ok(_) => tm.transcribe(samples),
                         Err(err) => Err(err),
                     };
@@ -705,7 +696,7 @@ impl ShortcutAction for TranscribeAction {
                             debug!(
                                 "Transcription completed in {:?}: '{}'",
                                 transcription_time.elapsed(),
-                                utils::redact_text(&transcription.text)
+                                utils::redact_text(&transcription)
                             );
 
                             if post_process {
@@ -738,7 +729,7 @@ impl ShortcutAction for TranscribeAction {
                             if wav_saved {
                                 if let Err(err) = hm.save_entry(
                                     file_name,
-                                    transcription.text,
+                                    transcription,
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
