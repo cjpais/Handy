@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::collections::HashSet;
 use std::error::Error as StdError;
 use std::sync::{Mutex, OnceLock};
+use std::time::Duration;
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -172,11 +173,21 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     Ok(headers)
 }
 
+/// Upper bound on one provider request. reqwest has no default timeout, so an
+/// endpoint that accepts the connection and never answers (a stalled network,
+/// a local server still loading its model) would otherwise leave the dictation
+/// on "Processing" until the user cancels it. Sixty seconds matches the model
+/// downloader's stall bound and leaves room for slow providers. On expiry the
+/// request fails through the normal error path, and post-processing falls back
+/// to the original transcription.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
+
 /// Create an HTTP client with provider-specific headers
 fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwest::Client, String> {
     let headers = build_headers(provider, api_key)?;
     reqwest::Client::builder()
         .default_headers(headers)
+        .timeout(REQUEST_TIMEOUT)
         .build()
         .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))
 }
@@ -660,6 +671,37 @@ mod tests {
         assert!(details.contains(&format!("url: {base_url}/private")));
         assert!(!details.contains("SECRET_QUERY_TOKEN"));
         assert!(!details.contains("#private"));
+    }
+
+    /// An endpoint that reads the request and never answers must fail with a
+    /// timeout instead of hanging. The clock is paused, so tokio jumps straight
+    /// to the next deadline rather than sleeping through it; without a request
+    /// timeout the only deadline left is the outer guard, and the test fails.
+    #[tokio::test(start_paused = true)]
+    async fn request_to_silent_endpoint_times_out() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 2048];
+            let _ = stream.read(&mut request).await;
+            // Keep the connection open and never write a response.
+            std::future::pending::<()>().await;
+        });
+
+        let silent = provider("custom", &format!("http://{address}"));
+        let started = tokio::time::Instant::now();
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(600),
+            send_chat_completion(&silent, String::new(), "model", "hi".to_string(), false),
+        )
+        .await;
+
+        let error = outcome
+            .expect("request to a silent endpoint never gave up")
+            .unwrap_err();
+        assert!(error.contains("timeout"), "unexpected error: {error}");
+        assert!(started.elapsed() >= REQUEST_TIMEOUT);
     }
 
     #[test]
