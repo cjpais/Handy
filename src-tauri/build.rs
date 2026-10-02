@@ -19,6 +19,13 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib/Handy:$ORIGIN/../lib");
     }
 
+    // CPAL (handy-recorder's and rodio's) links two CoreAudio functions that
+    // only exist on macOS 14.2+. Weak-link the framework so Handy still
+    // launches on older macOS (minimumSystemVersion is 10.15).
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        println!("cargo:rustc-link-arg=-Wl,-weak_framework,CoreAudio");
+    }
+
     // Stage transcribe-cpp's shared runtime libraries (and the dlopen'd ggml
     // backend modules) for the installer. Self-gates on the shared /
     // dynamic-backends posture used by Linux and Windows; it's a no-op for the
