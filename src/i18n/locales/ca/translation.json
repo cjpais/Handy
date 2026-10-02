@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Elimina les falques",
         "description": "Elimina les expressions de vacil·lació habituals de les transcripcions. Desactiveu aquesta opció per conservar-les."
+      },
+      "chineseScript": {
+        "title": "Escriptura xinesa",
+        "description": "Escriu les transcripcions en mandarí i cantonès amb caràcters simplificats o tradicionals. Els altres idiomes no es modifiquen.",
+        "options": {
+          "asTranscribed": "Tal com s'ha transcrit",
+          "simplified": "Simplificat",
+          "traditional": "Tradicional"
+        }
       }
     },
     "postProcessing": {

@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "フィラー語を削除",
         "description": "文字起こしから一般的なフィラー語を削除します。残すにはオフにしてください。"
+      },
+      "chineseScript": {
+        "title": "中国語の字体",
+        "description": "北京語と広東語の文字起こしを簡体字または繁体字で出力します。他の言語は変更されません。",
+        "options": {
+          "asTranscribed": "文字起こしのまま",
+          "simplified": "簡体字",
+          "traditional": "繁体字"
+        }
       }
     },
     "postProcessing": {

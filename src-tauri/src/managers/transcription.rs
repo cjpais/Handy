@@ -2,10 +2,11 @@ use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
     remove_filler_words, OutputLanguageEvidence,
 };
+use crate::chinese_script::{convert_chinese_script, ChineseVariety};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
-    get_settings, AppSettings, ModelUnloadTimeout, OrtAcceleratorSetting,
+    get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, OrtAcceleratorSetting,
     TranscribeAcceleratorSetting,
 };
 use anyhow::Result;
@@ -104,6 +105,15 @@ enum StreamCmd {
     /// was ever active (caller should fall back to batch transcription).
     Finalize(mpsc::Sender<Option<FinalizedStreamText>>),
     Cancel,
+}
+
+/// Post-filtered transcription text.
+#[derive(Debug, Default)]
+pub struct TranscriptionOutput {
+    pub text: String,
+    /// Set when the text was rewritten into the configured Chinese script, so
+    /// later rewrites (LLM post-processing) can be converted the same way.
+    pub chinese_variety: Option<ChineseVariety>,
 }
 
 struct FinalizedStreamText {
@@ -953,6 +963,7 @@ impl TranscriptionManager {
         // (and thus the engine) for its lifetime, so the feed/finalize loop
         // lives in a labeled block — when it exits, the borrow is released and
         // the engine can be moved into return_engine().
+        let mut preview_script = PreviewScript::new(settings.chinese_script, &output_language);
         let mut finalize_reply: Option<mpsc::Sender<Option<FinalizedStreamText>>> = None;
         let mut finalize_result: Option<Option<FinalizedStreamText>> = None;
         let stream_started = 'stream: {
@@ -1002,7 +1013,12 @@ impl TranscriptionManager {
                                 if update.committed_changed || update.tentative_changed {
                                     let text = stream.text();
                                     perf.record_emit();
-                                    self.emit_stream_text(&text.committed, &text.tentative);
+                                    let (committed, tentative) = preview_script.convert(
+                                        &text.committed,
+                                        &text.tentative,
+                                        &languages,
+                                    );
+                                    self.emit_stream_text(&committed, &tentative);
                                 }
                                 perf.maybe_log();
                             }
@@ -1112,7 +1128,7 @@ impl TranscriptionManager {
     /// to batch transcription. `Err` means finalize itself failed or timed out.
     /// A timeout may still leave the worker holding the engine, so callers
     /// should surface it instead of immediately starting a batch fallback.
-    pub fn finalize_stream(&self) -> Result<Option<String>> {
+    pub fn finalize_stream(&self) -> Result<Option<TranscriptionOutput>> {
         let Some(tx) = self.router.take() else {
             return Ok(None);
         };
@@ -1173,7 +1189,7 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+    pub fn transcribe(&self, audio: Vec<f32>) -> Result<TranscriptionOutput> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -1192,7 +1208,7 @@ impl TranscriptionManager {
         if audio.is_empty() {
             debug!("Empty audio vector");
             self.maybe_unload_immediately("empty audio");
-            return Ok(String::new());
+            return Ok(TranscriptionOutput::default());
         }
 
         // Check if model is loaded, if not try to load it
@@ -1373,7 +1389,7 @@ impl TranscriptionManager {
                             anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
                         }),
                     LoadedEngine::SenseVoice(sense_voice_engine) => {
-                        let language = match normalize_cjk_language(&validated_language) {
+                        let language = match validated_language.as_str() {
                             "zh" => Some("zh".to_string()),
                             "en" => Some("en".to_string()),
                             "ja" => Some("ja".to_string()),
@@ -1417,7 +1433,7 @@ impl TranscriptionManager {
                         let lang = if validated_language == "auto" {
                             None
                         } else {
-                            Some(normalize_cjk_language(&validated_language).to_string())
+                            Some(validated_language.clone())
                         };
                         applied_language_hint = lang.clone();
                         let options = TranscribeOptions {
@@ -1520,12 +1536,12 @@ impl TranscriptionManager {
 
         let final_result = filtered_result;
 
-        if final_result.is_empty() {
+        if final_result.text.is_empty() {
             info!("Transcription result is empty");
         } else {
             info!(
                 "Transcription result: {}",
-                crate::utils::redact_text(&final_result)
+                crate::utils::redact_text(&final_result.text)
             );
         }
 
@@ -1649,13 +1665,6 @@ fn real_time_factor(audio_secs: f64, compute_secs: f64) -> f64 {
     }
 }
 
-fn normalize_cjk_language(language: &str) -> &str {
-    match language {
-        "zh-Hans" | "zh-Hant" => "zh",
-        other => other,
-    }
-}
-
 /// Resolve the persisted language intent into the language a specific model can
 /// use without writing the coerced value back to settings.
 fn effective_language_for_model(
@@ -1746,7 +1755,7 @@ fn transcribe_cpp_run_plan(
 ) -> TranscribeCppRunPlan {
     let requested_language = match effective_language {
         "auto" => None,
-        other => Some(normalize_cjk_language(other).to_string()),
+        other => Some(other.to_string()),
     };
     // Only pass a language the loaded model actually advertises (per
     // capabilities().languages); otherwise auto-detect rather than failing with
@@ -1772,27 +1781,21 @@ fn post_process_transcription_text(
     custom_words_already_prompted: bool,
     output_language: &OutputLanguageEvidence,
     supported_languages: &[String],
-) -> String {
-    fail_open_text_transform(raw, |raw| {
-        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
-            apply_custom_words(
-                &raw,
-                &settings.custom_words,
-                settings.word_correction_threshold,
-            )
-        } else {
-            raw
-        };
-
+) -> TranscriptionOutput {
+    let converts_script = settings.chinese_script != ChineseScript::AsTranscribed;
+    let mut chinese_variety = None;
+    let text = fail_open_text_transform(raw, |raw| {
         // Last-resort language evidence: confidence-gated detection from the
         // transcribed text itself, constrained to the model's languages. Only
-        // consulted when it can change the outcome (built-in gated fillers).
+        // consulted when it can change the outcome (built-in gated fillers or
+        // Chinese script conversion).
         let output_language = match output_language {
             OutputLanguageEvidence::Unknown
-                if settings.filler_word_removal_enabled
-                    && settings.custom_filler_words.is_none() =>
+                if converts_script
+                    || (settings.filler_word_removal_enabled
+                        && settings.custom_filler_words.is_none()) =>
             {
-                match detect_output_language(&corrected, supported_languages) {
+                match detect_output_language(&raw, supported_languages) {
                     Some(language) => {
                         debug!("Text-based language detection resolved '{}'", language);
                         OutputLanguageEvidence::TextDetected(language)
@@ -1803,6 +1806,31 @@ fn post_process_transcription_text(
             other => other.clone(),
         };
 
+        // Convert the script before custom words so they match in the script
+        // the user writes in. Only output known to be Chinese is touched, so
+        // e.g. Japanese kanji are never rewritten.
+        let raw = if converts_script {
+            chinese_variety = output_language
+                .language()
+                .and_then(ChineseVariety::from_language);
+            match chinese_variety {
+                Some(variety) => convert_chinese_script(&raw, variety, settings.chinese_script),
+                None => raw,
+            }
+        } else {
+            raw
+        };
+
+        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
+            apply_custom_words(
+                &raw,
+                &settings.custom_words,
+                settings.word_correction_threshold,
+            )
+        } else {
+            raw
+        };
+
         let without_fillers = remove_filler_words(
             &corrected,
             &output_language,
@@ -1811,7 +1839,71 @@ fn post_process_transcription_text(
         );
 
         normalize_transcription_output(&without_fillers)
-    })
+    });
+
+    TranscriptionOutput {
+        text,
+        chinese_variety,
+    }
+}
+
+/// Characters to wait for before detecting the preview's language. A lone
+/// Chinese character reads as Mandarin, but Japanese often opens with kanji
+/// before any kana; waiting a few characters keeps those from locking in.
+const PREVIEW_DETECTION_MIN_CHARS: usize = 6;
+
+/// Converts live-preview text into the configured Chinese script as it streams.
+///
+/// The preview is cosmetic: the final paste re-resolves the language and
+/// converts on its own, so this only has to look right while speaking.
+struct PreviewScript {
+    script: ChineseScript,
+    variety: Option<ChineseVariety>,
+    /// The language wasn't known when the stream started (auto-detect), so it
+    /// is detected from the streamed text until it turns out to be Chinese.
+    detect: bool,
+}
+
+impl PreviewScript {
+    fn new(script: ChineseScript, output_language: &OutputLanguageEvidence) -> Self {
+        let enabled = script != ChineseScript::AsTranscribed;
+        Self {
+            script,
+            variety: output_language
+                .language()
+                .and_then(ChineseVariety::from_language)
+                .filter(|_| enabled),
+            detect: enabled && *output_language == OutputLanguageEvidence::Unknown,
+        }
+    }
+
+    /// Converts the model's raw committed/tentative text. Always fed the raw
+    /// text, never a previous conversion, so it stays consistent with the
+    /// final conversion. Once Chinese is detected it sticks for the rest of
+    /// the stream so the preview doesn't flip back and forth.
+    fn convert(
+        &mut self,
+        committed: &str,
+        tentative: &str,
+        supported_languages: &[String],
+    ) -> (String, String) {
+        if self.variety.is_none() && self.detect {
+            let text = format!("{committed}{tentative}");
+            if text.chars().count() >= PREVIEW_DETECTION_MIN_CHARS {
+                self.variety = detect_output_language(&text, supported_languages)
+                    .as_deref()
+                    .and_then(ChineseVariety::from_language);
+            }
+        }
+
+        match self.variety {
+            Some(variety) => (
+                convert_chinese_script(committed, variety, self.script),
+                convert_chinese_script(tentative, variety, self.script),
+            ),
+            None => (committed.to_string(), tentative.to_string()),
+        }
+    }
 }
 
 /// Optional text cleanup must never discard a successful model result. The
@@ -2229,6 +2321,163 @@ mod tests {
         assert_eq!(result, raw);
     }
 
+    fn script_settings(script: ChineseScript) -> AppSettings {
+        AppSettings {
+            chinese_script: script,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn chinese_output_is_converted_to_the_configured_script() {
+        let settings = script_settings(ChineseScript::Traditional);
+        let result = post_process_transcription_text(
+            "我们去学校".to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::UserSelected("zh".to_string()),
+            &languages(&["zh", "en"]),
+        );
+
+        assert_eq!(result.text, "我們去學校");
+        assert_eq!(result.chinese_variety, Some(ChineseVariety::Mandarin));
+    }
+
+    #[test]
+    fn preview_converts_from_the_first_update_when_language_is_known() {
+        let mut preview = PreviewScript::new(
+            ChineseScript::Traditional,
+            &OutputLanguageEvidence::UserSelected("zh".to_string()),
+        );
+
+        assert_eq!(
+            preview.convert("我们", "去学校", &languages(&["zh", "en"])),
+            ("我們".to_string(), "去學校".to_string())
+        );
+    }
+
+    #[test]
+    fn preview_detects_chinese_on_auto_and_keeps_it() {
+        let supported = languages(&["zh", "en", "ja"]);
+        let mut preview =
+            PreviewScript::new(ChineseScript::Simplified, &OutputLanguageEvidence::Unknown);
+
+        assert_eq!(
+            preview.convert("Hello there, how", " are you", &supported),
+            ("Hello there, how".to_string(), " are you".to_string())
+        );
+        let (committed, _) = preview.convert("我們今天下午一起去學校圖書館看書", "", &supported);
+        assert_eq!(committed, "我们今天下午一起去学校图书馆看书");
+        // Locked in: later mixed text keeps converting.
+        let (committed, _) = preview.convert("我們 OK", "", &supported);
+        assert_eq!(committed, "我们 OK");
+    }
+
+    #[test]
+    fn preview_waits_before_detecting_so_kanji_led_japanese_is_not_converted() {
+        let supported = languages(&["zh", "en", "ja"]);
+        let mut preview =
+            PreviewScript::new(ChineseScript::Traditional, &OutputLanguageEvidence::Unknown);
+
+        assert_eq!(preview.convert("東京大学", "", &supported).0, "東京大学");
+        assert_eq!(
+            preview.convert("東京大学に行きます", "", &supported).0,
+            "東京大学に行きます"
+        );
+    }
+
+    #[test]
+    fn preview_leaves_text_alone_when_off_or_not_chinese() {
+        let supported = languages(&["zh", "ja"]);
+        let mut off = PreviewScript::new(
+            ChineseScript::AsTranscribed,
+            &OutputLanguageEvidence::UserSelected("zh".to_string()),
+        );
+        assert_eq!(off.convert("我们", "", &supported).0, "我们");
+
+        let mut japanese = PreviewScript::new(
+            ChineseScript::Traditional,
+            &OutputLanguageEvidence::UserSelected("ja".to_string()),
+        );
+        assert_eq!(
+            japanese.convert("学校に行きます", "", &supported).0,
+            "学校に行きます"
+        );
+    }
+
+    #[test]
+    fn cantonese_output_uses_hong_kong_tables() {
+        let settings = script_settings(ChineseScript::Traditional);
+        let result = post_process_transcription_text(
+            "喺里面".to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::ModelDetected("yue".to_string()),
+            &languages(&["zh", "yue"]),
+        );
+
+        assert_eq!(result.text, "喺裏面");
+        assert_eq!(result.chinese_variety, Some(ChineseVariety::Cantonese));
+    }
+
+    #[test]
+    fn non_chinese_output_is_never_converted() {
+        let settings = script_settings(ChineseScript::Traditional);
+        for evidence in [
+            OutputLanguageEvidence::ModelDetected("ja".to_string()),
+            OutputLanguageEvidence::UserSelected("en".to_string()),
+            OutputLanguageEvidence::TranslatedToEnglish,
+        ] {
+            let result = post_process_transcription_text(
+                "学校に行きます".to_string(),
+                &settings,
+                false,
+                &evidence,
+                &languages(&["zh", "ja", "en"]),
+            );
+
+            assert_eq!(result.text, "学校に行きます", "{evidence:?}");
+            assert_eq!(result.chinese_variety, None, "{evidence:?}");
+        }
+    }
+
+    #[test]
+    fn as_transcribed_keeps_chinese_output() {
+        let settings = script_settings(ChineseScript::AsTranscribed);
+        let result = post_process_transcription_text(
+            "我们去学校".to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::UserSelected("zh".to_string()),
+            &languages(&["zh", "en"]),
+        );
+
+        assert_eq!(result.text, "我们去学校");
+        assert_eq!(result.chinese_variety, None);
+    }
+
+    #[test]
+    fn auto_detected_chinese_text_is_converted() {
+        let settings = AppSettings {
+            chinese_script: ChineseScript::Simplified,
+            filler_word_removal_enabled: false,
+            ..Default::default()
+        };
+        let result = post_process_transcription_text(
+            "我們今天下午一起去學校圖書館看書，然後再去吃晚飯。".to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::Unknown,
+            &languages(&["zh", "en", "ja"]),
+        );
+
+        assert_eq!(
+            result.text,
+            "我们今天下午一起去学校图书馆看书，然后再去吃晚饭。"
+        );
+        assert_eq!(result.chinese_variety, Some(ChineseVariety::Mandarin));
+    }
+
     #[test]
     fn portuguese_transcription_does_not_use_english_ui_filler_words() {
         let settings = AppSettings {
@@ -2251,7 +2500,7 @@ mod tests {
             evidence,
             OutputLanguageEvidence::UserSelected("pt".to_string())
         );
-        assert_eq!(result, "eu vi um carro");
+        assert_eq!(result.text, "eu vi um carro");
     }
 
     #[test]
@@ -2290,7 +2539,7 @@ mod tests {
         );
 
         assert_eq!(evidence, OutputLanguageEvidence::Unknown);
-        assert_eq!(result, "um ok");
+        assert_eq!(result.text, "um ok");
     }
 
     #[test]
@@ -2310,7 +2559,7 @@ mod tests {
         );
 
         assert_eq!(
-            result,
+            result.text,
             "so the weather forecast said it would probably rain throughout the whole weekend"
         );
     }
@@ -2331,7 +2580,7 @@ mod tests {
         );
 
         assert_eq!(
-            result,
+            result.text,
             "eu vi um carro na rua ontem de manhã quando fui ao mercado"
         );
     }
@@ -2415,7 +2664,7 @@ mod tests {
             &evidence,
             &supported,
         );
-        assert_eq!(result, "eu vi um carro");
+        assert_eq!(result.text, "eu vi um carro");
     }
 
     #[test]
@@ -2454,15 +2703,6 @@ mod tests {
         );
 
         assert_eq!(evidence, OutputLanguageEvidence::TranslatedToEnglish);
-    }
-
-    #[test]
-    fn transcribe_cpp_run_plan_maps_chinese_variants() {
-        let plan = transcribe_cpp_run_plan(false, "zh-Hant", &languages(&["zh"]), true);
-
-        assert!(matches!(plan.task, Task::Transcribe));
-        assert_eq!(plan.language.as_deref(), Some("zh"));
-        assert_eq!(plan.target_language, None);
     }
 
     #[test]

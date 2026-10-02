@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "군더더기 표현 제거",
         "description": "전사에서 흔한 머뭇거림 표현을 제거합니다. 그대로 두려면 이 옵션을 끄세요."
+      },
+      "chineseScript": {
+        "title": "중국어 문자",
+        "description": "표준 중국어와 광둥어 전사를 간체 또는 번체로 표기합니다. 다른 언어는 변경되지 않습니다.",
+        "options": {
+          "asTranscribed": "전사된 그대로",
+          "simplified": "간체",
+          "traditional": "번체"
+        }
       }
     },
     "postProcessing": {

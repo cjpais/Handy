@@ -2,11 +2,12 @@
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error, VadPolicy};
+use crate::chinese_script::convert_chinese_script;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
-use crate::managers::transcription::TranscriptionManager;
+use crate::managers::transcription::{TranscriptionManager, TranscriptionOutput};
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
@@ -14,7 +15,6 @@ use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
 use crate::TranscriptionCoordinator;
-use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -345,103 +345,32 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 }
 
-async fn maybe_convert_chinese_variant(
-    effective_language: &str,
-    transcription: &str,
-) -> Option<String> {
-    // Gate on the language the model actually transcribed in (the effective
-    // language), not the persisted intent. A leftover zh-Hans/zh-Hant intent
-    // from a previously selected model must not run OpenCC S2T/T2S over output a
-    // non-Chinese model produced — that would silently rewrite any shared CJK
-    // characters (e.g. Japanese kanji) in the result.
-    let is_simplified = effective_language == "zh-Hans";
-    let is_traditional = effective_language == "zh-Hant";
-
-    if !is_simplified && !is_traditional {
-        debug!("effective language is not Simplified or Traditional Chinese; skipping conversion");
-        return None;
-    }
-
-    debug!(
-        "Starting Chinese variant conversion using OpenCC for language: {}",
-        effective_language
-    );
-
-    // Use OpenCC to convert based on selected language
-    let config = if is_simplified {
-        // Convert Traditional Chinese to Simplified Chinese
-        BuiltinConfig::Tw2sp
-    } else {
-        // Convert Simplified Chinese to Traditional Chinese
-        BuiltinConfig::S2tw
-    };
-
-    match OpenCC::from_config(config) {
-        Ok(converter) => {
-            let converted = converter.convert(transcription);
-            debug!(
-                "OpenCC translation completed. Input length: {}, Output length: {}",
-                transcription.len(),
-                converted.len()
-            );
-            Some(converted)
-        }
-        Err(e) => {
-            error!("Failed to initialize OpenCC converter: {}. Falling back to original transcription.", e);
-            None
-        }
-    }
-}
-
 pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
 }
 
-/// Resolve the persisted language *intent* into the language the currently-loaded
-/// model will actually use — the same capability-aware coercion the transcription
-/// paths apply (see [`crate::managers::model::effective_language`]). Post-processing
-/// resolves it independently so it agrees with the language the transcription ran
-/// in, without threading a value through the pipeline.
-fn resolve_effective_language(app: &AppHandle, settings: &AppSettings) -> String {
-    let tm = app.state::<Arc<TranscriptionManager>>();
-    let model_manager = app.state::<Arc<ModelManager>>();
-    let active_model = tm
-        .get_current_model()
-        .unwrap_or_else(|| settings.selected_model.clone());
-    match model_manager.get_model_info(&active_model) {
-        Some(info) => crate::managers::model::effective_language(
-            &settings.selected_language,
-            &info.supported_languages,
-            info.supports_language_detection,
-        ),
-        None => settings.selected_language.clone(),
-    }
-}
-
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
-    transcription: &str,
+    transcription: &TranscriptionOutput,
     post_process: bool,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
-    let mut final_text = transcription.to_string();
+    let mut final_text = transcription.text.clone();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
-    // Resolve the language the transcription actually ran in (the persisted
-    // intent coerced against the loaded model's capabilities) so OpenCC keys off
-    // the effective language rather than a possibly-stale intent.
-    let effective_language = resolve_effective_language(app, &settings);
-    if let Some(converted_text) =
-        maybe_convert_chinese_variant(&effective_language, transcription).await
-    {
-        final_text = converted_text;
-    }
-
     if post_process {
         if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+            // The LLM may answer in either script; hold it to the same script
+            // the transcription was converted to.
+            let processed_text = match transcription.chinese_variety {
+                Some(variety) => {
+                    convert_chinese_script(&processed_text, variety, settings.chinese_script)
+                }
+                None => processed_text,
+            };
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
@@ -455,8 +384,6 @@ pub(crate) async fn process_transcription_output(
                 }
             }
         }
-    } else if final_text != transcription {
-        post_processed_text = Some(final_text.clone());
     }
 
     ProcessedTranscription {
@@ -737,7 +664,7 @@ impl ShortcutAction for TranscribeAction {
                         // transcription of the same audio. A finalize timeout is
                         // surfaced instead — the worker may still hold the engine,
                         // so a batch fallback would contend with it.
-                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
+                        Ok(Some(output)) if !output.text.trim().is_empty() => Ok(output),
                         Ok(_) => tm.transcribe(samples),
                         Err(err) => Err(err),
                     };
@@ -778,7 +705,7 @@ impl ShortcutAction for TranscribeAction {
                             debug!(
                                 "Transcription completed in {:?}: '{}'",
                                 transcription_time.elapsed(),
-                                utils::redact_text(&transcription)
+                                utils::redact_text(&transcription.text)
                             );
 
                             if post_process {
@@ -811,7 +738,7 @@ impl ShortcutAction for TranscribeAction {
                             if wav_saved {
                                 if let Err(err) = hm.save_entry(
                                     file_name,
-                                    transcription,
+                                    transcription.text,
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),

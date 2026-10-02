@@ -179,6 +179,18 @@ pub enum ClipboardHandling {
     CopyToClipboard,
 }
 
+/// Script applied to Mandarin and Cantonese output. Other languages are never
+/// converted.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ChineseScript {
+    /// Keep whatever script the model produced.
+    #[default]
+    AsTranscribed,
+    Simplified,
+    Traditional,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AutoSubmitKey {
@@ -490,6 +502,11 @@ pub struct AppSettings {
     pub filler_word_removal_enabled: bool,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
+    /// Stores missing this key get a default from the OS locale; legacy
+    /// `zh-Hans`/`zh-Hant` language intents are migrated into it in
+    /// `apply_settings_migrations`.
+    #[serde(default = "default_chinese_script")]
+    pub chinese_script: ChineseScript,
     #[serde(default)]
     pub transcribe_accelerator: TranscribeAcceleratorSetting,
     #[serde(default)]
@@ -583,6 +600,16 @@ fn default_vad_enabled() -> bool {
 
 fn default_filler_word_removal_enabled() -> bool {
     true
+}
+
+fn default_chinese_script() -> ChineseScript {
+    // Keep tests independent of the machine's locale.
+    if cfg!(test) {
+        return ChineseScript::AsTranscribed;
+    }
+    tauri_plugin_os::locale()
+        .and_then(|locale| crate::chinese_script::chinese_script_for_locale(&locale))
+        .unwrap_or_default()
 }
 
 fn default_debug_mode() -> bool {
@@ -963,6 +990,7 @@ pub fn get_default_settings() -> AppSettings {
         external_script_path: None,
         filler_word_removal_enabled: default_filler_word_removal_enabled(),
         custom_filler_words: None,
+        chinese_script: default_chinese_script(),
         transcribe_accelerator: TranscribeAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
         transcribe_gpu_device: default_transcribe_gpu_device(),
@@ -1134,6 +1162,24 @@ fn apply_settings_migrations(
             };
             updated = true;
         }
+    }
+
+    // Chinese script used to be chosen through `zh-Hans`/`zh-Hant` language
+    // intents. Split them into the recognition language and the script setting
+    // so the explicit choice carries over.
+    let legacy_script = match settings.selected_language.as_str() {
+        "zh-Hans" => Some(ChineseScript::Simplified),
+        "zh-Hant" => Some(ChineseScript::Traditional),
+        _ => None,
+    };
+    if let Some(script) = legacy_script {
+        settings.selected_language = "zh".to_string();
+        settings.chinese_script = script;
+        updated = true;
+    } else if settings_value.get("chinese_script").is_none() {
+        // Persist the locale-derived default so it stays put if the OS locale
+        // changes later.
+        updated = true;
     }
 
     let stored_schema_version = settings_value
@@ -1570,6 +1616,38 @@ mod tests {
     }
 
     #[test]
+    fn chinese_script_migration_splits_legacy_language_intents() {
+        for (intent, script) in [
+            ("zh-Hans", ChineseScript::Simplified),
+            ("zh-Hant", ChineseScript::Traditional),
+        ] {
+            let mut settings = get_default_settings();
+            settings.selected_language = intent.to_string();
+            settings.chinese_script = ChineseScript::AsTranscribed;
+            let raw = serde_json::json!({ "selected_language": intent });
+
+            assert!(apply_settings_migrations(&mut settings, &raw));
+            assert_eq!(settings.selected_language, "zh");
+            assert_eq!(settings.chinese_script, script);
+        }
+    }
+
+    #[test]
+    fn chinese_script_migration_keeps_other_languages_and_explicit_script() {
+        let mut settings = get_default_settings();
+        settings.selected_language = "yue".to_string();
+        settings.chinese_script = ChineseScript::Simplified;
+        let raw = serde_json::json!({
+            "selected_language": "yue",
+            "chinese_script": "simplified"
+        });
+
+        apply_settings_migrations(&mut settings, &raw);
+        assert_eq!(settings.selected_language, "yue");
+        assert_eq!(settings.chinese_script, ChineseScript::Simplified);
+    }
+
+    #[test]
     fn shortcut_activation_migration_maps_push_to_talk_true() {
         let mut settings = get_default_settings();
         let raw = serde_json::json!({
@@ -1692,6 +1770,7 @@ mod tests {
             "onboarding_completed": false,
             "whats_new_last_seen_version": default_whats_new_last_seen_version(),
             "overlay_style": "live",
+            "chinese_script": "as_transcribed",
             "transcribe_accelerator": "gpu",
             "transcribe_gpu_device": settings.transcribe_gpu_device
         });

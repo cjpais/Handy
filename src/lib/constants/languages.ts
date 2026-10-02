@@ -3,8 +3,6 @@ export interface Language {
   label: string;
 }
 
-export const CHINESE_LANGUAGE_CODE = "zh";
-
 const LANGUAGE_ALIASES = new Map([
   ["nb", "no"],
   ["fil", "tl"],
@@ -13,9 +11,7 @@ const LANGUAGE_ALIASES = new Map([
 export const LANGUAGES: Language[] = [
   { value: "auto", label: "Auto Detect" },
   { value: "en", label: "English" },
-  { value: CHINESE_LANGUAGE_CODE, label: "Chinese" },
-  { value: "zh-Hans", label: "Chinese (Simplified)" },
-  { value: "zh-Hant", label: "Chinese (Traditional)" },
+  { value: "zh", label: "Chinese (Mandarin)" },
   { value: "yue", label: "Cantonese" },
   { value: "de", label: "German" },
   { value: "es", label: "Spanish" },
@@ -117,26 +113,12 @@ export const LANGUAGES: Language[] = [
   { value: "su", label: "Sundanese" },
 ];
 
-const CHINESE_OUTPUT_INTENTS = new Set(["zh-Hans", "zh-Hant"]);
-
 const LANGUAGE_LABELS = new Map(
   LANGUAGES.map((language) => [language.value, language.label] as const),
 );
 
 export const MODEL_CAPABILITY_LANGUAGES: Language[] = LANGUAGES.filter(
-  (language) =>
-    language.value !== "auto" && !CHINESE_OUTPUT_INTENTS.has(language.value),
-);
-
-// Languages offered in the transcription-language picker. We surface the two
-// explicit Chinese *output* variants (Simplified / Traditional) and hide the
-// bare recognition code `zh` ("Chinese"): all three recognize identically, so
-// the plain option only adds ambiguity about which script you get. `zh` stays in
-// LANGUAGES — it's still a valid *effective* language (auto-detect and must-pick
-// fallback can resolve to it) and its label is needed to render that state — it
-// just isn't directly selectable.
-export const SELECTABLE_LANGUAGES: Language[] = LANGUAGES.filter(
-  (language) => language.value !== CHINESE_LANGUAGE_CODE,
+  (language) => language.value !== "auto",
 );
 
 // Collapse a language tag to the canonical recognition intent Handy exposes in
