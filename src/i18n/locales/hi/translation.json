@@ -299,6 +299,11 @@
         "label": "ट्रे आइकन दिखाएं",
         "description": "सिस्टम ट्रे में Handy का आइकन दिखाएं."
       },
+      "showFloatingButton": {
+        "label": "Show Floating Record Button",
+        "description": "Show a button on the edge of the screen that starts and stops transcription. Useful on touchscreens and tablets without a keyboard. Drag it up or down to move it.",
+        "buttonLabel": "Start or stop transcription"
+      },
       "overlay": {
         "style": {
           "title": "ओवरले",

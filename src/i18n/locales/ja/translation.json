@@ -299,6 +299,11 @@
         "label": "トレイアイコンを表示",
         "description": "システムトレイに Handy のアイコンを表示します。"
       },
+      "showFloatingButton": {
+        "label": "Show Floating Record Button",
+        "description": "Show a button on the edge of the screen that starts and stops transcription. Useful on touchscreens and tablets without a keyboard. Drag it up or down to move it.",
+        "buttonLabel": "Start or stop transcription"
+      },
       "overlay": {
         "style": {
           "title": "オーバーレイ",

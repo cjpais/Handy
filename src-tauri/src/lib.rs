@@ -9,6 +9,7 @@ mod chinese_script;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod floating_button;
 mod helpers;
 mod input;
 mod llm_client;
@@ -369,6 +370,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    // Create the floating record button (shown only if enabled)
+    floating_button::create_floating_button(app_handle);
 }
 
 #[tauri::command]
@@ -704,6 +708,9 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_keyboard_implementation_setting,
             shortcut::get_keyboard_implementation,
             shortcut::change_show_tray_icon_setting,
+            floating_button::change_show_floating_button_setting,
+            floating_button::floating_button_pressed,
+            floating_button::floating_button_dragged,
             shortcut::change_transcribe_accelerator_setting,
             shortcut::change_ort_accelerator_setting,
             shortcut::change_transcribe_gpu_device,

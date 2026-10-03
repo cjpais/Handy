@@ -299,6 +299,11 @@
         "label": "Mostra la icona a la safata",
         "description": "Mostra la icona del Handy a la safata del sistema."
       },
+      "showFloatingButton": {
+        "label": "Show Floating Record Button",
+        "description": "Show a button on the edge of the screen that starts and stops transcription. Useful on touchscreens and tablets without a keyboard. Drag it up or down to move it.",
+        "buttonLabel": "Start or stop transcription"
+      },
       "overlay": {
         "style": {
           "title": "Finestra superposada",

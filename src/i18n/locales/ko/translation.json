@@ -299,6 +299,11 @@
         "label": "트레이 아이콘 표시",
         "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
       },
+      "showFloatingButton": {
+        "label": "Show Floating Record Button",
+        "description": "Show a button on the edge of the screen that starts and stops transcription. Useful on touchscreens and tablets without a keyboard. Drag it up or down to move it.",
+        "buttonLabel": "Start or stop transcription"
+      },
       "overlay": {
         "style": {
           "title": "오버레이",
