@@ -106,12 +106,6 @@ fn show_main_window(app: &AppHandle) {
         if let Err(e) = main_window.set_focus() {
             log::error!("Failed to focus webview window: {}", e);
         }
-        #[cfg(target_os = "macos")]
-        {
-            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
-                log::error!("Failed to set activation policy to Regular: {}", e);
-            }
-        }
         return;
     }
 
@@ -132,8 +126,8 @@ fn show_main_window(app: &AppHandle) {
 /// already-activated foreground app — the transition Apple documents as
 /// unreliable, and what left a Dock icon behind for start-hidden and
 /// login-item launches on macOS 26+ (#1787). Launching as Accessory avoids the
-/// transition entirely; showing the window later promotes to Regular, which is
-/// the supported direction.
+/// transition entirely; keeping that policy while the settings window is
+/// shown also avoids a later demotion back to Accessory.
 ///
 /// Mirrors the show-window decision in `setup`: the app launches without a
 /// Dock icon only when it will start hidden (setting or `--start-hidden`) AND a
@@ -1061,7 +1055,6 @@ pub fn run(cli_args: CliArgs) {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
-                let _res = window.hide();
 
                 #[cfg(target_os = "macos")]
                 {
@@ -1069,7 +1062,7 @@ pub fn run(cli_args: CliArgs) {
                     let tray_visible =
                         settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
-                        // Tray is available: hide the dock icon, app lives in the tray
+                        // Keep tray-backed apps out of the Dock after the window closes.
                         let res = window
                             .app_handle()
                             .set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -1079,6 +1072,8 @@ pub fn run(cli_args: CliArgs) {
                     }
                     // No tray: keep the dock icon visible so the user can reopen
                 }
+
+                let _res = window.hide();
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);
