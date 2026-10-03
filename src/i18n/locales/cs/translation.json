@@ -544,6 +544,10 @@
         "label": "Ztlumit při nahrávání",
         "description": "Ztlumit systémový zvuk během nahrávání"
       },
+      "muteImmediately": {
+        "label": "Ztlumit okamžitě",
+        "description": "Ztlumit hned po zahájení nahrávání místo až po úvodním zvuku, aby se nenahrával zvuk na pozadí. Úvodní zvuk se přeskočí."
+      },
       "appendTrailingSpace": {
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"

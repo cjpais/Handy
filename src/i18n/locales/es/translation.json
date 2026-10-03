@@ -544,6 +544,10 @@
         "label": "Silenciar durante la grabación",
         "description": "Silenciar el audio del sistema durante la grabación"
       },
+      "muteImmediately": {
+        "label": "Silenciar inmediatamente",
+        "description": "Silenciar en cuanto empieza la grabación en lugar de después del sonido de inicio, para que no se grabe audio de fondo. Se omite el sonido de inicio."
+      },
       "appendTrailingSpace": {
         "label": "Agregar espacio final",
         "description": "Agregar un espacio después de la transcripción pegada"

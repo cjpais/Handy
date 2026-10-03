@@ -544,6 +544,10 @@
         "label": "Kayıt Sırasında Sessize Al",
         "description": "Kayıt sırasında sistem sesini kapatır"
       },
+      "muteImmediately": {
+        "label": "Hemen Sessize Al",
+        "description": "Başlangıç sesinden sonra değil, kayıt başlar başlamaz sessize alır; böylece arka plan sesi kaydedilmez. Başlangıç sesi atlanır."
+      },
       "appendTrailingSpace": {
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"

@@ -544,6 +544,10 @@
         "label": "Ljudlös under inspelning",
         "description": "Stäng av systemljudet under inspelning"
       },
+      "muteImmediately": {
+        "label": "Stäng av ljudet direkt",
+        "description": "Stäng av ljudet så snart inspelningen startar i stället för efter startljudet, så att inget bakgrundsljud spelas in. Startljudet hoppas över."
+      },
       "appendTrailingSpace": {
         "label": "Lägg till avslutande mellanslag",
         "description": "Lägg till ett mellanslag efter klistrad transkription"

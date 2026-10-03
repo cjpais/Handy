@@ -544,6 +544,10 @@
         "label": "录制时静音",
         "description": "录制期间静音系统音频"
       },
+      "muteImmediately": {
+        "label": "立即静音",
+        "description": "在录制开始时立即静音，而不是在提示音之后，以免录入背景音频。将跳过开始提示音。"
+      },
       "appendTrailingSpace": {
         "label": "追加尾部空格",
         "description": "在粘贴的转录后添加空格"

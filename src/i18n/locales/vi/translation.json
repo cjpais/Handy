@@ -544,6 +544,10 @@
         "label": "Tắt tiếng khi ghi âm",
         "description": "Tắt tiếng âm thanh hệ thống trong khi ghi âm"
       },
+      "muteImmediately": {
+        "label": "Tắt tiếng ngay",
+        "description": "Tắt tiếng ngay khi bắt đầu ghi âm thay vì sau âm báo bắt đầu, để không ghi lại âm thanh nền. Âm báo bắt đầu sẽ bị bỏ qua."
+      },
       "appendTrailingSpace": {
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
