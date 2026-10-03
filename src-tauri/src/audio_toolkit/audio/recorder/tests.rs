@@ -407,7 +407,7 @@ fn detects_no_input_device() {
 #[test]
 fn detects_coreaudio_config_error() {
     assert!(is_no_input_device_error(
-        "Failed to fetch preferred config: A backend-specific error has occurred: An unknown error unknown to the coreaudio-rs API occurred"
+        "Failed to fetch default input config: A backend-specific error has occurred: An unknown error unknown to the coreaudio-rs API occurred"
     ));
 }
 

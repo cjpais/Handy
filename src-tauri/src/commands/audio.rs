@@ -352,7 +352,7 @@ pub async fn get_microphone_channels(device_name: String) -> Result<u16, String>
         };
 
         match device {
-            Some(device) => AudioRecorder::preferred_input_channel_count(&device)
+            Some(device) => AudioRecorder::default_input_channel_count(&device)
                 .map_err(|e| format!("Failed to get microphone config: {e}")),
             None => Ok(1),
         }
