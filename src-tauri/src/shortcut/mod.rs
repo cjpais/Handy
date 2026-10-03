@@ -121,9 +121,10 @@ fn reconcile_cancel_shortcut(app: &AppHandle) {
                 Err(e) => error!("Failed to register cancel shortcut: {}", e),
             }
         } else {
-            // We ignore errors here as it might already be unregistered
-            let _ = unregister_shortcut(app, cancel_binding);
-            *registered = false;
+            match unregister_shortcut(app, cancel_binding) {
+                Ok(()) => *registered = false,
+                Err(e) => error!("Failed to unregister cancel shortcut: {}", e),
+            }
         }
     }
 }
