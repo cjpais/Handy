@@ -281,6 +281,7 @@ fn create_audio_recorder(
     backend: VadBackend,
     app_handle: &tauri::AppHandle,
     selected_channel: Option<u16>,
+    airpods_mode: bool,
     stream_router: Arc<StreamRouter>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let detector: Box<dyn VoiceActivityDetector> = match backend {
@@ -335,6 +336,7 @@ fn create_audio_recorder(
             streaming_hangover_frames,
         )
         .with_selected_channel(selected_channel)
+        .with_airpods_mode(airpods_mode)
         .with_level_callback({
             let app_handle = app_handle.clone();
             move |levels| {
@@ -628,6 +630,7 @@ impl AudioRecordingManager {
                 settings.vad_backend,
                 &self.app_handle,
                 settings.selected_channel,
+                settings.airpods_mode,
                 Arc::clone(&self.stream_router),
             )?);
         }
@@ -878,6 +881,7 @@ impl AudioRecordingManager {
             backend,
             &self.app_handle,
             settings.selected_channel,
+            settings.airpods_mode,
             Arc::clone(&self.stream_router),
         )?;
         let was_open = *self.is_open.lock().unwrap();
@@ -954,6 +958,38 @@ impl AudioRecordingManager {
             if let Err(error) = self.start_microphone_stream() {
                 if let Some(recorder) = self.recorder.lock().unwrap().as_mut() {
                     recorder.set_selected_channel(previous_channel);
+                }
+                return Err(error);
+            }
+        }
+        drop(state);
+        Ok(())
+    }
+
+    /// Apply the AirPods keep-alive setting while idle. The keep-alive stream is
+    /// bound to the input stream's lifetime, so a warm stream (always-on or
+    /// lazy-close mode) is reopened for the change to take effect.
+    pub fn update_airpods_mode(&self, enabled: bool) -> Result<(), anyhow::Error> {
+        let state = self.state.lock().unwrap();
+        if !matches!(*state, RecordingState::Idle) {
+            return Err(anyhow::anyhow!(
+                "Cannot change AirPods mode while recording"
+            ));
+        }
+
+        let previous_enabled = get_settings(&self.app_handle).airpods_mode;
+        let was_open = *self.is_open.lock().unwrap();
+        if was_open {
+            self.close_generation.fetch_add(1, Ordering::SeqCst);
+            self.stop_microphone_stream();
+        }
+        if let Some(recorder) = self.recorder.lock().unwrap().as_mut() {
+            recorder.set_airpods_mode(enabled);
+        }
+        if was_open {
+            if let Err(error) = self.start_microphone_stream() {
+                if let Some(recorder) = self.recorder.lock().unwrap().as_mut() {
+                    recorder.set_airpods_mode(previous_enabled);
                 }
                 return Err(error);
             }

@@ -274,6 +274,10 @@
         "label": "Håll mikrofonen öppen mellan transkriptioner",
         "description": "Håller mikrofonströmmen öppen i 30 sekunder efter att inspelningen avslutats, vilket minskar latensen för transkriptioner efter varandra. Kan försämra Bluetooth-ljudkvaliteten medan den är aktiv."
       },
+      "airpodsMode": {
+        "label": "AirPods-läge",
+        "description": "Växlar automatiskt AirPods till Mac:en för transkribering när en iPhone spelar upp ljud. Utan detta kan inspelningar bli helt tysta."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Whisper-acceleration",

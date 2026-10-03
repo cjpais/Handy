@@ -274,6 +274,10 @@
         "label": "Transkripsiyonlar Arasında Mikrofonu Açık Tut",
         "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
       },
+      "airpodsMode": {
+        "label": "AirPods Modu",
+        "description": "Bir iPhone ses çalarken yazıya dökme için AirPods'u otomatik olarak Mac'e geçirir. Bu olmadan kayıtlar sessiz çıkabilir."
+      },
       "acceleration": {
         "transcribe": {
           "title": "transcribe.cpp Hızlandırması",
