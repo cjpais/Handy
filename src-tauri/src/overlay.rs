@@ -752,8 +752,14 @@ fn place_notch_overlay(
     overlay_window: &tauri::webview::WebviewWindow,
     state: &str,
 ) -> bool {
+    // A session already in the notch keeps its screen for later states, so
+    // moving the pointer to another display mid-dictation doesn't make the
+    // indicator jump; a new session follows the cursor like the pill does.
     let layout = if settings::get_settings(app_handle).overlay_notch {
-        objc2::MainThreadMarker::new().and_then(overlay_notch::layout_for_cursor_screen)
+        objc2::MainThreadMarker::new().and_then(|mtm| match notch_session() {
+            Some(session) => overlay_notch::layout_for_window_screen(mtm, &session.layout.window),
+            None => overlay_notch::layout_for_cursor_screen(mtm),
+        })
     } else {
         None
     };
