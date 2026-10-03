@@ -477,7 +477,14 @@
       "retranscribe": "Re-transcribir",
       "retranscribeError": "No se pudo re-transcribir. Por favor, inténtalo de nuevo.",
       "transcribing": "Transcribiendo...",
-      "transcriptionFailed": "La transcripción falló. Puedes re-transcribir usando el icono de reintentar."
+      "transcriptionFailed": "La transcripción falló. Puedes re-transcribir usando el icono de reintentar.",
+      "cancelReason": {
+        "shortcut": "Cancelada con {{key}}",
+        "overlay": "Cancelada desde la superposición",
+        "tray": "Cancelada desde el menú de la bandeja",
+        "remote": "Cancelada desde la línea de comandos",
+        "transcriptionFailed": "La transcripción falló"
+      }
     },
     "debug": {
       "title": "Depuración",

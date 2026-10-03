@@ -477,7 +477,14 @@
       "retranscribe": "Phiên âm lại",
       "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
       "transcribing": "Đang phiên âm...",
-      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại."
+      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại.",
+      "cancelReason": {
+        "shortcut": "Đã hủy bằng {{key}}",
+        "overlay": "Đã hủy từ lớp phủ",
+        "tray": "Đã hủy từ menu khay hệ thống",
+        "remote": "Đã hủy từ dòng lệnh",
+        "transcriptionFailed": "Phiên âm thất bại"
+      }
     },
     "debug": {
       "title": "Gỡ lỗi",

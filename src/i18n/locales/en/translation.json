@@ -477,7 +477,14 @@
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+      "cancelReason": {
+        "shortcut": "Cancelled by {{key}}",
+        "overlay": "Cancelled from overlay",
+        "tray": "Cancelled from tray menu",
+        "remote": "Cancelled from command line",
+        "transcriptionFailed": "Transcription failed"
+      }
     },
     "debug": {
       "title": "Debug",

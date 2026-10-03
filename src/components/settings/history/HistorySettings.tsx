@@ -11,6 +11,7 @@ import {
   type HistoryUpdatePayload,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
+import { formatKeyCombination } from "@/lib/utils/keyboard";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
@@ -305,6 +306,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   retryTranscription,
 }) => {
   const { t, i18n } = useTranslation();
+  const osType = useOsType();
   const [showCopied, setShowCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
@@ -353,10 +355,40 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
+  const cancelReasonLabel = (() => {
+    const reason = entry.cancel_reason;
+    if (!reason) return null;
+    if (reason.startsWith("shortcut:")) {
+      return t("settings.history.cancelReason.shortcut", {
+        key: formatKeyCombination(reason.slice("shortcut:".length), osType),
+      });
+    }
+    switch (reason) {
+      case "overlay":
+        return t("settings.history.cancelReason.overlay");
+      case "tray":
+        return t("settings.history.cancelReason.tray");
+      case "remote":
+        return t("settings.history.cancelReason.remote");
+      case "transcription_failed":
+        return t("settings.history.cancelReason.transcriptionFailed");
+      default:
+        return null;
+    }
+  })();
+
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
+        <p className="text-sm font-medium">
+          {formattedDate}
+          {cancelReasonLabel && (
+            <span className="font-normal text-mid-gray">
+              {" "}
+              ({cancelReasonLabel})
+            </span>
+          )}
+        </p>
         <div className="flex items-center">
           <IconButton
             onClick={handleCopyText}

@@ -477,7 +477,14 @@
       "retranscribe": "Transskribér igen",
       "retranscribeError": "Kunne ikke transskribere igen. Prøv igen.",
       "transcribing": "Transskriberer...",
-      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet."
+      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet.",
+      "cancelReason": {
+        "shortcut": "Annulleret med {{key}}",
+        "overlay": "Annulleret fra overlay",
+        "tray": "Annulleret fra menuen i systembakken",
+        "remote": "Annulleret fra kommandolinjen",
+        "transcriptionFailed": "Transskription mislykkedes"
+      }
     },
     "debug": {
       "title": "Fejlfinding",

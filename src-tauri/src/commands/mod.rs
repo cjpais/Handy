@@ -13,7 +13,7 @@ use tauri_plugin_opener::OpenerExt;
 #[tauri::command]
 #[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
-    cancel_current_operation(&app);
+    cancel_current_operation(&app, "overlay");
 }
 
 #[tauri::command]

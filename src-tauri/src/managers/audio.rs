@@ -384,6 +384,8 @@ pub struct AudioRecordingManager {
     mute_state: Arc<Mutex<MuteState>>,
     close_generation: Arc<AtomicU64>,
     cancel_generation: Arc<AtomicU64>,
+    /// Why the latest cancel happened, recorded on the history entry it leaves behind.
+    cancel_reason: Arc<Mutex<Option<String>>>,
     stream_router: Arc<StreamRouter>,
     /// Lock-free mirror of "is the state in {Recording, Stopping}",
     /// maintained by `set_state()`. The hot-path `is_recording()` reads THIS
@@ -429,6 +431,7 @@ impl AudioRecordingManager {
             mute_state: Arc::new(Mutex::new(MuteState::default())),
             close_generation: Arc::new(AtomicU64::new(0)),
             cancel_generation: Arc::new(AtomicU64::new(0)),
+            cancel_reason: Arc::new(Mutex::new(None)),
             stream_router,
             recording_active: Arc::new(AtomicBool::new(false)),
             capture_generation: Arc::new(AtomicU64::new(0)),
@@ -976,6 +979,10 @@ impl AudioRecordingManager {
         self.cancel_generation.load(Ordering::Acquire)
     }
 
+    pub fn last_cancel_reason(&self) -> Option<String> {
+        self.cancel_reason.lock().unwrap().clone()
+    }
+
     pub fn was_cancelled_since(&self, generation: u64) -> bool {
         self.cancel_generation.load(Ordering::Acquire) != generation
     }
@@ -1064,8 +1071,9 @@ impl AudioRecordingManager {
     }
 
     /// Cancel any ongoing recording. Returns the captured samples so the caller can keep them in history.
-    pub fn cancel_recording(&self) -> Option<Vec<f32>> {
+    pub fn cancel_recording(&self, reason: &str) -> Option<Vec<f32>> {
         self.invalidate_recording_readiness();
+        *self.cancel_reason.lock().unwrap() = Some(reason.to_string());
         self.cancel_generation.fetch_add(1, Ordering::AcqRel);
         let mut state = self.state.lock().unwrap();
 

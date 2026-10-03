@@ -477,7 +477,14 @@
       "retranscribe": "Yeniden transkribe et",
       "retranscribeError": "Yeniden transkripsiyon başarısız oldu. Lütfen tekrar deneyin.",
       "transcribing": "Transkribe ediliyor...",
-      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz."
+      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz.",
+      "cancelReason": {
+        "shortcut": "{{key}} ile iptal edildi",
+        "overlay": "Kaplamadan iptal edildi",
+        "tray": "Tepsi menüsünden iptal edildi",
+        "remote": "Komut satırından iptal edildi",
+        "transcriptionFailed": "Transkripsiyon başarısız oldu"
+      }
     },
     "debug": {
       "title": "Hata Ayıklama",

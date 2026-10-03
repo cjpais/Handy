@@ -83,7 +83,8 @@ fn native_windows_machine() -> Option<u16> {
 
 /// Centralized cancellation function that can be called from anywhere in the app.
 /// Handles cancelling both recording and transcription operations and updates UI state.
-pub fn cancel_current_operation(app: &AppHandle) {
+/// `reason` is recorded on the history entry the cancelled recording leaves behind.
+pub fn cancel_current_operation(app: &AppHandle, reason: &str) {
     info!("Initiating operation cancellation...");
 
     // Unregister the cancel shortcut asynchronously
@@ -92,7 +93,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Cancel any ongoing recording
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     let recording_was_active = audio_manager.is_recording();
-    let cancelled_samples = audio_manager.cancel_recording();
+    let cancelled_samples = audio_manager.cancel_recording(reason);
 
     // Captured audio goes to history and only the paste is cancelled, unless the user turned that off.
     // A recording that was already stopping is kept by its own stop task, which also owns the live stream.
@@ -101,7 +102,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let mut keeping_audio = false;
     match cancelled_samples {
         Some(samples) if keep_cancelled_recordings && !samples.is_empty() => {
-            crate::actions::keep_cancelled_recording(app, samples);
+            crate::actions::keep_cancelled_recording(app, samples, reason.to_string());
             keeping_audio = true;
         }
         None if keep_cancelled_recordings && recording_was_active => keeping_audio = true,

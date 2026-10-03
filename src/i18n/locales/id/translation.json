@@ -477,7 +477,14 @@
       "retranscribe": "Transkripsikan ulang",
       "retranscribeError": "Gagal mentranskripsikan ulang. Silakan coba lagi.",
       "transcribing": "Mentranskripsikan...",
-      "transcriptionFailed": "Transkripsi gagal. Anda dapat mentranskripsikan ulang menggunakan ikon coba lagi."
+      "transcriptionFailed": "Transkripsi gagal. Anda dapat mentranskripsikan ulang menggunakan ikon coba lagi.",
+      "cancelReason": {
+        "shortcut": "Dibatalkan dengan {{key}}",
+        "overlay": "Dibatalkan dari overlay",
+        "tray": "Dibatalkan dari menu baki",
+        "remote": "Dibatalkan dari baris perintah",
+        "transcriptionFailed": "Transkripsi gagal"
+      }
     },
     "debug": {
       "title": "Debug",

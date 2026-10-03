@@ -477,7 +477,14 @@
       "retranscribe": "Opnieuw transcriberen",
       "retranscribeError": "Opnieuw transcriberen mislukt. Probeer het opnieuw.",
       "transcribing": "Transcriberen...",
-      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram."
+      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram.",
+      "cancelReason": {
+        "shortcut": "Geannuleerd met {{key}}",
+        "overlay": "Geannuleerd via overlay",
+        "tray": "Geannuleerd via het systeemvakmenu",
+        "remote": "Geannuleerd via de opdrachtregel",
+        "transcriptionFailed": "Transcriptie mislukt"
+      }
     },
     "debug": {
       "title": "Probleemoplossing",

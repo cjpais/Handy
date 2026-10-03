@@ -694,6 +694,7 @@ impl ShortcutAction for TranscribeAction {
                                 post_process,
                                 None,
                                 None,
+                                rm.last_cancel_reason(),
                             ) {
                                 error!("Failed to save cancelled history entry: {}", err);
                             }
@@ -732,6 +733,7 @@ impl ShortcutAction for TranscribeAction {
                                         post_process,
                                         None,
                                         None,
+                                        rm.last_cancel_reason(),
                                     ) {
                                         error!("Failed to save cancelled history entry: {}", err);
                                     }
@@ -750,6 +752,7 @@ impl ShortcutAction for TranscribeAction {
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
+                                    None,
                                 ) {
                                     error!("Failed to save history entry: {}", err);
                                 }
@@ -822,6 +825,7 @@ impl ShortcutAction for TranscribeAction {
                                     post_process,
                                     None,
                                     None,
+                                    Some("transcription_failed".to_string()),
                                 ) {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
@@ -848,7 +852,7 @@ impl ShortcutAction for TranscribeAction {
 }
 
 /// Write the history entry before transcribing so a failed transcription still leaves it in history, ready to retry. Nothing is pasted.
-pub fn keep_cancelled_recording(app: &AppHandle, samples: Vec<f32>) {
+pub fn keep_cancelled_recording(app: &AppHandle, samples: Vec<f32>, reason: String) {
     let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
     let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
@@ -860,7 +864,7 @@ pub fn keep_cancelled_recording(app: &AppHandle, samples: Vec<f32>) {
             return;
         }
 
-        let entry = match hm.save_entry(file_name, String::new(), false, None, None) {
+        let entry = match hm.save_entry(file_name, String::new(), false, None, None, Some(reason)) {
             Ok(entry) => entry,
             Err(e) => {
                 error!("Failed to save cancelled recording to history: {}", e);
@@ -896,8 +900,8 @@ pub fn keep_cancelled_recording(app: &AppHandle, samples: Vec<f32>) {
 struct CancelAction;
 
 impl ShortcutAction for CancelAction {
-    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
-        utils::cancel_current_operation(app);
+    fn start(&self, app: &AppHandle, _binding_id: &str, shortcut_str: &str) {
+        utils::cancel_current_operation(app, &format!("shortcut:{shortcut_str}"));
     }
 
     fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {

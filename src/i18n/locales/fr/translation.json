@@ -477,7 +477,14 @@
       "retranscribe": "Re-transcrire",
       "retranscribeError": "Impossible de re-transcrire. Veuillez réessayer.",
       "transcribing": "Transcription en cours...",
-      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai."
+      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai.",
+      "cancelReason": {
+        "shortcut": "Annulé avec {{key}}",
+        "overlay": "Annulé depuis la superposition",
+        "tray": "Annulé depuis le menu de la barre d'état",
+        "remote": "Annulé depuis la ligne de commande",
+        "transcriptionFailed": "La transcription a échoué"
+      }
     },
     "debug": {
       "title": "Débogage",

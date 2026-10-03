@@ -477,7 +477,14 @@
       "retranscribe": "Erneut transkribieren",
       "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
       "transcribing": "Transkribiere...",
-      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren.",
+      "cancelReason": {
+        "shortcut": "Abgebrochen mit {{key}}",
+        "overlay": "Abgebrochen über das Overlay",
+        "tray": "Abgebrochen über das Tray-Menü",
+        "remote": "Abgebrochen über die Befehlszeile",
+        "transcriptionFailed": "Transkription fehlgeschlagen"
+      }
     },
     "debug": {
       "title": "Debug",

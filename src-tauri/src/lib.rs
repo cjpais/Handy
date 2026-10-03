@@ -318,7 +318,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 use crate::utils::cancel_current_operation;
 
                 // Use centralized cancellation that handles all operations
-                cancel_current_operation(app);
+                cancel_current_operation(app, "tray");
             }
             "quit" => {
                 app.exit(0);
@@ -858,7 +858,7 @@ pub fn run(cli_args: CliArgs) {
             } else if args.iter().any(|a| a == "--toggle-post-process") {
                 signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
             } else if args.iter().any(|a| a == "--cancel") {
-                crate::utils::cancel_current_operation(app);
+                crate::utils::cancel_current_operation(app, "remote");
             } else {
                 // A second process was launched without remote-control flags
                 // (e.g. the binary run from a shell). On macOS, relaunching the

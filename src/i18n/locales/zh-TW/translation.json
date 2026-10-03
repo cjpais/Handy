@@ -477,7 +477,14 @@
       "retranscribe": "重新轉錄",
       "retranscribeError": "重新轉錄失敗，請重試。",
       "transcribing": "轉錄中...",
-      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。"
+      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。",
+      "cancelReason": {
+        "shortcut": "已透過 {{key}} 取消",
+        "overlay": "已從浮動視窗取消",
+        "tray": "已從系統匣選單取消",
+        "remote": "已從命令列取消",
+        "transcriptionFailed": "轉錄失敗"
+      }
     },
     "debug": {
       "title": "偵錯",

@@ -477,7 +477,14 @@
       "retranscribe": "תמלל מחדש",
       "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
       "transcribing": "מתמלל...",
-      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר."
+      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
+      "cancelReason": {
+        "shortcut": "בוטלה באמצעות {{key}}",
+        "overlay": "בוטלה מהשכבה הצפה",
+        "tray": "בוטלה מתפריט מגש המערכת",
+        "remote": "בוטלה משורת הפקודה",
+        "transcriptionFailed": "התמלול נכשל"
+      }
     },
     "debug": {
       "title": "ניפוי שגיאות",

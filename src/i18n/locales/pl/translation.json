@@ -477,7 +477,14 @@
       "retranscribe": "Transkrybuj ponownie",
       "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
       "transcribing": "Transkrybuję...",
-      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia."
+      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia.",
+      "cancelReason": {
+        "shortcut": "Anulowano klawiszem {{key}}",
+        "overlay": "Anulowano z nakładki",
+        "tray": "Anulowano z menu zasobnika",
+        "remote": "Anulowano z wiersza poleceń",
+        "transcriptionFailed": "Transkrypcja nie powiodła się"
+      }
     },
     "debug": {
       "title": "Debugowanie",

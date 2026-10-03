@@ -477,7 +477,14 @@
       "retranscribe": "다시 전사",
       "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "cancelReason": {
+        "shortcut": "{{key}}(으)로 취소됨",
+        "overlay": "오버레이에서 취소됨",
+        "tray": "트레이 메뉴에서 취소됨",
+        "remote": "명령줄에서 취소됨",
+        "transcriptionFailed": "전사 실패"
+      }
     },
     "debug": {
       "title": "디버그",

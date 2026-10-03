@@ -477,7 +477,14 @@
       "retranscribe": "再文字起こし",
       "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
       "transcribing": "文字起こし中…",
-      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。",
+      "cancelReason": {
+        "shortcut": "{{key}} でキャンセル",
+        "overlay": "オーバーレイからキャンセル",
+        "tray": "トレイメニューからキャンセル",
+        "remote": "コマンドラインからキャンセル",
+        "transcriptionFailed": "文字起こしに失敗しました"
+      }
     },
     "debug": {
       "title": "デバッグ",

@@ -477,7 +477,14 @@
       "retranscribe": "Torneu a transcriure",
       "retranscribeError": "No s'ha pogut tornar a transcriure. Torneu-ho a provar.",
       "transcribing": "S'està transcrivint...",
-      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent."
+      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent.",
+      "cancelReason": {
+        "shortcut": "Cancel·lat amb {{key}}",
+        "overlay": "Cancel·lat des de la superposició",
+        "tray": "Cancel·lat des del menú de la safata",
+        "remote": "Cancel·lat des de la línia d'ordres",
+        "transcriptionFailed": "La transcripció ha fallat"
+      }
     },
     "debug": {
       "title": "Depuració",

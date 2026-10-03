@@ -477,7 +477,14 @@
       "retranscribe": "Ri-trascrivere",
       "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
       "transcribing": "Trascrizione in corso...",
-      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione."
+      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione.",
+      "cancelReason": {
+        "shortcut": "Annullata con {{key}}",
+        "overlay": "Annullata dalla sovrimpressione",
+        "tray": "Annullata dal menu della barra di sistema",
+        "remote": "Annullata dalla riga di comando",
+        "transcriptionFailed": "Trascrizione fallita"
+      }
     },
     "debug": {
       "title": "Debug",
