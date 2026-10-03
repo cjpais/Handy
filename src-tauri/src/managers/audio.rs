@@ -1038,10 +1038,7 @@ impl AudioRecordingManager {
                     }
                 }
 
-                if self.was_cancelled_since(cancel_generation) {
-                    debug!("Recording stop cancelled; discarding captured samples");
-                    return None;
-                }
+                // A cancel during stop still returns the samples. The caller decides whether to keep them in history.
 
                 // Pad if very short
                 let s_len = samples.len();
@@ -1066,8 +1063,8 @@ impl AudioRecordingManager {
         self.recording_active.load(Ordering::SeqCst)
     }
 
-    /// Cancel any ongoing recording without returning audio samples
-    pub fn cancel_recording(&self) {
+    /// Cancel any ongoing recording. Returns the captured samples so the caller can keep them in history.
+    pub fn cancel_recording(&self) -> Option<Vec<f32>> {
         self.invalidate_recording_readiness();
         self.cancel_generation.fetch_add(1, Ordering::AcqRel);
         let mut state = self.state.lock().unwrap();
@@ -1077,9 +1074,16 @@ impl AudioRecordingManager {
                 self.set_state(&mut state, RecordingState::Idle);
                 drop(state);
 
-                if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                    let _ = rec.stop(); // Discard the result
-                }
+                let samples = match self.recorder.lock().unwrap().as_ref() {
+                    Some(rec) => match rec.stop() {
+                        Ok(buf) => buf,
+                        Err(e) => {
+                            error!("stop() failed during cancel: {e}");
+                            Vec::new()
+                        }
+                    },
+                    None => Vec::new(),
+                };
 
                 *self.is_recording.lock().unwrap() = false;
 
@@ -1091,11 +1095,14 @@ impl AudioRecordingManager {
                         self.stop_microphone_stream();
                     }
                 }
+
+                Some(samples)
             }
             RecordingState::Stopping => {
                 debug!("Cancellation requested while recording is stopping");
+                None
             }
-            RecordingState::Idle => {}
+            RecordingState::Idle => None,
         }
     }
 }

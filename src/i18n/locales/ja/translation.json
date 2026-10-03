@@ -513,6 +513,10 @@
         "title": "単語修正しきい値",
         "description": "カスタム単語修正の感度"
       },
+      "keepCancelledRecordings": {
+        "title": "キャンセルした録音を保持",
+        "description": "キャンセルした録音を貼り付けずに履歴に保存します。破棄するにはオフにしてください。"
+      },
       "historyLimit": {
         "title": "履歴上限",
         "description": "保持する履歴エントリーの最大数",

@@ -513,6 +513,10 @@
         "title": "Seuil de correction des mots",
         "description": "Sensibilité pour les corrections de mots personnalisés"
       },
+      "keepCancelledRecordings": {
+        "title": "Conserver les enregistrements annulés",
+        "description": "Enregistre les enregistrements annulés dans l'historique sans les coller. Désactivez cette option pour les supprimer."
+      },
       "historyLimit": {
         "title": "Limite d'historique",
         "description": "Nombre maximum d'entrées d'historique à conserver",

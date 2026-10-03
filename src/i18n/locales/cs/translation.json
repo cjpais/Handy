@@ -513,6 +513,10 @@
         "title": "Práh korekce slov",
         "description": "Citlivost pro opravy vlastních slov"
       },
+      "keepCancelledRecordings": {
+        "title": "Uchovávat zrušené nahrávky",
+        "description": "Ukládá zrušené nahrávky do historie, aniž by je vložil. Vypnutím je zahodíte."
+      },
       "historyLimit": {
         "title": "Limit historie",
         "description": "Maximální počet záznamů historie k uchování",

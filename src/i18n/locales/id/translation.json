@@ -527,6 +527,10 @@
         "title": "Ambang Koreksi Kata",
         "description": "Sensitivitas untuk koreksi kata khusus"
       },
+      "keepCancelledRecordings": {
+        "title": "Simpan Rekaman yang Dibatalkan",
+        "description": "Menyimpan rekaman yang dibatalkan ke riwayat tanpa menempelkannya. Nonaktifkan untuk membuangnya."
+      },
       "historyLimit": {
         "title": "Batas Riwayat",
         "description": "Jumlah maksimum entri riwayat yang disimpan",
