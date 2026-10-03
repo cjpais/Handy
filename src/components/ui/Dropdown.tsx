@@ -17,8 +17,6 @@ interface DropdownProps {
   placeholder?: string;
   disabled?: boolean;
   onOpen?: () => void;
-  /** @deprecated Use onOpen instead */
-  onRefresh?: () => void;
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -30,7 +28,6 @@ export const Dropdown: React.FC<DropdownProps> = ({
   placeholder = "Select an option...",
   disabled = false,
   onOpen,
-  onRefresh,
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -60,9 +57,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
   const handleToggle = () => {
     if (disabled) return;
-    if (!isOpen) {
-      (onOpen ?? onRefresh)?.();
-    }
+    if (!isOpen) onOpen?.();
     setIsOpen(!isOpen);
   };
 

@@ -89,7 +89,7 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
               isLoading ||
               audioDevices.length === 0
             }
-            onRefresh={refreshAudioDevices}
+            onOpen={refreshAudioDevices}
           />
           <ResetButton
             onClick={handleReset}

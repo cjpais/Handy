@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Dropdown, DropdownOption } from "../ui/Dropdown";
 import { PlayIcon } from "lucide-react";
@@ -24,13 +24,9 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
 
   const selectedTheme = getSetting("sound_theme") ?? "marimba";
 
-  const handleRefresh = useCallback(async () => {
-    await checkCustomSounds();
-  }, [checkCustomSounds]);
-
   useEffect(() => {
-    handleRefresh();
-  }, [handleRefresh]);
+    checkCustomSounds();
+  }, [checkCustomSounds]);
 
   const options: DropdownOption[] = [
     { value: "marimba", label: "Marimba" },
@@ -61,7 +57,7 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
             updateSetting("sound_theme", value as "marimba" | "pop" | "custom")
           }
           options={options}
-          onOpen={handleRefresh}
+          onOpen={checkCustomSounds}
         />
         <Button
           variant="ghost"
