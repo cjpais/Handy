@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Fjern fyldord",
         "description": "Fjerner almindelige tøveord fra transskriptioner. Slå fra for at beholde dem."
+      },
+      "chineseScript": {
+        "title": "Kinesisk skrift",
+        "description": "Skriver mandarin- og kantonesisk-transskriptioner med forenklede eller traditionelle tegn. Andre sprog ændres ikke.",
+        "options": {
+          "asTranscribed": "Som transskriberet",
+          "simplified": "Forenklet",
+          "traditional": "Traditionel"
+        }
       }
     },
     "postProcessing": {

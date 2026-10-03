@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Eliminar muletillas",
         "description": "Elimina las muletillas más comunes de las transcripciones. Desactívalo para conservarlas."
+      },
+      "chineseScript": {
+        "title": "Escritura china",
+        "description": "Escribe las transcripciones en mandarín y cantonés con caracteres simplificados o tradicionales. Los demás idiomas no se modifican.",
+        "options": {
+          "asTranscribed": "Tal como se transcribió",
+          "simplified": "Simplificado",
+          "traditional": "Tradicional"
+        }
       }
     },
     "postProcessing": {

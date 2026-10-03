@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Ta bort utfyllnadsord",
         "description": "Tar bort vanliga tvekljud från transkriberingar. Stäng av för att behålla dem."
+      },
+      "chineseScript": {
+        "title": "Kinesisk skrift",
+        "description": "Skriver mandarin- och kantonesiska transkriptioner med förenklade eller traditionella tecken. Andra språk lämnas oförändrade.",
+        "options": {
+          "asTranscribed": "Som transkriberat",
+          "simplified": "Förenklad",
+          "traditional": "Traditionell"
+        }
       }
     },
     "postProcessing": {

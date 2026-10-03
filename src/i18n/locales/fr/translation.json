@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Supprimer les mots de remplissage",
         "description": "Supprime les hésitations courantes des transcriptions. Désactivez cette option pour les conserver."
+      },
+      "chineseScript": {
+        "title": "Écriture chinoise",
+        "description": "Écrit les transcriptions en mandarin et en cantonais en caractères simplifiés ou traditionnels. Les autres langues ne sont pas modifiées.",
+        "options": {
+          "asTranscribed": "Tel que transcrit",
+          "simplified": "Simplifié",
+          "traditional": "Traditionnel"
+        }
       }
     },
     "postProcessing": {

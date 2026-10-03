@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "移除语气词",
         "description": "从转录中移除常见的语气词。关闭此选项即可保留这些词。"
+      },
+      "chineseScript": {
+        "title": "简繁转换",
+        "description": "将普通话和粤语转录输出为简体或繁体中文。其他语言不受影响。",
+        "options": {
+          "asTranscribed": "保持原样",
+          "simplified": "简体",
+          "traditional": "繁体"
+        }
       }
     },
     "postProcessing": {

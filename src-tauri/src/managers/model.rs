@@ -268,10 +268,7 @@ impl ModelDescriptor {
 /// Matching is base-aware ([`base_language`]) and returns the model's own
 /// *concrete* code, so a bare intent (`en`) resolves to the exact string the
 /// engine's prompt table expects (`en-US`) for models that advertise full
-/// BCP-47 locales. Chinese *script* intents (`zh-Hans`/`zh-Hant`) are the sole
-/// exception: they pass through unchanged so the downstream Simplified /
-/// Traditional output conversion still fires (the engine path collapses them to
-/// a plain Chinese code separately).
+/// BCP-47 locales.
 pub fn effective_language(
     intent: &str,
     supported_languages: &[String],
@@ -295,9 +292,6 @@ pub fn effective_language(
         };
 
         if let Some(code) = exact_base_match.or_else(equivalent_match) {
-            if intent == "zh-Hans" || intent == "zh-Hant" {
-                return intent.to_string();
-            }
             return code.clone();
         }
     }
@@ -2678,14 +2672,6 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_effective_language_accepts_chinese_script_intent_for_zh_capability() {
-        let languages = vec!["zh".to_string()];
-
-        assert_eq!(effective_language("zh-Hans", &languages, false), "zh-Hans");
-        assert_eq!(effective_language("zh-Hant", &languages, false), "zh-Hant");
-    }
-
-    #[test]
     fn test_effective_language_falls_back_to_canonical_chinese() {
         let languages = vec!["zh-Hant".to_string()];
 
@@ -2712,16 +2698,6 @@ mod tests {
         assert_eq!(effective_language("ja", &languages, true), "ja-JP");
         // An unsupported intent still auto-detects when the model can.
         assert_eq!(effective_language("fr", &languages, true), "auto");
-    }
-
-    #[test]
-    fn test_effective_language_preserves_chinese_script_intent_for_locale_model() {
-        // Script intents survive so Simplified/Traditional output conversion
-        // still fires, even when the model advertises a regioned Chinese code.
-        let languages = vec!["en-US".to_string(), "zh-CN".to_string()];
-
-        assert_eq!(effective_language("zh-Hans", &languages, true), "zh-Hans");
-        assert_eq!(effective_language("zh-Hant", &languages, true), "zh-Hant");
     }
 
     #[test]

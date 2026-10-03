@@ -375,6 +375,15 @@
       "fillerWordRemoval": {
         "title": "إزالة كلمات الحشو",
         "description": "يزيل كلمات التردد الشائعة من النصوص. عطّل هذا الخيار للاحتفاظ بها."
+      },
+      "chineseScript": {
+        "title": "الكتابة الصينية",
+        "description": "يكتب نصوص الماندرين والكانتونية بالأحرف المبسطة أو التقليدية. لا تتغير اللغات الأخرى.",
+        "options": {
+          "asTranscribed": "كما نُسخ",
+          "simplified": "مبسطة",
+          "traditional": "تقليدية"
+        }
       }
     },
     "postProcessing": {

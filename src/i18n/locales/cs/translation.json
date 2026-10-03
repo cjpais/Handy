@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Odstranit výplňová slova",
         "description": "Odstraňuje běžná slova vyjadřující váhání z přepisů. Vypnutím je zachováte."
+      },
+      "chineseScript": {
+        "title": "Čínské písmo",
+        "description": "Zapisuje přepisy v mandarínštině a kantonštině zjednodušenými nebo tradičními znaky. Ostatní jazyky zůstávají beze změny.",
+        "options": {
+          "asTranscribed": "Jak bylo přepsáno",
+          "simplified": "Zjednodušené",
+          "traditional": "Tradiční"
+        }
       }
     },
     "postProcessing": {

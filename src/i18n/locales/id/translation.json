@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Hapus Kata Pengisi",
         "description": "Menghapus kata pengisi umum dari transkripsi. Nonaktifkan untuk mempertahankannya."
+      },
+      "chineseScript": {
+        "title": "Aksara Tionghoa",
+        "description": "Menulis transkripsi Mandarin dan Kanton dengan aksara Sederhana atau Tradisional. Bahasa lain tidak diubah.",
+        "options": {
+          "asTranscribed": "Sesuai transkripsi",
+          "simplified": "Sederhana",
+          "traditional": "Tradisional"
+        }
       }
     },
     "postProcessing": {

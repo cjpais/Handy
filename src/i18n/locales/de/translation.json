@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Füllwörter entfernen",
         "description": "Entfernt häufige Verzögerungslaute aus Transkriptionen. Deaktivieren Sie diese Option, um sie beizubehalten."
+      },
+      "chineseScript": {
+        "title": "Chinesische Schrift",
+        "description": "Schreibt Transkriptionen auf Mandarin und Kantonesisch in vereinfachten oder traditionellen Schriftzeichen. Andere Sprachen bleiben unverändert.",
+        "options": {
+          "asTranscribed": "Wie transkribiert",
+          "simplified": "Vereinfacht",
+          "traditional": "Traditionell"
+        }
       }
     },
     "postProcessing": {
