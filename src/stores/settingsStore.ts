@@ -185,6 +185,8 @@ const settingUpdaters: {
     commands.changeFillerWordRemovalEnabledSetting(value as boolean),
   chinese_script: (value) =>
     commands.changeChineseScriptSetting(value as ChineseScript),
+  keep_cancelled_recordings: (value) =>
+    commands.changeKeepCancelledRecordingsSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
   transcribe_accelerator: (value) =>

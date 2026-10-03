@@ -92,18 +92,30 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Cancel any ongoing recording
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     let recording_was_active = audio_manager.is_recording();
-    audio_manager.cancel_recording();
+    let cancelled_samples = audio_manager.cancel_recording();
 
-    // Abandon any live streaming transcription
+    // Captured audio goes to history and only the paste is cancelled, unless the user turned that off.
+    // A recording that was already stopping is kept by its own stop task, which also owns the live stream.
+    let keep_cancelled_recordings = crate::settings::get_settings(app).keep_cancelled_recordings;
     let tm = app.state::<Arc<TranscriptionManager>>();
-    tm.cancel_stream();
+    let mut keeping_audio = false;
+    match cancelled_samples {
+        Some(samples) if keep_cancelled_recordings && !samples.is_empty() => {
+            crate::actions::keep_cancelled_recording(app, samples);
+            keeping_audio = true;
+        }
+        None if keep_cancelled_recordings && recording_was_active => keeping_audio = true,
+        _ => tm.cancel_stream(),
+    }
 
     // Update tray icon and hide overlay
     set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
     // Unload model if immediate unload is enabled
-    tm.maybe_unload_immediately("cancellation");
+    if !keeping_audio {
+        tm.maybe_unload_immediately("cancellation");
+    }
 
     // Notify coordinator so it can keep lifecycle state coherent.
     if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {

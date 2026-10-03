@@ -513,6 +513,10 @@
         "title": "詞彙修正閾值",
         "description": "自訂詞彙修正的靈敏度"
       },
+      "keepCancelledRecordings": {
+        "title": "保留已取消的錄音",
+        "description": "將已取消的錄音儲存到歷史紀錄中，但不貼上。關閉此選項即可捨棄這些錄音。"
+      },
       "historyLimit": {
         "title": "歷史紀錄上限",
         "description": "歷史紀錄的最大保留筆數",

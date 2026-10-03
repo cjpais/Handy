@@ -513,6 +513,10 @@
         "title": "Kelime Düzeltme Eşiği",
         "description": "Özel kelime düzeltmeleri için hassasiyet"
       },
+      "keepCancelledRecordings": {
+        "title": "İptal Edilen Kayıtları Sakla",
+        "description": "İptal edilen kayıtları yapıştırmadan geçmişe kaydeder. Silmek için kapatın."
+      },
       "historyLimit": {
         "title": "Geçmiş Limiti",
         "description": "Saklanacak maksimum geçmiş kaydı sayısı",

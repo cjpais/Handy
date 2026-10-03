@@ -527,6 +527,10 @@
         "title": "Tærskel for ordkorrektion",
         "description": "Følsomhed for brugerdefinerede ordkorrektioner"
       },
+      "keepCancelledRecordings": {
+        "title": "Behold annullerede optagelser",
+        "description": "Gemmer annullerede optagelser i historikken uden at indsætte dem. Slå fra for at kassere dem."
+      },
       "historyLimit": {
         "title": "Historikgrænse",
         "description": "Maksimalt antal historikposter, der skal beholdes",

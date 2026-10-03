@@ -513,6 +513,10 @@
         "title": "Tröskelvärde för ordkorrigering",
         "description": "Känslighet för anpassade ordkorrigeringar"
       },
+      "keepCancelledRecordings": {
+        "title": "Behåll avbrutna inspelningar",
+        "description": "Sparar avbrutna inspelningar i historiken utan att klistra in dem. Stäng av för att ta bort dem."
+      },
       "historyLimit": {
         "title": "Historikgräns",
         "description": "Maximalt antal historikposter som ska sparas",

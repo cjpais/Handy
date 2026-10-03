@@ -513,6 +513,10 @@
         "title": "词汇修正阈值",
         "description": "自定义词汇修正的灵敏度"
       },
+      "keepCancelledRecordings": {
+        "title": "保留已取消的录音",
+        "description": "将已取消的录音保存到历史记录中，但不粘贴。关闭此选项即可丢弃这些录音。"
+      },
       "historyLimit": {
         "title": "历史记录上限",
         "description": "保留的最大历史条目数",

@@ -31,6 +31,7 @@ export { AppDataDirectory } from "./AppDataDirectory";
 export { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";
 export { StartHidden } from "./StartHidden";
 export { HistoryLimit } from "./HistoryLimit";
+export { KeepCancelledRecordings } from "./KeepCancelledRecordings";
 export { RecordingRetentionPeriodSelector } from "./RecordingRetentionPeriod";
 export { AutostartToggle } from "./AutostartToggle";
 export { UpdateChecksToggle } from "./UpdateChecksToggle";
