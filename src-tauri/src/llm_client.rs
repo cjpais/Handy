@@ -1,11 +1,21 @@
 use crate::settings::PostProcessProvider;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::error::Error as StdError;
+use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
+
+/// Environment variables consulted (in order) for an additional PEM bundle to
+/// trust when calling out to a custom OpenAI-compatible endpoint. The first
+/// non-empty value wins.
+///
+/// `HANDY_CA_BUNDLE` is the Handy-specific override; `SSL_CERT_FILE` is the
+/// long-standing OpenSSL / curl convention which already works for many users
+/// behind corporate proxies.
+const CA_BUNDLE_ENV_VARS: &[&str] = &["HANDY_CA_BUNDLE", "SSL_CERT_FILE"];
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -172,11 +182,79 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     Ok(headers)
 }
 
+/// Returns the path of the first set, non-empty env var in
+/// [`CA_BUNDLE_ENV_VARS`], along with the env var name it came from.
+fn ca_bundle_path_from_env() -> Option<(&'static str, PathBuf)> {
+    for var in CA_BUNDLE_ENV_VARS {
+        if let Some(value) = std::env::var_os(var) {
+            if !value.is_empty() {
+                return Some((var, PathBuf::from(value)));
+            }
+        }
+    }
+    None
+}
+
+/// Apply any custom CA certificates configured via env vars to a
+/// [`reqwest::ClientBuilder`].
+///
+/// This lets users behind enterprise TLS proxies, or with self-hosted
+/// OpenAI-compatible endpoints whose certificate is signed by an internal CA,
+/// trust those CAs without having to rebuild Handy. See gh-1370.
+///
+/// The function is fail-soft: if the configured PEM bundle cannot be read or
+/// parsed, we warn and return the builder unchanged rather than blocking
+/// requests entirely. This matches `curl`'s lenient behaviour with
+/// `SSL_CERT_FILE`.
+fn apply_custom_ca_certs(mut builder: reqwest::ClientBuilder) -> reqwest::ClientBuilder {
+    let Some((env_var, path)) = ca_bundle_path_from_env() else {
+        return builder;
+    };
+
+    let pem = match std::fs::read(&path) {
+        Ok(pem) => pem,
+        Err(err) => {
+            warn!(
+                "Ignoring {} = {}: could not read CA bundle: {}",
+                env_var,
+                path.display(),
+                err
+            );
+            return builder;
+        }
+    };
+
+    let certs = match reqwest::Certificate::from_pem_bundle(&pem) {
+        Ok(certs) => certs,
+        Err(err) => {
+            warn!(
+                "Ignoring {} = {}: could not parse PEM bundle: {}",
+                env_var,
+                path.display(),
+                err
+            );
+            return builder;
+        }
+    };
+
+    let count = certs.len();
+    for cert in certs {
+        builder = builder.add_root_certificate(cert);
+    }
+    debug!(
+        "Loaded {} extra CA certificate(s) from {} = {}",
+        count,
+        env_var,
+        path.display()
+    );
+
+    builder
+}
+
 /// Create an HTTP client with provider-specific headers
 fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwest::Client, String> {
     let headers = build_headers(provider, api_key)?;
-    reqwest::Client::builder()
-        .default_headers(headers)
+    apply_custom_ca_certs(reqwest::Client::builder().default_headers(headers))
         .build()
         .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))
 }
@@ -730,5 +808,150 @@ mod tests {
         assert!(is_known_rejected(&key));
         // A different model on the same endpoint is tracked separately
         assert!(!is_known_rejected(&endpoint_key(&deepseek, "other-model")));
+    }
+
+    /// Guard for restoring the previous values of the CA-bundle env vars after
+    /// a test mutates them. Tests must hold the same instance for the lifetime
+    /// of any env mutation.
+    ///
+    /// Env mutations are process-global, so tests that touch these vars must
+    /// first hold [`ENV_LOCK`]: cargo runs tests in parallel threads, and an
+    /// EnvGuard alone only restores the previous value, it does not stop a
+    /// concurrent test from observing a half-mutated environment.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    struct EnvGuard {
+        previous: Vec<(&'static str, Option<std::ffi::OsString>)>,
+    }
+
+    impl EnvGuard {
+        fn new() -> Self {
+            let previous = CA_BUNDLE_ENV_VARS
+                .iter()
+                .map(|name| (*name, std::env::var_os(name)))
+                .collect();
+            for name in CA_BUNDLE_ENV_VARS {
+                std::env::remove_var(name);
+            }
+            Self { previous }
+        }
+
+        fn set(&self, name: &str, value: &std::path::Path) {
+            std::env::set_var(name, value);
+        }
+    }
+
+    impl Drop for EnvGuard {
+        fn drop(&mut self) {
+            for (name, value) in &self.previous {
+                match value {
+                    Some(v) => std::env::set_var(name, v),
+                    None => std::env::remove_var(name),
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ca_bundle_unset_returns_none() {
+        let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = EnvGuard::new();
+        assert!(ca_bundle_path_from_env().is_none());
+    }
+
+    #[test]
+    fn ca_bundle_handy_env_takes_precedence_over_ssl_cert_file() {
+        let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = EnvGuard::new();
+        let handy_path = std::path::PathBuf::from("/tmp/handy-test-ca.pem");
+        let ssl_path = std::path::PathBuf::from("/tmp/ssl-cert-file.pem");
+        guard.set("HANDY_CA_BUNDLE", &handy_path);
+        guard.set("SSL_CERT_FILE", &ssl_path);
+
+        let (var, path) = ca_bundle_path_from_env().expect("env var should resolve");
+        assert_eq!(var, "HANDY_CA_BUNDLE");
+        assert_eq!(path, handy_path);
+    }
+
+    #[test]
+    fn ca_bundle_falls_back_to_ssl_cert_file() {
+        let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = EnvGuard::new();
+        let ssl_path = std::path::PathBuf::from("/tmp/ssl-cert-file.pem");
+        guard.set("SSL_CERT_FILE", &ssl_path);
+
+        let (var, path) = ca_bundle_path_from_env().expect("env var should resolve");
+        assert_eq!(var, "SSL_CERT_FILE");
+        assert_eq!(path, ssl_path);
+    }
+
+    #[test]
+    fn apply_custom_ca_certs_is_no_op_when_env_unset() {
+        let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = EnvGuard::new();
+        // Should not panic and should return a valid builder.
+        let builder = apply_custom_ca_certs(reqwest::Client::builder());
+        assert!(builder.build().is_ok());
+    }
+
+    #[test]
+    fn apply_custom_ca_certs_warns_and_continues_on_missing_file() {
+        let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = EnvGuard::new();
+        guard.set(
+            "HANDY_CA_BUNDLE",
+            std::path::Path::new("/nonexistent/handy-ca.pem"),
+        );
+        // Fail-soft: missing file must not block client construction.
+        let builder = apply_custom_ca_certs(reqwest::Client::builder());
+        assert!(builder.build().is_ok());
+    }
+
+    #[test]
+    fn apply_custom_ca_certs_warns_and_continues_on_unparseable_pem() {
+        let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = EnvGuard::new();
+        let path = std::env::temp_dir().join(format!("handy-ca-test-{}.pem", std::process::id()));
+        std::fs::write(&path, b"not a pem bundle").unwrap();
+        guard.set("HANDY_CA_BUNDLE", &path);
+        // Fail-soft: unparseable bundle must not block client construction.
+        let builder = apply_custom_ca_certs(reqwest::Client::builder());
+        let result = builder.build();
+        std::fs::remove_file(&path).ok();
+        assert!(result.is_ok());
+    }
+
+    const STATIC_SELF_SIGNED_PEM: &str = "-----BEGIN CERTIFICATE-----
+MIIC5zCCAc+gAwIBAgIJAJV3N/zqsgtpMA0GCSqGSIb3DQEBCwUAMCYxJDAiBgNV
+BAMMG0hhbmR5IFVuaXQgVGVzdCBTZWxmLVNpZ25lZDAeFw0yNjEwMDExMDM5NTda
+Fw0zNjA5MjgxMDM5NTdaMCYxJDAiBgNVBAMMG0hhbmR5IFVuaXQgVGVzdCBTZWxm
+LVNpZ25lZDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAPO8asCxw7DA
+n4FJFSUvAxUlcyCtsYoQhr4U0w9UGJGrA0X/lNP6a6kbwpKXtONu104I3MVHmQ/X
+XGv36QwMV6vSjSUETPmyEygvJ8xbR4HHH/JMp8CJnsFiFgS+sLJFgEOEPd1llLIh
+RBPfQ1hsICtarCn6yAfvTbykb7RMY7yPD+TVD6Z4xJPaTCgZSZgdJs4MYO7TjVaF
+9jrlE6nafQ2srjD7LHSL6GlbvUMemBfQIdAJ4Dl5rUZDKnKZb9+rZfqvmahKAH84
+ZCOz4y15Rl+IyS610VfXaG3JAlhFkw7YFMcMQtVK847Pdvvez9zn8dWpi5CizQoE
+3p8Req4ydW8CAwEAAaMYMBYwFAYDVR0RBA0wC4IJbG9jYWxob3N0MA0GCSqGSIb3
+DQEBCwUAA4IBAQDW+rQRu/u15gq4xfQd9BtUCiPkW9WkqVXhYaQHdLCQKcmDNt1y
+ufCfg4rBXF95YST569P6Fklux3EZsW6OEPjuo8VvwCvXByN7tpG5iMCTHFLJfcWT
+Z6j9RoypT/8rs6Jdm12iOOk7V24uQkxtVMJv3iSR/av9iFZiSVkJDkeo5lzh2DtZ
+sebdIT5VmP6yOS8X1+MpUgoQ4d3aFDghLPvQsKnRF9IpHCtbnOMYU/TjcTP/hQ4t
+QpcL66SkZ/OfyT/5LCBJStQ3LITHYmFvuSg6IyyOzS/IwqRlRYZ5BBaI85I4A7Vl
+vKRbnBS3BSX1GkA+0kuzA/WXt0keZHmSlV9i
+-----END CERTIFICATE-----
+";
+
+    #[test]
+    fn apply_custom_ca_certs_loads_valid_pem_bundle() {
+        let _env = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = EnvGuard::new();
+        let path = std::env::temp_dir().join(format!("handy-ca-ok-{}.pem", std::process::id()));
+        std::fs::write(&path, STATIC_SELF_SIGNED_PEM).unwrap();
+        guard.set("HANDY_CA_BUNDLE", &path);
+        // Success path: parseable bundle must be accepted and the client built.
+        let builder = apply_custom_ca_certs(reqwest::Client::builder());
+        let result = builder.build();
+        std::fs::remove_file(&path).ok();
+        assert!(result.is_ok());
     }
 }
