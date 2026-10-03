@@ -474,6 +474,29 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Builds the dotool stdin script that types `text`.
+///
+/// dotool reads one command per line, so each line of `text` gets its own
+/// `type` command and line breaks are sent as `key enter`, like the other
+/// typing tools do. Otherwise everything after the first newline would be run
+/// as dotool commands instead of being typed.
+#[cfg(target_os = "linux")]
+fn dotool_type_script(text: &str) -> String {
+    let mut script = String::new();
+    for (i, line) in text.split('\n').enumerate() {
+        if i > 0 {
+            script.push_str("key enter\n");
+        }
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        if !line.is_empty() {
+            script.push_str("type ");
+            script.push_str(line);
+            script.push('\n');
+        }
+    }
+    script
+}
+
 /// Type text directly via dotool (works on both Wayland and X11 via uinput).
 #[cfg(target_os = "linux")]
 fn type_text_via_dotool(text: &str) -> Result<(), String> {
@@ -486,8 +509,8 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to spawn dotool: {}", e))?;
 
     if let Some(mut stdin) = child.stdin.take() {
-        // dotool uses "type <text>" command
-        writeln!(stdin, "type {}", text)
+        stdin
+            .write_all(dotool_type_script(text).as_bytes())
             .map_err(|e| format!("Failed to write to dotool stdin: {}", e))?;
     }
 
@@ -942,6 +965,24 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
         assert_eq!(
             ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes).unwrap(),
             ["key", "42:1", "110:1", "110:0", "42:0"]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_script_types_single_line_text_unchanged() {
+        assert_eq!(dotool_type_script("hello world"), "type hello world\n");
+        assert_eq!(dotool_type_script(" indented"), "type  indented\n");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_script_does_not_run_lines_of_text_as_commands() {
+        // dotool reads one command per line; text after a line break must still
+        // be typed, not executed as `key`/`click` commands.
+        assert_eq!(
+            dotool_type_script("first line\nkey super+l\r\nclick left\n"),
+            "type first line\nkey enter\ntype key super+l\nkey enter\ntype click left\nkey enter\n"
         );
     }
 
