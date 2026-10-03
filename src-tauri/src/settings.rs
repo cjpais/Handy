@@ -602,10 +602,6 @@ fn default_filler_word_removal_enabled() -> bool {
 }
 
 fn default_chinese_script() -> ChineseScript {
-    // Keep tests independent of the machine's locale.
-    if cfg!(test) {
-        return ChineseScript::AsTranscribed;
-    }
     tauri_plugin_os::locale()
         .and_then(|locale| crate::chinese_script::chinese_script_for_locale(&locale))
         .unwrap_or_default()
