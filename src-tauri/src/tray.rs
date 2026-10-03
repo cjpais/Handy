@@ -217,6 +217,7 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState, warning: bool) -> &'
 /// Sets the recording state shown by the tray (icon + Cancel/model menu).
 pub fn set_tray_state(app: &AppHandle, state: TrayIconState) {
     sync_tray_with(app, |inner| inner.icon_state = state);
+    crate::floating_button::emit_state(app, state);
 }
 
 /// Re-syncs the tray after something other than the recording state changed

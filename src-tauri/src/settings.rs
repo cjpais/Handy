@@ -485,6 +485,14 @@ pub struct AppSettings {
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
     pub show_tray_icon: bool,
+    /// On-screen button docked to the screen edge that toggles transcription,
+    /// for touch/tablet use where no keyboard shortcut can be pressed.
+    #[serde(default)]
+    pub show_floating_button: bool,
+    /// Vertical position of the floating button, as a fraction (0.0 top –
+    /// 1.0 bottom) of the primary monitor's work area.
+    #[serde(default = "default_floating_button_offset")]
+    pub floating_button_offset: f64,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
     #[serde(default = "default_paste_delay_after_ms")]
@@ -663,6 +671,10 @@ fn default_app_language() -> String {
 
 fn default_show_tray_icon() -> bool {
     true
+}
+
+fn default_floating_button_offset() -> f64 {
+    0.7
 }
 
 fn default_post_process_provider_id() -> String {
@@ -978,6 +990,8 @@ pub fn get_default_settings() -> AppSettings {
         lazy_stream_close: false,
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
+        show_floating_button: false,
+        floating_button_offset: default_floating_button_offset(),
         paste_delay_ms: default_paste_delay_ms(),
         paste_delay_after_ms: default_paste_delay_after_ms(),
         reliable_paste: false,

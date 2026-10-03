@@ -1,0 +1,42 @@
+/* Half-pill docked flush against the right screen edge. */
+.floating-button {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 0 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-right: none;
+  border-radius: 22px 0 0 22px;
+  background: rgba(24, 24, 27, 0.92);
+  color: #ffffff;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+  transition:
+    background-color 150ms ease,
+    filter 150ms ease;
+}
+
+.floating-button.pressed {
+  filter: brightness(1.35);
+}
+
+.floating-button.recording {
+  background: rgba(220, 38, 38, 0.95);
+  border-color: rgba(254, 202, 202, 0.6);
+}
+
+.floating-button.transcribing {
+  background: rgba(24, 24, 27, 0.92);
+  animation: floating-button-pulse 1s ease-in-out infinite;
+}
+
+@keyframes floating-button-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
