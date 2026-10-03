@@ -235,7 +235,11 @@
         "title": "Micròfon",
         "description": "Selecciona el micròfon preferit",
         "placeholder": "Seleccionaun micròfon...",
-        "loading": "S'està carregant..."
+        "loading": "S'està carregant...",
+        "test": "Test Microphone",
+        "stopTest": "Stop Test",
+        "inputLevel": "Input level",
+        "testFailed": "Microphone test failed"
       },
       "channel": {
         "title": "Canal d'entrada",
@@ -694,7 +698,9 @@
     "modelLoadFailedUnknown": "model desconegut",
     "pasteFailedTitle": "No s'ha pogut enganxar el text",
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",
-    "transcriptionFailedTitle": "La transcripció ha fallat"
+    "transcriptionFailedTitle": "La transcripció ha fallat",
+    "silentInputTitle": "No Audio Detected",
+    "silentInput": "Check the selected microphone or input device, then try again."
   },
   "appLanguage": {
     "title": "Llengua de l'aplicació",

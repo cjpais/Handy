@@ -745,6 +745,8 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::get_available_microphones,
             commands::audio::set_selected_microphone,
             commands::audio::get_selected_microphone,
+            commands::audio::start_microphone_test,
+            commands::audio::stop_microphone_test,
             commands::audio::get_available_output_devices,
             commands::audio::set_selected_output_device,
             commands::audio::get_selected_output_device,
@@ -768,6 +770,8 @@ pub fn run(cli_args: CliArgs) {
             helpers::clamshell::is_laptop,
         ])
         .events(collect_events![
+            managers::audio::MicrophoneTestLevelEvent,
+            managers::audio::MicrophoneTestStoppedEvent,
             managers::history::HistoryUpdatePayload,
             managers::transcription::StreamTextEvent,
             managers::transcription::StreamPhaseEvent,
@@ -1061,6 +1065,12 @@ pub fn run(cli_args: CliArgs) {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
+                if window.label() == "main" {
+                    window
+                        .app_handle()
+                        .state::<Arc<AudioRecordingManager>>()
+                        .stop_microphone_test_on_window_close();
+                }
                 let _res = window.hide();
 
                 #[cfg(target_os = "macos")]

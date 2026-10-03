@@ -235,7 +235,11 @@
         "title": "Mikrofon",
         "description": "Pilih perangkat mikrofon yang Anda inginkan",
         "placeholder": "Pilih mikrofon...",
-        "loading": "Memuat..."
+        "loading": "Memuat...",
+        "test": "Test Microphone",
+        "stopTest": "Stop Test",
+        "inputLevel": "Input level",
+        "testFailed": "Microphone test failed"
       },
       "channel": {
         "title": "Kanal Masukan",
@@ -694,7 +698,9 @@
     "modelLoadFailedUnknown": "model tidak dikenal",
     "pasteFailedTitle": "Gagal Menempelkan Teks",
     "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
-    "transcriptionFailedTitle": "Transkripsi Gagal"
+    "transcriptionFailedTitle": "Transkripsi Gagal",
+    "silentInputTitle": "No Audio Detected",
+    "silentInput": "Check the selected microphone or input device, then try again."
   },
   "appLanguage": {
     "title": "Bahasa Aplikasi",

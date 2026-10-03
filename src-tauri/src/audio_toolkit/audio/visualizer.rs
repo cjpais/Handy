@@ -1,6 +1,8 @@
 use rustfft::{num_complex::Complex32, Fft, FftPlanner};
 use std::sync::Arc;
 
+use super::utils::SILENT_INPUT_PEAK;
+
 // `db` below is not true dBFS: it's a per-bin average divided by the FFT
 // window size, which lands ~20 dB low for speech. So this window is calibrated
 // against measured mic audio (dictation ~-32 dBFS, room tone ~-48 dBFS) rather
@@ -11,6 +13,58 @@ const DB_MIN: f32 = -68.0;
 const DB_MAX: f32 = -30.0;
 const GAIN: f32 = 1.3;
 const CURVE_POWER: f32 = 0.7;
+
+const METER_UPDATES_PER_SECOND: u32 = 30;
+const METER_MIN_DBFS: f32 = -60.0;
+
+pub(crate) struct InputPeakMeter {
+    window_samples: usize,
+    samples_seen: usize,
+    peak: f32,
+}
+
+impl InputPeakMeter {
+    pub(crate) fn new(sample_rate: u32) -> Self {
+        Self {
+            window_samples: (sample_rate / METER_UPDATES_PER_SECOND).max(1) as usize,
+            samples_seen: 0,
+            peak: 0.0,
+        }
+    }
+
+    pub(crate) fn feed(&mut self, samples: &[f32]) -> Option<f32> {
+        let mut latest_level = None;
+
+        for sample in samples {
+            if sample.is_finite() {
+                self.peak = self.peak.max(sample.abs());
+            }
+            self.samples_seen += 1;
+
+            if self.samples_seen == self.window_samples {
+                latest_level = Some(Self::normalize_peak(self.peak));
+                self.samples_seen = 0;
+                self.peak = 0.0;
+            }
+        }
+
+        latest_level
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.samples_seen = 0;
+        self.peak = 0.0;
+    }
+
+    fn normalize_peak(peak: f32) -> f32 {
+        if peak <= SILENT_INPUT_PEAK {
+            return 0.0;
+        }
+
+        let dbfs = 20.0 * peak.min(1.0).log10();
+        ((dbfs - METER_MIN_DBFS) / -METER_MIN_DBFS).clamp(0.0, 1.0)
+    }
+}
 
 pub struct AudioVisualiser {
     fft: Arc<dyn Fft<f32>>,
@@ -158,5 +212,48 @@ impl AudioVisualiser {
         self.buffer.clear();
         // Reset noise floor to initial values
         self.noise_floor.fill(-40.0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::InputPeakMeter;
+
+    #[test]
+    fn maps_peak_dbfs_to_a_normalized_level() {
+        let mut meter = InputPeakMeter::new(30);
+
+        assert_eq!(meter.feed(&[0.001]), Some(0.0));
+        assert!((meter.feed(&[0.01]).unwrap() - (1.0 / 3.0)).abs() < 0.001);
+        assert!((meter.feed(&[-0.1]).unwrap() - (2.0 / 3.0)).abs() < 0.001);
+        assert_eq!(meter.feed(&[1.0]), Some(1.0));
+    }
+
+    #[test]
+    fn emits_once_per_complete_window_and_keeps_partial_samples() {
+        let mut meter = InputPeakMeter::new(300);
+
+        assert_eq!(meter.feed(&[0.1; 9]), None);
+        assert!((meter.feed(&[0.1, 0.01]).unwrap() - (2.0 / 3.0)).abs() < 0.001);
+        assert_eq!(meter.feed(&[0.01; 8]), None);
+        assert!((meter.feed(&[0.01]).unwrap() - (1.0 / 3.0)).abs() < 0.001);
+    }
+
+    #[test]
+    fn reset_discards_partial_window_state() {
+        let mut meter = InputPeakMeter::new(300);
+
+        assert_eq!(meter.feed(&[0.1; 9]), None);
+        meter.reset();
+        assert_eq!(meter.feed(&[0.1]), None);
+    }
+
+    #[test]
+    fn ignores_non_finite_samples_and_clamps_above_full_scale() {
+        let mut meter = InputPeakMeter::new(30);
+
+        assert_eq!(meter.feed(&[f32::NAN]), Some(0.0));
+        assert_eq!(meter.feed(&[f32::INFINITY]), Some(0.0));
+        assert_eq!(meter.feed(&[2.0]), Some(1.0));
     }
 }

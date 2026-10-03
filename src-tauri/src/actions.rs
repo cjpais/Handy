@@ -31,6 +31,21 @@ struct RecordingErrorEvent {
     detail: Option<String>,
 }
 
+fn emit_silent_input_warning(app: &AppHandle) {
+    warn!(
+        "Captured input was empty or stayed below -60 dBFS peak; skipping transcription. Check the selected microphone/input device."
+    );
+    if let Err(err) = app.emit(
+        "recording-error",
+        RecordingErrorEvent {
+            error_type: "silent_input".to_string(),
+            detail: None,
+        },
+    ) {
+        warn!("Failed to emit silent-input warning: {err}");
+    }
+}
+
 /// Drop guard that finishes the transcription pipeline, including immediate
 /// model unloading on early exits.
 struct FinishGuard(AppHandle, Arc<TranscriptionManager>);
@@ -611,7 +626,9 @@ impl ShortcutAction for TranscribeAction {
             );
 
             let stop_recording_time = Instant::now();
-            if let Some(samples) = rm.stop_recording(&binding_id, cancel_generation) {
+            if let Some(captured) = rm.stop_recording(&binding_id, cancel_generation) {
+                let silent_input = captured.input_is_silent;
+                let samples = captured.samples;
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
@@ -627,6 +644,9 @@ impl ShortcutAction for TranscribeAction {
                 }
 
                 if samples.is_empty() {
+                    if silent_input {
+                        emit_silent_input_warning(&ah);
+                    }
                     debug!("Recording produced no audio samples; skipping persistence");
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
@@ -644,20 +664,27 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save. If a live stream was
-                    // running, finalize it and use its text (all audio was already
-                    // fed to the stream); otherwise batch-transcribe the samples.
+                    // The recorder classified input before VAD filtering. Empty
+                    // speech output alone is not evidence of a silent microphone.
                     let transcription_time = Instant::now();
-                    let transcription_result = match tm.finalize_stream() {
-                        // A finalized stream with usable text wins. An empty result
-                        // (no active stream, produced nothing, or a finalize error
-                        // after the engine was returned) falls back to a full batch
-                        // transcription of the same audio. A finalize timeout is
-                        // surfaced instead — the worker may still hold the engine,
-                        // so a batch fallback would contend with it.
-                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
-                        Ok(_) => tm.transcribe(samples),
-                        Err(err) => Err(err),
+                    let transcription_result = if silent_input {
+                        tm.cancel_stream();
+                        None
+                    } else {
+                        // Transcribe concurrently with WAV save. If a live stream was
+                        // running, finalize it and use its text (all audio was already
+                        // fed to the stream); otherwise batch-transcribe the samples.
+                        Some(match tm.finalize_stream() {
+                            // A finalized stream with usable text wins. An empty result
+                            // (no active stream, produced nothing, or a finalize error
+                            // after the engine was returned) falls back to a full batch
+                            // transcription of the same audio. A finalize timeout is
+                            // surfaced instead — the worker may still hold the engine,
+                            // so a batch fallback would contend with it.
+                            Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
+                            Ok(_) => tm.transcribe(samples),
+                            Err(err) => Err(err),
+                        })
                     };
 
                     // Await WAV save and verify
@@ -692,7 +719,26 @@ impl ShortcutAction for TranscribeAction {
                     }
 
                     match transcription_result {
-                        Ok(transcription) => {
+                        None => {
+                            emit_silent_input_warning(&ah);
+                            // Preserve the saved-recording/history behavior of a model
+                            // returning no text, while keeping this input failure distinct
+                            // in the UI and avoiding unnecessary model work.
+                            if wav_saved {
+                                if let Err(err) = hm.save_entry(
+                                    file_name,
+                                    String::new(),
+                                    post_process,
+                                    None,
+                                    None,
+                                ) {
+                                    error!("Failed to save silent recording history entry: {err}");
+                                }
+                            }
+                            utils::hide_recording_overlay(&ah);
+                            set_tray_state(&ah, TrayIconState::Idle);
+                        }
+                        Some(Ok(transcription)) => {
                             debug!(
                                 "Transcription completed in {:?}: '{}'",
                                 transcription_time.elapsed(),
@@ -774,7 +820,7 @@ impl ShortcutAction for TranscribeAction {
                                 });
                             }
                         }
-                        Err(err) => {
+                        Some(Err(err)) => {
                             if rm.was_cancelled_since(cancel_generation) {
                                 debug!(
                                     "Transcription operation cancelled after transcription error"

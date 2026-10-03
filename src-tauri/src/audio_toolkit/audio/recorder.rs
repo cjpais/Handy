@@ -14,7 +14,7 @@ use cpal::{
 use rtrb::{Consumer, Producer, RingBuffer};
 
 use crate::audio_toolkit::{
-    audio::{AudioVisualiser, FrameResampler},
+    audio::{AudioVisualiser, FrameResampler, InputPeakMeter},
     constants,
     vad::{self, VadFrame},
     VoiceActivityDetector,
@@ -24,7 +24,9 @@ enum Cmd {
     /// Begin capturing. Carries the send timestamp so the consumer can log how
     /// long the command sat in the channel, plus a one-shot first-sample acknowledgement.
     Start(VadPolicy, Instant, mpsc::Sender<()>),
-    Stop(mpsc::Sender<Vec<f32>>),
+    Stop(mpsc::Sender<CapturedAudio>),
+    StartMicrophoneTest,
+    StopMicrophoneTest(mpsc::Sender<()>),
     Shutdown,
 }
 
@@ -44,6 +46,13 @@ struct CaptureTransportState {
     /// remain silent until the consumer clears the request.
     pause_acknowledged: AtomicBool,
     overrun_samples: AtomicU64,
+}
+
+/// Filtered audio plus the input level measured before VAD can discard it.
+/// Only this small flag crosses the boundary; raw input is never retained.
+pub struct CapturedAudio {
+    pub samples: Vec<f32>,
+    pub input_is_silent: bool,
 }
 
 /// How 16 kHz mono frames should be filtered for one recording session.
@@ -92,6 +101,8 @@ pub struct AudioRecorder {
     vad: Option<VadConfig>,
     level_cb: Option<LevelCallback>,
     audio_cb: Option<AudioFrameCallback>,
+    microphone_test_level_cb: Option<Arc<dyn Fn(f32) + Send + Sync + 'static>>,
+    stream_error_cb: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
     /// Which input channel to use. None = average all (original behavior).
     selected_channel: Option<usize>,
     /// Preferred stream config cached per device name. The two HAL property
@@ -114,6 +125,8 @@ impl AudioRecorder {
             vad: None,
             level_cb: None,
             audio_cb: None,
+            microphone_test_level_cb: None,
+            stream_error_cb: None,
             selected_channel: None,
             config_cache: Arc::new(Mutex::new(None)),
             stream_error: Arc::new(AtomicBool::new(false)),
@@ -160,6 +173,22 @@ impl AudioRecorder {
         self
     }
 
+    pub fn with_microphone_test_level_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(f32) + Send + Sync + 'static,
+    {
+        self.microphone_test_level_cb = Some(Arc::new(cb));
+        self
+    }
+
+    pub fn with_stream_error_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.stream_error_cb = Some(Arc::new(cb));
+        self
+    }
+
     pub fn with_selected_channel(mut self, channel: Option<u16>) -> Self {
         self.set_selected_channel(channel);
         self
@@ -197,6 +226,8 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         // Move the optional real-time audio frame callback into the worker thread
         let audio_cb = self.audio_cb.clone();
+        let microphone_test_level_cb = self.microphone_test_level_cb.clone();
+        let stream_error_cb = self.stream_error_cb.clone();
         let selected_channel = self.selected_channel;
         let config_cache = Arc::clone(&self.config_cache);
         let stream_error = Arc::clone(&self.stream_error);
@@ -321,13 +352,14 @@ impl AudioRecorder {
                     // Timestamp for the play()-returned -> first-samples gap the
                     // init handshake can't see (hardware dependent).
                     let stream_running_at = Instant::now();
-                    let processor = CaptureProcessor::new(
+                    let mut processor = CaptureProcessor::new(
                         sample_rate,
                         vad,
                         level_cb,
                         audio_cb,
                         stream_running_at,
                     );
+                    processor.microphone_test_level_cb = microphone_test_level_cb;
                     run_consumer(
                         processor,
                         sample_consumer,
@@ -336,6 +368,11 @@ impl AudioRecorder {
                         Arc::clone(&stream_error),
                     );
                     drop(stream);
+                    if stream_error.load(Ordering::Acquire) {
+                        if let Some(callback) = stream_error_cb {
+                            callback();
+                        }
+                    }
                 }
                 Err(error_message) => {
                     // A failed open may mean the cached config went stale
@@ -390,7 +427,7 @@ impl AudioRecorder {
         Ok(ready_rx)
     }
 
-    pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
+    pub fn stop(&self) -> Result<CapturedAudio, Box<dyn std::error::Error>> {
         let tx = self
             .cmd_tx
             .as_ref()
@@ -398,6 +435,29 @@ impl AudioRecorder {
         let (resp_tx, resp_rx) = mpsc::channel();
         tx.send(Cmd::Stop(resp_tx))?;
         Ok(resp_rx.recv()?)
+    }
+
+    pub fn start_microphone_test(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if self.needs_reopen() {
+            return Err(Box::new(Error::other("Capture stream failed")));
+        }
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::other("Recorder is not open"))?;
+        tx.send(Cmd::StartMicrophoneTest)?;
+        Ok(())
+    }
+
+    pub fn stop_microphone_test(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::other("Recorder is not open"))?;
+        let (stopped_tx, stopped_rx) = mpsc::channel();
+        tx.send(Cmd::StopMicrophoneTest(stopped_tx))?;
+        stopped_rx.recv()?;
+        Ok(())
     }
 
     /// True when the active capture stream must be rebuilt.
@@ -694,6 +754,8 @@ enum ChunkDisposition {
     Capture,
     /// Consume idle audio without processing it.
     Discard,
+    /// Meter only: bypass VAD, transcription callbacks and retained audio.
+    MicrophoneTest,
 }
 
 /// Converts raw ring samples into 16 kHz frames across recording sessions.
@@ -710,9 +772,14 @@ struct CaptureProcessor {
     max_drain_samples: usize,
     first_chunk_logged: bool,
 
+    microphone_test_level_cb: Option<Arc<dyn Fn(f32) + Send + Sync + 'static>>,
+    microphone_test_meter: InputPeakMeter,
+    microphone_test_active: bool,
+
     // ---- recording-scoped: reset by `begin_recording` ------------------- //
     vad_policy: VadPolicy,
     processed_samples: Vec<f32>,
+    input_is_silent: bool,
     awaiting_first_captured_chunk: Option<Instant>,
     capture_ready_tx: Option<mpsc::Sender<()>>,
     total_dropped_samples: u64,
@@ -764,6 +831,10 @@ impl CaptureProcessor {
             first_chunk_logged: false,
             vad_policy: VadPolicy::Offline,
             processed_samples: Vec::new(),
+            input_is_silent: true,
+            microphone_test_level_cb: None,
+            microphone_test_meter: InputPeakMeter::new(in_sample_rate),
+            microphone_test_active: false,
             awaiting_first_captured_chunk: None,
             capture_ready_tx: None,
             total_dropped_samples: 0,
@@ -779,6 +850,9 @@ impl CaptureProcessor {
         self.overrun_warning_logged = false;
         self.vad_policy = policy;
         self.processed_samples.clear();
+        self.input_is_silent = true;
+        self.microphone_test_active = false;
+        self.microphone_test_meter.reset();
         self.visualizer.reset();
         self.frame_resampler.reset();
         if policy != VadPolicy::Disabled {
@@ -820,6 +894,15 @@ impl CaptureProcessor {
         if disposition == ChunkDisposition::Discard {
             return;
         }
+        if disposition == ChunkDisposition::MicrophoneTest {
+            if let Some(level) = self.microphone_test_meter.feed(raw) {
+                if let Some(callback) = &self.microphone_test_level_cb {
+                    callback(level);
+                }
+            }
+            return;
+        }
+        self.input_is_silent &= crate::audio_toolkit::is_effectively_silent(raw);
 
         if let Some(buckets) = self.visualizer.feed(raw) {
             if let Some(callback) = &self.level_cb {
@@ -869,7 +952,7 @@ impl CaptureProcessor {
     }
 
     /// Flush the resampler tail and hand back the finished recording.
-    fn finish_recording(&mut self) -> Vec<f32> {
+    fn finish_recording(&mut self) -> CapturedAudio {
         let vad_policy = self.vad_policy;
         self.frame_resampler.finish(|frame: &[f32]| {
             handle_frame(
@@ -907,7 +990,10 @@ impl CaptureProcessor {
                 self.total_dropped_samples
             );
         }
-        std::mem::take(&mut self.processed_samples)
+        CapturedAudio {
+            samples: std::mem::take(&mut self.processed_samples),
+            input_is_silent: self.input_is_silent,
+        }
     }
 }
 
@@ -1007,6 +1093,15 @@ fn run_consumer(
                             return;
                         }
                     }
+                    Cmd::StartMicrophoneTest => {
+                        processor.microphone_test_meter.reset();
+                        processor.microphone_test_active = true;
+                    }
+                    Cmd::StopMicrophoneTest(stopped_tx) => {
+                        processor.microphone_test_active = false;
+                        processor.microphone_test_meter.reset();
+                        let _ = stopped_tx.send(());
+                    }
                     Cmd::Shutdown => {
                         transport.pause_requested.store(true, Ordering::Release);
                         return;
@@ -1023,6 +1118,8 @@ fn run_consumer(
 
         let disposition = if recording {
             ChunkDisposition::Capture
+        } else if processor.microphone_test_active {
+            ChunkDisposition::MicrophoneTest
         } else {
             ChunkDisposition::Discard
         };
@@ -1038,6 +1135,9 @@ fn run_consumer(
         if stream_error.load(Ordering::Acquire) && !stream_error_logged {
             log::error!("Microphone backend reported a stream error; it will be rebuilt");
             stream_error_logged = true;
+        }
+        if processor.microphone_test_active && stream_error.load(Ordering::Acquire) {
+            return;
         }
     }
 }

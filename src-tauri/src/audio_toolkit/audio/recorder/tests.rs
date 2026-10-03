@@ -64,7 +64,7 @@ fn resampler_frame_size_follows_the_vad_backend() {
     let (ready_tx, _ready_rx) = mpsc::channel();
     processor.begin_recording(VadPolicy::Offline, ready_tx);
     processor.process_raw_chunk(&[0.0; 1024], ChunkDisposition::Capture);
-    let samples = processor.finish_recording();
+    let samples = processor.finish_recording().samples;
 
     assert_eq!(samples.len(), 1024);
     assert_eq!(*frame_lengths.lock().unwrap(), vec![frame_samples; 4]);
@@ -74,7 +74,7 @@ fn resampler_frame_size_follows_the_vad_backend() {
 fn idle_chunks_are_discarded_without_reaching_the_recording() {
     let mut processor = CaptureProcessor::new(16_000, None, None, None, Instant::now());
     processor.process_raw_chunk(&[1.0; 480], ChunkDisposition::Discard);
-    assert!(processor.finish_recording().is_empty());
+    assert!(processor.finish_recording().samples.is_empty());
 }
 
 #[test]
@@ -286,7 +286,8 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
 
     let first_samples = reply_rx
         .recv_timeout(Duration::from_secs(1))
-        .expect("first stop reply");
+        .expect("first stop reply")
+        .samples;
     let first_expected = [0.25f32, -0.5, 1.0, 99.0];
     assert_eq!(&first_samples[..first_expected.len()], &first_expected);
     assert!(first_samples[first_expected.len()..]
@@ -319,7 +320,8 @@ fn repeated_start_stop_cycles_resume_capture_without_leaking_samples() {
 
     let second_samples = reply_rx
         .recv_timeout(Duration::from_secs(1))
-        .expect("second stop reply");
+        .expect("second stop reply")
+        .samples;
     let second_expected = [0.75f32, -0.25, 0.5, 199.0];
     assert_eq!(&second_samples[..second_expected.len()], &second_expected);
     assert!(second_samples[second_expected.len()..]
@@ -373,7 +375,8 @@ fn missing_callback_at_stop_marks_stream_for_rebuild_and_returns_samples() {
 
     let samples = reply_rx
         .recv_timeout(Duration::from_secs(3))
-        .expect("pause timeout still returns captured samples");
+        .expect("pause timeout still returns captured samples")
+        .samples;
     assert!(samples.is_empty());
     worker.join().expect("consumer exits after pause timeout");
     assert!(observed_error.load(Ordering::Acquire));
@@ -415,4 +418,237 @@ fn detects_coreaudio_config_error() {
 fn does_not_match_other_errors_for_no_device() {
     assert!(!is_no_input_device_error("permission denied"));
     assert!(!is_no_input_device_error("device not found"));
+}
+
+struct TestMicrophoneCapture {
+    producer: rtrb::Producer<f32>,
+    commands: mpsc::Sender<Cmd>,
+    levels: mpsc::Receiver<f32>,
+    frames: mpsc::Receiver<Vec<f32>>,
+    transport: Arc<CaptureTransportState>,
+    stream_error: Arc<AtomicBool>,
+    worker: Option<thread::JoinHandle<()>>,
+}
+
+impl TestMicrophoneCapture {
+    fn new(sample_rate: u32) -> Self {
+        Self::with_vad(sample_rate, None)
+    }
+
+    fn with_vad(sample_rate: u32, vad: Option<VadConfig>) -> Self {
+        let (producer, consumer) = RingBuffer::new(sample_rate as usize * 2);
+        let (commands, command_rx) = mpsc::channel();
+        let (level_tx, levels) = mpsc::channel();
+        let (frame_tx, frames) = mpsc::channel();
+        let transport = Arc::new(CaptureTransportState::default());
+        let stream_error = Arc::new(AtomicBool::new(false));
+        let worker_transport = transport.clone();
+        let worker_error = stream_error.clone();
+        let worker = thread::spawn(move || {
+            let mut processor = CaptureProcessor::new(
+                sample_rate,
+                vad,
+                None,
+                Some(Arc::new(move |frame| {
+                    let _ = frame_tx.send(frame.to_vec());
+                })),
+                Instant::now(),
+            );
+            processor.microphone_test_level_cb = Some(Arc::new(move |level| {
+                let _ = level_tx.send(level);
+            }));
+            run_consumer(
+                processor,
+                consumer,
+                command_rx,
+                worker_transport,
+                worker_error,
+            );
+        });
+        Self {
+            producer,
+            commands,
+            levels,
+            frames,
+            transport,
+            stream_error,
+            worker: Some(worker),
+        }
+    }
+
+    fn feed(&mut self, samples: &[f32]) {
+        AudioRecorder::write_input_to_ring(samples, 1, None, &mut self.producer, &self.transport);
+    }
+}
+
+impl Drop for TestMicrophoneCapture {
+    fn drop(&mut self) {
+        let _ = self.commands.send(Cmd::Shutdown);
+        if let Some(worker) = self.worker.take() {
+            worker.join().unwrap();
+        }
+    }
+}
+
+#[test]
+fn microphone_test_emits_levels_until_stopped() {
+    let mut capture = TestMicrophoneCapture::new(30);
+    capture.commands.send(Cmd::StartMicrophoneTest).unwrap();
+    capture.feed(&[0.1]);
+    let level = capture.levels.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert!((level - (2.0 / 3.0)).abs() < 0.001);
+    assert!(
+        capture.frames.try_recv().is_err(),
+        "test audio reached transcription"
+    );
+    let (stop_tx, stop_rx) = mpsc::channel();
+    capture
+        .commands
+        .send(Cmd::StopMicrophoneTest(stop_tx))
+        .unwrap();
+    stop_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+    capture.feed(&[0.1]);
+    assert!(capture
+        .levels
+        .recv_timeout(Duration::from_millis(50))
+        .is_err());
+    assert!(capture.frames.try_recv().is_err());
+}
+
+#[test]
+fn recording_start_preempts_microphone_test() {
+    let mut capture = TestMicrophoneCapture::new(16_000);
+    capture.commands.send(Cmd::StartMicrophoneTest).unwrap();
+    capture.feed(&[0.1; 960]);
+    capture.levels.recv_timeout(Duration::from_secs(1)).unwrap();
+    let (ready_tx, ready_rx) = mpsc::channel();
+    capture
+        .commands
+        .send(Cmd::Start(VadPolicy::Disabled, Instant::now(), ready_tx))
+        .unwrap();
+    capture.feed(&[0.2; 960]);
+    ready_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert!(capture
+        .levels
+        .recv_timeout(Duration::from_millis(50))
+        .is_err());
+    assert!(capture.frames.recv_timeout(Duration::from_secs(1)).is_ok());
+}
+
+#[test]
+fn microphone_test_exits_when_capture_fails_without_more_samples() {
+    let mut capture = TestMicrophoneCapture::new(30);
+    capture.commands.send(Cmd::StartMicrophoneTest).unwrap();
+    capture.feed(&[0.1]);
+    capture.levels.recv_timeout(Duration::from_secs(1)).unwrap();
+    // CPAL can stop sending samples while keeping the ring producer alive.
+    capture.stream_error.store(true, Ordering::Release);
+    // The level callback sender belongs to the consumer processor. Dropping it
+    // proves the consumer ended, so the owning worker can drop the CPAL stream.
+    assert!(matches!(
+        capture.levels.recv_timeout(Duration::from_secs(1)),
+        Err(mpsc::RecvTimeoutError::Disconnected)
+    ));
+}
+
+struct RejectAllAudio;
+impl VoiceActivityDetector for RejectAllAudio {
+    fn frame_samples(&self) -> usize {
+        480
+    }
+    fn push_frame<'a>(&'a mut self, _frame: &'a [f32]) -> anyhow::Result<VadFrame<'a>> {
+        Ok(VadFrame::Noise)
+    }
+}
+
+fn capture_rejected_input(input: &[f32], drained: &[f32]) -> super::CapturedAudio {
+    let mut capture = TestMicrophoneCapture::with_vad(
+        16_000,
+        Some(VadConfig {
+            detector: Arc::new(Mutex::new(Box::new(RejectAllAudio))),
+            frame_samples: 480,
+            offline_hangover_frames: 0,
+            streaming_hangover_frames: 0,
+        }),
+    );
+    let (ready_tx, ready_rx) = mpsc::channel();
+    capture
+        .commands
+        .send(Cmd::Start(VadPolicy::Offline, Instant::now(), ready_tx))
+        .unwrap();
+    capture.feed(input);
+    if !input.is_empty() {
+        ready_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+    }
+    let (reply_tx, reply_rx) = mpsc::channel();
+    capture.commands.send(Cmd::Stop(reply_tx)).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while !capture.transport.pause_requested.load(Ordering::Acquire) {
+        assert!(Instant::now() < deadline);
+        thread::sleep(Duration::from_millis(1));
+    }
+    capture.feed(drained);
+    let captured = reply_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+    assert!(
+        captured.samples.is_empty(),
+        "the VAD must actually reject this input"
+    );
+    assert!(
+        capture.frames.try_recv().is_err(),
+        "VAD-rejected audio reached transcription"
+    );
+    captured
+}
+
+#[test]
+fn nonzero_input_rejected_by_vad_is_not_silent() {
+    assert!(
+        !capture_rejected_input(&[0.2; 960], &[]).input_is_silent,
+        "nonzero Noise was misclassified as silent input"
+    );
+}
+
+#[test]
+fn silent_input_remains_silent_after_vad_discards_it() {
+    for input in [vec![], vec![0.0; 960], vec![0.0005; 960]] {
+        assert!(capture_rejected_input(&input, &[]).input_is_silent);
+    }
+}
+
+#[test]
+fn nonzero_input_in_the_stop_drain_is_not_silent() {
+    assert!(!capture_rejected_input(&[0.0; 960], &[0.2; 960]).input_is_silent);
+}
+
+#[test]
+fn microphone_test_audio_is_not_retained_or_classified_as_recording_input() {
+    let (frame_tx, frame_rx) = mpsc::channel();
+    let mut processor = CaptureProcessor::new(
+        16_000,
+        None,
+        None,
+        Some(Arc::new(move |frame| {
+            frame_tx.send(frame.to_vec()).unwrap()
+        })),
+        Instant::now(),
+    );
+    processor.process_raw_chunk(&[0.2; 960], ChunkDisposition::MicrophoneTest);
+    let captured = processor.finish_recording();
+    assert!(captured.samples.is_empty());
+    assert!(captured.input_is_silent);
+    assert!(frame_rx.try_recv().is_err());
+}
+
+#[test]
+fn input_silence_is_reset_between_recordings() {
+    let mut processor = CaptureProcessor::new(16_000, None, None, None, Instant::now());
+    let (ready_tx, _) = mpsc::channel();
+    processor.begin_recording(VadPolicy::Disabled, ready_tx);
+    processor.process_raw_chunk(&[0.2; 480], ChunkDisposition::Capture);
+    assert!(!processor.finish_recording().input_is_silent);
+    let (ready_tx, _) = mpsc::channel();
+    processor.begin_recording(VadPolicy::Disabled, ready_tx);
+    processor.process_raw_chunk(&[0.2; 480], ChunkDisposition::Discard);
+    processor.process_raw_chunk(&[0.0; 480], ChunkDisposition::Capture);
+    assert!(processor.finish_recording().input_is_silent);
 }
