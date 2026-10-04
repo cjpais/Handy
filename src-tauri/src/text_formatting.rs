@@ -182,9 +182,9 @@ pub fn finish(text: &str, config: &TextFormatting) -> String {
         result = result
             .chars()
             .flat_map(|c| {
-                if matches!(c, '\u{e000}' | '\n' | '\r') {
+                if matches!(c, '\u{e000}' | '?' | '!' | '\n' | '\r') {
                     pending = Some(true);
-                } else if matches!(c, '.' | '?' | '!') && pending != Some(true) {
+                } else if c == '.' && pending != Some(true) {
                     pending = Some(false);
                 }
                 if c.is_alphabetic() {
@@ -256,15 +256,42 @@ pub fn finish_dictation(text: &str, config: &TextFormatting) -> String {
     finish_dictation_with_context(text, config, None)
 }
 
+#[cfg(test)]
 pub fn finish_dictation_with_context(
     text: &str,
     config: &TextFormatting,
     cursor_capitalization: Option<bool>,
 ) -> String {
-    static AFTER_PERIOD: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
-    let Ok(mut after_period) = AFTER_PERIOD.lock() else {
+    finish_dictation_for_target(text, config, cursor_capitalization, None)
+}
+
+pub fn finish_dictation_for_target(
+    text: &str,
+    config: &TextFormatting,
+    cursor_capitalization: Option<bool>,
+    target: Option<(i32, usize)>,
+) -> String {
+    static SESSION: std::sync::Mutex<(Option<(i32, usize)>, bool)> =
+        std::sync::Mutex::new((None, true));
+    let Ok(mut session) = SESSION.lock() else {
         return finish(text, config);
     };
+    finish_with_session(text, config, cursor_capitalization, target, &mut session)
+}
+
+type EditorSession = (Option<(i32, usize)>, bool);
+fn finish_with_session(
+    text: &str,
+    config: &TextFormatting,
+    cursor_capitalization: Option<bool>,
+    target: Option<(i32, usize)>,
+    session: &mut EditorSession,
+) -> String {
+    if target.is_some() && session.0 != target {
+        *session = (target, true);
+    }
+    let after_period = &mut session.1;
+
     let mut result = finish(text, config);
     if config.enabled
         && config.initial_capitalization == InitialCapitalization::AfterPeriod
@@ -278,8 +305,12 @@ pub fn finish_dictation_with_context(
         }
     }
     if !result.trim().is_empty() {
-        *after_period =
-            config.enabled && (result.trim_end().ends_with('.') || result.ends_with('\n'));
+        *after_period = config.enabled
+            && (result
+                .trim_end()
+                .trim_end_matches(['\"', '”', '’', ')', ']'])
+                .ends_with(['.', '?', '!'])
+                || result.ends_with('\n'));
     }
     result
 }
@@ -298,6 +329,47 @@ mod tests {
         }
     }
     #[test]
+    fn changing_editor_does_not_inherit_an_unfinished_sentence() {
+        let c = TextFormatting::default();
+        let mut session = (None, false);
+        assert_eq!(
+            finish_with_session("hello", &c, None, Some((42, 1)), &mut session),
+            "Hello"
+        );
+        assert_eq!(
+            finish_with_session("next", &c, Some(false), Some((42, 2)), &mut session),
+            "next"
+        );
+        assert_eq!(
+            finish_with_session("after", &c, Some(true), Some((42, 3)), &mut session),
+            "After"
+        );
+        assert_eq!(
+            finish_with_session("new editor", &c, None, Some((43, 1)), &mut session),
+            "New editor"
+        );
+    }
+
+    #[test]
+    fn question_marks_and_exclamations_start_sentences() {
+        let c = TextFormatting::default();
+        assert_eq!(finish("Hello? next! again", &c), "hello? Next! Again");
+        let mut session = (None, false);
+        assert_eq!(
+            finish_with_session("hello question mark", &c, None, Some((10, 1)), &mut session),
+            "Hello?"
+        );
+        assert_eq!(
+            finish_with_session("next", &c, None, Some((10, 1)), &mut session),
+            "Next"
+        );
+        assert_eq!(
+            finish_with_session("continuing", &c, None, Some((10, 1)), &mut session),
+            "continuing"
+        );
+    }
+
+    #[test]
     fn defaults_use_only_spoken_periods_and_capitalize_after_them() {
         assert_eq!(
             finish("Hello exclamation point.", &TextFormatting::default()),
@@ -308,7 +380,7 @@ mod tests {
             finish("Hello. World period. Next sentence.", &c),
             "hello world. Next sentence"
         );
-        assert_eq!(finish("Hello? World! Again.", &c), "hello? world! again");
+        assert_eq!(finish("Hello? World! Again.", &c), "hello? World! Again");
         assert_eq!(finish("Version 3.14 period Next", &c), "version 3.14. Next");
         assert_eq!(finish("Wait... Again.", &c), "wait again");
         assert_eq!(

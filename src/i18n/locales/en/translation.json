@@ -414,12 +414,12 @@
         "spoken": "Replace spoken punctuation",
         "spokenDescription": "Convert spoken commands such as “exclamation point” to symbols. Matching phrases are always treated as commands.",
         "capitalization": "First letter",
-        "capitalizationDescription": "Capitalize at the beginning of a line or after a period. Continue unfinished sentences in lowercase. Uses the insertion point when the editor supports macOS Accessibility; otherwise tracks spoken periods and line breaks. Internal names keep their case.",
+        "capitalizationDescription": "Capitalize at the beginning of a line or after a period, question mark, or exclamation point. Continue unfinished sentences in lowercase. Uses the insertion point when the editor supports macOS Accessibility; otherwise tracks sentence boundaries within the same editor, defaulting to a capital letter for a new editor. Internal names keep their case.",
         "capitalizationOptions": {
           "keep": "Keep original",
           "lower": "Lowercase",
           "upper": "Uppercase",
-          "after_period": "Capitalize at line starts and after periods"
+          "after_period": "Capitalize at line starts and sentence boundaries"
         },
         "periods": "Sentence periods",
         "periodsDescription": "Remove the final period or all sentence-ending periods. Abbreviations may also be affected. Decimal numbers and ellipses are preserved.",

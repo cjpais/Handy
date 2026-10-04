@@ -405,10 +405,11 @@ pub(crate) async fn process_transcription_output(
         }
     }
 
-    final_text = crate::text_formatting::finish_dictation_with_context(
+    final_text = crate::text_formatting::finish_dictation_for_target(
         &final_text,
         &settings.text_formatting,
         cursor_capitalization,
+        crate::editor_context::target(),
     );
     if post_processed_text.is_some() {
         post_processed_text = Some(final_text.clone());

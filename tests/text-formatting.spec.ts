@@ -48,10 +48,12 @@ test("all period choices and disabling formatting are available", async ({
   ).toBeVisible();
   await page.getByText("Lowercase", { exact: true }).click();
   await page
-    .getByText("Capitalize at line starts and after periods", { exact: true })
+    .getByText("Capitalize at line starts and sentence boundaries", {
+      exact: true,
+    })
     .click();
   await expect(
-    page.getByText("Capitalize at line starts and after periods", {
+    page.getByText("Capitalize at line starts and sentence boundaries", {
       exact: true,
     }),
   ).toBeVisible();

@@ -30,8 +30,9 @@ pub fn preview_text_formatting(text: &str) -> serde_json::Value {
     serde_json::json!({
         "cursor_capitalization": context,
         "context_status": status,
-        "formatted": text_formatting::finish_dictation_with_context(
-            text, &text_formatting::TextFormatting::default(), context,
+        "context_target_pid": editor_context::target().map(|target| target.0),
+        "formatted": text_formatting::finish_dictation_for_target(
+            text, &text_formatting::TextFormatting::default(), context, editor_context::target(),
         ),
     })
 }

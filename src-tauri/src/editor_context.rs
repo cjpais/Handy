@@ -1,6 +1,11 @@
 //! Read-only cursor context. Never logs or persists editor contents.
 thread_local! {
+    static TARGET: std::cell::Cell<Option<(i32, usize)>> = const { std::cell::Cell::new(None) };
     static STATUS: std::cell::RefCell<String> = std::cell::RefCell::new("unsupported platform".into());
+}
+
+pub fn target() -> Option<(i32, usize)> {
+    TARGET.with(|target| target.get())
 }
 
 pub fn diagnostic() -> (Option<bool>, String) {
@@ -15,7 +20,12 @@ fn capitalize_at_cursor(text: &str, offset: usize) -> Option<bool> {
     let utf16: Vec<_> = text.encode_utf16().collect();
     let prefix = String::from_utf16(utf16.get(..offset)?).ok()?;
     let line = prefix.rsplit(['\n', '\r']).next()?.trim_end();
-    Some(line.trim().is_empty() || line.ends_with('.'))
+    Some(
+        line.trim().is_empty()
+            || line
+                .trim_end_matches(['\"', '”', '’', ')', ']'])
+                .ends_with(['.', '?', '!']),
+    )
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -37,6 +47,14 @@ pub fn capitalization() -> Option<bool> {
         fn AXUIElementCreateSystemWide() -> Ref;
         fn AXIsProcessTrusted() -> bool;
         fn AXUIElementCopyAttributeValue(element: Ref, attribute: Ref, value: *mut Ref) -> i32;
+        fn AXUIElementCopyParameterizedAttributeValue(
+            element: Ref,
+            attribute: Ref,
+            parameter: Ref,
+            value: *mut Ref,
+        ) -> i32;
+        fn AXUIElementGetPid(element: Ref, pid: *mut i32) -> i32;
+        fn AXValueCreate(kind: u32, value: *const c_void) -> Ref;
         fn AXValueGetValue(value: Ref, kind: u32, output: *mut c_void) -> bool;
         fn AXValueGetType(value: Ref) -> u32;
         fn AXValueGetTypeID() -> usize;
@@ -45,6 +63,7 @@ pub fn capitalization() -> Option<bool> {
     #[link(name = "CoreFoundation", kind = "framework")]
     extern "C" {
         fn CFRelease(value: Ref);
+        fn CFHash(value: Ref) -> usize;
         fn CFGetTypeID(value: Ref) -> usize;
         fn CFStringGetTypeID() -> usize;
         fn CFStringCreateWithCString(allocator: Ref, bytes: *const c_char, encoding: u32) -> Ref;
@@ -77,8 +96,55 @@ pub fn capitalization() -> Option<bool> {
         }
         Some(Owned(value))
     }
+    unsafe fn string(value: Ref) -> Option<String> {
+        if CFGetTypeID(value) != CFStringGetTypeID() {
+            return None;
+        }
+        let length = CFStringGetLength(value);
+        if !(0..=1_000_000).contains(&length) {
+            return None;
+        }
+        let mut units = vec![0; length as usize];
+        CFStringGetCharacters(
+            value,
+            Range {
+                location: 0,
+                length,
+            },
+            units.as_mut_ptr(),
+        );
+        String::from_utf16(&units).ok()
+    }
+    unsafe fn prefix_for_range(element: Ref, length: isize) -> Option<String> {
+        let range = Range {
+            location: 0,
+            length,
+        };
+        let parameter = AXValueCreate(AX_VALUE_CF_RANGE, (&range as *const Range).cast());
+        if parameter.is_null() {
+            return None;
+        }
+        let parameter = Owned(parameter);
+        let key =
+            CFStringCreateWithCString(std::ptr::null(), c"AXStringForRange".as_ptr(), 0x08000100);
+        if key.is_null() {
+            return None;
+        }
+        let key = Owned(key);
+        let mut value = std::ptr::null();
+        if AXUIElementCopyParameterizedAttributeValue(element, key.0, parameter.0, &mut value) != 0
+            || value.is_null()
+        {
+            return None;
+        }
+        let value = Owned(value);
+        let prefix = string(value.0)?;
+        // Reject partial ranges rather than interpreting truncated text as an empty line.
+        (prefix.encode_utf16().count() == length as usize).then_some(prefix)
+    }
     // All copied CF objects are released, including on unsupported-editor paths.
     unsafe {
+        TARGET.with(|target| target.set(None));
         STATUS.with(|status| *status.borrow_mut() = "invalid selection or text value".into());
         if !AXIsProcessTrusted() {
             STATUS.with(|status| {
@@ -94,8 +160,29 @@ pub fn capitalization() -> Option<bool> {
         AXUIElementSetMessagingTimeout(system.0, 0.2);
         let application = attribute(system.0, b"AXFocusedApplication\0")?;
         AXUIElementSetMessagingTimeout(application.0, 0.2);
+        let mut pid = 0;
+        if AXUIElementGetPid(application.0, &mut pid) == 0 {
+            TARGET.with(|target| target.set(Some((pid, 0))));
+        }
         let focused = attribute(application.0, b"AXFocusedUIElement\0")?;
         AXUIElementSetMessagingTimeout(focused.0, 0.2);
+        if pid != 0 {
+            TARGET.with(|target| target.set(Some((pid, CFHash(focused.0)))));
+        }
+        // Some web editors expose an empty value but no usable selection range.
+        // An empty editable value is sufficient evidence of a line start.
+        if let Some(role) = attribute(focused.0, b"AXRole\0").and_then(|value| string(value.0)) {
+            if matches!(role.as_str(), "AXTextArea" | "AXTextField" | "AXComboBox") {
+                if let Some(value) =
+                    attribute(focused.0, b"AXValue\0").and_then(|value| string(value.0))
+                {
+                    if value.trim().is_empty() {
+                        STATUS.with(|status| *status.borrow_mut() = "empty editable field".into());
+                        return Some(true);
+                    }
+                }
+            }
+        }
         let selection = attribute(focused.0, b"AXSelectedTextRange\0")?;
         if CFGetTypeID(selection.0) != AXValueGetTypeID()
             || AXValueGetType(selection.0) != AX_VALUE_CF_RANGE
@@ -117,6 +204,14 @@ pub fn capitalization() -> Option<bool> {
         if range.location == 0 {
             STATUS.with(|status| *status.borrow_mut() = "available".into());
             return Some(true);
+        }
+        if range.location > 1_000_000 {
+            return None;
+        }
+        // Rich text editors may expose range text without exposing AXValue.
+        if let Some(prefix) = prefix_for_range(focused.0, range.location) {
+            STATUS.with(|status| *status.borrow_mut() = "available via text range".into());
+            return capitalize_at_cursor(&prefix, range.location as usize);
         }
         let value = attribute(focused.0, b"AXValue\0")?;
         if CFGetTypeID(value.0) != CFStringGetTypeID() {
@@ -189,6 +284,9 @@ mod tests {
         assert_eq!(capitalize_at_cursor("", 0), Some(true));
         assert_eq!(capitalize_at_cursor("hello", 5), Some(false));
         assert_eq!(capitalize_at_cursor("hello.  ", 8), Some(true));
+        assert_eq!(capitalize_at_cursor("hello? ", 7), Some(true));
+        assert_eq!(capitalize_at_cursor("hello! ", 7), Some(true));
+        assert_eq!(capitalize_at_cursor("hello?\" ", 8), Some(true));
         assert_eq!(capitalize_at_cursor("hello\n  ", 8), Some(true));
         assert_eq!(capitalize_at_cursor("hello\nworld", 6), Some(true));
         assert_eq!(capitalize_at_cursor("hello\nworld", 9), Some(false));
