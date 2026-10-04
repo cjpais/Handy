@@ -679,6 +679,10 @@
     "openSettings": "Open System Settings"
   },
   "errors": {
+    "deviceFallbackTitle": "Handy switched transcription devices",
+    "deviceFallbackDescription": "The device Handy was using is no longer available. Handy is now using {{device}}. Restart Handy to try your preferred device again when it’s available.",
+    "backupCpu": "your computer’s CPU",
+    "backupDevice": "another device",
     "loadDirectory": "Error loading directory: {{error}}",
     "micPermissionDeniedTitle": "Microphone Access Denied",
     "micPermissionDenied": {

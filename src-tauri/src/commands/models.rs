@@ -136,6 +136,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
                 event_type: "selection_changed".to_string(),
                 model_id: Some(model_id.to_string()),
                 model_name: Some(model_info.name.clone()),
+                device_name: None,
                 error: None,
             },
         );

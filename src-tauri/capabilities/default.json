@@ -9,6 +9,7 @@
     "store:default",
     "updater:default",
     "process:default",
+    "notification:default",
     "dialog:default",
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
