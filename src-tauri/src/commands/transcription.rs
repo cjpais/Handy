@@ -2,6 +2,7 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use serde::Serialize;
 use specta::Type;
+use std::sync::Arc;
 use tauri::{AppHandle, State};
 
 #[derive(Serialize, Type)]
@@ -21,7 +22,7 @@ pub fn set_model_unload_timeout(app: AppHandle, timeout: ModelUnloadTimeout) {
 #[tauri::command]
 #[specta::specta]
 pub fn get_model_load_status(
-    transcription_manager: State<TranscriptionManager>,
+    transcription_manager: State<Arc<TranscriptionManager>>,
 ) -> Result<ModelLoadStatus, String> {
     Ok(ModelLoadStatus {
         is_loaded: transcription_manager.is_model_loaded(),
@@ -31,10 +32,14 @@ pub fn get_model_load_status(
 
 #[tauri::command]
 #[specta::specta]
-pub fn unload_model_manually(
-    transcription_manager: State<TranscriptionManager>,
+pub async fn unload_model_manually(
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
 ) -> Result<(), String> {
-    transcription_manager
-        .unload_model()
+    // Unloading waits for any load or transcription in progress, so keep it
+    // off the main thread and the async workers.
+    let tm = Arc::clone(&transcription_manager);
+    tauri::async_runtime::spawn_blocking(move || tm.unload_model())
+        .await
+        .map_err(|e| format!("Failed to unload model: {}", e))?
         .map_err(|e| format!("Failed to unload model: {}", e))
 }
