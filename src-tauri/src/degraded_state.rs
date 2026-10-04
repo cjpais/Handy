@@ -17,10 +17,9 @@ static STATE: AtomicU32 = AtomicU32::new(0);
 #[repr(u32)]
 pub enum Degraded {
     /// A transcribe.cpp worker with GPU backends crashed or hung (in backend
-    /// init, device listing, model load or inference) and a CPU-only worker
-    /// then did the same work. Models load in CPU-only workers, and devices
-    /// are not listed again, until an explicit transcribe.cpp accelerator or
-    /// GPU device change, or an app restart.
+    /// init, device listing, model load or inference). Models load in
+    /// CPU-only workers, and devices are not listed again, until an explicit
+    /// transcribe.cpp accelerator or GPU device change, or an app restart.
     GpuUnavailable = 1 << 0,
 }
 

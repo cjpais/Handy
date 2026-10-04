@@ -29,8 +29,7 @@ mod worker;
 
 pub use protocol::{DeviceInfo, DeviceSelector, LoadedInfo};
 pub use supervisor::{
-    DeviceList, EngineError, EngineSupervisor, Finalized, LoadSpec, StreamHandle, StreamProgress,
-    Unloading,
+    EngineError, EngineSupervisor, Finalized, LoadSpec, StreamHandle, StreamProgress, Unloading,
 };
 
 /// Hidden first argument that turns the executable into a worker.

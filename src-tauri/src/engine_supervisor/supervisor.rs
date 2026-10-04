@@ -101,20 +101,6 @@ impl LoadSpec {
     }
 }
 
-/// The compute devices transcribe.cpp registers, as last reported by a
-/// worker.
-#[derive(Debug, Clone, Default)]
-pub enum DeviceList {
-    /// No worker has listed devices yet (or none could be started).
-    #[default]
-    Unknown,
-    /// A worker crashed, hung or failed while initializing backends or
-    /// listing. Models load on CPU, and devices are not listed again, until
-    /// [`EngineSupervisor::retry_gpu`].
-    Failed(String),
-    Known(Vec<DeviceInfo>),
-}
-
 #[derive(Debug)]
 pub enum EngineError {
     /// [`EngineSupervisor::cancel`] stopped the work.
@@ -197,7 +183,8 @@ struct Shared {
     /// The loaded model (logically: it stays loaded while its worker is
     /// replaced after a crash or cancel).
     loaded: Mutex<Option<LoadedInfo>>,
-    devices: Mutex<DeviceList>,
+    /// The compute devices as last listed by a worker; `None` until one has.
+    devices: Mutex<Option<Vec<DeviceInfo>>>,
     /// Held for the length of a device probe, so concurrent callers wait for
     /// the one probe instead of starting their own.
     probing: Mutex<()>,
@@ -210,51 +197,48 @@ struct Shared {
     /// Bumped by every [`EngineSupervisor::unload`] as it is called, so the
     /// model reads as unloaded at once, even while the unload waits its turn.
     unloads_requested: AtomicU64,
-    /// Bumped by every [`EngineSupervisor::retry_gpu`]; GPU failures from
-    /// before the bump no longer count.
-    gpu_retries: AtomicU64,
     next_id: AtomicU64,
 }
 
 impl Shared {
-    /// Start a model-less worker just to list devices.
+    /// Start a model-less worker just to list devices. If it may use the GPU
+    /// and crashes or hangs doing so, the GPU is marked unavailable.
     fn probe_devices(&self) {
-        match self.hello(!self.gpu_allowed, true) {
+        let cpu_only = !self.gpu_allowed;
+        match self.hello(cpu_only, true) {
             Ok(worker) => drop(worker),
-            Err(failure) => error!(
-                "Could not start a transcription worker to list compute devices: {}",
-                failure
-            ),
+            Err(failure) => {
+                error!(
+                    "Could not start a transcription worker to list compute devices: {}",
+                    failure
+                );
+                if failure.worker_lost() && !cpu_only {
+                    Degraded::GpuUnavailable.set(format!(
+                        "a worker with GPU backends {failure} while listing compute devices"
+                    ));
+                }
+            }
         }
     }
 
     /// Start a worker and say hello, publishing its device list if it lists
-    /// one. If listing was asked for, a worker that fails backend init or
-    /// listing (crash, hang or init error) marks the list failed. A worker
-    /// that could not be launched at all may be a passing problem, so that
-    /// is not recorded.
+    /// one.
     fn hello(&self, cpu_only: bool, list_devices: bool) -> Result<Worker, Failure> {
         let mut worker = Worker::spawn(cpu_only).map_err(Failure::Spawn)?;
-        match worker.call(&Request::Hello { list_devices }, None, HELLO_TIMEOUT) {
-            Ok(Response::Hello { devices }) => {
+        match worker.call(&Request::Hello { list_devices }, None, HELLO_TIMEOUT)? {
+            Response::Hello { devices } => {
                 if let Some(devices) = devices {
-                    self.set_devices(DeviceList::Known(devices));
+                    self.set_devices(devices);
                 }
                 Ok(worker)
             }
-            Ok(other) => Err(unexpected(&other)),
-            Err(failure) => {
-                if list_devices && !matches!(failure, Failure::Spawn(_)) {
-                    self.set_devices(DeviceList::Failed(failure.to_string()));
-                }
-                Err(failure)
-            }
+            other => Err(unexpected(&other)),
         }
     }
 
-    fn set_devices(&self, devices: DeviceList) {
+    fn set_devices(&self, new: Vec<DeviceInfo>) {
         let mut current = lock(&self.devices);
-        if let (DeviceList::Known(old), DeviceList::Known(new)) = (&*current, &devices) {
+        if let Some(old) = &*current {
             let identity = |d: &DeviceInfo| (d.key.clone(), d.index);
             if !old.iter().map(identity).eq(new.iter().map(identity)) {
                 info!(
@@ -266,7 +250,7 @@ impl Shared {
                 );
             }
         }
-        *current = devices;
+        *current = Some(new);
     }
 
     fn epoch(&self) -> u64 {
@@ -320,7 +304,6 @@ impl EngineSupervisor {
             worker: None,
             spec: None,
             stream: None,
-            gpu_suspect: None,
             unloads_done: 0,
         };
         thread::Builder::new()
@@ -362,15 +345,10 @@ impl EngineSupervisor {
     }
 
     /// An explicit transcribe.cpp accelerator or GPU device change: forget
-    /// every GPU failure so far, so the next load may use (and list) the GPU
-    /// again. A new failure raises its flag again.
+    /// the GPU failure, if any, so the next load may use (and list) the GPU
+    /// again. A new failure sets the flag again.
     pub fn retry_gpu(&self, reason: &str) {
-        self.shared.gpu_retries.fetch_add(1, Ordering::SeqCst);
         Degraded::GpuUnavailable.clear(reason);
-        let mut devices = lock(&self.shared.devices);
-        if matches!(*devices, DeviceList::Failed(_)) {
-            *devices = DeviceList::Unknown;
-        }
     }
 
     /// The loaded model. A snapshot; never waits on the queue.
@@ -379,8 +357,7 @@ impl EngineSupervisor {
     }
 
     /// Transcribe 16 kHz mono PCM with the loaded model. A worker crash or
-    /// hang is retried once in a fresh worker (on CPU if the GPU may be at
-    /// fault).
+    /// hang is retried once in a fresh worker (on CPU if it was on the GPU).
     pub fn transcribe(&self, pcm: Vec<f32>, run: RunOptions) -> Result<Transcript, EngineError> {
         let epoch = self.shared.epoch();
         self.ask(|reply| Command::Transcribe {
@@ -443,21 +420,16 @@ impl EngineSupervisor {
 
     /// The compute devices, as listed by the latest worker. If no worker has
     /// listed them yet, starts a short-lived worker on this thread to list
-    /// them. It runs beside any model worker, which it leaves alone.
-    pub fn devices(&self) -> DeviceList {
+    /// them. It runs beside any model worker, which it leaves alone. Not
+    /// while the GPU is marked unavailable: that probe would crash or hang
+    /// the same way.
+    pub fn devices(&self) -> Option<Vec<DeviceInfo>> {
         let _probing = lock(&self.shared.probing);
-        if needs_probe(&lock(&self.shared.devices)) {
+        if lock(&self.shared.devices).is_none() && !Degraded::GpuUnavailable.is_set() {
             self.shared.probe_devices();
         }
         lock(&self.shared.devices).clone()
     }
-}
-
-/// Only an unknown list is probed, and not while the GPU is known to fail:
-/// that probe would crash or hang the same way. A failed list stays failed
-/// until [`EngineSupervisor::retry_gpu`].
-fn needs_probe(devices: &DeviceList) -> bool {
-    matches!(devices, DeviceList::Unknown) && !Degraded::GpuUnavailable.is_set()
 }
 
 /// An unload in progress; see [`EngineSupervisor::unload`].
@@ -595,19 +567,8 @@ struct Owner {
     /// hang or cancel the next use starts a fresh worker for it.
     spec: Option<LoadSpec>,
     stream: Option<ActiveStream>,
-    /// A worker failed on a GPU during dictation work. Workers use CPU while
-    /// this is pending; once the same kind of work succeeds there,
-    /// [`Degraded::GpuUnavailable`] is set. If it fails on CPU too, the GPU
-    /// was not at fault and this is dropped.
-    gpu_suspect: Option<GpuSuspect>,
     /// Unload commands processed, against [`Shared::unloads_requested`].
     unloads_done: u64,
-}
-
-struct GpuSuspect {
-    reason: String,
-    /// [`Shared::gpu_retries`] when the failure happened.
-    gpu_retries: u64,
 }
 
 impl Owner {
@@ -698,23 +659,13 @@ impl Owner {
         *lock(&self.shared.loaded) = None;
     }
 
-    /// The spec a fresh worker should load: CPU while the GPU is unusable or
-    /// suspect, unless the device was chosen explicitly.
+    /// The spec a fresh worker should load: CPU while the GPU is marked
+    /// unavailable, unless the device was chosen explicitly.
     fn effective_spec(&self, spec: &LoadSpec) -> LoadSpec {
-        if spec.pinned() || spec.cpu_only() {
+        if spec.pinned() || spec.cpu_only() || !Degraded::GpuUnavailable.is_set() {
             return spec.clone();
         }
-        let reason = if Degraded::GpuUnavailable.is_set() {
-            "a worker with GPU backends crashed or hung earlier"
-        } else if matches!(*lock(&self.shared.devices), DeviceList::Failed(_)) {
-            // A worker with GPU backends would fail the same way first.
-            "listing compute devices failed"
-        } else if self.pending_gpu_suspect().is_some() {
-            "the last attempt failed on the GPU"
-        } else {
-            return spec.clone();
-        };
-        info!("Loading the transcription model on CPU: {}", reason);
+        info!("Loading the transcription model on CPU: the GPU failed earlier");
         spec.cpu()
     }
 
@@ -736,53 +687,25 @@ impl Owner {
 
     /// Start a worker and load the current spec in it. If a worker with GPU
     /// backends is lost on the way (backend init, device listing or the
-    /// load), retry once in a CPU-only worker. Only if that succeeds is the
-    /// GPU marked unavailable: if it fails too, the GPU was not at fault.
+    /// load), mark the GPU unavailable and retry once in a CPU-only worker.
     fn start(&mut self) -> Result<LoadedInfo, EngineError> {
         let spec = self.spec.clone().ok_or_else(not_loaded)?;
         let started = Instant::now();
-        let mut wanted = self.effective_spec(&spec);
-        if !self.cpu_only_worker(&wanted) {
-            // A device probe in flight is starting the same GPU driver: wait
-            // for its verdict rather than crash or hang beside it. CPU-only
-            // starts never wait on a probe.
-            drop(lock(&self.shared.probing));
-            wanted = self.effective_spec(&spec);
-        }
+        let wanted = self.effective_spec(&spec);
         let (worker, info) = match self.start_worker(&wanted) {
             Ok(started) => started,
             Err(failure)
                 if failure.worker_lost() && !self.cpu_only_worker(&wanted) && !wanted.pinned() =>
             {
-                warn!(
-                    "Starting a worker for '{}' failed with GPU backends ({}); retrying in a CPU-only worker",
+                Degraded::GpuUnavailable.set(format!(
+                    "a worker for '{}' with GPU backends {}",
                     wanted.path.display(),
                     failure
-                );
-                match self.start_worker(&wanted.cpu()) {
-                    Ok(started) => {
-                        Degraded::GpuUnavailable.set(format!(
-                            "a worker for '{}' with GPU backends {} but a CPU-only worker loaded it",
-                            wanted.path.display(),
-                            failure
-                        ));
-                        started
-                    }
-                    Err(cpu_failure) => {
-                        warn!(
-                            "The CPU-only worker failed too ({}), so this is not treated as a GPU failure",
-                            cpu_failure
-                        );
-                        return Err(cpu_failure.into());
-                    }
-                }
+                ));
+                warn!("Retrying in a CPU-only worker");
+                self.start_worker(&wanted.cpu())?
             }
-            Err(failure) => {
-                if failure.worker_lost() && wanted.cpu_only() {
-                    self.resolve_gpu_suspect(false);
-                }
-                return Err(failure.into());
-            }
+            Err(failure) => return Err(failure.into()),
         };
         debug!(
             "Worker (pid {}) spawned and loaded the model in {}ms",
@@ -824,66 +747,23 @@ impl Owner {
     }
 
     /// Drop a worker that crashed or hung (its handle already logged the
-    /// details and native output). Returns whether it was on a GPU.
+    /// details and native output). If it was on a GPU, mark the GPU
+    /// unavailable so the next worker uses CPU. Returns whether it was.
     fn worker_lost(&mut self, during: &str, failure: &Failure) -> bool {
         // Dropping the handle reaps the process.
         let info = self.worker.take().and_then(|worker| worker.info.clone());
-        let on_gpu = info.as_ref().is_some_and(|info| info.on_gpu);
         let pinned = self.spec.as_ref().is_some_and(LoadSpec::pinned);
         match info {
-            Some(info) if on_gpu && !pinned => {
-                warn!(
-                    "Transcription worker failed during {} on GPU '{}' ({}); using CPU",
-                    during, info.device, info.backend
-                );
-                self.gpu_suspect = Some(GpuSuspect {
-                    reason: format!(
+            Some(info) if info.on_gpu => {
+                if !pinned {
+                    Degraded::GpuUnavailable.set(format!(
                         "{failure} during {during} on GPU '{}' ({})",
                         info.device, info.backend
-                    ),
-                    gpu_retries: self.shared.gpu_retries.load(Ordering::SeqCst),
-                });
+                    ));
+                }
+                true
             }
-            _ if !on_gpu => self.resolve_gpu_suspect(false),
-            _ => {}
-        }
-        on_gpu
-    }
-
-    /// The pending GPU failure, unless an explicit accelerator change has
-    /// cleared GPU failures since.
-    fn pending_gpu_suspect(&self) -> Option<&str> {
-        self.gpu_suspect
-            .as_ref()
-            .filter(|s| s.gpu_retries == self.shared.gpu_retries.load(Ordering::SeqCst))
-            .map(|s| s.reason.as_str())
-    }
-
-    /// Settle a pending GPU suspicion once work has run on CPU.
-    fn resolve_gpu_suspect(&mut self, cpu_succeeded: bool) {
-        let Some(reason) = self.pending_gpu_suspect().map(str::to_string) else {
-            self.gpu_suspect = None;
-            return;
-        };
-        self.gpu_suspect = None;
-        if cpu_succeeded {
-            Degraded::GpuUnavailable.set(format!("{reason}; it succeeded on CPU"));
-        } else {
-            info!(
-                "Transcription failed on CPU too, so the earlier GPU failure ({}) is not treated as a GPU problem",
-                reason
-            );
-        }
-    }
-
-    fn work_succeeded(&mut self) {
-        let on_cpu = self
-            .worker
-            .as_ref()
-            .and_then(|worker| worker.info.as_ref())
-            .is_some_and(|info| !info.on_gpu);
-        if on_cpu {
-            self.resolve_gpu_suspect(true);
+            _ => false,
         }
     }
 
@@ -931,9 +811,8 @@ impl Owner {
         result
     }
 
-    /// Retry once after a crash or hang: on CPU if the GPU may be at fault,
-    /// never on the same device after a hang, and never for an explicitly
-    /// chosen device.
+    /// Retry once after a crash or hang, on CPU if it happened on the GPU.
+    /// Not after a hang on CPU, and never for an explicitly chosen device.
     fn transcribe(
         &mut self,
         pcm: &[f32],
@@ -954,10 +833,7 @@ impl Owner {
             // deadline starts only once the model is loaded.
             self.ensure_worker()?;
             match self.call_work(&request, Some(pcm), run_deadline(pcm.len()), epoch) {
-                Ok(Response::Transcript(transcript)) => {
-                    self.work_succeeded();
-                    return Ok(transcript);
-                }
+                Ok(Response::Transcript(transcript)) => return Ok(transcript),
                 Ok(other) => return Err(unexpected(&other).into()),
                 Err(failure) if failure.worker_lost() => {
                     let on_gpu = self.worker_lost("transcription", &failure);
@@ -1077,15 +953,12 @@ impl Owner {
                 update,
                 text,
                 language,
-            }) => {
-                self.work_succeeded();
-                Ok(Some(Finalized {
-                    update,
-                    text,
-                    language,
-                    elapsed: started.elapsed(),
-                }))
-            }
+            }) => Ok(Some(Finalized {
+                update,
+                text,
+                language,
+                elapsed: started.elapsed(),
+            })),
             Ok(other) => {
                 error!("Stream finalize failed: {}", unexpected(&other));
                 Ok(None)
@@ -1728,7 +1601,7 @@ mod tests {
         assert_eq!(worker_count(), 0);
         assert!(engine.loaded().is_none());
         // A device probe with nothing loaded leaves no worker behind.
-        assert!(matches!(engine.devices(), DeviceList::Known(_)));
+        assert!(engine.devices().is_some());
         assert_eq!(worker_count(), 0);
     }
 
@@ -1829,43 +1702,6 @@ mod tests {
         set_fault(None, false);
     }
 
-    /// After a listing crash, "try the GPU again" refreshes the device list
-    /// right away with a probe beside the CPU-only worker holding the model,
-    /// which keeps running.
-    #[test]
-    #[ignore]
-    fn retry_gpu_refreshes_devices_with_a_worker_running() {
-        let pcm = test_pcm();
-        set_fault(Some("abort@list"), false);
-        let engine = EngineSupervisor::new(true);
-        assert!(!engine.load(spec()).unwrap().on_gpu);
-        assert!(matches!(engine.devices(), DeviceList::Failed(_)));
-        engine.retry_gpu("test");
-        assert!(matches!(engine.devices(), DeviceList::Known(_)));
-        assert!(engine.loaded().is_some());
-        assert_eq!(worker_count(), 1, "the probe left the model worker alone");
-        engine.transcribe(pcm, RunOptions::default()).unwrap();
-        set_fault(None, false);
-    }
-
-    /// An explicit accelerator change forgets a GPU failure that was still
-    /// pending (a stream lost on the GPU, no CPU work since): the next load
-    /// goes back to the GPU.
-    #[test]
-    #[ignore]
-    fn retry_gpu_forgets_a_pending_gpu_failure() {
-        let pcm = test_pcm();
-        set_fault(Some("abort@feed"), true);
-        let engine = EngineSupervisor::new(true);
-        assert!(engine.load(spec()).unwrap().on_gpu, "needs a GPU");
-        assert!(stream_all(&engine, &pcm).unwrap().is_none());
-        set_fault(None, false);
-        engine.retry_gpu("test");
-        assert!(engine.load(spec()).unwrap().on_gpu);
-        engine.transcribe(pcm, RunOptions::default()).unwrap();
-        assert!(!Degraded::GpuUnavailable.is_set());
-    }
-
     /// An unload reads as unloaded at once, even while it waits behind a
     /// run, so a new dictation queues a fresh load instead of assuming the
     /// model is there.
@@ -1949,59 +1785,10 @@ mod tests {
         set_fault(None, false);
     }
 
-    /// A GPU hang on a short clip is killed at the run deadline floor and
-    /// retried on CPU, never on the same GPU.
-    #[test]
-    #[ignore]
-    fn gpu_hang_retries_on_cpu() {
-        let pcm = test_pcm()[..16_000].to_vec();
-        set_fault(Some("hang@run"), true);
-        let engine = EngineSupervisor::new(true);
-        assert!(engine.load(spec()).unwrap().on_gpu);
-        let t = Instant::now();
-        engine.transcribe(pcm, RunOptions::default()).unwrap();
-        let elapsed = t.elapsed();
-        println!("hung on GPU, recovered on CPU after {elapsed:?}");
-        assert!(elapsed >= RUN_FLOOR && elapsed < RUN_FLOOR + CALL_FLOOR);
-        assert!(Degraded::GpuUnavailable.is_set());
-        set_fault(None, false);
-    }
-
-    /// A crash on CPU too means the GPU was not at fault: GPU_UNAVAILABLE
-    /// stays clear and the error is reported.
-    #[test]
-    #[ignore]
-    fn crash_everywhere_is_not_a_gpu_failure() {
-        let pcm = test_pcm();
-        set_fault(Some("abort@run"), false);
-        std::env::remove_var("HANDY_WORKER_FAULT_ONCE");
-        let engine = EngineSupervisor::new(true);
-        engine.load(spec()).unwrap();
-        let err = engine.transcribe(pcm, RunOptions::default()).unwrap_err();
-        println!("failed as expected: {err}");
-        assert!(!Degraded::GpuUnavailable.is_set());
-        set_fault(None, false);
-    }
-
-    /// Device listing crashes: the model loads in a CPU-only worker,
-    /// GPU_UNAVAILABLE is set, and the failed list is not probed again.
-    #[test]
-    #[ignore]
-    fn device_listing_crash_uses_cpu() {
-        let pcm = test_pcm();
-        set_fault(Some("abort@list"), true);
-        let engine = EngineSupervisor::new(true);
-        let info = engine.load(spec()).unwrap();
-        assert!(!info.on_gpu, "loaded on '{}'", info.backend);
-        assert!(Degraded::GpuUnavailable.is_set());
-        assert!(matches!(engine.devices(), DeviceList::Failed(_)));
-        engine.transcribe(pcm, RunOptions::default()).unwrap();
-        set_fault(None, false);
-    }
-
     /// A GPU driver that crashes while its backend registers, before the
     /// hello: only a CPU-only worker survives it, so that is where the model
-    /// loads. GPU_UNAVAILABLE is set and later loads stay CPU-only.
+    /// loads. GPU_UNAVAILABLE is set, later loads stay CPU-only and devices
+    /// aren't probed, until "try the GPU again" (a settings change).
     #[test]
     #[ignore]
     fn gpu_backend_init_crash_uses_cpu_only_worker() {
@@ -2011,33 +1798,14 @@ mod tests {
         let info = engine.load(spec()).unwrap();
         assert!(!info.on_gpu, "loaded on '{}'", info.backend);
         assert!(Degraded::GpuUnavailable.is_set());
-        assert!(matches!(engine.devices(), DeviceList::Failed(_)));
+        assert!(engine.devices().is_none());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         // The fault still fires in any worker with GPU backends.
         assert!(!engine.load(spec()).unwrap().on_gpu);
         set_fault(None, false);
-    }
-
-    /// An explicit device never moves to a CPU-only worker, where its
-    /// registry index would mean something else: an init crash is reported.
-    #[test]
-    #[ignore]
-    fn pinned_device_init_crash_fails_loudly() {
-        set_fault(None, false);
-        let engine = EngineSupervisor::new(true);
-        let DeviceList::Known(devices) = engine.devices() else {
-            panic!("devices not listed");
-        };
-        let gpu = devices.iter().find(|d| d.is_gpu()).expect("needs a GPU");
-        set_fault(Some("abort@init"), true);
-        assert!(engine
-            .load(LoadSpec {
-                device: DeviceSelector::Index(gpu.index.unwrap()),
-                ..spec()
-            })
-            .is_err());
-        assert!(!Degraded::GpuUnavailable.is_set());
-        set_fault(None, false);
+        engine.retry_gpu("test");
+        assert!(engine.load(spec()).unwrap().on_gpu);
+        assert!(engine.devices().is_some());
     }
 
     /// With the CPU accelerator, the model worker is CPU-only (a GPU-only
@@ -2058,7 +1826,7 @@ mod tests {
         assert!(!info.on_gpu);
         assert!(!Degraded::GpuUnavailable.is_set());
         set_fault(None, false);
-        assert!(matches!(engine.devices(), DeviceList::Known(_)));
+        assert!(engine.devices().is_some());
         assert_eq!(worker_count(), 1);
         assert!(engine.loaded().is_some());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
@@ -2071,9 +1839,7 @@ mod tests {
     fn gpu_disallowed_host_never_registers_a_gpu_backend() {
         set_fault(Some("abort@init"), true);
         let engine = EngineSupervisor::new(false);
-        let DeviceList::Known(devices) = engine.devices() else {
-            panic!("devices not listed");
-        };
+        let devices = engine.devices().expect("devices not listed");
         assert!(devices.iter().all(|d| !d.is_gpu()), "{devices:?}");
         assert!(!engine.load(spec()).unwrap().on_gpu);
         assert!(!Degraded::GpuUnavailable.is_set());
@@ -2105,9 +1871,7 @@ mod tests {
         let pcm = test_pcm();
         set_fault(Some("abort@run"), true);
         let engine = EngineSupervisor::new(true);
-        let DeviceList::Known(devices) = engine.devices() else {
-            panic!("devices not listed");
-        };
+        let devices = engine.devices().expect("devices not listed");
         let gpu = devices.iter().find(|d| d.is_gpu()).expect("needs a GPU");
         let info = engine
             .load(LoadSpec {

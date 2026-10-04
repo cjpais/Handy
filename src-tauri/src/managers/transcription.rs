@@ -4,8 +4,7 @@ use crate::audio_toolkit::{
 };
 use crate::chinese_script::{convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
-    DeviceInfo, DeviceList, DeviceSelector, EngineError, EngineSupervisor, LoadSpec,
-    StreamProgress, Unloading,
+    DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, StreamProgress, Unloading,
 };
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
@@ -2088,19 +2087,13 @@ fn transcribe_device_allowed(kind: &str, gpu_disabled: bool) -> bool {
 /// hides.
 fn transcribe_compute_devices(engine: &EngineSupervisor) -> Result<Vec<DeviceInfo>> {
     let gpu_disabled = transcribe_gpu_disabled_for_host();
-    match engine.devices() {
-        DeviceList::Known(devices) => Ok(devices
-            .into_iter()
-            .filter(|device| transcribe_device_allowed(&device.kind, gpu_disabled))
-            .collect()),
-        DeviceList::Failed(reason) => Err(anyhow::anyhow!(
-            "listing compute devices failed: {}",
-            reason
-        )),
-        DeviceList::Unknown => Err(anyhow::anyhow!(
-            "no transcription worker could be started to list compute devices"
-        )),
-    }
+    let devices = engine.devices().ok_or_else(|| {
+        anyhow::anyhow!("compute devices could not be listed (see the log for why)")
+    })?;
+    Ok(devices
+        .into_iter()
+        .filter(|device| transcribe_device_allowed(&device.kind, gpu_disabled))
+        .collect())
 }
 
 fn available_transcribe_accelerators(gpu_disabled: bool) -> Vec<String> {
