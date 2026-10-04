@@ -41,6 +41,18 @@ test("all period choices and disabling formatting are available", async ({
   ).toBeVisible();
   await page.getByText("Remove final period", { exact: true }).click();
   await page.getByText("Remove sentence periods", { exact: true }).click();
+  await page.getByText("Remove sentence periods", { exact: true }).click();
+  await page.getByText("Only spoken periods", { exact: true }).click();
+  await expect(
+    page.getByText("Only spoken periods", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Lowercase", { exact: true }).click();
+  await page
+    .getByText("Capitalize only after a period", { exact: true })
+    .click();
+  await expect(
+    page.getByText("Capitalize only after a period", { exact: true }),
+  ).toBeVisible();
   await page.locator('input[type="checkbox"]').first().uncheck({ force: true });
   await expect(page.getByRole("textbox")).toHaveCount(0);
 });

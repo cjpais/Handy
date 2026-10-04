@@ -414,18 +414,20 @@
         "spoken": "Replace spoken punctuation",
         "spokenDescription": "Convert spoken commands such as “exclamation point” to symbols. Matching phrases are always treated as commands.",
         "capitalization": "First letter",
-        "capitalizationDescription": "Change the first alphabetic character of each dictation. This also affects names and the pronoun I.",
+        "capitalizationDescription": "Choose how sentence openings are capitalized. Only after a period lowercases the opening of a dictation and other sentence openings, and capitalizes after spoken periods. Internal names keep their case.",
         "capitalizationOptions": {
           "keep": "Keep original",
           "lower": "Lowercase",
-          "upper": "Uppercase"
+          "upper": "Uppercase",
+          "after_period": "Capitalize only after a period"
         },
         "periods": "Sentence periods",
         "periodsDescription": "Remove the final period or all sentence-ending periods. Abbreviations may also be affected. Decimal numbers and ellipses are preserved.",
         "periodOptions": {
           "keep": "Keep original",
           "remove_final": "Remove final period",
-          "remove_sentence": "Remove sentence periods"
+          "remove_sentence": "Remove sentence periods",
+          "spoken_only": "Only spoken periods"
         },
         "replacements": "Punctuation replacements",
         "replacementsDescription": "Edit spoken phrases and their replacements. Use \\n for a new line. Changes apply after saving.",

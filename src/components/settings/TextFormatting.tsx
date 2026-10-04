@@ -74,10 +74,12 @@ export const TextFormatting: React.FC = () => {
             <Dropdown
               selectedValue={config.initial_capitalization}
               disabled={busy}
-              options={["keep", "lower", "upper"].map((value) => ({
-                value,
-                label: t(`${key}.capitalizationOptions.${value}`),
-              }))}
+              options={["keep", "lower", "upper", "after_period"].map(
+                (value) => ({
+                  value,
+                  label: t(`${key}.capitalizationOptions.${value}`),
+                }),
+              )}
               onSelect={(value) =>
                 update({
                   initial_capitalization: value as InitialCapitalization,
@@ -93,12 +95,15 @@ export const TextFormatting: React.FC = () => {
             <Dropdown
               selectedValue={config.periods}
               disabled={busy}
-              options={["keep", "remove_final", "remove_sentence"].map(
-                (value) => ({
-                  value,
-                  label: t(`${key}.periodOptions.${value}`),
-                }),
-              )}
+              options={[
+                "keep",
+                "remove_final",
+                "remove_sentence",
+                "spoken_only",
+              ].map((value) => ({
+                value,
+                label: t(`${key}.periodOptions.${value}`),
+              }))}
               onSelect={(value) => update({ periods: value as PeriodHandling })}
             />
           </SettingContainer>

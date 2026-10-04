@@ -365,9 +365,23 @@ pub(crate) async fn process_transcription_output(
     let mut post_process_prompt: Option<String> = None;
 
     if post_process {
-        if let Some(processed_text) =
-            post_process_transcription(&settings, &final_text.replace('\u{e000}', ".")).await
-        {
+        let preserve_spoken_periods = settings.text_formatting.enabled
+            && settings.text_formatting.periods
+                == crate::text_formatting::PeriodHandling::SpokenOnly;
+        let ai_input = if preserve_spoken_periods {
+            final_text.clone()
+        } else {
+            final_text.replace('\u{e000}', ".")
+        };
+        if let Some(mut processed_text) = post_process_transcription(&settings, &ai_input).await {
+            // If an AI rewrite loses explicit sentence boundaries, keep the local text
+            // rather than silently removing a period the user deliberately dictated.
+            if preserve_spoken_periods
+                && processed_text.matches('\u{e000}').count()
+                    != final_text.matches('\u{e000}').count()
+            {
+                processed_text = final_text.clone();
+            }
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
@@ -383,7 +397,7 @@ pub(crate) async fn process_transcription_output(
         }
     }
 
-    final_text = crate::text_formatting::finish(&final_text, &settings.text_formatting);
+    final_text = crate::text_formatting::finish_dictation(&final_text, &settings.text_formatting);
     if post_processed_text.is_some() {
         post_processed_text = Some(final_text.clone());
     }

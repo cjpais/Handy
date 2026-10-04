@@ -15,6 +15,7 @@ pub enum InitialCapitalization {
     Keep,
     Lower,
     Upper,
+    AfterPeriod,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, specta::Type, PartialEq)]
@@ -24,6 +25,7 @@ pub enum PeriodHandling {
     Keep,
     RemoveFinal,
     RemoveSentence,
+    SpokenOnly,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -39,10 +41,10 @@ pub struct TextFormatting {
 impl Default for TextFormatting {
     fn default() -> Self {
         Self {
-            enabled: false,
+            enabled: true,
             spoken_punctuation: true,
-            initial_capitalization: InitialCapitalization::Keep,
-            periods: PeriodHandling::Keep,
+            initial_capitalization: InitialCapitalization::AfterPeriod,
+            periods: PeriodHandling::SpokenOnly,
             replacements: default_replacements(),
         }
     }
@@ -175,6 +177,29 @@ pub fn finish(text: &str, config: &TextFormatting) -> String {
         return text.into();
     }
     let mut result = replace_spoken(text, config);
+    if config.initial_capitalization == InitialCapitalization::AfterPeriod {
+        let mut pending = Some(false);
+        result = result
+            .chars()
+            .flat_map(|c| {
+                if c == '\u{e000}' {
+                    pending = Some(true);
+                } else if matches!(c, '.' | '?' | '!' | '\n') {
+                    pending = Some(false);
+                }
+                if c.is_alphabetic() {
+                    if let Some(upper) = pending.take() {
+                        return if upper {
+                            c.to_uppercase().collect::<Vec<_>>()
+                        } else {
+                            c.to_lowercase().collect::<Vec<_>>()
+                        };
+                    }
+                }
+                vec![c]
+            })
+            .collect();
+    }
     if config.periods != PeriodHandling::Keep {
         let chars: Vec<_> = result.chars().collect();
         let final_index = chars
@@ -191,29 +216,62 @@ pub fn finish(text: &str, config: &TextFormatting) -> String {
                     || (prev.is_some_and(|v| v.is_ascii_digit())
                         && next.is_some_and(|v| v.is_ascii_digit()));
                 let remove = c == '.'
-                    && !decimal_or_ellipsis
+                    && (!decimal_or_ellipsis
+                        || (config.periods == PeriodHandling::SpokenOnly
+                            && !(prev.is_some_and(|v| v.is_ascii_digit())
+                                && next.is_some_and(|v| v.is_ascii_digit()))))
                     && match config.periods {
                         PeriodHandling::RemoveFinal => Some(i) == final_index,
                         PeriodHandling::RemoveSentence => next.is_none_or(|v| {
                             v.is_whitespace() || matches!(v, '"' | '”' | '’' | ')')
                         }),
+                        PeriodHandling::SpokenOnly => true,
                         PeriodHandling::Keep => false,
                     };
                 (!remove).then_some(c)
             })
             .collect();
     }
-    if config.initial_capitalization != InitialCapitalization::Keep {
+    if !matches!(
+        config.initial_capitalization,
+        InitialCapitalization::Keep | InitialCapitalization::AfterPeriod
+    ) {
         if let Some((index, first)) = result.char_indices().find(|(_, c)| c.is_alphabetic()) {
             let replacement: String = match config.initial_capitalization {
                 InitialCapitalization::Lower => first.to_lowercase().collect(),
                 InitialCapitalization::Upper => first.to_uppercase().collect(),
-                InitialCapitalization::Keep => first.to_string(),
+                InitialCapitalization::Keep | InitialCapitalization::AfterPeriod => {
+                    first.to_string()
+                }
             };
             result.replace_range(index..index + first.len_utf8(), &replacement);
         }
     }
     result.replace('\u{e000}', ".")
+}
+
+/// Carry sentence boundaries across consecutive dictations in this app session.
+pub fn finish_dictation(text: &str, config: &TextFormatting) -> String {
+    static AFTER_PERIOD: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
+    let Ok(mut after_period) = AFTER_PERIOD.lock() else {
+        return finish(text, config);
+    };
+    let mut result = finish(text, config);
+    if config.enabled
+        && config.initial_capitalization == InitialCapitalization::AfterPeriod
+        && *after_period
+    {
+        if let Some((index, first)) = result.char_indices().find(|(_, c)| c.is_alphabetic()) {
+            result.replace_range(
+                index..index + first.len_utf8(),
+                &first.to_uppercase().collect::<String>(),
+            );
+        }
+    }
+    if !result.trim().is_empty() {
+        *after_period = config.enabled && result.trim_end().ends_with('.');
+    }
+    result
 }
 
 #[cfg(test)]
@@ -224,14 +282,30 @@ mod tests {
             enabled: true,
             spoken_punctuation: true,
             replacements: default_replacements(),
+            initial_capitalization: InitialCapitalization::Keep,
+            periods: PeriodHandling::Keep,
             ..Default::default()
         }
     }
     #[test]
-    fn defaults_preserve_existing_transcriptions() {
+    fn defaults_use_only_spoken_periods_and_capitalize_after_them() {
         assert_eq!(
             finish("Hello exclamation point.", &TextFormatting::default()),
-            "Hello exclamation point."
+            "hello!"
+        );
+        let c = TextFormatting::default();
+        assert_eq!(
+            finish("Hello. World period. Next sentence.", &c),
+            "hello world. Next sentence"
+        );
+        assert_eq!(finish("Hello? World! Again.", &c), "hello? world! again");
+        assert_eq!(finish("Version 3.14 period Next", &c), "version 3.14. Next");
+        assert_eq!(finish("Wait... Again.", &c), "wait again");
+        assert_eq!(finish_dictation("Hello period", &c), "hello.");
+        assert_eq!(finish_dictation("Next sentence.", &c), "Next sentence");
+        assert_eq!(
+            finish_dictation("Another sentence.", &c),
+            "another sentence"
         );
     }
     #[test]
