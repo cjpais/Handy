@@ -48,10 +48,12 @@ test("all period choices and disabling formatting are available", async ({
   ).toBeVisible();
   await page.getByText("Lowercase", { exact: true }).click();
   await page
-    .getByText("Capitalize only after a period", { exact: true })
+    .getByText("Capitalize at line starts and after periods", { exact: true })
     .click();
   await expect(
-    page.getByText("Capitalize only after a period", { exact: true }),
+    page.getByText("Capitalize at line starts and after periods", {
+      exact: true,
+    }),
   ).toBeVisible();
   await page.locator('input[type="checkbox"]').first().uncheck({ force: true });
   await expect(page.getByRole("textbox")).toHaveCount(0);
