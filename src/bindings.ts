@@ -466,11 +466,15 @@ async floatingButtonPressed() : Promise<void> {
     await TAURI_INVOKE("floating_button_pressed");
 },
 /**
- * Vertical drag of the floating button. `delta_y` is in CSS pixels relative
- * to where the drag started; `finished` saves the new position.
+ * One step of dragging the floating button: moves it vertically by `delta`
+ * logical pixels (clamped to the work area). `finished` saves the position.
+ *
+ * Deliberately synchronous, so the window has already moved when the call
+ * returns: the frontend sends one step at a time and discards pointer events
+ * that were measured against the window's previous position.
  */
-async floatingButtonDragged(deltaY: number, finished: boolean) : Promise<void> {
-    await TAURI_INVOKE("floating_button_dragged", { deltaY, finished });
+async floatingButtonDragBy(delta: number, finished: boolean) : Promise<void> {
+    await TAURI_INVOKE("floating_button_drag_by", { delta, finished });
 },
 async changeTranscribeAcceleratorSetting(accelerator: TranscribeAcceleratorSetting) : Promise<Result<null, string>> {
     try {

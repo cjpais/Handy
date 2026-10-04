@@ -11,7 +11,7 @@
 use crate::settings;
 use crate::tray::TrayIconState;
 use log::{debug, error};
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
@@ -30,9 +30,10 @@ const WINDOW_LABEL: &str = "floating_button";
 const BUTTON_WIDTH: f64 = 44.0;
 const BUTTON_HEIGHT: f64 = 72.0;
 
-/// Window y position (physical) when the current drag started; `i32::MIN`
-/// when no drag is in progress.
-static DRAG_ORIGIN_Y: AtomicI32 = AtomicI32::new(i32::MIN);
+/// When the last drag step was applied (ms since the epoch); the display
+/// watcher stays out of the way while a drag is in progress.
+static LAST_DRAG_MS: AtomicU64 = AtomicU64::new(0);
+const DRAG_QUIET_MS: u64 = 3000;
 
 /// Last placement, used to skip redundant moves in the display watcher.
 static LAST_PLACEMENT: Mutex<Option<(i32, i32, u32, u32)>> = Mutex::new(None);
@@ -193,7 +194,13 @@ fn place(app_handle: &AppHandle, window: &tauri::WebviewWindow, y_override: Opti
     };
     let bounds = docked_bounds(work.position, work.size, scale, offset);
     let (x, y, width, height) = bounds;
-    let _ = window.set_size(PhysicalSize::new(width, height));
+    // Resizing a transparent webview window repaints it from scratch, which
+    // shows as a flicker when it happens on every drag step — so only resize
+    // when the size actually changes (first show, DPI change).
+    let target_size = PhysicalSize::new(width, height);
+    if window.outer_size().ok() != Some(target_size) {
+        let _ = window.set_size(target_size);
+    }
     let _ = window.set_position(PhysicalPosition::new(x, y));
     if let Ok(mut last) = LAST_PLACEMENT.lock() {
         *last = Some(bounds);
@@ -209,7 +216,7 @@ fn start_display_watcher(app_handle: &AppHandle) {
     let handle = app_handle.clone();
     std::thread::spawn(move || loop {
         std::thread::sleep(std::time::Duration::from_secs(2));
-        if DRAG_ORIGIN_Y.load(Ordering::SeqCst) != i32::MIN {
+        if now_ms().saturating_sub(LAST_DRAG_MS.load(Ordering::Relaxed)) < DRAG_QUIET_MS {
             continue;
         }
         let inner = handle.clone();
@@ -218,6 +225,13 @@ fn start_display_watcher(app_handle: &AppHandle) {
                 return;
             };
             if !window.is_visible().unwrap_or(false) {
+                return;
+            }
+            // "Show desktop" (Win+D) minimizes the button along with
+            // everything else; it has no taskbar entry to bring it back.
+            if window.is_minimized().unwrap_or(false) {
+                let _ = window.unminimize();
+                place(&inner, &window, None);
                 return;
             }
             let Ok(Some(monitor)) = inner.primary_monitor() else {
@@ -268,45 +282,49 @@ pub fn floating_button_pressed(app: AppHandle) {
     crate::signal_handle::send_transcription_input(&app, "transcribe", "floating_button");
 }
 
-/// Vertical drag of the floating button. `delta_y` is in CSS pixels relative
-/// to where the drag started; `finished` saves the new position.
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+/// One step of dragging the floating button: moves it vertically by `delta`
+/// logical pixels (clamped to the work area). `finished` saves the position.
+///
+/// Deliberately synchronous, so the window has already moved when the call
+/// returns: the frontend sends one step at a time and discards pointer events
+/// that were measured against the window's previous position.
 #[tauri::command]
 #[specta::specta]
-pub fn floating_button_dragged(app: AppHandle, delta_y: f64, finished: bool) {
-    let handle = app.clone();
-    let _ = app.run_on_main_thread(move || {
-        let Some(window) = handle.get_webview_window(WINDOW_LABEL) else {
-            return;
-        };
-        let Ok(position) = window.outer_position() else {
-            return;
-        };
-        let origin = match DRAG_ORIGIN_Y.load(Ordering::SeqCst) {
-            i32::MIN => {
-                DRAG_ORIGIN_Y.store(position.y, Ordering::SeqCst);
-                position.y
-            }
-            y => y,
-        };
-        let scale = window.scale_factor().unwrap_or(1.0);
-        let y = origin + (delta_y * scale).round() as i32;
-        place(&handle, &window, Some(y));
+pub fn floating_button_drag_by(app: AppHandle, delta: f64, finished: bool) {
+    let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
+        return;
+    };
+    let Ok(position) = window.outer_position() else {
+        return;
+    };
+    let scale = window.scale_factor().unwrap_or(1.0);
+    LAST_DRAG_MS.store(now_ms(), Ordering::Relaxed);
+    if delta != 0.0 {
+        place(
+            &app,
+            &window,
+            Some(position.y + (delta * scale).round() as i32),
+        );
+    }
 
-        if finished {
-            DRAG_ORIGIN_Y.store(i32::MIN, Ordering::SeqCst);
-            if let (Ok(Some(monitor)), Ok(placed)) =
-                (handle.primary_monitor(), window.outer_position())
-            {
-                let work = monitor.work_area();
-                let height = (BUTTON_HEIGHT * monitor.scale_factor()).round();
-                let free = (work.size.height as f64 - height).max(1.0);
-                let mut s = settings::get_settings(&handle);
-                s.floating_button_offset =
-                    ((placed.y - work.position.y) as f64 / free).clamp(0.0, 1.0);
-                settings::write_settings(&handle, s);
-            }
+    if finished {
+        LAST_DRAG_MS.store(0, Ordering::Relaxed);
+        if let (Ok(Some(monitor)), Ok(placed)) = (app.primary_monitor(), window.outer_position()) {
+            let work = monitor.work_area();
+            let height = (BUTTON_HEIGHT * monitor.scale_factor()).round();
+            let free = (work.size.height as f64 - height).max(1.0);
+            let mut s = settings::get_settings(&app);
+            s.floating_button_offset = ((placed.y - work.position.y) as f64 / free).clamp(0.0, 1.0);
+            settings::write_settings(&app, s);
         }
-    });
+    }
 }
 
 #[tauri::command]

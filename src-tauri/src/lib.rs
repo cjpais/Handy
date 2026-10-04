@@ -710,7 +710,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_show_tray_icon_setting,
             floating_button::change_show_floating_button_setting,
             floating_button::floating_button_pressed,
-            floating_button::floating_button_dragged,
+            floating_button::floating_button_drag_by,
             shortcut::change_transcribe_accelerator_setting,
             shortcut::change_ort_accelerator_setting,
             shortcut::change_transcribe_gpu_device,
