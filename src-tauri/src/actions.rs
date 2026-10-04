@@ -364,6 +364,8 @@ pub(crate) async fn process_transcription_output(
     } else {
         None
     };
+    // Keep the identity with this dictation even if AI processing resumes on another thread.
+    let cursor_target = crate::editor_context::target();
     let mut final_text = if post_process {
         crate::text_formatting::replace_spoken(transcription, &settings.text_formatting)
     } else {
@@ -409,7 +411,7 @@ pub(crate) async fn process_transcription_output(
         &final_text,
         &settings.text_formatting,
         cursor_capitalization,
-        crate::editor_context::target(),
+        cursor_target,
     );
     if post_processed_text.is_some() {
         post_processed_text = Some(final_text.clone());
