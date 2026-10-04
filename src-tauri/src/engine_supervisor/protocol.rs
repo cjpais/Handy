@@ -1,7 +1,7 @@
 //! Wire protocol between Handy and its transcribe.cpp worker process.
 //!
-//! Strict request/response: every [`Request`] except [`Request::Cancel`] gets
-//! exactly one [`Response`]. Each message is one frame: `[u32 json_len][json][u32 pcm_len][pcm bytes]`
+//! Strict request/response: every [`Request`] gets exactly one [`Response`].
+//! Each message is one frame: `[u32 json_len][json][u32 pcm_len][pcm bytes]`
 //! (lengths little-endian, PCM as little-endian f32). JSON (not bincode) is
 //! deliberate: transcribe-cpp's serde impls round-trip NaN confidences through
 //! `null`, which only works with a self-describing format.
@@ -49,10 +49,6 @@ pub enum Request {
         want_language: bool,
     },
     StreamReset,
-    /// Out of band: abort the request in flight (the last one sent before
-    /// this). Has no response; the aborted request answers with an error.
-    /// Only takes effect for families with `Feature::Cancellation`.
-    Cancel,
 }
 
 /// How the worker should pick the device for a [`Request::Load`]. Device
@@ -156,8 +152,6 @@ pub struct LoadedInfo {
     pub on_gpu: bool,
     pub capabilities: Capabilities,
     pub supports_initial_prompt: bool,
-    /// Whether an in-flight run honors [`Request::Cancel`].
-    pub supports_cancellation: bool,
 }
 
 /// Encode one frame.

@@ -3,9 +3,7 @@
 //! closes its stdin.
 //!
 //! A dedicated thread reads stdin so the parent's writes never block (R2),
-//! [`Request::Cancel`] takes effect while the main thread is busy in native
-//! code, and the worker exits the moment the parent goes away, even if hung
-//! (R3).
+//! and the worker exits the moment the parent goes away, even if hung (R3).
 
 use super::protocol::{
     read_message, write_message, DeviceInfo, DeviceSelector, LoadedInfo, Request, Response,
@@ -15,63 +13,20 @@ use log::{debug, error, warn, LevelFilter, Log, Metadata, Record};
 use std::fs::File;
 use std::io::{self, BufReader, Write};
 use std::path::Path;
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::mpsc;
 use std::thread;
 use transcribe_cpp::{
-    Backend, BackendMask, CancelToken, DeviceType, Feature, Model, ModelOptions, Session, Stream,
+    Backend, BackendMask, DeviceType, Feature, Model, ModelOptions, Session, Stream,
 };
 
 /// Prefix on worker log lines so the parent can tell them apart from raw
 /// native output (e.g. a `GGML_ASSERT` message right before an abort).
 pub(super) const LOG_LINE_PREFIX: &str = "\u{1}";
 
-/// A request as handed from the stdin reader to the main loop. `seq` numbers
-/// requests (from 1) so a [`Request::Cancel`] can name the one it targets.
+/// A request as handed from the stdin reader to the main loop.
 struct Incoming {
-    seq: u64,
     request: Request,
     pcm: Vec<f32>,
-}
-
-/// Shared between the stdin reader and the main loop. A cancel only aborts
-/// the request it was sent for: one arriving after that request finished
-/// must not abort the next.
-#[derive(Default)]
-struct Canceller {
-    token: CancelToken,
-    /// `(running, cancelled)`: the request in progress (0 when idle) and the
-    /// latest request a cancel targeted.
-    state: Mutex<(u64, u64)>,
-}
-
-impl Canceller {
-    /// Called by the reader: cancel request `seq` now if it is running, or
-    /// as soon as it starts.
-    fn cancel(&self, seq: u64) {
-        if seq == 0 {
-            return;
-        }
-        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        state.1 = seq;
-        if state.0 == seq {
-            self.token.cancel();
-        }
-    }
-
-    fn begin(&self, seq: u64) {
-        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        state.0 = seq;
-        self.token.reset();
-        if state.1 >= seq {
-            self.token.cancel();
-        }
-    }
-
-    fn end(&self) {
-        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        state.0 = 0;
-        self.token.reset();
-    }
 }
 
 pub fn run() -> i32 {
@@ -87,17 +42,13 @@ pub fn run() -> i32 {
     };
     init_logger();
 
-    let canceller = Arc::new(Canceller::default());
     let (requests_tx, requests) = mpsc::channel();
+    if let Err(e) = thread::Builder::new()
+        .name("transcribe-worker-in".into())
+        .spawn(move || read_requests(requests_tx))
     {
-        let canceller = Arc::clone(&canceller);
-        if let Err(e) = thread::Builder::new()
-            .name("transcribe-worker-in".into())
-            .spawn(move || read_requests(requests_tx, &canceller))
-        {
-            error!("Failed to start the request reader: {}", e);
-            return 2;
-        }
+        error!("Failed to start the request reader: {}", e);
+        return 2;
     }
 
     transcribe_cpp::init_logging();
@@ -123,7 +74,7 @@ pub fn run() -> i32 {
     let mut output = protocol_out;
     let mut session: Option<(Session, LoadedInfo)> = None;
 
-    while let Ok(Incoming { seq, request, pcm }) = requests.recv() {
+    while let Ok(Incoming { request, pcm }) = requests.recv() {
         let response = match request {
             Request::Hello { list_devices } => match &init_error {
                 Some(message) => Response::Error(message.clone()),
@@ -144,7 +95,7 @@ pub fn run() -> i32 {
             } => {
                 // Free any previous model first to avoid holding two at once.
                 session = None;
-                match load(&path, backend, device, &canceller.token) {
+                match load(&path, backend, device) {
                     Ok(loaded) => {
                         let info = loaded.1.clone();
                         session = Some(loaded);
@@ -155,11 +106,8 @@ pub fn run() -> i32 {
             }
             Request::Run { options } => match session.as_mut() {
                 Some((session, info)) => {
-                    canceller.begin(seq);
                     inject_fault("run", info.on_gpu);
-                    let result = session.run(&pcm, &options);
-                    canceller.end();
-                    match result {
+                    match session.run(&pcm, &options) {
                         Ok(transcript) => Response::Transcript(transcript),
                         Err(e) => Response::Error(e.to_string()),
                     }
@@ -173,9 +121,7 @@ pub fn run() -> i32 {
                             return 1;
                         }
                         let on_gpu = info.on_gpu;
-                        if let Err(e) =
-                            serve_stream(stream, &requests, &mut output, &canceller, on_gpu)
-                        {
+                        if let Err(e) = serve_stream(stream, &requests, &mut output, on_gpu) {
                             error!("Protocol write failed during stream: {}", e);
                             return 1;
                         }
@@ -188,8 +134,6 @@ pub fn run() -> i32 {
             Request::Feed | Request::Finalize { .. } | Request::StreamReset => {
                 Response::Error("no active stream".to_string())
             }
-            // Handled by the reader; never forwarded.
-            Request::Cancel => continue,
         };
         if let Err(e) = write_message(&mut output, &response, None) {
             error!("Protocol write failed: {}", e);
@@ -205,15 +149,12 @@ pub fn run() -> i32 {
 /// quit, or the parent died). `_exit` skips C++ static destructors, so a
 /// model still alive at that point can't trip ggml-metal's teardown asserts,
 /// and the OS reclaims its CPU and GPU memory.
-fn read_requests(requests: mpsc::Sender<Incoming>, canceller: &Canceller) -> ! {
+fn read_requests(requests: mpsc::Sender<Incoming>) -> ! {
     let mut input = BufReader::new(io::stdin().lock());
-    let mut seq = 0;
     loop {
         match read_message::<Request>(&mut input) {
-            Ok(Some((Request::Cancel, _))) => canceller.cancel(seq),
             Ok(Some((request, pcm))) => {
-                seq += 1;
-                if requests.send(Incoming { seq, request, pcm }).is_err() {
+                if requests.send(Incoming { request, pcm }).is_err() {
                     exit_now(1);
                 }
             }
@@ -237,17 +178,13 @@ fn serve_stream(
     mut stream: Stream<'_>,
     requests: &mpsc::Receiver<Incoming>,
     output: &mut impl Write,
-    canceller: &Canceller,
     on_gpu: bool,
 ) -> io::Result<()> {
-    while let Ok(Incoming { seq, request, pcm }) = requests.recv() {
+    while let Ok(Incoming { request, pcm }) = requests.recv() {
         let (response, done) = match request {
             Request::Feed => {
-                canceller.begin(seq);
                 inject_fault("feed", on_gpu);
-                let result = stream.feed(&pcm);
-                canceller.end();
-                match result {
+                match stream.feed(&pcm) {
                     Ok(update) => {
                         let text = (update.committed_changed || update.tentative_changed)
                             .then(|| stream.text());
@@ -257,11 +194,8 @@ fn serve_stream(
                 }
             }
             Request::Finalize { want_language } => {
-                canceller.begin(seq);
                 inject_fault("finalize", on_gpu);
-                let result = stream.finalize();
-                canceller.end();
-                match result {
+                match stream.finalize() {
                     Ok(update) => {
                         let language = if want_language {
                             stream.snapshot().language
@@ -286,7 +220,6 @@ fn serve_stream(
                 stream.reset();
                 (Response::Ok, true)
             }
-            Request::Cancel => continue,
             _ => (
                 Response::Error("a stream is active; finalize or reset it first".to_string()),
                 false,
@@ -308,7 +241,6 @@ fn load(
     path: &Path,
     backend: Backend,
     selector: DeviceSelector,
-    cancel: &CancelToken,
 ) -> Result<(Session, LoadedInfo), String> {
     let device = match selector {
         DeviceSelector::Auto => None,
@@ -345,15 +277,9 @@ fn load(
     inject_fault("load", backend != Backend::Cpu);
     let model = Model::load_with(path, &ModelOptions { backend, device })
         .map_err(|e| format!("Failed to load model: {e}"))?;
-    let mut session = model
+    let session = model
         .session()
         .map_err(|e| format!("Failed to create session: {e}"))?;
-    let supports_cancellation = model.supports(Feature::Cancellation);
-    if supports_cancellation {
-        // Installed once, while nothing is in flight; the canceller arms and
-        // resets the shared flag per request.
-        session.set_cancel_token(cancel);
-    }
     let bound = model.device().ok().map(|d| DeviceInfo::from_device(&d));
     let backend_name = model.backend();
     let info = LoadedInfo {
@@ -370,15 +296,13 @@ fn load(
             .unwrap_or_else(|| "unknown".to_string()),
         capabilities: model.capabilities(),
         supports_initial_prompt: model.supports(Feature::InitialPrompt),
-        supports_cancellation,
     };
     Ok((session, info))
 }
 
 /// Debug-build fault injection for exercising crash/hang recovery:
-/// `HANDY_WORKER_FAULT=<abort|segv|hang|slow>@<init|list|load|run|feed|finalize>`
-/// (`slow` adds 100 ms to every call at that stage; `init` is backend
-/// registration, before the hello). With `HANDY_WORKER_FAULT_ONCE=<marker
+/// `HANDY_WORKER_FAULT=<abort|segv|hang>@<init|list|load|run|feed|finalize>`
+/// (`init` is backend registration, before the hello). With `HANDY_WORKER_FAULT_ONCE=<marker
 /// path>` it fires only in the first worker to reach that stage (the marker
 /// file records that it fired). With `HANDY_WORKER_FAULT_GPU_ONLY=1` it fires
 /// only on a GPU (backend init and device listing count as GPU work unless
@@ -420,7 +344,6 @@ fn inject_fault(stage: &str, on_gpu: bool) {
         "hang" => loop {
             std::thread::sleep(std::time::Duration::from_secs(3600));
         },
-        "slow" => std::thread::sleep(std::time::Duration::from_millis(100)),
         _ => {}
     }
 }

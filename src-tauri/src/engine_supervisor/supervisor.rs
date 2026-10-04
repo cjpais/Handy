@@ -27,7 +27,7 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::process::{Child, ChildStdin, ChildStdout, Command as ProcessCommand, Stdio};
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -46,16 +46,11 @@ const CALL_FLOOR: Duration = Duration::from_secs(10);
 /// Whisper always encodes a full 30 s window, which on CPU takes seconds
 /// even for a 1 s clip.
 const RUN_FLOOR: Duration = Duration::from_secs(60);
-/// A live stream this far behind real time can't keep up: it is dropped and
-/// the dictation is transcribed in one batch run instead.
-const MAX_STREAM_BACKLOG: Duration = Duration::from_secs(5);
 /// Work on N seconds of audio may take up to this many times N. Past that,
 /// something is wrong anyway.
 const AUDIO_DEADLINE_FACTOR: f64 = 10.0;
 /// How long a worker gets to exit after its stdin closes before it's killed.
 const SHUTDOWN_GRACE: Duration = Duration::from_secs(2);
-/// How long a polite cancel gets before the worker is killed.
-const CANCEL_GRACE: Duration = Duration::from_secs(2);
 /// Native stderr lines kept for crash reports (a `GGML_ASSERT` message lands
 /// here right before an abort).
 const STDERR_TAIL_LINES: usize = 64;
@@ -209,7 +204,8 @@ struct Shared {
     /// Bumped by every [`EngineSupervisor::cancel`]. Work queued before the
     /// bump counts as cancelled.
     cancel_epoch: AtomicU64,
-    /// The cancellable call the owner is waiting on, if any.
+    /// The call the owner is waiting on, if any. A cancel takes it and kills
+    /// its worker.
     in_flight: Mutex<Option<InFlight>>,
     /// Bumped by every [`EngineSupervisor::unload`] as it is called, so the
     /// model reads as unloaded at once, even while the unload waits its turn.
@@ -291,16 +287,11 @@ impl Shared {
 struct StreamQueue {
     /// Set when the caller drops its handle.
     closed: AtomicBool,
-    /// Samples fed but not yet taken up by the owner: how far the stream is
-    /// behind real time.
-    backlog: AtomicUsize,
 }
 
 struct InFlight {
-    id: u64,
     what: &'static str,
     control: Arc<Control>,
-    cancellable: bool,
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -435,45 +426,19 @@ impl EngineSupervisor {
     }
 
     /// Stop the transcription or stream in progress, and any queued behind
-    /// it. Bypasses the queue. Families with `Feature::Cancellation`
-    /// get a polite cancel and keep their model loaded; if that gets no
-    /// answer within [`CANCEL_GRACE`], or the family can't cancel, the
-    /// worker is killed and the next use starts a fresh one. Model loads are
+    /// it. Bypasses the queue. The worker doing the work is killed, so the
+    /// next use starts a fresh one and reloads the model. Model loads are
     /// never cancelled.
     pub fn cancel(&self) {
         self.shared.cancel_epoch.fetch_add(1, Ordering::SeqCst);
-        let in_flight = lock(&self.shared.in_flight);
-        let Some(call) = in_flight.as_ref() else {
-            return;
-        };
-        let polite = call.cancellable
-            && encode_message(&Request::Cancel, None).is_ok_and(|frame| call.control.send(frame));
-        if !polite {
+        // Taking the call tells the owner its worker was killed.
+        if let Some(call) = lock(&self.shared.in_flight).take() {
             info!(
                 "Cancelling the {} by stopping its worker (pid {})",
                 call.what, call.control.pid
             );
             call.control.kill();
-            return;
         }
-        info!("Cancelling the {}", call.what);
-        let shared = Arc::clone(&self.shared);
-        let id = call.id;
-        let _ = thread::Builder::new()
-            .name("transcribe-cancel".into())
-            .spawn(move || {
-                thread::sleep(CANCEL_GRACE);
-                // Same lock the owner clears the call under, so this can
-                // only kill the call it was started for.
-                let in_flight = lock(&shared.in_flight);
-                if let Some(call) = in_flight.as_ref().filter(|call| call.id == id) {
-                    warn!(
-                        "The {} did not stop within {:?} of cancelling; killing its worker (pid {})",
-                        call.what, CANCEL_GRACE, call.control.pid
-                    );
-                    call.control.kill();
-                }
-            });
     }
 
     /// The compute devices, as listed by the latest worker. If no worker has
@@ -520,7 +485,6 @@ pub struct StreamHandle {
 
 impl StreamHandle {
     pub fn feed(&self, pcm: Vec<f32>) {
-        self.queue.backlog.fetch_add(pcm.len(), Ordering::AcqRel);
         let _ = self.commands.send(Command::Feed { id: self.id, pcm });
     }
 
@@ -937,21 +901,15 @@ impl Owner {
         let sent = {
             // Check, send and publish under the lock cancel() takes after
             // bumping the epoch: either this sees the cancel and sends
-            // nothing, or the cancel sees the call and its Cancel frame
-            // follows the request.
+            // nothing, or the cancel sees the call and kills its worker.
             let mut in_flight = lock(&self.shared.in_flight);
             if self.shared.cancelled_since(epoch) {
                 return Err(Failure::Cancelled);
             }
             let sent = worker.control.send(frame);
             *in_flight = Some(InFlight {
-                id: self.shared.next_id(),
                 what: request_name(request),
                 control: Arc::clone(&worker.control),
-                cancellable: worker
-                    .info
-                    .as_ref()
-                    .is_some_and(|info| info.supports_cancellation),
             });
             sent
         };
@@ -960,10 +918,12 @@ impl Owner {
         } else {
             Err(worker.died())
         };
-        lock(&self.shared.in_flight).take();
-        if self.shared.cancelled_since(epoch) {
-            if result.as_ref().is_err_and(Failure::worker_lost) {
-                // Killed by the cancel; the next use starts a fresh worker.
+        // Gone if cancel() took the call, which means it killed the worker
+        // (possibly just after it answered).
+        let killed = lock(&self.shared.in_flight).take().is_none();
+        if killed || self.shared.cancelled_since(epoch) {
+            if killed || result.as_ref().is_err_and(Failure::worker_lost) {
+                // The next use starts a fresh worker.
                 self.worker = None;
             }
             return Err(Failure::Cancelled);
@@ -1026,12 +986,6 @@ impl Owner {
         }
         self.ensure_worker()?;
         let worker = self.worker.as_mut().expect("worker was just ensured");
-        if worker.streams_too_slowly {
-            return Err(EngineError::Failed(
-                "live transcription can't keep up on this device; using batch transcription"
-                    .to_string(),
-            ));
-        }
         let request = Request::StreamBegin {
             run: run.clone(),
             stream: stream.clone(),
@@ -1059,29 +1013,11 @@ impl Owner {
         let Some(stream) = self.stream.as_ref().filter(|s| s.id == id) else {
             return;
         };
-        // Includes this frame and every frame queued behind it.
-        let backlog = stream.queue.backlog.fetch_sub(pcm.len(), Ordering::AcqRel);
         // Skipped once the caller dropped its handle or cancelled.
         if stream.queue.closed.load(Ordering::Acquire)
             || self.shared.cancelled_since(stream.epoch)
             || self.worker.is_none()
         {
-            return;
-        }
-        if backlog > ms_to_samples(MAX_STREAM_BACKLOG.as_millis() as i64) {
-            // Streaming slower than real time only falls further behind, and
-            // stopping would wait for the whole backlog. Drop the stream (its
-            // finalize then reports no result, so the dictation runs as one
-            // batch) and don't stream on this worker again; a new worker,
-            // e.g. back on the GPU, may try again.
-            warn!(
-                "Live transcription fell {:.1}s behind real time; using batch transcription instead",
-                backlog as f64 / SAMPLE_RATE
-            );
-            if let Some(worker) = self.worker.as_mut() {
-                worker.streams_too_slowly = true;
-            }
-            self.end_stream();
             return;
         }
         let epoch = stream.epoch;
@@ -1237,8 +1173,6 @@ struct Worker {
     stderr_tail: Arc<Mutex<VecDeque<String>>>,
     /// Set once a model is loaded.
     info: Option<LoadedInfo>,
-    /// A stream on this worker fell too far behind real time.
-    streams_too_slowly: bool,
 }
 
 impl Worker {
@@ -1290,7 +1224,6 @@ impl Worker {
             stderr_done,
             stderr_tail: Arc::new(Mutex::new(VecDeque::with_capacity(STDERR_TAIL_LINES))),
             info: None,
-            streams_too_slowly: false,
         };
 
         thread::Builder::new()
@@ -1497,7 +1430,6 @@ fn request_name(request: &Request) -> &'static str {
         Request::Feed => "stream feed",
         Request::Finalize { .. } => "stream finalize",
         Request::StreamReset => "stream reset",
-        Request::Cancel => "cancel",
     }
 }
 
@@ -1608,8 +1540,7 @@ mod tests {
         String::from_utf8_lossy(&out.stdout).lines().count()
     }
 
-    /// Feed 30 ms frames a little faster than a microphone would, but not so
-    /// fast that the stream looks like it fell behind real time.
+    /// Feed 30 ms frames a little faster than a microphone would.
     fn feed_paced(stream: &StreamHandle, pcm: &[f32]) {
         for frame in pcm.chunks(480) {
             stream.feed(frame.to_vec());
@@ -1866,14 +1797,14 @@ mod tests {
         let result = finalize.join().unwrap();
         println!("finalize cancelled {:?} after cancel()", t.elapsed());
         assert!(matches!(result, Err(EngineError::Cancelled)));
-        assert!(t.elapsed() < CANCEL_GRACE + Duration::from_secs(2));
+        assert!(t.elapsed() < Duration::from_secs(2));
         assert!(!Degraded::GpuUnavailable.is_set());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);
     }
 
-    /// Cancelling during a hung feed stops it within the cancel grace (not
-    /// the feed deadline), skips the queued frames, and the finalize reports
+    /// Cancelling during a hung feed stops it at once (not at the feed
+    /// deadline), skips the queued frames, and the finalize reports
     /// `Cancelled` even though the stream's worker is gone.
     #[test]
     #[ignore]
@@ -1892,37 +1823,10 @@ mod tests {
         let result = stream.finalize(false);
         println!("hung feed cancelled {:?} after cancel()", t.elapsed());
         assert!(matches!(result, Err(EngineError::Cancelled)));
-        assert!(t.elapsed() < CANCEL_GRACE + Duration::from_secs(2));
+        assert!(t.elapsed() < Duration::from_secs(2));
         assert!(!Degraded::GpuUnavailable.is_set());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);
-    }
-
-    /// A stream slower than real time is dropped once it falls 5 s behind:
-    /// finalize reports no result (so the dictation runs as one batch), and
-    /// this worker doesn't stream again.
-    #[test]
-    #[ignore]
-    fn slow_stream_falls_back_to_batch() {
-        let pcm = test_pcm();
-        set_fault(Some("slow@feed"), false);
-        std::env::remove_var("HANDY_WORKER_FAULT_ONCE");
-        let engine = EngineSupervisor::new(true);
-        engine.load(spec()).unwrap();
-        let t = Instant::now();
-        assert!(stream_all(&engine, &pcm).unwrap().is_none());
-        println!("slow stream gave up after {:?}", t.elapsed());
-        assert!(t.elapsed() < Duration::from_secs(10));
-        assert!(engine
-            .start_stream(RunOptions::default(), StreamOptions::default(), |_| {})
-            .is_err());
-        engine
-            .transcribe(pcm.clone(), RunOptions::default())
-            .unwrap();
-        // A new worker may stream again.
-        set_fault(None, false);
-        engine.load(spec()).unwrap();
-        assert!(stream_all(&engine, &pcm).unwrap().is_some());
     }
 
     /// After a listing crash, "try the GPU again" refreshes the device list
@@ -2217,15 +2121,15 @@ mod tests {
         set_fault(None, false);
     }
 
-    /// Cancel mid-run: the run stops promptly, without a retry, and the next
-    /// run works (on the same worker if the family can cancel politely).
+    /// Cancel mid-run: the run stops promptly, without a retry, the model
+    /// still reads as loaded, and the next run works in a fresh worker.
     #[test]
     #[ignore]
     fn cancel_stops_a_run() {
         let pcm = long_pcm(60);
         set_fault(None, false);
         let engine = EngineSupervisor::new(true);
-        let info = engine.load(spec()).unwrap();
+        engine.load(spec()).unwrap();
         let run = {
             let engine = engine.clone();
             let pcm = pcm.clone();
@@ -2235,13 +2139,9 @@ mod tests {
         let t = Instant::now();
         engine.cancel();
         let result = run.join().unwrap();
-        println!(
-            "cancelled {:?} after cancel() (polite: {})",
-            t.elapsed(),
-            info.supports_cancellation
-        );
+        println!("cancelled {:?} after cancel()", t.elapsed());
         assert!(matches!(result, Err(EngineError::Cancelled)));
-        assert!(t.elapsed() < CANCEL_GRACE * 2);
+        assert!(t.elapsed() < Duration::from_secs(2));
         assert!(engine.loaded().is_some());
         assert!(!Degraded::GpuUnavailable.is_set());
         let t = Instant::now();
@@ -2251,7 +2151,7 @@ mod tests {
         println!("next run took {:?}", t.elapsed());
     }
 
-    /// Cancel a hung run: killed within the cancel grace, no retry, no GPU
+    /// Cancel a hung run: killed at once, no retry, no GPU
     /// flag, and the next run starts a fresh worker.
     #[test]
     #[ignore]
@@ -2271,7 +2171,7 @@ mod tests {
         let result = run.join().unwrap();
         println!("hung run cancelled {:?} after cancel()", t.elapsed());
         assert!(matches!(result, Err(EngineError::Cancelled)));
-        assert!(t.elapsed() < CANCEL_GRACE + Duration::from_secs(2));
+        assert!(t.elapsed() < Duration::from_secs(2));
         assert!(!Degraded::GpuUnavailable.is_set());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);

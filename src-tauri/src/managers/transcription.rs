@@ -1107,9 +1107,9 @@ impl TranscriptionManager {
     }
 
     /// Stop the transcription in progress (a batch run or stream finalize),
-    /// and any queued behind it, for an explicit user cancel. Where the model
-    /// family supports cancelling, the model stays loaded; otherwise its
-    /// worker is stopped and the next use starts a fresh one.
+    /// and any queued behind it, for an explicit user cancel. The worker doing
+    /// it is stopped; the model stays loaded and the next use starts a fresh
+    /// worker for it.
     pub fn cancel_transcription(&self) {
         self.engine.cancel();
     }
