@@ -454,6 +454,8 @@ pub struct AppSettings {
     #[serde(default = "default_auto_submit")]
     pub auto_submit: bool,
     #[serde(default)]
+    pub auto_submit_double_tap: bool,
+    #[serde(default)]
     pub auto_submit_key: AutoSubmitKey,
     #[serde(default = "default_post_process_enabled")]
     pub post_process_enabled: bool,
@@ -962,6 +964,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
         auto_submit: default_auto_submit(),
+        auto_submit_double_tap: false,
         auto_submit_key: AutoSubmitKey::default(),
         post_process_enabled: default_post_process_enabled(),
         post_process_provider_id: default_post_process_provider_id(),
@@ -1550,9 +1553,26 @@ mod tests {
     }
 
     #[test]
+    fn auto_submit_double_tap_is_backward_compatible_and_persists() {
+        let mut stored = serde_json::to_value(get_default_settings()).unwrap();
+        stored
+            .as_object_mut()
+            .unwrap()
+            .remove("auto_submit_double_tap");
+        let mut settings: AppSettings = serde_json::from_value(stored).unwrap();
+        assert!(!settings.auto_submit_double_tap);
+
+        settings.auto_submit_double_tap = true;
+        let saved = serde_json::to_value(settings).unwrap();
+        let restored: AppSettings = serde_json::from_value(saved).unwrap();
+        assert!(restored.auto_submit_double_tap);
+    }
+
+    #[test]
     fn default_settings_disable_auto_submit() {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
+        assert!(!settings.auto_submit_double_tap);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
         assert_eq!(
             settings.settings_schema_version,

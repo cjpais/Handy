@@ -52,6 +52,23 @@ The process is entirely local:
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
+### Auto Submit Double Tap
+
+In **Settings → Advanced → Output**, select an **Auto Submit** key and enable
+**Auto Submit Double Tap** to press that key once, insert the transcribed message,
+and press the same key again. This can open a chat input before inserting and
+submitting the message. The setting is off by default and is saved across restarts.
+It has no effect when Auto Submit is off or Paste Method is None.
+
+Handy waits at least 50 milliseconds after the first tap. Increase **Paste Delay
+(Before)** in Debug if the target application needs more time to open its input.
+With Reliable Paste enabled, the final tap still waits for the target application
+to read the clipboard. If the first tap fails, Handy stops without inserting text.
+
+The control is implemented in
+[`AutoSubmitDoubleTap.tsx`](src/components/settings/AutoSubmitDoubleTap.tsx), with
+the key sequence in [`clipboard.rs`](src-tauri/src/clipboard.rs).
+
 ## Sponsors
 
 <div align="center">

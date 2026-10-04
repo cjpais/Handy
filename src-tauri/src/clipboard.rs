@@ -789,6 +789,18 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
 
+    // Run before either paste path so Reliable Paste fallback cannot repeat the
+    // opening tap. Its receipt handler still owns the final auto-submit tap.
+    if settings.auto_submit_double_tap
+        && should_send_auto_submit(settings.auto_submit, paste_method)
+    {
+        with_enigo(&app_handle, |enigo| {
+            send_return_key(enigo, settings.auto_submit_key)
+        })?;
+        // Give the target application time to open or focus its input field.
+        std::thread::sleep(Duration::from_millis(paste_delay_ms.max(50)));
+    }
+
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {

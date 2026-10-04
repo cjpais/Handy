@@ -346,6 +346,10 @@
           "copyToClipboard": "Copy to Clipboard"
         }
       },
+      "autoSubmitDoubleTap": {
+        "title": "Auto Submit Double Tap",
+        "description": "Press the selected auto-submit key once before inserting the message, then press it again afterward. Requires Auto Submit and an active paste method."
+      },
       "autoSubmit": {
         "title": "Auto Submit",
         "description": "Automatically send the selected key combination after text insertion. Cmd+Enter applies on macOS, while Windows/Linux use Super+Enter.",

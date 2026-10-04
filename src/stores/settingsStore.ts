@@ -152,6 +152,8 @@ const settingUpdaters: {
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
   auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),
+  auto_submit_double_tap: (value) =>
+    commands.changeAutoSubmitDoubleTapSetting(value as boolean),
   auto_submit_key: (value) =>
     commands.changeAutoSubmitKeySetting(value as string),
   history_limit: (value) => commands.updateHistoryLimit(value as number),
