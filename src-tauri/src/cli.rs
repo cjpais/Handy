@@ -4,6 +4,9 @@ use std::path::PathBuf;
 #[derive(Parser, Debug, Clone, Default)]
 #[command(name = "handy", about = "Handy - Speech to Text")]
 pub struct CliArgs {
+    /// Preview local formatting against the focused editor without pasting or recording.
+    #[arg(long, value_name = "TEXT")]
+    pub format_preview: Option<String>,
     /// Start with the main window hidden
     #[arg(long)]
     pub start_hidden: bool,

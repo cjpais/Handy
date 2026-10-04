@@ -23,6 +23,18 @@ mod settings;
 mod shortcut;
 mod signal_handle;
 mod text_formatting;
+
+/// Read-only diagnostic: exposes only a capitalization decision and supplied sample text.
+pub fn preview_text_formatting(text: &str) -> serde_json::Value {
+    let (context, status) = editor_context::diagnostic();
+    serde_json::json!({
+        "cursor_capitalization": context,
+        "context_status": status,
+        "formatted": text_formatting::finish_dictation_with_context(
+            text, &text_formatting::TextFormatting::default(), context,
+        ),
+    })
+}
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
@@ -855,7 +867,18 @@ pub fn run(cli_args: CliArgs) {
     // instance instead.
     if !headless_mode {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            if args.iter().any(|a| a == "--toggle-transcription") {
+            if let Some(index) = args.iter().position(|a| a == "--format-preview") {
+                if let (Some(text), Ok(directory)) =
+                    (args.get(index + 1), app.path().app_data_dir())
+                {
+                    let preview = preview_text_formatting(text);
+                    if let Err(error) =
+                        std::fs::write(directory.join("format-preview.json"), preview.to_string())
+                    {
+                        log::warn!("Could not save formatting preview: {}", error);
+                    }
+                }
+            } else if args.iter().any(|a| a == "--toggle-transcription") {
                 signal_handle::send_transcription_input(app, "transcribe", "CLI");
             } else if args.iter().any(|a| a == "--toggle-post-process") {
                 signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");

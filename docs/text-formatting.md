@@ -15,3 +15,5 @@ Spoken replacements run before optional AI processing, then final replacements, 
 Explicit spoken periods are protected through formatting. In spoken-only mode, if an AI rewrite loses the protected sentence boundaries, Handy falls back to the local text for that dictation.
 
 Turn off Text formatting to revert to the existing processing behavior. Settings persist in Handy’s normal settings store. No transcript is sent to a server by this feature; optional AI processing still uses the provider already configured by the user.
+
+For a read-only native check, run the installed Handy executable with `--format-preview "hello period next sentence"` while the target editor has focus. With Handy already running, this forwards the check to the authorized GUI app and saves the capitalization decision and formatted sample in `format-preview.json` in Handy’s app data directory, without pasting, recording, or exposing editor contents. The preview uses the built-in formatting defaults.

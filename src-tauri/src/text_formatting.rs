@@ -184,7 +184,7 @@ pub fn finish(text: &str, config: &TextFormatting) -> String {
             .flat_map(|c| {
                 if matches!(c, '\u{e000}' | '\n' | '\r') {
                     pending = Some(true);
-                } else if matches!(c, '.' | '?' | '!' | '\n') {
+                } else if matches!(c, '.' | '?' | '!') && pending != Some(true) {
                     pending = Some(false);
                 }
                 if c.is_alphabetic() {
@@ -311,6 +311,10 @@ mod tests {
         assert_eq!(finish("Hello? World! Again.", &c), "hello? world! again");
         assert_eq!(finish("Version 3.14 period Next", &c), "version 3.14. Next");
         assert_eq!(finish("Wait... Again.", &c), "wait again");
+        assert_eq!(
+            finish("Hello period . next sentence.", &c),
+            "hello.  Next sentence"
+        );
         assert_eq!(finish("Hello new line next line.", &c), "hello\nNext line");
         assert_eq!(
             finish_dictation_with_context("Hello.", &c, Some(true)),

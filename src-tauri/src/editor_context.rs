@@ -1,4 +1,15 @@
 //! Read-only cursor context. Never logs or persists editor contents.
+thread_local! {
+    static STATUS: std::cell::RefCell<String> = std::cell::RefCell::new("unsupported platform".into());
+}
+
+pub fn diagnostic() -> (Option<bool>, String) {
+    let result = capitalization();
+    (result, STATUS.with(|status| status.borrow().clone()))
+}
+
+#[cfg(target_os = "macos")]
+const AX_VALUE_CF_RANGE: u32 = 4;
 
 fn capitalize_at_cursor(text: &str, offset: usize) -> Option<bool> {
     let utf16: Vec<_> = text.encode_utf16().collect();
@@ -24,6 +35,7 @@ pub fn capitalization() -> Option<bool> {
     #[link(name = "ApplicationServices", kind = "framework")]
     extern "C" {
         fn AXUIElementCreateSystemWide() -> Ref;
+        fn AXIsProcessTrusted() -> bool;
         fn AXUIElementCopyAttributeValue(element: Ref, attribute: Ref, value: *mut Ref) -> i32;
         fn AXValueGetValue(value: Ref, kind: u32, output: *mut c_void) -> bool;
         fn AXValueGetType(value: Ref) -> u32;
@@ -54,33 +66,56 @@ pub fn capitalization() -> Option<bool> {
         let mut value = std::ptr::null();
         let status = AXUIElementCopyAttributeValue(element, key.0, &mut value);
         if status != 0 || value.is_null() {
+            STATUS.with(|message| {
+                *message.borrow_mut() = format!(
+                    "{}: AXError {}",
+                    String::from_utf8_lossy(&name[..name.len() - 1]),
+                    status
+                )
+            });
             return None;
         }
         Some(Owned(value))
     }
     // All copied CF objects are released, including on unsupported-editor paths.
     unsafe {
+        STATUS.with(|status| *status.borrow_mut() = "invalid selection or text value".into());
+        if !AXIsProcessTrusted() {
+            STATUS.with(|status| {
+                *status.borrow_mut() = "Accessibility permission unavailable in this process".into()
+            });
+            return None;
+        }
         let system = AXUIElementCreateSystemWide();
         if system.is_null() {
             return None;
         }
         let system = Owned(system);
         AXUIElementSetMessagingTimeout(system.0, 0.2);
-        let focused = attribute(system.0, b"AXFocusedUIElement\0")?;
+        let application = attribute(system.0, b"AXFocusedApplication\0")?;
+        AXUIElementSetMessagingTimeout(application.0, 0.2);
+        let focused = attribute(application.0, b"AXFocusedUIElement\0")?;
         AXUIElementSetMessagingTimeout(focused.0, 0.2);
         let selection = attribute(focused.0, b"AXSelectedTextRange\0")?;
-        if CFGetTypeID(selection.0) != AXValueGetTypeID() || AXValueGetType(selection.0) != 3 {
+        if CFGetTypeID(selection.0) != AXValueGetTypeID()
+            || AXValueGetType(selection.0) != AX_VALUE_CF_RANGE
+        {
             return None;
         }
         let mut range = Range {
             location: 0,
             length: 0,
         };
-        if !AXValueGetValue(selection.0, 3, (&mut range as *mut Range).cast()) || range.location < 0
+        if !AXValueGetValue(
+            selection.0,
+            AX_VALUE_CF_RANGE,
+            (&mut range as *mut Range).cast(),
+        ) || range.location < 0
         {
             return None;
         }
         if range.location == 0 {
+            STATUS.with(|status| *status.borrow_mut() = "available".into());
             return Some(true);
         }
         let value = attribute(focused.0, b"AXValue\0")?;
@@ -101,6 +136,7 @@ pub fn capitalization() -> Option<bool> {
             units.as_mut_ptr(),
         );
         let prefix = String::from_utf16(&units).ok()?;
+        STATUS.with(|status| *status.borrow_mut() = "available".into());
         capitalize_at_cursor(&prefix, units.len())
     }
 }
@@ -108,6 +144,46 @@ pub fn capitalization() -> Option<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn native_selection_range_uses_the_macos_range_type() {
+        use std::ffi::c_void;
+        #[repr(C)]
+        struct Range {
+            location: isize,
+            length: isize,
+        }
+        #[link(name = "ApplicationServices", kind = "framework")]
+        extern "C" {
+            fn AXValueCreate(kind: u32, value: *const c_void) -> *const c_void;
+            fn AXValueGetType(value: *const c_void) -> u32;
+            fn AXValueGetValue(value: *const c_void, kind: u32, output: *mut c_void) -> bool;
+        }
+        #[link(name = "CoreFoundation", kind = "framework")]
+        extern "C" {
+            fn CFRelease(value: *const c_void);
+        }
+        unsafe {
+            let expected = Range {
+                location: 7,
+                length: 2,
+            };
+            let value = AXValueCreate(AX_VALUE_CF_RANGE, (&expected as *const Range).cast());
+            assert!(!value.is_null());
+            assert_eq!(AXValueGetType(value), AX_VALUE_CF_RANGE);
+            let mut actual = Range {
+                location: 0,
+                length: 0,
+            };
+            assert!(AXValueGetValue(
+                value,
+                AX_VALUE_CF_RANGE,
+                (&mut actual as *mut Range).cast()
+            ));
+            CFRelease(value);
+            assert_eq!((actual.location, actual.length), (7, 2));
+        }
+    }
     #[test]
     fn empty_lines_and_sentences_use_real_cursor_position() {
         assert_eq!(capitalize_at_cursor("", 0), Some(true));
