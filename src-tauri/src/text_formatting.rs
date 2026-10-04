@@ -182,7 +182,7 @@ pub fn finish(text: &str, config: &TextFormatting) -> String {
         result = result
             .chars()
             .flat_map(|c| {
-                if c == '\u{e000}' {
+                if matches!(c, '\u{e000}' | '\n' | '\r') {
                     pending = Some(true);
                 } else if matches!(c, '.' | '?' | '!' | '\n') {
                     pending = Some(false);
@@ -251,7 +251,16 @@ pub fn finish(text: &str, config: &TextFormatting) -> String {
 }
 
 /// Carry sentence boundaries across consecutive dictations in this app session.
+#[cfg(test)]
 pub fn finish_dictation(text: &str, config: &TextFormatting) -> String {
+    finish_dictation_with_context(text, config, None)
+}
+
+pub fn finish_dictation_with_context(
+    text: &str,
+    config: &TextFormatting,
+    cursor_capitalization: Option<bool>,
+) -> String {
     static AFTER_PERIOD: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
     let Ok(mut after_period) = AFTER_PERIOD.lock() else {
         return finish(text, config);
@@ -259,7 +268,7 @@ pub fn finish_dictation(text: &str, config: &TextFormatting) -> String {
     let mut result = finish(text, config);
     if config.enabled
         && config.initial_capitalization == InitialCapitalization::AfterPeriod
-        && *after_period
+        && cursor_capitalization.unwrap_or(*after_period)
     {
         if let Some((index, first)) = result.char_indices().find(|(_, c)| c.is_alphabetic()) {
             result.replace_range(
@@ -269,7 +278,8 @@ pub fn finish_dictation(text: &str, config: &TextFormatting) -> String {
         }
     }
     if !result.trim().is_empty() {
-        *after_period = config.enabled && result.trim_end().ends_with('.');
+        *after_period =
+            config.enabled && (result.trim_end().ends_with('.') || result.ends_with('\n'));
     }
     result
 }
@@ -301,6 +311,19 @@ mod tests {
         assert_eq!(finish("Hello? World! Again.", &c), "hello? world! again");
         assert_eq!(finish("Version 3.14 period Next", &c), "version 3.14. Next");
         assert_eq!(finish("Wait... Again.", &c), "wait again");
+        assert_eq!(finish("Hello new line next line.", &c), "hello\nNext line");
+        assert_eq!(
+            finish_dictation_with_context("Hello.", &c, Some(true)),
+            "Hello"
+        );
+        assert_eq!(
+            finish_dictation_with_context("Hello period", &c, Some(true)),
+            "Hello."
+        );
+        assert_eq!(
+            finish_dictation_with_context("Next word.", &c, Some(false)),
+            "next word"
+        );
         assert_eq!(finish_dictation("Hello period", &c), "hello.");
         assert_eq!(finish_dictation("Next sentence.", &c), "Next sentence");
         assert_eq!(

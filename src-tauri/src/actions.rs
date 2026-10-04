@@ -356,6 +356,14 @@ pub(crate) async fn process_transcription_output(
     post_process: bool,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
+    let cursor_capitalization = if settings.text_formatting.enabled
+        && settings.text_formatting.initial_capitalization
+            == crate::text_formatting::InitialCapitalization::AfterPeriod
+    {
+        crate::editor_context::capitalization()
+    } else {
+        None
+    };
     let mut final_text = if post_process {
         crate::text_formatting::replace_spoken(transcription, &settings.text_formatting)
     } else {
@@ -397,7 +405,11 @@ pub(crate) async fn process_transcription_output(
         }
     }
 
-    final_text = crate::text_formatting::finish_dictation(&final_text, &settings.text_formatting);
+    final_text = crate::text_formatting::finish_dictation_with_context(
+        &final_text,
+        &settings.text_formatting,
+        cursor_capitalization,
+    );
     if post_processed_text.is_some() {
         post_processed_text = Some(final_text.clone());
     }

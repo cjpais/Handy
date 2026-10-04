@@ -9,6 +9,7 @@ mod chinese_script;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod editor_context;
 mod helpers;
 mod input;
 mod llm_client;

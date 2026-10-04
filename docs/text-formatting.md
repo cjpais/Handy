@@ -1,11 +1,11 @@
 # Local text formatting
 
-Advanced → Transcription → Text formatting enables deterministic formatting without an AI provider or external paste script. The defaults enable spoken punctuation, keep only explicitly spoken sentence periods, and capitalize sentence openings only after those periods. Explicitly saved preferences remain configurable.
+Advanced → Transcription → Text formatting enables deterministic formatting without an AI provider or external paste script. The defaults enable spoken punctuation, keep only explicitly spoken sentence periods, and capitalize at line starts and after periods. Explicitly saved preferences remain configurable.
 
 When enabled:
 
 - Spoken punctuation replaces editable literal phrases, ignoring case and matching whole words. Rules run in one pass per stage, with longer phrases matched first. Commands such as “exclamation point” produce symbols; “new paragraph” inserts two newlines. Matching words are treated as commands even when spoken literally, so remove ambiguous entries such as “period” if needed.
-- First letter can keep the recognizer’s output, become lowercase, or become uppercase. The default “Capitalize only after a period” lowercases sentence openings, except after an explicitly spoken period. This boundary carries across consecutive dictations in the same app session. It cannot read text already in the target editor or detect manual cursor movements. Internal names retain their case.
+- First letter can keep the recognizer’s output, become lowercase, or become uppercase. The default “Capitalize at line starts and after periods” reads the text before the insertion point using macOS Accessibility. Empty or whitespace-only line prefixes and prefixes ending in a period capitalize the opening; unfinished sentences use lowercase. Dictated line breaks also capitalize the next word. Editors that do not expose a text value and selection range fall back to tracking boundaries across dictations in the app session. Editor contents are neither logged nor persisted. Internal names retain their case.
 - Sentence periods can remain, be removed only at the end of a dictation, or be removed at sentence boundaries. Decimals remain. The default spoken-only mode removes automatic ellipses too. Removing periods is a character heuristic and may also remove abbreviation periods.
 
 Use Add replacement, Remove, and Save replacements to edit the list. Enter `\n` in a replacement for a newline. Up to 100 unique phrases are supported; phrases may contain up to 200 UTF-8 bytes and replacements up to 100 bytes. Empty replacements are allowed.
