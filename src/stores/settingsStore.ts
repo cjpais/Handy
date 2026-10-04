@@ -9,6 +9,7 @@ import type {
   OrtAcceleratorSetting,
   ShortcutActivation,
   VadBackend,
+  TextFormatting,
 } from "@/bindings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
@@ -177,6 +178,15 @@ const settingUpdaters: {
     if (result.status === "error") {
       // Rejected switches (e.g. mid-recording) roll the dropdown back via the
       // throw below; the toast tells the user why.
+      toast.error(result.error);
+      throw new Error(result.error);
+    }
+  },
+  text_formatting: async (value) => {
+    const result = await commands.changeTextFormattingSetting(
+      value as TextFormatting,
+    );
+    if (result.status === "error") {
       toast.error(result.error);
       throw new Error(result.error);
     }

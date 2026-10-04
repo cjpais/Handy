@@ -1483,3 +1483,16 @@ mod tests {
         }
     }
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_text_formatting_setting(
+    app: AppHandle,
+    value: crate::text_formatting::TextFormatting,
+) -> Result<(), String> {
+    crate::text_formatting::validate(&value)?;
+    let mut settings = settings::get_settings(&app);
+    settings.text_formatting = value;
+    settings::write_settings(&app, settings);
+    Ok(())
+}

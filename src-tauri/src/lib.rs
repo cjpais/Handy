@@ -21,6 +21,7 @@ mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod text_formatting;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
@@ -696,6 +697,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_vad_enabled_setting,
             shortcut::change_vad_backend_setting,
             shortcut::change_filler_word_removal_enabled_setting,
+            shortcut::change_text_formatting_setting,
             shortcut::change_chinese_script_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,

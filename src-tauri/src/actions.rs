@@ -356,12 +356,18 @@ pub(crate) async fn process_transcription_output(
     post_process: bool,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
-    let mut final_text = transcription.to_string();
+    let mut final_text = if post_process {
+        crate::text_formatting::replace_spoken(transcription, &settings.text_formatting)
+    } else {
+        transcription.to_string()
+    };
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+        if let Some(processed_text) =
+            post_process_transcription(&settings, &final_text.replace('\u{e000}', ".")).await
+        {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
@@ -375,6 +381,11 @@ pub(crate) async fn process_transcription_output(
                 }
             }
         }
+    }
+
+    final_text = crate::text_formatting::finish(&final_text, &settings.text_formatting);
+    if post_processed_text.is_some() {
+        post_processed_text = Some(final_text.clone());
     }
 
     ProcessedTranscription {

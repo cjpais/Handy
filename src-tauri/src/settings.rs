@@ -374,6 +374,8 @@ impl std::ops::DerefMut for SecretMap {
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(default)]
 pub struct AppSettings {
+    #[serde(default)]
+    pub text_formatting: crate::text_formatting::TextFormatting,
     /// Internal settings schema marker for one-time migrations. Fresh installs
     /// start at the current version; existing stores missing this key are
     /// treated as version 0 and migrated forward.
@@ -930,6 +932,7 @@ pub fn get_default_settings() -> AppSettings {
     );
 
     AppSettings {
+        text_formatting: crate::text_formatting::TextFormatting::default(),
         settings_schema_version: default_settings_schema_version(),
         bindings,
         shortcut_activation: ShortcutActivation::default(),
