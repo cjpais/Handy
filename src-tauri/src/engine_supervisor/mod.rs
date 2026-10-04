@@ -7,10 +7,17 @@
 //!
 //! [`EngineSupervisor`] is the single owner of that worker. It loads and
 //! unloads models, runs and streams transcriptions, cancels them, and
-//! recovers from crashes and hangs (retrying on CPU when the GPU was at
-//! fault), so the rest of the app never sees processes, restarts or fallback.
-//! At most one worker is alive at a time, and it lives exactly as long as a
-//! loaded model, so unloading returns all of its CPU and GPU memory to the OS.
+//! recovers from crashes and hangs (retrying in a CPU-only worker when the
+//! GPU was at fault), so the rest of the app never sees processes, restarts
+//! or fallback. At most one worker holds a model at a time, and it lives
+//! exactly as long as that model, so unloading returns all of its CPU and GPU
+//! memory to the OS. Listing compute devices may briefly run a second,
+//! model-less worker.
+//!
+//! A CPU-only worker ([`CPU_ONLY_FLAG`]) restricts transcribe.cpp to its CPU
+//! backends before any are registered, so no GPU driver code runs in it at
+//! all: a driver that crashes or hangs while initializing can't take the CPU
+//! fallback down with it.
 //!
 //! - `protocol`: the framed request/response protocol between the two.
 //! - `supervisor`: the parent side ([`EngineSupervisor`]).
@@ -28,6 +35,8 @@ pub use supervisor::{
 
 /// Hidden first argument that turns the executable into a worker.
 pub const WORKER_FLAG: &str = "--transcribe-worker";
+/// Worker argument: register only the CPU backends.
+const CPU_ONLY_FLAG: &str = "--cpu-only";
 const LOG_LEVEL_ENV: &str = "HANDY_TRANSCRIBE_WORKER_LOG";
 
 /// Whether this process was launched as a transcription worker. Checked in

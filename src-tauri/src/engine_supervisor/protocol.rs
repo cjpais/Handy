@@ -20,9 +20,11 @@ const MAX_SECTION_BYTES: usize = 1 << 30;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
-    /// First request to every worker. With `list_devices`, the worker
-    /// enumerates its compute devices, which is what first opens the GPU.
-    /// The parent skips listing once it is known to crash or hang.
+    /// First request to every worker; answered once backend init is done
+    /// (with an error if it registered no compute device). With
+    /// `list_devices`, the worker also enumerates its compute devices.
+    /// CPU-only workers that hold a model don't list: they would only see
+    /// the CPU.
     Hello {
         list_devices: bool,
     },

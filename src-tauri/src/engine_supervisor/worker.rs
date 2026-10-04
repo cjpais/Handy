@@ -10,15 +10,15 @@
 use super::protocol::{
     read_message, write_message, DeviceInfo, DeviceSelector, LoadedInfo, Request, Response,
 };
-use super::LOG_LEVEL_ENV;
-use log::{error, warn, LevelFilter, Log, Metadata, Record};
+use super::{CPU_ONLY_FLAG, LOG_LEVEL_ENV};
+use log::{debug, error, warn, LevelFilter, Log, Metadata, Record};
 use std::fs::File;
 use std::io::{self, BufReader, Write};
 use std::path::Path;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use transcribe_cpp::{
-    Backend, CancelToken, DeviceType, Feature, Model, ModelOptions, Session, Stream,
+    Backend, BackendMask, CancelToken, DeviceType, Feature, Model, ModelOptions, Session, Stream,
 };
 
 /// Prefix on worker log lines so the parent can tell them apart from raw
@@ -101,23 +101,41 @@ pub fn run() -> i32 {
     }
 
     transcribe_cpp::init_logging();
-    if let Err(e) = transcribe_cpp::init_backends_default() {
-        warn!("Failed to initialize transcribe-cpp backends: {}", e);
-    }
+    // Registering a GPU backend runs its driver code, so this is where a
+    // broken driver crashes or hangs, before the hello is answered.
+    let cpu_only = std::env::args_os().any(|arg| arg == CPU_ONLY_FLAG);
+    inject_fault("init", !cpu_only);
+    let init = if cpu_only {
+        transcribe_cpp::init_backends_with(None::<&Path>, BackendMask::CPU)
+    } else {
+        transcribe_cpp::init_backends_default()
+    };
+    // Init only fails when no compute device registered at all, which no
+    // other worker could fix either: the hello reports it.
+    let init_error = init
+        .err()
+        .map(|e| format!("Failed to initialize transcribe.cpp backends: {e}"));
+    debug!(
+        "transcribe.cpp allowed backends: {:#x}",
+        transcribe_cpp::allowed_backends().bits()
+    );
 
     let mut output = protocol_out;
     let mut session: Option<(Session, LoadedInfo)> = None;
 
     while let Ok(Incoming { seq, request, pcm }) = requests.recv() {
         let response = match request {
-            Request::Hello { list_devices } => Response::Hello {
-                devices: list_devices.then(|| {
-                    inject_fault("list", true);
-                    transcribe_cpp::devices()
-                        .iter()
-                        .map(DeviceInfo::from_device)
-                        .collect()
-                }),
+            Request::Hello { list_devices } => match &init_error {
+                Some(message) => Response::Error(message.clone()),
+                None => Response::Hello {
+                    devices: list_devices.then(|| {
+                        inject_fault("list", !cpu_only);
+                        transcribe_cpp::devices()
+                            .iter()
+                            .map(DeviceInfo::from_device)
+                            .collect()
+                    }),
+                },
             },
             Request::Load {
                 path,
@@ -358,12 +376,13 @@ fn load(
 }
 
 /// Debug-build fault injection for exercising crash/hang recovery:
-/// `HANDY_WORKER_FAULT=<abort|segv|hang|slow>@<list|load|run|feed|finalize>`
-/// (`slow` adds 100 ms to every call at that stage). With
-/// `HANDY_WORKER_FAULT_ONCE=<marker path>` it fires only in the first worker
-/// to reach that stage (the marker file records that it fired). With
-/// `HANDY_WORKER_FAULT_GPU_ONLY=1` it fires only on a GPU (listing devices
-/// counts as GPU work), so recovery on CPU can succeed.
+/// `HANDY_WORKER_FAULT=<abort|segv|hang|slow>@<init|list|load|run|feed|finalize>`
+/// (`slow` adds 100 ms to every call at that stage; `init` is backend
+/// registration, before the hello). With `HANDY_WORKER_FAULT_ONCE=<marker
+/// path>` it fires only in the first worker to reach that stage (the marker
+/// file records that it fired). With `HANDY_WORKER_FAULT_GPU_ONLY=1` it fires
+/// only on a GPU (backend init and device listing count as GPU work unless
+/// the worker is CPU-only), so recovery on CPU can succeed.
 #[cfg(debug_assertions)]
 fn inject_fault(stage: &str, on_gpu: bool) {
     let Ok(spec) = std::env::var("HANDY_WORKER_FAULT") else {

@@ -1037,7 +1037,8 @@ pub fn run(cli_args: CliArgs) {
             // ORT execution providers and transcribe-cpp compute devices; without this
             // the cost is paid synchronously when the user first opens Advanced
             // settings, freezing the UI. The device list is kept by the
-            // transcription engine and refreshed by every worker it starts.
+            // transcription engine and refreshed by every worker it starts that may
+            // use the GPU (CPU-only workers can't see it).
             let devices_app_handle = app_handle.clone();
             std::thread::spawn(move || {
                 let tm = devices_app_handle.state::<Arc<TranscriptionManager>>();

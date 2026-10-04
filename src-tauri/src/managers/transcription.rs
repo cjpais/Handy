@@ -278,7 +278,7 @@ pub struct TranscriptionManager {
 impl TranscriptionManager {
     pub fn new(app_handle: &AppHandle, model_manager: Arc<ModelManager>) -> Result<Self> {
         let manager = Self {
-            engine: EngineSupervisor::new(),
+            engine: EngineSupervisor::new(!transcribe_gpu_disabled_for_host()),
             onnx: Arc::new(Mutex::new(None)),
             model_manager,
             app_handle: app_handle.clone(),
