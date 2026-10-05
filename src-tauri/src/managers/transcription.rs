@@ -9,6 +9,7 @@ use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, OrtAcceleratorSetting,
     TranscribeAcceleratorSetting,
 };
+use crate::vulkan_probe;
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -50,12 +51,208 @@ fn panic_payload_message(payload: &(dyn std::any::Any + Send)) -> String {
     }
 }
 
+/// Whether a transcribe-cpp error is a compute-backend failure (driver-level),
+/// as opposed to a per-request error (invalid args, unsupported language, …).
+/// On the run/stream paths `Error::Backend` means the compute backend is no
+/// longer usable — e.g. ggml-vulkan reporting device loss after the GPU hung
+/// and the driver was reset, or a laptop dGPU being powered off.
+fn is_transcribe_cpp_backend_failure(error: &transcribe_cpp::Error) -> bool {
+    matches!(error, transcribe_cpp::Error::Backend(_))
+}
+
+/// Whether an anyhow error (as produced by the batch run path) wraps a
+/// transcribe-cpp backend failure.
+fn is_gpu_backend_failure_error(error: &anyhow::Error) -> bool {
+    error.downcast_ref::<RemovedGpuDevice>().is_some()
+        || error
+            .downcast_ref::<transcribe_cpp::Error>()
+            .is_some_and(is_transcribe_cpp_backend_failure)
+}
+
+/// Recovery evidence attached without replacing the original typed OOM error.
+#[derive(Debug)]
+struct RemovedGpuDevice(String);
+
+/// Retain the failed device identity after its native engine is disposed.
+#[derive(Debug)]
+struct FailedGpuDeviceKey(String);
+
+impl std::fmt::Display for FailedGpuDeviceKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "compute failure on GPU '{}'", self.0)
+    }
+}
+
+impl std::fmt::Display for RemovedGpuDevice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "GPU device '{}' disappeared during transcription",
+            self.0
+        )
+    }
+}
+
+fn allocation_failed_on_removed_gpu(
+    error: &transcribe_cpp::Error,
+    bound_gpu_label: Option<&str>,
+    probed: Option<&[String]>,
+) -> bool {
+    matches!(error, transcribe_cpp::Error::OutOfMemory(_))
+        && bound_gpu_label.is_some_and(|label| {
+            probed.is_some_and(|names| !names.iter().any(|name| name == label))
+        })
+}
+
+fn transcribe_cpp_failure_requires_recovery(
+    error: &transcribe_cpp::Error,
+    bound_gpu_label: Option<&str>,
+) -> bool {
+    if is_transcribe_cpp_backend_failure(error) {
+        return true;
+    }
+    if !matches!(error, transcribe_cpp::Error::OutOfMemory(_)) || bound_gpu_label.is_none() {
+        return false;
+    }
+    // 0.3.0 reports graph-allocation failure as OOM even when its GPU was
+    // powered off. Only confirmed removal warrants recovery; ordinary OOM,
+    // CPU allocation failure, and unavailable probes retain their behavior.
+    let probed = vulkan_probe::probe_gpu_device_names();
+    let removed = allocation_failed_on_removed_gpu(error, bound_gpu_label, probed.as_deref());
+    if removed {
+        warn!(
+            "transcribe-cpp returned {:?}; fresh Vulkan probe confirms GPU '{}' was removed",
+            error,
+            bound_gpu_label.unwrap_or_default()
+        );
+    }
+    removed
+}
+
+/// How long GPU loads are skipped after a GPU-bound load attempt failed, so a
+/// device whose logical handle is dead (driver TDR/reset) doesn't add a failed
+/// load to every dictation. This is a retry backoff, not a ban: after the
+/// window GPU loads may be tried again. Devices with compute failures are
+/// excluded separately until restart.
+const GPU_RETRY_COOLDOWN: Duration = Duration::from_secs(5 * 60);
+
+/// Selection rank for compute devices: discrete GPU over integrated GPU over
+/// everything else. Mirrors what ggml's `Auto` prefers.
+fn transcribe_device_rank(device: &transcribe_cpp::Device) -> u8 {
+    match device.device_type {
+        transcribe_cpp::DeviceType::Gpu => 2,
+        transcribe_cpp::DeviceType::Igpu => 1,
+        _ => 0,
+    }
+}
+
+/// Whether a registered device is confirmed present by a fresh probe. The
+/// registry label is the driver-reported device name (e.g. "AMD Radeon(TM)
+/// Graphics"), which is what the probe reports too.
+fn device_binding_removed(is_gpu: bool, label: &str, probed: &[String]) -> bool {
+    is_gpu && !probed.iter().any(|name| name == label)
+}
+
+/// One GPU-capable registry device, reduced to the data selection needs. Kept
+/// free of `transcribe_cpp::Device` so the choice logic is unit-testable
+/// (`Device` can't be constructed outside the binding crate).
+#[derive(Debug, Clone, PartialEq)]
+struct GpuCandidate {
+    /// Index into the registry device list.
+    index: usize,
+    key: String,
+    label: String,
+    rank: u8,
+}
+
+/// Ordered load plan for the transcribe-cpp backend, given what we know about
+/// the machine right now. The first entry is the primary choice; later entries
+/// are fallbacks tried in order when a load fails.
+///
+/// - CPU preference / host-disabled GPU → `[(Cpu, None)]`.
+/// - No probe result (probe unavailable) → `[(Auto, None)]`: ggml decides —
+///   exactly the pre-hot-plug behavior.
+/// - Otherwise: GPU devices confirmed present by the fresh probe, best rank
+///   first (the stored user device first when present), then a CPU terminal
+///   fallback. An active GPU retry cooldown skips GPU attempts entirely.
+fn build_load_plan(
+    setting: TranscribeAcceleratorSetting,
+    gpu_disabled: bool,
+    probe: Option<&[String]>,
+    gpu_candidates: &[GpuCandidate],
+    stored_gpu_key: Option<&str>,
+    gpu_cooldown_active: bool,
+    failed_gpu_keys: &[String],
+) -> Vec<(Backend, Option<usize>)> {
+    if gpu_disabled || setting == TranscribeAcceleratorSetting::Cpu {
+        return vec![(Backend::Cpu, None)];
+    }
+
+    let Some(probed) = probe else {
+        if gpu_cooldown_active || !failed_gpu_keys.is_empty() {
+            // Automatic selection could pick the failed device again.
+            return vec![(Backend::Cpu, None)];
+        }
+        // No fresh device information: keep ggml's automatic selection.
+        return vec![(Backend::Auto, None)];
+    };
+
+    let mut candidates: Vec<GpuCandidate> = gpu_candidates
+        .iter()
+        .filter(|candidate| probed.iter().any(|name| name == &candidate.label))
+        .filter(|candidate| !failed_gpu_keys.contains(&candidate.key))
+        .cloned()
+        .collect();
+
+    if gpu_cooldown_active {
+        candidates.clear();
+    }
+
+    // Rank automatic choices first, then give the saved device priority.
+    candidates.sort_by_key(|candidate| std::cmp::Reverse(candidate.rank));
+    if let Some(stored_key) = stored_gpu_key {
+        match candidates
+            .iter()
+            .position(|candidate| candidate.key == stored_key)
+        {
+            Some(position) if position > 0 => {
+                let stored = candidates.remove(position);
+                candidates.insert(0, stored);
+            }
+            Some(_) => {}
+            None => {
+                warn!(
+                    "Stored transcribe GPU device is not currently present; \
+                     using the best available device"
+                );
+            }
+        }
+    }
+
+    if candidates.is_empty() {
+        return vec![(Backend::Cpu, None)];
+    }
+
+    let mut plan: Vec<(Backend, Option<usize>)> = candidates
+        .into_iter()
+        .map(|candidate| (Backend::Auto, Some(candidate.index)))
+        .collect();
+    plan.push((Backend::Cpu, None));
+    plan
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
     pub event_type: String,
     pub model_id: Option<String>,
     pub model_name: Option<String>,
+    pub device_name: Option<String>,
     pub error: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum StaleDeviceBinding {
+    Removed,
 }
 
 /// Live transcription snapshot emitted to the overlay during a streaming run.
@@ -99,11 +296,19 @@ pub struct StreamPhaseEvent {
 /// Commands sent to the streaming worker thread. Audio frames and the finalize
 /// request travel the same channel so FIFO ordering guarantees every fed frame
 /// is processed before finalize runs.
+enum StreamFinalizeReply {
+    Finished(Option<FinalizedStreamText>),
+    NeedsRecovery {
+        model_id: String,
+        failed_gpu_key: Option<String>,
+    },
+}
+
 enum StreamCmd {
     Feed(Vec<f32>),
     /// Flush the stream and reply with the final text, or `None` if no stream
     /// was ever active (caller should fall back to batch transcription).
-    Finalize(mpsc::Sender<Option<FinalizedStreamText>>),
+    Finalize(mpsc::Sender<StreamFinalizeReply>),
     Cancel,
 }
 
@@ -189,6 +394,18 @@ enum LoadedEngine {
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
     Cohere(CohereModel),
+}
+
+fn loaded_engine_gpu_key(engine: &LoadedEngine) -> Option<String> {
+    let LoadedEngine::TranscribeCpp(session) = engine else {
+        return None;
+    };
+    session
+        .model()
+        .device()
+        .ok()
+        .filter(is_transcribe_gpu_device)
+        .map(|device| transcribe_device_key(&device))
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -278,6 +495,15 @@ pub struct TranscriptionManager {
     /// `is_model_loaded()` consults this so the model still reports "loaded"
     /// while the worker holds it.
     active_engine_lease: Arc<AtomicU64>,
+    /// When the last GPU-bound model load failed. Used to back off GPU attempts
+    /// for [`GPU_RETRY_COOLDOWN`] so a dead device (driver TDR/reset, dGPU
+    /// removed) doesn't add a failed load attempt to every dictation. Not a
+    /// ban: GPU loads may be retried after the window. Compute failures are
+    /// tracked separately until restart.
+    last_gpu_load_failure: Arc<Mutex<Option<Instant>>>,
+    /// Compute failures invalidate the native device handle for this process.
+    /// Keep those devices out of subsequent loads until Handy restarts.
+    failed_gpu_keys: Arc<Mutex<Vec<String>>>,
 }
 
 impl TranscriptionManager {
@@ -298,6 +524,8 @@ impl TranscriptionManager {
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
             active_engine_lease: Arc::new(AtomicU64::new(0)),
+            last_gpu_load_failure: Arc::new(Mutex::new(None)),
+            failed_gpu_keys: Arc::new(Mutex::new(Vec::new())),
         };
 
         // Start the idle watcher
@@ -432,6 +660,7 @@ impl TranscriptionManager {
                 event_type: "unloaded".to_string(),
                 model_id: None,
                 model_name: None,
+                device_name: None,
                 error: None,
             },
         );
@@ -442,6 +671,100 @@ impl TranscriptionManager {
             unload_duration.as_millis()
         );
         Ok(())
+    }
+
+    /// Record that a GPU-bound model load just failed, starting the retry
+    /// cooldown window.
+    fn note_gpu_load_failure(&self) {
+        *self.last_gpu_load_failure.lock().unwrap() = Some(Instant::now());
+    }
+
+    /// Whether GPU load attempts are currently in the retry cooldown window.
+    fn gpu_cooldown_active(&self) -> bool {
+        self.last_gpu_load_failure
+            .lock()
+            .unwrap()
+            .is_some_and(|at| at.elapsed() < GPU_RETRY_COOLDOWN)
+    }
+
+    fn note_failed_compute_device(&self, key: Option<&str>) {
+        if let Some(key) = key {
+            let mut failed = self.failed_gpu_keys.lock().unwrap();
+            if !failed.iter().any(|failed_key| failed_key == key) {
+                failed.push(key.to_string());
+            }
+        } else {
+            // Without an identity, automatic selection could reuse the failure.
+            self.note_gpu_load_failure();
+        }
+    }
+
+    /// Handle a hard GPU compute failure (e.g. ggml-vulkan device loss after a
+    /// Windows driver reset/TDR, or a laptop dGPU powering off mid-stream):
+    /// drop the engine bound to the failed device, notify the UI, and (best
+    /// effort) reload the model on the best device that
+    /// currently exists, excluding devices that have already failed in this
+    /// process, or the CPU when nothing else is available. Returns true
+    /// when a freshly loaded engine is available.
+    fn recover_backend_failure(&self, model_id: &str, failed_gpu_key: Option<String>) -> bool {
+        error!(
+            "GPU compute backend failed (device lost / driver reset); \
+             recovering on the best available device"
+        );
+
+        // Drop the engine that hit the failure — its native context is bound
+        // to the failed device and must not be reused.
+        {
+            let mut engine = self.lock_engine();
+            let failed_gpu_key =
+                failed_gpu_key.or_else(|| engine.as_ref().and_then(loaded_engine_gpu_key));
+            self.note_failed_compute_device(failed_gpu_key.as_deref());
+            *engine = None;
+        }
+        {
+            let mut current_model = self.current_model_id.lock().unwrap();
+            *current_model = None;
+        }
+
+        match self.load_model(model_id) {
+            Ok(()) => {
+                self.emit_device_fallback_notification(model_id);
+                true
+            }
+            Err(e) => {
+                error!("Failed to reload model after GPU failure: {}", e);
+                false
+            }
+        }
+    }
+
+    fn current_transcription_device_name(&self) -> Option<String> {
+        let engine = self.lock_engine();
+        let Some(LoadedEngine::TranscribeCpp(session)) = engine.as_ref() else {
+            return None;
+        };
+        let model = session.model();
+        let Ok(device) = model.device() else {
+            return None;
+        };
+        match device.device_type {
+            transcribe_cpp::DeviceType::Cpu => Some("cpu".to_string()),
+            _ if !device.description.trim().is_empty() => Some(device.description),
+            _ => Some(device.name),
+        }
+    }
+
+    fn emit_device_fallback_notification(&self, model_id: &str) {
+        let _ = self.app_handle.emit(
+            "model-state-changed",
+            ModelStateEvent {
+                event_type: "device_fallback".to_string(),
+                model_id: Some(model_id.to_string()),
+                model_name: None,
+                device_name: self.current_transcription_device_name(),
+                error: None,
+            },
+        );
     }
 
     fn now_ms() -> u64 {
@@ -495,6 +818,7 @@ impl TranscriptionManager {
                 event_type: "loading_started".to_string(),
                 model_id: Some(model_id.to_string()),
                 model_name: None,
+                device_name: None,
                 error: None,
             },
         );
@@ -509,6 +833,7 @@ impl TranscriptionManager {
                         event_type: "loading_failed".to_string(),
                         model_id: Some(model_id.to_string()),
                         model_name: None,
+                        device_name: None,
                         error: Some(error_msg.clone()),
                     },
                 );
@@ -525,6 +850,7 @@ impl TranscriptionManager {
                     event_type: "loading_failed".to_string(),
                     model_id: Some(model_id.to_string()),
                     model_name: Some(model_info.name.clone()),
+                    device_name: None,
                     error: Some(error_msg.to_string()),
                 },
             );
@@ -561,40 +887,90 @@ impl TranscriptionManager {
                 // The whisper backend is chosen at load time (transcribe-cpp has
                 // no runtime global). With an explicit `device_index` (the
                 // --device-index flag) hard-select that registered device;
-                // otherwise re-read the persisted accelerator preference (so an
-                // accelerator change marked for reload takes effect here).
-                let (backend, device) = match device_index {
-                    Some(index) => resolve_device_index(index).inspect_err(|e| {
+                // otherwise resolve the persisted accelerator preference against
+                // the devices that actually exist right now (fresh probe, so
+                // hot-plugged/removed GPUs are seen), with ordered fallbacks.
+                let load_plan: Vec<(Backend, Option<transcribe_cpp::Device>)> = match device_index {
+                    Some(index) => vec![resolve_device_index(index).inspect_err(|e| {
                         emit_loading_failed(&e.to_string());
-                    })?,
+                    })?],
                     None => {
                         let settings = get_settings(&self.app_handle);
-                        let accelerator = settings.transcribe_accelerator;
-                        let device = resolve_gpu_device(
-                            accelerator,
+                        let gpu_registry = transcribe_compute_devices();
+                        let gpu_candidates: Vec<GpuCandidate> = gpu_registry
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, device)| is_transcribe_gpu_device(device))
+                            .map(|(index, device)| GpuCandidate {
+                                index,
+                                key: transcribe_device_key(device),
+                                label: transcribe_device_label(device),
+                                rank: transcribe_device_rank(device),
+                            })
+                            .collect();
+                        let probe = vulkan_probe::probe_gpu_device_names();
+                        if probe.is_none() {
+                            debug!("GPU device probe unavailable; using ggml automatic selection");
+                        }
+                        build_load_plan(
+                            settings.transcribe_accelerator,
+                            transcribe_gpu_disabled_for_host(),
+                            probe.as_deref(),
+                            &gpu_candidates,
                             settings.transcribe_gpu_device.as_deref(),
-                        );
-                        // Backend::Auto accepts an exact GPU device. Without a
-                        // valid exact device, backend selection handles the
-                        // retired generic GPU state and host CPU guard.
-                        let backend = if device.is_some() {
-                            Backend::Auto
-                        } else {
-                            select_transcribe_backend(accelerator)
-                        };
-                        (backend, device)
+                            self.gpu_cooldown_active(),
+                            &self.failed_gpu_keys.lock().unwrap(),
+                        )
+                        .into_iter()
+                        .map(|(backend, index)| (backend, index.map(|i| gpu_registry[i].clone())))
+                        .collect()
                     }
                 };
-                let requested_device = device
-                    .as_ref()
-                    .map(transcribe_device_label)
-                    .unwrap_or_else(|| "automatic".to_string());
-                let model_options = ModelOptions { backend, device };
-                let model = Model::load_with(&model_path, &model_options).map_err(|e| {
-                    let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
-                    emit_loading_failed(&error_msg);
-                    anyhow::anyhow!(error_msg)
-                })?;
+
+                // Try the plan in order. A failed GPU-bound attempt starts the
+                // retry cooldown and falls through to the next device (finally
+                // the CPU); the last error is surfaced if nothing loads.
+                let mut loaded = None;
+                let mut last_error: Option<anyhow::Error> = None;
+                let mut loaded_with = (Backend::Auto, "automatic".to_string());
+                for (backend, device) in load_plan {
+                    let is_gpu_attempt = device.is_some();
+                    let requested_device = device
+                        .as_ref()
+                        .map(transcribe_device_label)
+                        .unwrap_or_else(|| "automatic".to_string());
+                    match Model::load_with(&model_path, &ModelOptions { backend, device }) {
+                        Ok(model) => {
+                            loaded_with = (backend, requested_device);
+                            loaded = Some(model);
+                            break;
+                        }
+                        Err(e) => {
+                            if is_gpu_attempt && last_error.is_none() {
+                                self.note_gpu_load_failure();
+                            }
+                            warn!(
+                                "Failed to load whisper model '{}' on '{}': {}",
+                                model_id, requested_device, e
+                            );
+                            last_error = Some(anyhow::Error::new(e));
+                        }
+                    }
+                }
+                let model = match loaded {
+                    Some(model) => model,
+                    None => {
+                        let error_msg = format!(
+                            "Failed to load whisper model {}: {}",
+                            model_id,
+                            last_error
+                                .unwrap_or_else(|| anyhow::anyhow!("no load attempt was made"))
+                        );
+                        emit_loading_failed(&error_msg);
+                        return Err(anyhow::anyhow!(error_msg));
+                    }
+                };
+                let (backend, requested_device) = loaded_with;
                 // The bound backend may differ from the request (e.g. CPU
                 // fallback under Auto); log what actually loaded.
                 let bound_backend = model.backend();
@@ -728,6 +1104,7 @@ impl TranscriptionManager {
                 event_type: "loading_completed".to_string(),
                 model_id: Some(model_id.to_string()),
                 model_name: Some(model_info.name.clone()),
+                device_name: None,
                 error: None,
             },
         );
@@ -749,8 +1126,22 @@ impl TranscriptionManager {
         }
 
         let reload_pending = self.reload_model_on_next_use.load(Ordering::Acquire);
+        let mut removed_device = false;
         if !reload_pending && self.is_model_loaded() {
-            return;
+            // Hot-plug check: if the loaded model is bound to a device that no
+            // longer exists, reload onto current hardware instead of keeping
+            // the stale binding.
+            if let Some(reason) = self.device_binding_stale() {
+                info!("Loaded model's device was removed; reloading onto current hardware");
+                if let Err(e) = self.unload_model() {
+                    warn!("Failed to unload stale-bound model: {}", e);
+                    return;
+                }
+                removed_device = reason == StaleDeviceBinding::Removed;
+                // Fall through to the reload below.
+            } else {
+                return;
+            }
         }
 
         *is_loading = true;
@@ -762,13 +1153,54 @@ impl TranscriptionManager {
                     .store(false, Ordering::Release);
             }
             let settings = get_settings(&self_clone.app_handle);
-            if let Err(e) = self_clone.load_model(&settings.selected_model) {
-                error!("Failed to load model: {}", e);
+            match self_clone.load_model(&settings.selected_model) {
+                Ok(()) if removed_device => {
+                    self_clone.emit_device_fallback_notification(&settings.selected_model);
+                }
+                Ok(()) => {}
+                Err(e) => error!("Failed to load model: {}", e),
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
             *is_loading = false;
             self_clone.loading_condvar.notify_all();
         });
+    }
+
+    /// Whether the loaded transcribe-cpp model's device binding no longer
+    /// matches current hardware: the bound device disappeared (laptop dGPU
+    /// powered off). Keep a working binding, including an explicit CPU or iGPU
+    /// choice, until a setting change or restart. CPU bindings return without
+    /// probing Vulkan. GPU bindings require a fresh probe; without one this
+    /// returns `None`, keeping the pre-hot-plug behavior.
+    fn device_binding_stale(&self) -> Option<StaleDeviceBinding> {
+        let bound = {
+            let engine = self.lock_engine();
+            let Some(LoadedEngine::TranscribeCpp(session)) = engine.as_ref() else {
+                return None;
+            };
+            match session.model().device() {
+                Ok(device) if is_transcribe_gpu_device(&device) => device,
+                _ => return None,
+            }
+        };
+
+        let Some(probed) = vulkan_probe::probe_gpu_device_names() else {
+            return None; // no fresh information; keep the current binding
+        };
+
+        if device_binding_removed(
+            is_transcribe_gpu_device(&bound),
+            &transcribe_device_label(&bound),
+            &probed,
+        ) {
+            info!(
+                "Bound GPU device '{}' is no longer present on the system",
+                transcribe_device_label(&bound)
+            );
+            return Some(StaleDeviceBinding::Removed);
+        }
+
+        None
     }
 
     pub fn get_current_model(&self) -> Option<String> {
@@ -955,8 +1387,14 @@ impl TranscriptionManager {
         // lives in a labeled block — when it exits, the borrow is released and
         // the engine can be moved into return_engine().
         let mut preview_script = PreviewScript::new(settings.chinese_script, &output_language);
-        let mut finalize_reply: Option<mpsc::Sender<Option<FinalizedStreamText>>> = None;
+        let mut finalize_reply: Option<mpsc::Sender<StreamFinalizeReply>> = None;
         let mut finalize_result: Option<Option<FinalizedStreamText>> = None;
+        // Set when the compute backend dies mid-stream (device removed, driver
+        // reset, …). Further work on the dead device is skipped — feeding (and
+        // even finalize) can abort the process in ggml otherwise — the dead
+        // engine is dropped, and the model reloads on the best device so the
+        // batch fallback below still produces text.
+        let mut gpu_backend_failed = false;
         let stream_started = 'stream: {
             let session = match &mut engine {
                 LoadedEngine::TranscribeCpp(s) => s,
@@ -967,13 +1405,24 @@ impl TranscriptionManager {
             // `Stream` borrows `session` mutably for its lifetime, so we can't
             // call `session.model()` once it exists.
             let backend = session.model().backend();
+            let bound_gpu_label = session
+                .model()
+                .device()
+                .ok()
+                .filter(is_transcribe_gpu_device)
+                .map(|device| transcribe_device_label(&device));
 
             // StreamOptions::default() uses CommitPolicy::Auto and lets the
             // family pick its own streaming strategy (no family-specific ext).
             let mut stream = match session.stream(&run_options, &StreamOptions::default()) {
                 Ok(s) => s,
                 Err(e) => {
-                    error!("Failed to begin stream: {}", e);
+                    if transcribe_cpp_failure_requires_recovery(&e, bound_gpu_label.as_deref()) {
+                        error!("Failed to begin stream (backend failure): {}", e);
+                        gpu_backend_failed = true;
+                    } else {
+                        error!("Failed to begin stream: {}", e);
+                    }
                     break 'stream false;
                 }
             };
@@ -989,6 +1438,10 @@ impl TranscriptionManager {
             while let Ok(cmd) = rx.recv() {
                 match cmd {
                     StreamCmd::Feed(pcm) => {
+                        if gpu_backend_failed {
+                            // Device is gone; drain frames without touching it.
+                            continue;
+                        }
                         self.touch_activity();
                         perf.record_feed(pcm.len());
                         let feed_start = Instant::now();
@@ -1015,48 +1468,73 @@ impl TranscriptionManager {
                             }
                             Err(e) => {
                                 perf.record_compute(feed_start.elapsed());
-                                warn!("stream feed failed: {}", e);
+                                if transcribe_cpp_failure_requires_recovery(
+                                    &e,
+                                    bound_gpu_label.as_deref(),
+                                ) {
+                                    error!(
+                                        "stream feed failed fatally ({}); abandoning live stream",
+                                        e
+                                    );
+                                    gpu_backend_failed = true;
+                                } else {
+                                    warn!("stream feed failed: {}", e);
+                                }
                             }
                         }
                     }
                     StreamCmd::Finalize(reply) => {
                         let finalize_start = Instant::now();
-                        let result = match stream.finalize() {
-                            // After finalize the committed prefix holds the full
-                            // text; display() = committed + tentative is the safe read.
-                            Ok(update) => {
-                                perf.record_compute(finalize_start.elapsed());
-                                perf.record_update(
-                                    update.revision,
-                                    update.input_received_ms,
-                                    update.audio_committed_ms,
-                                    update.buffered_ms,
-                                );
-                                // In auto mode the model's own LID is the best
-                                // remaining evidence; the snapshot is only
-                                // materialized when it can change the outcome.
-                                let output_language = match &output_language {
-                                    OutputLanguageEvidence::Unknown => {
-                                        with_model_detected_language(
-                                            OutputLanguageEvidence::Unknown,
-                                            stream.snapshot().language,
-                                        )
+                        // With a dead backend there is nothing to finalize;
+                        // report "no stream text" so the caller falls back to
+                        // batch transcription on a recovered engine.
+                        let result = if gpu_backend_failed {
+                            perf.record_compute(finalize_start.elapsed());
+                            None
+                        } else {
+                            match stream.finalize() {
+                                // After finalize the committed prefix holds the full
+                                // text; display() = committed + tentative is the safe read.
+                                Ok(update) => {
+                                    perf.record_compute(finalize_start.elapsed());
+                                    perf.record_update(
+                                        update.revision,
+                                        update.input_received_ms,
+                                        update.audio_committed_ms,
+                                        update.buffered_ms,
+                                    );
+                                    // In auto mode the model's own LID is the best
+                                    // remaining evidence; the snapshot is only
+                                    // materialized when it can change the outcome.
+                                    let output_language = match &output_language {
+                                        OutputLanguageEvidence::Unknown => {
+                                            with_model_detected_language(
+                                                OutputLanguageEvidence::Unknown,
+                                                stream.snapshot().language,
+                                            )
+                                        }
+                                        resolved => resolved.clone(),
+                                    };
+                                    Some(FinalizedStreamText {
+                                        text: stream.text().full,
+                                        output_language,
+                                        supported_languages: languages.clone(),
+                                    })
+                                }
+                                Err(e) => {
+                                    perf.record_compute(finalize_start.elapsed());
+                                    if transcribe_cpp_failure_requires_recovery(
+                                        &e,
+                                        bound_gpu_label.as_deref(),
+                                    ) {
+                                        gpu_backend_failed = true;
                                     }
-                                    resolved => resolved.clone(),
-                                };
-                                Some(FinalizedStreamText {
-                                    text: stream.text().full,
-                                    output_language,
-                                    supported_languages: languages.clone(),
-                                })
-                            }
-                            Err(e) => {
-                                perf.record_compute(finalize_start.elapsed());
-                                error!(
-                                    "stream finalize failed: {}; falling back to batch transcription",
-                                    e
-                                );
-                                None
+                                    error!(
+                                        "stream finalize failed: {}; falling back to batch transcription",
+                                        e
+                                    );
+                                    None
+                                }
                             }
                         };
                         let chars = match &result {
@@ -1069,7 +1547,9 @@ impl TranscriptionManager {
                         break;
                     }
                     StreamCmd::Cancel => {
-                        stream.reset();
+                        if !gpu_backend_failed {
+                            stream.reset();
+                        }
                         break;
                     }
                 }
@@ -1083,18 +1563,49 @@ impl TranscriptionManager {
             // Stream never began (model doesn't support streaming or begin
             // failed); drain so the finalize handshake still completes and the
             // caller falls back to batch transcription. Return the engine first
-            // so the fallback can immediately use it.
-            self.return_engine(engine, &model_id);
-            drain_until_finalize(rx);
+            // so the fallback can immediately use it — unless the backend
+            // failed, in which case the dead engine is dropped and recovered
+            // onto the best available device instead.
+            if gpu_backend_failed {
+                let failed_gpu_key = loaded_engine_gpu_key(&engine);
+                self.note_failed_compute_device(failed_gpu_key.as_deref());
+                drop(engine);
+                drop(_worker);
+                drain_until_finalize_with_reply(
+                    rx,
+                    StreamFinalizeReply::NeedsRecovery {
+                        model_id,
+                        failed_gpu_key,
+                    },
+                );
+            } else {
+                self.return_engine(engine, &model_id);
+                drop(_worker);
+                drain_until_finalize(rx);
+            }
             return;
         }
 
-        self.return_engine(engine, &model_id);
-        if let (Some(reply), Some(result)) = (finalize_reply, finalize_result) {
+        let result = if gpu_backend_failed {
+            // Drop the engine bound to the dead device (do not return it to
+            // the pool) before reloading on the best available device.
+            // The caller recovers outside the timed finalize handshake.
+            let failed_gpu_key = loaded_engine_gpu_key(&engine);
+            self.note_failed_compute_device(failed_gpu_key.as_deref());
+            drop(engine);
+            StreamFinalizeReply::NeedsRecovery {
+                model_id,
+                failed_gpu_key,
+            }
+        } else {
+            self.return_engine(engine, &model_id);
+            StreamFinalizeReply::Finished(finalize_result.flatten())
+        };
+        // Release the lease before waking a caller that may start batch work.
+        drop(_worker);
+        if let Some(reply) = finalize_reply {
             let _ = reply.send(result);
         }
-        // `_worker` drops here, clearing this worker's active/lease flags after
-        // the engine has been returned to the pool.
     }
 
     /// Return the leased engine to the mutex, unless the model was switched or
@@ -1127,16 +1638,16 @@ impl TranscriptionManager {
         if tx.send(StreamCmd::Finalize(reply_tx)).is_err() {
             return Ok(None);
         }
-        let finalized = match reply_rx.recv_timeout(STREAM_FINALIZE_REPLY_TIMEOUT) {
+        let finalized = match receive_stream_finalization(
+            reply_rx,
+            STREAM_FINALIZE_REPLY_TIMEOUT,
+            |model_id, failed_gpu_key| self.recover_backend_failure(model_id, failed_gpu_key),
+        ) {
             Ok(Some(finalized)) => finalized,
             Ok(None) => return Ok(None),
-            Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(None),
-            Err(mpsc::RecvTimeoutError::Timeout) => {
+            Err(error) => {
                 self.stream_active.store(false, Ordering::Release);
-                return Err(anyhow::anyhow!(
-                    "Timed out waiting {:?} for live transcription to finalize",
-                    STREAM_FINALIZE_REPLY_TIMEOUT
-                ));
+                return Err(error);
             }
         };
 
@@ -1180,7 +1691,30 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
+    /// Run batch transcription, recovering automatically if the GPU compute
+    /// backend dies mid-run (e.g. ggml-vulkan device loss after a Windows
+    /// driver reset/TDR on some AMD iGPUs). On such a failure the
+    /// dead engine is dropped, the model reloads on the best available device,
+    /// and the audio is transcribed once more so the current utterance is not
+    /// lost. Failed GPU loads start the temporary GPU retry cooldown.
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        match self.transcribe_inner(audio.clone()) {
+            Err(e) if is_gpu_backend_failure_error(&e) => {
+                let model_id = self.get_current_model().unwrap_or_default();
+                let failed_gpu_key = e
+                    .downcast_ref::<FailedGpuDeviceKey>()
+                    .map(|key| key.0.clone());
+                if self.recover_backend_failure(&model_id, failed_gpu_key) {
+                    self.transcribe_inner(audio)
+                } else {
+                    Err(e)
+                }
+            }
+            other => other,
+        }
+    }
+
+    fn transcribe_inner(&self, audio: Vec<f32>) -> Result<String> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -1289,8 +1823,14 @@ impl TranscriptionManager {
             let mut output_was_translated = false;
             let mut applied_language_hint: Option<String> = None;
             let mut model_detected_language: Option<String> = None;
+            let mut bound_gpu_label = None;
             if let LoadedEngine::TranscribeCpp(session) = &engine {
                 let model = session.model();
+                bound_gpu_label = model
+                    .device()
+                    .ok()
+                    .filter(is_transcribe_gpu_device)
+                    .map(|device| transcribe_device_label(&device));
                 let caps = model.capabilities();
                 model_takes_initial_prompt = model.supports(Feature::InitialPrompt);
                 model_is_whisper = model.arch() == "whisper";
@@ -1355,8 +1895,24 @@ impl TranscriptionManager {
                                 model_detected_language = t.language;
                                 t.text
                             })
+                            // Preserve the typed error so GPU backend failures
+                            // (Error::Backend, e.g. Vulkan device loss) can be
+                            // detected and recovered from by `transcribe`.
                             .map_err(|e| {
-                                anyhow::anyhow!("transcribe-cpp transcription failed: {}", e)
+                                let removed_gpu = !is_transcribe_cpp_backend_failure(&e)
+                                    && transcribe_cpp_failure_requires_recovery(
+                                        &e,
+                                        bound_gpu_label.as_deref(),
+                                    );
+                                let error = anyhow::Error::new(e);
+                                let error = if removed_gpu {
+                                    error.context(RemovedGpuDevice(
+                                        bound_gpu_label.clone().unwrap_or_default(),
+                                    ))
+                                } else {
+                                    error
+                                };
+                                error.context("transcribe-cpp transcription failed")
                             })
                     }
                     LoadedEngine::Parakeet(parakeet_engine) => {
@@ -1440,10 +1996,23 @@ impl TranscriptionManager {
             }));
 
             let text = match transcribe_result {
-                Ok(inner_result) => {
-                    // Success or normal error: return the engine unless a model
-                    // switch/unload invalidated it while it was in use.
-                    self.return_engine(engine, &active_model);
+                Ok(mut inner_result) => {
+                    // A backend failure invalidates the native context, including
+                    // on the final retry. Never return that engine to the pool.
+                    if inner_result
+                        .as_ref()
+                        .is_err_and(is_gpu_backend_failure_error)
+                    {
+                        let failed_gpu_key = loaded_engine_gpu_key(&engine);
+                        self.note_failed_compute_device(failed_gpu_key.as_deref());
+                        if let Some(key) = failed_gpu_key {
+                            inner_result = inner_result
+                                .map_err(|error| error.context(FailedGpuDeviceKey(key)));
+                        }
+                        drop(engine);
+                    } else {
+                        self.return_engine(engine, &active_model);
+                    }
                     inner_result?
                 }
                 Err(panic_payload) => {
@@ -1470,6 +2039,7 @@ impl TranscriptionManager {
                             event_type: "unloaded".to_string(),
                             model_id: None,
                             model_name: None,
+                            device_name: None,
                             error: Some(format!("Engine panicked: {}", panic_msg)),
                         },
                     );
@@ -1939,15 +2509,49 @@ fn cpp_translation_task(
 /// loaded / not streaming-capable) so the finalize handshake still completes
 /// and the caller falls back to batch transcription.
 fn drain_until_finalize(rx: mpsc::Receiver<StreamCmd>) {
+    drain_until_finalize_with_reply(rx, StreamFinalizeReply::Finished(None));
+}
+
+fn drain_until_finalize_with_reply(rx: mpsc::Receiver<StreamCmd>, result: StreamFinalizeReply) {
     while let Ok(cmd) = rx.recv() {
         match cmd {
             StreamCmd::Feed(_) => {}
             StreamCmd::Finalize(reply) => {
-                let _ = reply.send(None);
+                let _ = reply.send(result);
                 break;
             }
             StreamCmd::Cancel => break,
         }
+    }
+}
+
+/// Only the worker handshake is timed. Recovery starts after the failed engine
+/// and its lease have been released, so a slow fallback load cannot consume
+/// the finalize deadline and prevent the recorded utterance's batch retry.
+fn receive_stream_finalization(
+    rx: mpsc::Receiver<StreamFinalizeReply>,
+    timeout: Duration,
+    recover: impl FnOnce(&str, Option<String>) -> bool,
+) -> Result<Option<FinalizedStreamText>> {
+    match rx.recv_timeout(timeout) {
+        Ok(StreamFinalizeReply::Finished(result)) => Ok(result),
+        Ok(StreamFinalizeReply::NeedsRecovery {
+            model_id,
+            failed_gpu_key,
+        }) => {
+            if recover(&model_id, failed_gpu_key) {
+                Ok(None)
+            } else {
+                Err(anyhow::anyhow!(
+                    "Failed to recover transcription after a GPU failure"
+                ))
+            }
+        }
+        Err(mpsc::RecvTimeoutError::Disconnected) => Ok(None),
+        Err(mpsc::RecvTimeoutError::Timeout) => Err(anyhow::anyhow!(
+            "Timed out waiting {:?} for live transcription to finalize",
+            timeout
+        )),
     }
 }
 
@@ -2044,51 +2648,12 @@ fn resolve_device_index(index: usize) -> Result<(Backend, Option<transcribe_cpp:
     Ok((Backend::Auto, Some(device)))
 }
 
-/// Map Handy's whisper accelerator setting to a transcribe-cpp [`Backend`].
-///
-/// `Auto` lets the library pick the best device (with CPU fallback), while
-/// `Cpu` forces strict CPU. `Gpu` only remains as the companion setting for an
-/// exact device; without a valid exact device it has the retired generic GPU
-/// state's new Auto semantics. An emulated x64 process on Windows ARM64 forces
-/// strict CPU for every setting.
-fn select_transcribe_backend(setting: TranscribeAcceleratorSetting) -> Backend {
-    select_transcribe_backend_for_host(setting, transcribe_gpu_disabled_for_host())
-}
-
-fn select_transcribe_backend_for_host(
-    setting: TranscribeAcceleratorSetting,
-    gpu_disabled: bool,
-) -> Backend {
-    match effective_transcribe_accelerator(setting, gpu_disabled) {
-        TranscribeAcceleratorSetting::Cpu => Backend::Cpu,
-        TranscribeAcceleratorSetting::Auto | TranscribeAcceleratorSetting::Gpu => Backend::Auto,
-    }
-}
-
 /// Resolve the user's persisted GPU identity to a fresh opaque 0.2 device
 /// handle. Registry indices and handles are process-local, so settings store a
 /// key based on the backend's stable `device_id` (falling back to name for
-/// backends such as Metal that do not report one).
-fn resolve_gpu_device(
-    setting: TranscribeAcceleratorSetting,
-    gpu_device: Option<&str>,
-) -> Option<transcribe_cpp::Device> {
-    if transcribe_gpu_disabled_for_host() || setting != TranscribeAcceleratorSetting::Gpu {
-        return None;
-    }
-    let gpu_device = gpu_device?;
-    let resolved = transcribe_compute_devices().into_iter().find(|device| {
-        is_transcribe_gpu_device(device) && transcribe_device_key(device) == gpu_device
-    });
-    if resolved.is_none() {
-        warn!(
-            "Stored transcribe GPU device '{}' is no longer available; using automatic device selection",
-            gpu_device
-        );
-    }
-    resolved
-}
-
+/// backends such as Metal that do not report one). The hot-plug load plan
+/// (`build_load_plan`) orders candidates and prefers this stored device when
+/// it is still present.
 fn transcribe_device_key(device: &transcribe_cpp::Device) -> String {
     let (identity_kind, identity) = match device.device_id.as_deref() {
         Some(device_id) => ("id", device_id),
@@ -2110,8 +2675,9 @@ fn transcribe_device_label(device: &transcribe_cpp::Device) -> String {
 /// Called on startup and before loading a model.
 ///
 /// The transcribe.cpp (whisper-family) backend is no longer set here: it is
-/// chosen at model-load time from [`select_transcribe_backend`], so changing the
-/// accelerator only needs a model reload (see `reload_model_on_next_use`).
+/// chosen at model-load time against the devices that currently exist (see
+/// `build_load_plan`), so changing the accelerator only needs a model reload
+/// (see `reload_model_on_next_use`).
 pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
     use transcribe_rs::accel;
 
@@ -2144,17 +2710,6 @@ static GPU_DEVICES: OnceLock<Vec<GpuDeviceOption>> = OnceLock::new();
 
 fn transcribe_gpu_disabled_for_host() -> bool {
     crate::utils::is_windows_x64_emulated_on_arm64()
-}
-
-fn effective_transcribe_accelerator(
-    setting: TranscribeAcceleratorSetting,
-    gpu_disabled: bool,
-) -> TranscribeAcceleratorSetting {
-    if gpu_disabled {
-        TranscribeAcceleratorSetting::Cpu
-    } else {
-        setting
-    }
 }
 
 fn is_transcribe_gpu_device(device: &transcribe_cpp::Device) -> bool {
@@ -2241,29 +2796,110 @@ mod tests {
     }
 
     #[test]
-    fn normal_hosts_preserve_every_transcribe_accelerator_setting() {
-        for setting in [
-            TranscribeAcceleratorSetting::Auto,
-            TranscribeAcceleratorSetting::Cpu,
-            TranscribeAcceleratorSetting::Gpu,
+    fn backend_recovery_excludes_allocation_and_request_errors() {
+        assert!(is_transcribe_cpp_backend_failure(
+            &transcribe_cpp::Error::Backend("device lost".to_string())
+        ));
+        for error in [
+            transcribe_cpp::Error::OutOfMemory("allocation failed".to_string()),
+            transcribe_cpp::Error::InvalidArgument("invalid request".to_string()),
+            transcribe_cpp::Error::Unsupported("unsupported language".to_string()),
+            transcribe_cpp::Error::ModelLoad("invalid model".to_string()),
         ] {
-            assert_eq!(effective_transcribe_accelerator(setting, false), setting);
+            assert!(!is_transcribe_cpp_backend_failure(&error), "{error}");
         }
+    }
+
+    #[test]
+    fn batch_backend_failure_survives_error_context() {
+        let error = anyhow::Error::new(transcribe_cpp::Error::Backend("device lost".to_string()))
+            .context(FailedGpuDeviceKey("vulkan:rtx".to_string()))
+            .context("transcribe-cpp transcription failed")
+            .context("history retranscription");
+        assert!(is_gpu_backend_failure_error(&error));
+        assert_eq!(
+            error.downcast_ref::<FailedGpuDeviceKey>().unwrap().0,
+            "vulkan:rtx"
+        );
+        assert!(matches!(
+            error.downcast_ref::<transcribe_cpp::Error>(),
+            Some(transcribe_cpp::Error::Backend(_))
+        ));
+        assert!(!is_gpu_backend_failure_error(&anyhow::anyhow!(
+            "backend error: device lost"
+        )));
+    }
+
+    #[test]
+    fn allocation_recovery_requires_confirmed_removal_of_the_bound_gpu() {
+        let error = transcribe_cpp::Error::OutOfMemory("graph allocation failed".to_string());
+        let present = vec!["RTX".to_string(), "Radeon".to_string()];
+        let removed = vec!["Radeon".to_string()];
+        assert!(allocation_failed_on_removed_gpu(
+            &error,
+            Some("RTX"),
+            Some(&removed)
+        ));
+        assert!(!allocation_failed_on_removed_gpu(
+            &error,
+            Some("RTX"),
+            Some(&present)
+        ));
+        assert!(!allocation_failed_on_removed_gpu(&error, Some("RTX"), None));
+        assert!(!allocation_failed_on_removed_gpu(
+            &error,
+            None,
+            Some(&removed)
+        ));
+        assert!(!allocation_failed_on_removed_gpu(
+            &transcribe_cpp::Error::InvalidArgument("bad request".to_string()),
+            Some("RTX"),
+            Some(&removed)
+        ));
+    }
+
+    #[test]
+    fn removed_gpu_evidence_preserves_the_original_allocation_error() {
+        let error = anyhow::Error::new(transcribe_cpp::Error::OutOfMemory(
+            "graph allocation failed".to_string(),
+        ))
+        .context(RemovedGpuDevice("RTX".to_string()))
+        .context("transcribe-cpp transcription failed");
+        assert!(is_gpu_backend_failure_error(&error));
+        assert!(matches!(
+            error.downcast_ref::<transcribe_cpp::Error>(),
+            Some(transcribe_cpp::Error::OutOfMemory(_))
+        ));
+    }
+
+    #[test]
+    fn normal_hosts_preserve_every_transcribe_accelerator_setting() {
         assert_eq!(
             available_transcribe_accelerators(false),
             ["auto", "cpu", "gpu"]
         );
+        // Without a probe result the pre-hot-plug behavior is preserved:
+        // Auto/Gpu defer to ggml's automatic selection, Cpu is strict.
+        for (setting, expected) in [
+            (TranscribeAcceleratorSetting::Auto, Backend::Auto),
+            (TranscribeAcceleratorSetting::Gpu, Backend::Auto),
+        ] {
+            assert_eq!(
+                build_load_plan(setting, false, None, &[], None, false, &[]),
+                vec![(expected, None)]
+            );
+        }
         assert_eq!(
-            select_transcribe_backend_for_host(TranscribeAcceleratorSetting::Auto, false),
-            Backend::Auto
-        );
-        assert_eq!(
-            select_transcribe_backend_for_host(TranscribeAcceleratorSetting::Cpu, false),
-            Backend::Cpu
-        );
-        assert_eq!(
-            select_transcribe_backend_for_host(TranscribeAcceleratorSetting::Gpu, false),
-            Backend::Auto
+            build_load_plan(
+                TranscribeAcceleratorSetting::Cpu,
+                false,
+                None,
+                &[],
+                None,
+                false,
+                &[]
+            ),
+            vec![(Backend::Cpu, None)]
         );
         for kind in ["cpu", "accel", "metal", "cuda", "vulkan", "gpu"] {
             assert!(transcribe_device_allowed(kind, false));
@@ -2278,12 +2914,8 @@ mod tests {
             TranscribeAcceleratorSetting::Gpu,
         ] {
             assert_eq!(
-                effective_transcribe_accelerator(setting, true),
-                TranscribeAcceleratorSetting::Cpu
-            );
-            assert_eq!(
-                select_transcribe_backend_for_host(setting, true),
-                Backend::Cpu
+                build_load_plan(setting, true, None, &[], None, false, &[]),
+                vec![(Backend::Cpu, None)]
             );
         }
         assert_eq!(available_transcribe_accelerators(true), ["cpu"]);
@@ -2292,6 +2924,233 @@ mod tests {
         for kind in ["metal", "cuda", "vulkan", "gpu", "unknown"] {
             assert!(!transcribe_device_allowed(kind, true));
         }
+    }
+
+    fn gpu_candidate(index: usize, label: &str, rank: u8) -> GpuCandidate {
+        GpuCandidate {
+            index,
+            key: format!("key-{label}"),
+            label: label.to_string(),
+            rank,
+        }
+    }
+
+    #[test]
+    fn load_plan_orders_probed_gpus_and_falls_back_to_cpu() {
+        let candidates = vec![
+            gpu_candidate(0, "AMD Radeon(TM) Graphics", 1),
+            gpu_candidate(1, "NVIDIA GeForce RTX 3060", 2),
+        ];
+        let probed = vec![
+            "AMD Radeon(TM) Graphics".to_string(),
+            "NVIDIA GeForce RTX 3060".to_string(),
+        ];
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Auto,
+                false,
+                Some(&probed),
+                &candidates,
+                None,
+                false,
+                &[]
+            ),
+            vec![
+                (Backend::Auto, Some(1)),
+                (Backend::Auto, Some(0)),
+                (Backend::Cpu, None)
+            ]
+        );
+    }
+
+    #[test]
+    fn load_plan_skips_devices_missing_from_probe() {
+        // dGPU powered off: the registry still lists it, the probe doesn't
+        // see it, so the plan binds the iGPU and keeps a CPU terminal entry.
+        let candidates = vec![
+            gpu_candidate(0, "NVIDIA GeForce RTX 3060", 2),
+            gpu_candidate(1, "AMD Radeon(TM) Graphics", 1),
+        ];
+        let probed = vec!["AMD Radeon(TM) Graphics".to_string()];
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Auto,
+                false,
+                Some(&probed),
+                &candidates,
+                None,
+                false,
+                &[]
+            ),
+            vec![(Backend::Auto, Some(1)), (Backend::Cpu, None)]
+        );
+    }
+
+    #[test]
+    fn load_plan_prefers_stored_device_and_respects_cooldown() {
+        let candidates = vec![
+            gpu_candidate(1, "AMD Radeon(TM) Graphics", 1),
+            gpu_candidate(0, "NVIDIA GeForce RTX 3060", 2),
+        ];
+        let probed = vec![
+            "AMD Radeon(TM) Graphics".to_string(),
+            "NVIDIA GeForce RTX 3060".to_string(),
+        ];
+        let plan = build_load_plan(
+            TranscribeAcceleratorSetting::Gpu,
+            false,
+            Some(&probed),
+            &candidates,
+            Some("key-NVIDIA GeForce RTX 3060"),
+            false,
+            &[],
+        );
+        assert_eq!(plan.first(), Some(&(Backend::Auto, Some(0))));
+
+        // While the retry cooldown is active, GPU attempts are skipped
+        // entirely and the plan is CPU-only.
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Auto,
+                false,
+                Some(&probed),
+                &candidates,
+                None,
+                true,
+                &[]
+            ),
+            vec![(Backend::Cpu, None)]
+        );
+    }
+
+    #[test]
+    fn load_plan_is_cpu_only_when_probe_sees_no_gpus() {
+        let candidates = vec![gpu_candidate(0, "NVIDIA GeForce RTX 3060", 2)];
+        let probed = vec!["AMD Radeon(TM) Graphics".to_string()];
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Auto,
+                false,
+                Some(&probed),
+                &candidates,
+                None,
+                false,
+                &[]
+            ),
+            vec![(Backend::Cpu, None)]
+        );
+    }
+
+    #[test]
+    fn explicit_igpu_preference_precedes_a_higher_ranked_gpu() {
+        let candidates = vec![gpu_candidate(0, "RTX", 2), gpu_candidate(1, "Radeon", 1)];
+        let probe = vec!["RTX".to_string(), "Radeon".to_string()];
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Gpu,
+                false,
+                Some(&probe),
+                &candidates,
+                Some("key-Radeon"),
+                false,
+                &[],
+            ),
+            vec![
+                (Backend::Auto, Some(1)),
+                (Backend::Auto, Some(0)),
+                (Backend::Cpu, None)
+            ]
+        );
+    }
+
+    #[test]
+    fn compute_failure_excludes_a_gpu_that_is_still_present() {
+        let candidates = vec![gpu_candidate(0, "RTX", 2), gpu_candidate(1, "Radeon", 1)];
+        let probe = vec!["RTX".to_string(), "Radeon".to_string()];
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Auto,
+                false,
+                Some(&probe),
+                &candidates,
+                Some("key-RTX"),
+                false,
+                &["key-RTX".to_string()],
+            ),
+            vec![(Backend::Auto, Some(1)), (Backend::Cpu, None)]
+        );
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Auto,
+                false,
+                Some(&probe),
+                &candidates,
+                None,
+                false,
+                &["key-RTX".to_string(), "key-Radeon".to_string()],
+            ),
+            vec![(Backend::Cpu, None)]
+        );
+        // Without a fresh probe, Auto could select the failed device again.
+        assert_eq!(
+            build_load_plan(
+                TranscribeAcceleratorSetting::Auto,
+                false,
+                None,
+                &candidates,
+                None,
+                false,
+                &["key-RTX".to_string()],
+            ),
+            vec![(Backend::Cpu, None)]
+        );
+    }
+
+    #[test]
+    fn working_cpu_and_igpu_bindings_stay_loaded_with_a_discrete_gpu_present() {
+        let probe = vec!["RTX".to_string(), "Radeon".to_string()];
+        assert!(!device_binding_removed(false, "CPU", &probe));
+        assert!(!device_binding_removed(true, "Radeon", &probe));
+        assert!(device_binding_removed(true, "Removed GPU", &probe));
+    }
+
+    #[test]
+    fn stream_recovery_runs_after_the_handshake_without_its_timeout() {
+        let (tx, rx) = mpsc::channel();
+        let active_worker = Arc::new(AtomicU64::new(1));
+        let lease = Arc::new(AtomicU64::new(1));
+        let guard = StreamWorkerGuard {
+            worker_id: 1,
+            active_stream_worker: active_worker.clone(),
+            active_engine_lease: lease.clone(),
+            stream_active: Arc::new(AtomicBool::new(true)),
+        };
+        drop(guard);
+        tx.send(StreamFinalizeReply::NeedsRecovery {
+            model_id: "test-model".to_string(),
+            failed_gpu_key: Some("key-Radeon".to_string()),
+        })
+        .unwrap();
+        let result = receive_stream_finalization(rx, Duration::from_millis(1), |model, key| {
+            assert_eq!(model, "test-model");
+            assert_eq!(key.as_deref(), Some("key-Radeon"));
+            assert_eq!(active_worker.load(Ordering::Acquire), 0);
+            assert_eq!(lease.load(Ordering::Acquire), 0);
+            thread::sleep(Duration::from_millis(10));
+            true
+        });
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn failed_stream_recovery_is_reported_instead_of_starting_batch_work() {
+        let (tx, rx) = mpsc::channel();
+        tx.send(StreamFinalizeReply::NeedsRecovery {
+            model_id: "test-model".to_string(),
+            failed_gpu_key: None,
+        })
+        .unwrap();
+        assert!(receive_stream_finalization(rx, Duration::from_secs(1), |_, _| false).is_err());
     }
 
     #[test]

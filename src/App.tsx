@@ -10,6 +10,11 @@ import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from "@tauri-apps/plugin-notification";
+import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
@@ -207,6 +212,33 @@ function App() {
             description: event.payload.error,
           },
         );
+      }
+      if (event.payload.event_type === "device_fallback") {
+        const device =
+          event.payload.device_name === "cpu"
+            ? t("errors.backupCpu")
+            : event.payload.device_name || t("errors.backupDevice");
+        void (async () => {
+          try {
+            let permissionGranted = await isPermissionGranted();
+            if (!permissionGranted) {
+              permissionGranted = (await requestPermission()) === "granted";
+            }
+            if (!permissionGranted) {
+              console.warn("System notifications are not permitted.");
+              return;
+            }
+            await sendNotification({
+              title: t("errors.deviceFallbackTitle"),
+              body: t("errors.deviceFallbackDescription", { device }),
+            });
+          } catch (error) {
+            console.error(
+              "Failed to show device fallback notification:",
+              error,
+            );
+          }
+        })();
       }
     });
     return () => {
