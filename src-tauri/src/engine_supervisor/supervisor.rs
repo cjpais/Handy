@@ -1165,8 +1165,13 @@ impl Worker {
         thread::Builder::new()
             .name("transcribe-worker-err".into())
             .spawn(move || {
-                for line in BufReader::new(stderr).lines() {
+                // Split on raw bytes: native code may write non-UTF-8 (e.g. a
+                // path in the Windows ANSI code page), and `lines()` would end
+                // the loop there, losing every later line, abort message included.
+                for line in BufReader::new(stderr).split(b'\n') {
                     let Ok(line) = line else { break };
+                    let line = String::from_utf8_lossy(&line);
+                    let line = line.strip_suffix('\r').unwrap_or(&line).to_string();
                     forward_worker_log(&line);
                     let mut tail = lock(&tail);
                     if tail.len() == STDERR_TAIL_LINES {

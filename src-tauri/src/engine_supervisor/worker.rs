@@ -30,6 +30,9 @@ struct Incoming {
 }
 
 pub fn run() -> i32 {
+    // The worker owns the per-run engine scratch, so it needs the same glibc
+    // tuning as the app (#1792). Before anything allocates.
+    crate::memory::init_allocator();
     #[cfg(unix)]
     ignore_app_signals();
     #[cfg(target_os = "linux")]
@@ -79,6 +82,7 @@ pub fn run() -> i32 {
     let mut session: Option<(Session, LoadedInfo)> = None;
 
     while let Ok(Incoming { request, pcm }) = requests.recv() {
+        let finished_run = matches!(request, Request::Run { .. });
         let response = match request {
             Request::Hello { list_devices } => match &init_error {
                 Some(message) => Response::Error(message.clone()),
@@ -129,6 +133,7 @@ pub fn run() -> i32 {
                             error!("Protocol write failed during stream: {}", e);
                             return 1;
                         }
+                        crate::memory::trim_freed_memory();
                         continue;
                     }
                     Err(e) => Response::Error(e.to_string()),
@@ -142,6 +147,11 @@ pub fn run() -> i32 {
         if let Err(e) = write_message(&mut output, &response, None) {
             error!("Protocol write failed: {}", e);
             return 1;
+        }
+        // After the reply, so it never delays the transcript.
+        if finished_run {
+            drop(pcm);
+            crate::memory::trim_freed_memory();
         }
     }
     // Unreachable in practice: the reader exits the process on EOF.
