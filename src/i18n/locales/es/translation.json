@@ -513,6 +513,10 @@
         "title": "Umbral de corrección de palabras",
         "description": "Sensibilidad para correcciones de palabras personalizadas"
       },
+      "keepCancelledRecordings": {
+        "title": "Conservar grabaciones canceladas",
+        "description": "Guarda las grabaciones canceladas en el historial sin pegarlas. Desactívalo para descartarlas."
+      },
       "historyLimit": {
         "title": "Límite de historial",
         "description": "Número máximo de entradas de historial a conservar",

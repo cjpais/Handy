@@ -513,6 +513,10 @@
         "title": "Wortkorrektur-Schwelle",
         "description": "Empfindlichkeit für benutzerdefinierte Wortkorrekturen"
       },
+      "keepCancelledRecordings": {
+        "title": "Abgebrochene Aufnahmen behalten",
+        "description": "Speichert abgebrochene Aufnahmen im Verlauf, ohne sie einzufügen. Deaktivieren, um sie zu verwerfen."
+      },
       "historyLimit": {
         "title": "Verlaufslimit",
         "description": "Maximale Anzahl der Verlaufseinträge",

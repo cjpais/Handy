@@ -1374,6 +1374,18 @@ pub fn change_filler_word_removal_enabled_setting(
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_keep_cancelled_recordings_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.keep_cancelled_recordings = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_chinese_script_setting(app: AppHandle, script: ChineseScript) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.chinese_script = script;

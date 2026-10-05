@@ -513,6 +513,10 @@
         "title": "Soglia di Correzione Parole",
         "description": "Sensibilità per la correzione delle parole personalizzate"
       },
+      "keepCancelledRecordings": {
+        "title": "Conserva registrazioni annullate",
+        "description": "Salva le registrazioni annullate nella cronologia senza incollarle. Disattiva per scartarle."
+      },
       "historyLimit": {
         "title": "Limite della Cronologia",
         "description": "Massimo numero di elementi da conservare nella cronologia",

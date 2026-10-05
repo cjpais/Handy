@@ -527,6 +527,10 @@
         "title": "Word Correction Threshold",
         "description": "Sensitivity for custom word corrections"
       },
+      "keepCancelledRecordings": {
+        "title": "Keep Cancelled Recordings",
+        "description": "Save cancelled recordings to history without pasting them. Turn off to discard them."
+      },
       "historyLimit": {
         "title": "History Limit",
         "description": "Maximum number of history entries to keep",

@@ -527,6 +527,10 @@
         "title": "Drempelwaarde woordcorrectie",
         "description": "Gevoeligheid voor eigen woordcorrecties"
       },
+      "keepCancelledRecordings": {
+        "title": "Geannuleerde opnames bewaren",
+        "description": "Slaat geannuleerde opnames op in de geschiedenis zonder ze te plakken. Schakel dit uit om ze te verwijderen."
+      },
       "historyLimit": {
         "title": "Geschiedenislimiet",
         "description": "Maximum aantal te bewaren geschiedenisitems",

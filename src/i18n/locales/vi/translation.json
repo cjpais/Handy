@@ -513,6 +513,10 @@
         "title": "Ngưỡng sửa từ",
         "description": "Độ nhạy cho việc sửa từ tùy chỉnh"
       },
+      "keepCancelledRecordings": {
+        "title": "Giữ bản ghi âm đã hủy",
+        "description": "Lưu bản ghi âm đã hủy vào lịch sử mà không dán. Tắt để loại bỏ chúng."
+      },
       "historyLimit": {
         "title": "Giới hạn lịch sử",
         "description": "Số lượng mục lịch sử tối đa cần giữ",

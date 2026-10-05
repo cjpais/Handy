@@ -513,6 +513,10 @@
         "title": "Limite de Correção de Palavras",
         "description": "Sensibilidade para correções de palavras personalizadas"
       },
+      "keepCancelledRecordings": {
+        "title": "Manter Gravações Canceladas",
+        "description": "Salva gravações canceladas no histórico sem colá-las. Desative para descartá-las."
+      },
       "historyLimit": {
         "title": "Limite de Histórico",
         "description": "Número máximo de entradas de histórico a manter",

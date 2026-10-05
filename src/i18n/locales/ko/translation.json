@@ -513,6 +513,10 @@
         "title": "단어 수정 임계값",
         "description": "사용자 정의 단어 수정의 민감도"
       },
+      "keepCancelledRecordings": {
+        "title": "취소된 녹음 보관",
+        "description": "취소된 녹음을 붙여넣지 않고 히스토리에 저장합니다. 삭제하려면 이 옵션을 끄세요."
+      },
       "historyLimit": {
         "title": "히스토리 제한",
         "description": "보관할 최대 히스토리 항목 수",

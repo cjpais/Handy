@@ -513,6 +513,10 @@
         "title": "Próg korekty słów",
         "description": "Czułość dla własnych korekt słów"
       },
+      "keepCancelledRecordings": {
+        "title": "Zachowuj anulowane nagrania",
+        "description": "Zapisuje anulowane nagrania w historii bez ich wklejania. Wyłącz, aby je odrzucać."
+      },
       "historyLimit": {
         "title": "Limit historii",
         "description": "Maksymalna liczba wpisów w historii",
