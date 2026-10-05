@@ -82,7 +82,7 @@ sudo apt install wl-clipboard
 - **Clipboard (Ctrl+V)** and **Clipboard (Ctrl+Shift+V)** press the key at the QWERTY `V` position. On layouts where this key is not `v`, such as bépo or Dvorak, the application gets another shortcut and nothing is pasted.
 - **Clipboard (Shift+Insert)** works on any layout, but fails while a modifier of your shortcut is still held (for example Ctrl with `Ctrl+Space`).
 
-To paste with `Ctrl+V` on any layout, use an external script that presses the key that types `v` on your layout. Find the QWERTY key at the same position as `v` on your layout, and its code in `/usr/include/linux/input-event-codes.h`. For example, on bépo `v` is on the QWERTY `U` key (`KEY_U`, 22), and on Dvorak it is on the QWERTY `.` key (`KEY_DOT`, 52).
+The recommended method is an external script that presses Ctrl and the key that types `v` on your layout. It works better than the built-in methods: apps get a real `Ctrl+V`, and a modifier still held from your shortcut does not break it, since the script presses Ctrl itself. Find the QWERTY key at the same position as `v` on your layout, and its code in `/usr/include/linux/input-event-codes.h`. For example, on bépo `v` is on the QWERTY `U` key (`KEY_U`, 22), and on Dvorak it is on the QWERTY `.` key (`KEY_DOT`, 52).
 
 Create `~/.local/bin/handy-paste`, here for bépo:
 
