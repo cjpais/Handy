@@ -2059,6 +2059,11 @@ mod tests {
             thread::spawn(move || engine.transcribe(pcm, RunOptions::default()))
         };
         wait_in_flight(&engine, "transcription");
+        // Cancel only once the worker is actually hung, not on its way there.
+        let marker = std::env::temp_dir().join("handy-worker-fault-once");
+        while !marker.exists() {
+            thread::sleep(Duration::from_millis(1));
+        }
         let t = Instant::now();
         engine.cancel();
         let result = run.join().unwrap();
