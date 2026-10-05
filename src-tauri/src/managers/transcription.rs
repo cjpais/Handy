@@ -4,7 +4,8 @@ use crate::audio_toolkit::{
 };
 use crate::chinese_script::{convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
-    DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, StreamProgress, Unloading,
+    DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
+    StreamProgress, Unloading,
 };
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
@@ -456,6 +457,13 @@ impl TranscriptionManager {
         Ok(())
     }
 
+    /// Unload the model without waiting for the transcribe-cpp worker to
+    /// exit, so it never blocks the caller (e.g. the event loop) behind a
+    /// transcription in progress. The model reads as unloaded at once.
+    pub fn request_unload(&self) {
+        drop(self.begin_unload());
+    }
+
     /// Every state change of an unload, done now on the caller's thread: a
     /// dictation started right after sees no model and loads it again, and
     /// its load is queued behind this unload, so the unload can never affect
@@ -503,8 +511,7 @@ impl TranscriptionManager {
             && self.is_model_loaded()
         {
             info!("Immediately unloading model after {}", context);
-            // Not waited for; the worker exits in the background.
-            drop(self.begin_unload());
+            self.request_unload();
         }
     }
 
@@ -603,14 +610,10 @@ impl TranscriptionManager {
                 // registered device; otherwise re-read the persisted
                 // accelerator preference (so an accelerator change marked for
                 // reload takes effect here). The worker resolves the selector
-                // to a device handle.
+                // to a device handle, and rejects an index that isn't a
+                // loadable device (a host without GPU access lists none).
                 let (backend, device) = match device_index {
-                    Some(index) => (
-                        Backend::Auto,
-                        resolve_device_index(&self.engine, index).inspect_err(|e| {
-                            emit_loading_failed(&e.to_string());
-                        })?,
-                    ),
+                    Some(index) => (Backend::Auto, DeviceSelector::Index(index)),
                     None => {
                         let settings = get_settings(&self.app_handle);
                         let accelerator = settings.transcribe_accelerator;
@@ -1182,278 +1185,24 @@ impl TranscriptionManager {
             );
         }
 
-        // Whether the loaded model is actually whisper-family (arch string).
-        // Non-whisper archs (e.g. Voxtral Small) can advertise
-        // Feature::InitialPrompt yet reject the whisper-kind run extension
-        // with INVALID_ARG, so the whisper extension must be gated on the
-        // arch, not on the feature (see #1601).
-        let mut model_is_whisper = false;
-
         // Perform transcription with the appropriate engine.
-        let (result, output_language, model_languages) = {
-            let mut model_languages = self
-                .model_manager
-                .get_model_info(&active_model)
-                .map(|info| info.supported_languages)
-                .unwrap_or_default();
-            let mut output_was_translated = false;
-            let mut applied_language_hint: Option<String> = None;
-            let mut model_detected_language: Option<String> = None;
-
-            let text = match self.engine.loaded() {
-                // transcribe-cpp: the model runs in the engine's worker
-                // process, which recovers from crashes and hangs itself. The
-                // loaded model's live capabilities (cheap GGUF-metadata reads)
-                // are the source of truth, not the ModelManager copy. The
-                // whisper run extension is kind-tagged, so non-whisper archs
-                // (parakeet, voxtral, …) reject it with INVALID_ARG; attach it
-                // — and translate — only where supported.
-                Some(info) => {
-                    // Whether the model advertises Feature::InitialPrompt.
-                    // Informational (logged below); the whisper run extension
-                    // and the fuzzy-correction skip are gated on
-                    // `model_is_whisper` instead, since non-whisper archs can
-                    // advertise the feature while rejecting the whisper-kind
-                    // extension.
-                    let model_takes_initial_prompt = info.supports_initial_prompt;
-                    model_is_whisper = info.arch == "whisper";
-                    let model_supports_translate = info.capabilities.supports_translate;
-                    model_languages = info.capabilities.languages.clone();
-                    debug!(
-                        "transcribe-cpp model '{}' on '{}': initial_prompt={}, translate={}, languages={:?}",
-                        settings.selected_model,
-                        info.backend,
-                        model_takes_initial_prompt,
-                        model_supports_translate,
-                        model_languages
-                    );
-
-                    // Custom words become the initial prompt ONLY for models
-                    // that accept one (whisper family). Attaching the
-                    // whisper run extension to a non-whisper arch is rejected
-                    // with INVALID_ARG, so skip it there and let the fuzzy
-                    // post-correction handle custom words instead.
-                    let family = if settings.custom_words.is_empty() || !model_is_whisper {
-                        None
-                    } else {
-                        Some(RunExtension::Whisper(WhisperRunOptions {
-                            initial_prompt: Some(settings.custom_words.join(", ")),
-                            ..Default::default()
-                        }))
-                    };
-
-                    let run_plan = transcribe_cpp_run_plan(
-                        settings.translate_to_english,
-                        &validated_language,
-                        &model_languages,
-                        model_supports_translate,
-                    );
-                    output_was_translated = run_plan.target_language.as_deref() == Some("en");
-                    applied_language_hint = run_plan.language.clone();
-
-                    let run_options = RunOptions {
-                        task: run_plan.task,
-                        language: run_plan.language,
-                        target_language: run_plan.target_language,
-                        family,
-                        ..Default::default()
-                    };
-
-                    debug!(
-                        "transcribe-cpp run: task={:?}, language={:?}, initial_prompt={}",
-                        run_options.task,
-                        run_options.language,
-                        run_options.family.is_some()
-                    );
-
-                    match self.engine.transcribe(audio, run_options) {
-                        Ok(transcript) => {
-                            // Whisper's audio-based LID (auto mode only;
-                            // `None` when a language hint was passed).
-                            model_detected_language = transcript.language;
-                            transcript.text
-                        }
-                        Err(EngineError::Cancelled) => {
-                            return Err(EngineError::Cancelled.into());
-                        }
-                        Err(e) => {
-                            self.forget_model_if_engine_dropped(&active_model, &e.to_string());
-                            return Err(anyhow::anyhow!(
-                                "transcribe-cpp transcription failed: {}",
-                                e
-                            ));
-                        }
-                    }
-                }
-                None => {
-                    // Take the engine out so we own it during transcription.
-                    // If the engine panics, we simply don't put it back
-                    // (effectively unloading it) instead of poisoning the
-                    // mutex. No lock is held during the engine call.
-                    let mut engine = match self.lock_onnx().take() {
-                        Some(e) => e,
-                        None => {
-                            return Err(anyhow::anyhow!(
-                                "Model failed to load after auto-load attempt. Please check your model settings."
-                            ));
-                        }
-                    };
-
-                    // We use catch_unwind to prevent engine panics from
-                    // poisoning the mutex, which would make the app hang
-                    // indefinitely on subsequent operations.
-                    let transcribe_result = catch_unwind(AssertUnwindSafe(|| -> Result<String> {
-                        match &mut engine {
-                            OnnxEngine::Parakeet(parakeet_engine) => {
-                                let params = ParakeetParams {
-                                    timestamp_granularity: Some(TimestampGranularity::Segment),
-                                    ..Default::default()
-                                };
-                                parakeet_engine
-                                    .transcribe_with(&audio, &params)
-                                    .map(|r| r.text)
-                                    .map_err(|e| {
-                                        anyhow::anyhow!("Parakeet transcription failed: {}", e)
-                                    })
-                            }
-                            OnnxEngine::Moonshine(moonshine_engine) => moonshine_engine
-                                .transcribe(&audio, &TranscribeOptions::default())
-                                .map(|r| r.text)
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Moonshine transcription failed: {}", e)
-                                }),
-                            OnnxEngine::MoonshineStreaming(streaming_engine) => streaming_engine
-                                .transcribe(&audio, &TranscribeOptions::default())
-                                .map(|r| r.text)
-                                .map_err(|e| {
-                                    anyhow::anyhow!(
-                                        "Moonshine streaming transcription failed: {}",
-                                        e
-                                    )
-                                }),
-                            OnnxEngine::SenseVoice(sense_voice_engine) => {
-                                let language = match validated_language.as_str() {
-                                    "zh" => Some("zh".to_string()),
-                                    "en" => Some("en".to_string()),
-                                    "ja" => Some("ja".to_string()),
-                                    "ko" => Some("ko".to_string()),
-                                    "yue" => Some("yue".to_string()),
-                                    _ => None,
-                                };
-                                applied_language_hint = language.clone();
-                                let params = SenseVoiceParams {
-                                    language,
-                                    use_itn: Some(true),
-                                };
-                                sense_voice_engine
-                                    .transcribe_with(&audio, &params)
-                                    .map(|r| r.text)
-                                    .map_err(|e| {
-                                        anyhow::anyhow!("SenseVoice transcription failed: {}", e)
-                                    })
-                            }
-                            OnnxEngine::GigaAM(gigaam_engine) => gigaam_engine
-                                .transcribe(&audio, &TranscribeOptions::default())
-                                .map(|r| r.text)
-                                .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
-                            OnnxEngine::Canary(canary_engine) => {
-                                output_was_translated = settings.translate_to_english;
-                                let lang = if validated_language == "auto" {
-                                    None
-                                } else {
-                                    Some(validated_language.clone())
-                                };
-                                applied_language_hint = lang.clone();
-                                let options = TranscribeOptions {
-                                    language: lang,
-                                    translate: settings.translate_to_english,
-                                    ..Default::default()
-                                };
-                                canary_engine
-                                    .transcribe(&audio, &options)
-                                    .map(|r| r.text)
-                                    .map_err(|e| {
-                                        anyhow::anyhow!("Canary transcription failed: {}", e)
-                                    })
-                            }
-                            OnnxEngine::Cohere(cohere_engine) => {
-                                let lang = if validated_language == "auto" {
-                                    None
-                                } else {
-                                    Some(validated_language.clone())
-                                };
-                                applied_language_hint = lang.clone();
-                                let options = TranscribeOptions {
-                                    language: lang,
-                                    ..Default::default()
-                                };
-                                cohere_engine
-                                    .transcribe(&audio, &options)
-                                    .map(|r| r.text)
-                                    .map_err(|e| {
-                                        anyhow::anyhow!("Cohere transcription failed: {}", e)
-                                    })
-                            }
-                        }
-                    }));
-
-                    match transcribe_result {
-                        Ok(inner_result) => {
-                            // Success or normal error: return the engine unless a model
-                            // switch/unload invalidated it while it was in use.
-                            self.return_engine(engine, &active_model);
-                            inner_result?
-                        }
-                        Err(panic_payload) => {
-                            // Engine panicked — do NOT put it back (it's in an unknown state).
-                            // The engine is dropped here, effectively unloading it.
-                            let panic_msg = panic_payload_message(panic_payload.as_ref());
-                            error!(
-                                "Transcription engine panicked: {}. Model has been unloaded.",
-                                panic_msg
-                            );
-
-                            // Clear the model ID so it will be reloaded on next attempt
-                            {
-                                let mut current_model = self
-                                    .current_model_id
-                                    .lock()
-                                    .unwrap_or_else(|e| e.into_inner());
-                                *current_model = None;
-                            }
-
-                            let _ = self.app_handle.emit(
-                                "model-state-changed",
-                                ModelStateEvent {
-                                    event_type: "unloaded".to_string(),
-                                    model_id: None,
-                                    model_name: None,
-                                    error: Some(format!("Engine panicked: {}", panic_msg)),
-                                },
-                            );
-
-                            return Err(anyhow::anyhow!(
-                                "Transcription engine panicked: {}. The model has been unloaded and will reload on next attempt.",
-                                panic_msg
-                            ));
-                        }
-                    }
-                }
-            };
-
-            let output_language = with_model_detected_language(
-                resolve_output_language_evidence(
-                    &settings,
-                    applied_language_hint.as_deref(),
-                    &model_languages,
-                    output_was_translated,
-                ),
-                model_detected_language,
-            );
-            debug!("Output language evidence: {:?}", output_language);
-
-            (text, output_language, model_languages)
+        let run = match self.engine.loaded() {
+            Some(info) => {
+                self.transcribe_cpp(info, audio, &settings, &validated_language, &active_model)?
+            }
+            None => self.transcribe_onnx(&audio, &settings, &validated_language, &active_model)?,
         };
+
+        let output_language = with_model_detected_language(
+            resolve_output_language_evidence(
+                &settings,
+                run.applied_language_hint.as_deref(),
+                &run.languages,
+                run.output_was_translated,
+            ),
+            run.model_detected_language,
+        );
+        debug!("Output language evidence: {:?}", output_language);
 
         // Apply fuzzy word correction if custom words are configured — UNLESS the
         // words were already handed to the model as an initial prompt (whisper
@@ -1461,11 +1210,11 @@ impl TranscriptionManager {
         // whisper-kind run extension), so they still get fuzzy correction here,
         // same as the ONNX engines.
         let filtered_result = post_process_transcription_text(
-            result,
+            run.text,
             &settings,
-            model_is_whisper,
+            run.model_is_whisper,
             &output_language,
-            &model_languages,
+            &run.languages,
         );
 
         let et = std::time::Instant::now();
@@ -1500,6 +1249,281 @@ impl TranscriptionManager {
 
         Ok(final_result)
     }
+
+    /// transcribe-cpp: the model runs in the engine's worker process, which
+    /// recovers from crashes and hangs itself. The loaded model's live
+    /// capabilities (cheap GGUF-metadata reads) are the source of truth, not
+    /// the ModelManager copy. The whisper run extension is kind-tagged, so
+    /// non-whisper archs (parakeet, voxtral, …) reject it with INVALID_ARG;
+    /// attach it — and translate — only where supported.
+    fn transcribe_cpp(
+        &self,
+        info: LoadedInfo,
+        audio: Vec<f32>,
+        settings: &AppSettings,
+        validated_language: &str,
+        active_model: &str,
+    ) -> Result<RunOutcome> {
+        // Whether the model advertises Feature::InitialPrompt. Informational
+        // (logged below); the whisper run extension and the fuzzy-correction
+        // skip are gated on `model_is_whisper` instead, since non-whisper
+        // archs can advertise the feature while rejecting the whisper-kind
+        // extension.
+        let model_takes_initial_prompt = info.supports_initial_prompt;
+        let model_is_whisper = info.arch == "whisper";
+        let model_supports_translate = info.capabilities.supports_translate;
+        let languages = info.capabilities.languages;
+        debug!(
+            "transcribe-cpp model '{}' on '{}': initial_prompt={}, translate={}, languages={:?}",
+            settings.selected_model,
+            info.backend,
+            model_takes_initial_prompt,
+            model_supports_translate,
+            languages
+        );
+
+        // Custom words become the initial prompt ONLY for models that accept
+        // one (whisper family). Attaching the whisper run extension to a
+        // non-whisper arch is rejected with INVALID_ARG, so skip it there and
+        // let the fuzzy post-correction handle custom words instead.
+        let family = if settings.custom_words.is_empty() || !model_is_whisper {
+            None
+        } else {
+            Some(RunExtension::Whisper(WhisperRunOptions {
+                initial_prompt: Some(settings.custom_words.join(", ")),
+                ..Default::default()
+            }))
+        };
+
+        let run_plan = transcribe_cpp_run_plan(
+            settings.translate_to_english,
+            validated_language,
+            &languages,
+            model_supports_translate,
+        );
+        let output_was_translated = run_plan.target_language.as_deref() == Some("en");
+        let applied_language_hint = run_plan.language.clone();
+
+        let run_options = RunOptions {
+            task: run_plan.task,
+            language: run_plan.language,
+            target_language: run_plan.target_language,
+            family,
+            ..Default::default()
+        };
+
+        debug!(
+            "transcribe-cpp run: task={:?}, language={:?}, initial_prompt={}",
+            run_options.task,
+            run_options.language,
+            run_options.family.is_some()
+        );
+
+        let transcript = match self.engine.transcribe(audio, run_options) {
+            Ok(transcript) => transcript,
+            Err(EngineError::Cancelled) => return Err(EngineError::Cancelled.into()),
+            Err(e) => {
+                self.forget_model_if_engine_dropped(active_model, &e.to_string());
+                return Err(anyhow::anyhow!(
+                    "transcribe-cpp transcription failed: {}",
+                    e
+                ));
+            }
+        };
+        Ok(RunOutcome {
+            text: transcript.text,
+            languages,
+            applied_language_hint,
+            output_was_translated,
+            // Whisper's audio-based LID (auto mode only; `None` when a
+            // language hint was passed).
+            model_detected_language: transcript.language,
+            model_is_whisper,
+        })
+    }
+
+    /// In-process ONNX engines.
+    fn transcribe_onnx(
+        &self,
+        audio: &[f32],
+        settings: &AppSettings,
+        validated_language: &str,
+        active_model: &str,
+    ) -> Result<RunOutcome> {
+        let languages = self
+            .model_manager
+            .get_model_info(active_model)
+            .map(|info| info.supported_languages)
+            .unwrap_or_default();
+        let mut output_was_translated = false;
+        let mut applied_language_hint: Option<String> = None;
+
+        // Take the engine out so we own it during transcription. If the
+        // engine panics, we simply don't put it back (effectively unloading
+        // it) instead of poisoning the mutex. No lock is held during the
+        // engine call.
+        let mut engine = match self.lock_onnx().take() {
+            Some(e) => e,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Model failed to load after auto-load attempt. Please check your model settings."
+                ));
+            }
+        };
+
+        // We use catch_unwind to prevent engine panics from poisoning the
+        // mutex, which would make the app hang indefinitely on subsequent
+        // operations.
+        let transcribe_result = catch_unwind(AssertUnwindSafe(|| -> Result<String> {
+            match &mut engine {
+                OnnxEngine::Parakeet(parakeet_engine) => {
+                    let params = ParakeetParams {
+                        timestamp_granularity: Some(TimestampGranularity::Segment),
+                        ..Default::default()
+                    };
+                    parakeet_engine
+                        .transcribe_with(audio, &params)
+                        .map(|r| r.text)
+                        .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))
+                }
+                OnnxEngine::Moonshine(moonshine_engine) => moonshine_engine
+                    .transcribe(audio, &TranscribeOptions::default())
+                    .map(|r| r.text)
+                    .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
+                OnnxEngine::MoonshineStreaming(streaming_engine) => streaming_engine
+                    .transcribe(audio, &TranscribeOptions::default())
+                    .map(|r| r.text)
+                    .map_err(|e| {
+                        anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
+                    }),
+                OnnxEngine::SenseVoice(sense_voice_engine) => {
+                    let language = match validated_language {
+                        "zh" => Some("zh".to_string()),
+                        "en" => Some("en".to_string()),
+                        "ja" => Some("ja".to_string()),
+                        "ko" => Some("ko".to_string()),
+                        "yue" => Some("yue".to_string()),
+                        _ => None,
+                    };
+                    applied_language_hint = language.clone();
+                    let params = SenseVoiceParams {
+                        language,
+                        use_itn: Some(true),
+                    };
+                    sense_voice_engine
+                        .transcribe_with(audio, &params)
+                        .map(|r| r.text)
+                        .map_err(|e| anyhow::anyhow!("SenseVoice transcription failed: {}", e))
+                }
+                OnnxEngine::GigaAM(gigaam_engine) => gigaam_engine
+                    .transcribe(audio, &TranscribeOptions::default())
+                    .map(|r| r.text)
+                    .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
+                OnnxEngine::Canary(canary_engine) => {
+                    output_was_translated = settings.translate_to_english;
+                    let lang = if validated_language == "auto" {
+                        None
+                    } else {
+                        Some(validated_language.to_string())
+                    };
+                    applied_language_hint = lang.clone();
+                    let options = TranscribeOptions {
+                        language: lang,
+                        translate: settings.translate_to_english,
+                        ..Default::default()
+                    };
+                    canary_engine
+                        .transcribe(audio, &options)
+                        .map(|r| r.text)
+                        .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
+                }
+                OnnxEngine::Cohere(cohere_engine) => {
+                    let lang = if validated_language == "auto" {
+                        None
+                    } else {
+                        Some(validated_language.to_string())
+                    };
+                    applied_language_hint = lang.clone();
+                    let options = TranscribeOptions {
+                        language: lang,
+                        ..Default::default()
+                    };
+                    cohere_engine
+                        .transcribe(audio, &options)
+                        .map(|r| r.text)
+                        .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
+                }
+            }
+        }));
+
+        let text = match transcribe_result {
+            Ok(inner_result) => {
+                // Success or normal error: return the engine unless a model
+                // switch/unload invalidated it while it was in use.
+                self.return_engine(engine, active_model);
+                inner_result?
+            }
+            Err(panic_payload) => {
+                // Engine panicked — do NOT put it back (it's in an unknown state).
+                // The engine is dropped here, effectively unloading it.
+                let panic_msg = panic_payload_message(panic_payload.as_ref());
+                error!(
+                    "Transcription engine panicked: {}. Model has been unloaded.",
+                    panic_msg
+                );
+
+                // Clear the model ID so it will be reloaded on next attempt
+                {
+                    let mut current_model = self
+                        .current_model_id
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
+                    *current_model = None;
+                }
+
+                let _ = self.app_handle.emit(
+                    "model-state-changed",
+                    ModelStateEvent {
+                        event_type: "unloaded".to_string(),
+                        model_id: None,
+                        model_name: None,
+                        error: Some(format!("Engine panicked: {}", panic_msg)),
+                    },
+                );
+
+                return Err(anyhow::anyhow!(
+                    "Transcription engine panicked: {}. The model has been unloaded and will reload on next attempt.",
+                    panic_msg
+                ));
+            }
+        };
+        Ok(RunOutcome {
+            text,
+            languages,
+            applied_language_hint,
+            output_was_translated,
+            model_detected_language: None,
+            model_is_whisper: false,
+        })
+    }
+}
+
+/// What a batch transcription produced, plus what post-processing needs to
+/// know about how it was produced.
+struct RunOutcome {
+    text: String,
+    /// The model's supported languages.
+    languages: Vec<String>,
+    applied_language_hint: Option<String>,
+    output_was_translated: bool,
+    /// The language the model itself detected, if it reported one.
+    model_detected_language: Option<String>,
+    /// Whether the loaded model is actually whisper-family (arch string).
+    /// Non-whisper archs (e.g. Voxtral Small) can advertise
+    /// Feature::InitialPrompt yet reject the whisper-kind run extension with
+    /// INVALID_ARG, so the whisper extension must be gated on the arch, not
+    /// on the feature (see #1601).
+    model_is_whisper: bool,
 }
 
 fn emit_stream_text(app_handle: &AppHandle, committed: &str, tentative: &str) {
@@ -1969,31 +1993,6 @@ pub fn describe_compute_devices(tm: &TranscriptionManager) -> Result<Vec<String>
         .collect())
 }
 
-/// Validate a `--list-devices` registry index for a transcribe-cpp model load
-/// (the `--device-index` flag) against the devices this host may use, so a
-/// GPU hidden by the host guard can't be selected. In 0.2 index 0 is an exact
-/// selection too; only an omitted index requests automatic device selection.
-/// Errors if the index isn't a listed, loadable primary device, or if devices
-/// could not be listed at all.
-fn resolve_device_index(engine: &EngineSupervisor, index: usize) -> Result<DeviceSelector> {
-    let device = transcribe_compute_devices(engine)?
-        .into_iter()
-        .find(|d| d.index == Some(index))
-        .ok_or_else(|| {
-            anyhow::anyhow!("No compute device with index {index} (see --list-devices)")
-        })?;
-    if matches!(
-        device.device_type,
-        transcribe_cpp::DeviceType::Accel | transcribe_cpp::DeviceType::Unknown
-    ) {
-        return Err(anyhow::anyhow!(
-            "Device index {index} ({}) cannot host a model",
-            device.kind
-        ));
-    }
-    Ok(DeviceSelector::Index(index))
-}
-
 /// Map Handy's whisper accelerator setting to a transcribe-cpp [`Backend`].
 ///
 /// `Auto` lets the library pick the best device (with CPU fallback), while
@@ -2079,21 +2078,12 @@ fn effective_transcribe_accelerator(
     }
 }
 
-fn transcribe_device_allowed(kind: &str, gpu_disabled: bool) -> bool {
-    !gpu_disabled || matches!(kind, "cpu" | "accel")
-}
-
-/// The compute devices the latest worker listed, minus those the host guard
-/// hides.
+/// The compute devices the latest worker listed. On a host without GPU
+/// access every worker is CPU-only, so it lists no GPU.
 fn transcribe_compute_devices(engine: &EngineSupervisor) -> Result<Vec<DeviceInfo>> {
-    let gpu_disabled = transcribe_gpu_disabled_for_host();
-    let devices = engine.devices().ok_or_else(|| {
-        anyhow::anyhow!("compute devices could not be listed (see the log for why)")
-    })?;
-    Ok(devices
-        .into_iter()
-        .filter(|device| transcribe_device_allowed(&device.kind, gpu_disabled))
-        .collect())
+    engine
+        .devices()
+        .ok_or_else(|| anyhow::anyhow!("compute devices could not be listed (see the log for why)"))
 }
 
 fn available_transcribe_accelerators(gpu_disabled: bool) -> Vec<String> {
@@ -2180,9 +2170,6 @@ mod tests {
             select_transcribe_backend_for_host(TranscribeAcceleratorSetting::Gpu, false),
             Backend::Auto
         );
-        for kind in ["cpu", "accel", "metal", "cuda", "vulkan", "gpu"] {
-            assert!(transcribe_device_allowed(kind, false));
-        }
     }
 
     #[test]
@@ -2202,11 +2189,6 @@ mod tests {
             );
         }
         assert_eq!(available_transcribe_accelerators(true), ["cpu"]);
-        assert!(transcribe_device_allowed("cpu", true));
-        assert!(transcribe_device_allowed("accel", true));
-        for kind in ["metal", "cuda", "vulkan", "gpu", "unknown"] {
-            assert!(!transcribe_device_allowed(kind, true));
-        }
     }
 
     #[test]

@@ -9,7 +9,6 @@ mod chinese_script;
 pub mod cli;
 mod clipboard;
 mod commands;
-mod degraded_state;
 pub mod engine_supervisor;
 mod helpers;
 mod input;
@@ -302,17 +301,13 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 tray::copy_last_transcript(app);
             }
             "unload_model" => {
-                let transcription_manager = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
+                let transcription_manager = app.state::<Arc<TranscriptionManager>>();
                 if !transcription_manager.is_model_loaded() {
                     log::warn!("No model is currently loaded.");
                     return;
                 }
-                // Unloading waits for any transcription in progress to finish;
-                // keep that off the event loop.
-                std::thread::spawn(move || match transcription_manager.unload_model() {
-                    Ok(()) => log::info!("Model unloaded via tray."),
-                    Err(e) => log::error!("Failed to unload model via tray: {}", e),
-                });
+                transcription_manager.request_unload();
+                log::info!("Model unloaded via tray.");
             }
             "cancel" => {
                 use crate::utils::cancel_current_operation;

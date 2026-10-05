@@ -19,14 +19,13 @@ use super::protocol::{
 };
 use super::worker::LOG_LINE_PREFIX;
 use super::{CPU_ONLY_FLAG, LOG_LEVEL_ENV, WORKER_FLAG};
-use crate::degraded_state::Degraded;
 use log::{debug, error, info, warn, Level};
 use std::collections::VecDeque;
 use std::fmt;
 use std::io::{self, BufRead, BufReader, Write};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
-use std::process::{Child, ChildStdin, ChildStdout, Command as ProcessCommand, Stdio};
+use std::process::{Child, ChildStdin, ChildStdout, Command as ProcessCommand, ExitStatus, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 use std::thread;
@@ -185,12 +184,9 @@ enum Command {
         reply: Reply<Result<Transcript, EngineError>>,
     },
     StreamBegin {
-        id: u64,
-        epoch: u64,
+        active: ActiveStream,
         run: RunOptions,
         stream: StreamOptions,
-        queue: Arc<StreamQueue>,
-        on_progress: OnProgress,
         reply: Reply<Result<(), EngineError>>,
     },
     Feed {
@@ -214,6 +210,10 @@ struct Shared {
     /// Whether this host may use a GPU at all. When not, every worker is
     /// CPU-only, device probes included.
     gpu_allowed: bool,
+    /// A worker with GPU backends crashed or hung (in backend init, device
+    /// listing, model load or inference). Models load in CPU-only workers,
+    /// and devices are not listed again, until [`EngineSupervisor::retry_gpu`].
+    gpu_unavailable: AtomicBool,
     /// The loaded model (logically: it stays loaded while its worker is
     /// replaced after a crash or cancel).
     loaded: Mutex<Option<LoadedInfo>>,
@@ -247,7 +247,7 @@ impl Shared {
                     failure
                 );
                 if failure.worker_lost() && !cpu_only {
-                    Degraded::GpuUnavailable.set(format!(
+                    self.mark_gpu_unavailable(format!(
                         "a worker with GPU backends {failure} while listing compute devices"
                     ));
                 }
@@ -287,6 +287,17 @@ impl Shared {
         *current = Some(new);
     }
 
+    fn gpu_unavailable(&self) -> bool {
+        self.gpu_unavailable.load(Ordering::Acquire)
+    }
+
+    /// `reason` is logged when this changes the state.
+    fn mark_gpu_unavailable(&self, reason: impl fmt::Display) {
+        if !self.gpu_unavailable.swap(true, Ordering::AcqRel) {
+            warn!("Transcription GPU marked unavailable: {}", reason);
+        }
+    }
+
     fn epoch(&self) -> u64 {
         self.cancel_epoch.load(Ordering::SeqCst)
     }
@@ -298,13 +309,6 @@ impl Shared {
     fn next_id(&self) -> u64 {
         self.next_id.fetch_add(1, Ordering::Relaxed) + 1
     }
-}
-
-/// Shared between a stream's handle and the owner.
-#[derive(Default)]
-struct StreamQueue {
-    /// Set when the caller drops its handle.
-    closed: AtomicBool,
 }
 
 struct InFlight {
@@ -384,7 +388,9 @@ impl EngineSupervisor {
     /// the GPU failure, if any, so the next load may use (and list) the GPU
     /// again. A new failure sets the flag again.
     pub fn retry_gpu(&self, reason: &str) {
-        Degraded::GpuUnavailable.clear(reason);
+        if self.shared.gpu_unavailable.swap(false, Ordering::AcqRel) {
+            info!("Transcription GPU no longer marked unavailable: {}", reason);
+        }
     }
 
     /// The loaded model. A snapshot; never waits on the queue.
@@ -418,21 +424,24 @@ impl EngineSupervisor {
         // The stream is one piece of cancellable work: a cancel from here on
         // stops its feeds and its finalize.
         let epoch = self.shared.epoch();
-        let queue = Arc::new(StreamQueue::default());
+        let closed = Arc::new(AtomicBool::new(false));
         self.ask(|reply| Command::StreamBegin {
-            id,
-            epoch,
+            active: ActiveStream {
+                id,
+                epoch,
+                closed: Arc::clone(&closed),
+                on_progress: Box::new(on_progress),
+                pending_ms: 0,
+            },
             run,
             stream,
-            queue: Arc::clone(&queue),
-            on_progress: Box::new(on_progress),
             reply,
         })
         .unwrap_or_else(|| Err(engine_stopped()))?;
         Ok(StreamHandle {
             id,
             epoch,
-            queue,
+            closed,
             commands: self.commands.clone(),
             finished: false,
         })
@@ -461,7 +470,7 @@ impl EngineSupervisor {
     /// the same way.
     pub fn devices(&self) -> Option<Vec<DeviceInfo>> {
         let _probing = lock(&self.shared.probing);
-        if lock(&self.shared.devices).is_none() && !Degraded::GpuUnavailable.is_set() {
+        if lock(&self.shared.devices).is_none() && !self.shared.gpu_unavailable() {
             self.shared.probe_devices();
         }
         lock(&self.shared.devices).clone()
@@ -486,7 +495,8 @@ pub struct StreamHandle {
     id: u64,
     /// Cancel epoch when the stream started.
     epoch: u64,
-    queue: Arc<StreamQueue>,
+    /// Set when the handle is dropped; shared with the owner.
+    closed: Arc<AtomicBool>,
     commands: mpsc::Sender<Command>,
     finished: bool,
 }
@@ -519,7 +529,7 @@ impl Drop for StreamHandle {
     fn drop(&mut self) {
         if !self.finished {
             // Queued feeds for this stream are skipped from here on.
-            self.queue.closed.store(true, Ordering::Release);
+            self.closed.store(true, Ordering::Release);
             let _ = self.commands.send(Command::StreamReset { id: self.id });
         }
     }
@@ -588,7 +598,8 @@ struct ActiveStream {
     id: u64,
     /// Cancel epoch when the stream started; a later cancel stops it.
     epoch: u64,
-    queue: Arc<StreamQueue>,
+    /// Set when the caller drops its handle.
+    closed: Arc<AtomicBool>,
     on_progress: OnProgress,
     /// Audio received but not yet committed, which finalize must still
     /// decode; sizes the feed and finalize deadlines.
@@ -628,25 +639,12 @@ impl Owner {
                     let _ = reply.send(self.transcribe(&pcm, &run, epoch));
                 }
                 Command::StreamBegin {
-                    id,
-                    epoch,
+                    active,
                     run,
                     stream,
-                    queue,
-                    on_progress,
                     reply,
                 } => {
-                    let _ = reply.send(self.stream_begin(
-                        ActiveStream {
-                            id,
-                            epoch,
-                            queue,
-                            on_progress,
-                            pending_ms: 0,
-                        },
-                        &run,
-                        &stream,
-                    ));
+                    let _ = reply.send(self.stream_begin(active, &run, &stream));
                 }
                 Command::Feed { id, pcm } => self.feed(id, &pcm),
                 Command::Finalize {
@@ -698,7 +696,7 @@ impl Owner {
     /// The spec a fresh worker should load: CPU while the GPU is marked
     /// unavailable, unless the device was chosen explicitly.
     fn effective_spec(&self, spec: &LoadSpec) -> LoadSpec {
-        if spec.pinned() || spec.cpu_only() || !Degraded::GpuUnavailable.is_set() {
+        if spec.pinned() || spec.cpu_only() || !self.shared.gpu_unavailable() {
             return spec.clone();
         }
         info!("Loading the transcription model on CPU: the GPU failed earlier");
@@ -733,7 +731,7 @@ impl Owner {
             Err(failure)
                 if failure.worker_lost() && !self.cpu_only_worker(&wanted) && !wanted.pinned() =>
             {
-                Degraded::GpuUnavailable.set(format!(
+                self.shared.mark_gpu_unavailable(format!(
                     "a worker for '{}' with GPU backends {}",
                     wanted.path.display(),
                     failure
@@ -792,7 +790,7 @@ impl Owner {
         match info {
             Some(info) if info.on_gpu => {
                 if !pinned {
-                    Degraded::GpuUnavailable.set(format!(
+                    self.shared.mark_gpu_unavailable(format!(
                         "{failure} during {during} on GPU '{}' ({})",
                         info.device, info.backend
                     ));
@@ -937,7 +935,7 @@ impl Owner {
             return;
         };
         // Skipped once the caller dropped its handle or cancelled.
-        if stream.queue.closed.load(Ordering::Acquire)
+        if stream.closed.load(Ordering::Acquire)
             || self.shared.cancelled_since(stream.epoch)
             || self.worker.is_none()
         {
@@ -1248,17 +1246,11 @@ impl Worker {
         let _ = self.stderr_done.recv_timeout(Duration::from_secs(1));
         let status = {
             let mut child = lock(&self.control.child);
-            let deadline = Instant::now() + Duration::from_secs(1);
-            loop {
-                match child.try_wait() {
-                    Ok(Some(status)) => break status.to_string(),
-                    Ok(None) if Instant::now() < deadline => {
-                        thread::sleep(Duration::from_millis(10))
-                    }
-                    _ => {
-                        let _ = child.kill();
-                        break "unresponsive after closing its output; killed".to_string();
-                    }
+            match wait_exit(&mut child, Duration::from_secs(1)) {
+                Some(status) => status.to_string(),
+                None => {
+                    let _ = child.kill();
+                    "unresponsive after closing its output; killed".to_string()
                 }
             }
         };
@@ -1296,16 +1288,8 @@ impl Worker {
 impl Drop for Worker {
     fn drop(&mut self) {
         self.control.close_stdin();
-        let deadline = Instant::now() + SHUTDOWN_GRACE;
         let mut child = lock(&self.control.child);
-        let exited = loop {
-            match child.try_wait() {
-                Ok(Some(_)) => break true,
-                Ok(None) if Instant::now() < deadline => thread::sleep(Duration::from_millis(5)),
-                _ => break false,
-            }
-        };
-        if !exited {
+        if wait_exit(&mut child, SHUTDOWN_GRACE).is_none() {
             warn!(
                 "Transcription worker (pid {}) did not exit within {:?}; killing it",
                 self.control.pid, SHUTDOWN_GRACE
@@ -1315,6 +1299,19 @@ impl Drop for Worker {
         }
         #[cfg(test)]
         LIVE_WORKERS.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+/// Wait up to `timeout` for `child` to exit. `None` if it is still running
+/// (or its status can't be read).
+fn wait_exit(child: &mut Child, timeout: Duration) -> Option<ExitStatus> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return Some(status),
+            Ok(None) if Instant::now() < deadline => thread::sleep(Duration::from_millis(5)),
+            _ => return None,
+        }
     }
 }
 
@@ -1499,27 +1496,8 @@ mod tests {
         }
     }
 
-    fn percentile(sorted: &[Duration], p: f64) -> Duration {
-        sorted[((sorted.len() - 1) as f64 * p).round() as usize]
-    }
-
-    fn summarize(label: &str, mut samples: Vec<Duration>) {
-        samples.sort();
-        let total: Duration = samples.iter().sum();
-        println!(
-            "{label}: n={} mean={:?} p50={:?} p95={:?} max={:?}",
-            samples.len(),
-            total / samples.len() as u32,
-            percentile(&samples, 0.5),
-            percentile(&samples, 0.95),
-            samples.last().unwrap()
-        );
-    }
-
     /// Faults are read by each worker at spawn, so set them before loading.
-    /// Also resets the (process-global) degraded state.
     fn set_fault(fault: Option<&str>, gpu_only: bool) {
-        Degraded::GpuUnavailable.clear("test reset");
         let marker = std::env::temp_dir().join("handy-worker-fault-once");
         let _ = std::fs::remove_file(&marker);
         std::env::remove_var("HANDY_WORKER_FAULT_ONCE");
@@ -1581,138 +1559,6 @@ mod tests {
     fn long_pcm(secs: usize) -> Vec<f32> {
         let clip = test_pcm();
         clip.repeat((secs * 16_000).div_ceil(clip.len()))
-    }
-
-    /// Pure IPC cost: requests the worker rejects immediately, carrying a
-    /// 30 ms recorder frame and a 60 s batch buffer.
-    #[test]
-    #[ignore]
-    fn ipc_round_trip_overhead() {
-        set_fault(None, false);
-        let started = Instant::now();
-        let mut worker = Worker::spawn(false).unwrap();
-        worker
-            .call(&Request::Hello { list_devices: true }, None, HELLO_TIMEOUT)
-            .unwrap();
-        println!(
-            "spawn + backend init + list devices: {:?}",
-            started.elapsed()
-        );
-
-        for (label, samples, n) in [("30ms frame", 480, 2000), ("60s buffer", 960_000, 50)] {
-            let pcm = vec![0.25f32; samples];
-            let times = (0..n)
-                .map(|_| {
-                    let t = Instant::now();
-                    let r = worker.call(
-                        &Request::Run {
-                            options: RunOptions::default(),
-                        },
-                        Some(&pcm),
-                        LOAD_TIMEOUT,
-                    );
-                    assert!(matches!(r, Err(Failure::Remote(_))));
-                    t.elapsed()
-                })
-                .collect();
-            summarize(&format!("round trip, {label}"), times);
-        }
-    }
-
-    /// Streams the test WAV in 30 ms frames through the worker and, for
-    /// comparison, through transcribe-cpp in this process.
-    #[test]
-    #[ignore]
-    fn stream_feed_latency_vs_in_process() {
-        set_fault(None, false);
-        let pcm = test_pcm();
-        let run = RunOptions::default();
-        let stream_options = StreamOptions::default();
-
-        let engine = EngineSupervisor::new(true);
-        let started = Instant::now();
-        let info = engine.load(spec()).unwrap();
-        println!(
-            "isolated: spawn + load {:?} on '{}'",
-            started.elapsed(),
-            info.backend
-        );
-        let isolated = Arc::new(Mutex::new(Vec::new()));
-        let feeds = Arc::clone(&isolated);
-        let stream = engine
-            .start_stream(run.clone(), stream_options.clone(), move |progress| {
-                lock(&feeds).push(progress.elapsed);
-            })
-            .unwrap();
-        feed_paced(&stream, &pcm);
-        let finalized = stream.finalize(false).unwrap().unwrap();
-        println!(
-            "isolated finalize {:?}: {}",
-            finalized.elapsed, finalized.text.full
-        );
-        engine.unload().wait();
-
-        transcribe_cpp::init_backends_default().unwrap();
-        let started = Instant::now();
-        let model = transcribe_cpp::Model::load(env_path("HANDY_TEST_MODEL")).unwrap();
-        let mut session = model.session().unwrap();
-        println!("in-process: load {:?}", started.elapsed());
-        let mut stream = session.stream(&run, &stream_options).unwrap();
-        let mut in_process = Vec::new();
-        for frame in pcm.chunks(480) {
-            let t = Instant::now();
-            let update = stream.feed(frame).unwrap();
-            if update.committed_changed || update.tentative_changed {
-                let _ = stream.text();
-            }
-            in_process.push(t.elapsed());
-        }
-        let t = Instant::now();
-        stream.finalize().unwrap();
-        println!(
-            "in-process finalize {:?}: {}",
-            t.elapsed(),
-            stream.text().full
-        );
-
-        summarize("feed, isolated", lock(&isolated).clone());
-        summarize("feed, in-process", in_process);
-    }
-
-    /// Cost of (re)loading: a fresh worker per load (what idle unload or a
-    /// crash now costs) vs reloading inside an already-warm process.
-    #[test]
-    #[ignore]
-    fn reload_cost_worker_vs_in_process() {
-        set_fault(None, false);
-        let pcm = test_pcm();
-        let options = RunOptions::default();
-        let engine = EngineSupervisor::new(true);
-        for i in 0..3 {
-            let t = Instant::now();
-            engine.load(spec()).unwrap();
-            let loaded = t.elapsed();
-            engine.transcribe(pcm.clone(), options.clone()).unwrap();
-            println!(
-                "worker #{i}: spawn+load {:?}, +first run {:?}",
-                loaded,
-                t.elapsed()
-            );
-            engine.unload().wait();
-        }
-        transcribe_cpp::init_backends_default().unwrap();
-        for i in 0..3 {
-            let t = Instant::now();
-            let model = transcribe_cpp::Model::load(env_path("HANDY_TEST_MODEL")).unwrap();
-            let mut session = model.session().unwrap();
-            let loaded = t.elapsed();
-            session.run(&pcm, &options).unwrap();
-            println!(
-                "in-process #{i}: load {:?}, +first run {:?}",
-                loaded,
-                t.elapsed()
-            );
-        }
     }
 
     /// Never two workers: a reload or unload has fully stopped the old
@@ -1800,7 +1646,7 @@ mod tests {
         println!("finalize cancelled {:?} after cancel()", t.elapsed());
         assert!(matches!(result, Err(EngineError::Cancelled)));
         assert!(t.elapsed() < Duration::from_secs(2));
-        assert!(!Degraded::GpuUnavailable.is_set());
+        assert!(!engine.shared.gpu_unavailable());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);
     }
@@ -1826,7 +1672,7 @@ mod tests {
         println!("hung feed cancelled {:?} after cancel()", t.elapsed());
         assert!(matches!(result, Err(EngineError::Cancelled)));
         assert!(t.elapsed() < Duration::from_secs(2));
-        assert!(!Degraded::GpuUnavailable.is_set());
+        assert!(!engine.shared.gpu_unavailable());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);
     }
@@ -1890,7 +1736,7 @@ mod tests {
     }
 
     /// A crash that only happens on the GPU: the dictation succeeds on CPU,
-    /// GPU_UNAVAILABLE is set, and later loads use CPU.
+    /// the GPU is marked unavailable, and later loads use CPU.
     #[test]
     #[ignore]
     fn gpu_only_crash_recovers_on_cpu() {
@@ -1903,12 +1749,12 @@ mod tests {
             .transcribe(pcm.clone(), RunOptions::default())
             .unwrap();
         println!("recovered on CPU: {}", transcript.text);
-        assert!(Degraded::GpuUnavailable.is_set());
+        assert!(engine.shared.gpu_unavailable());
         assert!(!engine.loaded().unwrap().on_gpu);
         let info = engine.load(spec()).unwrap();
         assert!(
             !info.on_gpu,
-            "loads stay on CPU while GPU_UNAVAILABLE is set"
+            "loads stay on CPU while the GPU is marked unavailable"
         );
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);
@@ -1916,7 +1762,7 @@ mod tests {
 
     /// A GPU driver that crashes while its backend registers, before the
     /// hello: only a CPU-only worker survives it, so that is where the model
-    /// loads. GPU_UNAVAILABLE is set, later loads stay CPU-only and devices
+    /// loads. The GPU is marked unavailable, later loads stay CPU-only and devices
     /// aren't probed, until "try the GPU again" (a settings change).
     #[test]
     #[ignore]
@@ -1926,7 +1772,7 @@ mod tests {
         let engine = EngineSupervisor::new(true);
         let info = engine.load(spec()).unwrap();
         assert!(!info.on_gpu, "loaded on '{}'", info.backend);
-        assert!(Degraded::GpuUnavailable.is_set());
+        assert!(engine.shared.gpu_unavailable());
         assert!(engine.devices().is_none());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         // The fault still fires in any worker with GPU backends.
@@ -1953,7 +1799,7 @@ mod tests {
             })
             .unwrap();
         assert!(!info.on_gpu);
-        assert!(!Degraded::GpuUnavailable.is_set());
+        assert!(!engine.shared.gpu_unavailable());
         set_fault(None, false);
         assert!(engine.devices().is_some());
         assert_eq!(worker_count(), 1);
@@ -1971,7 +1817,7 @@ mod tests {
         let devices = engine.devices().expect("devices not listed");
         assert!(devices.iter().all(|d| !d.is_gpu()), "{devices:?}");
         assert!(!engine.load(spec()).unwrap().on_gpu);
-        assert!(!Degraded::GpuUnavailable.is_set());
+        assert!(!engine.shared.gpu_unavailable());
         set_fault(None, false);
     }
 
@@ -2010,7 +1856,7 @@ mod tests {
             .unwrap();
         assert!(info.on_gpu);
         assert!(engine.transcribe(pcm, RunOptions::default()).is_err());
-        assert!(!Degraded::GpuUnavailable.is_set());
+        assert!(!engine.shared.gpu_unavailable());
         set_fault(None, false);
     }
 
@@ -2036,7 +1882,7 @@ mod tests {
         assert!(matches!(result, Err(EngineError::Cancelled)));
         assert!(t.elapsed() < Duration::from_secs(2));
         assert!(engine.loaded().is_some());
-        assert!(!Degraded::GpuUnavailable.is_set());
+        assert!(!engine.shared.gpu_unavailable());
         let t = Instant::now();
         engine
             .transcribe(test_pcm(), RunOptions::default())
@@ -2065,7 +1911,7 @@ mod tests {
         println!("hung run cancelled {:?} after cancel()", t.elapsed());
         assert!(matches!(result, Err(EngineError::Cancelled)));
         assert!(t.elapsed() < Duration::from_secs(2));
-        assert!(!Degraded::GpuUnavailable.is_set());
+        assert!(!engine.shared.gpu_unavailable());
         engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);
     }

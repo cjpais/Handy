@@ -32,14 +32,9 @@ pub fn get_model_load_status(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn unload_model_manually(
-    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+pub fn unload_model_manually(
+    transcription_manager: State<Arc<TranscriptionManager>>,
 ) -> Result<(), String> {
-    // Unloading waits for any load or transcription in progress, so keep it
-    // off the main thread and the async workers.
-    let tm = Arc::clone(&transcription_manager);
-    tauri::async_runtime::spawn_blocking(move || tm.unload_model())
-        .await
-        .map_err(|e| format!("Failed to unload model: {}", e))?
-        .map_err(|e| format!("Failed to unload model: {}", e))
+    transcription_manager.request_unload();
+    Ok(())
 }
