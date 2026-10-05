@@ -60,3 +60,36 @@ handy-keys shortcuts initialized
 ```
 
 Then use your existing Handy shortcut and test dictation.
+
+## 4. Hide the overlay
+
+On GNOME, the overlay is a regular window that can take the focus, so nothing is pasted. Set **Overlay** to **None**.
+
+## 5. Install wl-clipboard
+
+Handy uses `wl-copy` on Wayland when it is installed:
+
+```bash
+sudo apt install wl-clipboard
+```
+
+## 6. Non-QWERTY keyboard layouts
+
+`ydotool` sends physical keys, so the built-in paste methods fail on layouts such as bépo or Dvorak: Ctrl+V presses the QWERTY `V` key, and Shift+Insert breaks while a modifier of your shortcut is still held.
+
+Use an external script instead: it presses Ctrl and the key that types `v` on your layout, `KEY_U` (22) on bépo or `KEY_DOT` (52) on Dvorak (codes in `/usr/include/linux/input-event-codes.h`).
+
+Create `~/.local/bin/handy-paste`, here for bépo:
+
+```sh
+#!/bin/sh
+printf '%s' "$1" | wl-copy
+sleep 0.1
+ydotool key 29:1 22:1 22:0 29:0
+```
+
+```bash
+chmod +x ~/.local/bin/handy-paste
+```
+
+Set **Paste Method** to **External Script** with this path.
