@@ -63,13 +63,11 @@ Then use your existing Handy shortcut and test dictation.
 
 ## 4. Hide the overlay
 
-GNOME has no layer shell, so the recording overlay is a regular window. When it is visible, it can take the focus and the text is not pasted into your application.
-
-In Handy settings, set **Overlay** to **None**.
+On GNOME, the overlay is a regular window that can take the focus, so nothing is pasted. Set **Overlay** to **None**.
 
 ## 5. Install wl-clipboard
 
-On Wayland, Handy writes the clipboard with `wl-copy` when it is installed:
+Handy uses `wl-copy` on Wayland when it is installed:
 
 ```bash
 sudo apt install wl-clipboard
@@ -77,12 +75,9 @@ sudo apt install wl-clipboard
 
 ## 6. Non-QWERTY keyboard layouts
 
-`ydotool` sends physical keys, not characters:
+`ydotool` sends physical keys, so the built-in paste methods fail on layouts such as bépo or Dvorak: Ctrl+V presses the QWERTY `V` key, and Shift+Insert breaks while a modifier of your shortcut is still held.
 
-- **Clipboard (Ctrl+V)** and **Clipboard (Ctrl+Shift+V)** press the key at the QWERTY `V` position. On layouts where this key is not `v`, such as bépo or Dvorak, the application gets another shortcut and nothing is pasted.
-- **Clipboard (Shift+Insert)** works on any layout, but fails while a modifier of your shortcut is still held (for example Ctrl with `Ctrl+Space`).
-
-The recommended method is an external script that presses Ctrl and the key that types `v` on your layout. It works better than the built-in methods: apps get a real `Ctrl+V`, and a modifier still held from your shortcut does not break it, since the script presses Ctrl itself. Find the QWERTY key at the same position as `v` on your layout, and its code in `/usr/include/linux/input-event-codes.h`. For example, on bépo `v` is on the QWERTY `U` key (`KEY_U`, 22), and on Dvorak it is on the QWERTY `.` key (`KEY_DOT`, 52).
+Use an external script instead: it presses Ctrl and the key that types `v` on your layout, `KEY_U` (22) on bépo or `KEY_DOT` (52) on Dvorak (codes in `/usr/include/linux/input-event-codes.h`).
 
 Create `~/.local/bin/handy-paste`, here for bépo:
 
@@ -93,10 +88,8 @@ sleep 0.1
 ydotool key 29:1 22:1 22:0 29:0
 ```
 
-Make it executable:
-
 ```bash
 chmod +x ~/.local/bin/handy-paste
 ```
 
-In Handy settings, set **Paste Method** to **External Script** and the script path to `/home/<user>/.local/bin/handy-paste`.
+Set **Paste Method** to **External Script** with this path.
