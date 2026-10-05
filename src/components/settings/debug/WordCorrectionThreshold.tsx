@@ -12,7 +12,7 @@ export const WordCorrectionThreshold: React.FC<
   WordCorrectionThresholdProps
 > = ({ descriptionMode = "tooltip", grouped = false }) => {
   const { t } = useTranslation();
-  const { settings, updateSetting } = useSettings();
+  const { settings, updateSetting, resetSetting, isUpdating } = useSettings();
 
   const handleThresholdChange = (value: number) => {
     updateSetting("word_correction_threshold", value);
@@ -22,6 +22,8 @@ export const WordCorrectionThreshold: React.FC<
     <Slider
       value={settings?.word_correction_threshold ?? 0.18}
       onChange={handleThresholdChange}
+      onReset={() => resetSetting("word_correction_threshold")}
+      isResetting={isUpdating("word_correction_threshold")}
       min={0.0}
       max={1.0}
       label={t("settings.debug.wordCorrectionThreshold.title")}

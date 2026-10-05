@@ -1,6 +1,7 @@
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use log::error;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -21,6 +22,20 @@ pub async fn get_model_info(
     Ok(model_manager.get_model_info(&model_id))
 }
 
+/// Re-scan local sources (custom models dir + shared HF cache) for models added
+/// since launch
+#[tauri::command]
+#[specta::specta]
+pub async fn rescan_local_models(
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<(), String> {
+    let mm = model_manager.inner().clone();
+    tokio::task::spawn_blocking(move || mm.rescan_local_models())
+        .await
+        .map_err(|e| format!("rescan task panicked: {e}"))?
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn download_model(
@@ -34,6 +49,9 @@ pub async fn download_model(
         .map_err(|e| e.to_string());
 
     if let Err(ref error) = result {
+        // Log as well as emit: the toast is transient, and failed downloads have
+        // historically been undiagnosable because logs showed nothing (#1579).
+        error!("Model download failed for {}: {}", model_id, error);
         let _ = app_handle.emit(
             "model-download-failed",
             serde_json::json!({ "model_id": &model_id, "error": error }),
@@ -97,28 +115,13 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let settings = get_settings(app);
     let unload_timeout = settings.model_unload_timeout;
     let old_model = settings.selected_model.clone();
+    let old_onboarding_completed = settings.onboarding_completed;
 
     // Persist the new selection early so the frontend sees the correct model
     // when it reacts to events emitted by load_model.
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
-
-    // Reset language to auto if the new model doesn't support the currently selected language.
-    // This prevents stale language settings from causing errors (e.g. Canary receiving zh-Hans)
-    // and stops downstream processing (e.g. OpenCC) from running on an irrelevant language.
-    if settings.selected_language != "auto"
-        && !model_info.supported_languages.is_empty()
-        && !model_info
-            .supported_languages
-            .contains(&settings.selected_language)
-    {
-        log::info!(
-            "Resetting language from '{}' to 'auto' (not supported by {})",
-            settings.selected_language,
-            model_id
-        );
-        settings.selected_language = "auto".to_string();
-    }
+    settings.onboarding_completed = true;
 
     write_settings(app, settings);
 
@@ -147,6 +150,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     if let Err(e) = transcription_manager.load_model(model_id) {
         let mut settings = get_settings(app);
         settings.selected_model = old_model;
+        settings.onboarding_completed = old_onboarding_completed;
         write_settings(app, settings);
         return Err(e.to_string());
     }
@@ -188,25 +192,6 @@ pub async fn is_model_loading(
     // Check if transcription manager has a loaded model
     let current_model = transcription_manager.get_current_model();
     Ok(current_model.is_none())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn has_any_models_available(
-    model_manager: State<'_, Arc<ModelManager>>,
-) -> Result<bool, String> {
-    let models = model_manager.get_available_models();
-    Ok(models.iter().any(|m| m.is_downloaded))
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn has_any_models_or_downloads(
-    model_manager: State<'_, Arc<ModelManager>>,
-) -> Result<bool, String> {
-    let models = model_manager.get_available_models();
-    // Return true if any models are downloaded OR if any downloads are in progress
-    Ok(models.iter().any(|m| m.is_downloaded))
 }
 
 #[tauri::command]

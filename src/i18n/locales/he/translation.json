@@ -1,0 +1,727 @@
+{
+  "tray": {
+    "settings": "הגדרות...",
+    "checkUpdates": "בדוק עדכונים...",
+    "copyLastTranscript": "העתק את התמלול האחרון",
+    "unloadModel": "פרוק מודל",
+    "model": "מודל",
+    "quit": "יציאה",
+    "cancel": "ביטול",
+    "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input"
+  },
+  "sidebar": {
+    "general": "כללי",
+    "models": "מודלים",
+    "advanced": "מתקדם",
+    "postProcessing": "עיבוד משלים",
+    "history": "היסטוריה",
+    "debug": "ניפוי שגיאות",
+    "about": "אודות"
+  },
+  "onboarding": {
+    "subtitle": "כדי להתחיל, בחר מודל תמלול",
+    "existingModelsTitle": "מודלים תואמים",
+    "downloadModelsTitle": "זמינים להורדה",
+    "showAllModels": "הצג את כל {{total}} המודלים",
+    "showFewerModels": "הצג פחות מודלים",
+    "recommended": "מומלץ",
+    "customModelDescription": "לא נתמך באופן רשמי",
+    "modelCard": {
+      "accuracy": "דיוק",
+      "speed": "מהירות"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "מהיר ודי מדויק."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "דיוק טוב, מהירות בינונית"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "איזון טוב בין דיוק למהירות."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "דיוק טוב, אבל איטי."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "אנגלית בלבד. המודל הטוב ביותר לדוברי אנגלית."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "מהיר ומדויק"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "מהיר מאוד, אנגלית בלבד. מתמודד היטב עם מבטאים."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "מהיר במיוחד, אנגלית בלבד"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "מהיר, אנגלית בלבד. איזון טוב בין מהירות לדיוק."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "אנגלית בלבד. איכות גבוהה."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "מותאם למנדרינית טאיוואנית. תמיכה במעבר בין שפות."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "מהיר מאוד. סינית, אנגלית, יפנית, קוריאנית וקנטונזית."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "זיהוי דיבור ברוסית. מהיר ומדויק."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "מהיר מאוד. אנגלית, גרמנית, ספרדית וצרפתית. תומך בתרגום."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "רב-לשוני ומדויק. 25 שפות אירופיות. תומך בתרגום."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "מודל גדול, איטי יותר, אך מדויק מאוד ורב-לשוני."
+      }
+    },
+    "errors": {
+      "selectModel": "בחירת המודל נכשלה"
+    },
+    "permissions": {
+      "title": "נדרשות הרשאות",
+      "description": "Handy צריך כמה הרשאות כדי לעבוד כמו שצריך.",
+      "microphone": {
+        "title": "גישה למיקרופון",
+        "description": "נדרש כדי לשמוע את הקול שלך לצורך תמלול."
+      },
+      "accessibility": {
+        "title": "גישת נגישות",
+        "description": "נדרש כדי להקליד את הטקסט המתומלל לתוך האפליקציות שלך."
+      },
+      "grant": "תן הרשאה",
+      "granted": "ניתנה",
+      "waiting": "ממתין...",
+      "allGranted": "הכול מוכן!",
+      "errors": {
+        "checkFailed": "בדיקת ההרשאות נכשלה. נסה שוב.",
+        "requestFailed": "בקשת ההרשאה נכשלה. נסה שוב."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "מותאם אישית",
+    "streaming": "סטרימינג",
+    "active": "פעיל",
+    "switching": "מחליף...",
+    "noModelsAvailable": "אין מודלים זמינים",
+    "verifying": "מאמת את {{modelName}}...",
+    "verifyingGeneric": "מאמת...",
+    "extracting": "מחלץ את {{modelName}}...",
+    "extractingMultiple": "מחלץ {{count}} מודלים...",
+    "extractingGeneric": "מחלץ...",
+    "downloading": "מוריד {{percentage}}%",
+    "downloadingMultiple": "מוריד {{count}} מודלים...",
+    "modelReady": "המודל מוכן",
+    "loading": "טוען את {{modelName}}...",
+    "loadingGeneric": "טוען...",
+    "modelError": "שגיאת מודל",
+    "modelUnloaded": "המודל נפרק",
+    "noModelDownloadRequired": "אין מודל, נדרשת הורדה",
+    "deleteModel": "מחק את {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "ביטול",
+    "cancelDownload": "בטל הורדה",
+    "capabilities": {
+      "languageSelection": "תומך בכמה שפות קלט",
+      "singleLanguage": "תומך רק בשפה הזו",
+      "languageCount": "{{total}} שפות",
+      "languageOnly": "{{language}} בלבד",
+      "translation": "יכול לתרגם לאנגלית",
+      "translate": "תרגם לאנגלית",
+      "streaming": "מציג תמלול חי תוך כדי דיבור"
+    },
+    "legacy": "מדור קודם"
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "הגדרות עבור {{model}}"
+    },
+    "general": {
+      "title": "כללי",
+      "shortcut": {
+        "title": "קיצורי מקשים של Handy",
+        "description": "הגדר קיצורי מקשים כדי להפעיל הקלטה ותמלול דיבור",
+        "loading": "טוען קיצורי מקשים...",
+        "none": "לא הוגדרו קיצורי מקשים",
+        "notFound": "קיצור הדרך לא נמצא",
+        "pressKeys": "לחץ על המקשים...",
+        "bindings": {
+          "transcribe": {
+            "name": "קיצור מקשים לתמלול",
+            "description": "קיצור המקלדת להקלטה ולתמלול הקול שלך."
+          },
+          "cancel": {
+            "name": "קיצור מקשים לביטול",
+            "description": "קיצור המקלדת לביטול ההקלטה הנוכחית."
+          },
+          "transcribe_with_post_process": {
+            "name": "קיצור לעיבוד משלים",
+            "description": "אופציונלי: קיצור מקשים ייעודי שתמיד מפעיל עיבוד AI על התמלול."
+          }
+        },
+        "errors": {
+          "restore": "שחזור קיצור הדרך המקורי נכשל",
+          "set": "הגדרת קיצור הדרך נכשלה: {{error}}",
+          "reset": "איפוס קיצור הדרך לערך המקורי נכשל"
+        }
+      },
+      "language": {
+        "title": "שפה",
+        "description": "בחר את שפת זיהוי הדיבור. מצב אוטומטי יזהה את השפה לבד, בעוד שבחירת שפה מסוימת יכולה לשפר את הדיוק עבורה.",
+        "searchPlaceholder": "חפש שפות...",
+        "noResults": "לא נמצאו שפות",
+        "auto": "אוטומטי"
+      },
+      "shortcutActivation": {
+        "title": "התנהגות קיצור הדרך",
+        "description": "בחר כיצד קיצור התמלול מתחיל ומפסיק את ההקלטה.",
+        "options": {
+          "holdOrToggle": "אוטומטי",
+          "pushToTalk": "לחיצה ארוכה",
+          "toggle": "החלפת מצב"
+        },
+        "descriptions": {
+          "hold_or_toggle": "לחצו לחיצה ארוכה כדי להקליט או הקישו כדי להחליף מצב",
+          "push_to_talk": "מקליט כל עוד קיצור הדרך לחוץ",
+          "toggle": "הקישו על קיצור הדרך כדי להתחיל להקליט, והקישו שוב כדי לעצור"
+        }
+      }
+    },
+    "models": {
+      "title": "מודלי תמלול",
+      "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
+      "yourModels": "מודלים שהורדו",
+      "availableModels": "זמינים להורדה",
+      "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
+      "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
+      "deleteTitle": "מחיקת מודל",
+      "filters": {
+        "allLanguages": "כל השפות",
+        "streaming": "סינון דגמים התומכים בתמלול חי",
+        "translation": "סינון דגמים התומכים בתרגום לאנגלית"
+      },
+      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
+      "searchPlaceholder": "חיפוש מודלים לפי שם…",
+      "rescan": {
+        "label": "סריקה מחדש",
+        "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Handy"
+      }
+    },
+    "sound": {
+      "title": "שמע",
+      "microphone": {
+        "title": "מיקרופון",
+        "description": "בחר את המיקרופון המועדף עליך",
+        "placeholder": "בחר מיקרופון...",
+        "loading": "טוען..."
+      },
+      "channel": {
+        "title": "ערוץ קלט",
+        "description": "בחרו את ערוץ הקלט שממנו תתבצע ההקלטה. השתמשו באפשרות זו אם לממשק השמע שלכם יש מספר כניסות.",
+        "average": "ממוצע של כל הערוצים",
+        "channel": "ערוץ {{n}}"
+      },
+      "audioFeedback": {
+        "label": "משוב קולי",
+        "description": "נגן צליל כשההקלטה מתחילה ומסתיימת"
+      },
+      "outputDevice": {
+        "title": "התקן פלט",
+        "description": "בחר את התקן השמע המועדף עליך עבור צלילי המשוב",
+        "placeholder": "בחר התקן פלט...",
+        "loading": "טוען..."
+      },
+      "volume": {
+        "title": "עוצמת קול",
+        "description": "כוונן את עוצמת צלילי המשוב"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "אפליקציה",
+        "output": "פלט",
+        "transcription": "תמלול",
+        "history": "היסטוריה",
+        "experimental": "ניסיוני"
+      },
+      "experimentalToggle": {
+        "label": "תכונות ניסיוניות",
+        "description": "הפעל תכונות ניסיוניות שעדיין נמצאות בפיתוח."
+      },
+      "lazyStreamClose": {
+        "label": "השאר את המיקרופון פתוח בין תמלולים",
+        "description": "משאיר את זרם המיקרופון פתוח למשך 30 שניות אחרי סיום ההקלטה, וכך מפחית השהיה בתמלולים רצופים. עשוי לפגוע באיכות שמע Bluetooth בזמן שהאפשרות פעילה."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "האצת Whisper",
+          "description": "האצת חומרה למודלי Whisper. מצב אוטומטי משתמש ב-GPU אם זמין (Metal ב-macOS, Vulkan ב-Windows/Linux)."
+        },
+        "ort": {
+          "title": "האצת ONNX",
+          "description": "האצת חומרה למודלי ONNX (Parakeet, Canary, Moonshine ועוד). DirectML ב-Windows הוא ניסיוני. ייתכן שמודלים ייכשלו בתמלול."
+        },
+        "gpuDevice": {
+          "auto": "אוטומטי"
+        }
+      },
+      "startHidden": {
+        "label": "התחל מוסתר",
+        "description": "הפעל לתוך מגש המערכת בלי לפתוח את החלון."
+      },
+      "autostart": {
+        "label": "הפעל עם עליית המערכת",
+        "description": "הפעל את Handy אוטומטית כשאתה מתחבר למחשב."
+      },
+      "showTrayIcon": {
+        "label": "הצג אייקון במגש",
+        "description": "הצג את האייקון של Handy במגש המערכת."
+      },
+      "overlay": {
+        "style": {
+          "title": "שכבת-על",
+          "description": "בחר את שכבת-העל בהקלטה: 'ללא' מסתירה אותה, 'מינימלי' מציג סמן קומפקטי, 'בזמן אמת' מציג תמלול בזמן אמת בזמן הדיבור (מודלים התומכים בסטרימינג בלבד — חפש את התווית 'סטרימינג' בבורר המודלים). ב-Linux מומלץ לבחור 'ללא'.",
+          "options": {
+            "none": "ללא",
+            "minimal": "מינימלי",
+            "live": "בזמן אמת"
+          }
+        },
+        "position": {
+          "title": "מיקום שכבת המשוב",
+          "description": "הצג שכבת משוב חזותית בזמן הקלטה ותמלול. בלינוקס מומלץ לבחור 'ללא'.",
+          "options": {
+            "bottom": "למטה",
+            "top": "למעלה"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "שיטת הדבקה",
+        "description": "בחר איך הטקסט יוכנס. ישיר: מדמה הקלדה דרך קלט המערכת. ללא: מדלג על הדבקה ומעדכן רק היסטוריה/לוח.",
+        "options": {
+          "clipboard": "לוח ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "לוח (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "לוח (Shift+Insert)",
+          "direct": "ישיר",
+          "none": "ללא",
+          "externalScript": "סקריפט חיצוני"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
+      },
+      "typingTool": {
+        "title": "כלי הקלדה",
+        "description": "בחר איזה כלי הקלדה בלינוקס ישמש עבור הדבקה ישירה. מצב אוטומטי יזהה וישתמש בכלי המתאים ביותר למערכת שלך.",
+        "options": {
+          "auto": "אוטומטי (מומלץ)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "התנהגות הלוח",
+        "description": "אל תשנה את הלוח ישמור על תוכן הלוח הנוכחי שלך אחרי התמלול. העתק ללוח ישאיר את תוצאת התמלול בלוח אחרי ההדבקה.",
+        "options": {
+          "dontModify": "אל תשנה את הלוח",
+          "copyToClipboard": "העתק ללוח"
+        }
+      },
+      "autoSubmit": {
+        "title": "שליחה אוטומטית",
+        "description": "שלח אוטומטית את צירוף המקשים שנבחר אחרי הכנסת הטקסט. ב-macOS יופעל Cmd+Enter, וב-Windows/Linux יופעל Super+Enter.",
+        "options": {
+          "off": "כבוי",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "תרגם לאנגלית",
+        "description": "תרגם אוטומטית דיבור משפות אחרות לאנגלית בזמן התמלול."
+      },
+      "modelUnload": {
+        "title": "פרוק מודל",
+        "description": "שחרר אוטומטית זיכרון GPU/CPU כשהמודל לא היה בשימוש במשך הזמן שנבחר",
+        "options": {
+          "never": "אף פעם",
+          "immediately": "מיידית",
+          "min2": "אחרי 2 דקות",
+          "min5": "אחרי 5 דקות",
+          "min10": "אחרי 10 דקות",
+          "min15": "אחרי 15 דקות",
+          "hour1": "אחרי שעה",
+          "sec15": "אחרי 15 שניות (דיבאג)"
+        }
+      },
+      "customWords": {
+        "title": "מילים מותאמות אישית",
+        "description": "עזרו למודלים נתמכים לזהות שמות ומונחים מקצועיים. תיקון בקירוב מוגבל כרגע למילים המשתמשות באותיות A–Z ובמספרים.",
+        "placeholder": "הוסף מילה",
+        "add": "הוסף",
+        "remove": "הסר את {{word}}",
+        "duplicate": "\"{{word}}\" כבר קיימת"
+      },
+      "voiceActivityDetection": {
+        "title": "זיהוי פעילות קולית",
+        "description": "סינון שקט מההקלטות. מודלים התומכים בסטרימינג משתמשים בזנב VAD ארוך יותר; ביטול VAD מקליט אודיו גולמי."
+      },
+      "vadBackend": {
+        "title": "מנוע זיהוי פעילות קולית",
+        "description": "בחרו את הגלאי המשמש לסינון שקט. Earshot ניסיוני; חזרו ל-Silero אם הדיבור נחתך או שרעש נשמר.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
+      "fillerWordRemoval": {
+        "title": "הסרת מילות מילוי",
+        "description": "מסיר מילות היסוס נפוצות מתמלולים. השבת כדי להשאיר אותן."
+      },
+      "chineseScript": {
+        "title": "כתב סיני",
+        "description": "כותב תמלולים במנדרינית ובקנטונזית בתווים מפושטים או מסורתיים. שפות אחרות נשארות ללא שינוי.",
+        "options": {
+          "asTranscribed": "כפי שתומלל",
+          "simplified": "מפושט",
+          "traditional": "מסורתי"
+        }
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "קיצור מקשים"
+      },
+      "api": {
+        "title": "API (תואם OpenAI)",
+        "provider": {
+          "title": "ספק",
+          "description": "בחר ספק שתואם ל-OpenAI."
+        },
+        "appleIntelligence": {
+          "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
+        },
+        "baseUrl": {
+          "title": "כתובת URL בסיסית",
+          "description": "כתובת ה-API הבסיסית עבור הספק הנבחר. רק ספק מותאם אישית ניתן לעריכה.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "מפתח API",
+          "description": "מפתח API עבור הספק הנבחר.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "מודל",
+          "descriptionCustom": "ספק את מזהה המודל שה-endpoint המותאם שלך מצפה לו.",
+          "descriptionDefault": "בחר מודל שהספק הנבחר חושף.",
+          "placeholderWithOptions": "חפש או בחר מודל",
+          "placeholderNoOptions": "הקלד שם מודל",
+          "refreshModels": "רענן מודלים"
+        }
+      },
+      "prompts": {
+        "title": "פרומפט",
+        "selectedPrompt": {
+          "title": "פרומפט נבחר",
+          "description": "בחר תבנית לשיפור התמלול או צור חדשה. השתמש ב-${output} בתוך טקסט הפרומפט כדי להפנות לתמלול שנקלט."
+        },
+        "noPrompts": "אין פרומפטים זמינים",
+        "selectPrompt": "בחר פרומפט",
+        "createNew": "צור פרומפט חדש",
+        "promptLabel": "שם הפרומפט",
+        "promptLabelPlaceholder": "הזן שם לפרומפט",
+        "promptInstructions": "הוראות לפרומפט",
+        "promptInstructionsPlaceholder": "כתוב את ההוראות שירוצו אחרי התמלול. לדוגמה: שפר דקדוק ובהירות עבור הטקסט הבא: ${output}",
+        "promptTip": "טיפ: השתמש ב-<code>${output}</code> כדי להכניס את הטקסט המתומלל לפרומפט שלך.",
+        "updatePrompt": "עדכן פרומפט",
+        "deletePrompt": "מחק פרומפט",
+        "createPrompt": "צור פרומפט",
+        "cancel": "ביטול",
+        "selectToEdit": "בחר פרומפט למעלה כדי לצפות בפרטים שלו ולערוך אותם.",
+        "createFirst": "לחץ על 'צור פרומפט חדש' למעלה כדי ליצור את פרומפט העיבוד הראשון שלך."
+      }
+    },
+    "history": {
+      "title": "היסטוריה",
+      "openFolder": "פתח את תיקיית ההקלטות",
+      "loading": "טוען היסטוריה...",
+      "empty": "עדיין אין תמלולים. התחל להקליט כדי לבנות את ההיסטוריה שלך!",
+      "copyToClipboard": "העתק תמלול ללוח",
+      "copyError": "לא ניתן להעתיק את התמלול ללוח.",
+      "save": "שמור תמלול",
+      "unsave": "הסר משמורים",
+      "delete": "מחק רשומה",
+      "deleteError": "מחיקת הרשומה נכשלה. נסה שוב.",
+      "retranscribe": "תמלל מחדש",
+      "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
+      "transcribing": "מתמלל...",
+      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר."
+    },
+    "debug": {
+      "title": "ניפוי שגיאות",
+      "logDirectory": {
+        "title": "תיקיית לוגים",
+        "description": "המיקום שבו נשמרים קבצי הלוג"
+      },
+      "logLevel": {
+        "title": "רמת לוג",
+        "description": "הגדר את רמת הפירוט של הלוגים"
+      },
+      "liveLogs": {
+        "title": "לוגים בזמן אמת",
+        "description": "הצג את לוגי האפליקציה בזמן אמת כדי לאבחן בעיות בלי לפתוח את קובץ הלוג. מוצגים רק לוגים שנוצרו בזמן שחלונית זו פתוחה; מתחשב בהגדרת «רמת לוג» שלמעלה.",
+        "live": "בזמן אמת",
+        "paused": "מושהה",
+        "pause": "השהה",
+        "resume": "המשך",
+        "copied": "הועתק",
+        "lineCount": "{{count}} שורות",
+        "empty": "ממתין ללוגים… רשומות יופיעו כאן כשהאפליקציה תפיק אותן."
+      },
+      "updateChecks": {
+        "label": "בדוק עדכונים",
+        "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של Handy",
+        "lockedDescription": "מושבת על ידי תצורת המערכת (HANDY_DISABLE_UPDATER)"
+      },
+      "soundTheme": {
+        "label": "ערכת צלילים",
+        "description": "בחר ערכת צלילים להתחלה ולסיום ההקלטה"
+      },
+      "wordCorrectionThreshold": {
+        "title": "סף תיקון מילים",
+        "description": "רגישות לתיקוני מילים מותאמות אישית"
+      },
+      "historyLimit": {
+        "title": "מגבלת היסטוריה",
+        "description": "המספר המרבי של רשומות היסטוריה לשמירה",
+        "entries": "רשומות"
+      },
+      "recordingRetention": {
+        "title": "מחיקה אוטומטית של הקלטות",
+        "description": "מחק הקלטות ישנות אוטומטית כדי לחסוך מקום",
+        "never": "אף פעם",
+        "preserveLimit": "שמור את {{count}} האחרונות",
+        "days3": "אחרי 3 ימים",
+        "weeks2": "אחרי שבועיים",
+        "months3": "אחרי 3 חודשים",
+        "placeholder": "בחר משך שמירה..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "מיקרופון תמיד פעיל",
+        "description": "השאר את המיקרופון פעיל לתגובה מהירה יותר"
+      },
+      "clamshellMicrophone": {
+        "title": "מיקרופון במצב clamshell",
+        "description": "המיקרופון שישמש כשהמחשב הנייד סגור"
+      },
+      "postProcessingToggle": {
+        "label": "עיבוד משלים",
+        "description": "הפעל שיפור טקסט מבוסס AI אחרי התמלול"
+      },
+      "muteWhileRecording": {
+        "label": "השתק בזמן הקלטה",
+        "description": "השתק את שמע המערכת בזמן הקלטה"
+      },
+      "appendTrailingSpace": {
+        "label": "הוסף רווח בסוף",
+        "description": "הוסף רווח אחרי התמלול המודבק"
+      },
+      "keyboardImplementation": {
+        "title": "מימוש מקלדת",
+        "description": "בחר את מנגנון קיצורי המקלדת.",
+        "bindingsReset": "קיצורי המקלדת לא היו תואמים ואופסו לברירות המחדל"
+      },
+      "paths": {
+        "appData": "נתוני אפליקציה:",
+        "models": "מודלים:",
+        "settings": "הגדרות:"
+      },
+      "pasteDelay": {
+        "title": "השהיית הדבקה (לפני)",
+        "description": "השהיה (במילישניות) לאחר העתקת הטקסט, לפני שליחת צירוף ההדבקה. הגדל אם דבר אינו מודבק."
+      },
+      "pasteDelayAfter": {
+        "title": "השהיית הדבקה (אחרי)",
+        "description": "השהיה (במילישניות) לאחר צירוף ההדבקה, לפני שחזור הלוח הקודם. הגדל אם התוכן הישן של הלוח מודבק במקום התמלול."
+      },
+      "holdThreshold": {
+        "title": "סף לחיצה ארוכה",
+        "description": "במצב אוטומטי בלבד: כמה זמן (במילישניות) יש להחזיק את קיצור הדרך כדי שייחשב ללחיצה ארוכה במקום להקשה. הנמיכו אם ההקלטה ממשיכה לרוץ אחרי לחיצות ארוכות קצרות; הגביהו אם הקשות מכוונות מתפרשות כלחיצה ארוכה."
+      },
+      "reliablePaste": {
+        "title": "הדבקה אמינה (Beta)",
+        "description": "שחזור הלוח רק אחרי שאפליקציית היעד קוראת בפועל את התמלול, במקום אחרי השהיה קבועה. נועד לתקן הדבקה של תוכן לוח ישן כשהמערכת עמוסה. דורש שיטת הדבקה דרך הלוח; ב-macOS וב-Windows בלבד."
+      },
+      "recordingBuffer": {
+        "title": "באפר הקלטה נוסף",
+        "description": "זמן נוסף (במילישניות) להמשך הקלטה אחרי שחרור המקש, כדי ללכוד סוף דיבור. 0 = בלי באפר נוסף."
+      },
+      "keyboardDiagnostic": {
+        "title": "אבחון מקלדת",
+        "description": "בודק אם אירועי מקלדת מגיעים ל-Handy. נרשם רק מספר האירועים — לעולם לא אילו מקשים הקשת.",
+        "run": "הרצת אבחון של 10 שניות",
+        "running": "מאזין… הקש על קיצור המקשים שלך כמה פעמים (למשל Option+Space)",
+        "secureInputLabel": "Secure Input",
+        "enabled": "מופעל",
+        "disabled": "מושבת",
+        "holder": "מוחזק על ידי {{name}} (pid {{pid}})",
+        "holderUnknown": "אין מחזיק גלוי",
+        "keyDown": "לחיצת מקש",
+        "keyUp": "שחרור מקש",
+        "flagsChanged": "מקשי החלפה",
+        "mouse": "עכבר",
+        "verdictBlocked": "Secure Input חוסם אירועי מקשים — קיצורים הכוללים מקש רגיל לא יוכלו לפעול עד שהבעיה תיפתר.",
+        "verdictSuspicious": "הגיעו אירועים של מקשי החלפה אך לא אירועי מקשים — משהו מדכא מקשים למרות ש-Secure Input מדווח כמושבת. אנא דווח על כך ב-GitHub.",
+        "verdictOk": "אירועי מקשים מגיעים ל-Handy כרגיל.",
+        "verdictNoEvents": "לא נקלטו אירועים — האם הקשת על מקשים במהלך הבדיקה?",
+        "failed": "האבחון נכשל: {{error}}"
+      },
+      "whatsNewPreview": {
+        "title": "תצוגה מקדימה של מה חדש",
+        "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
+        "button": "תצוגה מקדימה",
+        "noNotes": "לא נמצאו הערות גרסה מצורפות",
+        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
+      },
+      "onboardingPreview": {
+        "title": "תצוגה מקדימה של ההגדרה הראשונית",
+        "description": "הצג את מסכי ההגדרה הראשונית בלי לשנות הרשאות, מודלים או את מצב ההשלמה",
+        "permissionsButton": "הרשאות",
+        "modelsButton": "בחירת מודל",
+        "exitButton": "יציאה מהתצוגה המקדימה"
+      }
+    },
+    "about": {
+      "title": "אודות",
+      "version": {
+        "title": "גרסה",
+        "description": "הגרסה הנוכחית של Handy"
+      },
+      "appDataDirectory": {
+        "title": "תיקיית נתוני אפליקציה",
+        "description": "המיקום שבו Handy שומר את הנתונים שלו"
+      },
+      "sourceCode": {
+        "title": "קוד מקור",
+        "description": "צפה בקוד המקור ותרום",
+        "button": "צפה ב-GitHub"
+      },
+      "supportDevelopment": {
+        "title": "תמיכה בפיתוח",
+        "description": "עזור לנו להמשיך לבנות את Handy",
+        "button": "תרומה"
+      },
+      "acknowledgments": {
+        "title": "תודות",
+        "ggml": {
+          "title": "ggml",
+          "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
+          "details": "Handy משתמש ב-ggml לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
+        }
+      },
+      "whatsNewUpdates": {
+        "label": "הצג מה חדש",
+        "description": "הצג הערות גרסה לאחר עדכוני Handy"
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "בודק עדכונים...",
+    "updateAvailableShort": "יש עדכון זמין",
+    "upToDate": "מעודכן",
+    "updateCheckingDisabled": "בדיקת העדכונים כבויה",
+    "downloading": "מוריד... {{progress}}%",
+    "installing": "מתקין...",
+    "preparing": "מכין...",
+    "checkForUpdates": "בדוק עדכונים",
+    "portableUpdateTitle": "נדרש עדכון ידני",
+    "portableUpdateMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. הורד למטה את המתקין המתאים למערכת שלך, הפעל אותו והתקן לאותה תיקייה — תיקיית Data/ (הגדרות, מודלים, הקלטות) נשמרת במקומה.",
+    "portableUpdateButton": "הורדת המתקין",
+    "portableUpdateBrowseMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. הורד את הגרסה האחרונה המתאימה למערכת שלך מ-GitHub Releases והתקן אותה לאותה תיקייה — תיקיית Data/ (הגדרות, מודלים, הקלטות) נשמרת במקומה.",
+    "portableUpdateBrowseButton": "פתח את GitHub Releases"
+  },
+  "common": {
+    "loading": "טוען...",
+    "delete": "מחק",
+    "close": "סגור",
+    "open": "פתח",
+    "copy": "העתק",
+    "clear": "נקה",
+    "noOptionsFound": "לא נמצאו אפשרויות"
+  },
+  "accessibility": {
+    "permissionsDescription": "Handy צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
+    "openSettings": "פתח את הגדרות המערכת"
+  },
+  "errors": {
+    "loadDirectory": "שגיאה בטעינת תיקייה: {{error}}",
+    "micPermissionDeniedTitle": "הגישה למיקרופון נדחתה",
+    "micPermissionDenied": {
+      "generic": "מערכת ההפעלה חסמה את הגישה למיקרופון. תן הרשאת מיקרופון בהגדרות המערכת.",
+      "windows": "הפעל גישה למיקרופון ב-Settings > Privacy & security > Microphone, כולל גישה לאפליקציות שולחן עבודה.",
+      "macos": "תן גישה למיקרופון ב-System Settings > Privacy & Security > Microphone.",
+      "linux": "תן גישה למיקרופון דרך הגדרות השמע או הפרטיות במערכת שלך."
+    },
+    "noInputDeviceTitle": "לא נמצא מיקרופון",
+    "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
+    "recordingFailed": "הפעלת ההקלטה נכשלה: {{error}}",
+    "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
+    "modelLoadFailedUnknown": "מודל לא ידוע",
+    "pasteFailedTitle": "ההדבקה נכשלה",
+    "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "transcriptionFailedTitle": "התמלול נכשל"
+  },
+  "appLanguage": {
+    "title": "שפת האפליקציה",
+    "description": "שנה את שפת הממשק של Handy"
+  },
+  "theme": {
+    "title": "ערכת נושא של האפליקציה",
+    "description": "בחר אם Handy יעקוב אחר ערכת הנושא של המערכת או יישאר בהיר או כהה",
+    "options": {
+      "system": "מערכת",
+      "light": "בהיר",
+      "dark": "כהה"
+    }
+  },
+  "overlay": {
+    "transcribing": "מתמלל...",
+    "processing": "מעבד..."
+  },
+  "whatsNew": {
+    "title": "חדש ב-Handy v{{version}}"
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "ייתכן ש-{{name}} חוסם קיצור דרך אחד",
+    "blockedWithCulprit_other": "ייתכן ש-{{name}} חוסם {{count}} קיצורי דרך",
+    "blockedNoCulprit_one": "macOS חוסם זמנית קיצור דרך אחד",
+    "blockedNoCulprit_other": "macOS חוסם זמנית {{count}} קיצורי דרך",
+    "recorderBlockedWithCulprit": "ייתכן ש-{{name}} חוסם שינויים בקיצורי דרך",
+    "recorderBlockedNoCulprit": "macOS חוסם זמנית שינויים בקיצורי דרך",
+    "learnMore": "איך לתקן את זה",
+    "recorderBlocked": "לא ניתן להקליט קיצורים כרגע — Secure Input של macOS חוסם אירועי מקשים. פתור תחילה את אזהרת Secure Input.",
+    "dismiss": "התעלם"
+  }
+}

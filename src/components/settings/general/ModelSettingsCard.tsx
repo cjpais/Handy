@@ -12,10 +12,10 @@ export const ModelSettingsCard: React.FC = () => {
 
   const currentModelInfo = models.find((m: ModelInfo) => m.id === currentModel);
 
-  const supportsLanguageSelection =
+  const showLanguageSelector =
     currentModelInfo?.supports_language_selection ?? false;
   const supportsTranslation = currentModelInfo?.supports_translation ?? false;
-  const hasAnySettings = supportsLanguageSelection || supportsTranslation;
+  const hasAnySettings = showLanguageSelector || supportsTranslation;
 
   // Don't render anything if no model is selected or no settings available
   if (!currentModel || !currentModelInfo || !hasAnySettings) {
@@ -28,11 +28,14 @@ export const ModelSettingsCard: React.FC = () => {
         model: currentModelInfo.name,
       })}
     >
-      {supportsLanguageSelection && (
+      {showLanguageSelector && (
         <LanguageSelector
           descriptionMode="tooltip"
           grouped={true}
           supportedLanguages={currentModelInfo.supported_languages}
+          supportsLanguageDetection={
+            currentModelInfo.supports_language_detection
+          }
         />
       )}
       {supportsTranslation && (

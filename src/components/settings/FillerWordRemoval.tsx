@@ -3,25 +3,26 @@ import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 
-interface PushToTalkProps {
+interface FillerWordRemovalProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
-export const PushToTalk: React.FC<PushToTalkProps> = React.memo(
+export const FillerWordRemoval: React.FC<FillerWordRemovalProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
-
-    const pttEnabled = getSetting("push_to_talk") || false;
+    const enabled = getSetting("filler_word_removal_enabled") ?? true;
 
     return (
       <ToggleSwitch
-        checked={pttEnabled}
-        onChange={(enabled) => updateSetting("push_to_talk", enabled)}
-        isUpdating={isUpdating("push_to_talk")}
-        label={t("settings.general.pushToTalk.label")}
-        description={t("settings.general.pushToTalk.description")}
+        checked={enabled}
+        onChange={(nextEnabled) =>
+          updateSetting("filler_word_removal_enabled", nextEnabled)
+        }
+        isUpdating={isUpdating("filler_word_removal_enabled")}
+        label={t("settings.advanced.fillerWordRemoval.title")}
+        description={t("settings.advanced.fillerWordRemoval.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       />

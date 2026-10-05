@@ -120,7 +120,7 @@ Found a typo or better translation?
 
 ### Don't:
 
-- Translate brand names (Handy, Whisper.cpp, OpenAI)
+- Translate brand names (Handy, transcribe.cpp, ggml, OpenAI)
 - Change or remove `{{variables}}`
 - Modify JSON keys
 - Add extra spaces or formatting
@@ -154,6 +154,7 @@ Some languages have complex plural rules. For now, use a general form that works
 | Language   | Code | Status            |
 | ---------- | ---- | ----------------- |
 | English    | `en` | Complete (source) |
+| Catalan    | `ca` | Complete          |
 | Chinese    | `zh` | Complete          |
 | French     | `fr` | Complete          |
 | German     | `de` | Complete          |

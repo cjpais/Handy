@@ -457,51 +457,6 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Register the cancel shortcut (called when recording starts)
-pub fn register_cancel_shortcut(app: &AppHandle) {
-    // Disabled on Linux due to instability
-    #[cfg(target_os = "linux")]
-    {
-        let _ = app;
-        return;
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    {
-        let app_clone = app.clone();
-        tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-                if let Some(state) = app_clone.try_state::<HandyKeysState>() {
-                    if let Err(e) = state.register(&cancel_binding) {
-                        error!("Failed to register cancel shortcut: {}", e);
-                    }
-                }
-            }
-        });
-    }
-}
-
-/// Unregister the cancel shortcut (called when recording stops)
-pub fn unregister_cancel_shortcut(app: &AppHandle) {
-    #[cfg(target_os = "linux")]
-    {
-        let _ = app;
-        return;
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    {
-        let app_clone = app.clone();
-        tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-                if let Some(state) = app_clone.try_state::<HandyKeysState>() {
-                    let _ = state.unregister(&cancel_binding);
-                }
-            }
-        });
-    }
-}
-
 /// Register a shortcut
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     let state = app
@@ -527,10 +482,29 @@ pub fn start_handy_keys_recording(app: AppHandle, binding_id: String) -> Result<
         return Err("handy-keys is not the active keyboard implementation".into());
     }
 
+    // While Secure Input is active the tap receives no KeyDown/KeyUp, so the
+    // recorder would silently capture just the modifier and overwrite the
+    // binding with it (issue #1578). Refuse instead; the frontend maps this
+    // marker to a localized explanation, and the noted impact makes the
+    // warning banner appear with the full story.
+    if crate::secure_input::is_enabled_now() {
+        crate::secure_input::note_recorder_blocked(&app);
+        return Err("secure-input-active".into());
+    }
+
     let state = app
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
-    state.start_recording(&app, binding_id)
+
+    // Suspend every registered shortcut so a combo that overlaps an existing
+    // binding can't fire it (or have its keys swallowed) mid-capture.
+    super::suspend_all_shortcuts(&app);
+
+    let result = state.start_recording(&app, binding_id);
+    if result.is_err() {
+        super::resume_all_shortcuts(&app);
+    }
+    result
 }
 
 /// Stop key recording mode
@@ -545,5 +519,11 @@ pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
     let state = app
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
-    state.stop_recording()
+
+    // Restore shortcuts from settings regardless of how recording ended.
+    // A commit has already registered the new binding via change_binding;
+    // re-registering it here fails cleanly and is ignored.
+    let result = state.stop_recording();
+    super::resume_all_shortcuts(&app);
+    result
 }

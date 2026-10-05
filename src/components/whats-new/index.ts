@@ -1,0 +1,1 @@
+export { WhatsNewGate } from "./WhatsNewGate";

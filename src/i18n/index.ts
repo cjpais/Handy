@@ -52,20 +52,34 @@ export const SUPPORTED_LANGUAGES = Object.keys(resources)
 export type SupportedLanguageCode = string;
 
 // Check if a language code is supported
-const getSupportedLanguage = (
+export const getSupportedLanguage = (
   langCode: string | null | undefined,
 ): SupportedLanguageCode | null => {
   if (!langCode) return null;
-  const normalized = langCode.toLowerCase();
+
+  const normalized = langCode.toLowerCase().replace(/_/g, "-");
+  const subtags = normalized.split("-");
+  const language = subtags[0];
+  const isHant = subtags.includes("hant");
+  const isHans = subtags.includes("hans");
+  const isTraditionalRegion = ["tw", "hk", "mo"].some((region) =>
+    subtags.includes(region),
+  );
+
   // Try exact match first
   let supported = SUPPORTED_LANGUAGES.find(
     (lang) => lang.code.toLowerCase() === normalized,
   );
   if (!supported) {
-    // Fall back to prefix match (language only, without region)
-    const prefix = normalized.split("-")[0];
+    let fallback = language;
+    if (language === "zh" && (isHant || (!isHans && isTraditionalRegion))) {
+      fallback = "zh-tw";
+    } else if (language === "yue") {
+      // Cantonese uses Traditional Chinese unless explicitly tagged as Hans.
+      fallback = isHans ? "zh" : "zh-tw";
+    }
     supported = SUPPORTED_LANGUAGES.find(
-      (lang) => lang.code.toLowerCase() === prefix,
+      (lang) => lang.code.toLowerCase() === fallback,
     );
   }
   return supported ? supported.code : null;
