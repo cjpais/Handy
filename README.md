@@ -122,17 +122,22 @@ handy --start-hidden --no-tray
 > /Applications/Handy.app/Contents/MacOS/Handy --toggle-transcription
 > ```
 
-
 ### Transcription hook
 
-It is possble to modify transcription text by a script before Handy pastes it.
-To do that create an executable script `hooks/transcription` in the app's data folder.
-Handy will pass transcription text to it via standard input and paste its standard output.
+Advanced users can rewrite the text with a script just before Handy pastes it (macOS and Linux).
+Create an executable file named `hooks/transcription` in Handy's app data folder (`~/Library/Application Support/com.pais.handy/` on macOS, `~/.local/share/com.pais.handy/` on Linux, or the `Data` folder in portable mode).
+Handy passes the text it would paste on standard input and pastes the script's standard output instead.
+
+- The hook runs after LLM post-processing, if that's enabled. History keeps the text as transcribed and post-processed, before the hook.
+- A single trailing newline in the output is removed, so `echo` and `print` won't submit the line in a terminal.
+- If the script prints nothing, nothing is pasted. You can use that to deliver the text another way.
+- If the script fails (non-zero exit) or runs longer than 30 seconds, Handy pastes the original text. The cancel shortcut also stops the hook.
 
 Example script to transform first letter to lowercase and remove trailing period:
+
 ```bash
-# macOS/Linux
-mkdir ~/Library/Application\ Support/com.pais.handy/hooks/
+# macOS (on Linux use ~/.local/share/com.pais.handy instead)
+mkdir -p ~/Library/Application\ Support/com.pais.handy/hooks/
 cat > ~/Library/Application\ Support/com.pais.handy/hooks/transcription << 'EOF'
 #!/usr/bin/env python3
 import sys
@@ -146,6 +151,7 @@ chmod +x ~/Library/Application\ Support/com.pais.handy/hooks/transcription
 ```
 
 Example using Apple Script to prefix transcription with `#` if active window is Terminal.app:
+
 ```bash
 #!/bin/bash
 active_app=$(osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true')
