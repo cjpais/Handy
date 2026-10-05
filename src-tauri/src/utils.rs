@@ -117,6 +117,79 @@ pub fn cancel_current_operation(app: &AppHandle) {
     info!("Operation cancellation completed - returned to idle state");
 }
 
+/// Whether a package upgrade replaced this binary on disk. dpkg, rpm and
+/// pacman install the new file over the old path, which leaves this process
+/// running the old, now deleted, file. False if the file is just gone
+/// (uninstalled, or a garbage-collected Nix store path): nothing to restart
+/// into.
+#[cfg(target_os = "linux")]
+fn binary_replaced_on_disk() -> bool {
+    let Ok(exe) = std::fs::read_link("/proc/self/exe") else {
+        return false;
+    };
+    exe.to_str()
+        .and_then(|path| path.strip_suffix(" (deleted)"))
+        .is_some_and(|path| std::path::Path::new(path).exists())
+}
+
+/// Once a package upgrade replaces Handy's binary, restart into the new
+/// version as soon as no dictation is in progress. Until then this version
+/// keeps running: transcription workers start from `/proc/self/exe`, still
+/// the old binary (and transcribe.cpp refuses a mismatched library cleanly).
+#[cfg(target_os = "linux")]
+pub fn restart_after_package_upgrade(app: &AppHandle) {
+    let app = app.clone();
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        if binary_replaced_on_disk() {
+            app.state::<TranscriptionCoordinator>().restart_if_idle();
+        }
+    });
+}
+
+/// Whether to relaunch from `RunEvent::Exit`, and if so whether hidden.
+#[cfg(target_os = "linux")]
+static UPGRADE_RELAUNCH: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+
+/// Quit so `relaunch_after_upgrade` starts the new version. Not
+/// `request_restart()`: that would bring the settings window up out of
+/// nowhere after a background upgrade unless start-hidden is set, so the
+/// new instance starts hidden unless the window is showing now.
+#[cfg(target_os = "linux")]
+pub fn quit_for_upgrade(app: &AppHandle) {
+    let window_visible = app
+        .get_webview_window("main")
+        .and_then(|w| w.is_visible().ok())
+        .unwrap_or(false);
+    if UPGRADE_RELAUNCH.set(!window_visible).is_ok() {
+        app.exit(0);
+    }
+}
+
+/// Called on `RunEvent::Exit`, after plugins' exit hooks: single-instance has
+/// released its name by then, so the new instance does not defer to this one.
+#[cfg(target_os = "linux")]
+pub fn relaunch_after_upgrade(app: &AppHandle) {
+    let Some(&hidden) = UPGRADE_RELAUNCH.get() else {
+        return;
+    };
+    let env = app.env();
+    let exe = match tauri::process::current_binary(&env) {
+        Ok(exe) => exe,
+        Err(e) => {
+            log::error!("Failed to find Handy's binary to relaunch: {e}");
+            return;
+        }
+    };
+    let mut args: Vec<_> = env.args_os.iter().skip(1).cloned().collect();
+    if hidden && !args.iter().any(|arg| arg == "--start-hidden") {
+        args.push("--start-hidden".into());
+    }
+    if let Err(e) = std::process::Command::new(exe).args(args).spawn() {
+        log::error!("Failed to relaunch Handy after an upgrade: {e}");
+    }
+}
+
 /// Check if using the Wayland display server protocol
 #[cfg(target_os = "linux")]
 pub fn is_wayland() -> bool {

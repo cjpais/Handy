@@ -30,6 +30,10 @@ struct Incoming {
 }
 
 pub fn run() -> i32 {
+    #[cfg(unix)]
+    ignore_app_signals();
+    #[cfg(target_os = "linux")]
+    set_process_name();
     // Take the real stdout for the protocol before any native code runs, and
     // point fd 1 at stderr: ggml writes to stdout in places, and any stray
     // byte there would corrupt the protocol stream.
@@ -390,6 +394,29 @@ fn init_logger() {
         .unwrap_or(LevelFilter::Info);
     if log::set_logger(&LOGGER).is_ok() {
         log::set_max_level(level);
+    }
+}
+
+/// SIGUSR2 toggles transcription in the app (and WebKitGTK uses SIGUSR1).
+/// Aimed at Handy by name, e.g. the README's `pkill -USR2 -n handy`, one
+/// can reach this worker instead, and its default action would kill it.
+#[cfg(unix)]
+fn ignore_app_signals() {
+    // SAFETY: setting a signal's disposition to SIG_IGN has no preconditions.
+    unsafe {
+        libc::signal(libc::SIGUSR1, libc::SIG_IGN);
+        libc::signal(libc::SIGUSR2, libc::SIG_IGN);
+    }
+}
+
+/// Started from /proc/self/exe, the kernel names this process "exe". Name it
+/// as Handy's, but not `handy`: `pkill`/`killall` match names case-sensitively,
+/// so `pkill -USR2 -n handy` keeps reaching the app, never this newer process.
+#[cfg(target_os = "linux")]
+fn set_process_name() {
+    // SAFETY: PR_SET_NAME copies a NUL-terminated name of up to 16 bytes.
+    unsafe {
+        libc::prctl(libc::PR_SET_NAME, c"Handy-worker".as_ptr());
     }
 }
 

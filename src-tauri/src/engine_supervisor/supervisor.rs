@@ -39,9 +39,10 @@ use transcribe_cpp::{Backend, RunOptions, StreamOptions, StreamText, StreamUpdat
 const HELLO_TIMEOUT: Duration = Duration::from_secs(60);
 /// Model loads stay generous: a slow load is slow, not hung (#1841).
 const LOAD_TIMEOUT: Duration = Duration::from_secs(180);
-/// Floor for every other call, so sub-second clips and first-use shader
-/// compiles are not mistaken for hangs.
-const CALL_FLOOR: Duration = Duration::from_secs(10);
+/// Floor for every other call, so sub-second clips, first-use shader
+/// compiles and slow CPU streaming (a single feed or finalize can take well
+/// over 10 s there) are not mistaken for hangs.
+const CALL_FLOOR: Duration = Duration::from_secs(30);
 /// Floor for a batch run. A run has a fixed cost however short the clip:
 /// Whisper always encodes a full 30 s window, which on CPU takes seconds
 /// even for a 1 s clip.
@@ -1060,8 +1061,14 @@ impl Worker {
                 .expect("set HANDY_TRANSCRIBE_WORKER_EXE"),
         );
         #[cfg(not(test))]
-        let exe = std::env::current_exe()?;
+        let exe = worker_exe()?;
         let mut command = ProcessCommand::new(exe);
+        #[cfg(target_os = "linux")]
+        if let Some(arg0) = std::env::args_os().next() {
+            // Keep `ps` showing Handy's own path rather than /proc/self/exe.
+            use std::os::unix::process::CommandExt;
+            command.arg0(arg0);
+        }
         command.arg(WORKER_FLAG);
         if cpu_only {
             command.arg(CPU_ONLY_FLAG);
@@ -1255,6 +1262,17 @@ impl Drop for Worker {
         let _ = child.kill();
         let _ = child.wait();
     }
+}
+
+/// The executable a worker runs. On Linux, `/proc/self/exe`: this very
+/// binary even after a package upgrade has replaced the file at its path,
+/// where `current_exe()` names a path that no longer exists.
+#[cfg(not(test))]
+fn worker_exe() -> io::Result<PathBuf> {
+    #[cfg(target_os = "linux")]
+    return Ok(PathBuf::from("/proc/self/exe"));
+    #[cfg(not(target_os = "linux"))]
+    std::env::current_exe()
 }
 
 fn encode_request(request: &Request, pcm: Option<&[f32]>) -> Result<Vec<u8>, Failure> {
