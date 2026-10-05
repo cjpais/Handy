@@ -39,17 +39,8 @@ use transcribe_cpp::{Backend, RunOptions, StreamOptions, StreamText, StreamUpdat
 const HELLO_TIMEOUT: Duration = Duration::from_secs(60);
 /// Model loads stay generous: a slow load is slow, not hung (#1841).
 const LOAD_TIMEOUT: Duration = Duration::from_secs(180);
-/// Floor for every other call, so sub-second clips, first-use shader
-/// compiles and slow CPU streaming (a single feed or finalize can take well
-/// over 10 s there) are not mistaken for hangs.
+/// Floor for stream calls that do no decoding (begin, reset).
 const CALL_FLOOR: Duration = Duration::from_secs(30);
-/// Floor for a batch run. A run has a fixed cost however short the clip:
-/// Whisper always encodes a full 30 s window, which on CPU takes seconds
-/// even for a 1 s clip.
-const RUN_FLOOR: Duration = Duration::from_secs(60);
-/// Work on N seconds of audio may take up to this many times N. Past that,
-/// something is wrong anyway.
-const AUDIO_DEADLINE_FACTOR: f64 = 10.0;
 /// How long a worker gets to exit after its stdin closes before it's killed.
 const SHUTDOWN_GRACE: Duration = Duration::from_secs(2);
 /// Native stderr lines kept for crash reports (a `GGML_ASSERT` message lands
@@ -57,16 +48,58 @@ const SHUTDOWN_GRACE: Duration = Duration::from_secs(2);
 const STDERR_TAIL_LINES: usize = 64;
 const SAMPLE_RATE: f64 = 16_000.0;
 
-/// Deadline for work on `samples` of 16 kHz audio.
-fn audio_deadline(samples: usize) -> Duration {
-    CALL_FLOOR.max(Duration::from_secs_f64(
-        samples as f64 / SAMPLE_RATE * AUDIO_DEADLINE_FACTOR,
-    ))
+/// How long decoding work may take before its worker counts as hung, by the
+/// device the model runs on. On a GPU a hang is recovered from (retried on
+/// CPU), so it should be caught soon. On CPU a hang is never retried, so the
+/// deadline only decides when to give up: a slow machine must not be
+/// mistaken for a hung one.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Deadlines {
+    /// Floor for a stream feed or finalize, so sub-second chunks and
+    /// first-use shader compiles are not mistaken for hangs.
+    call_floor: Duration,
+    /// Floor for a batch run. A run has a fixed cost however short the
+    /// clip: Whisper always encodes a full 30 s window, which on CPU takes
+    /// seconds even for a 1 s clip.
+    run_floor: Duration,
+    /// Work on N seconds of audio may take up to this many times N.
+    audio_factor: f64,
 }
 
-/// Deadline for a batch run on `samples` of 16 kHz audio.
-fn run_deadline(samples: usize) -> Duration {
-    RUN_FLOOR.max(audio_deadline(samples))
+const GPU_DEADLINES: Deadlines = Deadlines {
+    call_floor: Duration::from_secs(30),
+    run_floor: Duration::from_secs(60),
+    audio_factor: 10.0,
+};
+
+/// A single CPU feed or finalize can take well over 10 s, and a large model
+/// on an older CPU runs slower than real time.
+const CPU_DEADLINES: Deadlines = Deadlines {
+    call_floor: Duration::from_secs(120),
+    run_floor: Duration::from_secs(300),
+    audio_factor: 20.0,
+};
+
+impl Deadlines {
+    fn for_device(on_gpu: bool) -> Self {
+        if on_gpu {
+            GPU_DEADLINES
+        } else {
+            CPU_DEADLINES
+        }
+    }
+
+    /// Deadline for stream work on `samples` of 16 kHz audio.
+    fn audio(&self, samples: usize) -> Duration {
+        self.call_floor.max(Duration::from_secs_f64(
+            samples as f64 / SAMPLE_RATE * self.audio_factor,
+        ))
+    }
+
+    /// Deadline for a batch run on `samples` of 16 kHz audio.
+    fn run(&self, samples: usize) -> Duration {
+        self.run_floor.max(self.audio(samples))
+    }
 }
 
 fn ms_to_samples(ms: i64) -> usize {
@@ -768,6 +801,16 @@ impl Owner {
         }
     }
 
+    /// Deadlines for the device the current worker's model runs on.
+    fn deadlines(&self) -> Deadlines {
+        let on_gpu = self
+            .worker
+            .as_ref()
+            .and_then(|worker| worker.info.as_ref())
+            .is_some_and(|info| info.on_gpu);
+        Deadlines::for_device(on_gpu)
+    }
+
     /// A call that [`EngineSupervisor::cancel`] can stop. Returns
     /// `Cancelled` if a cancel came after `epoch`, whatever the worker said.
     fn call_work(
@@ -833,7 +876,8 @@ impl Owner {
             // A respawn here runs under the load deadline; the run's own
             // deadline starts only once the model is loaded.
             self.ensure_worker()?;
-            match self.call_work(&request, Some(pcm), run_deadline(pcm.len()), epoch) {
+            let deadline = self.deadlines().run(pcm.len());
+            match self.call_work(&request, Some(pcm), deadline, epoch) {
                 Ok(Response::Transcript(transcript)) => return Ok(transcript),
                 Ok(other) => return Err(unexpected(&other).into()),
                 Err(failure) if failure.worker_lost() => {
@@ -898,7 +942,9 @@ impl Owner {
             return;
         }
         let epoch = stream.epoch;
-        let deadline = audio_deadline(pcm.len() + ms_to_samples(stream.pending_ms));
+        let deadline = self
+            .deadlines()
+            .audio(pcm.len() + ms_to_samples(stream.pending_ms));
         let started = Instant::now();
         match self.call_work(&Request::Feed, Some(pcm), deadline, epoch) {
             Ok(Response::Fed { update, text }) => {
@@ -947,7 +993,7 @@ impl Owner {
         if self.worker.is_none() {
             return Ok(None);
         }
-        let deadline = audio_deadline(ms_to_samples(stream.pending_ms));
+        let deadline = self.deadlines().audio(ms_to_samples(stream.pending_ms));
         let started = Instant::now();
         match self.call_work(&Request::Finalize { want_language }, None, deadline, epoch) {
             Ok(Response::Finalized {
@@ -1093,6 +1139,8 @@ impl Worker {
         let (stdin_tx, frames) = mpsc::channel();
         let (response_tx, responses) = mpsc::channel();
         let (stderr_done_tx, stderr_done) = mpsc::channel();
+        #[cfg(test)]
+        LIVE_WORKERS.fetch_add(1, Ordering::SeqCst);
         // Built before the threads so a failure below still reaps the child.
         let worker = Worker {
             control: Arc::new(Control {
@@ -1248,21 +1296,30 @@ impl Drop for Worker {
         self.control.close_stdin();
         let deadline = Instant::now() + SHUTDOWN_GRACE;
         let mut child = lock(&self.control.child);
-        loop {
+        let exited = loop {
             match child.try_wait() {
-                Ok(Some(_)) => return,
+                Ok(Some(_)) => break true,
                 Ok(None) if Instant::now() < deadline => thread::sleep(Duration::from_millis(5)),
-                _ => break,
+                _ => break false,
             }
+        };
+        if !exited {
+            warn!(
+                "Transcription worker (pid {}) did not exit within {:?}; killing it",
+                self.control.pid, SHUTDOWN_GRACE
+            );
+            let _ = child.kill();
+            let _ = child.wait();
         }
-        warn!(
-            "Transcription worker (pid {}) did not exit within {:?}; killing it",
-            self.control.pid, SHUTDOWN_GRACE
-        );
-        let _ = child.kill();
-        let _ = child.wait();
+        #[cfg(test)]
+        LIVE_WORKERS.fetch_sub(1, Ordering::SeqCst);
     }
 }
+
+/// Worker processes started and not yet reaped. Every worker is reaped when
+/// its handle drops, so this is exactly the worker processes still alive.
+#[cfg(test)]
+static LIVE_WORKERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
 /// The executable a worker runs. On Linux, `/proc/self/exe`: this very
 /// binary even after a package upgrade has replaced the file at its path,
@@ -1346,12 +1403,27 @@ mod unit_tests {
     use super::*;
 
     #[test]
-    fn audio_deadline_is_ten_times_the_audio_with_a_floor() {
-        assert_eq!(audio_deadline(0), CALL_FLOOR);
-        assert_eq!(audio_deadline(16_000 / 2), CALL_FLOOR);
-        assert_eq!(audio_deadline(16_000 * 5), Duration::from_secs(50));
-        assert_eq!(run_deadline(16_000), RUN_FLOOR);
-        assert_eq!(run_deadline(16_000 * 10), Duration::from_secs(100));
+    fn deadlines_scale_with_the_audio_above_a_floor() {
+        let gpu = Deadlines::for_device(true);
+        assert_eq!(gpu, GPU_DEADLINES);
+        assert_eq!(gpu.audio(0), gpu.call_floor);
+        assert_eq!(gpu.audio(16_000 / 2), gpu.call_floor);
+        assert_eq!(gpu.audio(16_000 * 5), Duration::from_secs(50));
+        assert_eq!(gpu.run(16_000), gpu.run_floor);
+        assert_eq!(gpu.run(16_000 * 10), Duration::from_secs(100));
+
+        let cpu = Deadlines::for_device(false);
+        assert_eq!(cpu, CPU_DEADLINES);
+        assert_eq!(cpu.audio(16_000), cpu.call_floor);
+        assert_eq!(cpu.audio(16_000 * 10), Duration::from_secs(200));
+        assert_eq!(cpu.run(16_000 * 5), cpu.run_floor);
+        assert_eq!(cpu.run(16_000 * 60), Duration::from_secs(1200));
+        // CPU is never stricter than GPU.
+        for secs in [0, 1, 5, 30, 120, 600] {
+            assert!(cpu.audio(secs * 16_000) >= gpu.audio(secs * 16_000));
+            assert!(cpu.run(secs * 16_000) >= gpu.run(secs * 16_000));
+        }
+
         assert_eq!(ms_to_samples(1500), 24_000);
         assert_eq!(ms_to_samples(-5), 0);
     }
@@ -1422,13 +1494,9 @@ mod tests {
         }
     }
 
-    /// Child processes of this test process (the workers alive right now).
+    /// The workers alive right now.
     fn worker_count() -> usize {
-        let out = std::process::Command::new("pgrep")
-            .args(["-P", &std::process::id().to_string()])
-            .output()
-            .expect("run pgrep");
-        String::from_utf8_lossy(&out.stdout).lines().count()
+        LIVE_WORKERS.load(Ordering::SeqCst)
     }
 
     /// Feed 30 ms frames a little faster than a microphone would.
@@ -1646,7 +1714,7 @@ mod tests {
     }
 
     /// A hung finalize is killed at its deadline (sized by the buffered
-    /// audio, at least CALL_FLOOR) and the batch fallback runs in a fresh
+    /// audio, at least the device's call floor) and the batch fallback runs in a fresh
     /// worker.
     #[test]
     #[ignore]

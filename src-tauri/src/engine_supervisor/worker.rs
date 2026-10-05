@@ -306,6 +306,7 @@ fn load(
 
 /// Debug-build fault injection for exercising crash/hang recovery:
 /// `HANDY_WORKER_FAULT=<abort|segv|hang>@<init|list|load|run|feed|finalize>`
+/// (`abort` is what `GGML_ASSERT` ends in, `segv` a real invalid memory write)
 /// (`init` is backend registration, before the hello). With `HANDY_WORKER_FAULT_ONCE=<marker
 /// path>` it fires only in the first worker to reach that stage (the marker
 /// file records that it fired). With `HANDY_WORKER_FAULT_GPU_ONLY=1` it fires
@@ -338,12 +339,15 @@ fn inject_fault(stage: &str, on_gpu: bool) {
     eprintln!("injected fault: {kind} at {stage}");
     match kind {
         "abort" => std::process::abort(),
-        // SAFETY: deliberately crash the worker with a real SIGSEGV. Rust's
-        // stack-overflow handler would swallow a raised signal, so restore
-        // the default disposition first.
+        // SAFETY: deliberately crash the worker with a real invalid memory
+        // write, as a faulting driver does: SIGSEGV on Unix, an access
+        // violation on Windows (where raising SIGSEGV only exits with code
+        // 3). On Unix, restore the default disposition first so Rust's
+        // stack-overflow handler doesn't get involved.
         "segv" => unsafe {
+            #[cfg(unix)]
             libc::signal(libc::SIGSEGV, libc::SIG_DFL);
-            libc::raise(libc::SIGSEGV);
+            std::ptr::write_volatile(std::ptr::null_mut::<u32>(), 1);
         },
         "hang" => loop {
             std::thread::sleep(std::time::Duration::from_secs(3600));
