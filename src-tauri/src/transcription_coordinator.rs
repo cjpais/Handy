@@ -170,13 +170,8 @@ enum Effect {
 /// Commands processed sequentially by the coordinator thread.
 enum Command {
     Input(InputEvent),
-    Cancel {
-        recording_was_active: bool,
-    },
+    Cancel { recording_was_active: bool },
     ProcessingFinished,
-    /// Restart into an upgraded binary, unless a dictation is in progress.
-    #[cfg(target_os = "linux")]
-    RestartIfIdle,
 }
 
 /// Decide whether a key-up should be deferred (so auto-repeat can cancel it)
@@ -584,15 +579,6 @@ impl TranscriptionCoordinator {
                                 run_effect(&app, &mut state, effect);
                             }
                         }
-                        #[cfg(target_os = "linux")]
-                        Command::RestartIfIdle => {
-                            if state.stage == Stage::Idle {
-                                log::info!(
-                                    "Handy's binary was replaced by an upgrade; restarting into the new version"
-                                );
-                                crate::utils::quit_for_upgrade(&app);
-                            }
-                        }
                     }
                 }
                 debug!("Transcription coordinator exited");
@@ -679,13 +665,6 @@ impl TranscriptionCoordinator {
         if self.tx.send(Command::ProcessingFinished).is_err() {
             warn!("Transcription coordinator channel closed");
         }
-    }
-
-    /// Restart the app, but only if no dictation is in progress. Commands
-    /// are handled in order, so none can start while this is checked.
-    #[cfg(target_os = "linux")]
-    pub fn restart_if_idle(&self) {
-        let _ = self.tx.send(Command::RestartIfIdle);
     }
 }
 

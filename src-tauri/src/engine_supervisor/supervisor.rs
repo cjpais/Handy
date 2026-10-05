@@ -328,6 +328,8 @@ impl EngineSupervisor {
     /// Without `gpu_allowed`, every worker is CPU-only, so no GPU driver is
     /// ever loaded.
     pub fn new(gpu_allowed: bool) -> Self {
+        #[cfg(all(unix, not(test)))]
+        record_launched_exe();
         let (commands, queue) = mpsc::channel();
         let shared = Arc::new(Shared {
             gpu_allowed,
@@ -1321,11 +1323,52 @@ impl Drop for Worker {
 #[cfg(test)]
 static LIVE_WORKERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
-/// The executable a worker runs. On Linux, `/proc/self/exe`: this very
-/// binary even after a package upgrade has replaced the file at its path,
-/// where `current_exe()` names a path that no longer exists.
+/// The file Handy was started from, with its identity (device and inode),
+/// recorded at startup; see [`worker_exe`]. `None` if either couldn't be
+/// read, which skips the check.
+#[cfg(all(unix, not(test)))]
+static LAUNCHED_EXE: std::sync::OnceLock<Option<(PathBuf, (u64, u64))>> =
+    std::sync::OnceLock::new();
+
+#[cfg(all(unix, not(test)))]
+fn file_id(path: &std::path::Path) -> io::Result<(u64, u64)> {
+    use std::os::unix::fs::MetadataExt;
+    let metadata = std::fs::metadata(path)?;
+    Ok((metadata.dev(), metadata.ino()))
+}
+
+/// Must run before an upgrade can replace the file, so at startup.
+#[cfg(all(unix, not(test)))]
+fn record_launched_exe() {
+    LAUNCHED_EXE.get_or_init(|| {
+        std::env::current_exe()
+            .and_then(|path| {
+                let id = file_id(&path)?;
+                Ok((path, id))
+            })
+            .inspect_err(|e| warn!("Could not identify Handy's executable: {}", e))
+            .ok()
+    });
+}
+
+/// The executable a worker runs: always this very binary, so the two agree
+/// on the protocol and on transcribe.cpp's backend libraries. Upgrading or
+/// moving Handy while it runs replaces or removes the file it started from,
+/// and a worker started from there would be the new version (macOS), or this
+/// binary loading the new version's backend libraries (Linux). Only a
+/// restart fixes that, so refuse to start one and say so. Windows locks a
+/// running executable against replacement. On Linux the worker runs from
+/// `/proc/self/exe`, which is this binary even once its file is replaced.
 #[cfg(not(test))]
 fn worker_exe() -> io::Result<PathBuf> {
+    #[cfg(unix)]
+    if let Some((path, launched)) = LAUNCHED_EXE.get().and_then(Option::as_ref) {
+        if file_id(path).ok().as_ref() != Some(launched) {
+            return Err(io::Error::other(
+                "Handy was updated or moved while it was running; restart Handy",
+            ));
+        }
+    }
     #[cfg(target_os = "linux")]
     return Ok(PathBuf::from("/proc/self/exe"));
     #[cfg(not(target_os = "linux"))]

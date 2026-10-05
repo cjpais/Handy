@@ -1014,8 +1014,6 @@ pub fn run(cli_args: CliArgs) {
             WEBVIEW_LOG_STREAMING.store(settings.debug_mode, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
-            #[cfg(target_os = "linux")]
-            utils::restart_after_package_upgrade(&app_handle);
 
             initialize_core_logic(&app_handle);
 
@@ -1106,8 +1104,8 @@ pub fn run(cli_args: CliArgs) {
     #[cfg(target_os = "macos")]
     apply_startup_activation_policy(&mut app, headless_mode);
 
-    // `app` is only used by the macOS and Linux arms.
-    #[cfg_attr(windows, allow(unused_variables))]
+    // `app` is only used by the macOS arm.
+    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     app.run(|app, event| match &event {
         #[cfg(target_os = "macos")]
         tauri::RunEvent::Reopen { .. } => {
@@ -1126,8 +1124,6 @@ pub fn run(cli_args: CliArgs) {
             }
             show_main_window(app);
         }
-        #[cfg(target_os = "linux")]
-        tauri::RunEvent::Exit => utils::relaunch_after_upgrade(app),
         // No transcription teardown on exit: transcribe.cpp runs only in the
         // worker process, which exits by itself as soon as this process's end
         // of its stdin closes, even if it is hung. Waiting on an unload here

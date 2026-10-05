@@ -2,8 +2,8 @@
 //! the model, session and stream, and serves [`Request`]s until the parent
 //! closes its stdin.
 //!
-//! A dedicated thread reads stdin so the parent's writes never block (R2),
-//! and the worker exits the moment the parent goes away, even if hung (R3).
+//! A dedicated thread reads stdin so the parent's writes never block, and
+//! the worker exits the moment the parent goes away, even if hung.
 
 use super::protocol::{
     read_message, write_message, DeviceInfo, DeviceSelector, LoadedInfo, Request, Response,
@@ -148,11 +148,12 @@ pub fn run() -> i32 {
     0
 }
 
-/// The stdin reader. Forwards requests to the main loop, applies cancels
-/// immediately, and ends the process when the parent closes stdin (unload,
-/// quit, or the parent died). `_exit` skips C++ static destructors, so a
-/// model still alive at that point can't trip ggml-metal's teardown asserts,
-/// and the OS reclaims its CPU and GPU memory.
+/// The stdin reader. Forwards requests to the main loop, and ends the
+/// process when the parent closes stdin (unload, quit, or the parent died).
+/// Cancels never reach the worker: the parent kills it instead. `_exit`
+/// skips C++ static destructors, so a model still alive at that point can't
+/// trip ggml-metal's teardown asserts, and the OS reclaims its CPU and GPU
+/// memory.
 fn read_requests(requests: mpsc::Sender<Incoming>) -> ! {
     let mut input = BufReader::new(io::stdin().lock());
     loop {

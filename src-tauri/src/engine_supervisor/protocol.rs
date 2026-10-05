@@ -17,6 +17,7 @@ use transcribe_cpp::{
 /// Refuse frames larger than this: a garbage length must not turn into a
 /// multi-gigabyte allocation. One hour of 16 kHz f32 PCM is ~230 MB.
 const MAX_SECTION_BYTES: usize = 1 << 30;
+const PCM_BYTES_PER_MINUTE: usize = 16_000 * 4 * 60;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
@@ -154,10 +155,20 @@ pub struct LoadedInfo {
     pub supports_initial_prompt: bool,
 }
 
-/// Encode one frame.
+/// Encode one frame. Refuses a section the reader would refuse, so an
+/// oversized request fails cleanly here instead of killing the worker (which
+/// would read as a crash and be blamed on the GPU).
 pub fn encode_message<T: Serialize>(message: &T, pcm: Option<&[f32]>) -> io::Result<Vec<u8>> {
     let json = serde_json::to_vec(message).map_err(io::Error::other)?;
+    check_section_len(json.len())?;
     let pcm = pcm.unwrap_or(&[]);
+    if check_section_len(pcm.len() * 4).is_err() {
+        return Err(io::Error::other(format!(
+            "audio too long for one transcription: {} minutes (limit {} minutes)",
+            pcm.len() * 4 / PCM_BYTES_PER_MINUTE,
+            MAX_SECTION_BYTES / PCM_BYTES_PER_MINUTE,
+        )));
+    }
     let mut frame = Vec::with_capacity(8 + json.len() + pcm.len() * 4);
     frame.extend_from_slice(&(json.len() as u32).to_le_bytes());
     frame.extend_from_slice(&json);
@@ -218,12 +229,18 @@ fn read_section(r: &mut impl Read) -> io::Result<Vec<u8>> {
 
 fn read_section_body(r: &mut impl Read, len: [u8; 4]) -> io::Result<Vec<u8>> {
     let len = u32::from_le_bytes(len) as usize;
-    if len > MAX_SECTION_BYTES {
-        return Err(io::Error::other(format!("frame section too large: {len}")));
-    }
+    check_section_len(len)?;
     let mut buf = vec![0u8; len];
     r.read_exact(&mut buf)?;
     Ok(buf)
+}
+
+/// Also keeps every section length within the frame's `u32` length prefix.
+fn check_section_len(len: usize) -> io::Result<()> {
+    if len > MAX_SECTION_BYTES {
+        return Err(io::Error::other(format!("frame section too large: {len}")));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -270,6 +287,13 @@ mod tests {
             let err = read_message::<Request>(&mut &*partial).unwrap_err();
             assert_eq!(err.kind(), io::ErrorKind::UnexpectedEof, "cut at {cut}");
         }
+    }
+
+    #[test]
+    fn section_limit_is_inclusive_and_fits_the_length_prefix() {
+        assert!(check_section_len(MAX_SECTION_BYTES).is_ok());
+        assert!(check_section_len(MAX_SECTION_BYTES + 1).is_err());
+        assert!(MAX_SECTION_BYTES <= u32::MAX as usize);
     }
 
     #[test]
