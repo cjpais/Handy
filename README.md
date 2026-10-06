@@ -44,6 +44,11 @@ The process is entirely local:
      ```
      Do not use `dpkg -i` unless the dependencies are already installed. If you already used it, run `sudo apt --fix-broken install`.
 2. Install the application
+   - **Windows (installer)**: The `.exe` installer adds `handy.exe` to your user `PATH` automatically, so `handy` works in new terminals after install (existing terminals must be reopened). Uninstalling removes it.
+   - **Windows (portable)**: If you use the portable/zip version, add the extracted folder to your `PATH` manually: **Settings > System > About > Advanced system settings > Environment Variables**, edit `Path` under your user variables, and add the folder containing `handy.exe`. Or in PowerShell:
+     ```powershell
+     setx PATH "$env:PATH;C:\path\to\handy"
+     ```
 3. Launch Handy and grant necessary system permissions (microphone, accessibility)
 4. Configure your preferred keyboard shortcuts in Settings
 5. Start transcribing!
