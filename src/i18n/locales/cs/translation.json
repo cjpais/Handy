@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Zkratky blokuje Secure Input",
     "language": "Jazyk",
     "autoLanguage": "Automaticky",
-    "otherLanguages": "Další jazyky"
+    "otherLanguages": "Další jazyky",
+    "microphone": "Mikrofon"
   },
   "sidebar": {
     "general": "Obecné",

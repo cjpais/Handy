@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Tastenkürzel durch Secure Input blockiert",
     "language": "Sprache",
     "autoLanguage": "Automatisch",
-    "otherLanguages": "Weitere Sprachen"
+    "otherLanguages": "Weitere Sprachen",
+    "microphone": "Mikrofon"
   },
   "sidebar": {
     "general": "Allgemein",
