@@ -373,8 +373,12 @@ jobs:
             '.bundle.macOS.frameworks = [$lib]' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
-      - name: Install ONNX Runtime (x86_64 Linux, Ubuntu 22.04)
-        if: contains(inputs.platform, 'ubuntu-22.04') && inputs.target == 'x86_64-unknown-linux-gnu'
+      # Every x86_64 Linux bundle (deb on 22.04, AppImage + RPM on 24.04) must link
+      # this baseline build. Without it, ort statically embeds pyke's prebuilt
+      # ONNX Runtime, compiled with an AVX2 baseline, and the app dies with an
+      # illegal instruction on pre-Haswell CPUs as soon as recording starts.
+      - name: Install ONNX Runtime (x86_64 Linux)
+        if: contains(inputs.platform, 'ubuntu') && inputs.target == 'x86_64-unknown-linux-gnu'
         shell: bash
         run: |
           ORT_VERSION="1.24.2"
@@ -393,10 +397,19 @@ jobs:
           # name the loader resolves (handy has NEEDED libonnxruntime.so.1).
           # Shipping the .so/.so.x.y.z aliases too would triplicate the lib as
           # real files and draw ldconfig warnings (issue #1639).
-          # deb.files key = destination in package, value = source on disk
+          # files key = destination in package, value = source on disk. The
+          # AppImage keeps its app libs directly in usr/lib (see tauri.conf.json).
           jq --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
-            '.bundle.linux.deb.files["/usr/lib/Handy/libonnxruntime.so.1"] = $so1' \
+            '.bundle.linux.deb.files["/usr/lib/Handy/libonnxruntime.so.1"] = $so1
+             | .bundle.linux.rpm.files["/usr/lib/Handy/libonnxruntime.so.1"] = $so1
+             | .bundle.linux.appimage.files["/usr/lib/libonnxruntime.so.1"] = $so1' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          # linuxdeploy resolves handy's NEEDED libs with ldd and hard-fails on an
+          # unresolved one, so make libonnxruntime.so.1 resolvable on the build
+          # host the same way the transcribe-cpp libs are below.
+          echo "LD_LIBRARY_PATH=$ORT_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          sudo cp -vL "$ORT_DIR"/lib/libonnxruntime.so.1 /usr/local/lib/
+          sudo ldconfig
 
       # Windows x64 links a BASELINE ONNX Runtime dynamically instead of statically
       # embedding pyke's default download-binaries build, which is compiled with a
@@ -675,7 +688,7 @@ jobs:
               require_pattern "$listing" 'usr/bin/handy$' "handy binary"
               require_pattern "$listing" 'usr/lib/Handy/libtranscribe\.so(\.[0-9]+)+$' "transcribe runtime library (SONAME)"
               require_pattern "$listing" 'usr/lib/Handy/libggml-cpu.*\.so' "ggml CPU backend module"
-              if [[ "${{ inputs.platform }}" == *"ubuntu-22.04"* && "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+              if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
                 require_pattern "$listing" 'usr/lib/Handy/libonnxruntime\.so\.[0-9]+$' "ONNX Runtime library (SONAME)"
               fi
               # Handy's libs must stay out of the ldconfig-scanned /usr/lib
@@ -705,6 +718,9 @@ jobs:
               require_pattern "$listing" '/usr/bin/handy$' "handy binary"
               require_pattern "$listing" '/usr/lib/Handy/libtranscribe\.so(\.[0-9]+)+$' "transcribe runtime library (SONAME)"
               require_pattern "$listing" '/usr/lib/Handy/libggml-cpu.*\.so' "ggml CPU backend module"
+              if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+                require_pattern "$listing" '/usr/lib/Handy/libonnxruntime\.so\.[0-9]+$' "ONNX Runtime library (SONAME)"
+              fi
               # Same /usr/lib pollution guard as the deb audit (issue #1639).
               if grep -Eq 'usr/lib/[^/]+\.so' "$listing"; then
                 echo "ERROR: libraries installed directly into /usr/lib (issue #1639):" >&2
@@ -747,6 +763,15 @@ jobs:
                   exit 1
                 fi
                 require_path "squashfs-root/usr/lib/libggml-vulkan.so" "AppImage ggml Vulkan backend module"
+                if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+                  require_path "squashfs-root/usr/lib/libonnxruntime.so.1" "AppImage ONNX Runtime library (SONAME)"
+                  # A handy without this NEEDED entry has ONNX Runtime linked in
+                  # statically, which is the AVX2 build that crashes old CPUs.
+                  if ! readelf -d squashfs-root/usr/bin/handy | grep -q 'NEEDED.*\[libonnxruntime\.so\.1\]'; then
+                    echo "ERROR: AppImage handy does not link libonnxruntime.so.1 dynamically" >&2
+                    exit 1
+                  fi
+                fi
 
                 # These libraries mediate access to the host graphics stack.
                 # Shipping build-host copies ahead of the system versions can
