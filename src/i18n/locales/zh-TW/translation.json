@@ -644,6 +644,15 @@
       "whatsNewUpdates": {
         "label": "顯示新功能",
         "description": "Handy 更新後顯示版本資訊"
+      },
+      "cliInstall": {
+        "title": "Command-Line Tool",
+        "description": "Expose the handy command in ~/.local/bin for terminal and agent use",
+        "install": "Install",
+        "uninstall": "Uninstall",
+        "installedAt": "Installed at {{path}}",
+        "notInstalled": "Not installed",
+        "notOnPath": "~/.local/bin is not on your PATH. Add it to your shell profile to use handy from the terminal."
       }
     }
   },
@@ -691,7 +700,9 @@
     "modelLoadFailedUnknown": "未知模型",
     "pasteFailedTitle": "貼上文字失敗",
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
-    "transcriptionFailedTitle": "轉錄失敗"
+    "transcriptionFailedTitle": "轉錄失敗",
+    "cliInstallStatus": "Error loading CLI install status: {{error}}",
+    "cliInstallAction": "CLI install action failed: {{error}}"
   },
   "appLanguage": {
     "title": "應用程式語言",

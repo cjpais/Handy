@@ -5,6 +5,30 @@
 
 
 export const commands = {
+async getCliInstallStatus() : Promise<Result<CliInstallStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_cli_install_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async installCli() : Promise<Result<CliInstallStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("install_cli") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async uninstallCli() : Promise<Result<CliInstallStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("uninstall_cli") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeBinding(id: string, binding: string) : Promise<Result<BindingResponse, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_binding", { id, binding }) };
@@ -1020,6 +1044,7 @@ vad_backend?: VadBackend;
 overlay_style?: OverlayStyle }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
+export type CliInstallStatus = { installed: boolean; link_path: string; target_path: string; dir_on_path: boolean }
 export type AvailableAccelerators = { transcribe: string[]; ort: string[]; gpu_devices: GpuDeviceOption[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 /**

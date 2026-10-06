@@ -644,6 +644,15 @@
       "whatsNewUpdates": {
         "label": "Показувати новини",
         "description": "Показувати примітки до випуску після оновлень Handy"
+      },
+      "cliInstall": {
+        "title": "Command-Line Tool",
+        "description": "Expose the handy command in ~/.local/bin for terminal and agent use",
+        "install": "Install",
+        "uninstall": "Uninstall",
+        "installedAt": "Installed at {{path}}",
+        "notInstalled": "Not installed",
+        "notOnPath": "~/.local/bin is not on your PATH. Add it to your shell profile to use handy from the terminal."
       }
     }
   },
@@ -691,7 +700,9 @@
     "modelLoadFailedUnknown": "невідома модель",
     "pasteFailedTitle": "Не вдалося вставити текст",
     "pasteFailed": "Не вдалося вставити текст до активної програми.",
-    "transcriptionFailedTitle": "Помилка транскрипції"
+    "transcriptionFailedTitle": "Помилка транскрипції",
+    "cliInstallStatus": "Error loading CLI install status: {{error}}",
+    "cliInstallAction": "CLI install action failed: {{error}}"
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",

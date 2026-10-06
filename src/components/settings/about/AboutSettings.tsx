@@ -6,6 +6,7 @@ import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 import { AppDataDirectory } from "../AppDataDirectory";
+import { CliInstall } from "../CliInstall";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ShowWhatsNewOnUpdate } from "../ShowWhatsNewOnUpdate";
 import { ThemeSelector } from "../ThemeSelector";
@@ -78,6 +79,7 @@ export const AboutSettings: React.FC = () => {
         </SettingContainer>
 
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
+        <CliInstall descriptionMode="tooltip" grouped={true} />
         <LogDirectory grouped={true} />
       </SettingsGroup>
 

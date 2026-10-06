@@ -644,6 +644,15 @@
       "whatsNewUpdates": {
         "label": "Hiển thị điểm mới",
         "description": "Hiển thị ghi chú phát hành sau khi Handy cập nhật"
+      },
+      "cliInstall": {
+        "title": "Command-Line Tool",
+        "description": "Expose the handy command in ~/.local/bin for terminal and agent use",
+        "install": "Install",
+        "uninstall": "Uninstall",
+        "installedAt": "Installed at {{path}}",
+        "notInstalled": "Not installed",
+        "notOnPath": "~/.local/bin is not on your PATH. Add it to your shell profile to use handy from the terminal."
       }
     }
   },
@@ -691,7 +700,9 @@
     "modelLoadFailedUnknown": "mô hình không xác định",
     "pasteFailedTitle": "Không thể dán văn bản",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
-    "transcriptionFailedTitle": "Phiên âm thất bại"
+    "transcriptionFailedTitle": "Phiên âm thất bại",
+    "cliInstallStatus": "Error loading CLI install status: {{error}}",
+    "cliInstallAction": "CLI install action failed: {{error}}"
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",

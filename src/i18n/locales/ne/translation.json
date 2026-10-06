@@ -644,6 +644,15 @@
           "description": "अन-डिभाइस मेसिन लर्निङ अनुमानका लागि उच्च-प्रदर्शन टेन्सर लाइब्रेरी",
           "details": "Handy को स्थानीय स्पिच-टु-टेक्स्ट transcribe.cpp र ggml मा आधारित छ। Georgi Gerganov र योगदानकर्ताहरूको उत्कृष्ट कामका लागि धन्यवाद।"
         }
+      },
+      "cliInstall": {
+        "title": "Command-Line Tool",
+        "description": "Expose the handy command in ~/.local/bin for terminal and agent use",
+        "install": "Install",
+        "uninstall": "Uninstall",
+        "installedAt": "Installed at {{path}}",
+        "notInstalled": "Not installed",
+        "notOnPath": "~/.local/bin is not on your PATH. Add it to your shell profile to use handy from the terminal."
       }
     }
   },
@@ -694,7 +703,9 @@
     "modelLoadFailedUnknown": "अज्ञात मोडेल",
     "pasteFailedTitle": "टेक्स्ट पेस्ट गर्न सकिएन",
     "pasteFailed": "सक्रिय एपमा टेक्स्ट पेस्ट गर्न सकिएन।",
-    "transcriptionFailedTitle": "ट्रान्सक्रिप्सन गर्न सकिएन"
+    "transcriptionFailedTitle": "ट्रान्सक्रिप्सन गर्न सकिएन",
+    "cliInstallStatus": "Error loading CLI install status: {{error}}",
+    "cliInstallAction": "CLI install action failed: {{error}}"
   },
   "appLanguage": {
     "title": "एपको भाषा",

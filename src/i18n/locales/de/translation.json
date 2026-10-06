@@ -644,6 +644,15 @@
       "whatsNewUpdates": {
         "label": "Neuerungen anzeigen",
         "description": "Versionshinweise nach Handy-Updates anzeigen"
+      },
+      "cliInstall": {
+        "title": "Befehlszeilen-Tool",
+        "description": "Stellt den Befehl handy in ~/.local/bin für Terminal- und Agent-Nutzung bereit",
+        "install": "Install",
+        "uninstall": "Uninstall",
+        "installedAt": "Installiert unter {{path}}",
+        "notInstalled": "Nicht installiert",
+        "notOnPath": "~/.local/bin ist nicht in deinem PATH. Füge es zu deinem Shell-Profil hinzu, um handy im Terminal zu nutzen."
       }
     }
   },
@@ -691,7 +700,9 @@
     "modelLoadFailedUnknown": "unbekanntes Modell",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
-    "transcriptionFailedTitle": "Transkription fehlgeschlagen"
+    "transcriptionFailedTitle": "Transkription fehlgeschlagen",
+    "cliInstallStatus": "Fehler beim Laden des CLI-Installationsstatus: {{error}}",
+    "cliInstallAction": "CLI-Installationsaktion fehlgeschlagen: {{error}}"
   },
   "appLanguage": {
     "title": "Anwendungssprache",

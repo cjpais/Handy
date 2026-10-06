@@ -644,6 +644,15 @@
       "whatsNewUpdates": {
         "label": "Mostrar novedades",
         "description": "Mostrar notas de la versión después de las actualizaciones de Handy"
+      },
+      "cliInstall": {
+        "title": "Herramienta de línea de comandos",
+        "description": "Expone el comando handy en ~/.local/bin para su uso en terminal y por agentes",
+        "install": "Install",
+        "uninstall": "Uninstall",
+        "installedAt": "Instalado en {{path}}",
+        "notInstalled": "No instalado",
+        "notOnPath": "~/.local/bin no está en tu PATH. Añádelo al perfil de tu shell para usar handy desde la terminal."
       }
     }
   },
@@ -691,7 +700,9 @@
     "modelLoadFailedUnknown": "modelo desconocido",
     "pasteFailedTitle": "Error al pegar el texto",
     "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",
-    "transcriptionFailedTitle": "Error de transcripción"
+    "transcriptionFailedTitle": "Error de transcripción",
+    "cliInstallStatus": "Error al cargar el estado de instalación del CLI: {{error}}",
+    "cliInstallAction": "Falló la acción de instalación del CLI: {{error}}"
   },
   "appLanguage": {
     "title": "Idioma de la aplicación",
