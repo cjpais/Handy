@@ -10,6 +10,7 @@ import type {
   StreamWorkKind,
 } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
+import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
@@ -26,6 +27,10 @@ const RecordingOverlay: React.FC = () => {
   // Stay visually in an arming state until the backend processes the first
   // actual microphone sample chunk.
   const [captureReady, setCaptureReady] = useState(false);
+  // Recording starts while the model loads in the background. If the user stops
+  // before the load finishes, the wait is the load, not the transcription — say
+  // so, otherwise a cold start looks like a hung "Transcribing..." spinner.
+  const [modelLoading, setModelLoading] = useState(false);
   const [levels, setLevels] = useState<number[]>(Array(WAVE_BARS).fill(0));
   const [streamText, setStreamText] = useState<StreamTextEvent>({
     committed: "",
@@ -121,6 +126,15 @@ const RecordingOverlay: React.FC = () => {
         if (payload.kind) setWorkKind(payload.kind);
       });
 
+      // Every other model event (completed, failed, unloaded, selection
+      // changed) means no load is in flight.
+      const unlistenModel = await listen<ModelStateEvent>(
+        "model-state-changed",
+        (event) => {
+          setModelLoading(event.payload.event_type === "loading_started");
+        },
+      );
+
       return () => {
         unlistenShow();
         unlistenHide();
@@ -128,6 +142,7 @@ const RecordingOverlay: React.FC = () => {
         unlistenLevel();
         unlistenStream();
         unlistenPhase();
+        unlistenModel();
       };
     };
 
@@ -168,6 +183,10 @@ const RecordingOverlay: React.FC = () => {
 
   const fmtTime = (s: number) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  const transcribingLabel = modelLoading
+    ? t("modelSelector.loadingGeneric")
+    : t("overlay.transcribing");
 
   // ---- Shared building blocks (one visual language for every overlay form) ----
   const waveform = (
@@ -270,7 +289,7 @@ const RecordingOverlay: React.FC = () => {
             ? workingRow(
                 workKind === "polishing"
                   ? t("overlay.processing")
-                  : t("overlay.transcribing"),
+                  : transcribingLabel,
                 true,
               )
             : listeningRow(open, true)}
@@ -284,9 +303,7 @@ const RecordingOverlay: React.FC = () => {
   // width between them; the cancel button is in both rows so it stays put.
   const working = state === "transcribing" || state === "processing";
   const workLabel =
-    state === "processing"
-      ? t("overlay.processing")
-      : t("overlay.transcribing");
+    state === "processing" ? t("overlay.processing") : transcribingLabel;
 
   return (
     <div
