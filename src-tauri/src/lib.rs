@@ -7,6 +7,7 @@ mod autostart;
 mod catalog;
 mod chinese_script;
 pub mod cli;
+mod cli_install;
 mod clipboard;
 mod commands;
 mod helpers;
@@ -670,6 +671,9 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_paste_delay_after_ms_setting,
             shortcut::change_reliable_paste_setting,
             shortcut::change_paste_method_setting,
+            cli_install::get_cli_install_status,
+            cli_install::install_cli,
+            cli_install::uninstall_cli,
             shortcut::get_available_typing_tools,
             shortcut::change_typing_tool_setting,
             shortcut::change_external_script_path_setting,
