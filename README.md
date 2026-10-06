@@ -122,6 +122,48 @@ handy --start-hidden --no-tray
 > /Applications/Handy.app/Contents/MacOS/Handy --toggle-transcription
 > ```
 
+### Headless Transcription (CLI)
+
+Handy can transcribe a WAV file directly from the terminal without launching the
+app UI (macOS and Linux):
+
+```bash
+handy --transcribe-file meeting.wav            # prints transcription to stdout
+handy --transcribe-file note.wav -o out.txt    # writes to a file
+handy --transcribe-file note.wav --json        # machine-readable output
+handy --transcribe-file note.wav --model <id>  # use a specific installed model
+handy --repeat 5 note.wav                      # benchmark (best_ms is the fastest run)
+
+handy --list-models            # list installed models (ids usable with --model)
+handy --list-models --json     # machine-readable model list
+handy --list-devices           # list compute devices (usable with --device-index)
+```
+
+Constraints to know about:
+
+- The input must be a WAV file (16 kHz mono recommended). Other formats are not
+  decoded yet.
+- Models must already be installed through the app; the CLI never downloads.
+- The headless run starts its own instance (it does not talk to a running app).
+
+**Making `handy` available on your PATH:** Handy can create a symlink at
+`~/.local/bin/handy` pointing at the installed binary, so the commands above
+work without the full path. This is managed from the app's settings. Until you
+enable it there, you can link manually:
+
+```bash
+# macOS
+ln -s /Applications/Handy.app/Contents/MacOS/Handy ~/.local/bin/handy
+
+# Linux (deb/RPM install)
+ln -s /usr/bin/handy ~/.local/bin/handy
+```
+
+Make sure `~/.local/bin` is on your `PATH`.
+
+An agent-oriented skill documenting this CLI lives at
+[`skills/handy/SKILL.md`](skills/handy/SKILL.md).
+
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
