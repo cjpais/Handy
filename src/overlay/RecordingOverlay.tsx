@@ -19,6 +19,12 @@ type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
 // every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
 const WAVE_BARS = 9;
 
+// Only call out a model load in the Live preview once it has run this long.
+// Warm loads finish in well under this (~0.2s on Apple Silicon, ~1.5s on a
+// Windows CPU backend), so the common case never flashes a loading notice while
+// the user is speaking; cold loads can take 40s+.
+const SLOW_MODEL_LOAD_MS = 2000;
+
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
@@ -27,10 +33,17 @@ const RecordingOverlay: React.FC = () => {
   // Stay visually in an arming state until the backend processes the first
   // actual microphone sample chunk.
   const [captureReady, setCaptureReady] = useState(false);
-  // Recording starts while the model loads in the background. If the user stops
-  // before the load finishes, the wait is the load, not the transcription — say
-  // so, otherwise a cold start looks like a hung "Transcribing..." spinner.
+  // Recording starts while the model loads in the background. Say so, otherwise
+  // a cold start looks like an empty Live preview that ignores speech, then a
+  // hung "Transcribing..." spinner. Once recording stops, any in-flight load is
+  // the wait, so the working label reflects it immediately; the Live notice
+  // waits for the load to be slow so fast loads don't flash it mid-speech.
   const [modelLoading, setModelLoading] = useState(false);
+  const [modelLoadSlow, setModelLoadSlow] = useState(false);
+  const modelLoadTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  // Latched per Live session: once the loading notice has opened the panel, keep
+  // it open after the load so it doesn't collapse and reopen when text arrives.
+  const [loadNoticeShown, setLoadNoticeShown] = useState(false);
   const [levels, setLevels] = useState<number[]>(Array(WAVE_BARS).fill(0));
   const [streamText, setStreamText] = useState<StreamTextEvent>({
     committed: "",
@@ -89,6 +102,7 @@ const RecordingOverlay: React.FC = () => {
           setPhase("listening");
           setWorkKind("transcribing");
           setElapsed(0);
+          setLoadNoticeShown(false);
           setSession((s) => s + 1); // remount the card fresh for this session
         }
         setIsVisible(true);
@@ -126,12 +140,30 @@ const RecordingOverlay: React.FC = () => {
         if (payload.kind) setWorkKind(payload.kind);
       });
 
-      // Every other model event (completed, failed, unloaded, selection
-      // changed) means no load is in flight.
+      // The backend ends every `loading_started` with exactly one of completed
+      // or failed, so only those end a load. Other events (e.g. `unloaded` from
+      // the idle watcher) aren't ordered against an in-flight load and must not
+      // clear it.
       const unlistenModel = await listen<ModelStateEvent>(
         "model-state-changed",
         (event) => {
-          setModelLoading(event.payload.event_type === "loading_started");
+          const type = event.payload.event_type;
+          if (type === "loading_started") {
+            clearTimeout(modelLoadTimerRef.current);
+            setModelLoading(true);
+            setModelLoadSlow(false);
+            modelLoadTimerRef.current = setTimeout(
+              () => setModelLoadSlow(true),
+              SLOW_MODEL_LOAD_MS,
+            );
+          } else if (
+            type === "loading_completed" ||
+            type === "loading_failed"
+          ) {
+            clearTimeout(modelLoadTimerRef.current);
+            setModelLoading(false);
+            setModelLoadSlow(false);
+          }
         },
       );
 
@@ -143,6 +175,7 @@ const RecordingOverlay: React.FC = () => {
         unlistenStream();
         unlistenPhase();
         unlistenModel();
+        clearTimeout(modelLoadTimerRef.current);
       };
     };
 
@@ -165,6 +198,12 @@ const RecordingOverlay: React.FC = () => {
     setOverflowing(el.scrollHeight > el.clientHeight + 1);
     if (pinnedRef.current) el.scrollTop = el.scrollHeight;
   }, [streamText]);
+
+  // `session` re-runs this when a new Live session starts mid-load (e.g. a
+  // retry during a cold load), since the reset doesn't change the other deps.
+  useEffect(() => {
+    if (modelLoadSlow && state === "streaming") setLoadNoticeShown(true);
+  }, [modelLoadSlow, state, session]);
 
   // Each fresh streaming session starts pinned to the bottom, fade cleared.
   useEffect(() => {
@@ -251,11 +290,14 @@ const RecordingOverlay: React.FC = () => {
     const hasText =
       streamText.committed.length > 0 || streamText.tentative.length > 0;
     const working = phase === "working";
+    // While listening, a slow model load opens the panel with a notice where the
+    // text would be, so speech that isn't transcribing yet doesn't look ignored.
+    const loadingNotice = modelLoadSlow && !working && !hasText;
     // Keep the panel open whenever there's text — even while finalizing — so the
     // transcript stays put under a working spinner instead of collapsing and
     // squishing the text mid-stream. Only fall back to the small working pill
     // when there was no text to preserve.
-    const open = hasText;
+    const open = hasText || loadingNotice || (loadNoticeShown && !working);
     const collapsed = working && !hasText;
 
     return (
@@ -274,13 +316,18 @@ const RecordingOverlay: React.FC = () => {
                 onScroll={handleStreamScroll}
               >
                 <p>
+                  {loadingNotice && (
+                    <span className="sloading">
+                      {t("overlay.loadingModel")}
+                    </span>
+                  )}
                   <span className="committed">
                     {streamText.committed ? streamText.committed + " " : ""}
                   </span>
                   <span className="tentative">{streamText.tentative}</span>
                   {/* Drop the blinking caret once finalizing — it's no longer
                       capturing, and a static spinner conveys the work. */}
-                  {!working && <span className="scaret" />}
+                  {!working && !loadingNotice && <span className="scaret" />}
                 </p>
               </div>
             </div>
