@@ -708,7 +708,8 @@
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
-    "processing": "Đang xử lý..."
+    "processing": "Đang xử lý...",
+    "loadingModel": "Đang tải mô hình..."
   },
   "whatsNew": {
     "title": "Điểm mới trong Handy v{{version}}"

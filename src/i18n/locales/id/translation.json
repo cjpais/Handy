@@ -711,7 +711,8 @@
   },
   "overlay": {
     "transcribing": "Mentranskripsikan...",
-    "processing": "Memproses..."
+    "processing": "Memproses...",
+    "loadingModel": "Memuat model..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} mungkin memblokir 1 pintasan",

@@ -708,7 +708,8 @@
   },
   "overlay": {
     "transcribing": "Trascrizione...",
-    "processing": "Elaborazione..."
+    "processing": "Elaborazione...",
+    "loadingModel": "Caricamento del modello..."
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"

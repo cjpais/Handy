@@ -708,7 +708,8 @@
   },
   "overlay": {
     "transcribing": "...جاري التفريغ",
-    "processing": "...جاري المعالجة"
+    "processing": "...جاري المعالجة",
+    "loadingModel": "جارٍ تحميل النموذج..."
   },
   "whatsNew": {
     "title": "الجديد في Handy v{{version}}"

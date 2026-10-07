@@ -711,7 +711,8 @@
   },
   "overlay": {
     "transcribing": "Transskriberer...",
-    "processing": "Behandler..."
+    "processing": "Behandler...",
+    "loadingModel": "Indlæser model..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",

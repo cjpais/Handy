@@ -708,7 +708,8 @@
   },
   "overlay": {
     "transcribing": "文字起こし中…",
-    "processing": "処理中…"
+    "processing": "処理中…",
+    "loadingModel": "モデルを読み込み中…"
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"

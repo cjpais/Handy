@@ -185,7 +185,7 @@ const RecordingOverlay: React.FC = () => {
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   const transcribingLabel = modelLoading
-    ? t("modelSelector.loadingGeneric")
+    ? t("overlay.loadingModel")
     : t("overlay.transcribing");
 
   // ---- Shared building blocks (one visual language for every overlay form) ----

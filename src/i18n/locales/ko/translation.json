@@ -708,7 +708,8 @@
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
-    "processing": "처리 중..."
+    "processing": "처리 중...",
+    "loadingModel": "모델 로딩 중..."
   },
   "whatsNew": {
     "title": "Handy v{{version}}의 새 소식"

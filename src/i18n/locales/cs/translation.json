@@ -708,7 +708,8 @@
   },
   "overlay": {
     "transcribing": "Přepisuji...",
-    "processing": "Zpracovávám..."
+    "processing": "Zpracovávám...",
+    "loadingModel": "Načítání modelu..."
   },
   "whatsNew": {
     "title": "Novinky v Handy v{{version}}"
