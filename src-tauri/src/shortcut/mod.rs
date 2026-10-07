@@ -1425,6 +1425,8 @@ pub fn change_transcribe_accelerator_setting(
     let mut s = settings::get_settings(&app);
     s.transcribe_accelerator = accelerator;
     save_accelerator_and_reload_next_use(&app, s);
+    app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>()
+        .retry_transcribe_gpu("the transcribe.cpp accelerator setting changed");
     Ok(())
 }
 
@@ -1446,6 +1448,8 @@ pub fn change_transcribe_gpu_device(app: AppHandle, device: Option<String>) -> R
     let mut s = settings::get_settings(&app);
     s.transcribe_gpu_device = device;
     save_accelerator_and_reload_next_use(&app, s);
+    app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>()
+        .retry_transcribe_gpu("the transcribe.cpp GPU device setting changed");
     Ok(())
 }
 
@@ -1457,10 +1461,16 @@ pub fn change_transcribe_gpu_device(app: AppHandle, device: Option<String>) -> R
 /// stays responsive — see also the startup pre-warm in `lib.rs`.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
-    tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
-        .await
-        .expect("get_available_accelerators panicked")
+pub async fn get_available_accelerators(
+    app: AppHandle,
+) -> crate::managers::transcription::AvailableAccelerators {
+    tauri::async_runtime::spawn_blocking(move || {
+        let tm =
+            app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
+        crate::managers::transcription::get_available_accelerators(&tm)
+    })
+    .await
+    .expect("get_available_accelerators panicked")
 }
 
 #[cfg(test)]
