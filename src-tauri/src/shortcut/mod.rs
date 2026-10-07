@@ -10,8 +10,11 @@
 //! setting and can be changed at runtime.
 
 mod handler;
+pub mod gamepad;
 pub mod handy_keys;
 pub mod tauri_impl;
+
+pub use gamepad::is_gamepad_binding;
 
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -54,6 +57,9 @@ pub fn init_shortcuts(app: &AppHandle) {
             }
         }
     }
+
+    // Initialize gamepad shortcut listener
+    gamepad::init_gamepad(app);
 }
 
 /// Whether the recording lifecycle currently wants the cancel shortcut.
@@ -131,6 +137,9 @@ fn reconcile_cancel_shortcut(app: &AppHandle) {
 
 /// Register a shortcut using the appropriate implementation
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if is_gamepad_binding(&binding.id) {
+        return Ok(());
+    }
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_shortcut(app, binding),
@@ -140,6 +149,9 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
 
 /// Unregister a shortcut using the appropriate implementation
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if is_gamepad_binding(&binding.id) {
+        return Ok(());
+    }
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_shortcut(app, binding),
@@ -215,6 +227,20 @@ pub fn change_binding(
         }
     }
 
+    // If this is a gamepad binding, update settings and gamepad listener directly
+    if is_gamepad_binding(&id) {
+        let mut b = binding_to_modify.clone();
+        b.current_binding = binding.clone();
+        settings.bindings.insert(id.clone(), b.clone());
+        settings::write_settings(&app, settings);
+        gamepad::update_binding(&app, &id, &binding);
+        return Ok(BindingResponse {
+            success: true,
+            binding: Some(b),
+            error: None,
+        });
+    }
+
     // Unregister the existing binding
     if let Err(e) = unregister_shortcut(&app, binding_to_modify.clone()) {
         let error_msg = format!("Failed to unregister shortcut: {}", e);
@@ -283,8 +309,9 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
 /// mid-capture. The "cancel" binding is untouched: it is managed dynamically
 /// by the recording lifecycle.
 pub fn suspend_all_shortcuts(app: &AppHandle) {
+    gamepad::suspend_gamepad();
     for (id, binding) in settings::get_bindings(app) {
-        if id == "cancel" {
+        if id == "cancel" || is_gamepad_binding(&id) {
             continue;
         }
         if let Err(e) = unregister_shortcut(app, binding) {
@@ -300,9 +327,10 @@ pub fn suspend_all_shortcuts(app: &AppHandle) {
 /// Registering an already-registered shortcut fails cleanly in both
 /// implementations, so this is idempotent and safe on every exit path.
 pub fn resume_all_shortcuts(app: &AppHandle) {
+    gamepad::resume_gamepad();
     let settings = get_settings(app);
     for (id, binding) in &settings.bindings {
-        if id == "cancel" {
+        if id == "cancel" || is_gamepad_binding(id) {
             continue;
         }
         if id == "transcribe_with_post_process" && !settings.post_process_enabled {
@@ -491,8 +519,8 @@ fn register_all_shortcuts_for_implementation(
     let mut current_settings = settings::get_settings(app);
 
     for (id, default_binding) in &default_bindings {
-        // Skip cancel shortcut as it's dynamically registered
-        if id == "cancel" {
+        // Skip cancel and gamepad shortcuts as they are managed separately
+        if id == "cancel" || is_gamepad_binding(id) {
             continue;
         }
 

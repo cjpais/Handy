@@ -179,13 +179,18 @@
           "transcribe_with_post_process": {
             "name": "Snabbkommando för efterbearbetning",
             "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbearbetning på din transkription."
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad Transcribe Shortcut",
+            "description": "The gamepad shortcut to record and transcribe your voice."
           }
         },
         "errors": {
           "restore": "Misslyckades med att återställa ursprungligt kortkommando",
           "set": "Misslyckades med att ställa in kortkommando: {{error}}",
           "reset": "Misslyckades med att återställa kortkommando till ursprungsvärdet"
-        }
+        },
+        "pressGamepadButtons": "Press gamepad buttons..."
       },
       "language": {
         "title": "Språk",

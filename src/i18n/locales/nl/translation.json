@@ -179,13 +179,18 @@
           "transcribe_with_post_process": {
             "name": "Sneltoets voor naverwerking",
             "description": "Optioneel: Een specifieke sneltoets die altijd AI-naverwerking toepast op je transcriptie."
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad transcriptiesneltoets",
+            "description": "De gamepadsneltoets om uw stem op te nemen en te transcriberen."
           }
         },
         "errors": {
           "restore": "Herstellen van originele sneltoets mislukt",
           "set": "Instellen van sneltoets mislukt: {{error}}",
           "reset": "Sneltoets terugzetten naar standaardwaarde mislukt"
-        }
+        },
+        "pressGamepadButtons": "Druk op gamepadknoppen..."
       },
       "language": {
         "title": "Taal",

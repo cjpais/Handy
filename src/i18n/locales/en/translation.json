@@ -179,13 +179,18 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad Transcribe Shortcut",
+            "description": "The gamepad shortcut to record and transcribe your voice."
           }
         },
         "errors": {
           "restore": "Failed to restore original shortcut",
           "set": "Failed to set shortcut: {{error}}",
           "reset": "Failed to reset shortcut to original value"
-        }
+        },
+        "pressGamepadButtons": "Press gamepad buttons..."
       },
       "language": {
         "title": "Language",

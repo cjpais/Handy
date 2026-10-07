@@ -176,13 +176,18 @@
           "transcribe_with_post_process": {
             "name": "مفتاح المعالجة اللاحقة",
             "description": "اختياري: مفتاح اختصار مخصص يطبق دائماً المعالجة اللاحقة بالذكاء الاصطناعي على التفريغ الصوتي."
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad Transcribe Shortcut",
+            "description": "The gamepad shortcut to record and transcribe your voice."
           }
         },
         "errors": {
           "restore": "فشل استعادة الاختصار الأصلي",
           "set": "فشل تعيين الاختصار: {{error}}",
           "reset": "فشل إعادة تعيين الاختصار إلى قيمته الأصلية"
-        }
+        },
+        "pressGamepadButtons": "Press gamepad buttons..."
       },
       "language": {
         "title": "اللغة",

@@ -5,6 +5,12 @@
       "name": "Transcribe Keyboard Shortcut",
       "description": "Converts your speech into text.",
       "default_binding": "Platform-specific: ctrl+space (Windows/Linux), alt+space (macOS)"
+    },
+    "transcribe_gamepad": {
+      "id": "transcribe_gamepad",
+      "name": "Gamepad Transcribe Shortcut",
+      "description": "The gamepad shortcut to record and transcribe your voice.",
+      "default_binding": "select + start"
     }
   },
   "push_to_talk": true,

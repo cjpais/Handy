@@ -179,13 +179,18 @@
           "transcribe_with_post_process": {
             "name": "पोस्ट-प्रोसेसिंग हॉटकी",
             "description": "वैकल्पिक: एक अलग हॉटकी जो आपके ट्रांसक्रिप्शन पर हमेशा AI पोस्ट-प्रोसेसिंग लागू करती है."
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad Transcribe Shortcut",
+            "description": "The gamepad shortcut to record and transcribe your voice."
           }
         },
         "errors": {
           "restore": "पहले वाला शॉर्टकट वापस नहीं लाया जा सका",
           "set": "शॉर्टकट सेट नहीं हो सका: {{error}}",
           "reset": "शॉर्टकट को पहले जैसा रीसेट नहीं किया जा सका"
-        }
+        },
+        "pressGamepadButtons": "Press gamepad buttons..."
       },
       "language": {
         "title": "भाषा",

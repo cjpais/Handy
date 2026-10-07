@@ -928,6 +928,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "escape".to_string(),
         },
     );
+    bindings.insert(
+        "transcribe_gamepad".to_string(),
+        ShortcutBinding {
+            id: "transcribe_gamepad".to_string(),
+            name: "Gamepad Transcribe".to_string(),
+            description: "Converts your speech into text using your gamepad.".to_string(),
+            default_binding: "select + start".to_string(),
+            current_binding: "select + start".to_string(),
+        },
+    );
 
     AppSettings {
         settings_schema_version: default_settings_schema_version(),

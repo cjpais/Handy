@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad Transcribe Shortcut",
+            "description": "The gamepad shortcut to record and transcribe your voice."
           }
         },
         "errors": {
           "restore": "Không thể khôi phục phím tắt gốc",
           "set": "Không thể đặt phím tắt: {{error}}",
           "reset": "Không thể đặt lại phím tắt về giá trị gốc"
-        }
+        },
+        "pressGamepadButtons": "Press gamepad buttons..."
       },
       "language": {
         "title": "Ngôn ngữ",

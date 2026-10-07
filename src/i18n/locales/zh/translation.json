@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "后处理快捷键",
             "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
+          },
+          "transcribe_gamepad": {
+            "name": "手柄转录快捷键",
+            "description": "用于录音和转录语音的手柄快捷键。"
           }
         },
         "errors": {
           "restore": "无法恢复原始快捷键",
           "set": "无法设置快捷键: {{error}}",
           "reset": "无法将快捷键重置为原始值"
-        }
+        },
+        "pressGamepadButtons": "按下手柄按键..."
       },
       "language": {
         "title": "语言",

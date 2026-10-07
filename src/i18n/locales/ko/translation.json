@@ -179,13 +179,18 @@
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
+          },
+          "transcribe_gamepad": {
+            "name": "게임패드 전사 단축키",
+            "description": "음성을 녹음하고 텍스트로 변환하는 게임패드 단축키입니다."
           }
         },
         "errors": {
           "restore": "원래 단축키 복원에 실패했습니다",
           "set": "단축키 설정 실패: {{error}}",
           "reset": "단축키를 원래 값으로 재설정하는데 실패했습니다"
-        }
+        },
+        "pressGamepadButtons": "게임패드 버튼을 누르세요..."
       },
       "language": {
         "title": "언어",

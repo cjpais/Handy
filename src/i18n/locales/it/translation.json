@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "Tasto di post-elaborazione",
             "description": "Facoltativo: Un tasto di scelta rapida dedicato che applica sempre la post-elaborazione IA alla trascrizione."
+          },
+          "transcribe_gamepad": {
+            "name": "Scorciatoia trascrizione gamepad",
+            "description": "La scorciatoia del gamepad per registrare e trascrivere la tua voce."
           }
         },
         "errors": {
           "restore": "Errore nel ripristino della scorciatoia originale",
           "set": "Errore nella configurazione della scorciatoia: {{error}}",
           "reset": "Errore nella reinizializzazione della scorciatoia al valore originale"
-        }
+        },
+        "pressGamepadButtons": "Premi i pulsanti del gamepad..."
       },
       "language": {
         "title": "Lingua",

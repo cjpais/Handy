@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "Tecla de post procesamiento",
             "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
+          },
+          "transcribe_gamepad": {
+            "name": "Atajo de transcripción con mando",
+            "description": "El atajo del mando para grabar y transcribir tu voz."
           }
         },
         "errors": {
           "restore": "Error al restaurar el atajo original",
           "set": "Error al configurar el atajo: {{error}}",
           "reset": "Error al restablecer el atajo al valor original"
-        }
+        },
+        "pressGamepadButtons": "Presiona los botones del mando..."
       },
       "language": {
         "title": "Idioma",

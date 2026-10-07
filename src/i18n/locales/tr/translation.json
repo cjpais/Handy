@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "Son İşlem Kısayolu",
             "description": "İsteğe bağlı: Transkripsiyonunuza her zaman yapay zekâ ile son işlem uygulayan özel bir kısayol tuşu."
+          },
+          "transcribe_gamepad": {
+            "name": "Oyun Kolu Yazıya Dökme Kısayolu",
+            "description": "Sesinizi kaydedip yazıya dökmek için oyun kolu kısayolu."
           }
         },
         "errors": {
           "restore": "Orijinal kısayol geri yüklenemedi",
           "set": "Kısayol ayarlanamadı: {{error}}",
           "reset": "Kısayol orijinal değerine sıfırlanamadı"
-        }
+        },
+        "pressGamepadButtons": "Oyun kolu tuşlarına basın..."
       },
       "language": {
         "title": "Dil",

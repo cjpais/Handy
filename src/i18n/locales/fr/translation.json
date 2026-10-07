@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "Raccourci de post-traitement",
             "description": "Facultatif : Un raccourci dédié qui applique toujours le post-traitement IA à votre transcription."
+          },
+          "transcribe_gamepad": {
+            "name": "Raccourci de transcription manette",
+            "description": "Le raccourci manette pour enregistrer et transcrire votre voix."
           }
         },
         "errors": {
           "restore": "Échec de la restauration du raccourci original",
           "set": "Échec de la définition du raccourci : {{error}}",
           "reset": "Échec de la réinitialisation du raccourci à sa valeur d'origine"
-        }
+        },
+        "pressGamepadButtons": "Appuyez sur les boutons de la manette..."
       },
       "language": {
         "title": "Langue",

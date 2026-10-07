@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "Skrót postprocessingu",
             "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
+          },
+          "transcribe_gamepad": {
+            "name": "Skrót transkrypcji na padzie",
+            "description": "Skrót na kontrolerze do nagrywania i transkrypcji Twojego głosu."
           }
         },
         "errors": {
           "restore": "Nie udało się przywrócić oryginalnego skrótu",
           "set": "Nie udało się ustawić skrótu: {{error}}",
           "reset": "Nie udało się zresetować skrótu do wartości domyślnej"
-        }
+        },
+        "pressGamepadButtons": "Naciśnij przyciski kontrolera..."
       },
       "language": {
         "title": "Język",

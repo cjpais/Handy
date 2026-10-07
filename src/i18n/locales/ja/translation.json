@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "後処理のショートカット",
             "description": "文字起こしに常に AI 後処理を適用するキーボードショートカット。 (任意)"
+          },
+          "transcribe_gamepad": {
+            "name": "ゲームパッド文字起こしショートカット",
+            "description": "音声を録音して文字起こしするゲームパッドのショートカット。"
           }
         },
         "errors": {
           "restore": "元のショートカットを復元できませんでした",
           "set": "ショートカットを設定できませんでした: {{error}}",
           "reset": "ショートカットを元の値にリセットできませんでした"
-        }
+        },
+        "pressGamepadButtons": "ゲームパッドのボタンを押してください..."
       },
       "language": {
         "title": "言語",

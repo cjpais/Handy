@@ -199,13 +199,18 @@
           "transcribe_with_post_process": {
             "name": "Nachbearbeitungs-Tastenkürzel",
             "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf deine Transkription anwendet."
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad-Transkriptions-Hotkey",
+            "description": "Die Gamepad-Tastenkombination zum Aufnehmen und Transkribieren Ihrer Stimme."
           }
         },
         "errors": {
           "restore": "Ursprüngliches Tastenkürzel konnte nicht wiederhergestellt werden",
           "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}",
           "reset": "Tastenkürzel konnte nicht auf Originalwert zurückgesetzt werden"
-        }
+        },
+        "pressGamepadButtons": "Gamepad-Tasten drücken..."
       },
       "language": {
         "title": "Sprache",

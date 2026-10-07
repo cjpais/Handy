@@ -179,13 +179,18 @@
           "transcribe_with_post_process": {
             "name": "पोस्ट-प्रोसेसिङ हटकी",
             "description": "वैकल्पिक: तपाईंको ट्रान्सक्रिप्सनमा सधैँ AI पोस्ट-प्रोसेसिङ लागू गर्ने छुट्टै हटकी।"
+          },
+          "transcribe_gamepad": {
+            "name": "Gamepad Transcribe Shortcut",
+            "description": "The gamepad shortcut to record and transcribe your voice."
           }
         },
         "errors": {
           "restore": "मूल सर्टकट पुनर्स्थापना गर्न सकिएन",
           "set": "सर्टकट सेट गर्न सकिएन: {{error}}",
           "reset": "सर्टकटलाई मूल मानमा रिसेट गर्न सकिएन"
-        }
+        },
+        "pressGamepadButtons": "Press gamepad buttons..."
       },
       "language": {
         "title": "भाषा",
