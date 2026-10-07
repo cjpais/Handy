@@ -4,7 +4,7 @@ Tested on Ubuntu 26.04.1 LTS, GNOME Wayland, Handy 0.9.8.
 
 The fix is to use `ydotool` for typing and `handy_keys` for shortcuts.
 
-*Note: Run commands one by one in terminal*
+_Note: Run commands one by one in terminal_
 
 ## 1. Check Wayland and uinput
 
