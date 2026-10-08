@@ -52,6 +52,7 @@ export const Slider: React.FC<SliderProps> = ({
         <div className="flex items-center space-x-1 h-6">
           <input
             type="range"
+            aria-label={label}
             min={min}
             max={max}
             step={step}
