@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { SettingContainer } from "./SettingContainer";
 import { ResetButton } from "./ResetButton";
 
@@ -35,6 +36,7 @@ export const Slider: React.FC<SliderProps> = ({
   onReset,
   isResetting = false,
 }) => {
+  const { t } = useTranslation();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(parseFloat(e.target.value));
   };
@@ -73,7 +75,11 @@ export const Slider: React.FC<SliderProps> = ({
             </span>
           )}
           {onReset && (
-            <ResetButton onClick={onReset} disabled={disabled || isResetting} />
+            <ResetButton
+              onClick={onReset}
+              disabled={disabled || isResetting}
+              ariaLabel={t("common.resetSetting", { setting: label })}
+            />
           )}
         </div>
       </div>

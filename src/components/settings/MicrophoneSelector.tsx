@@ -66,6 +66,9 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
             onOpen={refreshAudioDevices}
           />
           <ResetButton
+            ariaLabel={t("common.resetSetting", {
+              setting: t("settings.sound.microphone.title"),
+            })}
             onClick={handleReset}
             disabled={isUpdating("selected_microphone") || isLoading}
           />
