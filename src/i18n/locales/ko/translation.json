@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "GitHub Releases 열기"
   },
   "common": {
+    "playbackPosition": "재생 위치",
     "loading": "로딩 중...",
     "delete": "삭제",
     "close": "닫기",

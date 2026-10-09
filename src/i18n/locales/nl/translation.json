@@ -666,6 +666,7 @@
     "title": "Nieuw in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Playback position",
     "loading": "Laden...",
     "delete": "Verwijderen",
     "close": "Sluiten",
