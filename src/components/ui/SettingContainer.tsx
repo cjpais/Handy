@@ -47,6 +47,17 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     setShowTooltip(!showTooltip);
   };
 
+  const handleTooltipKeyDown = (event: React.KeyboardEvent<SVGSVGElement>) => {
+    if (event.key === "Escape" && showTooltip) {
+      event.preventDefault();
+      event.stopPropagation();
+      setShowTooltip(false);
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleTooltip();
+    }
+  };
+
   const containerClasses = grouped
     ? "px-4 p-2"
     : "px-4 p-2 rounded-lg border border-mid-gray/20";
@@ -76,12 +87,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
                 aria-label="More information"
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleTooltip();
-                  }
-                }}
+                onKeyDown={handleTooltipKeyDown}
               >
                 <path
                   strokeLinecap="round"
@@ -149,12 +155,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
                 aria-label="More information"
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleTooltip();
-                  }
-                }}
+                onKeyDown={handleTooltipKeyDown}
               >
                 <path
                   strokeLinecap="round"
