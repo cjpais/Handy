@@ -200,12 +200,12 @@ export const HistorySettings: React.FC = () => {
     try {
       const result = await commands.deleteHistoryEntry(id);
       if (result.status !== "ok") {
-        // Reload on failure
-        loadPage();
+        throw new Error(String(result.error));
       }
     } catch (error) {
       console.error("Failed to delete entry:", error);
       loadPage();
+      throw error;
     }
   };
 
