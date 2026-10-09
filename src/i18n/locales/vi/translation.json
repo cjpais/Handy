@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "Mở GitHub Releases"
   },
   "common": {
+    "resetSetting": "Reset {{setting}} to default",
     "loading": "Đang tải...",
     "delete": "Xóa",
     "close": "Đóng",

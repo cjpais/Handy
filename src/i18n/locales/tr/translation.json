@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "GitHub Releases’i aç"
   },
   "common": {
+    "resetSetting": "Reset {{setting}} to default",
     "loading": "Yükleniyor...",
     "delete": "Sil",
     "close": "Kapat",
