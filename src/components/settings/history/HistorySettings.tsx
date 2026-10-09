@@ -89,9 +89,14 @@ export const HistorySettings: React.FC = () => {
       );
       if (result.status === "ok") {
         const { entries: newEntries, has_more } = result.data;
-        setEntries((prev) =>
-          isFirstPage ? newEntries : [...prev, ...newEntries],
-        );
+        setEntries((prev) => {
+          if (isFirstPage) return newEntries;
+          const existingIds = new Set(prev.map((entry) => entry.id));
+          return [
+            ...prev,
+            ...newEntries.filter((entry) => !existingIds.has(entry.id)),
+          ];
+        });
         setHasMore(has_more);
       }
     } catch (error) {
@@ -136,7 +141,10 @@ export const HistorySettings: React.FC = () => {
     const unlisten = events.historyUpdatePayload.listen((event) => {
       const payload: HistoryUpdatePayload = event.payload;
       if (payload.action === "added") {
-        setEntries((prev) => [payload.entry, ...prev]);
+        setEntries((prev) => [
+          payload.entry,
+          ...prev.filter((entry) => entry.id !== payload.entry.id),
+        ]);
       } else if (payload.action === "updated") {
         setEntries((prev) =>
           prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
