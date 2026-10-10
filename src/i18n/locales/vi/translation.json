@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "Mở GitHub Releases"
   },
   "common": {
+    "playbackPosition": "Playback position",
     "loading": "Đang tải...",
     "delete": "Xóa",
     "close": "Đóng",

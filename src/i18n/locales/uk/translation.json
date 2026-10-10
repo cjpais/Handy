@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "Відкрити GitHub Releases"
   },
   "common": {
+    "playbackPosition": "Playback position",
     "loading": "Завантаження...",
     "delete": "Видалити",
     "close": "Закрити",

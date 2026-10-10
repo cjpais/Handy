@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "Öppna GitHub Releases"
   },
   "common": {
+    "playbackPosition": "Playback position",
     "loading": "Laddar...",
     "delete": "Ta bort",
     "close": "Stäng",

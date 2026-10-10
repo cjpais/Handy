@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "GitHub Releases’i aç"
   },
   "common": {
+    "playbackPosition": "Playback position",
     "loading": "Yükleniyor...",
     "delete": "Sil",
     "close": "Kapat",

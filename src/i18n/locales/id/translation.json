@@ -666,6 +666,7 @@
     "title": "Baru di Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Playback position",
     "loading": "Memuat...",
     "delete": "Hapus",
     "close": "Tutup",
