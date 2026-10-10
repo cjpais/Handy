@@ -48,7 +48,11 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (
+        e.key === "Enter" &&
+        !e.nativeEvent.isComposing &&
+        e.nativeEvent.keyCode !== 229
+      ) {
         e.preventDefault();
         handleAddWord();
       }

@@ -123,7 +123,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" && filteredLanguages.length > 0) {
+    if (
+      event.key === "Enter" &&
+      !event.nativeEvent.isComposing &&
+      event.nativeEvent.keyCode !== 229 &&
+      filteredLanguages.length > 0
+    ) {
       // Select first filtered language on Enter
       handleLanguageSelect(filteredLanguages[0].value);
     } else if (event.key === "Escape") {
