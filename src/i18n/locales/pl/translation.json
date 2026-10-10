@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "Otwórz GitHub Releases"
   },
   "common": {
+    "resetSetting": "Reset {{setting}} to default",
     "loading": "Wczytywanie...",
     "delete": "Usuń",
     "close": "Zamknij",

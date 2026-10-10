@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "GitHub Releases 열기"
   },
   "common": {
+    "resetSetting": "{{setting}} 기본값으로 초기화",
     "loading": "로딩 중...",
     "delete": "삭제",
     "close": "닫기",

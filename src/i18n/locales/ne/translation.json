@@ -666,6 +666,7 @@
     "title": "Handy v{{version}} मा नयाँ"
   },
   "common": {
+    "resetSetting": "Reset {{setting}} to default",
     "loading": "लोड गरिँदैछ...",
     "delete": "मेटाउनुहोस्",
     "close": "बन्द गर्नुहोस्",

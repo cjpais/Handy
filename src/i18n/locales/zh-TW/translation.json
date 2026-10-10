@@ -663,6 +663,7 @@
     "portableUpdateBrowseButton": "開啟 GitHub Releases"
   },
   "common": {
+    "resetSetting": "Reset {{setting}} to default",
     "loading": "載入中...",
     "delete": "刪除",
     "close": "關閉",
