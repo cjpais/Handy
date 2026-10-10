@@ -378,3 +378,58 @@ pub async fn set_selected_channel(app: AppHandle, channel: Option<u16>) -> Resul
     write_settings(&app, settings);
     Ok(())
 }
+
+/* ---------- hands-free continuous capture ------------------------------ */
+
+/// Enable hands-free continuous capture and start the loop. Only persists the
+/// setting once the loop has actually started — a failed start (mic busy,
+/// permission not granted) must not leave `hands_free_capture: true` on disk
+/// with nothing actually listening.
+#[tauri::command]
+#[specta::specta]
+pub fn start_hands_free(app: AppHandle) -> Result<(), String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.start_hands_free()
+        .map_err(|e| format!("Failed to start hands-free capture: {e}"))?;
+
+    let mut settings = get_settings(&app);
+    settings.hands_free_capture = true;
+    write_settings(&app, settings);
+    Ok(())
+}
+
+/// Disable hands-free continuous capture, persist the setting, and stop the loop.
+#[tauri::command]
+#[specta::specta]
+pub fn stop_hands_free(app: AppHandle) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.hands_free_capture = false;
+    write_settings(&app, settings);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.stop_hands_free();
+    Ok(())
+}
+
+/// Toggle pause on the hands-free loop without disabling it. Returns the new
+/// paused state (true = paused).
+#[tauri::command]
+#[specta::specta]
+pub fn toggle_hands_free_pause(app: AppHandle) -> Result<bool, String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    Ok(rm.toggle_hands_free_pause())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn is_hands_free_running(app: AppHandle) -> bool {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.is_hands_free_running()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn is_hands_free_paused(app: AppHandle) -> bool {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.is_hands_free_paused()
+}
