@@ -167,7 +167,7 @@
 
             preFixup = ''
               gappsWrapperArgs+=(
-                --set WEBKIT_DISABLE_DMABUF_RENDERER 1
+                --set-default WEBKIT_DISABLE_DMABUF_RENDERER 1
                 --set ALSA_PLUGIN_DIR "${combinedAlsaPlugins}"
                 # Self-update can't work against an immutable /nix/store install
                 # (downloadAndInstall would try to overwrite the store path), so
