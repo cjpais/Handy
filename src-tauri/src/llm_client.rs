@@ -1,4 +1,4 @@
-use crate::settings::PostProcessProvider;
+use crate::settings::{PostProcessApiFormat, PostProcessProvider};
 use log::{debug, error, info};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
@@ -135,6 +135,47 @@ struct ChatMessageResponse {
     content: Option<String>,
 }
 
+/// Output budget for Anthropic Messages requests, where `max_tokens` is
+/// required. Ample for a cleaned-up dictation.
+const ANTHROPIC_MAX_TOKENS: u32 = 4096;
+
+#[derive(Debug, Serialize)]
+struct AnthropicMessagesRequest {
+    model: String,
+    max_tokens: u32,
+    messages: Vec<ChatMessage>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnthropicMessagesResponse {
+    content: Vec<AnthropicContentBlock>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+enum AnthropicContentBlock {
+    Text {
+        text: String,
+    },
+    /// Thinking and any other non-text blocks
+    #[serde(other)]
+    Other,
+}
+
+impl AnthropicMessagesResponse {
+    fn into_text(self) -> Option<String> {
+        let text: String = self
+            .content
+            .into_iter()
+            .filter_map(|block| match block {
+                AnthropicContentBlock::Text { text } => Some(text),
+                AnthropicContentBlock::Other => None,
+            })
+            .collect();
+        (!text.is_empty()).then_some(text)
+    }
+}
+
 /// Build headers for API requests based on provider type
 fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<HeaderMap, String> {
     let mut headers = HeaderMap::new();
@@ -153,7 +194,7 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
 
     // Provider-specific auth headers
     if !api_key.is_empty() {
-        if provider.id == "anthropic" {
+        if provider.id == "anthropic" || provider.api_format == PostProcessApiFormat::Anthropic {
             headers.insert(
                 "x-api-key",
                 HeaderValue::from_str(api_key)
@@ -304,6 +345,10 @@ pub async fn send_chat_completion(
     prompt: String,
     disable_reasoning: bool,
 ) -> Result<Option<String>, String> {
+    if provider.api_format == PostProcessApiFormat::Anthropic {
+        return send_anthropic_message(provider, api_key, model, prompt).await;
+    }
+
     send_chat_completion_with_schema(
         provider,
         api_key,
@@ -461,6 +506,64 @@ pub async fn send_chat_completion_with_schema(
         .and_then(|choice| choice.message.content.clone()))
 }
 
+/// Send a single-prompt request to an Anthropic Messages API (`/messages`).
+/// Only the custom provider reaches this, and it never uses structured output.
+/// Thinking is off unless requested, so no reasoning fields are needed.
+async fn send_anthropic_message(
+    provider: &PostProcessProvider,
+    api_key: String,
+    model: &str,
+    prompt: String,
+) -> Result<Option<String>, String> {
+    let url = format!("{}/messages", provider.base_url.trim_end_matches('/'));
+
+    debug!(
+        "Sending Anthropic Messages request to: {}",
+        sanitized_url_for_log(&url)
+    );
+
+    let request_body = AnthropicMessagesRequest {
+        model: model.to_string(),
+        max_tokens: ANTHROPIC_MAX_TOKENS,
+        messages: vec![ChatMessage {
+            role: "user".to_string(),
+            content: prompt,
+        }],
+    };
+
+    let response = create_client(provider, &api_key)?
+        .post(&url)
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| report_reqwest_error("HTTP request failed", &e))?;
+    let status = response.status();
+    debug!(
+        "Anthropic Messages response received with status {} over {:?} from {}",
+        status,
+        response.version(),
+        sanitized_url(response.url())
+    );
+
+    if !status.is_success() {
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|e| report_reqwest_error("Failed to read API error response", &e));
+        return Err(format!(
+            "API request failed with status {}: {}",
+            status, error_text
+        ));
+    }
+
+    let message: AnthropicMessagesResponse = response
+        .json()
+        .await
+        .map_err(|e| report_reqwest_error("Failed to parse API response", &e))?;
+
+    Ok(message.into_text())
+}
+
 /// Fetch available models from an OpenAI-compatible API
 /// Returns a list of model IDs
 pub async fn fetch_models(
@@ -561,6 +664,14 @@ mod tests {
             allow_base_url_edit: true,
             models_endpoint: None,
             supports_structured_output: false,
+            api_format: PostProcessApiFormat::OpenAi,
+        }
+    }
+
+    fn anthropic_format_provider(base_url: &str) -> PostProcessProvider {
+        PostProcessProvider {
+            api_format: PostProcessApiFormat::Anthropic,
+            ..provider("custom", base_url)
         }
     }
 
@@ -730,5 +841,69 @@ mod tests {
         assert!(is_known_rejected(&key));
         // A different model on the same endpoint is tracked separately
         assert!(!is_known_rejected(&endpoint_key(&deepseek, "other-model")));
+    }
+
+    #[test]
+    fn anthropic_format_uses_api_key_headers() {
+        let headers = build_headers(
+            &anthropic_format_provider("https://example.com/anthropic/v1"),
+            "key",
+        )
+        .unwrap();
+        assert_eq!(headers["x-api-key"], "key");
+        assert_eq!(headers["anthropic-version"], "2023-06-01");
+        assert!(headers.get(AUTHORIZATION).is_none());
+
+        let headers =
+            build_headers(&provider("custom", "http://localhost:11434/v1"), "key").unwrap();
+        assert_eq!(headers[AUTHORIZATION], "Bearer key");
+        assert!(headers.get("x-api-key").is_none());
+    }
+
+    #[test]
+    fn anthropic_request_carries_required_max_tokens() {
+        let request = AnthropicMessagesRequest {
+            model: "claude-haiku".to_string(),
+            max_tokens: ANTHROPIC_MAX_TOKENS,
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "hi".to_string(),
+            }],
+        };
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["max_tokens"], ANTHROPIC_MAX_TOKENS);
+        assert_eq!(json["messages"][0]["role"], "user");
+        assert!(json.get("stream").is_none());
+        assert!(json.get("reasoning_effort").is_none());
+    }
+
+    #[test]
+    fn anthropic_response_keeps_only_text_blocks() {
+        let response: AnthropicMessagesResponse = serde_json::from_str(
+            r#"{"content":[{"type":"thinking","thinking":"hmm"},{"type":"text","text":"Hello"},{"type":"text","text":" world"}]}"#,
+        )
+        .unwrap();
+        assert_eq!(response.into_text().as_deref(), Some("Hello world"));
+
+        let empty: AnthropicMessagesResponse = serde_json::from_str(r#"{"content":[]}"#).unwrap();
+        assert_eq!(empty.into_text(), None);
+    }
+
+    #[tokio::test]
+    async fn anthropic_format_parses_messages_response() {
+        let base_url = serve_one_response(
+            "200 OK",
+            r#"{"type":"message","role":"assistant","content":[{"type":"text","text":"Cleaned text"}]}"#,
+        )
+        .await;
+        let result = send_chat_completion(
+            &anthropic_format_provider(&base_url),
+            "key".to_string(),
+            "claude-haiku",
+            "raw text".to_string(),
+            true,
+        )
+        .await;
+        assert_eq!(result, Ok(Some("Cleaned text".to_string())));
     }
 }
