@@ -1110,6 +1110,30 @@ pub fn change_post_process_base_url_setting(
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_post_process_api_format_setting(
+    app: AppHandle,
+    provider_id: String,
+    api_format: settings::PostProcessApiFormat,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let provider = settings
+        .post_process_provider_mut(&provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    if provider.id != "custom" {
+        return Err(format!(
+            "Provider '{}' does not allow changing the API format",
+            provider.label
+        ));
+    }
+
+    provider.api_format = api_format;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Generic helper to validate provider exists
 fn validate_provider_exists(
     settings: &settings::AppSettings,

@@ -414,10 +414,18 @@
         "title": "Pintasan"
       },
       "api": {
-        "title": "API (Kompatibel dengan OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Penyedia",
-          "description": "Pilih penyedia yang kompatibel dengan OpenAI."
+          "description": "Pilih penyedia yang kompatibel dengan OpenAI atau Anthropic."
+        },
+        "apiFormat": {
+          "title": "Format API",
+          "description": "Format permintaan yang diharapkan oleh endpoint kustom Anda.",
+          "options": {
+            "openai": "Kompatibel dengan OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence tidak tersedia di perangkat ini. Memerlukan Mac Apple Silicon yang menjalankan macOS Tahoe (26.0) atau yang lebih baru dengan Apple Intelligence diaktifkan di Pengaturan Sistem."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "URL Dasar",
           "description": "URL dasar API untuk penyedia yang dipilih. Hanya penyedia kustom yang dapat diedit.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Kunci API",

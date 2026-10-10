@@ -1,6 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSettings } from "../../../hooks/useSettings";
-import { commands, type PostProcessProvider } from "@/bindings";
+import {
+  commands,
+  type PostProcessApiFormat,
+  type PostProcessProvider,
+} from "@/bindings";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
@@ -14,6 +18,8 @@ type PostProcessProviderState = {
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
   isBaseUrlUpdating: boolean;
+  apiFormat: PostProcessApiFormat;
+  handleApiFormatChange: (value: PostProcessApiFormat) => void;
   apiKey: string;
   handleApiKeyChange: (value: string) => void;
   isApiKeyUpdating: boolean;
@@ -34,6 +40,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
     settings,
     isUpdating,
+    refreshSettings,
     setPostProcessProvider,
     updatePostProcessBaseUrl,
     updatePostProcessApiKey,
@@ -62,6 +69,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
+  const apiFormat = selectedProvider?.api_format ?? "openai";
   const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
   const model = settings?.post_process_models?.[selectedProviderId] ?? "";
 
@@ -127,6 +135,22 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       }
     },
     [selectedProvider, baseUrl, updatePostProcessBaseUrl],
+  );
+
+  const handleApiFormatChange = useCallback(
+    async (value: PostProcessApiFormat) => {
+      if (value === apiFormat) return;
+      const result = await commands.changePostProcessApiFormatSetting(
+        selectedProviderId,
+        value,
+      );
+      if (result.status === "error") {
+        console.error("Failed to update API format:", result.error);
+        return;
+      }
+      await refreshSettings();
+    },
+    [apiFormat, selectedProviderId, refreshSettings],
   );
 
   const handleApiKeyChange = useCallback(
@@ -219,6 +243,8 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     baseUrl,
     handleBaseUrlChange,
     isBaseUrlUpdating,
+    apiFormat,
+    handleApiFormatChange,
     apiKey,
     handleApiKeyChange,
     isApiKeyUpdating,
