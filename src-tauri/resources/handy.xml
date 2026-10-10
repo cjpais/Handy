@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+    <name>org.freedesktop.IBus.Handy</name>
+    <description>Handy Speech-to-Text Input Method</description>
+    <version>0.8.3</version>
+    <author>pengcheng</author>
+    <homepage>https://github.com/cjpais/Handy</homepage>
+    <exec>/usr/bin/handy --ibus-engine</exec>
+    <textdomain>handy</textdomain>
+    <engines>
+        <engine>
+            <name>handy</name>
+            <language>other</language>
+            <license>MIT</license>
+            <author>pengcheng</author>
+            <icon>handy</icon>
+            <layout>default</layout>
+            <longname>Handy Voice Input</longname>
+            <description>Handy Speech-to-Text direct typing engine</description>
+            <rank>99</rank>
+        </engine>
+    </engines>
+</component>
