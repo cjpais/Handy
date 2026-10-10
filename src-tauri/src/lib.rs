@@ -359,8 +359,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     });
 
     // Apply the autostart preference (SMAppService login item on macOS 13+,
-    // tauri-plugin-autostart elsewhere)
-    autostart::apply_autostart(app_handle, settings.autostart_enabled);
+    // tauri-plugin-autostart elsewhere) off the startup path. The macOS status
+    // query is a synchronous round trip to a system service, and a login item
+    // only matters at the next login, so nothing here needs to wait for it.
+    let autostart_app = app_handle.clone();
+    std::thread::spawn(move || autostart::reconcile_autostart(&autostart_app));
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
