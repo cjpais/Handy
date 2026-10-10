@@ -414,10 +414,18 @@
         "title": "Бърз клавиш"
       },
       "api": {
-        "title": "API (съвместим с OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Доставчик",
-          "description": "Изберете доставчик, съвместим с OpenAI."
+          "description": "Изберете доставчик, съвместим с OpenAI или Anthropic."
+        },
+        "apiFormat": {
+          "title": "Формат на API",
+          "description": "Формат на заявката, очакван от вашия персонализиран краен адрес.",
+          "options": {
+            "openai": "Съвместим с OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence не е налична на това устройство. Необходим е Mac с Apple Silicon и macOS Tahoe (26.0) или по-нова с включена Apple Intelligence в Системните настройки."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "Базов URL",
           "description": "Базов API URL за избрания доставчик. Редактируем е само при персонализиран доставчик.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API ключ",

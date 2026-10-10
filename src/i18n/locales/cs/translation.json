@@ -414,10 +414,18 @@
         "title": "Klávesová zkratka"
       },
       "api": {
-        "title": "API (kompatibilní s OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Poskytovatel",
-          "description": "Vyberte poskytovatele kompatibilního s OpenAI."
+          "description": "Vyberte poskytovatele kompatibilního s OpenAI nebo Anthropic."
+        },
+        "apiFormat": {
+          "title": "Formát API",
+          "description": "Formát požadavku očekávaný vaším vlastním endpointem.",
+          "options": {
+            "openai": "Kompatibilní s OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence není na tomto zařízení k dispozici. Vyžaduje Mac s Apple Silicon a macOS Tahoe (26.0) nebo novější a povolené Apple Intelligence v Nastavení systému."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "Základní URL",
           "description": "Základní URL API pro vybraného poskytovatele. Upravitelné je pouze u vlastního poskytovatele.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API klíč",
