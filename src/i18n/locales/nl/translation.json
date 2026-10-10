@@ -558,6 +558,10 @@
         "label": "Dempen tijdens opname",
         "description": "Systeemgeluid dempen tijdens het opnemen"
       },
+      "muteImmediately": {
+        "label": "Direct dempen",
+        "description": "Dempen zodra de opname start in plaats van na het startgeluid, zodat er geen achtergrondgeluid wordt opgenomen. Het startgeluid wordt overgeslagen."
+      },
       "appendTrailingSpace": {
         "label": "Spatie achteraan toevoegen",
         "description": "Voeg een spatie toe na de geplakte transcriptie"

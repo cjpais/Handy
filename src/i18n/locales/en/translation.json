@@ -558,6 +558,10 @@
         "label": "Mute While Recording",
         "description": "Mute system audio during recording"
       },
+      "muteImmediately": {
+        "label": "Mute Immediately",
+        "description": "Mute as soon as recording starts instead of after the start sound, so no background audio is recorded. The start sound is skipped."
+      },
       "appendTrailingSpace": {
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"

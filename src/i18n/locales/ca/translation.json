@@ -558,6 +558,10 @@
         "label": "Silencia durant l'enregistrament",
         "description": "Silencia l'àudio del sistema durant l'enregistrament"
       },
+      "muteImmediately": {
+        "label": "Silencia immediatament",
+        "description": "Silencia tan bon punt comença l'enregistrament en lloc de després del so d'inici, perquè no s'enregistri àudio de fons. El so d'inici s'omet."
+      },
       "appendTrailingSpace": {
         "label": "Afegiu un espai al final",
         "description": "Afegeix un espai après de la transcripció enganxada"

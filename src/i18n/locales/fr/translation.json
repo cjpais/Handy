@@ -544,6 +544,10 @@
         "label": "Muet pendant l'enregistrement",
         "description": "Couper le son du système pendant l'enregistrement"
       },
+      "muteImmediately": {
+        "label": "Couper le son immédiatement",
+        "description": "Couper le son dès le début de l'enregistrement plutôt qu'après le son de démarrage, afin qu'aucun son de fond ne soit enregistré. Le son de démarrage est ignoré."
+      },
       "appendTrailingSpace": {
         "label": "Ajouter une espace final",
         "description": "Ajouter une espace après la transcription collée"

@@ -544,6 +544,10 @@
         "label": "録音中にミュート",
         "description": "録音中にシステムオーディオをミュート"
       },
+      "muteImmediately": {
+        "label": "すぐにミュート",
+        "description": "開始音の後ではなく録音開始と同時にミュートし、バックグラウンドの音声が録音されないようにします。開始音は再生されません。"
+      },
       "appendTrailingSpace": {
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
