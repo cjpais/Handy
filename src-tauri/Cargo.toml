@@ -64,7 +64,7 @@ reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "d
 futures-util = "0.3"
 rustfft = "6.4.0"
 strsim = "0.11.0"
-natural = "0.5.0"
+rphonetic = "4.0.0"
 regex = "1"
 # Text-based language ID (filler-word removal fallback); isolang bridges the
 # ISO 639-1 codes in model metadata to whatlang's 639-3 codes.
