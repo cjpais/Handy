@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::path::Path;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Mutex, OnceLock, PoisonError};
 
 use transcribe_cpp::{Backend, BackendMask, Model, ModelOptions, VadSession, VadSessionOptions};
 
@@ -8,7 +8,8 @@ use super::{VadFrame, VoiceActivityDetector};
 use crate::audio_toolkit::constants;
 
 pub struct SileroVad {
-    // `VadSession` is Send but not Sync; the trait requires both.
+    // `VadSession` is Send but not Sync; the trait requires both. Only ever
+    // reached through `get_mut`, so it is never locked and never poisoned.
     session: Mutex<VadSession>,
     frame_samples: usize,
     threshold: f32,
@@ -19,6 +20,9 @@ pub struct SileroVad {
 fn init_cpu_backends() -> Result<()> {
     static INIT: OnceLock<Result<(), String>> = OnceLock::new();
     INIT.get_or_init(|| {
+        // Route native/ggml diagnostics into Handy's log; must precede any
+        // native call.
+        transcribe_cpp::init_logging();
         transcribe_cpp::init_backends_with(None::<&Path>, BackendMask::CPU)
             .map_err(|e| e.to_string())
     })
@@ -76,11 +80,10 @@ impl VoiceActivityDetector for SileroVad {
             );
         }
 
-        let session = self
+        let result = self
             .session
             .get_mut()
-            .map_err(|_| anyhow::anyhow!("Silero VAD session poisoned"))?;
-        let result = session
+            .unwrap_or_else(PoisonError::into_inner)
             .stream_feed(frame)
             .map_err(|e| anyhow::anyhow!("Silero VAD error: {e}"))?;
 
@@ -107,8 +110,9 @@ impl VoiceActivityDetector for SileroVad {
     fn reset(&mut self) {
         // Clear the Silero LSTM state and frame context so a new session
         // doesn't inherit recurrent context from the previous recording.
-        if let Ok(session) = self.session.get_mut() {
-            session.stream_reset();
-        }
+        self.session
+            .get_mut()
+            .unwrap_or_else(PoisonError::into_inner)
+            .stream_reset();
     }
 }
