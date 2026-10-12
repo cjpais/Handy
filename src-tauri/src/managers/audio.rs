@@ -345,9 +345,6 @@ fn create_capture_vad(
         ),
     };
 
-    // Earshot uses 16 ms frames while Silero uses 32 ms. Convert the existing
-    // time-based capture profile to each detector's frame size so selecting a
-    // backend does not shorten pre-roll, onset, or post-speech audio.
     let frame_samples = detector.frame_samples();
     let prefill_frames = frames_for_duration_ms(VAD_PREFILL_MS, frame_samples);
     let offline_hangover_frames = frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, frame_samples);
