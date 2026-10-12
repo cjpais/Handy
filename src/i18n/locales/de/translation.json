@@ -441,6 +441,29 @@
           "refreshModels": "Modelle aktualisieren"
         }
       },
+      "fallback": {
+        "title": "Ausweichmodell",
+        "enabled": {
+          "title": "Ausweichmodell",
+          "description": "Schlägt die Nachbearbeitung fehl, wird einmal mit dem Ausweichmodell erneut versucht. Aus: Bei einem Fehlschlag bleibt die unbearbeitete Transkription erhalten."
+        },
+        "model": {
+          "title": "Ausweichmodell",
+          "descriptionCustom": "Gib die Kennung eines zweiten Modells an, das dein eigener Endpunkt akzeptiert.",
+          "descriptionDefault": "Wähle ein zweites Modell dieses Anbieters, das bei einem Fehlschlag des primären Modells greift.",
+          "placeholderWithOptions": "Ausweichmodell suchen oder auswählen",
+          "placeholderNoOptions": "Name des Ausweichmodells eingeben"
+        },
+        "separateKey": {
+          "title": "Eigenen API-Schlüssel verwenden",
+          "description": "Ein: Das Ausweichmodell nutzt einen eigenen Schlüssel und funktioniert weiter, wenn der Hauptschlüssel das Kontingent erschöpft hat. Aus: Es wird derselbe Schlüssel genutzt, was nur bei modellspezifischen Fehlern hilft."
+        },
+        "apiKey": {
+          "title": "API-Schlüssel für das Ausweichmodell",
+          "description": "Wird nur für den zweiten Versuch verwendet. Das primäre Modell nutzt weiterhin den API-Schlüssel oben.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

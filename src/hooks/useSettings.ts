@@ -41,6 +41,14 @@ interface UseSettingsReturn {
     apiKey: string,
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  updatePostProcessFallbackModel: (
+    providerId: string,
+    model: string,
+  ) => Promise<void>;
+  updatePostProcessFallbackApiKey: (
+    providerId: string,
+    apiKey: string,
+  ) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
 }
 
@@ -75,6 +83,8 @@ export const useSettings = (): UseSettingsReturn => {
     updatePostProcessBaseUrl: store.updatePostProcessBaseUrl,
     updatePostProcessApiKey: store.updatePostProcessApiKey,
     updatePostProcessModel: store.updatePostProcessModel,
+    updatePostProcessFallbackModel: store.updatePostProcessFallbackModel,
+    updatePostProcessFallbackApiKey: store.updatePostProcessFallbackApiKey,
     fetchPostProcessModels: store.fetchPostProcessModels,
   };
 };

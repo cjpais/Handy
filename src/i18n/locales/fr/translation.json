@@ -441,6 +441,29 @@
           "refreshModels": "Actualiser les modèles"
         }
       },
+      "fallback": {
+        "title": "Secours",
+        "enabled": {
+          "title": "Modèle de secours",
+          "description": "Si le post-traitement échoue, une nouvelle tentative est faite avec le modèle de secours. Désactivé : en cas d'échec, la transcription brute est conservée."
+        },
+        "model": {
+          "title": "Modèle de secours",
+          "descriptionCustom": "Indiquez l'identifiant d'un second modèle accepté par votre point de terminaison personnalisé.",
+          "descriptionDefault": "Choisissez un second modèle de ce fournisseur, utilisé si le modèle principal échoue.",
+          "placeholderWithOptions": "Rechercher ou sélectionner un modèle de secours",
+          "placeholderNoOptions": "Saisir le nom du modèle de secours"
+        },
+        "separateKey": {
+          "title": "Utiliser une clé d'API distincte",
+          "description": "Activé : le modèle de secours utilise sa propre clé et continue de fonctionner lorsque la clé principale est limitée. Désactivé : il réutilise la clé principale, ce qui ne sert que contre les pannes propres à un modèle."
+        },
+        "apiKey": {
+          "title": "Clé d'API du modèle de secours",
+          "description": "Utilisée uniquement pour la seconde tentative. Le modèle principal continue d'utiliser la clé d'API ci-dessus.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

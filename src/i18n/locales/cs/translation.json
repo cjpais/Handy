@@ -441,6 +441,29 @@
           "refreshModels": "Obnovit modely"
         }
       },
+      "fallback": {
+        "title": "Záložní",
+        "enabled": {
+          "title": "Záložní model",
+          "description": "Pokud se následné zpracování nezdaří, zkusíme to ještě jednou se záložním modelem. Vypnuto: při chybě zůstane nezpracovaný přepis."
+        },
+        "model": {
+          "title": "Záložní model",
+          "descriptionCustom": "Zadejte identifikátor druhého modelu, který přijímá váš vlastní koncový bod.",
+          "descriptionDefault": "Vyberte druhý model tohoto poskytovatele, který se použije, když hlavní selže.",
+          "placeholderWithOptions": "Vyhledat nebo vybrat záložní model",
+          "placeholderNoOptions": "Zadejte název záložního modelu"
+        },
+        "separateKey": {
+          "title": "Použít samostatný API klíč",
+          "description": "Zapnuto: záložní model použije vlastní klíč a funguje dál, i když je hlavní omezený. Vypnuto: použije hlavní klíč, což pomáhá jen při chybách konkrétního modelu."
+        },
+        "apiKey": {
+          "title": "API klíč záložního modelu",
+          "description": "Použije se jen při druhém pokusu. Hlavní model dál používá API klíč výše.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

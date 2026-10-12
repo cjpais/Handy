@@ -441,6 +441,29 @@
           "refreshModels": "刷新模型"
         }
       },
+      "fallback": {
+        "title": "备用",
+        "enabled": {
+          "title": "备用模型",
+          "description": "如果后处理失败，会用备用模型重试一次。关闭：请求失败时保留未经处理的转写文本。"
+        },
+        "model": {
+          "title": "备用模型",
+          "descriptionCustom": "请填写你的自定义接口可接受的第二个模型标识。",
+          "descriptionDefault": "选择该服务商的第二个模型，主模型失败时使用。",
+          "placeholderWithOptions": "搜索或选择备用模型",
+          "placeholderNoOptions": "输入备用模型名称"
+        },
+        "separateKey": {
+          "title": "使用单独的 API 密钥",
+          "description": "开启：备用模型使用自己的密钥，主密钥被限流时仍可继续工作。关闭：沿用主密钥，只能应对特定模型的故障。"
+        },
+        "apiKey": {
+          "title": "备用模型 API 密钥",
+          "description": "仅用于第二次重试。主模型仍使用上面的 API 密钥。",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "提示词",
         "selectedPrompt": {

@@ -441,6 +441,29 @@
           "refreshModels": "Modellen verversen"
         }
       },
+      "fallback": {
+        "title": "Terugvalmodel",
+        "enabled": {
+          "title": "Terugvalmodel",
+          "description": "Als de nabewerking mislukt, wordt één keer opnieuw geprobeerd met het terugvalmodel. Uit: bij een mislukte aanvraag blijft de onbewerkte transcriptie staan."
+        },
+        "model": {
+          "title": "Terugvalmodel",
+          "descriptionCustom": "Geef de identifier van een tweede model dat je eigen endpoint accepteert.",
+          "descriptionDefault": "Kies een tweede model van deze provider, dat wordt gebruikt als het primaire model faalt.",
+          "placeholderWithOptions": "Zoek of kies een terugvalmodel",
+          "placeholderNoOptions": "Typ de naam van het terugvalmodel"
+        },
+        "separateKey": {
+          "title": "Een aparte API-sleutel gebruiken",
+          "description": "Aan: het terugvalmodel gebruikt zijn eigen sleutel en blijft werken als de primaire sleutel is beperkt. Uit: het hergebruikt de primaire sleutel, wat alleen helpt bij modelspecifieke fouten."
+        },
+        "apiKey": {
+          "title": "API-sleutel voor het terugvalmodel",
+          "description": "Alleen gebruikt voor de tweede poging. Het primaire model blijft de API-sleutel hierboven gebruiken.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

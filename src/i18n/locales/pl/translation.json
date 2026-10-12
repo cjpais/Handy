@@ -441,6 +441,29 @@
           "refreshModels": "Odśwież modele"
         }
       },
+      "fallback": {
+        "title": "Zapasowe",
+        "enabled": {
+          "title": "Model zapasowy",
+          "description": "Jeśli postprocessing się nie powiedzie, podejmujemy jedną próbę z modelem zapasowym. Wyłączone: przy błędzie pozostaje nieprzetworzona transkrypcja."
+        },
+        "model": {
+          "title": "Model zapasowy",
+          "descriptionCustom": "Podaj identyfikator drugiego modelu akceptowanego przez Twój własny punkt końcowy.",
+          "descriptionDefault": "Wybierz drugi model tego dostawcy, używany, gdy główny zawiedzie.",
+          "placeholderWithOptions": "Wyszukaj lub wybierz model zapasowy",
+          "placeholderNoOptions": "Wpisz nazwę modelu zapasowego"
+        },
+        "separateKey": {
+          "title": "Użyj osobnego klucza API",
+          "description": "Włączone: model zapasowy używa własnego klucza i działa dalej, gdy główny jest wyczerpany. Wyłączone: korzysta z głównego klucza, co pomaga tylko przy awariach konkretnego modelu."
+        },
+        "apiKey": {
+          "title": "Klucz API modelu zapasowego",
+          "description": "Używany tylko przy drugiej próbie. Model główny nadal korzysta z klucza API powyżej.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

@@ -441,6 +441,29 @@
           "refreshModels": "모델 새로고침"
         }
       },
+      "fallback": {
+        "title": "대체",
+        "enabled": {
+          "title": "대체 모델",
+          "description": "후처리가 실패하면 대체 모델로 한 번 다시 시도합니다. 끄면 실패한 요청에서는 처리되지 않은 그대로의 텍스트를 남깁니다."
+        },
+        "model": {
+          "title": "대체 모델",
+          "descriptionCustom": "사용자 지정 엔드포인트가 받아들이는 두 번째 모델의 식별자를 입력하세요.",
+          "descriptionDefault": "기본 모델이 실패할 때 사용할 이 공급자의 두 번째 모델을 선택하세요.",
+          "placeholderWithOptions": "대체 모델 검색 또는 선택",
+          "placeholderNoOptions": "대체 모델 이름 입력"
+        },
+        "separateKey": {
+          "title": "별도 API 키 사용",
+          "description": "켜면: 대체 모델이 자체 키를 쓰므로 기본 키가 사용 한도에 걸려도 계속 동작합니다. 끄면: 기본 키를 재사용하므로 모델 자체의 오류에만 도움이 됩니다."
+        },
+        "apiKey": {
+          "title": "대체 모델 API 키",
+          "description": "두 번째 시도에만 사용됩니다. 기본 모델은 위의 API 키를 계속 사용합니다.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "프롬프트",
         "selectedPrompt": {

@@ -441,6 +441,29 @@
           "refreshModels": "Actualitzeu els models"
         }
       },
+      "fallback": {
+        "title": "Alternatiu",
+        "enabled": {
+          "title": "Model alternatiu",
+          "description": "Si el postprocessament falla, es torna a intentar un cop amb el model alternatiu. Desactivat: si la petició falla, es conserva la transcripció sense processar."
+        },
+        "model": {
+          "title": "Model alternatiu",
+          "descriptionCustom": "Indiqueu l'identificador d'un segon model que accepti el vostre endpoint personalitzat.",
+          "descriptionDefault": "Trieu un segon model d'aquest proveïdor, que s'usa quan el principal falla.",
+          "placeholderWithOptions": "Cerqueu o seleccioneu un model alternatiu",
+          "placeholderNoOptions": "Escriviu el nom del model alternatiu"
+        },
+        "separateKey": {
+          "title": "Utilitza una clau d'API separada",
+          "description": "Activat: el model alternatiu usa la seva pròpia clau i continua funcionant quan la principal està limitada. Desactivat: reutilitza la clau principal, cosa que només ajuda davant fallades del model."
+        },
+        "apiKey": {
+          "title": "Clau d'API del model alternatiu",
+          "description": "Només s'utilitza per al segon intent. El model principal continua amb la clau d'API de dalt.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Indicació",
         "selectedPrompt": {

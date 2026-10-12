@@ -441,6 +441,29 @@
           "refreshModels": "モデルを更新"
         }
       },
+      "fallback": {
+        "title": "フォールバック",
+        "enabled": {
+          "title": "フォールバックモデル",
+          "description": "後処理が失敗した場合、フォールバックモデルで1回だけ再試行します。オフの場合、失敗したリクエストでは未処理の文字起こしがそのまま残ります。"
+        },
+        "model": {
+          "title": "フォールバックモデル",
+          "descriptionCustom": "独自のエンドポイントが受け付ける2つ目のモデルの識別子を入力してください。",
+          "descriptionDefault": "主なモデルが失敗したときに使う、同じプロバイダの2つ目のモデルを選びます。",
+          "placeholderWithOptions": "フォールバックモデルを検索または選択",
+          "placeholderNoOptions": "フォールバックモデルの名前を入力"
+        },
+        "separateKey": {
+          "title": "別のAPIキーを使用",
+          "description": "オン: フォールバックモデルが独自のキーを使うため、主なキーが上限に達しても動き続けます。オフ: 主なキーを再利用するため、モデル固有の障害にだけ有効です。"
+        },
+        "apiKey": {
+          "title": "フォールバックモデルのAPIキー",
+          "description": "2回目の試行にだけ使われます。主なモデルは上のAPIキーを引き続き使用します。",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "プロンプト",
         "selectedPrompt": {
