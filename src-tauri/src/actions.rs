@@ -8,7 +8,9 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
 use crate::media_control::MediaController;
-use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, OverlayStyle, PostProcessProvider, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
 use crate::utils::{
@@ -173,82 +175,31 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
-    if is_blank_transcription(transcription) {
-        debug!("Post-processing skipped because the transcription is empty");
-        return None;
-    }
-
-    let provider = match settings.active_post_process_provider().cloned() {
-        Some(provider) => provider,
-        None => {
-            debug!("Post-processing enabled but no provider is selected");
-            return None;
-        }
-    };
-
-    let model = settings
-        .post_process_models
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
-
-    if model.trim().is_empty() {
-        debug!(
-            "Post-processing skipped because provider '{}' has no model configured",
-            provider.id
-        );
-        return None;
-    }
-
-    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
-        Some(id) => id.clone(),
-        None => {
-            debug!("Post-processing skipped because no prompt is selected");
-            return None;
-        }
-    };
-
-    let prompt = match settings
-        .post_process_prompts
-        .iter()
-        .find(|prompt| prompt.id == selected_prompt_id)
-    {
-        Some(prompt) => prompt.prompt.clone(),
-        None => {
-            debug!(
-                "Post-processing skipped because prompt '{}' was not found",
-                selected_prompt_id
-            );
-            return None;
-        }
-    };
-
-    if prompt.trim().is_empty() {
-        debug!("Post-processing skipped because the selected prompt is empty");
-        return None;
-    }
+/// Single LLM post-processing attempt against one model/key pair. Returns
+/// `None` when the attempt fails so the caller can fall through to the
+/// configured fallback model.
+async fn attempt_post_process(
+    provider: &PostProcessProvider,
+    model: &str,
+    api_key: String,
+    prompt: &str,
+    custom_words: &[String],
+    transcription: &str,
+) -> Option<String> {
+    // Ask these providers to skip reasoning/thinking — post-processing rarely
+    // benefits from it and it adds seconds of latency. llm_client picks the
+    // field the endpoint understands and retries without it if rejected.
+    let disable_reasoning = matches!(provider.id.as_str(), "custom" | "openrouter");
 
     debug!(
         "Starting LLM post-processing with provider '{}' (model: {})",
         provider.id, model
     );
 
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
-
-    // Ask these providers to skip reasoning/thinking — post-processing rarely
-    // benefits from it and it adds seconds of latency. llm_client picks the
-    // field the endpoint understands and retries without it if rejected.
-    let disable_reasoning = matches!(provider.id.as_str(), "custom" | "openrouter");
-
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt, &settings.custom_words);
+        let system_prompt = build_system_prompt(prompt, custom_words);
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -309,9 +260,9 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         });
 
         match crate::llm_client::send_chat_completion_with_schema(
-            &provider,
+            provider,
             api_key.clone(),
-            &model,
+            model,
             user_content,
             Some(system_prompt),
             Some(json_schema),
@@ -363,13 +314,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 
     // Legacy mode: render the transcription and custom words into one prompt.
-    let processed_prompt = render_prompt_template(&prompt, transcription, &settings.custom_words);
+    let processed_prompt = render_prompt_template(prompt, transcription, custom_words);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
-        &provider,
+        provider,
         api_key,
-        &model,
+        model,
         processed_prompt,
         disable_reasoning,
     )
@@ -390,13 +341,141 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
         Err(e) => {
             error!(
-                "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
-                provider.id,
-                e
+                "LLM post-processing failed for provider '{}' (model '{}'): {}.",
+                provider.id, model, e
             );
             None
         }
     }
+}
+
+async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+    if is_blank_transcription(transcription) {
+        debug!("Post-processing skipped because the transcription is empty");
+        return None;
+    }
+
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("Post-processing enabled but no provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "Post-processing skipped because provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
+        Some(id) => id.clone(),
+        None => {
+            debug!("Post-processing skipped because no prompt is selected");
+            return None;
+        }
+    };
+
+    let prompt = match settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| prompt.id == selected_prompt_id)
+    {
+        Some(prompt) => prompt.prompt.clone(),
+        None => {
+            debug!(
+                "Post-processing skipped because prompt '{}' was not found",
+                selected_prompt_id
+            );
+            return None;
+        }
+    };
+
+    if prompt.trim().is_empty() {
+        debug!("Post-processing skipped because the selected prompt is empty");
+        return None;
+    }
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if let Some(result) = attempt_post_process(
+        &provider,
+        &model,
+        api_key,
+        &prompt,
+        &settings.custom_words,
+        transcription,
+    )
+    .await
+    {
+        return Some(result);
+    }
+
+    // Primary attempt failed — fall through to the fallback model when enabled.
+    if !settings.post_process_fallback_enabled {
+        debug!("Post-processing fallback is disabled; keeping original transcription");
+        return None;
+    }
+
+    let fallback_model = settings
+        .post_process_fallback_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if fallback_model.trim().is_empty() {
+        debug!(
+            "Post-processing fallback enabled but provider '{}' has no fallback model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    if fallback_model == model {
+        debug!("Post-processing fallback model matches the primary model; skipping retry");
+        return None;
+    }
+
+    let fallback_api_key = if settings.post_process_fallback_use_separate_key {
+        settings
+            .post_process_fallback_api_keys
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default()
+    } else {
+        settings
+            .post_process_api_keys
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default()
+    };
+
+    debug!(
+        "Primary post-processing failed; retrying with fallback model '{}'",
+        fallback_model
+    );
+    attempt_post_process(
+        &provider,
+        &fallback_model,
+        fallback_api_key,
+        &prompt,
+        &settings.custom_words,
+        transcription,
+    )
+    .await
 }
 
 pub(crate) struct ProcessedTranscription {

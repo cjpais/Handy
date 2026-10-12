@@ -469,6 +469,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Fallback",
+        "enabled": {
+          "title": "Fallback Model",
+          "description": "If post-processing fails, retry once with the fallback model. Off: a failed request keeps the unprocessed transcript."
+        },
+        "model": {
+          "title": "Fallback Model",
+          "descriptionCustom": "Provide the identifier of a second model your custom endpoint accepts.",
+          "descriptionDefault": "Choose a second model from this provider, used when the primary one fails.",
+          "placeholderWithOptions": "Search or select a fallback model",
+          "placeholderNoOptions": "Type a fallback model name"
+        },
+        "separateKey": {
+          "title": "Use a Separate API Key",
+          "description": "On: the fallback uses its own key, so it keeps working when the primary key is rate-limited. Off: it reuses the primary key, which only helps against model-specific failures."
+        },
+        "apiKey": {
+          "title": "Fallback API Key",
+          "description": "Used only for the fallback retry. The primary model keeps using the API key above.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

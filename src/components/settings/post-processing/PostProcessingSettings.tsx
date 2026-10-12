@@ -20,6 +20,7 @@ import { Button } from "../../ui/Button";
 import { ResetButton } from "../../ui/ResetButton";
 import { Input } from "../../ui/Input";
 
+import { ToggleSwitch } from "../../ui/ToggleSwitch";
 import { ProviderSelect } from "../PostProcessingSettingsApi/ProviderSelect";
 import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
 import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
@@ -280,6 +281,219 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             )}
           </div>
         </SettingContainer>
+      )}
+    </>
+  );
+};
+
+const PostProcessingFallbackComponent: React.FC = () => {
+  const { t } = useTranslation();
+  const state = usePostProcessProviderState();
+  const [testingFallbackModel, setTestingFallbackModel] = useState<string | null>(
+    null,
+  );
+  const [fallbackTestResult, setFallbackTestResult] =
+    useState<TestResultState | null>(null);
+
+  useEffect(() => {
+    setTestingFallbackModel(null);
+    setFallbackTestResult(null);
+  }, [state.selectedProviderId]);
+
+  const handleTestFallbackModel = async (model?: string) => {
+    const targetModel = model || state.fallbackModel;
+    if (testingFallbackModel || !targetModel) return;
+
+    setTestingFallbackModel(targetModel);
+    setFallbackTestResult(null);
+    try {
+      const result = await commands.testPostProcessModel(targetModel);
+      if (result.status === "ok") {
+        setFallbackTestResult({ kind: "success", model: targetModel });
+      } else {
+        setFallbackTestResult({
+          kind: "error",
+          model: targetModel,
+          failure: result.error,
+        });
+      }
+    } catch (error) {
+      setFallbackTestResult({
+        kind: "error",
+        model: targetModel,
+        failure: { kind: "provider", detail: String(error) },
+      });
+    } finally {
+      setTestingFallbackModel(null);
+    }
+  };
+
+  return (
+    <>
+      <ToggleSwitch
+        checked={state.fallbackEnabled}
+        onChange={state.handleFallbackEnabledChange}
+        isUpdating={state.isFallbackEnabledUpdating}
+        label={t("settings.postProcessing.fallback.enabled.title")}
+        description={t("settings.postProcessing.fallback.enabled.description")}
+        descriptionMode="tooltip"
+        grouped={true}
+      />
+
+      {state.fallbackEnabled && !state.isAppleProvider && (
+        <>
+          <SettingContainer
+            title={t("settings.postProcessing.fallback.model.title")}
+            description={
+              state.isCustomProvider
+                ? t(
+                    "settings.postProcessing.fallback.model.descriptionCustom",
+                  )
+                : t(
+                    "settings.postProcessing.fallback.model.descriptionDefault",
+                  )
+            }
+            descriptionMode="tooltip"
+            layout="stacked"
+            grouped={true}
+          >
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ModelSelect
+                  value={state.fallbackModel}
+                  options={state.fallbackModelOptions}
+                  disabled={state.isFallbackModelUpdating}
+                  isLoading={state.isFetchingModels}
+                  placeholder={
+                    state.fallbackModelOptions.length > 0
+                      ? t(
+                          "settings.postProcessing.fallback.model.placeholderWithOptions",
+                        )
+                      : t(
+                          "settings.postProcessing.fallback.model.placeholderNoOptions",
+                        )
+                  }
+                  onSelect={state.handleFallbackModelSelect}
+                  onCreate={state.handleFallbackModelCreate}
+                  onBlur={() => {}}
+                  onTest={handleTestFallbackModel}
+                  testingModel={testingFallbackModel}
+                  testLabel={t("settings.postProcessing.api.model.test")}
+                  testingLabel={t("settings.postProcessing.api.model.testing")}
+                  className="flex-1 min-w-[380px]"
+                />
+              </div>
+
+              {fallbackTestResult && (
+                <div
+                  className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${
+                    fallbackTestResult.kind === "error"
+                      ? "border-error/40 bg-error/10"
+                      : "border-success/40 bg-success/10"
+                  }`}
+                >
+                  {fallbackTestResult.kind === "error" ? (
+                    <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-error" />
+                  ) : (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+                  )}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    {fallbackTestResult.kind === "error" ? (
+                      <>
+                        <p className="text-sm font-medium leading-5 text-error">
+                          {t(
+                            `settings.postProcessing.api.model.errors.${
+                              TEST_ERROR_KEYS[fallbackTestResult.failure.kind] ??
+                              "provider"
+                            }`,
+                          )}
+                        </p>
+                        <p className="break-words text-xs leading-4 text-error/80">
+                          {fallbackTestResult.failure.detail}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm leading-5 text-success">
+                        {t("settings.postProcessing.api.model.testSuccess")}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1 pt-1">
+                      {fallbackTestResult.kind === "error" && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleTestFallbackModel(fallbackTestResult.model)
+                          }
+                          disabled={Boolean(testingFallbackModel)}
+                          className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded px-2 py-1 text-xs font-medium text-error transition-colors hover:bg-error/15 focus:outline-none focus:ring-1 focus:ring-error disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <RotateCcw
+                            className={`h-3.5 w-3.5 ${
+                              testingFallbackModel === fallbackTestResult.model
+                                ? "animate-spin"
+                                : ""
+                            }`}
+                          />
+                          {t("settings.postProcessing.api.model.retry")}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setFallbackTestResult(null)}
+                        aria-label={t(
+                          "settings.postProcessing.api.model.dismiss",
+                        )}
+                        className={`cursor-pointer rounded p-1 transition-colors focus:outline-none focus:ring-1 ${
+                          fallbackTestResult.kind === "error"
+                            ? "text-error hover:bg-error/15 focus:ring-error"
+                            : "text-success hover:bg-success/15 focus:ring-success"
+                        }`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </SettingContainer>
+
+          <ToggleSwitch
+            checked={state.fallbackUseSeparateKey}
+            onChange={state.handleFallbackUseSeparateKeyChange}
+            isUpdating={state.isFallbackSeparateKeyUpdating}
+            label={t("settings.postProcessing.fallback.separateKey.title")}
+            description={t(
+              "settings.postProcessing.fallback.separateKey.description",
+            )}
+            descriptionMode="tooltip"
+            grouped={true}
+          />
+
+          {state.fallbackUseSeparateKey && (
+            <SettingContainer
+              title={t("settings.postProcessing.fallback.apiKey.title")}
+              description={t(
+                "settings.postProcessing.fallback.apiKey.description",
+              )}
+              descriptionMode="tooltip"
+              layout="horizontal"
+              grouped={true}
+            >
+              <div className="flex items-center gap-2">
+                <ApiKeyField
+                  value={state.fallbackApiKey}
+                  onBlur={state.handleFallbackApiKeyChange}
+                  placeholder={t(
+                    "settings.postProcessing.fallback.apiKey.placeholder",
+                  )}
+                  disabled={state.isFallbackApiKeyUpdating}
+                  className="min-w-[320px]"
+                />
+              </div>
+            </SettingContainer>
+          )}
+        </>
       )}
     </>
   );
@@ -556,6 +770,16 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   );
 };
 
+export const PostProcessingFallback: React.FC = () => {
+  const { t } = useTranslation();
+
+  return (
+    <SettingsGroup title={t("settings.postProcessing.fallback.title")}>
+      <PostProcessingFallbackComponent />
+    </SettingsGroup>
+  );
+};
+
 export const PostProcessingSettingsApi = React.memo(
   PostProcessingSettingsApiComponent,
 );
@@ -582,6 +806,8 @@ export const PostProcessingSettings: React.FC = () => {
       <SettingsGroup title={t("settings.postProcessing.api.title")}>
         <PostProcessingSettingsApi />
       </SettingsGroup>
+
+      <PostProcessingFallback />
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
         <PostProcessingSettingsPrompts />

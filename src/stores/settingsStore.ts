@@ -45,7 +45,7 @@ interface SettingsStore {
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
   updatePostProcessSetting: (
-    settingType: "base_url" | "api_key" | "model",
+    settingType: "base_url" | "api_key" | "model" | "fallback_model" | "fallback_api_key",
     providerId: string,
     value: string,
   ) => Promise<void>;
@@ -58,6 +58,14 @@ interface SettingsStore {
     apiKey: string,
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  updatePostProcessFallbackModel: (
+    providerId: string,
+    model: string,
+  ) => Promise<void>;
+  updatePostProcessFallbackApiKey: (
+    providerId: string,
+    apiKey: string,
+  ) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
 
@@ -157,6 +165,10 @@ const settingUpdaters: {
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),
+  post_process_fallback_enabled: (value) =>
+    commands.changePostProcessFallbackEnabledSetting(value as boolean),
+  post_process_fallback_use_separate_key: (value) =>
+    commands.changePostProcessFallbackUseSeparateKeySetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>
@@ -498,7 +510,12 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Generic updater for post-processing provider settings
     updatePostProcessSetting: async (
-      settingType: "base_url" | "api_key" | "model",
+      settingType:
+        | "base_url"
+        | "api_key"
+        | "model"
+        | "fallback_model"
+        | "fallback_api_key",
       providerId: string,
       value: string,
     ) => {
@@ -514,6 +531,16 @@ export const useSettingsStore = create<SettingsStore>()(
           await commands.changePostProcessApiKeySetting(providerId, value);
         } else if (settingType === "model") {
           await commands.changePostProcessModelSetting(providerId, value);
+        } else if (settingType === "fallback_model") {
+          await commands.changePostProcessFallbackModelSetting(
+            providerId,
+            value,
+          );
+        } else if (settingType === "fallback_api_key") {
+          await commands.changePostProcessFallbackApiKeySetting(
+            providerId,
+            value,
+          );
         }
         await refreshSettings();
       } catch (error) {
@@ -585,6 +612,26 @@ export const useSettingsStore = create<SettingsStore>()(
 
     updatePostProcessModel: async (providerId, model) => {
       return get().updatePostProcessSetting("model", providerId, model);
+    },
+
+    updatePostProcessFallbackModel: async (providerId, model) => {
+      return get().updatePostProcessSetting("fallback_model", providerId, model);
+    },
+
+    updatePostProcessFallbackApiKey: async (providerId, apiKey) => {
+      // Same rationale as the primary key: cached model lists can depend on the
+      // key's permissions, so drop them and let the user refresh.
+      set((state) => ({
+        postProcessModelOptions: {
+          ...state.postProcessModelOptions,
+          [providerId]: [],
+        },
+      }));
+      return get().updatePostProcessSetting(
+        "fallback_api_key",
+        providerId,
+        apiKey,
+      );
     },
 
     fetchPostProcessModels: async (providerId) => {

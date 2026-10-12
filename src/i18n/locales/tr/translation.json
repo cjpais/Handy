@@ -468,6 +468,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Yedek",
+        "enabled": {
+          "title": "Yedek Model",
+          "description": "Son işlem başarısız olursa bir kez yedek modelle yeniden denenir. Kapalı: istek başarısız olduğunda işlenmemiş transkripsiyon korunur."
+        },
+        "model": {
+          "title": "Yedek Model",
+          "descriptionCustom": "Kendi uç noktanızın kabul ettiği ikinci bir modelin tanımlayıcısını girin.",
+          "descriptionDefault": "Ana model başarısız olduğunda kullanılacak, bu sağlayıcıdan ikinci bir model seçin.",
+          "placeholderWithOptions": "Yedek model arayın veya seçin",
+          "placeholderNoOptions": "Yedek modelin adını yazın"
+        },
+        "separateKey": {
+          "title": "Ayrı Bir API Anahtarı Kullan",
+          "description": "Açık: yedek model kendi anahtarını kullanır, ana anahtar limitlendiğinde de çalışmaya devam eder. Kapalı: ana anahtarı yeniden kullanır, bu yalnızca modele özel hatalarda işe yarar."
+        },
+        "apiKey": {
+          "title": "Yedek Model API Anahtarı",
+          "description": "Yalnızca ikinci deneme için kullanılır. Ana model yukarıdaki API anahtarını kullanmaya devam eder.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

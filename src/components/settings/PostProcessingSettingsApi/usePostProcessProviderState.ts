@@ -26,6 +26,22 @@ type PostProcessProviderState = {
   handleModelSelect: (value: string) => void;
   handleModelCreate: (value: string) => void;
   handleRefreshModels: () => void;
+  // Fallback (secondary) model, used when the primary model fails.
+  fallbackEnabled: boolean;
+  handleFallbackEnabledChange: (enabled: boolean) => void;
+  isFallbackEnabledUpdating: boolean;
+  fallbackUseSeparateKey: boolean;
+  handleFallbackUseSeparateKeyChange: (enabled: boolean) => void;
+  isFallbackSeparateKeyUpdating: boolean;
+  fallbackModel: string;
+  handleFallbackModelChange: (value: string) => void;
+  handleFallbackModelSelect: (value: string) => void;
+  handleFallbackModelCreate: (value: string) => void;
+  isFallbackModelUpdating: boolean;
+  fallbackModelOptions: ModelOption[];
+  fallbackApiKey: string;
+  handleFallbackApiKeyChange: (value: string) => void;
+  isFallbackApiKeyUpdating: boolean;
 };
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
@@ -34,10 +50,13 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
     settings,
     isUpdating,
+    updateSetting,
     setPostProcessProvider,
     updatePostProcessBaseUrl,
     updatePostProcessApiKey,
     updatePostProcessModel,
+    updatePostProcessFallbackModel,
+    updatePostProcessFallbackApiKey,
     fetchPostProcessModels,
     postProcessModelOptions,
   } = useSettings();
@@ -209,6 +228,96 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   // No automatic fetching - user must click refresh button
 
+  const fallbackEnabled = settings?.post_process_fallback_enabled ?? false;
+  const fallbackUseSeparateKey =
+    settings?.post_process_fallback_use_separate_key ?? false;
+  const fallbackModel =
+    settings?.post_process_fallback_models?.[selectedProviderId] ?? "";
+  const fallbackApiKey =
+    settings?.post_process_fallback_api_keys?.[selectedProviderId] ?? "";
+
+  const handleFallbackEnabledChange = useCallback(
+    (enabled: boolean) => {
+      void updateSetting("post_process_fallback_enabled", enabled);
+    },
+    [updateSetting],
+  );
+
+  const handleFallbackUseSeparateKeyChange = useCallback(
+    (enabled: boolean) => {
+      void updateSetting("post_process_fallback_use_separate_key", enabled);
+    },
+    [updateSetting],
+  );
+
+  const handleFallbackModelChange = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (trimmed !== fallbackModel) {
+        void updatePostProcessFallbackModel(selectedProviderId, trimmed);
+      }
+    },
+    [fallbackModel, selectedProviderId, updatePostProcessFallbackModel],
+  );
+
+  const handleFallbackModelSelect = useCallback(
+    (value: string) => {
+      void updatePostProcessFallbackModel(selectedProviderId, value.trim());
+    },
+    [selectedProviderId, updatePostProcessFallbackModel],
+  );
+
+  const handleFallbackModelCreate = useCallback(
+    (value: string) => {
+      void updatePostProcessFallbackModel(selectedProviderId, value);
+    },
+    [selectedProviderId, updatePostProcessFallbackModel],
+  );
+
+  const handleFallbackApiKeyChange = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (trimmed !== fallbackApiKey) {
+        void updatePostProcessFallbackApiKey(selectedProviderId, trimmed);
+      }
+    },
+    [fallbackApiKey, selectedProviderId, updatePostProcessFallbackApiKey],
+  );
+
+  // The fallback draws from the same provider list as the primary model, so it
+  // can reuse the fetched options and still offer the configured value.
+  const fallbackModelOptions = useMemo<ModelOption[]>(() => {
+    const seen = new Set<string>();
+    const options: ModelOption[] = [];
+
+    const upsert = (value: string | null | undefined) => {
+      const trimmed = value?.trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      options.push({ value: trimmed, label: trimmed });
+    };
+
+    for (const candidate of availableModelsRaw) {
+      upsert(candidate);
+    }
+    upsert(fallbackModel);
+
+    return options;
+  }, [availableModelsRaw, fallbackModel]);
+
+  const isFallbackEnabledUpdating = isUpdating(
+    "post_process_fallback_enabled",
+  );
+  const isFallbackSeparateKeyUpdating = isUpdating(
+    "post_process_fallback_use_separate_key",
+  );
+  const isFallbackModelUpdating = isUpdating(
+    `post_process_fallback_model:${selectedProviderId}`,
+  );
+  const isFallbackApiKeyUpdating = isUpdating(
+    `post_process_fallback_api_key:${selectedProviderId}`,
+  );
+
   return {
     providerOptions,
     selectedProviderId,
@@ -231,5 +340,20 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     handleModelSelect,
     handleModelCreate,
     handleRefreshModels,
+    fallbackEnabled,
+    handleFallbackEnabledChange,
+    isFallbackEnabledUpdating,
+    fallbackUseSeparateKey,
+    handleFallbackUseSeparateKeyChange,
+    isFallbackSeparateKeyUpdating,
+    fallbackModel,
+    handleFallbackModelChange,
+    handleFallbackModelSelect,
+    handleFallbackModelCreate,
+    isFallbackModelUpdating,
+    fallbackModelOptions,
+    fallbackApiKey,
+    handleFallbackApiKeyChange,
+    isFallbackApiKeyUpdating,
   };
 };

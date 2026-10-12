@@ -468,6 +468,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "備援",
+        "enabled": {
+          "title": "備援模型",
+          "description": "若後處理失敗，會改用備援模型重試一次。關閉時，請求失敗會保留未處理的轉寫文字。"
+        },
+        "model": {
+          "title": "備援模型",
+          "descriptionCustom": "請填寫自訂端點可接受的第二個模型識別名稱。",
+          "descriptionDefault": "選擇此供應商的第二個模型，主模型失敗時使用。",
+          "placeholderWithOptions": "搜尋或選擇備援模型",
+          "placeholderNoOptions": "輸入備援模型名稱"
+        },
+        "separateKey": {
+          "title": "使用獨立的 API 金鑰",
+          "description": "開啟：備援模型使用自己的金鑰，主金鑰被限流時仍可繼續運作。關閉：沿用主金鑰，只能處理特定模型的故障。"
+        },
+        "apiKey": {
+          "title": "備援模型 API 金鑰",
+          "description": "僅用於第二次重試。主模型仍使用上面的 API 金鑰。",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "提示詞",
         "selectedPrompt": {

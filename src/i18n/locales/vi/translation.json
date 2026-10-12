@@ -468,6 +468,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Dự phòng",
+        "enabled": {
+          "title": "Mô hình dự phòng",
+          "description": "Nếu hậu xử lý thất bại, sẽ thử lại một lần bằng mô hình dự phòng. Tắt: yêu cầu lỗi thì giữ nguyên bản chép chưa xử lý."
+        },
+        "model": {
+          "title": "Mô hình dự phòng",
+          "descriptionCustom": "Nhập định danh của mô hình thứ hai mà điểm cuối tùy chỉnh của bạn chấp nhận.",
+          "descriptionDefault": "Chọn mô hình thứ hai của nhà cung cấp này, dùng khi mô hình chính thất bại.",
+          "placeholderWithOptions": "Tìm hoặc chọn mô hình dự phòng",
+          "placeholderNoOptions": "Nhập tên mô hình dự phòng"
+        },
+        "separateKey": {
+          "title": "Dùng khóa API riêng",
+          "description": "Bật: mô hình dự phòng dùng khóa riêng nên vẫn chạy được khi khóa chính bị giới hạn. Tắt: dùng lại khóa chính, chỉ hữu ích khi lỗi do riêng mô hình."
+        },
+        "apiKey": {
+          "title": "Khóa API của mô hình dự phòng",
+          "description": "Chỉ dùng cho lần thử thứ hai. Mô hình chính vẫn dùng khóa API ở trên.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Câu lệnh",
         "selectedPrompt": {

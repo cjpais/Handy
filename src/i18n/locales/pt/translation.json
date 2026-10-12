@@ -468,6 +468,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Alternativo",
+        "enabled": {
+          "title": "Modelo alternativo",
+          "description": "Se o pós-processamento falhar, é feita uma nova tentativa com o modelo alternativo. Desligado: se a chamada falhar, a transcrição sem processamento é mantida."
+        },
+        "model": {
+          "title": "Modelo alternativo",
+          "descriptionCustom": "Informe o identificador de um segundo modelo aceito pelo seu endpoint personalizado.",
+          "descriptionDefault": "Escolha um segundo modelo deste provedor, usado quando o principal falhar.",
+          "placeholderWithOptions": "Buscar ou selecionar um modelo alternativo",
+          "placeholderNoOptions": "Digite o nome do modelo alternativo"
+        },
+        "separateKey": {
+          "title": "Usar uma chave de API separada",
+          "description": "Ligado: o modelo alternativo usa a própria chave e continua funcionando quando a principal está limitada. Desligado: ele reaproveita a chave principal, o que só ajuda em falhas do modelo."
+        },
+        "apiKey": {
+          "title": "Chave de API do modelo alternativo",
+          "description": "Usada apenas na segunda tentativa. O modelo principal continua usando a chave de API acima.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

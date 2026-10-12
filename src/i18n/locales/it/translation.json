@@ -468,6 +468,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Secondario",
+        "enabled": {
+          "title": "Modello secondario",
+          "description": "Se la post-elaborazione fallisce, si riprova una volta con il modello secondario. Disattivato: se la richiesta fallisce, la trascrizione non elaborata viene mantenuta."
+        },
+        "model": {
+          "title": "Modello secondario",
+          "descriptionCustom": "Indica l'identificatore di un secondo modello accettato dal tuo endpoint personalizzato.",
+          "descriptionDefault": "Scegli un secondo modello di questo provider, usato quando quello principale fallisce.",
+          "placeholderWithOptions": "Cerca o seleziona un modello secondario",
+          "placeholderNoOptions": "Scrivi il nome del modello secondario"
+        },
+        "separateKey": {
+          "title": "Usa una chiave API separata",
+          "description": "Attivo: il modello secondario usa la propria chiave e continua a funzionare quando quella principale è limitata. Disattivato: riutilizza la chiave principale, utile solo per guasti specifici del modello."
+        },
+        "apiKey": {
+          "title": "Chiave API del modello secondario",
+          "description": "Usata solo per il secondo tentativo. Il modello principale continua a usare la chiave API qui sopra.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

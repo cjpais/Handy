@@ -468,6 +468,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Reserv",
+        "enabled": {
+          "title": "Reservmodell",
+          "description": "Om efterbehandlingen misslyckas görs ett nytt försök med reservmodellen. Av: vid ett misslyckat anrop behålls den obearbetade transkriptionen."
+        },
+        "model": {
+          "title": "Reservmodell",
+          "descriptionCustom": "Ange identifieraren för en andra modell som din egen endpoint accepterar.",
+          "descriptionDefault": "Välj en andra modell hos den här leverantören, som används när huvudmodellen misslyckas.",
+          "placeholderWithOptions": "Sök eller välj en reservmodell",
+          "placeholderNoOptions": "Skriv reservmodellens namn"
+        },
+        "separateKey": {
+          "title": "Använd en separat API-nyckel",
+          "description": "På: reservmodellen använder sin egen nyckel och fortsätter fungera när huvudnyckeln är begränsad. Av: den återanvänder huvudnyckeln, vilket bara hjälper vid modellspecifika fel."
+        },
+        "apiKey": {
+          "title": "API-nyckel för reservmodellen",
+          "description": "Används bara för det andra försöket. Huvudmodellen fortsätter använda API-nyckeln ovan.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

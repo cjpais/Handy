@@ -467,6 +467,14 @@ pub struct AppSettings {
     pub post_process_api_keys: SecretMap,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
+    #[serde(default)]
+    pub post_process_fallback_enabled: bool,
+    #[serde(default)]
+    pub post_process_fallback_use_separate_key: bool,
+    #[serde(default = "default_post_process_fallback_models")]
+    pub post_process_fallback_models: HashMap<String, String>,
+    #[serde(default = "default_post_process_fallback_api_keys")]
+    pub post_process_fallback_api_keys: SecretMap,
     #[serde(default = "default_post_process_prompts")]
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
@@ -802,6 +810,14 @@ fn default_post_process_models() -> HashMap<String, String> {
     map
 }
 
+fn default_post_process_fallback_models() -> HashMap<String, String> {
+    HashMap::new()
+}
+
+fn default_post_process_fallback_api_keys() -> SecretMap {
+    SecretMap(HashMap::new())
+}
+
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
     vec![LLMPrompt {
         id: "default_improve_transcriptions".to_string(),
@@ -885,6 +901,26 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                     .insert(provider.id.clone(), default_model);
                 changed = true;
             }
+        }
+
+        if !settings
+            .post_process_fallback_models
+            .contains_key(&provider.id)
+        {
+            settings
+                .post_process_fallback_models
+                .insert(provider.id.clone(), String::new());
+            changed = true;
+        }
+
+        if !settings
+            .post_process_fallback_api_keys
+            .contains_key(&provider.id)
+        {
+            settings
+                .post_process_fallback_api_keys
+                .insert(provider.id.clone(), String::new());
+            changed = true;
         }
     }
 
@@ -984,6 +1020,10 @@ pub fn get_default_settings() -> AppSettings {
         post_process_providers: default_post_process_providers(),
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
+        post_process_fallback_enabled: false,
+        post_process_fallback_use_separate_key: false,
+        post_process_fallback_models: default_post_process_fallback_models(),
+        post_process_fallback_api_keys: default_post_process_fallback_api_keys(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,

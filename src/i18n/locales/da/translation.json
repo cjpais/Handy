@@ -468,6 +468,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Reserve",
+        "enabled": {
+          "title": "Reservemodel",
+          "description": "Hvis efterbehandlingen mislykkes, prøver vi én gang mere med reservemodellen. Slået fra: ved fejl beholdes den ubehandlede transskription."
+        },
+        "model": {
+          "title": "Reservemodel",
+          "descriptionCustom": "Angiv idet på en anden model, som dit eget endpoint accepterer.",
+          "descriptionDefault": "Vælg endnu en model hos denne udbyder, som bruges, når den primære fejler.",
+          "placeholderWithOptions": "Søg eller vælg et reservemodel",
+          "placeholderNoOptions": "Skriv navnet på reservemodellen"
+        },
+        "separateKey": {
+          "title": "Brug en separat API-nøgle",
+          "description": "Til: reservemodellen bruger sin egen nøgle og virker stadig, når den primære er begrænset. Fra: den genbruger den primære nøgle, hvilket kun hjælper ved modelfejl."
+        },
+        "apiKey": {
+          "title": "API-nøgle til reservemodellen",
+          "description": "Bruges kun til det andet forsøg. Den primære model bruger stadig API-nøglen ovenfor.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {

@@ -464,6 +464,29 @@
           }
         }
       },
+      "fallback": {
+        "title": "Cadangan",
+        "enabled": {
+          "title": "Model cadangan",
+          "description": "Jika pasiproses gagal, percobaan diulang sekali dengan model cadangan. Mati: permintaan yang gagal tetap memakai transkripsi tanpa olah."
+        },
+        "model": {
+          "title": "Model cadangan",
+          "descriptionCustom": "Masukkan identifier model kedua yang diterima endpoint kustom Anda.",
+          "descriptionDefault": "Pilih model kedua dari penyedia ini, dipakai ketika model utama gagal.",
+          "placeholderWithOptions": "Cari atau pilih model cadangan",
+          "placeholderNoOptions": "Ketik nama model cadangan"
+        },
+        "separateKey": {
+          "title": "Gunakan kunci API terpisah",
+          "description": "Nyala: model cadangan memakai kuncinya sendiri dan tetap jalan saat kunci utama dibatasi. Mati: memakai kunci utama, yang hanya membantu untuk kegagalan khusus model."
+        },
+        "apiKey": {
+          "title": "Kunci API model cadangan",
+          "description": "Hanya dipakai untuk percobaan kedua. Model utama tetap memakai kunci API di atas.",
+          "placeholder": "sk-..."
+        }
+      },
       "prompts": {
         "title": "Prompt",
         "selectedPrompt": {
