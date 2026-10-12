@@ -7,11 +7,6 @@ use transcribe_cpp::{Backend, BackendMask, Model, ModelOptions, VadSession, VadS
 use super::{VadFrame, VoiceActivityDetector};
 use crate::audio_toolkit::constants;
 
-/// Silero VAD (v6) through transcribe.cpp, in-process and CPU-only.
-///
-/// This is the one place the main process runs transcribe.cpp; ASR stays in
-/// the engine worker. Only the CPU backends are ever registered here, so no
-/// GPU driver code loads into the app process.
 pub struct SileroVad {
     // `VadSession` is Send but not Sync; the trait requires both.
     session: Mutex<VadSession>,
