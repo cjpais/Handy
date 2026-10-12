@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { Play, Pause } from "lucide-react";
 
 interface AudioPlayerProps {
@@ -42,6 +43,33 @@ export const AudioPlayerGroup: React.FC<React.PropsWithChildren> = ({
     }),
     [],
   );
+
+  // Pause playback when the main window hides to tray (backend emits
+  // "stop-audio-playback" on CloseRequested) or when the document becomes
+  // hidden. Without this, history audio keeps playing with no way to stop it.
+  useEffect(() => {
+    const stopActivePlayback = () => {
+      activeAudioRef.current?.pause();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) stopActivePlayback();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+    listen("stop-audio-playback", stopActivePlayback).then((fn) => {
+      if (cancelled) fn();
+      else unlisten = fn;
+    });
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      unlisten?.();
+    };
+  }, []);
 
   return (
     <AudioPlayerGroupContext.Provider value={value}>

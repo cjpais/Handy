@@ -1076,6 +1076,12 @@ pub fn run(cli_args: CliArgs) {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
+                // Stop any history audio playback before hiding: the webview
+                // keeps running while hidden to tray, so playback would
+                // otherwise continue with no way to stop it.
+                if window.label() == "main" {
+                    let _ = window.emit("stop-audio-playback", ());
+                }
                 api.prevent_close();
                 let _res = window.hide();
 
