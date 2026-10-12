@@ -330,7 +330,7 @@ fn create_capture_vad(
             let vad_path = app_handle
                 .path()
                 .resolve(
-                    "resources/models/silero_vad_v4.onnx",
+                    "resources/models/silero-vad-v6.2-F32.gguf",
                     tauri::path::BaseDirectory::Resource,
                 )
                 .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {e}"))?;
@@ -345,7 +345,7 @@ fn create_capture_vad(
         ),
     };
 
-    // Earshot uses 16 ms frames while Silero uses 30 ms. Convert the existing
+    // Earshot uses 16 ms frames while Silero uses 32 ms. Convert the existing
     // time-based capture profile to each detector's frame size so selecting a
     // backend does not shorten pre-roll, onset, or post-speech audio.
     let frame_samples = detector.frame_samples();

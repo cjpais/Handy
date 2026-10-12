@@ -44,7 +44,7 @@ bun run format:backend    # cargo fmt only
 
 ```bash
 mkdir -p src-tauri/resources/models
-curl -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
+curl -L -o src-tauri/resources/models/silero-vad-v6.2-F32.gguf https://huggingface.co/handy-computer/silero-vad-v6.2-gguf/resolve/main/silero-vad-v6.2-F32.gguf
 ```
 
 For detailed platform-specific build setup, see [BUILD.md](BUILD.md).
@@ -105,7 +105,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `transcribe-cpp` - Local Whisper-family inference (GGML/GGUF) with GPU acceleration
 - `transcribe-rs` - ONNX speech recognition (Parakeet, Moonshine, SenseVoice, etc.)
 - `handy-recorder` - Microphone capture: device selection, resampling to 16 kHz, failure detection
-- `vad-rs` - Voice Activity Detection
+- `transcribe-cpp` (Silero VAD v6, CPU-only, in-process) / `earshot` - Voice Activity Detection
 - `rdev` - Global keyboard shortcuts
 - `rodio` - Audio playback for feedback sounds
 
