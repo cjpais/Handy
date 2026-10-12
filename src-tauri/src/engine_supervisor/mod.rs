@@ -5,6 +5,10 @@
 //! re-launched with [`WORKER_FLAG`]. A GPU driver fault, `GGML_ASSERT` abort,
 //! or hang then kills only the worker.
 //!
+//! The one exception is Silero VAD (`audio_toolkit::vad::SileroVad`), which
+//! scores every recorded frame and so runs in the app process. It registers
+//! only transcribe.cpp's CPU backends, so no GPU driver code loads there.
+//!
 //! [`EngineSupervisor`] is the single owner of that worker. It loads and
 //! unloads models, runs and streams transcriptions, cancels them, and
 //! recovers from crashes and hangs (retrying in a CPU-only worker when the

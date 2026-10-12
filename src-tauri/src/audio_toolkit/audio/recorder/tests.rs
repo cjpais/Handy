@@ -27,7 +27,7 @@ fn stream_error_requires_reopen() {
 }
 
 /// Pass-through detector with a configurable frame size, standing in for a
-/// backend such as Earshot whose frames are not 30 ms.
+/// backend such as Earshot whose frames differ from Silero's 32 ms.
 struct FixedFrameVad(usize);
 
 impl VoiceActivityDetector for FixedFrameVad {

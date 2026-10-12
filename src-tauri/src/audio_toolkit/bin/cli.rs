@@ -178,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=========================");
     print_help();
 
-    let silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
+    let silero = SileroVad::new("./resources/models/silero-vad-v6.2-F32.gguf", 0.5)?;
     let frame_samples = silero.frame_samples();
     let offline_hangover_frames = frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, frame_samples);
     let smoothed_vad = SmoothedVad::new(
