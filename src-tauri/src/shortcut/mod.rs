@@ -13,6 +13,7 @@ mod handler;
 pub mod handy_keys;
 pub mod tauri_impl;
 
+use ::handy_keys::{Hotkey, Key, Modifiers};
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
@@ -32,6 +33,7 @@ use crate::tray;
 
 /// Initialize shortcuts using the configured implementation
 pub fn init_shortcuts(app: &AppHandle) {
+    reset_paste_conflicting_bindings(app);
     let user_settings = settings::load_or_create_app_settings(app);
 
     // Check which implementation to use
@@ -437,8 +439,80 @@ fn validate_shortcut_for_implementation(
     implementation: KeyboardImplementation,
 ) -> Result<(), String> {
     match implementation {
-        KeyboardImplementation::Tauri => tauri_impl::validate_shortcut(raw),
-        KeyboardImplementation::HandyKeys => handy_keys::validate_shortcut(raw),
+        KeyboardImplementation::Tauri => tauri_impl::validate_shortcut(raw)?,
+        KeyboardImplementation::HandyKeys => handy_keys::validate_shortcut(raw)?,
+    }
+    reject_paste_shortcut(raw)
+}
+
+/// Keystrokes Handy sends to paste a transcription. Each is listed for the
+/// left and right modifier keys, because the Secure Input fallback widens a
+/// one-sided shortcut to either side.
+fn paste_keystrokes() -> Vec<(Modifiers, Key)> {
+    #[cfg(target_os = "macos")]
+    let paste_mods = [Modifiers::CMD_LEFT, Modifiers::CMD_RIGHT];
+    #[cfg(not(target_os = "macos"))]
+    let paste_mods = [Modifiers::CTRL_LEFT, Modifiers::CTRL_RIGHT];
+    let shifts = [Modifiers::SHIFT_LEFT, Modifiers::SHIFT_RIGHT];
+
+    let mut keystrokes = Vec::new();
+    for paste_mod in paste_mods {
+        keystrokes.push((paste_mod, Key::V));
+        for shift in shifts {
+            keystrokes.push((paste_mod | shift, Key::V));
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    for shift in shifts {
+        keystrokes.push((shift, Key::Insert));
+    }
+    keystrokes
+}
+
+/// Reject a shortcut that Handy's own paste keystroke would trigger. With such
+/// a binding every paste starts a new recording, so toggle mode falls out of
+/// step and the next stop delivers nothing; under Secure Input the Carbon
+/// fallback also swallows the user's own paste in every app.
+fn reject_paste_shortcut(raw: &str) -> Result<(), String> {
+    // Unparseable shortcuts are reported by the backend validators.
+    let Ok(hotkey) = raw.parse::<Hotkey>() else {
+        return Ok(());
+    };
+    let collides = paste_keystrokes()
+        .into_iter()
+        .any(|(mods, key)| hotkey.key == Some(key) && hotkey.modifiers.matches(mods));
+    if collides {
+        return Err(format!(
+            "'{}' is the key combination Handy uses to paste text. Choose a different shortcut.",
+            raw
+        ));
+    }
+    Ok(())
+}
+
+/// Bindings saved before paste-conflict validation existed can still hold the
+/// paste keystroke. Put those back to their defaults before registering.
+fn reset_paste_conflicting_bindings(app: &AppHandle) {
+    let defaults = settings::get_default_settings().bindings;
+    let mut settings = settings::load_or_create_app_settings(app);
+    let mut changed = false;
+
+    for (id, binding) in settings.bindings.iter_mut() {
+        if id == "cancel" {
+            continue;
+        }
+        let Some(default_binding) = defaults.get(id) else {
+            continue;
+        };
+        if let Err(e) = reject_paste_shortcut(&binding.current_binding) {
+            warn!("{} Resetting '{}' to its default.", e, id);
+            binding.current_binding = default_binding.current_binding.clone();
+            changed = true;
+        }
+    }
+
+    if changed {
+        settings::write_settings(app, settings);
     }
 }
 
@@ -1490,6 +1564,39 @@ mod tests {
         ] {
             assert!(key.parse::<Shortcut>().is_ok(), "Tauri rejected {key}");
             assert!(key.parse::<Hotkey>().is_ok(), "HandyKeys rejected {key}");
+        }
+    }
+
+    #[test]
+    fn paste_keystroke_cannot_be_a_shortcut() {
+        #[cfg(target_os = "macos")]
+        let blocked = [
+            "command+v",
+            "command_left+v",
+            "command_right+v",
+            "command+shift+v",
+        ];
+        #[cfg(not(target_os = "macos"))]
+        let blocked = ["ctrl+v", "ctrl_left+v", "ctrl+shift+v", "shift+insert"];
+        for raw in blocked {
+            assert!(
+                super::reject_paste_shortcut(raw).is_err(),
+                "{raw} should be rejected"
+            );
+        }
+
+        for raw in [
+            "option+space",
+            "option+shift+space",
+            "ctrl+space",
+            "command+shift+space",
+            "alt+v",
+            "v",
+        ] {
+            assert!(
+                super::reject_paste_shortcut(raw).is_ok(),
+                "{raw} should be allowed"
+            );
         }
     }
 }
