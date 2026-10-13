@@ -20,6 +20,7 @@ type PostProcessProviderState = {
   isBaseUrlUpdating: boolean;
   apiFormat: PostProcessApiFormat;
   handleApiFormatChange: (value: PostProcessApiFormat) => void;
+  isApiFormatUpdating: boolean;
   apiKey: string;
   handleApiKeyChange: (value: string) => void;
   isApiKeyUpdating: boolean;
@@ -40,9 +41,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
     settings,
     isUpdating,
-    refreshSettings,
     setPostProcessProvider,
     updatePostProcessBaseUrl,
+    updatePostProcessApiFormat,
     updatePostProcessApiKey,
     updatePostProcessModel,
     fetchPostProcessModels,
@@ -138,19 +139,12 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   );
 
   const handleApiFormatChange = useCallback(
-    async (value: PostProcessApiFormat) => {
-      if (value === apiFormat) return;
-      const result = await commands.changePostProcessApiFormatSetting(
-        selectedProviderId,
-        value,
-      );
-      if (result.status === "error") {
-        console.error("Failed to update API format:", result.error);
-        return;
+    (value: PostProcessApiFormat) => {
+      if (value !== apiFormat) {
+        void updatePostProcessApiFormat(selectedProviderId, value);
       }
-      await refreshSettings();
     },
-    [apiFormat, selectedProviderId, refreshSettings],
+    [apiFormat, selectedProviderId, updatePostProcessApiFormat],
   );
 
   const handleApiKeyChange = useCallback(
@@ -219,6 +213,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const isBaseUrlUpdating = isUpdating(
     `post_process_base_url:${selectedProviderId}`,
   );
+  const isApiFormatUpdating = isUpdating(
+    `post_process_api_format:${selectedProviderId}`,
+  );
   const isApiKeyUpdating = isUpdating(
     `post_process_api_key:${selectedProviderId}`,
   );
@@ -245,6 +242,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     isBaseUrlUpdating,
     apiFormat,
     handleApiFormatChange,
+    isApiFormatUpdating,
     apiKey,
     handleApiKeyChange,
     isApiKeyUpdating,

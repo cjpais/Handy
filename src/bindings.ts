@@ -1107,8 +1107,8 @@ export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
 /**
- * Request format a post-processing endpoint speaks. Only the custom provider
- * lets the user change it; every built-in provider uses `OpenAi`.
+ * Request format a post-processing endpoint speaks. Built-in providers have a
+ * fixed format; only the custom provider lets the user change it.
  */
 export type PostProcessApiFormat = 
 /**

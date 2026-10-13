@@ -81,6 +81,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
                 onSelect={(value) =>
                   state.handleApiFormatChange(value as PostProcessApiFormat)
                 }
+                disabled={state.isApiFormatUpdating}
               />
             </SettingContainer>
           )}

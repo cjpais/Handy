@@ -94,8 +94,8 @@ pub struct LLMPrompt {
     pub prompt: String,
 }
 
-/// Request format a post-processing endpoint speaks. Only the custom provider
-/// lets the user change it; every built-in provider uses `OpenAi`.
+/// Request format a post-processing endpoint speaks. Built-in providers have a
+/// fixed format; only the custom provider lets the user change it.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum PostProcessApiFormat {
@@ -719,7 +719,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
-            api_format: PostProcessApiFormat::OpenAi,
+            api_format: PostProcessApiFormat::Anthropic,
         },
         PostProcessProvider {
             id: "groq".to_string(),
@@ -861,6 +861,17 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                         provider.supports_structured_output
                     );
                     existing.supports_structured_output = provider.supports_structured_output;
+                    changed = true;
+                }
+
+                // Built-in providers have a fixed API format (migration); the
+                // custom provider's format is a user choice and is left alone.
+                if provider.id != "custom" && existing.api_format != provider.api_format {
+                    debug!(
+                        "Updating api_format for provider '{}' from {:?} to {:?}",
+                        provider.id, existing.api_format, provider.api_format
+                    );
+                    existing.api_format = provider.api_format;
                     changed = true;
                 }
             }
@@ -1782,6 +1793,25 @@ mod tests {
             settings.transcribe_gpu_device.as_deref(),
             Some("[\"vulkan\",\"id\",\"0000:01:00.0\"]")
         );
+    }
+
+    #[test]
+    fn post_process_defaults_sync_builtin_api_format_but_keep_custom() {
+        let mut settings = get_default_settings();
+        for provider in settings.post_process_providers.iter_mut() {
+            match provider.id.as_str() {
+                // Settings saved before the built-in provider moved to Messages
+                "anthropic" => provider.api_format = PostProcessApiFormat::OpenAi,
+                "custom" => provider.api_format = PostProcessApiFormat::Anthropic,
+                _ => {}
+            }
+        }
+
+        assert!(ensure_post_process_defaults(&mut settings));
+
+        let format_of = |id: &str| settings.post_process_provider(id).unwrap().api_format;
+        assert_eq!(format_of("anthropic"), PostProcessApiFormat::Anthropic);
+        assert_eq!(format_of("custom"), PostProcessApiFormat::Anthropic);
     }
 
     #[test]

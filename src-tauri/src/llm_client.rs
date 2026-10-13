@@ -149,6 +149,7 @@ struct AnthropicMessagesRequest {
 #[derive(Debug, Deserialize)]
 struct AnthropicMessagesResponse {
     content: Vec<AnthropicContentBlock>,
+    stop_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -194,7 +195,7 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
 
     // Provider-specific auth headers
     if !api_key.is_empty() {
-        if provider.id == "anthropic" || provider.api_format == PostProcessApiFormat::Anthropic {
+        if provider.api_format == PostProcessApiFormat::Anthropic {
             headers.insert(
                 "x-api-key",
                 HeaderValue::from_str(api_key)
@@ -507,8 +508,10 @@ pub async fn send_chat_completion_with_schema(
 }
 
 /// Send a single-prompt request to an Anthropic Messages API (`/messages`).
-/// Only the custom provider reaches this, and it never uses structured output.
-/// Thinking is off unless requested, so no reasoning fields are needed.
+/// Used by every provider with the Anthropic format (the built-in Anthropic
+/// provider and a custom provider set to it). None of them use structured
+/// output, and thinking is off unless requested, so no reasoning fields are
+/// needed.
 async fn send_anthropic_message(
     provider: &PostProcessProvider,
     api_key: String,
@@ -560,6 +563,15 @@ async fn send_anthropic_message(
         .json()
         .await
         .map_err(|e| report_reqwest_error("Failed to parse API response", &e))?;
+
+    // A response cut off at the token budget is incomplete; pasting it would
+    // silently drop the end of the dictation.
+    if message.stop_reason.as_deref() == Some("max_tokens") {
+        return Err(format!(
+            "Response was truncated at the {} token limit",
+            ANTHROPIC_MAX_TOKENS
+        ));
+    }
 
     Ok(message.into_text())
 }
@@ -905,5 +917,23 @@ mod tests {
         )
         .await;
         assert_eq!(result, Ok(Some("Cleaned text".to_string())));
+    }
+
+    #[tokio::test]
+    async fn anthropic_format_rejects_truncated_response() {
+        let base_url = serve_one_response(
+            "200 OK",
+            r#"{"type":"message","stop_reason":"max_tokens","content":[{"type":"text","text":"Cut off"}]}"#,
+        )
+        .await;
+        let result = send_chat_completion(
+            &anthropic_format_provider(&base_url),
+            "key".to_string(),
+            "claude-haiku",
+            "raw text".to_string(),
+            true,
+        )
+        .await;
+        assert!(result.unwrap_err().contains("truncated"));
     }
 }
