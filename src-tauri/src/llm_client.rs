@@ -128,6 +128,7 @@ struct ChatCompletionResponse {
 #[derive(Debug, Deserialize)]
 struct ChatChoice {
     message: ChatMessageResponse,
+    finish_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -501,10 +502,18 @@ pub async fn send_chat_completion_with_schema(
         .await
         .map_err(|e| report_reqwest_error("Failed to parse API response", &e))?;
 
-    Ok(completion
-        .choices
-        .first()
-        .and_then(|choice| choice.message.content.clone()))
+    let Some(choice) = completion.choices.into_iter().next() else {
+        return Ok(None);
+    };
+
+    // A response cut off at the provider's output limit is incomplete; pasting
+    // it would silently drop the end of the dictation (or, for structured
+    // output, paste unparseable JSON).
+    if choice.finish_reason.as_deref() == Some("length") {
+        return Err("Response was truncated at the provider's output token limit".to_string());
+    }
+
+    Ok(choice.message.content)
 }
 
 /// Send a single-prompt request to an Anthropic Messages API (`/messages`).
@@ -917,6 +926,24 @@ mod tests {
         )
         .await;
         assert_eq!(result, Ok(Some("Cleaned text".to_string())));
+    }
+
+    #[tokio::test]
+    async fn chat_completion_rejects_truncated_response() {
+        let base_url = serve_one_response(
+            "200 OK",
+            r#"{"choices":[{"message":{"content":"Cut off"},"finish_reason":"length"}]}"#,
+        )
+        .await;
+        let result = send_chat_completion(
+            &provider("custom", &base_url),
+            "key".to_string(),
+            "test-model",
+            "raw text".to_string(),
+            false,
+        )
+        .await;
+        assert!(result.unwrap_err().contains("truncated"));
     }
 
     #[tokio::test]
