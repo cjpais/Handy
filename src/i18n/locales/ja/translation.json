@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "フィラー語を削除",
         "description": "文字起こしから一般的なフィラー語を削除します。残すにはオフにしてください。"
+      },
+      "chineseScript": {
+        "title": "中国語の表記",
+        "description": "北京語と広東語の文字起こしを簡体字または繁体字で出力します。他の言語は変更されません。",
+        "options": {
+          "asTranscribed": "文字起こしのまま",
+          "simplified": "簡体字",
+          "traditional": "繁体字"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +414,18 @@
         "title": "ショートカット"
       },
       "api": {
-        "title": "API (OpenAI 互換)",
+        "title": "API",
         "provider": {
           "title": "プロバイダー",
-          "description": "OpenAI 互換のプロバイダーを選択。"
+          "description": "OpenAI 互換または Anthropic 互換のプロバイダーを選択。"
+        },
+        "apiFormat": {
+          "title": "API 形式",
+          "description": "カスタムエンドポイントが期待するリクエスト形式。",
+          "options": {
+            "openai": "OpenAI 互換 (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "このデバイスでは Apple Intelligence を利用できません。macOS Tahoe (26.0) 以降を実行し、システム設定で Apple Intelligence が有効になっている Apple Silicon Mac が必要です。"
@@ -416,7 +433,8 @@
         "baseUrl": {
           "title": "ベース URL",
           "description": "選択したプロバイダーの API ベース URL。カスタムプロバイダーのみ編集可能。",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API キー",
@@ -699,7 +717,8 @@
   },
   "overlay": {
     "transcribing": "文字起こし中…",
-    "processing": "処理中…"
+    "processing": "処理中…",
+    "loadingModel": "モデルを読み込み中…"
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"

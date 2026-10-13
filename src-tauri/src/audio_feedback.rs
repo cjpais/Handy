@@ -1,10 +1,11 @@
+use crate::audio_toolkit::audio::output_device_name;
 use crate::settings::SoundTheme;
 use crate::settings::{self, AppSettings};
-use cpal::traits::{DeviceTrait, HostTrait};
 use log::{debug, error, warn};
-use rodio::OutputStreamBuilder;
+use rodio::cpal::traits::HostTrait;
+use rodio::DeviceSinkBuilder;
 use std::fs::File;
-use std::io::{BufReader};
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -100,43 +101,37 @@ fn play_audio_file(
     selected_device: Option<String>,
     volume: f32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let stream_builder = if let Some(device_name) = selected_device {
+    let sink_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
             debug!("Using default device");
-            OutputStreamBuilder::from_default_device()?
+            DeviceSinkBuilder::from_default_device()?
         } else {
             let host = crate::audio_toolkit::get_cpal_host();
-            let devices = host.output_devices()?;
-
-            let mut found_device = None;
-            for device in devices {
-                if device.name()? == device_name {
-                    found_device = Some(device);
-                    break;
-                }
-            }
+            let found_device = host
+                .output_devices()?
+                .find(|device| output_device_name(device).as_deref() == Some(&device_name));
 
             match found_device {
-                Some(device) => OutputStreamBuilder::from_device(device)?,
+                Some(device) => DeviceSinkBuilder::from_device(device)?,
                 None => {
                     warn!("Device '{}' not found, using default device", device_name);
-                    OutputStreamBuilder::from_default_device()?
+                    DeviceSinkBuilder::from_default_device()?
                 }
             }
         }
     } else {
         debug!("Using default device");
-        OutputStreamBuilder::from_default_device()?
+        DeviceSinkBuilder::from_default_device()?
     };
 
-    let stream_handle = stream_builder.open_stream()?;
-    let mixer = stream_handle.mixer();
+    let device_sink = sink_builder.open_stream()?;
+    let mixer = device_sink.mixer();
 
     let file = File::open(path)?;
     let buf_reader = BufReader::new(file);
 
-    let sink = rodio::play(mixer, buf_reader)?;
-    sink.set_volume(volume);
+    let player = rodio::play(mixer, buf_reader)?;
+    player.set_volume(volume);
 
     // Bound the wait: if the output device wedges (e.g. on Linux/ALSA the
     // hardware keeps a stale open handle), sleep_until_end() parks this thread
@@ -145,7 +140,7 @@ fn play_audio_file(
     // as long as the app lives. Poll with a hard cap instead.
     const FEEDBACK_MAX: Duration = Duration::from_secs(30);
     let started = Instant::now();
-    while !sink.empty() {
+    while !player.empty() {
         if started.elapsed() > FEEDBACK_MAX {
             warn!(
                 "Feedback sound did not finish within {}s (wedged output device?); dropping the output stream",

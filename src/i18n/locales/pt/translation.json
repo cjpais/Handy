@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Remover palavras de preenchimento",
         "description": "Remove hesitações comuns das transcrições. Desative para mantê-las."
+      },
+      "chineseScript": {
+        "title": "Escrita chinesa",
+        "description": "Escreve as transcrições em mandarim e cantonês com caracteres simplificados ou tradicionais. Os outros idiomas não são alterados.",
+        "options": {
+          "asTranscribed": "Como transcrito",
+          "simplified": "Simplificado",
+          "traditional": "Tradicional"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +414,18 @@
         "title": "Tecla de atalho"
       },
       "api": {
-        "title": "API (Compatível com OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Provedor",
-          "description": "Selecione um provedor compatível com OpenAI."
+          "description": "Selecione um provedor compatível com OpenAI ou Anthropic."
+        },
+        "apiFormat": {
+          "title": "Formato da API",
+          "description": "Formato de requisição esperado pelo seu endpoint personalizado.",
+          "options": {
+            "openai": "Compatível com OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence não está disponível neste dispositivo. Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior com Apple Intelligence habilitado nas Configurações do Sistema."
@@ -416,7 +433,8 @@
         "baseUrl": {
           "title": "URL Base",
           "description": "URL base da API para o provedor selecionado. Apenas o provedor personalizado pode ser editado.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Chave da API",
@@ -699,7 +717,8 @@
   },
   "overlay": {
     "transcribing": "Transcrevendo...",
-    "processing": "Processando..."
+    "processing": "Processando...",
+    "loadingModel": "Carregando modelo..."
   },
   "whatsNew": {
     "title": "Novidades no Handy v{{version}}"

@@ -5,10 +5,6 @@ import { LanguageSelector } from "../LanguageSelector";
 import { TranslateToEnglish } from "../TranslateToEnglish";
 import { useModelStore } from "../../../stores/modelStore";
 import type { ModelInfo } from "@/bindings";
-import {
-  CHINESE_LANGUAGE_CODE,
-  getUniqueCapabilityLanguages,
-} from "@/lib/constants/languages";
 
 export const ModelSettingsCard: React.FC = () => {
   const { t } = useTranslation();
@@ -16,16 +12,8 @@ export const ModelSettingsCard: React.FC = () => {
 
   const currentModelInfo = models.find((m: ModelInfo) => m.id === currentModel);
 
-  const supportsLanguageSelection =
-    currentModelInfo?.supports_language_selection ?? false;
-  const capabilityLanguages = getUniqueCapabilityLanguages(
-    currentModelInfo?.supported_languages ?? [],
-  );
-  const supportsChineseOnlyScriptSelection =
-    capabilityLanguages.length === 1 &&
-    capabilityLanguages[0] === CHINESE_LANGUAGE_CODE;
   const showLanguageSelector =
-    supportsLanguageSelection || supportsChineseOnlyScriptSelection;
+    currentModelInfo?.supports_language_selection ?? false;
   const supportsTranslation = currentModelInfo?.supports_translation ?? false;
   const hasAnySettings = showLanguageSelector || supportsTranslation;
 

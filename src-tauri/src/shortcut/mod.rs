@@ -16,14 +16,15 @@ pub mod tauri_impl;
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter, Manager};
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
-    self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding, SoundTheme,
-    Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AutoSubmitKey, ChineseScript, ClipboardHandling, KeyboardImplementation,
+    LLMPrompt, OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding,
+    SoundTheme, Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -55,27 +56,76 @@ pub fn init_shortcuts(app: &AppHandle) {
     }
 }
 
+/// Whether the recording lifecycle currently wants the cancel shortcut.
+/// Written synchronously by start/stop, so it always holds the latest request.
+static CANCEL_REQUESTED: AtomicBool = AtomicBool::new(false);
+
+/// Whether the cancel shortcut is actually registered with the backend.
+/// The lock also serializes reconciliation passes.
+#[cfg(not(target_os = "linux"))]
+static CANCEL_REGISTERED: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
+
 /// Register the cancel shortcut (called when recording starts)
 pub fn register_cancel_shortcut(app: &AppHandle) {
     // Track recording lifecycle independently of the current implementation so
     // switching implementations mid-recording cannot leave stale fallback state.
     crate::secure_input::register_cancel_fallback(app);
 
-    let settings = get_settings(app);
-    match settings.keyboard_implementation {
-        KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::register_cancel_shortcut(app),
-    }
+    CANCEL_REQUESTED.store(true, Ordering::SeqCst);
+    schedule_cancel_reconcile(app);
 }
 
 /// Unregister the cancel shortcut (called when recording stops)
 pub fn unregister_cancel_shortcut(app: &AppHandle) {
     crate::secure_input::unregister_cancel_fallback(app);
 
-    let settings = get_settings(app);
-    match settings.keyboard_implementation {
-        KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::unregister_cancel_shortcut(app),
+    CANCEL_REQUESTED.store(false, Ordering::SeqCst);
+    schedule_cancel_reconcile(app);
+}
+
+/// Apply the requested cancel state off the calling thread. Start and stop run
+/// on the shortcut handler thread, which must not block on registration, so the
+/// work is spawned. Spawned tasks may run in any order (a very short recording
+/// can see its unregister task run before its register task), so each pass
+/// applies the latest request instead of the action that scheduled it.
+fn schedule_cancel_reconcile(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        reconcile_cancel_shortcut(&app);
+    });
+}
+
+fn reconcile_cancel_shortcut(app: &AppHandle) {
+    // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+    #[cfg(target_os = "linux")]
+    {
+        let _ = app;
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut registered = CANCEL_REGISTERED.lock().unwrap_or_else(|e| e.into_inner());
+        let requested = CANCEL_REQUESTED.load(Ordering::SeqCst);
+        if requested == *registered {
+            return;
+        }
+
+        let Some(cancel_binding) = get_settings(app).bindings.get("cancel").cloned() else {
+            return;
+        };
+
+        if requested {
+            match register_shortcut(app, cancel_binding) {
+                Ok(()) => *registered = true,
+                Err(e) => error!("Failed to register cancel shortcut: {}", e),
+            }
+        } else {
+            match unregister_shortcut(app, cancel_binding) {
+                Ok(()) => *registered = false,
+                Err(e) => error!("Failed to unregister cancel shortcut: {}", e),
+            }
+        }
     }
 }
 
@@ -1060,6 +1110,30 @@ pub fn change_post_process_base_url_setting(
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_post_process_api_format_setting(
+    app: AppHandle,
+    provider_id: String,
+    api_format: settings::PostProcessApiFormat,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let provider = settings
+        .post_process_provider_mut(&provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    if provider.id != "custom" {
+        return Err(format!(
+            "Provider '{}' does not allow changing the API format",
+            provider.label
+        ));
+    }
+
+    provider.api_format = api_format;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Generic helper to validate provider exists
 fn validate_provider_exists(
     settings: &settings::AppSettings,
@@ -1324,6 +1398,15 @@ pub fn change_filler_word_removal_enabled_setting(
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_chinese_script_setting(app: AppHandle, script: ChineseScript) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.chinese_script = script;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.app_language = language.clone();
@@ -1366,6 +1449,8 @@ pub fn change_transcribe_accelerator_setting(
     let mut s = settings::get_settings(&app);
     s.transcribe_accelerator = accelerator;
     save_accelerator_and_reload_next_use(&app, s);
+    app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>()
+        .retry_transcribe_gpu("the transcribe.cpp accelerator setting changed");
     Ok(())
 }
 
@@ -1387,6 +1472,8 @@ pub fn change_transcribe_gpu_device(app: AppHandle, device: Option<String>) -> R
     let mut s = settings::get_settings(&app);
     s.transcribe_gpu_device = device;
     save_accelerator_and_reload_next_use(&app, s);
+    app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>()
+        .retry_transcribe_gpu("the transcribe.cpp GPU device setting changed");
     Ok(())
 }
 
@@ -1398,10 +1485,16 @@ pub fn change_transcribe_gpu_device(app: AppHandle, device: Option<String>) -> R
 /// stays responsive — see also the startup pre-warm in `lib.rs`.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
-    tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
-        .await
-        .expect("get_available_accelerators panicked")
+pub async fn get_available_accelerators(
+    app: AppHandle,
+) -> crate::managers::transcription::AvailableAccelerators {
+    tauri::async_runtime::spawn_blocking(move || {
+        let tm =
+            app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
+        crate::managers::transcription::get_available_accelerators(&tm)
+    })
+    .await
+    .expect("get_available_accelerators panicked")
 }
 
 #[cfg(test)]

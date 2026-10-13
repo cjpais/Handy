@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Dolgu Sözcüklerini Kaldır",
         "description": "Transkripsiyonlardaki yaygın duraksama sözcüklerini kaldırır. Bunları korumak için kapatın."
+      },
+      "chineseScript": {
+        "title": "Çince yazı",
+        "description": "Mandarin ve Kantonca transkripsiyonları Basitleştirilmiş veya Geleneksel karakterlerle yazar. Diğer diller değiştirilmez.",
+        "options": {
+          "asTranscribed": "Transkripsiyondaki gibi",
+          "simplified": "Basitleştirilmiş",
+          "traditional": "Geleneksel"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +414,18 @@
         "title": "Kısayol Tuşu"
       },
       "api": {
-        "title": "API (OpenAI Uyumlu)",
+        "title": "API",
         "provider": {
           "title": "Sağlayıcı",
-          "description": "OpenAI uyumlu bir sağlayıcı seçin."
+          "description": "OpenAI veya Anthropic uyumlu bir sağlayıcı seçin."
+        },
+        "apiFormat": {
+          "title": "API Biçimi",
+          "description": "Özel uç noktanızın beklediği istek biçimi.",
+          "options": {
+            "openai": "OpenAI Uyumlu (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence bu cihazda kullanılamıyor. macOS Tahoe (26.0) veya üzeri ve Sistem Ayarları'nda Apple Intelligence etkin olan bir Apple Silicon Mac gerektirir."
@@ -416,7 +433,8 @@
         "baseUrl": {
           "title": "Temel URL",
           "description": "Seçili sağlayıcı için API temel URL'si. Yalnızca özel sağlayıcı düzenlenebilir.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API Anahtarı",
@@ -699,7 +717,8 @@
   },
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
-    "processing": "İşleniyor..."
+    "processing": "İşleniyor...",
+    "loadingModel": "Model yükleniyor..."
   },
   "whatsNew": {
     "title": "Handy v{{version}} yenilikleri"
