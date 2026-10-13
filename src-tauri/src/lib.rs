@@ -5,9 +5,11 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod autostart;
 mod catalog;
+mod chinese_script;
 pub mod cli;
 mod clipboard;
 mod commands;
+pub mod engine_supervisor;
 mod helpers;
 mod input;
 mod llm_client;
@@ -205,10 +207,6 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
-    // Initialize the transcribe-cpp native backend (logging + backend module
-    // registration) once, before any whisper model is loaded.
-    managers::transcription::init_transcribe_backend();
-
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
 
@@ -308,10 +306,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     log::warn!("No model is currently loaded.");
                     return;
                 }
-                match transcription_manager.unload_model() {
-                    Ok(()) => log::info!("Model unloaded via tray."),
-                    Err(e) => log::error!("Failed to unload model via tray: {}", e),
-                }
+                transcription_manager.request_unload();
+                log::info!("Model unloaded via tray.");
             }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
@@ -437,7 +433,14 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
     // --list-devices: print registered compute devices (with indices) and exit.
     // Useful on multi-GPU machines to discover the index for --device-index.
     if args.list_devices {
-        let devices = crate::managers::transcription::describe_compute_devices();
+        let tm = app.state::<Arc<TranscriptionManager>>();
+        let devices = match crate::managers::transcription::describe_compute_devices(&tm) {
+            Ok(devices) => devices,
+            Err(e) => {
+                eprintln!("error: {}", e);
+                return 1;
+            }
+        };
         if devices.is_empty() {
             println!("No transcribe-cpp compute devices registered.");
         } else {
@@ -678,6 +681,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_post_process_enabled_setting,
             shortcut::change_experimental_enabled_setting,
             shortcut::change_post_process_base_url_setting,
+            shortcut::change_post_process_api_format_setting,
             shortcut::change_post_process_api_key_setting,
             shortcut::change_post_process_model_setting,
             shortcut::set_post_process_provider,
@@ -695,6 +699,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_vad_enabled_setting,
             shortcut::change_vad_backend_setting,
             shortcut::change_filler_word_removal_enabled_setting,
+            shortcut::change_chinese_script_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,
             shortcut::change_show_whats_new_on_update_setting,
@@ -912,19 +917,17 @@ pub fn run(cli_args: CliArgs) {
                     TranscriptionManager::new(&app_handle, model_manager.clone())
                         .expect("Failed to initialize transcription manager"),
                 );
+                managers::transcription::report_compute_devices(&transcription_manager);
                 app_handle.manage(model_manager);
                 app_handle.manage(transcription_manager);
-                managers::transcription::init_transcribe_backend();
-                managers::transcription::report_compute_devices();
                 managers::transcription::apply_accelerator_settings(&app_handle);
 
                 let handle = app_handle.clone();
                 let args = cli_args.clone();
                 std::thread::spawn(move || {
                     let code = run_headless_guarded(|| run_headless_transcription(&handle, &args));
-                    // Drop the loaded engine before teardown: ggml-metal's global
-                    // device free asserts (SIGABRT) if a model's Metal resources
-                    // are still alive at C++ static-destructor time.
+                    // Drop the loaded engine before exit so its transcription
+                    // worker is told to shut down cleanly.
                     if let Some(tm) = handle.try_state::<Arc<TranscriptionManager>>() {
                         let _ = tm.unload_model();
                     }
@@ -1029,10 +1032,14 @@ pub fn run(cli_args: CliArgs) {
             // stays off the startup path. get_available_accelerators then enumerates
             // ORT execution providers and transcribe-cpp compute devices; without this
             // the cost is paid synchronously when the user first opens Advanced
-            // settings, freezing the UI. Result is cached in a OnceLock.
-            std::thread::spawn(|| {
-                crate::managers::transcription::report_compute_devices();
-                let _ = crate::managers::transcription::get_available_accelerators();
+            // settings, freezing the UI. The device list is kept by the
+            // transcription engine and refreshed by every worker it starts that may
+            // use the GPU (CPU-only workers can't see it).
+            let devices_app_handle = app_handle.clone();
+            std::thread::spawn(move || {
+                let tm = devices_app_handle.state::<Arc<TranscriptionManager>>();
+                crate::managers::transcription::report_compute_devices(&tm);
+                let _ = crate::managers::transcription::get_available_accelerators(&tm);
             });
 
             // Hide tray icon if --no-tray was passed
@@ -1093,6 +1100,8 @@ pub fn run(cli_args: CliArgs) {
     #[cfg(target_os = "macos")]
     apply_startup_activation_policy(&mut app, headless_mode);
 
+    // `app` is only used by the macOS arm.
+    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     app.run(|app, event| match &event {
         #[cfg(target_os = "macos")]
         tauri::RunEvent::Reopen { .. } => {
@@ -1111,12 +1120,10 @@ pub fn run(cli_args: CliArgs) {
             }
             show_main_window(app);
         }
-        // Teardown transcribe.cpp before exit
-        tauri::RunEvent::Exit => {
-            if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
-                let _ = tm.unload_model();
-            }
-        }
+        // No transcription teardown on exit: transcribe.cpp runs only in the
+        // worker process, which exits by itself as soon as this process's end
+        // of its stdin closes, even if it is hung. Waiting on an unload here
+        // could block quitting behind a hung model load.
         _ => {}
     });
 }

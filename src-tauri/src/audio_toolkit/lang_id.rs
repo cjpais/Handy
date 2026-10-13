@@ -1,10 +1,10 @@
 //! Confidence-gated text-based language identification.
 //!
-//! Last-resort evidence for filler-word removal when neither the user's
-//! language selection nor the transcription model identifies the output
-//! language. Detection is constrained to the languages the active model can
-//! produce and fails closed: any doubt returns `None`, which callers treat as
-//! an unknown output language.
+//! Last-resort evidence for filler-word removal and Chinese script conversion
+//! when neither the user's language selection nor the transcription model
+//! identifies the output language. Detection is constrained to the languages
+//! the active model can produce and fails closed: any doubt returns `None`,
+//! which callers treat as an unknown output language.
 
 use whatlang::{Detector, Lang};
 

@@ -63,7 +63,7 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
               isLoading ||
               audioDevices.length === 0
             }
-            onRefresh={refreshAudioDevices}
+            onOpen={refreshAudioDevices}
           />
           <ResetButton
             onClick={handleReset}

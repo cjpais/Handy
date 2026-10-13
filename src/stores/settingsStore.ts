@@ -4,6 +4,8 @@ import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
   AudioDevice,
+  PostProcessApiFormat,
+  ChineseScript,
   TranscribeAcceleratorSetting,
   OrtAcceleratorSetting,
   ShortcutActivation,
@@ -51,6 +53,10 @@ interface SettingsStore {
   updatePostProcessBaseUrl: (
     providerId: string,
     baseUrl: string,
+  ) => Promise<void>;
+  updatePostProcessApiFormat: (
+    providerId: string,
+    apiFormat: PostProcessApiFormat,
   ) => Promise<void>;
   updatePostProcessApiKey: (
     providerId: string,
@@ -182,6 +188,8 @@ const settingUpdaters: {
   },
   filler_word_removal_enabled: (value) =>
     commands.changeFillerWordRemovalEnabledSetting(value as boolean),
+  chinese_script: (value) =>
+    commands.changeChineseScriptSetting(value as ChineseScript),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
   transcribe_accelerator: (value) =>
@@ -545,6 +553,37 @@ export const useSettingsStore = create<SettingsStore>()(
         await refreshSettings();
       } catch (error) {
         console.error("Failed to update post-process base URL:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updatePostProcessApiFormat: async (providerId, apiFormat) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `post_process_api_format:${providerId}`;
+
+      // The format decides the auth headers, so models listed under the old
+      // format may not reflect this one - user should click refresh after
+      set((state) => ({
+        postProcessModelOptions: {
+          ...state.postProcessModelOptions,
+          [providerId]: [],
+        },
+      }));
+      setUpdating(updateKey, true);
+
+      try {
+        const result = await commands.changePostProcessApiFormatSetting(
+          providerId,
+          apiFormat,
+        );
+        if (result.status === "error") {
+          console.error("Failed to update API format:", result.error);
+          return;
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update post-process API format:", error);
       } finally {
         setUpdating(updateKey, false);
       }

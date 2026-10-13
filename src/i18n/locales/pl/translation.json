@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "Usuń wyrazy wypełniające",
         "description": "Usuwa typowe słowa wyrażające wahanie z transkrypcji. Wyłącz, aby je zachować."
+      },
+      "chineseScript": {
+        "title": "Pismo chińskie",
+        "description": "Zapisuje transkrypcje w języku mandaryńskim i kantońskim znakami uproszczonymi lub tradycyjnymi. Inne języki pozostają bez zmian.",
+        "options": {
+          "asTranscribed": "Jak w transkrypcji",
+          "simplified": "Uproszczone",
+          "traditional": "Tradycyjne"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +414,18 @@
         "title": "Skrót klawiszowy"
       },
       "api": {
-        "title": "API (zgodne z OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Dostawca",
-          "description": "Wybierz dostawcę zgodnego z OpenAI."
+          "description": "Wybierz dostawcę zgodnego z OpenAI lub Anthropic."
+        },
+        "apiFormat": {
+          "title": "Format API",
+          "description": "Format żądania wymagany przez Twój niestandardowy endpoint.",
+          "options": {
+            "openai": "Zgodne z OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence nie jest dostępne na tym urządzeniu. Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym z włączonym Apple Intelligence w Ustawieniach systemowych."
@@ -416,7 +433,8 @@
         "baseUrl": {
           "title": "Adres bazowy",
           "description": "Bazowy adres API dla wybranego dostawcy. Tylko dostawca niestandardowy może być edytowany.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Klucz API",
@@ -699,7 +717,8 @@
   },
   "overlay": {
     "transcribing": "Transkrypcja...",
-    "processing": "Przetwarzanie..."
+    "processing": "Przetwarzanie...",
+    "loadingModel": "Wczytywanie modelu..."
   },
   "whatsNew": {
     "title": "Nowości w Handy v{{version}}"

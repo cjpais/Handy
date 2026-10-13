@@ -398,6 +398,15 @@
       "fillerWordRemoval": {
         "title": "הסרת מילות מילוי",
         "description": "מסיר מילות היסוס נפוצות מתמלולים. השבת כדי להשאיר אותן."
+      },
+      "chineseScript": {
+        "title": "כתב סיני",
+        "description": "כותב תמלולים במנדרינית ובקנטונזית בתווים מפושטים או מסורתיים. שפות אחרות נשארות ללא שינוי.",
+        "options": {
+          "asTranscribed": "כפי שתומלל",
+          "simplified": "מפושט",
+          "traditional": "מסורתי"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +414,18 @@
         "title": "קיצור מקשים"
       },
       "api": {
-        "title": "API (תואם OpenAI)",
+        "title": "API",
         "provider": {
           "title": "ספק",
-          "description": "בחר ספק שתואם ל-OpenAI."
+          "description": "בחר ספק שתואם ל-OpenAI או ל-Anthropic."
+        },
+        "apiFormat": {
+          "title": "פורמט API",
+          "description": "פורמט הבקשה שה-endpoint המותאם שלך מצפה לו.",
+          "options": {
+            "openai": "תואם OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
@@ -416,7 +433,8 @@
         "baseUrl": {
           "title": "כתובת URL בסיסית",
           "description": "כתובת ה-API הבסיסית עבור הספק הנבחר. רק ספק מותאם אישית ניתן לעריכה.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "מפתח API",
@@ -699,7 +717,8 @@
   },
   "overlay": {
     "transcribing": "מתמלל...",
-    "processing": "מעבד..."
+    "processing": "מעבד...",
+    "loadingModel": "טוען מודל..."
   },
   "whatsNew": {
     "title": "חדש ב-Handy v{{version}}"
