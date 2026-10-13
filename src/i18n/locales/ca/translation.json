@@ -414,10 +414,18 @@
         "title": "Drecera de teclat"
       },
       "api": {
-        "title": "API (compatible amb OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Proveïdor",
-          "description": "Seleccioneu un proveïdor compatible amb OpenAI."
+          "description": "Seleccioneu un proveïdor compatible amb OpenAI o Anthropic."
+        },
+        "apiFormat": {
+          "title": "Format de l'API",
+          "description": "Format de sol·licitud que espera el punt de connexió personalitzat.",
+          "options": {
+            "openai": "Compatible amb OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "L'Apple Intelligence no està disponible en aquest dispositiu. Cal un Mac amb Apple Silicon i macOS Tahoe (26.0) o posterior, amb l'Apple Intelligence activada a la configuració del sistema."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "URL de base",
           "description": "URL de base de l'API del proveïdor seleccionat. Només es pot editar la del proveïdor personalitzat.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Clau de l'API",

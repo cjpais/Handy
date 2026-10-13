@@ -414,10 +414,18 @@
         "title": "Горячая клавиша"
       },
       "api": {
-        "title": "API (совместимый с OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Поставщик",
-          "description": "Выберите поставщика, совместимого с OpenAI."
+          "description": "Выберите поставщика, совместимого с OpenAI или Anthropic."
+        },
+        "apiFormat": {
+          "title": "Формат API",
+          "description": "Формат запроса, ожидаемый вашей пользовательской конечной точкой.",
+          "options": {
+            "openai": "Совместимый с OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence недоступен на этом устройстве. Требуется Apple Silicon Mac под управлением macOS Tahoe (26.0) или более поздней версии с включенным Apple Intelligence в настройках системы."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "Базовый URL",
           "description": "Базовый URL-адрес API для выбранного провайдера. Редактировать можно только настраиваемого поставщика.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-ключ",

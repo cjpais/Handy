@@ -414,10 +414,18 @@
         "title": "Tasto di scelta rapida"
       },
       "api": {
-        "title": "API (Compatibile con OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Provider",
-          "description": "Seleziona un provider compatibile con OpenAI."
+          "description": "Seleziona un provider compatibile con OpenAI o Anthropic."
+        },
+        "apiFormat": {
+          "title": "Formato API",
+          "description": "Formato della richiesta previsto dal tuo endpoint personalizzato.",
+          "options": {
+            "openai": "Compatibile con OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence non è disponibile su questo dispositivo. Necessita di un Mac con Apple Silicon e macOS Tahoe (26.0) o successivi con Apple Intelligence abilitata nelle Impostazioni di Sistema."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "URL Base",
           "description": "URL di base per l'API del provider selezionato. Solo per i provider personalizzati.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Chiave API",

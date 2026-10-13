@@ -414,10 +414,18 @@
         "title": "Sneltoets"
       },
       "api": {
-        "title": "API (OpenAI-compatibel)",
+        "title": "API",
         "provider": {
           "title": "Provider",
-          "description": "Selecteer een OpenAI-compatibele provider."
+          "description": "Selecteer een OpenAI- of Anthropic-compatibele provider."
+        },
+        "apiFormat": {
+          "title": "API-indeling",
+          "description": "Verzoekindeling die door je aangepaste eindpunt wordt verwacht.",
+          "options": {
+            "openai": "OpenAI-compatibel (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence is niet beschikbaar op dit apparaat. Vereist een Apple Silicon Mac met macOS Tahoe (26.0) of nieuwer waarop Apple Intelligence is ingeschakeld via de Systeeminstellingen."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "Basis-URL",
           "description": "API-basis-URL voor de geselecteerde provider. Alleen de aangepaste provider kan worden bewerkt.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-sleutel",

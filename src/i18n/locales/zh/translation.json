@@ -414,10 +414,18 @@
         "title": "快捷键"
       },
       "api": {
-        "title": "API（兼容 OpenAI）",
+        "title": "API",
         "provider": {
           "title": "提供商",
-          "description": "选择一个兼容 OpenAI 的提供商。"
+          "description": "选择一个兼容 OpenAI 或 Anthropic 的提供商。"
+        },
+        "apiFormat": {
+          "title": "API 格式",
+          "description": "自定义端点期望的请求格式。",
+          "options": {
+            "openai": "兼容 OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "基础 URL",
           "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API 密钥",

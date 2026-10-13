@@ -414,10 +414,18 @@
         "title": "Raccourci clavier"
       },
       "api": {
-        "title": "API (Compatible OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Fournisseur",
-          "description": "Sélectionnez un fournisseur compatible OpenAI."
+          "description": "Sélectionnez un fournisseur compatible OpenAI ou Anthropic."
+        },
+        "apiFormat": {
+          "title": "Format d'API",
+          "description": "Format de requête attendu par votre point de terminaison personnalisé.",
+          "options": {
+            "openai": "Compatible OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence n'est pas disponible sur cet appareil. Nécessite un Mac Apple Silicon exécutant macOS Tahoe (26.0) ou une version ultérieure avec Apple Intelligence activé dans les Préférences Système."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "URL de base",
           "description": "URL de base de l'API pour le fournisseur sélectionné. Seul le fournisseur personnalisé peut être modifié.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Clé API",

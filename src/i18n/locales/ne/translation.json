@@ -414,10 +414,18 @@
         "title": "हटकी"
       },
       "api": {
-        "title": "API (OpenAI अनुकूल)",
+        "title": "API",
         "provider": {
           "title": "प्रदायक",
-          "description": "OpenAI-अनुकूल प्रदायक चयन गर्नुहोस्।"
+          "description": "OpenAI-अनुकूल वा Anthropic-अनुकूल प्रदायक चयन गर्नुहोस्।"
+        },
+        "apiFormat": {
+          "title": "API ढाँचा",
+          "description": "तपाईंको कस्टम इन्डपोइन्टले अपेक्षा गर्ने अनुरोध ढाँचा।",
+          "options": {
+            "openai": "OpenAI अनुकूल (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "यो डिभाइसमा Apple Intelligence उपलब्ध छैन। macOS Tahoe (26.0) वा पछिको संस्करण चलिरहेको र System Settings मा Apple Intelligence सक्षम गरिएको Apple Silicon Mac आवश्यक छ।"
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "आधार URL",
           "description": "चयन गरिएको प्रदायकका लागि API आधार URL। कस्टम प्रदायक मात्र सम्पादन गर्न सकिन्छ।",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API कुञ्जी",

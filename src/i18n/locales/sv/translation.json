@@ -414,10 +414,18 @@
         "title": "Snabbkommando"
       },
       "api": {
-        "title": "API (OpenAI-kompatibelt)",
+        "title": "API",
         "provider": {
           "title": "Leverantör",
-          "description": "Välj en OpenAI-kompatibel leverantör."
+          "description": "Välj en OpenAI- eller Anthropic-kompatibel leverantör."
+        },
+        "apiFormat": {
+          "title": "API-format",
+          "description": "Det förfrågningsformat som din anpassade slutpunkt förväntar sig.",
+          "options": {
+            "openai": "OpenAI-kompatibelt (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence är inte tillgängligt på den här enheten. Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare med Apple Intelligence aktiverat i systeminställningarna."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "Bas-URL",
           "description": "API-bas-URL för den valda leverantören. Endast den anpassade leverantören kan redigeras.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-nyckel",

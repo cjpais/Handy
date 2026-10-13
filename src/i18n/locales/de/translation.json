@@ -414,10 +414,18 @@
         "title": "Tastenkürzel"
       },
       "api": {
-        "title": "API (OpenAI-kompatibel)",
+        "title": "API",
         "provider": {
           "title": "Anbieter",
-          "description": "Wähle einen OpenAI-kompatiblen Anbieter."
+          "description": "Wähle einen OpenAI- oder Anthropic-kompatiblen Anbieter."
+        },
+        "apiFormat": {
+          "title": "API-Format",
+          "description": "Anfrageformat, das von deinem benutzerdefinierten Endpunkt erwartet wird.",
+          "options": {
+            "openai": "OpenAI-kompatibel (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence ist auf diesem Gerät nicht verfügbar. Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer und aktiviertem Apple Intelligence in den Systemeinstellungen."
@@ -425,7 +433,8 @@
         "baseUrl": {
           "title": "Basis-URL",
           "description": "API-Basis-URL für den ausgewählten Anbieter. Nur der benutzerdefinierte Anbieter kann bearbeitet werden.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-Schlüssel",
