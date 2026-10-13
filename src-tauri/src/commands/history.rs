@@ -13,9 +13,10 @@ pub async fn get_history_entries(
     history_manager: State<'_, Arc<HistoryManager>>,
     cursor: Option<i64>,
     limit: Option<usize>,
+    search: Option<String>,
 ) -> Result<PaginatedHistory, String> {
     history_manager
-        .get_history_entries(cursor, limit)
+        .get_history_entries(cursor, limit, search)
         .await
         .map_err(|e| e.to_string())
 }

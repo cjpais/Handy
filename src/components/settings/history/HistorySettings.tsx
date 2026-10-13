@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
+import {
+  Check,
+  Copy,
+  FolderOpen,
+  RotateCcw,
+  Search,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -15,6 +24,7 @@ import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 import { copyToClipboard } from "./clipboard";
+import { matchesSearch, splitByQuery } from "./search";
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -38,6 +48,27 @@ const IconButton: React.FC<{
 );
 
 const PAGE_SIZE = 30;
+const SEARCH_DEBOUNCE_MS = 250;
+
+const HighlightedText: React.FC<{ text: string; query: string }> = ({
+  text,
+  query,
+}) => (
+  <>
+    {splitByQuery(text, query).map((segment, index) =>
+      segment.match ? (
+        <mark
+          key={index}
+          className="bg-logo-primary/40 text-inherit rounded-sm"
+        >
+          {segment.text}
+        </mark>
+      ) : (
+        segment.text
+      ),
+    )}
+  </>
+);
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -66,9 +97,14 @@ export const HistorySettings: React.FC = () => {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const entriesRef = useRef<HistoryEntry[]>([]);
   const loadingRef = useRef(false);
+  const searchQueryRef = useRef("");
+  // Bumped on every query change so responses for an outdated query are dropped
+  const requestGenerationRef = useRef(0);
 
   // Keep ref in sync for use in IntersectionObserver callback
   useEffect(() => {
@@ -79,6 +115,8 @@ export const HistorySettings: React.FC = () => {
     const isFirstPage = cursor === undefined;
     if (!isFirstPage && loadingRef.current) return;
     loadingRef.current = true;
+    const generation = requestGenerationRef.current;
+    const query = searchQueryRef.current;
 
     if (isFirstPage) setLoading(true);
 
@@ -86,7 +124,9 @@ export const HistorySettings: React.FC = () => {
       const result = await commands.getHistoryEntries(
         cursor ?? null,
         PAGE_SIZE,
+        query || null,
       );
+      if (generation !== requestGenerationRef.current) return;
       if (result.status === "ok") {
         const { entries: newEntries, has_more } = result.data;
         setEntries((prev) =>
@@ -97,15 +137,33 @@ export const HistorySettings: React.FC = () => {
     } catch (error) {
       console.error("Failed to load history entries:", error);
     } finally {
-      setLoading(false);
-      loadingRef.current = false;
+      if (generation === requestGenerationRef.current) {
+        setLoading(false);
+        loadingRef.current = false;
+      }
     }
   }, []);
 
-  // Initial load
+  // Debounce typing so we don't query on every keystroke
   useEffect(() => {
+    const timeout = setTimeout(
+      () => setSearchQuery(searchInput.trim()),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
+
+  // Initial load, and reload from the top whenever the search query changes
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+    requestGenerationRef.current += 1;
     loadPage();
-  }, [loadPage]);
+  }, [searchQuery, loadPage]);
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setSearchQuery("");
+  };
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -136,7 +194,14 @@ export const HistorySettings: React.FC = () => {
     const unlisten = events.historyUpdatePayload.listen((event) => {
       const payload: HistoryUpdatePayload = event.payload;
       if (payload.action === "added") {
-        setEntries((prev) => [payload.entry, ...prev]);
+        if (
+          matchesSearch(
+            payload.entry.transcription_text,
+            searchQueryRef.current,
+          )
+        ) {
+          setEntries((prev) => [payload.entry, ...prev]);
+        }
       } else if (payload.action === "updated") {
         setEntries((prev) =>
           prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
@@ -229,7 +294,8 @@ export const HistorySettings: React.FC = () => {
 
   let content: React.ReactNode;
 
-  if (loading) {
+  // While a new search loads, keep showing the previous results to avoid flicker
+  if (loading && entries.length === 0) {
     content = (
       <div className="px-4 py-3 text-center text-text/60">
         {t("settings.history.loading")}
@@ -238,7 +304,9 @@ export const HistorySettings: React.FC = () => {
   } else if (entries.length === 0) {
     content = (
       <div className="px-4 py-3 text-center text-text/60">
-        {t("settings.history.empty")}
+        {searchQuery
+          ? t("settings.history.noSearchResults", { query: searchQuery })
+          : t("settings.history.empty")}
       </div>
     );
   } else {
@@ -250,6 +318,7 @@ export const HistorySettings: React.FC = () => {
               <HistoryEntryComponent
                 key={entry.id}
                 entry={entry}
+                searchQuery={searchQuery}
                 onToggleSaved={() => toggleSaved(entry.id)}
                 onCopyText={() => copyToClipboard(entry.transcription_text)}
                 getAudioUrl={getAudioUrl}
@@ -279,6 +348,35 @@ export const HistorySettings: React.FC = () => {
             label={t("settings.history.openFolder")}
           />
         </div>
+        {/* Matches the Models search bar so the two pages feel the same */}
+        <div className="relative">
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 pointer-events-none" />
+          <input
+            type="text"
+            className="w-full ps-9 pe-9 py-2 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-logo-primary placeholder:text-text/40"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && searchInput) {
+                e.preventDefault();
+                clearSearch();
+              }
+            }}
+            placeholder={t("settings.history.searchPlaceholder")}
+            aria-label={t("settings.history.searchPlaceholder")}
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-text/50 hover:text-logo-primary cursor-pointer"
+              title={t("settings.history.clearSearch")}
+              aria-label={t("settings.history.clearSearch")}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           {content}
         </div>
@@ -289,6 +387,7 @@ export const HistorySettings: React.FC = () => {
 
 interface HistoryEntryProps {
   entry: HistoryEntry;
+  searchQuery: string;
   onToggleSaved: () => void;
   onCopyText: () => Promise<boolean>;
   getAudioUrl: (fileName: string) => Promise<string | null>;
@@ -298,6 +397,7 @@ interface HistoryEntryProps {
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   entry,
+  searchQuery,
   onToggleSaved,
   onCopyText,
   getAudioUrl,
@@ -432,11 +532,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             }
           `}</style>
         )}
-        {retrying
-          ? t("settings.history.transcribing")
-          : hasTranscription
-            ? entry.transcription_text
-            : t("settings.history.transcriptionFailed")}
+        {retrying ? (
+          t("settings.history.transcribing")
+        ) : hasTranscription ? (
+          <HighlightedText
+            text={entry.transcription_text}
+            query={searchQuery}
+          />
+        ) : (
+          t("settings.history.transcriptionFailed")
+        )}
       </p>
 
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />

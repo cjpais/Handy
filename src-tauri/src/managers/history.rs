@@ -451,9 +451,14 @@ impl HistoryManager {
         &self,
         cursor: Option<i64>,
         limit: Option<usize>,
+        search: Option<String>,
     ) -> Result<PaginatedHistory> {
         let conn = self.get_connection()?;
         let limit = limit.map(|l| l.min(100));
+
+        if let Some(query) = search.as_deref().map(str::trim).filter(|q| !q.is_empty()) {
+            return Self::search_entries_with_conn(&conn, query, cursor, limit);
+        }
 
         let mut entries: Vec<HistoryEntry> = match (cursor, limit) {
             (Some(cursor_id), Some(lim)) => {
@@ -495,6 +500,47 @@ impl HistoryManager {
                 result
             }
         };
+
+        let has_more = limit.is_some_and(|lim| entries.len() > lim);
+        if has_more {
+            entries.pop();
+        }
+
+        Ok(PaginatedHistory { entries, has_more })
+    }
+
+    /// Find entries whose transcription contains `query`, newest first, using the
+    /// same id cursor pagination as `get_history_entries`.
+    ///
+    /// Matching happens in Rust rather than with SQL `LIKE` because SQLite's `LIKE`
+    /// is only case-insensitive for ASCII, which would break non-English searches.
+    fn search_entries_with_conn(
+        conn: &Connection,
+        query: &str,
+        cursor: Option<i64>,
+        limit: Option<usize>,
+    ) -> Result<PaginatedHistory> {
+        let needle = query.to_lowercase();
+        let fetch_count = limit.map_or(usize::MAX, |lim| lim + 1);
+
+        let mut stmt = conn.prepare(
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+             FROM transcription_history
+             WHERE ?1 IS NULL OR id < ?1
+             ORDER BY id DESC",
+        )?;
+        let rows = stmt.query_map(params![cursor], Self::map_history_entry)?;
+
+        let mut entries: Vec<HistoryEntry> = Vec::new();
+        for row in rows {
+            let entry = row?;
+            if entry.transcription_text.to_lowercase().contains(&needle) {
+                entries.push(entry);
+                if entries.len() >= fetch_count {
+                    break;
+                }
+            }
+        }
 
         let has_more = limit.is_some_and(|lim| entries.len() > lim);
         if has_more {
@@ -733,5 +779,85 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    fn search_texts(
+        conn: &Connection,
+        query: &str,
+        cursor: Option<i64>,
+        limit: Option<usize>,
+    ) -> (Vec<String>, bool) {
+        let page = HistoryManager::search_entries_with_conn(conn, query, cursor, limit)
+            .expect("search history");
+        let texts = page
+            .entries
+            .into_iter()
+            .map(|e| e.transcription_text)
+            .collect();
+        (texts, page.has_more)
+    }
+
+    #[test]
+    fn search_matches_case_insensitively_including_non_ascii() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "Buy milk tomorrow", None);
+        insert_entry(&conn, 200, "Встреча в ПЯТНИЦУ", None);
+        insert_entry(&conn, 300, "Unrelated note", None);
+
+        assert_eq!(
+            search_texts(&conn, "MILK", None, None).0,
+            vec!["Buy milk tomorrow"]
+        );
+        assert_eq!(
+            search_texts(&conn, "пятницу", None, None).0,
+            vec!["Встреча в ПЯТНИЦУ"]
+        );
+    }
+
+    #[test]
+    fn search_treats_sql_wildcards_literally() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "100% done", None);
+        insert_entry(&conn, 200, "snake_case name", None);
+        insert_entry(&conn, 300, "nothing special", None);
+
+        assert_eq!(search_texts(&conn, "%", None, None).0, vec!["100% done"]);
+        assert_eq!(
+            search_texts(&conn, "_", None, None).0,
+            vec!["snake_case name"]
+        );
+    }
+
+    #[test]
+    fn search_ignores_post_processed_text() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "raw words", Some("polished words"));
+
+        assert!(search_texts(&conn, "polished", None, None).0.is_empty());
+    }
+
+    #[test]
+    fn search_paginates_over_matches_only() {
+        let conn = setup_conn();
+        for i in 1..=5 {
+            insert_entry(&conn, i, &format!("match {}", i), None);
+            insert_entry(&conn, i + 100, "other", None);
+        }
+
+        // Newest first; the non-matching rows in between must not use up the page.
+        let (first, has_more) = search_texts(&conn, "match", None, Some(2));
+        assert_eq!(first, vec!["match 5", "match 4"]);
+        assert!(has_more);
+
+        let cursor: i64 = conn
+            .query_row(
+                "SELECT id FROM transcription_history WHERE transcription_text = 'match 4'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("find cursor id");
+        let (rest, has_more) = search_texts(&conn, "match", Some(cursor), Some(10));
+        assert_eq!(rest, vec!["match 3", "match 2", "match 1"]);
+        assert!(!has_more);
     }
 }
