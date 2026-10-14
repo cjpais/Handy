@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp एक्सेलेरेशन",
-          "description": "transcribe.cpp (Whisper-परिवार) मॉडल के लिए हार्डवेयर एक्सेलेरेशन. 'ऑटो' उपलब्ध होने पर GPU का इस्तेमाल करता है (macOS पर Metal, Windows/Linux पर Vulkan)."
+          "title": "हार्डवेयर एक्सेलेरेशन",
+          "description": "चुनें कि ट्रांसक्रिप्शन किस हार्डवेयर पर चले. 'ऑटो' उपलब्ध होने पर GPU का इस्तेमाल करता है, नहीं तो CPU पर चला जाता है."
         },
         "gpuDevice": {
           "auto": "ऑटो"

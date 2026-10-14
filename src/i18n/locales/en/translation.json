@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp Acceleration",
-          "description": "Hardware acceleration for transcribe.cpp (Whisper-family) models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
+          "title": "Hardware Acceleration",
+          "description": "Choose the hardware used for transcription. Auto uses the GPU when available and falls back to the CPU."
         },
         "gpuDevice": {
           "auto": "Auto"

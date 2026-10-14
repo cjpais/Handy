@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Accélération Whisper",
-          "description": "Accélération matérielle pour les modèles Whisper. Auto utilise le GPU si disponible (Metal sur macOS, Vulkan sur Windows/Linux)."
+          "title": "Accélération matérielle",
+          "description": "Choisissez le matériel utilisé pour la transcription. Automatique utilise le GPU lorsqu'il est disponible et bascule sinon sur le CPU."
         },
         "gpuDevice": {
           "auto": "Automatique"

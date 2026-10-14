@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp-versnelling",
-          "description": "Hardwareversnelling voor transcribe.cpp-modellen (Whisper-familie). 'Automatisch' gebruikt de GPU indien beschikbaar (Metal op macOS, Vulkan op Windows/Linux)."
+          "title": "Hardwareversnelling",
+          "description": "Kies de hardware die voor transcriptie wordt gebruikt. 'Automatisch' gebruikt de GPU indien beschikbaar en valt anders terug op de CPU."
         },
         "gpuDevice": {
           "auto": "Automatisch"

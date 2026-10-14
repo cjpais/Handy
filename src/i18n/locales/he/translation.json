@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "האצת Whisper",
-          "description": "האצת חומרה למודלי Whisper. מצב אוטומטי משתמש ב-GPU אם זמין (Metal ב-macOS, Vulkan ב-Windows/Linux)."
+          "title": "האצת חומרה",
+          "description": "בחר את החומרה שמשמשת לתמלול. מצב אוטומטי משתמש ב-GPU כשהוא זמין, ואחרת עובר ל-CPU."
         },
         "gpuDevice": {
           "auto": "אוטומטי"

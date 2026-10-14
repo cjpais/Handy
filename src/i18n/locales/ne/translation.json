@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp एक्सेलेरेसन",
-          "description": "transcribe.cpp (Whisper परिवार) मोडेलहरूका लागि हार्डवेयर एक्सेलेरेसन। Auto ले उपलब्ध भए GPU प्रयोग गर्छ (macOS मा Metal, Windows/Linux मा Vulkan)।"
+          "title": "हार्डवेयर एक्सेलेरेसन",
+          "description": "ट्रान्सक्रिप्सनका लागि प्रयोग हुने हार्डवेयर छान्नुहोस्। 'स्वतः' ले उपलब्ध भए GPU प्रयोग गर्छ, नभए CPU प्रयोग गर्छ।"
         },
         "gpuDevice": {
           "auto": "स्वतः"

@@ -218,8 +218,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "تسريع Whisper",
-          "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
+          "title": "تسريع الأجهزة",
+          "description": "اختر الأجهزة المستخدمة للتفريغ الصوتي. الوضع التلقائي يستخدم GPU إن توفر، وإلا فيستخدم CPU."
         },
         "gpuDevice": {
           "auto": "تلقائي"

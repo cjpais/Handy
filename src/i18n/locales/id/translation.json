@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Akselerasi transcribe.cpp",
-          "description": "Akselerasi perangkat keras untuk model transcribe.cpp (keluarga Whisper). Otomatis menggunakan GPU jika tersedia (Metal di macOS, Vulkan di Windows/Linux)."
+          "title": "Akselerasi perangkat keras",
+          "description": "Pilih perangkat keras yang digunakan untuk transkripsi. Otomatis menggunakan GPU jika tersedia, dan beralih ke CPU jika tidak."
         },
         "gpuDevice": {
           "auto": "Otomatis"

@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp アクセラレーション",
-          "description": "transcribe.cpp (Whisper 系) モデルのハードウェアアクセラレーション。「自動」では利用可能な場合 GPU を使用します (macOS では Metal、Windows/Linux では Vulkan)。"
+          "title": "ハードウェアアクセラレーション",
+          "description": "文字起こしに使用するハードウェアを選択します。「自動」では利用可能な場合は GPU を使用し、利用できない場合は CPU を使用します。"
         },
         "gpuDevice": {
           "auto": "自動"

@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Acceleració del transcribe.cpp",
-          "description": "Acceleració per maquinari dels models del transcribe.cpp (família Whisper). L'opció automàtica utilitza la GPU si està disponible (Metal al macOS, Vulkan al Windows i al Linux)."
+          "title": "Acceleració per maquinari",
+          "description": "Trieu el maquinari que s'utilitza per a la transcripció. L'opció automàtica utilitza la GPU si està disponible i, si no, recorre a la CPU."
         },
         "gpuDevice": {
           "auto": "Automàtica"

@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Akcelerace Whisper",
-          "description": "Hardwarová akcelerace pro modely Whisper. Automatický režim používá GPU, pokud je k dispozici (Metal na macOS, Vulkan na Windows/Linux)."
+          "title": "Hardwarová akcelerace",
+          "description": "Vyberte hardware, který se použije pro přepis. Automatický režim používá GPU, pokud je k dispozici, jinak přejde na CPU."
         },
         "gpuDevice": {
           "auto": "Automaticky"

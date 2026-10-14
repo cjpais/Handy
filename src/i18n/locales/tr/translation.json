@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp Hızlandırması",
-          "description": "transcribe.cpp (Whisper ailesi) modelleri için donanım hızlandırması. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
+          "title": "Donanım Hızlandırma",
+          "description": "Transkripsiyon için kullanılacak donanımı seçin. Otomatik mod, mevcutsa GPU'yu kullanır; değilse CPU'ya geçer."
         },
         "gpuDevice": {
           "auto": "Otomatik"

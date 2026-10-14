@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper 가속",
-          "description": "Whisper 모델의 하드웨어 가속. 자동 모드는 GPU를 사용합니다 (macOS에서는 Metal, Windows/Linux에서는 Vulkan)."
+          "title": "하드웨어 가속",
+          "description": "음성 인식에 사용할 하드웨어를 선택합니다. 자동 모드는 GPU를 사용할 수 있으면 GPU를, 그렇지 않으면 CPU를 사용합니다."
         },
         "gpuDevice": {
           "auto": "자동"

@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper-Beschleunigung",
-          "description": "Hardwarebeschleunigung für Whisper-Modelle. Automatisch nutzt GPU falls verfügbar (Metal auf macOS, Vulkan auf Windows/Linux)."
+          "title": "Hardwarebeschleunigung",
+          "description": "Wähle die Hardware für die Transkription. „Automatisch“ nutzt die GPU, wenn verfügbar, und weicht sonst auf die CPU aus."
         },
         "gpuDevice": {
           "auto": "Automatisch"

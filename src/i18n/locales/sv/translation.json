@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper-acceleration",
-          "description": "Hårdvaruacceleration för Whisper-modeller. Auto använder GPU om tillgängligt (Metal på macOS, Vulkan på Windows/Linux)."
+          "title": "Hårdvaruacceleration",
+          "description": "Välj vilken hårdvara som används för transkription. Automatiskt använder GPU:n när den finns tillgänglig och faller annars tillbaka på CPU:n."
         },
         "gpuDevice": {
           "auto": "Automatiskt"

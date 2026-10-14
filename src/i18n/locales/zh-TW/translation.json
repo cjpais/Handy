@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper 加速",
-          "description": "Whisper 模型的硬體加速。自動模式在可用時使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
+          "title": "硬體加速",
+          "description": "選擇用於轉錄的硬體。自動模式在可用時使用 GPU，否則改用 CPU。"
         },
         "gpuDevice": {
           "auto": "自動"

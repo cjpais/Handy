@@ -248,8 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Прискорення Whisper",
-          "description": "Апаратне прискорення для моделей Whisper. Автоматичний режим використовує GPU за наявності (Metal на macOS, Vulkan на Windows/Linux)."
+          "title": "Апаратне прискорення",
+          "description": "Оберіть обладнання для транскрипції. Автоматичний режим використовує GPU за наявності, а інакше перемикається на CPU."
         },
         "gpuDevice": {
           "auto": "Авто"
