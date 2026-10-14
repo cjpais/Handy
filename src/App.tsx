@@ -33,7 +33,10 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useModelStore } from "./stores/modelStore";
 import { commands } from "@/bindings";
-import { isRetiredModel } from "@/components/onboarding/retiredModels";
+import {
+  deleteRetiredModel,
+  isRetiredModel,
+} from "@/components/onboarding/retiredModels";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "migration" | "model" | "done";
@@ -335,11 +338,9 @@ function App() {
     // Coming from the model update: the user picked a different model instead
     // of updating, so the retired models left on disk can't run anymore.
     if (migrationModelId) {
-      const { models, deleteModel } = useModelStore.getState();
-      for (const model of models) {
-        if (!model.is_downloaded || !isRetiredModel(model.id)) continue;
-        if (!(await deleteModel(model.id))) {
-          console.warn(`Failed to delete retired model ${model.id}`);
+      for (const model of useModelStore.getState().models) {
+        if (model.is_downloaded && isRetiredModel(model.id)) {
+          await deleteRetiredModel(model.id);
         }
       }
     }

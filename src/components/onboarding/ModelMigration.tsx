@@ -16,6 +16,7 @@ import { formatModelSize } from "../../lib/utils/format";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import {
   RETIRED_MODEL_REPLACEMENTS,
+  deleteRetiredModel,
   findReplacement,
   type ModelMigrationPair,
 } from "./retiredModels";
@@ -30,6 +31,7 @@ interface ModelMigrationProps {
 
 type Phase = "choose" | "migrating";
 type RowState = "idle" | "ready" | "failed" | number;
+type Outcome = "done" | "failed";
 
 const ModelMigration: React.FC<ModelMigrationProps> = ({
   onComplete,
@@ -47,7 +49,6 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     downloadStats,
     downloadModel,
     selectModel,
-    deleteModel,
   } = useModelStore();
   // The retired list is frozen once models load: deleting old files flips
   // their `is_downloaded`, and rows must not vanish mid-flow.
@@ -56,9 +57,10 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   // Ticked rows (retired ids). Starts with the model in use; any row can be
   // unticked.
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  // Keyed by retired model id.
-  const [failed, setFailed] = useState<Set<string>>(new Set());
-  const [finished, setFinished] = useState<Set<string>>(new Set());
+  // Keyed by retired model id; unset while still in progress.
+  const [outcomes, setOutcomes] = useState<Record<string, Outcome | undefined>>(
+    {},
+  );
   const finalizing = useRef<Set<string>>(new Set());
   const wrappingUp = useRef(false);
 
@@ -86,12 +88,10 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     [snapshot, models],
   );
 
-  // A lone row has no checkbox, so it's always the pick.
-  const isChosen = (p: ModelMigrationPair) =>
-    rows.length === 1 || picked.has(p.retired.id);
+  const isChosen = (p: ModelMigrationPair) => picked.has(p.retired.id);
 
   const chosen = useMemo(
-    () => rows.filter((p) => rows.length === 1 || picked.has(p.retired.id)),
+    () => rows.filter((p) => picked.has(p.retired.id)),
     [rows, picked],
   );
   // The replacement that becomes the selected model: the one for the model in
@@ -121,8 +121,8 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
 
   const rowState = (p: ModelMigrationPair): RowState => {
     if (!isChosen(p) || phase === "choose") return "idle";
-    if (failed.has(p.retired.id)) return "failed";
-    if (finished.has(p.retired.id)) return "ready";
+    const outcome = outcomes[p.retired.id];
+    if (outcome) return outcome === "done" ? "ready" : "failed";
     const id = p.replacement.id;
     if (id in downloadingModels) return downloadProgress[id]?.percentage ?? 0;
     // Verifying, extracting, waiting on the model list to refresh, or being
@@ -131,7 +131,8 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   };
 
   const downloading = chosen.some((p) => typeof rowState(p) === "number");
-  const targetFailed = targetId !== undefined && failed.has(targetId);
+  const targetFailed =
+    targetId !== undefined && outcomes[targetId] === "failed";
 
   // Combined speed and time remaining across the parallel downloads.
   let speed = 0;
@@ -163,19 +164,14 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
         )
       : null;
 
-  const markFailed = (retiredId: string, value: boolean) =>
-    setFailed((prev) => {
-      const next = new Set(prev);
-      if (value) next.add(retiredId);
-      else next.delete(retiredId);
-      return next;
-    });
+  const setOutcome = (retiredId: string, outcome?: Outcome) =>
+    setOutcomes((prev) => ({ ...prev, [retiredId]: outcome }));
 
   const download = async (p: ModelMigrationPair) => {
-    markFailed(p.retired.id, false);
+    setOutcome(p.retired.id);
     // Failure toasts come from the store's model-download-failed listener.
     if (!(await downloadModel(p.replacement.id))) {
-      markFailed(p.retired.id, true);
+      setOutcome(p.retired.id, "failed");
     }
   };
 
@@ -186,7 +182,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   };
 
   const handleRetry = (p: ModelMigrationPair) => {
-    markFailed(p.retired.id, false);
+    setOutcome(p.retired.id);
     finalizing.current.delete(p.retired.id);
     // A replacement that downloaded but couldn't be selected only needs the
     // finalize step again, which the effect re-runs once it isn't failed.
@@ -194,7 +190,6 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   };
 
   const toggle = (id: string) => {
-    if (phase !== "choose") return;
     setPicked((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -212,7 +207,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
       const retiredId = p.retired.id;
       if (
         finalizing.current.has(retiredId) ||
-        failed.has(retiredId) ||
+        outcomes[retiredId] === "failed" ||
         !isReplacementReady(p)
       ) {
         continue;
@@ -223,57 +218,30 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
         if (retiredId === targetId && !(await selectModel(replacementId))) {
           toast.error(t("onboarding.errors.selectModel"));
           finalizing.current.delete(retiredId);
-          markFailed(retiredId, true);
+          setOutcome(retiredId, "failed");
           return;
         }
-        if (!(await deleteModel(retiredId))) {
-          console.warn(`Failed to delete retired model ${retiredId}`);
-        }
-        setFinished((prev) => new Set(prev).add(retiredId));
+        await deleteRetiredModel(retiredId);
+        setOutcome(retiredId, "done");
       })();
     }
-  }, [
-    phase,
-    chosen,
-    failed,
-    targetId,
-    isReplacementReady,
-    selectModel,
-    deleteModel,
-    t,
-  ]);
+  }, [phase, chosen, outcomes, targetId, isReplacementReady, selectModel, t]);
 
   // Wrap up once the target is switched to and every other pick has either
   // finished or failed. A failed extra keeps its old file; the Models page
   // notice can clean it up later. Unticked models are removed here.
   useEffect(() => {
     if (phase !== "migrating" || wrappingUp.current) return;
-    if (targetId !== undefined && !finished.has(targetId)) return;
-    const settled = chosen.every(
-      (p) => finished.has(p.retired.id) || failed.has(p.retired.id),
-    );
-    if (!settled) return;
+    if (targetId !== undefined && outcomes[targetId] !== "done") return;
+    if (!chosen.every((p) => outcomes[p.retired.id])) return;
     wrappingUp.current = true;
     (async () => {
       for (const p of rows) {
-        if (rows.length === 1 || picked.has(p.retired.id)) continue;
-        if (!(await deleteModel(p.retired.id))) {
-          console.warn(`Failed to delete retired model ${p.retired.id}`);
-        }
+        if (!picked.has(p.retired.id)) await deleteRetiredModel(p.retired.id);
       }
       onComplete();
     })();
-  }, [
-    phase,
-    targetId,
-    picked,
-    finished,
-    failed,
-    chosen,
-    rows,
-    deleteModel,
-    onComplete,
-  ]);
+  }, [phase, targetId, picked, outcomes, chosen, rows, onComplete]);
 
   if (!snapshot) {
     return (
@@ -432,18 +400,8 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
   const toggleable = showCheck && phase === "choose";
 
   const status = () => {
-    // Already-downloaded picks are as good as ready before anything starts.
-    if (state === "ready" || (chosen && replacement.is_downloaded)) {
-      return (
-        <span
-          role="img"
-          aria-label={t("modelSelector.modelReady")}
-          className="grid place-items-center w-[22px] h-[22px] rounded-full bg-emerald-500/20 text-emerald-500"
-        >
-          <Check className="w-3 h-3" strokeWidth={3} />
-        </span>
-      );
-    }
+    // Checked first: a replacement that downloaded but couldn't be selected
+    // still needs its Retry button.
     if (state === "failed") {
       return (
         <>
@@ -459,6 +417,18 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
             {t("onboarding.migration.retry")}
           </Button>
         </>
+      );
+    }
+    // Already-downloaded picks are as good as ready before anything starts.
+    if (state === "ready" || (chosen && replacement.is_downloaded)) {
+      return (
+        <span
+          role="img"
+          aria-label={t("modelSelector.modelReady")}
+          className="grid place-items-center w-[22px] h-[22px] rounded-full bg-emerald-500/20 text-emerald-500"
+        >
+          <Check className="w-3 h-3" strokeWidth={3} />
+        </span>
       );
     }
     if (typeof state === "number") {

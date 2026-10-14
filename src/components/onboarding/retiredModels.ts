@@ -1,4 +1,5 @@
 import type { ModelInfo } from "@/bindings";
+import { useModelStore } from "@/stores/modelStore";
 
 // Retired (ONNX) model ids mapped to the catalog repo that replaces each one.
 // Whisper .bin models are legacy too, but still run, so they are not listed.
@@ -40,3 +41,11 @@ export const findReplacement = (
 
 export const isRetiredModel = (modelId: string): boolean =>
   modelId in RETIRED_MODEL_REPLACEMENTS;
+
+// Best effort: a leftover retired model only wastes disk space, and the Models
+// page notice offers to clean it up later.
+export const deleteRetiredModel = async (modelId: string): Promise<void> => {
+  if (!(await useModelStore.getState().deleteModel(modelId))) {
+    console.warn(`Failed to delete retired model ${modelId}`);
+  }
+};
