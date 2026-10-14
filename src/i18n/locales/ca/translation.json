@@ -59,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Bona precisió, però lent."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Només anglès. El millor model per a parlants d'anglès."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Ràpid i precís."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Molt ràpid, només anglès. Reconeix bé els accents."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultraràpid, només anglès."
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Ràpid, només anglès. Bon equilibri entre velocitat i precisió."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Només anglès. Alta qualitat."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimitzat per al xinès mandarí de Taiwan. Admet l'alternança de llengües."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Molt ràpid. Xinès, anglès, japonès, coreà i cantonès."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Reconeixement de la parla en rus. Ràpid i precís."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Molt ràpid. Anglès, alemany, castellà i francès. Admet la traducció."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Multilingüe i precís. 25 llengües europees. Admet la traducció."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Un model multilingüe gran, més lent, però molt precís."
       }
     },
     "errors": {
@@ -141,9 +97,6 @@
     "noModelsAvailable": "No hi ha models disponibles",
     "verifying": "S'està verificant {{modelName}}...",
     "verifyingGeneric": "S'està verificant...",
-    "extracting": "S'està extraient {{modelName}}...",
-    "extractingMultiple": "S'estan extraient {{count}} models...",
-    "extractingGeneric": "S'està extraient...",
     "downloading": "S'està baixant: {{percentage}}%",
     "downloadingMultiple": "S'estan baixant {{count}} models...",
     "modelReady": "Model a punt",
@@ -297,10 +250,6 @@
         "transcribe": {
           "title": "Acceleració del transcribe.cpp",
           "description": "Acceleració per maquinari dels models del transcribe.cpp (família Whisper). L'opció automàtica utilitza la GPU si està disponible (Metal al macOS, Vulkan al Windows i al Linux)."
-        },
-        "ort": {
-          "title": "Acceleració ONNX",
-          "description": "Acceleració per maquinari dels models ONNX (Parakeet, Canary, Moonshine, etc.). El DirectML al Windows és experimental. És possible que els models no puguin transcriure."
         },
         "gpuDevice": {
           "auto": "Automàtica"

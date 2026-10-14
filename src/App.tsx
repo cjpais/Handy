@@ -31,12 +31,8 @@ import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
-import { useModelStore } from "./stores/modelStore";
 import { commands } from "@/bindings";
-import {
-  deleteRetiredModel,
-  isRetiredModel,
-} from "@/components/onboarding/retiredModels";
+import { deleteRetiredModel } from "@/components/onboarding/retiredModels";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "migration" | "model" | "done";
@@ -237,17 +233,8 @@ function App() {
   const getMigrationModelId = async (
     selectedModel: string,
   ): Promise<string | null> => {
-    if (!isRetiredModel(selectedModel)) return null;
-    try {
-      const result = await commands.getAvailableModels();
-      const onDisk =
-        result.status === "ok" &&
-        result.data.some((m) => m.id === selectedModel && m.is_downloaded);
-      return onDisk ? selectedModel : null;
-    } catch (e) {
-      console.warn("Failed to check for retired models:", e);
-      return null;
-    }
+    const retired = await commands.getRetiredModels();
+    return retired.some((m) => m.id === selectedModel) ? selectedModel : null;
   };
 
   // Returning users land in the app unless their model needs updating. The
@@ -338,10 +325,8 @@ function App() {
     // Coming from the model update: the user picked a different model instead
     // of updating, so the retired models left on disk can't run anymore.
     if (migrationModelId) {
-      for (const model of useModelStore.getState().models) {
-        if (model.is_downloaded && isRetiredModel(model.id)) {
-          await deleteRetiredModel(model.id);
-        }
+      for (const model of await commands.getRetiredModels()) {
+        await deleteRetiredModel(model.id);
       }
     }
     // Transition to main app - user has started a download

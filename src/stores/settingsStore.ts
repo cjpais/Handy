@@ -7,7 +7,6 @@ import type {
   PostProcessApiFormat,
   ChineseScript,
   TranscribeAcceleratorSetting,
-  OrtAcceleratorSetting,
   ShortcutActivation,
   VadBackend,
 } from "@/bindings";
@@ -196,8 +195,6 @@ const settingUpdaters: {
     commands.changeTranscribeAcceleratorSetting(
       value as TranscribeAcceleratorSetting,
     ),
-  ort_accelerator: (value) =>
-    commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
   transcribe_gpu_device: (value) =>
     commands.changeTranscribeGpuDevice(value as string | null),
   extra_recording_buffer_ms: (value) =>

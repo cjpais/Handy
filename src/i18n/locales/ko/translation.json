@@ -59,53 +59,9 @@
         "name": "Whisper Large",
         "description": "좋은 정확도지만 느립니다."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "영어 전용. 영어 사용자를 위한 최고의 모델."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "빠르고 정확함"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "매우 빠름, 영어 전용. 억양을 잘 처리합니다."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "초고속, 영어 전용"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "빠름, 영어 전용. 속도와 정확도의 균형이 좋음."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "영어 전용. 높은 품질."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "대만 만다린에 최적화. 코드 스위칭 지원."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "매우 빠름. 중국어, 영어, 일본어, 한국어, 광둥어."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "러시아어 음성 인식. 빠르고 정확함."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "매우 빠름. 영어, 독일어, 스페인어, 프랑스어. 번역 지원."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "정확한 다국어 지원. 25개 유럽 언어. 번역 지원."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "크고 느리지만 매우 정확한 다국어 모델."
       }
     },
     "errors": {
@@ -140,9 +96,6 @@
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
     "verifying": "{{modelName}} 검증 중...",
     "verifyingGeneric": "검증 중...",
-    "extracting": "{{modelName}} 압축 해제 중...",
-    "extractingMultiple": "{{count}}개 모델 압축 해제 중...",
-    "extractingGeneric": "압축 해제 중...",
     "downloading": "다운로드 중 {{percentage}}%",
     "downloadingMultiple": "{{count}}개 모델 다운로드 중...",
     "modelReady": "모델 준비 완료",
@@ -297,10 +250,6 @@
         "transcribe": {
           "title": "Whisper 가속",
           "description": "Whisper 모델의 하드웨어 가속. 자동 모드는 GPU를 사용합니다 (macOS에서는 Metal, Windows/Linux에서는 Vulkan)."
-        },
-        "ort": {
-          "title": "ONNX 가속",
-          "description": "ONNX 모델의 하드웨어 가속 (Parakeet, Canary, Moonshine 등). Windows의 DirectML은 실험적입니다. 모델이 전사에 실패할 수 있습니다."
         },
         "gpuDevice": {
           "auto": "자동"

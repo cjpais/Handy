@@ -8,16 +8,15 @@ import React, {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Check, Loader2 } from "lucide-react";
-import type { ModelInfo } from "@/bindings";
+import type { RetiredModel } from "@/bindings";
 import HandyTextLogo from "../icons/HandyTextLogo";
 import { Button } from "../ui/Button";
 import { useModelStore } from "../../stores/modelStore";
 import { formatModelSize } from "../../lib/utils/format";
-import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
+import { commands } from "@/bindings";
 import {
   deleteRetiredModel,
   findReplacement,
-  isRetiredModel,
   type ModelMigrationPair,
 } from "./retiredModels";
 
@@ -44,15 +43,14 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     loading,
     downloadingModels,
     verifyingModels,
-    extractingModels,
     downloadProgress,
     downloadStats,
     downloadModel,
     selectModel,
   } = useModelStore();
-  // The retired list is frozen once models load: deleting old files flips
-  // their `is_downloaded`, and rows must not vanish mid-flow.
-  const [snapshot, setSnapshot] = useState<ModelInfo[] | null>(null);
+  // The retired list is read once: deleting old files takes them off disk, and
+  // rows must not vanish mid-flow.
+  const [snapshot, setSnapshot] = useState<RetiredModel[] | null>(null);
   const [phase, setPhase] = useState<Phase>("choose");
   // Ticked rows (retired ids). Starts with the model in use; any row can be
   // unticked.
@@ -64,25 +62,34 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   const finalizing = useRef<Set<string>>(new Set());
   const wrappingUp = useRef(false);
 
+  const snapshotRequested = useRef(false);
   useEffect(() => {
-    if (snapshot || loading) return;
-    const retired = models.filter(
-      (m) => m.is_downloaded && isRetiredModel(m.id),
-    );
-    // The model in use always leads the list.
-    retired.sort(
-      (a, b) => Number(b.id === inUseModelId) - Number(a.id === inUseModelId),
-    );
-    setSnapshot(retired);
-    setPicked(new Set([inUseModelId]));
-  }, [snapshot, loading, models, inUseModelId]);
+    if (snapshotRequested.current || loading) return;
+    snapshotRequested.current = true;
+    commands
+      .getRetiredModels()
+      .then((retired) => {
+        // The model in use always leads the list.
+        retired.sort(
+          (a, b) =>
+            Number(b.id === inUseModelId) - Number(a.id === inUseModelId),
+        );
+        setSnapshot(retired);
+        setPicked(new Set([inUseModelId]));
+      })
+      .catch((e) => {
+        // Without the list there is nothing to update: fall back to the picker.
+        console.error("Failed to list retired models:", e);
+        onChooseAnother();
+      });
+  }, [loading, inUseModelId, onChooseAnother]);
 
   const rows: ModelMigrationPair[] = useMemo(
     () =>
       // Every replacement is in the bundled catalog, so this only drops a row
-      // if RETIRED_MODEL_REPLACEMENTS drifts from catalog.json.
+      // if RETIRED_ONNX_MODELS drifts from catalog.json.
       (snapshot ?? []).flatMap((retired) => {
-        const replacement = findReplacement(models, retired.id);
+        const replacement = findReplacement(models, retired);
         return replacement ? [{ retired, replacement }] : [];
       }),
     [snapshot, models],
@@ -105,18 +112,17 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     0,
   );
 
-  // Downloaded, verified and extracted: safe to switch to and to drop the old.
+  // Downloaded and verified: safe to switch to and to drop the old.
   const isReplacementReady = useCallback(
     (p: ModelMigrationPair) => {
       const id = p.replacement.id;
       return (
         p.replacement.is_downloaded &&
         !(id in downloadingModels) &&
-        !(id in verifyingModels) &&
-        !(id in extractingModels)
+        !(id in verifyingModels)
       );
     },
-    [downloadingModels, verifyingModels, extractingModels],
+    [downloadingModels, verifyingModels],
   );
 
   const rowState = (p: ModelMigrationPair): RowState => {
@@ -125,7 +131,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     if (outcome) return outcome === "done" ? "ready" : "failed";
     const id = p.replacement.id;
     if (id in downloadingModels) return downloadProgress[id]?.percentage ?? 0;
-    // Verifying, extracting, waiting on the model list to refresh, or being
+    // Verifying, waiting on the model list to refresh, or being
     // switched to: the bytes are all here.
     return 100;
   };
@@ -133,6 +139,14 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   const downloading = chosen.some((p) => typeof rowState(p) === "number");
   const targetFailed =
     targetId !== undefined && outcomes[targetId] === "failed";
+  // The target's bytes are in and it is being switched to (loaded).
+  const target = chosen.find((p) => p.retired.id === targetId);
+  const loadingTarget =
+    phase === "migrating" &&
+    !downloading &&
+    target !== undefined &&
+    !outcomes[target.retired.id] &&
+    isReplacementReady(target);
 
   // Combined speed and time remaining across the parallel downloads.
   let speed = 0;
@@ -314,6 +328,13 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
             aria-live="polite"
           >
             <Loader2 className="w-4 h-4 animate-spin" />
+            {loadingTarget && (
+              <span>
+                {t("modelSelector.loading", {
+                  modelName: target.replacement.name,
+                })}
+              </span>
+            )}
             {timeLeft && (
               <span className="tabular-nums text-text/50">
                 {t("onboarding.migration.timeRemaining", { time: timeLeft })}
@@ -395,7 +416,7 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
 }) => {
   const { t } = useTranslation();
   const { retired, replacement } = pair;
-  const oldName = getTranslatedModelName(retired, t);
+  const oldName = retired.name;
   // Checkbox semantics only while choosing; later the row may hold a button.
   const toggleable = showCheck && phase === "choose";
 

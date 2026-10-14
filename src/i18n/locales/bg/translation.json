@@ -59,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Добра точност, но по-бавен."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Само английски. Най-добрият модел за носители на английски."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Бърз и точен."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Много бърз, само английски. Добре обработва акценти."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ултрабърз, само английски."
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Бърз, само английски. Добър баланс между скорост и точност."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Само английски. Високо качество."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Оптимизиран за тайвански мандарин. Поддръжка на смесване на езици."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Много бърз. Китайски, английски, японски, корейски, кантонски."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Разпознаване на руска реч. Бърз и точен."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Много бърз. Английски, немски, испански, френски. Поддържа превод."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Точен многоезичен. 25 европейски езика. Поддържа превод."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Голям, по-бавен, но много точен многоезичен модел."
       }
     },
     "errors": {
@@ -140,9 +96,6 @@
     "noModelsAvailable": "Няма налични модели",
     "verifying": "Проверка на {{modelName}}...",
     "verifyingGeneric": "Проверка...",
-    "extracting": "Разархивиране на {{modelName}}...",
-    "extractingMultiple": "Разархивиране на {{count}} модела...",
-    "extractingGeneric": "Разархивиране...",
     "downloading": "Изтегляне {{percentage}}%",
     "downloadingMultiple": "Изтегляне на {{count}} модела...",
     "modelReady": "Моделът е готов",
@@ -297,10 +250,6 @@
         "transcribe": {
           "title": "Ускорение за Whisper",
           "description": "Хардуерно ускорение за моделите Whisper. „Автоматично“ използва GPU при наличност (Metal на macOS, Vulkan на Windows/Linux)."
-        },
-        "ort": {
-          "title": "Ускорение за ONNX",
-          "description": "Хардуерно ускорение за ONNX модели (Parakeet, Canary, Moonshine и др.). DirectML на Windows е експериментален. Моделите може да не транскрибират."
         },
         "gpuDevice": {
           "auto": "Автоматично"

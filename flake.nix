@@ -38,7 +38,6 @@
         glib
         libsoup_3
         alsa-lib
-        onnxruntime
         libayatana-appindicator
         libevdev
         libxtst
@@ -60,8 +59,6 @@
 
       # Shared environment variables for Rust/native builds
       commonEnv = pkgs: let lib = pkgs.lib; in {
-        ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
-        ORT_PREFER_DYNAMIC_LINK = "1";
         GST_PLUGIN_SYSTEM_PATH_1_0 = "${lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (gstPlugins pkgs)}";
       };
 
@@ -232,11 +229,9 @@
             ]);
 
             inherit (commonEnv pkgs)
-              ORT_LIB_LOCATION
-              ORT_PREFER_DYNAMIC_LINK
               GST_PLUGIN_SYSTEM_PATH_1_0;
 
-            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libayatana-appindicator pkgs.onnxruntime pkgs.vulkan-loader ]}";
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libayatana-appindicator pkgs.vulkan-loader ]}";
 
             # Same as wrapGAppsHook4
             XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:${pkgs.hicolor-icon-theme}/share";
