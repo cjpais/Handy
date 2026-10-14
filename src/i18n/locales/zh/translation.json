@@ -59,53 +59,9 @@
         "name": "Whisper Large",
         "description": "准确度高，但速度较慢。"
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "仅支持英语。英语用户的最佳模型。"
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "快速且准确"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "非常快速，仅支持英语。口音处理良好。"
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "超快速，仅支持英语"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "快速，仅支持英语。速度与准确度的良好平衡。"
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "仅支持英语。高质量。"
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "针对台湾国语优化。支持语码转换。"
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "非常快速。支持中文、英语、日语、韩语、粤语。"
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "俄语语音识别。快速且准确。"
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "非常快速。支持英语、德语、西班牙语、法语。支持翻译。"
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "准确的多语言模型。25种欧洲语言。支持翻译。"
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "大型模型，速度较慢，但多语言识别非常准确。"
       }
     },
     "errors": {
@@ -140,9 +96,6 @@
     "noModelsAvailable": "没有可用的模型",
     "verifying": "正在验证 {{modelName}}...",
     "verifyingGeneric": "正在验证...",
-    "extracting": "正在解压 {{modelName}}...",
-    "extractingMultiple": "正在解压 {{count}} 个模型...",
-    "extractingGeneric": "解压中...",
     "downloading": "下载中 {{percentage}}%",
     "downloadingMultiple": "正在下载 {{count}} 个模型...",
     "modelReady": "模型已就绪",
@@ -295,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper 加速",
-          "description": "Whisper 模型的硬件加速。自动模式在可用时使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
-        },
-        "ort": {
-          "title": "ONNX 加速",
-          "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
+          "title": "硬件加速",
+          "description": "选择用于转录的硬件。自动模式在可用时使用 GPU，否则回退到 CPU。"
         },
         "gpuDevice": {
           "auto": "自动"

@@ -8,7 +8,6 @@ import ModelCard, { isLegacySource } from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
 import { Button } from "../ui/Button";
 import { useModelStore } from "../../stores/modelStore";
-import { isRetiredModel } from "./retiredModels";
 
 interface OnboardingProps {
   onModelSelected: () => void;
@@ -29,7 +28,6 @@ const Onboarding: React.FC<OnboardingProps> = ({
     selectModel,
     downloadingModels,
     verifyingModels,
-    extractingModels,
     downloadProgress,
     downloadStats,
     cancelDownload,
@@ -40,7 +38,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
 
   const isBusy = selectedModelId !== null;
 
-  // Curate the download list: legacy (.bin/ONNX) downloads are deprecated and
+  // Curate the download list: legacy (.bin) downloads are deprecated and
   // never shown here (they still appear in the compatible section if already on
   // disk). The catalog arrives rank-sorted, so the first two recommended models
   // are the featured picks — currently Parakeet Unified (English) and Nemotron
@@ -62,17 +60,14 @@ const Onboarding: React.FC<OnboardingProps> = ({
     };
   }, [models]);
 
-  // Retired (ONNX) models can't run, so never offer them as a pick here.
-  const existingModels = models.filter(
-    (m: ModelInfo) => m.is_downloaded && !isRetiredModel(m.id),
-  );
+  const existingModels = models.filter((m: ModelInfo) => m.is_downloaded);
 
   const hasRecommended = topPicks.length > 0 || otherRecommended.length > 0;
   // When nothing recommended remains to download (e.g. all already on disk),
   // there is no curated subset to collapse, so just show the full list.
   const showRest = showAll || !hasRecommended;
 
-  // Watch for the selected model to finish downloading + verifying + extracting
+  // Watch for the selected model to finish downloading + verifying
   useEffect(() => {
     // Debug previews are inert: never switch the user's active model. Guarded
     // here as well as in the handlers because this is where the backend call
@@ -87,13 +82,11 @@ const Onboarding: React.FC<OnboardingProps> = ({
     const model = models.find((m) => m.id === selectedModelId);
     const stillDownloading = selectedModelId in downloadingModels;
     const stillVerifying = selectedModelId in verifyingModels;
-    const stillExtracting = selectedModelId in extractingModels;
 
     if (
       model?.is_downloaded &&
       !stillDownloading &&
       !stillVerifying &&
-      !stillExtracting &&
       !hasStartedSelection.current
     ) {
       hasStartedSelection.current = true;
@@ -114,7 +107,6 @@ const Onboarding: React.FC<OnboardingProps> = ({
     models,
     downloadingModels,
     verifyingModels,
-    extractingModels,
     selectModel,
     onModelSelected,
     preview,
@@ -150,7 +142,6 @@ const Onboarding: React.FC<OnboardingProps> = ({
   };
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
-    if (modelId in extractingModels) return "extracting";
     if (modelId in verifyingModels) return "verifying";
     if (modelId in downloadingModels) return "downloading";
     return "downloadable";

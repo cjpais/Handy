@@ -59,53 +59,9 @@
         "name": "Whisper Large",
         "description": "God nøjagtighed, men langsom."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Kun engelsk. Den bedste model for engelsktalende."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Hurtig og nøjagtig"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Meget hurtig, kun engelsk. Håndterer accenter godt."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrahurtig, kun engelsk"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Hurtig, kun engelsk. God balance mellem hastighed og nøjagtighed."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Kun engelsk. Høj kvalitet."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimeret til taiwansk mandarin. Understøtter kodeskift."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Meget hurtig. Kinesisk, engelsk, japansk, koreansk, kantonesisk."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russisk talegenkendelse. Hurtig og nøjagtig."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Meget hurtig. Engelsk, tysk, spansk, fransk. Understøtter oversættelse."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Nøjagtig, flersproget. 25 europæiske sprog. Understøtter oversættelse."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "En stor, langsommere, men meget nøjagtig flersproget model."
       }
     },
     "errors": {
@@ -141,9 +97,6 @@
     "noModelsAvailable": "Ingen modeller tilgængelige",
     "verifying": "Verificerer {{modelName}}...",
     "verifyingGeneric": "Verificerer...",
-    "extracting": "Udpakker {{modelName}}...",
-    "extractingMultiple": "Udpakker {{count}} modeller...",
-    "extractingGeneric": "Udpakker...",
     "downloading": "Downloader {{percentage}}%",
     "downloadingMultiple": "Downloader {{count}} modeller...",
     "modelReady": "Model klar",
@@ -295,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp-acceleration",
-          "description": "Hardwareacceleration til transcribe.cpp-modeller (Whisper-familien). Auto bruger GPU, hvis tilgængelig (Metal på macOS, Vulkan på Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX-acceleration",
-          "description": "Hardwareacceleration til ONNX-modeller (Parakeet, Canary, Moonshine osv.). DirectML på Windows er eksperimentelt. Modeller kan fejle under transskription."
+          "title": "Hardwareacceleration",
+          "description": "Vælg den hardware, der bruges til transskription. Automatisk bruger GPU'en, når den er tilgængelig, og falder ellers tilbage til CPU'en."
         },
         "gpuDevice": {
           "auto": "Automatisk"

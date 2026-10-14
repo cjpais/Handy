@@ -59,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Bonne précision, mais lent."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Anglais uniquement. Le meilleur modèle pour les anglophones."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Rapide et précis"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Très rapide, anglais uniquement. Gère bien les accents."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultra-rapide, anglais uniquement"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Rapide, anglais uniquement. Bon équilibre entre vitesse et précision."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Anglais uniquement. Haute qualité."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimisé pour le mandarin taïwanais. Prise en charge de l'alternance codique."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Très rapide. Chinois, anglais, japonais, coréen, cantonais."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Reconnaissance vocale en russe. Rapide et précis."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Très rapide. Anglais, allemand, espagnol, français. Supporte la traduction."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Multilingue précis. 25 langues européennes. Supporte la traduction."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Un modèle volumineux, plus lent, mais très précis et multilingue."
       }
     },
     "errors": {
@@ -140,9 +96,6 @@
     "noModelsAvailable": "Aucun modèle disponible",
     "verifying": "Vérification de {{modelName}}...",
     "verifyingGeneric": "Vérification...",
-    "extracting": "Extraction de {{modelName}}...",
-    "extractingMultiple": "Extraction de {{count}} modèles...",
-    "extractingGeneric": "Extraction...",
     "downloading": "Téléchargement {{percentage}}%",
     "downloadingMultiple": "Téléchargement de {{count}} modèles...",
     "modelReady": "Modèle Prêt",
@@ -295,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Accélération Whisper",
-          "description": "Accélération matérielle pour les modèles Whisper. Auto utilise le GPU si disponible (Metal sur macOS, Vulkan sur Windows/Linux)."
-        },
-        "ort": {
-          "title": "Accélération ONNX",
-          "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
+          "title": "Accélération matérielle",
+          "description": "Choisissez le matériel utilisé pour la transcription. Automatique utilise le GPU lorsqu'il est disponible et bascule sinon sur le CPU."
         },
         "gpuDevice": {
           "auto": "Automatique"

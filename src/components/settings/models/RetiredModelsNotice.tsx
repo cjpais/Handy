@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Loader2, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "../../ui/Button";
+import { commands, type RetiredModel } from "@/bindings";
 import { useModelStore } from "@/stores/modelStore";
-import { isRetiredModel } from "@/components/onboarding/retiredModels";
+import { deleteRetiredModel } from "@/components/onboarding/retiredModels";
 import { formatModelSize } from "@/lib/utils/format";
 
 /**
@@ -14,12 +15,15 @@ import { formatModelSize } from "@/lib/utils/format";
  */
 const RetiredModelsNotice: React.FC = () => {
   const { t } = useTranslation();
-  const { models, currentModel, deleteModel } = useModelStore();
+  const { currentModel } = useModelStore();
+  const [onDisk, setOnDisk] = useState<RetiredModel[]>([]);
   const [deleting, setDeleting] = useState(false);
 
-  const retired = models.filter(
-    (m) => m.is_downloaded && isRetiredModel(m.id) && m.id !== currentModel,
-  );
+  useEffect(() => {
+    commands.getRetiredModels().then(setOnDisk);
+  }, []);
+
+  const retired = onDisk.filter((m) => m.id !== currentModel);
 
   if (retired.length === 0) return null;
 
@@ -30,10 +34,10 @@ const RetiredModelsNotice: React.FC = () => {
   const handleDelete = async () => {
     setDeleting(true);
     let deleted = 0;
-    // Sequential: each delete reloads the model list in the store.
     for (const model of retired) {
-      if (await deleteModel(model.id)) deleted += 1;
+      if (await deleteRetiredModel(model.id)) deleted += 1;
     }
+    setOnDisk(await commands.getRetiredModels());
     setDeleting(false);
 
     if (deleted === retired.length) {

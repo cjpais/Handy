@@ -115,7 +115,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
-          key: ${{ inputs.platform }}-${{ inputs.target }}-no-bin-v1
+          key: ${{ inputs.platform }}-${{ inputs.target }}-no-bin-v2
           cache-bin: false
 
       - name: install dependencies (ubuntu 24.04 x64)
@@ -358,72 +358,6 @@ jobs:
           Write-Host "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
           Add-Content -Path $env:GITHUB_ENV -Value "TAURI_WINDOWS_SIGNTOOL_PATH=$($signtool.FullName)"
 
-      - name: Install ONNX Runtime (x86_64 macOS)
-        if: inputs.target == 'x86_64-apple-darwin'
-        shell: bash
-        run: |
-          ORT_VERSION="1.24.2"
-          curl -L -o ort.tgz "https://blob.handy.computer/onnxruntime-osx-x86_64-${ORT_VERSION}.tgz"
-          tar xzf ort.tgz
-          ORT_DIR="$(pwd)/onnxruntime-osx-x86_64-${ORT_VERSION}"
-          echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
-          echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
-          # Bundle the versioned dylib (matches the install name @rpath/libonnxruntime.1.24.2.dylib)
-          jq --arg lib "$ORT_DIR/lib/libonnxruntime.${ORT_VERSION}.dylib" \
-            '.bundle.macOS.frameworks = [$lib]' \
-            src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-
-      - name: Install ONNX Runtime (x86_64 Linux, Ubuntu 22.04)
-        if: contains(inputs.platform, 'ubuntu-22.04') && inputs.target == 'x86_64-unknown-linux-gnu'
-        shell: bash
-        run: |
-          ORT_VERSION="1.24.2"
-          curl -L -o ort.tgz "https://blob.handy.computer/onnxruntime-linux-x86_64-${ORT_VERSION}.tgz"
-          tar xzf ort.tgz
-          ORT_DIR="$(pwd)/onnxruntime-linux-x86_64-${ORT_VERSION}"
-          echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
-          echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
-          # Resolve symlinks so the deb bundler gets real files (not broken symlinks)
-          for f in "$ORT_DIR"/lib/libonnxruntime.so*; do
-            if [ -L "$f" ]; then
-              cp -L "$f" "$f.real" && mv "$f.real" "$f"
-            fi
-          done
-          # Ship ORT in Handy's private lib dir under its SONAME only — the one
-          # name the loader resolves (handy has NEEDED libonnxruntime.so.1).
-          # Shipping the .so/.so.x.y.z aliases too would triplicate the lib as
-          # real files and draw ldconfig warnings (issue #1639).
-          # deb.files key = destination in package, value = source on disk
-          jq --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
-            '.bundle.linux.deb.files["/usr/lib/Handy/libonnxruntime.so.1"] = $so1' \
-            src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-
-      # Windows x64 links a BASELINE ONNX Runtime dynamically instead of statically
-      # embedding pyke's default download-binaries build, which is compiled with a
-      # global /arch:AVX2 baseline and executes BMI2/AVX in a C++ static initializer
-      # — crashing at process startup on any pre-Haswell CPU (Sandy/Ivy Bridge, older
-      # AMD) before main() runs. Microsoft's official build uses an SSE2 baseline with
-      # MLAS runtime CPU dispatch, so it runs everywhere and dispatches to AVX2/AVX-512
-      # kernels when present (perf parity on capable CPUs). build.rs stages
-      # onnxruntime.dll into transcribe-libs/, which tauri.windows.conf.json bundles
-      # beside Handy.exe. ARM64 is excluded (all modern CPUs; keeps its static
-      # ORT posture).
-      # NOTE: sourced from Microsoft's GitHub release; can be re-hosted on
-      # blob.handy.computer to match the macOS/Linux steps.
-      - name: Install ONNX Runtime (Windows x64)
-        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $ORT_VERSION = "1.24.2"
-          $url = "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VERSION/onnxruntime-win-x64-$ORT_VERSION.zip"
-          Invoke-WebRequest -Uri $url -OutFile ort.zip
-          Expand-Archive -Path ort.zip -DestinationPath ort-dist -Force
-          $ortLib = (Resolve-Path "ort-dist/onnxruntime-win-x64-$ORT_VERSION/lib").Path
-          Write-Host "ORT_LIB_LOCATION=$ortLib"
-          Add-Content -Path $env:GITHUB_ENV -Value "ORT_LIB_LOCATION=$ortLib"
-          Add-Content -Path $env:GITHUB_ENV -Value "ORT_PREFER_DYNAMIC_LINK=1"
-
       # ggml-vulkan (built by transcribe-cpp-sys when the Vulkan backend is on)
       # does `find_package(SPIRV-Headers CONFIG REQUIRED)` for <spirv-headers/
       # spirv.hpp>. ggml's CMake appends $VULKAN_SDK to CMAKE_PREFIX_PATH first,
@@ -579,27 +513,6 @@ jobs:
             fi
           )
 
-      - name: Verify macOS dylib bundling
-        if: inputs.target == 'x86_64-apple-darwin'
-        shell: bash
-        run: |
-          APP=$(find src-tauri/target -name "*.app" -type d | head -1)
-          echo "=== Frameworks contents ==="
-          ls -la "$APP/Contents/Frameworks/" | grep onnx || true
-          echo "=== Binary linked libs ==="
-          otool -L "$APP/Contents/MacOS/handy" | grep onnx || true
-          echo "=== Checking all @rpath deps are satisfied ==="
-          # Extract every @rpath lib the binary needs
-          otool -L "$APP/Contents/MacOS/handy" | grep '@rpath/' | awk '{print $1}' | while read dep; do
-            libname=$(basename "$dep")
-            if [ ! -f "$APP/Contents/Frameworks/$libname" ]; then
-              echo "MISSING: $libname not found in Frameworks/"
-              exit 1
-            else
-              echo "OK: $libname"
-            fi
-          done
-
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
         uses: actions/upload-artifact@v7
@@ -675,9 +588,6 @@ jobs:
               require_pattern "$listing" 'usr/bin/handy$' "handy binary"
               require_pattern "$listing" 'usr/lib/Handy/libtranscribe\.so(\.[0-9]+)+$' "transcribe runtime library (SONAME)"
               require_pattern "$listing" 'usr/lib/Handy/libggml-cpu.*\.so' "ggml CPU backend module"
-              if [[ "${{ inputs.platform }}" == *"ubuntu-22.04"* && "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
-                require_pattern "$listing" 'usr/lib/Handy/libonnxruntime\.so\.[0-9]+$' "ONNX Runtime library (SONAME)"
-              fi
               # Handy's libs must stay out of the ldconfig-scanned /usr/lib
               # (issue #1639): app-private libs belong in /usr/lib/Handy only.
               # `[^/]+` excludes the Handy/ subdir, so only direct hits match.
@@ -811,10 +721,10 @@ jobs:
             throw "src-tauri/transcribe-libs contains no DLLs; every Windows build must stage the app-local VC++ runtime (issue #1527)"
           }
 
-          # x64 also ships dynamic transcribe/ggml/ORT DLLs; ARM64 is otherwise static.
+          # x64 also ships dynamic transcribe/ggml DLLs; ARM64 is otherwise static.
           $requiredStaged = @("msvcp140.dll", "vcruntime140.dll")
           if ("${{ inputs.target }}" -notlike "aarch64*") {
-            $requiredStaged += @("vcomp140.dll", "onnxruntime.dll")
+            $requiredStaged += @("vcomp140.dll")
             if (-not ($stagedDlls | Where-Object { $_.Name -like "*transcribe*" })) {
               throw "Staging is missing transcribe runtime DLLs"
             }

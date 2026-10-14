@@ -66,15 +66,11 @@ whatlang = "0.16"
 isolang = "2"
 chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
-tar = "0.4.44"
-flate2 = "1.0"
 sha2 = "0.10"
 libc = "0.2"
-# Whisper-family models run through transcribe-cpp (GGUF/ggml, native backends);
-# transcribe-rs is now ONNX-only (Parakeet, Moonshine, SenseVoice, GigaAM,
-# Canary, Cohere). Per-platform backend features are added in the target tables
-# (Cargo unifies features, so `serde` here applies to every platform).
-transcribe-rs = { version = "0.3.8", features = ["onnx"] }
+# Every model runs through transcribe-cpp (GGUF/ggml, native backends).
+# Per-platform backend features are added in the target tables (Cargo unifies
+# features, so `serde` here applies to every platform).
 transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "serde",
 ] }
@@ -103,14 +99,6 @@ tauri-plugin-updater = "2.10.1"
 # (disabling browser accelerator keys in the main window). Must match the
 # version wry links against so the COM types are identical.
 webview2-com = "0.38"
-# ONNX Runtime on Windows is CPU-only (no ort-directml), matching macOS/Linux.
-# The DirectML EP was experimental and, more importantly, pulled in pyke's
-# prebuilt ONNX Runtime which is compiled with a global /arch:AVX2 baseline that
-# executes BMI2/AVX in a static initializer and crashes at process startup on any
-# pre-Haswell CPU (Sandy/Ivy Bridge, older AMD). Dropping the feature means we
-# link a baseline ONNX Runtime (dynamically, via ORT_LIB_LOCATION in build.yml)
-# with proper runtime CPU dispatch. Base `transcribe-rs` (features = ["onnx"])
-# is inherited here, so Parakeet/Moonshine/etc. still run on CPU.
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
