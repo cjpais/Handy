@@ -666,7 +666,7 @@
     "title": "Nyt i Handy v{{version}}"
   },
   "common": {
-    "playbackPosition": "Playback position",
+    "playbackPosition": "Afspilningsposition",
     "loading": "Indlæser...",
     "delete": "Slet",
     "close": "Luk",

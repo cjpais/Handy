@@ -663,7 +663,7 @@
     "portableUpdateBrowseButton": "開啟 GitHub Releases"
   },
   "common": {
-    "playbackPosition": "Playback position",
+    "playbackPosition": "播放位置",
     "loading": "載入中...",
     "delete": "刪除",
     "close": "關閉",
