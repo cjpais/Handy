@@ -15,9 +15,9 @@ import { useModelStore } from "../../stores/modelStore";
 import { formatModelSize } from "../../lib/utils/format";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import {
-  RETIRED_MODEL_REPLACEMENTS,
   deleteRetiredModel,
   findReplacement,
+  isRetiredModel,
   type ModelMigrationPair,
 } from "./retiredModels";
 
@@ -67,7 +67,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   useEffect(() => {
     if (snapshot || loading) return;
     const retired = models.filter(
-      (m) => m.is_downloaded && m.id in RETIRED_MODEL_REPLACEMENTS,
+      (m) => m.is_downloaded && isRetiredModel(m.id),
     );
     // The model in use always leads the list.
     retired.sort(
