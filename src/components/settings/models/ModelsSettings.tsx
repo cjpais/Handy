@@ -12,6 +12,7 @@ import {
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
+import RetiredModelsNotice from "./RetiredModelsNotice";
 import {
   getLanguageLabel,
   MODEL_CAPABILITY_LANGUAGES,
@@ -247,6 +248,8 @@ export const ModelsSettings: React.FC = () => {
           {t("settings.models.description")}
         </p>
       </div>
+
+      <RetiredModelsNotice />
 
       {/* Search bar — filter the catalog by name or description */}
       <div className="relative">

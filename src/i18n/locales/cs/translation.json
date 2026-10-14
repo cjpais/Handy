@@ -26,6 +26,18 @@
     "showFewerModels": "Zobrazit méně modelů",
     "recommended": "Doporučeno",
     "customModelDescription": "Oficiálně nepodporováno",
+    "migration": {
+      "title": "Vaše modely potřebují aktualizaci",
+      "description": "Handy nyní používá novější typ modelů. Stáhněte si novou verzi, abyste mohli dál přepisovat. Staré verze budou odstraněny.",
+      "replaces": "Nahrazuje {{name}}",
+      "oldFormat": "Starý formát",
+      "failed": "Stahování selhalo",
+      "retry": "Zkusit znovu",
+      "chooseAnother": "Vybrat jiný model",
+      "download": "Stáhnout modely ({{size}})",
+      "continue": "Pokračovat",
+      "timeRemaining": "Zbývá {{time}}"
+    },
     "modelCard": {
       "accuracy": "přesnost",
       "speed": "rychlost"
@@ -164,6 +176,13 @@
       "deleteConfirm": "Opravdu chcete smazat {{modelName}}? Pro opětovné použití jej budete muset znovu stáhnout.",
       "deleteActiveConfirm": "{{modelName}} je váš aktivní model. Jeho smazáním se zastaví přepisy, dokud nevyberete nový model. Opravdu chcete pokračovat?",
       "deleteTitle": "Smazat model",
+      "retiredNotice": {
+        "title": "Staré modely už s Handy nefungují",
+        "description": "Zabírají {{size}} na vašem počítači.",
+        "delete": "Smazat modely",
+        "deleted": "Staré modely byly smazány",
+        "deleteFailed": "Některé staré modely se nepodařilo smazat. Podrobnosti najdete v protokolu."
+      },
       "filters": {
         "allLanguages": "Všechny jazyky",
         "streaming": "Filtrovat modely podporující živý přepis",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "Načítání...",
     "delete": "Smazat",
+    "back": "Zpět",
     "close": "Zavřít",
     "open": "Otevřít",
     "copy": "Kopírovat",

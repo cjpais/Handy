@@ -26,6 +26,18 @@
     "showFewerModels": "הצג פחות מודלים",
     "recommended": "מומלץ",
     "customModelDescription": "לא נתמך באופן רשמי",
+    "migration": {
+      "title": "המודלים שלך צריכים עדכון",
+      "description": "Handy משתמש כעת בסוג חדש יותר של מודלים. יש להוריד את הגרסה החדשה כדי להמשיך לתמלל. גרסאות ישנות יוסרו.",
+      "replaces": "מחליף את {{name}}",
+      "oldFormat": "פורמט ישן",
+      "failed": "ההורדה נכשלה",
+      "retry": "ניסיון חוזר",
+      "chooseAnother": "בחירת מודל אחר",
+      "download": "הורדת מודלים ({{size}})",
+      "continue": "המשך",
+      "timeRemaining": "נותרו {{time}}"
+    },
     "modelCard": {
       "accuracy": "דיוק",
       "speed": "מהירות"
@@ -217,6 +229,13 @@
       "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
       "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
       "deleteTitle": "מחיקת מודל",
+      "retiredNotice": {
+        "title": "מודלים ישנים כבר לא עובדים עם Handy",
+        "description": "הם תופסים {{size}} במחשב שלך.",
+        "delete": "מחיקת מודלים",
+        "deleted": "המודלים הישנים נמחקו",
+        "deleteFailed": "לא ניתן היה למחוק חלק מהמודלים הישנים. פרטים נוספים ביומן."
+      },
       "filters": {
         "allLanguages": "כל השפות",
         "streaming": "סינון דגמים התומכים בתמלול חי",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "טוען...",
     "delete": "מחק",
+    "back": "חזרה",
     "close": "סגור",
     "open": "פתח",
     "copy": "העתק",

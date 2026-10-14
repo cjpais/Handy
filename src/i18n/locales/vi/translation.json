@@ -26,6 +26,18 @@
     "showFewerModels": "Hiển thị ít mô hình hơn",
     "recommended": "Đề xuất",
     "customModelDescription": "Không được hỗ trợ chính thức",
+    "migration": {
+      "title": "Các mô hình của bạn cần được cập nhật",
+      "description": "Handy hiện sử dụng loại mô hình mới hơn. Hãy tải phiên bản mới để tiếp tục chuyển đổi giọng nói. Các phiên bản cũ sẽ bị xóa.",
+      "replaces": "Thay thế {{name}}",
+      "oldFormat": "Định dạng cũ",
+      "failed": "Tải xuống thất bại",
+      "retry": "Thử lại",
+      "chooseAnother": "Chọn mô hình khác",
+      "download": "Tải mô hình ({{size}})",
+      "continue": "Tiếp tục",
+      "timeRemaining": "Còn {{time}}"
+    },
     "modelCard": {
       "accuracy": "độ chính xác",
       "speed": "tốc độ"
@@ -164,6 +176,13 @@
       "deleteConfirm": "Bạn có chắc chắn muốn xóa {{modelName}}? Bạn sẽ cần tải lại để sử dụng.",
       "deleteActiveConfirm": "{{modelName}} là mô hình đang hoạt động của bạn. Xóa nó sẽ dừng phiên âm cho đến khi bạn chọn một mô hình mới. Bạn có chắc không?",
       "deleteTitle": "Xóa mô hình",
+      "retiredNotice": {
+        "title": "Các mô hình cũ không còn hoạt động với Handy",
+        "description": "Chúng đang chiếm {{size}} trên máy tính của bạn.",
+        "delete": "Xóa mô hình",
+        "deleted": "Đã xóa các mô hình cũ",
+        "deleteFailed": "Không thể xóa một số mô hình cũ. Hãy kiểm tra nhật ký để biết chi tiết."
+      },
       "filters": {
         "allLanguages": "Tất cả ngôn ngữ",
         "streaming": "Lọc các mô hình hỗ trợ phiên âm trực tiếp",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "Đang tải...",
     "delete": "Xóa",
+    "back": "Quay lại",
     "close": "Đóng",
     "open": "Mở",
     "copy": "Sao chép",

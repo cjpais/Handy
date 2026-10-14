@@ -26,6 +26,18 @@
     "showFewerModels": "Minder modellen tonen",
     "recommended": "Aanbevolen",
     "customModelDescription": "Niet officieel ondersteund",
+    "migration": {
+      "title": "Je modellen moeten worden bijgewerkt",
+      "description": "Handy gebruikt nu een nieuwer soort model. Download de nieuwe versie om te blijven transcriberen. Oude versies worden verwijderd.",
+      "replaces": "Vervangt {{name}}",
+      "oldFormat": "Oud formaat",
+      "failed": "Downloaden mislukt",
+      "retry": "Opnieuw proberen",
+      "chooseAnother": "Kies een ander model",
+      "download": "Modellen downloaden ({{size}})",
+      "continue": "Doorgaan",
+      "timeRemaining": "Nog {{time}}"
+    },
     "modelCard": {
       "accuracy": "nauwkeurigheid",
       "speed": "snelheid"
@@ -218,6 +230,13 @@
       "deleteConfirm": "Weet je zeker dat je {{modelName}} wilt verwijderen? Je moet het model opnieuw downloaden om het weer te gebruiken.",
       "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
       "deleteTitle": "Model verwijderen",
+      "retiredNotice": {
+        "title": "Oude modellen werken niet meer met Handy",
+        "description": "Ze nemen {{size}} in beslag op je computer.",
+        "delete": "Modellen verwijderen",
+        "deleted": "Oude modellen verwijderd",
+        "deleteFailed": "Sommige oude modellen konden niet worden verwijderd. Bekijk het logboek voor details."
+      },
       "filters": {
         "allLanguages": "Alle talen",
         "streaming": "Filter modellen die live transcriptie ondersteunen",
@@ -677,6 +696,7 @@
   "common": {
     "loading": "Laden...",
     "delete": "Verwijderen",
+    "back": "Terug",
     "close": "Sluiten",
     "open": "Openen",
     "copy": "Kopiëren",

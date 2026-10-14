@@ -26,6 +26,18 @@
     "showFewerModels": "Mostra menys models",
     "recommended": "Recomanat",
     "customModelDescription": "Sense suport oficial",
+    "migration": {
+      "title": "Cal actualitzar els vostres models",
+      "description": "Handy ara utilitza un tipus de model més nou. Baixeu la versió nova per continuar transcrivint. Les versions antigues s'eliminaran.",
+      "replaces": "Substitueix {{name}}",
+      "oldFormat": "Format antic",
+      "failed": "Ha fallat la baixada",
+      "retry": "Torna-ho a provar",
+      "chooseAnother": "Trieu un altre model",
+      "download": "Baixa els models ({{size}})",
+      "continue": "Continua",
+      "timeRemaining": "Queden {{time}}"
+    },
     "modelCard": {
       "accuracy": "precisió",
       "speed": "velocitat"
@@ -218,6 +230,13 @@
       "deleteConfirm": "Segur que voleu suprimir {{modelName}}? Haureu de tornar-lo a baixar per utilitzar-lo.",
       "deleteActiveConfirm": "{{modelName}} és el model actiu. Si el suprimiu, no podreu fer transcripcions fins que seleccioneu un altre model. N'esteu segur?",
       "deleteTitle": "Suprimeix el model",
+      "retiredNotice": {
+        "title": "Els models antics ja no funcionen amb Handy",
+        "description": "Ocupen {{size}} a l'ordinador.",
+        "delete": "Suprimeix els models",
+        "deleted": "S'han suprimit els models antics",
+        "deleteFailed": "No s'han pogut suprimir alguns models antics. Consulteu el registre per a més detalls."
+      },
       "filters": {
         "allLanguages": "Totes les llengües",
         "streaming": "Filtra els models que admeten la transcripció en temps real",
@@ -677,6 +696,7 @@
   "common": {
     "loading": "S'està carregant...",
     "delete": "Suprimeix",
+    "back": "Enrere",
     "close": "Tanca",
     "open": "Obre",
     "copy": "Copia",

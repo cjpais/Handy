@@ -26,6 +26,18 @@
     "showFewerModels": "Pokaż mniej modeli",
     "recommended": "Polecane",
     "customModelDescription": "Nieoficjalnie wspierane",
+    "migration": {
+      "title": "Twoje modele wymagają aktualizacji",
+      "description": "Handy używa teraz nowszego rodzaju modeli. Pobierz nową wersję, aby dalej korzystać z transkrypcji. Stare wersje zostaną usunięte.",
+      "replaces": "Zastępuje {{name}}",
+      "oldFormat": "Stary format",
+      "failed": "Pobieranie nie powiodło się",
+      "retry": "Spróbuj ponownie",
+      "chooseAnother": "Wybierz inny model",
+      "download": "Pobierz modele ({{size}})",
+      "continue": "Kontynuuj",
+      "timeRemaining": "Pozostało {{time}}"
+    },
     "modelCard": {
       "accuracy": "dokładność",
       "speed": "szybkość"
@@ -164,6 +176,13 @@
       "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
       "deleteActiveConfirm": "{{modelName}} jest Twoim aktywnym modelem. Usunięcie go zatrzyma transkrypcje, dopóki nie wybierzesz nowego modelu. Czy na pewno chcesz kontynuować?",
       "deleteTitle": "Usuń model",
+      "retiredNotice": {
+        "title": "Stare modele nie działają już z Handy",
+        "description": "Zajmują {{size}} na Twoim komputerze.",
+        "delete": "Usuń modele",
+        "deleted": "Usunięto stare modele",
+        "deleteFailed": "Nie udało się usunąć niektórych starych modeli. Szczegóły znajdziesz w dzienniku."
+      },
       "filters": {
         "allLanguages": "Wszystkie języki",
         "streaming": "Filtruj modele obsługujące transkrypcję na żywo",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "Wczytywanie...",
     "delete": "Usuń",
+    "back": "Wstecz",
     "close": "Zamknij",
     "open": "Otwórz",
     "copy": "Kopiuj",

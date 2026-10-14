@@ -26,6 +26,18 @@
     "showFewerModels": "Vis færre modeller",
     "recommended": "Anbefalet",
     "customModelDescription": "Ikke officielt understøttet",
+    "migration": {
+      "title": "Dine modeller skal opdateres",
+      "description": "Handy bruger nu en nyere type model. Download den nye version for at fortsætte med at transskribere. Gamle versioner vil blive fjernet.",
+      "replaces": "Erstatter {{name}}",
+      "oldFormat": "Gammelt format",
+      "failed": "Download mislykkedes",
+      "retry": "Prøv igen",
+      "chooseAnother": "Vælg en anden model",
+      "download": "Download modeller ({{size}})",
+      "continue": "Fortsæt",
+      "timeRemaining": "{{time}} tilbage"
+    },
     "modelCard": {
       "accuracy": "nøjagtighed",
       "speed": "hastighed"
@@ -218,6 +230,13 @@
       "deleteConfirm": "Er du sikker på, at du vil slette {{modelName}}? Du skal downloade den igen for at bruge den.",
       "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
       "deleteTitle": "Slet model",
+      "retiredNotice": {
+        "title": "Gamle modeller virker ikke længere med Handy",
+        "description": "De fylder {{size}} på din computer.",
+        "delete": "Slet modeller",
+        "deleted": "Gamle modeller er slettet",
+        "deleteFailed": "Nogle gamle modeller kunne ikke slettes. Se loggen for detaljer."
+      },
       "filters": {
         "allLanguages": "Alle sprog",
         "streaming": "Filtrer modeller, der understøtter live transskription",
@@ -677,6 +696,7 @@
   "common": {
     "loading": "Indlæser...",
     "delete": "Slet",
+    "back": "Tilbage",
     "close": "Luk",
     "open": "Åbn",
     "copy": "Kopiér",
