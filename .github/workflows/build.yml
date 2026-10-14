@@ -115,7 +115,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
-          key: ${{ inputs.platform }}-${{ inputs.target }}-no-bin-v1
+          key: ${{ inputs.platform }}-${{ inputs.target }}-no-bin-v2
           cache-bin: false
 
       - name: install dependencies (ubuntu 24.04 x64)

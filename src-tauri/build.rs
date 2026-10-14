@@ -24,6 +24,7 @@ fn main() {
     // launches on older macOS (minimumSystemVersion is 10.15).
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
         println!("cargo:rustc-link-arg=-Wl,-weak_framework,CoreAudio");
+        link_clang_rt_osx();
     }
 
     // Stage transcribe-cpp's shared runtime libraries (and the dlopen'd ggml
@@ -36,6 +37,34 @@ fn main() {
     stage_vc_runtime_dlls();
 
     tauri_build::build()
+}
+
+/// Link clang's compiler runtime, which provides `__isPlatformVersionAtLeast`.
+///
+/// ggml-metal guards newer Metal APIs with `@available`. When the deployment
+/// target is older than the SDK (CI builds for macOS 11.0), clang lowers those
+/// checks to calls into `libclang_rt.osx.a`, which rustc does not link
+/// (`-nodefaultlibs`). ort-sys used to add it for its own static ONNX Runtime;
+/// without ORT, Handy has to. Local builds targeting the host macOS fold the
+/// checks away, which is why only CI hit the undefined symbol.
+fn link_clang_rt_osx() {
+    let output = std::process::Command::new("clang")
+        .arg("--print-resource-dir")
+        .output()
+        .expect("run `clang --print-resource-dir` to locate libclang_rt.osx.a");
+    assert!(
+        output.status.success(),
+        "`clang --print-resource-dir` failed; cannot locate libclang_rt.osx.a"
+    );
+    let resource_dir = String::from_utf8(output.stdout).expect("clang resource dir is UTF-8");
+    let darwin_dir = std::path::Path::new(resource_dir.trim()).join("lib/darwin");
+    assert!(
+        darwin_dir.join("libclang_rt.osx.a").exists(),
+        "libclang_rt.osx.a not found in {}",
+        darwin_dir.display()
+    );
+    println!("cargo:rustc-link-search=native={}", darwin_dir.display());
+    println!("cargo:rustc-link-lib=static=clang_rt.osx");
 }
 
 /// Stage the MSVC runtime DLLs into `transcribe-libs/` for app-local deployment.
