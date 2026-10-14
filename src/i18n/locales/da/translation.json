@@ -666,7 +666,7 @@
     "title": "Nyt i Handy v{{version}}"
   },
   "common": {
-    "resetSetting": "Reset {{setting}} to default",
+    "resetSetting": "Nulstil {{setting}} til standardværdien",
     "loading": "Indlæser...",
     "delete": "Slet",
     "close": "Luk",

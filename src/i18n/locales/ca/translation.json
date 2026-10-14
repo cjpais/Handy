@@ -666,7 +666,7 @@
     "title": "Novetats del Handy v{{version}}"
   },
   "common": {
-    "resetSetting": "Reset {{setting}} to default",
+    "resetSetting": "Restableix {{setting}} al valor predeterminat",
     "loading": "S'està carregant...",
     "delete": "Suprimeix",
     "close": "Tanca",
