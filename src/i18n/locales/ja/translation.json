@@ -26,6 +26,18 @@
     "showFewerModels": "表示を減らす",
     "recommended": "おすすめ",
     "customModelDescription": "公式サポート対象外",
+    "migration": {
+      "title": "モデルの更新が必要です",
+      "description": "Handy は新しい種類のモデルを使用するようになりました。文字起こしを続けるには、新しいバージョンをダウンロードしてください。古いバージョンは削除されます。",
+      "replaces": "{{name}} の後継",
+      "oldFormat": "旧形式",
+      "failed": "ダウンロードに失敗しました",
+      "retry": "再試行",
+      "chooseAnother": "別のモデルを選択",
+      "download": "モデルをダウンロード ({{size}})",
+      "continue": "続行",
+      "timeRemaining": "残り {{time}}"
+    },
     "modelCard": {
       "accuracy": "精度",
       "speed": "速度"
@@ -164,6 +176,13 @@
       "deleteConfirm": "{{modelName}}を削除してもよろしいですか? 再度使用するにはダウンロードが必要です。",
       "deleteActiveConfirm": "{{modelName}}は現在使用中のモデルです。削除すると、新しいモデルを選択するまで文字起こしが停止します。本当に削除しますか?",
       "deleteTitle": "モデルを削除",
+      "retiredNotice": {
+        "title": "古いモデルは Handy で使用できなくなりました",
+        "description": "コンピューター上で {{size}} を使用しています。",
+        "delete": "モデルを削除",
+        "deleted": "古いモデルを削除しました",
+        "deleteFailed": "一部の古いモデルを削除できませんでした。詳細はログを確認してください。"
+      },
       "filters": {
         "allLanguages": "すべての言語",
         "streaming": "リアルタイム文字起こしに対応するモデルを絞り込む",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "読み込み中…",
     "delete": "削除",
+    "back": "戻る",
     "close": "閉じる",
     "open": "開く",
     "copy": "コピー",

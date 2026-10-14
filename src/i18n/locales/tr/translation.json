@@ -26,6 +26,18 @@
     "showFewerModels": "Daha az model göster",
     "recommended": "Önerilen",
     "customModelDescription": "Resmi olarak desteklenmiyor",
+    "migration": {
+      "title": "Modellerinizin güncellenmesi gerekiyor",
+      "description": "Handy artık daha yeni bir model türü kullanıyor. Transkripsiyona devam etmek için yeni sürümü indirin. Eski sürümler kaldırılacak.",
+      "replaces": "{{name}} yerine geçer",
+      "oldFormat": "Eski format",
+      "failed": "İndirme başarısız oldu",
+      "retry": "Tekrar dene",
+      "chooseAnother": "Farklı bir model seçin",
+      "download": "Modelleri indir ({{size}})",
+      "continue": "Devam et",
+      "timeRemaining": "{{time}} kaldı"
+    },
     "modelCard": {
       "accuracy": "doğruluk",
       "speed": "hız"
@@ -164,6 +176,13 @@
       "deleteConfirm": "{{modelName}} modelini silmek istediğinizden emin misiniz? Kullanmak için tekrar indirmeniz gerekecek.",
       "deleteActiveConfirm": "{{modelName}} aktif modelinizdir. Silmek, yeni bir model seçene kadar transkripsiyonları durduracaktır. Emin misiniz?",
       "deleteTitle": "Modeli Sil",
+      "retiredNotice": {
+        "title": "Eski modeller artık Handy ile çalışmıyor",
+        "description": "Bilgisayarınızda {{size}} yer kaplıyorlar.",
+        "delete": "Modelleri sil",
+        "deleted": "Eski modeller silindi",
+        "deleteFailed": "Bazı eski modeller silinemedi. Ayrıntılar için günlüğe bakın."
+      },
       "filters": {
         "allLanguages": "Tüm Diller",
         "streaming": "Canlı transkripsiyonu destekleyen modelleri filtrele",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "Yükleniyor...",
     "delete": "Sil",
+    "back": "Geri",
     "close": "Kapat",
     "open": "Aç",
     "copy": "Kopyala",

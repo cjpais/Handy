@@ -26,6 +26,18 @@
     "showFewerModels": "간략히 표시",
     "recommended": "추천",
     "customModelDescription": "공식 지원되지 않음",
+    "migration": {
+      "title": "모델 업데이트가 필요합니다",
+      "description": "Handy가 이제 새로운 종류의 모델을 사용합니다. 계속 음성 인식을 사용하려면 새 버전을 다운로드하세요. 이전 버전은 삭제됩니다.",
+      "replaces": "{{name}} 대체",
+      "oldFormat": "이전 형식",
+      "failed": "다운로드 실패",
+      "retry": "다시 시도",
+      "chooseAnother": "다른 모델 선택",
+      "download": "모델 다운로드 ({{size}})",
+      "continue": "계속",
+      "timeRemaining": "{{time}} 남음"
+    },
     "modelCard": {
       "accuracy": "정확도",
       "speed": "속도"
@@ -246,6 +258,13 @@
       "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
       "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
       "deleteTitle": "모델 삭제",
+      "retiredNotice": {
+        "title": "이전 모델은 더 이상 Handy에서 작동하지 않습니다",
+        "description": "컴퓨터에서 {{size}}을(를) 차지하고 있습니다.",
+        "delete": "모델 삭제",
+        "deleted": "이전 모델을 삭제했습니다",
+        "deleteFailed": "일부 이전 모델을 삭제할 수 없습니다. 자세한 내용은 로그를 확인하세요."
+      },
       "filters": {
         "allLanguages": "모든 언어",
         "streaming": "실시간 음성 인식을 지원하는 모델 필터링",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "로딩 중...",
     "delete": "삭제",
+    "back": "뒤로",
     "close": "닫기",
     "open": "열기",
     "copy": "복사",

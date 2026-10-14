@@ -1,20 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronLeft } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import type { ModelCardStatus } from "./ModelCard";
 import ModelCard, { isLegacySource } from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
+import { Button } from "../ui/Button";
 import { useModelStore } from "../../stores/modelStore";
+import { isRetiredModel } from "./retiredModels";
 
 interface OnboardingProps {
   onModelSelected: () => void;
+  // Shown when the picker was opened from another step (the model update).
+  onBack?: () => void;
   preview?: boolean;
 }
 
 const Onboarding: React.FC<OnboardingProps> = ({
   onModelSelected,
+  onBack,
   preview = false,
 }) => {
   const { t } = useTranslation();
@@ -56,6 +61,11 @@ const Onboarding: React.FC<OnboardingProps> = ({
       rest,
     };
   }, [models]);
+
+  // Retired (ONNX) models can't run, so never offer them as a pick here.
+  const existingModels = models.filter(
+    (m: ModelInfo) => m.is_downloaded && !isRetiredModel(m.id),
+  );
 
   const hasRecommended = topPicks.length > 0 || otherRecommended.length > 0;
   // When nothing recommended remains to download (e.g. all already on disk),
@@ -161,6 +171,18 @@ const Onboarding: React.FC<OnboardingProps> = ({
 
   return (
     <div className="h-screen w-full flex flex-col p-6 gap-4">
+      {onBack && (
+        <Button
+          variant="ghost"
+          size="md"
+          onClick={onBack}
+          disabled={isBusy}
+          className="fixed top-4 start-4 flex items-center gap-1 text-text/70 hover:text-text"
+        >
+          <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+          {t("common.back")}
+        </Button>
+      )}
       <div className="flex flex-col items-center gap-2 shrink-0">
         <HandyTextLogo width={200} />
         <p className="text-text/70 max-w-md font-medium mx-auto">
@@ -170,25 +192,23 @@ const Onboarding: React.FC<OnboardingProps> = ({
 
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
         <div className="space-y-6 pb-6">
-          {models.some((m: ModelInfo) => m.is_downloaded) && (
+          {existingModels.length > 0 && (
             <div className="space-y-3">
               <div className="text-left">
                 <h2 className="text-sm font-medium text-text/60">
                   {t("onboarding.existingModelsTitle")}
                 </h2>
               </div>
-              {models
-                .filter((m: ModelInfo) => m.is_downloaded)
-                .map((model: ModelInfo) => (
-                  <ModelCard
-                    key={model.id}
-                    model={model}
-                    status={getExistingModelStatus(model.id)}
-                    disabled={isBusy}
-                    onSelect={handleSelectExistingModel}
-                    showRecommended={false}
-                  />
-                ))}
+              {existingModels.map((model: ModelInfo) => (
+                <ModelCard
+                  key={model.id}
+                  model={model}
+                  status={getExistingModelStatus(model.id)}
+                  disabled={isBusy}
+                  onSelect={handleSelectExistingModel}
+                  showRecommended={false}
+                />
+              ))}
             </div>
           )}
 

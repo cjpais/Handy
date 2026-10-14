@@ -26,6 +26,18 @@
     "showFewerModels": "Afficher moins de modèles",
     "recommended": "Recommandé",
     "customModelDescription": "Non officiellement pris en charge",
+    "migration": {
+      "title": "Vos modèles doivent être mis à jour",
+      "description": "Handy utilise désormais un nouveau type de modèle. Téléchargez la nouvelle version pour continuer à transcrire. Les anciennes versions seront supprimées.",
+      "replaces": "Remplace {{name}}",
+      "oldFormat": "Ancien format",
+      "failed": "Échec du téléchargement",
+      "retry": "Réessayer",
+      "chooseAnother": "Choisir un autre modèle",
+      "download": "Télécharger les modèles ({{size}})",
+      "continue": "Continuer",
+      "timeRemaining": "{{time}} restant"
+    },
     "modelCard": {
       "accuracy": "précision",
       "speed": "vitesse"
@@ -164,6 +176,13 @@
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
       "deleteActiveConfirm": "{{modelName}} est votre modèle actif. Le supprimer arrêtera les transcriptions jusqu'à ce que vous sélectionniez un nouveau modèle. Êtes-vous sûr ?",
       "deleteTitle": "Supprimer le modèle",
+      "retiredNotice": {
+        "title": "Les anciens modèles ne fonctionnent plus avec Handy",
+        "description": "Ils occupent {{size}} sur votre ordinateur.",
+        "delete": "Supprimer les modèles",
+        "deleted": "Anciens modèles supprimés",
+        "deleteFailed": "Certains anciens modèles n'ont pas pu être supprimés. Consultez le journal pour plus de détails."
+      },
       "filters": {
         "allLanguages": "Toutes les langues",
         "streaming": "Filtrer les modèles prenant en charge la transcription en direct",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "Chargement...",
     "delete": "Supprimer",
+    "back": "Retour",
     "close": "Fermer",
     "open": "Ouvrir",
     "copy": "Copier",

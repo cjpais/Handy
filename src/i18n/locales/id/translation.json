@@ -26,6 +26,18 @@
     "showFewerModels": "Tampilkan lebih sedikit model",
     "recommended": "Direkomendasikan",
     "customModelDescription": "Tidak didukung secara resmi",
+    "migration": {
+      "title": "Model Anda perlu diperbarui",
+      "description": "Handy kini menggunakan jenis model yang lebih baru. Unduh versi baru untuk terus mentranskripsi. Versi lama akan dihapus.",
+      "replaces": "Menggantikan {{name}}",
+      "oldFormat": "Format lama",
+      "failed": "Unduhan gagal",
+      "retry": "Coba lagi",
+      "chooseAnother": "Pilih model lain",
+      "download": "Unduh model ({{size}})",
+      "continue": "Lanjutkan",
+      "timeRemaining": "Sisa {{time}}"
+    },
     "modelCard": {
       "accuracy": "akurasi",
       "speed": "kecepatan"
@@ -218,6 +230,13 @@
       "deleteConfirm": "Yakin ingin menghapus {{modelName}}? Anda harus mengunduhnya lagi untuk menggunakannya.",
       "deleteActiveConfirm": "{{modelName}} adalah model aktif Anda. Menghapusnya akan menghentikan transkripsi sampai Anda memilih model baru. Yakin ingin melanjutkan?",
       "deleteTitle": "Hapus Model",
+      "retiredNotice": {
+        "title": "Model lama tidak lagi berfungsi dengan Handy",
+        "description": "Model tersebut memakan {{size}} di komputer Anda.",
+        "delete": "Hapus model",
+        "deleted": "Model lama telah dihapus",
+        "deleteFailed": "Beberapa model lama tidak dapat dihapus. Periksa log untuk detailnya."
+      },
       "filters": {
         "allLanguages": "Semua Bahasa",
         "streaming": "Saring model yang mendukung transkripsi waktu nyata",
@@ -677,6 +696,7 @@
   "common": {
     "loading": "Memuat...",
     "delete": "Hapus",
+    "back": "Kembali",
     "close": "Tutup",
     "open": "Buka",
     "copy": "Salin",

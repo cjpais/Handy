@@ -26,6 +26,18 @@
     "showFewerModels": "Weniger Modelle anzeigen",
     "recommended": "Empfohlen",
     "customModelDescription": "Nicht offiziell unterstützt",
+    "migration": {
+      "title": "Deine Modelle brauchen ein Update",
+      "description": "Handy verwendet jetzt eine neuere Art von Modellen. Lade die neue Version herunter, um weiter zu transkribieren. Alte Versionen werden entfernt.",
+      "replaces": "Ersetzt {{name}}",
+      "oldFormat": "Altes Format",
+      "failed": "Download fehlgeschlagen",
+      "retry": "Erneut versuchen",
+      "chooseAnother": "Anderes Modell wählen",
+      "download": "Modelle herunterladen ({{size}})",
+      "continue": "Weiter",
+      "timeRemaining": "Noch {{time}}"
+    },
     "modelCard": {
       "accuracy": "Genauigkeit",
       "speed": "Geschwindigkeit"
@@ -164,6 +176,13 @@
       "deleteConfirm": "Bist du sicher, dass du {{modelName}} löschen möchtest? Du musst es erneut herunterladen, um es zu verwenden.",
       "deleteActiveConfirm": "{{modelName}} ist dein aktives Modell. Das Löschen stoppt Transkriptionen, bis du ein neues Modell auswählst. Bist du sicher?",
       "deleteTitle": "Modell löschen",
+      "retiredNotice": {
+        "title": "Alte Modelle funktionieren nicht mehr mit Handy",
+        "description": "Sie belegen {{size}} auf deinem Computer.",
+        "delete": "Modelle löschen",
+        "deleted": "Alte Modelle gelöscht",
+        "deleteFailed": "Einige alte Modelle konnten nicht gelöscht werden. Details findest du im Protokoll."
+      },
       "filters": {
         "allLanguages": "Alle Sprachen",
         "streaming": "Modelle filtern, die Live-Transkription unterstützen",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "Wird geladen...",
     "delete": "Löschen",
+    "back": "Zurück",
     "close": "Schließen",
     "open": "Öffnen",
     "copy": "Kopieren",

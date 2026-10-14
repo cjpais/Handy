@@ -26,6 +26,18 @@
     "showFewerModels": "顯示較少模型",
     "recommended": "推薦",
     "customModelDescription": "官方不支援",
+    "migration": {
+      "title": "您的模型需要更新",
+      "description": "Handy 現在使用更新的模型類型。請下載新版本以繼續轉錄。舊版本將會移除。",
+      "replaces": "取代 {{name}}",
+      "oldFormat": "舊格式",
+      "failed": "下載失敗",
+      "retry": "重試",
+      "chooseAnother": "選擇其他模型",
+      "download": "下載模型（{{size}}）",
+      "continue": "繼續",
+      "timeRemaining": "剩餘 {{time}}"
+    },
     "modelCard": {
       "accuracy": "準確度",
       "speed": "速度"
@@ -217,6 +229,13 @@
       "deleteConfirm": "確定要刪除 {{modelName}} 嗎？刪除後須重新下載才能使用",
       "deleteActiveConfirm": "{{modelName}} 是您目前使用的模型。刪除後將停止轉錄，直到您選擇新的模型。確定要刪除嗎？",
       "deleteTitle": "刪除模型",
+      "retiredNotice": {
+        "title": "舊模型已無法在 Handy 中使用",
+        "description": "它們佔用了您電腦上 {{size}} 的空間。",
+        "delete": "刪除模型",
+        "deleted": "已刪除舊模型",
+        "deleteFailed": "部分舊模型無法刪除。請查看記錄檔以了解詳情。"
+      },
       "filters": {
         "allLanguages": "所有語言",
         "streaming": "篩選支援即時轉錄的模型",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "載入中...",
     "delete": "刪除",
+    "back": "返回",
     "close": "關閉",
     "open": "開啟",
     "copy": "複製",

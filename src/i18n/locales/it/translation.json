@@ -26,6 +26,18 @@
     "showFewerModels": "Mostra meno modelli",
     "recommended": "Raccomandato",
     "customModelDescription": "Non ufficialmente supportato",
+    "migration": {
+      "title": "I tuoi modelli devono essere aggiornati",
+      "description": "Handy ora usa un nuovo tipo di modello. Scarica la nuova versione per continuare a trascrivere. Le versioni precedenti verranno rimosse.",
+      "replaces": "Sostituisce {{name}}",
+      "oldFormat": "Formato precedente",
+      "failed": "Download non riuscito",
+      "retry": "Riprova",
+      "chooseAnother": "Scegli un altro modello",
+      "download": "Scarica modelli ({{size}})",
+      "continue": "Continua",
+      "timeRemaining": "{{time}} rimanenti"
+    },
     "modelCard": {
       "accuracy": "accuratezza",
       "speed": "velocità"
@@ -164,6 +176,13 @@
       "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
       "deleteActiveConfirm": "{{modelName}} è il tuo modello attivo. Eliminarlo interromperà le trascrizioni fino a quando non selezionerai un nuovo modello. Sei sicuro?",
       "deleteTitle": "Elimina modello",
+      "retiredNotice": {
+        "title": "I modelli precedenti non funzionano più con Handy",
+        "description": "Occupano {{size}} sul tuo computer.",
+        "delete": "Elimina modelli",
+        "deleted": "Modelli precedenti eliminati",
+        "deleteFailed": "Non è stato possibile eliminare alcuni modelli precedenti. Controlla il log per i dettagli."
+      },
       "filters": {
         "allLanguages": "Tutte le lingue",
         "streaming": "Filtra i modelli che supportano la trascrizione in tempo reale",
@@ -674,6 +693,7 @@
   "common": {
     "loading": "Caricamento...",
     "delete": "Elimina",
+    "back": "Indietro",
     "close": "Chiudi",
     "open": "Apri",
     "copy": "Copia",
