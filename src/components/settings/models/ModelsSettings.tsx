@@ -343,6 +343,8 @@ export const ModelsSettings: React.FC = () => {
                         onKeyDown={(e) => {
                           if (
                             e.key === "Enter" &&
+                            !e.nativeEvent.isComposing &&
+                            e.nativeEvent.keyCode !== 229 &&
                             filteredLanguages.length > 0
                           ) {
                             setLanguageFilter(filteredLanguages[0].value);
