@@ -320,6 +320,7 @@ pub enum TypingTool {
     Dotool,
     Ydotool,
     Xdotool,
+    Ibus,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]

@@ -60,4 +60,8 @@ pub struct CliArgs {
     /// Emit --transcribe-file results as JSON.
     #[arg(long)]
     pub json: bool,
+
+    /// Start as IBus Input Method Engine (Linux only)
+    #[arg(long)]
+    pub ibus_engine: bool,
 }
