@@ -640,6 +640,7 @@
     "portableUpdateBrowseButton": "فتح GitHub Releases"
   },
   "common": {
+    "playbackPosition": "موضع التشغيل",
     "loading": "جاري التحميل...",
     "delete": "حذف",
     "back": "رجوع",

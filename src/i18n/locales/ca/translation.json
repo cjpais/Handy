@@ -643,6 +643,7 @@
     "title": "Novetats del Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Posició de reproducció",
     "loading": "S'està carregant...",
     "delete": "Suprimeix",
     "back": "Enrere",

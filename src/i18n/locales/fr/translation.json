@@ -640,6 +640,7 @@
     "portableUpdateBrowseButton": "Ouvrir GitHub Releases"
   },
   "common": {
+    "playbackPosition": "Position de lecture",
     "loading": "Chargement...",
     "delete": "Supprimer",
     "back": "Retour",

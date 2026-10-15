@@ -643,6 +643,7 @@
     "title": "Handy v{{version}} में नया क्या है"
   },
   "common": {
+    "playbackPosition": "प्लेबैक का स्थान",
     "loading": "लोड हो रहा है...",
     "delete": "हटाएं",
     "back": "वापस",

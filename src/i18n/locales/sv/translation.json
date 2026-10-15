@@ -640,6 +640,7 @@
     "portableUpdateBrowseButton": "Öppna GitHub Releases"
   },
   "common": {
+    "playbackPosition": "Uppspelningsposition",
     "loading": "Laddar...",
     "delete": "Ta bort",
     "back": "Tillbaka",
