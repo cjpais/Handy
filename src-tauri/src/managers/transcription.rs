@@ -16,6 +16,7 @@ use crate::settings::{
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
+use policy::{batch_decode, live_decode, BatchDecode, LiveDecode, ModelTraits};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -26,6 +27,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 use transcribe_cpp::{Backend, RunOptions, StreamOptions, Task, Transcript};
+
+pub mod policy;
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -778,16 +781,20 @@ impl TranscriptionManager {
             caps.supports_translate,
             caps.languages,
         );
-        if !caps.supports_streaming {
-            // Long audio is decoded in chunks as the recording goes, unless
-            // the model handles it in one run.
-            if get_settings(&self.app_handle).long_form_chunking && !info.supports_long_form {
+        match live_decode(
+            ModelTraits::of(&info),
+            get_settings(&self.app_handle).long_form_chunking,
+        ) {
+            LiveDecode::Stream => {}
+            LiveDecode::Chunked => {
                 self.run_chunked_worker(rx, &info, &model_id);
                 return;
             }
-            self.router.clear();
-            drain_until_finalize(rx);
-            return;
+            LiveDecode::None => {
+                self.router.clear();
+                drain_until_finalize(rx);
+                return;
+            }
         }
         // The same run setup as the batch and chunked paths: task + language
         // gated against what the model actually advertises.
@@ -1239,17 +1246,11 @@ impl TranscriptionManager {
     ) -> Result<RunOutcome> {
         let setup = run_setup(&info, settings, validated_language);
 
-        // Long audio is decoded in chunks unless the model handles it in one
-        // run. Streaming models take the whole clip in one run, as before
-        // chunking existed. `mark` covers every chunk, so a cancel between
-        // two stops the rest. A failed chunk fails the whole transcription.
-        let chunks = if settings.long_form_chunking
-            && !info.supports_long_form
-            && !info.capabilities.supports_streaming
-        {
-            self.long_form_chunks(&audio, settings.vad_backend)
-        } else {
-            None
+        // `mark` covers every chunk, so a cancel between two stops the rest.
+        // A failed chunk fails the whole transcription.
+        let chunks = match batch_decode(ModelTraits::of(&info), settings.long_form_chunking) {
+            BatchDecode::Chunked => self.long_form_chunks(&audio, settings.vad_backend),
+            BatchDecode::Whole => None,
         };
         let run = |pcm: Vec<f32>| {
             self.run_batch(mark, pcm, &setup.run_options, active_model)

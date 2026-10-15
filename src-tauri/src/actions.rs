@@ -5,6 +5,7 @@ use crate::audio_toolkit::VadPolicy;
 use crate::managers::audio::{recording_error_type, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
+use crate::managers::transcription::policy::{live_decode, LiveDecode, ModelTraits};
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
@@ -445,9 +446,14 @@ impl ShortcutAction for TranscribeAction {
         } else {
             VadPolicy::Offline
         };
-        // The stream worker also decodes long audio in chunks while a
-        // non-streaming model's recording is still going.
-        if model_supports_streaming || settings.long_form_chunking {
+        // Before the model loads, whether it keeps its accuracy on long audio
+        // is unknown, so assume not: the worker decides again with the loaded
+        // model, and a wrong guess costs only an idle worker.
+        let expected_model = ModelTraits {
+            streaming: model_supports_streaming,
+            long_form: false,
+        };
+        if live_decode(expected_model, settings.long_form_chunking) != LiveDecode::None {
             tm.start_stream();
         }
         let plan_elapsed = plan_started.elapsed();

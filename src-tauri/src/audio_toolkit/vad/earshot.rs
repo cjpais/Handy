@@ -82,10 +82,7 @@ impl SpeechScorer for EarshotVad {
     fn score(&mut self, frames: &[f32]) -> Result<Vec<f32>> {
         check_whole_frames(frames, EARSHOT_FRAME_SAMPLES)?;
         let (frames, _) = frames.as_chunks::<EARSHOT_FRAME_SAMPLES>();
-        frames
-            .iter()
-            .map(|frame| self.score_frame(frame))
-            .collect()
+        frames.iter().map(|frame| self.score_frame(frame)).collect()
     }
 }
 
