@@ -26,9 +26,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
-use transcribe_cpp::{
-    Backend, RunExtension, RunOptions, StreamOptions, Task, Transcript, WhisperRunOptions,
-};
+use transcribe_cpp::{Backend, RunOptions, StreamOptions, Task, Transcript};
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -116,6 +114,8 @@ struct FinalizedStreamText {
     output_language: OutputLanguageEvidence,
     /// The streaming model's supported languages, for text-based detection.
     supported_languages: Vec<String>,
+    /// Custom words went to the model as vocabulary; skip fuzzy correction.
+    custom_words_prompted: bool,
 }
 
 /// Routes real-time audio frames to the active streaming worker. Shared between
@@ -879,6 +879,7 @@ impl TranscriptionManager {
                                 output_language: setup
                                     .output_language(&settings, finalized.language),
                                 supported_languages: setup.languages.clone(),
+                                custom_words_prompted: setup.custom_words_prompted(),
                             }))
                         }
                         Ok(None) => {
@@ -1012,6 +1013,7 @@ impl TranscriptionManager {
                             Ok(Some(FinalizedStreamText {
                                 text,
                                 output_language: setup.output_language(&settings, language),
+                                custom_words_prompted: setup.custom_words_prompted(),
                                 supported_languages: setup.languages,
                             }))
                         }
@@ -1052,12 +1054,11 @@ impl TranscriptionManager {
         };
 
         let settings = get_settings(&self.app_handle);
-        // Streaming models do not receive a decode prompt, so custom words
-        // always go through the shared fuzzy post-correction path.
+        // Skip fuzzy correction if the model already got the custom words.
         let filtered = post_process_transcription_text(
             finalized.text,
             &settings,
-            false,
+            finalized.custom_words_prompted,
             &finalized.output_language,
             &finalized.supported_languages,
         );
@@ -1180,14 +1181,11 @@ impl TranscriptionManager {
         );
         debug!("Output language evidence: {:?}", output_language);
 
-        // Apply fuzzy word correction if custom words are configured — UNLESS the
-        // words were already handed to the model as an initial prompt (whisper
-        // family). We don't pass a prompt to non-whisper models (it requires the
-        // whisper-kind run extension), so they still get fuzzy correction here.
+        // Skip fuzzy correction if the model already got the custom words.
         let filtered_result = post_process_transcription_text(
             run.text,
             &settings,
-            run.model_is_whisper,
+            run.custom_words_prompted,
             &output_language,
             &run.languages,
         );
@@ -1343,12 +1341,8 @@ struct RunOutcome {
     output_was_translated: bool,
     /// The language the model itself detected, if it reported one.
     model_detected_language: Option<String>,
-    /// Whether the loaded model is actually whisper-family (arch string).
-    /// Non-whisper archs (e.g. Voxtral Small) can advertise
-    /// Feature::InitialPrompt yet reject the whisper-kind run extension with
-    /// INVALID_ARG, so the whisper extension must be gated on the arch, not
-    /// on the feature (see #1601).
-    model_is_whisper: bool,
+    /// Custom words went to the model as vocabulary; skip fuzzy correction.
+    custom_words_prompted: bool,
 }
 
 /// How every run of one transcription (each chunk, or a whole clip) is
@@ -1358,10 +1352,14 @@ struct RunSetup {
     languages: Vec<String>,
     applied_language_hint: Option<String>,
     output_was_translated: bool,
-    model_is_whisper: bool,
 }
 
 impl RunSetup {
+    /// Custom words went to the model as vocabulary; skip fuzzy correction.
+    fn custom_words_prompted(&self) -> bool {
+        !self.run_options.vocabulary.is_empty()
+    }
+
     /// What the output language is known to be, given the model's own
     /// detection when it reported one.
     fn output_language(
@@ -1382,51 +1380,31 @@ impl RunSetup {
 
     fn into_outcome(self, text: String, model_detected_language: Option<String>) -> RunOutcome {
         RunOutcome {
+            custom_words_prompted: self.custom_words_prompted(),
             text,
             languages: self.languages,
             applied_language_hint: self.applied_language_hint,
             output_was_translated: self.output_was_translated,
             model_detected_language,
-            model_is_whisper: self.model_is_whisper,
         }
     }
 }
 
 /// The loaded model's live capabilities (cheap GGUF-metadata reads) are the
-/// source of truth, not the ModelManager copy. The whisper run extension is
-/// kind-tagged, so non-whisper archs (parakeet, voxtral, …) reject it with
-/// INVALID_ARG; attach it — and translate — only where supported.
+/// source of truth, not the ModelManager copy; translate is gated on what the
+/// model advertises.
 fn run_setup(info: &LoadedInfo, settings: &AppSettings, validated_language: &str) -> RunSetup {
-    // Whether the model advertises Feature::InitialPrompt. Informational
-    // (logged below); the whisper run extension and the fuzzy-correction
-    // skip are gated on `model_is_whisper` instead, since non-whisper
-    // archs can advertise the feature while rejecting the whisper-kind
-    // extension.
-    let model_takes_initial_prompt = info.supports_initial_prompt;
-    let model_is_whisper = info.arch == "whisper";
     let model_supports_translate = info.capabilities.supports_translate;
     let languages = info.capabilities.languages.clone();
     debug!(
-        "transcribe-cpp model '{}' on '{}': initial_prompt={}, translate={}, languages={:?}",
+        "transcribe-cpp model '{}' on '{}': initial_prompt={}, vocabulary={}, translate={}, languages={:?}",
         settings.selected_model,
         info.backend,
-        model_takes_initial_prompt,
+        info.supports_initial_prompt,
+        info.supports_vocabulary,
         model_supports_translate,
         languages
     );
-
-    // Custom words become the initial prompt ONLY for models that accept
-    // one (whisper family). Attaching the whisper run extension to a
-    // non-whisper arch is rejected with INVALID_ARG, so skip it there and
-    // let the fuzzy post-correction handle custom words instead.
-    let family = if settings.custom_words.is_empty() || !model_is_whisper {
-        None
-    } else {
-        Some(RunExtension::Whisper(WhisperRunOptions {
-            initial_prompt: Some(settings.custom_words.join(", ")),
-            ..Default::default()
-        }))
-    };
 
     let run_plan = transcribe_cpp_run_plan(
         settings.translate_to_english,
@@ -1441,15 +1419,15 @@ fn run_setup(info: &LoadedInfo, settings: &AppSettings, validated_language: &str
         task: run_plan.task,
         language: run_plan.language,
         target_language: run_plan.target_language,
-        family,
+        vocabulary: vocabulary_for_model(info.supports_vocabulary, &settings.custom_words),
         ..Default::default()
     };
 
     debug!(
-        "transcribe-cpp run: task={:?}, language={:?}, initial_prompt={}",
+        "transcribe-cpp run: task={:?}, language={:?}, vocabulary_terms={}",
         run_options.task,
         run_options.language,
-        run_options.family.is_some()
+        run_options.vocabulary.len()
     );
 
     RunSetup {
@@ -1457,7 +1435,6 @@ fn run_setup(info: &LoadedInfo, settings: &AppSettings, validated_language: &str
         languages,
         applied_language_hint,
         output_was_translated,
-        model_is_whisper,
     }
 }
 
@@ -1671,6 +1648,17 @@ fn with_model_detected_language(
             OutputLanguageEvidence::ModelDetected(language)
         }
         (evidence, _) => evidence,
+    }
+}
+
+/// Custom words for transcribe-cpp's `vocabulary` slot, in priority order.
+/// Empty for models without Feature::Vocabulary, which would warn on every run
+/// and rely on fuzzy correction instead.
+fn vocabulary_for_model(supports_vocabulary: bool, custom_words: &[String]) -> Vec<String> {
+    if supports_vocabulary {
+        custom_words.to_vec()
+    } else {
+        Vec::new()
     }
 }
 
@@ -2412,6 +2400,37 @@ mod tests {
         assert!(matches!(plan.task, Task::Transcribe));
         assert_eq!(plan.language.as_deref(), Some("es"));
         assert_eq!(plan.target_language, None);
+    }
+
+    #[test]
+    fn fuzzy_correction_is_skipped_exactly_when_vocabulary_was_sent() {
+        let settings = AppSettings {
+            selected_language: "en".to_string(),
+            custom_words: vec!["Handy".to_string()],
+            ..Default::default()
+        };
+        let evidence = OutputLanguageEvidence::UserSelected("en".to_string());
+        let supported = languages(&["en"]);
+
+        // The model was already prompted with the term: leave its output alone.
+        let prompted = post_process_transcription_text(
+            "i use handy every day".to_string(),
+            &settings,
+            true,
+            &evidence,
+            &supported,
+        );
+        assert_eq!(prompted, "i use handy every day");
+
+        // No vocabulary sent: the fuzzy post-correction fixes the casing.
+        let corrected = post_process_transcription_text(
+            "i use handy every day".to_string(),
+            &settings,
+            false,
+            &evidence,
+            &supported,
+        );
+        assert_eq!(corrected, "i use Handy every day");
     }
 }
 
