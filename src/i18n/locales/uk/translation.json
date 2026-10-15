@@ -16,7 +16,8 @@
     "postProcessing": "Постобробка",
     "history": "Історія",
     "debug": "Дебаг",
-    "about": "Інфо"
+    "about": "Інфо",
+    "close": "Закрити"
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
