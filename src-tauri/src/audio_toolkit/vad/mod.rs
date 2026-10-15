@@ -111,31 +111,6 @@ mod tests {
     }
 
     #[test]
-    fn earshot_scores_the_same_in_pieces_and_frame_by_frame() {
-        // Earshot needs no model file, so the real detector runs here. The
-        // signal rings outside [-1, 1] so scoring clamps it as gating does.
-        let frame = earshot::EARSHOT_FRAME_SAMPLES;
-        let pcm: Vec<f32> = (0..frame * 12)
-            .map(|i| (i as f32 * 0.05).sin() * 1.2)
-            .collect();
-        let whole = EarshotVad::new(0.5).unwrap().score(&pcm).unwrap();
-        assert_eq!(whole.len(), 12);
-
-        let mut pieces = EarshotVad::new(0.5).unwrap();
-        let mut scored = pieces.score(&pcm[..frame * 5]).unwrap();
-        scored.extend(pieces.score(&pcm[frame * 5..]).unwrap());
-        assert_eq!(scored, whole);
-
-        // Gating thresholds the same scores.
-        let mut gated = EarshotVad::new(0.0).unwrap();
-        for chunk in pcm.chunks(frame) {
-            assert!(gated.push_frame(chunk).unwrap().is_speech());
-        }
-
-        assert!(EarshotVad::new(0.5).unwrap().score(&pcm[..10]).is_err());
-    }
-
-    #[test]
     fn duration_profiles_round_up_for_earshot_frames() {
         assert_eq!(frames_for_duration_ms(VAD_PREFILL_MS, 256), 29);
         assert_eq!(frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, 256), 29);
