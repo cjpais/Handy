@@ -102,8 +102,7 @@ struct FinalizedStreamText {
     output_language: OutputLanguageEvidence,
     /// The streaming model's supported languages, for text-based detection.
     supported_languages: Vec<String>,
-    /// Whether the custom words were sent to the model through the vocabulary
-    /// slot (skip the fuzzy post-correction if so).
+    /// Custom words went to the model as vocabulary; skip fuzzy correction.
     custom_words_prompted: bool,
 }
 
@@ -797,8 +796,6 @@ impl TranscriptionManager {
             &languages,
             run_plan.target_language.as_deref() == Some("en"),
         );
-        // Custom words reach a streaming model through the same vocabulary
-        // slot as the batch path (Feature::Vocabulary families only).
         let vocabulary = vocabulary_for_model(info.supports_vocabulary, &settings.custom_words);
         let custom_words_prompted = !vocabulary.is_empty();
         let run_options = RunOptions {
@@ -945,9 +942,7 @@ impl TranscriptionManager {
         };
 
         let settings = get_settings(&self.app_handle);
-        // Streaming models with vocabulary support already got the custom
-        // words as a hint; everyone else goes through the shared fuzzy
-        // post-correction path.
+        // Skip fuzzy correction if the model already got the custom words.
         let filtered = post_process_transcription_text(
             finalized.text,
             &settings,
@@ -1064,10 +1059,7 @@ impl TranscriptionManager {
         );
         debug!("Output language evidence: {:?}", output_language);
 
-        // Apply fuzzy word correction if custom words are configured — UNLESS the
-        // words were already handed to the model through the vocabulary slot
-        // (families advertising Feature::Vocabulary). Models without vocabulary
-        // support still get fuzzy correction here.
+        // Skip fuzzy correction if the model already got the custom words.
         let filtered_result = post_process_transcription_text(
             run.text,
             &settings,
@@ -1112,9 +1104,7 @@ impl TranscriptionManager {
     /// transcribe-cpp: the model runs in the engine's worker process, which
     /// recovers from crashes and hangs itself. The loaded model's live
     /// capabilities (cheap GGUF-metadata reads) are the source of truth, not
-    /// the ModelManager copy. Custom words reach the model through the generic
-    /// vocabulary slot when the family supports it (Feature::Vocabulary);
-    /// translate is likewise gated on what the model advertises.
+    /// the ModelManager copy; translate is gated on what the model advertises.
     fn transcribe_cpp(
         &self,
         info: LoadedInfo,
@@ -1126,11 +1116,6 @@ impl TranscriptionManager {
         let model_supports_translate = info.capabilities.supports_translate;
         let languages = info.capabilities.languages;
 
-        // Custom words go to the model through transcribe-cpp's generic
-        // vocabulary slot (formatted per family) when it advertises
-        // Feature::Vocabulary; those runs skip the fuzzy post-correction.
-        // Unsupported models never see the slot — it would WARN on every run —
-        // and keep the fuzzy post-correction path instead.
         let vocabulary = vocabulary_for_model(info.supports_vocabulary, &settings.custom_words);
         let custom_words_prompted = !vocabulary.is_empty();
 
@@ -1202,9 +1187,7 @@ struct RunOutcome {
     output_was_translated: bool,
     /// The language the model itself detected, if it reported one.
     model_detected_language: Option<String>,
-    /// Whether the custom words were sent to the model through the vocabulary
-    /// slot. When true, the fuzzy custom-word post-correction is skipped —
-    /// the model was already prompted with the terms.
+    /// Custom words went to the model as vocabulary; skip fuzzy correction.
     custom_words_prompted: bool,
 }
 
@@ -1402,13 +1385,9 @@ fn with_model_detected_language(
     }
 }
 
-/// Custom words for transcribe-cpp's generic `vocabulary` slot, shared by the
-/// batch and live streaming paths. Terms are passed in priority order and
-/// formatted per model family (e.g. `Glossary: {terms}` for whisper), but only
-/// when the model advertises Feature::Vocabulary (whisper, qwen3_asr,
-/// funasr_nano, granite, moss): unsupported models ignore the slot with a WARN
-/// on every run, so they get an empty vocabulary and rely on the fuzzy
-/// post-correction instead.
+/// Custom words for transcribe-cpp's `vocabulary` slot, in priority order.
+/// Empty for models without Feature::Vocabulary, which would warn on every run
+/// and rely on fuzzy correction instead.
 fn vocabulary_for_model(supports_vocabulary: bool, custom_words: &[String]) -> Vec<String> {
     if supports_vocabulary {
         custom_words.to_vec()
@@ -2155,17 +2134,6 @@ mod tests {
         assert!(matches!(plan.task, Task::Transcribe));
         assert_eq!(plan.language.as_deref(), Some("es"));
         assert_eq!(plan.target_language, None);
-    }
-
-    #[test]
-    fn vocabulary_is_set_only_for_supporting_models() {
-        let words = vec!["Handy".to_string(), "WhisperBoard".to_string()];
-
-        assert_eq!(vocabulary_for_model(true, &words), words);
-        // Unsupported models never see the slot, so no per-run WARN.
-        assert!(vocabulary_for_model(false, &words).is_empty());
-        assert!(vocabulary_for_model(true, &[]).is_empty());
-        assert!(vocabulary_for_model(false, &[]).is_empty());
     }
 
     #[test]
