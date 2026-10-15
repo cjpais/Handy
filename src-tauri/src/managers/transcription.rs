@@ -1,5 +1,4 @@
 use crate::audio_toolkit::chunking::{self, Chunker};
-use crate::audio_toolkit::vad::score_clip;
 use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
     remove_filler_words, FrameScores, OutputLanguageEvidence,
@@ -9,10 +8,11 @@ use crate::engine_supervisor::{
     CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
     StreamProgress, Unloading,
 };
-use crate::managers::audio::{silero_vad_path, AudioRecordingManager};
+use crate::managers::audio::{create_detector, AudioRecordingManager};
 use crate::managers::model::ModelManager;
 use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
+    VadBackend,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
@@ -799,31 +799,13 @@ impl TranscriptionManager {
             drain_until_finalize(rx);
             return;
         }
-        let languages = caps.languages.clone();
-
-        // Build run options mirroring the offline transcribe-cpp path: task +
-        // language gated against what the model actually advertises.
+        // The same run setup as the batch and chunked paths: task + language
+        // gated against what the model actually advertises.
         let settings = get_settings(&self.app_handle);
         let effective_language =
             effective_language_for_model(&settings, self.model_manager.as_ref(), &model_id);
-        let run_plan = transcribe_cpp_run_plan(
-            settings.translate_to_english,
-            &effective_language,
-            &languages,
-            caps.supports_translate,
-        );
-        let output_language = resolve_output_language_evidence(
-            &settings,
-            run_plan.language.as_deref(),
-            &languages,
-            run_plan.target_language.as_deref() == Some("en"),
-        );
-        let run_options = RunOptions {
-            task: run_plan.task,
-            language: run_plan.language,
-            target_language: run_plan.target_language,
-            ..Default::default()
-        };
+        let setup = run_setup(&info, &settings, &effective_language);
+        let output_language = setup.output_language(&settings, None);
 
         // Feed results arrive on the engine's thread; this callback only
         // converts and emits preview text.
@@ -831,7 +813,7 @@ impl TranscriptionManager {
         let on_progress = {
             let perf = Arc::clone(&perf);
             let app_handle = self.app_handle.clone();
-            let languages = languages.clone();
+            let languages = setup.languages.clone();
             let mut preview_script = PreviewScript::new(settings.chinese_script, &output_language);
             move |progress: StreamProgress| {
                 let mut perf = lock_perf(&perf);
@@ -852,19 +834,19 @@ impl TranscriptionManager {
         // result, and the caller falls back to batch transcription. StreamOptions::default()
         // uses CommitPolicy::Auto and lets the family pick its own streaming
         // strategy (no family-specific ext).
-        let stream =
-            match self
-                .engine
-                .start_stream(run_options, StreamOptions::default(), on_progress)
-            {
-                Ok(stream) => stream,
-                Err(e) => {
-                    error!("Failed to begin stream: {}", e);
-                    self.forget_model_if_engine_dropped(&model_id, &e.to_string());
-                    drain_until_finalize(rx);
-                    return;
-                }
-            };
+        let stream = match self.engine.start_stream(
+            setup.run_options.clone(),
+            StreamOptions::default(),
+            on_progress,
+        ) {
+            Ok(stream) => stream,
+            Err(e) => {
+                error!("Failed to begin stream: {}", e);
+                self.forget_model_if_engine_dropped(&model_id, &e.to_string());
+                drain_until_finalize(rx);
+                return;
+            }
+        };
 
         self.stream_active.store(true, Ordering::Release);
         self.touch_activity();
@@ -892,17 +874,11 @@ impl TranscriptionManager {
                             let mut perf = lock_perf(&perf);
                             perf.record_compute(finalized.elapsed);
                             perf.record_update(&finalized.update);
-                            let output_language = match &output_language {
-                                OutputLanguageEvidence::Unknown => with_model_detected_language(
-                                    OutputLanguageEvidence::Unknown,
-                                    finalized.language,
-                                ),
-                                resolved => resolved.clone(),
-                            };
                             Ok(Some(FinalizedStreamText {
                                 text: finalized.text.full,
-                                output_language,
-                                supported_languages: languages.clone(),
+                                output_language: setup
+                                    .output_language(&settings, finalized.language),
+                                supported_languages: setup.languages.clone(),
                             }))
                         }
                         Ok(None) => {
@@ -1123,6 +1099,10 @@ impl TranscriptionManager {
             ));
         }
 
+        // A cancel from here on (during the model-load wait or chunk planning
+        // included) stops every run of this transcription.
+        let mark = self.engine.cancel_mark();
+
         // Update last activity timestamp
         self.touch_activity();
 
@@ -1180,8 +1160,14 @@ impl TranscriptionManager {
                 "Model failed to load after auto-load attempt. Please check your model settings."
             ));
         };
-        let run =
-            self.transcribe_cpp(info, audio, &settings, &validated_language, &active_model)?;
+        let run = self.transcribe_cpp(
+            mark,
+            info,
+            audio,
+            &settings,
+            &validated_language,
+            &active_model,
+        )?;
 
         let output_language = with_model_detected_language(
             resolve_output_language_evidence(
@@ -1244,6 +1230,7 @@ impl TranscriptionManager {
     /// chunks cut at pauses, unless the model handles it in one run.
     fn transcribe_cpp(
         &self,
+        mark: CancelMark,
         info: LoadedInfo,
         audio: Vec<f32>,
         settings: &AppSettings,
@@ -1254,18 +1241,16 @@ impl TranscriptionManager {
 
         // Long audio is decoded in chunks unless the model handles it in one
         // run. Streaming models take the whole clip in one run, as before
-        // chunking existed. One cancel mark covers every chunk, so a cancel
-        // between two stops the rest. A failed chunk fails the whole
-        // transcription.
+        // chunking existed. `mark` covers every chunk, so a cancel between
+        // two stops the rest. A failed chunk fails the whole transcription.
         let chunks = if settings.long_form_chunking
             && !info.supports_long_form
             && !info.capabilities.supports_streaming
         {
-            self.long_form_chunks(&audio)
+            self.long_form_chunks(&audio, settings.vad_backend)
         } else {
             None
         };
-        let mark = self.engine.cancel_mark();
         let run = |pcm: Vec<f32>| {
             self.run_batch(mark, pcm, &setup.run_options, active_model)
                 .map_err(|e| match e {
@@ -1313,19 +1298,26 @@ impl TranscriptionManager {
     }
 
     /// Where to cut long audio for a model that doesn't handle it in one run:
-    /// at pauses Silero finds, about 30 s apart. `None` decodes it in one
-    /// piece: audio of 40 s or less, or audio Silero can't score.
-    fn long_form_chunks(&self, audio: &[f32]) -> Option<Vec<Range<usize>>> {
+    /// at pauses the selected VAD backend finds, about 30 s apart, as a
+    /// recording's chunks are. `None` decodes it in one piece: audio of 40 s
+    /// or less, or audio the VAD can't score.
+    fn long_form_chunks(&self, audio: &[f32], backend: VadBackend) -> Option<Vec<Range<usize>>> {
         if audio.len() <= chunking::MAX_CHUNK_SAMPLES {
             return None;
         }
         let started = Instant::now();
-        let scored = silero_vad_path(&self.app_handle).and_then(|path| score_clip(&path, audio));
+        let scored = create_detector(backend, &self.app_handle).and_then(|mut detector| {
+            let frame_samples = detector.frame_samples();
+            detector
+                .score_clip(audio)
+                .map(|probs| (probs, frame_samples))
+        });
         match scored {
             Ok((probs, frame_samples)) => {
                 debug!(
-                    "Scored {:.1}s of audio for long-form chunking in {:?}",
+                    "Scored {:.1}s of audio with {:?} VAD for long-form chunking in {:?}",
                     audio.len() as f64 / 16_000.0,
+                    backend,
                     started.elapsed()
                 );
                 Some(chunking::plan_chunks(&probs, frame_samples, audio.len()))

@@ -323,7 +323,7 @@ pub fn recording_error_type(error: &anyhow::Error) -> &'static str {
 /* ──────────────────────────────────────────────────────────────── */
 
 /// The bundled Silero VAD model.
-pub fn silero_vad_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, anyhow::Error> {
+fn silero_vad_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, anyhow::Error> {
     app_handle
         .path()
         .resolve(
@@ -333,11 +333,14 @@ pub fn silero_vad_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, anyhow:
         .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {e}"))
 }
 
-fn create_capture_vad(
+/// A fresh detector for `backend`, without Handy's smoothing: what a
+/// recording's VAD wraps, and what scores whole clips for long-form chunking,
+/// so every path uses the selected backend.
+pub fn create_detector(
     backend: VadBackend,
     app_handle: &tauri::AppHandle,
-) -> Result<CaptureVad, anyhow::Error> {
-    let detector: Box<dyn VoiceActivityDetector> = match backend {
+) -> Result<Box<dyn VoiceActivityDetector>, anyhow::Error> {
+    Ok(match backend {
         VadBackend::Silero => {
             let vad_path = silero_vad_path(app_handle)?;
             Box::new(
@@ -349,7 +352,14 @@ fn create_capture_vad(
             EarshotVad::new(EARSHOT_VAD_THRESHOLD)
                 .map_err(|e| anyhow::anyhow!("Failed to create EarshotVad: {e}"))?,
         ),
-    };
+    })
+}
+
+fn create_capture_vad(
+    backend: VadBackend,
+    app_handle: &tauri::AppHandle,
+) -> Result<CaptureVad, anyhow::Error> {
+    let detector = create_detector(backend, app_handle)?;
 
     // Earshot uses 16 ms frames while Silero uses 32 ms. Convert the existing
     // time-based capture profile to each detector's frame size so selecting a

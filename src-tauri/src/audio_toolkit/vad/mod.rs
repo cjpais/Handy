@@ -67,6 +67,26 @@ pub trait VoiceActivityDetector: Send + Sync {
     }
 
     fn reset(&mut self) {}
+
+    /// The speech probability of each frame of a whole clip, the last frame
+    /// zero padded, from a fresh state (so a recording's detector is reset).
+    /// Frame by frame unless the detector can score a clip in one go.
+    fn score_clip(&mut self, pcm: &[f32]) -> Result<Vec<f32>> {
+        self.reset();
+        let frame_samples = self.frame_samples();
+        let mut probs = Vec::with_capacity(pcm.len().div_ceil(frame_samples));
+        let mut padded = vec![0.0; frame_samples];
+        for frame in pcm.chunks(frame_samples) {
+            let frame = if frame.len() == frame_samples {
+                frame
+            } else {
+                padded[..frame.len()].copy_from_slice(frame);
+                &padded
+            };
+            probs.push(self.push_frame(frame)?.frame_prob());
+        }
+        Ok(probs)
+    }
 }
 
 /// End-of-recording snapshot of a smoothing detector's state. Voiced frames
@@ -90,7 +110,7 @@ mod silero;
 mod smoothed;
 
 pub use earshot::EarshotVad;
-pub use silero::{score_clip, SileroVad};
+pub use silero::SileroVad;
 pub use smoothed::SmoothedVad;
 
 #[cfg(test)]
@@ -103,6 +123,44 @@ mod tests {
         assert_eq!(frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, 512), 15);
         assert_eq!(frames_for_duration_ms(VAD_STREAMING_HANGOVER_MS, 512), 52);
         assert_eq!(frames_for_duration_ms(VAD_ONSET_MS, 512), 2);
+    }
+
+    /// Scores each frame with the sum of its samples, so padding shows.
+    struct SummingVad;
+
+    impl VoiceActivityDetector for SummingVad {
+        fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
+            assert_eq!(frame.len(), 4, "every frame is whole");
+            Ok(VadFrame::Noise {
+                prob: frame.iter().sum(),
+            })
+        }
+
+        fn frame_samples(&self) -> usize {
+            4
+        }
+    }
+
+    #[test]
+    fn score_clip_scores_every_frame_padding_the_last() {
+        let pcm = [1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0];
+        assert_eq!(SummingVad.score_clip(&pcm).unwrap(), vec![4.0, 8.0, 6.0]);
+        assert!(SummingVad.score_clip(&[]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn score_clip_matches_a_detector_fed_frame_by_frame() {
+        // Earshot needs no model file, so the real detector runs here.
+        let pcm: Vec<f32> = (0..EarshotVad::new(0.5).unwrap().frame_samples() * 6)
+            .map(|i| (i as f32 * 0.05).sin() * 0.3)
+            .collect();
+        let probs = EarshotVad::new(0.5).unwrap().score_clip(&pcm).unwrap();
+        let mut fed = EarshotVad::new(0.5).unwrap();
+        let expected: Vec<f32> = pcm
+            .chunks(fed.frame_samples())
+            .map(|frame| fed.push_frame(frame).unwrap().frame_prob())
+            .collect();
+        assert_eq!(probs, expected);
     }
 
     #[test]

@@ -65,17 +65,6 @@ fn open_session(model_path: &Path) -> Result<(VadSession, usize)> {
     Ok((session, info.frame_samples as usize))
 }
 
-/// Silero's speech probability for each frame of a whole clip (the last frame
-/// zero padded), and the frame size in samples. Uses its own session, so it
-/// never disturbs a recording's detector.
-pub fn score_clip(model_path: &Path, pcm: &[f32]) -> Result<(Vec<f32>, usize)> {
-    let (mut session, frame_samples) = open_session(model_path)?;
-    let result = session
-        .run(pcm, &VadOptions::default())
-        .map_err(|e| anyhow::anyhow!("Silero VAD error: {e}"))?;
-    Ok((result.probs, frame_samples))
-}
-
 impl SileroVad {
     pub fn new<P: AsRef<Path>>(model_path: P, threshold: f32) -> Result<Self> {
         if !(0.0..=1.0).contains(&threshold) {
@@ -140,5 +129,49 @@ impl VoiceActivityDetector for SileroVad {
             .get_mut()
             .unwrap_or_else(PoisonError::into_inner)
             .stream_reset();
+    }
+
+    /// One native call for the whole clip: the same probabilities as frame
+    /// by frame (and the same state reset), several times faster.
+    fn score_clip(&mut self, pcm: &[f32]) -> Result<Vec<f32>> {
+        let result = self
+            .session
+            .get_mut()
+            .unwrap_or_else(PoisonError::into_inner)
+            .run(pcm, &VadOptions::default())
+            .map_err(|e| anyhow::anyhow!("Silero VAD error: {e}"))?;
+        Ok(result.probs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Needs the bundled model (see AGENTS.md); run with `--ignored`.
+    #[test]
+    #[ignore]
+    fn clip_scores_match_frame_by_frame() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/resources/models/silero-vad-v6.2-F32.gguf"
+        );
+        // A partial last frame checks the padding matches too.
+        let pcm: Vec<f32> = (0..16_000 * 20 + 100)
+            .map(|i| (i as f32 * 0.013).sin() * (i as f32 * 0.0007).cos() * 0.2)
+            .collect();
+        let clip = SileroVad::new(path, 0.3).unwrap().score_clip(&pcm).unwrap();
+
+        let mut vad = SileroVad::new(path, 0.3).unwrap();
+        let frame = vad.frame_samples();
+        let fed: Vec<f32> = pcm
+            .chunks(frame)
+            .map(|chunk| {
+                let mut padded = chunk.to_vec();
+                padded.resize(frame, 0.0);
+                vad.push_frame(&padded).unwrap().frame_prob()
+            })
+            .collect();
+        assert_eq!(clip, fed);
     }
 }
