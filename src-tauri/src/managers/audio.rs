@@ -12,7 +12,6 @@ use crate::settings::{get_settings, write_settings, AppSettings, VadBackend};
 use crate::utils;
 use handy_recorder::{Channels, EndReason, ErrorKind, Recorder, RecorderConfig, StartError};
 use log::{debug, error, info, trace, warn};
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -322,17 +321,6 @@ pub fn recording_error_type(error: &anyhow::Error) -> &'static str {
 
 /* ──────────────────────────────────────────────────────────────── */
 
-/// The bundled Silero VAD model.
-fn silero_vad_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, anyhow::Error> {
-    app_handle
-        .path()
-        .resolve(
-            "resources/models/silero-vad-v6.2-F32.gguf",
-            tauri::path::BaseDirectory::Resource,
-        )
-        .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {e}"))
-}
-
 /// A fresh detector for `backend`, without Handy's smoothing: what a
 /// recording's VAD wraps, and what scores audio for long-form chunking, so
 /// every path uses the selected backend.
@@ -342,7 +330,13 @@ pub fn create_detector(
 ) -> Result<Box<dyn SpeechScorer>, anyhow::Error> {
     Ok(match backend {
         VadBackend::Silero => {
-            let vad_path = silero_vad_path(app_handle)?;
+            let vad_path = app_handle
+                .path()
+                .resolve(
+                    "resources/models/silero-vad-v6.2-F32.gguf",
+                    tauri::path::BaseDirectory::Resource,
+                )
+                .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {e}"))?;
             Box::new(
                 SileroVad::new(vad_path, SILERO_VAD_THRESHOLD)
                     .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {e}"))?,

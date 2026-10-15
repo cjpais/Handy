@@ -4,7 +4,7 @@
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
-use log::{error, info};
+use log::{debug, error, info};
 use transcribe_cpp::StreamOptions;
 
 use super::chunked::ChunkedDecode;
@@ -97,7 +97,7 @@ fn finish_chunks(
 ) -> Result<Option<Decoded>, EngineError> {
     // A failure stops the decode short of the recording; report the failure.
     if chunks.samples() != recorded_samples && !chunks.failed() {
-        info!(
+        debug!(
             "Live chunks saw {} of the recording's {} samples; transcribing it in batch",
             chunks.samples(),
             recorded_samples
