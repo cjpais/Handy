@@ -478,7 +478,18 @@ impl ShortcutAction for TranscribeAction {
                     "Recording request accepted in {:?}; waiting for first microphone samples",
                     recording_start_time.elapsed()
                 );
+
+                // Muting only after the start chime lets whatever is playing
+                // (e.g. speech in a video) leak into the first moments of the
+                // recording. With mute_immediately, mute as soon as capture
+                // starts and skip the chime, which would be silenced by the
+                // mute anyway.
+                let mute_immediately = settings.mute_while_recording && settings.mute_immediately;
                 let generation = readiness.generation();
+                if mute_immediately && rm.is_recording_readiness_current(generation) {
+                    rm.apply_mute();
+                }
+
                 let app_clone = app.clone();
                 let rm_clone = Arc::clone(&rm);
                 std::thread::spawn(move || {
@@ -514,7 +525,7 @@ impl ShortcutAction for TranscribeAction {
                     // first real input callback rather than Stream::play() or a
                     // fixed delay. The helper returns immediately when feedback
                     // is disabled; mute still follows the same readiness point.
-                    if rm_clone.is_recording_readiness_current(generation) {
+                    if !mute_immediately && rm_clone.is_recording_readiness_current(generation) {
                         play_feedback_sound_blocking(&app_clone, SoundType::Start);
                     }
                     if rm_clone.is_recording_readiness_current(generation) {
