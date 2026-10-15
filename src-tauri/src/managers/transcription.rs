@@ -967,11 +967,17 @@ impl TranscriptionManager {
                 match self.run_batch(mark, chunk, &setup.run_options, model_id) {
                     Ok(transcript) => {
                         transcripts.push(transcript);
+                        let audio_secs = len as f64 / 16_000.0;
+                        // Real-time factor: audio seconds decoded per second
+                        // of wall clock. Floored so a near-instant decode
+                        // reports a large factor instead of infinity.
+                        let elapsed_secs = started.elapsed().as_secs_f64().max(1e-6);
                         info!(
-                            "Decoded long-form chunk {} ({:.1}s of audio) in {:.2}s",
+                            "Decoded long-form chunk {} ({:.1}s of audio) in {:.2}s ({:.0}x real time)",
                             transcripts.len(),
-                            len as f64 / 16_000.0,
-                            started.elapsed().as_secs_f64()
+                            audio_secs,
+                            elapsed_secs,
+                            audio_secs / elapsed_secs
                         );
                     }
                     Err(e) => {
@@ -1234,9 +1240,8 @@ impl TranscriptionManager {
     }
 
     /// transcribe-cpp: the model runs in the engine's worker process, which
-    /// recovers from crashes and hangs itself. Streaming models take the clip
-    /// through their stream; other long audio is decoded in chunks cut at
-    /// pauses, unless the model handles it in one run.
+    /// recovers from crashes and hangs itself. Long audio is decoded in
+    /// chunks cut at pauses, unless the model handles it in one run.
     fn transcribe_cpp(
         &self,
         info: LoadedInfo,
@@ -1247,35 +1252,15 @@ impl TranscriptionManager {
     ) -> Result<RunOutcome> {
         let setup = run_setup(&info, settings, validated_language);
 
-        // Streaming models never take a whole clip in one run: it goes through
-        // their stream, as a recording would. If that fails, chunked batch is
-        // the last resort.
-        if info.capabilities.supports_streaming {
-            let want_language = matches!(
-                setup.output_language(settings, None),
-                OutputLanguageEvidence::Unknown
-            );
-            match self.stream_clip(&audio, &setup.run_options, want_language, active_model) {
-                Ok(Some((text, language))) => {
-                    info!(
-                        "Transcribed {:.1}s of audio through the model's stream",
-                        audio.len() as f64 / 16_000.0
-                    );
-                    return Ok(setup.into_outcome(text, language));
-                }
-                Ok(None) => warn!("Streaming the clip failed; transcribing it in batch"),
-                Err(EngineError::Cancelled) => return Err(EngineError::Cancelled.into()),
-                Err(e) => warn!(
-                    "Streaming the clip failed ({}); transcribing it in batch",
-                    e
-                ),
-            }
-        }
-
         // Long audio is decoded in chunks unless the model handles it in one
-        // run. One cancel mark covers every chunk, so a cancel between two
-        // stops the rest. A failed chunk fails the whole transcription.
-        let chunks = if settings.long_form_chunking && !info.supports_long_form {
+        // run. Streaming models take the whole clip in one run, as before
+        // chunking existed. One cancel mark covers every chunk, so a cancel
+        // between two stops the rest. A failed chunk fails the whole
+        // transcription.
+        let chunks = if settings.long_form_chunking
+            && !info.supports_long_form
+            && !info.capabilities.supports_streaming
+        {
             self.long_form_chunks(&audio)
         } else {
             None
@@ -1327,37 +1312,6 @@ impl TranscriptionManager {
             })
     }
 
-    /// A whole clip through a streaming model's stream, fed in pieces as a
-    /// recording would be. Returns its text and, when asked for, the model's
-    /// detected language; `Ok(None)` if the stream was lost or failed.
-    fn stream_clip(
-        &self,
-        audio: &[f32],
-        run_options: &RunOptions,
-        want_language: bool,
-        active_model: &str,
-    ) -> Result<Option<(String, Option<String>)>, EngineError> {
-        let stream =
-            match self
-                .engine
-                .start_stream(run_options.clone(), StreamOptions::default(), |_| {})
-            {
-                Ok(stream) => stream,
-                Err(EngineError::Cancelled) => return Err(EngineError::Cancelled),
-                Err(e) => {
-                    self.forget_model_if_engine_dropped(active_model, &e.to_string());
-                    warn!("Failed to begin a stream for the clip: {}", e);
-                    return Ok(None);
-                }
-            };
-        for piece in audio.chunks(STREAM_CLIP_FEED_SAMPLES) {
-            stream.feed(piece.to_vec());
-        }
-        Ok(stream
-            .finalize(want_language)?
-            .map(|finalized| (finalized.text.full, finalized.language)))
-    }
-
     /// Where to cut long audio for a model that doesn't handle it in one run:
     /// at pauses Silero finds, about 30 s apart. `None` decodes it in one
     /// piece: audio of 40 s or less, or audio Silero can't score.
@@ -1404,9 +1358,6 @@ struct RunOutcome {
     /// on the feature (see #1601).
     model_is_whisper: bool,
 }
-
-/// A whole clip goes through a streaming model's stream in pieces this long.
-const STREAM_CLIP_FEED_SAMPLES: usize = 16_000;
 
 /// How every run of one transcription (each chunk, or a whole clip) is
 /// configured on the loaded model, and what post-processing needs to know.
