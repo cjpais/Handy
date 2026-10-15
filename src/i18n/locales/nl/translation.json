@@ -355,6 +355,10 @@
         "title": "Spraakactiviteitsdetectie (VAD)",
         "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."
       },
+      "longFormChunking": {
+        "title": "Lange audio opsplitsen",
+        "description": "Splitst lange opnames bij pauzes op voordat ze worden getranscribeerd, wat de transcriptie doorgaans verbetert."
+      },
       "vadBackend": {
         "title": "VAD-backend",
         "description": "Kies de detector die stilte filtert. Earshot is experimenteel; schakel terug naar Silero als spraak wordt afgekapt of ruis behouden blijft.",

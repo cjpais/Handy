@@ -2,7 +2,9 @@ use anyhow::Result;
 use std::path::Path;
 use std::sync::{Mutex, OnceLock, PoisonError};
 
-use transcribe_cpp::{Backend, BackendMask, Model, ModelOptions, VadSession, VadSessionOptions};
+use transcribe_cpp::{
+    Backend, BackendMask, Model, ModelOptions, VadOptions, VadSession, VadSessionOptions,
+};
 
 use super::{VadFrame, VoiceActivityDetector};
 use crate::audio_toolkit::constants;
@@ -13,6 +15,8 @@ pub struct SileroVad {
     session: Mutex<VadSession>,
     frame_samples: usize,
     threshold: f32,
+    /// The last frame's probability, lent out with a speech frame.
+    last_prob: f32,
 }
 
 /// Register transcribe.cpp's CPU backends once per process. The allowed mask
@@ -30,42 +34,60 @@ fn init_cpu_backends() -> Result<()> {
     .map_err(|e| anyhow::anyhow!("Failed to initialize transcribe.cpp CPU backend: {e}"))
 }
 
+/// Load the Silero model on CPU and open a single-threaded session on it.
+/// Returns the session and its frame size in samples.
+fn open_session(model_path: &Path) -> Result<(VadSession, usize)> {
+    init_cpu_backends()?;
+    let model = Model::load_with(
+        model_path,
+        &ModelOptions {
+            backend: Backend::Cpu,
+            device: None,
+        },
+    )
+    .map_err(|e| anyhow::anyhow!("Failed to load VAD model: {e}"))?;
+
+    let info = model
+        .vad_info()
+        .map_err(|e| anyhow::anyhow!("Model does not support VAD: {e}"))?;
+    if info.sample_rate != constants::WHISPER_SAMPLE_RATE as i32 || info.frame_samples <= 0 {
+        anyhow::bail!(
+            "unsupported VAD model: {} Hz, {} samples per frame",
+            info.sample_rate,
+            info.frame_samples
+        );
+    }
+
+    // The session keeps the native model alive on its own.
+    let session = model
+        .vad_session_with(&VadSessionOptions { n_threads: 1 })
+        .map_err(|e| anyhow::anyhow!("Failed to create VAD session: {e}"))?;
+    Ok((session, info.frame_samples as usize))
+}
+
+/// Silero's speech probability for each frame of a whole clip (the last frame
+/// zero padded), and the frame size in samples. Uses its own session, so it
+/// never disturbs a recording's detector.
+pub fn score_clip(model_path: &Path, pcm: &[f32]) -> Result<(Vec<f32>, usize)> {
+    let (mut session, frame_samples) = open_session(model_path)?;
+    let result = session
+        .run(pcm, &VadOptions::default())
+        .map_err(|e| anyhow::anyhow!("Silero VAD error: {e}"))?;
+    Ok((result.probs, frame_samples))
+}
+
 impl SileroVad {
     pub fn new<P: AsRef<Path>>(model_path: P, threshold: f32) -> Result<Self> {
         if !(0.0..=1.0).contains(&threshold) {
             anyhow::bail!("threshold must be between 0.0 and 1.0");
         }
 
-        init_cpu_backends()?;
-        let model = Model::load_with(
-            model_path.as_ref(),
-            &ModelOptions {
-                backend: Backend::Cpu,
-                device: None,
-            },
-        )
-        .map_err(|e| anyhow::anyhow!("Failed to load VAD model: {e}"))?;
-
-        let info = model
-            .vad_info()
-            .map_err(|e| anyhow::anyhow!("Model does not support VAD: {e}"))?;
-        if info.sample_rate != constants::WHISPER_SAMPLE_RATE as i32 || info.frame_samples <= 0 {
-            anyhow::bail!(
-                "unsupported VAD model: {} Hz, {} samples per frame",
-                info.sample_rate,
-                info.frame_samples
-            );
-        }
-
-        // The session keeps the native model alive on its own.
-        let session = model
-            .vad_session_with(&VadSessionOptions { n_threads: 1 })
-            .map_err(|e| anyhow::anyhow!("Failed to create VAD session: {e}"))?;
-
+        let (session, frame_samples) = open_session(model_path.as_ref())?;
         Ok(Self {
             session: Mutex::new(session),
-            frame_samples: info.frame_samples as usize,
+            frame_samples,
             threshold,
+            last_prob: 0.0,
         })
     }
 }
@@ -97,9 +119,13 @@ impl VoiceActivityDetector for SileroVad {
         };
 
         if prob > self.threshold {
-            Ok(VadFrame::Speech(frame))
+            self.last_prob = prob;
+            Ok(VadFrame::Speech {
+                samples: frame,
+                probs: std::slice::from_ref(&self.last_prob),
+            })
         } else {
-            Ok(VadFrame::Noise)
+            Ok(VadFrame::Noise { prob })
         }
     }
 

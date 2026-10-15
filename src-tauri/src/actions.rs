@@ -445,7 +445,9 @@ impl ShortcutAction for TranscribeAction {
         } else {
             VadPolicy::Offline
         };
-        if model_supports_streaming {
+        // The stream worker also decodes long audio in chunks while a
+        // non-streaming model's recording is still going.
+        if model_supports_streaming || settings.long_form_chunking {
             tm.start_stream();
         }
         let plan_elapsed = plan_started.elapsed();
@@ -638,10 +640,11 @@ impl ShortcutAction for TranscribeAction {
                     });
 
                     // Transcribe concurrently with WAV save. If a live stream was
-                    // running, finalize it and use its text (all audio was already
-                    // fed to the stream); otherwise batch-transcribe the samples.
+                    // running (or live chunks were decoding), finalize it and use
+                    // its text (all audio was already fed to it); otherwise
+                    // batch-transcribe the samples.
                     let transcription_time = Instant::now();
-                    let transcription_result = match tm.finalize_stream() {
+                    let transcription_result = match tm.finalize_stream(sample_count) {
                         // A finalized stream with usable text wins. An empty result
                         // (no active stream, produced nothing, or the stream failed
                         // or its worker crashed) falls back to a full batch

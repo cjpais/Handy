@@ -355,6 +355,10 @@
         "title": "Deteksi Aktivitas Suara",
         "description": "Saring keheningan dari rekaman. Model yang mendukung streaming menggunakan ekor VAD yang lebih panjang; menonaktifkan VAD akan merekam audio mentah."
       },
+      "longFormChunking": {
+        "title": "Pemisahan Audio Panjang",
+        "description": "Memisahkan rekaman panjang pada jeda sebelum ditranskripsi, yang biasanya meningkatkan kinerja transkripsi."
+      },
       "vadBackend": {
         "title": "Backend Deteksi Aktivitas Suara",
         "description": "Pilih detektor yang digunakan untuk menyaring keheningan. Earshot bersifat eksperimental; kembali ke Silero jika ucapan terpotong atau kebisingan tetap terekam.",

@@ -12,6 +12,7 @@ use crate::settings::{get_settings, write_settings, AppSettings, VadBackend};
 use crate::utils;
 use handy_recorder::{Channels, EndReason, ErrorKind, Recorder, RecorderConfig, StartError};
 use log::{debug, error, info, trace, warn};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -321,19 +322,24 @@ pub fn recording_error_type(error: &anyhow::Error) -> &'static str {
 
 /* ──────────────────────────────────────────────────────────────── */
 
+/// The bundled Silero VAD model.
+pub fn silero_vad_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, anyhow::Error> {
+    app_handle
+        .path()
+        .resolve(
+            "resources/models/silero-vad-v6.2-F32.gguf",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {e}"))
+}
+
 fn create_capture_vad(
     backend: VadBackend,
     app_handle: &tauri::AppHandle,
 ) -> Result<CaptureVad, anyhow::Error> {
     let detector: Box<dyn VoiceActivityDetector> = match backend {
         VadBackend::Silero => {
-            let vad_path = app_handle
-                .path()
-                .resolve(
-                    "resources/models/silero-vad-v6.2-F32.gguf",
-                    tauri::path::BaseDirectory::Resource,
-                )
-                .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {e}"))?;
+            let vad_path = silero_vad_path(app_handle)?;
             Box::new(
                 SileroVad::new(vad_path, SILERO_VAD_THRESHOLD)
                     .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {e}"))?,
@@ -496,7 +502,8 @@ impl AudioRecordingManager {
             let app_handle = app.clone();
             Arc::new(move |levels| utils::emit_levels(&app_handle, &levels))
         };
-        let on_audio: AudioFrameCallback = Arc::new(move |frame| stream_router.feed(frame));
+        let on_audio: AudioFrameCallback =
+            Arc::new(move |frame, scores| stream_router.feed(frame, scores));
 
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),

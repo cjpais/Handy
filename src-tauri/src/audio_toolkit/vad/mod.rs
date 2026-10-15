@@ -17,16 +17,30 @@ pub const fn frames_for_duration_ms(duration_ms: u64, frame_samples: usize) -> u
 }
 
 pub enum VadFrame<'a> {
-    /// Speech – may aggregate several frames (prefill + current + hangover)
-    Speech(&'a [f32]),
-    /// Non-speech (silence, noise). Down-stream code can ignore it.
-    Noise,
+    /// Speech – may aggregate several frames (prefill + current + hangover),
+    /// with each frame's speech probability, in order.
+    Speech {
+        samples: &'a [f32],
+        probs: &'a [f32],
+    },
+    /// Non-speech (silence, noise), with the frame's speech probability.
+    /// Down-stream code can ignore the audio.
+    Noise { prob: f32 },
 }
 
 impl<'a> VadFrame<'a> {
     #[inline]
     pub fn is_speech(&self) -> bool {
-        matches!(self, VadFrame::Speech(_))
+        matches!(self, VadFrame::Speech { .. })
+    }
+
+    /// The speech probability of the frame just pushed: the last one of a
+    /// speech run.
+    pub fn frame_prob(&self) -> f32 {
+        match self {
+            VadFrame::Speech { probs, .. } => probs.last().copied().unwrap_or(0.0),
+            VadFrame::Noise { prob } => *prob,
+        }
     }
 }
 
@@ -76,7 +90,7 @@ mod silero;
 mod smoothed;
 
 pub use earshot::EarshotVad;
-pub use silero::SileroVad;
+pub use silero::{score_clip, SileroVad};
 pub use smoothed::SmoothedVad;
 
 #[cfg(test)]

@@ -525,6 +525,11 @@ pub struct AppSettings {
     /// Experimental detector implementation. Silero remains the stable default.
     #[serde(default)]
     pub vad_backend: VadBackend,
+    /// Decode long audio in chunks cut at pauses, for models whose accuracy
+    /// degrades on long audio. Independent of `vad_enabled`, which only
+    /// decides whether silence is dropped from recordings.
+    #[serde(default = "default_long_form_chunking")]
+    pub long_form_chunking: bool,
     /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
     /// not gated on this — that follows model capability. Migrated from the old
     /// `overlay_position` (position `none` → style `None`).
@@ -594,6 +599,10 @@ fn default_overlay_style() -> OverlayStyle {
 }
 
 fn default_vad_enabled() -> bool {
+    true
+}
+
+fn default_long_form_chunking() -> bool {
     true
 }
 
@@ -1011,6 +1020,7 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
         vad_backend: VadBackend::default(),
+        long_form_chunking: default_long_form_chunking(),
         overlay_style: default_overlay_style(),
     }
 }
@@ -1455,6 +1465,10 @@ mod tests {
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
         assert_eq!(settings.vad_backend, VadBackend::Silero);
+        assert!(
+            settings.long_form_chunking,
+            "chunking is on for settings saved before it existed"
+        );
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.

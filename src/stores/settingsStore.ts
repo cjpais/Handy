@@ -176,6 +176,8 @@ const settingUpdaters: {
     commands.changeLazyStreamCloseSetting(value as boolean),
   overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
   vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
+  long_form_chunking: (value) =>
+    commands.changeLongFormChunkingSetting(value as boolean),
   vad_backend: async (value) => {
     const result = await commands.changeVadBackendSetting(value as VadBackend);
     if (result.status === "error") {

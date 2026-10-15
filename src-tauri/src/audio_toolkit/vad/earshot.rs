@@ -12,6 +12,8 @@ pub struct EarshotVad {
     engine: Box<earshot::Detector>,
     threshold: f32,
     clamped_frame: [f32; EARSHOT_FRAME_SAMPLES],
+    /// The last frame's score, lent out with a speech frame.
+    last_score: f32,
 }
 
 impl EarshotVad {
@@ -26,6 +28,7 @@ impl EarshotVad {
             engine: earshot::Detector::default_boxed(),
             threshold,
             clamped_frame: [0.0; EARSHOT_FRAME_SAMPLES],
+            last_score: 0.0,
         })
     }
 }
@@ -56,9 +59,13 @@ impl VoiceActivityDetector for EarshotVad {
         };
 
         if score >= self.threshold {
-            Ok(VadFrame::Speech(frame))
+            self.last_score = score;
+            Ok(VadFrame::Speech {
+                samples: frame,
+                probs: std::slice::from_ref(&self.last_score),
+            })
         } else {
-            Ok(VadFrame::Noise)
+            Ok(VadFrame::Noise { prob: score })
         }
     }
 
@@ -101,8 +108,8 @@ mod tests {
         let mut vad = EarshotVad::new(0.0).unwrap();
         let frame = [1.01; EARSHOT_FRAME_SAMPLES];
         match vad.push_frame(&frame).unwrap() {
-            VadFrame::Speech(output) => assert_eq!(output, frame),
-            VadFrame::Noise => panic!("zero threshold should retain the frame"),
+            VadFrame::Speech { samples, .. } => assert_eq!(samples, frame),
+            VadFrame::Noise { .. } => panic!("zero threshold should retain the frame"),
         }
     }
 

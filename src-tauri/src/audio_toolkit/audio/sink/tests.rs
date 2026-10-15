@@ -1,10 +1,10 @@
-use super::{AudioFrameCallback, CaptureSink, CaptureVad, LevelCallback, VadPolicy};
+use super::{AudioFrameCallback, CaptureSink, CaptureVad, FrameScores, LevelCallback, VadPolicy};
 use crate::audio_toolkit::vad::{VadFrame, VoiceActivityDetector};
 use handy_recorder::{AudioChunk, Sink};
 use std::sync::{mpsc, Arc, Mutex};
 
-/// Keeps frames whose first sample is non-zero, and records how the sink
-/// configured it.
+/// Keeps frames whose first sample is non-zero, scoring each frame with its
+/// first sample, and records how the sink configured it.
 #[derive(Default)]
 struct ScriptedVad {
     frame_samples: usize,
@@ -15,9 +15,12 @@ struct ScriptedVad {
 impl VoiceActivityDetector for ScriptedVad {
     fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> anyhow::Result<VadFrame<'a>> {
         Ok(if frame[0] != 0.0 {
-            VadFrame::Speech(frame)
+            VadFrame::Speech {
+                samples: frame,
+                probs: std::slice::from_ref(&frame[0]),
+            }
         } else {
-            VadFrame::Noise
+            VadFrame::Noise { prob: frame[0] }
         })
     }
 
@@ -36,10 +39,14 @@ impl VoiceActivityDetector for ScriptedVad {
 
 const FRAME: usize = 4;
 
+/// One delivery's scores and frame size; `None` when unscored.
+type Delivered = Option<(Vec<f32>, usize)>;
+
 struct Harness {
     sink: CaptureSink,
     ready: mpsc::Receiver<()>,
     fed: Arc<Mutex<Vec<f32>>>,
+    scores: Arc<Mutex<Vec<Delivered>>>,
     hangover: Arc<Mutex<Option<usize>>>,
     resets: Arc<Mutex<usize>>,
 }
@@ -52,9 +59,19 @@ fn harness(policy: VadPolicy) -> Harness {
     let hangover = Arc::clone(&vad.hangover);
     let resets = Arc::clone(&vad.resets);
     let fed = Arc::new(Mutex::new(Vec::new()));
+    let scores = Arc::new(Mutex::new(Vec::new()));
     let on_audio: AudioFrameCallback = {
         let fed = Arc::clone(&fed);
-        Arc::new(move |frame: &[f32]| fed.lock().unwrap().extend_from_slice(frame))
+        let scores = Arc::clone(&scores);
+        Arc::new(
+            move |frame: &[f32], frame_scores: Option<FrameScores<'_>>| {
+                fed.lock().unwrap().extend_from_slice(frame);
+                scores
+                    .lock()
+                    .unwrap()
+                    .push(frame_scores.map(|s| (s.probs.to_vec(), s.frame_samples)));
+            },
+        )
     };
     let on_levels: LevelCallback = Arc::new(|_| {});
     let (ready_tx, ready) = mpsc::channel();
@@ -69,6 +86,7 @@ fn harness(policy: VadPolicy) -> Harness {
         sink,
         ready,
         fed,
+        scores,
         hangover,
         resets,
     }
@@ -112,12 +130,20 @@ fn disabled_vad_keeps_every_real_sample_and_drops_padding() {
 
     let expected = vec![1.0, 0.0, 2.0, 0.0, 3.0];
     assert_eq!(*h.fed.lock().unwrap(), expected);
-    assert_eq!(h.sink.finish().samples, expected);
+    // Every frame is still scored, the padded final one included.
     assert_eq!(
-        *h.resets.lock().unwrap(),
-        0,
-        "a disabled policy leaves VAD alone"
+        *h.scores.lock().unwrap(),
+        vec![Some((vec![1.0], FRAME)), Some((vec![3.0], FRAME))]
     );
+    assert_eq!(h.sink.finish().samples, expected);
+}
+
+#[test]
+fn disabled_vad_keeps_silence_with_its_score() {
+    let mut h = harness(VadPolicy::Disabled);
+    h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
+    assert_eq!(*h.fed.lock().unwrap(), vec![0.0; FRAME]);
+    assert_eq!(*h.scores.lock().unwrap(), vec![Some((vec![0.0], FRAME))]);
 }
 
 #[test]
@@ -129,6 +155,11 @@ fn vad_keeps_speech_frames_only() {
 
     let expected = [[1.0; FRAME], [2.0; FRAME]].concat();
     assert_eq!(*h.fed.lock().unwrap(), expected);
+    assert_eq!(
+        *h.scores.lock().unwrap(),
+        vec![Some((vec![1.0], FRAME)), Some((vec![2.0], FRAME))],
+        "kept speech carries its scores"
+    );
     assert_eq!(h.sink.finish().samples, expected);
 }
 
@@ -141,6 +172,10 @@ fn each_recording_resets_the_detector_with_its_policys_hangover() {
     let streaming = harness(VadPolicy::Streaming);
     assert_eq!(*streaming.hangover.lock().unwrap(), Some(20));
     assert_eq!(*streaming.resets.lock().unwrap(), 1);
+
+    // VAD off still scores, so it starts from a clean detector too.
+    let disabled = harness(VadPolicy::Disabled);
+    assert_eq!(*disabled.resets.lock().unwrap(), 1);
 }
 
 #[test]

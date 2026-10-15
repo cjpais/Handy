@@ -355,6 +355,10 @@
         "title": "Detecció d'activitat de veu",
         "description": "Filtra els silencis dels enregistraments. Els models compatibles amb la transcripció en temps real utilitzen un marge final de detecció de veu més llarg; si desactiveu la detecció, s'enregistra l'àudio sense filtrar."
       },
+      "longFormChunking": {
+        "title": "Divisió d'àudio llarg",
+        "description": "Divideix els enregistraments llargs a les pauses abans de transcriure'ls, cosa que normalment millora el rendiment de la transcripció."
+      },
       "vadBackend": {
         "title": "Motor de detecció d'activitat de veu",
         "description": "Trieu el detector utilitzat per filtrar els silencis. L'Earshot és experimental; torneu al Silero si es corta la parla o es conserva el soroll.",

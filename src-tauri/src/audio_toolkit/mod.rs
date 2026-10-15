@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod chunking;
 pub mod constants;
 pub mod lang_id;
 pub mod text;
@@ -7,7 +8,7 @@ pub mod vad;
 
 pub use audio::{
     list_output_devices, read_wav_samples, save_wav_file, verify_wav_file, CaptureSink, CaptureVad,
-    VadPolicy,
+    FrameScores, VadPolicy,
 };
 pub use lang_id::detect_output_language;
 pub use text::{

@@ -1,13 +1,15 @@
+use crate::audio_toolkit::chunking::{self, Chunker};
+use crate::audio_toolkit::vad::score_clip;
 use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
-    remove_filler_words, OutputLanguageEvidence,
+    remove_filler_words, FrameScores, OutputLanguageEvidence,
 };
 use crate::chinese_script::{convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
-    DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
+    CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
     StreamProgress, Unloading,
 };
-use crate::managers::audio::AudioRecordingManager;
+use crate::managers::audio::{silero_vad_path, AudioRecordingManager};
 use crate::managers::model::ModelManager;
 use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
@@ -16,6 +18,7 @@ use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::ops::Range;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard};
@@ -23,7 +26,9 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
-use transcribe_cpp::{Backend, RunExtension, RunOptions, StreamOptions, Task, WhisperRunOptions};
+use transcribe_cpp::{
+    Backend, RunExtension, RunOptions, StreamOptions, Task, Transcript, WhisperRunOptions,
+};
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -87,11 +92,20 @@ pub struct StreamPhaseEvent {
 /// request travel the same channel so FIFO ordering guarantees every fed frame
 /// is processed before finalize runs.
 enum StreamCmd {
-    Feed(Vec<f32>),
+    Feed {
+        pcm: Vec<f32>,
+        /// Each whole frame's speech probability and the frame size, when
+        /// the recording's detector scored them.
+        scores: Option<(Vec<f32>, usize)>,
+    },
     /// Flush the stream and reply with the final text, or `None` if no
     /// usable stream exists (caller should fall back to batch transcription).
-    /// `Err(Cancelled)` if the finalize itself was cancelled.
-    Finalize(mpsc::Sender<StreamFinalizeReply>),
+    /// `Err(Cancelled)` if the finalize itself was cancelled. `samples` is
+    /// the whole recording's length, for a worker that checks it saw it all.
+    Finalize {
+        reply: mpsc::Sender<StreamFinalizeReply>,
+        samples: usize,
+    },
     Cancel,
 }
 
@@ -150,14 +164,18 @@ impl StreamRouter {
         *self.tx.lock().unwrap() = None;
     }
 
-    /// Forward a 16 kHz frame to the active streaming worker. Cheap no-op (a
-    /// single relaxed atomic load) when no stream is pending.
-    pub fn feed(&self, frame: &[f32]) {
+    /// Forward a 16 kHz frame, and its speech probabilities when scored, to
+    /// the active streaming worker. Cheap no-op (a single relaxed atomic
+    /// load) when no stream is pending.
+    pub fn feed(&self, frame: &[f32], scores: Option<FrameScores<'_>>) {
         if !self.open.load(Ordering::Relaxed) {
             return;
         }
         if let Some(tx) = self.tx.lock().unwrap().as_ref() {
-            let _ = tx.send(StreamCmd::Feed(frame.to_vec()));
+            let _ = tx.send(StreamCmd::Feed {
+                pcm: frame.to_vec(),
+                scores: scores.map(|scores| (scores.probs.to_vec(), scores.frame_samples)),
+            });
         }
     }
 
@@ -771,6 +789,12 @@ impl TranscriptionManager {
             caps.languages,
         );
         if !caps.supports_streaming {
+            // Long audio is decoded in chunks as the recording goes, unless
+            // the model handles it in one run.
+            if get_settings(&self.app_handle).long_form_chunking && !info.supports_long_form {
+                self.run_chunked_worker(rx, &info, &model_id);
+                return;
+            }
             self.router.clear();
             drain_until_finalize(rx);
             return;
@@ -851,12 +875,12 @@ impl TranscriptionManager {
 
         while let Ok(cmd) = rx.recv() {
             match cmd {
-                StreamCmd::Feed(pcm) => {
+                StreamCmd::Feed { pcm, .. } => {
                     self.touch_activity();
                     lock_perf(&perf).record_feed(pcm.len());
                     stream.feed(pcm);
                 }
-                StreamCmd::Finalize(reply) => {
+                StreamCmd::Finalize { reply, .. } => {
                     // In auto mode the model's own LID is the best remaining
                     // evidence; the snapshot is only materialized when it can
                     // change the outcome.
@@ -914,19 +938,129 @@ impl TranscriptionManager {
         // this worker's flags.
     }
 
+    /// Long-form chunking while a non-streaming model's recording goes on:
+    /// each chunk is decoded as soon as its cut is certain, using the speech
+    /// probabilities the recording's VAD already computed, so only the last
+    /// chunk is left when the recording stops. Any failure, or a recording
+    /// this worker didn't see all of, reports no result: the caller then
+    /// transcribes the whole recording in batch (which chunks it too).
+    fn run_chunked_worker(&self, rx: mpsc::Receiver<StreamCmd>, info: &LoadedInfo, model_id: &str) {
+        let settings = get_settings(&self.app_handle);
+        let validated_language =
+            effective_language_for_model(&settings, self.model_manager.as_ref(), model_id);
+        let setup = run_setup(info, &settings, &validated_language);
+        // Every chunk of this recording stops with one cancel.
+        let mark = self.engine.cancel_mark();
+        let mut chunker: Option<Chunker> = None;
+        let mut transcripts: Vec<Transcript> = Vec::new();
+        // The first failure; no more chunks are decoded after it.
+        let mut failure: Option<EngineError> = None;
+        let decode = |chunks: Vec<Vec<f32>>,
+                      transcripts: &mut Vec<Transcript>,
+                      failure: &mut Option<EngineError>| {
+            for chunk in chunks {
+                if failure.is_some() {
+                    return;
+                }
+                let len = chunk.len();
+                let started = Instant::now();
+                match self.run_batch(mark, chunk, &setup.run_options, model_id) {
+                    Ok(transcript) => {
+                        transcripts.push(transcript);
+                        info!(
+                            "Decoded long-form chunk {} ({:.1}s of audio) in {:.2}s",
+                            transcripts.len(),
+                            len as f64 / 16_000.0,
+                            started.elapsed().as_secs_f64()
+                        );
+                    }
+                    Err(e) => {
+                        info!("Live chunk decoding stopped: {}", e);
+                        *failure = Some(e);
+                    }
+                }
+            }
+        };
+        info!("Live long-form chunking started (model '{}')", model_id);
+
+        while let Ok(cmd) = rx.recv() {
+            match cmd {
+                StreamCmd::Feed { pcm, scores } => {
+                    // Unscored audio never cuts, so its frame size is moot.
+                    let chunker = chunker.get_or_insert_with(|| {
+                        Chunker::new(scores.as_ref().map_or(512, |(_, frame)| *frame))
+                    });
+                    let ready = chunker.push(&pcm, scores.as_ref().map(|(probs, _)| &probs[..]));
+                    decode(ready, &mut transcripts, &mut failure);
+                }
+                StreamCmd::Finalize { reply, samples } => {
+                    let live_chunks = transcripts.len();
+                    if matches!(failure, Some(EngineError::Cancelled)) {
+                        let _ = reply.send(Err(EngineError::Cancelled));
+                        return;
+                    }
+                    // Nothing was decoded while recording (a recording under
+                    // about 45 s): the batch path does the same work, so it
+                    // keeps doing it.
+                    if live_chunks == 0 {
+                        let _ = reply.send(Ok(None));
+                        return;
+                    }
+                    let Some(chunker) = chunker.filter(|c| c.samples() == samples) else {
+                        info!(
+                            "Live chunks did not see the whole recording ({} samples); \
+                             transcribing it in batch",
+                            samples
+                        );
+                        let _ = reply.send(Ok(None));
+                        return;
+                    };
+                    decode(chunker.finish(), &mut transcripts, &mut failure);
+                    let result = match failure {
+                        Some(EngineError::Cancelled) => Err(EngineError::Cancelled),
+                        Some(EngineError::Failed(_)) => Ok(None),
+                        None => {
+                            info!(
+                                "Decoded {:.1}s of audio in {} chunks, {} while recording",
+                                samples as f64 / 16_000.0,
+                                transcripts.len(),
+                                live_chunks
+                            );
+                            let (text, language) = join_chunks(transcripts);
+                            Ok(Some(FinalizedStreamText {
+                                text,
+                                output_language: setup.output_language(&settings, language),
+                                supported_languages: setup.languages,
+                            }))
+                        }
+                    };
+                    let _ = reply.send(result);
+                    return;
+                }
+                StreamCmd::Cancel => return,
+            }
+        }
+    }
+
     /// Flush the active stream and return its final, post-filtered text.
+    /// `recorded_samples` is the length of the whole recording: a chunked
+    /// worker that saw less reports no result.
     ///
     /// `Ok(None)` means no usable stream result exists and the caller should
     /// fall back to batch transcription. `Err` means the transcription was
     /// cancelled. There is no timeout here: waiting behind a model load is a
     /// queue position, not a failure (#1841), and the engine bounds the
     /// finalize itself by the audio it still has to decode.
-    pub fn finalize_stream(&self) -> Result<Option<String>> {
+    pub fn finalize_stream(&self, recorded_samples: usize) -> Result<Option<String>> {
         let Some(tx) = self.router.take() else {
             return Ok(None);
         };
         let (reply_tx, reply_rx) = mpsc::channel();
-        if tx.send(StreamCmd::Finalize(reply_tx)).is_err() {
+        let finalize = StreamCmd::Finalize {
+            reply: reply_tx,
+            samples: recorded_samples,
+        };
+        if tx.send(finalize).is_err() {
             return Ok(None);
         }
         let finalized = match reply_rx.recv() {
@@ -1100,11 +1234,9 @@ impl TranscriptionManager {
     }
 
     /// transcribe-cpp: the model runs in the engine's worker process, which
-    /// recovers from crashes and hangs itself. The loaded model's live
-    /// capabilities (cheap GGUF-metadata reads) are the source of truth, not
-    /// the ModelManager copy. The whisper run extension is kind-tagged, so
-    /// non-whisper archs (parakeet, voxtral, …) reject it with INVALID_ARG;
-    /// attach it — and translate — only where supported.
+    /// recovers from crashes and hangs itself. Streaming models take the clip
+    /// through their stream; other long audio is decoded in chunks cut at
+    /// pauses, unless the model handles it in one run.
     fn transcribe_cpp(
         &self,
         info: LoadedInfo,
@@ -1113,82 +1245,145 @@ impl TranscriptionManager {
         validated_language: &str,
         active_model: &str,
     ) -> Result<RunOutcome> {
-        // Whether the model advertises Feature::InitialPrompt. Informational
-        // (logged below); the whisper run extension and the fuzzy-correction
-        // skip are gated on `model_is_whisper` instead, since non-whisper
-        // archs can advertise the feature while rejecting the whisper-kind
-        // extension.
-        let model_takes_initial_prompt = info.supports_initial_prompt;
-        let model_is_whisper = info.arch == "whisper";
-        let model_supports_translate = info.capabilities.supports_translate;
-        let languages = info.capabilities.languages;
-        debug!(
-            "transcribe-cpp model '{}' on '{}': initial_prompt={}, translate={}, languages={:?}",
-            settings.selected_model,
-            info.backend,
-            model_takes_initial_prompt,
-            model_supports_translate,
-            languages
-        );
+        let setup = run_setup(&info, settings, validated_language);
 
-        // Custom words become the initial prompt ONLY for models that accept
-        // one (whisper family). Attaching the whisper run extension to a
-        // non-whisper arch is rejected with INVALID_ARG, so skip it there and
-        // let the fuzzy post-correction handle custom words instead.
-        let family = if settings.custom_words.is_empty() || !model_is_whisper {
-            None
-        } else {
-            Some(RunExtension::Whisper(WhisperRunOptions {
-                initial_prompt: Some(settings.custom_words.join(", ")),
-                ..Default::default()
-            }))
-        };
-
-        let run_plan = transcribe_cpp_run_plan(
-            settings.translate_to_english,
-            validated_language,
-            &languages,
-            model_supports_translate,
-        );
-        let output_was_translated = run_plan.target_language.as_deref() == Some("en");
-        let applied_language_hint = run_plan.language.clone();
-
-        let run_options = RunOptions {
-            task: run_plan.task,
-            language: run_plan.language,
-            target_language: run_plan.target_language,
-            family,
-            ..Default::default()
-        };
-
-        debug!(
-            "transcribe-cpp run: task={:?}, language={:?}, initial_prompt={}",
-            run_options.task,
-            run_options.language,
-            run_options.family.is_some()
-        );
-
-        let transcript = match self.engine.transcribe(audio, run_options) {
-            Ok(transcript) => transcript,
-            Err(EngineError::Cancelled) => return Err(EngineError::Cancelled.into()),
-            Err(e) => {
-                self.forget_model_if_engine_dropped(active_model, &e.to_string());
-                return Err(anyhow::anyhow!(
-                    "transcribe-cpp transcription failed: {}",
+        // Streaming models never take a whole clip in one run: it goes through
+        // their stream, as a recording would. If that fails, chunked batch is
+        // the last resort.
+        if info.capabilities.supports_streaming {
+            let want_language = matches!(
+                setup.output_language(settings, None),
+                OutputLanguageEvidence::Unknown
+            );
+            match self.stream_clip(&audio, &setup.run_options, want_language, active_model) {
+                Ok(Some((text, language))) => {
+                    info!(
+                        "Transcribed {:.1}s of audio through the model's stream",
+                        audio.len() as f64 / 16_000.0
+                    );
+                    return Ok(setup.into_outcome(text, language));
+                }
+                Ok(None) => warn!("Streaming the clip failed; transcribing it in batch"),
+                Err(EngineError::Cancelled) => return Err(EngineError::Cancelled.into()),
+                Err(e) => warn!(
+                    "Streaming the clip failed ({}); transcribing it in batch",
                     e
-                ));
+                ),
             }
+        }
+
+        // Long audio is decoded in chunks unless the model handles it in one
+        // run. One cancel mark covers every chunk, so a cancel between two
+        // stops the rest. A failed chunk fails the whole transcription.
+        let chunks = if settings.long_form_chunking && !info.supports_long_form {
+            self.long_form_chunks(&audio)
+        } else {
+            None
         };
-        Ok(RunOutcome {
-            text: transcript.text,
-            languages,
-            applied_language_hint,
-            output_was_translated,
-            // Whisper's audio-based LID (auto mode only; `None` when a
-            // language hint was passed).
-            model_detected_language: transcript.language,
-            model_is_whisper,
-        })
+        let mark = self.engine.cancel_mark();
+        let run = |pcm: Vec<f32>| {
+            self.run_batch(mark, pcm, &setup.run_options, active_model)
+                .map_err(|e| match e {
+                    EngineError::Cancelled => EngineError::Cancelled.into(),
+                    e => anyhow::anyhow!("transcribe-cpp transcription failed: {}", e),
+                })
+        };
+        let transcripts = match chunks {
+            Some(chunks) => {
+                let transcripts = chunks
+                    .iter()
+                    .map(|chunk| run(audio[chunk.clone()].to_vec()))
+                    .collect::<Result<Vec<_>>>()?;
+                info!(
+                    "Decoded {:.1}s of audio in {} chunks",
+                    audio.len() as f64 / 16_000.0,
+                    chunks.len()
+                );
+                transcripts
+            }
+            None => vec![run(audio)?],
+        };
+        let (text, language) = join_chunks(transcripts);
+        Ok(setup.into_outcome(text, language))
+    }
+
+    /// One batch run of a transcription that began at `mark`, so a cancel
+    /// since then stops it. Keeps the idle watcher from unloading the model
+    /// between the runs of a chunked transcription.
+    fn run_batch(
+        &self,
+        mark: CancelMark,
+        pcm: Vec<f32>,
+        run_options: &RunOptions,
+        active_model: &str,
+    ) -> Result<Transcript, EngineError> {
+        self.touch_activity();
+        self.engine
+            .transcribe_since(mark, pcm, run_options.clone())
+            .inspect_err(|e| {
+                if !matches!(e, EngineError::Cancelled) {
+                    self.forget_model_if_engine_dropped(active_model, &e.to_string());
+                }
+            })
+    }
+
+    /// A whole clip through a streaming model's stream, fed in pieces as a
+    /// recording would be. Returns its text and, when asked for, the model's
+    /// detected language; `Ok(None)` if the stream was lost or failed.
+    fn stream_clip(
+        &self,
+        audio: &[f32],
+        run_options: &RunOptions,
+        want_language: bool,
+        active_model: &str,
+    ) -> Result<Option<(String, Option<String>)>, EngineError> {
+        let stream =
+            match self
+                .engine
+                .start_stream(run_options.clone(), StreamOptions::default(), |_| {})
+            {
+                Ok(stream) => stream,
+                Err(EngineError::Cancelled) => return Err(EngineError::Cancelled),
+                Err(e) => {
+                    self.forget_model_if_engine_dropped(active_model, &e.to_string());
+                    warn!("Failed to begin a stream for the clip: {}", e);
+                    return Ok(None);
+                }
+            };
+        for piece in audio.chunks(STREAM_CLIP_FEED_SAMPLES) {
+            stream.feed(piece.to_vec());
+        }
+        Ok(stream
+            .finalize(want_language)?
+            .map(|finalized| (finalized.text.full, finalized.language)))
+    }
+
+    /// Where to cut long audio for a model that doesn't handle it in one run:
+    /// at pauses Silero finds, about 30 s apart. `None` decodes it in one
+    /// piece: audio of 40 s or less, or audio Silero can't score.
+    fn long_form_chunks(&self, audio: &[f32]) -> Option<Vec<Range<usize>>> {
+        if audio.len() <= chunking::MAX_CHUNK_SAMPLES {
+            return None;
+        }
+        let started = Instant::now();
+        let scored = silero_vad_path(&self.app_handle).and_then(|path| score_clip(&path, audio));
+        match scored {
+            Ok((probs, frame_samples)) => {
+                debug!(
+                    "Scored {:.1}s of audio for long-form chunking in {:?}",
+                    audio.len() as f64 / 16_000.0,
+                    started.elapsed()
+                );
+                Some(chunking::plan_chunks(&probs, frame_samples, audio.len()))
+            }
+            Err(e) => {
+                warn!(
+                    "Voice activity detection failed, decoding long audio in one piece: {}",
+                    e
+                );
+                None
+            }
+        }
     }
 }
 
@@ -1208,6 +1403,138 @@ struct RunOutcome {
     /// INVALID_ARG, so the whisper extension must be gated on the arch, not
     /// on the feature (see #1601).
     model_is_whisper: bool,
+}
+
+/// A whole clip goes through a streaming model's stream in pieces this long.
+const STREAM_CLIP_FEED_SAMPLES: usize = 16_000;
+
+/// How every run of one transcription (each chunk, or a whole clip) is
+/// configured on the loaded model, and what post-processing needs to know.
+struct RunSetup {
+    run_options: RunOptions,
+    languages: Vec<String>,
+    applied_language_hint: Option<String>,
+    output_was_translated: bool,
+    model_is_whisper: bool,
+}
+
+impl RunSetup {
+    /// What the output language is known to be, given the model's own
+    /// detection when it reported one.
+    fn output_language(
+        &self,
+        settings: &AppSettings,
+        model_detected_language: Option<String>,
+    ) -> OutputLanguageEvidence {
+        with_model_detected_language(
+            resolve_output_language_evidence(
+                settings,
+                self.applied_language_hint.as_deref(),
+                &self.languages,
+                self.output_was_translated,
+            ),
+            model_detected_language,
+        )
+    }
+
+    fn into_outcome(self, text: String, model_detected_language: Option<String>) -> RunOutcome {
+        RunOutcome {
+            text,
+            languages: self.languages,
+            applied_language_hint: self.applied_language_hint,
+            output_was_translated: self.output_was_translated,
+            model_detected_language,
+            model_is_whisper: self.model_is_whisper,
+        }
+    }
+}
+
+/// The loaded model's live capabilities (cheap GGUF-metadata reads) are the
+/// source of truth, not the ModelManager copy. The whisper run extension is
+/// kind-tagged, so non-whisper archs (parakeet, voxtral, …) reject it with
+/// INVALID_ARG; attach it — and translate — only where supported.
+fn run_setup(info: &LoadedInfo, settings: &AppSettings, validated_language: &str) -> RunSetup {
+    // Whether the model advertises Feature::InitialPrompt. Informational
+    // (logged below); the whisper run extension and the fuzzy-correction
+    // skip are gated on `model_is_whisper` instead, since non-whisper
+    // archs can advertise the feature while rejecting the whisper-kind
+    // extension.
+    let model_takes_initial_prompt = info.supports_initial_prompt;
+    let model_is_whisper = info.arch == "whisper";
+    let model_supports_translate = info.capabilities.supports_translate;
+    let languages = info.capabilities.languages.clone();
+    debug!(
+        "transcribe-cpp model '{}' on '{}': initial_prompt={}, translate={}, languages={:?}",
+        settings.selected_model,
+        info.backend,
+        model_takes_initial_prompt,
+        model_supports_translate,
+        languages
+    );
+
+    // Custom words become the initial prompt ONLY for models that accept
+    // one (whisper family). Attaching the whisper run extension to a
+    // non-whisper arch is rejected with INVALID_ARG, so skip it there and
+    // let the fuzzy post-correction handle custom words instead.
+    let family = if settings.custom_words.is_empty() || !model_is_whisper {
+        None
+    } else {
+        Some(RunExtension::Whisper(WhisperRunOptions {
+            initial_prompt: Some(settings.custom_words.join(", ")),
+            ..Default::default()
+        }))
+    };
+
+    let run_plan = transcribe_cpp_run_plan(
+        settings.translate_to_english,
+        validated_language,
+        &languages,
+        model_supports_translate,
+    );
+    let output_was_translated = run_plan.target_language.as_deref() == Some("en");
+    let applied_language_hint = run_plan.language.clone();
+
+    let run_options = RunOptions {
+        task: run_plan.task,
+        language: run_plan.language,
+        target_language: run_plan.target_language,
+        family,
+        ..Default::default()
+    };
+
+    debug!(
+        "transcribe-cpp run: task={:?}, language={:?}, initial_prompt={}",
+        run_options.task,
+        run_options.language,
+        run_options.family.is_some()
+    );
+
+    RunSetup {
+        run_options,
+        languages,
+        applied_language_hint,
+        output_was_translated,
+        model_is_whisper,
+    }
+}
+
+/// One transcription's text from its chunks, in order, and the model's
+/// detected language (Whisper's audio-based LID, auto mode only; `None` when a
+/// language hint was passed). Chunks that disagree leave it unknown. A single
+/// transcript passes through untouched.
+fn join_chunks(transcripts: Vec<Transcript>) -> (String, Option<String>) {
+    let mut detected = transcripts.iter().map(|t| t.language.clone());
+    let language = detected
+        .next()
+        .flatten()
+        .filter(|first| detected.all(|language| language.as_ref() == Some(first)));
+    let text = match <[Transcript; 1]>::try_from(transcripts) {
+        Ok([one]) => one.text,
+        Err(many) => {
+            chunking::join_transcripts(&many.iter().map(|t| t.text.as_str()).collect::<Vec<_>>())
+        }
+    };
+    (text, language)
 }
 
 fn emit_stream_text(app_handle: &AppHandle, committed: &str, tentative: &str) {
@@ -1615,8 +1942,8 @@ fn cpp_translation_task(
 fn drain_until_finalize(rx: mpsc::Receiver<StreamCmd>) {
     while let Ok(cmd) = rx.recv() {
         match cmd {
-            StreamCmd::Feed(_) => {}
-            StreamCmd::Finalize(reply) => {
+            StreamCmd::Feed { .. } => {}
+            StreamCmd::Finalize { reply, .. } => {
                 let _ = reply.send(Ok(None));
                 break;
             }

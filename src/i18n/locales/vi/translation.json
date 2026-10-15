@@ -355,6 +355,10 @@
         "title": "Phát hiện hoạt động giọng nói",
         "description": "Lọc bỏ khoảng lặng khỏi bản ghi. Các mô hình hỗ trợ truyền trực tiếp dùng đuôi VAD dài hơn; tắt VAD sẽ ghi âm thanh thô."
       },
+      "longFormChunking": {
+        "title": "Chia nhỏ âm thanh dài",
+        "description": "Chia các bản ghi dài tại các khoảng ngắt trước khi chuyển thành văn bản, điều này thường cải thiện hiệu quả chuyển văn bản."
+      },
       "vadBackend": {
         "title": "Bộ phát hiện giọng nói",
         "description": "Chọn bộ phát hiện dùng để lọc khoảng lặng. Earshot đang thử nghiệm; hãy chuyển về Silero nếu giọng nói bị cắt hoặc tiếng ồn vẫn còn.",
