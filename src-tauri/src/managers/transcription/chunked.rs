@@ -12,14 +12,6 @@ use crate::engine_supervisor::{CancelMark, EngineError};
 use crate::managers::audio::create_detector;
 use crate::settings::VadBackend;
 
-/// Why a chunked decode stopped short.
-pub(super) enum ChunkFailure {
-    /// The VAD couldn't score the audio, so it couldn't be cut.
-    Vad(anyhow::Error),
-    /// A chunk's run failed or was cancelled.
-    Engine(EngineError),
-}
-
 /// Cuts audio at pauses as it arrives and decodes each chunk once its cut is
 /// certain, so a recording has only its last chunk left when it stops.
 pub(super) struct ChunkedDecode<'a> {
@@ -30,8 +22,9 @@ pub(super) struct ChunkedDecode<'a> {
     model_id: String,
     chunker: Chunker,
     transcripts: Vec<Transcript>,
-    /// The first failure; nothing more is decoded after it.
-    failure: Option<ChunkFailure>,
+    /// The first run that failed or was cancelled; nothing more is decoded
+    /// after it.
+    failure: Option<EngineError>,
 }
 
 impl<'a> ChunkedDecode<'a> {
@@ -41,16 +34,18 @@ impl<'a> ChunkedDecode<'a> {
         run_options: RunOptions,
         model_id: &str,
         backend: VadBackend,
-    ) -> anyhow::Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        // The VAD is only loaded if the audio turns out long enough to cut.
+        let app_handle = tm.app_handle.clone();
+        Self {
             tm,
             mark,
             run_options,
             model_id: model_id.to_string(),
-            chunker: Chunker::new(create_detector(backend, &tm.app_handle)?),
+            chunker: Chunker::new(Box::new(move || create_detector(backend, &app_handle))),
             transcripts: Vec::new(),
             failure: None,
-        })
+        }
     }
 
     /// A whole clip's chunks, decoded in order.
@@ -58,12 +53,11 @@ impl<'a> ChunkedDecode<'a> {
         tm: &'a TranscriptionManager,
         mark: CancelMark,
         run_options: RunOptions,
-        audio: &[f32],
+        audio: Vec<f32>,
         model_id: &str,
         backend: VadBackend,
-    ) -> Result<Vec<Transcript>, ChunkFailure> {
-        let mut decode =
-            Self::new(tm, mark, run_options, model_id, backend).map_err(ChunkFailure::Vad)?;
+    ) -> Result<Vec<Transcript>, EngineError> {
+        let mut decode = Self::new(tm, mark, run_options, model_id, backend);
         decode.push(audio);
         decode.finish()
     }
@@ -85,24 +79,20 @@ impl<'a> ChunkedDecode<'a> {
     }
 
     /// Adds audio, decoding each chunk it makes certain.
-    pub(super) fn push(&mut self, pcm: &[f32]) {
+    pub(super) fn push(&mut self, pcm: Vec<f32>) {
         if self.failure.is_some() {
             return;
         }
-        match self.chunker.push(pcm) {
-            Ok(chunks) => self.decode(chunks),
-            Err(e) => self.failure = Some(ChunkFailure::Vad(e)),
-        }
+        let chunks = self.chunker.push(pcm);
+        self.decode(chunks);
     }
 
-    /// Decodes what is left. Every chunk's transcript in order, or why the
-    /// decode stopped short.
-    pub(super) fn finish(mut self) -> Result<Vec<Transcript>, ChunkFailure> {
+    /// Decodes what is left. Every chunk's transcript in order, or the run
+    /// that failed or was cancelled.
+    pub(super) fn finish(mut self) -> Result<Vec<Transcript>, EngineError> {
         if self.failure.is_none() {
-            match self.chunker.finish() {
-                Ok(chunks) => self.decode(chunks),
-                Err(e) => self.failure = Some(ChunkFailure::Vad(e)),
-            }
+            let chunks = self.chunker.finish();
+            self.decode(chunks);
         }
         if let Some(failure) = self.failure {
             return Err(failure);
@@ -144,7 +134,7 @@ impl<'a> ChunkedDecode<'a> {
                 }
                 Err(e) => {
                     info!("Chunk decoding stopped: {}", e);
-                    self.failure = Some(ChunkFailure::Engine(e));
+                    self.failure = Some(e);
                 }
             }
         }

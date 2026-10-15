@@ -4,10 +4,10 @@
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
-use log::{error, info, warn};
+use log::{error, info};
 use transcribe_cpp::StreamOptions;
 
-use super::chunked::{ChunkFailure, ChunkedDecode};
+use super::chunked::ChunkedDecode;
 use super::policy::LiveDecode;
 use super::{
     effective_language_for_model, emit_stream_text, join_chunks, lock_perf, run_setup,
@@ -41,6 +41,9 @@ impl<'a> LiveSession<'a> {
         info: &LoadedInfo,
         model_id: &str,
     ) -> Option<Self> {
+        if mode == LiveDecode::None {
+            return None;
+        }
         // The same run setup as the batch path: task + language gated
         // against what the model actually advertises.
         let settings = get_settings(&tm.app_handle);
@@ -48,26 +51,20 @@ impl<'a> LiveSession<'a> {
             effective_language_for_model(&settings, tm.model_manager.as_ref(), model_id);
         let setup = run_setup(info, &settings, &effective_language);
         let decoder = match mode {
-            LiveDecode::None => return None,
+            LiveDecode::None => unreachable!("returned above"),
             LiveDecode::Stream => {
                 LiveDecoder::Stream(StreamSession::begin(tm, info, &settings, &setup, model_id)?)
             }
-            LiveDecode::Chunked => match ChunkedDecode::new(
-                tm,
-                tm.engine.cancel_mark(),
-                setup.run_options.clone(),
-                model_id,
-                settings.vad_backend,
-            ) {
-                Ok(decode) => {
-                    info!("Live long-form chunking started (model '{}')", model_id);
-                    LiveDecoder::Chunked(Box::new(decode))
-                }
-                Err(e) => {
-                    warn!("Live long-form chunking unavailable: {}", e);
-                    return None;
-                }
-            },
+            LiveDecode::Chunked => {
+                info!("Live long-form chunking started (model '{}')", model_id);
+                LiveDecoder::Chunked(Box::new(ChunkedDecode::new(
+                    tm,
+                    tm.engine.cancel_mark(),
+                    setup.run_options.clone(),
+                    model_id,
+                    settings.vad_backend,
+                )))
+            }
         };
         Some(Self { setup, decoder })
     }
@@ -75,7 +72,7 @@ impl<'a> LiveSession<'a> {
     pub(super) fn feed(&mut self, pcm: Vec<f32>) {
         match &mut self.decoder {
             LiveDecoder::Stream(stream) => stream.feed(pcm),
-            LiveDecoder::Chunked(chunks) => chunks.push(&pcm),
+            LiveDecoder::Chunked(chunks) => chunks.push(pcm),
         }
     }
 
@@ -119,16 +116,9 @@ fn finish_chunks(
             }
             Ok(Some(join_chunks(transcripts)))
         }
-        Err(ChunkFailure::Engine(EngineError::Cancelled)) => Err(EngineError::Cancelled),
-        Err(ChunkFailure::Engine(e)) => {
+        Err(EngineError::Cancelled) => Err(EngineError::Cancelled),
+        Err(e) => {
             info!("Live chunks failed ({}); transcribing in batch", e);
-            Ok(None)
-        }
-        Err(ChunkFailure::Vad(e)) => {
-            info!(
-                "Live chunks could not be cut ({}); transcribing in batch",
-                e
-            );
             Ok(None)
         }
     }

@@ -11,7 +11,7 @@
 use std::ops::Range;
 
 use anyhow::Result;
-use log::debug;
+use log::{debug, warn};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -186,13 +186,26 @@ fn plan_chunks(probs: &[f32], frame_samples: usize, samples: usize) -> Vec<Range
         .collect()
 }
 
+/// Makes a fresh scorer for one clip.
+pub type MakeScorer = Box<dyn Fn() -> Result<Box<dyn SpeechScorer>> + Send>;
+
 /// Cuts audio into chunks at pauses as it arrives, and hands each back once
 /// its cut is certain, so it can be decoded while the user is still
 /// speaking. Pushed all at once, a clip is cut exactly as it is live: the
 /// same scores and the same plan.
+///
+/// If the audio can't be scored (the VAD fails to load or to run), nothing
+/// more is cut and the rest is one chunk: chunking only places cuts, so the
+/// audio is still decoded, as it would be without chunking.
 pub struct Chunker {
-    scorer: Box<dyn SpeechScorer>,
+    make_scorer: MakeScorer,
+    /// Made the first time audio has to be scored, so a clip short enough to
+    /// be one chunk never loads a VAD.
+    scorer: Option<Box<dyn SpeechScorer>>,
+    /// The scorer's frame size, once it is made.
     frame_samples: usize,
+    /// Set when scoring fails: no more cuts.
+    uncut: bool,
     /// Audio from `start` on; everything before it is already in a chunk.
     pending: Vec<f32>,
     /// One speech probability per whole frame from the beginning. Audio is
@@ -204,13 +217,14 @@ pub struct Chunker {
 }
 
 impl Chunker {
-    /// `scorer` must be fresh: its scores carry on from what it saw before.
-    pub fn new(scorer: Box<dyn SpeechScorer>) -> Self {
-        let frame_samples = scorer.frame_samples();
-        assert!(frame_samples > 0, "VAD frame size must be non-zero");
+    /// `make_scorer` must make a fresh scorer: scores carry on from what it
+    /// saw before.
+    pub fn new(make_scorer: MakeScorer) -> Self {
         Self {
-            scorer,
-            frame_samples,
+            make_scorer,
+            scorer: None,
+            frame_samples: 0,
+            uncut: false,
             pending: Vec::new(),
             probs: Vec::new(),
             start: 0,
@@ -225,19 +239,31 @@ impl Chunker {
     }
 
     /// Adds audio. Returns the chunks whose cuts this made certain, in order.
-    pub fn push(&mut self, pcm: &[f32]) -> Result<Vec<Vec<f32>>> {
-        self.pending.extend_from_slice(pcm);
+    /// A whole clip pushed at once is moved in, not copied.
+    pub fn push(&mut self, pcm: impl Into<Vec<f32>>) -> Vec<Vec<f32>> {
+        let pcm = pcm.into();
         self.len += pcm.len();
-        if self.len - self.start <= MAX_CHUNK_SAMPLES + LOOKAHEAD_SAMPLES {
-            return Ok(Vec::new());
+        if self.pending.is_empty() {
+            self.pending = pcm;
+        } else {
+            self.pending.extend_from_slice(&pcm);
+        }
+        if self.uncut || self.len - self.start <= MAX_CHUNK_SAMPLES + LOOKAHEAD_SAMPLES {
+            return Vec::new();
         }
         // Plan over whole frames only; a partial one waits for the rest.
-        let scored = self.score_whole_frames()?;
+        let scored = match self.score(false) {
+            Ok(scored) => scored,
+            Err(e) => {
+                self.stop_cutting(e);
+                return Vec::new();
+            }
+        };
         let segments = speech_segments(&self.probs, self.frame_samples, scored);
         // A pause still open at the end moves its midpoint as it grows: wait
         // for speech.
         if segments.last().map(|segment| segment.end) != Some(scored) {
-            return Ok(Vec::new());
+            return Vec::new();
         }
         // One plan, committed while each cut's whole window plus the lookahead
         // is scored.
@@ -249,46 +275,72 @@ impl Chunker {
             }
             chunks.push(self.take_until(cut));
         }
-        Ok(chunks)
+        chunks
     }
 
     /// Cuts what is left and returns the remaining chunks, in order. Nothing
     /// more is pushed after.
-    pub fn finish(&mut self) -> Result<Vec<Vec<f32>>> {
+    pub fn finish(&mut self) -> Vec<Vec<f32>> {
         let mut chunks = Vec::new();
-        if self.len - self.start > MAX_CHUNK_SAMPLES {
-            // The last partial frame is scored zero padded.
-            let scored = self.score_whole_frames()?;
-            if self.len > scored {
-                let mut tail = self.pending[scored - self.start..].to_vec();
-                tail.resize(self.frame_samples, 0.0);
-                let probs = self.scorer.score(&tail)?;
-                self.probs.extend(probs);
-            }
-            let segments = speech_segments(&self.probs, self.frame_samples, self.len);
-            let cuts = plan_cuts(&cut_candidates(&segments, self.len), self.len, self.start);
-            for cut in cuts {
-                chunks.push(self.take_until(cut));
+        if !self.uncut && self.len - self.start > MAX_CHUNK_SAMPLES {
+            match self.score(true) {
+                Ok(_) => {
+                    let segments = speech_segments(&self.probs, self.frame_samples, self.len);
+                    let cuts =
+                        plan_cuts(&cut_candidates(&segments, self.len), self.len, self.start);
+                    for cut in cuts {
+                        chunks.push(self.take_until(cut));
+                    }
+                }
+                Err(e) => self.stop_cutting(e),
             }
         }
         if self.len > self.start {
             chunks.push(self.take_until(self.len));
         }
-        Ok(chunks)
+        chunks
     }
 
-    /// Scores every whole frame not yet scored. Returns how many samples
-    /// have been scored.
-    fn score_whole_frames(&mut self) -> Result<usize> {
-        let scored = self.probs.len() * self.frame_samples;
-        let whole = (self.len - scored) / self.frame_samples * self.frame_samples;
+    /// Scores every frame not yet scored, making the scorer first if this is
+    /// the first time: whole frames only, or with `pad_last` the partial last
+    /// frame too, zero padded. Returns how many samples are scored.
+    fn score(&mut self, pad_last: bool) -> Result<usize> {
+        if self.scorer.is_none() {
+            // Nothing is cut before the first score, so a fresh scorer starts
+            // at the first sample, as it must.
+            debug_assert!(self.start == 0 && self.probs.is_empty());
+            let scorer = (self.make_scorer)()?;
+            self.frame_samples = scorer.frame_samples();
+            assert!(self.frame_samples > 0, "VAD frame size must be non-zero");
+            self.scorer = Some(scorer);
+        }
+        let scorer = self.scorer.as_mut().expect("the scorer was made above");
+        let frame = self.frame_samples;
+        let scored = self.probs.len() * frame;
+        // Cuts only fall in scored audio, so its unscored rest is pending.
+        let from = scored - self.start;
+        let whole = (self.len - scored) / frame * frame;
         if whole > 0 {
-            // Cuts only fall in scored audio, so its unscored rest is pending.
-            let from = scored - self.start;
-            let probs = self.scorer.score(&self.pending[from..from + whole])?;
-            self.probs.extend(probs);
+            self.probs
+                .extend(scorer.score(&self.pending[from..from + whole])?);
+        }
+        if pad_last && self.len > scored + whole {
+            let mut tail = self.pending[from + whole..].to_vec();
+            tail.resize(frame, 0.0);
+            self.probs.extend(scorer.score(&tail)?);
+            return Ok(self.len);
         }
         Ok(scored + whole)
+    }
+
+    /// Scoring failed: nothing more is cut, so the rest is one chunk.
+    fn stop_cutting(&mut self, e: anyhow::Error) {
+        warn!(
+            "Voice activity detection failed at {:.1}s; decoding the rest in one piece: {:#}",
+            seconds(self.len),
+            e
+        );
+        self.uncut = true;
     }
 
     fn take_until(&mut self, cut: usize) -> Vec<f32> {
@@ -501,13 +553,31 @@ mod tests {
         }
     }
 
-    fn chunker() -> (Chunker, Arc<AtomicUsize>) {
-        let scored = Arc::new(AtomicUsize::new(0));
-        let scorer = ScriptedScorer {
-            scored: Arc::clone(&scored),
-            fail: false,
+    /// How many scorers a chunker made, and how many frames they scored.
+    #[derive(Clone, Default)]
+    struct Counts {
+        made: Arc<AtomicUsize>,
+        scored: Arc<AtomicUsize>,
+    }
+
+    fn scripted(fail: bool) -> (Chunker, Counts) {
+        let counts = Counts::default();
+        let make = {
+            let counts = counts.clone();
+            move || {
+                counts.made.fetch_add(1, Ordering::Relaxed);
+                let scorer = ScriptedScorer {
+                    scored: Arc::clone(&counts.scored),
+                    fail,
+                };
+                Ok(Box::new(scorer) as Box<dyn SpeechScorer>)
+            }
         };
-        (Chunker::new(Box::new(scorer)), scored)
+        (Chunker::new(Box::new(make)), counts)
+    }
+
+    fn chunker() -> (Chunker, Counts) {
+        scripted(false)
     }
 
     /// Audio whose every frame holds its own probability.
@@ -532,19 +602,19 @@ mod tests {
     fn live_chunks_arrive_before_the_end_at_the_same_cuts() {
         let (pcm, probs) = long_clip();
         let (mut once, _) = chunker();
-        let mut offline = once.push(&pcm).unwrap();
-        offline.extend(once.finish().unwrap());
+        let mut offline = once.push(&pcm[..]);
+        offline.extend(once.finish());
         assert_eq!(lengths(&offline), planned(&probs, pcm.len()));
 
         let (mut chunker, _) = chunker();
         let mut live = Vec::new();
         for frame in pcm.chunks(FRAME) {
-            live.extend(chunker.push(frame).unwrap());
+            live.extend(chunker.push(frame));
         }
         // A cut is made whenever more than 45 s is waiting: 2 of the 4 chunks
         // before the end.
         assert_eq!(live.len(), 2, "chunks are ready while audio still arrives");
-        live.extend(chunker.finish().unwrap());
+        live.extend(chunker.finish());
         assert_eq!(lengths(&live), planned(&probs, pcm.len()));
     }
 
@@ -560,9 +630,9 @@ mod tests {
         let (mut chunker, _) = chunker();
         let mut live = Vec::new();
         for piece in pcm.chunks(16 * FRAME) {
-            live.extend(chunker.push(piece).unwrap());
+            live.extend(chunker.push(piece));
         }
-        live.extend(chunker.finish().unwrap());
+        live.extend(chunker.finish());
         assert_eq!(lengths(&live), planned);
     }
 
@@ -575,33 +645,50 @@ mod tests {
         let (mut chunker, _) = chunker();
         let mut chunks = Vec::new();
         for piece in pcm.chunks(FRAME * 3 + 7) {
-            chunks.extend(chunker.push(piece).unwrap());
+            chunks.extend(chunker.push(piece));
         }
-        chunks.extend(chunker.finish().unwrap());
+        chunks.extend(chunker.finish());
         assert_eq!(lengths(&chunks), planned(&probs, pcm.len()));
     }
 
     #[test]
-    fn audio_that_is_one_chunk_is_never_scored() {
+    fn audio_that_is_one_chunk_never_loads_a_vad() {
         let probs = probs_with_pauses(40.0, &[(20.0, 21.0)]);
         let pcm = clip(&probs);
-        let (mut chunker, scored) = chunker();
+        let (mut chunker, counts) = chunker();
         for frame in pcm.chunks(FRAME) {
-            assert!(chunker.push(frame).unwrap().is_empty());
+            assert!(chunker.push(frame).is_empty());
         }
-        assert_eq!(lengths(&chunker.finish().unwrap()), vec![pcm.len()]);
-        assert_eq!(scored.load(Ordering::Relaxed), 0);
+        assert_eq!(lengths(&chunker.finish()), vec![pcm.len()]);
+        assert_eq!(counts.made.load(Ordering::Relaxed), 0);
     }
 
     #[test]
-    fn a_scoring_failure_is_an_error() {
+    fn one_scorer_scores_the_whole_clip_once() {
+        let (pcm, probs) = long_clip();
+        let (mut chunker, counts) = chunker();
+        for frame in pcm.chunks(FRAME) {
+            chunker.push(frame);
+        }
+        chunker.finish();
+        assert_eq!(counts.made.load(Ordering::Relaxed), 1);
+        assert_eq!(counts.scored.load(Ordering::Relaxed), probs.len());
+    }
+
+    #[test]
+    fn a_scoring_failure_leaves_the_rest_in_one_piece() {
         let (pcm, _) = long_clip();
-        let scorer = ScriptedScorer {
-            scored: Arc::new(AtomicUsize::new(0)),
-            fail: true,
-        };
-        let mut chunker = Chunker::new(Box::new(scorer));
-        assert!(chunker.push(&pcm[..s(30.0)]).unwrap().is_empty());
-        assert!(chunker.push(&pcm[s(30.0)..]).is_err());
+        let (mut chunker, _) = scripted(true);
+        assert!(chunker.push(&pcm[..s(30.0)]).is_empty());
+        assert!(chunker.push(&pcm[s(30.0)..]).is_empty());
+        assert_eq!(lengths(&chunker.finish()), vec![pcm.len()]);
+    }
+
+    #[test]
+    fn a_vad_that_fails_to_load_leaves_the_clip_in_one_piece() {
+        let (pcm, _) = long_clip();
+        let mut chunker = Chunker::new(Box::new(|| anyhow::bail!("no VAD model")));
+        assert!(chunker.push(pcm.clone()).is_empty());
+        assert_eq!(lengths(&chunker.finish()), vec![pcm.len()]);
     }
 }

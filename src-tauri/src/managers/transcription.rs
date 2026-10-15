@@ -14,7 +14,7 @@ use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
 };
 use anyhow::Result;
-use chunked::{ChunkFailure, ChunkedDecode};
+use chunked::ChunkedDecode;
 use live::LiveSession;
 use log::{debug, error, info, warn};
 use policy::{batch_decode, live_decode, BatchDecode, ModelTraits};
@@ -1040,24 +1040,15 @@ impl TranscriptionManager {
         // `mark` covers every chunk, so a cancel between two stops the rest.
         // A failed chunk fails the whole transcription.
         let transcripts = match batch_decode(ModelTraits::of(&info), settings.long_form_chunking) {
-            BatchDecode::Chunked => match ChunkedDecode::decode_clip(
+            BatchDecode::Chunked => ChunkedDecode::decode_clip(
                 self,
                 mark,
                 setup.run_options.clone(),
-                &audio,
+                audio,
                 active_model,
                 settings.vad_backend,
-            ) {
-                Ok(transcripts) => transcripts,
-                Err(ChunkFailure::Engine(e)) => return Err(engine_error(e)),
-                Err(ChunkFailure::Vad(e)) => {
-                    warn!(
-                        "Voice activity detection failed, decoding the audio in one piece: {}",
-                        e
-                    );
-                    vec![whole(audio)?]
-                }
-            },
+            )
+            .map_err(engine_error)?,
             BatchDecode::Whole => vec![whole(audio)?],
         };
         let (text, model_detected_language) = join_chunks(transcripts);
