@@ -263,6 +263,9 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
     if (preview) return;
 
     try {
+      if (isMacOS) {
+        await commands.resetAccessibilityPermission();
+      }
       await requestAccessibilityPermission();
       setPermissions((prev) => ({ ...prev, accessibility: "waiting" }));
       startPolling();
