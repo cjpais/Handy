@@ -357,6 +357,39 @@ Place the `.gguf` file directly into the `models` directory, exactly like the Wh
 3. Your manually installed models should now appear as "Downloaded"
 4. Select the model you want to use and test transcription
 
+### Custom CA Certificates
+
+If your post-processing endpoint is a self-hosted, OpenAI-compatible API whose
+TLS certificate is signed by an internal Certificate Authority (e.g. an
+enterprise proxy doing TLS inspection, or an internal Open WebUI deployment),
+chat completions may fail with `HTTP request failed: error sending request`
+even though `curl` against the same URL succeeds.
+
+Point Handy at a PEM bundle containing your internal root(s) via either of
+these environment variables (consulted in this order):
+
+- `HANDY_CA_BUNDLE` — Handy-specific override.
+- `SSL_CERT_FILE` — long-standing OpenSSL / `curl` convention.
+
+```bash
+# macOS / Linux
+HANDY_CA_BUNDLE=/path/to/internal-ca.pem handy
+
+# Windows (PowerShell)
+$env:HANDY_CA_BUNDLE = "C:\path\to\internal-ca.pem"; & handy
+```
+
+The bundle should contain one or more `BEGIN CERTIFICATE` blocks — the same
+file you would point `curl --cacert` at. Handy adds these certificates *on top
+of* the system trust store rather than replacing it, so endpoints with public
+CAs continue to work. On Linux, prefer `HANDY_CA_BUNDLE`: OpenSSL itself
+honours `SSL_CERT_FILE` as a replacement for the default store, so pointing it
+at an internal-only bundle can break endpoints with public CAs.
+
+If the file cannot be read or parsed, Handy logs a warning and falls back to
+the system trust store rather than failing all requests. Run with `--debug` to
+see the warning.
+
 ### Custom Whisper Models
 
 Handy can auto-discover custom Whisper GGML models placed in the `models` directory. This is useful for users who want to use fine-tuned or community models not included in the default model list.
