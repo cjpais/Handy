@@ -41,6 +41,68 @@ fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), Str
         .map_err(|e| format!("Failed to write to clipboard: {}", e))
 }
 
+// VTE requests PRIMARY asynchronously after the synthetic Shift+Insert event.
+#[cfg(target_os = "linux")]
+const X11_PRIMARY_RESTORE_DELAY: Duration = Duration::from_millis(250);
+
+#[cfg(target_os = "linux")]
+struct X11PrimaryRestore {
+    previous_text: Option<String>,
+    pasted_text: String,
+}
+
+#[cfg(target_os = "linux")]
+fn should_mirror_shift_insert_to_x11_primary(
+    paste_method: &PasteMethod,
+    is_wayland_session: bool,
+) -> bool {
+    !is_wayland_session && *paste_method == PasteMethod::ShiftInsert
+}
+
+#[cfg(target_os = "linux")]
+fn prepare_x11_primary_paste(text: &str, paste_method: &PasteMethod) -> Option<X11PrimaryRestore> {
+    if !should_mirror_shift_insert_to_x11_primary(paste_method, is_wayland()) {
+        return None;
+    }
+
+    // VTE terminals paste PRIMARY for Shift+Insert on X11, while many GUI apps
+    // use the regular CLIPBOARD selection for the same shortcut. Mirror to both.
+    let primary = gtk::Clipboard::get(&gtk::gdk::SELECTION_PRIMARY);
+    let previous_text = primary.wait_for_text().map(|text| text.to_string());
+
+    info!("Mirroring Shift+Insert paste text to X11 PRIMARY selection");
+    primary.set_text(text);
+
+    Some(X11PrimaryRestore {
+        previous_text,
+        pasted_text: text.to_string(),
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn restore_x11_primary_if_unchanged(paste: X11PrimaryRestore) {
+    let primary = gtk::Clipboard::get(&gtk::gdk::SELECTION_PRIMARY);
+    let current_text = primary.wait_for_text().map(|text| text.to_string());
+
+    if current_text.as_deref() != Some(paste.pasted_text.as_str()) {
+        info!("X11 PRIMARY selection changed during paste; leaving it untouched");
+        return;
+    }
+
+    if let Some(previous_text) = paste.previous_text {
+        primary.set_text(&previous_text);
+    } else {
+        primary.clear();
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn schedule_x11_primary_restore(paste: X11PrimaryRestore) {
+    gtk::glib::timeout_add_local_once(X11_PRIMARY_RESTORE_DELAY, move || {
+        restore_x11_primary_if_unchanged(paste)
+    });
+}
+
 fn finish_clipboard_paste(
     paste_result: Result<(), String>,
     paste_delay_after_ms: u64,
@@ -73,6 +135,9 @@ fn paste_via_clipboard(
     // Write text to clipboard first
     write_text_to_clipboard(app_handle, text)?;
 
+    #[cfg(target_os = "linux")]
+    let x11_primary_paste = prepare_x11_primary_paste(text, paste_method);
+
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
     // Capture key injection errors so the original clipboard is restored before
@@ -99,6 +164,14 @@ fn paste_via_clipboard(
 
         Ok(())
     })();
+
+    #[cfg(target_os = "linux")]
+    if let Some(x11_primary_paste) = x11_primary_paste {
+        // Schedule before the normal clipboard restore. The callback cannot run
+        // until this main-thread paste function returns to the GLib event loop,
+        // which gives VTE time to request PRIMARY first.
+        schedule_x11_primary_restore(x11_primary_paste);
+    }
 
     finish_clipboard_paste(paste_result, paste_delay_after_ms, || {
         // Restore original clipboard content even when key injection failed.
@@ -943,6 +1016,27 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
             ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes).unwrap(),
             ["key", "42:1", "110:1", "110:0", "42:0"]
         );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn x11_primary_mirroring_requires_shift_insert_on_x11() {
+        assert!(should_mirror_shift_insert_to_x11_primary(
+            &PasteMethod::ShiftInsert,
+            false
+        ));
+        assert!(!should_mirror_shift_insert_to_x11_primary(
+            &PasteMethod::CtrlV,
+            false
+        ));
+        assert!(!should_mirror_shift_insert_to_x11_primary(
+            &PasteMethod::CtrlShiftV,
+            false
+        ));
+        assert!(!should_mirror_shift_insert_to_x11_primary(
+            &PasteMethod::ShiftInsert,
+            true
+        ));
     }
 
     #[test]
