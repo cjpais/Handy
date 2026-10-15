@@ -17,30 +17,16 @@ pub const fn frames_for_duration_ms(duration_ms: u64, frame_samples: usize) -> u
 }
 
 pub enum VadFrame<'a> {
-    /// Speech – may aggregate several frames (prefill + current + hangover),
-    /// with each frame's speech probability, in order.
-    Speech {
-        samples: &'a [f32],
-        probs: &'a [f32],
-    },
-    /// Non-speech (silence, noise), with the frame's speech probability.
-    /// Down-stream code can ignore the audio.
-    Noise { prob: f32 },
+    /// Speech – may aggregate several frames (prefill + current + hangover)
+    Speech(&'a [f32]),
+    /// Non-speech (silence, noise). Down-stream code can ignore it.
+    Noise,
 }
 
 impl<'a> VadFrame<'a> {
     #[inline]
     pub fn is_speech(&self) -> bool {
-        matches!(self, VadFrame::Speech { .. })
-    }
-
-    /// The speech probability of the frame just pushed: the last one of a
-    /// speech run.
-    pub fn frame_prob(&self) -> f32 {
-        match self {
-            VadFrame::Speech { probs, .. } => probs.last().copied().unwrap_or(0.0),
-            VadFrame::Noise { prob } => *prob,
-        }
+        matches!(self, VadFrame::Speech(_))
     }
 }
 
@@ -67,26 +53,25 @@ pub trait VoiceActivityDetector: Send + Sync {
     }
 
     fn reset(&mut self) {}
+}
 
-    /// The speech probability of each frame of a whole clip, the last frame
-    /// zero padded, from a fresh state (so a recording's detector is reset).
-    /// Frame by frame unless the detector can score a clip in one go.
-    fn score_clip(&mut self, pcm: &[f32]) -> Result<Vec<f32>> {
-        self.reset();
-        let frame_samples = self.frame_samples();
-        let mut probs = Vec::with_capacity(pcm.len().div_ceil(frame_samples));
-        let mut padded = vec![0.0; frame_samples];
-        for frame in pcm.chunks(frame_samples) {
-            let frame = if frame.len() == frame_samples {
-                frame
-            } else {
-                padded[..frame.len()].copy_from_slice(frame);
-                &padded
-            };
-            probs.push(self.push_frame(frame)?.frame_prob());
-        }
-        Ok(probs)
+/// A detector's own speech probabilities, before any threshold or smoothing:
+/// what long-form chunking cuts at.
+pub trait SpeechScorer: VoiceActivityDetector {
+    /// One probability per frame of `frames`, which must be whole frames.
+    /// Scoring carries on from the frames scored before, so a clip scored in
+    /// pieces gets the same probabilities as scored in one go.
+    fn score(&mut self, frames: &[f32]) -> Result<Vec<f32>>;
+}
+
+fn check_whole_frames(frames: &[f32], frame_samples: usize) -> Result<()> {
+    if !frames.len().is_multiple_of(frame_samples) {
+        anyhow::bail!(
+            "expected whole {frame_samples}-sample frames, got {} samples",
+            frames.len()
+        );
     }
+    Ok(())
 }
 
 /// End-of-recording snapshot of a smoothing detector's state. Voiced frames
@@ -125,42 +110,29 @@ mod tests {
         assert_eq!(frames_for_duration_ms(VAD_ONSET_MS, 512), 2);
     }
 
-    /// Scores each frame with the sum of its samples, so padding shows.
-    struct SummingVad;
+    #[test]
+    fn earshot_scores_the_same_in_pieces_and_frame_by_frame() {
+        // Earshot needs no model file, so the real detector runs here. The
+        // signal rings outside [-1, 1] so scoring clamps it as gating does.
+        let frame = earshot::EARSHOT_FRAME_SAMPLES;
+        let pcm: Vec<f32> = (0..frame * 12)
+            .map(|i| (i as f32 * 0.05).sin() * 1.2)
+            .collect();
+        let whole = EarshotVad::new(0.5).unwrap().score(&pcm).unwrap();
+        assert_eq!(whole.len(), 12);
 
-    impl VoiceActivityDetector for SummingVad {
-        fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
-            assert_eq!(frame.len(), 4, "every frame is whole");
-            Ok(VadFrame::Noise {
-                prob: frame.iter().sum(),
-            })
+        let mut pieces = EarshotVad::new(0.5).unwrap();
+        let mut scored = pieces.score(&pcm[..frame * 5]).unwrap();
+        scored.extend(pieces.score(&pcm[frame * 5..]).unwrap());
+        assert_eq!(scored, whole);
+
+        // Gating thresholds the same scores.
+        let mut gated = EarshotVad::new(0.0).unwrap();
+        for chunk in pcm.chunks(frame) {
+            assert!(gated.push_frame(chunk).unwrap().is_speech());
         }
 
-        fn frame_samples(&self) -> usize {
-            4
-        }
-    }
-
-    #[test]
-    fn score_clip_scores_every_frame_padding_the_last() {
-        let pcm = [1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0];
-        assert_eq!(SummingVad.score_clip(&pcm).unwrap(), vec![4.0, 8.0, 6.0]);
-        assert!(SummingVad.score_clip(&[]).unwrap().is_empty());
-    }
-
-    #[test]
-    fn score_clip_matches_a_detector_fed_frame_by_frame() {
-        // Earshot needs no model file, so the real detector runs here.
-        let pcm: Vec<f32> = (0..EarshotVad::new(0.5).unwrap().frame_samples() * 6)
-            .map(|i| (i as f32 * 0.05).sin() * 0.3)
-            .collect();
-        let probs = EarshotVad::new(0.5).unwrap().score_clip(&pcm).unwrap();
-        let mut fed = EarshotVad::new(0.5).unwrap();
-        let expected: Vec<f32> = pcm
-            .chunks(fed.frame_samples())
-            .map(|frame| fed.push_frame(frame).unwrap().frame_prob())
-            .collect();
-        assert_eq!(probs, expected);
+        assert!(EarshotVad::new(0.5).unwrap().score(&pcm[..10]).is_err());
     }
 
     #[test]

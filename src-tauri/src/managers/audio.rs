@@ -4,7 +4,7 @@ use crate::audio_toolkit::{
         frames_for_duration_ms, EarshotVad, SmoothedVad, VAD_OFFLINE_HANGOVER_MS, VAD_ONSET_MS,
         VAD_PREFILL_MS, VAD_STREAMING_HANGOVER_MS,
     },
-    CaptureSink, CaptureVad, SileroVad, VadPolicy, VoiceActivityDetector,
+    CaptureSink, CaptureVad, SileroVad, SpeechScorer, VadPolicy, VoiceActivityDetector,
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
@@ -334,12 +334,12 @@ fn silero_vad_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, anyhow::Err
 }
 
 /// A fresh detector for `backend`, without Handy's smoothing: what a
-/// recording's VAD wraps, and what scores whole clips for long-form chunking,
-/// so every path uses the selected backend.
+/// recording's VAD wraps, and what scores audio for long-form chunking, so
+/// every path uses the selected backend.
 pub fn create_detector(
     backend: VadBackend,
     app_handle: &tauri::AppHandle,
-) -> Result<Box<dyn VoiceActivityDetector>, anyhow::Error> {
+) -> Result<Box<dyn SpeechScorer>, anyhow::Error> {
     Ok(match backend {
         VadBackend::Silero => {
             let vad_path = silero_vad_path(app_handle)?;
@@ -359,7 +359,7 @@ fn create_capture_vad(
     backend: VadBackend,
     app_handle: &tauri::AppHandle,
 ) -> Result<CaptureVad, anyhow::Error> {
-    let detector = create_detector(backend, app_handle)?;
+    let detector: Box<dyn VoiceActivityDetector> = create_detector(backend, app_handle)?;
 
     // Earshot uses 16 ms frames while Silero uses 32 ms. Convert the existing
     // time-based capture profile to each detector's frame size so selecting a
@@ -512,8 +512,7 @@ impl AudioRecordingManager {
             let app_handle = app.clone();
             Arc::new(move |levels| utils::emit_levels(&app_handle, &levels))
         };
-        let on_audio: AudioFrameCallback =
-            Arc::new(move |frame, scores| stream_router.feed(frame, scores));
+        let on_audio: AudioFrameCallback = Arc::new(move |frame| stream_router.feed(frame));
 
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),

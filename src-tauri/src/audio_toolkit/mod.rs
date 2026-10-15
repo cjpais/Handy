@@ -8,11 +8,11 @@ pub mod vad;
 
 pub use audio::{
     list_output_devices, read_wav_samples, save_wav_file, verify_wav_file, CaptureSink, CaptureVad,
-    FrameScores, VadPolicy,
+    VadPolicy,
 };
 pub use lang_id::detect_output_language;
 pub use text::{
     apply_custom_words, normalize_transcription_output, remove_filler_words, OutputLanguageEvidence,
 };
 pub use utils::get_cpal_host;
-pub use vad::{EarshotVad, SileroVad, VoiceActivityDetector};
+pub use vad::{EarshotVad, SileroVad, SpeechScorer, VoiceActivityDetector};

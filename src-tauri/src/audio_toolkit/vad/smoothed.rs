@@ -6,8 +6,6 @@ use std::collections::VecDeque;
 /// end-of-recording `tail_report()` diagnostic; they never affect emission.
 struct BufferedFrame {
     samples: Vec<f32>,
-    /// The inner VAD's speech probability, passed on with the samples.
-    prob: f32,
     emitted: bool,
     voiced: bool,
 }
@@ -24,7 +22,6 @@ pub struct SmoothedVad {
     in_speech: bool,
 
     temp_out: Vec<f32>,
-    temp_probs: Vec<f32>,
 }
 
 impl SmoothedVad {
@@ -44,7 +41,6 @@ impl SmoothedVad {
             onset_counter: 0,
             in_speech: false,
             temp_out: Vec::new(),
-            temp_probs: Vec::new(),
         }
     }
 
@@ -53,39 +49,24 @@ impl SmoothedVad {
             frame.emitted = true;
         }
     }
-
-    /// The current frame, kept as speech on its own.
-    fn emit_current<'a>(&'a mut self, frame: &'a [f32]) -> VadFrame<'a> {
-        self.mark_last_emitted();
-        let prob = &self
-            .frame_buffer
-            .back()
-            .expect("the current frame is buffered")
-            .prob;
-        VadFrame::Speech {
-            samples: frame,
-            probs: std::slice::from_ref(prob),
-        }
-    }
 }
 
 impl VoiceActivityDetector for SmoothedVad {
     fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
-        // 1. Delegate to the wrapped VAD
-        let (is_voice, prob) = {
-            let decision = self.inner_vad.push_frame(frame)?;
-            (decision.is_speech(), decision.frame_prob())
-        };
-
-        // 2. Buffer every incoming frame for possible pre-roll
+        // 1. Buffer every incoming frame for possible pre-roll
         self.frame_buffer.push_back(BufferedFrame {
             samples: frame.to_vec(),
-            prob,
             emitted: false,
-            voiced: is_voice,
+            voiced: false,
         });
         while self.frame_buffer.len() > self.prefill_frames + 1 {
             self.frame_buffer.pop_front();
+        }
+
+        // 2. Delegate to the wrapped boolean VAD
+        let is_voice = self.inner_vad.is_voice(frame)?;
+        if let Some(last) = self.frame_buffer.back_mut() {
+            last.voiced = is_voice;
         }
 
         match (self.in_speech, is_voice) {
@@ -100,43 +81,40 @@ impl VoiceActivityDetector for SmoothedVad {
 
                     // Collect prefill + current frame
                     self.temp_out.clear();
-                    self.temp_probs.clear();
                     for buffered in self.frame_buffer.iter_mut().filter(|f| !f.emitted) {
                         self.temp_out.extend(buffered.samples.iter());
-                        self.temp_probs.push(buffered.prob);
                         buffered.emitted = true;
                     }
-                    Ok(VadFrame::Speech {
-                        samples: &self.temp_out,
-                        probs: &self.temp_probs,
-                    })
+                    Ok(VadFrame::Speech(&self.temp_out))
                 } else {
                     // Not enough frames yet, still silence
-                    Ok(VadFrame::Noise { prob })
+                    Ok(VadFrame::Noise)
                 }
             }
 
             // Ongoing Speech
             (true, true) => {
                 self.hangover_counter = self.hangover_frames;
-                Ok(self.emit_current(frame))
+                self.mark_last_emitted();
+                Ok(VadFrame::Speech(frame))
             }
 
             // End of Speech or interruption during onset phase
             (true, false) => {
                 if self.hangover_counter > 0 {
                     self.hangover_counter -= 1;
-                    Ok(self.emit_current(frame))
+                    self.mark_last_emitted();
+                    Ok(VadFrame::Speech(frame))
                 } else {
                     self.in_speech = false;
-                    Ok(VadFrame::Noise { prob })
+                    Ok(VadFrame::Noise)
                 }
             }
 
             // Silence or broken onset sequence
             (false, false) => {
                 self.onset_counter = 0; // Reset onset counter on silence
-                Ok(VadFrame::Noise { prob })
+                Ok(VadFrame::Noise)
             }
         }
     }
@@ -182,7 +160,6 @@ impl VoiceActivityDetector for SmoothedVad {
         self.onset_counter = 0;
         self.in_speech = false;
         self.temp_out.clear();
-        self.temp_probs.clear();
     }
 }
 
@@ -206,12 +183,9 @@ mod tests {
     impl VoiceActivityDetector for ScriptedVad {
         fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
             if self.script.pop_front().unwrap_or(false) {
-                Ok(VadFrame::Speech {
-                    samples: frame,
-                    probs: &[0.9],
-                })
+                Ok(VadFrame::Speech(frame))
             } else {
-                Ok(VadFrame::Noise { prob: 0.1 })
+                Ok(VadFrame::Noise)
             }
         }
 
@@ -259,31 +233,5 @@ mod tests {
         let report = vad.tail_report().unwrap();
         assert_eq!(report.withheld_frames, 2);
         assert_eq!(report.withheld_voiced_frames, 0);
-    }
-
-    #[test]
-    fn speech_carries_one_probability_per_frame() {
-        // The onset releases the withheld pre-roll with each frame's own
-        // probability; a hangover frame carries its (low) probability too.
-        let mut vad = smoothed(&[false, true, true, false], 2);
-        assert!(matches!(
-            vad.push_frame(&frame(0.1)).unwrap(),
-            VadFrame::Noise { prob } if prob == 0.1
-        ));
-        assert!(!vad.push_frame(&frame(0.2)).unwrap().is_speech());
-        match vad.push_frame(&frame(0.3)).unwrap() {
-            VadFrame::Speech { samples, probs } => {
-                assert_eq!(samples.len(), 3 * 4);
-                assert_eq!(probs, &[0.1, 0.9, 0.9]);
-            }
-            VadFrame::Noise { .. } => panic!("onset should release speech"),
-        }
-        match vad.push_frame(&frame(0.4)).unwrap() {
-            VadFrame::Speech { samples, probs } => {
-                assert_eq!(samples, &frame(0.4)[..]);
-                assert_eq!(probs, &[0.1]);
-            }
-            VadFrame::Noise { .. } => panic!("hangover should keep the frame"),
-        }
     }
 }

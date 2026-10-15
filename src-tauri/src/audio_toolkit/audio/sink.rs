@@ -11,8 +11,7 @@ use crate::audio_toolkit::{
 /// How 16 kHz mono frames should be filtered for one recording session.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum VadPolicy {
-    /// Forward every frame. The detector still scores each one, so long
-    /// audio can be chunked at pauses.
+    /// Bypass VAD and forward every frame.
     Disabled,
     /// Current offline-tuned VAD profile.
     Offline,
@@ -53,7 +52,7 @@ impl CaptureVad {
     }
 
     /// Post-speech hangover tail (in detector frames) for the given policy.
-    /// `Disabled` never drops a frame, so it maps to the offline value.
+    /// `Disabled` never reaches the detector, so it maps to the offline value.
     fn hangover_for(&self, policy: VadPolicy) -> usize {
         match policy {
             VadPolicy::Streaming => self.streaming_hangover_frames,
@@ -64,18 +63,9 @@ impl CaptureVad {
 
 /// Receives spectrum levels for the recording overlay.
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
-/// The speech probability of each whole detector frame of some audio.
-#[derive(Clone, Copy, Debug)]
-pub struct FrameScores<'a> {
-    pub probs: &'a [f32],
-    pub frame_samples: usize,
-}
-
 /// Receives each 16 kHz mono frame that passes the recording's VAD policy, in
-/// order, with its frames' speech probabilities when the detector scored them.
-/// Used to feed live transcription (streaming, or long audio decoded in chunks
-/// cut at pauses) as audio arrives.
-pub type AudioFrameCallback = Arc<dyn Fn(&[f32], Option<FrameScores<'_>>) + Send + Sync + 'static>;
+/// order. Used to feed live streaming transcription as audio arrives.
+pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 
 /// What a finished recording hands back.
 pub struct CapturedAudio {
@@ -114,9 +104,11 @@ impl CaptureSink {
         on_audio: AudioFrameCallback,
         ready: mpsc::Sender<()>,
     ) -> Self {
-        let hangover = vad.hangover_for(policy);
-        vad.detector.set_hangover_frames(hangover);
-        vad.detector.reset();
+        if policy != VadPolicy::Disabled {
+            let hangover = vad.hangover_for(policy);
+            vad.detector.set_hangover_frames(hangover);
+            vad.detector.reset();
+        }
         Self {
             vad,
             policy,
@@ -164,14 +156,9 @@ impl CaptureSink {
         }
     }
 
-    fn emit(
-        samples: &mut Vec<f32>,
-        on_audio: &AudioFrameCallback,
-        frame: &[f32],
-        scores: Option<FrameScores<'_>>,
-    ) {
+    fn emit(samples: &mut Vec<f32>, on_audio: &AudioFrameCallback, frame: &[f32]) {
         samples.extend_from_slice(frame);
-        on_audio(frame, scores);
+        on_audio(frame);
     }
 }
 
@@ -187,36 +174,21 @@ impl Sink for CaptureSink {
             (self.on_levels)(levels);
         }
 
-        // The detector needs whole frames, so the final chunk goes in with its
-        // zero padding.
-        let frame_samples = self.vad.frame_samples();
-        let decision = self.vad.detector.push_frame(chunk.samples);
-
         if self.policy == VadPolicy::Disabled {
-            // Every real sample is kept; its frame's score rides along.
-            let prob = decision.ok().map(|decision| decision.frame_prob());
-            let scores = prob.as_ref().map(|prob| FrameScores {
-                probs: std::slice::from_ref(prob),
-                frame_samples,
-            });
-            Self::emit(&mut self.samples, &self.on_audio, real, scores);
+            Self::emit(&mut self.samples, &self.on_audio, real);
             return;
         }
 
-        // At most one frame of padding silence reaches the recording.
-        match decision {
-            Ok(VadFrame::Speech { samples, probs }) => Self::emit(
-                &mut self.samples,
-                &self.on_audio,
-                samples,
-                Some(FrameScores {
-                    probs,
-                    frame_samples,
-                }),
-            ),
-            Ok(VadFrame::Noise { .. }) => {}
-            // A detector failure keeps the audio, unscored.
-            Err(_) => Self::emit(&mut self.samples, &self.on_audio, chunk.samples, None),
+        // The detector needs whole frames, so the final chunk goes in with its
+        // zero padding; at most one frame of silence reaches the recording.
+        match self
+            .vad
+            .detector
+            .push_frame(chunk.samples)
+            .unwrap_or(VadFrame::Speech(chunk.samples))
+        {
+            VadFrame::Speech(frame) => Self::emit(&mut self.samples, &self.on_audio, frame),
+            VadFrame::Noise => {}
         }
     }
 }

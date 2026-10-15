@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use super::{VadFrame, VoiceActivityDetector};
+use super::{check_whole_frames, SpeechScorer, VadFrame, VoiceActivityDetector};
 
 pub const EARSHOT_FRAME_SAMPLES: usize = 256;
 
@@ -12,8 +12,6 @@ pub struct EarshotVad {
     engine: Box<earshot::Detector>,
     threshold: f32,
     clamped_frame: [f32; EARSHOT_FRAME_SAMPLES],
-    /// The last frame's score, lent out with a speech frame.
-    last_score: f32,
 }
 
 impl EarshotVad {
@@ -28,13 +26,13 @@ impl EarshotVad {
             engine: earshot::Detector::default_boxed(),
             threshold,
             clamped_frame: [0.0; EARSHOT_FRAME_SAMPLES],
-            last_score: 0.0,
         })
     }
 }
 
-impl VoiceActivityDetector for EarshotVad {
-    fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
+impl EarshotVad {
+    /// The speech score of one frame.
+    fn score_frame(&mut self, frame: &[f32]) -> Result<f32> {
         if frame.len() != EARSHOT_FRAME_SAMPLES {
             anyhow::bail!(
                 "expected {EARSHOT_FRAME_SAMPLES} samples, got {}",
@@ -49,23 +47,25 @@ impl VoiceActivityDetector for EarshotVad {
         // signal can ring slightly outside [-1, 1]. Earshot documents that
         // range as a precondition and asserts it in debug builds, so clamp only
         // the prediction input while preserving the original audio on output.
-        let score = if frame.iter().all(|sample| (-1.0..=1.0).contains(sample)) {
-            self.engine.predict_f32(frame)
-        } else {
-            for (clamped, sample) in self.clamped_frame.iter_mut().zip(frame) {
-                *clamped = sample.clamp(-1.0, 1.0);
-            }
-            self.engine.predict_f32(&self.clamped_frame)
-        };
+        Ok(
+            if frame.iter().all(|sample| (-1.0..=1.0).contains(sample)) {
+                self.engine.predict_f32(frame)
+            } else {
+                for (clamped, sample) in self.clamped_frame.iter_mut().zip(frame) {
+                    *clamped = sample.clamp(-1.0, 1.0);
+                }
+                self.engine.predict_f32(&self.clamped_frame)
+            },
+        )
+    }
+}
 
-        if score >= self.threshold {
-            self.last_score = score;
-            Ok(VadFrame::Speech {
-                samples: frame,
-                probs: std::slice::from_ref(&self.last_score),
-            })
+impl VoiceActivityDetector for EarshotVad {
+    fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
+        if self.score_frame(frame)? >= self.threshold {
+            Ok(VadFrame::Speech(frame))
         } else {
-            Ok(VadFrame::Noise { prob: score })
+            Ok(VadFrame::Noise)
         }
     }
 
@@ -75,6 +75,17 @@ impl VoiceActivityDetector for EarshotVad {
 
     fn reset(&mut self) {
         self.engine.reset();
+    }
+}
+
+impl SpeechScorer for EarshotVad {
+    fn score(&mut self, frames: &[f32]) -> Result<Vec<f32>> {
+        check_whole_frames(frames, EARSHOT_FRAME_SAMPLES)?;
+        let (frames, _) = frames.as_chunks::<EARSHOT_FRAME_SAMPLES>();
+        frames
+            .iter()
+            .map(|frame| self.score_frame(frame))
+            .collect()
     }
 }
 
@@ -108,8 +119,8 @@ mod tests {
         let mut vad = EarshotVad::new(0.0).unwrap();
         let frame = [1.01; EARSHOT_FRAME_SAMPLES];
         match vad.push_frame(&frame).unwrap() {
-            VadFrame::Speech { samples, .. } => assert_eq!(samples, frame),
-            VadFrame::Noise { .. } => panic!("zero threshold should retain the frame"),
+            VadFrame::Speech(output) => assert_eq!(output, frame),
+            VadFrame::Noise => panic!("zero threshold should retain the frame"),
         }
     }
 

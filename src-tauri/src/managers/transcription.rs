@@ -1,7 +1,7 @@
 use crate::audio_toolkit::chunking::{self, Chunker};
 use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
-    remove_filler_words, FrameScores, OutputLanguageEvidence,
+    remove_filler_words, OutputLanguageEvidence,
 };
 use crate::chinese_script::{convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
@@ -18,7 +18,6 @@ use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::ops::Range;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard};
@@ -90,12 +89,7 @@ pub struct StreamPhaseEvent {
 /// request travel the same channel so FIFO ordering guarantees every fed frame
 /// is processed before finalize runs.
 enum StreamCmd {
-    Feed {
-        pcm: Vec<f32>,
-        /// Each whole frame's speech probability and the frame size, when
-        /// the recording's detector scored them.
-        scores: Option<(Vec<f32>, usize)>,
-    },
+    Feed(Vec<f32>),
     /// Flush the stream and reply with the final text, or `None` if no
     /// usable stream exists (caller should fall back to batch transcription).
     /// `Err(Cancelled)` if the finalize itself was cancelled. `samples` is
@@ -164,18 +158,14 @@ impl StreamRouter {
         *self.tx.lock().unwrap() = None;
     }
 
-    /// Forward a 16 kHz frame, and its speech probabilities when scored, to
-    /// the active streaming worker. Cheap no-op (a single relaxed atomic
-    /// load) when no stream is pending.
-    pub fn feed(&self, frame: &[f32], scores: Option<FrameScores<'_>>) {
+    /// Forward a 16 kHz frame to the active streaming worker. Cheap no-op (a
+    /// single relaxed atomic load) when no stream is pending.
+    pub fn feed(&self, frame: &[f32]) {
         if !self.open.load(Ordering::Relaxed) {
             return;
         }
         if let Some(tx) = self.tx.lock().unwrap().as_ref() {
-            let _ = tx.send(StreamCmd::Feed {
-                pcm: frame.to_vec(),
-                scores: scores.map(|scores| (scores.probs.to_vec(), scores.frame_samples)),
-            });
+            let _ = tx.send(StreamCmd::Feed(frame.to_vec()));
         }
     }
 
@@ -857,7 +847,7 @@ impl TranscriptionManager {
 
         while let Ok(cmd) = rx.recv() {
             match cmd {
-                StreamCmd::Feed { pcm, .. } => {
+                StreamCmd::Feed(pcm) => {
                     self.touch_activity();
                     lock_perf(&perf).record_feed(pcm.len());
                     stream.feed(pcm);
@@ -916,9 +906,9 @@ impl TranscriptionManager {
     }
 
     /// Long-form chunking while a non-streaming model's recording goes on:
-    /// each chunk is decoded as soon as its cut is certain, using the speech
-    /// probabilities the recording's VAD already computed, so only the last
-    /// chunk is left when the recording stops. Any failure, or a recording
+    /// each chunk is decoded as soon as its cut is certain, scored by the
+    /// selected VAD backend as the audio arrives, so only the last chunk is
+    /// left when the recording stops. Any failure, or a recording
     /// this worker didn't see all of, reports no result: the caller then
     /// transcribes the whole recording in batch (which chunks it too).
     fn run_chunked_worker(&self, rx: mpsc::Receiver<StreamCmd>, info: &LoadedInfo, model_id: &str) {
@@ -928,7 +918,14 @@ impl TranscriptionManager {
         let setup = run_setup(info, &settings, &validated_language);
         // Every chunk of this recording stops with one cancel.
         let mark = self.engine.cancel_mark();
-        let mut chunker: Option<Chunker> = None;
+        let mut chunker = match create_detector(settings.vad_backend, &self.app_handle) {
+            Ok(detector) => Chunker::new(detector),
+            Err(e) => {
+                warn!("Live long-form chunking unavailable: {}", e);
+                drain_until_finalize(rx);
+                return;
+            }
+        };
         let mut transcripts: Vec<Transcript> = Vec::new();
         // The first failure; no more chunks are decoded after it.
         let mut failure: Option<EngineError> = None;
@@ -968,14 +965,13 @@ impl TranscriptionManager {
 
         while let Ok(cmd) = rx.recv() {
             match cmd {
-                StreamCmd::Feed { pcm, scores } => {
-                    // Unscored audio never cuts, so its frame size is moot.
-                    let chunker = chunker.get_or_insert_with(|| {
-                        Chunker::new(scores.as_ref().map_or(512, |(_, frame)| *frame))
-                    });
-                    let ready = chunker.push(&pcm, scores.as_ref().map(|(probs, _)| &probs[..]));
-                    decode(ready, &mut transcripts, &mut failure);
-                }
+                StreamCmd::Feed(pcm) => match chunker.push(&pcm) {
+                    Ok(ready) => decode(ready, &mut transcripts, &mut failure),
+                    Err(e) => {
+                        info!("Live chunk scoring stopped: {}", e);
+                        failure.get_or_insert(EngineError::Failed(e.to_string()));
+                    }
+                },
                 StreamCmd::Finalize { reply, samples } => {
                     let live_chunks = transcripts.len();
                     if matches!(failure, Some(EngineError::Cancelled)) {
@@ -989,7 +985,7 @@ impl TranscriptionManager {
                         let _ = reply.send(Ok(None));
                         return;
                     }
-                    let Some(chunker) = chunker.filter(|c| c.samples() == samples) else {
+                    if chunker.samples() != samples {
                         info!(
                             "Live chunks did not see the whole recording ({} samples); \
                              transcribing it in batch",
@@ -997,8 +993,14 @@ impl TranscriptionManager {
                         );
                         let _ = reply.send(Ok(None));
                         return;
-                    };
-                    decode(chunker.finish(), &mut transcripts, &mut failure);
+                    }
+                    match chunker.finish() {
+                        Ok(rest) => decode(rest, &mut transcripts, &mut failure),
+                        Err(e) => {
+                            info!("Live chunk scoring stopped: {}", e);
+                            failure.get_or_insert(EngineError::Failed(e.to_string()));
+                        }
+                    }
                     let result = match failure {
                         Some(EngineError::Cancelled) => Err(EngineError::Cancelled),
                         Some(EngineError::Failed(_)) => Ok(None),
@@ -1258,14 +1260,12 @@ impl TranscriptionManager {
         };
         let transcripts = match chunks {
             Some(chunks) => {
-                let transcripts = chunks
-                    .iter()
-                    .map(|chunk| run(audio[chunk.clone()].to_vec()))
-                    .collect::<Result<Vec<_>>>()?;
+                let count = chunks.len();
+                let transcripts = chunks.into_iter().map(run).collect::<Result<Vec<_>>>()?;
                 info!(
                     "Decoded {:.1}s of audio in {} chunks",
                     audio.len() as f64 / 16_000.0,
-                    chunks.len()
+                    count
                 );
                 transcripts
             }
@@ -1295,30 +1295,26 @@ impl TranscriptionManager {
             })
     }
 
-    /// Where to cut long audio for a model that doesn't handle it in one run:
-    /// at pauses the selected VAD backend finds, about 30 s apart, as a
-    /// recording's chunks are. `None` decodes it in one piece: audio of 40 s
-    /// or less, or audio the VAD can't score.
-    fn long_form_chunks(&self, audio: &[f32], backend: VadBackend) -> Option<Vec<Range<usize>>> {
-        if audio.len() <= chunking::MAX_CHUNK_SAMPLES {
-            return None;
-        }
+    /// Long audio cut at pauses the selected VAD backend finds, about 30 s
+    /// apart, as a recording is live. `None` decodes it in one piece: audio
+    /// the VAD can't score.
+    fn long_form_chunks(&self, audio: &[f32], backend: VadBackend) -> Option<Vec<Vec<f32>>> {
         let started = Instant::now();
-        let scored = create_detector(backend, &self.app_handle).and_then(|mut detector| {
-            let frame_samples = detector.frame_samples();
-            detector
-                .score_clip(audio)
-                .map(|probs| (probs, frame_samples))
+        let chunks = create_detector(backend, &self.app_handle).and_then(|detector| {
+            let mut chunker = Chunker::new(detector);
+            let mut chunks = chunker.push(audio)?;
+            chunks.extend(chunker.finish()?);
+            Ok(chunks)
         });
-        match scored {
-            Ok((probs, frame_samples)) => {
+        match chunks {
+            Ok(chunks) => {
                 debug!(
-                    "Scored {:.1}s of audio with {:?} VAD for long-form chunking in {:?}",
+                    "Planned {:.1}s of audio with {:?} VAD for long-form chunking in {:?}",
                     audio.len() as f64 / 16_000.0,
                     backend,
                     started.elapsed()
                 );
-                Some(chunking::plan_chunks(&probs, frame_samples, audio.len()))
+                Some(chunks)
             }
             Err(e) => {
                 warn!(
@@ -1873,7 +1869,7 @@ fn cpp_translation_task(
 fn drain_until_finalize(rx: mpsc::Receiver<StreamCmd>) {
     while let Ok(cmd) = rx.recv() {
         match cmd {
-            StreamCmd::Feed { .. } => {}
+            StreamCmd::Feed(_) => {}
             StreamCmd::Finalize { reply, .. } => {
                 let _ = reply.send(Ok(None));
                 break;
