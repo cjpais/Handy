@@ -355,6 +355,10 @@
         "title": "Rilevamento dell'attività vocale",
         "description": "Filtra il silenzio dalle registrazioni. I modelli che supportano lo streaming utilizzano una coda VAD più lunga; disabilitando la VAD si registra l'audio grezzo."
       },
+      "longFormChunking": {
+        "title": "Suddivisione dell'audio lungo",
+        "description": "Suddivide le registrazioni lunghe in corrispondenza delle pause prima della trascrizione, il che di solito migliora le prestazioni della trascrizione."
+      },
       "vadBackend": {
         "title": "Backend di rilevamento vocale",
         "description": "Scegli il rilevatore usato per filtrare il silenzio. Earshot è sperimentale; torna a Silero se il parlato viene tagliato o il rumore viene mantenuto.",

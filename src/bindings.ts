@@ -375,6 +375,14 @@ async changeVadEnabledSetting(enabled: boolean) : Promise<Result<null, string>> 
     else return { status: "error", error: e  as any };
 }
 },
+async changeLongFormChunkingSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_long_form_chunking_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeVadBackendSetting(backend: VadBackend) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_vad_backend_setting", { backend }) };
@@ -1023,6 +1031,12 @@ transcribe_gpu_device?: string | null; extra_recording_buffer_ms?: number; vad_e
  * Experimental detector implementation. Silero remains the stable default.
  */
 vad_backend?: VadBackend; 
+/**
+ * Decode long audio in chunks cut at pauses, for models whose accuracy
+ * degrades on long audio. Independent of `vad_enabled`, which only
+ * decides whether silence is dropped from recordings.
+ */
+long_form_chunking?: boolean; 
 /**
  * Which recording overlay to show: None / Minimal / Live. Streaming mode is
  * not gated on this — that follows model capability. Migrated from the old

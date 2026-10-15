@@ -355,6 +355,10 @@
         "title": "Sprachaktivitätserkennung (VAD)",
         "description": "Filtert Stille aus Aufnahmen. Streamingfähige Modelle verwenden ein längeres VAD-Ende; das Deaktivieren von VAD nimmt Rohaudio auf."
       },
+      "longFormChunking": {
+        "title": "Lange Aufnahmen aufteilen",
+        "description": "Teilt lange Aufnahmen vor der Transkription an Sprechpausen auf, was die Transkription in der Regel verbessert."
+      },
       "vadBackend": {
         "title": "VAD-Backend",
         "description": "Wählt den Detektor zum Herausfiltern von Stille. Earshot ist experimentell; wechseln Sie zurück zu Silero, wenn Sprache abgeschnitten oder Rauschen beibehalten wird.",

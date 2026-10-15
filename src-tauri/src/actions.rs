@@ -5,6 +5,7 @@ use crate::audio_toolkit::VadPolicy;
 use crate::managers::audio::{recording_error_type, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
+use crate::managers::transcription::policy::{live_decode, LiveDecode, ModelTraits};
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
@@ -445,7 +446,14 @@ impl ShortcutAction for TranscribeAction {
         } else {
             VadPolicy::Offline
         };
-        if model_supports_streaming {
+        // Before the model loads, whether it keeps its accuracy on long audio
+        // is unknown, so assume not: the worker decides again with the loaded
+        // model, and a wrong guess costs only an idle worker.
+        let expected_model = ModelTraits {
+            streaming: model_supports_streaming,
+            long_form: false,
+        };
+        if live_decode(expected_model, settings.long_form_chunking) != LiveDecode::None {
             tm.start_stream();
         }
         let plan_elapsed = plan_started.elapsed();
@@ -637,20 +645,12 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save. If a live stream was
-                    // running, finalize it and use its text (all audio was already
-                    // fed to the stream); otherwise batch-transcribe the samples.
+                    // Transcribe concurrently with WAV save: the live decode's
+                    // result when it has one (all audio was already fed to it),
+                    // otherwise a batch run of the samples. A cancel is surfaced
+                    // as an error, so it never starts a batch run.
                     let transcription_time = Instant::now();
-                    let transcription_result = match tm.finalize_stream() {
-                        // A finalized stream with usable text wins. An empty result
-                        // (no active stream, produced nothing, or the stream failed
-                        // or its worker crashed) falls back to a full batch
-                        // transcription of the same audio. A cancelled finalize is
-                        // surfaced instead, so a cancel never starts a batch run.
-                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
-                        Ok(_) => tm.transcribe(samples),
-                        Err(err) => Err(err),
-                    };
+                    let transcription_result = tm.transcribe_recording(samples);
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {

@@ -355,6 +355,10 @@
         "title": "语音活动检测",
         "description": "过滤录音中的静音。支持流式的模型会使用更长的 VAD 尾段；停用 VAD 则会录制原始音频。"
       },
+      "longFormChunking": {
+        "title": "长音频分段",
+        "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。"
+      },
       "vadBackend": {
         "title": "语音活动检测后端",
         "description": "选择用于过滤静音的检测器。Earshot 为实验性功能；如果语音被截断或噪音被保留，请切换回 Silero。",

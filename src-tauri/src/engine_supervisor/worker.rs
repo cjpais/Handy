@@ -313,6 +313,7 @@ fn load(
             .capabilities()
             .map_err(|e| format!("Failed to read model capabilities: {e}"))?,
         supports_initial_prompt: model.supports(Feature::InitialPrompt),
+        supports_long_form: model.supports(Feature::LongForm),
         supports_vocabulary: model.supports(Feature::Vocabulary),
     };
     Ok((session, info))

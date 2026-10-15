@@ -355,6 +355,10 @@
         "title": "Détection d'activité vocale (VAD)",
         "description": "Filtre le silence des enregistrements. Les modèles compatibles avec le streaming utilisent une marge de détection VAD plus longue ; désactiver le VAD enregistre l'audio brut."
       },
+      "longFormChunking": {
+        "title": "Découpage des longs enregistrements",
+        "description": "Découpe les longs enregistrements aux pauses avant la transcription, ce qui améliore généralement la qualité de la transcription."
+      },
       "vadBackend": {
         "title": "Backend de détection vocale",
         "description": "Choisissez le détecteur utilisé pour filtrer le silence. Earshot est expérimental ; revenez à Silero si la parole est coupée ou si le bruit est conservé.",

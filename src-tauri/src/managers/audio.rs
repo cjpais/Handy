@@ -4,7 +4,7 @@ use crate::audio_toolkit::{
         frames_for_duration_ms, EarshotVad, SmoothedVad, VAD_OFFLINE_HANGOVER_MS, VAD_ONSET_MS,
         VAD_PREFILL_MS, VAD_STREAMING_HANGOVER_MS,
     },
-    CaptureSink, CaptureVad, SileroVad, VadPolicy, VoiceActivityDetector,
+    CaptureSink, CaptureVad, SileroVad, SpeechScorer, VadPolicy, VoiceActivityDetector,
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
@@ -321,11 +321,14 @@ pub fn recording_error_type(error: &anyhow::Error) -> &'static str {
 
 /* ──────────────────────────────────────────────────────────────── */
 
-fn create_capture_vad(
+/// A fresh detector for `backend`, without Handy's smoothing: what a
+/// recording's VAD wraps, and what scores audio for long-form chunking, so
+/// every path uses the selected backend.
+pub fn create_detector(
     backend: VadBackend,
     app_handle: &tauri::AppHandle,
-) -> Result<CaptureVad, anyhow::Error> {
-    let detector: Box<dyn VoiceActivityDetector> = match backend {
+) -> Result<Box<dyn SpeechScorer>, anyhow::Error> {
+    Ok(match backend {
         VadBackend::Silero => {
             let vad_path = app_handle
                 .path()
@@ -343,7 +346,14 @@ fn create_capture_vad(
             EarshotVad::new(EARSHOT_VAD_THRESHOLD)
                 .map_err(|e| anyhow::anyhow!("Failed to create EarshotVad: {e}"))?,
         ),
-    };
+    })
+}
+
+fn create_capture_vad(
+    backend: VadBackend,
+    app_handle: &tauri::AppHandle,
+) -> Result<CaptureVad, anyhow::Error> {
+    let detector: Box<dyn VoiceActivityDetector> = create_detector(backend, app_handle)?;
 
     // Earshot uses 16 ms frames while Silero uses 32 ms. Convert the existing
     // time-based capture profile to each detector's frame size so selecting a

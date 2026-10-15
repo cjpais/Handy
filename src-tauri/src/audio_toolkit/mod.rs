@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod chunking;
 pub mod constants;
 pub mod lang_id;
 pub mod text;
@@ -14,4 +15,4 @@ pub use text::{
     apply_custom_words, normalize_transcription_output, remove_filler_words, OutputLanguageEvidence,
 };
 pub use utils::get_cpal_host;
-pub use vad::{EarshotVad, SileroVad, VoiceActivityDetector};
+pub use vad::{EarshotVad, SileroVad, SpeechScorer, VoiceActivityDetector};

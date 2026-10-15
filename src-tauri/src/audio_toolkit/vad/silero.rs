@@ -4,7 +4,7 @@ use std::sync::{Mutex, OnceLock, PoisonError};
 
 use transcribe_cpp::{Backend, BackendMask, Model, ModelOptions, VadSession, VadSessionOptions};
 
-use super::{VadFrame, VoiceActivityDetector};
+use super::{check_whole_frames, SpeechScorer, VadFrame, VoiceActivityDetector};
 use crate::audio_toolkit::constants;
 
 pub struct SileroVad {
@@ -79,24 +79,7 @@ impl VoiceActivityDetector for SileroVad {
                 frame.len()
             );
         }
-
-        let result = self
-            .session
-            .get_mut()
-            .unwrap_or_else(PoisonError::into_inner)
-            .stream_feed(frame)
-            .map_err(|e| anyhow::anyhow!("Silero VAD error: {e}"))?;
-
-        // A whole frame in must score exactly one frame; anything else means
-        // the stream is out of step with the recorder's framing.
-        let [prob] = result.probs[..] else {
-            anyhow::bail!(
-                "Silero VAD returned {} probabilities for one frame",
-                result.probs.len()
-            );
-        };
-
-        if prob > self.threshold {
+        if self.score(frame)?[0] > self.threshold {
             Ok(VadFrame::Speech(frame))
         } else {
             Ok(VadFrame::Noise)
@@ -114,5 +97,64 @@ impl VoiceActivityDetector for SileroVad {
             .get_mut()
             .unwrap_or_else(PoisonError::into_inner)
             .stream_reset();
+    }
+}
+
+impl SpeechScorer for SileroVad {
+    fn score(&mut self, frames: &[f32]) -> Result<Vec<f32>> {
+        check_whole_frames(frames, self.frame_samples)?;
+        let result = self
+            .session
+            .get_mut()
+            .unwrap_or_else(PoisonError::into_inner)
+            .stream_feed(frames)
+            .map_err(|e| anyhow::anyhow!("Silero VAD error: {e}"))?;
+
+        // Whole frames in must score exactly that many frames; anything else
+        // means the stream is out of step with the caller's framing.
+        let expected = frames.len() / self.frame_samples;
+        if result.probs.len() != expected {
+            anyhow::bail!(
+                "Silero VAD returned {} probabilities for {expected} frames",
+                result.probs.len()
+            );
+        }
+        Ok(result.probs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Needs the bundled model (see AGENTS.md); run with `--ignored`.
+    #[test]
+    #[ignore]
+    fn scores_the_same_in_pieces_and_frame_by_frame() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/resources/models/silero-vad-v6.2-F32.gguf"
+        );
+        let mut vad = SileroVad::new(path, 0.3).unwrap();
+        let frame = vad.frame_samples();
+        let pcm: Vec<f32> = (0..frame * 600)
+            .map(|i| (i as f32 * 0.013).sin() * (i as f32 * 0.0007).cos() * 0.2)
+            .collect();
+        let whole = vad.score(&pcm).unwrap();
+        assert_eq!(whole.len(), 600);
+
+        let mut pieces = SileroVad::new(path, 0.3).unwrap();
+        let mut scored = pieces.score(&pcm[..frame * 250]).unwrap();
+        scored.extend(pieces.score(&pcm[frame * 250..]).unwrap());
+        assert_eq!(scored, whole);
+
+        let mut by_frame = SileroVad::new(path, 0.3).unwrap();
+        let fed: Vec<f32> = pcm
+            .chunks(frame)
+            .flat_map(|chunk| by_frame.score(chunk).unwrap())
+            .collect();
+        assert_eq!(fed, whole);
+
+        assert!(vad.score(&pcm[..frame + 1]).is_err());
     }
 }

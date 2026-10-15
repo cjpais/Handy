@@ -355,6 +355,10 @@
         "title": "Stemmeaktivitetsdetektion",
         "description": "Filtrer stilhed fra optagelser. Streaming-modeller bruger en længere VAD-hale; deaktivering af VAD optager rå lyd."
       },
+      "longFormChunking": {
+        "title": "Opdeling af lang lyd",
+        "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen."
+      },
       "vadBackend": {
         "title": "Stemmedetektions-backend",
         "description": "Vælg den detektor, der bruges til at filtrere stilhed. Earshot er eksperimentel; skift tilbage til Silero, hvis tale klippes eller støj bevares.",

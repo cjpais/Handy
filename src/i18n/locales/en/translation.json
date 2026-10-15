@@ -355,6 +355,10 @@
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       },
+      "longFormChunking": {
+        "title": "Long Audio Chunking",
+        "description": "Splits long recordings at pauses before transcribing, which typically improves transcription performance."
+      },
       "vadBackend": {
         "title": "Voice Activity Backend",
         "description": "Choose the detector used to filter silence. Earshot is experimental; switch back to Silero if speech is clipped or noise is retained.",

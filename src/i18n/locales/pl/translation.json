@@ -355,6 +355,10 @@
         "title": "Wykrywanie aktywności głosowej",
         "description": "Odfiltrowuje ciszę z nagrań. Modele obsługujące streaming używają dłuższego marginesu VAD; wyłączenie VAD nagrywa surowy dźwięk."
       },
+      "longFormChunking": {
+        "title": "Dzielenie długich nagrań",
+        "description": "Dzieli długie nagrania w miejscach pauz przed transkrypcją, co zwykle poprawia jakość transkrypcji."
+      },
       "vadBackend": {
         "title": "Backend wykrywania głosu",
         "description": "Wybierz detektor używany do filtrowania ciszy. Earshot jest eksperymentalny; wróć do Silero, jeśli mowa jest ucinana lub szum jest zachowywany.",
