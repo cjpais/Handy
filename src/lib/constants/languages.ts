@@ -10,6 +10,7 @@ const LANGUAGE_ALIASES = new Map([
 
 export const LANGUAGES: Language[] = [
   { value: "auto", label: "Auto Detect" },
+  { value: "keyboard_layout", label: "Follow Keyboard Layout" },
   { value: "en", label: "English" },
   { value: "zh", label: "Chinese (Mandarin)" },
   { value: "yue", label: "Cantonese" },
@@ -118,7 +119,8 @@ const LANGUAGE_LABELS = new Map(
 );
 
 export const MODEL_CAPABILITY_LANGUAGES: Language[] = LANGUAGES.filter(
-  (language) => language.value !== "auto",
+  (language) =>
+    language.value !== "auto" && language.value !== "keyboard_layout",
 );
 
 // Collapse a language tag to the canonical recognition intent Handy exposes in

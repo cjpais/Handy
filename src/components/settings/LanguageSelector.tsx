@@ -29,6 +29,8 @@ const effectiveLanguage = (
   supported: string[],
   supportsDetection: boolean,
 ): string => {
+  // Resolved from the OS keyboard layout at recording time (backend).
+  if (intent === "keyboard_layout") return intent;
   if (supported.length === 0) return recognitionLanguage(intent);
   if (intent !== "auto" && supportsLanguageCode(supported, intent))
     return recognitionLanguage(intent);
@@ -88,7 +90,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     return LANGUAGES.filter((lang) =>
       lang.value === "auto"
         ? supportsLanguageDetection
-        : supportsLanguageCode(supportedLanguages, lang.value),
+        : lang.value === "keyboard_layout" ||
+          supportsLanguageCode(supportedLanguages, lang.value),
     );
   }, [supportedLanguages, supportsLanguageDetection]);
 
