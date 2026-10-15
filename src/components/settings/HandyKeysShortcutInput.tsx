@@ -340,6 +340,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
           </div>
         )}
         <ResetButton
+          ariaLabel={t("common.resetSetting", { setting: translatedName })}
           onClick={() => resetBinding(shortcutId)}
           disabled={isUpdating(`binding_${shortcutId}`)}
         />
