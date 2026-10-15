@@ -153,6 +153,9 @@ pub struct LoadedInfo {
     pub on_gpu: bool,
     pub capabilities: Capabilities,
     pub supports_initial_prompt: bool,
+    /// Whether the model formats `RunOptions::vocabulary` for its family
+    /// (Feature::Vocabulary). Unsupported models ignore the slot with a WARN.
+    pub supports_vocabulary: bool,
 }
 
 /// Encode one frame. Refuses a section the reader would refuse, so an
