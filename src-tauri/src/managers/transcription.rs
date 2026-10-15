@@ -104,16 +104,7 @@ enum StreamCmd {
     Cancel,
 }
 
-type StreamFinalizeReply = Result<Option<FinalizedStreamText>, EngineError>;
-
-struct FinalizedStreamText {
-    text: String,
-    output_language: OutputLanguageEvidence,
-    /// The streaming model's supported languages, for text-based detection.
-    supported_languages: Vec<String>,
-    /// Custom words went to the model as vocabulary; skip fuzzy correction.
-    custom_words_prompted: bool,
-}
+type StreamFinalizeReply = Result<Option<RunOutcome>, EngineError>;
 
 /// Routes real-time audio frames to the active streaming worker. Shared between
 /// the [`TranscriptionManager`] (opens/closes the route) and the audio recorder's
@@ -871,13 +862,18 @@ impl TranscriptionManager {
                             let mut perf = lock_perf(&perf);
                             perf.record_compute(finalized.elapsed);
                             perf.record_update(&finalized.update);
-                            Ok(Some(FinalizedStreamText {
-                                text: finalized.text.full,
-                                output_language: setup
-                                    .output_language(&settings, finalized.language),
-                                supported_languages: setup.languages.clone(),
-                                custom_words_prompted: setup.custom_words_prompted(),
-                            }))
+                            if finalized.text.full.trim().is_empty() {
+                                // A stream can miss what a run over the whole
+                                // recording finds, so empty text retries in batch.
+                                info!("Live transcription produced no text; retrying in batch");
+                                Ok(None)
+                            } else {
+                                Ok(Some(RunOutcome {
+                                    setup,
+                                    text: finalized.text.full,
+                                    model_detected_language: finalized.language,
+                                }))
+                            }
                         }
                         Ok(None) => {
                             error!(
@@ -985,13 +981,6 @@ impl TranscriptionManager {
                         let _ = reply.send(Err(EngineError::Cancelled));
                         return;
                     }
-                    // Nothing was decoded while recording (a recording under
-                    // about 45 s): the batch path does the same work, so it
-                    // keeps doing it.
-                    if live_chunks == 0 {
-                        let _ = reply.send(Ok(None));
-                        return;
-                    }
                     if chunker.samples() != samples {
                         info!(
                             "Live chunks did not see the whole recording ({} samples); \
@@ -1018,12 +1007,11 @@ impl TranscriptionManager {
                                 transcripts.len(),
                                 live_chunks
                             );
-                            let (text, language) = join_chunks(transcripts);
-                            Ok(Some(FinalizedStreamText {
+                            let (text, model_detected_language) = join_chunks(transcripts);
+                            Ok(Some(RunOutcome {
+                                setup,
                                 text,
-                                output_language: setup.output_language(&settings, language),
-                                custom_words_prompted: setup.custom_words_prompted(),
-                                supported_languages: setup.languages,
+                                model_detected_language,
                             }))
                         }
                     };
@@ -1035,16 +1023,16 @@ impl TranscriptionManager {
         }
     }
 
-    /// Flush the active stream and return its final, post-filtered text.
-    /// `recorded_samples` is the length of the whole recording: a chunked
-    /// worker that saw less reports no result.
+    /// Flush the live decode (a stream, or chunks decoded while recording)
+    /// and return what it produced. `recorded_samples` is the length of the
+    /// whole recording: a chunked decode that saw less reports no result.
     ///
-    /// `Ok(None)` means no usable stream result exists and the caller should
+    /// `Ok(None)` means no usable live result exists and the caller should
     /// fall back to batch transcription. `Err` means the transcription was
     /// cancelled. There is no timeout here: waiting behind a model load is a
     /// queue position, not a failure (#1841), and the engine bounds the
     /// finalize itself by the audio it still has to decode.
-    pub fn finalize_stream(&self, recorded_samples: usize) -> Result<Option<String>> {
+    fn finalize_live(&self, recorded_samples: usize) -> Result<Option<RunOutcome>> {
         let Some(tx) = self.router.take() else {
             return Ok(None);
         };
@@ -1056,24 +1044,11 @@ impl TranscriptionManager {
         if tx.send(finalize).is_err() {
             return Ok(None);
         }
-        let finalized = match reply_rx.recv() {
-            Ok(Ok(Some(finalized))) => finalized,
-            Ok(Ok(None)) | Err(_) => return Ok(None),
-            Ok(Err(e)) => return Err(e.into()),
-        };
-
-        let settings = get_settings(&self.app_handle);
-        // Skip fuzzy correction if the model already got the custom words.
-        let filtered = post_process_transcription_text(
-            finalized.text,
-            &settings,
-            finalized.custom_words_prompted,
-            &finalized.output_language,
-            &finalized.supported_languages,
-        );
-
-        self.maybe_unload_immediately("streaming transcription");
-        Ok(Some(filtered))
+        match reply_rx.recv() {
+            Ok(Ok(outcome)) => Ok(outcome),
+            Ok(Err(e)) => Err(e.into()),
+            Err(_) => Ok(None),
+        }
     }
 
     /// Abandon any active stream without producing text (e.g. on cancel).
@@ -1101,7 +1076,28 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
+    /// Transcribe a whole clip in batch: a re-transcribed history entry, or
+    /// a file from the CLI.
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        self.complete(Instant::now(), audio, None)
+    }
+
+    /// Transcribe a finished recording: what its live decode produced, or a
+    /// batch run of the whole recording when there is no live result.
+    pub fn transcribe_recording(&self, samples: Vec<f32>) -> Result<String> {
+        let started = Instant::now();
+        let live = self.finalize_live(samples.len())?;
+        self.complete(started, samples, live)
+    }
+
+    /// The final text of one transcription, from its live result or else a
+    /// batch run of `audio`. Every transcription finishes here.
+    fn complete(
+        &self,
+        started: Instant,
+        audio: Vec<f32>,
+        live: Option<RunOutcome>,
+    ) -> Result<String> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -1109,23 +1105,60 @@ impl TranscriptionManager {
             ));
         }
 
+        let audio_len = audio.len();
+        debug!("Audio vector length: {}", audio_len);
+        if audio.is_empty() {
+            debug!("Empty audio vector");
+            self.maybe_unload_immediately("empty audio");
+            return Ok(String::new());
+        }
+
+        let outcome = match live {
+            Some(outcome) => outcome,
+            None => self.decode_batch(audio)?,
+        };
+        let settings = get_settings(&self.app_handle);
+        let final_result = finish_text(outcome, &settings);
+
+        let translation_note = if settings.translate_to_english {
+            " (translated)"
+        } else {
+            ""
+        };
+        // Real-time factor. Input PCM is 16 kHz mono, so audio length in seconds
+        // is samples / 16000. `speedup` is audio_secs / elapsed_secs — e.g. 4.00x
+        // means transcribed 4x faster than real time
+        let elapsed_secs = started.elapsed().as_secs_f64();
+        let audio_secs = audio_len as f64 / 16_000.0;
+        let speedup = real_time_factor(audio_secs, elapsed_secs);
+        info!(
+            "Transcription completed in {:.2}s for {:.2}s of audio ({:.2}x real-time){}",
+            elapsed_secs, audio_secs, speedup, translation_note
+        );
+
+        if final_result.is_empty() {
+            info!("Transcription result is empty");
+        } else {
+            info!(
+                "Transcription result: {}",
+                crate::utils::redact_text(&final_result)
+            );
+        }
+
+        self.maybe_unload_immediately("transcription");
+
+        Ok(final_result)
+    }
+
+    /// Decode a whole clip with the loaded model, loading it first if a load
+    /// is under way.
+    fn decode_batch(&self, audio: Vec<f32>) -> Result<RunOutcome> {
         // A cancel from here on (during the model-load wait or chunk planning
         // included) stops every run of this transcription.
         let mark = self.engine.cancel_mark();
 
         // Update last activity timestamp
         self.touch_activity();
-
-        let st = std::time::Instant::now();
-        let audio_len = audio.len();
-
-        debug!("Audio vector length: {}", audio_len);
-
-        if audio.is_empty() {
-            debug!("Empty audio vector");
-            self.maybe_unload_immediately("empty audio");
-            return Ok(String::new());
-        }
 
         // Check if model is loaded, if not try to load it
         {
@@ -1170,66 +1203,14 @@ impl TranscriptionManager {
                 "Model failed to load after auto-load attempt. Please check your model settings."
             ));
         };
-        let run = self.transcribe_cpp(
+        self.transcribe_cpp(
             mark,
             info,
             audio,
             &settings,
             &validated_language,
             &active_model,
-        )?;
-
-        let output_language = with_model_detected_language(
-            resolve_output_language_evidence(
-                &settings,
-                run.applied_language_hint.as_deref(),
-                &run.languages,
-                run.output_was_translated,
-            ),
-            run.model_detected_language,
-        );
-        debug!("Output language evidence: {:?}", output_language);
-
-        // Skip fuzzy correction if the model already got the custom words.
-        let filtered_result = post_process_transcription_text(
-            run.text,
-            &settings,
-            run.custom_words_prompted,
-            &output_language,
-            &run.languages,
-        );
-
-        let et = std::time::Instant::now();
-        let translation_note = if settings.translate_to_english {
-            " (translated)"
-        } else {
-            ""
-        };
-        // Real-time factor. Input PCM is 16 kHz mono, so audio length in seconds
-        // is samples / 16000. `speedup` is audio_secs / elapsed_secs — e.g. 4.00x
-        // means transcribed 4x faster than real time
-        let elapsed_secs = (et - st).as_secs_f64();
-        let audio_secs = audio_len as f64 / 16_000.0;
-        let speedup = real_time_factor(audio_secs, elapsed_secs);
-        info!(
-            "Transcription completed in {:.2}s for {:.2}s of audio ({:.2}x real-time){}",
-            elapsed_secs, audio_secs, speedup, translation_note
-        );
-
-        let final_result = filtered_result;
-
-        if final_result.is_empty() {
-            info!("Transcription result is empty");
-        } else {
-            info!(
-                "Transcription result: {}",
-                crate::utils::redact_text(&final_result)
-            );
-        }
-
-        self.maybe_unload_immediately("transcription");
-
-        Ok(final_result)
+        )
     }
 
     /// transcribe-cpp: the model runs in the engine's worker process, which
@@ -1272,8 +1253,12 @@ impl TranscriptionManager {
             }
             None => vec![run(audio)?],
         };
-        let (text, language) = join_chunks(transcripts);
-        Ok(setup.into_outcome(text, language))
+        let (text, model_detected_language) = join_chunks(transcripts);
+        Ok(RunOutcome {
+            setup,
+            text,
+            model_detected_language,
+        })
     }
 
     /// One batch run of a transcription that began at `mark`, so a cancel
@@ -1328,18 +1313,33 @@ impl TranscriptionManager {
     }
 }
 
-/// What a batch transcription produced, plus what post-processing needs to
-/// know about how it was produced.
+/// What one transcription decoded (live or in batch), with how its runs were
+/// set up, which post-processing needs to know.
 struct RunOutcome {
+    setup: RunSetup,
     text: String,
-    /// The model's supported languages.
-    languages: Vec<String>,
-    applied_language_hint: Option<String>,
-    output_was_translated: bool,
     /// The language the model itself detected, if it reported one.
     model_detected_language: Option<String>,
-    /// Custom words went to the model as vocabulary; skip fuzzy correction.
-    custom_words_prompted: bool,
+}
+
+/// One transcription's final text: its output language resolved, then
+/// post-processed.
+fn finish_text(outcome: RunOutcome, settings: &AppSettings) -> String {
+    let RunOutcome {
+        setup,
+        text,
+        model_detected_language,
+    } = outcome;
+    let output_language = setup.output_language(settings, model_detected_language);
+    debug!("Output language evidence: {:?}", output_language);
+    // Skip fuzzy correction if the model already got the custom words.
+    post_process_transcription_text(
+        text,
+        settings,
+        setup.custom_words_prompted(),
+        &output_language,
+        &setup.languages,
+    )
 }
 
 /// How every run of one transcription (each chunk, or a whole clip) is
@@ -1373,17 +1373,6 @@ impl RunSetup {
             ),
             model_detected_language,
         )
-    }
-
-    fn into_outcome(self, text: String, model_detected_language: Option<String>) -> RunOutcome {
-        RunOutcome {
-            custom_words_prompted: self.custom_words_prompted(),
-            text,
-            languages: self.languages,
-            applied_language_hint: self.applied_language_hint,
-            output_was_translated: self.output_was_translated,
-            model_detected_language,
-        }
     }
 }
 

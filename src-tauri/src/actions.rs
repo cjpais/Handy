@@ -645,21 +645,12 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save. If a live stream was
-                    // running (or live chunks were decoding), finalize it and use
-                    // its text (all audio was already fed to it); otherwise
-                    // batch-transcribe the samples.
+                    // Transcribe concurrently with WAV save: the live decode's
+                    // result when it has one (all audio was already fed to it),
+                    // otherwise a batch run of the samples. A cancel is surfaced
+                    // as an error, so it never starts a batch run.
                     let transcription_time = Instant::now();
-                    let transcription_result = match tm.finalize_stream(sample_count) {
-                        // A finalized stream with usable text wins. An empty result
-                        // (no active stream, produced nothing, or the stream failed
-                        // or its worker crashed) falls back to a full batch
-                        // transcription of the same audio. A cancelled finalize is
-                        // surfaced instead, so a cancel never starts a batch run.
-                        Ok(Some(text)) if !text.trim().is_empty() => Ok(text),
-                        Ok(_) => tm.transcribe(samples),
-                        Err(err) => Err(err),
-                    };
+                    let transcription_result = tm.transcribe_recording(samples);
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
