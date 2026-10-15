@@ -1,4 +1,4 @@
-use crate::audio_toolkit::chunking::{self, Chunker};
+use crate::audio_toolkit::chunking;
 use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
     remove_filler_words, OutputLanguageEvidence,
@@ -6,17 +6,18 @@ use crate::audio_toolkit::{
 use crate::chinese_script::{convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
     CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
-    StreamProgress, Unloading,
+    Unloading,
 };
-use crate::managers::audio::{create_detector, AudioRecordingManager};
+use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::ModelManager;
 use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
-    VadBackend,
 };
 use anyhow::Result;
+use chunked::{ChunkFailure, ChunkedDecode};
+use live::LiveSession;
 use log::{debug, error, info, warn};
-use policy::{batch_decode, live_decode, BatchDecode, LiveDecode, ModelTraits};
+use policy::{batch_decode, live_decode, BatchDecode, ModelTraits};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -26,8 +27,10 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
-use transcribe_cpp::{Backend, RunOptions, StreamOptions, Task, Transcript};
+use transcribe_cpp::{Backend, RunOptions, Task, Transcript};
 
+mod chunked;
+mod live;
 pub mod policy;
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
@@ -93,10 +96,11 @@ pub struct StreamPhaseEvent {
 /// is processed before finalize runs.
 enum StreamCmd {
     Feed(Vec<f32>),
-    /// Flush the stream and reply with the final text, or `None` if no
-    /// usable stream exists (caller should fall back to batch transcription).
-    /// `Err(Cancelled)` if the finalize itself was cancelled. `samples` is
-    /// the whole recording's length, for a worker that checks it saw it all.
+    /// Flush the live decode and reply with what it decoded, or `None` if
+    /// there is no usable live result (caller should fall back to batch
+    /// transcription). `Err(Cancelled)` if the finalize itself was cancelled.
+    /// `samples` is the whole recording's length, for a chunked decode that
+    /// checks it saw it all.
     Finalize {
         reply: mpsc::Sender<StreamFinalizeReply>,
         samples: usize,
@@ -112,44 +116,56 @@ type StreamFinalizeReply = Result<Option<RunOutcome>, EngineError>;
 /// directly, so a frame with no stream pending costs a single relaxed atomic
 /// load — no Tauri state lookup, no mutex lock.
 pub struct StreamRouter {
-    /// Command channel to the active streaming worker, present from
-    /// `start_stream` until `finalize_stream`/`cancel_stream`.
-    tx: Mutex<Option<mpsc::Sender<StreamCmd>>>,
+    /// The active streaming worker's route, present from `start_stream`
+    /// until `finalize_live`/`cancel_stream`.
+    route: Mutex<Option<Route>>,
     /// True while a stream is pending or active (channel is open). The audio
     /// callback checks this first to avoid the mutex lock when no stream runs.
     open: Arc<AtomicBool>,
 }
 
+/// One streaming worker's command channel.
+struct Route {
+    tx: mpsc::Sender<StreamCmd>,
+    /// Set by `cancel_stream`, so the worker drops audio still queued ahead
+    /// of the `Cancel` instead of decoding it.
+    cancelled: Arc<AtomicBool>,
+}
+
 impl StreamRouter {
     fn new() -> Self {
         Self {
-            tx: Mutex::new(None),
+            route: Mutex::new(None),
             open: Arc::new(AtomicBool::new(false)),
         }
     }
 
     /// Open a fresh command channel for a new streaming session, returning the
-    /// receiver the worker should drain. Caller must ensure no prior channel is
-    /// still open.
-    fn open(&self) -> mpsc::Receiver<StreamCmd> {
+    /// receiver the worker should drain and its cancel flag. Caller must
+    /// ensure no prior channel is still open.
+    fn open(&self) -> (mpsc::Receiver<StreamCmd>, Arc<AtomicBool>) {
         let (tx, rx) = mpsc::channel::<StreamCmd>();
-        *self.tx.lock().unwrap() = Some(tx);
+        let cancelled = Arc::new(AtomicBool::new(false));
+        *self.route.lock().unwrap() = Some(Route {
+            tx,
+            cancelled: Arc::clone(&cancelled),
+        });
         self.open.store(true, Ordering::Relaxed);
-        rx
+        (rx, cancelled)
     }
 
-    /// Take the sender out (closing the channel to new feeds). Returns the
-    /// sender so the caller can send the final `Finalize`/`Cancel` command.
-    fn take(&self) -> Option<mpsc::Sender<StreamCmd>> {
+    /// Take the route out (closing the channel to new feeds), so the caller
+    /// can send the final `Finalize`/`Cancel` command.
+    fn take(&self) -> Option<Route> {
         self.open.store(false, Ordering::Relaxed);
-        self.tx.lock().unwrap().take()
+        self.route.lock().unwrap().take()
     }
 
     /// Drop the channel and mark closed without sending a final command (used
     /// when the worker exits without a finalize/cancel handshake).
     fn clear(&self) {
         self.open.store(false, Ordering::Relaxed);
-        *self.tx.lock().unwrap() = None;
+        *self.route.lock().unwrap() = None;
     }
 
     /// Forward a 16 kHz frame to the active streaming worker. Cheap no-op (a
@@ -158,8 +174,8 @@ impl StreamRouter {
         if !self.open.load(Ordering::Relaxed) {
             return;
         }
-        if let Some(tx) = self.tx.lock().unwrap().as_ref() {
-            let _ = tx.send(StreamCmd::Feed(frame.to_vec()));
+        if let Some(route) = self.route.lock().unwrap().as_ref() {
+            let _ = route.tx.send(StreamCmd::Feed(frame.to_vec()));
         }
     }
 
@@ -699,16 +715,17 @@ impl TranscriptionManager {
         Arc::clone(&self.router)
     }
 
-    /// Begin a live streaming transcription on the held engine's session.
-    /// Audio frames pushed via [`StreamRouter::feed`] (captured directly by the
-    /// audio recorder) are decoded incrementally and emitted to the overlay as
-    /// [`StreamTextEvent`].
+    /// Begin a recording's live decode on the held engine's session. Audio
+    /// frames pushed via [`StreamRouter::feed`] (captured directly by the
+    /// audio recorder) are streamed, with preview text emitted to the overlay
+    /// as [`StreamTextEvent`], or cut into long-form chunks decoded as the
+    /// recording goes; [`policy::live_decode`] picks which.
     ///
     /// Non-blocking: spawns a worker that waits for any in-progress model load,
-    /// verifies the model supports streaming, then begins the stream. If the
-    /// model can't stream, the worker idles until finalize/cancel and reports
-    /// `None` so the caller falls back to batch transcription. Frames sent
-    /// before the stream begins queue on the channel and are not lost.
+    /// then begins the live decode the loaded model calls for. With none, the
+    /// worker idles until finalize/cancel and reports `None` so the caller
+    /// falls back to batch transcription. Frames sent before the decode begins
+    /// queue on the channel and are not lost.
     pub fn start_stream(&self) {
         if self.router.is_open() || self.active_stream_worker.load(Ordering::Acquire) != 0 {
             warn!("start_stream called while a stream worker is already active");
@@ -723,14 +740,19 @@ impl TranscriptionManager {
             warn!("start_stream lost a race with another stream worker");
             return;
         }
-        let rx = self.router.open();
+        let (rx, cancelled) = self.router.open();
         self.stream_active.store(false, Ordering::Release);
 
         let manager = self.clone();
-        thread::spawn(move || manager.run_stream_worker(rx, worker_id));
+        thread::spawn(move || manager.run_stream_worker(rx, cancelled, worker_id));
     }
 
-    fn run_stream_worker(&self, rx: mpsc::Receiver<StreamCmd>, worker_id: u64) {
+    fn run_stream_worker(
+        &self,
+        rx: mpsc::Receiver<StreamCmd>,
+        cancelled: Arc<AtomicBool>,
+        worker_id: u64,
+    ) {
         let _worker = StreamWorkerGuard {
             worker_id,
             active_stream_worker: Arc::clone(&self.active_stream_worker),
@@ -748,9 +770,8 @@ impl TranscriptionManager {
 
         let model_id = self.get_current_model().unwrap_or_default();
 
-        // Models without streaming fall back to batch. The loaded model (not
-        // the ModelManager copy) is the source of truth for run-path
-        // capabilities.
+        // The loaded model (not the ModelManager copy) is the source of truth
+        // for run-path capabilities.
         let Some(info) = self.engine.loaded() else {
             info!(
                 "Live preview: model '{}' is not a loaded transcribe-cpp model; \
@@ -772,255 +793,39 @@ impl TranscriptionManager {
             caps.supports_translate,
             caps.languages,
         );
-        match live_decode(
+        let mode = live_decode(
             ModelTraits::of(&info),
             get_settings(&self.app_handle).long_form_chunking,
-        ) {
-            LiveDecode::Stream => {}
-            LiveDecode::Chunked => {
-                self.run_chunked_worker(rx, &info, &model_id);
-                return;
-            }
-            LiveDecode::None => {
-                self.router.clear();
-                drain_until_finalize(rx);
-                return;
-            }
-        }
-        // The same run setup as the batch and chunked paths: task + language
-        // gated against what the model actually advertises.
-        let settings = get_settings(&self.app_handle);
-        let effective_language =
-            effective_language_for_model(&settings, self.model_manager.as_ref(), &model_id);
-        let setup = run_setup(&info, &settings, &effective_language);
-        let output_language = setup.output_language(&settings, None);
-
-        // Feed results arrive on the engine's thread; this callback only
-        // converts and emits preview text.
-        let perf = Arc::new(Mutex::new(StreamPerf::new()));
-        let on_progress = {
-            let perf = Arc::clone(&perf);
-            let app_handle = self.app_handle.clone();
-            let languages = setup.languages.clone();
-            let mut preview_script = PreviewScript::new(settings.chinese_script, &output_language);
-            move |progress: StreamProgress| {
-                let mut perf = lock_perf(&perf);
-                perf.record_compute(progress.elapsed);
-                perf.record_update(&progress.update);
-                if let Some(text) = progress.text {
-                    perf.record_emit();
-                    let (committed, tentative) =
-                        preview_script.convert(&text.committed, &text.tentative, &languages);
-                    emit_stream_text(&app_handle, &committed, &tentative);
-                }
-                perf.maybe_log();
-            }
-        };
-
-        // Run the stream in the engine's worker process. Feeds are queued
-        // without waiting; a crashed or hung worker makes finalize report no
-        // result, and the caller falls back to batch transcription. StreamOptions::default()
-        // uses CommitPolicy::Auto and lets the family pick its own streaming
-        // strategy (no family-specific ext).
-        let stream = match self.engine.start_stream(
-            setup.run_options.clone(),
-            StreamOptions::default(),
-            on_progress,
-        ) {
-            Ok(stream) => stream,
-            Err(e) => {
-                error!("Failed to begin stream: {}", e);
-                self.forget_model_if_engine_dropped(&model_id, &e.to_string());
-                drain_until_finalize(rx);
-                return;
-            }
-        };
-
-        self.stream_active.store(true, Ordering::Release);
-        self.touch_activity();
-        info!(
-            "Live streaming transcription started (model '{}', backend '{}')",
-            model_id, info.backend
         );
+        let Some(mut session) = LiveSession::begin(self, mode, &info, &model_id) else {
+            // Nothing to decode live: the recording is transcribed in batch.
+            self.router.clear();
+            drain_until_finalize(rx);
+            return;
+        };
+        self.touch_activity();
 
         while let Ok(cmd) = rx.recv() {
             match cmd {
                 StreamCmd::Feed(pcm) => {
+                    // Audio queued ahead of a cancel is dropped, not decoded.
+                    if cancelled.load(Ordering::Acquire) {
+                        continue;
+                    }
                     self.touch_activity();
-                    lock_perf(&perf).record_feed(pcm.len());
-                    stream.feed(pcm);
+                    session.feed(pcm);
                 }
-                StreamCmd::Finalize { reply, .. } => {
-                    // In auto mode the model's own LID is the best remaining
-                    // evidence; the snapshot is only materialized when it can
-                    // change the outcome.
-                    let want_language = matches!(output_language, OutputLanguageEvidence::Unknown);
-                    let result = match stream.finalize(want_language) {
-                        // After finalize the committed prefix holds the full
-                        // text; display() = committed + tentative is the safe read.
-                        Ok(Some(finalized)) => {
-                            let mut perf = lock_perf(&perf);
-                            perf.record_compute(finalized.elapsed);
-                            perf.record_update(&finalized.update);
-                            if finalized.text.full.trim().is_empty() {
-                                // A stream can miss what a run over the whole
-                                // recording finds, so empty text retries in batch.
-                                info!("Live transcription produced no text; retrying in batch");
-                                Ok(None)
-                            } else {
-                                Ok(Some(RunOutcome {
-                                    setup,
-                                    text: finalized.text.full,
-                                    model_detected_language: finalized.language,
-                                }))
-                            }
-                        }
-                        Ok(None) => {
-                            error!(
-                                "Live transcription could not be finalized; \
-                                 falling back to batch transcription"
-                            );
-                            self.forget_model_if_engine_dropped(
-                                &model_id,
-                                "live transcription failed and the model could not be restarted",
-                            );
-                            Ok(None)
-                        }
-                        Err(e) => {
-                            info!("Live transcription finalize stopped: {}", e);
-                            Err(e)
-                        }
-                    };
-                    let chars = match &result {
-                        Ok(Some(finalized)) => finalized.text.len(),
-                        _ => 0,
-                    };
-                    lock_perf(&perf).log_finalized(chars);
-                    let _ = reply.send(result);
-                    return;
-                }
-                // Dropping the stream handle resets the worker's stream.
-                StreamCmd::Cancel => return,
-            }
-        }
-        // The channel closed without finalize/cancel; dropping the stream
-        // handle resets the worker's stream. `_worker` drops after, clearing
-        // this worker's flags.
-    }
-
-    /// Long-form chunking while a non-streaming model's recording goes on:
-    /// each chunk is decoded as soon as its cut is certain, scored by the
-    /// selected VAD backend as the audio arrives, so only the last chunk is
-    /// left when the recording stops. Any failure, or a recording
-    /// this worker didn't see all of, reports no result: the caller then
-    /// transcribes the whole recording in batch (which chunks it too).
-    fn run_chunked_worker(&self, rx: mpsc::Receiver<StreamCmd>, info: &LoadedInfo, model_id: &str) {
-        let settings = get_settings(&self.app_handle);
-        let validated_language =
-            effective_language_for_model(&settings, self.model_manager.as_ref(), model_id);
-        let setup = run_setup(info, &settings, &validated_language);
-        // Every chunk of this recording stops with one cancel.
-        let mark = self.engine.cancel_mark();
-        let mut chunker = match create_detector(settings.vad_backend, &self.app_handle) {
-            Ok(detector) => Chunker::new(detector),
-            Err(e) => {
-                warn!("Live long-form chunking unavailable: {}", e);
-                drain_until_finalize(rx);
-                return;
-            }
-        };
-        let mut transcripts: Vec<Transcript> = Vec::new();
-        // The first failure; no more chunks are decoded after it.
-        let mut failure: Option<EngineError> = None;
-        let decode = |chunks: Vec<Vec<f32>>,
-                      transcripts: &mut Vec<Transcript>,
-                      failure: &mut Option<EngineError>| {
-            for chunk in chunks {
-                if failure.is_some() {
-                    return;
-                }
-                let len = chunk.len();
-                let started = Instant::now();
-                match self.run_batch(mark, chunk, &setup.run_options, model_id) {
-                    Ok(transcript) => {
-                        transcripts.push(transcript);
-                        let audio_secs = len as f64 / 16_000.0;
-                        // Real-time factor: audio seconds decoded per second
-                        // of wall clock. Floored so a near-instant decode
-                        // reports a large factor instead of infinity.
-                        let elapsed_secs = started.elapsed().as_secs_f64().max(1e-6);
-                        info!(
-                            "Decoded long-form chunk {} ({:.1}s of audio) in {:.2}s ({:.0}x real time)",
-                            transcripts.len(),
-                            audio_secs,
-                            elapsed_secs,
-                            audio_secs / elapsed_secs
-                        );
-                    }
-                    Err(e) => {
-                        info!("Live chunk decoding stopped: {}", e);
-                        *failure = Some(e);
-                    }
-                }
-            }
-        };
-        info!("Live long-form chunking started (model '{}')", model_id);
-
-        while let Ok(cmd) = rx.recv() {
-            match cmd {
-                StreamCmd::Feed(pcm) => match chunker.push(&pcm) {
-                    Ok(ready) => decode(ready, &mut transcripts, &mut failure),
-                    Err(e) => {
-                        info!("Live chunk scoring stopped: {}", e);
-                        failure.get_or_insert(EngineError::Failed(e.to_string()));
-                    }
-                },
                 StreamCmd::Finalize { reply, samples } => {
-                    let live_chunks = transcripts.len();
-                    if matches!(failure, Some(EngineError::Cancelled)) {
-                        let _ = reply.send(Err(EngineError::Cancelled));
-                        return;
-                    }
-                    if chunker.samples() != samples {
-                        info!(
-                            "Live chunks did not see the whole recording ({} samples); \
-                             transcribing it in batch",
-                            samples
-                        );
-                        let _ = reply.send(Ok(None));
-                        return;
-                    }
-                    match chunker.finish() {
-                        Ok(rest) => decode(rest, &mut transcripts, &mut failure),
-                        Err(e) => {
-                            info!("Live chunk scoring stopped: {}", e);
-                            failure.get_or_insert(EngineError::Failed(e.to_string()));
-                        }
-                    }
-                    let result = match failure {
-                        Some(EngineError::Cancelled) => Err(EngineError::Cancelled),
-                        Some(EngineError::Failed(_)) => Ok(None),
-                        None => {
-                            info!(
-                                "Decoded {:.1}s of audio in {} chunks, {} while recording",
-                                samples as f64 / 16_000.0,
-                                transcripts.len(),
-                                live_chunks
-                            );
-                            let (text, model_detected_language) = join_chunks(transcripts);
-                            Ok(Some(RunOutcome {
-                                setup,
-                                text,
-                                model_detected_language,
-                            }))
-                        }
-                    };
-                    let _ = reply.send(result);
+                    let _ = reply.send(session.finish(samples));
                     return;
                 }
+                // Dropping the session resets the worker's stream.
                 StreamCmd::Cancel => return,
             }
         }
+        // The channel closed without finalize/cancel; dropping the session
+        // resets the worker's stream. `_worker` drops after, clearing this
+        // worker's flags.
     }
 
     /// Flush the live decode (a stream, or chunks decoded while recording)
@@ -1033,7 +838,7 @@ impl TranscriptionManager {
     /// queue position, not a failure (#1841), and the engine bounds the
     /// finalize itself by the audio it still has to decode.
     fn finalize_live(&self, recorded_samples: usize) -> Result<Option<RunOutcome>> {
-        let Some(tx) = self.router.take() else {
+        let Some(route) = self.router.take() else {
             return Ok(None);
         };
         let (reply_tx, reply_rx) = mpsc::channel();
@@ -1041,7 +846,7 @@ impl TranscriptionManager {
             reply: reply_tx,
             samples: recorded_samples,
         };
-        if tx.send(finalize).is_err() {
+        if route.tx.send(finalize).is_err() {
             return Ok(None);
         }
         match reply_rx.recv() {
@@ -1051,10 +856,12 @@ impl TranscriptionManager {
         }
     }
 
-    /// Abandon any active stream without producing text (e.g. on cancel).
+    /// Abandon any live decode without producing text (e.g. on cancel). A
+    /// chunk already decoding finishes; audio queued behind it is dropped.
     pub fn cancel_stream(&self) {
-        if let Some(tx) = self.router.take() {
-            let _ = tx.send(StreamCmd::Cancel);
+        if let Some(route) = self.router.take() {
+            route.cancelled.store(true, Ordering::Release);
+            let _ = route.tx.send(StreamCmd::Cancel);
         }
         self.stream_active.store(false, Ordering::Release);
     }
@@ -1226,32 +1033,32 @@ impl TranscriptionManager {
         active_model: &str,
     ) -> Result<RunOutcome> {
         let setup = run_setup(&info, settings, validated_language);
-
+        let whole = |pcm: Vec<f32>| {
+            self.run_batch(mark, pcm, &setup.run_options, active_model)
+                .map_err(engine_error)
+        };
         // `mark` covers every chunk, so a cancel between two stops the rest.
         // A failed chunk fails the whole transcription.
-        let chunks = match batch_decode(ModelTraits::of(&info), settings.long_form_chunking) {
-            BatchDecode::Chunked => self.long_form_chunks(&audio, settings.vad_backend),
-            BatchDecode::Whole => None,
-        };
-        let run = |pcm: Vec<f32>| {
-            self.run_batch(mark, pcm, &setup.run_options, active_model)
-                .map_err(|e| match e {
-                    EngineError::Cancelled => EngineError::Cancelled.into(),
-                    e => anyhow::anyhow!("transcribe-cpp transcription failed: {}", e),
-                })
-        };
-        let transcripts = match chunks {
-            Some(chunks) => {
-                let count = chunks.len();
-                let transcripts = chunks.into_iter().map(run).collect::<Result<Vec<_>>>()?;
-                info!(
-                    "Decoded {:.1}s of audio in {} chunks",
-                    audio.len() as f64 / 16_000.0,
-                    count
-                );
-                transcripts
-            }
-            None => vec![run(audio)?],
+        let transcripts = match batch_decode(ModelTraits::of(&info), settings.long_form_chunking) {
+            BatchDecode::Chunked => match ChunkedDecode::decode_clip(
+                self,
+                mark,
+                setup.run_options.clone(),
+                &audio,
+                active_model,
+                settings.vad_backend,
+            ) {
+                Ok(transcripts) => transcripts,
+                Err(ChunkFailure::Engine(e)) => return Err(engine_error(e)),
+                Err(ChunkFailure::Vad(e)) => {
+                    warn!(
+                        "Voice activity detection failed, decoding the audio in one piece: {}",
+                        e
+                    );
+                    vec![whole(audio)?]
+                }
+            },
+            BatchDecode::Whole => vec![whole(audio)?],
         };
         let (text, model_detected_language) = join_chunks(transcripts);
         Ok(RunOutcome {
@@ -1279,37 +1086,6 @@ impl TranscriptionManager {
                     self.forget_model_if_engine_dropped(active_model, &e.to_string());
                 }
             })
-    }
-
-    /// Long audio cut at pauses the selected VAD backend finds, about 30 s
-    /// apart, as a recording is live. `None` decodes it in one piece: audio
-    /// the VAD can't score.
-    fn long_form_chunks(&self, audio: &[f32], backend: VadBackend) -> Option<Vec<Vec<f32>>> {
-        let started = Instant::now();
-        let chunks = create_detector(backend, &self.app_handle).and_then(|detector| {
-            let mut chunker = Chunker::new(detector);
-            let mut chunks = chunker.push(audio)?;
-            chunks.extend(chunker.finish()?);
-            Ok(chunks)
-        });
-        match chunks {
-            Ok(chunks) => {
-                debug!(
-                    "Planned {:.1}s of audio with {:?} VAD for long-form chunking in {:?}",
-                    audio.len() as f64 / 16_000.0,
-                    backend,
-                    started.elapsed()
-                );
-                Some(chunks)
-            }
-            Err(e) => {
-                warn!(
-                    "Voice activity detection failed, decoding long audio in one piece: {}",
-                    e
-                );
-                None
-            }
-        }
     }
 }
 
@@ -1421,6 +1197,14 @@ fn run_setup(info: &LoadedInfo, settings: &AppSettings, validated_language: &str
         languages,
         applied_language_hint,
         output_was_translated,
+    }
+}
+
+/// A batch run's error: a cancel stays recognisable as one.
+fn engine_error(e: EngineError) -> anyhow::Error {
+    match e {
+        EngineError::Cancelled => EngineError::Cancelled.into(),
+        e => anyhow::anyhow!("transcribe-cpp transcription failed: {}", e),
     }
 }
 

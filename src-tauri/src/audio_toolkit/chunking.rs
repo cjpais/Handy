@@ -252,8 +252,9 @@ impl Chunker {
         Ok(chunks)
     }
 
-    /// Cuts what is left and returns the remaining chunks, in order.
-    pub fn finish(mut self) -> Result<Vec<Vec<f32>>> {
+    /// Cuts what is left and returns the remaining chunks, in order. Nothing
+    /// more is pushed after.
+    pub fn finish(&mut self) -> Result<Vec<Vec<f32>>> {
         let mut chunks = Vec::new();
         if self.len - self.start > MAX_CHUNK_SAMPLES {
             // The last partial frame is scored zero padded.
