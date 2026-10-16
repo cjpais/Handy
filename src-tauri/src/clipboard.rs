@@ -58,6 +58,7 @@ fn paste_via_clipboard(
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
     paste_delay_after_ms: u64,
+    #[cfg(target_os = "linux")] typing_tool: TypingTool,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
@@ -80,7 +81,7 @@ fn paste_via_clipboard(
     let paste_result = (|| -> Result<(), String> {
         // Send paste key combo
         #[cfg(target_os = "linux")]
-        let key_combo_sent = try_send_key_combo_linux(paste_method)?;
+        let key_combo_sent = try_send_key_combo_linux(paste_method, typing_tool)?;
 
         #[cfg(not(target_os = "linux"))]
         let key_combo_sent = false;
@@ -120,7 +121,29 @@ fn paste_via_clipboard(
 /// Attempts to send a key combination using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
-fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
+fn try_send_key_combo_linux(
+    paste_method: &PasteMethod,
+    preferred_tool: TypingTool,
+) -> Result<bool, String> {
+    // kwtype only supports direct typing; keep automatic selection for paste shortcuts.
+    if !matches!(preferred_tool, TypingTool::Auto | TypingTool::Kwtype) {
+        match preferred_tool {
+            TypingTool::Wtype if is_wtype_available() => send_key_combo_via_wtype(paste_method),
+            TypingTool::Dotool if is_dotool_available() => send_key_combo_via_dotool(paste_method),
+            TypingTool::Ydotool if is_ydotool_available() => {
+                send_key_combo_via_ydotool(paste_method)
+            }
+            TypingTool::Xdotool if is_xdotool_available() => {
+                send_key_combo_via_xdotool(paste_method)
+            }
+            _ => Err(format!(
+                "Typing tool {:?} is not available on this system",
+                preferred_tool
+            )),
+        }?;
+        info!("Using user-specified {:?} for key combo", preferred_tool);
+        return Ok(true);
+    }
     if is_wayland() {
         // Wayland: prefer wtype (but not on KDE or GNOME), then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
@@ -834,6 +857,8 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &paste_method,
                 paste_delay_ms,
                 paste_delay_after_ms,
+                #[cfg(target_os = "linux")]
+                settings.typing_tool,
             )?
         }
         PasteMethod::ExternalScript => {
