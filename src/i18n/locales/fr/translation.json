@@ -352,7 +352,7 @@
       },
       "typingTool": {
         "title": "Outil de frappe",
-        "description": "Choisissez quel outil de frappe Linux utiliser pour la méthode de collage direct. Auto détectera et utilisera automatiquement le meilleur outil disponible pour votre système.",
+        "description": "Choisissez l'outil Linux qui insère le texte ou envoie le raccourci de collage. Auto détecte le meilleur outil disponible pour votre système.",
         "options": {
           "auto": "Auto (Recommandé)"
         }
