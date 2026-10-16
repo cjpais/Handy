@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
+import {
+  BookText,
+  Check,
+  ChevronDown,
+  Copy,
+  FolderOpen,
+  RotateCcw,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -14,6 +23,7 @@ import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
+import { CustomWords } from "../CustomWords";
 import { copyToClipboard } from "./clipboard";
 
 const IconButton: React.FC<{
@@ -60,6 +70,54 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   </Button>
 );
 
+// Custom words are the one setting people keep coming back to while dictating,
+// so the History page can show them in a shelf. Remember whether it was left
+// open. It's view state rather than a setting, so localStorage is enough.
+const CUSTOM_WORDS_SHELF_KEY = "handy.history.customWordsShelfOpen";
+
+const getStoredShelfOpen = (): boolean => {
+  try {
+    return localStorage.getItem(CUSTOM_WORDS_SHELF_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+
+const storeShelfOpen = (open: boolean): void => {
+  try {
+    localStorage.setItem(CUSTOM_WORDS_SHELF_KEY, String(open));
+  } catch {
+    // ignore; the shelf just starts closed next time
+  }
+};
+
+interface CustomWordsShelfButtonProps {
+  open: boolean;
+  onClick: () => void;
+  label: string;
+}
+
+const CustomWordsShelfButton: React.FC<CustomWordsShelfButtonProps> = ({
+  open,
+  onClick,
+  label,
+}) => (
+  <Button
+    onClick={onClick}
+    variant="secondary"
+    size="sm"
+    className="flex items-center gap-2"
+    aria-expanded={open}
+    aria-controls="history-custom-words-shelf"
+  >
+    <BookText className="w-4 h-4" />
+    <span>{label}</span>
+    <ChevronDown
+      className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+    />
+  </Button>
+);
+
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
@@ -69,6 +127,11 @@ export const HistorySettings: React.FC = () => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const entriesRef = useRef<HistoryEntry[]>([]);
   const loadingRef = useRef(false);
+  const [customWordsOpen, setCustomWordsOpen] = useState(getStoredShelfOpen);
+
+  useEffect(() => {
+    storeShelfOpen(customWordsOpen);
+  }, [customWordsOpen]);
 
   // Keep ref in sync for use in IntersectionObserver callback
   useEffect(() => {
@@ -282,11 +345,26 @@ export const HistorySettings: React.FC = () => {
               {t("settings.history.title")}
             </h2>
           </div>
-          <OpenRecordingsButton
-            onClick={openRecordingsFolder}
-            label={t("settings.history.openFolder")}
-          />
+          <div className="flex items-center gap-2">
+            <CustomWordsShelfButton
+              open={customWordsOpen}
+              onClick={() => setCustomWordsOpen((open) => !open)}
+              label={t("settings.advanced.customWords.title")}
+            />
+            <OpenRecordingsButton
+              onClick={openRecordingsFolder}
+              label={t("settings.history.openFolder")}
+            />
+          </div>
         </div>
+        {customWordsOpen && (
+          <div
+            id="history-custom-words-shelf"
+            className="bg-background border border-mid-gray/20 rounded-lg divide-y divide-mid-gray/20"
+          >
+            <CustomWords descriptionMode="tooltip" grouped />
+          </div>
+        )}
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           {content}
         </div>
