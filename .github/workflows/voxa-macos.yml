@@ -1,0 +1,124 @@
+name: voxa-macos
+
+# Voxa CI: lint + unit tests (Linux) and an ad-hoc signed Apple Silicon build
+# (macos-latest). The macOS job uploads Voxa-macos-arm64.zip.
+
+on:
+  push:
+    branches: ["voxa/**", "claude/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: voxa-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # ggml's CMake files still use a pre-3.5 minimum on some toolchains
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+
+jobs:
+  checks:
+    name: Lint and tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+            libasound2-dev libssl-dev libgtk-layer-shell-dev libvulkan-dev glslc spirv-headers
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Translations
+        run: |
+          bun run check:translations
+          bun run check:model-languages
+
+      - name: ESLint
+        run: bun run lint
+
+      - name: Prettier
+        run: bunx prettier --check .
+
+      - name: TypeScript
+        run: bunx tsc --noEmit
+
+      - name: Frontend unit tests
+        run: bun run test:unit
+
+      - name: cargo fmt
+        working-directory: src-tauri
+        run: cargo fmt -- --check
+
+      - name: Rust unit tests
+        working-directory: src-tauri
+        run: cargo test
+
+  build-macos:
+    name: Build macOS arm64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          key: macos-arm64-voxa
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build app bundle
+        run: bunx tauri build --target aarch64-apple-darwin --bundles app
+
+      - name: Ad-hoc codesign
+        run: |
+          set -euo pipefail
+          APP="$(find src-tauri/target/aarch64-apple-darwin/release/bundle/macos -maxdepth 1 -name 'Voxa.app' -print -quit)"
+          if [ -z "$APP" ]; then
+            echo "Voxa.app was not produced" >&2
+            find src-tauri/target -maxdepth 6 -name '*.app' >&2 || true
+            exit 1
+          fi
+          codesign --force --deep --options runtime --sign - \
+            --entitlements src-tauri/Entitlements.plist "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dv --entitlements - "$APP" || true
+          echo "APP_PATH=$APP" >> "$GITHUB_ENV"
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          mkdir -p dist-artifact
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" dist-artifact/Voxa-macos-arm64.zip
+          ls -la dist-artifact
+          # Smoke check: the main binary is arm64 and linked
+          lipo -info "$APP_PATH/Contents/MacOS/"* || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Voxa-macos-arm64
+          path: dist-artifact/Voxa-macos-arm64.zip
+          if-no-files-found: error
+          retention-days: 30
