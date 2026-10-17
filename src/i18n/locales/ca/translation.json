@@ -706,5 +706,116 @@
     "learnMore": "Com es resol",
     "recorderBlocked": "Ara no se'n poden enregistrar dreceres: l'entrada segura del macOS bloca els esdeveniments de tecla. Resol primer l'avís d'entrada segura.",
     "dismiss": "Descarta"
+  },
+  "voxa": {
+    "nav": {
+      "statistics": "Statistics"
+    },
+    "stats": {
+      "title": "Statistics",
+      "subtitle": "Measured on this Mac. Nothing leaves it.",
+      "loading": "Loading…",
+      "error": "Could not load statistics: {{error}}",
+      "retry": "Try again",
+      "empty": {
+        "title": "No dictations yet",
+        "body": "Dictate something with your shortcut and the numbers will show up here."
+      },
+      "cards": {
+        "today": "Today",
+        "week": "This week",
+        "allTime": "All time",
+        "wordsLabel": "Words",
+        "dictations": "Dictations: {{value}}",
+        "minutes": "Spoken: {{value}} {{unit}}",
+        "avgWords": "Words per dictation",
+        "avgSeconds": "Seconds per dictation",
+        "latinShare": "Latin share",
+        "latinHint": "Words with at least one letter A–Z, such as RAG-пайплайн"
+      },
+      "units": {
+        "min": "min",
+        "hour": "h",
+        "sec": "s",
+        "ms": "ms"
+      },
+      "chart": {
+        "title": "Words per day",
+        "range": "Last 30 days",
+        "peak": "Peak: {{value}}",
+        "bar": "{{date}}: words {{words}}, dictations {{dictations}}",
+        "today": "today"
+      },
+      "models": {
+        "title": "Models",
+        "columns": {
+          "model": "Model",
+          "dictations": "Dictations",
+          "words": "Words",
+          "latency": "Latency avg / p95",
+          "latin": "Latin"
+        },
+        "notEnough": "not enough data",
+        "notEnoughHint": "Needs at least {{min}} timed dictations, this model has {{count}}.",
+        "imported": "Imported history",
+        "latencyHint": "From the end of the recording to the finished text, model and post-processing included."
+      },
+      "candidates": {
+        "title": "Dictionary candidates",
+        "replaced": {
+          "title": "The model gets these wrong",
+          "hint": "Dictionary replacements that actually fired, most frequent first."
+        },
+        "translit": {
+          "title": "Written in Cyrillic",
+          "hint": "Known technical terms the model spelled with Cyrillic letters."
+        },
+        "empty": "Nothing to suggest yet.",
+        "seen": "written as: {{variants}}",
+        "times": "×{{count}}",
+        "add": "Add to dictionary",
+        "inDictionary": "In dictionary",
+        "toastAdded": "“{{term}}” added to the dictionary",
+        "toastError": "Could not add the word: {{error}}"
+      },
+      "footer": {
+        "local": "Every number is computed on this Mac from your own dictations.",
+        "clear": "Clear statistics",
+        "clearConfirm": "Delete all recorded statistics? History and audio stay.",
+        "clearTitle": "Clear statistics",
+        "cleared": "Statistics cleared"
+      }
+    },
+    "overlay": {
+      "recording": "Recording",
+      "arming": "Starting the microphone",
+      "transcribing": "Recognizing",
+      "done": "Done",
+      "cancel": "Cancel dictation",
+      "error": {
+        "recording": "Microphone unavailable",
+        "transcription": "Could not transcribe",
+        "paste": "Could not insert text",
+        "generic": "Something went wrong"
+      }
+    },
+    "settings": {
+      "initialPrompt": {
+        "title": "Context phrase",
+        "description": "A natural sentence with your terms. Whisper reads it as context and spells those words right. Leave it empty to turn it off.",
+        "placeholder": "A sentence that uses your terms"
+      },
+      "fixCase": {
+        "title": "Fix case of dictionary words",
+        "description": "After recognition, “langchain” becomes “LangChain” when the word is in your dictionary."
+      },
+      "handyImport": {
+        "title": "Import custom words from Handy",
+        "body": "Your Handy settings have words Voxa does not know yet: {{words}}. Voxa only reads that file and never changes it.",
+        "import": "Import",
+        "dismiss": "No thanks",
+        "imported": "Custom words imported"
+      }
+    }
   }
 }

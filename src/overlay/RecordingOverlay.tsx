@@ -12,6 +12,7 @@ import type {
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+import { GlassPill, type GlassState } from "@/voxa/overlay/GlassPill";
 
 type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
 
@@ -24,6 +25,15 @@ const WAVE_BARS = 9;
 // Windows CPU backend), so the common case never flashes a loading notice while
 // the user is speaking; cold loads can take 40s+.
 const SLOW_MODEL_LOAD_MS = 2000;
+
+// How long the dissolve of the capsule runs before the overlay unmounts. The
+// native window is hidden 300 ms after `hide-overlay` (overlay.rs).
+const GLASS_LEAVE_MS = 240;
+
+interface OverlayOutcome {
+  state: "done" | "error";
+  failure?: string | null;
+}
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
@@ -45,6 +55,15 @@ const RecordingOverlay: React.FC = () => {
   // it open after the load so it doesn't collapse and reopen when text arrives.
   const [loadNoticeShown, setLoadNoticeShown] = useState(false);
   const [levels, setLevels] = useState<number[]>(Array(WAVE_BARS).fill(0));
+  // Voxa: all 16 smoothed mic buckets for the glass capsule's waveform, the
+  // outcome (done / error) of the finished dictation, and the dissolve state.
+  const [buckets, setBuckets] = useState<number[]>(Array(16).fill(0));
+  const [outcome, setOutcome] = useState<OverlayOutcome | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  // The event listeners below are registered once, so they read this instead of
+  // `state` to know whether the Live card (not the capsule) is on screen.
+  const isStreamingRef = useRef(false);
   const [streamText, setStreamText] = useState<StreamTextEvent>({
     committed: "",
     tentative: "",
@@ -77,12 +96,20 @@ const RecordingOverlay: React.FC = () => {
         // Reset synchronously before settings I/O. A fast microphone can emit
         // recording-ready while the awaits below are in flight; resetting after
         // them would overwrite that event and leave the overlay stuck arming.
+        // A new session cancels a dissolve still in flight.
+        clearTimeout(leaveTimerRef.current);
+        setLeaving(false);
+        setOutcome(null);
+
         if (overlayState === "recording" || overlayState === "streaming") {
           setCaptureReady(false);
           smoothedLevelsRef.current = Array(16).fill(0);
           setLevels(Array(WAVE_BARS).fill(0));
+          setBuckets(Array(16).fill(0));
           setStreamText({ committed: "", tentative: "" });
         }
+
+        isStreamingRef.current = overlayState === "streaming";
 
         await syncLanguageFromSettings();
         // The Live panel flows downward from a top overlay and upward from a
@@ -109,9 +136,25 @@ const RecordingOverlay: React.FC = () => {
       });
 
       const unlistenHide = await listen("hide-overlay", () => {
-        setIsVisible(false);
         setCaptureReady(false);
+        // The compact capsule dissolves (scale + fade) before it unmounts; the
+        // Live card goes at once, as before.
+        if (isStreamingRef.current) {
+          setIsVisible(false);
+          return;
+        }
+        setLeaving(true);
+        clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = setTimeout(() => {
+          setIsVisible(false);
+          setLeaving(false);
+        }, GLASS_LEAVE_MS);
       });
+
+      const unlistenOutcome = await listen<OverlayOutcome>(
+        "overlay-outcome",
+        (event) => setOutcome(event.payload),
+      );
 
       const unlistenReady = await listen("recording-ready", () => {
         setElapsed(0);
@@ -128,6 +171,7 @@ const RecordingOverlay: React.FC = () => {
         });
         smoothedLevelsRef.current = smoothed;
         setLevels(smoothed.slice(0, WAVE_BARS));
+        setBuckets(smoothed);
       });
 
       const unlistenStream = await events.streamTextEvent.listen((event) => {
@@ -170,12 +214,14 @@ const RecordingOverlay: React.FC = () => {
       return () => {
         unlistenShow();
         unlistenHide();
+        unlistenOutcome();
         unlistenReady();
         unlistenLevel();
         unlistenStream();
         unlistenPhase();
         unlistenModel();
         clearTimeout(modelLoadTimerRef.current);
+        clearTimeout(leaveTimerRef.current);
       };
     };
 
@@ -184,7 +230,12 @@ const RecordingOverlay: React.FC = () => {
 
   // Elapsed capture timer starts only once microphone samples are flowing.
   useEffect(() => {
-    if (state !== "streaming" || !isVisible || !captureReady) return;
+    if (
+      (state !== "streaming" && state !== "recording") ||
+      !isVisible ||
+      !captureReady
+    )
+      return;
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
   }, [state, isVisible, captureReady]);
@@ -345,23 +396,42 @@ const RecordingOverlay: React.FC = () => {
     );
   }
 
-  // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
-  // spinner + label (transcribing / processing). Never both. The pill animates its
-  // width between them; the cancel button is in both rows so it stays put.
+  // ---- Compact overlay: the Liquid Glass capsule (voxa/overlay/GlassPill). One
+  // capsule morphs between recording, recognizing, done and error.
   const working = state === "transcribing" || state === "processing";
   const workLabel =
     state === "processing" ? t("overlay.processing") : transcribingLabel;
+  const glassState: GlassState = outcome
+    ? outcome.state
+    : working
+      ? "transcribing"
+      : captureReady
+        ? "recording"
+        : "arming";
+  const errorText = outcome
+    ? t(`voxa.overlay.error.${outcome.failure ?? "generic"}`, {
+        defaultValue: t("voxa.overlay.error.generic"),
+      })
+    : undefined;
 
   return (
-    <div
-      dir={direction}
-      className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
-    >
-      <div
-        className={`scard compact ${working && isVisible ? "cworking" : ""}`}
-      >
-        {working ? workingRow(workLabel, true) : listeningRow(false, true)}
-      </div>
+    <div dir={direction} className="vg-stage">
+      <GlassPill
+        state={glassState}
+        levels={buckets}
+        elapsedSeconds={elapsed}
+        errorText={errorText}
+        leaving={leaving}
+        nativeGlass={document.documentElement.dataset.platform === "macos"}
+        labels={{
+          recording: t("voxa.overlay.recording"),
+          arming: t("voxa.overlay.arming"),
+          transcribing: workLabel,
+          done: t("voxa.overlay.done"),
+          cancel: t("voxa.overlay.cancel"),
+        }}
+        onCancel={() => commands.cancelOperation()}
+      />
     </div>
   );
 };

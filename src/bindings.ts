@@ -947,6 +947,86 @@ async isLaptop() : Promise<Result<boolean, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Statistics for the "Statistics" screen, computed in the system timezone.
+ */
+async getVoxaStats() : Promise<Result<VoxaStats, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_voxa_stats") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Deletes all recorded statistics. History and audio are not touched.
+ */
+async voxaClearStats() : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_clear_stats") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Adds a term to the custom words. Returns the dictionary after the call; the
+ * list is unchanged when the term was already in it.
+ */
+async voxaAddDictionaryWord(word: string) : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_add_dictionary_word", { word }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * The "import custom words from Handy" offer, if Handy is installed, has
+ * words Voxa lacks and the owner has not answered yet.
+ */
+async voxaGetHandyImport() : Promise<HandyImportOffer | null> {
+    return await TAURI_INVOKE("voxa_get_handy_import");
+},
+/**
+ * Adds Handy's new custom words and closes the offer. Returns the dictionary.
+ */
+async voxaImportHandyWords() : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_import_handy_words") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Closes the import offer without importing anything.
+ */
+async voxaDismissHandyImport() : Promise<void> {
+    await TAURI_INVOKE("voxa_dismiss_handy_import");
+},
+/**
+ * The sentence handed to Whisper as context. Empty switches it off.
+ */
+async voxaSetInitialPrompt(prompt: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_set_initial_prompt", { prompt }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Whether custom words the model already saw are still repaired for case.
+ */
+async voxaSetFixCustomWordCase(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_set_fix_custom_word_case", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -1042,11 +1122,24 @@ long_form_chunking?: boolean;
  * not gated on this — that follows model capability. Migrated from the old
  * `overlay_position` (position `none` → style `None`).
  */
-overlay_style?: OverlayStyle }
+overlay_style?: OverlayStyle; 
+/**
+ * Voxa-only settings (see `crate::voxa`).
+ */
+voxa?: VoxaSettings }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; gpu_devices: GpuDeviceOption[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
+export type CandidateKind = 
+/**
+ * A custom-word replacement that fired: the model got the word wrong.
+ */
+"replacement" | 
+/**
+ * The model wrote a known technical term in Cyrillic.
+ */
+"translit"
 /**
  * Script applied to Mandarin and Cantonese output. Other languages are never
  * converted.
@@ -1058,7 +1151,34 @@ export type ChineseScript =
 "as_transcribed" | "simplified" | "traditional"
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
+export type DailyWords = { 
+/**
+ * Local calendar day, `YYYY-MM-DD`.
+ */
+date: string; words: number; dictations: number }
+export type DictionaryCandidate = { kind: CandidateKind; 
+/**
+ * The spelling to add to the dictionary.
+ */
+term: string; count: number; 
+/**
+ * How the model wrote it instead, most frequent first.
+ */
+variants: string[]; in_dictionary: boolean }
 export type GpuDeviceOption = { id: string; name: string; total_vram_mb: number }
+export type HandyImportOffer = { 
+/**
+ * Where the words were read from.
+ */
+path: string; 
+/**
+ * Every custom word in Handy.
+ */
+words: string[]; 
+/**
+ * The ones Voxa does not have yet; the import adds exactly these.
+ */
+new_words: string[] }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
@@ -1103,6 +1223,23 @@ sha256: string | null } } |
  * in a shared cache. Nothing to download.
  */
 "Local"
+export type ModelStats = { 
+/**
+ * Registry id of the model; empty for imported history without one.
+ */
+model_id: string; dictations: number; words: number; 
+/**
+ * Share of Latin words, `None` without words.
+ */
+latin_share: number | null; 
+/**
+ * Dictations with a measured latency.
+ */
+latency_samples: number; avg_latency_ms: number | null; p95_latency_ms: number | null; 
+/**
+ * `latency_samples >= MIN_LATENCY_SAMPLES`; below it the UI says "not enough data".
+ */
+enough_latency_data: boolean }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
 export type OverlayPosition = "top" | "bottom"
 /**
@@ -1114,6 +1251,11 @@ export type OverlayPosition = "top" | "bottom"
 export type OverlayStyle = "none" | "minimal" | "live"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
+export type PeriodStats = { dictations: number; words: number; 
+/**
+ * Minutes of recorded audio (rows without a known length add nothing).
+ */
+minutes: number }
 export type PermissionAccess = "allowed" | "denied" | "unknown"
 /**
  * Request format a post-processing endpoint speaks. Built-in providers have a
@@ -1227,6 +1369,29 @@ export type Theme = "system" | "light" | "dark"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type VadBackend = "silero" | "earshot"
+/**
+ * Voxa-only settings, nested under `AppSettings.voxa`.
+ */
+export type VoxaSettings = { 
+/**
+ * A natural sentence with your terms, passed to Whisper as context so it
+ * spells them right. Empty switches it off.
+ */
+initial_prompt: string; 
+/**
+ * Repair the case of custom words the model already saw as a glossary
+ * (`langchain` -> `LangChain`).
+ */
+fix_custom_word_case: boolean; 
+/**
+ * The owner answered the "import custom words from Handy" offer.
+ */
+handy_import_handled: boolean }
+export type VoxaStats = { today: PeriodStats; 
+/**
+ * Monday to Sunday of the current week.
+ */
+week: PeriodStats; all_time: PeriodStats; avg_words_per_dictation: number; avg_seconds_per_dictation: number | null; latin_share: number | null; daily: DailyWords[]; models: ModelStats[]; candidates: DictionaryCandidate[] }
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 
 /** tauri-specta globals **/

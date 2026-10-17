@@ -1,18 +1,18 @@
-/* Handy Colors */
+/* Voxa colors (palette of the Handy fork, re-tinted azure) */
 
 :root {
   /* Palette source of truth. Each themed color is defined once as a
      light/dark pair; the active tokens below and the `data-theme` overrides
      in App.css reference these, so a hex value lives in exactly one place. */
   --light-color-text: #0f0f0f;
-  --light-color-background: #fbfbfb;
-  --light-color-logo-primary: #faa2ca;
-  --light-color-logo-stroke: #382731;
+  --light-color-background: #f6f7fb;
+  --light-color-logo-primary: #5b95ff;
+  --light-color-logo-stroke: #1d2b4a;
 
   --dark-color-text: #fbfbfb;
-  --dark-color-background: #2c2b29;
-  --dark-color-logo-primary: #f28cbb;
-  --dark-color-logo-stroke: #fad1ed;
+  --dark-color-background: #1b1e25;
+  --dark-color-logo-primary: #8db8ff;
+  --dark-color-logo-stroke: #c9dcff;
 
   /* Semantic status colors. First used by SecureInputWarning; intended to
      replace the ad-hoc yellow-500/red-500 usages (e.g. ui/Alert.tsx) over
@@ -23,7 +23,7 @@
   --dark-color-error: #f87171;
 
   /* Tokens that do not change between light and dark */
-  --color-background-ui: #da5893;
+  --color-background-ui: #2f6bf0;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
 

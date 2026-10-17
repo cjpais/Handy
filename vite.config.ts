@@ -2,12 +2,29 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "path";
+import type { Plugin } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
 
+// Voxa: `/voxa-preview` is a dev-only page (overlay gallery, mocked app) used for
+// screenshots. It is not a build input, so it never ships in the app bundle.
+const voxaPreviewRoute = (): Plugin => ({
+  name: "voxa-preview-route",
+  apply: "serve",
+  configureServer(server) {
+    server.middlewares.use((req, _res, next) => {
+      const [path, query = ""] = (req.url ?? "").split("?");
+      if (path === "/voxa-preview" || path === "/voxa-preview/") {
+        req.url = `/voxa-preview/index.html${query ? `?${query}` : ""}`;
+      }
+      next();
+    });
+  },
+});
+
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), voxaPreviewRoute()],
 
   // Path aliases
   resolve: {

@@ -1,0 +1,563 @@
+/*
+ * Liquid Glass recording capsule (220 x 48).
+ *
+ * Material: a translucent fill that blurs what is behind it, a light rim that
+ * fades from top to bottom, a soft specular highlight on top and a faint
+ * refraction glow along the edge. On macOS the blur is real: the overlay window
+ * is exactly capsule-sized and carries a native HUD vibrancy view (overlay.rs),
+ * so this CSS only adds fill, rim and highlights on top of it. The soft drop
+ * shadow comes from the native window shadow for the same reason; the preview
+ * page paints an equivalent one around the capsule.
+ */
+
+/* The overlay window's content: the capsule, centred. */
+.vg-stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vg-pill {
+  /* ---- light appearance (default) ---- */
+  --vgp-fill: rgba(255, 255, 255, 0.45);
+  --vgp-fill-fallback: rgba(255, 255, 255, 0.88);
+  --vgp-ink: #0f1722;
+  --vgp-ink-soft: #3b4657;
+  --vgp-bar-hi: #2f6bf0;
+  --vgp-bar-lo: #6f9dff;
+  --vgp-rim-top: rgba(255, 255, 255, 0.85);
+  --vgp-rim-bottom: rgba(255, 255, 255, 0.14);
+  --vgp-specular: rgba(255, 255, 255, 0.7);
+  --vgp-edge: rgba(255, 255, 255, 0.9);
+  --vgp-chip: rgba(15, 23, 34, 0.08);
+  --vgp-chip-hover: rgba(15, 23, 34, 0.16);
+  --vgp-ok: #14804a;
+  --vgp-ok-bg: rgba(20, 128, 74, 0.16);
+  --vgp-error-tint: rgba(235, 72, 72, 0.22);
+  --vgp-error-ink: #8a1717;
+  --vgp-solid: #f2f4f9;
+  --vgp-ring: rgba(30, 42, 74, 0.16);
+  --vgp-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .vg-pill {
+    --vgp-fill: rgba(255, 255, 255, 0.14);
+    --vgp-fill-fallback: rgba(36, 39, 47, 0.84);
+    --vgp-ink: rgba(255, 255, 255, 0.95);
+    --vgp-ink-soft: rgba(255, 255, 255, 0.7);
+    --vgp-bar-hi: #ffffff;
+    --vgp-bar-lo: #a9c8ff;
+    --vgp-rim-top: rgba(255, 255, 255, 0.55);
+    --vgp-rim-bottom: rgba(255, 255, 255, 0.08);
+    --vgp-specular: rgba(255, 255, 255, 0.5);
+    --vgp-edge: rgba(255, 255, 255, 0.75);
+    --vgp-chip: rgba(255, 255, 255, 0.12);
+    --vgp-chip-hover: rgba(255, 255, 255, 0.24);
+    --vgp-ok: #7be0a4;
+    --vgp-ok-bg: rgba(123, 224, 164, 0.2);
+    --vgp-error-tint: rgba(255, 92, 92, 0.3);
+    --vgp-error-ink: #ffd9d9;
+    --vgp-solid: #2a2d35;
+    --vgp-ring: rgba(0, 0, 0, 0.35);
+  }
+}
+
+[data-theme="light"] .vg-pill {
+  --vgp-fill: rgba(255, 255, 255, 0.45);
+  --vgp-fill-fallback: rgba(255, 255, 255, 0.88);
+  --vgp-ink: #0f1722;
+  --vgp-ink-soft: #3b4657;
+  --vgp-bar-hi: #2f6bf0;
+  --vgp-bar-lo: #6f9dff;
+  --vgp-rim-top: rgba(255, 255, 255, 0.85);
+  --vgp-rim-bottom: rgba(255, 255, 255, 0.14);
+  --vgp-specular: rgba(255, 255, 255, 0.7);
+  --vgp-edge: rgba(255, 255, 255, 0.9);
+  --vgp-chip: rgba(15, 23, 34, 0.08);
+  --vgp-chip-hover: rgba(15, 23, 34, 0.16);
+  --vgp-ok: #14804a;
+  --vgp-ok-bg: rgba(20, 128, 74, 0.16);
+  --vgp-error-tint: rgba(235, 72, 72, 0.22);
+  --vgp-error-ink: #8a1717;
+  --vgp-solid: #f2f4f9;
+  --vgp-ring: rgba(30, 42, 74, 0.16);
+}
+
+[data-theme="dark"] .vg-pill {
+  --vgp-fill: rgba(255, 255, 255, 0.14);
+  --vgp-fill-fallback: rgba(36, 39, 47, 0.84);
+  --vgp-ink: rgba(255, 255, 255, 0.95);
+  --vgp-ink-soft: rgba(255, 255, 255, 0.7);
+  --vgp-bar-hi: #ffffff;
+  --vgp-bar-lo: #a9c8ff;
+  --vgp-rim-top: rgba(255, 255, 255, 0.55);
+  --vgp-rim-bottom: rgba(255, 255, 255, 0.08);
+  --vgp-specular: rgba(255, 255, 255, 0.5);
+  --vgp-edge: rgba(255, 255, 255, 0.75);
+  --vgp-chip: rgba(255, 255, 255, 0.12);
+  --vgp-chip-hover: rgba(255, 255, 255, 0.24);
+  --vgp-ok: #7be0a4;
+  --vgp-ok-bg: rgba(123, 224, 164, 0.2);
+  --vgp-error-tint: rgba(255, 92, 92, 0.3);
+  --vgp-error-ink: #ffd9d9;
+  --vgp-solid: #2a2d35;
+  --vgp-ring: rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- the capsule ---------- */
+
+.vg-pill {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 220px;
+  height: 48px;
+  border-radius: 24px;
+  overflow: hidden;
+  color: var(--vgp-ink);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
+    sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  background: var(--vgp-fill);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+  box-shadow: 0 0 0 0.5px var(--vgp-ring);
+  animation: vg-pop 280ms var(--vgp-spring) both;
+  will-change: transform, opacity;
+}
+
+/* No native blur behind the window (Windows, Linux): denser fill. */
+.vg-pill.no-native-glass {
+  background: var(--vgp-fill-fallback);
+}
+
+/* Gradient rim: bright at the top, fading towards the bottom. */
+.vg-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    var(--vgp-rim-top),
+    var(--vgp-rim-bottom)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Specular highlight: a soft light pooled at the top of the glass. */
+.vg-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    115% 85% at 50% -35%,
+    var(--vgp-specular) 0%,
+    rgba(255, 255, 255, 0.1) 42%,
+    transparent 68%
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Refraction at the rim: edge brightening, blended over the glass. */
+.vg-pill-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    transparent 66%,
+    var(--vgp-edge) 100%
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Error: the glass takes on a reddish tint. */
+.vg-pill.is-error {
+  background-image: linear-gradient(
+    var(--vgp-error-tint),
+    var(--vgp-error-tint)
+  );
+  color: var(--vgp-error-ink);
+}
+
+/* ---------- appearance / dissolve ---------- */
+
+@keyframes vg-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes vg-dissolve {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.vg-pill.is-leaving {
+  animation: vg-dissolve 220ms ease-in forwards;
+  pointer-events: none;
+}
+
+/* ---------- contents (all absolutely placed; states cross-fade) ---------- */
+
+.vg-wave,
+.vg-flow,
+.vg-timer,
+.vg-label,
+.vg-outcome,
+.vg-x {
+  position: absolute;
+  top: 50%;
+}
+
+/* Waveform: seven rounded bars, centred. */
+.vg-wave {
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 200ms ease,
+    transform 320ms var(--vgp-spring);
+}
+
+.vg-wave i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--vgp-bar-hi), var(--vgp-bar-lo));
+  transition:
+    height 90ms linear,
+    opacity 200ms ease;
+}
+
+.vg-pill.is-arming .vg-wave i {
+  height: 6px !important;
+  opacity: 0.4;
+  animation: vg-arming 900ms ease-in-out infinite;
+}
+
+.vg-pill.is-arming .vg-wave i:nth-child(2),
+.vg-pill.is-arming .vg-wave i:nth-child(6) {
+  animation-delay: 80ms;
+}
+.vg-pill.is-arming .vg-wave i:nth-child(3),
+.vg-pill.is-arming .vg-wave i:nth-child(5) {
+  animation-delay: 160ms;
+}
+.vg-pill.is-arming .vg-wave i:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+@keyframes vg-arming {
+  0%,
+  100% {
+    transform: scaleY(0.6);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scaleY(1.6);
+    opacity: 0.7;
+  }
+}
+
+/* Timer on the left while recording. */
+.vg-timer {
+  left: 20px;
+  min-width: 34px;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--vgp-ink-soft);
+  transition: opacity 180ms ease;
+}
+
+/* Recognizing: the bars flow into a shimmering strip, then a label. */
+.vg-flow {
+  left: 20px;
+  width: 52px;
+  height: 4px;
+  border-radius: 2px;
+  transform: translateY(-50%) scaleX(0.35);
+  transform-origin: left center;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--vgp-bar-lo) 30%, transparent) 0%,
+    var(--vgp-bar-hi) 50%,
+    color-mix(in srgb, var(--vgp-bar-lo) 30%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  transition:
+    opacity 220ms ease,
+    transform 380ms var(--vgp-spring);
+}
+
+.vg-label {
+  left: 82px;
+  max-width: 102px;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vgp-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 200ms ease 80ms;
+}
+
+.vg-pill.is-transcribing .vg-wave {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6, 0.15);
+}
+.vg-pill.is-transcribing .vg-timer {
+  opacity: 0;
+}
+.vg-pill.is-transcribing .vg-flow {
+  opacity: 1;
+  transform: translateY(-50%) scaleX(1);
+  animation: vg-shimmer 1.5s linear infinite;
+}
+.vg-pill.is-transcribing .vg-label {
+  opacity: 1;
+}
+
+@keyframes vg-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Idle timer / wave visibility for the other states. */
+.vg-pill.is-arming .vg-timer {
+  opacity: 0.5;
+}
+.vg-pill.is-done .vg-wave,
+.vg-pill.is-done .vg-timer,
+.vg-pill.is-error .vg-wave,
+.vg-pill.is-error .vg-timer {
+  opacity: 0;
+}
+
+/* Done / error. */
+.vg-outcome {
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 24px;
+  transform: translateY(-50%);
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.vg-check {
+  width: 26px;
+  height: 26px;
+  color: var(--vgp-ok);
+  animation: vg-check-pop 360ms var(--vgp-spring) both;
+}
+.vg-check-disc {
+  fill: var(--vgp-ok-bg);
+}
+.vg-check-mark {
+  stroke: currentColor;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: vg-draw 320ms 90ms ease-out forwards;
+}
+
+@keyframes vg-check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes vg-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.vg-alert {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--vgp-error-ink);
+}
+.vg-alert-disc {
+  fill: color-mix(in srgb, var(--vgp-error-ink) 14%, transparent);
+}
+.vg-error-text {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cancel: appears on hover (and for keyboard focus). */
+.vg-x {
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%) scale(0.8);
+  color: var(--vgp-ink);
+  background: var(--vgp-chip);
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition:
+    opacity 160ms ease,
+    transform 220ms var(--vgp-spring),
+    background-color 140ms ease;
+}
+.vg-x svg {
+  width: 11px;
+  height: 11px;
+}
+.vg-pill:hover .vg-x,
+.vg-x:focus-visible {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+.vg-x:hover {
+  background: var(--vgp-chip-hover);
+}
+.vg-x:active {
+  transform: translateY(-50%) scale(0.92);
+}
+.vg-x:focus-visible {
+  outline: 2px solid var(--vgp-bar-hi);
+  outline-offset: 1px;
+}
+.vg-pill.is-done .vg-x,
+.vg-pill.is-error .vg-x {
+  display: none;
+}
+
+/* ---------- accessibility ---------- */
+
+/* Reduce transparency: an opaque capsule instead of glass. */
+@media (prefers-reduced-transparency: reduce) {
+  .vg-pill,
+  .vg-pill.no-native-glass {
+    background: var(--vgp-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .vg-pill.is-error {
+    background-image: linear-gradient(
+      var(--vgp-error-tint),
+      var(--vgp-error-tint)
+    );
+  }
+  .vg-pill::after,
+  .vg-pill-edge {
+    display: none;
+  }
+}
+
+/* Reduce motion: no springs, no shimmer, no pulsing; state changes just fade. */
+@media (prefers-reduced-motion: reduce) {
+  .vg-pill {
+    animation: vg-fade 120ms ease-out both;
+  }
+  .vg-pill.is-leaving {
+    animation: vg-fade-out 120ms ease-in forwards;
+  }
+  .vg-wave,
+  .vg-flow,
+  .vg-label,
+  .vg-x {
+    transition: opacity 120ms ease;
+  }
+  .vg-wave i {
+    transition: none;
+  }
+  .vg-pill.is-arming .vg-wave i,
+  .vg-pill.is-transcribing .vg-flow,
+  .vg-check,
+  .vg-check-mark {
+    animation: none;
+  }
+  .vg-check-mark {
+    stroke-dashoffset: 0;
+  }
+  .vg-pill.is-transcribing .vg-flow {
+    background-position: 50% 0;
+  }
+  .vg-pill.is-transcribing .vg-wave {
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes vg-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vg-fade-out {
+  to {
+    opacity: 0;
+  }
+}

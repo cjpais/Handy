@@ -1,0 +1,72 @@
+/* Dev-only styles of the /voxa-preview page. */
+
+body.pv {
+  margin: 0;
+  background: #0d0f14;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+
+.pv-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 560px);
+  gap: 20px;
+  padding: 20px;
+}
+
+.pv-stage {
+  position: relative;
+  box-sizing: border-box;
+  width: 560px;
+  height: 190px;
+  margin: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 110px;
+  border-radius: 14px;
+  overflow: hidden;
+  background-size: 1600px 900px;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+}
+
+/* The native window shadow in the real app, painted around the capsule here. */
+.pv-capsule {
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.pv-caption {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.pv-stage .vg-pill {
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+
+/* the app view takes the whole page */
+.pv-app-frame {
+  width: 960px;
+  height: 640px;
+  overflow: hidden;
+  position: relative;
+}

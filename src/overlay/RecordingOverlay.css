@@ -1,4 +1,5 @@
 @import "../styles/theme.css";
+@import "../voxa/overlay/glass-pill.css";
 
 :root {
   --s-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
