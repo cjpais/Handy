@@ -1,4 +1,3 @@
-use crate::utils;
 use log::{debug, warn};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -535,6 +534,9 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    /// Voxa-only settings (see `crate::voxa`).
+    #[serde(default)]
+    pub voxa: crate::voxa::VoxaSettings,
 }
 
 fn default_model() -> String {
@@ -568,11 +570,11 @@ fn default_autostart_enabled() -> bool {
 }
 
 fn default_update_checks_enabled() -> bool {
-    true
+    false
 }
 
 fn default_show_whats_new_on_update() -> bool {
-    true
+    false
 }
 
 fn default_whats_new_last_seen_version() -> String {
@@ -641,7 +643,9 @@ fn default_auto_submit() -> bool {
 }
 
 fn default_history_limit() -> usize {
-    5
+    // Voxa: statistics live in their own store, so this only bounds the History
+    // screen and the saved audio.
+    crate::voxa::defaults::DEFAULT_HISTORY_LIMIT
 }
 
 fn default_recording_retention_period() -> RecordingRetentionPeriod {
@@ -979,12 +983,15 @@ pub fn get_default_settings() -> AppSettings {
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
-        selected_language: "auto".to_string(),
+        // Voxa: the owner dictates in Russian.
+        selected_language: crate::voxa::defaults::DEFAULT_LANGUAGE.to_string(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
-        custom_words: Vec::new(),
-        model_unload_timeout: ModelUnloadTimeout::default(),
+        // Voxa: pre-filled with the owner's technical terms.
+        custom_words: crate::voxa::defaults::default_custom_words(),
+        // Voxa: free the model after 10 idle minutes (8 GB machine).
+        model_unload_timeout: ModelUnloadTimeout::Min10,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),
@@ -1022,6 +1029,7 @@ pub fn get_default_settings() -> AppSettings {
         vad_backend: VadBackend::default(),
         long_form_chunking: default_long_form_chunking(),
         overlay_style: default_overlay_style(),
+        voxa: crate::voxa::VoxaSettings::default(),
     }
 }
 
@@ -1261,9 +1269,10 @@ fn apply_settings_migrations(
 /// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
 /// can't work against an immutable /nix/store install.
 pub fn update_checks_forced_disabled() -> bool {
-    use std::sync::OnceLock;
-    static IS_UPDATER_DISABLED: OnceLock<bool> = OnceLock::new();
-    *IS_UPDATER_DISABLED.get_or_init(|| utils::env_flag_enabled("HANDY_DISABLE_UPDATER"))
+    // Voxa never self-updates: an update from the upstream feed would replace the
+    // fork with the original, and the app makes no network requests besides
+    // explicit model downloads (docs/DECISIONS.md, D-03).
+    true
 }
 
 /// Effective updater state: the user's stored preference, overridden to `false`

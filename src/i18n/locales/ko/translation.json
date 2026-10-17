@@ -610,9 +610,9 @@
         "button": "GitHub에서 보기"
       },
       "supportDevelopment": {
-        "title": "개발 지원",
-        "description": "Handy 개발을 계속할 수 있도록 도와주세요",
-        "button": "후원하기"
+        "title": "Based on Handy",
+        "description": "Voxa is a fork of Handy by CJ Pais (MIT license)",
+        "button": "View Handy"
       },
       "acknowledgments": {
         "title": "감사의 말",

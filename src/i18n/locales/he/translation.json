@@ -610,9 +610,9 @@
         "button": "צפה ב-GitHub"
       },
       "supportDevelopment": {
-        "title": "תמיכה בפיתוח",
-        "description": "עזור לנו להמשיך לבנות את Handy",
-        "button": "תרומה"
+        "title": "Based on Handy",
+        "description": "Voxa is a fork of Handy by CJ Pais (MIT license)",
+        "button": "View Handy"
       },
       "acknowledgments": {
         "title": "תודות",

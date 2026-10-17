@@ -1,7 +1,7 @@
 [package]
 name = "handy"
 version = "0.9.8"
-description = "Handy"
+description = "Voxa: local voice dictation (fork of Handy)"
 authors = ["cjpais"]
 edition = "2021"
 license = "MIT"

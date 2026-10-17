@@ -26,6 +26,7 @@ mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
+mod voxa;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
@@ -213,6 +214,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(tray::TrayState::new());
+    // Voxa: dictation statistics (own database, see voxa/store.rs)
+    voxa::init(app_handle);
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -768,6 +771,14 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
+            voxa::commands::get_voxa_stats,
+            voxa::commands::voxa_clear_stats,
+            voxa::commands::voxa_add_dictionary_word,
+            voxa::commands::voxa_get_handy_import,
+            voxa::commands::voxa_import_handy_words,
+            voxa::commands::voxa_dismiss_handy_import,
+            voxa::commands::voxa_set_initial_prompt,
+            voxa::commands::voxa_set_fix_custom_word_case,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,
@@ -944,7 +955,7 @@ pub fn run(cli_args: CliArgs) {
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                    .title("Handy")
+                    .title("Voxa")
                     .inner_size(680.0, 570.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)

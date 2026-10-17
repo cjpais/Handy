@@ -2,7 +2,8 @@ use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tauri::window::{Effect, EffectState, EffectsBuilder};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -46,7 +47,17 @@ tauri_panel! {
 // Compact overlay (Minimal / transcribing / processing): the 40h pill animates
 // width from 172 (--ov-rest-w) to 216 (--ov-work-w) and expands from center, so
 // the window must fit the widest state plus a little slack.
+//
+// Voxa (macOS): the window IS the glass capsule — the native vibrancy view fills
+// the whole window, so window and capsule must have the same size (see
+// `sync_native_glass`).
+#[cfg(target_os = "macos")]
+const OVERLAY_WIDTH: f64 = 220.0;
+#[cfg(target_os = "macos")]
+const OVERLAY_HEIGHT: f64 = 48.0;
+#[cfg(not(target_os = "macos"))]
 const OVERLAY_WIDTH: f64 = 256.0;
+#[cfg(not(target_os = "macos"))]
 const OVERLAY_HEIGHT: f64 = 50.0;
 
 // Actual is 394x118, just a little extra
@@ -70,8 +81,9 @@ const OVERLAY_TOP_OFFSET: f64 = 46.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_TOP_OFFSET: f64 = 4.0;
 
+// Voxa: capsule floats ~24 pt above the Dock.
 #[cfg(target_os = "macos")]
-const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
+const OVERLAY_BOTTOM_OFFSET: f64 = 24.0;
 
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
@@ -462,7 +474,9 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
                 width: OVERLAY_WIDTH,
                 height: OVERLAY_HEIGHT,
             }))
-            .has_shadow(false)
+            // Voxa: the capsule's soft shadow is the native window shadow (the
+            // window is exactly the capsule, so CSS cannot draw outside it).
+            .has_shadow(true)
             .transparent(true)
             .no_activate(true)
             .corner_radius(0.0)
@@ -477,6 +491,10 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         {
             Ok(panel) => {
                 panel.hide();
+                // Voxa: native blur behind the capsule from the first frame.
+                if let Some(window) = app_handle.get_webview_window("recording_overlay") {
+                    sync_native_glass(&window, true);
+                }
             }
             Err(e) => {
                 log::error!("Failed to create recording overlay panel: {}", e);
@@ -514,6 +532,11 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
         // Invalidate any delayed hide still in flight from a previous session
         // (see `hide_recording_overlay`).
         OVERLAY_SHOW_GENERATION.fetch_add(1, Ordering::SeqCst);
+
+        // Voxa: the capsule gets native glass; the Live card has no fixed shape.
+        let streaming = state == "streaming";
+        STREAMING_LAYOUT.store(streaming, Ordering::Relaxed);
+        sync_native_glass(&overlay_window, !streaming);
 
         #[cfg(target_os = "linux")]
         let shown_with_layer_shell = if LAYER_SHELL_ACTIVE.load(Ordering::SeqCst) {
@@ -675,6 +698,92 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
             }
         }
     }
+}
+
+/// Whether the native glass (vibrancy) view is applied to the overlay window.
+static GLASS_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+/// Whether the overlay currently shows the Live (streaming) card instead of the
+/// compact capsule.
+static STREAMING_LAYOUT: AtomicBool = AtomicBool::new(false);
+
+/// Voxa: puts (or removes) a native macOS HUD vibrancy view behind the webview,
+/// clipped to a capsule, so the blur of whatever is under the window is real.
+/// The overlay window is exactly capsule-sized for this reason. No-op elsewhere.
+fn sync_native_glass(window: &tauri::webview::WebviewWindow, enable: bool) {
+    if !cfg!(target_os = "macos") || GLASS_ACTIVE.swap(enable, Ordering::SeqCst) == enable {
+        return;
+    }
+    let effects = enable.then(|| {
+        EffectsBuilder::new()
+            .effect(Effect::HudWindow)
+            .state(EffectState::Active)
+            .radius(OVERLAY_HEIGHT / 2.0)
+            .build()
+    });
+    if let Err(error) = window.set_effects(effects) {
+        log::warn!("Overlay glass effect could not be changed: {error}");
+        GLASS_ACTIVE.store(!enable, Ordering::SeqCst);
+    }
+}
+
+/// Why the overlay is showing its error state. The frontend maps it to a short
+/// translated message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OverlayFailure {
+    Recording,
+    Transcription,
+    Paste,
+}
+
+impl OverlayFailure {
+    fn as_str(self) -> &'static str {
+        match self {
+            OverlayFailure::Recording => "recording",
+            OverlayFailure::Transcription => "transcription",
+            OverlayFailure::Paste => "paste",
+        }
+    }
+}
+
+/// How long the check mark stays before the capsule dissolves.
+const DONE_HOLD_MS: u64 = 650;
+/// How long an error stays on screen.
+const ERROR_HOLD_MS: u64 = 2000;
+
+/// Voxa: shows the "done" check mark, then dissolves the overlay.
+pub fn finish_recording_overlay(app_handle: &AppHandle) {
+    show_outcome(app_handle, "done", None, DONE_HOLD_MS);
+}
+
+/// Voxa: shows a short error in the overlay, then dissolves it after 2 s.
+pub fn fail_recording_overlay(app_handle: &AppHandle, failure: OverlayFailure) {
+    show_outcome(app_handle, "error", Some(failure.as_str()), ERROR_HOLD_MS);
+}
+
+fn show_outcome(app_handle: &AppHandle, state: &str, failure: Option<&str>, hold_ms: u64) {
+    // With the overlay off, or the Live card up, there is no capsule to update.
+    if !OVERLAY_ENABLED.load(Ordering::Relaxed) || STREAMING_LAYOUT.load(Ordering::Relaxed) {
+        hide_recording_overlay(app_handle);
+        return;
+    }
+    let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") else {
+        return;
+    };
+    let shown_generation = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+    let _ = overlay_window.emit(
+        "overlay-outcome",
+        serde_json::json!({ "state": state, "failure": failure }),
+    );
+    let handle = app_handle.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(hold_ms));
+        // A newer session showed the overlay meanwhile: leave it alone.
+        if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != shown_generation {
+            return;
+        }
+        hide_recording_overlay(&handle);
+    });
 }
 
 /// Generation counter bumped every time the overlay is shown. The delayed

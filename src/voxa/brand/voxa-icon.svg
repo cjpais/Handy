@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#3a4a7a"/>
+      <stop offset="0.55" stop-color="#1f2a52"/>
+      <stop offset="1" stop-color="#121a38"/>
+    </linearGradient>
+    <radialGradient id="spec" cx="0.32" cy="0.1" r="0.75">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.28"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#9ec5ff"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#spec)"/>
+  <rect x="103" y="103" width="818" height="818" rx="187" fill="none" stroke="url(#rim)" stroke-width="6"/>
+  <g filter="url(#glow)" opacity="0.55" fill="#7fb1ff">
+    <rect x="304" y="392" width="72" height="240" rx="36"/>
+    <rect x="398" y="318" width="72" height="388" rx="36"/>
+    <rect x="492" y="262" width="72" height="500" rx="36"/>
+    <rect x="586" y="342" width="72" height="340" rx="36"/>
+    <rect x="680" y="418" width="72" height="188" rx="36"/>
+  </g>
+  <g fill="url(#bar)">
+    <rect x="304" y="392" width="72" height="240" rx="36"/>
+    <rect x="398" y="318" width="72" height="388" rx="36"/>
+    <rect x="492" y="262" width="72" height="500" rx="36"/>
+    <rect x="586" y="342" width="72" height="340" rx="36"/>
+    <rect x="680" y="418" width="72" height="188" rx="36"/>
+  </g>
+</svg>

@@ -149,8 +149,28 @@ fn find_best_match<'a>(
 /// # Returns
 /// The corrected text with custom words applied
 pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> String {
+    apply_custom_words_with_report(text, custom_words, threshold).0
+}
+
+/// One correction made by [`apply_custom_words_with_report`]: the text as the
+/// model wrote it, and what replaced it. Surrounding punctuation is not part of
+/// either side.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct WordReplacement {
+    pub from: String,
+    pub to: String,
+}
+
+/// Same as [`apply_custom_words`], and also reports every replacement that
+/// changed the text. A word that already matched its custom word exactly is not
+/// a replacement.
+pub fn apply_custom_words_with_report(
+    text: &str,
+    custom_words: &[String],
+    threshold: f64,
+) -> (String, Vec<WordReplacement>) {
     if custom_words.is_empty() {
-        return text.to_string();
+        return (text.to_string(), Vec::new());
     }
 
     // Pre-compute normalized comparison keys to avoid repeated allocations.
@@ -162,6 +182,7 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
 
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut result = Vec::new();
+    let mut replacements = Vec::new();
     let mut i = 0;
 
     while i < words.len() {
@@ -208,6 +229,15 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
             // Preserve case from first word.
             let corrected = preserve_case_pattern(ngram_words[0], replacement);
 
+            let original = ngram_words.join(" ");
+            let original_core = &original[prefix.len()..original.len() - suffix.len()];
+            if original_core != corrected {
+                replacements.push(WordReplacement {
+                    from: original_core.to_string(),
+                    to: corrected.clone(),
+                });
+            }
+
             result.push(format!("{}{}{}", prefix, corrected, suffix));
             i += n;
         } else {
@@ -216,7 +246,7 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
         }
     }
 
-    result.join(" ")
+    (result.join(" "), replacements)
 }
 
 /// Preserves the case pattern of the original word when applying a replacement
@@ -783,6 +813,58 @@ mod tests {
         let result = normalize_transcription_output(&filtered);
 
         assert_eq!(result, "should be removed but um should remain");
+    }
+
+    #[test]
+    fn report_lists_only_replacements_that_changed_the_text() {
+        let words = vec!["Docker".to_string(), "LangChain".to_string()];
+        let (text, report) =
+            apply_custom_words_with_report("docker и Langchain, а Docker не тронут", &words, 0.5);
+        assert_eq!(text, "Docker и LangChain, а Docker не тронут");
+        assert_eq!(
+            report,
+            vec![
+                WordReplacement {
+                    from: "docker".to_string(),
+                    to: "Docker".to_string()
+                },
+                WordReplacement {
+                    from: "Langchain".to_string(),
+                    to: "LangChain".to_string()
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn report_excludes_punctuation_and_covers_ngrams() {
+        let words = vec!["ChargeBee".to_string()];
+        let (text, report) = apply_custom_words_with_report("Use (Charge B) now", &words, 0.5);
+        assert_eq!(text, "Use (ChargeBee) now");
+        assert_eq!(
+            report,
+            vec![WordReplacement {
+                from: "Charge B".to_string(),
+                to: "ChargeBee".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn report_is_empty_without_custom_words_and_text_is_unchanged() {
+        let (text, report) = apply_custom_words_with_report("hello  world", &[], 0.5);
+        assert_eq!(text, "hello  world");
+        assert!(report.is_empty());
+    }
+
+    #[test]
+    fn plain_apply_matches_the_report_variant() {
+        let words = vec!["Docker".to_string()];
+        let input = "i use docker daily";
+        assert_eq!(
+            apply_custom_words(input, &words, 0.5),
+            apply_custom_words_with_report(input, &words, 0.5).0
+        );
     }
 
     #[test]

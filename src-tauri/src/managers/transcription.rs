@@ -1,7 +1,7 @@
 use crate::audio_toolkit::chunking;
 use crate::audio_toolkit::{
-    apply_custom_words, detect_output_language, normalize_transcription_output,
-    remove_filler_words, OutputLanguageEvidence,
+    apply_custom_words_with_report, detect_output_language, normalize_transcription_output,
+    remove_filler_words, OutputLanguageEvidence, WordReplacement,
 };
 use crate::chinese_script::{convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
@@ -13,6 +13,7 @@ use crate::managers::model::ModelManager;
 use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
 };
+use crate::voxa::TranscriptionDetails;
 use anyhow::Result;
 use chunked::ChunkedDecode;
 use live::LiveSession;
@@ -886,12 +887,14 @@ impl TranscriptionManager {
     /// Transcribe a whole clip in batch: a re-transcribed history entry, or
     /// a file from the CLI.
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
-        self.complete(Instant::now(), audio, None)
+        self.complete(Instant::now(), audio, None).map(|d| d.text)
     }
 
     /// Transcribe a finished recording: what its live decode produced, or a
-    /// batch run of the whole recording when there is no live result.
-    pub fn transcribe_recording(&self, samples: Vec<f32>) -> Result<String> {
+    /// batch run of the whole recording when there is no live result. Besides
+    /// the final text, the result carries what Voxa's statistics need: the
+    /// model's raw text, the custom-word replacements and the model that ran.
+    pub fn transcribe_recording_detailed(&self, samples: Vec<f32>) -> Result<TranscriptionDetails> {
         let started = Instant::now();
         let live = self.finalize_live(samples.len())?;
         self.complete(started, samples, live)
@@ -904,7 +907,7 @@ impl TranscriptionManager {
         started: Instant,
         audio: Vec<f32>,
         live: Option<RunOutcome>,
-    ) -> Result<String> {
+    ) -> Result<TranscriptionDetails> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -917,7 +920,7 @@ impl TranscriptionManager {
         if audio.is_empty() {
             debug!("Empty audio vector");
             self.maybe_unload_immediately("empty audio");
-            return Ok(String::new());
+            return Ok(TranscriptionDetails::default());
         }
 
         let outcome = match live {
@@ -925,7 +928,11 @@ impl TranscriptionManager {
             None => self.decode_batch(audio)?,
         };
         let settings = get_settings(&self.app_handle);
-        let final_result = finish_text(outcome, &settings);
+        let raw_text = outcome.text.clone();
+        let (final_result, replacements) = finish_text(outcome, &settings);
+        let model_id = self
+            .get_current_model()
+            .unwrap_or_else(|| settings.selected_model.clone());
 
         let translation_note = if settings.translate_to_english {
             " (translated)"
@@ -954,7 +961,13 @@ impl TranscriptionManager {
 
         self.maybe_unload_immediately("transcription");
 
-        Ok(final_result)
+        Ok(TranscriptionDetails {
+            text: final_result,
+            raw_text,
+            replacements,
+            model_id,
+            language: settings.selected_language.clone(),
+        })
     }
 
     /// Decode a whole clip with the loaded model, loading it first if a load
@@ -1089,9 +1102,9 @@ struct RunOutcome {
     model_detected_language: Option<String>,
 }
 
-/// One transcription's final text: its output language resolved, then
-/// post-processed.
-fn finish_text(outcome: RunOutcome, settings: &AppSettings) -> String {
+/// One transcription's final text and the custom-word replacements that shaped
+/// it: its output language resolved, then post-processed.
+fn finish_text(outcome: RunOutcome, settings: &AppSettings) -> (String, Vec<WordReplacement>) {
     let RunOutcome {
         setup,
         text,
@@ -1100,7 +1113,7 @@ fn finish_text(outcome: RunOutcome, settings: &AppSettings) -> String {
     let output_language = setup.output_language(settings, model_detected_language);
     debug!("Output language evidence: {:?}", output_language);
     // Skip fuzzy correction if the model already got the custom words.
-    post_process_transcription_text(
+    post_process_transcription_text_detailed(
         text,
         settings,
         setup.custom_words_prompted(),
@@ -1173,6 +1186,7 @@ fn run_setup(info: &LoadedInfo, settings: &AppSettings, validated_language: &str
         language: run_plan.language,
         target_language: run_plan.target_language,
         vocabulary: vocabulary_for_model(info.supports_vocabulary, &settings.custom_words),
+        prompt: context_prompt_for_model(info.supports_initial_prompt, settings),
         ..Default::default()
     };
 
@@ -1423,6 +1437,17 @@ fn vocabulary_for_model(supports_vocabulary: bool, custom_words: &[String]) -> V
     }
 }
 
+/// The editable Voxa phrase, as the model's context prompt. Only models with a
+/// prompt slot (Whisper) get it; elsewhere it would just draw a warning from
+/// the engine on every run.
+fn context_prompt_for_model(
+    supports_initial_prompt: bool,
+    settings: &AppSettings,
+) -> Option<String> {
+    let phrase = settings.voxa.initial_prompt.trim();
+    (supports_initial_prompt && !phrase.is_empty()).then(|| phrase.to_string())
+}
+
 struct TranscribeCppRunPlan {
     task: Task,
     language: Option<String>,
@@ -1459,6 +1484,7 @@ fn transcribe_cpp_run_plan(
     }
 }
 
+#[cfg(test)]
 fn post_process_transcription_text(
     raw: String,
     settings: &AppSettings,
@@ -1466,8 +1492,28 @@ fn post_process_transcription_text(
     output_language: &OutputLanguageEvidence,
     supported_languages: &[String],
 ) -> String {
+    post_process_transcription_text_detailed(
+        raw,
+        settings,
+        custom_words_already_prompted,
+        output_language,
+        supported_languages,
+    )
+    .0
+}
+
+/// [`post_process_transcription_text`], also returning the custom-word
+/// replacements that changed the text (empty when none ran or fired).
+fn post_process_transcription_text_detailed(
+    raw: String,
+    settings: &AppSettings,
+    custom_words_already_prompted: bool,
+    output_language: &OutputLanguageEvidence,
+    supported_languages: &[String],
+) -> (String, Vec<WordReplacement>) {
     let converts_script = settings.chinese_script != ChineseScript::AsTranscribed;
-    fail_open_text_transform(raw, |raw| {
+    let mut replacements: Vec<WordReplacement> = Vec::new();
+    let text = fail_open_text_transform(raw, |raw| {
         // Last-resort language evidence: confidence-gated detection from the
         // transcribed text itself, constrained to the model's languages. Only
         // consulted when it can change the outcome (built-in gated fillers or
@@ -1502,12 +1548,27 @@ fn post_process_transcription_text(
             _ => raw,
         };
 
-        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
-            apply_custom_words(
+        let corrected = if settings.custom_words.is_empty() {
+            raw
+        } else if !custom_words_already_prompted {
+            let (text, applied) = apply_custom_words_with_report(
                 &raw,
                 &settings.custom_words,
                 settings.word_correction_threshold,
-            )
+            );
+            replacements = applied;
+            text
+        } else if settings.voxa.fix_custom_word_case {
+            // The model already got the words as a glossary, so no fuzzy
+            // matching. Voxa still repairs spellings that differ only in case
+            // or spacing (`langchain` -> `LangChain`).
+            let (text, applied) = apply_custom_words_with_report(
+                &raw,
+                &settings.custom_words,
+                crate::voxa::CASE_ONLY_THRESHOLD,
+            );
+            replacements = applied;
+            text
         } else {
             raw
         };
@@ -1520,7 +1581,8 @@ fn post_process_transcription_text(
         );
 
         normalize_transcription_output(&without_fillers)
-    })
+    });
+    (text, replacements)
 }
 
 /// Characters to wait for before detecting the preview's language. A lone
@@ -2168,6 +2230,12 @@ mod tests {
         let settings = AppSettings {
             selected_language: "en".to_string(),
             custom_words: vec!["Handy".to_string()],
+            // Voxa's case repair would fix `handy` here; this test is about the
+            // upstream rule, so switch it off.
+            voxa: crate::voxa::VoxaSettings {
+                fix_custom_word_case: false,
+                ..Default::default()
+            },
             ..Default::default()
         };
         let evidence = OutputLanguageEvidence::UserSelected("en".to_string());
@@ -2192,6 +2260,90 @@ mod tests {
             &supported,
         );
         assert_eq!(corrected, "i use Handy every day");
+    }
+
+    #[test]
+    fn prompted_output_gets_case_repair_and_reports_it() {
+        let settings = AppSettings {
+            selected_language: "ru".to_string(),
+            custom_words: vec!["LangChain".to_string(), "Docker".to_string()],
+            ..Default::default()
+        };
+        assert!(settings.voxa.fix_custom_word_case);
+        let evidence = OutputLanguageEvidence::UserSelected("ru".to_string());
+        let supported = languages(&["ru"]);
+
+        let (text, replacements) = post_process_transcription_text_detailed(
+            "Настроил langchain и Docker для проекта".to_string(),
+            &settings,
+            true,
+            &evidence,
+            &supported,
+        );
+        assert_eq!(text, "Настроил LangChain и Docker для проекта");
+        assert_eq!(
+            replacements,
+            vec![WordReplacement {
+                from: "langchain".to_string(),
+                to: "LangChain".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn prompted_case_repair_is_exact_only() {
+        let settings = AppSettings {
+            custom_words: vec!["Obsidian".to_string()],
+            ..Default::default()
+        };
+        let evidence = OutputLanguageEvidence::Unknown;
+        // `Obsidan` is a near miss, not a case difference: stays untouched.
+        let (text, replacements) = post_process_transcription_text_detailed(
+            "note in Obsidan".to_string(),
+            &settings,
+            true,
+            &evidence,
+            &[],
+        );
+        assert_eq!(text, "note in Obsidan");
+        assert!(replacements.is_empty());
+    }
+
+    #[test]
+    fn fuzzy_path_reports_replacements() {
+        let settings = AppSettings {
+            custom_words: vec!["Obsidian".to_string()],
+            ..Default::default()
+        };
+        let evidence = OutputLanguageEvidence::Unknown;
+        let (text, replacements) = post_process_transcription_text_detailed(
+            "note in Obsidan".to_string(),
+            &settings,
+            false,
+            &evidence,
+            &[],
+        );
+        assert_eq!(text, "note in Obsidian");
+        assert_eq!(
+            replacements,
+            vec![WordReplacement {
+                from: "Obsidan".to_string(),
+                to: "Obsidian".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn context_prompt_goes_only_to_models_with_a_prompt_slot() {
+        let mut settings = AppSettings::default();
+        settings.voxa.initial_prompt = "  Настроил RAG-пайплайн на LangChain.  ".to_string();
+        assert_eq!(
+            context_prompt_for_model(true, &settings).as_deref(),
+            Some("Настроил RAG-пайплайн на LangChain.")
+        );
+        assert_eq!(context_prompt_for_model(false, &settings), None);
+        settings.voxa.initial_prompt = "   ".to_string();
+        assert_eq!(context_prompt_for_model(true, &settings), None);
     }
 }
 

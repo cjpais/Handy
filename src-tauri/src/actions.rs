@@ -543,7 +543,7 @@ impl ShortcutAction for TranscribeAction {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             tm.cancel_stream();
-            utils::hide_recording_overlay(app);
+            utils::fail_recording_overlay(app, utils::OverlayFailure::Recording);
             set_tray_state(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
                 let _ = app.emit(
@@ -650,7 +650,13 @@ impl ShortcutAction for TranscribeAction {
                     // otherwise a batch run of the samples. A cancel is surfaced
                     // as an error, so it never starts a batch run.
                     let transcription_time = Instant::now();
-                    let transcription_result = tm.transcribe_recording(samples);
+                    // Voxa: keep the raw text, replacements and model for the
+                    // statistics; the pipeline below only needs the text.
+                    let (transcription_result, voxa_details) =
+                        match tm.transcribe_recording_detailed(samples) {
+                            Ok(details) => (Ok(details.text.clone()), Some(details)),
+                            Err(err) => (Err(err), None),
+                        };
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
@@ -717,17 +723,44 @@ impl ShortcutAction for TranscribeAction {
                                 return;
                             }
 
+                            // Voxa: end of recording to finished text, post-processing
+                            // included.
+                            let transcribe_ms = stop_time.elapsed().as_millis() as i64;
+
                             // Save to history if WAV was saved
-                            if wav_saved {
-                                if let Err(err) = hm.save_entry(
+                            let history_id = if wav_saved {
+                                match hm.save_entry(
                                     file_name,
                                     transcription,
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
-                                    error!("Failed to save history entry: {}", err);
+                                    Ok(entry) => Some(entry.id),
+                                    Err(err) => {
+                                        error!("Failed to save history entry: {}", err);
+                                        None
+                                    }
                                 }
+                            } else {
+                                None
+                            };
+
+                            if let Some(details) = voxa_details {
+                                crate::voxa::record_dictation(
+                                    &ah,
+                                    crate::voxa::DictationInput {
+                                        created_at: chrono::Utc::now().timestamp(),
+                                        history_id,
+                                        duration_ms: Some(sample_count as i64 * 1000 / 16_000),
+                                        transcribe_ms: Some(transcribe_ms),
+                                        model_id: details.model_id,
+                                        language: details.language,
+                                        raw_text: details.raw_text,
+                                        final_text: processed.final_text.clone(),
+                                        replacements: details.replacements,
+                                    },
+                                );
                             }
 
                             if processed.final_text.is_empty() {
@@ -747,16 +780,22 @@ impl ShortcutAction for TranscribeAction {
                                     }
 
                                     match utils::paste(final_text, ah_clone.clone()) {
-                                        Ok(()) => debug!(
-                                            "Text pasted successfully in {:?}",
-                                            paste_time.elapsed()
-                                        ),
+                                        Ok(()) => {
+                                            debug!(
+                                                "Text pasted successfully in {:?}",
+                                                paste_time.elapsed()
+                                            );
+                                            utils::finish_recording_overlay(&ah_clone);
+                                        }
                                         Err(e) => {
                                             error!("Failed to paste transcription: {}", e);
                                             let _ = ah_clone.emit("paste-error", ());
+                                            utils::fail_recording_overlay(
+                                                &ah_clone,
+                                                utils::OverlayFailure::Paste,
+                                            );
                                         }
                                     }
-                                    utils::hide_recording_overlay(&ah_clone);
                                     set_tray_state(&ah_clone, TrayIconState::Idle);
                                 })
                                 .unwrap_or_else(|e| {
@@ -792,7 +831,10 @@ impl ShortcutAction for TranscribeAction {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
-                            utils::hide_recording_overlay(&ah);
+                            utils::fail_recording_overlay(
+                                &ah,
+                                utils::OverlayFailure::Transcription,
+                            );
                             set_tray_state(&ah, TrayIconState::Idle);
                         }
                     }

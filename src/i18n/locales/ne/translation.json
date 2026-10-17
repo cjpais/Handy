@@ -614,9 +614,9 @@
         "button": "GitHub मा हेर्नुहोस्"
       },
       "supportDevelopment": {
-        "title": "विकासलाई सहयोग गर्नुहोस्",
-        "description": "Handy निर्माण जारी राख्न हामीलाई सहयोग गर्नुहोस्",
-        "button": "दान गर्नुहोस्"
+        "title": "Based on Handy",
+        "description": "Voxa is a fork of Handy by CJ Pais (MIT license)",
+        "button": "View Handy"
       },
       "acknowledgments": {
         "title": "आभार",

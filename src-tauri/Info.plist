@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
   <key>NSMicrophoneUsageDescription</key>
-  <string>Request microphone access to transcribe audio locally</string>
+  <string>Voxa needs microphone access to turn your speech into text. Audio is processed on this Mac and never sent anywhere.</string>
 </dict>
 </plist>
