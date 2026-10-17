@@ -68,6 +68,7 @@ async function boot() {
           pendingTerm={null}
           onAddWord={() => {}}
           onClear={() => {}}
+          onRefresh={() => {}}
         />
       </div>,
     );

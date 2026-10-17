@@ -10,6 +10,10 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:1420",
     trace: "on-first-retry",
+    // Sandboxes without the pinned Playwright browser point this at a Chromium.
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
+      : {},
   },
   projects: [
     {

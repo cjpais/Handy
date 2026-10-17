@@ -118,6 +118,7 @@ export const StatsScreen: React.FC = () => {
       pendingTerm={pendingTerm}
       onAddWord={handleAddWord}
       onClear={handleClear}
+      onRefresh={() => void load()}
     />
   );
 };

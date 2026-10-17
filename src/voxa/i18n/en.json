@@ -28,7 +28,13 @@
       "min": "min",
       "hour": "h",
       "sec": "s",
-      "ms": "ms"
+      "ms": "ms",
+      "words": {
+        "one": "word",
+        "few": "words",
+        "many": "words",
+        "other": "words"
+      }
     },
     "chart": {
       "title": "Words per day",
@@ -75,7 +81,16 @@
       "clearConfirm": "Delete all recorded statistics? History and audio stay.",
       "clearTitle": "Clear statistics",
       "cleared": "Statistics cleared"
-    }
+    },
+    "hero": {
+      "label": {
+        "one": "word today",
+        "few": "words today",
+        "many": "words today",
+        "other": "words today"
+      }
+    },
+    "refresh": "Refresh"
   },
   "overlay": {
     "recording": "Recording",

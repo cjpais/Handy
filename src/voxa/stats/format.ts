@@ -84,3 +84,31 @@ export function splitModelId(modelId: string): {
     ? { name: match[1], quant: match[2] }
     : { name: label, quant: null };
 }
+
+export type PluralForm = "one" | "few" | "many" | "other";
+
+/**
+ * The plural form a language uses for `count` (CLDR categories via
+ * `Intl.PluralRules`), limited to the four forms the locale files carry. The
+ * forms live in plain keys (`one`/`few`/`many`/`other`) rather than i18next's
+ * plural suffixes, so every locale file has the same key set.
+ */
+export function pluralForm(count: number, locale: string): PluralForm {
+  const category = new Intl.PluralRules(locale).select(count);
+  return category === "one" || category === "few" || category === "many"
+    ? category
+    : "other";
+}
+
+/** `2026-10-17` -> `Saturday, October 17` in the user's language, first letter capitalized. */
+export function dayLabel(isoDay: string, locale: string): string {
+  const [year, month, day] = isoDay.split("-").map(Number);
+  // A local date at noon: no timezone shift can move it to another day.
+  const date = new Date(year, month - 1, day, 12);
+  const text = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+  return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
+}

@@ -1,18 +1,20 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { AudioLines, RotateCw, Trash2 } from "lucide-react";
 import type {
   DictionaryCandidate,
   ModelStats,
   PeriodStats,
   VoxaStats,
 } from "@/bindings";
-import { Button } from "@/components/ui/Button";
 import { VoxaMark } from "../brand/VoxaMark";
 import { DailyBars } from "./DailyBars";
 import {
   MIN_LATENCY_SAMPLES,
+  dayLabel,
   formatNumber,
   formatPercent,
+  pluralForm,
   splitDuration,
   splitMinutes,
   splitModelId,
@@ -25,8 +27,10 @@ export interface StatsViewProps {
   pendingTerm: string | null;
   onAddWord: (term: string) => void;
   onClear: () => void;
+  onRefresh: () => void;
 }
 
+/** "6 420" + the unit in the right plural form, then the supporting line. */
 const PeriodCard: React.FC<{
   title: string;
   period: PeriodStats;
@@ -36,16 +40,18 @@ const PeriodCard: React.FC<{
   const minutes = splitMinutes(period.minutes);
   return (
     <section className="vg-card vg-stat">
-      <h3 className="vg-eyebrow">{title}</h3>
-      <div className="vg-number" aria-label={t("voxa.stats.cards.wordsLabel")}>
-        {formatNumber(period.words, locale)}
+      <h3 className="vg-card-title">{title}</h3>
+      <div className="vg-figure">
+        <span className="vg-number">{formatNumber(period.words, locale)}</span>
+        <span className="vg-unit">
+          {t(`voxa.stats.units.words.${pluralForm(period.words, locale)}`)}
+        </span>
       </div>
-      <p className="vg-muted">
+      <p className="vg-muted vg-stat-foot">
         {t("voxa.stats.cards.dictations", {
           value: formatNumber(period.dictations, locale),
         })}
-      </p>
-      <p className="vg-muted">
+        {" · "}
         {t("voxa.stats.cards.minutes", {
           value: formatNumber(minutes.value, locale),
           unit: t(
@@ -199,14 +205,14 @@ const CandidateRow: React.FC<{
           {t("voxa.stats.candidates.inDictionary")}
         </span>
       ) : (
-        <Button
-          variant="primary-soft"
-          size="sm"
+        <button
+          type="button"
+          className="vg-pill-btn"
           disabled={pending}
           onClick={() => onAdd(candidate.term)}
         >
           {t("voxa.stats.candidates.add")}
-        </Button>
+        </button>
       )}
     </li>
   );
@@ -248,7 +254,7 @@ export const EmptyStats: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="vg-card vg-empty">
-      <VoxaMark width={44} accent />
+      <VoxaMark width={44} />
       <h3 className="vg-card-title">{t("voxa.stats.empty.title")}</h3>
       <p className="vg-muted">{t("voxa.stats.empty.body")}</p>
     </div>
@@ -262,29 +268,81 @@ export const StatsView: React.FC<StatsViewProps> = ({
   pendingTerm,
   onAddWord,
   onClear,
+  onRefresh,
 }) => {
   const { t } = useTranslation();
   const isEmpty = stats.all_time.dictations === 0;
   const replaced = stats.candidates.filter((c) => c.kind === "replacement");
   const translit = stats.candidates.filter((c) => c.kind === "translit");
+  const today = stats.daily[stats.daily.length - 1]?.date;
+  const todayMinutes = splitMinutes(stats.today.minutes);
 
   return (
     <div className="vg-stats">
-      <header className="vg-stats-head">
-        <h2 className="vg-title">{t("voxa.stats.title")}</h2>
-        <p className="vg-muted">{t("voxa.stats.subtitle")}</p>
-      </header>
+      <div className="vg-stats-top">
+        <span className="vg-stats-date">
+          {today ? dayLabel(today, locale) : t("voxa.stats.title")}
+        </span>
+        <div className="vg-stats-actions">
+          <button
+            type="button"
+            className="vg-round-btn"
+            aria-label={t("voxa.stats.refresh")}
+            title={t("voxa.stats.refresh")}
+            onClick={onRefresh}
+          >
+            <RotateCw aria-hidden="true" />
+          </button>
+          {!isEmpty && (
+            <button
+              type="button"
+              className="vg-round-btn"
+              aria-label={t("voxa.stats.footer.clear")}
+              title={t("voxa.stats.footer.clear")}
+              onClick={onClear}
+            >
+              <Trash2 aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
 
       {isEmpty ? (
         <EmptyStats />
       ) : (
         <>
-          <div className="vg-grid-3">
-            <PeriodCard
-              title={t("voxa.stats.cards.today")}
-              period={stats.today}
-              locale={locale}
-            />
+          <section className="vg-hero" aria-label={t("voxa.stats.cards.today")}>
+            <div className="vg-figure">
+              <span className="vg-number">
+                {formatNumber(stats.today.words, locale)}
+              </span>
+              <span className="vg-unit">
+                <AudioLines
+                  className="vg-gold inline-block align-[-0.15em] me-1.5 w-[1.05em] h-[1.05em]"
+                  aria-hidden="true"
+                />
+                {t(
+                  `voxa.stats.hero.label.${pluralForm(stats.today.words, locale)}`,
+                )}
+              </span>
+            </div>
+            <p className="vg-hero-note">
+              {t("voxa.stats.cards.dictations", {
+                value: formatNumber(stats.today.dictations, locale),
+              })}
+              {" · "}
+              {t("voxa.stats.cards.minutes", {
+                value: formatNumber(todayMinutes.value, locale),
+                unit: t(
+                  todayMinutes.unit === "h"
+                    ? "voxa.stats.units.hour"
+                    : "voxa.stats.units.min",
+                ),
+              })}
+            </p>
+          </section>
+
+          <div className="vg-grid-2">
             <PeriodCard
               title={t("voxa.stats.cards.week")}
               period={stats.week}
@@ -299,14 +357,18 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
           <div className="vg-grid-2">
             <section className="vg-card vg-stat">
-              <h3 className="vg-eyebrow">{t("voxa.stats.cards.avgWords")}</h3>
-              <div className="vg-number">
-                {formatNumber(
-                  Math.round(stats.avg_words_per_dictation * 10) / 10,
-                  locale,
-                )}
+              <h3 className="vg-card-title">
+                {t("voxa.stats.cards.avgWords")}
+              </h3>
+              <div className="vg-figure">
+                <span className="vg-number">
+                  {formatNumber(
+                    Math.round(stats.avg_words_per_dictation * 10) / 10,
+                    locale,
+                  )}
+                </span>
               </div>
-              <p className="vg-muted">
+              <p className="vg-muted vg-stat-foot">
                 {t("voxa.stats.cards.avgSeconds")}:{" "}
                 <span className="vg-tabular">
                   {stats.avg_seconds_per_dictation === null
@@ -318,15 +380,19 @@ export const StatsView: React.FC<StatsViewProps> = ({
                 </span>
               </p>
             </section>
-            <section
-              className="vg-card vg-stat"
-              title={t("voxa.stats.cards.latinHint")}
-            >
-              <h3 className="vg-eyebrow">{t("voxa.stats.cards.latinShare")}</h3>
-              <div className="vg-number">
-                {formatPercent(stats.latin_share)}
+            <section className="vg-card vg-stat">
+              <h3 className="vg-card-title">
+                {t("voxa.stats.cards.latinShare")}
+              </h3>
+              <div className="vg-figure">
+                <span className="vg-number">
+                  {formatPercent(stats.latin_share)}
+                </span>
               </div>
               <LatinMeter share={stats.latin_share} />
+              <p className="vg-muted vg-stat-foot">
+                {t("voxa.stats.cards.latinHint")}
+              </p>
             </section>
           </div>
 
@@ -360,16 +426,6 @@ export const StatsView: React.FC<StatsViewProps> = ({
 
       <footer className="vg-stats-foot">
         <p className="vg-muted">{t("voxa.stats.footer.local")}</p>
-        {!isEmpty && (
-          <Button
-            variant="danger-ghost"
-            size="sm"
-            className="shrink-0 whitespace-nowrap"
-            onClick={onClear}
-          >
-            {t("voxa.stats.footer.clear")}
-          </Button>
-        )}
       </footer>
     </div>
   );

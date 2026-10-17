@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="vg-sidebar flex flex-col w-40 h-full items-center px-2">
+    <div className="vg-sidebar flex flex-col w-44 h-full items-center px-2">
       <HandyTextLogo width={120} className="m-4" />
       <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
         {availableSections.map((section) => {
@@ -121,7 +121,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`vg-nav-item flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer ${
                 isActive ? "is-active" : "opacity-90 hover:opacity-100"
               }`}
+              role="button"
+              tabIndex={0}
+              aria-current={isActive ? "page" : undefined}
               onClick={() => onSectionChange(section.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSectionChange(section.id);
+                }
+              }}
             >
               <Icon width={24} height={24} className="shrink-0" />
               <p

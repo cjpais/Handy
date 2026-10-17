@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import {
   buildBars,
+  dayLabel,
   formatPercent,
+  pluralForm,
   modelLabel,
   shortDate,
   splitModelId,
@@ -69,5 +71,29 @@ assert.deepEqual(splitModelId("x/y/model-F16.gguf"), {
   quant: "F16",
 });
 assert.deepEqual(splitModelId("small"), { name: "small", quant: null });
+
+// plural forms
+assert.equal(pluralForm(1, "en"), "one");
+assert.equal(pluralForm(2, "en"), "other");
+assert.equal(pluralForm(1, "ru"), "one");
+assert.equal(pluralForm(21, "ru"), "one");
+assert.equal(pluralForm(2, "ru"), "few");
+assert.equal(pluralForm(24, "ru"), "few");
+assert.equal(pluralForm(5, "ru"), "many");
+assert.equal(pluralForm(11, "ru"), "many");
+assert.equal(pluralForm(412, "ru"), "many");
+assert.equal(pluralForm(0, "ru"), "many");
+assert.equal(pluralForm(1.5, "ru"), "other");
+assert.equal(pluralForm(3, "ja"), "other");
+assert.equal(
+  pluralForm(2, "ar"),
+  "other",
+  "forms outside the four collapse to other",
+);
+
+// the day label follows the calendar day it is given
+assert.equal(dayLabel("2026-10-17", "en-US"), "Saturday, October 17");
+assert.equal(dayLabel("2026-10-17", "ru"), "Суббота, 17 октября");
+assert.equal(dayLabel("2026-01-01", "en-US"), "Thursday, January 1");
 
 console.log("voxa stats format: all assertions passed");

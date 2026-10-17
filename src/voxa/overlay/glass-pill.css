@@ -25,8 +25,8 @@
   --vgp-fill-fallback: rgba(255, 255, 255, 0.88);
   --vgp-ink: #0f1722;
   --vgp-ink-soft: #3b4657;
-  --vgp-bar-hi: #2f6bf0;
-  --vgp-bar-lo: #6f9dff;
+  --vgp-bar-hi: #17181d;
+  --vgp-bar-lo: #6a6e7a;
   --vgp-rim-top: rgba(255, 255, 255, 0.85);
   --vgp-rim-bottom: rgba(255, 255, 255, 0.14);
   --vgp-specular: rgba(255, 255, 255, 0.7);
@@ -47,9 +47,9 @@
     --vgp-fill: rgba(255, 255, 255, 0.14);
     --vgp-fill-fallback: rgba(36, 39, 47, 0.84);
     --vgp-ink: rgba(255, 255, 255, 0.95);
-    --vgp-ink-soft: rgba(255, 255, 255, 0.7);
+    --vgp-ink-soft: rgba(255, 255, 255, 0.84);
     --vgp-bar-hi: #ffffff;
-    --vgp-bar-lo: #a9c8ff;
+    --vgp-bar-lo: #c4cee2;
     --vgp-rim-top: rgba(255, 255, 255, 0.55);
     --vgp-rim-bottom: rgba(255, 255, 255, 0.08);
     --vgp-specular: rgba(255, 255, 255, 0.5);
@@ -58,8 +58,8 @@
     --vgp-chip-hover: rgba(255, 255, 255, 0.24);
     --vgp-ok: #7be0a4;
     --vgp-ok-bg: rgba(123, 224, 164, 0.2);
-    --vgp-error-tint: rgba(255, 92, 92, 0.3);
-    --vgp-error-ink: #ffd9d9;
+    --vgp-error-tint: rgba(205, 48, 48, 0.36);
+    --vgp-error-ink: #ffffff;
     --vgp-solid: #2a2d35;
     --vgp-ring: rgba(0, 0, 0, 0.35);
   }
@@ -70,8 +70,8 @@
   --vgp-fill-fallback: rgba(255, 255, 255, 0.88);
   --vgp-ink: #0f1722;
   --vgp-ink-soft: #3b4657;
-  --vgp-bar-hi: #2f6bf0;
-  --vgp-bar-lo: #6f9dff;
+  --vgp-bar-hi: #17181d;
+  --vgp-bar-lo: #6a6e7a;
   --vgp-rim-top: rgba(255, 255, 255, 0.85);
   --vgp-rim-bottom: rgba(255, 255, 255, 0.14);
   --vgp-specular: rgba(255, 255, 255, 0.7);
@@ -90,9 +90,9 @@
   --vgp-fill: rgba(255, 255, 255, 0.14);
   --vgp-fill-fallback: rgba(36, 39, 47, 0.84);
   --vgp-ink: rgba(255, 255, 255, 0.95);
-  --vgp-ink-soft: rgba(255, 255, 255, 0.7);
+  --vgp-ink-soft: rgba(255, 255, 255, 0.84);
   --vgp-bar-hi: #ffffff;
-  --vgp-bar-lo: #a9c8ff;
+  --vgp-bar-lo: #c4cee2;
   --vgp-rim-top: rgba(255, 255, 255, 0.55);
   --vgp-rim-bottom: rgba(255, 255, 255, 0.08);
   --vgp-specular: rgba(255, 255, 255, 0.5);
@@ -101,8 +101,8 @@
   --vgp-chip-hover: rgba(255, 255, 255, 0.24);
   --vgp-ok: #7be0a4;
   --vgp-ok-bg: rgba(123, 224, 164, 0.2);
-  --vgp-error-tint: rgba(255, 92, 92, 0.3);
-  --vgp-error-ink: #ffd9d9;
+  --vgp-error-tint: rgba(205, 48, 48, 0.36);
+  --vgp-error-ink: #ffffff;
   --vgp-solid: #2a2d35;
   --vgp-ring: rgba(0, 0, 0, 0.35);
 }

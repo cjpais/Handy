@@ -4,13 +4,13 @@
   /* Palette source of truth. Each themed color is defined once as a
      light/dark pair; the active tokens below and the `data-theme` overrides
      in App.css reference these, so a hex value lives in exactly one place. */
-  --light-color-text: #0f0f0f;
-  --light-color-background: #f6f7fb;
+  --light-color-text: #141416;
+  --light-color-background: #f4f3f0;
   --light-color-logo-primary: #5b95ff;
   --light-color-logo-stroke: #1d2b4a;
 
-  --dark-color-text: #fbfbfb;
-  --dark-color-background: #1b1e25;
+  --dark-color-text: #f5f5f7;
+  --dark-color-background: #0c0c0f;
   --dark-color-logo-primary: #8db8ff;
   --dark-color-logo-stroke: #c9dcff;
 
