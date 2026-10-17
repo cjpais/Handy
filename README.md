@@ -1,3 +1,55 @@
+# Voxa
+
+> Based on [Handy](https://github.com/cjpais/Handy) by CJ Pais (MIT).
+
+**Voxa — личная голосовая диктовка для macOS.** Нажал хоткей, сказал, текст вставился в активное поле: Claude, Obsidian, любое приложение. Всё считается локально на Mac, без облачных API и без телеметрии.
+
+Что есть сверх Handy:
+
+- **Индикатор записи в стиле Liquid Glass**: капсула 220×48 с живой волной, таймером, галочкой «готово» и красноватым состоянием ошибки. На macOS под ней настоящее размытие фона (нативная вибрация HUD), учитываются «Уменьшить движение» и «Уменьшить прозрачность».
+- **Статистика внутри приложения**: слова за день, неделю и всё время, слова по дням, задержка и p95 по моделям, доля латиницы, кандидаты в словарь с кнопкой «Добавить в словарь». Данные измеряются в коде и хранятся в отдельной базе `voxa_stats.db`.
+- **Настройки под русскую диктовку с английскими терминами**: Whisper large-v3-turbo (Q8_0, 0,9 ГБ), язык Russian, словарь Claude, Obsidian, LangChain, RAG, GigaChat, FastAPI, Docker, GitHub, Python, pandas, Streamlit, embeddings, PostgreSQL, Sber и редактируемая фраза-подсказка для Whisper.
+- Собственный идентификатор `com.daniyar.voxa`: свои настройки, история и разрешения, Handy можно держать рядом.
+- Автообновление отключено, сетевые запросы только при скачивании моделей по вашему клику.
+
+Данные лежат в `~/Library/Application Support/com.daniyar.voxa/`.
+
+## Установка на Mac
+
+1. Скачайте артефакт `Voxa-macos-arm64` из последнего запуска workflow **voxa-macos** (вкладка Actions) и распакуйте `Voxa-macos-arm64.zip`.
+2. Перенесите `Voxa.app` в «Программы».
+3. Снимите карантин (приложение подписано ad-hoc, не нотаризовано):
+
+   ```bash
+   xattr -cr /Applications/Voxa.app
+   ```
+
+4. Запустите, выдайте разрешения «Микрофон» и «Универсальный доступ» (и «Мониторинг ввода», если macOS спросит), выберите модель Whisper large-v3-turbo Q8_0 на первом экране.
+5. Проверьте диктовку в Claude: хоткей по умолчанию `⌥ Space` (держать, чтобы говорить; короткое нажатие включает запись до следующего нажатия).
+
+### После каждой пересборки разрешения слетают
+
+Подпись ad-hoc меняется с каждой сборкой (меняется CDHash), и macOS может сбросить доступы. Перевыдайте их:
+
+```bash
+tccutil reset Accessibility com.daniyar.voxa
+tccutil reset ListenEvent com.daniyar.voxa
+```
+
+и снова включите Voxa в «Конфиденциальность и безопасность» → «Универсальный доступ» / «Мониторинг ввода».
+
+### Сборка на своём Mac
+
+См. [docs/BUILD_LOCAL.md](docs/BUILD_LOCAL.md). Решения и отчёт: [docs/DECISIONS.md](docs/DECISIONS.md), [docs/FINAL_REPORT.md](docs/FINAL_REPORT.md).
+
+## Лицензия
+
+MIT, как и у Handy: файл [LICENSE](LICENSE) сохранён, авторские права CJ Pais остаются за ним.
+
+---
+
+The rest of this file is the upstream Handy README, kept for its usage and build documentation.
+
 # Handy
 
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)

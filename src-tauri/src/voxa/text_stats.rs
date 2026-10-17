@@ -69,19 +69,15 @@ pub fn tokens(text: &str) -> Vec<&str> {
     let mut end = 0usize;
 
     for (i, &(byte_idx, c)) in chars.iter().enumerate() {
-        let in_token = if c.is_alphanumeric() {
-            true
-        } else if start.is_some() && is_combining_mark(c) {
-            true
-        } else if start.is_some() {
-            let prev = chars[i - 1].1;
-            match chars.get(i + 1) {
-                Some(&(_, next)) => joins(c, prev, next),
-                None => false,
-            }
-        } else {
-            false
-        };
+        // Letters and digits are always part of a token. Inside one, a combining
+        // mark continues it and a joiner continues it when both neighbours are
+        // alphanumeric.
+        let in_token = c.is_alphanumeric()
+            || (start.is_some()
+                && (is_combining_mark(c)
+                    || chars
+                        .get(i + 1)
+                        .is_some_and(|&(_, next)| joins(c, chars[i - 1].1, next))));
 
         if in_token {
             if start.is_none() {

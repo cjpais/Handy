@@ -41,10 +41,11 @@ appended at the bottom.
 
 ## D-04 Charts
 
-- **Chosen:** a hand-written SVG bar chart (`src/voxa/stats/DailyBars.tsx`), no
-  charting dependency.
+- **Chosen:** plain CSS bars (`src/voxa/stats/DailyBars.tsx`), no charting
+  dependency.
 - **Why:** 30 bars need no library; zero extra bytes in the bundle and RAM on an
-  8 GB machine; full control over the glass look and `prefers-reduced-motion`.
+  8 GB machine; full control over the glass look, hover readout and
+  `prefers-reduced-motion`.
 - **Alternatives:** Recharts (about 100 kB gzip + d3 modules for one bar chart).
 
 ## D-05 Where dictation metrics live
@@ -87,3 +88,98 @@ appended at the bottom.
   added to all 26 locale files because `check:translations` fails otherwise;
   English and Russian are written by hand, other locales get the English text
   (marked in the file by being identical to `en`).
+
+## D-08 Case repair for dictionary words the model already saw
+
+- **Chosen:** after transcription, custom words are also applied when the model
+  received them as a Whisper glossary, but with a threshold that only accepts
+  words equal to a dictionary word once case and spacing are ignored
+  (`langchain` -> `LangChain`, `Lang Chain` -> `LangChain`). A setting
+  (`voxa.fix_custom_word_case`, default on) switches it off. Replacements it makes
+  are reported like any other, so the statistics can show them.
+- **Why:** upstream skips fuzzy matching whenever the vocabulary was sent to the
+  model, and Whisper always gets it. Without this pass `replacements_json` would
+  stay empty for the owner's setup and brand names would keep the wrong case.
+  The fuzzy matcher only understands ASCII, so it cannot turn `питон` into
+  `Python`; that case is covered by the transliteration candidates.
+- **Alternatives:** leave upstream behaviour (no replacement data for Whisper);
+  run the full fuzzy pass after prompting (risk of rewriting correct words).
+
+## D-09 Context phrase for Whisper
+
+- **Chosen:** the editable phrase goes into `RunOptions.prompt` (Whisper's context
+  prompt, rendered after the `Glossary:` of the custom words in the same slot).
+  Only models that advertise `Feature::InitialPrompt` (Whisper) get it.
+- **Why:** Whisper's `initial_prompt` extension cannot be combined with the
+  vocabulary the app already sends, the generic prompt can.
+
+## D-10 Default model is chosen on the onboarding screen, not preset
+
+- **Chosen:** `selected_model` stays empty on a fresh install. Whisper
+  large-v3-turbo Q8_0 is catalog rank 1 and recommended, so it is the first card
+  of the onboarding model step; the download starts on click.
+- **Why:** `ModelManager::auto_select_model_if_needed` clears a selected model that
+  is not on disk, so presetting it does nothing, and downloading without a click
+  would break "no network except explicit downloads".
+
+## D-11 Word classes in the statistics
+
+- **Chosen:** every token falls into exactly one class: Latin (contains an ASCII
+  letter, so `RAG-пайплайн` and `Claude'а` are Latin), else Cyrillic, else other
+  (numbers, other scripts). `latin + cyrillic + other = words`. A token is a run
+  of letters and digits where `-`, `'`, `’`, `_` and `.` between alphanumerics and
+  `,` between digits join it (`GPT-4o`, `e-mail`, `3.11`, `3,14`); a chunk without
+  a letter or digit is not a word.
+- **Why:** it matches PLAN.md 5.2 and keeps the three counters consistent.
+
+## D-12 Visual direction
+
+- **Chosen:** after the owner's reference screenshot (dark, editorial): near-black
+  canvas with a faint swirl, dark glass cards with hairline gradient rims, 24 pt
+  card radius, serif display numerals (`ui-serif`, New York on macOS), round icon
+  buttons, a gold highlight for "today", azure only for functional accents
+  (switches, primary buttons, focus). The light appearance keeps the structure on
+  a warm white canvas. The recording capsule is monochrome glass for the same
+  reason.
+- **Why:** the owner asked for "something like this" mid-task. Card radius is
+  24 pt instead of the 14-20 pt in PLAN.md, following the reference.
+- **How:** palette and radius tokens in `src/styles/theme.css` and
+  `src/voxa/glass.css` (`@theme` radii, `--vg-*` pairs), `vg-` classes only on the
+  few card containers (settings groups, history list, sidebar, footer).
+
+## D-13 Overlay window geometry and clicks
+
+- **Chosen:** on macOS the overlay window is exactly the capsule (220x48), the
+  native HUD vibrancy view fills it with a 24 pt corner radius and the native
+  window shadow gives the soft shadow. The Live (streaming) card keeps its larger
+  window and runs without vibrancy. The window accepts clicks (needed for the
+  hover cancel button); it is a non-activating panel, so it never takes focus.
+- **Why:** vibrancy fills the whole window, so a bigger window would show a blurred
+  rectangle around the capsule. Truly click-through except for the cancel button
+  would need per-pixel hit testing driven by cursor polling, which cannot be
+  verified without a Mac.
+- **Risk:** if hover events do not reach a non-key panel, the cancel button stays
+  invisible; Esc still cancels. Listed in the manual checklist.
+
+## D-14 NSGlassEffectView (stretch goal) not shipped
+
+- **Chosen:** vibrancy (`Effect::HudWindow`) plus CSS layers only.
+- **Why:** `objc2-app-kit` has the bindings, but native glass would have to be
+  written and iterated against a Mac. CI could not run (BLOCKERS B-03), so any
+  compile or runtime mistake in that code would break the owner's build or the
+  overlay without a way to see it. PLAN.md allows the fallback.
+- **Next step:** enable the `NSGlassEffectView` feature of `objc2-app-kit`, create
+  the view behind the webview when `NSClassFromString("NSGlassEffectView")` exists
+  (macOS 26+), keep vibrancy otherwise.
+
+## D-15 PLAN.md excluded from the Prettier check
+
+- **Chosen:** `PLAN.md` is listed in `.prettierignore`.
+- **Why:** it is the owner's file and CI runs `prettier --check .`.
+
+## D-16 Strings in other locales
+
+- **Chosen:** `en` and `ru` carry the new `voxa.*` strings and the renamed app
+  name; the 24 other locales get the English `voxa.*` block (and
+  "Based on Handy" instead of the donate row) so the translation check passes.
+  `scripts/voxa/sync_locales.py` regenerates them from `src/voxa/i18n/`.
