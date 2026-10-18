@@ -146,3 +146,14 @@ Actions minutes are free.
 | `src/components/Sidebar.tsx`, `App.tsx`, `main.tsx` | Statistics section, preview route                             |
 | `src/styles/theme.css`, `src/App.css`               | glass tokens                                                  |
 | `src-tauri/src/catalog/catalog.json`                | turbo Q8_0 flagged recommended                                |
+
+## Iteration 2 additions
+
+| Area                       | Where                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| In-app updates (backend)   | `src-tauri/src/voxa/updates.rs` (state, background check, install), commands in `voxa/commands.rs`      |
+| In-app updates (frontend)  | `src/voxa/updates/` (store, About card, footer link), sidebar badge, tray item in `tray.rs`             |
+| Release pipeline           | `.github/workflows/voxa-release.yml`, `scripts/voxa/release_manifest.py`, `make-signing-cert.sh`        |
+| Word statistics (backend)  | `src-tauri/src/voxa/words/` (`analyze`, `stopwords`, `index`, `query`), migration 2 in `voxa/store.rs`  |
+| Word statistics (frontend) | `src/voxa/words/` (tab, blocks, trend line, word panel), tabs in `src/voxa/stats/StatsScreen.tsx`       |
+| Upstream touch points      | `settings.rs` (updater flag, one migration), `tray.rs` (menu item), `managers/history.rs` (delete hook) |
