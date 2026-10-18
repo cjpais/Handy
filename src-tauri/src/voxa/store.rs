@@ -6,18 +6,21 @@
 //! own history migrations by position, which Voxa columns would collide with.
 
 use super::text_stats::count_words;
+use super::words::index::{self, BackfillStatus};
 use crate::audio_toolkit::WordReplacement;
 use anyhow::{Context, Result};
-use rusqlite::{params, Connection, OpenFlags};
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 use rusqlite_migration::{Migrations, M};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 pub const DB_FILE_NAME: &str = "voxa_stats.db";
 
 const META_HISTORY_BACKFILL: &str = "history_backfill";
 
 /// Each migration is applied once, in order; `PRAGMA user_version` tracks them.
-static MIGRATIONS: &[M] = &[M::up(
+static MIGRATIONS: &[M] = &[
+    M::up(
     "CREATE TABLE dictations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         -- unix seconds, UTC
@@ -48,8 +51,10 @@ static MIGRATIONS: &[M] = &[M::up(
     CREATE TABLE voxa_meta (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
-    );",
-)];
+    );"),
+    // word statistics (voxa/words/index.rs)
+    M::up(index::SCHEMA),
+];
 
 /// One finished dictation, as the pipeline reports it.
 #[derive(Debug, Clone, Default)]
@@ -69,6 +74,8 @@ pub struct DictationInput {
 
 pub struct VoxaStore {
     path: PathBuf,
+    /// Progress of the one-time word indexing of older dictations.
+    backfill: Mutex<BackfillStatus>,
 }
 
 impl VoxaStore {
@@ -81,8 +88,12 @@ impl VoxaStore {
         }
         let store = Self {
             path: path.to_path_buf(),
+            backfill: Mutex::new(BackfillStatus::idle()),
         };
         let mut conn = store.connection()?;
+        // WAL: the background indexing and a new dictation never block each other.
+        conn.query_row("PRAGMA journal_mode = WAL", [], |r| r.get::<_, String>(0))
+            .context("enable WAL")?;
         Migrations::new(MIGRATIONS.to_vec())
             .to_latest(&mut conn)
             .context("migrate the statistics database")?;
@@ -92,28 +103,112 @@ impl VoxaStore {
                 log::warn!("Could not import history into statistics: {e:#}");
             }
         }
+        match index::prepare_backfill(&conn) {
+            Ok(status) => *store.backfill.lock().expect("backfill status") = status,
+            Err(e) => log::warn!("Could not prepare word statistics: {e:#}"),
+        }
         Ok(store)
+    }
+
+    pub fn backfill_status(&self) -> BackfillStatus {
+        self.backfill.lock().expect("backfill status").clone()
+    }
+
+    fn set_backfill_status(&self, status: BackfillStatus) {
+        *self.backfill.lock().expect("backfill status") = status;
+    }
+
+    /// Indexes the words of dictations that existed before the word tables did,
+    /// batch by batch. Safe to call again: it resumes at the saved cursor.
+    /// `on_progress` gets the status after every batch.
+    pub fn run_words_backfill(&self, mut on_progress: impl FnMut(&BackfillStatus)) -> Result<()> {
+        let conn = self.connection()?;
+        let mut status = self.backfill_status();
+        if status.state != index::BackfillState::Running {
+            return Ok(());
+        }
+        loop {
+            let more = index::backfill_batch(&conn, index::BACKFILL_BATCH)?;
+            status.processed = (status.processed + index::BACKFILL_BATCH as u32).min(status.total);
+            if !more {
+                status.state = index::BackfillState::Done;
+                status.processed = status.total;
+            }
+            self.set_backfill_status(status.clone());
+            on_progress(&status);
+            if !more {
+                return Ok(());
+            }
+            // a pause so a long backfill never starves a dictation's own write
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
+
+    /// Weekly housekeeping of the phrase table.
+    pub fn cleanup(&self) -> Result<usize> {
+        let conn = self.connection()?;
+        let now = chrono::Local::now();
+        index::cleanup_ngrams(&conn, now.timestamp(), now.date_naive())
+    }
+
+    /// Takes one dictation out of the statistics, words included: the owner
+    /// deleted it from the history. Returns whether a row was removed.
+    pub fn remove_by_history_id(&self, history_id: i64) -> Result<bool> {
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+        let row: Option<(i64, String)> = tx
+            .query_row(
+                "SELECT id, final_text FROM dictations WHERE history_id = ?1",
+                [history_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?;
+        let Some((id, text)) = row else {
+            return Ok(false);
+        };
+        index::remove_dictation(&tx, id, &text)?;
+        tx.execute("DELETE FROM dictations WHERE id = ?1", [id])?;
+        tx.commit()?;
+        Ok(true)
     }
 
     pub fn connection(&self) -> Result<Connection> {
         let conn = Connection::open(&self.path)
             .with_context(|| format!("open {}", self.path.display()))?;
         conn.busy_timeout(std::time::Duration::from_secs(3))?;
+        conn.pragma_update(None, "synchronous", "NORMAL")?;
         Ok(conn)
     }
 
     /// Stores one dictation. Returns the row id, or `None` when the text has no
     /// words (nothing worth counting).
     pub fn record(&self, input: &DictationInput) -> Result<Option<i64>> {
-        let conn = self.connection()?;
-        insert_dictation(&conn, input, "live")
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+        let id = insert_dictation(&tx, input, "live")?;
+        if let Some(id) = id {
+            index::add_dictation(&tx, id, &index::local_day(input.created_at), &input.final_text)?;
+        }
+        tx.commit()?;
+        Ok(id)
     }
 
     /// Deletes every recorded dictation. The "history imported" marker stays,
     /// so cleared statistics are not re-imported on the next start.
     pub fn clear(&self) -> Result<usize> {
-        let conn = self.connection()?;
-        Ok(conn.execute("DELETE FROM dictations", [])?)
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+        let removed = tx.execute("DELETE FROM dictations", [])?;
+        index::clear_all(&tx)?;
+        // whatever the backfill had left is gone with the rows
+        index::meta_set(&tx, index::META_DONE, "1")?;
+        tx.commit()?;
+        self.set_backfill_status(BackfillStatus {
+            state: index::BackfillState::Done,
+            processed: 0,
+            total: 0,
+        });
+        Ok(removed)
     }
 }
 
@@ -243,6 +338,24 @@ pub(crate) mod tests {
         .unwrap();
     }
 
+    /// A statistics database as the first Voxa build left it (migration 1 only,
+    /// no word tables), holding `(created_at, final_text)` rows.
+    pub(crate) fn legacy_v1_db(path: &Path, rows: &[(i64, &str)]) {
+        let mut conn = Connection::open(path).unwrap();
+        Migrations::new(vec![MIGRATIONS[0].clone()])
+            .to_latest(&mut conn)
+            .unwrap();
+        for (created_at, text) in rows {
+            let input = DictationInput {
+                created_at: *created_at,
+                final_text: text.to_string(),
+                raw_text: text.to_string(),
+                ..Default::default()
+            };
+            insert_dictation(&conn, &input, "live").unwrap();
+        }
+    }
+
     fn dump_history(path: &Path) -> Vec<(i64, String, i64, String, Option<String>)> {
         let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
         let mut stmt = conn
@@ -282,7 +395,7 @@ pub(crate) mod tests {
         let dir = TempDir::new().unwrap();
         let store = VoxaStore::open(&dir.path().join(DB_FILE_NAME), None).unwrap();
         let conn = store.connection().unwrap();
-        assert_eq!(count(&conn, "PRAGMA user_version"), 1);
+        assert_eq!(count(&conn, "PRAGMA user_version"), 2);
         assert_eq!(count(&conn, "SELECT COUNT(*) FROM dictations"), 0);
         // every column of PLAN.md 5.1 exists
         let cols: Vec<String> = conn
@@ -318,7 +431,7 @@ pub(crate) mod tests {
         let store = VoxaStore::open(&path, None).unwrap();
         let conn = store.connection().unwrap();
         assert_eq!(count(&conn, "SELECT COUNT(*) FROM dictations"), 1);
-        assert_eq!(count(&conn, "PRAGMA user_version"), 1);
+        assert_eq!(count(&conn, "PRAGMA user_version"), 2);
     }
 
     #[test]
@@ -407,7 +520,13 @@ pub(crate) mod tests {
         let missing = dir.path().join("nope.db");
         let store = VoxaStore::open(&path, Some(&missing)).unwrap();
         let conn = store.connection().unwrap();
-        assert_eq!(count(&conn, "SELECT COUNT(*) FROM voxa_meta"), 0);
+        assert_eq!(
+            count(
+                &conn,
+                "SELECT COUNT(*) FROM voxa_meta WHERE key = 'history_backfill'"
+            ),
+            0
+        );
 
         // the history appears later: it is imported then
         legacy_history_db(&missing);

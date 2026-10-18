@@ -198,6 +198,21 @@
     "fix_custom_word_case": true,
     "handy_import_handled": false,
     "updates_default_applied": true,
+    "filler_words": [
+      "типо",
+      "типа",
+      "короче",
+      "ну",
+      "как бы",
+      "вот",
+      "значит",
+      "блин",
+      "э",
+      "ээ",
+      "эээ",
+      "м",
+      "мм"
+    ],
     "initial_prompt": "Настроил RAG-пайплайн на LangChain, промпт для Claude, заметка в Obsidian, деплой в Docker."
   },
   "whats_new_last_seen_version": "0.9.8",

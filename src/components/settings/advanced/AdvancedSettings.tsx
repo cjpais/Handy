@@ -26,6 +26,7 @@ import { FillerWordRemoval } from "../FillerWordRemoval";
 import { ChineseScriptSetting } from "../ChineseScript";
 import { VadBackendSelector } from "../VadBackendSelector";
 import { VoxaTranscriptionSettings } from "@/voxa/settings/VoxaTranscriptionSettings";
+import { FillerWordsSettings } from "@/voxa/settings/FillerWordsSettings";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -57,6 +58,7 @@ export const AdvancedSettings: React.FC = () => {
         <ChineseScriptSetting descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
         <VoxaTranscriptionSettings />
+        <FillerWordsSettings />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 

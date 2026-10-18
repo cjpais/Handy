@@ -121,6 +121,11 @@
       "import": "Import",
       "dismiss": "No thanks",
       "imported": "Custom words imported"
+    },
+    "fillers": {
+      "title": "Filler words",
+      "description": "Words the Words tab counts as fillers, separated by commas. A phrase of up to three words (like “you know”) counts as one filler.",
+      "placeholder": "um, like, you know"
     }
   },
   "updates": {
@@ -150,6 +155,90 @@
       "signature": "The update did not pass the signature check and was not installed. The current version keeps working.",
       "noRelease": "No release is published yet.",
       "other": "The update did not work out. The current version keeps working."
+    }
+  },
+  "words": {
+    "tabs": {
+      "label": "Statistics sections",
+      "overview": "Overview",
+      "words": "Words"
+    },
+    "period": {
+      "label": "Period",
+      "week": "Week",
+      "month": "Month",
+      "all": "All time",
+      "custom": "Custom",
+      "from": "From",
+      "to": "To",
+      "weekHint": "Last 7 days",
+      "monthHint": "Last 30 days"
+    },
+    "showStop": {
+      "label": "Show function words",
+      "hint": "Prepositions, conjunctions, pronouns, particles"
+    },
+    "loading": "Loading words…",
+    "error": "Could not load this block: {{error}}",
+    "retry": "Try again",
+    "empty": {
+      "title": "No words yet",
+      "body": "Dictate something and the word statistics will appear here."
+    },
+    "emptyBlock": "Nothing in this period yet.",
+    "backfill": {
+      "running": "Indexing earlier dictations… {{processed}} of {{total}}",
+      "hint": "The numbers below fill in as it goes."
+    },
+    "vocabulary": {
+      "title": "Vocabulary",
+      "unit": {
+        "one": "different word",
+        "few": "different words",
+        "many": "different words",
+        "other": "different words"
+      },
+      "of": "out of {{total}} words used"
+    },
+    "top": {
+      "title": "Top words",
+      "hint": "The most used words in the period. Click a word for details.",
+      "showAll": "Show all {{count}}",
+      "showLess": "Show fewer",
+      "times": "{{count}}×"
+    },
+    "openers": {
+      "title": "How dictations begin",
+      "hint": "The first one or two words, as a share of all dictations.",
+      "one": "First word",
+      "two": "First two words"
+    },
+    "phrases": {
+      "title": "Frequent phrases",
+      "hint": "Two- and three-word phrases used at least twice. Phrases made only of function words are left out.",
+      "two": "Two words",
+      "three": "Three words"
+    },
+    "fillers": {
+      "title": "Filler words",
+      "hint": "Counts of the words you chose. Edit the list in Settings, Advanced.",
+      "none": "No filler words are set.",
+      "trendTitle": "Fillers per 100 words, by week",
+      "trendEmpty": "Not enough data for a trend yet.",
+      "week": "Week of {{date}}: {{value}} per 100 words ({{count}} of {{words}})",
+      "total": "Total"
+    },
+    "newWords": {
+      "title": "New words",
+      "hint": "First used in this period and used at least twice in it. For all time: the last 30 days."
+    },
+    "detail": {
+      "title": "Word details",
+      "close": "Close",
+      "total": "Total in the period: {{count}}",
+      "forms": "Forms",
+      "examples": "Recent dictations",
+      "noExamples": "No dictations with this word in the period."
     }
   }
 }

@@ -32,6 +32,15 @@ pub const DEFAULT_CUSTOM_WORDS: &[&str] = &[
     "Sber",
 ];
 
+/// Filler words the Words tab counts out of the box. "как бы" is a phrase.
+pub const DEFAULT_FILLER_WORDS: &[&str] = &[
+    "типо", "типа", "короче", "ну", "как бы", "вот", "значит", "блин", "э", "ээ", "эээ", "м", "мм",
+];
+
+pub fn default_filler_words() -> Vec<String> {
+    DEFAULT_FILLER_WORDS.iter().map(|w| w.to_string()).collect()
+}
+
 /// How many dictations stay in Handy's history by default. Statistics live in
 /// their own store, so this only bounds the History screen and the saved audio.
 pub const DEFAULT_HISTORY_LIMIT: usize = 200;

@@ -3,6 +3,11 @@
 use super::handy_import::{self, HandyImportOffer};
 use super::stats::{self, VoxaStats};
 use super::updates::{self, UpdateManager, UpdateStatus};
+use super::words::index::BackfillStatus;
+use super::words::query::{
+    self, Fillers, Openers, Phrases, Vocabulary, WordCount, WordDetail,
+};
+use super::words::WordsPeriod;
 use super::VoxaStore;
 use crate::settings::{get_settings, write_settings};
 use std::sync::Arc;
@@ -176,6 +181,143 @@ pub fn voxa_set_fix_custom_word_case(app: AppHandle, enabled: bool) -> Result<()
     Ok(())
 }
 
+/// Rows of a top list on the Words tab.
+const TOP_WORDS: usize = 50;
+const TOP_OPENERS: usize = 10;
+const TOP_PHRASES: usize = 15;
+const TOP_NEW_WORDS: usize = 30;
+
+/// Runs a read on the statistics database off the async runtime.
+async fn read_words<T: Send + 'static>(
+    app: &AppHandle,
+    job: impl FnOnce(&rusqlite::Connection) -> anyhow::Result<T> + Send + 'static,
+) -> Result<T, String> {
+    let store = store(app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let conn = store.connection().map_err(|e| format!("{e:#}"))?;
+        job(&conn).map_err(|e| format!("{e:#}"))
+    })
+    .await
+    .map_err(|e| format!("Task failed: {e}"))?
+}
+
+fn today() -> chrono::NaiveDate {
+    chrono::Local::now().date_naive()
+}
+
+/// Top words of the period. `include_stop` shows prepositions, particles and the like.
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_words_top(
+    app: AppHandle,
+    period: WordsPeriod,
+    include_stop: bool,
+) -> Result<Vec<WordCount>, String> {
+    read_words(&app, move |c| query::top_words(c, &period, include_stop, TOP_WORDS)).await
+}
+
+/// Words first used inside the period and used at least twice in it.
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_words_new(
+    app: AppHandle,
+    period: WordsPeriod,
+    include_stop: bool,
+) -> Result<Vec<WordCount>, String> {
+    read_words(&app, move |c| {
+        query::new_words(c, &period, today(), include_stop, TOP_NEW_WORDS)
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_words_vocabulary(
+    app: AppHandle,
+    period: WordsPeriod,
+) -> Result<Vocabulary, String> {
+    read_words(&app, move |c| query::vocabulary(c, &period)).await
+}
+
+/// How dictations most often begin.
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_words_openers(app: AppHandle, period: WordsPeriod) -> Result<Openers, String> {
+    read_words(&app, move |c| query::openers(c, &period, TOP_OPENERS)).await
+}
+
+/// Frequent two- and three-word phrases (not made of stop words only).
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_words_phrases(app: AppHandle, period: WordsPeriod) -> Result<Phrases, String> {
+    read_words(&app, move |c| query::phrases(c, &period, TOP_PHRASES)).await
+}
+
+/// Filler word counters and their weekly trend.
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_words_fillers(app: AppHandle, period: WordsPeriod) -> Result<Fillers, String> {
+    let fillers = get_settings(&app).voxa.filler_words;
+    read_words(&app, move |c| query::fillers(c, &period, &fillers, today())).await
+}
+
+/// All forms of one word in the period and its latest dictations, word highlighted.
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_word_detail(
+    app: AppHandle,
+    period: WordsPeriod,
+    stem: String,
+) -> Result<WordDetail, String> {
+    read_words(&app, move |c| {
+        query::word_detail(c, &period, &stem, &chrono::Local)
+    })
+    .await
+}
+
+/// Progress of the one-time indexing of older dictations.
+#[tauri::command]
+#[specta::specta]
+pub fn voxa_words_backfill_status(app: AppHandle) -> Result<BackfillStatus, String> {
+    Ok(store(&app)?.backfill_status())
+}
+
+/// Saves the filler word list; returns it as stored (trimmed, no empty or
+/// duplicate entries, at most three words each).
+#[tauri::command]
+#[specta::specta]
+pub fn voxa_set_filler_words(app: AppHandle, words: Vec<String>) -> Result<Vec<String>, String> {
+    let cleaned = clean_filler_words(&words);
+    let mut settings = get_settings(&app);
+    settings.voxa.filler_words = cleaned.clone();
+    write_settings(&app, settings);
+    Ok(cleaned)
+}
+
+/// Longest list the settings accept.
+const MAX_FILLER_WORDS: usize = 60;
+
+/// Normalizes a filler list the way the counters look words up: whitespace
+/// collapsed, case ignored, 1 to 3 words per entry, duplicates dropped.
+pub fn clean_filler_words(words: &[String]) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for raw in words {
+        let entry = normalize_word(raw);
+        let count = entry.split_whitespace().count();
+        if count == 0 || count > 3 || entry.chars().count() > MAX_WORD_CHARS {
+            continue;
+        }
+        if seen.insert(entry.to_lowercase()) {
+            out.push(entry);
+        }
+        if out.len() == MAX_FILLER_WORDS {
+            break;
+        }
+    }
+    out
+}
+
 /// Current update state (the UI also follows the `voxa-update-status` event).
 #[tauri::command]
 #[specta::specta]
@@ -201,6 +343,16 @@ pub async fn voxa_install_update(app: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn filler_list_is_cleaned() {
+        let input = ["  Ну ", "как   бы", "НУ", "", "а б в г", "ээ", "<b>м</b>"];
+        let words: Vec<String> = input.iter().map(|s| s.to_string()).collect();
+        assert_eq!(
+            clean_filler_words(&words),
+            vec!["Ну", "как бы", "ээ", "bм/b"]
+        );
+    }
 
     fn words(list: &[&str]) -> Vec<String> {
         list.iter().map(|s| s.to_string()).collect()

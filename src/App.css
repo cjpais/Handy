@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 @import "./voxa/glass.css";
+@import "./voxa/words/words.css";
 
 /* Register the shared color tokens (src/styles/theme.css) as Tailwind
    utilities */

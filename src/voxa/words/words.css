@@ -1,0 +1,472 @@
+/* Words tab of the statistics page (src/voxa/words). Builds on glass.css. */
+
+.vg-stats-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+}
+
+/* ---------- segmented control (tabs and period) ---------- */
+
+.vg-segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--vg-card-fill);
+  box-shadow: inset 0 0 0 1px var(--vg-hairline);
+}
+
+.vg-segment {
+  padding: 0.34rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--vg-muted);
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--vg-ease),
+    color 160ms var(--vg-ease);
+}
+
+.vg-segment:hover {
+  color: var(--vg-ink);
+}
+
+.vg-segment[aria-pressed="true"],
+.vg-segment[aria-selected="true"] {
+  color: var(--vg-ink);
+  background: var(--vg-nav-active);
+  box-shadow: inset 0 0 0 1px var(--vg-hairline);
+}
+
+.vg-segment:focus-visible {
+  outline: 2px solid var(--vg-accent);
+  outline-offset: 1px;
+}
+
+/* ---------- controls ---------- */
+
+.vgw {
+  position: relative;
+}
+
+.vgw-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem 1rem;
+}
+
+.vgw-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.vgw-custom {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.vgw-custom label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.vgw-custom input[type="date"] {
+  padding: 0.25rem 0.5rem;
+  border-radius: 10px;
+  color: var(--vg-ink);
+  background: var(--vg-card-fill);
+  box-shadow: inset 0 0 0 1px var(--vg-hairline);
+  color-scheme: light dark;
+}
+
+.vgw-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--vg-muted);
+  cursor: pointer;
+}
+
+.vgw-switch input {
+  accent-color: var(--vg-accent);
+}
+
+/* ---------- cards ---------- */
+
+.vgw-card {
+  padding: 1.1rem 1.25rem 1.15rem;
+}
+
+.vgw-hint {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.vgw-hero .vg-number {
+  font-size: 3.6rem;
+}
+
+.vgw-of {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.8rem;
+}
+
+.vgw-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 1.6rem;
+  margin-top: 0.6rem;
+}
+
+.vgw-two h4 {
+  margin-bottom: 0.25rem;
+}
+
+/* ---------- rows ---------- */
+
+.vgw-rows {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.5rem;
+}
+
+.vgw-row {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 11rem) 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.32rem 0.45rem;
+  border-radius: 10px;
+  text-align: start;
+  color: var(--vg-ink);
+}
+
+button.vgw-row {
+  cursor: pointer;
+  transition: background-color 140ms var(--vg-ease);
+}
+
+button.vgw-row:hover {
+  background: var(--vg-hairline);
+}
+
+button.vgw-row:focus-visible {
+  outline: 2px solid var(--vg-accent);
+  outline-offset: -1px;
+}
+
+.vgw-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.vgw-row-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--vg-hairline);
+  overflow: hidden;
+}
+
+.vgw-row-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--vg-bar-bottom), var(--vg-bar-top));
+}
+
+.vgw-row-count {
+  min-width: 2.4rem;
+  text-align: end;
+  font-size: 0.85rem;
+  color: var(--vg-muted);
+}
+
+.vgw-row.is-filler {
+  grid-template-columns: minmax(5.5rem, 11rem) 1fr auto;
+}
+
+.vgw-more {
+  margin-top: 0.6rem;
+}
+
+/* ---------- chips ---------- */
+
+.vgw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.vgw-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.28rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--vg-ink);
+  background: var(--vg-card-fill);
+  box-shadow: inset 0 0 0 1px var(--vg-hairline);
+  cursor: pointer;
+  transition: background-color 140ms var(--vg-ease);
+}
+
+.vgw-chip:hover {
+  background: var(--vg-nav-active);
+}
+
+.vgw-chip:focus-visible {
+  outline: 2px solid var(--vg-accent);
+  outline-offset: 2px;
+}
+
+.vgw-chip .vg-tabular {
+  font-size: 0.75rem;
+}
+
+/* ---------- trend ---------- */
+
+.vgw-trend {
+  margin: 0.9rem 0 0;
+}
+
+.vgw-trend-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.3rem 1rem;
+}
+
+.vgw-trend-readout {
+  font-size: 0.8rem;
+  color: var(--vg-muted);
+}
+
+.vgw-trend-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 0.4rem;
+  overflow: visible;
+}
+
+.vgw-trend-base {
+  stroke: var(--vg-hairline);
+  stroke-width: 1;
+}
+
+.vgw-trend-line {
+  fill: none;
+  stroke: var(--vg-gold);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vgw-trend-dot {
+  fill: var(--vg-card-fill-strong);
+  stroke: var(--vg-gold);
+  stroke-width: 2;
+  cursor: default;
+  transition: r 120ms var(--vg-ease);
+}
+
+.vgw-trend-dot.is-now {
+  fill: var(--vg-gold);
+}
+
+.vgw-trend-dot:focus-visible {
+  outline: 2px solid var(--vg-accent);
+  outline-offset: 3px;
+}
+
+.vgw-trend-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--vg-muted);
+}
+
+.vgw-trend-empty {
+  margin-top: 0.8rem;
+  font-size: 0.8rem;
+}
+
+.vgw-spark {
+  width: 100%;
+  max-width: 6rem;
+  height: 1.25rem;
+  justify-self: start;
+}
+
+.vgw-spark path {
+  fill: none;
+  stroke: var(--vg-gold);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vgw-spark path.is-flat {
+  stroke: var(--vg-hairline);
+}
+
+/* ---------- backfill ---------- */
+
+.vgw-backfill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.9rem 1.2rem;
+  font-size: 0.9rem;
+}
+
+.vgw-backfill progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--vg-accent);
+}
+
+.vgw-block-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+/* ---------- word detail panel ---------- */
+
+.vgw-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--vg-backdrop-base) 38%, transparent);
+}
+
+.vgw-panel {
+  position: fixed;
+  inset-block: 0.8rem;
+  inset-inline-end: 0.8rem;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: min(23rem, calc(100vw - 1.6rem));
+  padding: 1.2rem 1.3rem;
+  overflow-y: auto;
+  background: var(--vg-card-fill-strong);
+  box-shadow: var(--vg-shadow);
+  animation: vgw-slide-in 200ms var(--vg-ease);
+}
+
+@keyframes vgw-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+.vgw-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.vgw-panel-word {
+  font-family: var(--font-serif, ui-serif, serif);
+  font-size: 1.9rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.vgw-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+
+.vgw-forms li {
+  display: grid;
+  grid-template-columns: minmax(4rem, 9rem) 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.vgw-form-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--vg-hairline);
+  overflow: hidden;
+}
+
+.vgw-form-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--vg-bar-bottom), var(--vg-bar-top));
+}
+
+.vgw-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.vgw-example-time {
+  font-size: 0.72rem;
+}
+
+.vgw-examples p {
+  margin-top: 0.1rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.vgw-examples mark {
+  padding: 0 0.2em;
+  border-radius: 5px;
+  color: var(--vg-gold-text);
+  background: color-mix(in srgb, var(--vg-gold) 24%, transparent);
+}
+
+@media (max-width: 560px) {
+  .vgw-two {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vg-segment,
+  button.vgw-row,
+  .vgw-chip,
+  .vgw-trend-dot {
+    transition: none;
+  }
+  .vgw-panel {
+    animation: none;
+  }
+}

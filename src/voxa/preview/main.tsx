@@ -4,6 +4,7 @@
  *
  *   ?view=overlay[&lang=ru|en][&only=<stage id>]   the capsule in every state
  *   ?view=stats[&theme=light|dark][&data=empty|error]   the statistics screen
+ *   ?view=words[&theme=..][&words=empty|error|backfill]  the Words tab alone
  *   ?view=app[&theme=light|dark][&update=available|downloading|error|up_to_date]
  *                                                  the whole app on mocked data
  *
@@ -52,6 +53,9 @@ async function boot() {
     language: lang,
     stats: data === "empty" || data === "error" ? data : undefined,
     update: (params.get("update") as UpdateFixtureKind | null) ?? undefined,
+    words:
+      (params.get("words") as "empty" | "error" | "backfill" | null) ??
+      undefined,
   });
 
   await import("@/App.css");
@@ -73,6 +77,16 @@ async function boot() {
           onClear={() => {}}
           onRefresh={() => {}}
         />
+      </div>,
+    );
+    return;
+  }
+
+  if (view === "words") {
+    const { WordsScreen } = await import("../words/WordsScreen");
+    root.render(
+      <div style={{ padding: 16, width: 680, boxSizing: "border-box" }}>
+        <WordsScreen />
       </div>,
     );
     return;

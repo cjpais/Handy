@@ -204,3 +204,46 @@ appended at the bottom.
 - **Signature check:** with a certificate the job fails unless `codesign -d -r-` shows `identifier "com.daniyar.voxa" and certificate leaf`; a `cdhash` requirement would reset macOS permissions at every update.
 - **Public key:** injected from the secret `TAURI_UPDATER_PUBKEY` at build time (or edited into `tauri.conf.json`), so the owner never edits files; the repository keeps a placeholder.
 - **Without secrets:** the run stays green, the app archive is a workflow artifact only, nothing is published.
+
+## D-20 Word statistics: daily aggregates in the existing statistics database
+
+- **Chosen:** migration 2 of `voxa_stats.db` adds `word_forms`, `word_daily`, `form_daily`, `ngram_daily` and `dictation_openers` (the layout of PLAN-2 B.3, with two additions: `ngram_daily.stop_only`, and `WITHOUT ROWID` on the aggregate tables). One dictation is added in the same transaction that stores it (`VoxaStore::record`). Nothing existing is altered.
+- **Why:** per-day counters answer every period filter by summing days, so the screen needs no scan of the text. Queries read `form_daily`/`word_daily`; `word_forms` (every form ever seen per stem) is filled as the plan asks and kept for later use.
+- **Text handling:** the tokenizer of the basic statistics is reused; lowercase and `ё` -> `е` for the key; `rust-stemmers` (Russian for Cyrillic words, English for words with an ASCII letter); the shown word is the most frequent real form in the period. `Claude'а` and `Claude's` fold into `claude`, English contractions (`don't`) stay whole. Numbers are not words. Phrases (2 and 3 words) do not cross a sentence end or a number.
+
+## D-21 Stop words at query time, except for phrases
+
+- **Chosen:** the database holds every word; the RU + EN lists (`words/stopwords.rs`) are applied when a list is built, by stem, so the switch "Show function words" recounts nothing. Phrases made only of stop words are flagged `stop_only` when written and left out of "frequent phrases".
+- **Why for phrases:** the plan asks to leave those out without a switch, and filler phrases such as "как бы" consist of stop words, so they must still be counted for the filler block. The flag is derived data; a change of the list needs a recount.
+- **Known limit:** a stem shared by a stop word and a content word is hidden together with it (for example "быт" from "быть").
+
+## D-22 Periods are rolling windows
+
+- **Chosen:** Week = the last 7 days, Month = the last 30 days, both ending today; All time; Custom = two dates. The UI computes local days, the backend only receives `from`/`to`.
+- **Why:** it needs no locale rule for the first day of the week and matches "how did the last days go". The overview tab keeps its Monday-to-Sunday week.
+
+## D-23 Deleting a dictation: explicit delete subtracts, cleanup does not
+
+- **Chosen:** deleting an entry on the History screen (`HistoryManager::delete_entry`) also removes the dictation from the statistics: its row, and its words, phrases and opener are subtracted (counts that reach zero are deleted). Cleanup of old entries by count or age does not touch the statistics.
+- **Why:** PLAN-2 B.3 asks for exactly this split. Subtracting needs the dictation to be indexed (it has an opener row); a row the backfill has not reached yet is only deleted, never subtracted.
+
+## D-24 Backfill of older dictations
+
+- **Chosen:** on the first start with the word tables, the dictations that exist at that moment are indexed once in the background (a thread, batches of 500, a 5 ms pause between batches). The target (highest id at that moment) and a cursor are kept in `voxa_meta`, and the cursor moves in the same transaction as the counts, so an interrupted run resumes and nothing is counted twice. Dictations recorded afterwards are indexed live and are above the target. Progress is exposed by `voxa_words_backfill_status` and the `voxa-words-backfill` event; the tab shows a banner with a progress bar.
+- **Flag:** `voxa_meta.words_backfill_done` (the plan's `schema_meta` is the existing `voxa_meta`). "Clear statistics" empties the word tables and marks the backfill done.
+
+## D-25 Phrase cleanup counts a phrase over all days
+
+- **Chosen:** once a week, at start, phrases that were seen exactly once in total and are older than 90 days are deleted.
+- **Why not "count = 1 per day":** a phrase said once a day for months has `count = 1` on every row and would be deleted entirely. Only phrases with one use ever are dropped; phrases with two or more uses stay however old.
+
+## D-26 Filler words
+
+- **Chosen:** the list lives in settings (`voxa.filler_words`, default: типо, типа, короче, ну, как бы, вот, значит, блин, э, ээ, эээ, м, мм), edited in Settings, Advanced. An entry of one word is counted by its form, of two or three words as a phrase. The trend always covers the last 12 weeks, longer when the period starts earlier (at most 52), and shows uses per 100 words.
+- **Why 12 weeks regardless of the period:** a line of one or two points is no trend.
+
+## D-27 Examples of a word
+
+- **Chosen:** the five newest dictations of the period that contain the word are found by scanning up to 20 000 recent dictations, with a cheap first-letters check before the exact stem comparison; the matches are highlighted by byte spans.
+- **Why:** SQLite's `LIKE` and `lower()` ignore case only for ASCII, so Cyrillic cannot be searched in SQL. No extra table is needed for a click-driven view.
+

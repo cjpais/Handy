@@ -629,6 +629,9 @@ impl HistoryManager {
         )?;
 
         debug!("Deleted history entry with id: {}", id);
+        // Voxa: an explicit delete also leaves the statistics (cleanup by count
+        // or age does not)
+        crate::voxa::on_history_entry_deleted(&self.app_handle, id);
 
         // Emit history updated event
         if let Err(e) = (HistoryUpdatePayload::Deleted { id }).emit(&self.app_handle) {

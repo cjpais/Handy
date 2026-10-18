@@ -7,9 +7,10 @@ import type { VoxaStats } from "@/bindings";
 import { Button } from "@/components/ui/Button";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { StatsView } from "./StatsView";
+import { WordsScreen } from "../words/WordsScreen";
 
 /** Loads the statistics, keeps them fresh and wires the actions. */
-export const StatsScreen: React.FC = () => {
+const OverviewScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [stats, setStats] = useState<VoxaStats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +121,46 @@ export const StatsScreen: React.FC = () => {
       onClear={handleClear}
       onRefresh={() => void load()}
     />
+  );
+};
+
+type StatsTab = "overview" | "words";
+const TABS: StatsTab[] = ["overview", "words"];
+
+/** The statistics page: the overview and the word statistics as two tabs. */
+export const StatsScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<StatsTab>("overview");
+  return (
+    <div className="vg-stats-shell">
+      <div
+        className="vg-segmented vgw-tabs"
+        role="tablist"
+        aria-label={t("voxa.words.tabs.label")}
+      >
+        {TABS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`stats-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls="stats-tabpanel"
+            className="vg-segment"
+            onClick={() => setTab(id)}
+          >
+            {t(`voxa.words.tabs.${id}`)}
+          </button>
+        ))}
+      </div>
+      <div
+        id="stats-tabpanel"
+        role="tabpanel"
+        aria-labelledby={`stats-tab-${tab}`}
+      >
+        {tab === "overview" ? <OverviewScreen /> : <WordsScreen />}
+      </div>
+    </div>
   );
 };
 

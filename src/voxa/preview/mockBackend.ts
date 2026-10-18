@@ -2,6 +2,8 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import type { AppSettings } from "@/bindings";
 import defaultSettings from "./default-settings.json";
 import { emit } from "@tauri-apps/api/event";
+import type { WordsPeriod } from "@/bindings";
+import * as wf from "./wordsFixtures";
 import {
   modelsFixture,
   statsFixture,
@@ -18,6 +20,8 @@ export interface MockOptions {
   stats?: ReturnType<typeof statsFixture> | "error" | "empty";
   /** Update state the mocked backend reports. */
   update?: UpdateFixtureKind;
+  /** Words tab: no words at all, every block failing, or the backfill running. */
+  words?: "empty" | "error" | "backfill";
 }
 
 const TURBO =
@@ -108,6 +112,47 @@ export function installMockBackend(options: MockOptions = {}): void {
             };
           }
           return options.stats ?? statsFixture();
+        case "voxa_words_top":
+        case "voxa_words_new":
+        case "voxa_words_vocabulary":
+        case "voxa_words_openers":
+        case "voxa_words_phrases":
+        case "voxa_words_fillers":
+        case "voxa_word_detail": {
+          if (options.words === "error") throw "database is locked";
+          const a = args as {
+            period: WordsPeriod;
+            includeStop?: boolean;
+            stem?: string;
+          };
+          const empty = options.words === "empty";
+          switch (cmd) {
+            case "voxa_words_top":
+              return empty ? [] : wf.topWords(a.period, !!a.includeStop);
+            case "voxa_words_new":
+              return empty ? [] : wf.newWords();
+            case "voxa_words_vocabulary":
+              return empty
+                ? { distinct: 0, total: 0 }
+                : wf.vocabulary(a.period);
+            case "voxa_words_openers":
+              return empty
+                ? { total: 0, one: [], two: [] }
+                : wf.openers(a.period);
+            case "voxa_words_phrases":
+              return empty
+                ? { bigrams: [], trigrams: [] }
+                : wf.phrases(a.period);
+            case "voxa_words_fillers":
+              return empty ? { items: [], weeks: [] } : wf.fillers(a.period);
+            default:
+              return wf.wordDetail(a.stem ?? "");
+          }
+        }
+        case "voxa_words_backfill_status":
+          return wf.backfillStatus(
+            options.words === "backfill" ? "running" : "done",
+          );
         case "voxa_get_handy_import":
           return null;
         case "voxa_add_dictionary_word":

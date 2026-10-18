@@ -15,7 +15,7 @@
     "format:frontend": "prettier --write .",
     "format:backend": "cd src-tauri && cargo fmt",
     "test:keyboard": "bun src/lib/utils/keyboard.test.ts",
-    "test:unit": "bun run test:keyboard && bun src/voxa/stats/format.test.ts && bun src/voxa/overlay/levels.test.ts && bun src/voxa/overlay/contrast.test.ts",
+    "test:unit": "bun run test:keyboard && bun src/voxa/stats/format.test.ts && bun src/voxa/words/format.test.ts && bun src/voxa/overlay/levels.test.ts && bun src/voxa/overlay/contrast.test.ts",
     "screenshots": "VOXA_SCREENSHOTS=1 playwright test voxa-preview",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",

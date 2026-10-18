@@ -38,7 +38,7 @@ fn is_combining_mark(c: char) -> bool {
     ('\u{0300}'..='\u{036F}').contains(&c)
 }
 
-fn is_cyrillic(c: char) -> bool {
+pub(crate) fn is_cyrillic(c: char) -> bool {
     // Cyrillic + Cyrillic Supplement
     ('\u{0400}'..='\u{052F}').contains(&c)
 }
