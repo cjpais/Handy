@@ -54,7 +54,7 @@ export const WordDetailPanel: React.FC<Props> = ({
             {data && (
               <p className="vg-muted">
                 {t("voxa.words.detail.total", {
-                  count: formatNumber(data.total, locale),
+                  value: formatNumber(data.total, locale),
                 })}
               </p>
             )}

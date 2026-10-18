@@ -101,7 +101,14 @@ mod tests {
     #[test]
     fn content_words_are_not() {
         let set = stop_set();
-        for word in ["промпт", "пайплайн", "обсидиан", "docker", "python", "модель"] {
+        for word in [
+            "промпт",
+            "пайплайн",
+            "обсидиан",
+            "docker",
+            "python",
+            "модель",
+        ] {
             assert!(!set.is_stop_form(word), "{word}");
         }
     }

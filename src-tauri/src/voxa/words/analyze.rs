@@ -206,7 +206,12 @@ mod tests {
         assert_eq!(seg, vec![0, 0, 0, 0, 1, 1, 2]);
         let trigrams: Vec<String> = a
             .windows(3)
-            .map(|w| w.iter().map(|t| t.form.as_str()).collect::<Vec<_>>().join(" "))
+            .map(|w| {
+                w.iter()
+                    .map(|t| t.form.as_str())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
             .collect();
         assert_eq!(trigrams, vec!["сделай так чтобы", "так чтобы работало"]);
     }
@@ -216,7 +221,10 @@ mod tests {
         let a = analyze("— Короче, делаем так");
         assert_eq!(
             a.openers(),
-            (Some("короче".to_string()), Some("короче делаем".to_string()))
+            (
+                Some("короче".to_string()),
+                Some("короче делаем".to_string())
+            )
         );
         let one = analyze("...Да.");
         assert_eq!(one.openers(), (Some("да".to_string()), None));

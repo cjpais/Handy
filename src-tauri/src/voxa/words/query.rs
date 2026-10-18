@@ -10,9 +10,9 @@ use chrono::{Datelike, Duration, NaiveDate, TimeZone};
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use specta::Type;
-use std::collections::HashMap;
 #[cfg(test)]
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 /// Weeks the filler trend always shows (more when the period reaches further back).
 pub const TREND_WEEKS: i64 = 12;
@@ -56,9 +56,7 @@ fn display_form(conn: &Connection, stem: &str, from: &str, to: &str) -> Result<S
         "SELECT form FROM form_daily WHERE stem = ?1 AND day BETWEEN ?2 AND ?3
          GROUP BY form ORDER BY SUM(count) DESC, length(form), form LIMIT 1",
     )?;
-    let in_period: Option<String> = stmt
-        .query_row(params![stem, from, to], |r| r.get(0))
-        .ok();
+    let in_period: Option<String> = stmt.query_row(params![stem, from, to], |r| r.get(0)).ok();
     if let Some(form) = in_period {
         return Ok(form);
     }
@@ -99,7 +97,12 @@ fn with_display_forms(
 
 /// Fetch enough rows that filtering out every stop stem still leaves `limit`.
 fn overfetch(limit: usize, include_stop: bool) -> i64 {
-    (limit + if include_stop { 0 } else { stop_set().stem_count() }) as i64
+    (limit
+        + if include_stop {
+            0
+        } else {
+            stop_set().stem_count()
+        }) as i64
 }
 
 /// Word counts for the period as `(stem, count)` rows, unsorted. A bounded
@@ -121,9 +124,8 @@ pub fn top_words(
     let (from, to) = period.bounds();
     let fetch = overfetch(limit, include_stop);
     let rows: Vec<(String, i64)> = if period.is_open() {
-        let mut stmt = conn.prepare_cached(&format!(
-            "{OPEN_WORDS_SQL} ORDER BY tc DESC, stem LIMIT ?2"
-        ))?;
+        let mut stmt =
+            conn.prepare_cached(&format!("{OPEN_WORDS_SQL} ORDER BY tc DESC, stem LIMIT ?2"))?;
         let mapped = stmt
             .query_map(params![rolled, fetch], |r| Ok((r.get(0)?, r.get(1)?)))?
             .collect::<std::result::Result<_, _>>()?;
@@ -172,7 +174,13 @@ pub fn new_words(
     )?;
     let rows: Vec<(String, i64)> = stmt
         .query_map(
-            params![from, to, NEW_WORD_MIN_COUNT, rolled, overfetch(limit, include_stop)],
+            params![
+                from,
+                to,
+                NEW_WORD_MIN_COUNT,
+                rolled,
+                overfetch(limit, include_stop)
+            ],
             |r| Ok((r.get(0)?, r.get(1)?)),
         )?
         .collect::<std::result::Result<_, _>>()?;
@@ -401,7 +409,9 @@ pub struct Fillers {
 /// A filler as it is looked up: normalized words joined by a space, 1 to 3 words.
 fn filler_key(raw: &str) -> Option<(String, usize)> {
     let forms: Vec<String> = analyze(raw).tokens.into_iter().map(|t| t.form).collect();
-    (1..=3).contains(&forms.len()).then(|| (forms.join(" "), forms.len()))
+    (1..=3)
+        .contains(&forms.len())
+        .then(|| (forms.join(" "), forms.len()))
 }
 
 /// Daily counts of the multi-word fillers inside `[from, to]`, in one pass:
@@ -456,12 +466,17 @@ pub fn fillers(
     let window_to = day_string(this_monday + Duration::days(6));
     let (period_from, period_to) = period.bounds();
     // The window rows also give the period's count when the period lies inside it.
-    let period_in_window = period.from.as_deref().is_some_and(|f| f >= window_from.as_str());
+    let period_in_window = period
+        .from
+        .as_deref()
+        .is_some_and(|f| f >= window_from.as_str());
 
     let week_index = |day: &str| -> Option<usize> {
         let date = parse_day(day)?;
         let weeks = (monday(date) - first_monday).num_days() / 7;
-        (0..week_count as i64).contains(&weeks).then_some(weeks as usize)
+        (0..week_count as i64)
+            .contains(&weeks)
+            .then_some(weeks as usize)
     };
 
     // distinct fillers, as they are looked up
@@ -509,7 +524,9 @@ pub fn fillers(
         // the counter covers the period, which may be shorter or longer than the window
         let in_period: i64 = if period_in_window {
             rows.iter()
-                .filter(|(d, _)| d.as_str() >= period_from.as_str() && d.as_str() <= period_to.as_str())
+                .filter(|(d, _)| {
+                    d.as_str() >= period_from.as_str() && d.as_str() <= period_to.as_str()
+                })
                 .map(|(_, c)| c)
                 .sum()
         } else if *n == 1 {
@@ -522,7 +539,11 @@ pub fn fillers(
         } else if period.is_open() {
             // the roll-up plus what came after it (the window holds those days)
             let known: i64 = conn
-                .query_row("SELECT count FROM ngram_total WHERE ngram = ?1", [key], |r| r.get(0))
+                .query_row(
+                    "SELECT count FROM ngram_total WHERE ngram = ?1",
+                    [key],
+                    |r| r.get(0),
+                )
                 .unwrap_or(0);
             known
                 + rows

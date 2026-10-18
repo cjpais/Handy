@@ -4,9 +4,7 @@ use super::handy_import::{self, HandyImportOffer};
 use super::stats::{self, VoxaStats};
 use super::updates::{self, UpdateManager, UpdateStatus};
 use super::words::index::BackfillStatus;
-use super::words::query::{
-    self, Fillers, Openers, Phrases, Vocabulary, WordCount, WordDetail,
-};
+use super::words::query::{self, Fillers, Openers, Phrases, Vocabulary, WordCount, WordDetail};
 use super::words::WordsPeriod;
 use super::VoxaStore;
 use crate::settings::{get_settings, write_settings};
@@ -215,7 +213,10 @@ pub async fn voxa_words_top(
     period: WordsPeriod,
     include_stop: bool,
 ) -> Result<Vec<WordCount>, String> {
-    read_words(&app, move |c, r| query::top_words(c, &period, include_stop, TOP_WORDS, r)).await
+    read_words(&app, move |c, r| {
+        query::top_words(c, &period, include_stop, TOP_WORDS, r)
+    })
+    .await
 }
 
 /// Words first used inside the period and used at least twice in it.
@@ -260,7 +261,10 @@ pub async fn voxa_words_phrases(app: AppHandle, period: WordsPeriod) -> Result<P
 #[specta::specta]
 pub async fn voxa_words_fillers(app: AppHandle, period: WordsPeriod) -> Result<Fillers, String> {
     let fillers = get_settings(&app).voxa.filler_words;
-    read_words(&app, move |c, r| query::fillers(c, &period, &fillers, today(), r)).await
+    read_words(&app, move |c, r| {
+        query::fillers(c, &period, &fillers, today(), r)
+    })
+    .await
 }
 
 /// All forms of one word in the period and its latest dictations, word highlighted.

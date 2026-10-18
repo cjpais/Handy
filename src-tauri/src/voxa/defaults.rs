@@ -34,7 +34,19 @@ pub const DEFAULT_CUSTOM_WORDS: &[&str] = &[
 
 /// Filler words the Words tab counts out of the box. "как бы" is a phrase.
 pub const DEFAULT_FILLER_WORDS: &[&str] = &[
-    "типо", "типа", "короче", "ну", "как бы", "вот", "значит", "блин", "э", "ээ", "эээ", "м", "мм",
+    "типо",
+    "типа",
+    "короче",
+    "ну",
+    "как бы",
+    "вот",
+    "значит",
+    "блин",
+    "э",
+    "ээ",
+    "эээ",
+    "м",
+    "мм",
 ];
 
 pub fn default_filler_words() -> Vec<String> {

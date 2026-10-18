@@ -30,7 +30,7 @@ export const WordsScreen: React.FC = () => {
   // "Today" is fixed per mount; a reload keeps rolling windows honest.
   const period = useMemo(
     () => periodFor(preset, new Date(), appliedCustom),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reloadKey re-reads today
+    // reloadKey re-reads today
     [preset, appliedCustom, reloadKey],
   );
 

@@ -21,7 +21,7 @@ const META_HISTORY_BACKFILL: &str = "history_backfill";
 /// Each migration is applied once, in order; `PRAGMA user_version` tracks them.
 static MIGRATIONS: &[M] = &[
     M::up(
-    "CREATE TABLE dictations (
+        "CREATE TABLE dictations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         -- unix seconds, UTC
         created_at INTEGER NOT NULL,
@@ -51,7 +51,8 @@ static MIGRATIONS: &[M] = &[
     CREATE TABLE voxa_meta (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
-    );"),
+    );",
+    ),
     // word statistics (voxa/words/index.rs)
     M::up(index::SCHEMA),
 ];
@@ -197,7 +198,12 @@ impl VoxaStore {
         let tx = conn.transaction()?;
         let id = insert_dictation(&tx, input, "live")?;
         if let Some(id) = id {
-            index::add_dictation(&tx, id, &index::local_day(input.created_at), &input.final_text)?;
+            index::add_dictation(
+                &tx,
+                id,
+                &index::local_day(input.created_at),
+                &input.final_text,
+            )?;
         }
         tx.commit()?;
         Ok(id)

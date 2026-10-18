@@ -251,7 +251,13 @@ pub fn remove_dictation(conn: &Connection, dictation_id: i64, text: &str) -> Res
     let Some(day) = day else {
         return Ok(false);
     };
-    apply(conn, &day, &rolled_through(conn)?, &contribution(&analyze(text)), -1)?;
+    apply(
+        conn,
+        &day,
+        &rolled_through(conn)?,
+        &contribution(&analyze(text)),
+        -1,
+    )?;
     conn.execute(
         "DELETE FROM dictation_openers WHERE dictation_id = ?1",
         [dictation_id],
@@ -328,7 +334,9 @@ pub fn prepare_backfill(conn: &Connection) -> Result<BackfillStatus> {
     }
     if meta_get(conn, META_TARGET)?.is_none() {
         let target: i64 =
-            conn.query_row("SELECT COALESCE(MAX(id), 0) FROM dictations", [], |r| r.get(0))?;
+            conn.query_row("SELECT COALESCE(MAX(id), 0) FROM dictations", [], |r| {
+                r.get(0)
+            })?;
         meta_set(conn, META_TARGET, &target.to_string())?;
         meta_set(conn, META_CURSOR, "0")?;
     }

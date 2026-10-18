@@ -936,7 +936,7 @@
         "trendTitle": "Fillers per 100 words, by week",
         "trendEmpty": "Not enough data for a trend yet.",
         "week": "Week of {{date}}: {{value}} per 100 words ({{count}} of {{words}})",
-        "total": "Total"
+        "peak": "Peak: {{value}}"
       },
       "newWords": {
         "title": "New words",
@@ -945,7 +945,7 @@
       "detail": {
         "title": "Word details",
         "close": "Close",
-        "total": "Total in the period: {{count}}",
+        "total": "Total in the period: {{value}}",
         "forms": "Forms",
         "examples": "Recent dictations",
         "noExamples": "No dictations with this word in the period."

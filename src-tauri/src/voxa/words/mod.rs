@@ -36,7 +36,9 @@ impl WordsPeriod {
     /// Bounds usable in `day BETWEEN ?1 AND ?2` (days sort as text).
     pub fn bounds(&self) -> (String, String) {
         (
-            self.from.clone().unwrap_or_else(|| "0000-00-00".to_string()),
+            self.from
+                .clone()
+                .unwrap_or_else(|| "0000-00-00".to_string()),
             self.to.clone().unwrap_or_else(|| "9999-99-99".to_string()),
         )
     }

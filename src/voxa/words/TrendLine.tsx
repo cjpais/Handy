@@ -84,7 +84,7 @@ export const TrendLine: React.FC<{ weeks: WeekPoint[]; locale: string }> = ({
       <div className="vgw-trend-axis">
         <span>{weekLabel(weeks[0].week_start, locale)}</span>
         <span className="vg-muted">
-          {t("voxa.words.fillers.total")}: {formatDecimal(max, locale)}
+          {t("voxa.words.fillers.peak", { value: formatDecimal(max, locale) })}
         </span>
         <span>{weekLabel(weeks[weeks.length - 1].week_start, locale)}</span>
       </div>

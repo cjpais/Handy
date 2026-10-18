@@ -250,4 +250,3 @@ appended at the bottom.
 
 - **Chosen:** the five newest dictations of the period that contain the word are found by scanning up to 20 000 recent dictations, with a cheap first-letters check before the exact stem comparison; the matches are highlighted by byte spans.
 - **Why:** SQLite's `LIKE` and `lower()` ignore case only for ASCII, so Cyrillic cannot be searched in SQL. No extra table is needed for a click-driven view.
-

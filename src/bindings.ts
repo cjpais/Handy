@@ -1029,6 +1029,103 @@ async voxaSetFixCustomWordCase(enabled: boolean) : Promise<Result<null, string>>
 }
 },
 /**
+ * Top words of the period. `include_stop` shows prepositions, particles and the like.
+ */
+async voxaWordsTop(period: WordsPeriod, includeStop: boolean) : Promise<Result<WordCount[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_words_top", { period, includeStop }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Words first used inside the period and used at least twice in it.
+ */
+async voxaWordsNew(period: WordsPeriod, includeStop: boolean) : Promise<Result<WordCount[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_words_new", { period, includeStop }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async voxaWordsVocabulary(period: WordsPeriod) : Promise<Result<Vocabulary, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_words_vocabulary", { period }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * How dictations most often begin.
+ */
+async voxaWordsOpeners(period: WordsPeriod) : Promise<Result<Openers, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_words_openers", { period }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Frequent two- and three-word phrases (not made of stop words only).
+ */
+async voxaWordsPhrases(period: WordsPeriod) : Promise<Result<Phrases, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_words_phrases", { period }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Filler word counters and their weekly trend.
+ */
+async voxaWordsFillers(period: WordsPeriod) : Promise<Result<Fillers, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_words_fillers", { period }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * All forms of one word in the period and its latest dictations, word highlighted.
+ */
+async voxaWordDetail(period: WordsPeriod, stem: string) : Promise<Result<WordDetail, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_word_detail", { period, stem }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Progress of the one-time indexing of older dictations.
+ */
+async voxaWordsBackfillStatus() : Promise<Result<BackfillStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_words_backfill_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Saves the filler word list; returns it as stored (trimmed, no empty or
+ * duplicate entries, at most three words each).
+ */
+async voxaSetFillerWords(words: string[]) : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_set_filler_words", { words }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Current update state (the UI also follows the `voxa-update-status` event).
  */
 async voxaUpdateStatus() : Promise<Result<UpdateStatus, string>> {
@@ -1164,6 +1261,12 @@ voxa?: VoxaSettings }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; gpu_devices: GpuDeviceOption[] }
+export type BackfillState = 
+/**
+ * Nothing to index (or not started).
+ */
+"idle" | "running" | "done"
+export type BackfillStatus = { state: BackfillState; processed: number; total: number }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 export type CandidateKind = 
 /**
@@ -1199,6 +1302,21 @@ term: string; count: number;
  * How the model wrote it instead, most frequent first.
  */
 variants: string[]; in_dictionary: boolean }
+/**
+ * A piece of an example sentence; `hit` pieces are the word to highlight.
+ */
+export type ExampleSegment = { text: string; hit: boolean }
+export type FillerStat = { word: string; 
+/**
+ * Uses within the period.
+ */
+count: number; 
+/**
+ * Uses per week of the trend, aligned with `Fillers::weeks`.
+ */
+weekly: number[] }
+export type Fillers = { items: FillerStat[]; weeks: WeekPoint[] }
+export type FormCount = { form: string; count: number }
 export type GpuDeviceOption = { id: string; name: string; total_vram_mb: number }
 export type HandyImportOffer = { 
 /**
@@ -1275,6 +1393,16 @@ latency_samples: number; avg_latency_ms: number | null; p95_latency_ms: number |
  */
 enough_latency_data: boolean }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+export type OpenerStat = { text: string; count: number; 
+/**
+ * Share of the period's dictations, in percent.
+ */
+percent: number }
+export type Openers = { 
+/**
+ * Dictations with at least one word in the period.
+ */
+total: number; one: OpenerStat[]; two: OpenerStat[] }
 export type OverlayPosition = "top" | "bottom"
 /**
  * Which recording overlay to display. `Minimal` and `Live` share one base
@@ -1291,6 +1419,8 @@ export type PeriodStats = { dictations: number; words: number;
  */
 minutes: number }
 export type PermissionAccess = "allowed" | "denied" | "unknown"
+export type PhraseStat = { text: string; count: number }
+export type Phrases = { bigrams: PhraseStat[]; trigrams: PhraseStat[] }
 /**
  * Request format a post-processing endpoint speaks. Built-in providers have a
  * fixed format; only the custom provider lets the user change it.
@@ -1454,6 +1584,15 @@ error_detail: string | null;
  */
 last_checked: string | null }
 export type VadBackend = "silero" | "earshot"
+export type Vocabulary = { 
+/**
+ * Different words (stems) used in the period.
+ */
+distinct: number; 
+/**
+ * Word occurrences in the period (numbers are not words).
+ */
+total: number }
 /**
  * Voxa-only settings, nested under `AppSettings.voxa`.
  */
@@ -1476,13 +1615,46 @@ handy_import_handled: boolean;
  * The one-time switch of `update_checks_enabled` to on has been applied
  * (see `settings::apply_settings_migrations`).
  */
-updates_default_applied: boolean }
+updates_default_applied: boolean; 
+/**
+ * Filler words counted on the Words tab. A multi-word filler ("как бы")
+ * is looked up as a phrase of up to three words.
+ */
+filler_words: string[] }
 export type VoxaStats = { today: PeriodStats; 
 /**
  * Monday to Sunday of the current week.
  */
 week: PeriodStats; all_time: PeriodStats; avg_words_per_dictation: number; avg_seconds_per_dictation: number | null; latin_share: number | null; daily: DailyWords[]; models: ModelStats[]; candidates: DictionaryCandidate[] }
+export type WeekPoint = { 
+/**
+ * Monday of the week, `YYYY-MM-DD`.
+ */
+week_start: string; 
+/**
+ * All filler uses in the week.
+ */
+fillers: number; 
+/**
+ * All words in the week, to turn the line into "per 100 words".
+ */
+words: number }
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
+export type WordCount = { 
+/**
+ * Aggregation key (the stem); pass it back to ask for the word's details.
+ */
+stem: string; 
+/**
+ * The most frequent real form of the word in the period ("промпт", not "промп").
+ */
+word: string; count: number }
+export type WordDetail = { word: string; total: number; forms: FormCount[]; examples: WordExample[] }
+export type WordExample = { dictation_id: number; created_at: number; segments: ExampleSegment[] }
+/**
+ * Local calendar days (`YYYY-MM-DD`), both ends inclusive; `None` is open.
+ */
+export type WordsPeriod = { from: string | null; to: string | null }
 
 /** tauri-specta globals **/
 

@@ -51,7 +51,7 @@ export function useWordsData(
     run("openers", () => commands.voxaWordsOpeners(period));
     run("phrases", () => commands.voxaWordsPhrases(period));
     run("fillers", () => commands.voxaWordsFillers(period));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `periodKey` stands for `period`
+    // `periodKey` stands for `period` in the dependencies
   }, [periodKey, includeStop, reloadKey]);
 
   return data;
@@ -90,7 +90,7 @@ export function useWordDetail(
         if (generation.current === mine)
           setDetail({ status: "error", error: String(e) });
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `periodKey` stands for `period`
+    // `periodKey` stands for `period` in the dependencies
   }, [stem, periodKey]);
 
   useEffect(() => {

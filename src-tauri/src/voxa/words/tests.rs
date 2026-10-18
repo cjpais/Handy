@@ -65,7 +65,12 @@ fn top(conn: &Connection, period: &WordsPeriod, stop: bool) -> Vec<(String, u32)
 fn forms_of_a_word_group_and_show_the_most_frequent_real_form() {
     let (_dir, store) = open();
     let d = day(2026, 10, 5);
-    say(&store, d, None, "Промпт получился хороший. Промпта не хватает. Промпт снова.");
+    say(
+        &store,
+        d,
+        None,
+        "Промпт получился хороший. Промпта не хватает. Промпт снова.",
+    );
     say(&store, d, None, "С промптом проще. Промпт готов.");
     let conn = store.connection().unwrap();
 
@@ -74,22 +79,36 @@ fn forms_of_a_word_group_and_show_the_most_frequent_real_form() {
     assert_eq!(word, "промпт", "the stem 'промп' is never shown");
     assert_eq!(*count, 5, "промпт ×3, промпта, промптом: one group");
 
-    let stem = query::top_words(&conn, &all(), false, 1, &rolled(&conn)).unwrap().remove(0).stem;
+    let stem = query::top_words(&conn, &all(), false, 1, &rolled(&conn))
+        .unwrap()
+        .remove(0)
+        .stem;
     let detail = query::word_detail(&conn, &all(), &stem, &Utc).unwrap();
     assert_eq!(detail.total, 5);
     assert_eq!(detail.forms[0].form, "промпт");
     assert_eq!(detail.forms[0].count, 3);
     let forms: Vec<&str> = detail.forms.iter().map(|f| f.form.as_str()).collect();
-    assert!(forms.contains(&"промпта") && forms.contains(&"промптом"), "{forms:?}");
+    assert!(
+        forms.contains(&"промпта") && forms.contains(&"промптом"),
+        "{forms:?}"
+    );
 }
 
 #[test]
 fn claude_and_claude_with_a_russian_ending_are_one_word() {
     let (_dir, store) = open();
-    say(&store, day(2026, 10, 5), None, "Claude помог. Спросил у Claude'а. Claude снова.");
+    say(
+        &store,
+        day(2026, 10, 5),
+        None,
+        "Claude помог. Спросил у Claude'а. Claude снова.",
+    );
     let conn = store.connection().unwrap();
     let words = top(&conn, &all(), false);
-    assert_eq!(words.iter().find(|(w, _)| w == "claude").map(|w| w.1), Some(3));
+    assert_eq!(
+        words.iter().find(|(w, _)| w == "claude").map(|w| w.1),
+        Some(3)
+    );
 }
 
 #[test]
@@ -98,14 +117,27 @@ fn numbers_are_not_counted_as_words() {
     say(&store, day(2026, 10, 5), None, "Python 3.11 и 2026 год");
     let conn = store.connection().unwrap();
     let counts = stem_counts(&conn);
-    assert!(counts.keys().all(|k| k.chars().any(char::is_alphabetic)), "{counts:?}");
-    assert_eq!(query::vocabulary(&conn, &all(), &rolled(&conn)).unwrap().total, 3);
+    assert!(
+        counts.keys().all(|k| k.chars().any(char::is_alphabetic)),
+        "{counts:?}"
+    );
+    assert_eq!(
+        query::vocabulary(&conn, &all(), &rolled(&conn))
+            .unwrap()
+            .total,
+        3
+    );
 }
 
 #[test]
 fn stop_words_are_filtered_when_asked_not_when_stored() {
     let (_dir, store) = open();
-    say(&store, day(2026, 10, 5), None, "Это и в на что промпт и в промпт");
+    say(
+        &store,
+        day(2026, 10, 5),
+        None,
+        "Это и в на что промпт и в промпт",
+    );
     let conn = store.connection().unwrap();
 
     // stored: every word is there
@@ -133,11 +165,24 @@ fn period_filters_every_block() {
     say(&store, day(2026, 10, 5), None, "Октябрьский промпт готов");
     let conn = store.connection().unwrap();
     let october = between(day(2026, 10, 1), day(2026, 10, 31));
-    let words: Vec<String> = top(&conn, &october, false).into_iter().map(|w| w.0).collect();
+    let words: Vec<String> = top(&conn, &october, false)
+        .into_iter()
+        .map(|w| w.0)
+        .collect();
     assert!(words.contains(&"промпт".to_string()));
     assert!(!words.contains(&"пайплайн".to_string()));
-    assert_eq!(query::vocabulary(&conn, &october, &rolled(&conn)).unwrap().total, 3);
-    assert_eq!(query::vocabulary(&conn, &all(), &rolled(&conn)).unwrap().total, 6);
+    assert_eq!(
+        query::vocabulary(&conn, &october, &rolled(&conn))
+            .unwrap()
+            .total,
+        3
+    );
+    assert_eq!(
+        query::vocabulary(&conn, &all(), &rolled(&conn))
+            .unwrap()
+            .total,
+        6
+    );
     assert_eq!(query::openers(&conn, &october, 10).unwrap().total, 1);
 }
 
@@ -155,8 +200,11 @@ fn openers_ignore_leading_punctuation_and_report_a_share() {
     assert_eq!(openers.one[0].text, "короче");
     assert_eq!(openers.one[0].count, 2);
     assert!((openers.one[0].percent - 50.0).abs() < 1e-9);
-    let two: std::collections::HashMap<&str, u32> =
-        openers.two.iter().map(|o| (o.text.as_str(), o.count)).collect();
+    let two: std::collections::HashMap<&str, u32> = openers
+        .two
+        .iter()
+        .map(|o| (o.text.as_str(), o.count))
+        .collect();
     assert_eq!(two["короче делаем"], 1);
     assert_eq!(two["короче потом"], 1);
     assert_eq!(two["слушай а"], 1);
@@ -173,10 +221,20 @@ fn phrases_skip_stop_only_ones_and_singletons_and_do_not_cross_sentences() {
     let conn = store.connection().unwrap();
     let phrases = query::phrases(&conn, &all(), 10, &rolled(&conn)).unwrap();
     let tri: Vec<&str> = phrases.trigrams.iter().map(|p| p.text.as_str()).collect();
-    assert_eq!(tri, vec!["сделай так чтобы"], "stop-only and once-only are out");
+    assert_eq!(
+        tri,
+        vec!["сделай так чтобы"],
+        "stop-only and once-only are out"
+    );
     let bi: Vec<&str> = phrases.bigrams.iter().map(|p| p.text.as_str()).collect();
-    assert!(bi.contains(&"сделай так") && bi.contains(&"потом проверь"), "{bi:?}");
-    assert!(!bi.contains(&"работало потом"), "no phrase across a sentence end");
+    assert!(
+        bi.contains(&"сделай так") && bi.contains(&"потом проверь"),
+        "{bi:?}"
+    );
+    assert!(
+        !bi.contains(&"работало потом"),
+        "no phrase across a sentence end"
+    );
     assert!(!bi.contains(&"в том"), "{bi:?}");
 }
 
@@ -200,10 +258,17 @@ fn fillers_count_single_words_and_phrases_with_a_weekly_trend() {
         fillers.items.iter().map(|f| (f.word.as_str(), f)).collect();
     assert_eq!(by["ну"].count, 2);
     assert_eq!(by["короче"].count, 2);
-    assert_eq!(by["как бы"].count, 3, "a two-word filler is looked up as a phrase");
+    assert_eq!(
+        by["как бы"].count, 3,
+        "a two-word filler is looked up as a phrase"
+    );
     assert_eq!(by["типа"].count, 1);
     assert_eq!(by["блин"].count, 0);
-    assert_eq!(fillers.items.len(), 5, "the duplicate 'Ну' is not listed twice");
+    assert_eq!(
+        fillers.items.len(),
+        5,
+        "the duplicate 'Ну' is not listed twice"
+    );
     assert_eq!(fillers.items[0].word, "как бы", "most used first");
 
     // trend: 12 weeks ending this week; the last two points hold the data
@@ -224,7 +289,14 @@ fn a_period_older_than_twelve_weeks_widens_the_trend() {
     say(&store, day(2026, 3, 2), None, "ну да");
     let conn = store.connection().unwrap();
     let period = between(day(2026, 3, 1), day(2026, 10, 22));
-    let fillers = query::fillers(&conn, &period, &["ну".to_string()], day(2026, 10, 22), &rolled(&conn)).unwrap();
+    let fillers = query::fillers(
+        &conn,
+        &period,
+        &["ну".to_string()],
+        day(2026, 10, 22),
+        &rolled(&conn),
+    )
+    .unwrap();
     assert!(fillers.weeks.len() > 12);
     assert_eq!(fillers.weeks.len() as i64 <= query::TREND_WEEKS_MAX, true);
     assert_eq!(fillers.items[0].count, 1);
@@ -234,31 +306,62 @@ fn a_period_older_than_twelve_weeks_widens_the_trend() {
 fn new_words_are_first_seen_in_the_period_and_used_twice() {
     let (_dir, store) = open();
     say(&store, day(2026, 9, 1), None, "Старый промпт");
-    say(&store, day(2026, 10, 5), None, "Новый пайплайн и старый промпт");
-    say(&store, day(2026, 10, 6), None, "Пайплайн снова, а ещё эмбеддинг");
+    say(
+        &store,
+        day(2026, 10, 5),
+        None,
+        "Новый пайплайн и старый промпт",
+    );
+    say(
+        &store,
+        day(2026, 10, 6),
+        None,
+        "Пайплайн снова, а ещё эмбеддинг",
+    );
     let conn = store.connection().unwrap();
     let october = between(day(2026, 10, 1), day(2026, 10, 31));
-    let words: Vec<(String, u32)> = query::new_words(&conn, &october, day(2026, 10, 31), false, 30, &rolled(&conn))
-        .unwrap()
-        .into_iter()
-        .map(|w| (w.word, w.count))
-        .collect();
+    let words: Vec<(String, u32)> = query::new_words(
+        &conn,
+        &october,
+        day(2026, 10, 31),
+        false,
+        30,
+        &rolled(&conn),
+    )
+    .unwrap()
+    .into_iter()
+    .map(|w| (w.word, w.count))
+    .collect();
     assert!(words.contains(&("пайплайн".to_string(), 2)), "{words:?}");
-    assert!(!words.iter().any(|w| w.0 == "промпт"), "промпт was known in September");
+    assert!(
+        !words.iter().any(|w| w.0 == "промпт"),
+        "промпт was known in September"
+    );
     assert!(!words.iter().any(|w| w.0 == "эмбеддинг"), "used only once");
 }
 
 #[test]
 fn all_time_new_words_look_at_the_last_thirty_days() {
     let (_dir, store) = open();
-    say(&store, day(2026, 1, 10), None, "давний пайплайн и давний пайплайн");
-    say(&store, day(2026, 10, 20), None, "свежий агент и свежий агент");
+    say(
+        &store,
+        day(2026, 1, 10),
+        None,
+        "давний пайплайн и давний пайплайн",
+    );
+    say(
+        &store,
+        day(2026, 10, 20),
+        None,
+        "свежий агент и свежий агент",
+    );
     let conn = store.connection().unwrap();
-    let words: Vec<String> = query::new_words(&conn, &all(), day(2026, 10, 22), false, 30, &rolled(&conn))
-        .unwrap()
-        .into_iter()
-        .map(|w| w.word)
-        .collect();
+    let words: Vec<String> =
+        query::new_words(&conn, &all(), day(2026, 10, 22), false, 30, &rolled(&conn))
+            .unwrap()
+            .into_iter()
+            .map(|w| w.word)
+            .collect();
     assert!(words.contains(&"агент".to_string()), "{words:?}");
     assert!(!words.contains(&"пайплайн".to_string()), "{words:?}");
 }
@@ -266,7 +369,12 @@ fn all_time_new_words_look_at_the_last_thirty_days() {
 #[test]
 fn vocabulary_counts_different_words() {
     let (_dir, store) = open();
-    say(&store, day(2026, 10, 5), None, "промпт промпта промптом агент агент");
+    say(
+        &store,
+        day(2026, 10, 5),
+        None,
+        "промпт промпта промптом агент агент",
+    );
     let conn = store.connection().unwrap();
     let v = query::vocabulary(&conn, &all(), &rolled(&conn)).unwrap();
     assert_eq!((v.distinct, v.total), (2, 5));
@@ -285,10 +393,15 @@ fn deleting_a_dictation_takes_its_contribution_out() {
     assert!(store.remove_by_history_id(1).unwrap());
     let conn = store.connection().unwrap();
     assert_eq!(top(&conn, &all(), false)[0], ("промпт".to_string(), 1));
-    let agents = top(&conn, &all(), false).into_iter().filter(|w| w.0.starts_with("агент")).count();
+    let agents = top(&conn, &all(), false)
+        .into_iter()
+        .filter(|w| w.0.starts_with("агент"))
+        .count();
     assert_eq!(agents, 0, "rows that reach zero disappear");
     assert_eq!(query::openers(&conn, &all(), 10).unwrap().total, 1);
-    let rows: i64 = conn.query_row("SELECT COUNT(*) FROM dictations", [], |r| r.get(0)).unwrap();
+    let rows: i64 = conn
+        .query_row("SELECT COUNT(*) FROM dictations", [], |r| r.get(0))
+        .unwrap();
     assert_eq!(rows, 1);
     assert!(!store.remove_by_history_id(1).unwrap(), "already gone");
     assert!(!store.remove_by_history_id(99).unwrap(), "unknown id");
@@ -297,7 +410,12 @@ fn deleting_a_dictation_takes_its_contribution_out() {
 #[test]
 fn removing_everything_leaves_no_residue() {
     let (_dir, store) = open();
-    say(&store, day(2026, 10, 5), Some(1), "Сделай так, чтобы работало. Потом проверь");
+    say(
+        &store,
+        day(2026, 10, 5),
+        Some(1),
+        "Сделай так, чтобы работало. Потом проверь",
+    );
     assert!(store.remove_by_history_id(1).unwrap());
     let conn = store.connection().unwrap();
     for table in [
@@ -340,9 +458,11 @@ fn cleanup_drops_old_single_use_phrases_but_keeps_repeated_ones() {
     let removed = index::cleanup_ngrams(&conn, noon(today), today).unwrap();
     assert!(removed > 0);
     let has = |ngram: &str| -> bool {
-        conn.query_row("SELECT COUNT(*) FROM ngram_daily WHERE ngram = ?1", [ngram], |r| {
-            r.get::<_, i64>(0)
-        })
+        conn.query_row(
+            "SELECT COUNT(*) FROM ngram_daily WHERE ngram = ?1",
+            [ngram],
+            |r| r.get::<_, i64>(0),
+        )
         .unwrap()
             > 0
     };
@@ -350,16 +470,29 @@ fn cleanup_drops_old_single_use_phrases_but_keeps_repeated_ones() {
     assert!(has("повторная фраза"), "used on two days: kept");
     assert!(has("свежая фраза"), "recent: kept");
     // weekly: a second run right away does nothing
-    assert_eq!(index::cleanup_ngrams(&conn, noon(today) + 60, today).unwrap(), 0);
+    assert_eq!(
+        index::cleanup_ngrams(&conn, noon(today) + 60, today).unwrap(),
+        0
+    );
 }
 
 #[test]
 fn word_examples_highlight_the_word_in_the_newest_dictations() {
     let (_dir, store) = open();
     for i in 1..=7 {
-        say(&store, day(2026, 10, i), None, &format!("Запись {i}: поправил промпт и пошёл дальше"));
+        say(
+            &store,
+            day(2026, 10, i),
+            None,
+            &format!("Запись {i}: поправил промпт и пошёл дальше"),
+        );
     }
-    say(&store, day(2026, 10, 8), None, "Здесь вообще нет нужного слова");
+    say(
+        &store,
+        day(2026, 10, 8),
+        None,
+        "Здесь вообще нет нужного слова",
+    );
     let conn = store.connection().unwrap();
     let stem = query::top_words(&conn, &all(), false, 50, &rolled(&conn))
         .unwrap()
@@ -372,7 +505,12 @@ fn word_examples_highlight_the_word_in_the_newest_dictations() {
     // newest first
     assert!(detail.examples[0].created_at > detail.examples[4].created_at);
     for example in &detail.examples {
-        let hits: Vec<&str> = example.segments.iter().filter(|s| s.hit).map(|s| s.text.as_str()).collect();
+        let hits: Vec<&str> = example
+            .segments
+            .iter()
+            .filter(|s| s.hit)
+            .map(|s| s.text.as_str())
+            .collect();
         assert_eq!(hits, vec!["промпт"]);
         let text: String = example.segments.iter().map(|s| s.text.as_str()).collect();
         assert!(text.contains("поправил промпт и"), "{text}");
@@ -382,7 +520,12 @@ fn word_examples_highlight_the_word_in_the_newest_dictations() {
 #[test]
 fn examples_are_found_after_an_apostrophe_earlier_in_the_text() {
     let (_dir, store) = open();
-    say(&store, day(2026, 10, 5), None, "Спросил у Claude'а, потом поправил промпт");
+    say(
+        &store,
+        day(2026, 10, 5),
+        None,
+        "Спросил у Claude'а, потом поправил промпт",
+    );
     let conn = store.connection().unwrap();
     let stem = query::top_words(&conn, &all(), false, 50, &rolled(&conn))
         .unwrap()
@@ -406,7 +549,12 @@ fn long_examples_are_cut_around_the_word_on_word_edges() {
     assert!(segments.iter().any(|s| s.hit && s.text == "промпт"));
     // no half words next to the cut
     let inner = joined.trim_matches('\u{2026}');
-    assert!(inner.split_whitespace().all(|w| w == "слово" || w == "промпт"), "{inner}");
+    assert!(
+        inner
+            .split_whitespace()
+            .all(|w| w == "слово" || w == "промпт"),
+        "{inner}"
+    );
 }
 
 #[test]
@@ -446,20 +594,34 @@ fn backfill_indexes_old_dictations_once_and_resumes() {
     let mut seen = Vec::new();
     store.run_words_backfill(|s| seen.push(s.clone())).unwrap();
     assert_eq!(store.backfill_status().state, BackfillState::Done);
-    assert!(seen.last().is_some_and(|s| s.state == BackfillState::Done && s.processed == s.total));
+    assert!(seen
+        .last()
+        .is_some_and(|s| s.state == BackfillState::Done && s.processed == s.total));
 
     let conn = store.connection().unwrap();
     let finished = stem_counts(&conn);
     let prompt = |m: &std::collections::BTreeMap<String, i64>| {
-        m.iter().find(|(k, _)| k.starts_with("промп")).map(|(_, v)| *v).unwrap_or(0)
+        m.iter()
+            .find(|(k, _)| k.starts_with("промп"))
+            .map(|(_, v)| *v)
+            .unwrap_or(0)
     };
     assert_eq!(
         prompt(&partial),
         3,
         "the live dictation and the first two old rows were indexed before the restart"
     );
-    assert_eq!(prompt(&finished), 4, "four промпт in all, none counted twice");
-    assert_eq!(query::vocabulary(&conn, &all(), &rolled(&conn)).unwrap().total, 15);
+    assert_eq!(
+        prompt(&finished),
+        4,
+        "four промпт in all, none counted twice"
+    );
+    assert_eq!(
+        query::vocabulary(&conn, &all(), &rolled(&conn))
+            .unwrap()
+            .total,
+        15
+    );
 
     // running it again changes nothing
     drop(conn);
@@ -480,22 +642,31 @@ fn a_fresh_database_needs_no_backfill() {
 fn existing_data_is_not_touched_by_the_word_migration() {
     let dir = TempDir::new().unwrap();
     let path = dir.path().join(DB_FILE_NAME);
-    crate::voxa::store::tests::legacy_v1_db(&path, &[(noon(day(2026, 10, 1)), "Промпт для агента")]);
+    crate::voxa::store::tests::legacy_v1_db(
+        &path,
+        &[(noon(day(2026, 10, 1)), "Промпт для агента")],
+    );
     let before: (i64, String, i64) = Connection::open(&path)
         .unwrap()
-        .query_row("SELECT id, final_text, word_count FROM dictations", [], |r| {
-            Ok((r.get(0)?, r.get(1)?, r.get(2)?))
-        })
+        .query_row(
+            "SELECT id, final_text, word_count FROM dictations",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
         .unwrap();
     let store = VoxaStore::open(&path, None).unwrap();
     let conn = store.connection().unwrap();
     let after: (i64, String, i64) = conn
-        .query_row("SELECT id, final_text, word_count FROM dictations", [], |r| {
-            Ok((r.get(0)?, r.get(1)?, r.get(2)?))
-        })
+        .query_row(
+            "SELECT id, final_text, word_count FROM dictations",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
         .unwrap();
     assert_eq!(before, after);
-    let version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
+    let version: i64 = conn
+        .query_row("PRAGMA user_version", [], |r| r.get(0))
+        .unwrap();
     assert_eq!(version, 2);
 }
 
@@ -505,9 +676,13 @@ fn existing_data_is_not_touched_by_the_word_migration() {
 /// the synthetic database has a realistic shape: a few very frequent words, a
 /// long tail, many unique phrases.
 fn synthetic_text(seed: u64, words: &[String]) -> String {
-    let mut state = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let mut state = seed
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     let mut next = || {
-        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        state = state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         (state >> 33) as usize
     };
     let length = 20 + next() % 60;
@@ -524,7 +699,13 @@ fn synthetic_text(seed: u64, words: &[String]) -> String {
         } else {
             out.push_str(word);
         }
-        out.push(if next() % 11 == 0 { '.' } else if next() % 7 == 0 { ',' } else { ' ' });
+        out.push(if next() % 11 == 0 {
+            '.'
+        } else if next() % 7 == 0 {
+            ','
+        } else {
+            ' '
+        });
         if !out.ends_with(' ') {
             out.push(' ');
         }
@@ -533,7 +714,18 @@ fn synthetic_text(seed: u64, words: &[String]) -> String {
 }
 
 fn vocabulary_for_tests(size: usize) -> Vec<String> {
-    let seeds = ["ну", "короче", "как", "бы", "промпт", "агент", "модель", "сделай", "так", "чтобы"];
+    let seeds = [
+        "ну",
+        "короче",
+        "как",
+        "бы",
+        "промпт",
+        "агент",
+        "модель",
+        "сделай",
+        "так",
+        "чтобы",
+    ];
     let mut words: Vec<String> = seeds.iter().map(|s| s.to_string()).collect();
     let letters: Vec<char> = "абвгдежзиклмнопрстуфхцчшэюя".chars().collect();
     let mut n = 0usize;
@@ -587,19 +779,50 @@ fn timed<T>(label: &str, f: impl FnOnce() -> T) -> (T, std::time::Duration) {
     (value, elapsed)
 }
 
-fn run_all_queries(conn: &Connection, period: &WordsPeriod, label: &str) -> Vec<std::time::Duration> {
+fn run_all_queries(
+    conn: &Connection,
+    period: &WordsPeriod,
+    label: &str,
+) -> Vec<std::time::Duration> {
     let fillers: Vec<String> = crate::voxa::defaults::default_filler_words();
     let today = day(2026, 10, 1);
-    let stem = query::top_words(conn, period, false, 1, &rolled(conn)).unwrap().remove(0).stem;
+    let stem = query::top_words(conn, period, false, 1, &rolled(conn))
+        .unwrap()
+        .remove(0)
+        .stem;
     vec![
-        timed(&format!("{label} top words"), || query::top_words(conn, period, false, 50, &rolled(conn)).unwrap()).1,
-        timed(&format!("{label} top words + stop"), || query::top_words(conn, period, true, 50, &rolled(conn)).unwrap()).1,
-        timed(&format!("{label} openers"), || query::openers(conn, period, 10).unwrap()).1,
-        timed(&format!("{label} phrases"), || query::phrases(conn, period, 15, &rolled(conn)).unwrap()).1,
-        timed(&format!("{label} fillers"), || query::fillers(conn, period, &fillers, today, &rolled(conn)).unwrap()).1,
-        timed(&format!("{label} new words"), || query::new_words(conn, period, today, false, 30, &rolled(conn)).unwrap()).1,
-        timed(&format!("{label} vocabulary"), || query::vocabulary(conn, period, &rolled(conn)).unwrap()).1,
-        timed(&format!("{label} word detail"), || query::word_detail(conn, period, &stem, &Utc).unwrap()).1,
+        timed(&format!("{label} top words"), || {
+            query::top_words(conn, period, false, 50, &rolled(conn)).unwrap()
+        })
+        .1,
+        timed(&format!("{label} top words + stop"), || {
+            query::top_words(conn, period, true, 50, &rolled(conn)).unwrap()
+        })
+        .1,
+        timed(&format!("{label} openers"), || {
+            query::openers(conn, period, 10).unwrap()
+        })
+        .1,
+        timed(&format!("{label} phrases"), || {
+            query::phrases(conn, period, 15, &rolled(conn)).unwrap()
+        })
+        .1,
+        timed(&format!("{label} fillers"), || {
+            query::fillers(conn, period, &fillers, today, &rolled(conn)).unwrap()
+        })
+        .1,
+        timed(&format!("{label} new words"), || {
+            query::new_words(conn, period, today, false, 30, &rolled(conn)).unwrap()
+        })
+        .1,
+        timed(&format!("{label} vocabulary"), || {
+            query::vocabulary(conn, period, &rolled(conn)).unwrap()
+        })
+        .1,
+        timed(&format!("{label} word detail"), || {
+            query::word_detail(conn, period, &stem, &Utc).unwrap()
+        })
+        .1,
     ]
 }
 
@@ -639,7 +862,10 @@ fn bench_twenty_thousand_dictations() {
         index::cleanup_ngrams(&conn, noon(today), today).unwrap()
     });
     eprintln!("cleanup removed {removed} single-use phrases in {took:?}");
-    let rows = |t: &str| -> i64 { conn.query_row(&format!("SELECT COUNT(*) FROM {t}"), [], |r| r.get(0)).unwrap() };
+    let rows = |t: &str| -> i64 {
+        conn.query_row(&format!("SELECT COUNT(*) FROM {t}"), [], |r| r.get(0))
+            .unwrap()
+    };
     eprintln!(
         "rows: form_daily {}, ngram_daily {}, word_total {}, ngram_total {}",
         rows("form_daily"),
@@ -647,7 +873,9 @@ fn bench_twenty_thousand_dictations() {
         rows("word_total"),
         rows("ngram_total")
     );
-    let size = std::fs::metadata(_dir.path().join(DB_FILE_NAME)).unwrap().len();
+    let size = std::fs::metadata(_dir.path().join(DB_FILE_NAME))
+        .unwrap()
+        .len();
     eprintln!("database file: {:.1} MB", size as f64 / 1e6);
 
     let mut worst = std::time::Duration::ZERO;
@@ -661,7 +889,10 @@ fn bench_twenty_thousand_dictations() {
         }
     }
     eprintln!("slowest query: {worst:?}");
-    assert!(per_dictation < 5.0, "indexing took {per_dictation:.3} ms per dictation");
+    assert!(
+        per_dictation < 5.0,
+        "indexing took {per_dictation:.3} ms per dictation"
+    );
 }
 
 // ------------------------------------------------------------------ roll-up
@@ -669,7 +900,10 @@ fn bench_twenty_thousand_dictations() {
 /// Every all-time answer, to compare before and after rolling days up.
 fn all_time_answers(conn: &Connection, today: NaiveDate) -> String {
     let r = rolled(conn);
-    let fillers: Vec<String> = ["ну", "короче", "как бы", "типа"].iter().map(|s| s.to_string()).collect();
+    let fillers: Vec<String> = ["ну", "короче", "как бы", "типа"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     format!(
         "{:?}\n{:?}\n{:?}\n{:?}\n{:?}",
         query::top_words(conn, &all(), true, 50, &r).unwrap(),
@@ -728,16 +962,29 @@ fn a_dictation_for_a_rolled_day_reaches_the_totals_and_leaves_them_again() {
     let baseline = all_time_answers(&conn, today);
 
     // late arrival for a day that is already rolled (e.g. a time zone change)
-    say(&store, day(2026, 10, 2), Some(100), "Короче сделай так чтобы работало");
+    say(
+        &store,
+        day(2026, 10, 2),
+        Some(100),
+        "Короче сделай так чтобы работало",
+    );
     let with_it = all_time_answers(&conn, today);
     assert_ne!(with_it, baseline);
     let words = top(&conn, &all(), true);
-    assert!(words.iter().any(|(w, c)| w == "короче" && *c == 4), "{words:?}");
+    assert!(
+        words.iter().any(|(w, c)| w == "короче" && *c == 4),
+        "{words:?}"
+    );
 
     // the same answers as a database that never rolled anything up
     let (_d2, plain) = open();
     busy_history(&plain);
-    say(&plain, day(2026, 10, 2), Some(100), "Короче сделай так чтобы работало");
+    say(
+        &plain,
+        day(2026, 10, 2),
+        Some(100),
+        "Короче сделай так чтобы работало",
+    );
     let plain_conn = plain.connection().unwrap();
     assert_eq!(with_it, all_time_answers(&plain_conn, today));
 
@@ -759,7 +1006,10 @@ fn deleting_a_rolled_dictation_updates_the_totals() {
     busy_history(&plain);
     assert!(plain.remove_by_history_id(1).unwrap());
     let plain_conn = plain.connection().unwrap();
-    assert_eq!(all_time_answers(&conn, today), all_time_answers(&plain_conn, today));
+    assert_eq!(
+        all_time_answers(&conn, today),
+        all_time_answers(&plain_conn, today)
+    );
 }
 
 #[test]
@@ -799,8 +1049,12 @@ fn cleanup_works_on_rolled_totals_too() {
     let today = day(2026, 10, 22);
     index::cleanup_ngrams(&conn, noon(today), today).unwrap();
     let total = |ngram: &str| -> i64 {
-        conn.query_row("SELECT COUNT(*) FROM ngram_total WHERE ngram = ?1", [ngram], |r| r.get(0))
-            .unwrap()
+        conn.query_row(
+            "SELECT COUNT(*) FROM ngram_total WHERE ngram = ?1",
+            [ngram],
+            |r| r.get(0),
+        )
+        .unwrap()
     };
     assert_eq!(total("уникальная фраза"), 0);
     assert_eq!(total("повторная фраза"), 1);
