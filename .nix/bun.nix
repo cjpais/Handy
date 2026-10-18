@@ -301,6 +301,10 @@
     url = "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.10.tgz";
     hash = "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==";
   };
+  "@handy-computer/models@0.2.1" = fetchurl {
+    url = "https://registry.npmjs.org/@handy-computer/models/-/models-0.2.1.tgz";
+    hash = "sha512-Jjo/kf/kYk6/5M9RNw3V7x94TagxJGuOhx8t+iLGxAMVPblnGAe9PG/DoAdyDq5Ac6GkdxudwSqY2wgskPj/CQ==";
+  };
   "@humanfs/core@0.19.1" = fetchurl {
     url = "https://registry.npmjs.org/@humanfs/core/-/core-0.19.1.tgz";
     hash = "sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==";
