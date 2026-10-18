@@ -1,0 +1,247 @@
+name: voxa-release
+
+# Builds Voxa for Apple Silicon on every push to main and, when the updater
+# secrets exist, publishes a GitHub Release that the in-app updater reads.
+#
+# Secrets (docs/SETUP_SECRETS.md). Everything is optional; missing ones are
+# skipped with a warning and the run stays green:
+#   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD, TAURI_UPDATER_PUBKEY
+#       sign the update archive and publish the release
+#   MACOS_CERT_P12_BASE64, MACOS_CERT_PASSWORD, (MACOS_CERT_NAME)
+#       sign the app with one permanent certificate, so macOS keeps its
+#       permissions across updates; without them the app is signed ad-hoc
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One release at a time, and never cancel one that is already uploading.
+concurrency:
+  group: voxa-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+  BUNDLE_ID: com.daniyar.voxa
+  TARGET: aarch64-apple-darwin
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the changelog reads the commits since the last release
+          fetch-tags: true
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          key: macos-arm64-voxa-release
+
+      - name: Check which secrets exist
+        id: secrets
+        env:
+          UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          UPDATER_PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
+          CERT_P12: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "$UPDATER_KEY" ]; then
+            echo "updater=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "updater=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=No updater key::TAURI_SIGNING_PRIVATE_KEY is not set. The update archive is not signed and no release is published. See docs/SETUP_SECRETS.md."
+          fi
+          if [ -n "$UPDATER_KEY" ] && [ -z "$UPDATER_PUBKEY" ] \
+             && grep -q PLACEHOLDER src-tauri/tauri.conf.json; then
+            echo "::error title=No updater public key::TAURI_SIGNING_PRIVATE_KEY is set, but there is no public key: add the TAURI_UPDATER_PUBKEY secret (docs/SETUP_SECRETS.md). An app built without it cannot verify updates."
+            exit 1
+          fi
+          if [ -n "$CERT_P12" ] && [ -n "$CERT_PASSWORD" ]; then
+            echo "cert=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cert=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Ad-hoc signature::No code-signing certificate secrets. The app is signed ad-hoc, so macOS asks for Microphone/Accessibility again after every update. See docs/SETUP_SECRETS.md."
+          fi
+
+      - name: Set the version
+        id: version
+        env:
+          UPDATER_PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 scripts/voxa/release_manifest.py version "$GITHUB_RUN_NUMBER")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing Voxa $VERSION"
+          python3 - "$VERSION" <<'PY'
+          import json, os, re, sys
+          version = sys.argv[1]
+          path = "src-tauri/tauri.conf.json"
+          conf = json.load(open(path, encoding="utf-8"))
+          conf["version"] = version
+          pubkey = os.environ.get("UPDATER_PUBKEY", "").strip()
+          if pubkey:
+              conf["plugins"]["updater"]["pubkey"] = pubkey
+          json.dump(conf, open(path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+          cargo = "src-tauri/Cargo.toml"
+          text = open(cargo, encoding="utf-8").read()
+          text, n = re.subn(r'(?m)^version = "[^"]*"', f'version = "{version}"', text, count=1)
+          assert n == 1, "package version not found in Cargo.toml"
+          open(cargo, "w", encoding="utf-8").write(text)
+          PY
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build app bundle
+        run: bunx tauri build --target "$TARGET" --bundles app
+
+      - name: Locate the app
+        run: |
+          set -euo pipefail
+          APP="$(find "src-tauri/target/$TARGET/release/bundle/macos" -maxdepth 1 -name 'Voxa.app' -print -quit)"
+          if [ -z "$APP" ]; then
+            echo "Voxa.app was not produced" >&2
+            exit 1
+          fi
+          echo "APP_PATH=$APP" >> "$GITHUB_ENV"
+
+      - name: Import the signing certificate
+        if: steps.secrets.outputs.cert == 'true'
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          CERT_NAME: ${{ secrets.MACOS_CERT_NAME }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/voxa-build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/voxa-signing.p12"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/voxa-signing.p12" -k "$KEYCHAIN" \
+            -P "$CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/voxa-signing.p12"
+
+          # A self-signed certificate is not in the "valid identities" list
+          # until it is trusted for code signing; select it by hash.
+          security find-identity -p codesigning "$KEYCHAIN"
+          IDENTITY="$(security find-identity -p codesigning "$KEYCHAIN" | awk '/[0-9A-F]{40}/ {print $2; exit}')"
+          if [ -n "$CERT_NAME" ]; then
+            BY_NAME="$(security find-identity -p codesigning "$KEYCHAIN" | awk -v n="\"$CERT_NAME\"" 'index($0, n) && /[0-9A-F]{40}/ {print $2; exit}')"
+            IDENTITY="${BY_NAME:-$IDENTITY}"
+          fi
+          if [ -z "$IDENTITY" ]; then
+            echo "::error title=No identity::The certificate has no private key or is not for code signing. Recreate it with scripts/voxa/make-signing-cert.sh."
+            exit 1
+          fi
+          echo "CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "CODESIGN_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+      - name: Sign the app
+        run: |
+          set -euo pipefail
+          if [ -n "${CODESIGN_IDENTITY:-}" ]; then
+            codesign --force --deep --options runtime \
+              --keychain "$CODESIGN_KEYCHAIN" --sign "$CODESIGN_IDENTITY" \
+              --entitlements src-tauri/Entitlements.plist "$APP_PATH"
+          else
+            codesign --force --deep --options runtime --sign - \
+              --entitlements src-tauri/Entitlements.plist "$APP_PATH"
+          fi
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          REQUIREMENT="$(codesign -d -r- "$APP_PATH" 2>&1 | grep 'designated =>' || true)"
+          echo "$REQUIREMENT"
+          if [ -n "${CODESIGN_IDENTITY:-}" ]; then
+            # The permanent identity: bundle id + certificate, not a content hash.
+            # A cdhash requirement changes with every build and resets macOS permissions.
+            if ! printf '%s' "$REQUIREMENT" | grep -q "identifier \"$BUNDLE_ID\" and certificate leaf"; then
+              echo "::error title=Unstable signature::The designated requirement does not name the bundle id and the certificate. Permissions would reset on every update."
+              exit 1
+            fi
+          fi
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          mkdir -p dist-artifact
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" dist-artifact/Voxa-macos-arm64.zip
+          lipo -info "$APP_PATH/Contents/MacOS/"* || true
+          ls -la dist-artifact
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Voxa-macos-arm64
+          path: dist-artifact/Voxa-macos-arm64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Sign the update archive
+        if: steps.secrets.outputs.updater == 'true'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # The updater unpacks this archive over the installed app; the app
+          # directory must be at its root, and no AppleDouble (._*) files in it.
+          COPYFILE_DISABLE=1 tar -czf dist-artifact/Voxa.app.tar.gz \
+            -C "$(dirname "$APP_PATH")" "$(basename "$APP_PATH")"
+          bunx tauri signer sign dist-artifact/Voxa.app.tar.gz
+          test -s dist-artifact/Voxa.app.tar.gz.sig
+
+      - name: Publish the release
+        if: steps.secrets.outputs.updater == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v$VERSION"
+          PREVIOUS="$(git tag --list 'v0.*' --sort=-version:refname | grep -vx "$TAG" | head -n 1 || true)"
+          python3 scripts/voxa/release_manifest.py notes "${PREVIOUS:--}" > dist-artifact/notes.md
+          cat dist-artifact/notes.md
+
+          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/Voxa.app.tar.gz"
+          python3 scripts/voxa/release_manifest.py manifest \
+            --version "$VERSION" --notes dist-artifact/notes.md \
+            --signature dist-artifact/Voxa.app.tar.gz.sig \
+            --url "$URL" --out dist-artifact/latest.json
+          cat dist-artifact/latest.json
+
+          FILES=(dist-artifact/Voxa.app.tar.gz dist-artifact/Voxa.app.tar.gz.sig \
+                 dist-artifact/latest.json dist-artifact/Voxa-macos-arm64.zip)
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            # a re-run of the same workflow run: replace the assets
+            gh release upload "$TAG" "${FILES[@]}" --clobber
+          else
+            gh release create "$TAG" "${FILES[@]}" \
+              --title "Voxa $VERSION" --notes-file dist-artifact/notes.md \
+              --target "$GITHUB_SHA" --latest
+          fi
+          echo "Published https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
+
+      - name: Remove the temporary keychain
+        if: always() && steps.secrets.outputs.cert == 'true'
+        run: security delete-keychain "$RUNNER_TEMP/voxa-build.keychain-db" || true

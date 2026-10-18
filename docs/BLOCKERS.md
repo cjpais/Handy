@@ -20,3 +20,11 @@ closed on the owner's request (not needed).
 The macOS-only code paths (`cfg(target_os = "macos")`) compile in CI but were not
 run on a real Mac; see B-01 and the manual checklist in `FINAL_REPORT.md`.
 `docs/BUILD_LOCAL.md` has the single command for a local Mac build.
+
+## B-04 Secrets cannot be set from the session
+
+`gh secret list` answers `HTTP 403: Access to this GitHub Actions path is not permitted through this proxy`, so the session cannot create the updater key, the signing certificate or the repository secrets (PLAN-2, A.5). Not worked around.
+
+Effect: `voxa-release` runs green without secrets (ad-hoc signature, no release published, a warning in the log), and `tauri.conf.json` keeps `PLACEHOLDER_SET_BY_RELEASE_WORKFLOW` as the updater public key. The app then reports "updates are not set up yet".
+
+How to unblock: follow [SETUP_SECRETS.md](SETUP_SECRETS.md) (about 10 minutes, one time).

@@ -183,3 +183,24 @@ appended at the bottom.
   name; the 24 other locales get the English `voxa.*` block (and
   "Based on Handy" instead of the donate row) so the translation check passes.
   `scripts/voxa/sync_locales.py` regenerates them from `src/voxa/i18n/`.
+
+## D-17 In-app updates replace the "never update" rule of D-03
+
+- **Chosen:** the updater is back, with these limits: `update_checks_forced_disabled()` is the upstream env switch again (`HANDY_DISABLE_UPDATER`); the check runs in the Rust backend (30 s after start, then every 6 hours) and only when "Check for updates automatically" is on (default on); installing happens only on the button. The one-time settings migration `voxa.updates_default_applied` switches the stored `update_checks_enabled` to on for stores written by the first Voxa build, which persisted `false`.
+- **Why:** PLAN-2 part A. Checking in the backend keeps it working with the window closed and lets the tray menu show "Update to vX.Y.Z...". A failed background check never replaces what the owner already sees; only a manual check reports errors.
+- **Privacy:** the feed (`latest.json` on this repository's releases) and the signed archive after the click are the only new network requests, besides model downloads.
+- **Alternatives:** a JS-side check in the webview (stops with the window closed, and Handy's component also carries the Windows portable logic that is not needed here).
+
+## D-18 Version scheme
+
+- **Chosen:** `0.10.<workflow run number>` (`scripts/voxa/release_manifest.py`). The release workflow writes it to `tauri.conf.json` and `Cargo.toml` of the build only; nothing is committed back.
+- **Why:** the updater offers a build only when its version is higher. The run number only grows; minor `10` is above the `0.9.8` of the CI test builds, so those update to the first release.
+- **Re-runs:** a re-run of the same workflow run has the same version and replaces the assets of its release instead of failing.
+
+## D-19 How a release is built and signed
+
+- **Chosen:** `tauri build --bundles app` without updater artifacts, then the workflow signs the app itself (own certificate from the secrets, ad-hoc without them), packs `Voxa.app.tar.gz` and signs that with `tauri signer sign`, writes `latest.json` and publishes with `gh release`.
+- **Why:** Tauri creates its archive during the build, before any signing of ours, so an archive made by `tauri build` would hold the wrong signature. Doing the steps by hand fixes the order and does not depend on a third-party action.
+- **Signature check:** with a certificate the job fails unless `codesign -d -r-` shows `identifier "com.daniyar.voxa" and certificate leaf`; a `cdhash` requirement would reset macOS permissions at every update.
+- **Public key:** injected from the secret `TAURI_UPDATER_PUBKEY` at build time (or edited into `tauri.conf.json`), so the owner never edits files; the repository keeps a placeholder.
+- **Without secrets:** the run stays green, the app archive is a workflow artifact only, nothing is published.

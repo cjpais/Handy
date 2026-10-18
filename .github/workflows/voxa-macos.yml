@@ -60,6 +60,9 @@ jobs:
       - name: Frontend unit tests
         run: bun run test:unit
 
+      - name: Release script tests
+        run: python3 -m unittest discover -s scripts/voxa -p "test_*.py"
+
       - name: cargo fmt
         working-directory: src-tauri
         run: cargo fmt -- --check
