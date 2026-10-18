@@ -678,6 +678,15 @@ const RETIRED_ONNX_MODELS: &[RetiredOnnxModel] = &[
     },
 ];
 
+/// Repos of the catalog models that replace retired ONNX models. The update
+/// screen pairs each retired model with its replacement from the model list,
+/// so the catalog offers these even when the package doesn't curate them.
+pub(crate) fn retired_replacement_repos() -> impl Iterator<Item = &'static str> {
+    RETIRED_ONNX_MODELS
+        .iter()
+        .map(|model| model.replacement_repo)
+}
+
 /// A retired ONNX model found on disk.
 #[derive(Serialize, Clone, Debug, Type)]
 pub struct RetiredModel {
@@ -2460,6 +2469,37 @@ mod tests {
         match &desc.source {
             ModelSource::HuggingFace { repo_id, revision } => (repo_id, revision),
             _ => panic!("catalog descriptors are HF-sourced"),
+        }
+    }
+
+    #[test]
+    fn test_every_retired_model_has_a_downloadable_replacement() {
+        // The update screen pairs a retired model with the first registry
+        // entry whose HF repo equals `replacement_repo` (`findReplacement` in
+        // retiredModels.ts) and drops the row when there is none. Moonshine's
+        // replacements aren't curated, so this guards the retired-replacement
+        // rule in `is_offered` as well as plain table drift.
+        let mut registry = HashMap::new();
+        ModelManager::seed_catalog_models(&mut registry);
+        for retired in RETIRED_ONNX_MODELS {
+            let replacement = registry
+                .values()
+                .find(|info| {
+                    matches!(&info.source, ModelSource::HuggingFace { repo_id, .. }
+                        if repo_id == retired.replacement_repo)
+                })
+                .unwrap_or_else(|| {
+                    panic!(
+                        "{}: replacement {} is not offered",
+                        retired.id, retired.replacement_repo
+                    )
+                });
+            assert!(
+                !crate::catalog::mirror_fallbacks(&replacement.id).is_empty(),
+                "{}: replacement {} has no mirror fallback",
+                retired.id,
+                replacement.id
+            );
         }
     }
 

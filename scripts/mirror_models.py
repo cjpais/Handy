@@ -45,12 +45,14 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
 import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import boto3
 from boto3.s3.transfer import TransferConfig
@@ -79,12 +81,25 @@ def make_s3():
                         aws_access_key_id=key, aws_secret_access_key=secret), bucket
 
 
+MODEL_RS = Path(__file__).resolve().parent.parent / "src-tauri/src/managers/model.rs"
+
+
+def retired_replacement_repos():
+    """Repos of the catalog models replacing retired ONNX models, read from
+    `RETIRED_ONNX_MODELS` in model.rs so the two can't drift."""
+    repos = set(re.findall(r'replacement_repo: "([^"]+)"', MODEL_RS.read_text()))
+    if not repos:
+        sys.exit(f"no replacement_repo entries found in {MODEL_RS}")
+    return repos
+
+
 def offered_models(catalog):
-    """The models the app offers for download: curated transcription models
-    whose default file sits at the repo root. Mirrors `is_offered` in
-    src-tauri/src/catalog/mod.rs."""
+    """The models the app offers for download: transcription models that are
+    curated or replace a retired ONNX model, whose default file sits at the
+    repo root. Mirrors `is_offered` in src-tauri/src/catalog/mod.rs."""
+    replacements = retired_replacement_repos()
     for m in catalog["models"]:
-        if (m["curated"] and m["role"] == "asr"
+        if ((m["curated"] or m["repository"] in replacements) and m["role"] == "asr"
                 and "/" not in m["files"][m["quant"]]["filename"]):
             yield m
 

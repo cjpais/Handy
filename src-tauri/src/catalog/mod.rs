@@ -9,7 +9,8 @@
 //!
 //! Handy *recognises* every published transcription model, so any file already
 //! on disk keeps its catalog name and metadata, but only *offers* (seeds for
-//! download, mirrors) the curated ones — see [`ModelDescriptor::offered`].
+//! download, mirrors) the curated ones, plus the replacements the update screen
+//! offers for retired ONNX models — see [`ModelDescriptor::offered`].
 //!
 //! Each entry is normalised into a [`ModelDescriptor`] — the same source-agnostic
 //! shape every other producer (HF discovery, on-disk scans, the legacy table)
@@ -23,7 +24,9 @@ use std::collections::{BTreeSet, HashMap};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
-use crate::managers::model::{default_quant_file, ModelDescriptor, ModelSource, QuantFile};
+use crate::managers::model::{
+    default_quant_file, retired_replacement_repos, ModelDescriptor, ModelSource, QuantFile,
+};
 use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 
 /// Catalog schema this loader understands. The package bumps it on any
@@ -145,16 +148,22 @@ impl CatalogModel {
     }
 
     /// Whether Handy offers this model for download (and mirrors it): a
-    /// curated transcription model whose default file sits at the repo root.
-    /// (A file in a subfolder can't map onto the flat models dir the mirror
-    /// fallback downloads into.) Must match `offered_models` in
-    /// `scripts/mirror_models.py`.
+    /// transcription model that is curated or replaces a retired ONNX model,
+    /// and whose default file sits at the repo root. (A file in a subfolder
+    /// can't map onto the flat models dir the mirror fallback downloads into.)
+    /// Must match `offered_models` in `scripts/mirror_models.py`.
     fn is_offered(&self) -> bool {
-        self.curated
+        (self.curated || self.replaces_a_retired_model())
             && self.role == "asr"
             && self
                 .default_file()
                 .is_some_and(|file| !file.filename.contains('/'))
+    }
+
+    /// Named as a retired ONNX model's replacement. The update screen matches
+    /// the repo id exactly, so this does too.
+    fn replaces_a_retired_model(&self) -> bool {
+        retired_replacement_repos().any(|repo| repo == self.repository)
     }
 
     /// Files ordered largest first, so the list reads F32 → Q4 like the HF repo.
@@ -474,10 +483,14 @@ mod tests {
     }
 
     #[test]
-    fn only_curated_models_are_offered() {
+    fn only_curated_models_and_retired_replacements_are_offered() {
         for m in transcription_models() {
             if m.is_offered() {
-                assert!(m.curated, "{} is offered but not curated", m.id);
+                assert!(
+                    m.curated || m.replaces_a_retired_model(),
+                    "{} is offered but neither curated nor a retired model's replacement",
+                    m.id
+                );
             }
         }
         assert!(
