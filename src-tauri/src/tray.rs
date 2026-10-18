@@ -63,6 +63,8 @@ struct MenuInputs {
     downloaded_models: Vec<(String, String)>,
     locale: String,
     update_checks_enabled: bool,
+    /// Version waiting to be installed; shown in place of "Check for Updates".
+    update_version: Option<String>,
 }
 
 /// Complete description of what the tray should look like.
@@ -333,7 +335,11 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
             selected_model: settings.selected_model,
             downloaded_models,
             locale: settings.app_language,
-            update_checks_enabled: settings.update_checks_enabled,
+            // The manual check works with automatic checks off.
+            update_checks_enabled: true,
+            update_version: app
+                .try_state::<crate::voxa::updates::UpdateManager>()
+                .and_then(|m| m.available_version()),
         },
     }
 }
@@ -495,10 +501,21 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         true,
         settings_accelerator,
     )?;
+    let check_updates_label = match &inputs.update_version {
+        Some(version) => {
+            let template = if strings.update_available.is_empty() {
+                get_tray_translations(Some("en".to_string())).update_available
+            } else {
+                strings.update_available.clone()
+            };
+            template.replace("{{version}}", version)
+        }
+        None => strings.check_updates.clone(),
+    };
     let check_updates_i = MenuItem::with_id(
         app,
         "check_updates",
-        &strings.check_updates,
+        &check_updates_label,
         inputs.update_checks_enabled,
         None::<&str>,
     )?;
@@ -694,6 +711,7 @@ mod tests {
             downloaded_models: vec![("small".to_string(), "Small".to_string())],
             locale: "en".to_string(),
             update_checks_enabled: true,
+            update_version: None,
         }
     }
 

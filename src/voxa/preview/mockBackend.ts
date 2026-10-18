@@ -1,7 +1,13 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type { AppSettings } from "@/bindings";
 import defaultSettings from "./default-settings.json";
-import { modelsFixture, statsFixture } from "./fixtures";
+import { emit } from "@tauri-apps/api/event";
+import {
+  modelsFixture,
+  statsFixture,
+  updateFixture,
+  type UpdateFixtureKind,
+} from "./fixtures";
 
 export interface MockOptions {
   theme?: "light" | "dark" | "system";
@@ -10,6 +16,8 @@ export interface MockOptions {
   settings?: Partial<AppSettings>;
   /** Returned by `get_voxa_stats`; the default fixture when omitted. */
   stats?: ReturnType<typeof statsFixture> | "error" | "empty";
+  /** Update state the mocked backend reports. */
+  update?: UpdateFixtureKind;
 }
 
 const TURBO =
@@ -28,6 +36,7 @@ export function installMockBackend(options: MockOptions = {}): void {
   } as AppSettings;
 
   const unknown = new Set<string>();
+  let updateStatus = updateFixture(options.update ?? "idle");
 
   mockIPC(
     (cmd, args) => {
@@ -54,7 +63,21 @@ export function installMockBackend(options: MockOptions = {}): void {
         case "is_laptop":
           return false;
         case "is_update_checks_locked":
-          return true;
+          return false;
+        case "voxa_update_status":
+          return updateStatus;
+        case "voxa_check_for_updates":
+          // A check on a fresh preview finds the announced update or reports
+          // up to date, like the real backend would.
+          updateStatus =
+            updateStatus.phase === "idle"
+              ? updateFixture("up_to_date")
+              : updateStatus;
+          return updateStatus;
+        case "voxa_install_update":
+          updateStatus = updateFixture("downloading");
+          void emit("voxa-update-status", updateStatus);
+          return null;
         case "get_retired_models":
         case "get_available_microphones":
         case "get_available_output_devices":

@@ -1,4 +1,9 @@
-import type { DailyWords, ModelInfo, VoxaStats } from "@/bindings";
+import type {
+  DailyWords,
+  ModelInfo,
+  UpdateStatus,
+  VoxaStats,
+} from "@/bindings";
 
 /** The preview pins "today" so screenshots do not change from day to day. */
 export const PREVIEW_TODAY = "2026-10-17";
@@ -182,3 +187,56 @@ export const modelsFixture = (): ModelInfo[] => [
     },
   ),
 ];
+
+export type UpdateFixtureKind =
+  | "idle"
+  | "up_to_date"
+  | "available"
+  | "downloading"
+  | "error";
+
+/** Update states the preview page can show (`&update=<kind>`). */
+export function updateFixture(kind: UpdateFixtureKind): UpdateStatus {
+  const base: UpdateStatus = {
+    phase: "idle",
+    current_version: "0.10.4",
+    version: null,
+    notes: null,
+    published: null,
+    progress: null,
+    error_kind: null,
+    error_detail: null,
+    last_checked: null,
+  };
+  const checkedAt = "2026-10-18T09:30:00Z";
+  switch (kind) {
+    case "up_to_date":
+      return { ...base, phase: "up_to_date", last_checked: checkedAt };
+    case "available":
+    case "downloading":
+      return {
+        ...base,
+        phase: kind,
+        version: "0.10.7",
+        published: "2026-10-18T08:12:00Z",
+        last_checked: checkedAt,
+        progress: kind === "downloading" ? 42 : null,
+        notes: [
+          "- feat: Words tab with top words, openers and filler counters",
+          "- feat: update check from the settings page",
+          "- fix: the overlay no longer steals focus on macOS 15",
+          "- docs: setup instructions for the release secrets",
+        ].join("\n"),
+      };
+    case "error":
+      return {
+        ...base,
+        phase: "error",
+        last_checked: checkedAt,
+        error_kind: "network",
+        error_detail: "error sending request for url (https://github.com/…)",
+      };
+    default:
+      return base;
+  }
+}

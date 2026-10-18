@@ -9,6 +9,7 @@ pub mod stats;
 pub mod store;
 pub mod text_stats;
 pub mod translit;
+pub mod updates;
 
 use crate::audio_toolkit::WordReplacement;
 use serde::{Deserialize, Serialize};
@@ -32,6 +33,9 @@ pub struct VoxaSettings {
     pub fix_custom_word_case: bool,
     /// The owner answered the "import custom words from Handy" offer.
     pub handy_import_handled: bool,
+    /// The one-time switch of `update_checks_enabled` to on has been applied
+    /// (see `settings::apply_settings_migrations`).
+    pub updates_default_applied: bool,
 }
 
 impl Default for VoxaSettings {
@@ -40,6 +44,7 @@ impl Default for VoxaSettings {
             initial_prompt: defaults::DEFAULT_INITIAL_PROMPT.to_string(),
             fix_custom_word_case: true,
             handy_import_handled: false,
+            updates_default_applied: true,
         }
     }
 }

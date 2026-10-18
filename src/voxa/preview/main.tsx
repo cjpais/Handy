@@ -4,12 +4,14 @@
  *
  *   ?view=overlay[&lang=ru|en][&only=<stage id>]   the capsule in every state
  *   ?view=stats[&theme=light|dark][&data=empty|error]   the statistics screen
- *   ?view=app[&theme=light|dark]                   the whole app on mocked data
+ *   ?view=app[&theme=light|dark][&update=available|downloading|error|up_to_date]
+ *                                                  the whole app on mocked data
  *
  * The Tauri backend is replaced by fixtures (mockBackend.ts).
  */
 import React from "react";
 import ReactDOM from "react-dom/client";
+import type { UpdateFixtureKind } from "./fixtures";
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get("view") ?? "overlay";
@@ -49,6 +51,7 @@ async function boot() {
     theme,
     language: lang,
     stats: data === "empty" || data === "error" ? data : undefined,
+    update: (params.get("update") as UpdateFixtureKind | null) ?? undefined,
   });
 
   await import("@/App.css");

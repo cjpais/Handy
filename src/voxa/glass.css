@@ -286,6 +286,19 @@ body {
   outline-offset: 1px;
 }
 
+/* Quiet "update waiting" dot on the corner of a nav icon, so the label keeps its room. */
+.vg-nav-badge {
+  position: absolute;
+  inset-inline-start: 26px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--vg-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vg-accent) 22%, transparent);
+}
+
 .vg-footer {
   background: color-mix(in srgb, var(--vg-card-fill) 55%, transparent);
   -webkit-backdrop-filter: blur(28px) saturate(160%);

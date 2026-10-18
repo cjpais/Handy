@@ -2,6 +2,7 @@
 
 use super::handy_import::{self, HandyImportOffer};
 use super::stats::{self, VoxaStats};
+use super::updates::{self, UpdateManager, UpdateStatus};
 use super::VoxaStore;
 use crate::settings::{get_settings, write_settings};
 use std::sync::Arc;
@@ -173,6 +174,28 @@ pub fn voxa_set_fix_custom_word_case(app: AppHandle, enabled: bool) -> Result<()
     settings.voxa.fix_custom_word_case = enabled;
     write_settings(&app, settings);
     Ok(())
+}
+
+/// Current update state (the UI also follows the `voxa-update-status` event).
+#[tauri::command]
+#[specta::specta]
+pub fn voxa_update_status(app: AppHandle) -> Result<UpdateStatus, String> {
+    Ok(app.state::<UpdateManager>().status())
+}
+
+/// "Check for updates" button: reports errors and works with automatic checks off.
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_check_for_updates(app: AppHandle) -> Result<UpdateStatus, String> {
+    Ok(updates::check(&app, true).await)
+}
+
+/// "Update" button: downloads, verifies, installs and restarts. Returns only on
+/// failure.
+#[tauri::command]
+#[specta::specta]
+pub async fn voxa_install_update(app: AppHandle) -> Result<(), String> {
+    updates::install(&app).await
 }
 
 #[cfg(test)]

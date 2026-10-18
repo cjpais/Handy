@@ -570,7 +570,7 @@ fn default_autostart_enabled() -> bool {
 }
 
 fn default_update_checks_enabled() -> bool {
-    false
+    true
 }
 
 fn default_show_whats_new_on_update() -> bool {
@@ -1244,6 +1244,18 @@ fn apply_settings_migrations(
         updated = true;
     }
 
+    // One-time Voxa migration: the first Voxa build shipped with update checks
+    // off and persisted that default. In-app updates are on by default now
+    // (docs/DECISIONS.md, D-17), so flip the stored value once.
+    if settings_value
+        .get("voxa")
+        .is_some_and(|v| v.get("updates_default_applied").is_none())
+    {
+        settings.update_checks_enabled = true;
+        settings.voxa.updates_default_applied = true;
+        updated = true;
+    }
+
     // One-time overlay migration (only while the new key is absent): the retired
     // overlay_position `none` meant "hide the overlay" → OverlayStyle::None; any
     // other position had it visible → Live. The position enum no longer has a
@@ -1269,10 +1281,9 @@ fn apply_settings_migrations(
 /// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
 /// can't work against an immutable /nix/store install.
 pub fn update_checks_forced_disabled() -> bool {
-    // Voxa never self-updates: an update from the upstream feed would replace the
-    // fork with the original, and the app makes no network requests besides
-    // explicit model downloads (docs/DECISIONS.md, D-03).
-    true
+    use std::sync::OnceLock;
+    static IS_UPDATER_DISABLED: OnceLock<bool> = OnceLock::new();
+    *IS_UPDATER_DISABLED.get_or_init(|| crate::utils::env_flag_enabled("HANDY_DISABLE_UPDATER"))
 }
 
 /// Effective updater state: the user's stored preference, overridden to `false`
@@ -1607,6 +1618,32 @@ mod tests {
     fn default_overlay_style_is_live_when_overlay_defaults_on() {
         let settings = get_default_settings();
         assert_eq!(settings.overlay_style, OverlayStyle::Live);
+    }
+
+    #[test]
+    fn voxa_migration_turns_update_checks_on_once() {
+        // Store written by the first Voxa build: checks off, no marker yet.
+        let mut settings = get_default_settings();
+        settings.update_checks_enabled = false;
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "update_checks_enabled": false,
+            "voxa": { "initial_prompt": "x" }
+        });
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert!(settings.update_checks_enabled);
+        assert!(settings.voxa.updates_default_applied);
+
+        // Marker present: the owner's later choice is respected.
+        let mut settings = get_default_settings();
+        settings.update_checks_enabled = false;
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "update_checks_enabled": false,
+            "voxa": { "updates_default_applied": true }
+        });
+        apply_settings_migrations(&mut settings, &raw);
+        assert!(!settings.update_checks_enabled);
     }
 
     #[test]

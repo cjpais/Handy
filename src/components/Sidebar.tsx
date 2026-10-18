@@ -22,6 +22,7 @@ import {
   ModelsSettings,
 } from "./settings";
 import { StatsScreen } from "@/voxa/stats/StatsScreen";
+import { availableVersion, useUpdateStore } from "@/voxa/updates/updateStore";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
 
@@ -102,6 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const updateVersion = availableVersion(useUpdateStore((s) => s.status));
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
     .filter(([_, config]) => config.enabled(settings))
@@ -139,6 +141,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 {t(section.labelKey)}
               </p>
+              {section.id === "about" && updateVersion ? (
+                <span
+                  className="vg-nav-badge"
+                  role="img"
+                  aria-label={t("voxa.updates.available", {
+                    version: updateVersion,
+                  })}
+                  data-testid="update-badge"
+                />
+              ) : null}
             </div>
           );
         })}

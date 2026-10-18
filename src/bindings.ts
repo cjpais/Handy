@@ -1027,6 +1027,40 @@ async voxaSetFixCustomWordCase(enabled: boolean) : Promise<Result<null, string>>
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Current update state (the UI also follows the `voxa-update-status` event).
+ */
+async voxaUpdateStatus() : Promise<Result<UpdateStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_update_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * "Check for updates" button: reports errors and works with automatic checks off.
+ */
+async voxaCheckForUpdates() : Promise<Result<UpdateStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_check_for_updates") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * "Update" button: downloads, verifies, installs and restarts. Returns only on
+ * failure.
+ */
+async voxaInstallUpdate() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voxa_install_update") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -1368,6 +1402,57 @@ export type StreamWorkKind = "transcribing" | "polishing"
 export type Theme = "system" | "light" | "dark"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
+export type UpdateErrorKind = 
+/**
+ * Switched off by `HANDY_DISABLE_UPDATER`.
+ */
+"disabled" | 
+/**
+ * The release signing key is not set up yet.
+ */
+"not_configured" | "network" | 
+/**
+ * The archive does not match the signature, or the key is invalid.
+ */
+"signature" | 
+/**
+ * The feed answered but has no release.
+ */
+"no_release" | "other"
+export type UpdatePhase = 
+/**
+ * Nothing checked yet.
+ */
+"idle" | "checking" | "up_to_date" | "available" | "downloading" | "installing" | "error"
+/**
+ * Everything the UI shows about updates.
+ */
+export type UpdateStatus = { phase: UpdatePhase; current_version: string; 
+/**
+ * The announced version while `phase` is `Available`, `Downloading`,
+ * `Installing`, or `Error` after a failed install.
+ */
+version: string | null; 
+/**
+ * Release notes (the commit list the release workflow wrote).
+ */
+notes: string | null; 
+/**
+ * Publication date, RFC 3339.
+ */
+published: string | null; 
+/**
+ * Download progress in percent, while `Downloading`.
+ */
+progress: number | null; error_kind: UpdateErrorKind | null; 
+/**
+ * Technical detail of the error, for the log line under the message.
+ */
+error_detail: string | null; 
+/**
+ * When the last finished check ended, RFC 3339.
+ */
+last_checked: string | null }
 export type VadBackend = "silero" | "earshot"
 /**
  * Voxa-only settings, nested under `AppSettings.voxa`.
@@ -1386,7 +1471,12 @@ fix_custom_word_case: boolean;
 /**
  * The owner answered the "import custom words from Handy" offer.
  */
-handy_import_handled: boolean }
+handy_import_handled: boolean; 
+/**
+ * The one-time switch of `update_checks_enabled` to on has been applied
+ * (see `settings::apply_settings_migrations`).
+ */
+updates_default_applied: boolean }
 export type VoxaStats = { today: PeriodStats; 
 /**
  * Monday to Sunday of the current week.

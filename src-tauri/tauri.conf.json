@@ -81,7 +81,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJBQjcyMDk1MjA2NjAxRjkKUldUNUFXWWdsU0MzdXRRZi8zYzhqV2FaNUVDbDd2Rk5VM1IvWWowVXdmRFNKQ1BrMXF5RFFsLy8K",
+      "pubkey": "PLACEHOLDER_SET_BY_RELEASE_WORKFLOW",
       "endpoints": [
         "https://github.com/Dudu2I3/voxa/releases/latest/download/latest.json"
       ]

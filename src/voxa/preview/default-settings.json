@@ -191,12 +191,13 @@
   "transcribe_gpu_device": null,
   "translate_to_english": false,
   "typing_tool": "auto",
-  "update_checks_enabled": false,
+  "update_checks_enabled": true,
   "vad_backend": "silero",
   "vad_enabled": true,
   "voxa": {
     "fix_custom_word_case": true,
     "handy_import_handled": false,
+    "updates_default_applied": true,
     "initial_prompt": "Настроил RAG-пайплайн на LangChain, промпт для Claude, заметка в Obsidian, деплой в Docker."
   },
   "whats_new_last_seen_version": "0.9.8",

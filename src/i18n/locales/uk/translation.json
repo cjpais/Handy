@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Налаштування...",
     "checkUpdates": "Перевірити оновлення...",
+    "updateAvailable": "Update to v{{version}}…",
     "copyLastTranscript": "Скопіювати останню транскрипцію",
     "unloadModel": "Вивантажити модель",
     "model": "Модель",
@@ -830,6 +831,35 @@
         "import": "Import",
         "dismiss": "No thanks",
         "imported": "Custom words imported"
+      }
+    },
+    "updates": {
+      "title": "Updates",
+      "description": "Voxa looks for a new version on start and every 6 hours. It never installs anything without your click; models, history, statistics and settings stay as they are.",
+      "idle": "Not checked yet.",
+      "checking": "Checking for updates…",
+      "upToDate": "You have the latest version.",
+      "available": "Version {{version}} is available.",
+      "downloading": "Downloading the update… {{progress}}%",
+      "installing": "Installing. Voxa will restart in a moment.",
+      "lastChecked": "Last checked {{time}}",
+      "check": "Check for updates",
+      "install": "Update",
+      "retry": "Try again",
+      "notes": "What changed in {{version}}",
+      "footerAvailable": "Version {{version}} available",
+      "auto": {
+        "title": "Check for updates automatically",
+        "description": "Looks for a new version when Voxa starts and every 6 hours, quietly in the background. You can still check by hand.",
+        "locked": "Updates are turned off by the system configuration."
+      },
+      "error": {
+        "disabled": "Updates are turned off by the system configuration.",
+        "notConfigured": "Updates are not set up yet: the release signing key is missing. See docs/SETUP_SECRETS.md.",
+        "network": "Could not reach GitHub. Check the connection and try again. The current version keeps working.",
+        "signature": "The update did not pass the signature check and was not installed. The current version keeps working.",
+        "noRelease": "No release is published yet.",
+        "other": "The update did not work out. The current version keeps working."
       }
     }
   }

@@ -216,6 +216,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(tray::TrayState::new());
     // Voxa: dictation statistics (own database, see voxa/store.rs)
     voxa::init(app_handle);
+    voxa::updates::init(app_handle);
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -291,10 +292,21 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 show_main_window(app);
             }
             "check_updates" => {
-                let settings = settings::get_settings(app);
-                if settings::update_checks_effectively_enabled(&settings) {
+                if !settings::update_checks_forced_disabled() {
                     show_main_window(app);
-                    let _ = app.emit("check-for-updates", ());
+                    // Open the page with the update card; look for an update when
+                    // none is announced yet.
+                    let _ = app.emit(voxa::updates::OPEN_EVENT, ());
+                    if app
+                        .state::<voxa::updates::UpdateManager>()
+                        .available_version()
+                        .is_none()
+                    {
+                        let app = app.clone();
+                        tauri::async_runtime::spawn(async move {
+                            voxa::updates::check(&app, true).await;
+                        });
+                    }
                 }
             }
             "copy_last_transcript" => {
@@ -779,6 +791,9 @@ pub fn run(cli_args: CliArgs) {
             voxa::commands::voxa_dismiss_handy_import,
             voxa::commands::voxa_set_initial_prompt,
             voxa::commands::voxa_set_fix_custom_word_case,
+            voxa::commands::voxa_update_status,
+            voxa::commands::voxa_check_for_updates,
+            voxa::commands::voxa_install_update,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,

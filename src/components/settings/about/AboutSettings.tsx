@@ -10,6 +10,7 @@ import { AppLanguageSelector } from "../AppLanguageSelector";
 import { ShowWhatsNewOnUpdate } from "../ShowWhatsNewOnUpdate";
 import { ThemeSelector } from "../ThemeSelector";
 import { LogDirectory } from "../debug";
+import { UpdatesCard } from "@/voxa/updates/UpdatesCard";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -50,6 +51,8 @@ export const AboutSettings: React.FC = () => {
           {/* eslint-disable-next-line i18next/no-literal-string */}
           <span className="text-sm font-mono">v{version}</span>
         </SettingContainer>
+
+        <UpdatesCard />
 
         <ShowWhatsNewOnUpdate descriptionMode="tooltip" grouped={true} />
 
