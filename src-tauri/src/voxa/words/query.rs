@@ -10,6 +10,7 @@ use chrono::{Datelike, Duration, NaiveDate, TimeZone};
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use specta::Type;
+use std::collections::HashMap;
 #[cfg(test)]
 use std::collections::BTreeMap;
 
@@ -101,22 +102,42 @@ fn overfetch(limit: usize, include_stop: bool) -> i64 {
     (limit + if include_stop { 0 } else { stop_set().stem_count() }) as i64
 }
 
+/// Word counts for the period as `(stem, count)` rows, unsorted. A bounded
+/// period sums the daily rows; all time reads the roll-up plus the days after it.
+const OPEN_WORDS_SQL: &str = "
+    SELECT stem, SUM(c) AS tc FROM (
+        SELECT stem, count AS c FROM word_total
+        UNION ALL
+        SELECT stem, SUM(count) FROM form_daily WHERE day > ?1 GROUP BY stem
+    ) GROUP BY stem";
+
 pub fn top_words(
     conn: &Connection,
     period: &WordsPeriod,
     include_stop: bool,
     limit: usize,
+    rolled: &str,
 ) -> Result<Vec<WordCount>> {
     let (from, to) = period.bounds();
-    let mut stmt = conn.prepare_cached(
-        "SELECT stem, SUM(count) AS c FROM word_daily WHERE day BETWEEN ?1 AND ?2
-         GROUP BY stem ORDER BY c DESC, stem LIMIT ?3",
-    )?;
-    let rows: Vec<(String, i64)> = stmt
-        .query_map(params![from, to, overfetch(limit, include_stop)], |r| {
-            Ok((r.get(0)?, r.get(1)?))
-        })?
-        .collect::<std::result::Result<_, _>>()?;
+    let fetch = overfetch(limit, include_stop);
+    let rows: Vec<(String, i64)> = if period.is_open() {
+        let mut stmt = conn.prepare_cached(&format!(
+            "{OPEN_WORDS_SQL} ORDER BY tc DESC, stem LIMIT ?2"
+        ))?;
+        let mapped = stmt
+            .query_map(params![rolled, fetch], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<std::result::Result<_, _>>()?;
+        mapped
+    } else {
+        let mut stmt = conn.prepare_cached(
+            "SELECT stem, SUM(count) AS c FROM form_daily WHERE day BETWEEN ?1 AND ?2
+             GROUP BY stem ORDER BY c DESC, stem LIMIT ?3",
+        )?;
+        let mapped = stmt
+            .query_map(params![from, to, fetch], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<std::result::Result<_, _>>()?;
+        mapped
+    };
     with_display_forms(conn, rows, &from, &to, limit, include_stop)
 }
 
@@ -125,28 +146,33 @@ pub fn top_words(
 /// Words whose first appearance ever lies inside the period and that were used
 /// at least [`NEW_WORD_MIN_COUNT`] times in it. With no start of the period
 /// (all time) it looks at the last [`NEW_WORDS_ALL_TIME_DAYS`] days.
+///
+/// A word is known before the period when the roll-up saw it earlier
+/// (`word_total.first_day`) or a day between the roll-up and the period has it.
 pub fn new_words(
     conn: &Connection,
     period: &WordsPeriod,
     today: NaiveDate,
     include_stop: bool,
     limit: usize,
+    rolled: &str,
 ) -> Result<Vec<WordCount>> {
     let (mut from, to) = period.bounds();
     if period.from.is_none() {
         from = day_string(today - Duration::days(NEW_WORDS_ALL_TIME_DAYS - 1));
     }
     let mut stmt = conn.prepare_cached(
-        "SELECT stem,
-                SUM(CASE WHEN day >= ?1 AND day <= ?2 THEN count ELSE 0 END) AS c,
-                MIN(day) AS first_day
-         FROM word_daily GROUP BY stem
-         HAVING first_day >= ?1 AND first_day <= ?2 AND c >= ?3
-         ORDER BY c DESC, stem LIMIT ?4",
+        "SELECT p.stem, p.c FROM
+           (SELECT stem, SUM(count) AS c FROM form_daily
+            WHERE day BETWEEN ?1 AND ?2 GROUP BY stem HAVING c >= ?3) p
+         WHERE NOT EXISTS (SELECT 1 FROM word_total t WHERE t.stem = p.stem AND t.first_day < ?1)
+           AND NOT EXISTS (SELECT 1 FROM form_daily d
+                           WHERE d.day > ?4 AND d.day < ?1 AND d.stem = p.stem)
+         ORDER BY p.c DESC, p.stem LIMIT ?5",
     )?;
     let rows: Vec<(String, i64)> = stmt
         .query_map(
-            params![from, to, NEW_WORD_MIN_COUNT, overfetch(limit, include_stop)],
+            params![from, to, NEW_WORD_MIN_COUNT, rolled, overfetch(limit, include_stop)],
             |r| Ok((r.get(0)?, r.get(1)?)),
         )?
         .collect::<std::result::Result<_, _>>()?;
@@ -163,14 +189,23 @@ pub struct Vocabulary {
     pub total: u32,
 }
 
-pub fn vocabulary(conn: &Connection, period: &WordsPeriod) -> Result<Vocabulary> {
+pub fn vocabulary(conn: &Connection, period: &WordsPeriod, rolled: &str) -> Result<Vocabulary> {
     let (from, to) = period.bounds();
-    let (distinct, total): (i64, i64) = conn.query_row(
-        "SELECT COUNT(DISTINCT stem), COALESCE(SUM(count), 0) FROM word_daily
-         WHERE day BETWEEN ?1 AND ?2",
-        params![from, to],
-        |r| Ok((r.get(0)?, r.get(1)?)),
-    )?;
+    let read = |r: &rusqlite::Row| -> rusqlite::Result<(i64, i64)> { Ok((r.get(0)?, r.get(1)?)) };
+    let (distinct, total): (i64, i64) = if period.is_open() {
+        conn.query_row(
+            &format!("SELECT COUNT(*), COALESCE(SUM(tc), 0) FROM ({OPEN_WORDS_SQL})"),
+            [rolled],
+            read,
+        )?
+    } else {
+        conn.query_row(
+            "SELECT COUNT(*), COALESCE(SUM(c), 0) FROM
+               (SELECT SUM(count) AS c FROM form_daily WHERE day BETWEEN ?1 AND ?2 GROUP BY stem)",
+            params![from, to],
+            read,
+        )?
+    };
     Ok(Vocabulary {
         distinct: distinct as u32,
         total: total as u32,
@@ -251,9 +286,17 @@ pub struct Phrases {
 /// Phrases must be used at least this often to be listed.
 pub const PHRASE_MIN_COUNT: i64 = 2;
 
-pub fn phrases(conn: &Connection, period: &WordsPeriod, limit: usize) -> Result<Phrases> {
+pub fn phrases(
+    conn: &Connection,
+    period: &WordsPeriod,
+    limit: usize,
+    rolled: &str,
+) -> Result<Phrases> {
     let (from, to) = period.bounds();
     let top = |n: i64| -> Result<Vec<PhraseStat>> {
+        if period.is_open() {
+            return open_phrases(conn, n, limit, rolled);
+        }
         let mut stmt = conn.prepare_cached(
             "SELECT ngram, SUM(count) AS c FROM ngram_daily
              WHERE n = ?1 AND stop_only = 0 AND day BETWEEN ?2 AND ?3
@@ -273,6 +316,59 @@ pub fn phrases(conn: &Connection, period: &WordsPeriod, limit: usize) -> Result<
         bigrams: top(2)?,
         trigrams: top(3)?,
     })
+}
+
+/// All-time phrases: the best of the roll-up (read through the index on
+/// `(n, stop_only, count)`), corrected by the days after the roll-up. The
+/// roll-up is read far enough that no phrase pushed up by the newer days is missed.
+fn open_phrases(conn: &Connection, n: i64, limit: usize, rolled: &str) -> Result<Vec<PhraseStat>> {
+    let mut newer: HashMap<String, i64> = HashMap::new();
+    {
+        let mut stmt = conn.prepare_cached(
+            "SELECT ngram, SUM(count) FROM ngram_daily
+             WHERE day > ?1 AND n = ?2 AND stop_only = 0 GROUP BY ngram",
+        )?;
+        let rows = stmt.query_map(params![rolled, n], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })?;
+        for row in rows {
+            let (ngram, count) = row?;
+            newer.insert(ngram, count);
+        }
+    }
+    let mut merged: HashMap<String, i64> = HashMap::new();
+    {
+        let mut stmt = conn.prepare_cached(
+            "SELECT ngram, count FROM ngram_total
+             WHERE n = ?1 AND stop_only = 0 ORDER BY count DESC LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![n, (limit + newer.len()) as i64], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })?;
+        for row in rows {
+            let (ngram, count) = row?;
+            merged.insert(ngram, count);
+        }
+    }
+    let mut lookup = conn.prepare_cached("SELECT count FROM ngram_total WHERE ngram = ?1")?;
+    for (ngram, count) in &newer {
+        let known = match merged.get(ngram) {
+            Some(c) => *c,
+            None => lookup.query_row([ngram], |r| r.get(0)).unwrap_or(0),
+        };
+        merged.insert(ngram.clone(), known + count);
+    }
+    let mut rows: Vec<PhraseStat> = merged
+        .into_iter()
+        .filter(|(_, c)| *c >= PHRASE_MIN_COUNT)
+        .map(|(text, count)| PhraseStat {
+            text,
+            count: count as u32,
+        })
+        .collect();
+    rows.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.text.cmp(&b.text)));
+    rows.truncate(limit);
+    Ok(rows)
 }
 
 // -------------------------------------------------------------- fillers
@@ -308,11 +404,45 @@ fn filler_key(raw: &str) -> Option<(String, usize)> {
     (1..=3).contains(&forms.len()).then(|| (forms.join(" "), forms.len()))
 }
 
+/// Daily counts of the multi-word fillers inside `[from, to]`, in one pass:
+/// `filler -> [(day, count)]`.
+fn phrase_days(
+    conn: &Connection,
+    phrases: &[&str],
+    from: &str,
+    to: &str,
+) -> Result<HashMap<String, Vec<(String, i64)>>> {
+    let mut out: HashMap<String, Vec<(String, i64)>> = HashMap::new();
+    if phrases.is_empty() {
+        return Ok(out);
+    }
+    let marks = vec!["?"; phrases.len()].join(",");
+    let mut stmt = conn.prepare(&format!(
+        "SELECT ngram, day, count FROM ngram_daily
+         WHERE day BETWEEN ?1 AND ?2 AND ngram IN ({marks})"
+    ))?;
+    let mut args: Vec<&dyn rusqlite::ToSql> = vec![&from, &to];
+    args.extend(phrases.iter().map(|p| p as &dyn rusqlite::ToSql));
+    let rows = stmt.query_map(args.as_slice(), |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, i64>(2)?,
+        ))
+    })?;
+    for row in rows {
+        let (ngram, day, count) = row?;
+        out.entry(ngram).or_default().push((day, count));
+    }
+    Ok(out)
+}
+
 pub fn fillers(
     conn: &Connection,
     period: &WordsPeriod,
     filler_words: &[String],
     today: NaiveDate,
+    rolled: &str,
 ) -> Result<Fillers> {
     // trend window: this week and the 11 before it, further back when the period reaches there
     let this_monday = monday(today);
@@ -325,6 +455,8 @@ pub fn fillers(
     let window_from = day_string(first_monday);
     let window_to = day_string(this_monday + Duration::days(6));
     let (period_from, period_to) = period.bounds();
+    // The window rows also give the period's count when the period lies inside it.
+    let period_in_window = period.from.as_deref().is_some_and(|f| f >= window_from.as_str());
 
     let week_index = |day: &str| -> Option<usize> {
         let date = parse_day(day)?;
@@ -332,40 +464,40 @@ pub fn fillers(
         (0..week_count as i64).contains(&weeks).then_some(weeks as usize)
     };
 
+    // distinct fillers, as they are looked up
     let mut seen = std::collections::HashSet::new();
+    let mut keys: Vec<(String, usize)> = Vec::new();
+    for raw in filler_words {
+        if let Some((key, n)) = filler_key(raw) {
+            if seen.insert(key.clone()) {
+                keys.push((key, n));
+            }
+        }
+    }
+    let phrases: Vec<&str> = keys
+        .iter()
+        .filter(|(_, n)| *n > 1)
+        .map(|(k, _)| k.as_str())
+        .collect();
+    let phrase_rows = phrase_days(conn, &phrases, &window_from, &window_to)?;
+
     let mut items = Vec::new();
     let mut filler_per_week = vec![0u32; week_count];
-    for raw in filler_words {
-        let Some((key, n)) = filler_key(raw) else {
-            continue;
-        };
-        if !seen.insert(key.clone()) {
-            continue;
-        }
-        let stem = stem_of(&key);
-        let rows: Vec<(String, i64)> = if n == 1 {
+    for (key, n) in &keys {
+        let rows: Vec<(String, i64)> = if *n == 1 {
             // (stem, form, day) is the primary key: an exact lookup, no index needed
             let mut stmt = conn.prepare_cached(
                 "SELECT day, count FROM form_daily
                  WHERE stem = ?1 AND form = ?2 AND day BETWEEN ?3 AND ?4",
             )?;
             let mapped = stmt
-                .query_map(params![stem, key, window_from, window_to], |r| {
+                .query_map(params![stem_of(key), key, window_from, window_to], |r| {
                     Ok((r.get(0)?, r.get(1)?))
                 })?
                 .collect::<std::result::Result<_, _>>()?;
             mapped
         } else {
-            let mut stmt = conn.prepare_cached(
-                "SELECT day, count FROM ngram_daily
-                 WHERE ngram = ?1 AND day BETWEEN ?2 AND ?3",
-            )?;
-            let mapped = stmt
-                .query_map(params![key, window_from, window_to], |r| {
-                    Ok((r.get(0)?, r.get(1)?))
-                })?
-                .collect::<std::result::Result<_, _>>()?;
-            mapped
+            phrase_rows.get(key).cloned().unwrap_or_default()
         };
         let mut weekly = vec![0u32; week_count];
         for (day, count) in &rows {
@@ -375,13 +507,29 @@ pub fn fillers(
             }
         }
         // the counter covers the period, which may be shorter or longer than the window
-        let in_period: i64 = if n == 1 {
+        let in_period: i64 = if period_in_window {
+            rows.iter()
+                .filter(|(d, _)| d.as_str() >= period_from.as_str() && d.as_str() <= period_to.as_str())
+                .map(|(_, c)| c)
+                .sum()
+        } else if *n == 1 {
             conn.query_row(
                 "SELECT COALESCE(SUM(count), 0) FROM form_daily
                  WHERE stem = ?1 AND form = ?2 AND day BETWEEN ?3 AND ?4",
-                params![stem, key, period_from, period_to],
+                params![stem_of(key), key, period_from, period_to],
                 |r| r.get(0),
             )?
+        } else if period.is_open() {
+            // the roll-up plus what came after it (the window holds those days)
+            let known: i64 = conn
+                .query_row("SELECT count FROM ngram_total WHERE ngram = ?1", [key], |r| r.get(0))
+                .unwrap_or(0);
+            known
+                + rows
+                    .iter()
+                    .filter(|(d, _)| d.as_str() > rolled)
+                    .map(|(_, c)| c)
+                    .sum::<i64>()
         } else {
             conn.query_row(
                 "SELECT COALESCE(SUM(count), 0) FROM ngram_daily
@@ -391,7 +539,7 @@ pub fn fillers(
             )?
         };
         items.push(FillerStat {
-            word: key,
+            word: key.clone(),
             count: in_period as u32,
             weekly,
         });
@@ -401,7 +549,7 @@ pub fn fillers(
     let mut words_per_week = vec![0u32; week_count];
     {
         let mut stmt = conn.prepare_cached(
-            "SELECT day, SUM(count) FROM word_daily WHERE day BETWEEN ?1 AND ?2 GROUP BY day",
+            "SELECT day, SUM(count) FROM form_daily WHERE day BETWEEN ?1 AND ?2 GROUP BY day",
         )?;
         let rows = stmt.query_map(params![window_from, window_to], |r| {
             Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
@@ -632,7 +780,7 @@ pub fn word_detail<Tz: TimeZone>(
 #[cfg(test)]
 pub fn stem_counts(conn: &Connection) -> BTreeMap<String, i64> {
     let mut stmt = conn
-        .prepare("SELECT stem, SUM(count) FROM word_daily GROUP BY stem")
+        .prepare("SELECT stem, SUM(count) FROM form_daily GROUP BY stem")
         .unwrap();
     stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
         .unwrap()

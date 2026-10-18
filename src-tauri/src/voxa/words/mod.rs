@@ -28,6 +28,11 @@ pub struct WordsPeriod {
 }
 
 impl WordsPeriod {
+    /// No bounds at all (all time).
+    pub fn is_open(&self) -> bool {
+        self.from.is_none() && self.to.is_none()
+    }
+
     /// Bounds usable in `day BETWEEN ?1 AND ?2` (days sort as text).
     pub fn bounds(&self) -> (String, String) {
         (

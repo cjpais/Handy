@@ -207,9 +207,13 @@ appended at the bottom.
 
 ## D-20 Word statistics: daily aggregates in the existing statistics database
 
-- **Chosen:** migration 2 of `voxa_stats.db` adds `word_forms`, `word_daily`, `form_daily`, `ngram_daily` and `dictation_openers` (the layout of PLAN-2 B.3, with two additions: `ngram_daily.stop_only`, and `WITHOUT ROWID` on the aggregate tables). One dictation is added in the same transaction that stores it (`VoxaStore::record`). Nothing existing is altered.
-- **Why:** per-day counters answer every period filter by summing days, so the screen needs no scan of the text. Queries read `form_daily`/`word_daily`; `word_forms` (every form ever seen per stem) is filled as the plan asks and kept for later use.
+- **Chosen:** migration 2 of `voxa_stats.db` adds `form_daily`, `ngram_daily`, `dictation_openers` and two roll-ups, `word_total` and `ngram_total` (see "Deviations"). One dictation is added in the same transaction that stores it (`VoxaStore::record`), through one long-lived connection, on a background thread. Nothing existing is altered.
 - **Text handling:** the tokenizer of the basic statistics is reused; lowercase and `ё` -> `е` for the key; `rust-stemmers` (Russian for Cyrillic words, English for words with an ASCII letter); the shown word is the most frequent real form in the period. `Claude'а` and `Claude's` fold into `claude`, English contractions (`don't`) stay whole. Numbers are not words. Phrases (2 and 3 words) do not cross a sentence end or a number.
+- **Deviations from the PLAN-2 B.3 table list, with the measurement behind them** (release build, synthetic database of 20 000 dictations of near-random text, which is the worst case for phrase counts):
+  - `word_forms` and `word_daily` are not stored. `form_daily (stem, form, day)` has every form with its count per day and per-word sums are a `GROUP BY`; a dictation writes one row per word instead of three. The first version with all five tables took 26.7 ms per dictation; with day-first phrase keys, no secondary indexes and a warm connection 5.3 ms; with the cut tables 3.0 ms.
+  - `ngram_daily` is keyed `(day, ngram)` (plan: `(ngram, day)`), so a dictation's phrases land in a few pages (0.5 ms for about 100 rows, against 2 ms for 46 word rows keyed by word).
+  - `word_total` and `ngram_total` are roll-ups of the days up to `voxa_meta.words_rolled_through` (yesterday at the latest). All-time views read them plus the days after that date. Without them all-time queries scanned the whole table: 0.6 to 0.8 s for top words, phrases and vocabulary; with them 15 to 45 ms. Rolling happens at start and before a read, once a day; a dictation for an already rolled day is added to the totals directly and a delete subtracts from them, so they never disagree with the daily rows (tests compare every all-time answer before and after rolling).
+- **Benchmark** (`cargo test --release words::tests::bench -- --ignored --nocapture`, 20 000 dictations over two years): indexing 3.0 ms per dictation (sandbox disk; it runs off the dictation path, so it adds no latency); every query for all time, 30 days and 7 days between 0.4 and 50 ms (limit 150 ms). The database file grows to a few hundred MB on that adversarial text; real speech repeats far more and the weekly cleanup (D-25) removes the single-use phrases.
 
 ## D-21 Stop words at query time, except for phrases
 
@@ -234,8 +238,8 @@ appended at the bottom.
 
 ## D-25 Phrase cleanup counts a phrase over all days
 
-- **Chosen:** once a week, at start, phrases that were seen exactly once in total and are older than 90 days are deleted.
-- **Why not "count = 1 per day":** a phrase said once a day for months has `count = 1` on every row and would be deleted entirely. Only phrases with one use ever are dropped; phrases with two or more uses stay however old.
+- **Chosen:** once a week, after rolling the days up, phrases that were seen exactly once in total (`ngram_total.count = 1`) and not for 90 days (`last_day`) are deleted from the totals and from `ngram_daily`.
+- **Why not "count = 1 per day":** a phrase said once a day for months has `count = 1` on every row and would be deleted entirely. Only phrases with one use ever are dropped; phrases with two or more uses stay however old. The synthetic benchmark loses about 880 000 of its 1.66 million phrase rows this way.
 
 ## D-26 Filler words
 

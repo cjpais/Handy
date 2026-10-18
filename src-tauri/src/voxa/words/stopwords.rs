@@ -58,6 +58,11 @@ impl StopSet {
         self.words.contains(form) || self.stems.contains(&stem_of(form))
     }
 
+    /// Same as [`Self::is_stop_form`] for a token whose stem is already known.
+    pub fn is_stop_token(&self, form: &str, stem: &str) -> bool {
+        self.stems.contains(stem) || self.words.contains(form)
+    }
+
     pub fn is_stop_stem(&self, stem: &str) -> bool {
         self.stems.contains(stem)
     }

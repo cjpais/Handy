@@ -190,12 +190,14 @@ const TOP_NEW_WORDS: usize = 30;
 /// Runs a read on the statistics database off the async runtime.
 async fn read_words<T: Send + 'static>(
     app: &AppHandle,
-    job: impl FnOnce(&rusqlite::Connection) -> anyhow::Result<T> + Send + 'static,
+    job: impl FnOnce(&rusqlite::Connection, &str) -> anyhow::Result<T> + Send + 'static,
 ) -> Result<T, String> {
     let store = store(app)?;
     tauri::async_runtime::spawn_blocking(move || {
+        // the all-time views read the roll-up: bring it up to yesterday first
+        let rolled = store.ensure_rolled().map_err(|e| format!("{e:#}"))?;
         let conn = store.connection().map_err(|e| format!("{e:#}"))?;
-        job(&conn).map_err(|e| format!("{e:#}"))
+        job(&conn, &rolled).map_err(|e| format!("{e:#}"))
     })
     .await
     .map_err(|e| format!("Task failed: {e}"))?
@@ -213,7 +215,7 @@ pub async fn voxa_words_top(
     period: WordsPeriod,
     include_stop: bool,
 ) -> Result<Vec<WordCount>, String> {
-    read_words(&app, move |c| query::top_words(c, &period, include_stop, TOP_WORDS)).await
+    read_words(&app, move |c, r| query::top_words(c, &period, include_stop, TOP_WORDS, r)).await
 }
 
 /// Words first used inside the period and used at least twice in it.
@@ -224,8 +226,8 @@ pub async fn voxa_words_new(
     period: WordsPeriod,
     include_stop: bool,
 ) -> Result<Vec<WordCount>, String> {
-    read_words(&app, move |c| {
-        query::new_words(c, &period, today(), include_stop, TOP_NEW_WORDS)
+    read_words(&app, move |c, r| {
+        query::new_words(c, &period, today(), include_stop, TOP_NEW_WORDS, r)
     })
     .await
 }
@@ -236,21 +238,21 @@ pub async fn voxa_words_vocabulary(
     app: AppHandle,
     period: WordsPeriod,
 ) -> Result<Vocabulary, String> {
-    read_words(&app, move |c| query::vocabulary(c, &period)).await
+    read_words(&app, move |c, r| query::vocabulary(c, &period, r)).await
 }
 
 /// How dictations most often begin.
 #[tauri::command]
 #[specta::specta]
 pub async fn voxa_words_openers(app: AppHandle, period: WordsPeriod) -> Result<Openers, String> {
-    read_words(&app, move |c| query::openers(c, &period, TOP_OPENERS)).await
+    read_words(&app, move |c, _| query::openers(c, &period, TOP_OPENERS)).await
 }
 
 /// Frequent two- and three-word phrases (not made of stop words only).
 #[tauri::command]
 #[specta::specta]
 pub async fn voxa_words_phrases(app: AppHandle, period: WordsPeriod) -> Result<Phrases, String> {
-    read_words(&app, move |c| query::phrases(c, &period, TOP_PHRASES)).await
+    read_words(&app, move |c, r| query::phrases(c, &period, TOP_PHRASES, r)).await
 }
 
 /// Filler word counters and their weekly trend.
@@ -258,7 +260,7 @@ pub async fn voxa_words_phrases(app: AppHandle, period: WordsPeriod) -> Result<P
 #[specta::specta]
 pub async fn voxa_words_fillers(app: AppHandle, period: WordsPeriod) -> Result<Fillers, String> {
     let fillers = get_settings(&app).voxa.filler_words;
-    read_words(&app, move |c| query::fillers(c, &period, &fillers, today())).await
+    read_words(&app, move |c, r| query::fillers(c, &period, &fillers, today(), r)).await
 }
 
 /// All forms of one word in the period and its latest dictations, word highlighted.
@@ -269,7 +271,7 @@ pub async fn voxa_word_detail(
     period: WordsPeriod,
     stem: String,
 ) -> Result<WordDetail, String> {
-    read_words(&app, move |c| {
+    read_words(&app, move |c, _| {
         query::word_detail(c, &period, &stem, &chrono::Local)
     })
     .await

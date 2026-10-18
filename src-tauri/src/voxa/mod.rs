@@ -135,6 +135,9 @@ fn start_background_work(app: &tauri::AppHandle, store: std::sync::Arc<VoxaStore
             if let Err(e) = store.run_words_backfill(emit) {
                 log::error!("Word statistics backfill stopped: {e:#}");
             }
+            if let Err(e) = store.ensure_rolled() {
+                log::warn!("Word roll-up failed: {e:#}");
+            }
             match store.cleanup() {
                 Ok(0) => {}
                 Ok(n) => log::info!("Dropped {n} old single-use phrases"),

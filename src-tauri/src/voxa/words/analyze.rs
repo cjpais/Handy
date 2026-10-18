@@ -122,11 +122,20 @@ pub fn analyze(text: &str) -> Analysis {
 }
 
 impl Analysis {
-    /// Windows of `n` consecutive tokens inside one segment.
-    pub fn windows(&self, n: usize) -> impl Iterator<Item = &[Token]> {
+    /// Start indexes of the windows of `n` consecutive tokens that lie inside
+    /// one segment.
+    pub fn window_starts(&self, n: usize) -> impl Iterator<Item = usize> + '_ {
         self.tokens
             .windows(n)
-            .filter(move |w| w.first().map(|f| f.segment) == w.last().map(|l| l.segment))
+            .enumerate()
+            .filter(|(_, w)| w.first().map(|f| f.segment) == w.last().map(|l| l.segment))
+            .map(|(i, _)| i)
+    }
+
+    /// Windows of `n` consecutive tokens inside one segment.
+    #[cfg(test)]
+    pub fn windows(&self, n: usize) -> impl Iterator<Item = &[Token]> {
+        self.window_starts(n).map(move |i| &self.tokens[i..i + n])
     }
 
     /// The first one and the first two words of the text.

@@ -149,6 +149,14 @@ impl VoxaStore {
         }
     }
 
+    /// Folds the days up to yesterday into the all-time totals (once per day).
+    /// Returns the date the totals now reach.
+    pub fn ensure_rolled(&self) -> Result<String> {
+        let conn = self.writer.lock().expect("statistics writer");
+        index::roll_up(&conn, &index::yesterday(chrono::Local::now().date_naive()))?;
+        index::rolled_through(&conn)
+    }
+
     /// Weekly housekeeping of the phrase table.
     pub fn cleanup(&self) -> Result<usize> {
         let conn = self.connection()?;
@@ -223,6 +231,9 @@ fn open_connection(path: &Path) -> Result<Connection> {
     // after every dictation or two.
     conn.pragma_update(None, "cache_size", -16_384)?;
     conn.pragma_update(None, "wal_autocheckpoint", 4_000)?;
+    // Reads through a memory map: scanning the aggregates for a long period
+    // would otherwise cost one system call per 4 KB page.
+    conn.pragma_update(None, "mmap_size", 268_435_456i64)?;
     Ok(conn)
 }
 

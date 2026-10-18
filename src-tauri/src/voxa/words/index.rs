@@ -18,28 +18,24 @@ use std::collections::HashMap;
 
 /// Schema of the word statistics (migration 2 of `voxa_stats.db`).
 ///
-/// `word_forms` lists every form ever seen for a stem; the queries read
-/// `form_daily`, which also has the counts. `ngram_daily.stop_only` marks
-/// phrases made of stop words only, so "frequent phrases" can leave them out
-/// while filler phrases such as "как бы" are still counted.
+/// Deviations from the table list of PLAN-2 B.3 (docs/DECISIONS.md, D-20):
+/// `word_forms` and `word_daily` are not stored: `form_daily` already has every
+/// form of a stem with its counts per day, and per-word sums are a `GROUP BY`
+/// over it, so a dictation writes one row per word instead of three.
+/// `ngram_daily.stop_only` marks phrases made only of stop words, so "frequent
+/// phrases" can leave them out while filler phrases such as "как бы" are still
+/// counted.
 ///
-/// Key order matters for the write cost. A dictation touches a few dozen words
-/// and about a hundred phrases; phrases are keyed by day first, so all of today's
-/// rows share a few pages, while words keep `(stem, day)` order because the
-/// queries group by word. There are no secondary indexes on the big tables: each
-/// one would be another random page to dirty per row.
+/// Key order decides what a dictation costs. `form_daily` is keyed
+/// `(stem, form, day)`: a word's rows sit together, which is what the filler
+/// counters and the word panel read. `ngram_daily` is keyed `(day, ngram)`: a
+/// dictation's phrases land in today's few pages. Period queries read
+/// `form_daily` through the covering index on `(day, stem, count)`.
+///
+/// `word_total` and `ngram_total` are roll-ups of the days up to
+/// `voxa_meta.words_rolled_through`. The all-time views read them, plus the few
+/// days after that date, instead of scanning every day ever recorded.
 pub const SCHEMA: &str = "
-CREATE TABLE word_forms (
-    stem TEXT NOT NULL,
-    form TEXT NOT NULL,
-    PRIMARY KEY (stem, form)
-) WITHOUT ROWID;
-CREATE TABLE word_daily (
-    stem TEXT NOT NULL,
-    day TEXT NOT NULL,
-    count INTEGER NOT NULL,
-    PRIMARY KEY (stem, day)
-) WITHOUT ROWID;
 CREATE TABLE form_daily (
     stem TEXT NOT NULL,
     form TEXT NOT NULL,
@@ -47,6 +43,7 @@ CREATE TABLE form_daily (
     count INTEGER NOT NULL,
     PRIMARY KEY (stem, form, day)
 ) WITHOUT ROWID;
+CREATE INDEX idx_form_daily_day ON form_daily (day, stem, count);
 CREATE TABLE ngram_daily (
     day TEXT NOT NULL,
     ngram TEXT NOT NULL,
@@ -55,13 +52,25 @@ CREATE TABLE ngram_daily (
     count INTEGER NOT NULL,
     PRIMARY KEY (day, ngram)
 ) WITHOUT ROWID;
+CREATE TABLE word_total (
+    stem TEXT PRIMARY KEY,
+    count INTEGER NOT NULL,
+    first_day TEXT NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE ngram_total (
+    ngram TEXT PRIMARY KEY,
+    n INTEGER NOT NULL,
+    stop_only INTEGER NOT NULL,
+    count INTEGER NOT NULL,
+    last_day TEXT NOT NULL
+) WITHOUT ROWID;
+CREATE INDEX idx_ngram_total_top ON ngram_total (n, stop_only, count);
 CREATE TABLE dictation_openers (
     dictation_id INTEGER PRIMARY KEY,
     opener1 TEXT,
     opener2 TEXT,
     day TEXT NOT NULL
 );
-CREATE INDEX idx_word_daily_day ON word_daily (day);
 CREATE INDEX idx_dictation_openers_day ON dictation_openers (day);
 ";
 
@@ -69,6 +78,9 @@ pub const META_TARGET: &str = "words_backfill_target";
 pub const META_CURSOR: &str = "words_backfill_cursor";
 pub const META_DONE: &str = "words_backfill_done";
 pub const META_NGRAM_CLEANUP: &str = "ngram_cleanup_at";
+pub const META_ROLLED: &str = "words_rolled_through";
+/// Before any day: nothing is rolled up yet.
+pub const NOTHING_ROLLED: &str = "0000-00-00";
 
 /// Dictations indexed per transaction while backfilling.
 pub const BACKFILL_BATCH: i64 = 500;
@@ -93,7 +105,6 @@ pub fn day_in<Tz: TimeZone>(timestamp: i64, tz: &Tz) -> String {
 struct Contribution {
     /// (stem, form) -> occurrences
     forms: HashMap<(String, String), i64>,
-    stems: HashMap<String, i64>,
     /// ngram -> (n, stop_only, occurrences)
     ngrams: HashMap<String, (i64, bool, i64)>,
     openers: (Option<String>, Option<String>),
@@ -104,16 +115,22 @@ fn contribution(analysis: &Analysis) -> Contribution {
     let mut c = Contribution::default();
     for t in &analysis.tokens {
         *c.forms.entry((t.stem.clone(), t.form.clone())).or_default() += 1;
-        *c.stems.entry(t.stem.clone()).or_default() += 1;
     }
+    // stemming happens once per token, not once per phrase it sits in
+    let stop: Vec<bool> = analysis
+        .tokens
+        .iter()
+        .map(|t| stops.is_stop_token(&t.form, &t.stem))
+        .collect();
     for n in [2usize, 3] {
-        for window in analysis.windows(n) {
+        for start in analysis.window_starts(n) {
+            let window = &analysis.tokens[start..start + n];
             let text = window
                 .iter()
                 .map(|t| t.form.as_str())
                 .collect::<Vec<_>>()
                 .join(" ");
-            let stop_only = window.iter().all(|t| stops.is_stop_form(&t.form));
+            let stop_only = stop[start..start + n].iter().all(|&s| s);
             let entry = c.ngrams.entry(text).or_insert((n as i64, stop_only, 0));
             entry.2 += 1;
         }
@@ -122,11 +139,14 @@ fn contribution(analysis: &Analysis) -> Contribution {
     c
 }
 
-fn apply(conn: &Connection, day: &str, c: &Contribution, sign: i64) -> Result<()> {
+/// Writes (`sign` = 1) or takes out (`sign` = -1) one contribution for `day`.
+/// Days already rolled into the totals (`day <= rolled`) are applied to the
+/// totals as well, so the totals never lag behind the daily rows.
+fn apply(conn: &Connection, day: &str, rolled: &str, c: &Contribution, sign: i64) -> Result<()> {
+    let into_totals = day <= rolled;
+    let mut per_stem: HashMap<&str, i64> = HashMap::new();
     for ((stem, form), count) in &c.forms {
         if sign > 0 {
-            conn.prepare_cached("INSERT OR IGNORE INTO word_forms (stem, form) VALUES (?1, ?2)")?
-                .execute(params![stem, form])?;
             conn.prepare_cached(
                 "INSERT INTO form_daily (stem, form, day, count) VALUES (?1, ?2, ?3, ?4)
                  ON CONFLICT (stem, form, day) DO UPDATE SET count = count + excluded.count",
@@ -142,24 +162,7 @@ fn apply(conn: &Connection, day: &str, c: &Contribution, sign: i64) -> Result<()
             )?
             .execute(params![stem, form, day])?;
         }
-    }
-    for (stem, count) in &c.stems {
-        if sign > 0 {
-            conn.prepare_cached(
-                "INSERT INTO word_daily (stem, day, count) VALUES (?1, ?2, ?3)
-                 ON CONFLICT (stem, day) DO UPDATE SET count = count + excluded.count",
-            )?
-            .execute(params![stem, day, count])?;
-        } else {
-            conn.prepare_cached(
-                "UPDATE word_daily SET count = count - ?3 WHERE stem = ?1 AND day = ?2",
-            )?
-            .execute(params![stem, day, count])?;
-            conn.prepare_cached(
-                "DELETE FROM word_daily WHERE stem = ?1 AND day = ?2 AND count <= 0",
-            )?
-            .execute(params![stem, day])?;
-        }
+        *per_stem.entry(stem).or_default() += count;
     }
     for (ngram, (n, stop_only, count)) in &c.ngrams {
         if sign > 0 {
@@ -178,18 +181,55 @@ fn apply(conn: &Connection, day: &str, c: &Contribution, sign: i64) -> Result<()
             )?
             .execute(params![ngram, day])?;
         }
+        if into_totals {
+            if sign > 0 {
+                conn.prepare_cached(
+                    "INSERT INTO ngram_total (ngram, n, stop_only, count, last_day)
+                     VALUES (?1, ?2, ?3, ?4, ?5)
+                     ON CONFLICT (ngram) DO UPDATE SET count = count + excluded.count,
+                         last_day = MAX(last_day, excluded.last_day)",
+                )?
+                .execute(params![ngram, n, *stop_only as i64, count, day])?;
+            } else {
+                conn.prepare_cached("UPDATE ngram_total SET count = count - ?2 WHERE ngram = ?1")?
+                    .execute(params![ngram, count])?;
+                conn.prepare_cached("DELETE FROM ngram_total WHERE ngram = ?1 AND count <= 0")?
+                    .execute(params![ngram])?;
+            }
+        }
+    }
+    if into_totals {
+        for (stem, count) in per_stem {
+            if sign > 0 {
+                conn.prepare_cached(
+                    "INSERT INTO word_total (stem, count, first_day) VALUES (?1, ?2, ?3)
+                     ON CONFLICT (stem) DO UPDATE SET count = count + excluded.count,
+                         first_day = MIN(first_day, excluded.first_day)",
+                )?
+                .execute(params![stem, count, day])?;
+            } else {
+                conn.prepare_cached("UPDATE word_total SET count = count - ?2 WHERE stem = ?1")?
+                    .execute(params![stem, count])?;
+                conn.prepare_cached("DELETE FROM word_total WHERE stem = ?1 AND count <= 0")?
+                    .execute(params![stem])?;
+            }
+        }
     }
     Ok(())
+}
+
+pub fn rolled_through(conn: &Connection) -> Result<String> {
+    Ok(meta_get(conn, META_ROLLED)?.unwrap_or_else(|| NOTHING_ROLLED.to_string()))
 }
 
 /// Adds one dictation's words to the aggregates. Run it in the transaction that
 /// stores the dictation.
 pub fn add_dictation(conn: &Connection, dictation_id: i64, day: &str, text: &str) -> Result<()> {
     let c = contribution(&analyze(text));
-    if c.stems.is_empty() {
+    if c.forms.is_empty() {
         return Ok(());
     }
-    apply(conn, day, &c, 1)?;
+    apply(conn, day, &rolled_through(conn)?, &c, 1)?;
     conn.prepare_cached(
         "INSERT OR REPLACE INTO dictation_openers (dictation_id, opener1, opener2, day)
          VALUES (?1, ?2, ?3, ?4)",
@@ -211,7 +251,7 @@ pub fn remove_dictation(conn: &Connection, dictation_id: i64, text: &str) -> Res
     let Some(day) = day else {
         return Ok(false);
     };
-    apply(conn, &day, &contribution(&analyze(text)), -1)?;
+    apply(conn, &day, &rolled_through(conn)?, &contribution(&analyze(text)), -1)?;
     conn.execute(
         "DELETE FROM dictation_openers WHERE dictation_id = ?1",
         [dictation_id],
@@ -222,9 +262,10 @@ pub fn remove_dictation(conn: &Connection, dictation_id: i64, text: &str) -> Res
 /// Empties every word table (used by "clear statistics").
 pub fn clear_all(conn: &Connection) -> Result<()> {
     conn.execute_batch(
-        "DELETE FROM word_forms; DELETE FROM word_daily; DELETE FROM form_daily;
-         DELETE FROM ngram_daily; DELETE FROM dictation_openers;",
+        "DELETE FROM form_daily; DELETE FROM ngram_daily; DELETE FROM word_total;
+         DELETE FROM ngram_total; DELETE FROM dictation_openers;",
     )?;
+    meta_set(conn, META_ROLLED, NOTHING_ROLLED)?;
     Ok(())
 }
 
@@ -362,10 +403,47 @@ pub fn backfill_batch(conn: &Connection, batch: i64) -> Result<bool> {
     Ok(last < target)
 }
 
+// ------------------------------------------------------------- roll-up
+
+/// Folds the days after the last roll-up, up to and including `through`, into
+/// the totals. Cheap when there is nothing new; a day is rolled once. The
+/// all-time views read the totals plus the days after `words_rolled_through`.
+pub fn roll_up(conn: &Connection, through: &str) -> Result<bool> {
+    let rolled = rolled_through(conn)?;
+    if through <= rolled.as_str() {
+        return Ok(false);
+    }
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
+        "INSERT INTO word_total (stem, count, first_day)
+         SELECT stem, SUM(count), MIN(day) FROM form_daily
+         WHERE day > ?1 AND day <= ?2 GROUP BY stem
+         ON CONFLICT (stem) DO UPDATE SET count = count + excluded.count,
+             first_day = MIN(first_day, excluded.first_day)",
+        params![rolled, through],
+    )?;
+    tx.execute(
+        "INSERT INTO ngram_total (ngram, n, stop_only, count, last_day)
+         SELECT ngram, MAX(n), MAX(stop_only), SUM(count), MAX(day) FROM ngram_daily
+         WHERE day > ?1 AND day <= ?2 GROUP BY ngram
+         ON CONFLICT (ngram) DO UPDATE SET count = count + excluded.count,
+             last_day = MAX(last_day, excluded.last_day)",
+        params![rolled, through],
+    )?;
+    meta_set(&tx, META_ROLLED, through)?;
+    tx.commit()?;
+    Ok(true)
+}
+
+/// The day before `today`, the newest day a roll-up may include.
+pub fn yesterday(today: NaiveDate) -> String {
+    (today - Duration::days(1)).format("%Y-%m-%d").to_string()
+}
+
 // ------------------------------------------------------------- cleanup
 
-/// Drops phrases that were seen exactly once, ever, and are older than
-/// [`NGRAM_KEEP_DAYS`]: three-word phrases are mostly unique, so they would
+/// Drops phrases that were seen exactly once, ever, and not for
+/// [`NGRAM_KEEP_DAYS`] days: three-word phrases are mostly unique, so they would
 /// otherwise make up most of the table. Runs at most once a week. Phrases with
 /// two or more uses are kept whatever their age.
 pub fn cleanup_ngrams(conn: &Connection, now_unix: i64, today: NaiveDate) -> Result<usize> {
@@ -375,15 +453,23 @@ pub fn cleanup_ngrams(conn: &Connection, now_unix: i64, today: NaiveDate) -> Res
     if now_unix - last < CLEANUP_EVERY_SECONDS {
         return Ok(0);
     }
+    // the totals decide what "once, ever" means, so they must be current
+    roll_up(conn, &yesterday(today))?;
     let cutoff = (today - Duration::days(NGRAM_KEEP_DAYS))
         .format("%Y-%m-%d")
         .to_string();
-    let removed = conn.execute(
+    let tx = conn.unchecked_transaction()?;
+    let removed = tx.execute(
         "DELETE FROM ngram_daily
          WHERE day < ?1 AND count = 1
-           AND ngram IN (SELECT ngram FROM ngram_daily GROUP BY ngram HAVING SUM(count) = 1)",
-        [cutoff],
+           AND ngram IN (SELECT ngram FROM ngram_total WHERE count = 1 AND last_day < ?1)",
+        [&cutoff],
     )?;
-    meta_set(conn, META_NGRAM_CLEANUP, &now_unix.to_string())?;
+    tx.execute(
+        "DELETE FROM ngram_total WHERE count = 1 AND last_day < ?1",
+        [&cutoff],
+    )?;
+    meta_set(&tx, META_NGRAM_CLEANUP, &now_unix.to_string())?;
+    tx.commit()?;
     Ok(removed)
 }
