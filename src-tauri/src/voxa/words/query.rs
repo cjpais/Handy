@@ -2,7 +2,7 @@
 //! takes the period as local days; nothing here recounts text, except the
 //! example sentences of one word.
 
-use super::analyze::{analyze, fold_case};
+use super::analyze::{analyze, fold_case, stem_of};
 use super::stopwords::stop_set;
 use super::WordsPeriod;
 use anyhow::Result;
@@ -342,13 +342,15 @@ pub fn fillers(
         if !seen.insert(key.clone()) {
             continue;
         }
+        let stem = stem_of(&key);
         let rows: Vec<(String, i64)> = if n == 1 {
+            // (stem, form, day) is the primary key: an exact lookup, no index needed
             let mut stmt = conn.prepare_cached(
-                "SELECT day, SUM(count) FROM form_daily
-                 WHERE form = ?1 AND day BETWEEN ?2 AND ?3 GROUP BY day",
+                "SELECT day, count FROM form_daily
+                 WHERE stem = ?1 AND form = ?2 AND day BETWEEN ?3 AND ?4",
             )?;
             let mapped = stmt
-                .query_map(params![key, window_from, window_to], |r| {
+                .query_map(params![stem, key, window_from, window_to], |r| {
                     Ok((r.get(0)?, r.get(1)?))
                 })?
                 .collect::<std::result::Result<_, _>>()?;
@@ -376,8 +378,8 @@ pub fn fillers(
         let in_period: i64 = if n == 1 {
             conn.query_row(
                 "SELECT COALESCE(SUM(count), 0) FROM form_daily
-                 WHERE form = ?1 AND day BETWEEN ?2 AND ?3",
-                params![key, period_from, period_to],
+                 WHERE stem = ?1 AND form = ?2 AND day BETWEEN ?3 AND ?4",
+                params![stem, key, period_from, period_to],
                 |r| r.get(0),
             )?
         } else {

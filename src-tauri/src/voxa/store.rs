@@ -74,6 +74,10 @@ pub struct DictationInput {
 
 pub struct VoxaStore {
     path: PathBuf,
+    /// One long-lived connection for the dictation pipeline's writes. Its page
+    /// cache stays warm between dictations, which is what keeps recording a
+    /// dictation (hundreds of small upserts) in the millisecond range.
+    writer: Mutex<Connection>,
     /// Progress of the one-time word indexing of older dictations.
     backfill: Mutex<BackfillStatus>,
 }
@@ -86,11 +90,12 @@ impl VoxaStore {
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir).with_context(|| format!("create {}", dir.display()))?;
         }
+        let mut conn = open_connection(path)?;
         let store = Self {
             path: path.to_path_buf(),
+            writer: Mutex::new(open_connection(path)?),
             backfill: Mutex::new(BackfillStatus::idle()),
         };
-        let mut conn = store.connection()?;
         // WAL: the background indexing and a new dictation never block each other.
         conn.query_row("PRAGMA journal_mode = WAL", [], |r| r.get::<_, String>(0))
             .context("enable WAL")?;
@@ -154,7 +159,7 @@ impl VoxaStore {
     /// Takes one dictation out of the statistics, words included: the owner
     /// deleted it from the history. Returns whether a row was removed.
     pub fn remove_by_history_id(&self, history_id: i64) -> Result<bool> {
-        let mut conn = self.connection()?;
+        let mut conn = self.writer.lock().expect("statistics writer");
         let tx = conn.transaction()?;
         let row: Option<(i64, String)> = tx
             .query_row(
@@ -172,18 +177,15 @@ impl VoxaStore {
         Ok(true)
     }
 
+    /// A fresh connection for reading (and for the one-off background jobs).
     pub fn connection(&self) -> Result<Connection> {
-        let conn = Connection::open(&self.path)
-            .with_context(|| format!("open {}", self.path.display()))?;
-        conn.busy_timeout(std::time::Duration::from_secs(3))?;
-        conn.pragma_update(None, "synchronous", "NORMAL")?;
-        Ok(conn)
+        open_connection(&self.path)
     }
 
     /// Stores one dictation. Returns the row id, or `None` when the text has no
     /// words (nothing worth counting).
     pub fn record(&self, input: &DictationInput) -> Result<Option<i64>> {
-        let mut conn = self.connection()?;
+        let mut conn = self.writer.lock().expect("statistics writer");
         let tx = conn.transaction()?;
         let id = insert_dictation(&tx, input, "live")?;
         if let Some(id) = id {
@@ -196,7 +198,7 @@ impl VoxaStore {
     /// Deletes every recorded dictation. The "history imported" marker stays,
     /// so cleared statistics are not re-imported on the next start.
     pub fn clear(&self) -> Result<usize> {
-        let mut conn = self.connection()?;
+        let mut conn = self.writer.lock().expect("statistics writer");
         let tx = conn.transaction()?;
         let removed = tx.execute("DELETE FROM dictations", [])?;
         index::clear_all(&tx)?;
@@ -210,6 +212,18 @@ impl VoxaStore {
         });
         Ok(removed)
     }
+}
+
+fn open_connection(path: &Path) -> Result<Connection> {
+    let conn = Connection::open(path).with_context(|| format!("open {}", path.display()))?;
+    conn.busy_timeout(std::time::Duration::from_secs(3))?;
+    conn.pragma_update(None, "synchronous", "NORMAL")?;
+    // 16 MB of page cache and a checkpoint every 4000 pages: a dictation dirties
+    // pages all over the aggregate tables, and the defaults would flush and sync
+    // after every dictation or two.
+    conn.pragma_update(None, "cache_size", -16_384)?;
+    conn.pragma_update(None, "wal_autocheckpoint", 4_000)?;
+    Ok(conn)
 }
 
 fn insert_dictation(

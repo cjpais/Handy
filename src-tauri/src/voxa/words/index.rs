@@ -22,6 +22,12 @@ use std::collections::HashMap;
 /// `form_daily`, which also has the counts. `ngram_daily.stop_only` marks
 /// phrases made of stop words only, so "frequent phrases" can leave them out
 /// while filler phrases such as "как бы" are still counted.
+///
+/// Key order matters for the write cost. A dictation touches a few dozen words
+/// and about a hundred phrases; phrases are keyed by day first, so all of today's
+/// rows share a few pages, while words keep `(stem, day)` order because the
+/// queries group by word. There are no secondary indexes on the big tables: each
+/// one would be another random page to dirty per row.
 pub const SCHEMA: &str = "
 CREATE TABLE word_forms (
     stem TEXT NOT NULL,
@@ -42,12 +48,12 @@ CREATE TABLE form_daily (
     PRIMARY KEY (stem, form, day)
 ) WITHOUT ROWID;
 CREATE TABLE ngram_daily (
+    day TEXT NOT NULL,
     ngram TEXT NOT NULL,
     n INTEGER NOT NULL,
-    day TEXT NOT NULL,
     stop_only INTEGER NOT NULL DEFAULT 0,
     count INTEGER NOT NULL,
-    PRIMARY KEY (ngram, day)
+    PRIMARY KEY (day, ngram)
 ) WITHOUT ROWID;
 CREATE TABLE dictation_openers (
     dictation_id INTEGER PRIMARY KEY,
@@ -56,8 +62,6 @@ CREATE TABLE dictation_openers (
     day TEXT NOT NULL
 );
 CREATE INDEX idx_word_daily_day ON word_daily (day);
-CREATE INDEX idx_form_daily_form ON form_daily (form, day);
-CREATE INDEX idx_ngram_daily_scan ON ngram_daily (n, stop_only, day);
 CREATE INDEX idx_dictation_openers_day ON dictation_openers (day);
 ";
 
@@ -161,7 +165,7 @@ fn apply(conn: &Connection, day: &str, c: &Contribution, sign: i64) -> Result<()
         if sign > 0 {
             conn.prepare_cached(
                 "INSERT INTO ngram_daily (ngram, n, day, stop_only, count) VALUES (?1, ?2, ?3, ?4, ?5)
-                 ON CONFLICT (ngram, day) DO UPDATE SET count = count + excluded.count",
+                 ON CONFLICT (day, ngram) DO UPDATE SET count = count + excluded.count",
             )?
             .execute(params![ngram, n, day, *stop_only as i64, count])?;
         } else {

@@ -540,11 +540,18 @@ fn vocabulary_for_tests(size: usize) -> Vec<String> {
     words
 }
 
-fn fill(store: &VoxaStore, dictations: usize) -> std::time::Duration {
+/// Records `dictations` synthetic dictations; returns the total time and the
+/// average per dictation over the last thousand (the database is full by then).
+fn fill(store: &VoxaStore, dictations: usize) -> (std::time::Duration, f64) {
     let words = vocabulary_for_tests(6000);
     let first = day(2024, 11, 1);
     let started = std::time::Instant::now();
+    let tail_from = dictations.saturating_sub(1_000);
+    let mut tail_started = started;
     for i in 0..dictations {
+        if i == tail_from {
+            tail_started = std::time::Instant::now();
+        }
         let date = first + chrono::Duration::days((i * 700 / dictations) as i64);
         store
             .record(&DictationInput {
@@ -554,7 +561,11 @@ fn fill(store: &VoxaStore, dictations: usize) -> std::time::Duration {
             })
             .unwrap();
     }
-    started.elapsed()
+    let tail = (dictations - tail_from).max(1) as f64;
+    (
+        started.elapsed(),
+        tail_started.elapsed().as_secs_f64() * 1000.0 / tail,
+    )
 }
 
 fn timed<T>(label: &str, f: impl FnOnce() -> T) -> (T, std::time::Duration) {
@@ -601,10 +612,18 @@ fn queries_stay_fast_on_a_few_hundred_dictations() {
 #[ignore = "benchmark: run with --release -- --ignored --nocapture"]
 fn bench_twenty_thousand_dictations() {
     let (_dir, store) = open();
-    let elapsed = fill(&store, 20_000);
-    let per_dictation = elapsed.as_secs_f64() * 1000.0 / 20_000.0;
-    eprintln!("indexing: {per_dictation:.3} ms per dictation ({elapsed:?} for 20000)");
+    let (elapsed, per_dictation) = fill(&store, 20_000);
+    eprintln!(
+        "indexing: {per_dictation:.3} ms per dictation over the last 1000 \
+         ({elapsed:?} for 20000)"
+    );
     let conn = store.connection().unwrap();
+    // what the app does at its first start of the week
+    let today = day(2026, 10, 1);
+    let (removed, took) = timed("weekly phrase cleanup", || {
+        index::cleanup_ngrams(&conn, noon(today), today).unwrap()
+    });
+    eprintln!("cleanup removed {removed} single-use phrases in {took:?}");
     let rows = |t: &str| -> i64 { conn.query_row(&format!("SELECT COUNT(*) FROM {t}"), [], |r| r.get(0)).unwrap() };
     eprintln!(
         "rows: word_daily {}, form_daily {}, ngram_daily {}",

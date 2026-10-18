@@ -76,9 +76,14 @@ pub fn record_dictation(app: &tauri::AppHandle, input: DictationInput) {
     let Some(store) = app.try_state::<std::sync::Arc<VoxaStore>>() else {
         return;
     };
-    if let Err(e) = store.record(&input) {
-        log::error!("Failed to record dictation statistics: {e:#}");
-    }
+    let store = store.inner().clone();
+    // Off the dictation path: indexing the words is a few milliseconds of
+    // database work the owner should never wait for.
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Err(e) = store.record(&input) {
+            log::error!("Failed to record dictation statistics: {e:#}");
+        }
+    });
 }
 
 /// The owner deleted a dictation from the history screen: take it out of the
