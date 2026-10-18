@@ -920,9 +920,51 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
-        let outcome = match live {
-            Some(outcome) => outcome,
-            None => self.decode_batch(audio)?,
+        // Level of the captured audio, so an empty result can say whether the
+        // input was digital silence (#1899) or a decode that lost speech.
+        let level = audio_level(&audio);
+
+        let (outcome, decode_path) = match live {
+            // The usual case: the live decode produced text, use it.
+            Some(outcome) if !outcome.text.trim().is_empty() => (outcome, "live"),
+            Some(outcome) => {
+                if level.is_silence() {
+                    warn!(
+                        "Transcription result is empty: silent input, skipping batch retry \
+                         (samples={}, rms={:.6}, peak={:.6})",
+                        audio_len, level.rms, level.peak
+                    );
+                    (outcome, "live-silent")
+                } else {
+                    // The live decode came back empty for audio with healthy
+                    // levels (#2187); an empty live outcome used to win
+                    // outright and the dictation was lost. Run one batch pass
+                    // over the full recording before giving up.
+                    warn!(
+                        "Live decode produced no text for non-silent audio, retrying once in batch \
+                         (samples={}, rms={:.6}, peak={:.6})",
+                        audio_len, level.rms, level.peak
+                    );
+                    match self.decode_batch(audio) {
+                        Ok(batch) if !batch.text.trim().is_empty() => {
+                            info!("Batch retry recovered text after empty live decode");
+                            (batch, "batch-retry")
+                        }
+                        Ok(batch) => {
+                            warn!("Batch retry also produced no text");
+                            (batch, "live+batch-retry-empty")
+                        }
+                        Err(e) => {
+                            warn!(
+                                "Batch retry after empty live decode failed: {:#}; keeping empty result",
+                                e
+                            );
+                            (outcome, "live-retry-failed")
+                        }
+                    }
+                }
+            }
+            None => (self.decode_batch(audio)?, "batch"),
         };
         let settings = get_settings(&self.app_handle);
         let final_result = finish_text(outcome, &settings);
@@ -944,7 +986,10 @@ impl TranscriptionManager {
         );
 
         if final_result.is_empty() {
-            info!("Transcription result is empty");
+            warn!(
+                "Transcription result is empty (path={}, samples={}, rms={:.6}, peak={:.6})",
+                decode_path, audio_len, level.rms, level.peak
+            );
         } else {
             info!(
                 "Transcription result: {}",
@@ -1335,6 +1380,45 @@ fn real_time_factor(audio_secs: f64, compute_secs: f64) -> f64 {
         audio_secs / compute_secs
     } else {
         0.0
+    }
+}
+
+/// Peak amplitude below which captured audio counts as digital silence: -60
+/// dBFS, far below any audible speech yet above a zeroed capture. A live mic's
+/// noise floor alone exceeds this over seconds of audio, so falling below it
+/// means the capture path delivered effectively no signal (#1899).
+const SILENCE_PEAK_AMPLITUDE: f32 = 0.001;
+
+/// Level of one recording: root-mean-square and peak absolute amplitude of
+/// its 16 kHz mono f32 PCM.
+struct AudioLevel {
+    rms: f32,
+    peak: f32,
+}
+
+fn audio_level(audio: &[f32]) -> AudioLevel {
+    let mut sum_squares = 0.0f64;
+    let mut peak = 0.0f32;
+    for &sample in audio {
+        let abs = sample.abs();
+        if abs > peak {
+            peak = abs;
+        }
+        sum_squares += f64::from(abs) * f64::from(abs);
+    }
+    let rms = if audio.is_empty() {
+        0.0
+    } else {
+        (sum_squares / audio.len() as f64).sqrt() as f32
+    };
+    AudioLevel { rms, peak }
+}
+
+impl AudioLevel {
+    /// True when the capture carries effectively no signal, so an empty decode
+    /// is expected and a batch retry would decode the same silence.
+    fn is_silence(&self) -> bool {
+        self.peak < SILENCE_PEAK_AMPLITUDE
     }
 }
 
@@ -2192,6 +2276,32 @@ mod tests {
             &supported,
         );
         assert_eq!(corrected, "i use Handy every day");
+    }
+
+    #[test]
+    fn audio_level_reports_rms_and_peak() {
+        let audio = vec![0.5f32, -0.5, 0.5, -0.5];
+        let level = audio_level(&audio);
+        assert_eq!(level.rms, 0.5);
+        assert_eq!(level.peak, 0.5);
+        assert!(!level.is_silence());
+    }
+
+    #[test]
+    fn silence_check_skips_digital_silence_but_keeps_quiet_speech() {
+        let digital_silence = vec![0.0f32; 16_000];
+        assert!(audio_level(&digital_silence).is_silence());
+        assert!(audio_level(&[]).is_silence());
+
+        // Quiet but present speech (rms ~0.014, like a real capture whose live
+        // decode came back empty) must still qualify for the batch retry.
+        let quiet_speech: Vec<f32> = (0..16_000)
+            .map(|i| 0.02 * (2.0 * std::f32::consts::PI * 440.0 * i as f32 / 16_000.0).sin())
+            .collect();
+        let level = audio_level(&quiet_speech);
+        assert!(!level.is_silence());
+        assert!((level.rms - 0.014).abs() < 0.002);
+        assert!((level.peak - 0.02).abs() < 0.001);
     }
 }
 
