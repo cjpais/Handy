@@ -319,10 +319,6 @@ fn hf_cached_path(repo_id: &str, revision: &str, filename: &str) -> Option<PathB
     hf_cached_path_in(&hf_caches(), repo_id, revision, filename)
 }
 
-fn hf_cached_paths(repo_id: &str, revision: &str, filename: &str) -> Vec<PathBuf> {
-    hf_cached_paths_in(&hf_caches(), repo_id, revision, filename)
-}
-
 /// Resolve a Hugging Face model file in the supplied caches, if already present.
 ///
 /// Looks at the pinned `revision`, then every revision the catalog pinned
@@ -383,6 +379,34 @@ fn hf_cached_paths_in(
         }
     }
     paths
+}
+
+/// The `models--org--name` dir a cached file lives in.
+fn hf_repo_dir(cached_file: &Path) -> Option<PathBuf> {
+    cached_file
+        .ancestors()
+        .find(|dir| {
+            dir.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with("models--"))
+        })
+        .map(Path::to_path_buf)
+}
+
+/// Whether any `.gguf` file (or pointer) remains under `dir`.
+fn contains_gguf(dir: &Path) -> bool {
+    fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|entry| {
+            let path = entry.path();
+            if fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir()) {
+                contains_gguf(&path)
+            } else {
+                path.extension().is_some_and(|ext| ext == "gguf")
+            }
+        })
 }
 
 fn is_commit_sha(revision: &str) -> bool {
@@ -1210,10 +1234,29 @@ impl ModelManager {
     /// points to. Everything else in the repo (other quants, refs) is left
     /// untouched. Returns whether anything was removed.
     fn delete_hf_cache_file(repo_id: &str, revision: &str, filename: &str) -> bool {
-        // Every accepted copy (current pin, earlier pins, `main`), so an older
-        // one can't keep the entry "downloaded" after the user deleted it.
+        Self::delete_hf_cache_file_in(&hf_caches(), repo_id, revision, filename)
+    }
+
+    /// [`Self::delete_hf_cache_file`] against the supplied caches. Removes
+    /// every accepted copy (current pin, earlier pins, `main`), so an older one
+    /// can't keep the entry "downloaded" after the user deleted it. A repo dir
+    /// left with no model file is removed whole (blobs, refs, snapshots): per
+    /// product decision, delete hard-removes from the shared HF cache.
+    fn delete_hf_cache_file_in(
+        caches: &[Cache],
+        repo_id: &str,
+        revision: &str,
+        filename: &str,
+    ) -> bool {
+        let pointers = hf_cached_paths_in(caches, repo_id, revision, filename);
+        let mut repo_dirs: Vec<PathBuf> = pointers
+            .iter()
+            .filter_map(|pointer| hf_repo_dir(pointer))
+            .collect();
+        repo_dirs.dedup();
+
         let mut deleted = false;
-        for pointer in hf_cached_paths(repo_id, revision, filename) {
+        for pointer in pointers {
             // Resolve the blob before the pointer goes away. On Windows the
             // pointer may be a plain file (hf-hub's symlink fallback renames
             // the blob into the snapshot), in which case there is no separate
@@ -1229,6 +1272,13 @@ impl ModelManager {
             }
             info!("Deleting HF cache file at: {:?}", pointer);
             deleted |= fs::remove_file(&pointer).is_ok();
+        }
+
+        for repo_dir in repo_dirs {
+            if !contains_gguf(&repo_dir.join("snapshots")) {
+                info!("Deleting HF cache repo at: {:?}", repo_dir);
+                deleted |= fs::remove_dir_all(&repo_dir).is_ok();
+            }
         }
         deleted
     }
@@ -2080,30 +2130,11 @@ impl ModelManager {
         debug!("ModelManager: Found model info: {:?}", model_info);
 
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
-            let is_alternate_quant =
-                Self::is_catalog_alternate_quant(repo_id, &model_info.filename);
-            let mut deleted = false;
-            if is_alternate_quant {
-                // Only this quant's own file: the snapshot pointer and its
-                // blob. The default (and any other quants) survive in the
-                // cache — the entry never owned more than its one file.
-                deleted |= Self::delete_hf_cache_file(repo_id, revision, &model_info.filename);
-            } else if let Some(file) = hf_cached_path(repo_id, revision, &model_info.filename) {
-                // Cached at <cache>/models--org--name/snapshots/<rev>/<file>; remove
-                // the whole repo dir (blobs + refs + snapshots). Per product decision,
-                // delete hard-removes from the shared HF cache.
-                if let Some(repo_dir) = file.ancestors().nth(3) {
-                    if repo_dir
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .is_some_and(|n| n.starts_with("models--"))
-                    {
-                        info!("Deleting HF cache repo at: {:?}", repo_dir);
-                        fs::remove_dir_all(repo_dir)?;
-                        deleted = true;
-                    }
-                }
-            }
+            // Only this entry's own file, every cached copy of it. Other
+            // quants of the repo are separate entries: deleting the Q8_0
+            // default must not take a user's Q5_K_M with it. Once no model
+            // file is left the repo dir goes too (see the helper).
+            let mut deleted = Self::delete_hf_cache_file(repo_id, revision, &model_info.filename);
             // Also remove a models-dir copy (mirror fallback / manual drop-in)
             // and any resumable partial next to it.
             for path in [
@@ -2583,6 +2614,97 @@ mod tests {
         assert!(info.is_downloaded);
         assert_eq!(info.name, desc.name);
         assert!(ModelManager::disappears_when_missing(info));
+    }
+
+    #[test]
+    fn test_deleting_the_q8_default_keeps_a_q5_download() {
+        // A user with the old Q5_K_M default downloads the new Q8_0 to try it,
+        // then deletes it: the Q5 they were using must survive.
+        let desc = offered_catalog_model("handy-computer/whisper-large-v3-gguf/");
+        let (repo_id, revision) = hf_source(desc);
+        let q5 = &desc
+            .files
+            .iter()
+            .find(|f| f.quant == "Q5_K_M")
+            .unwrap()
+            .filename;
+        let q8 = &desc.default_file().unwrap().filename;
+
+        let cache = TempDir::new().unwrap();
+        let q5_path = add_unreferenced_snapshot_file(cache.path(), repo_id, revision, q5);
+        add_unreferenced_snapshot_file(cache.path(), repo_id, revision, q8);
+        let caches = vec![Cache::new(cache.path().to_path_buf())];
+
+        assert!(ModelManager::delete_hf_cache_file_in(
+            &caches, repo_id, revision, q8
+        ));
+        assert_eq!(hf_cached_path_in(&caches, repo_id, revision, q8), None);
+        assert_eq!(
+            hf_cached_path_in(&caches, repo_id, revision, q5),
+            Some(q5_path.clone())
+        );
+
+        // Deleting the last model file clears the repo out of the cache.
+        assert!(ModelManager::delete_hf_cache_file_in(
+            &caches, repo_id, revision, q5
+        ));
+        assert!(!hf_repo_dir(&q5_path).unwrap().exists());
+    }
+
+    #[test]
+    fn test_delete_removes_every_cached_copy() {
+        // The same file at an earlier pin and under `main`: both go, or the
+        // leftover would keep the entry "downloaded".
+        let desc = offered_catalog_model("handy-computer/canary-180m-flash-gguf/");
+        let (repo_id, revision) = hf_source(desc);
+        let old_pin = &crate::catalog::previous_revisions(repo_id)[0];
+        let filename = &desc.default_file().unwrap().filename;
+
+        let cache = TempDir::new().unwrap();
+        add_unreferenced_snapshot_file(cache.path(), repo_id, old_pin, filename);
+        let via_main = add_cached_model(cache.path(), repo_id, "main", filename);
+        let caches = vec![Cache::new(cache.path().to_path_buf())];
+
+        assert!(ModelManager::delete_hf_cache_file_in(
+            &caches, repo_id, revision, filename
+        ));
+        assert!(hf_cached_paths_in(&caches, repo_id, revision, filename).is_empty());
+        assert!(!hf_repo_dir(&via_main).unwrap().exists());
+    }
+
+    #[test]
+    fn test_discover_hf_cache_old_multitalker_download() {
+        // Handy offered multitalker with a root-level filename; the catalog
+        // now lists it under `bundle/` and doesn't offer it. An old download
+        // must still be listed under the id the user's settings hold.
+        let repo_id = "handy-computer/multitalker-parakeet-streaming-0.6b-v1-gguf";
+        let old_pin = crate::catalog::previous_revisions(repo_id)
+            .iter()
+            .find(|r| r.starts_with("31042fb4"))
+            .expect("catalog records Handy's multitalker pin");
+        let filename = "multitalker-parakeet-streaming-0.6b-v1-Q8_0.gguf";
+
+        let cache = TempDir::new().unwrap();
+        let path = add_unreferenced_snapshot_file(cache.path(), repo_id, old_pin, filename);
+        write_synthetic_gguf(&path, "parakeet", &["en"]);
+
+        let mut models = HashMap::new();
+        ModelManager::seed_catalog_models(&mut models);
+        ModelManager::discover_hf_cache_models_in(cache.path(), &mut models);
+
+        let info = models
+            .get(&format!("{repo_id}/{filename}"))
+            .expect("old multitalker download is listed");
+        assert!(info.is_downloaded);
+        let ModelSource::HuggingFace { revision, .. } = &info.source else {
+            panic!("HF-cache entries are HF-sourced");
+        };
+        // The next status refresh finds it again through the same revision.
+        let caches = vec![Cache::new(cache.path().to_path_buf())];
+        assert_eq!(
+            hf_cached_path_in(&caches, repo_id, revision, filename),
+            Some(path)
+        );
     }
 
     #[test]
