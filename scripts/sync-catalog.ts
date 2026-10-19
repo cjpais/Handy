@@ -21,11 +21,13 @@ const { version } = JSON.parse(
 ) as { version: string };
 
 const expected = readFileSync(source);
+// Only a missing copy counts as "differs"; any other read error is rethrown
+// rather than overwriting a file that couldn't be read.
 let current: Buffer | undefined;
 try {
   current = readFileSync(target);
-} catch {
-  current = undefined;
+} catch (e) {
+  if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
 }
 
 if (current?.equals(expected)) {

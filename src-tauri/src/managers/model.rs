@@ -393,20 +393,27 @@ fn hf_repo_dir(cached_file: &Path) -> Option<PathBuf> {
         .map(Path::to_path_buf)
 }
 
-/// Whether any `.gguf` file (or pointer) remains under `dir`.
-fn contains_gguf(dir: &Path) -> bool {
-    fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .any(|entry| {
-            let path = entry.path();
-            if fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir()) {
-                contains_gguf(&path)
-            } else {
-                path.extension().is_some_and(|ext| ext == "gguf")
-            }
-        })
+/// Whether any `.gguf` file (or pointer) remains under `dir`. A missing `dir`
+/// holds none; any other listing error is returned, so a caller deciding
+/// whether to delete keeps what it couldn't inspect.
+fn contains_gguf(dir: &Path) -> std::io::Result<bool> {
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(e) => return Err(e),
+    };
+    for entry in entries {
+        let path = entry?.path();
+        let found = if fs::symlink_metadata(&path)?.is_dir() {
+            contains_gguf(&path)?
+        } else {
+            path.extension().is_some_and(|ext| ext == "gguf")
+        };
+        if found {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn is_commit_sha(revision: &str) -> bool {
@@ -1262,6 +1269,9 @@ impl ModelManager {
             .iter()
             .filter_map(|pointer| hf_repo_dir(pointer))
             .collect();
+        // Paths come revision by revision across caches, so duplicates aren't
+        // adjacent until sorted.
+        repo_dirs.sort();
         repo_dirs.dedup();
 
         let mut deleted = false;
@@ -1284,9 +1294,16 @@ impl ModelManager {
         }
 
         for repo_dir in repo_dirs {
-            if !contains_gguf(&repo_dir.join("snapshots")) {
-                info!("Deleting HF cache repo at: {:?}", repo_dir);
-                deleted |= fs::remove_dir_all(&repo_dir).is_ok();
+            match contains_gguf(&repo_dir.join("snapshots")) {
+                Ok(false) => {
+                    info!("Deleting HF cache repo at: {:?}", repo_dir);
+                    deleted |= fs::remove_dir_all(&repo_dir).is_ok();
+                }
+                Ok(true) => {}
+                Err(e) => warn!(
+                    "Keeping HF cache repo at {:?}: couldn't check it for other model files: {}",
+                    repo_dir, e
+                ),
             }
         }
         deleted
@@ -2710,6 +2727,36 @@ mod tests {
         ));
         assert!(hf_cached_paths_in(&caches, repo_id, revision, filename).is_empty());
         assert!(!hf_repo_dir(&via_main).unwrap().exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_contains_gguf_reports_unlistable_dirs() {
+        // Delete removes a repo only on `Ok(false)`. A snapshot it couldn't
+        // list may hold another quant, so that must be an error, not "none".
+        // (Tested here rather than through delete: a dir the test can't list
+        // can't be removed either, which would hide the regression.)
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = TempDir::new().unwrap();
+        let snapshots = dir.path().join("snapshots");
+        assert!(
+            !contains_gguf(&snapshots).unwrap(),
+            "missing dir holds none"
+        );
+
+        let other = snapshots.join("f".repeat(40));
+        fs::create_dir_all(&other).unwrap();
+        fs::write(other.join("README.md"), b"").unwrap();
+        assert!(!contains_gguf(&snapshots).unwrap());
+
+        fs::write(other.join("model-Q5_K_M.gguf"), b"model").unwrap();
+        assert!(contains_gguf(&snapshots).unwrap());
+
+        fs::set_permissions(&other, fs::Permissions::from_mode(0o000)).unwrap();
+        let result = contains_gguf(&snapshots);
+        fs::set_permissions(&other, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(result.is_err(), "unlistable snapshot read as {result:?}");
     }
 
     #[test]
