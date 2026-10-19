@@ -416,6 +416,16 @@ fn contains_gguf(dir: &Path) -> std::io::Result<bool> {
     Ok(false)
 }
 
+/// `fs::remove_file`, where a file that's already gone counts as nothing
+/// removed rather than an error, so deleting stays idempotent.
+fn remove_file_if_present(path: &Path) -> std::io::Result<bool> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(e),
+    }
+}
+
 fn is_commit_sha(revision: &str) -> bool {
     revision.len() == 40 && revision.bytes().all(|b| b.is_ascii_hexdigit())
 }
@@ -1248,8 +1258,13 @@ impl ModelManager {
     /// Remove a single file from the shared HF cache: the snapshot pointer for
     /// the resolved revision and, when the pointer is a symlink, the blob it
     /// points to. Everything else in the repo (other quants, refs) is left
-    /// untouched. Returns whether anything was removed.
-    fn delete_hf_cache_file(repo_id: &str, revision: &str, filename: &str) -> bool {
+    /// untouched. Returns whether anything was removed, or the error that kept
+    /// the model's file on disk.
+    fn delete_hf_cache_file(
+        repo_id: &str,
+        revision: &str,
+        filename: &str,
+    ) -> std::io::Result<bool> {
         Self::delete_hf_cache_file_in(&hf_caches(), repo_id, revision, filename)
     }
 
@@ -1257,13 +1272,14 @@ impl ModelManager {
     /// every accepted copy (current pin, earlier pins, `main`), so an older one
     /// can't keep the entry "downloaded" after the user deleted it. A repo dir
     /// left with no model file is removed whole (blobs, refs, snapshots): per
-    /// product decision, delete hard-removes from the shared HF cache.
+    /// product decision, delete hard-removes from the shared HF cache. That
+    /// cleanup only logs a failure: the model file is gone by then.
     fn delete_hf_cache_file_in(
         caches: &[Cache],
         repo_id: &str,
         revision: &str,
         filename: &str,
-    ) -> bool {
+    ) -> std::io::Result<bool> {
         let pointers = hf_cached_paths_in(caches, repo_id, revision, filename);
         let mut repo_dirs: Vec<PathBuf> = pointers
             .iter()
@@ -1276,28 +1292,36 @@ impl ModelManager {
 
         let mut deleted = false;
         for pointer in pointers {
-            // Resolve the blob before the pointer goes away. On Windows the
+            // The blob goes first: if it can't be removed, the pointer still
+            // marks the model as downloaded, which stays true. On Windows the
             // pointer may be a plain file (hf-hub's symlink fallback renames
             // the blob into the snapshot), in which case there is no separate
-            // blob.
+            // blob. Copies at other pins can share a blob, so a later pointer
+            // may already dangle.
             let is_symlink = fs::symlink_metadata(&pointer)
                 .map(|m| m.file_type().is_symlink())
                 .unwrap_or(false);
             if is_symlink {
-                if let Ok(blob) = fs::canonicalize(&pointer) {
-                    info!("Deleting HF cache blob at: {:?}", blob);
-                    let _ = fs::remove_file(&blob);
+                match fs::canonicalize(&pointer) {
+                    Ok(blob) => {
+                        info!("Deleting HF cache blob at: {:?}", blob);
+                        deleted |= remove_file_if_present(&blob)?;
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(e) => return Err(e),
                 }
             }
             info!("Deleting HF cache file at: {:?}", pointer);
-            deleted |= fs::remove_file(&pointer).is_ok();
+            deleted |= remove_file_if_present(&pointer)?;
         }
 
         for repo_dir in repo_dirs {
             match contains_gguf(&repo_dir.join("snapshots")) {
                 Ok(false) => {
                     info!("Deleting HF cache repo at: {:?}", repo_dir);
-                    deleted |= fs::remove_dir_all(&repo_dir).is_ok();
+                    if let Err(e) = fs::remove_dir_all(&repo_dir) {
+                        warn!("Couldn't remove HF cache repo at {:?}: {}", repo_dir, e);
+                    }
                 }
                 Ok(true) => {}
                 Err(e) => warn!(
@@ -1306,7 +1330,7 @@ impl ModelManager {
                 ),
             }
         }
-        deleted
+        Ok(deleted)
     }
 
     fn auto_select_model_if_needed(&self) -> Result<()> {
@@ -2160,7 +2184,9 @@ impl ModelManager {
             // quants of the repo are separate entries: deleting the Q8_0
             // default must not take a user's Q5_K_M with it. Once no model
             // file is left the repo dir goes too (see the helper).
-            let mut deleted = Self::delete_hf_cache_file(repo_id, revision, &model_info.filename);
+            // A file that can't be removed (in use on Windows, permissions)
+            // fails the delete before the entry changes, so the UI says so.
+            let mut deleted = Self::delete_hf_cache_file(repo_id, revision, &model_info.filename)?;
             // Also remove a models-dir copy (mirror fallback / manual drop-in)
             // and any resumable partial next to it.
             for path in [
@@ -2692,9 +2718,7 @@ mod tests {
         add_unreferenced_snapshot_file(cache.path(), repo_id, revision, q8);
         let caches = vec![Cache::new(cache.path().to_path_buf())];
 
-        assert!(ModelManager::delete_hf_cache_file_in(
-            &caches, repo_id, revision, q8
-        ));
+        assert!(ModelManager::delete_hf_cache_file_in(&caches, repo_id, revision, q8).unwrap());
         assert_eq!(hf_cached_path_in(&caches, repo_id, revision, q8), None);
         assert_eq!(
             hf_cached_path_in(&caches, repo_id, revision, q5),
@@ -2702,9 +2726,7 @@ mod tests {
         );
 
         // Deleting the last model file clears the repo out of the cache.
-        assert!(ModelManager::delete_hf_cache_file_in(
-            &caches, repo_id, revision, q5
-        ));
+        assert!(ModelManager::delete_hf_cache_file_in(&caches, repo_id, revision, q5).unwrap());
         assert!(!hf_repo_dir(&q5_path).unwrap().exists());
     }
 
@@ -2722,11 +2744,88 @@ mod tests {
         let via_main = add_cached_model(cache.path(), repo_id, "main", filename);
         let caches = vec![Cache::new(cache.path().to_path_buf())];
 
-        assert!(ModelManager::delete_hf_cache_file_in(
-            &caches, repo_id, revision, filename
-        ));
+        assert!(
+            ModelManager::delete_hf_cache_file_in(&caches, repo_id, revision, filename).unwrap()
+        );
         assert!(hf_cached_paths_in(&caches, repo_id, revision, filename).is_empty());
         assert!(!hf_repo_dir(&via_main).unwrap().exists());
+    }
+
+    /// An HF-style cached file: a snapshot symlink to a blob named after its
+    /// content, so copies at several revisions can share one blob.
+    #[cfg(unix)]
+    fn add_cached_blob(cache: &Path, repo_id: &str, commit: &str, filename: &str) -> PathBuf {
+        let repo_dir = cache.join(format!("models--{}", repo_id.replace('/', "--")));
+        let blob = repo_dir.join("blobs").join("b".repeat(64));
+        fs::create_dir_all(blob.parent().unwrap()).unwrap();
+        fs::write(&blob, b"model").unwrap();
+        let pointer = repo_dir.join("snapshots").join(commit).join(filename);
+        fs::create_dir_all(pointer.parent().unwrap()).unwrap();
+        std::os::unix::fs::symlink(&blob, &pointer).unwrap();
+        pointer
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_delete_removes_copies_that_share_a_blob() {
+        // Removing the first copy's blob leaves the second pointer dangling;
+        // that's already deleted, not an error.
+        let desc = offered_catalog_model("handy-computer/canary-180m-flash-gguf/");
+        let (repo_id, revision) = hf_source(desc);
+        let old_pin = &crate::catalog::previous_revisions(repo_id)[0];
+        let filename = &desc.default_file().unwrap().filename;
+
+        let cache = TempDir::new().unwrap();
+        let current = add_cached_blob(cache.path(), repo_id, revision, filename);
+        let earlier = add_cached_blob(cache.path(), repo_id, old_pin, filename);
+        let caches = vec![Cache::new(cache.path().to_path_buf())];
+        assert_eq!(
+            hf_cached_paths_in(&caches, repo_id, revision, filename).len(),
+            2
+        );
+
+        assert!(
+            ModelManager::delete_hf_cache_file_in(&caches, repo_id, revision, filename).unwrap()
+        );
+        assert!(fs::symlink_metadata(&current).is_err());
+        assert!(fs::symlink_metadata(&earlier).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_delete_reports_a_file_it_cant_remove() {
+        // A file that can't be removed (in use on Windows, permissions) must
+        // fail the delete, not report success while the model stays on disk.
+        use std::os::unix::fs::PermissionsExt;
+
+        let desc = offered_catalog_model("handy-computer/canary-180m-flash-gguf/");
+        let (repo_id, revision) = hf_source(desc);
+        let filename = &desc.default_file().unwrap().filename;
+        let caches_in = |cache: &TempDir| vec![Cache::new(cache.path().to_path_buf())];
+        let lock =
+            |dir: &Path, mode| fs::set_permissions(dir, fs::Permissions::from_mode(mode)).unwrap();
+
+        // Plain file (hf-hub's no-symlink layout) in a read-only snapshot.
+        let cache = TempDir::new().unwrap();
+        let file = add_cached_model(cache.path(), repo_id, revision, filename);
+        lock(file.parent().unwrap(), 0o555);
+        let result =
+            ModelManager::delete_hf_cache_file_in(&caches_in(&cache), repo_id, revision, filename);
+        lock(file.parent().unwrap(), 0o755);
+        assert!(result.is_err(), "undeletable file read as {result:?}");
+        assert!(file.exists());
+
+        // Symlinked blob in a read-only blobs dir: the pointer stays, so the
+        // entry still (correctly) reads as downloaded.
+        let cache = TempDir::new().unwrap();
+        let pointer = add_cached_blob(cache.path(), repo_id, revision, filename);
+        let blobs = hf_repo_dir(&pointer).unwrap().join("blobs");
+        lock(&blobs, 0o555);
+        let result =
+            ModelManager::delete_hf_cache_file_in(&caches_in(&cache), repo_id, revision, filename);
+        lock(&blobs, 0o755);
+        assert!(result.is_err(), "undeletable blob read as {result:?}");
+        assert!(pointer.exists(), "pointer removed while its blob stayed");
     }
 
     #[cfg(unix)]
