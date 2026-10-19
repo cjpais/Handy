@@ -7,10 +7,8 @@
 //! the curated subset. It is compiled into the binary so Handy ships a
 //! complete model list with zero network access.
 //!
-//! Handy *recognises* every published transcription model, so any file already
-//! on disk keeps its catalog name and metadata, but only *offers* (seeds for
-//! download, mirrors) the curated ones, plus the replacements the update screen
-//! offers for retired ONNX models — see [`ModelDescriptor::offered`].
+//! Every supported transcription model is offered for download and mirrored
+//! at the package's default quant, independently of recommendation ranking.
 //!
 //! Each entry is normalised into a [`ModelDescriptor`] — the same source-agnostic
 //! shape every other producer (HF discovery, on-disk scans, the legacy table)
@@ -24,9 +22,7 @@ use std::collections::{BTreeSet, HashMap};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
-use crate::managers::model::{
-    default_quant_file, retired_replacement_repos, ModelDescriptor, ModelSource, QuantFile,
-};
+use crate::managers::model::{default_quant_file, ModelDescriptor, ModelSource, QuantFile};
 use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 
 /// Catalog schema this loader understands. The package bumps it on any
@@ -84,10 +80,6 @@ struct CatalogModel {
     /// Commit the files and hashes are pinned to. Both HF acquisition and
     /// mirror keys use it, so downloaded bytes provably match the hashes.
     revision: String,
-    /// Revisions pinned before `revision`, most recent first. A file cached at
-    /// one of them is an older download of this model and still counts.
-    #[serde(default)]
-    previous_revisions: Vec<String>,
     /// The loader architecture (`general.architecture`).
     family: String,
     languages: Vec<String>,
@@ -96,7 +88,6 @@ struct CatalogModel {
     quant: String,
     /// `asr`, `langid`, `vad` or `diarize`; only `asr` models transcribe.
     role: String,
-    curated: bool,
     /// Oldest transcribe.cpp release that can load these files.
     #[cfg_attr(not(test), allow(dead_code))]
     min_engine: Option<String>,
@@ -147,23 +138,14 @@ impl CatalogModel {
         self.files.get(&self.quant)
     }
 
-    /// Whether Handy offers this model for download (and mirrors it): a
-    /// transcription model that is curated or replaces a retired ONNX model,
-    /// and whose default file sits at the repo root. (A file in a subfolder
-    /// can't map onto the flat models dir the mirror fallback downloads into.)
+    /// Handy uses a flat models directory for mirror downloads, so only
+    /// transcription models with root-level default files can be offered.
     /// Must match `offered_models` in `scripts/mirror_models.py`.
     fn is_offered(&self) -> bool {
-        (self.curated || self.replaces_a_retired_model())
-            && self.role == "asr"
+        self.role == "asr"
             && self
                 .default_file()
                 .is_some_and(|file| !file.filename.contains('/'))
-    }
-
-    /// Named as a retired ONNX model's replacement. The update screen matches
-    /// the repo id exactly, so this does too.
-    fn replaces_a_retired_model(&self) -> bool {
-        retired_replacement_repos().any(|repo| repo == self.repository)
     }
 
     /// Files ordered largest first, so the list reads F32 → Q4 like the HF repo.
@@ -322,13 +304,12 @@ impl From<&CatalogModel> for ModelDescriptor {
             accuracy_score: accuracy_score(m, results) / 100.0,
             recommended_rank: ranking.map(|(_, rank, _)| *rank),
             recommended: ranking.is_some_and(|(_, _, recommended)| *recommended),
-            offered: m.is_offered(),
         }
     }
 }
 
 /// The raw parsed catalog. Kept alive (not consumed) so data that deliberately
-/// stays out of [`ModelDescriptor`] (mirrors, previous revisions, results) can
+/// stays out of [`ModelDescriptor`] (mirrors, results) can
 /// be looked up separately.
 static ROOT: Lazy<CatalogRoot> = Lazy::new(|| {
     let root: CatalogRoot = serde_json::from_str(include_str!("catalog.json"))
@@ -346,22 +327,13 @@ fn transcription_models() -> impl Iterator<Item = &'static CatalogModel> {
     ROOT.models.iter().filter(|m| m.role == "asr")
 }
 
-/// Every published transcription model, normalised. Only the
-/// [`ModelDescriptor::offered`] ones are seeded into the registry; the rest
-/// exist so files already on disk are recognised.
-pub static CATALOG: Lazy<Vec<ModelDescriptor>> =
-    Lazy::new(|| transcription_models().map(ModelDescriptor::from).collect());
-
-/// Revisions the catalog pinned `repo_id` to before its current pin, most
-/// recent first. A file cached at one of them is an older download of the same
-/// model and still counts as downloaded. HF repo ids are case-insensitive.
-pub fn previous_revisions(repo_id: &str) -> &'static [String] {
-    ROOT.models
-        .iter()
-        .find(|m| m.repository.eq_ignore_ascii_case(repo_id))
-        .map(|m| m.previous_revisions.as_slice())
-        .unwrap_or(&[])
-}
+/// Every transcription model Handy can download, normalised into descriptors.
+pub static CATALOG: Lazy<Vec<ModelDescriptor>> = Lazy::new(|| {
+    transcription_models()
+        .filter(|m| m.is_offered())
+        .map(ModelDescriptor::from)
+        .collect()
+});
 
 /// A mirror copy of a catalog model's file, with the expected content hash for
 /// end-to-end verification. Mirrors are untrusted bit-pipes: the sha256 here
@@ -407,7 +379,7 @@ pub fn mirror_fallbacks(model_id: &str) -> Vec<MirrorFile> {
 }
 
 /// The catalog descriptor + specific `files[]` entry owning `filename`,
-/// matched across every listed quant (not just the default) of every published
+/// matched across every listed quant (not just the default) of every offered
 /// transcription model. `repo_id`, when given, must also match — the HF-cache
 /// scan uses it to keep a foreign repo that happens to reuse a catalog
 /// filename from masquerading as ours.
@@ -450,13 +422,9 @@ mod tests {
     use super::*;
     use crate::managers::model_capabilities::KNOWN_ARCHES;
 
-    fn offered() -> impl Iterator<Item = &'static ModelDescriptor> {
-        CATALOG.iter().filter(|d| d.offered)
-    }
-
     #[test]
     fn catalog_parses_and_offers_models() {
-        assert!(offered().count() > 0, "bundled catalog should offer models");
+        assert!(!CATALOG.is_empty(), "bundled catalog should offer models");
     }
 
     #[test]
@@ -483,27 +451,17 @@ mod tests {
     }
 
     #[test]
-    fn only_curated_models_and_retired_replacements_are_offered() {
-        for m in transcription_models() {
-            if m.is_offered() {
-                assert!(
-                    m.curated || m.replaces_a_retired_model(),
-                    "{} is offered but neither curated nor a retired model's replacement",
-                    m.id
-                );
-            }
-        }
-        assert!(
-            CATALOG.iter().any(|d| !d.offered),
-            "published-but-uncurated models stay recognisable"
-        );
-    }
-
-    #[test]
-    fn offered_defaults_are_at_the_repo_root() {
-        for d in offered() {
-            let file = d.default_file().expect("offered model has a default file");
-            assert!(!file.filename.contains('/'), "{}: {}", d.id, file.filename);
+    fn all_flat_asr_models_are_offered_at_the_package_default() {
+        for m in transcription_models()
+            .filter(|m| m.default_file().is_some_and(|f| !f.filename.contains('/')))
+        {
+            let id = format!("{}/{}", m.repository, m.default_file().unwrap().filename);
+            let desc = CATALOG
+                .iter()
+                .find(|d| d.id == id)
+                .expect("ASR model is offered");
+            assert_eq!(desc.default_quant.as_deref(), Some(m.quant.as_str()));
+            assert_eq!(m.quant, "Q8_0");
         }
     }
 
@@ -540,7 +498,7 @@ mod tests {
     fn every_offered_model_has_mirror_fallbacks_with_hashes() {
         // The mirror fallback is the safety net for HF outages and blocked
         // networks; an offered entry without one silently loses that net.
-        for d in offered() {
+        for d in CATALOG.iter() {
             let mirrors = mirror_fallbacks(&d.id);
             assert!(!mirrors.is_empty(), "{}: no mirror fallbacks", d.id);
             for m in &mirrors {
@@ -549,22 +507,6 @@ mod tests {
                 assert!(m.url.starts_with("https://"), "{}: bad url {}", d.id, m.url);
             }
         }
-    }
-
-    #[test]
-    fn unoffered_models_have_no_mirror_fallbacks() {
-        for d in CATALOG.iter().filter(|d| !d.offered) {
-            assert!(mirror_fallbacks(&d.id).is_empty(), "{}", d.id);
-        }
-    }
-
-    #[test]
-    fn previous_revisions_cover_earlier_pins() {
-        // Handy pinned canary-180m-flash to b147f9dc before the package moved
-        // it; downloads at that pin must still count.
-        let previous = previous_revisions("handy-computer/canary-180m-flash-gguf");
-        assert!(previous.iter().any(|r| r.starts_with("b147f9dc")));
-        assert!(previous_revisions("handy-computer/not-a-model-gguf").is_empty());
     }
 
     #[test]

@@ -901,8 +901,9 @@
       "name": "Parakeet Multitalker English",
       "description": "For overlapping speakers in meetings, not for solo dictation",
       "repository": "handy-computer/multitalker-parakeet-streaming-0.6b-v1-gguf",
-      "revision": "a9a7208d8f205b5816770a6f7fb83afc81a7691b",
+      "revision": "d9ed2931bc10058f79809bd88139a27c2ef09a53",
       "previousRevisions": [
+        "a9a7208d8f205b5816770a6f7fb83afc81a7691b",
         "31042fb4b5018be38240018492bdbde1923789dc",
         "0314bc0d2f4be9a0d79fa5eeb36ad1f3962cfcbb"
       ],
@@ -918,12 +919,12 @@
       "curated": true,
       "minEngine": "0.2.4",
       "files": {
-        "F32": {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-F32.gguf", "size": 2960100448, "sha256": "1ae09d63777dc4ae061f1f92b8aa0f7336f51bd995860946cc1f120b7e010f16"},
-        "F16": {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-F16.gguf", "size": 1482674272, "sha256": "18116241c595891bccf44cd0207cd749e9ba9e6025ee73ab59606633ec730304"},
-        "Q8_0": {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q8_0.gguf", "size": 873443456, "sha256": "cf83cedc6777d2528a4d2a8a4bf476174ef7e5c65b86bc6c955f4cc9f5951ac5"},
-        "Q6_K": {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q6_K.gguf", "size": 743197824, "sha256": "d8db95ba257e370d910f42e8197dfc65fb5b879e09e4b13aefaac06af3555fa1"},
-        "Q5_K_M": {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q5_K_M.gguf", "size": 681209984, "sha256": "38c98bc0715ee95b4271952630661050a8c3c37f64b8b178c62b8b699668cbdb"},
-        "Q4_K_M": {"filename": "bundle/multitalker-parakeet-streaming-0.6b-v1-Q4_K_M.gguf", "size": 617132160, "sha256": "d24307ac22e9e691c146a7e2339891638a44a8492a765e4b6c11cff8960cd998"}
+        "F32": {"filename": "multitalker-parakeet-streaming-0.6b-v1-F32.gguf", "size": 2960100448, "sha256": "1ae09d63777dc4ae061f1f92b8aa0f7336f51bd995860946cc1f120b7e010f16"},
+        "F16": {"filename": "multitalker-parakeet-streaming-0.6b-v1-F16.gguf", "size": 1482674272, "sha256": "18116241c595891bccf44cd0207cd749e9ba9e6025ee73ab59606633ec730304"},
+        "Q8_0": {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q8_0.gguf", "size": 873443456, "sha256": "cf83cedc6777d2528a4d2a8a4bf476174ef7e5c65b86bc6c955f4cc9f5951ac5"},
+        "Q6_K": {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q6_K.gguf", "size": 743197824, "sha256": "d8db95ba257e370d910f42e8197dfc65fb5b879e09e4b13aefaac06af3555fa1"},
+        "Q5_K_M": {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q5_K_M.gguf", "size": 681209984, "sha256": "38c98bc0715ee95b4271952630661050a8c3c37f64b8b178c62b8b699668cbdb"},
+        "Q4_K_M": {"filename": "multitalker-parakeet-streaming-0.6b-v1-Q4_K_M.gguf", "size": 617132160, "sha256": "d24307ac22e9e691c146a7e2339891638a44a8492a765e4b6c11cff8960cd998"}
       }
     },
     {
