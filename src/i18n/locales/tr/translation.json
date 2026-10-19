@@ -26,6 +26,18 @@
     "showFewerModels": "Daha az model göster",
     "recommended": "Önerilen",
     "customModelDescription": "Resmi olarak desteklenmiyor",
+    "migration": {
+      "title": "Modellerinizin güncellenmesi gerekiyor",
+      "description": "Handy artık daha yeni bir model türü kullanıyor. Transkripsiyona devam etmek için yeni sürümü indirin. Eski sürümler kaldırılacak.",
+      "replaces": "{{name}} yerine geçer",
+      "oldFormat": "Eski format",
+      "failed": "İndirme başarısız oldu",
+      "retry": "Tekrar dene",
+      "chooseAnother": "Farklı bir model seçin",
+      "download": "Modelleri indir ({{size}})",
+      "continue": "Devam et",
+      "timeRemaining": "{{time}} kaldı"
+    },
     "modelCard": {
       "accuracy": "doğruluk",
       "speed": "hız"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "İyi doğruluk, ancak yavaş."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Yalnızca İngilizce. İngilizce konuşanlar için en iyi model."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Hızlı ve doğru."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Çok hızlı, yalnızca İngilizce. Aksanları iyi işler."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultra hızlı, yalnızca İngilizce"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Hızlı, yalnızca İngilizce. Hız ve doğruluk arasında iyi denge."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Yalnızca İngilizce. Yüksek kalite."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Tayvan Mandarin Çincesi için optimize edilmiş. Dil değiştirme desteği."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Çok hızlı. Çince, İngilizce, Japonca, Korece, Kantonca."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Rusça konuşma tanıma. Hızlı ve doğru."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Çok hızlı. İngilizce, Almanca, İspanyolca, Fransızca. Çeviri desteği."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Doğru çok dilli. 25 Avrupa dili. Çeviri desteği."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Büyük, daha yavaş, ancak çok doğru çok dilli bir model."
       }
     },
     "errors": {
@@ -127,9 +95,6 @@
     "noModelsAvailable": "Kullanılabilir model yok",
     "verifying": "{{modelName}} doğrulanıyor...",
     "verifyingGeneric": "Doğrulanıyor...",
-    "extracting": "{{modelName}} çıkarılıyor...",
-    "extractingMultiple": "{{count}} model çıkarılıyor...",
-    "extractingGeneric": "Çıkarılıyor...",
     "downloading": "%{{percentage}} indiriliyor",
     "downloadingMultiple": "{{count}} model indiriliyor...",
     "modelReady": "Model Hazır",
@@ -164,6 +129,13 @@
       "deleteConfirm": "{{modelName}} modelini silmek istediğinizden emin misiniz? Kullanmak için tekrar indirmeniz gerekecek.",
       "deleteActiveConfirm": "{{modelName}} aktif modelinizdir. Silmek, yeni bir model seçene kadar transkripsiyonları durduracaktır. Emin misiniz?",
       "deleteTitle": "Modeli Sil",
+      "retiredNotice": {
+        "title": "Eski modeller artık Handy ile çalışmıyor",
+        "description": "Bilgisayarınızda {{size}} yer kaplıyorlar.",
+        "delete": "Modelleri sil",
+        "deleted": "Eski modeller silindi",
+        "deleteFailed": "Bazı eski modeller silinemedi. Ayrıntılar için günlüğe bakın."
+      },
       "filters": {
         "allLanguages": "Tüm Diller",
         "streaming": "Canlı transkripsiyonu destekleyen modelleri filtrele",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp Hızlandırması",
-          "description": "transcribe.cpp (Whisper ailesi) modelleri için donanım hızlandırması. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
-        },
-        "ort": {
-          "title": "ONNX Hızlandırma",
-          "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Windows'ta DirectML deneyseldir. Modeller transkripsiyon yapamayabilir."
+          "title": "Donanım Hızlandırma",
+          "description": "Transkripsiyon için kullanılacak donanımı seçin. Otomatik mod, mevcutsa GPU'yu kullanır; değilse CPU'ya geçer."
         },
         "gpuDevice": {
           "auto": "Otomatik"
@@ -387,6 +355,10 @@
         "title": "Ses Etkinliği Algılama",
         "description": "Kayıtlardaki sessizliği filtreler. Akış destekli modeller daha uzun bir VAD kuyruğu kullanır; VAD devre dışı bırakıldığında ham ses kaydedilir."
       },
+      "longFormChunking": {
+        "title": "Uzun Sesi Bölme",
+        "description": "Uzun kayıtları yazıya dökmeden önce duraklamalardan böler; bu genellikle yazıya dökme performansını artırır."
+      },
       "vadBackend": {
         "title": "Ses Etkinliği Arka Ucu",
         "description": "Sessizliği filtrelemek için kullanılan algılayıcıyı seçin. Earshot deneyseldir; konuşma kesiliyorsa veya gürültü korunuyorsa Silero'ya geri dönün.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Dolgu Sözcüklerini Kaldır",
         "description": "Transkripsiyonlardaki yaygın duraksama sözcüklerini kaldırır. Bunları korumak için kapatın."
+      },
+      "chineseScript": {
+        "title": "Çince yazı",
+        "description": "Mandarin ve Kantonca transkripsiyonları Basitleştirilmiş veya Geleneksel karakterlerle yazar. Diğer diller değiştirilmez.",
+        "options": {
+          "asTranscribed": "Transkripsiyondaki gibi",
+          "simplified": "Basitleştirilmiş",
+          "traditional": "Geleneksel"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Kısayol Tuşu"
       },
       "api": {
-        "title": "API (OpenAI Uyumlu)",
+        "title": "API",
         "provider": {
           "title": "Sağlayıcı",
-          "description": "OpenAI uyumlu bir sağlayıcı seçin."
+          "description": "OpenAI veya Anthropic uyumlu bir sağlayıcı seçin."
+        },
+        "apiFormat": {
+          "title": "API Biçimi",
+          "description": "Özel uç noktanızın beklediği istek biçimi.",
+          "options": {
+            "openai": "OpenAI Uyumlu (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence bu cihazda kullanılamıyor. macOS Tahoe (26.0) veya üzeri ve Sistem Ayarları'nda Apple Intelligence etkin olan bir Apple Silicon Mac gerektirir."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "Temel URL",
           "description": "Seçili sağlayıcı için API temel URL'si. Yalnızca özel sağlayıcı düzenlenebilir.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API Anahtarı",
@@ -460,6 +450,7 @@
       "loading": "Geçmiş yükleniyor...",
       "empty": "Henüz transkripsiyon yok. Geçmişinizi oluşturmak için kayda başlayın!",
       "copyToClipboard": "Transkripsiyonu panoya kopyala",
+      "copyError": "Transkripsiyon panoya kopyalanamadı.",
       "save": "Transkripsiyonu kaydet",
       "unsave": "Kaydedilenlerden kaldır",
       "delete": "Kaydı sil",
@@ -594,6 +585,13 @@
         "button": "Önizle",
         "noNotes": "Paketlenmiş sürüm notu bulunamadı",
         "error": "Sürüm notları önizlenemedi"
+      },
+      "onboardingPreview": {
+        "title": "İlk kurulum önizlemesi",
+        "description": "İzinleri, modelleri veya tamamlanma durumunu değiştirmeden ilk kurulum ekranlarını önizleyin",
+        "permissionsButton": "İzinler",
+        "modelsButton": "Model seçimi",
+        "exitButton": "Önizlemeden çık"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Yükleniyor...",
     "delete": "Sil",
+    "back": "Geri",
     "close": "Kapat",
     "open": "Aç",
     "copy": "Kopyala",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
-    "processing": "İşleniyor..."
+    "processing": "İşleniyor...",
+    "loadingModel": "Model yükleniyor..."
   },
   "whatsNew": {
     "title": "Handy v{{version}} yenilikleri"

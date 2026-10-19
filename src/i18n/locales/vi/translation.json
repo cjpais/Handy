@@ -26,6 +26,18 @@
     "showFewerModels": "Hiển thị ít mô hình hơn",
     "recommended": "Đề xuất",
     "customModelDescription": "Không được hỗ trợ chính thức",
+    "migration": {
+      "title": "Các mô hình của bạn cần được cập nhật",
+      "description": "Handy hiện sử dụng loại mô hình mới hơn. Hãy tải phiên bản mới để tiếp tục chuyển đổi giọng nói. Các phiên bản cũ sẽ bị xóa.",
+      "replaces": "Thay thế {{name}}",
+      "oldFormat": "Định dạng cũ",
+      "failed": "Tải xuống thất bại",
+      "retry": "Thử lại",
+      "chooseAnother": "Chọn mô hình khác",
+      "download": "Tải mô hình ({{size}})",
+      "continue": "Tiếp tục",
+      "timeRemaining": "Còn {{time}}"
+    },
     "modelCard": {
       "accuracy": "độ chính xác",
       "speed": "tốc độ"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Độ chính xác tốt, nhưng chậm."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Chỉ tiếng Anh. Mô hình tốt nhất cho người nói tiếng Anh."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Nhanh và chính xác"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Rất nhanh, chỉ tiếng Anh. Xử lý tốt các giọng nói."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Cực nhanh, chỉ tiếng Anh"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Nhanh, chỉ tiếng Anh. Cân bằng tốt giữa tốc độ và độ chính xác."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Chỉ tiếng Anh. Chất lượng cao."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Tối ưu hóa cho tiếng Quan Thoại Đài Loan. Hỗ trợ chuyển đổi ngôn ngữ."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Rất nhanh. Tiếng Trung, tiếng Anh, tiếng Nhật, tiếng Hàn, tiếng Quảng Đông."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Nhận dạng giọng nói tiếng Nga. Nhanh và chính xác."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Rất nhanh. Tiếng Anh, tiếng Đức, tiếng Tây Ban Nha, tiếng Pháp. Hỗ trợ dịch thuật."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Đa ngôn ngữ chính xác. 25 ngôn ngữ châu Âu. Hỗ trợ dịch thuật."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Mô hình lớn, chậm hơn, nhưng rất chính xác và đa ngôn ngữ."
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "Không có mô hình nào",
     "verifying": "Đang xác minh {{modelName}}...",
     "verifyingGeneric": "Đang xác minh...",
-    "extracting": "Đang giải nén {{modelName}}...",
-    "extractingMultiple": "Đang giải nén {{count}} mô hình...",
-    "extractingGeneric": "Đang giải nén...",
     "downloading": "Đang tải xuống {{percentage}}%",
     "downloadingMultiple": "Đang tải xuống {{count}} mô hình...",
     "modelReady": "Mô Hình Sẵn Sàng",
@@ -164,6 +129,13 @@
       "deleteConfirm": "Bạn có chắc chắn muốn xóa {{modelName}}? Bạn sẽ cần tải lại để sử dụng.",
       "deleteActiveConfirm": "{{modelName}} là mô hình đang hoạt động của bạn. Xóa nó sẽ dừng phiên âm cho đến khi bạn chọn một mô hình mới. Bạn có chắc không?",
       "deleteTitle": "Xóa mô hình",
+      "retiredNotice": {
+        "title": "Các mô hình cũ không còn hoạt động với Handy",
+        "description": "Chúng đang chiếm {{size}} trên máy tính của bạn.",
+        "delete": "Xóa mô hình",
+        "deleted": "Đã xóa các mô hình cũ",
+        "deleteFailed": "Không thể xóa một số mô hình cũ. Hãy kiểm tra nhật ký để biết chi tiết."
+      },
       "filters": {
         "allLanguages": "Tất cả ngôn ngữ",
         "streaming": "Lọc các mô hình hỗ trợ phiên âm trực tiếp",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Tăng tốc Whisper",
-          "description": "Tăng tốc phần cứng cho các mô hình Whisper. Chế độ tự động sử dụng GPU nếu có (Metal trên macOS, Vulkan trên Windows/Linux)."
-        },
-        "ort": {
-          "title": "Tăng tốc ONNX",
-          "description": "Tăng tốc phần cứng cho các mô hình ONNX (Parakeet, Canary, Moonshine, v.v.). DirectML trên Windows là thử nghiệm. Các mô hình có thể không chuyển đổi giọng nói được."
+          "title": "Tăng tốc phần cứng",
+          "description": "Chọn phần cứng dùng để chuyển đổi giọng nói. Chế độ tự động sử dụng GPU nếu có, nếu không sẽ chuyển sang CPU."
         },
         "gpuDevice": {
           "auto": "Tự động"
@@ -387,6 +355,10 @@
         "title": "Phát hiện hoạt động giọng nói",
         "description": "Lọc bỏ khoảng lặng khỏi bản ghi. Các mô hình hỗ trợ truyền trực tiếp dùng đuôi VAD dài hơn; tắt VAD sẽ ghi âm thanh thô."
       },
+      "longFormChunking": {
+        "title": "Chia nhỏ âm thanh dài",
+        "description": "Chia các bản ghi dài tại các khoảng ngắt trước khi chuyển thành văn bản, điều này thường cải thiện hiệu quả chuyển văn bản."
+      },
       "vadBackend": {
         "title": "Bộ phát hiện giọng nói",
         "description": "Chọn bộ phát hiện dùng để lọc khoảng lặng. Earshot đang thử nghiệm; hãy chuyển về Silero nếu giọng nói bị cắt hoặc tiếng ồn vẫn còn.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Loại bỏ từ đệm",
         "description": "Loại bỏ các từ ngập ngừng phổ biến khỏi bản chép lời. Tắt để giữ lại các từ này."
+      },
+      "chineseScript": {
+        "title": "Chữ Hán giản thể/phồn thể",
+        "description": "Ghi bản chép tiếng Quan Thoại và tiếng Quảng Đông bằng chữ Giản thể hoặc Phồn thể. Các ngôn ngữ khác không bị thay đổi.",
+        "options": {
+          "asTranscribed": "Giữ nguyên bản chép",
+          "simplified": "Giản thể",
+          "traditional": "Phồn thể"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Phím tắt"
       },
       "api": {
-        "title": "API (Tương thích OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Nhà cung cấp",
-          "description": "Chọn một nhà cung cấp tương thích OpenAI."
+          "description": "Chọn một nhà cung cấp tương thích OpenAI hoặc Anthropic."
+        },
+        "apiFormat": {
+          "title": "Định dạng API",
+          "description": "Định dạng yêu cầu mà điểm cuối tùy chỉnh của bạn cần.",
+          "options": {
+            "openai": "Tương thích OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence không khả dụng trên thiết bị này. Yêu cầu Mac Apple Silicon chạy macOS Tahoe (26.0) trở lên với Apple Intelligence được bật trong Cài đặt Hệ thống."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "URL cơ sở",
           "description": "URL cơ sở API cho nhà cung cấp đã chọn. Chỉ có thể chỉnh sửa nhà cung cấp tùy chỉnh.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Khóa API",
@@ -460,6 +450,7 @@
       "loading": "Đang tải lịch sử...",
       "empty": "Chưa có bản ghi nào. Bắt đầu ghi âm để xây dựng lịch sử của bạn!",
       "copyToClipboard": "Sao chép bản ghi vào clipboard",
+      "copyError": "Không thể sao chép bản ghi vào bộ nhớ tạm.",
       "save": "Lưu bản ghi",
       "unsave": "Xóa khỏi đã lưu",
       "delete": "Xóa mục",
@@ -594,6 +585,13 @@
         "button": "Xem trước",
         "noNotes": "Không tìm thấy ghi chú phát hành được đóng gói",
         "error": "Không thể xem trước ghi chú phát hành"
+      },
+      "onboardingPreview": {
+        "title": "Xem trước thiết lập ban đầu",
+        "description": "Xem trước các màn hình thiết lập mà không thay đổi quyền, mô hình hoặc trạng thái hoàn tất",
+        "permissionsButton": "Quyền",
+        "modelsButton": "Chọn mô hình",
+        "exitButton": "Thoát xem trước"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Đang tải...",
     "delete": "Xóa",
+    "back": "Quay lại",
     "close": "Đóng",
     "open": "Mở",
     "copy": "Sao chép",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
-    "processing": "Đang xử lý..."
+    "processing": "Đang xử lý...",
+    "loadingModel": "Đang tải mô hình..."
   },
   "whatsNew": {
     "title": "Điểm mới trong Handy v{{version}}"

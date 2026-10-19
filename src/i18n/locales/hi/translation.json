@@ -26,6 +26,18 @@
     "showFewerModels": "कम मॉडल दिखाएं",
     "recommended": "सुझाया गया",
     "customModelDescription": "आधिकारिक रूप से समर्थित नहीं",
+    "migration": {
+      "title": "आपके मॉडल को अपडेट की ज़रूरत है",
+      "description": "Handy अब एक नए प्रकार के मॉडल का उपयोग करता है. ट्रांसक्राइब करना जारी रखने के लिए नया संस्करण डाउनलोड करें. पुराने संस्करण हटा दिए जाएंगे.",
+      "replaces": "{{name}} की जगह लेता है",
+      "oldFormat": "पुराना फ़ॉर्मेट",
+      "failed": "डाउनलोड विफल रहा",
+      "retry": "फिर से कोशिश करें",
+      "chooseAnother": "कोई दूसरा मॉडल चुनें",
+      "download": "मॉडल डाउनलोड करें ({{size}})",
+      "continue": "जारी रखें",
+      "timeRemaining": "{{time}} शेष"
+    },
     "modelCard": {
       "accuracy": "सटीकता",
       "speed": "स्पीड"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "अच्छी सटीकता, लेकिन धीमा."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "केवल अंग्रेज़ी. अंग्रेज़ी बोलने वालों के लिए सबसे अच्छा मॉडल."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "तेज़ और सटीक"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "बहुत तेज़, केवल अंग्रेज़ी. अलग-अलग लहजों को अच्छी तरह समझता है."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "बेहद तेज़, केवल अंग्रेज़ी"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "तेज़, केवल अंग्रेज़ी. स्पीड और सटीकता का अच्छा संतुलन."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "केवल अंग्रेज़ी. बेहतरीन क्वालिटी."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "ताइवानी मैंडरिन के लिए ऑप्टिमाइज़ किया गया. कोड-स्विचिंग की सुविधा."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "बहुत तेज़. चीनी, अंग्रेज़ी, जापानी, कोरियाई, कैंटोनीज़."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "रूसी बोली पहचानता है. तेज़ और सटीक."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "बहुत तेज़. अंग्रेज़ी, जर्मन, स्पेनिश, फ़्रेंच. अनुवाद भी कर सकता है."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "सटीक बहुभाषी मॉडल. 25 यूरोपीय भाषाएं. अनुवाद भी कर सकता है."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "बड़ा और थोड़ा धीमा, लेकिन बहुत सटीक बहुभाषी मॉडल."
       }
     },
     "errors": {
@@ -129,9 +97,6 @@
     "noModelsAvailable": "कोई मॉडल उपलब्ध नहीं है",
     "verifying": "{{modelName}} की पुष्टि हो रही है...",
     "verifyingGeneric": "पुष्टि हो रही है...",
-    "extracting": "{{modelName}} एक्सट्रैक्ट हो रहा है...",
-    "extractingMultiple": "{{count}} मॉडल एक्सट्रैक्ट हो रहे हैं...",
-    "extractingGeneric": "एक्सट्रैक्ट हो रहा है...",
     "downloading": "{{percentage}}% डाउनलोड हो रहा है",
     "downloadingMultiple": "{{count}} मॉडल डाउनलोड हो रहे हैं...",
     "modelReady": "मॉडल तैयार है",
@@ -218,6 +183,13 @@
       "deleteConfirm": "क्या आप वाकई {{modelName}} को हटाना चाहते हैं? इसे फिर से इस्तेमाल करने के लिए आपको इसे दोबारा डाउनलोड करना होगा.",
       "deleteActiveConfirm": "{{modelName}} अभी इस्तेमाल में है. इसे हटाने पर ट्रांसक्रिप्शन तब तक रुका रहेगा, जब तक आप कोई नया मॉडल नहीं चुन लेते. क्या आप वाकई हटाना चाहते हैं?",
       "deleteTitle": "मॉडल हटाएं",
+      "retiredNotice": {
+        "title": "पुराने मॉडल अब Handy के साथ काम नहीं करते",
+        "description": "ये आपके कंप्यूटर पर {{size}} जगह घेर रहे हैं.",
+        "delete": "मॉडल हटाएं",
+        "deleted": "पुराने मॉडल हटा दिए गए",
+        "deleteFailed": "कुछ पुराने मॉडल हटाए नहीं जा सके. विवरण के लिए लॉग देखें."
+      },
       "filters": {
         "allLanguages": "सभी भाषाएं",
         "streaming": "लाइव ट्रांसक्रिप्शन का समर्थन करने वाले मॉडल फ़िल्टर करें",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp एक्सेलेरेशन",
-          "description": "transcribe.cpp (Whisper-परिवार) मॉडल के लिए हार्डवेयर एक्सेलेरेशन. 'ऑटो' उपलब्ध होने पर GPU का इस्तेमाल करता है (macOS पर Metal, Windows/Linux पर Vulkan)."
-        },
-        "ort": {
-          "title": "ONNX एक्सेलेरेशन",
-          "description": "ONNX मॉडल (Parakeet, Canary, Moonshine वगैरह) के लिए हार्डवेयर एक्सेलेरेशन. Windows पर DirectML प्रायोगिक है. हो सकता है कि कुछ मॉडल ट्रांसक्राइब न कर पाएं."
+          "title": "हार्डवेयर एक्सेलेरेशन",
+          "description": "चुनें कि ट्रांसक्रिप्शन किस हार्डवेयर पर चले. 'ऑटो' उपलब्ध होने पर GPU का इस्तेमाल करता है, नहीं तो CPU पर चला जाता है."
         },
         "gpuDevice": {
           "auto": "ऑटो"
@@ -387,6 +355,10 @@
         "title": "वॉइस एक्टिविटी डिटेक्शन",
         "description": "रिकॉर्डिंग से बिना आवाज़ वाले हिस्से हटाएं. स्ट्रीमिंग वाले मॉडल लंबी VAD टेल इस्तेमाल करते हैं; VAD बंद करने पर कच्चा ऑडियो रिकॉर्ड होता है."
       },
+      "longFormChunking": {
+        "title": "लंबे ऑडियो का विभाजन",
+        "description": "ट्रांसक्राइब करने से पहले लंबी रिकॉर्डिंग को विरामों पर विभाजित करता है, जिससे आमतौर पर ट्रांसक्रिप्शन बेहतर होता है।"
+      },
       "vadBackend": {
         "title": "वॉइस एक्टिविटी बैकएंड",
         "description": "मौन को फ़िल्टर करने के लिए उपयोग किया जाने वाला डिटेक्टर चुनें। Earshot प्रायोगिक है; यदि बोली कट रही हो या शोर बना रहे तो Silero पर वापस जाएँ।",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "फिलर शब्द हटाएं",
         "description": "ट्रांसक्रिप्शन से आम हिचकिचाहट वाले शब्द हटाता है। उन्हें बनाए रखने के लिए इसे बंद करें।"
+      },
+      "chineseScript": {
+        "title": "चीनी लिपि",
+        "description": "मंदारिन और कैंटोनीज़ ट्रांसक्रिप्शन को सरलीकृत या पारंपरिक अक्षरों में लिखता है। अन्य भाषाएँ अपरिवर्तित रहती हैं।",
+        "options": {
+          "asTranscribed": "जैसा ट्रांसक्राइब हुआ",
+          "simplified": "सरलीकृत",
+          "traditional": "पारंपरिक"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "हॉटकी"
       },
       "api": {
-        "title": "API (OpenAI संगत)",
+        "title": "API",
         "provider": {
           "title": "प्रोवाइडर",
-          "description": "कोई OpenAI-संगत प्रोवाइडर चुनें."
+          "description": "कोई OpenAI-संगत या Anthropic-संगत प्रोवाइडर चुनें."
+        },
+        "apiFormat": {
+          "title": "API फ़ॉर्मेट",
+          "description": "वह अनुरोध फ़ॉर्मेट जो आपके कस्टम एंडपॉइंट को चाहिए.",
+          "options": {
+            "openai": "OpenAI संगत (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence इस डिवाइस पर उपलब्ध नहीं है. इसके लिए macOS Tahoe (26.0) या उसके बाद का वर्शन चलाने वाला Apple Silicon Mac चाहिए, जिसमें System Settings में Apple Intelligence चालू हो."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "बेस URL",
           "description": "चुने गए प्रोवाइडर के लिए API बेस URL. केवल कस्टम प्रोवाइडर में बदलाव किया जा सकता है.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API कुंजी",
@@ -460,6 +450,7 @@
       "loading": "इतिहास लोड हो रहा है...",
       "empty": "अभी तक कोई ट्रांसक्रिप्शन नहीं है. अपना इतिहास बनाने के लिए रिकॉर्डिंग शुरू करें!",
       "copyToClipboard": "ट्रांसक्रिप्शन क्लिपबोर्ड पर कॉपी करें",
+      "copyError": "ट्रांसक्रिप्शन को क्लिपबोर्ड पर कॉपी नहीं किया जा सका.",
       "save": "ट्रांसक्रिप्शन सेव करें",
       "unsave": "सेव किए गए से हटाएं",
       "delete": "एंट्री हटाएं",
@@ -501,6 +492,13 @@
         "button": "झलक देखें",
         "noNotes": "बंडल की गई कोई रिलीज़ नोट नहीं मिली",
         "error": "रिलीज़ नोट की झलक नहीं दिखाई जा सकी"
+      },
+      "onboardingPreview": {
+        "title": "शुरुआती सेटअप की झलक",
+        "description": "अनुमतियों, मॉडल या पूर्णता स्थिति को बदले बिना शुरुआती सेटअप स्क्रीन की झलक देखें",
+        "permissionsButton": "अनुमतियाँ",
+        "modelsButton": "मॉडल चयन",
+        "exitButton": "झलक से बाहर निकलें"
       },
       "soundTheme": {
         "label": "साउंड थीम",
@@ -651,6 +649,7 @@
   "common": {
     "loading": "लोड हो रहा है...",
     "delete": "हटाएं",
+    "back": "वापस",
     "close": "बंद करें",
     "open": "खोलें",
     "copy": "कॉपी करें",
@@ -694,7 +693,8 @@
   },
   "overlay": {
     "transcribing": "ट्रांसक्राइब हो रहा है...",
-    "processing": "प्रोसेस हो रहा है..."
+    "processing": "प्रोसेस हो रहा है...",
+    "loadingModel": "मॉडल लोड हो रहा है..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} शायद 1 शॉर्टकट को ब्लॉक कर रहा है",

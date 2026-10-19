@@ -26,6 +26,18 @@
     "showFewerModels": "הצג פחות מודלים",
     "recommended": "מומלץ",
     "customModelDescription": "לא נתמך באופן רשמי",
+    "migration": {
+      "title": "המודלים שלך צריכים עדכון",
+      "description": "Handy משתמש כעת בסוג חדש יותר של מודלים. יש להוריד את הגרסה החדשה כדי להמשיך לתמלל. גרסאות ישנות יוסרו.",
+      "replaces": "מחליף את {{name}}",
+      "oldFormat": "פורמט ישן",
+      "failed": "ההורדה נכשלה",
+      "retry": "ניסיון חוזר",
+      "chooseAnother": "בחירת מודל אחר",
+      "download": "הורדת מודלים ({{size}})",
+      "continue": "המשך",
+      "timeRemaining": "נותרו {{time}}"
+    },
     "modelCard": {
       "accuracy": "דיוק",
       "speed": "מהירות"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "דיוק טוב, אבל איטי."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "אנגלית בלבד. המודל הטוב ביותר לדוברי אנגלית."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "מהיר ומדויק"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "מהיר מאוד, אנגלית בלבד. מתמודד היטב עם מבטאים."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "מהיר במיוחד, אנגלית בלבד"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "מהיר, אנגלית בלבד. איזון טוב בין מהירות לדיוק."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "אנגלית בלבד. איכות גבוהה."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "מותאם למנדרינית טאיוואנית. תמיכה במעבר בין שפות."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "מהיר מאוד. סינית, אנגלית, יפנית, קוריאנית וקנטונזית."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "זיהוי דיבור ברוסית. מהיר ומדויק."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "מהיר מאוד. אנגלית, גרמנית, ספרדית וצרפתית. תומך בתרגום."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "רב-לשוני ומדויק. 25 שפות אירופיות. תומך בתרגום."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "מודל גדול, איטי יותר, אך מדויק מאוד ורב-לשוני."
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "אין מודלים זמינים",
     "verifying": "מאמת את {{modelName}}...",
     "verifyingGeneric": "מאמת...",
-    "extracting": "מחלץ את {{modelName}}...",
-    "extractingMultiple": "מחלץ {{count}} מודלים...",
-    "extractingGeneric": "מחלץ...",
     "downloading": "מוריד {{percentage}}%",
     "downloadingMultiple": "מוריד {{count}} מודלים...",
     "modelReady": "המודל מוכן",
@@ -217,6 +182,13 @@
       "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
       "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
       "deleteTitle": "מחיקת מודל",
+      "retiredNotice": {
+        "title": "מודלים ישנים כבר לא עובדים עם Handy",
+        "description": "הם תופסים {{size}} במחשב שלך.",
+        "delete": "מחיקת מודלים",
+        "deleted": "המודלים הישנים נמחקו",
+        "deleteFailed": "לא ניתן היה למחוק חלק מהמודלים הישנים. פרטים נוספים ביומן."
+      },
       "filters": {
         "allLanguages": "כל השפות",
         "streaming": "סינון דגמים התומכים בתמלול חי",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "האצת Whisper",
-          "description": "האצת חומרה למודלי Whisper. מצב אוטומטי משתמש ב-GPU אם זמין (Metal ב-macOS, Vulkan ב-Windows/Linux)."
-        },
-        "ort": {
-          "title": "האצת ONNX",
-          "description": "האצת חומרה למודלי ONNX (Parakeet, Canary, Moonshine ועוד). DirectML ב-Windows הוא ניסיוני. ייתכן שמודלים ייכשלו בתמלול."
+          "title": "האצת חומרה",
+          "description": "בחר את החומרה שמשמשת לתמלול. מצב אוטומטי משתמש ב-GPU כשהוא זמין, ואחרת עובר ל-CPU."
         },
         "gpuDevice": {
           "auto": "אוטומטי"
@@ -387,6 +355,10 @@
         "title": "זיהוי פעילות קולית",
         "description": "סינון שקט מההקלטות. מודלים התומכים בסטרימינג משתמשים בזנב VAD ארוך יותר; ביטול VAD מקליט אודיו גולמי."
       },
+      "longFormChunking": {
+        "title": "פיצול שמע ארוך",
+        "description": "מפצל הקלטות ארוכות בהפסקות לפני התמלול, מה שבדרך כלל משפר את איכות התמלול."
+      },
       "vadBackend": {
         "title": "מנוע זיהוי פעילות קולית",
         "description": "בחרו את הגלאי המשמש לסינון שקט. Earshot ניסיוני; חזרו ל-Silero אם הדיבור נחתך או שרעש נשמר.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "הסרת מילות מילוי",
         "description": "מסיר מילות היסוס נפוצות מתמלולים. השבת כדי להשאיר אותן."
+      },
+      "chineseScript": {
+        "title": "כתב סיני",
+        "description": "כותב תמלולים במנדרינית ובקנטונזית בתווים מפושטים או מסורתיים. שפות אחרות נשארות ללא שינוי.",
+        "options": {
+          "asTranscribed": "כפי שתומלל",
+          "simplified": "מפושט",
+          "traditional": "מסורתי"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "קיצור מקשים"
       },
       "api": {
-        "title": "API (תואם OpenAI)",
+        "title": "API",
         "provider": {
           "title": "ספק",
-          "description": "בחר ספק שתואם ל-OpenAI."
+          "description": "בחר ספק שתואם ל-OpenAI או ל-Anthropic."
+        },
+        "apiFormat": {
+          "title": "פורמט API",
+          "description": "פורמט הבקשה שה-endpoint המותאם שלך מצפה לו.",
+          "options": {
+            "openai": "תואם OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "כתובת URL בסיסית",
           "description": "כתובת ה-API הבסיסית עבור הספק הנבחר. רק ספק מותאם אישית ניתן לעריכה.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "מפתח API",
@@ -460,6 +450,7 @@
       "loading": "טוען היסטוריה...",
       "empty": "עדיין אין תמלולים. התחל להקליט כדי לבנות את ההיסטוריה שלך!",
       "copyToClipboard": "העתק תמלול ללוח",
+      "copyError": "לא ניתן להעתיק את התמלול ללוח.",
       "save": "שמור תמלול",
       "unsave": "הסר משמורים",
       "delete": "מחק רשומה",
@@ -594,6 +585,13 @@
         "button": "תצוגה מקדימה",
         "noNotes": "לא נמצאו הערות גרסה מצורפות",
         "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
+      },
+      "onboardingPreview": {
+        "title": "תצוגה מקדימה של ההגדרה הראשונית",
+        "description": "הצג את מסכי ההגדרה הראשונית בלי לשנות הרשאות, מודלים או את מצב ההשלמה",
+        "permissionsButton": "הרשאות",
+        "modelsButton": "בחירת מודל",
+        "exitButton": "יציאה מהתצוגה המקדימה"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "טוען...",
     "delete": "מחק",
+    "back": "חזרה",
     "close": "סגור",
     "open": "פתח",
     "copy": "העתק",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "מתמלל...",
-    "processing": "מעבד..."
+    "processing": "מעבד...",
+    "loadingModel": "טוען מודל..."
   },
   "whatsNew": {
     "title": "חדש ב-Handy v{{version}}"

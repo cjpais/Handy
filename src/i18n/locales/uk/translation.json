@@ -26,6 +26,18 @@
     "showFewerModels": "Показати менше моделей",
     "recommended": "Рекомендовано",
     "customModelDescription": "Офіційно не підтримується",
+    "migration": {
+      "title": "Ваші моделі потребують оновлення",
+      "description": "Handy тепер використовує моделі нового типу. Завантажте нову версію, щоб і далі транскрибувати. Старі версії буде видалено.",
+      "replaces": "Замінює {{name}}",
+      "oldFormat": "Старий формат",
+      "failed": "Помилка завантаження",
+      "retry": "Спробувати ще раз",
+      "chooseAnother": "Обрати іншу модель",
+      "download": "Завантажити моделі ({{size}})",
+      "continue": "Продовжити",
+      "timeRemaining": "Залишилося {{time}}"
+    },
     "modelCard": {
       "accuracy": "точність",
       "speed": "швидкість"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Хороша точність, але повільна"
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Лише англійська. Найкраща модель для англомовних"
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Швидка та точна"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Дуже швидкий, лише англійська. Добре справляється з акцентами."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Надшвидкий, лише англійська"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Швидкий, лише англійська. Добрий баланс швидкості та точності."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Лише англійська. Висока якість."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Оптимізовано для тайванської мандаринської. Підтримка перемикання мов."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Дуже швидкий. Китайська, англійська, японська, корейська, кантонська."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Розпізнавання російського мовлення. Швидко і точно."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Дуже швидка. Англійська, німецька, іспанська, французька. Підтримує переклад."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Точна багатомовна. 25 європейських мов. Підтримує переклад."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Велика, повільніша, але дуже точна багатомовна модель."
       }
     },
     "errors": {
@@ -127,9 +95,6 @@
     "noModelsAvailable": "Немає доступних моделей",
     "verifying": "Перевірка {{modelName}}...",
     "verifyingGeneric": "Перевірка...",
-    "extracting": "Розпакування {{modelName}}...",
-    "extractingMultiple": "Розпакування {{count}} моделей...",
-    "extractingGeneric": "Розпакування...",
     "downloading": "Завантаження {{percentage}}%",
     "downloadingMultiple": "Завантаження {{count}} моделей...",
     "modelReady": "Модель готова",
@@ -215,6 +180,13 @@
       "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
       "deleteActiveConfirm": "{{modelName}} — ваша активна модель. Видалення зупинить транскрипцію, доки ви не оберете нову модель. Ви впевнені?",
       "deleteTitle": "Видалити модель",
+      "retiredNotice": {
+        "title": "Старі моделі більше не працюють з Handy",
+        "description": "Вони займають {{size}} на вашому комп'ютері.",
+        "delete": "Видалити моделі",
+        "deleted": "Старі моделі видалено",
+        "deleteFailed": "Не вдалося видалити деякі старі моделі. Подробиці дивіться в журналі."
+      },
       "filters": {
         "allLanguages": "Усі мови",
         "streaming": "Фільтрувати моделі з підтримкою транскрипції в реальному часі",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Прискорення Whisper",
-          "description": "Апаратне прискорення для моделей Whisper. Автоматичний режим використовує GPU за наявності (Metal на macOS, Vulkan на Windows/Linux)."
-        },
-        "ort": {
-          "title": "Прискорення ONNX",
-          "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). DirectML на Windows є експериментальним. Моделі можуть не виконувати транскрипцію."
+          "title": "Апаратне прискорення",
+          "description": "Оберіть обладнання для транскрипції. Автоматичний режим використовує GPU за наявності, а інакше перемикається на CPU."
         },
         "gpuDevice": {
           "auto": "Авто"
@@ -387,6 +355,10 @@
         "title": "Виявлення голосової активності",
         "description": "Відфільтровує тишу із записів. Моделі з підтримкою потокової обробки використовують довший «хвіст» VAD; вимкнення VAD записує необроблений звук."
       },
+      "longFormChunking": {
+        "title": "Поділ довгого аудіо",
+        "description": "Розділяє довгі записи за паузами перед розпізнаванням, що зазвичай покращує якість розпізнавання."
+      },
       "vadBackend": {
         "title": "Рушій виявлення голосу",
         "description": "Виберіть детектор для фільтрації тиші. Earshot — експериментальний; поверніться до Silero, якщо мовлення обрізається або шум зберігається.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Видаляти слова-паразити",
         "description": "Видаляє поширені слова-вагання з транскрипцій. Вимкніть, щоб зберегти їх."
+      },
+      "chineseScript": {
+        "title": "Китайська писемність",
+        "description": "Записує транскрипції мандаринською та кантонською спрощеними або традиційними ієрогліфами. Інші мови не змінюються.",
+        "options": {
+          "asTranscribed": "Як розпізнано",
+          "simplified": "Спрощені",
+          "traditional": "Традиційні"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Гаряча клавіша"
       },
       "api": {
-        "title": "API (сумісний з OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Провайдер",
-          "description": "Оберіть OpenAI-сумісного провайдера"
+          "description": "Оберіть OpenAI- або Anthropic-сумісного провайдера"
+        },
+        "apiFormat": {
+          "title": "Формат API",
+          "description": "Формат запиту, який очікує ваш ендпоінт.",
+          "options": {
+            "openai": "Сумісний з OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence недоступний на цьому пристрої. Потрібен Mac з Apple Silicon під управлінням macOS Tahoe (26.0) або новіше з увімкненим Apple Intelligence в Системних налаштуваннях."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "Базова URL-адреса",
           "description": "Базова URL-адреса API для обраного провайдера. Лише власний провайдер можна редагувати.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-ключ",
@@ -460,6 +450,7 @@
       "loading": "Завантаження історії...",
       "empty": "Транскрипцій поки немає. Почніть запис, щоб створити історію!",
       "copyToClipboard": "Копіювати транскрипцію в буфер обміну",
+      "copyError": "Не вдалося скопіювати транскрипцію в буфер обміну.",
       "save": "Зберегти транскрипцію",
       "unsave": "Видалити зі збережених",
       "delete": "Видалити запис",
@@ -594,6 +585,13 @@
         "button": "Перегляд",
         "noNotes": "Вбудовані примітки до випуску не знайдено",
         "error": "Не вдалося переглянути примітки до випуску"
+      },
+      "onboardingPreview": {
+        "title": "Попередній перегляд початкового налаштування",
+        "description": "Перегляньте екрани початкового налаштування, не змінюючи дозволи, моделі чи стан завершення",
+        "permissionsButton": "Дозволи",
+        "modelsButton": "Вибір моделі",
+        "exitButton": "Вийти з перегляду"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Завантаження...",
     "delete": "Видалити",
+    "back": "Назад",
     "close": "Закрити",
     "open": "Відкрити",
     "copy": "Копіювати",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Обробка...",
-    "processing": "Постобробка..."
+    "processing": "Постобробка...",
+    "loadingModel": "Завантаження моделі..."
   },
   "whatsNew": {
     "title": "Нове в Handy v{{version}}"

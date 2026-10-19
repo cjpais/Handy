@@ -26,6 +26,18 @@
     "showFewerModels": "Vis færre modeller",
     "recommended": "Anbefalet",
     "customModelDescription": "Ikke officielt understøttet",
+    "migration": {
+      "title": "Dine modeller skal opdateres",
+      "description": "Handy bruger nu en nyere type model. Download den nye version for at fortsætte med at transskribere. Gamle versioner vil blive fjernet.",
+      "replaces": "Erstatter {{name}}",
+      "oldFormat": "Gammelt format",
+      "failed": "Download mislykkedes",
+      "retry": "Prøv igen",
+      "chooseAnother": "Vælg en anden model",
+      "download": "Download modeller ({{size}})",
+      "continue": "Fortsæt",
+      "timeRemaining": "{{time}} tilbage"
+    },
     "modelCard": {
       "accuracy": "nøjagtighed",
       "speed": "hastighed"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "God nøjagtighed, men langsom."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Kun engelsk. Den bedste model for engelsktalende."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Hurtig og nøjagtig"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Meget hurtig, kun engelsk. Håndterer accenter godt."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrahurtig, kun engelsk"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Hurtig, kun engelsk. God balance mellem hastighed og nøjagtighed."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Kun engelsk. Høj kvalitet."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimeret til taiwansk mandarin. Understøtter kodeskift."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Meget hurtig. Kinesisk, engelsk, japansk, koreansk, kantonesisk."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russisk talegenkendelse. Hurtig og nøjagtig."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Meget hurtig. Engelsk, tysk, spansk, fransk. Understøtter oversættelse."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Nøjagtig, flersproget. 25 europæiske sprog. Understøtter oversættelse."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "En stor, langsommere, men meget nøjagtig flersproget model."
       }
     },
     "errors": {
@@ -129,9 +97,6 @@
     "noModelsAvailable": "Ingen modeller tilgængelige",
     "verifying": "Verificerer {{modelName}}...",
     "verifyingGeneric": "Verificerer...",
-    "extracting": "Udpakker {{modelName}}...",
-    "extractingMultiple": "Udpakker {{count}} modeller...",
-    "extractingGeneric": "Udpakker...",
     "downloading": "Downloader {{percentage}}%",
     "downloadingMultiple": "Downloader {{count}} modeller...",
     "modelReady": "Model klar",
@@ -218,6 +183,13 @@
       "deleteConfirm": "Er du sikker på, at du vil slette {{modelName}}? Du skal downloade den igen for at bruge den.",
       "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
       "deleteTitle": "Slet model",
+      "retiredNotice": {
+        "title": "Gamle modeller virker ikke længere med Handy",
+        "description": "De fylder {{size}} på din computer.",
+        "delete": "Slet modeller",
+        "deleted": "Gamle modeller er slettet",
+        "deleteFailed": "Nogle gamle modeller kunne ikke slettes. Se loggen for detaljer."
+      },
       "filters": {
         "allLanguages": "Alle sprog",
         "streaming": "Filtrer modeller, der understøtter live transskription",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp-acceleration",
-          "description": "Hardwareacceleration til transcribe.cpp-modeller (Whisper-familien). Auto bruger GPU, hvis tilgængelig (Metal på macOS, Vulkan på Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX-acceleration",
-          "description": "Hardwareacceleration til ONNX-modeller (Parakeet, Canary, Moonshine osv.). DirectML på Windows er eksperimentelt. Modeller kan fejle under transskription."
+          "title": "Hardwareacceleration",
+          "description": "Vælg den hardware, der bruges til transskription. Automatisk bruger GPU'en, når den er tilgængelig, og falder ellers tilbage til CPU'en."
         },
         "gpuDevice": {
           "auto": "Automatisk"
@@ -387,6 +355,10 @@
         "title": "Stemmeaktivitetsdetektion",
         "description": "Filtrer stilhed fra optagelser. Streaming-modeller bruger en længere VAD-hale; deaktivering af VAD optager rå lyd."
       },
+      "longFormChunking": {
+        "title": "Opdeling af lang lyd",
+        "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen."
+      },
       "vadBackend": {
         "title": "Stemmedetektions-backend",
         "description": "Vælg den detektor, der bruges til at filtrere stilhed. Earshot er eksperimentel; skift tilbage til Silero, hvis tale klippes eller støj bevares.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Fjern fyldord",
         "description": "Fjerner almindelige tøveord fra transskriptioner. Slå fra for at beholde dem."
+      },
+      "chineseScript": {
+        "title": "Kinesisk skrift",
+        "description": "Skriver mandarin- og kantonesisk-transskriptioner med forenklede eller traditionelle tegn. Andre sprog ændres ikke.",
+        "options": {
+          "asTranscribed": "Som transskriberet",
+          "simplified": "Forenklet",
+          "traditional": "Traditionel"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Genvejstast"
       },
       "api": {
-        "title": "API (OpenAI-kompatibel)",
+        "title": "API",
         "provider": {
           "title": "Udbyder",
-          "description": "Vælg en OpenAI-kompatibel udbyder."
+          "description": "Vælg en OpenAI- eller Anthropic-kompatibel udbyder."
+        },
+        "apiFormat": {
+          "title": "API-format",
+          "description": "Det anmodningsformat, som det brugerdefinerede endpoint forventer.",
+          "options": {
+            "openai": "OpenAI-kompatibel (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence er ikke tilgængelig på denne enhed. Kræver en Apple Silicon Mac med macOS Tahoe (26.0) eller nyere med Apple Intelligence aktiveret i Systemindstillinger."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "Basis-URL",
           "description": "API-basis-URL for den valgte udbyder. Kun den brugerdefinerede udbyder kan redigeres.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-nøgle",
@@ -460,6 +450,7 @@
       "loading": "Indlæser historik...",
       "empty": "Ingen transskriptioner endnu. Start optagelse for at opbygge din historik!",
       "copyToClipboard": "Kopiér transskription til udklipsholder",
+      "copyError": "Kunne ikke kopiere transskriptionen til udklipsholderen.",
       "save": "Gem transskription",
       "unsave": "Fjern fra gemte",
       "delete": "Slet post",
@@ -501,6 +492,13 @@
         "button": "Forhåndsvisning",
         "noNotes": "Ingen medfølgende udgivelsesnoter fundet",
         "error": "Kunne ikke forhåndsvise udgivelsesnoter"
+      },
+      "onboardingPreview": {
+        "title": "Forhåndsvis introduktion",
+        "description": "Forhåndsvis introduktionsskærmene uden at ændre tilladelser, modeller eller fuldførelsesstatus",
+        "permissionsButton": "Tilladelser",
+        "modelsButton": "Modelvalg",
+        "exitButton": "Afslut forhåndsvisning"
       },
       "soundTheme": {
         "label": "Lydtema",
@@ -651,6 +649,7 @@
   "common": {
     "loading": "Indlæser...",
     "delete": "Slet",
+    "back": "Tilbage",
     "close": "Luk",
     "open": "Åbn",
     "copy": "Kopiér",
@@ -694,7 +693,8 @@
   },
   "overlay": {
     "transcribing": "Transskriberer...",
-    "processing": "Behandler..."
+    "processing": "Behandler...",
+    "loadingModel": "Indlæser model..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",

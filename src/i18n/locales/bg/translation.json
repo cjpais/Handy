@@ -26,6 +26,18 @@
     "showFewerModels": "Показване на по-малко модели",
     "recommended": "Препоръчан",
     "customModelDescription": "Не се поддържа официално",
+    "migration": {
+      "title": "Моделите ви се нуждаят от обновяване",
+      "description": "Handy вече използва по-нов вид модели. Изтеглете новата версия, за да продължите да транскрибирате. Старите версии ще бъдат премахнати.",
+      "replaces": "Заменя {{name}}",
+      "oldFormat": "Стар формат",
+      "failed": "Изтеглянето е неуспешно",
+      "retry": "Опитайте отново",
+      "chooseAnother": "Изберете друг модел",
+      "download": "Изтегляне на модели ({{size}})",
+      "continue": "Продължи",
+      "timeRemaining": "Остават {{time}}"
+    },
     "modelCard": {
       "accuracy": "точност",
       "speed": "скорост"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Добра точност, но по-бавен."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Само английски. Най-добрият модел за носители на английски."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Бърз и точен."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Много бърз, само английски. Добре обработва акценти."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ултрабърз, само английски."
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Бърз, само английски. Добър баланс между скорост и точност."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Само английски. Високо качество."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Оптимизиран за тайвански мандарин. Поддръжка на смесване на езици."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Много бърз. Китайски, английски, японски, корейски, кантонски."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Разпознаване на руска реч. Бърз и точен."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Много бърз. Английски, немски, испански, френски. Поддържа превод."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Точен многоезичен. 25 европейски езика. Поддържа превод."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Голям, по-бавен, но много точен многоезичен модел."
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "Няма налични модели",
     "verifying": "Проверка на {{modelName}}...",
     "verifyingGeneric": "Проверка...",
-    "extracting": "Разархивиране на {{modelName}}...",
-    "extractingMultiple": "Разархивиране на {{count}} модела...",
-    "extractingGeneric": "Разархивиране...",
     "downloading": "Изтегляне {{percentage}}%",
     "downloadingMultiple": "Изтегляне на {{count}} модела...",
     "modelReady": "Моделът е готов",
@@ -217,6 +182,13 @@
       "deleteConfirm": "Сигурни ли сте, че искате да изтриете {{modelName}}? Ще трябва да го изтеглите отново, за да го използвате.",
       "deleteActiveConfirm": "{{modelName}} е вашият активен модел. Изтриването му ще спре транскрипциите, докато не изберете нов модел. Сигурни ли сте?",
       "deleteTitle": "Изтриване на модел",
+      "retiredNotice": {
+        "title": "Старите модели вече не работят с Handy",
+        "description": "Заемат {{size}} на компютъра ви.",
+        "delete": "Изтрий моделите",
+        "deleted": "Старите модели са изтрити",
+        "deleteFailed": "Някои стари модели не можаха да бъдат изтрити. Проверете журнала за подробности."
+      },
       "filters": {
         "allLanguages": "Всички езици",
         "streaming": "Филтриране на моделите, които поддържат транскрипция на живо",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Ускорение за Whisper",
-          "description": "Хардуерно ускорение за моделите Whisper. „Автоматично“ използва GPU при наличност (Metal на macOS, Vulkan на Windows/Linux)."
-        },
-        "ort": {
-          "title": "Ускорение за ONNX",
-          "description": "Хардуерно ускорение за ONNX модели (Parakeet, Canary, Moonshine и др.). DirectML на Windows е експериментален. Моделите може да не транскрибират."
+          "title": "Хардуерно ускорение",
+          "description": "Изберете хардуера, използван за транскрипция. „Автоматично“ използва GPU при наличност, а в противен случай преминава към CPU."
         },
         "gpuDevice": {
           "auto": "Автоматично"
@@ -387,6 +355,10 @@
         "title": "Откриване на гласова активност",
         "description": "Филтрира тишината от записите. Моделите с поддръжка на стрийминг използват по-дълга опашка на VAD; изключването на VAD записва необработен звук."
       },
+      "longFormChunking": {
+        "title": "Разделяне на дълго аудио",
+        "description": "Разделя дългите записи на паузите преди транскрибиране, което обикновено подобрява качеството на транскрипцията."
+      },
       "vadBackend": {
         "title": "Бекенд за откриване на глас",
         "description": "Изберете детектора, използван за филтриране на тишината. Earshot е експериментален; върнете се към Silero, ако речта се отрязва или шумът се запазва.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Премахване на думи паразити",
         "description": "Премахва често срещаните думи за колебание от транскрипциите. Изключете, за да ги запазите."
+      },
+      "chineseScript": {
+        "title": "Китайска писменост",
+        "description": "Записва транскрипциите на мандарин и кантонски с опростени или традиционни йероглифи. Другите езици остават непроменени.",
+        "options": {
+          "asTranscribed": "Както е транскрибирано",
+          "simplified": "Опростени",
+          "traditional": "Традиционни"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Бърз клавиш"
       },
       "api": {
-        "title": "API (съвместим с OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Доставчик",
-          "description": "Изберете доставчик, съвместим с OpenAI."
+          "description": "Изберете доставчик, съвместим с OpenAI или Anthropic."
+        },
+        "apiFormat": {
+          "title": "Формат на API",
+          "description": "Формат на заявката, очакван от вашия персонализиран краен адрес.",
+          "options": {
+            "openai": "Съвместим с OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence не е налична на това устройство. Необходим е Mac с Apple Silicon и macOS Tahoe (26.0) или по-нова с включена Apple Intelligence в Системните настройки."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "Базов URL",
           "description": "Базов API URL за избрания доставчик. Редактируем е само при персонализиран доставчик.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API ключ",
@@ -460,6 +450,7 @@
       "loading": "Зареждане на историята...",
       "empty": "Все още няма транскрипции. Започнете запис, за да изградите история!",
       "copyToClipboard": "Копиране на транскрипцията в клипборда",
+      "copyError": "Транскрипцията не бе копирана в клипборда.",
       "save": "Запазване на транскрипцията",
       "unsave": "Премахване от запазените",
       "delete": "Изтриване на записа",
@@ -594,6 +585,13 @@
         "button": "Преглед",
         "noNotes": "Не са намерени включени бележки към изданието",
         "error": "Неуспешен преглед на бележките към изданието"
+      },
+      "onboardingPreview": {
+        "title": "Преглед на първоначалната настройка",
+        "description": "Прегледайте екраните за първоначална настройка, без да променяте разрешенията, моделите или състоянието на завършване",
+        "permissionsButton": "Разрешения",
+        "modelsButton": "Избор на модел",
+        "exitButton": "Изход от прегледа"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Зареждане...",
     "delete": "Изтриване",
+    "back": "Назад",
     "close": "Затваряне",
     "open": "Отваряне",
     "copy": "Копиране",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Транскрибиране...",
-    "processing": "Обработка..."
+    "processing": "Обработка...",
+    "loadingModel": "Зареждане на модела..."
   },
   "whatsNew": {
     "title": "Ново в Handy v{{version}}"

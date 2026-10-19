@@ -26,6 +26,18 @@
     "showFewerModels": "Mostrar menos modelos",
     "recommended": "Recomendado",
     "customModelDescription": "Sin soporte oficial",
+    "migration": {
+      "title": "Tus modelos necesitan una actualización",
+      "description": "Handy ahora usa un tipo de modelo más nuevo. Descarga la nueva versión para seguir transcribiendo. Las versiones antiguas se eliminarán.",
+      "replaces": "Reemplaza a {{name}}",
+      "oldFormat": "Formato antiguo",
+      "failed": "Error en la descarga",
+      "retry": "Intentar de nuevo",
+      "chooseAnother": "Elegir otro modelo",
+      "download": "Descargar modelos ({{size}})",
+      "continue": "Continuar",
+      "timeRemaining": "Quedan {{time}}"
+    },
     "modelCard": {
       "accuracy": "precisión",
       "speed": "velocidad"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Buena precisión, pero lento."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Solo inglés. El mejor modelo para hablantes de inglés."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Rápido y preciso"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Muy rápido, solo inglés. Maneja bien los acentos."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrarrápido, solo inglés"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Rápido, solo inglés. Buen equilibrio entre velocidad y precisión."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Solo inglés. Alta calidad."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimizado para mandarín taiwanés. Soporte para cambio de código."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Muy rápido. Chino, inglés, japonés, coreano, cantonés."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Reconocimiento de voz en ruso. Rápido y preciso."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Muy rápido. Inglés, alemán, español, francés. Soporta traducción."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Multilingüe preciso. 25 idiomas europeos. Soporta traducción."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Un modelo grande, más lento, pero muy preciso y multilingüe."
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "No hay modelos disponibles",
     "verifying": "Verificando {{modelName}}...",
     "verifyingGeneric": "Verificando...",
-    "extracting": "Extrayendo {{modelName}}...",
-    "extractingMultiple": "Extrayendo {{count}} modelos...",
-    "extractingGeneric": "Extrayendo...",
     "downloading": "Descargando {{percentage}}%",
     "downloadingMultiple": "Descargando {{count}} modelos...",
     "modelReady": "Modelo listo",
@@ -164,6 +129,13 @@
       "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
       "deleteActiveConfirm": "{{modelName}} es tu modelo activo. Eliminarlo detendrá las transcripciones hasta que selecciones un nuevo modelo. ¿Estás seguro?",
       "deleteTitle": "Eliminar modelo",
+      "retiredNotice": {
+        "title": "Los modelos antiguos ya no funcionan con Handy",
+        "description": "Ocupan {{size}} en tu equipo.",
+        "delete": "Eliminar modelos",
+        "deleted": "Modelos antiguos eliminados",
+        "deleteFailed": "No se pudieron eliminar algunos modelos antiguos. Consulta el registro para más detalles."
+      },
       "filters": {
         "allLanguages": "Todos los idiomas",
         "streaming": "Filtrar modelos compatibles con la transcripción en vivo",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Aceleración de transcribe.cpp",
-          "description": "Aceleración por hardware para modelos transcribe.cpp (familia Whisper). Auto usa GPU si está disponible (Metal en macOS, Vulkan en Windows/Linux)."
-        },
-        "ort": {
-          "title": "Aceleración de ONNX",
-          "description": "Aceleración por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML en Windows es experimental. Los modelos pueden fallar al transcribir."
+          "title": "Aceleración por hardware",
+          "description": "Elige el hardware que se usa para la transcripción. Automático usa la GPU cuando está disponible y, si no, recurre a la CPU."
         },
         "gpuDevice": {
           "auto": "Automático"
@@ -387,6 +355,10 @@
         "title": "Detección de actividad de voz",
         "description": "Filtra el silencio de las grabaciones. Los modelos compatibles con streaming usan una cola de VAD más larga; desactivar el VAD graba audio sin procesar."
       },
+      "longFormChunking": {
+        "title": "División de audio largo",
+        "description": "Divide las grabaciones largas en las pausas antes de transcribirlas, lo que normalmente mejora el rendimiento de la transcripción."
+      },
       "vadBackend": {
         "title": "Backend de detección de voz",
         "description": "Elige el detector usado para filtrar el silencio. Earshot es experimental; vuelve a Silero si la voz se recorta o se conserva el ruido.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Eliminar muletillas",
         "description": "Elimina las muletillas más comunes de las transcripciones. Desactívalo para conservarlas."
+      },
+      "chineseScript": {
+        "title": "Escritura china",
+        "description": "Escribe las transcripciones en mandarín y cantonés con caracteres simplificados o tradicionales. Los demás idiomas no se modifican.",
+        "options": {
+          "asTranscribed": "Tal como se transcribió",
+          "simplified": "Simplificado",
+          "traditional": "Tradicional"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Tecla de acceso rápido"
       },
       "api": {
-        "title": "API (compatible con OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Proveedor",
-          "description": "Selecciona un proveedor compatible con OpenAI."
+          "description": "Selecciona un proveedor compatible con OpenAI o Anthropic."
+        },
+        "apiFormat": {
+          "title": "Formato de API",
+          "description": "Formato de solicitud esperado por tu endpoint personalizado.",
+          "options": {
+            "openai": "Compatible con OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence no está disponible en este dispositivo. Requiere un Mac con Apple Silicon ejecutando macOS Tahoe (26.0) o posterior con Apple Intelligence habilitado en Ajustes del Sistema."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "URL base",
           "description": "URL base de la API para el proveedor seleccionado. Solo se puede editar el proveedor personalizado.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Clave API",
@@ -460,6 +450,7 @@
       "loading": "Cargando historial...",
       "empty": "Aún no hay transcripciones. ¡Comienza a grabar para crear tu historial!",
       "copyToClipboard": "Copiar transcripción al portapapeles",
+      "copyError": "No se pudo copiar la transcripción al portapapeles.",
       "save": "Guardar transcripción",
       "unsave": "Eliminar de guardados",
       "delete": "Eliminar entrada",
@@ -594,6 +585,13 @@
         "button": "Vista previa",
         "noNotes": "No se encontraron notas de la versión incluidas",
         "error": "No se pudo mostrar la vista previa de las notas de la versión"
+      },
+      "onboardingPreview": {
+        "title": "Vista previa de la configuración inicial",
+        "description": "Previsualiza las pantallas de configuración inicial sin cambiar permisos, modelos ni el estado de finalización",
+        "permissionsButton": "Permisos",
+        "modelsButton": "Selección de modelo",
+        "exitButton": "Salir de la vista previa"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Cargando...",
     "delete": "Eliminar",
+    "back": "Atrás",
     "close": "Cerrar",
     "open": "Abrir",
     "copy": "Copiar",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Transcribiendo...",
-    "processing": "Procesando..."
+    "processing": "Procesando...",
+    "loadingModel": "Cargando modelo..."
   },
   "whatsNew": {
     "title": "Nuevo en Handy v{{version}}"

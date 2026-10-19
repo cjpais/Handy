@@ -1,4 +1,10 @@
-import { useEffect, useState, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  type ReactNode,
+} from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
@@ -12,18 +18,36 @@ import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
-import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
+import Onboarding, {
+  AccessibilityOnboarding,
+  ModelMigration,
+} from "./components/onboarding";
+import {
+  DebugSettings,
+  type OnboardingPreviewStep,
+} from "./components/settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
+import { deleteRetiredModel } from "@/components/onboarding/retiredModels";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
-type OnboardingStep = "accessibility" | "model" | "done";
+type OnboardingStep = "accessibility" | "migration" | "model" | "done";
 
-const renderSettingsContent = (section: SidebarSection) => {
+// Stable identity so preview effects do not re-run due to callback changes.
+const NOOP = () => {};
+
+const renderSettingsContent = (
+  section: SidebarSection,
+  onPreviewOnboarding: (step: OnboardingPreviewStep) => void,
+) => {
+  if (section === "debug") {
+    return <DebugSettings onPreviewOnboarding={onPreviewOnboarding} />;
+  }
+
   const ActiveComponent =
     SECTIONS_CONFIG[section]?.component || SECTIONS_CONFIG.general.component;
   return <ActiveComponent />;
@@ -34,9 +58,14 @@ function App() {
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
+  const [onboardingPreview, setOnboardingPreview] =
+    useState<OnboardingPreviewStep | null>(null);
   // Track if this is a returning user who just needs to grant permissions
   // (vs a new user who needs full onboarding including model selection)
   const [isReturningUser, setIsReturningUser] = useState(false);
+  // Set when a returning user's selected model is a retired (ONNX) model that
+  // is still on disk: they must update it before the app can transcribe.
+  const [migrationModelId, setMigrationModelId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
@@ -48,6 +77,26 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const settingsScrollRef = useRef<HTMLDivElement>(null);
+  const isShowingOnboarding =
+    onboardingPreview !== null ||
+    onboardingStep === "accessibility" ||
+    onboardingStep === "migration" ||
+    onboardingStep === "model";
+
+  // Classic scrollbars consume layout space. Reserve a matching gutter on the
+  // opposite edge while onboarding is visible so its content stays centered in
+  // the physical window. Overlay scrollbars ignore scrollbar-gutter.
+  useLayoutEffect(() => {
+    const attribute = "data-onboarding-active";
+    document.documentElement.toggleAttribute(attribute, isShowingOnboarding);
+    return () => document.documentElement.removeAttribute(attribute);
+  }, [isShowingOnboarding]);
+
+  // Reset the scroll position whenever the active section changes.
+  useLayoutEffect(() => {
+    settingsScrollRef.current?.scrollTo({ top: 0 });
+  }, [currentSection]);
 
   useEffect(() => {
     checkOnboardingStatus();
@@ -181,6 +230,24 @@ function App() {
     }
   };
 
+  const getMigrationModelId = async (
+    selectedModel: string,
+  ): Promise<string | null> => {
+    const retired = await commands.getRetiredModels();
+    return retired.some((m) => m.id === selectedModel) ? selectedModel : null;
+  };
+
+  // Returning users land in the app unless their model needs updating. The
+  // window may start hidden, so bring it forward for the update screen.
+  const finishReturningUser = async (retiredModelId: string | null) => {
+    if (retiredModelId) {
+      await revealMainWindowForPermissions();
+      setOnboardingStep("migration");
+    } else {
+      setOnboardingStep("done");
+    }
+  };
+
   const checkOnboardingStatus = async () => {
     try {
       const settingsResult = await commands.getAppSettings();
@@ -192,6 +259,10 @@ function App() {
       if (hasCompletedOnboarding) {
         // Returning user - check if they need to grant permissions first
         setIsReturningUser(true);
+        const retiredModelId = await getMigrationModelId(
+          settingsResult.data.selected_model ?? "",
+        );
+        setMigrationModelId(retiredModelId);
 
         if (currentPlatform === "macos") {
           try {
@@ -228,7 +299,7 @@ function App() {
           }
         }
 
-        setOnboardingStep("done");
+        await finishReturningUser(retiredModelId);
       } else {
         // New user - start full onboarding
         setIsReturningUser(false);
@@ -241,12 +312,23 @@ function App() {
   };
 
   const handleAccessibilityComplete = () => {
-    // Returning users already have models, skip to main app
-    // New users need to select a model
-    setOnboardingStep(isReturningUser ? "done" : "model");
+    // Returning users already have models, skip to main app (unless their
+    // model needs updating). New users need to select a model.
+    if (isReturningUser) {
+      finishReturningUser(migrationModelId);
+    } else {
+      setOnboardingStep("model");
+    }
   };
 
-  const handleModelSelected = () => {
+  const handleModelSelected = async () => {
+    // Coming from the model update: the user picked a different model instead
+    // of updating, so the retired models left on disk can't run anymore.
+    if (migrationModelId) {
+      for (const model of await commands.getRetiredModels()) {
+        await deleteRetiredModel(model.id);
+      }
+    }
     // Transition to main app - user has started a download
     setOnboardingStep("done");
   };
@@ -282,12 +364,47 @@ function App() {
   // stable wrapper around this node, so crossing between onboarding steps and
   // the main app never remounts it (which would drop any in-flight toast).
   let content: ReactNode;
-  if (onboardingStep === "accessibility") {
+  if (onboardingPreview) {
+    // Render previews in the same top-level slot as real onboarding. Keeping
+    // the settings layout unmounted ensures viewport overflow behaves exactly
+    // as it does during first-run onboarding.
+    content = (
+      <>
+        {onboardingPreview === "accessibility" ? (
+          <AccessibilityOnboarding onComplete={NOOP} preview />
+        ) : (
+          <Onboarding onModelSelected={NOOP} preview />
+        )}
+        <button
+          type="button"
+          onClick={() => setOnboardingPreview(null)}
+          className="fixed top-4 end-4 z-50 rounded-lg border border-mid-gray/20 bg-background px-4 py-2 text-sm font-medium text-text shadow-lg hover:bg-background-ui/30 cursor-pointer"
+        >
+          {t("settings.debug.onboardingPreview.exitButton")}
+        </button>
+      </>
+    );
+  } else if (onboardingStep === "accessibility") {
     content = (
       <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
     );
+  } else if (onboardingStep === "migration" && migrationModelId) {
+    content = (
+      <ModelMigration
+        inUseModelId={migrationModelId}
+        onComplete={() => setOnboardingStep("done")}
+        onChooseAnother={() => setOnboardingStep("model")}
+      />
+    );
   } else if (onboardingStep === "model") {
-    content = <Onboarding onModelSelected={handleModelSelected} />;
+    content = (
+      <Onboarding
+        onModelSelected={handleModelSelected}
+        onBack={
+          migrationModelId ? () => setOnboardingStep("migration") : undefined
+        }
+      />
+    );
   } else {
     content = (
       <div
@@ -305,11 +422,11 @@ function App() {
           />
           {/* Scrollable content area */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto">
+            <div ref={settingsScrollRef} className="flex-1 overflow-y-auto">
               <div className="flex flex-col items-center p-4 gap-4">
                 <AccessibilityPermissions />
                 <SecureInputWarning />
-                {renderSettingsContent(currentSection)}
+                {renderSettingsContent(currentSection, setOnboardingPreview)}
               </div>
             </div>
           </div>

@@ -26,6 +26,18 @@
     "showFewerModels": "Show fewer models",
     "recommended": "Recommended",
     "customModelDescription": "Not officially supported",
+    "migration": {
+      "title": "Your models need an update",
+      "description": "Handy now uses a newer kind of model. Download the new version to keep transcribing. Old versions will be removed.",
+      "replaces": "Replaces {{name}}",
+      "oldFormat": "Old format",
+      "failed": "Download failed",
+      "retry": "Try again",
+      "chooseAnother": "Choose a different model",
+      "download": "Download models ({{size}})",
+      "continue": "Continue",
+      "timeRemaining": "{{time}} remaining"
+    },
     "modelCard": {
       "accuracy": "accuracy",
       "speed": "speed"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Good accuracy, but slow."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "English only. The best model for English speakers."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Fast and accurate"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultra-fast, English only"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Fast, English only. Good balance of speed and accuracy."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "English only. High quality."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimized for Taiwanese Mandarin. Code-switching support."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Very fast. Chinese, English, Japanese, Korean, Cantonese."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russian speech recognition. Fast and accurate."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Very fast. English, German, Spanish, French. Supports translation."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Accurate multilingual. 25 European languages. Supports translation."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "A large, slower, but very accurate multilingual model."
       }
     },
     "errors": {
@@ -129,9 +97,6 @@
     "noModelsAvailable": "No models available",
     "verifying": "Verifying {{modelName}}...",
     "verifyingGeneric": "Verifying...",
-    "extracting": "Extracting {{modelName}}...",
-    "extractingMultiple": "Extracting {{count}} models...",
-    "extractingGeneric": "Extracting...",
     "downloading": "Downloading {{percentage}}%",
     "downloadingMultiple": "Downloading {{count}} models...",
     "modelReady": "Model Ready",
@@ -218,6 +183,13 @@
       "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
       "deleteActiveConfirm": "{{modelName}} is your active model. Deleting it will stop transcriptions until you select a new model. Are you sure?",
       "deleteTitle": "Delete Model",
+      "retiredNotice": {
+        "title": "Old models no longer work with Handy",
+        "description": "They're taking up {{size}} on your computer.",
+        "delete": "Delete models",
+        "deleted": "Deleted old models",
+        "deleteFailed": "Some old models couldn't be deleted. Check the log for details."
+      },
       "filters": {
         "allLanguages": "All Languages",
         "streaming": "Filter models that support live streaming transcription",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp Acceleration",
-          "description": "Hardware acceleration for transcribe.cpp (Whisper-family) models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX Acceleration",
-          "description": "Hardware acceleration for ONNX models (Parakeet, Canary, Moonshine, etc.). DirectML on Windows is experimental. Models may fail to transcribe."
+          "title": "Hardware Acceleration",
+          "description": "Choose the hardware used for transcription. Auto uses the GPU when available and falls back to the CPU."
         },
         "gpuDevice": {
           "auto": "Auto"
@@ -387,6 +355,10 @@
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       },
+      "longFormChunking": {
+        "title": "Long Audio Chunking",
+        "description": "Splits long recordings at pauses before transcribing, which typically improves transcription performance."
+      },
       "vadBackend": {
         "title": "Voice Activity Backend",
         "description": "Choose the detector used to filter silence. Earshot is experimental; switch back to Silero if speech is clipped or noise is retained.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Remove Filler Words",
         "description": "Removes common hesitation words from transcriptions. Turn off to keep them."
+      },
+      "chineseScript": {
+        "title": "Chinese Script",
+        "description": "Writes Mandarin and Cantonese transcriptions in Simplified or Traditional characters. Other languages are left unchanged.",
+        "options": {
+          "asTranscribed": "As Transcribed",
+          "simplified": "Simplified",
+          "traditional": "Traditional"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Hotkey"
       },
       "api": {
-        "title": "API (OpenAI Compatible)",
+        "title": "API",
         "provider": {
           "title": "Provider",
-          "description": "Select an OpenAI-compatible provider."
+          "description": "Select an OpenAI-compatible or Anthropic-compatible provider."
+        },
+        "apiFormat": {
+          "title": "API Format",
+          "description": "Request format expected by your custom endpoint.",
+          "options": {
+            "openai": "OpenAI Compatible (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence is not available on this device. Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "Base URL",
           "description": "API base URL for the selected provider. Only the custom provider can be edited.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API Key",
@@ -460,6 +450,7 @@
       "loading": "Loading history...",
       "empty": "No transcriptions yet. Start recording to build your history!",
       "copyToClipboard": "Copy transcription to clipboard",
+      "copyError": "Failed to copy transcription to clipboard.",
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
@@ -501,6 +492,13 @@
         "button": "Preview",
         "noNotes": "No bundled release notes found",
         "error": "Failed to preview release notes"
+      },
+      "onboardingPreview": {
+        "title": "Preview Onboarding",
+        "description": "Preview onboarding screens without changing permissions, models, or completion state",
+        "permissionsButton": "Permissions",
+        "modelsButton": "Model Selection",
+        "exitButton": "Exit Preview"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -651,6 +649,7 @@
   "common": {
     "loading": "Loading...",
     "delete": "Delete",
+    "back": "Back",
     "close": "Close",
     "open": "Open",
     "copy": "Copy",
@@ -694,7 +693,8 @@
   },
   "overlay": {
     "transcribing": "Transcribing...",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "loadingModel": "Loading model..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

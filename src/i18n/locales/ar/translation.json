@@ -1,7 +1,7 @@
 {
   "tray": {
-    "settings": "...الإعدادات",
-    "checkUpdates": "...التحقق من وجود تحديثات",
+    "settings": "الإعدادات...",
+    "checkUpdates": "التحقق من وجود تحديثات...",
     "copyLastTranscript": "نسخ آخر نص تم تفريغه",
     "unloadModel": "تفريغ النموذج",
     "model": "النموذج",
@@ -26,6 +26,18 @@
     "showFewerModels": "عرض عدد أقل من النماذج",
     "recommended": "موصى به",
     "customModelDescription": "غير مدعوم رسميًا",
+    "migration": {
+      "title": "نماذجك بحاجة إلى تحديث",
+      "description": "يستخدم Handy الآن نوعًا أحدث من النماذج. نزّل الإصدار الجديد لمواصلة التفريغ الصوتي. ستتم إزالة الإصدارات القديمة.",
+      "replaces": "يحل محل {{name}}",
+      "oldFormat": "تنسيق قديم",
+      "failed": "فشل التنزيل",
+      "retry": "حاول مرة أخرى",
+      "chooseAnother": "اختر نموذجًا مختلفًا",
+      "download": "تنزيل النماذج ({{size}})",
+      "continue": "متابعة",
+      "timeRemaining": "متبقٍ {{time}}"
+    },
     "modelCard": {
       "accuracy": "الدقة",
       "speed": "السرعة"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": ".دقة جيدة، لكنه بطيء"
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": ".الإنجليزية فقط. أفضل نموذج للمتحدثين بالإنجليزية"
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": ".سريع ودقيق"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": ".سريع جداً، الإنجليزية فقط. يتعامل جيداً مع اللهجات"
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "سريع للغاية، الإنجليزية فقط"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "سريع، الإنجليزية فقط. توازن جيد بين السرعة والدقة."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "الإنجليزية فقط. جودة عالية."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "محسّن للماندرين التايوانية. دعم التبديل بين اللغات."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "سريع جداً. الصينية، الإنجليزية، اليابانية، الكورية، الكانتونية."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "التعرف على الكلام الروسي. سريع ودقيق."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "سريع جداً. الإنجليزية، الألمانية، الإسبانية، الفرنسية. يدعم الترجمة."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "متعدد اللغات ودقيق. 25 لغة أوروبية. يدعم الترجمة."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "نموذج كبير وأبطأ، لكنه دقيق جداً ومتعدد اللغات."
       }
     },
     "errors": {
@@ -112,7 +80,7 @@
       },
       "grant": "منح الإذن",
       "granted": "تم المنح",
-      "waiting": "...في الانتظار",
+      "waiting": "في الانتظار...",
       "allGranted": "كل شيء جاهز!",
       "errors": {
         "checkFailed": "فشل التحقق من الأذونات. يرجير المحاولة مرة أخرى.",
@@ -127,14 +95,11 @@
     "noModelsAvailable": "لا توجد نماذج متاحة",
     "verifying": "جارٍ التحقق من {{modelName}}...",
     "verifyingGeneric": "جارٍ التحقق...",
-    "extracting": "...جاري استخراج {{modelName}}",
-    "extractingMultiple": "...جاري استخراج {{count}} من النماذج",
-    "extractingGeneric": "...جاري الاستخراج",
     "downloading": "جاري التنزيل {{percentage}}%",
     "downloadingMultiple": "جاري تنزيل {{count}} من النماذج...",
     "modelReady": "النموذج جاهز",
-    "loading": "...جاري تحميل {{modelName}}",
-    "loadingGeneric": "...جاري التحميل",
+    "loading": "جاري تحميل {{modelName}}...",
+    "loadingGeneric": "جاري التحميل...",
     "modelError": "خطأ في النموذج",
     "modelUnloaded": "تم إلغاء تحميل النموذج",
     "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
@@ -160,10 +125,10 @@
       "shortcut": {
         "title": "اختصارات Handy",
         "description": "إعداد اختصارات لوحة المفاتيح لبدء تسجيل التفريغ الصوتي",
-        "loading": "...جاري تحميل الاختصارات",
+        "loading": "جاري تحميل الاختصارات...",
         "none": "لا توجد اختصارات مجهزة",
         "notFound": "الاختصار غير موجود",
-        "pressKeys": "...اضغط على المفاتيح",
+        "pressKeys": "اضغط على المفاتيح...",
         "bindings": {
           "transcribe": {
             "name": "اختصار التفريغ الصوتي",
@@ -211,8 +176,8 @@
       "microphone": {
         "title": "الميكروفون",
         "description": "اختر جهاز الميكروفون المفضل لديك",
-        "placeholder": "...اختر الميكروفون",
-        "loading": "...جاري التحميل"
+        "placeholder": "اختر الميكروفون...",
+        "loading": "جاري التحميل..."
       },
       "channel": {
         "title": "قناة الإدخال",
@@ -227,8 +192,8 @@
       "outputDevice": {
         "title": "جهاز الإخراج",
         "description": "اختر جهاز إخراج الصوت المفضل لتنبيهات الصوت",
-        "placeholder": "...اختر جهاز الإخراج",
-        "loading": "...جاري التحميل"
+        "placeholder": "اختر جهاز الإخراج...",
+        "loading": "جاري التحميل..."
       },
       "volume": {
         "title": "مستوى الصوت",
@@ -253,12 +218,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "تسريع Whisper",
-          "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
-        },
-        "ort": {
-          "title": "تسريع ONNX",
-          "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
+          "title": "تسريع الأجهزة",
+          "description": "اختر الأجهزة المستخدمة للتفريغ الصوتي. الوضع التلقائي يستخدم GPU إن توفر، وإلا فيستخدم CPU."
         },
         "gpuDevice": {
           "auto": "تلقائي"
@@ -364,6 +325,10 @@
         "title": "كشف النشاط الصوتي",
         "description": "تصفية الصمت من التسجيلات. النماذج التي تدعم البث تستخدم فترة VAD أطول؛ وتعطيل VAD يسجّل الصوت الخام."
       },
+      "longFormChunking": {
+        "title": "تقسيم الصوت الطويل",
+        "description": "يقسّم التسجيلات الطويلة عند فترات التوقف قبل نسخها، مما يحسّن أداء النسخ عادةً."
+      },
       "vadBackend": {
         "title": "محرك كشف النشاط الصوتي",
         "description": "اختر الكاشف المستخدم لتصفية الصمت. Earshot تجريبي؛ ارجع إلى Silero إذا تم اقتطاع الكلام أو الاحتفاظ بالضوضاء.",
@@ -375,6 +340,15 @@
       "fillerWordRemoval": {
         "title": "إزالة كلمات الحشو",
         "description": "يزيل كلمات التردد الشائعة من النصوص. عطّل هذا الخيار للاحتفاظ بها."
+      },
+      "chineseScript": {
+        "title": "الكتابة الصينية",
+        "description": "يكتب نصوص الماندرين والكانتونية بالأحرف المبسطة أو التقليدية. لا تتغير اللغات الأخرى.",
+        "options": {
+          "asTranscribed": "كما نُسخ",
+          "simplified": "مبسطة",
+          "traditional": "تقليدية"
+        }
       }
     },
     "postProcessing": {
@@ -382,10 +356,18 @@
         "title": "مفتاح الاختصار"
       },
       "api": {
-        "title": "API (متوافق مع OpenAI)",
+        "title": "API",
         "provider": {
           "title": "المزود",
-          "description": "اختر مزوداً متوافقاً مع OpenAI."
+          "description": "اختر مزوداً متوافقاً مع OpenAI أو Anthropic."
+        },
+        "apiFormat": {
+          "title": "تنسيق API",
+          "description": "تنسيق الطلب الذي تتوقعه نقطة النهاية المخصصة الخاصة بك.",
+          "options": {
+            "openai": "متوافق مع OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence غير متاح على هذا الجهاز. يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث مع تمكين Apple Intelligence في إعدادات النظام."
@@ -393,7 +375,8 @@
         "baseUrl": {
           "title": "URL الأساسي",
           "description": "URL الأساسي لـ API للمزود المختار. يمكن تعديل المزود المخصص فقط.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "مفتاح API",
@@ -434,9 +417,10 @@
     "history": {
       "title": "السجل",
       "openFolder": "فتح مجلد التسجيلات",
-      "loading": "...جاري تحميل السجل",
+      "loading": "جاري تحميل السجل...",
       "empty": "!لا يوجد تفريغ صوتي بعد. ابدأ التسجيل لبناء سجلك",
       "copyToClipboard": "نسخ التفريغ إلى الحافظة",
+      "copyError": "تعذر نسخ التفريغ إلى الحافظة.",
       "save": "حفظ التفريغ",
       "unsave": "إزالة من المحفوظات",
       "delete": "حذف الإدخال",
@@ -571,6 +555,13 @@
         "button": "معاينة",
         "noNotes": "لم يتم العثور على ملاحظات إصدار مضمنة",
         "error": "تعذرت معاينة ملاحظات الإصدار"
+      },
+      "onboardingPreview": {
+        "title": "معاينة الإعداد الأولي",
+        "description": "عاين شاشات الإعداد الأولي دون تغيير الأذونات أو النماذج أو حالة الإكمال",
+        "permissionsButton": "الأذونات",
+        "modelsButton": "اختيار النموذج",
+        "exitButton": "إنهاء المعاينة"
       }
     },
     "about": {
@@ -617,6 +608,13 @@
       "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
       "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
       "deleteTitle": "حذف النموذج",
+      "retiredNotice": {
+        "title": "النماذج القديمة لم تعد تعمل مع Handy",
+        "description": "إنها تشغل {{size}} على جهاز الكمبيوتر الخاص بك.",
+        "delete": "حذف النماذج",
+        "deleted": "تم حذف النماذج القديمة",
+        "deleteFailed": "تعذّر حذف بعض النماذج القديمة. تحقق من السجل لمزيد من التفاصيل."
+      },
       "filters": {
         "allLanguages": "جميع اللغات",
         "streaming": "تصفية النماذج التي تدعم النسخ المباشر",
@@ -631,13 +629,13 @@
     }
   },
   "footer": {
-    "checkingUpdates": "...جاري التحقق من وجود تحديثات",
+    "checkingUpdates": "جاري التحقق من وجود تحديثات...",
     "updateAvailableShort": "تحديث متاح",
     "upToDate": "محدث",
     "updateCheckingDisabled": "تم تعطيل التحقق من التحديث",
-    "downloading": "...جاري التنزيل {{progress}}%",
-    "installing": "...جاري التثبيت",
-    "preparing": "...جاري التحضير",
+    "downloading": "جاري التنزيل {{progress}}%...",
+    "installing": "جاري التثبيت...",
+    "preparing": "جاري التحضير...",
     "checkForUpdates": "التحقق من وجود تحديثات",
     "portableUpdateTitle": "التحديث اليدوي مطلوب",
     "portableUpdateMessage": "لا يمكن تحديث التثبيتات المحمولة تلقائيًا. نزّل المثبّت المناسب لنظامك من الزر أدناه، شغّله، وثبّته في المجلد نفسه — يبقى مجلد Data/ (الإعدادات والنماذج والتسجيلات) في مكانه.",
@@ -646,8 +644,9 @@
     "portableUpdateBrowseButton": "فتح GitHub Releases"
   },
   "common": {
-    "loading": "...جاري التحميل",
+    "loading": "جاري التحميل...",
     "delete": "حذف",
+    "back": "رجوع",
     "close": "إغلاق",
     "open": "فتح",
     "copy": "نسخ",
@@ -690,8 +689,9 @@
     }
   },
   "overlay": {
-    "transcribing": "...جاري التفريغ",
-    "processing": "...جاري المعالجة"
+    "transcribing": "جاري التفريغ...",
+    "processing": "جاري المعالجة...",
+    "loadingModel": "جارٍ تحميل النموذج..."
   },
   "whatsNew": {
     "title": "الجديد في Handy v{{version}}"

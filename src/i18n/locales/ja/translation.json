@@ -26,6 +26,18 @@
     "showFewerModels": "表示を減らす",
     "recommended": "おすすめ",
     "customModelDescription": "公式サポート対象外",
+    "migration": {
+      "title": "モデルの更新が必要です",
+      "description": "Handy は新しい種類のモデルを使用するようになりました。文字起こしを続けるには、新しいバージョンをダウンロードしてください。古いバージョンは削除されます。",
+      "replaces": "{{name}} の後継",
+      "oldFormat": "旧形式",
+      "failed": "ダウンロードに失敗しました",
+      "retry": "再試行",
+      "chooseAnother": "別のモデルを選択",
+      "download": "モデルをダウンロード ({{size}})",
+      "continue": "続行",
+      "timeRemaining": "残り {{time}}"
+    },
     "modelCard": {
       "accuracy": "精度",
       "speed": "速度"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "良好な精度、ただし低速。"
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "英語のみ。英語話者に最適なモデル。"
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "高速で正確"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "非常に高速、英語のみ。アクセントにも対応。"
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "超高速、英語のみ"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "高速、英語のみ。速度と精度のバランスが良い。"
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "英語のみ。高品質。"
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "台湾華語に最適化。コードスイッチングに対応。"
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "非常に高速。中国語、英語、日本語、韓国語、広東語。"
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "ロシア語音声認識。高速かつ高精度。"
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "非常に高速。英語、ドイツ語、スペイン語、フランス語。翻訳対応。"
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "高精度な多言語対応。25のヨーロッパ言語。翻訳対応。"
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "大型で低速ですが、非常に高精度な多言語モデル。"
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "利用可能なモデルがありません",
     "verifying": "{{modelName}}を検証中…",
     "verifyingGeneric": "検証中…",
-    "extracting": "{{modelName}}を展開中…",
-    "extractingMultiple": "{{count}}個のモデルを展開中…",
-    "extractingGeneric": "展開中…",
     "downloading": "ダウンロード中 {{percentage}}%",
     "downloadingMultiple": "{{count}}個のモデルをダウンロード中…",
     "modelReady": "モデル準備完了",
@@ -164,6 +129,13 @@
       "deleteConfirm": "{{modelName}}を削除してもよろしいですか? 再度使用するにはダウンロードが必要です。",
       "deleteActiveConfirm": "{{modelName}}は現在使用中のモデルです。削除すると、新しいモデルを選択するまで文字起こしが停止します。本当に削除しますか?",
       "deleteTitle": "モデルを削除",
+      "retiredNotice": {
+        "title": "古いモデルは Handy で使用できなくなりました",
+        "description": "コンピューター上で {{size}} を使用しています。",
+        "delete": "モデルを削除",
+        "deleted": "古いモデルを削除しました",
+        "deleteFailed": "一部の古いモデルを削除できませんでした。詳細はログを確認してください。"
+      },
       "filters": {
         "allLanguages": "すべての言語",
         "streaming": "リアルタイム文字起こしに対応するモデルを絞り込む",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp アクセラレーション",
-          "description": "transcribe.cpp (Whisper 系) モデルのハードウェアアクセラレーション。「自動」では利用可能な場合 GPU を使用します (macOS では Metal、Windows/Linux では Vulkan)。"
-        },
-        "ort": {
-          "title": "ONNX アクセラレーション",
-          "description": "ONNX モデルのハードウェアアクセラレーション (Parakeet、Canary、Moonshine など)。Windows の DirectML は実験的です。モデルの文字起こしに失敗する場合があります。"
+          "title": "ハードウェアアクセラレーション",
+          "description": "文字起こしに使用するハードウェアを選択します。「自動」では利用可能な場合は GPU を使用し、利用できない場合は CPU を使用します。"
         },
         "gpuDevice": {
           "auto": "自動"
@@ -387,6 +355,10 @@
         "title": "音声区間検出 (VAD)",
         "description": "録音から無音部分を除去します。ストリーミング対応モデルはより長い音声検出区間を使用します。VAD を無効にすると音声をそのまま録音します。"
       },
+      "longFormChunking": {
+        "title": "長い音声の分割",
+        "description": "文字起こしの前に長い録音を無音部分で分割します。通常、文字起こしの精度が向上します。"
+      },
       "vadBackend": {
         "title": "音声区間検出バックエンド",
         "description": "無音のフィルタリングに使用する検出器を選択します。Earshot は実験的機能です。音声が途切れたりノイズが残る場合は Silero に戻してください。",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "フィラー語を削除",
         "description": "文字起こしから一般的なフィラー語を削除します。残すにはオフにしてください。"
+      },
+      "chineseScript": {
+        "title": "中国語の表記",
+        "description": "北京語と広東語の文字起こしを簡体字または繁体字で出力します。他の言語は変更されません。",
+        "options": {
+          "asTranscribed": "文字起こしのまま",
+          "simplified": "簡体字",
+          "traditional": "繁体字"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "ショートカット"
       },
       "api": {
-        "title": "API (OpenAI 互換)",
+        "title": "API",
         "provider": {
           "title": "プロバイダー",
-          "description": "OpenAI 互換のプロバイダーを選択。"
+          "description": "OpenAI 互換または Anthropic 互換のプロバイダーを選択。"
+        },
+        "apiFormat": {
+          "title": "API 形式",
+          "description": "カスタムエンドポイントが期待するリクエスト形式。",
+          "options": {
+            "openai": "OpenAI 互換 (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "このデバイスでは Apple Intelligence を利用できません。macOS Tahoe (26.0) 以降を実行し、システム設定で Apple Intelligence が有効になっている Apple Silicon Mac が必要です。"
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "ベース URL",
           "description": "選択したプロバイダーの API ベース URL。カスタムプロバイダーのみ編集可能。",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API キー",
@@ -460,6 +450,7 @@
       "loading": "履歴を読み込み中…",
       "empty": "まだ文字起こしがありません。録音を開始して履歴を作成しましょう!",
       "copyToClipboard": "文字起こしをクリップボードにコピー",
+      "copyError": "文字起こしをクリップボードにコピーできませんでした。",
       "save": "文字起こしを保存",
       "unsave": "保存から削除",
       "delete": "エントリーを削除",
@@ -594,6 +585,13 @@
         "button": "プレビュー",
         "noNotes": "同梱リリースノートが見つかりません",
         "error": "リリースノートのプレビューに失敗しました"
+      },
+      "onboardingPreview": {
+        "title": "オンボーディングをプレビュー",
+        "description": "権限、モデル、完了状態を変更せずにオンボーディング画面をプレビューします",
+        "permissionsButton": "権限",
+        "modelsButton": "モデル選択",
+        "exitButton": "プレビューを終了"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "読み込み中…",
     "delete": "削除",
+    "back": "戻る",
     "close": "閉じる",
     "open": "開く",
     "copy": "コピー",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "文字起こし中…",
-    "processing": "処理中…"
+    "processing": "処理中…",
+    "loadingModel": "モデルを読み込み中…"
   },
   "whatsNew": {
     "title": "Handy v{{version}} の新機能"

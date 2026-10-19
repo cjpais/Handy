@@ -26,6 +26,18 @@
     "showFewerModels": "Mostra meno modelli",
     "recommended": "Raccomandato",
     "customModelDescription": "Non ufficialmente supportato",
+    "migration": {
+      "title": "I tuoi modelli devono essere aggiornati",
+      "description": "Handy ora usa un nuovo tipo di modello. Scarica la nuova versione per continuare a trascrivere. Le versioni precedenti verranno rimosse.",
+      "replaces": "Sostituisce {{name}}",
+      "oldFormat": "Formato precedente",
+      "failed": "Download non riuscito",
+      "retry": "Riprova",
+      "chooseAnother": "Scegli un altro modello",
+      "download": "Scarica modelli ({{size}})",
+      "continue": "Continua",
+      "timeRemaining": "{{time}} rimanenti"
+    },
     "modelCard": {
       "accuracy": "accuratezza",
       "speed": "velocità"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Buona accuratezza, ma lento."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Solo inglese. Il miglior modello per chi parla inglese."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Veloce e accurato"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Molto veloce, solo inglese. Gestisce bene gli accenti."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultra-veloce, solo inglese"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Veloce, solo inglese. Buon equilibrio tra velocità e precisione."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Solo inglese. Alta qualità."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Ottimizzato per il mandarino taiwanese. Supporto per il code-switching."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Molto veloce. Cinese, inglese, giapponese, coreano, cantonese."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Riconoscimento vocale in russo. Veloce e preciso."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Molto veloce. Inglese, tedesco, spagnolo, francese. Supporta la traduzione."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Multilingue accurato. 25 lingue europee. Supporta la traduzione."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Un modello grande, più lento, ma molto accurato e multilingue."
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "Nessun modello disponibile",
     "verifying": "Verifica di {{modelName}}...",
     "verifyingGeneric": "Verifica...",
-    "extracting": "Estrazione di {{modelName}}...",
-    "extractingMultiple": "Estrazione di {{count}} modelli...",
-    "extractingGeneric": "Estrazione...",
     "downloading": "Download {{percentage}}%",
     "downloadingMultiple": "Download di {{count}} modelli...",
     "modelReady": "Modello Pronto",
@@ -164,6 +129,13 @@
       "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
       "deleteActiveConfirm": "{{modelName}} è il tuo modello attivo. Eliminarlo interromperà le trascrizioni fino a quando non selezionerai un nuovo modello. Sei sicuro?",
       "deleteTitle": "Elimina modello",
+      "retiredNotice": {
+        "title": "I modelli precedenti non funzionano più con Handy",
+        "description": "Occupano {{size}} sul tuo computer.",
+        "delete": "Elimina modelli",
+        "deleted": "Modelli precedenti eliminati",
+        "deleteFailed": "Non è stato possibile eliminare alcuni modelli precedenti. Controlla il log per i dettagli."
+      },
       "filters": {
         "allLanguages": "Tutte le lingue",
         "streaming": "Filtra i modelli che supportano la trascrizione in tempo reale",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Accelerazione Whisper",
-          "description": "Accelerazione hardware per i modelli Whisper. Auto utilizza la GPU se disponibile (Metal su macOS, Vulkan su Windows/Linux)."
-        },
-        "ort": {
-          "title": "Accelerazione ONNX",
-          "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). DirectML su Windows è sperimentale. I modelli potrebbero non riuscire a trascrivere."
+          "title": "Accelerazione hardware",
+          "description": "Scegli l'hardware usato per la trascrizione. Automatico usa la GPU quando disponibile, altrimenti ripiega sulla CPU."
         },
         "gpuDevice": {
           "auto": "Automatico"
@@ -387,6 +355,10 @@
         "title": "Rilevamento dell'attività vocale",
         "description": "Filtra il silenzio dalle registrazioni. I modelli che supportano lo streaming utilizzano una coda VAD più lunga; disabilitando la VAD si registra l'audio grezzo."
       },
+      "longFormChunking": {
+        "title": "Suddivisione dell'audio lungo",
+        "description": "Suddivide le registrazioni lunghe in corrispondenza delle pause prima della trascrizione, il che di solito migliora le prestazioni della trascrizione."
+      },
       "vadBackend": {
         "title": "Backend di rilevamento vocale",
         "description": "Scegli il rilevatore usato per filtrare il silenzio. Earshot è sperimentale; torna a Silero se il parlato viene tagliato o il rumore viene mantenuto.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Rimuovi le parole riempitive",
         "description": "Rimuove le parole di esitazione più comuni dalle trascrizioni. Disattiva per mantenerle."
+      },
+      "chineseScript": {
+        "title": "Scrittura cinese",
+        "description": "Scrive le trascrizioni in mandarino e cantonese con caratteri semplificati o tradizionali. Le altre lingue restano invariate.",
+        "options": {
+          "asTranscribed": "Come trascritto",
+          "simplified": "Semplificato",
+          "traditional": "Tradizionale"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Tasto di scelta rapida"
       },
       "api": {
-        "title": "API (Compatibile con OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Provider",
-          "description": "Seleziona un provider compatibile con OpenAI."
+          "description": "Seleziona un provider compatibile con OpenAI o Anthropic."
+        },
+        "apiFormat": {
+          "title": "Formato API",
+          "description": "Formato della richiesta previsto dal tuo endpoint personalizzato.",
+          "options": {
+            "openai": "Compatibile con OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence non è disponibile su questo dispositivo. Necessita di un Mac con Apple Silicon e macOS Tahoe (26.0) o successivi con Apple Intelligence abilitata nelle Impostazioni di Sistema."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "URL Base",
           "description": "URL di base per l'API del provider selezionato. Solo per i provider personalizzati.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "Chiave API",
@@ -460,6 +450,7 @@
       "loading": "Caricamento cronologia...",
       "empty": "Non ci sono ancora trascrizioni. Comincia a registrare per costruire la tua cronologia!",
       "copyToClipboard": "Copia la trascrizione negli appunti",
+      "copyError": "Impossibile copiare la trascrizione negli appunti.",
       "save": "Salva la trascrizione",
       "unsave": "Rimuovi dai salvataggi",
       "delete": "Elimina elemento",
@@ -594,6 +585,13 @@
         "button": "Anteprima",
         "noNotes": "Nessuna nota di rilascio inclusa trovata",
         "error": "Impossibile mostrare l'anteprima delle note di rilascio"
+      },
+      "onboardingPreview": {
+        "title": "Anteprima della configurazione iniziale",
+        "description": "Visualizza le schermate di configurazione senza modificare autorizzazioni, modelli o stato di completamento",
+        "permissionsButton": "Autorizzazioni",
+        "modelsButton": "Selezione del modello",
+        "exitButton": "Esci dall’anteprima"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Caricamento...",
     "delete": "Elimina",
+    "back": "Indietro",
     "close": "Chiudi",
     "open": "Apri",
     "copy": "Copia",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Trascrizione...",
-    "processing": "Elaborazione..."
+    "processing": "Elaborazione...",
+    "loadingModel": "Caricamento del modello..."
   },
   "whatsNew": {
     "title": "Novità in Handy v{{version}}"

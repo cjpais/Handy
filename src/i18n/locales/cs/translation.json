@@ -26,6 +26,18 @@
     "showFewerModels": "Zobrazit méně modelů",
     "recommended": "Doporučeno",
     "customModelDescription": "Oficiálně nepodporováno",
+    "migration": {
+      "title": "Vaše modely potřebují aktualizaci",
+      "description": "Handy nyní používá novější typ modelů. Stáhněte si novou verzi, abyste mohli dál přepisovat. Staré verze budou odstraněny.",
+      "replaces": "Nahrazuje {{name}}",
+      "oldFormat": "Starý formát",
+      "failed": "Stahování selhalo",
+      "retry": "Zkusit znovu",
+      "chooseAnother": "Vybrat jiný model",
+      "download": "Stáhnout modely ({{size}})",
+      "continue": "Pokračovat",
+      "timeRemaining": "Zbývá {{time}}"
+    },
     "modelCard": {
       "accuracy": "přesnost",
       "speed": "rychlost"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Dobrá přesnost, ale pomalý."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Pouze angličtina. Nejlepší model pro anglicky mluvící."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Rychlý a přesný"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Velmi rychlý, pouze angličtina. Dobře zvládá přízvuky."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrarychlý, pouze angličtina"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Rychlý, pouze angličtina. Dobrý poměr rychlosti a přesnosti."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Pouze angličtina. Vysoká kvalita."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimalizováno pro tchajwanskou mandarínštinu. Podpora přepínání jazyků."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Velmi rychlý. Čínština, angličtina, japonština, korejština, kantonština."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Rozpoznávání ruské řeči. Rychlé a přesné."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Velmi rychlý. Angličtina, němčina, španělština, francouzština. Podporuje překlad."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Přesný vícejazyčný. 25 evropských jazyků. Podporuje překlad."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Velký, pomalejší, ale velmi přesný vícejazyčný model."
       }
     },
     "errors": {
@@ -127,9 +95,6 @@
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "verifying": "Ověřování {{modelName}}...",
     "verifyingGeneric": "Ověřování...",
-    "extracting": "Rozbaluji {{modelName}}...",
-    "extractingMultiple": "Rozbaluji {{count}} modelů...",
-    "extractingGeneric": "Rozbalování...",
     "downloading": "Stahování {{percentage}}%",
     "downloadingMultiple": "Stahování {{count}} modelů...",
     "modelReady": "Model připraven",
@@ -164,6 +129,13 @@
       "deleteConfirm": "Opravdu chcete smazat {{modelName}}? Pro opětovné použití jej budete muset znovu stáhnout.",
       "deleteActiveConfirm": "{{modelName}} je váš aktivní model. Jeho smazáním se zastaví přepisy, dokud nevyberete nový model. Opravdu chcete pokračovat?",
       "deleteTitle": "Smazat model",
+      "retiredNotice": {
+        "title": "Staré modely už s Handy nefungují",
+        "description": "Zabírají {{size}} na vašem počítači.",
+        "delete": "Smazat modely",
+        "deleted": "Staré modely byly smazány",
+        "deleteFailed": "Některé staré modely se nepodařilo smazat. Podrobnosti najdete v protokolu."
+      },
       "filters": {
         "allLanguages": "Všechny jazyky",
         "streaming": "Filtrovat modely podporující živý přepis",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Akcelerace Whisper",
-          "description": "Hardwarová akcelerace pro modely Whisper. Automatický režim používá GPU, pokud je k dispozici (Metal na macOS, Vulkan na Windows/Linux)."
-        },
-        "ort": {
-          "title": "Akcelerace ONNX",
-          "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
+          "title": "Hardwarová akcelerace",
+          "description": "Vyberte hardware, který se použije pro přepis. Automatický režim používá GPU, pokud je k dispozici, jinak přejde na CPU."
         },
         "gpuDevice": {
           "auto": "Automaticky"
@@ -387,6 +355,10 @@
         "title": "Detekce hlasové aktivity",
         "description": "Odfiltruje ticho z nahrávek. Modely podporující streaming používají delší doběh VAD; vypnutí VAD nahrává surový zvuk."
       },
+      "longFormChunking": {
+        "title": "Dělení dlouhého zvuku",
+        "description": "Před přepisem rozdělí dlouhé nahrávky v pauzách, což obvykle zlepšuje kvalitu přepisu."
+      },
       "vadBackend": {
         "title": "Backend detekce hlasu",
         "description": "Vyberte detektor používaný k filtrování ticha. Earshot je experimentální; pokud je řeč ořezávána nebo zůstává šum, přepněte zpět na Silero.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Odstranit výplňová slova",
         "description": "Odstraňuje běžná slova vyjadřující váhání z přepisů. Vypnutím je zachováte."
+      },
+      "chineseScript": {
+        "title": "Čínské písmo",
+        "description": "Zapisuje přepisy v mandarínštině a kantonštině zjednodušenými nebo tradičními znaky. Ostatní jazyky zůstávají beze změny.",
+        "options": {
+          "asTranscribed": "Jak bylo přepsáno",
+          "simplified": "Zjednodušené",
+          "traditional": "Tradiční"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Klávesová zkratka"
       },
       "api": {
-        "title": "API (kompatibilní s OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Poskytovatel",
-          "description": "Vyberte poskytovatele kompatibilního s OpenAI."
+          "description": "Vyberte poskytovatele kompatibilního s OpenAI nebo Anthropic."
+        },
+        "apiFormat": {
+          "title": "Formát API",
+          "description": "Formát požadavku očekávaný vaším vlastním endpointem.",
+          "options": {
+            "openai": "Kompatibilní s OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence není na tomto zařízení k dispozici. Vyžaduje Mac s Apple Silicon a macOS Tahoe (26.0) nebo novější a povolené Apple Intelligence v Nastavení systému."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "Základní URL",
           "description": "Základní URL API pro vybraného poskytovatele. Upravitelné je pouze u vlastního poskytovatele.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API klíč",
@@ -460,6 +450,7 @@
       "loading": "Načítám historii...",
       "empty": "Zatím žádné přepisy. Začněte nahrávat a vytvořte si historii!",
       "copyToClipboard": "Kopírovat přepis do schránky",
+      "copyError": "Přepis se nepodařilo zkopírovat do schránky.",
       "save": "Uložit přepis",
       "unsave": "Odebrat z uložených",
       "delete": "Smazat záznam",
@@ -594,6 +585,13 @@
         "button": "Náhled",
         "noNotes": "Nebyly nalezeny žádné přibalené poznámky k vydání",
         "error": "Nepodařilo se zobrazit náhled poznámek k vydání"
+      },
+      "onboardingPreview": {
+        "title": "Náhled úvodního nastavení",
+        "description": "Prohlédněte si obrazovky úvodního nastavení beze změny oprávnění, modelů nebo stavu dokončení",
+        "permissionsButton": "Oprávnění",
+        "modelsButton": "Výběr modelu",
+        "exitButton": "Ukončit náhled"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Načítání...",
     "delete": "Smazat",
+    "back": "Zpět",
     "close": "Zavřít",
     "open": "Otevřít",
     "copy": "Kopírovat",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Přepisuji...",
-    "processing": "Zpracovávám..."
+    "processing": "Zpracovávám...",
+    "loadingModel": "Načítání modelu..."
   },
   "whatsNew": {
     "title": "Novinky v Handy v{{version}}"

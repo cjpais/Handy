@@ -26,6 +26,18 @@
     "showFewerModels": "显示较少模型",
     "recommended": "推荐",
     "customModelDescription": "非官方支持",
+    "migration": {
+      "title": "您的模型需要更新",
+      "description": "Handy 现在使用一种更新的模型类型。请下载新版本以继续转录。旧版本将被移除。",
+      "replaces": "替代 {{name}}",
+      "oldFormat": "旧格式",
+      "failed": "下载失败",
+      "retry": "重试",
+      "chooseAnother": "选择其他模型",
+      "download": "下载模型（{{size}}）",
+      "continue": "继续",
+      "timeRemaining": "剩余 {{time}}"
+    },
     "modelCard": {
       "accuracy": "准确度",
       "speed": "速度"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "准确度高，但速度较慢。"
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "仅支持英语。英语用户的最佳模型。"
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "快速且准确"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "非常快速，仅支持英语。口音处理良好。"
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "超快速，仅支持英语"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "快速，仅支持英语。速度与准确度的良好平衡。"
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "仅支持英语。高质量。"
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "针对台湾国语优化。支持语码转换。"
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "非常快速。支持中文、英语、日语、韩语、粤语。"
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "俄语语音识别。快速且准确。"
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "非常快速。支持英语、德语、西班牙语、法语。支持翻译。"
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "准确的多语言模型。25种欧洲语言。支持翻译。"
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "大型模型，速度较慢，但多语言识别非常准确。"
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "没有可用的模型",
     "verifying": "正在验证 {{modelName}}...",
     "verifyingGeneric": "正在验证...",
-    "extracting": "正在解压 {{modelName}}...",
-    "extractingMultiple": "正在解压 {{count}} 个模型...",
-    "extractingGeneric": "解压中...",
     "downloading": "下载中 {{percentage}}%",
     "downloadingMultiple": "正在下载 {{count}} 个模型...",
     "modelReady": "模型已就绪",
@@ -164,6 +129,13 @@
       "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
       "deleteActiveConfirm": "{{modelName}} 是您当前使用的模型。删除后将停止转录，直到您选择新的模型。确定要删除吗？",
       "deleteTitle": "删除模型",
+      "retiredNotice": {
+        "title": "旧模型已无法在 Handy 中使用",
+        "description": "它们占用了您电脑上 {{size}} 的空间。",
+        "delete": "删除模型",
+        "deleted": "已删除旧模型",
+        "deleteFailed": "部分旧模型无法删除。请查看日志了解详情。"
+      },
       "filters": {
         "allLanguages": "所有语言",
         "streaming": "筛选支持实时转录的模型",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper 加速",
-          "description": "Whisper 模型的硬件加速。自动模式在可用时使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
-        },
-        "ort": {
-          "title": "ONNX 加速",
-          "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
+          "title": "硬件加速",
+          "description": "选择用于转录的硬件。自动模式在可用时使用 GPU，否则回退到 CPU。"
         },
         "gpuDevice": {
           "auto": "自动"
@@ -387,6 +355,10 @@
         "title": "语音活动检测",
         "description": "过滤录音中的静音。支持流式的模型会使用更长的 VAD 尾段；停用 VAD 则会录制原始音频。"
       },
+      "longFormChunking": {
+        "title": "长音频分段",
+        "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。"
+      },
       "vadBackend": {
         "title": "语音活动检测后端",
         "description": "选择用于过滤静音的检测器。Earshot 为实验性功能；如果语音被截断或噪音被保留，请切换回 Silero。",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "移除语气词",
         "description": "从转录中移除常见的语气词。关闭此选项即可保留这些词。"
+      },
+      "chineseScript": {
+        "title": "简繁转换",
+        "description": "将普通话和粤语转录输出为简体或繁体中文。其他语言不受影响。",
+        "options": {
+          "asTranscribed": "保持原样",
+          "simplified": "简体",
+          "traditional": "繁体"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "快捷键"
       },
       "api": {
-        "title": "API（兼容 OpenAI）",
+        "title": "API",
         "provider": {
           "title": "提供商",
-          "description": "选择一个兼容 OpenAI 的提供商。"
+          "description": "选择一个兼容 OpenAI 或 Anthropic 的提供商。"
+        },
+        "apiFormat": {
+          "title": "API 格式",
+          "description": "自定义端点期望的请求格式。",
+          "options": {
+            "openai": "兼容 OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "基础 URL",
           "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API 密钥",
@@ -460,6 +450,7 @@
       "loading": "加载历史记录中...",
       "empty": "还没有转录记录。开始录制以建立您的历史记录！",
       "copyToClipboard": "复制转录到剪贴板",
+      "copyError": "无法将转录复制到剪贴板。",
       "save": "保存转录",
       "unsave": "从已保存中移除",
       "delete": "删除条目",
@@ -594,6 +585,13 @@
         "button": "预览",
         "noNotes": "未找到内置发行说明",
         "error": "无法预览发行说明"
+      },
+      "onboardingPreview": {
+        "title": "预览新手引导",
+        "description": "预览新手引导界面，而不更改权限、模型或完成状态",
+        "permissionsButton": "权限",
+        "modelsButton": "模型选择",
+        "exitButton": "退出预览"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "加载中...",
     "delete": "删除",
+    "back": "返回",
     "close": "关闭",
     "open": "打开",
     "copy": "复制",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "正在转录...",
-    "processing": "处理中..."
+    "processing": "处理中...",
+    "loadingModel": "正在加载模型..."
   },
   "whatsNew": {
     "title": "Handy v{{version}} 新功能"

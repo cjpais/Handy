@@ -26,6 +26,18 @@
     "showFewerModels": "Visa färre modeller",
     "recommended": "Rekommenderat",
     "customModelDescription": "Stöds inte officiellt",
+    "migration": {
+      "title": "Dina modeller behöver uppdateras",
+      "description": "Handy använder nu en nyare typ av modell. Ladda ner den nya versionen för att fortsätta transkribera. Gamla versioner kommer att tas bort.",
+      "replaces": "Ersätter {{name}}",
+      "oldFormat": "Gammalt format",
+      "failed": "Nedladdningen misslyckades",
+      "retry": "Försök igen",
+      "chooseAnother": "Välj en annan modell",
+      "download": "Ladda ner modeller ({{size}})",
+      "continue": "Fortsätt",
+      "timeRemaining": "{{time}} kvar"
+    },
     "modelCard": {
       "accuracy": "noggrannhet",
       "speed": "hastighet"
@@ -47,53 +59,9 @@
         "name": "Whisper Large",
         "description": "Bra noggrannhet, men långsam."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Endast engelska. Den bästa modellen för engelsktalande."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Snabb och noggrann"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Mycket snabb, endast engelska. Hanterar accenter bra."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Blixtsnabb, endast engelska"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Snabb, endast engelska. Bra balans mellan hastighet och noggrannhet."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Endast engelska. Hög kvalitet."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimerad för taiwanesisk mandarin. Stöd för kodväxling."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Mycket snabb. Kinesiska, engelska, japanska, koreanska, kantonesiska."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Rysk taligenkänning. Snabb och noggrann."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Mycket snabb. Engelska, tyska, spanska, franska. Stöder översättning."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Noggrann flerspråkig. 25 europeiska språk. Stöder översättning."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "En stor, långsammare, men mycket noggrann flerspråkig modell."
       }
     },
     "errors": {
@@ -128,9 +96,6 @@
     "noModelsAvailable": "Inga modeller tillgängliga",
     "verifying": "Verifierar {{modelName}}...",
     "verifyingGeneric": "Verifierar...",
-    "extracting": "Extraherar {{modelName}}...",
-    "extractingMultiple": "Extraherar {{count}} modeller...",
-    "extractingGeneric": "Extraherar...",
     "downloading": "Laddar ner {{percentage}}%",
     "downloadingMultiple": "Laddar ner {{count}} modeller...",
     "modelReady": "Modell klar",
@@ -217,6 +182,13 @@
       "deleteConfirm": "Är du säker på att du vill ta bort {{modelName}}? Du måste ladda ner den igen för att använda den.",
       "deleteActiveConfirm": "{{modelName}} är din aktiva modell. Om du tar bort den avbryts transkriptioner tills du väljer en ny modell. Är du säker?",
       "deleteTitle": "Ta bort modell",
+      "retiredNotice": {
+        "title": "Gamla modeller fungerar inte längre med Handy",
+        "description": "De tar upp {{size}} på din dator.",
+        "delete": "Ta bort modeller",
+        "deleted": "Gamla modeller borttagna",
+        "deleteFailed": "Vissa gamla modeller kunde inte tas bort. Se loggen för mer information."
+      },
       "filters": {
         "allLanguages": "Alla språk",
         "streaming": "Filtrera modeller som stöder transkription i realtid",
@@ -276,12 +248,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper-acceleration",
-          "description": "Hårdvaruacceleration för Whisper-modeller. Auto använder GPU om tillgängligt (Metal på macOS, Vulkan på Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX-acceleration",
-          "description": "Hårdvaruacceleration för ONNX-modeller (Parakeet, Canary, Moonshine, etc.). DirectML på Windows är experimentellt. Modeller kan misslyckas med att transkribera."
+          "title": "Hårdvaruacceleration",
+          "description": "Välj vilken hårdvara som används för transkription. Automatiskt använder GPU:n när den finns tillgänglig och faller annars tillbaka på CPU:n."
         },
         "gpuDevice": {
           "auto": "Automatiskt"
@@ -387,6 +355,10 @@
         "title": "Röstaktivitetsdetektering",
         "description": "Filtrerar bort tystnad från inspelningar. Modeller med streamingstöd använder en längre VAD-svans; om VAD inaktiveras spelas rått ljud in."
       },
+      "longFormChunking": {
+        "title": "Dela upp långt ljud",
+        "description": "Delar upp långa inspelningar vid pauser före transkribering, vilket oftast förbättrar transkriberingen."
+      },
       "vadBackend": {
         "title": "Backend för röstdetektering",
         "description": "Välj detektorn som används för att filtrera bort tystnad. Earshot är experimentell; byt tillbaka till Silero om tal klipps eller brus behålls.",
@@ -398,6 +370,15 @@
       "fillerWordRemoval": {
         "title": "Ta bort utfyllnadsord",
         "description": "Tar bort vanliga tvekljud från transkriberingar. Stäng av för att behålla dem."
+      },
+      "chineseScript": {
+        "title": "Kinesisk skrift",
+        "description": "Skriver mandarin- och kantonesiska transkriptioner med förenklade eller traditionella tecken. Andra språk lämnas oförändrade.",
+        "options": {
+          "asTranscribed": "Som transkriberat",
+          "simplified": "Förenklad",
+          "traditional": "Traditionell"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +386,18 @@
         "title": "Snabbkommando"
       },
       "api": {
-        "title": "API (OpenAI-kompatibelt)",
+        "title": "API",
         "provider": {
           "title": "Leverantör",
-          "description": "Välj en OpenAI-kompatibel leverantör."
+          "description": "Välj en OpenAI- eller Anthropic-kompatibel leverantör."
+        },
+        "apiFormat": {
+          "title": "API-format",
+          "description": "Det förfrågningsformat som din anpassade slutpunkt förväntar sig.",
+          "options": {
+            "openai": "OpenAI-kompatibelt (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence är inte tillgängligt på den här enheten. Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare med Apple Intelligence aktiverat i systeminställningarna."
@@ -416,7 +405,8 @@
         "baseUrl": {
           "title": "Bas-URL",
           "description": "API-bas-URL för den valda leverantören. Endast den anpassade leverantören kan redigeras.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-nyckel",
@@ -460,6 +450,7 @@
       "loading": "Laddar historik...",
       "empty": "Inga transkriptioner ännu. Börja spela in för att bygga upp din historik!",
       "copyToClipboard": "Kopiera transkription till urklipp",
+      "copyError": "Det gick inte att kopiera transkriptionen till urklipp.",
       "save": "Spara transkription",
       "unsave": "Ta bort från sparade",
       "delete": "Ta bort post",
@@ -594,6 +585,13 @@
         "button": "Förhandsvisa",
         "noNotes": "Ingen medföljande versionsinformation hittades",
         "error": "Det gick inte att förhandsvisa versionsinformationen"
+      },
+      "onboardingPreview": {
+        "title": "Förhandsvisa introduktionen",
+        "description": "Förhandsvisa introduktionsskärmarna utan att ändra behörigheter, modeller eller slutförandestatus",
+        "permissionsButton": "Behörigheter",
+        "modelsButton": "Modellval",
+        "exitButton": "Avsluta förhandsvisning"
       }
     },
     "about": {
@@ -648,6 +646,7 @@
   "common": {
     "loading": "Laddar...",
     "delete": "Ta bort",
+    "back": "Tillbaka",
     "close": "Stäng",
     "open": "Öppna",
     "copy": "Kopiera",
@@ -691,7 +690,8 @@
   },
   "overlay": {
     "transcribing": "Transkriberar...",
-    "processing": "Bearbetar..."
+    "processing": "Bearbetar...",
+    "loadingModel": "Laddar modell..."
   },
   "whatsNew": {
     "title": "Nytt i Handy v{{version}}"
