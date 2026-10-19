@@ -391,7 +391,7 @@ pub fn file_in_catalog(
     catalog.iter().find_map(|d| {
         if let Some(repo) = repo_id {
             match &d.source {
-                ModelSource::HuggingFace { repo_id: r, .. } if r.eq_ignore_ascii_case(repo) => {}
+                ModelSource::HuggingFace { repo_id: r, .. } if r == repo => {}
                 _ => return None,
             }
         }

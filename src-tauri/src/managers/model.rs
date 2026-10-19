@@ -2916,6 +2916,37 @@ mod tests {
     }
 
     #[test]
+    fn test_discover_hf_cache_keeps_the_cache_folder_casing() {
+        // HF repo ids are case-insensitive, so another tool can cache a catalog
+        // repo under other casing. On a case-sensitive filesystem only that
+        // casing finds the file again, so it must not take the catalog's.
+        let filename = "SenseVoiceSmall-Q8_0.gguf";
+        let folder_repo = "handy-computer/sensevoicesmall-gguf";
+        assert!(crate::catalog::file_in_catalog(
+            filename,
+            Some("handy-computer/SenseVoiceSmall-gguf")
+        )
+        .is_some());
+
+        let cache = TempDir::new().unwrap();
+        let path = add_cached_model(cache.path(), folder_repo, "main", filename);
+        write_synthetic_gguf(&path, "sensevoice", &["en", "zh"]);
+
+        let mut models = HashMap::new();
+        ModelManager::discover_hf_cache_models_in(cache.path(), &mut models);
+
+        let info = models
+            .values()
+            .find(|m| m.filename == filename)
+            .expect("cached file is listed");
+        assert!(
+            matches!(&info.source, ModelSource::HuggingFace { repo_id, .. } if repo_id == folder_repo),
+            "listed under {:?}, not the cache folder's casing",
+            info.source
+        );
+    }
+
+    #[test]
     fn test_discover_hf_cache_models_filters_by_arch() {
         let tmp = TempDir::new().unwrap();
         let root = tmp.path();
