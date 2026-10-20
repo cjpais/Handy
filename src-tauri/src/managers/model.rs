@@ -401,8 +401,35 @@ fn hf_repo_dir(cached_file: &Path) -> Option<PathBuf> {
         .map(Path::to_path_buf)
 }
 
+/// The blob a snapshot pointer owns, if it may be deleted along with it:
+/// `None` for plain files (on Windows hf-hub's symlink fallback renames the
+/// blob into the snapshot), dangling pointers (copies at other pins can share
+/// a blob that's already gone), targets outside the repo's `blobs/`, and blobs
+/// another filename still references.
+fn unshared_blob(pointer: &Path, deleting: &HashSet<PathBuf>) -> std::io::Result<Option<PathBuf>> {
+    let is_symlink = fs::symlink_metadata(pointer)
+        .map(|m| m.file_type().is_symlink())
+        .unwrap_or(false);
+    let Some(repo_dir) = hf_repo_dir(pointer).filter(|_| is_symlink) else {
+        return Ok(None);
+    };
+    let blob = match fs::canonicalize(pointer) {
+        Ok(blob) => blob,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e),
+    };
+    // Only delete actual HF blobs, not arbitrary symlink targets.
+    let blobs = fs::canonicalize(repo_dir.join("blobs"))?;
+    if blob.parent() != Some(blobs.as_path())
+        || blob_is_shared(&repo_dir.join("snapshots"), &blob, deleting)?
+    {
+        return Ok(None);
+    }
+    Ok(Some(blob))
+}
+
 /// Preserve blobs referenced by another filename, including files in subfolders.
-/// Listing errors abort deletion rather than guessing that a blob is unshared.
+/// Listing errors are returned rather than guessing that a blob is unshared.
 fn blob_is_shared(dir: &Path, blob: &Path, deleting: &HashSet<PathBuf>) -> std::io::Result<bool> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -433,7 +460,11 @@ fn remove_file_if_present(path: &Path) -> std::io::Result<bool> {
     match fs::remove_file(path) {
         Ok(()) => Ok(true),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
-        Err(e) => Err(e),
+        // Name the file: a delete can stop partway through several copies.
+        Err(e) => Err(std::io::Error::new(
+            e.kind(),
+            format!("couldn't remove {}: {}", path.display(), e),
+        )),
     }
 }
 
@@ -1268,31 +1299,18 @@ impl ModelManager {
         let mut deleted = false;
         for pointer in pointers {
             // The blob goes first: if it can't be removed, the pointer still
-            // marks the model as downloaded, which stays true. On Windows the
-            // pointer may be a plain file (hf-hub's symlink fallback renames
-            // the blob into the snapshot), in which case there is no separate
-            // blob. Copies at other pins can share a blob, so a later pointer
-            // may already dangle.
-            let is_symlink = fs::symlink_metadata(&pointer)
-                .map(|m| m.file_type().is_symlink())
-                .unwrap_or(false);
-            if is_symlink {
-                match fs::canonicalize(&pointer) {
-                    Ok(blob) => {
-                        if let Some(repo_dir) = hf_repo_dir(&pointer) {
-                            // Only delete actual HF blobs, not arbitrary symlink targets.
-                            let blobs = fs::canonicalize(repo_dir.join("blobs"))?;
-                            if blob.parent() == Some(blobs.as_path())
-                                && !blob_is_shared(&repo_dir.join("snapshots"), &blob, &deleting)?
-                            {
-                                info!("Deleting HF cache blob at: {:?}", blob);
-                                deleted |= remove_file_if_present(&blob)?;
-                            }
-                        }
-                    }
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                    Err(e) => return Err(e),
+            // marks the model as downloaded, which stays true.
+            match unshared_blob(&pointer, &deleting) {
+                Ok(Some(blob)) => {
+                    info!("Deleting HF cache blob at: {:?}", blob);
+                    deleted |= remove_file_if_present(&blob)?;
                 }
+                Ok(None) => {}
+                // Can't tell which blob it is or whether it's shared (e.g.
+                // canonicalize is unsupported on some Windows volumes): keep
+                // the blob rather than fail the delete or guess. At worst
+                // its space stays used.
+                Err(e) => warn!("Keeping HF cache blob for {:?}: {}", pointer, e),
             }
             info!("Deleting HF cache file at: {:?}", pointer);
             deleted |= remove_file_if_present(&pointer)?;
@@ -2087,10 +2105,12 @@ impl ModelManager {
         if let ModelSource::HuggingFace { repo_id, revision } = &model_info.source {
             // Only this entry's own file, every cached copy of it. Other
             // quants of the repo are separate entries: deleting the Q8_0
-            // default must not take a user's Q5_K_M with it. Once no model
-            // file is removed without deleting the surrounding shared repo.
-            // A file that can't be removed (in use on Windows, permissions)
-            // fails the delete before the entry changes, so the UI says so.
+            // default must not take a user's Q5_K_M with it. Per product
+            // decision this hard-removes from every HF cache, including one
+            // shared with other apps. A file that can't be removed (in use on
+            // Windows, permissions) fails the delete so the UI says so; copies
+            // removed before it stay removed, and the entry keeps reading as
+            // downloaded while any copy remains.
             let mut deleted = Self::delete_hf_cache_file(repo_id, revision, &model_info.filename)?;
             // Also remove a models-dir copy (mirror fallback / manual drop-in)
             // and any resumable partial next to it.
