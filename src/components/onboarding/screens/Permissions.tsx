@@ -103,7 +103,7 @@ const PermissionRow: React.FC<PermissionRowProps> = ({
         </span>
       ) : (
         <Button
-          variant={next ? "primary" : "secondary"}
+          variant={next ? "primary" : "outline"}
           size="md"
           onClick={onRequest}
         >

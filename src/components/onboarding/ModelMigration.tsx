@@ -380,7 +380,7 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
         <>
           <span className="text-error">{t("onboarding.migration.failed")}</span>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();

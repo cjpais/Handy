@@ -659,10 +659,6 @@
         "noNotes": "No bundled release notes found",
         "error": "Failed to preview release notes"
       },
-      "stylePreview": {
-        "title": "New Style",
-        "description": "Switch the whole app to the new style to compare it with the current one"
-      },
       "onboardingPreview": {
         "title": "Preview Onboarding",
         "description": "Preview onboarding screens without changing permissions, models, or completion state",

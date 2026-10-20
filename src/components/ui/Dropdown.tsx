@@ -65,10 +65,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         type="button"
-        className={`px-2 py-[5px] text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 v2:h-[34px] v2:py-0 v2:px-[12px] v2:text-small v2:bg-background v2:border-[1.5px] v2:border-line-strong v2:rounded-control ${
+        className={`px-2 py-[5px] text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
           disabled
             ? "opacity-50 cursor-not-allowed"
-            : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary v2:hover:bg-background v2:hover:border-plum-edge"
+            : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
         }`}
         onClick={handleToggle}
         disabled={disabled}
@@ -90,7 +90,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </button>
       {isOpen && !disabled && (
         <div
-          className={`absolute top-full mt-1 bg-background border border-mid-gray/80 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto v2:p-1 v2:border-[1.5px] v2:border-line-strong v2:rounded-control ${
+          className={`absolute top-full mt-1 bg-background border border-mid-gray/80 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
             menuClassName ?? "left-0 right-0"
           }`}
         >
@@ -103,12 +103,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
               <button
                 key={option.value}
                 type="button"
-                className={`w-full text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 v2:text-small v2:rounded-[7px] v2:hover:bg-wash ${
+                className={`w-full text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
                   option.description ? "px-3 py-2" : "px-2 py-1"
                 } ${
-                  selectedValue === option.value
-                    ? "bg-logo-primary/20 v2:bg-wash"
-                    : ""
+                  selectedValue === option.value ? "bg-logo-primary/20" : ""
                 } ${option.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={() => handleSelect(option.value)}
                 disabled={option.disabled}

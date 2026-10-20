@@ -26,17 +26,3 @@ html[data-mflow]::view-transition-old(*.mf-row):only-child {
     transform: translateY(6px);
   }
 }
-
-/* The full list's rows touch, with a hairline between them, except next to
-   the picked or hovered row. */
-.model-row + .model-row::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  inset-inline: 14px;
-  border-top: 1px solid var(--color-line);
-}
-.model-row:is(.is-on, :hover)::before,
-.model-row:is(.is-on, :hover) + .model-row::before {
-  display: none;
-}

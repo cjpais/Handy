@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../ui/Button";
-import { Input } from "../../ui/Input";
 import { Radio } from "../../ui/Radio";
 import { GradeChip } from "../../shared/GradeChip";
 import { SpeedBars, speedLevel } from "../../shared/SpeedBars";
@@ -605,7 +604,7 @@ export const Model: React.FC<ModelProps> = ({
         {...vt(id)}
         data-vt-row=""
         onClick={() => select(id)}
-        className={`model-row relative grid w-full min-w-0 flex-none cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[10px] rounded-control px-[14px] py-[9px] text-start text-small leading-[1.5] text-text [view-transition-class:mf-row_mf-box] ${
+        className={`relative grid w-full min-w-0 flex-none cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[10px] rounded-control px-[14px] py-[9px] text-start text-small leading-[1.5] text-text [view-transition-class:mf-row_mf-box] ${
           on ? "is-on bg-pick-row" : "hover:bg-wash"
         }`}
       >
@@ -698,10 +697,10 @@ export const Model: React.FC<ModelProps> = ({
           className="mt-[12px] flex items-center gap-[10px] text-start"
         >
           <Button
-            variant="secondary"
+            variant="outline"
             size="md"
             onClick={close}
-            className="v2:ps-[12px]"
+            className="h-[34px] ps-[12px]"
           >
             <span className="inline-flex items-center gap-[7.5px]">
               <Chevron dir="left" />
@@ -712,7 +711,9 @@ export const Model: React.FC<ModelProps> = ({
             <span className="pointer-events-none absolute start-[11px] top-1/2 grid -translate-y-1/2 text-ink-3">
               <SearchIcon />
             </span>
-            <Input
+            {/* Quiet on focus: the caret says where typing goes, and the
+                picked row below stays the one pink thing. */}
+            <input
               ref={searchRef}
               type="search"
               value={query}
@@ -730,7 +731,7 @@ export const Model: React.FC<ModelProps> = ({
                   step(d);
                 }
               }}
-              className="w-full ps-[33px]! text-small!"
+              className="h-[34px] w-full rounded-lg border border-line-strong bg-background ps-[33px] pe-[12px] text-small text-text outline-none placeholder:text-ink-3"
             />
           </label>
         </div>

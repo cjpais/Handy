@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
+import { Window } from "@tauri-apps/api/window";
 import { commands, events } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
 import { useShortcutPress } from "@/hooks/useShortcutPress";
@@ -9,6 +10,7 @@ import { formatModelSize } from "@/lib/utils/format";
 import {
   PRACTICE_NOTE_CLOSED_EVENT,
   PRACTICE_NOTE_FOCUS_EVENT,
+  PRACTICE_NOTE_LABEL,
 } from "@/note/events";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
@@ -31,6 +33,16 @@ import type {
 // (React's StrictMode, or a language change re-running the effect) the note
 // stays open instead of being destroyed under the new open.
 let noteCloseTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Asks the note's window itself, rather than trusting focus events seen. */
+const isNoteFocused = async () => {
+  try {
+    const note = await Window.getByLabel(PRACTICE_NOTE_LABEL);
+    return !!note && (await note.isFocused());
+  } catch {
+    return false;
+  }
+};
 
 type Mode = "hold" | "tap";
 type Result =
@@ -141,6 +153,12 @@ export const TryIt: React.FC<TryItProps> = ({
         }
       },
     );
+    // Already in front (this screen came back, or its event came first).
+    isNoteFocused().then((on) => {
+      if (!on) return;
+      focusedRef.current = true;
+      setClicked(true);
+    });
     // Closed from its own title bar, or with Handy's window: start over at
     // "click into the note", with a way to open it again.
     const unlistenClosed = listen(PRACTICE_NOTE_CLOSED_EVENT, () => {
@@ -181,33 +199,35 @@ export const TryIt: React.FC<TryItProps> = ({
           setModeBoth(lockedRef.current ? "tap" : "hold");
       }
     });
-    const offDone = events.transcriptionCompleteEvent.listen(({ payload }) => {
-      const how = modeRef.current ?? "hold";
-      if (payload.outcome !== "typed") {
-        setModeBoth(null);
-        setResult({ kind: payload.outcome });
-        return;
-      }
-      if (!focusedRef.current) {
-        setModeBoth(null);
-        setResult({ kind: "nothingTyped" });
-        return;
-      }
-      setFinished(true);
-      setLessons({ [how]: true });
-      const speech = payload.audio_seconds;
-      const wait = payload.wait_seconds;
-      if (speech >= 5)
-        setResult({
-          kind: isTooSlow(speech, wait) ? "slow" : "ok",
-          speech,
-          wait,
-        });
-      else
-        setResult((r) =>
-          r.kind === "ok" || r.kind === "slow" ? r : { kind: "short", wait },
-        );
-    });
+    const offDone = events.transcriptionCompleteEvent.listen(
+      async ({ payload }) => {
+        const how = modeRef.current ?? "hold";
+        if (payload.outcome !== "typed") {
+          setModeBoth(null);
+          setResult({ kind: payload.outcome });
+          return;
+        }
+        if (!focusedRef.current && !(await isNoteFocused())) {
+          setModeBoth(null);
+          setResult({ kind: "nothingTyped" });
+          return;
+        }
+        setFinished(true);
+        setLessons({ [how]: true });
+        const speech = payload.audio_seconds;
+        const wait = payload.wait_seconds;
+        if (speech >= 5)
+          setResult({
+            kind: isTooSlow(speech, wait) ? "slow" : "ok",
+            speech,
+            wait,
+          });
+        else
+          setResult((r) =>
+            r.kind === "ok" || r.kind === "slow" ? r : { kind: "short", wait },
+          );
+      },
+    );
     return () => {
       clearTimeout(holdTimer.current);
       offState.then((off) => off());
@@ -387,7 +407,7 @@ export const TryIt: React.FC<TryItProps> = ({
               )}
             </div>
             <Button
-              variant="secondary"
+              variant="outline"
               size="md"
               onClick={() => {
                 setSwitchedTo(faster.model.id);

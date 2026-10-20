@@ -27,6 +27,11 @@ export const PracticeNote: React.FC = () => {
     const unlisten = getCurrentWindow().onFocusChanged(({ payload }) =>
       report(payload),
     );
+    // It may have been in front before this listener existed.
+    getCurrentWindow()
+      .isFocused()
+      .then((on) => on && report(true))
+      .catch(console.error);
     return () => {
       unlisten.then((off) => off());
     };

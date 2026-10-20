@@ -146,12 +146,6 @@
   }
 }
 
-/* The style being compared app-wide (temporary): `v2:` classes apply only
-   when <html data-style="v2"> is set (lib/utils/style.ts). Without the
-   attribute every component renders exactly as before. The attribute adds
-   specificity, so a v2: class wins over the base class it replaces. */
-@custom-variant v2 (:root[data-style="v2"] &);
-
 :root {
   /* Typography */
   font-size: 15px;
@@ -238,27 +232,4 @@
   fill: var(--color-logo-stroke);
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
-}
-
-/* The v2 style for react-select (ui/Select.tsx), whose own styles are
-   emotion classes: the paper field with a 1.5px edge, like ui/Input. */
-:root[data-style="v2"] .app-select__control {
-  min-height: 34px;
-  border-radius: 10px;
-  border: 1.5px solid var(--color-line-strong);
-  background-color: var(--color-background);
-  box-shadow: none;
-  font-size: 15px;
-}
-:root[data-style="v2"] .app-select__control:hover,
-:root[data-style="v2"] .app-select__control--is-focused {
-  border-color: var(--color-line-strong);
-  background-color: var(--color-background);
-}
-:root[data-style="v2"] .app-select__menu {
-  border-radius: 10px;
-  border: 1.5px solid var(--color-line-strong);
-}
-:root[data-style="v2"] .app-select__option--is-focused {
-  background-color: var(--color-wash);
 }
