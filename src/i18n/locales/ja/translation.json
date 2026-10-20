@@ -19,11 +19,6 @@
     "about": "概要"
   },
   "onboarding": {
-    "subtitle": "開始するには、文字起こしのモデルを選択してください",
-    "existingModelsTitle": "互換性のあるモデル",
-    "downloadModelsTitle": "ダウンロード可能",
-    "showAllModels": "すべての{{total}}個のモデルを表示",
-    "showFewerModels": "表示を減らす",
     "recommended": "おすすめ",
     "customModelDescription": "公式サポート対象外",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "モデルの選択に失敗しました"
     },
     "permissions": {
-      "title": "権限が必要です",
-      "description": "Handy が正常に動作するにはいくつかの権限が必要です。",
-      "microphone": {
-        "title": "マイクへのアクセス",
-        "description": "文字起こしのためにあなたの声を聞くために必要です。"
-      },
-      "accessibility": {
-        "title": "アクセシビリティへのアクセス",
-        "description": "アプリに文字起こししたテキストを入力するために必要です。"
-      },
-      "grant": "権限を許可",
-      "granted": "許可済み",
-      "waiting": "待機中…",
-      "allGranted": "準備完了!",
       "errors": {
         "checkFailed": "権限の確認に失敗しました。もう一度お試しください。",
         "requestFailed": "権限のリクエストに失敗しました。もう一度お試しください。"
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "オンボーディングをプレビュー",
         "description": "権限、モデル、完了状態を変更せずにオンボーディング画面をプレビューします",
-        "permissionsButton": "権限",
-        "modelsButton": "モデル選択",
         "exitButton": "プレビューを終了"
       }
     },

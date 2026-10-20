@@ -19,11 +19,6 @@
     "models": "النماذج"
   },
   "onboarding": {
-    "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
-    "existingModelsTitle": "النماذج المتوافقة",
-    "downloadModelsTitle": "متاح للتنزيل",
-    "showAllModels": "عرض كل النماذج ({{total}})",
-    "showFewerModels": "عرض عدد أقل من النماذج",
     "recommended": "موصى به",
     "customModelDescription": "غير مدعوم رسميًا",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "فشل تحديد النموذج"
     },
     "permissions": {
-      "title": "الأذونات المطلوبة",
-      "description": ".يحتاج Handy إلى بعض الأذونات ليعمل بشكل صحيح",
-      "microphone": {
-        "title": "الوصول إلى الميكروفون",
-        "description": ".مطلوب لسماع صوتك من أجل التفريغ الصوتي"
-      },
-      "accessibility": {
-        "title": "إمكانية الوصول",
-        "description": ".مطلوب لكتابة النص المفرغ في تطبيقاتك"
-      },
-      "grant": "منح الإذن",
-      "granted": "تم المنح",
-      "waiting": "في الانتظار...",
-      "allGranted": "كل شيء جاهز!",
       "errors": {
         "checkFailed": "فشل التحقق من الأذونات. يرجير المحاولة مرة أخرى.",
         "requestFailed": "فشل طلب الإذن. يرجى المحاولة مرة أخرى."
@@ -559,8 +540,6 @@
       "onboardingPreview": {
         "title": "معاينة الإعداد الأولي",
         "description": "عاين شاشات الإعداد الأولي دون تغيير الأذونات أو النماذج أو حالة الإكمال",
-        "permissionsButton": "الأذونات",
-        "modelsButton": "اختيار النموذج",
         "exitButton": "إنهاء المعاينة"
       }
     },

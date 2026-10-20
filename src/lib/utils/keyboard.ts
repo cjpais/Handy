@@ -227,3 +227,49 @@ export const normalizeKey = (key: string): string => {
   }
   return key;
 };
+
+/** One keycap: its label, and whether it's a wide key (Space). */
+export interface KeycapPart {
+  label: string;
+  wide: boolean;
+}
+
+// Keycaps show the symbols printed on the keys: glyphs on macOS, names
+// elsewhere. A key's side (option_left) isn't printed on it.
+const MAC_KEYCAPS: Record<string, string> = {
+  option: "⌥",
+  alt: "⌥",
+  command: "⌘",
+  cmd: "⌘",
+  meta: "⌘",
+  super: "⌘",
+  ctrl: "⌃",
+  control: "⌃",
+  shift: "⇧",
+};
+const PC_KEYCAPS: Record<string, string> = {
+  alt: "Alt",
+  option: "Alt",
+  ctrl: "Ctrl",
+  control: "Ctrl",
+  shift: "Shift",
+  meta: "⊞",
+  super: "⊞",
+  command: "⊞",
+};
+
+/**
+ * Split a binding ("option+space") into the keycaps that draw it:
+ * [{ label: "⌥" }, { label: "Space", wide: true }] on macOS.
+ */
+export const keycapParts = (binding: string, osType: OSType): KeycapPart[] =>
+  binding
+    .split("+")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const key = part.replace(/_(left|right)$/, "");
+      if (key === "space") return { label: capitalizeKey(key), wide: true };
+      const glyphs = osType === "macos" ? MAC_KEYCAPS : PC_KEYCAPS;
+      return { label: glyphs[key] ?? capitalizeKey(key), wide: false };
+    });

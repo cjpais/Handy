@@ -19,11 +19,6 @@
     "about": "O aplikaci"
   },
   "onboarding": {
-    "subtitle": "Pro začátek vyberte model pro přepis",
-    "existingModelsTitle": "Kompatibilní modely",
-    "downloadModelsTitle": "Dostupné ke stažení",
-    "showAllModels": "Zobrazit všech {{total}} modelů",
-    "showFewerModels": "Zobrazit méně modelů",
     "recommended": "Doporučeno",
     "customModelDescription": "Oficiálně nepodporováno",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Nepodařilo se vybrat model"
     },
     "permissions": {
-      "title": "Vyžadována oprávnění",
-      "description": "Handy potřebuje několik oprávnění pro správné fungování.",
-      "microphone": {
-        "title": "Přístup k mikrofonu",
-        "description": "Potřebný pro zachycení vašeho hlasu k přepisu."
-      },
-      "accessibility": {
-        "title": "Přístup k usnadnění",
-        "description": "Potřebný pro psaní přepsaného textu do vašich aplikací."
-      },
-      "grant": "Udělit oprávnění",
-      "granted": "Uděleno",
-      "waiting": "Čekání...",
-      "allGranted": "Vše připraveno!",
       "errors": {
         "checkFailed": "Nepodařilo se zkontrolovat oprávnění. Zkuste to prosím znovu.",
         "requestFailed": "Nepodařilo se požádat o oprávnění. Zkuste to prosím znovu."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Náhled úvodního nastavení",
         "description": "Prohlédněte si obrazovky úvodního nastavení beze změny oprávnění, modelů nebo stavu dokončení",
-        "permissionsButton": "Oprávnění",
-        "modelsButton": "Výběr modelu",
         "exitButton": "Ukončit náhled"
       }
     },

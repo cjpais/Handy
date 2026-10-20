@@ -19,11 +19,6 @@
     "about": "Om"
   },
   "onboarding": {
-    "subtitle": "For at komme i gang skal du vælge en transskriptionsmodel",
-    "existingModelsTitle": "Kompatible modeller",
-    "downloadModelsTitle": "Tilgængelig til download",
-    "showAllModels": "Vis alle {{total}} modeller",
-    "showFewerModels": "Vis færre modeller",
     "recommended": "Anbefalet",
     "customModelDescription": "Ikke officielt understøttet",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Kunne ikke vælge model"
     },
     "permissions": {
-      "title": "Tilladelser påkrævet",
-      "description": "Handy har brug for et par tilladelser for at fungere korrekt.",
-      "microphone": {
-        "title": "Mikrofonadgang",
-        "description": "Påkrævet for at høre din stemme til transskription."
-      },
-      "accessibility": {
-        "title": "Tilgængelighedsadgang",
-        "description": "Påkrævet for at skrive den transskriberede tekst ind i dine programmer."
-      },
-      "grant": "Giv tilladelse",
-      "granted": "Givet",
-      "waiting": "Venter...",
-      "allGranted": "Alt er klar!",
       "errors": {
         "checkFailed": "Kunne ikke tjekke tilladelser. Prøv igen.",
         "requestFailed": "Kunne ikke anmode om tilladelse. Prøv igen."
@@ -496,8 +477,6 @@
       "onboardingPreview": {
         "title": "Forhåndsvis introduktion",
         "description": "Forhåndsvis introduktionsskærmene uden at ændre tilladelser, modeller eller fuldførelsesstatus",
-        "permissionsButton": "Tilladelser",
-        "modelsButton": "Modelvalg",
         "exitButton": "Afslut forhåndsvisning"
       },
       "soundTheme": {

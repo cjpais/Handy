@@ -11,17 +11,17 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
-import { formatModelSize } from "../../lib/utils/format";
+import { formatModelSize } from "@/lib/utils/format";
 import {
   getTranslatedModelDescription,
   getTranslatedModelName,
-} from "../../lib/utils/modelTranslation";
+} from "@/lib/utils/modelTranslation";
 import {
   getLanguageLabel,
   getUniqueCapabilityLanguages,
-} from "../../lib/constants/languages";
-import Badge from "../ui/Badge";
-import { Button } from "../ui/Button";
+} from "@/lib/constants/languages";
+import Badge from "../../ui/Badge";
+import { Button } from "../../ui/Button";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 // Get display text for model's language support

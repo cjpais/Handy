@@ -433,6 +433,10 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    /// Every language the person dictates in (codes, e.g. ["en", "zh"]),
+    /// picked during onboarding. Empty until then.
+    #[serde(default)]
+    pub spoken_languages: Vec<String>,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -974,6 +978,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_model: "".to_string(),
         onboarding_completed: false,
         always_on_microphone: false,
+        spoken_languages: Vec::new(),
         selected_microphone: None,
         selected_channel: None,
         clamshell_microphone: None,

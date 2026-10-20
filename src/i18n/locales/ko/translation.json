@@ -19,11 +19,6 @@
     "about": "정보"
   },
   "onboarding": {
-    "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
-    "existingModelsTitle": "호환 가능한 모델",
-    "downloadModelsTitle": "다운로드 가능",
-    "showAllModels": "전체 {{total}}개 모델 표시",
-    "showFewerModels": "간략히 표시",
     "recommended": "추천",
     "customModelDescription": "공식 지원되지 않음",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "모델을 선택하지 못했습니다"
     },
     "permissions": {
-      "title": "권한 필요",
-      "description": "Handy가 제대로 작동하려면 몇 가지 권한이 필요합니다.",
-      "microphone": {
-        "title": "마이크 접근",
-        "description": "음성 인식을 위해 마이크 접근 권한이 필요합니다."
-      },
-      "accessibility": {
-        "title": "접근성 권한",
-        "description": "녹음된 텍스트를 애플리케이션에 입력하기 위해 필요합니다."
-      },
-      "grant": "권한 부여",
-      "granted": "승인됨",
-      "waiting": "대기 중...",
-      "allGranted": "모두 설정 완료!",
       "errors": {
         "checkFailed": "권한 확인에 실패했습니다. 다시 시도해주세요.",
         "requestFailed": "권한 요청에 실패했습니다. 다시 시도해주세요."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "온보딩 미리보기",
         "description": "권한, 모델 또는 완료 상태를 변경하지 않고 온보딩 화면을 미리 봅니다",
-        "permissionsButton": "권한",
-        "modelsButton": "모델 선택",
         "exitButton": "미리보기 종료"
       }
     },

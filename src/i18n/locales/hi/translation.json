@@ -19,11 +19,6 @@
     "about": "के बारे में"
   },
   "onboarding": {
-    "subtitle": "शुरू करने के लिए, एक ट्रांसक्रिप्शन मॉडल चुनें",
-    "existingModelsTitle": "संगत मॉडल",
-    "downloadModelsTitle": "डाउनलोड के लिए उपलब्ध",
-    "showAllModels": "सभी {{total}} मॉडल दिखाएं",
-    "showFewerModels": "कम मॉडल दिखाएं",
     "recommended": "सुझाया गया",
     "customModelDescription": "आधिकारिक रूप से समर्थित नहीं",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "मॉडल चुना नहीं जा सका"
     },
     "permissions": {
-      "title": "अनुमतियों की ज़रूरत है",
-      "description": "Handy को ठीक से काम करने के लिए कुछ अनुमतियों की ज़रूरत है.",
-      "microphone": {
-        "title": "माइक्रोफ़ोन ऐक्सेस",
-        "description": "आपकी आवाज़ सुनकर ट्रांसक्रिप्शन करने के लिए ज़रूरी."
-      },
-      "accessibility": {
-        "title": "ऐक्सेसिबिलिटी ऐक्सेस",
-        "description": "ट्रांसक्राइब किया गया टेक्स्ट आपके ऐप्लिकेशन में टाइप करने के लिए ज़रूरी."
-      },
-      "grant": "अनुमति दें",
-      "granted": "अनुमति मिल गई",
-      "waiting": "इंतज़ार किया जा रहा है...",
-      "allGranted": "सब तैयार!",
       "errors": {
         "checkFailed": "अनुमतियां जांची नहीं जा सकीं. कृपया फिर से कोशिश करें.",
         "requestFailed": "अनुमति मांगी नहीं जा सकी. कृपया फिर से कोशिश करें."
@@ -496,8 +477,6 @@
       "onboardingPreview": {
         "title": "शुरुआती सेटअप की झलक",
         "description": "अनुमतियों, मॉडल या पूर्णता स्थिति को बदले बिना शुरुआती सेटअप स्क्रीन की झलक देखें",
-        "permissionsButton": "अनुमतियाँ",
-        "modelsButton": "मॉडल चयन",
         "exitButton": "झलक से बाहर निकलें"
       },
       "soundTheme": {

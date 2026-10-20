@@ -19,11 +19,6 @@
     "about": "Over Handy"
   },
   "onboarding": {
-    "subtitle": "Kies een transcriptiemodel om aan de slag te gaan",
-    "existingModelsTitle": "Compatibele modellen",
-    "downloadModelsTitle": "Beschikbaar voor download",
-    "showAllModels": "Toon alle {{total}} modellen",
-    "showFewerModels": "Minder modellen tonen",
     "recommended": "Aanbevolen",
     "customModelDescription": "Niet officieel ondersteund",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Model selecteren mislukt"
     },
     "permissions": {
-      "title": "Machtigingen vereist",
-      "description": "Handy heeft een aantal machtigingen nodig om goed te kunnen werken.",
-      "microphone": {
-        "title": "Microfoontoegang",
-        "description": "Vereist om je stem op te nemen voor transcriptie."
-      },
-      "accessibility": {
-        "title": "Toegankelijkheid",
-        "description": "Vereist om getranscribeerde tekst in je applicaties te kunnen typen."
-      },
-      "grant": "Machtiging verlenen",
-      "granted": "Verleend",
-      "waiting": "Wachten...",
-      "allGranted": "Alles ingesteld!",
       "errors": {
         "checkFailed": "Machtigingen controleren mislukt. Probeer het opnieuw.",
         "requestFailed": "Machtiging aanvragen mislukt. Probeer het opnieuw."
@@ -496,8 +477,6 @@
       "onboardingPreview": {
         "title": "Voorbeeld van onboarding",
         "description": "Bekijk de onboardingschermen zonder machtigingen, modellen of de voltooiingsstatus te wijzigen",
-        "permissionsButton": "Machtigingen",
-        "modelsButton": "Modelselectie",
         "exitButton": "Voorbeeld sluiten"
       },
       "soundTheme": {

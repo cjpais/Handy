@@ -19,11 +19,6 @@
     "about": "Informazioni"
   },
   "onboarding": {
-    "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
-    "existingModelsTitle": "Modelli compatibili",
-    "downloadModelsTitle": "Disponibile per il download",
-    "showAllModels": "Mostra tutti e {{total}} modelli",
-    "showFewerModels": "Mostra meno modelli",
     "recommended": "Raccomandato",
     "customModelDescription": "Non ufficialmente supportato",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Impossibile selezionare il modello"
     },
     "permissions": {
-      "title": "Permessi Richiesti",
-      "description": "Handy ha bisogno di alcuni permessi per funzionare correttamente.",
-      "microphone": {
-        "title": "Accesso al Microfono",
-        "description": "Necessario per sentire la tua voce per la trascrizione."
-      },
-      "accessibility": {
-        "title": "Accesso all'Accessibilità",
-        "description": "Necessario per digitare il testo trascritto nelle tue applicazioni."
-      },
-      "grant": "Concedi Permesso",
-      "granted": "Concesso",
-      "waiting": "In attesa...",
-      "allGranted": "Tutto pronto!",
       "errors": {
         "checkFailed": "Impossibile verificare i permessi. Riprova.",
         "requestFailed": "Impossibile richiedere il permesso. Riprova."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Anteprima della configurazione iniziale",
         "description": "Visualizza le schermate di configurazione senza modificare autorizzazioni, modelli o stato di completamento",
-        "permissionsButton": "Autorizzazioni",
-        "modelsButton": "Selezione del modello",
         "exitButton": "Esci dall’anteprima"
       }
     },

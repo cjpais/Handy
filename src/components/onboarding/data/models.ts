@@ -1,0 +1,275 @@
+/**
+ * The speech models onboarding offers, and what it says about them, from the
+ * app's catalog (@handy-computer/models, the same file as
+ * src-tauri/src/catalog/catalog.json): accuracy per language, the wait on
+ * this machine's tier, and the package's picks for the chosen languages.
+ */
+import {
+  accuracyGrade,
+  catalog,
+  languageIdentity,
+  modelMatchesLanguage,
+  type CatalogModel,
+  type MachineTier,
+} from "@handy-computer/models";
+import type { GradeLetter } from "@/components/shared/GradeChip";
+
+export type { CatalogModel, MachineTier };
+
+const M = catalog.methodology;
+
+/** The models onboarding can offer: curated speech models. */
+export const CURATED_ASR: CatalogModel[] = catalog.curatedModels.filter(
+  (m) => m.role === "asr",
+);
+
+/** Measured word (or character) error for one language, in percent. */
+export const errorFor = (
+  model: CatalogModel,
+  language: string,
+): number | undefined =>
+  catalog.data.results[model.id]?.accuracy[languageIdentity(language)]?.error;
+
+export interface Grade {
+  letter: GradeLetter;
+  /** "A+", "B−"; "—" when the model doesn't speak it, "?" when unmeasured. */
+  label: string;
+  unsupported?: boolean;
+  unrated?: boolean;
+}
+
+// The package writes the minus as a hyphen; the design sets a real minus.
+const minus = (label: string) => label.replace("-", "−");
+
+export const gradeFor = (model: CatalogModel, language: string): Grade => {
+  if (!modelMatchesLanguage(model, language))
+    return { letter: "none", label: "—", unsupported: true };
+  const grade = catalog.languageAccuracyGrade(model, language);
+  if (!grade) return { letter: "none", label: "?", unrated: true };
+  return { letter: grade.letter, label: minus(grade.label) };
+};
+
+/** The grade for an error in percent (an average over several languages). */
+export const gradeForError = (error: number): Grade => {
+  const grade = accuracyGrade(error);
+  return { letter: grade.letter, label: minus(grade.label) };
+};
+
+/** Seconds after a 30-second dictation, on this machine's tier. */
+export const waitFor = (
+  model: CatalogModel,
+  tier: MachineTier,
+): number | undefined => catalog.modelWaitSeconds(model, tier);
+
+/** Several languages: the geometric mean of their errors. */
+const geoMean = (xs: number[]) =>
+  Math.exp(xs.reduce((a, x) => a + Math.log(x), 0) / xs.length);
+
+/** No curated model hears this language well (under 20% errors). */
+export const isWeakLanguage = (language: string): boolean => {
+  const errors = CURATED_ASR.filter((m) => modelMatchesLanguage(m, language))
+    .map((m) => errorFor(m, language))
+    .filter((e): e is number => e != null);
+  return !errors.length || Math.min(...errors) >= M.maxLanguageErrorPercent;
+};
+
+/* ---------------- the picks ---------------- */
+
+/** Recommended, Faster, More accurate: always in this order. */
+export type PickRole = "pick" | "faster" | "accurate";
+export const ROLE_ORDER: PickRole[] = ["pick", "faster", "accurate"];
+
+export interface Pick {
+  model: CatalogModel;
+  role: PickRole;
+  wait: number | undefined;
+}
+
+// A model the package gives several roles shows the strongest: Recommended,
+// then Faster (true against Recommended), then More accurate.
+const PACKAGE_ROLES = [
+  ["best", "pick"],
+  ["fast", "faster"],
+  ["accurate", "accurate"],
+] as const;
+
+/**
+ * The package's picks for these languages, one card per model, in the order
+ * Recommended, Faster, More accurate. Only models in `offered` (the ones the
+ * app can download) count.
+ */
+export const picksFor = (
+  languages: string[],
+  tier: MachineTier,
+  offered: (model: CatalogModel) => boolean,
+): Pick[] =>
+  catalog
+    .recommend(languages)
+    .filter((r) => offered(r.model))
+    .map((r) => {
+      const role = PACKAGE_ROLES.find(([p]) => r.roles.includes(p))?.[1];
+      return role
+        ? { model: r.model, role, wait: waitFor(r.model, tier) }
+        : null;
+    })
+    .filter((p): p is Pick => p !== null)
+    .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
+
+/**
+ * Every usable model for these languages, best value first: error plus a
+ * penalty for each second past the free wait (the package's overall cost),
+ * judged on this machine's tier. For ordering the full list.
+ */
+export const rankFor = (
+  languages: string[],
+  tier: MachineTier,
+  models: CatalogModel[],
+): Map<string, number> => {
+  const scored = models
+    .map((model) => {
+      if (!languages.every((l) => modelMatchesLanguage(model, l))) return null;
+      const errors = languages.map((l) => errorFor(model, l));
+      if (errors.some((e) => e == null)) return null;
+      const wait = waitFor(model, tier);
+      if (wait == null) return null;
+      const error = geoMean(errors as number[]);
+      return {
+        model,
+        worst: Math.max(...(errors as number[])),
+        cost: error + M.waitWeight * Math.max(0, wait - M.freeWaitSeconds),
+      };
+    })
+    .filter((s) => s !== null);
+  const eligible = scored.filter((s) => s.worst <= M.maxLanguageErrorPercent);
+  const pool = (eligible.length ? eligible : scored).sort(
+    (a, b) => a.cost - b.cost,
+  );
+  return new Map(pool.map((s, i) => [s.model.id, i]));
+};
+
+/* ---------------- the full list ---------------- */
+
+export interface ModelRow {
+  model: CatalogModel;
+  /** Its role when it's one of the picks. */
+  role: PickRole | null;
+  /** Your languages it doesn't speak. */
+  missing: string[];
+  /** Average error over your languages, when every one is measured. */
+  error: number | null;
+  wait: number | undefined;
+}
+
+export interface ModelGroups {
+  /** The picks, in order. */
+  picks: ModelRow[];
+  /** The rest that speak every one of your languages, best value first. */
+  others: ModelRow[];
+  /** Models missing one of your languages: fewest missing, then accuracy. */
+  partial: ModelRow[];
+}
+
+export const groupModels = (
+  languages: string[],
+  tier: MachineTier,
+  models: CatalogModel[],
+  picks: Pick[],
+): ModelGroups => {
+  const roles = new Map(picks.map((p) => [p.model.id, p.role]));
+  const rank = rankFor(languages, tier, models);
+  const rows: ModelRow[] = models.map((model) => {
+    const errors = languages.map((l) => errorFor(model, l));
+    return {
+      model,
+      role: roles.get(model.id) ?? null,
+      missing: languages.filter((l) => !modelMatchesLanguage(model, l)),
+      error: errors.every((e) => e != null)
+        ? geoMean(errors as number[])
+        : null,
+      wait: waitFor(model, tier),
+    };
+  });
+  const score = (r: ModelRow) => rank.get(r.model.id) ?? 100 + (r.error ?? 99);
+  return {
+    picks: picks
+      .map((p) => rows.find((r) => r.model.id === p.model.id))
+      .filter((r): r is ModelRow => !!r),
+    others: rows
+      .filter((r) => !r.role && !r.missing.length)
+      .sort((a, b) => score(a) - score(b)),
+    partial: rows
+      .filter((r) => !r.role && r.missing.length)
+      .sort(
+        (a, b) =>
+          a.missing.length - b.missing.length ||
+          (a.error ?? 99) - (b.error ?? 99),
+      ),
+  };
+};
+
+/* ---------------- speed on this computer (Try it) ---------------- */
+
+/**
+ * Only takes of 5 seconds or more are judged. Comfortable is a 30-second
+ * dictation back within 5 seconds (the overall pick's budget).
+ */
+export const isTooSlow = (speechSeconds: number, waitSeconds: number) =>
+  speechSeconds >= 5 &&
+  speechSeconds / Math.max(waitSeconds, 0.05) <
+    M.dictationSeconds / M.overallMaxWaitSeconds;
+
+export interface FasterOption {
+  model: CatalogModel;
+  wait: number;
+  /** More mistakes than the current model. */
+  worse: boolean;
+}
+
+/**
+ * A quicker model to offer after a slow take: Recommended or Faster if it's
+ * quicker, else the most accurate model that speaks every language well
+ * enough and is at least three times quicker (or under 5s).
+ */
+export const fasterOption = (
+  current: CatalogModel,
+  languages: string[],
+  tier: MachineTier,
+  picks: Pick[],
+  models: CatalogModel[],
+): FasterOption | null => {
+  const currentWait = waitFor(current, tier) ?? 99;
+  const quicker = picks.find(
+    (p) =>
+      (p.role === "pick" || p.role === "faster") &&
+      p.model.id !== current.id &&
+      p.wait != null &&
+      p.wait < currentWait,
+  );
+  if (quicker?.wait != null)
+    return { model: quicker.model, wait: quicker.wait, worse: false };
+  const meanError = (m: CatalogModel) =>
+    languages.reduce((a, l) => a + (errorFor(m, l) ?? 60), 0) /
+    languages.length;
+  const goodEnough = (m: CatalogModel) =>
+    languages.every((l) => !["D", "F", "none"].includes(gradeFor(m, l).letter));
+  const alt = models
+    .filter(
+      (m) =>
+        m.id !== current.id &&
+        languages.every((l) => modelMatchesLanguage(m, l)) &&
+        goodEnough(m),
+    )
+    .map((m) => ({ model: m, wait: waitFor(m, tier) }))
+    .filter(
+      (x): x is { model: CatalogModel; wait: number } =>
+        x.wait != null && x.wait <= Math.max(5, currentWait / 3),
+    )
+    .sort((a, b) => meanError(a.model) - meanError(b.model))[0];
+  if (!alt) return null;
+  return {
+    ...alt,
+    worse: meanError(alt.model) > meanError(current) * 1.15,
+  };
+};
+
+export const DICTATION_SECONDS = M.dictationSeconds;

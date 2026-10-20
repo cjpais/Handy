@@ -19,11 +19,6 @@
     "about": "Acerca de"
   },
   "onboarding": {
-    "subtitle": "Para comenzar, elige un modelo de transcripción",
-    "existingModelsTitle": "Modelos compatibles",
-    "downloadModelsTitle": "Disponibles para descargar",
-    "showAllModels": "Mostrar los {{total}} modelos",
-    "showFewerModels": "Mostrar menos modelos",
     "recommended": "Recomendado",
     "customModelDescription": "Sin soporte oficial",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Error al seleccionar el modelo"
     },
     "permissions": {
-      "title": "Permisos requeridos",
-      "description": "Handy necesita algunos permisos para funcionar correctamente.",
-      "microphone": {
-        "title": "Acceso al micrófono",
-        "description": "Necesario para escuchar tu voz para la transcripción."
-      },
-      "accessibility": {
-        "title": "Acceso de accesibilidad",
-        "description": "Necesario para escribir el texto transcrito en tus aplicaciones."
-      },
-      "grant": "Conceder permiso",
-      "granted": "Concedido",
-      "waiting": "Esperando...",
-      "allGranted": "¡Todo listo!",
       "errors": {
         "checkFailed": "Error al verificar permisos. Por favor, inténtalo de nuevo.",
         "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Vista previa de la configuración inicial",
         "description": "Previsualiza las pantallas de configuración inicial sin cambiar permisos, modelos ni el estado de finalización",
-        "permissionsButton": "Permisos",
-        "modelsButton": "Selección de modelo",
         "exitButton": "Salir de la vista previa"
       }
     },

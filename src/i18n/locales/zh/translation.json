@@ -19,11 +19,6 @@
     "about": "关于"
   },
   "onboarding": {
-    "subtitle": "请选择一个转录模型以开始使用",
-    "existingModelsTitle": "兼容的模型",
-    "downloadModelsTitle": "可供下载",
-    "showAllModels": "显示全部 {{total}} 个模型",
-    "showFewerModels": "显示较少模型",
     "recommended": "推荐",
     "customModelDescription": "非官方支持",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "选择模型失败"
     },
     "permissions": {
-      "title": "需要权限",
-      "description": "Handy 需要一些权限才能正常工作。",
-      "microphone": {
-        "title": "麦克风访问",
-        "description": "需要听取您的语音进行转录。"
-      },
-      "accessibility": {
-        "title": "辅助功能访问",
-        "description": "需要将转录文本输入到您的应用程序中。"
-      },
-      "grant": "授予权限",
-      "granted": "已授予",
-      "waiting": "等待中...",
-      "allGranted": "全部完成！",
       "errors": {
         "checkFailed": "检查权限失败。请重试。",
         "requestFailed": "请求权限失败。请重试。"
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "预览新手引导",
         "description": "预览新手引导界面，而不更改权限、模型或完成状态",
-        "permissionsButton": "权限",
-        "modelsButton": "模型选择",
         "exitButton": "退出预览"
       }
     },

@@ -19,11 +19,6 @@
     "about": "Sobre"
   },
   "onboarding": {
-    "subtitle": "Para começar, escolha um modelo de transcrição",
-    "existingModelsTitle": "Modelos compatíveis",
-    "downloadModelsTitle": "Disponíveis para download",
-    "showAllModels": "Mostrar todos os {{total}} modelos",
-    "showFewerModels": "Mostrar menos modelos",
     "recommended": "Recomendado",
     "customModelDescription": "Não suportado oficialmente",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Falha ao selecionar o modelo"
     },
     "permissions": {
-      "title": "Permissões Necessárias",
-      "description": "O Handy precisa de algumas permissões para funcionar corretamente.",
-      "microphone": {
-        "title": "Acesso ao Microfone",
-        "description": "Necessário para ouvir sua voz para transcrição."
-      },
-      "accessibility": {
-        "title": "Acesso à Acessibilidade",
-        "description": "Necessário para digitar o texto transcrito em seus aplicativos."
-      },
-      "grant": "Conceder Permissão",
-      "granted": "Concedido",
-      "waiting": "Aguardando...",
-      "allGranted": "Tudo pronto!",
       "errors": {
         "checkFailed": "Erro ao verificar permissões. Por favor, tente novamente.",
         "requestFailed": "Erro ao solicitar permissão. Por favor, tente novamente."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Pré-visualizar configuração inicial",
         "description": "Pré-visualize os ecrãs de configuração sem alterar permissões, modelos ou o estado de conclusão",
-        "permissionsButton": "Permissões",
-        "modelsButton": "Seleção de modelo",
         "exitButton": "Sair da pré-visualização"
       }
     },

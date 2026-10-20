@@ -19,11 +19,6 @@
     "about": "À propos"
   },
   "onboarding": {
-    "subtitle": "Pour commencer, choisissez un modèle de transcription",
-    "existingModelsTitle": "Modèles compatibles",
-    "downloadModelsTitle": "Disponibles au téléchargement",
-    "showAllModels": "Afficher tous les {{total}} modèles",
-    "showFewerModels": "Afficher moins de modèles",
     "recommended": "Recommandé",
     "customModelDescription": "Non officiellement pris en charge",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Échec de la sélection du modèle"
     },
     "permissions": {
-      "title": "Autorisations requises",
-      "description": "Handy a besoin de quelques autorisations pour fonctionner correctement.",
-      "microphone": {
-        "title": "Accès au microphone",
-        "description": "Nécessaire pour entendre votre voix pour la transcription."
-      },
-      "accessibility": {
-        "title": "Accès à l'accessibilité",
-        "description": "Nécessaire pour taper le texte transcrit dans vos applications."
-      },
-      "grant": "Accorder l'autorisation",
-      "granted": "Accordé",
-      "waiting": "En attente...",
-      "allGranted": "Tout est prêt !",
       "errors": {
         "checkFailed": "Échec de la vérification des autorisations. Veuillez réessayer.",
         "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Aperçu de la configuration initiale",
         "description": "Prévisualisez les écrans de configuration sans modifier les autorisations, les modèles ou l’état d’achèvement",
-        "permissionsButton": "Autorisations",
-        "modelsButton": "Sélection du modèle",
         "exitButton": "Quitter l’aperçu"
       }
     },

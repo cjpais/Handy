@@ -18,14 +18,17 @@ import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
-import Onboarding, {
-  AccessibilityOnboarding,
-  ModelMigration,
-} from "./components/onboarding";
+import { OnboardingFlow } from "./components/onboarding/OnboardingFlow";
+import ModelMigration from "./components/onboarding/ModelMigration";
 import {
-  DebugSettings,
-  type OnboardingPreviewStep,
-} from "./components/settings";
+  ReplaceModel,
+  ReturningPermissions,
+} from "./components/onboarding/StandaloneScreens";
+import {
+  clearOnboardingProgress,
+  type OnboardingStep as OnboardingPreviewStep,
+} from "./components/onboarding/onboardingStore";
+import { DebugSettings } from "./components/settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
@@ -35,17 +38,27 @@ import { commands } from "@/bindings";
 import { deleteRetiredModel } from "@/components/onboarding/retiredModels";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
-type OnboardingStep = "accessibility" | "migration" | "model" | "done";
-
-// Stable identity so preview effects do not re-run due to callback changes.
-const NOOP = () => {};
+// flow: first-run onboarding. permissions, migration and replaceModel are its
+// screens on their own, for returning users.
+type OnboardingStep =
+  | "flow"
+  | "permissions"
+  | "migration"
+  | "replaceModel"
+  | "done";
 
 const renderSettingsContent = (
   section: SidebarSection,
   onPreviewOnboarding: (step: OnboardingPreviewStep) => void,
+  onRunOnboarding: () => void,
 ) => {
   if (section === "debug") {
-    return <DebugSettings onPreviewOnboarding={onPreviewOnboarding} />;
+    return (
+      <DebugSettings
+        onPreviewOnboarding={onPreviewOnboarding}
+        onRunOnboarding={onRunOnboarding}
+      />
+    );
   }
 
   const ActiveComponent =
@@ -60,9 +73,6 @@ function App() {
   );
   const [onboardingPreview, setOnboardingPreview] =
     useState<OnboardingPreviewStep | null>(null);
-  // Track if this is a returning user who just needs to grant permissions
-  // (vs a new user who needs full onboarding including model selection)
-  const [isReturningUser, setIsReturningUser] = useState(false);
   // Set when a returning user's selected model is a retired (ONNX) model that
   // is still on disk: they must update it before the app can transcribe.
   const [migrationModelId, setMigrationModelId] = useState<string | null>(null);
@@ -78,21 +88,6 @@ function App() {
   );
   const hasCompletedPostOnboardingInit = useRef(false);
   const settingsScrollRef = useRef<HTMLDivElement>(null);
-  const isShowingOnboarding =
-    onboardingPreview !== null ||
-    onboardingStep === "accessibility" ||
-    onboardingStep === "migration" ||
-    onboardingStep === "model";
-
-  // Classic scrollbars consume layout space. Reserve a matching gutter on the
-  // opposite edge while onboarding is visible so its content stays centered in
-  // the physical window. Overlay scrollbars ignore scrollbar-gutter.
-  useLayoutEffect(() => {
-    const attribute = "data-onboarding-active";
-    document.documentElement.toggleAttribute(attribute, isShowingOnboarding);
-    return () => document.documentElement.removeAttribute(attribute);
-  }, [isShowingOnboarding]);
-
   // Reset the scroll position whenever the active section changes.
   useLayoutEffect(() => {
     settingsScrollRef.current?.scrollTo({ top: 0 });
@@ -258,7 +253,6 @@ function App() {
 
       if (hasCompletedOnboarding) {
         // Returning user - check if they need to grant permissions first
-        setIsReturningUser(true);
         const retiredModelId = await getMigrationModelId(
           settingsResult.data.selected_model ?? "",
         );
@@ -272,7 +266,7 @@ function App() {
             ]);
             if (!hasAccessibility || !hasMicrophone) {
               await revealMainWindowForPermissions();
-              setOnboardingStep("accessibility");
+              setOnboardingStep("permissions");
               return;
             }
           } catch (e) {
@@ -290,7 +284,7 @@ function App() {
               microphoneStatus.overall_access === "denied"
             ) {
               await revealMainWindowForPermissions();
-              setOnboardingStep("accessibility");
+              setOnboardingStep("permissions");
               return;
             }
           } catch (e) {
@@ -302,23 +296,18 @@ function App() {
         await finishReturningUser(retiredModelId);
       } else {
         // New user - start full onboarding
-        setIsReturningUser(false);
-        setOnboardingStep("accessibility");
+        setOnboardingStep("flow");
       }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);
-      setOnboardingStep("accessibility");
+      setOnboardingStep("flow");
     }
   };
 
-  const handleAccessibilityComplete = () => {
-    // Returning users already have models, skip to main app (unless their
-    // model needs updating). New users need to select a model.
-    if (isReturningUser) {
-      finishReturningUser(migrationModelId);
-    } else {
-      setOnboardingStep("model");
-    }
+  // Debug: the real onboarding from Welcome, for testing it end to end.
+  const runOnboarding = () => {
+    clearOnboardingProgress();
+    setOnboardingStep("flow");
   };
 
   const handleModelSelected = async () => {
@@ -329,7 +318,6 @@ function App() {
         await deleteRetiredModel(model.id);
       }
     }
-    // Transition to main app - user has started a download
     setOnboardingStep("done");
   };
 
@@ -365,16 +353,15 @@ function App() {
   // the main app never remounts it (which would drop any in-flight toast).
   let content: ReactNode;
   if (onboardingPreview) {
-    // Render previews in the same top-level slot as real onboarding. Keeping
-    // the settings layout unmounted ensures viewport overflow behaves exactly
-    // as it does during first-run onboarding.
+    // Previews render in the same top-level slot as real onboarding, inert:
+    // no prompts, downloads or setting writes.
     content = (
       <>
-        {onboardingPreview === "accessibility" ? (
-          <AccessibilityOnboarding onComplete={NOOP} preview />
-        ) : (
-          <Onboarding onModelSelected={NOOP} preview />
-        )}
+        <OnboardingFlow
+          preview
+          previewStep={onboardingPreview}
+          onComplete={() => setOnboardingPreview(null)}
+        />
         <button
           type="button"
           onClick={() => setOnboardingPreview(null)}
@@ -384,25 +371,29 @@ function App() {
         </button>
       </>
     );
-  } else if (onboardingStep === "accessibility") {
+  } else if (onboardingStep === "flow") {
+    content = <OnboardingFlow onComplete={() => setOnboardingStep("done")} />;
+  } else if (onboardingStep === "permissions") {
     content = (
-      <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
+      <ReturningPermissions
+        onComplete={() => finishReturningUser(migrationModelId)}
+      />
     );
   } else if (onboardingStep === "migration" && migrationModelId) {
     content = (
       <ModelMigration
         inUseModelId={migrationModelId}
         onComplete={() => setOnboardingStep("done")}
-        onChooseAnother={() => setOnboardingStep("model")}
+        onChooseAnother={() => setOnboardingStep("replaceModel")}
       />
     );
-  } else if (onboardingStep === "model") {
+  } else if (onboardingStep === "replaceModel") {
     content = (
-      <Onboarding
-        onModelSelected={handleModelSelected}
+      <ReplaceModel
         onBack={
           migrationModelId ? () => setOnboardingStep("migration") : undefined
         }
+        onComplete={handleModelSelected}
       />
     );
   } else {
@@ -426,7 +417,11 @@ function App() {
               <div className="flex flex-col items-center p-4 gap-4">
                 <AccessibilityPermissions />
                 <SecureInputWarning />
-                {renderSettingsContent(currentSection, setOnboardingPreview)}
+                {renderSettingsContent(
+                  currentSection,
+                  setOnboardingPreview,
+                  runOnboarding,
+                )}
               </div>
             </div>
           </div>

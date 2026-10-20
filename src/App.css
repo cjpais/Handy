@@ -13,7 +13,144 @@
   --color-mid-gray: var(--color-mid-gray);
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
+  --color-moss: var(--color-moss);
+  --color-plum-edge: var(--color-plum-edge);
+  --color-plum-pick: var(--color-plum-pick);
+  --color-note-surface: var(--color-note-surface);
+  --color-note-ink: var(--color-note-ink);
+  --color-demo-screen: var(--color-demo-screen);
+  --color-demo-window: var(--color-demo-window);
+  --color-hand: var(--color-hand);
+  --color-pick-surface: var(--color-pick-surface);
+  --color-pick-row: var(--color-pick-row);
+  --color-key-face: var(--color-key-face);
+  --color-key-ink: var(--color-key-ink);
+  --color-key-drop: var(--color-key-drop);
+  --color-wash: var(--color-wash);
+  --color-blush-wash: var(--color-blush-wash);
+  --color-moss-wash: var(--color-moss-wash);
+  --color-ink-2: var(--color-ink-2);
+  --color-ink-3: var(--color-ink-3);
+  --color-line: var(--color-line);
+  --color-line-strong: var(--color-line-strong);
 }
+
+/* The onboarding design's scale, in px: the root font size is 15px, so
+   Tailwind's rem-based steps (text-sm, rounded-lg, ...) land on fractions.
+   Names avoid Tailwind's defaults (text-sm, text-xl, ease-out, ...), which
+   Settings uses at their current values. */
+@theme {
+  --font-display:
+    ui-rounded, "SF Pro Rounded", system-ui, -apple-system,
+    "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  --font-ui:
+    system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+    "Noto Sans", sans-serif;
+
+  --text-hero: 40px; /* All set's headline */
+  --text-title: 26px; /* screen titles */
+  --text-name: 24px; /* the model name on Model's Full card */
+  --text-row: 17px; /* row titles */
+  --text-body: 15px; /* body, subtitles */
+  --text-small: 13px; /* buttons, secondary text, hints */
+  --text-label: 12px; /* labels */
+
+  --radius-panel: 16px; /* panels, the selected card */
+  --radius-card: 12px;
+  --radius-control: 10px; /* buttons, fields, table rows */
+  --radius-chip: 6px; /* grade chips */
+
+  /* One content width: every screen's main block runs 64px in from the
+     680px window's edges (552); Model's full list runs 40px in (600). */
+  --spacing-gutter: 64px;
+  --spacing-gutter-wide: 40px;
+
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* The mascot waves once on arrival (it rests tilted -8deg) */
+  --animate-wave: wave 1100ms var(--ease-glide) 250ms both;
+  /* A high five: lunge, squash, settle; the burst over it */
+  --animate-slap: slap 420ms var(--ease-glide);
+  --animate-burst: burst 420ms var(--ease-glide);
+  /* Something new rises into place */
+  --animate-rise: rise 260ms var(--ease-glide);
+
+  @keyframes wave {
+    0% {
+      rotate: -8deg;
+    }
+    20% {
+      rotate: 10deg;
+    }
+    40% {
+      rotate: -14deg;
+    }
+    60% {
+      rotate: 8deg;
+    }
+    80% {
+      rotate: -10deg;
+    }
+    100% {
+      rotate: -8deg;
+    }
+  }
+  @keyframes slap {
+    0% {
+      rotate: -8deg;
+      scale: 1;
+    }
+    30% {
+      rotate: 4deg;
+      scale: 1.16 1.08;
+    }
+    45% {
+      rotate: 2deg;
+      scale: 0.94 1.02;
+    }
+    100% {
+      rotate: -8deg;
+      scale: 1;
+    }
+  }
+  @keyframes burst {
+    0% {
+      opacity: 0;
+      scale: 0.6;
+    }
+    25% {
+      opacity: 1;
+      scale: 1.1;
+    }
+    100% {
+      opacity: 0;
+      scale: 1.3;
+      translate: 0 -6px;
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+}
+
+/* Onboarding honours reduced motion everywhere inside it. */
+@media (prefers-reduced-motion: reduce) {
+  [data-onboarding] *,
+  [data-onboarding] *::before,
+  [data-onboarding] *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* The style being compared app-wide (temporary): `v2:` classes apply only
+   when <html data-style="v2"> is set (lib/utils/style.ts). Without the
+   attribute every component renders exactly as before. The attribute adds
+   specificity, so a v2: class wins over the base class it replaces. */
+@custom-variant v2 (:root[data-style="v2"] &);
 
 :root {
   /* Typography */
@@ -61,12 +198,6 @@
   }
 }
 
-/* Keep onboarding centered when classic scrollbars consume layout space.
-   Overlay scrollbars do not reserve a gutter, so this has no effect on them. */
-:root[data-onboarding-active] {
-  scrollbar-gutter: stable both-edges;
-}
-
 /* macOS - tint native overlay scrollbar thumb */
 :root[data-platform="macos"] {
   scrollbar-color: var(--scrollbar-thumb) transparent;
@@ -107,4 +238,27 @@
   fill: var(--color-logo-stroke);
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
+}
+
+/* The v2 style for react-select (ui/Select.tsx), whose own styles are
+   emotion classes: the paper field with a 1.5px edge, like ui/Input. */
+:root[data-style="v2"] .app-select__control {
+  min-height: 34px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-line-strong);
+  background-color: var(--color-background);
+  box-shadow: none;
+  font-size: 15px;
+}
+:root[data-style="v2"] .app-select__control:hover,
+:root[data-style="v2"] .app-select__control--is-focused {
+  border-color: var(--color-line-strong);
+  background-color: var(--color-background);
+}
+:root[data-style="v2"] .app-select__menu {
+  border-radius: 10px;
+  border: 1.5px solid var(--color-line-strong);
+}
+:root[data-style="v2"] .app-select__option--is-focused {
+  background-color: var(--color-wash);
 }

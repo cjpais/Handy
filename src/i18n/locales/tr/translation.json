@@ -19,11 +19,6 @@
     "about": "Hakkında"
   },
   "onboarding": {
-    "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
-    "existingModelsTitle": "Uyumlu Modeller",
-    "downloadModelsTitle": "İndirilebilir",
-    "showAllModels": "{{total}} modelin tümünü göster",
-    "showFewerModels": "Daha az model göster",
     "recommended": "Önerilen",
     "customModelDescription": "Resmi olarak desteklenmiyor",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Model seçilemedi"
     },
     "permissions": {
-      "title": "İzinler Gerekli",
-      "description": "Handy'nin düzgün çalışabilmesi için birkaç izne ihtiyacı var.",
-      "microphone": {
-        "title": "Mikrofon Erişimi",
-        "description": "Sesinizi transkripsiyon için alabilmek için gereklidir."
-      },
-      "accessibility": {
-        "title": "Erişilebilirlik Erişimi",
-        "description": "Transkribe edilen metni uygulamalarınıza yazabilmek için gereklidir."
-      },
-      "grant": "İzin Ver",
-      "granted": "Verildi",
-      "waiting": "Bekleniyor...",
-      "allGranted": "Her şey hazır!",
       "errors": {
         "checkFailed": "İzinler kontrol edilemedi. Lütfen tekrar deneyin.",
         "requestFailed": "İzin isteği başarısız oldu. Lütfen tekrar deneyin."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "İlk kurulum önizlemesi",
         "description": "İzinleri, modelleri veya tamamlanma durumunu değiştirmeden ilk kurulum ekranlarını önizleyin",
-        "permissionsButton": "İzinler",
-        "modelsButton": "Model seçimi",
         "exitButton": "Önizlemeden çık"
       }
     },

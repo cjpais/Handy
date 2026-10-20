@@ -8,6 +8,7 @@ import {
   getStoredTheme,
   syncThemeFromSettings,
 } from "./lib/utils/theme";
+import { applyStyle, getStoredStyle } from "./lib/utils/style";
 
 installCompatShims();
 
@@ -18,6 +19,9 @@ document.documentElement.dataset.platform = platform();
 // the wrong palette, then reconcile with the persisted setting once it loads.
 applyTheme(getStoredTheme());
 syncThemeFromSettings();
+
+// The app-wide style being compared (temporary, see lib/utils/style.ts).
+applyStyle(getStoredStyle());
 
 // Initialize i18n
 import "./i18n";

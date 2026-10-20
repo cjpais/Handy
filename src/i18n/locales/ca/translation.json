@@ -19,11 +19,6 @@
     "about": "Quant a"
   },
   "onboarding": {
-    "subtitle": "Per començar, trieu un model de transcripció",
-    "existingModelsTitle": "Models compatibles",
-    "downloadModelsTitle": "Disponibles per baixar",
-    "showAllModels": "Mostra tots els {{total}} models",
-    "showFewerModels": "Mostra menys models",
     "recommended": "Recomanat",
     "customModelDescription": "Sense suport oficial",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "No s'ha pogut seleccionar el model"
     },
     "permissions": {
-      "title": "Permisos necessaris",
-      "description": "El Handy demana alguns permisos per funcionar correctament.",
-      "microphone": {
-        "title": "Accés al micròfon",
-        "description": "Necessari per escoltar la vostra veu i transcriure-la."
-      },
-      "accessibility": {
-        "title": "Accés a l'accessibilitat",
-        "description": "Necessari per escriure el text transcrit a les aplicacions."
-      },
-      "grant": "Concediu el permís",
-      "granted": "Concedit",
-      "waiting": "S'està esperant...",
-      "allGranted": "Tot a punt!",
       "errors": {
         "checkFailed": "No s'han pogut comprovar els permisos. Torneu-ho a provar.",
         "requestFailed": "No s'ha pogut sol·licitar el permís. Torneu-ho a provar."
@@ -496,8 +477,6 @@
       "onboardingPreview": {
         "title": "Previsualització de la configuració inicial",
         "description": "Previsualitza les pantalles de configuració inicial sense canviar els permisos, os models ni l'estat de compleció",
-        "permissionsButton": "Permisos",
-        "modelsButton": "Selecció del model",
         "exitButton": "Sortiu de la previsualització"
       },
       "soundTheme": {

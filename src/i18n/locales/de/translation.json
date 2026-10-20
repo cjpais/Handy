@@ -19,11 +19,6 @@
     "about": "Info"
   },
   "onboarding": {
-    "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
-    "existingModelsTitle": "Kompatible Modelle",
-    "downloadModelsTitle": "Verfügbar zum Download",
-    "showAllModels": "Alle {{total}} Modelle anzeigen",
-    "showFewerModels": "Weniger Modelle anzeigen",
     "recommended": "Empfohlen",
     "customModelDescription": "Nicht offiziell unterstützt",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Modellauswahl fehlgeschlagen"
     },
     "permissions": {
-      "title": "Berechtigungen erforderlich",
-      "description": "Handy benötigt einige Berechtigungen, um richtig zu funktionieren.",
-      "microphone": {
-        "title": "Mikrofonzugriff",
-        "description": "Erforderlich, um deine Stimme für die Transkription zu hören."
-      },
-      "accessibility": {
-        "title": "Bedienungshilfen-Zugriff",
-        "description": "Erforderlich, um transkribierten Text in deine Anwendungen einzugeben."
-      },
-      "grant": "Berechtigung erteilen",
-      "granted": "Erteilt",
-      "waiting": "Warten...",
-      "allGranted": "Alles bereit!",
       "errors": {
         "checkFailed": "Berechtigungsprüfung fehlgeschlagen. Bitte erneut versuchen.",
         "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Ersteinrichtung ansehen",
         "description": "Vorschau der Einrichtungsbildschirme, ohne Berechtigungen, Modelle oder den Abschlussstatus zu ändern",
-        "permissionsButton": "Berechtigungen",
-        "modelsButton": "Modellauswahl",
         "exitButton": "Vorschau beenden"
       }
     },

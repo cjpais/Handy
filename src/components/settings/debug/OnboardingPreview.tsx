@@ -1,9 +1,14 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../ui/Button";
+import { Dropdown } from "../../ui/Dropdown";
 import { SettingContainer } from "../../ui/SettingContainer";
+import {
+  STEP_ORDER,
+  type OnboardingStep,
+} from "../../onboarding/onboardingStore";
 
-export type OnboardingPreviewStep = "accessibility" | "model";
+export type OnboardingPreviewStep = OnboardingStep;
 
 interface OnboardingPreviewProps {
   onPreview: (step: OnboardingPreviewStep) => void;
@@ -11,6 +16,7 @@ interface OnboardingPreviewProps {
   grouped?: boolean;
 }
 
+/** Opens onboarding at any screen, inert, to look at it. */
 export const OnboardingPreview: React.FC<OnboardingPreviewProps> = ({
   onPreview,
   descriptionMode = "tooltip",
@@ -25,22 +31,46 @@ export const OnboardingPreview: React.FC<OnboardingPreviewProps> = ({
       descriptionMode={descriptionMode}
       grouped={grouped}
     >
-      <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          size="md"
-          onClick={() => onPreview("accessibility")}
-        >
-          {t("settings.debug.onboardingPreview.permissionsButton")}
-        </Button>
-        <Button
-          variant="secondary"
-          size="md"
-          onClick={() => onPreview("model")}
-        >
-          {t("settings.debug.onboardingPreview.modelsButton")}
-        </Button>
-      </div>
+      <Dropdown
+        options={STEP_ORDER.map((step) => ({
+          value: step,
+          label: t(`settings.debug.onboardingPreview.screens.${step}`),
+        }))}
+        selectedValue={null}
+        placeholder={t("settings.debug.onboardingPreview.choose")}
+        onSelect={(value) => onPreview(value as OnboardingPreviewStep)}
+      />
+    </SettingContainer>
+  );
+};
+
+interface OnboardingRunProps {
+  onRun: () => void;
+  descriptionMode?: "inline" | "tooltip";
+  grouped?: boolean;
+}
+
+/**
+ * Runs the real onboarding from Welcome: permission prompts, downloads, the
+ * practice note and setting writes, exactly as a new person gets it.
+ */
+export const OnboardingRun: React.FC<OnboardingRunProps> = ({
+  onRun,
+  descriptionMode = "tooltip",
+  grouped = false,
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <SettingContainer
+      title={t("settings.debug.onboardingRun.title")}
+      description={t("settings.debug.onboardingRun.description")}
+      descriptionMode={descriptionMode}
+      grouped={grouped}
+    >
+      <Button variant="secondary" size="sm" onClick={onRun}>
+        {t("settings.debug.onboardingRun.button")}
+      </Button>
     </SettingContainer>
   );
 };

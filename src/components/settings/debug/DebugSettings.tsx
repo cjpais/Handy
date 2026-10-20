@@ -14,17 +14,21 @@ import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
 import { UpdateChecksToggle } from "../UpdateChecksToggle";
 import { WhatsNewPreview } from "./WhatsNewPreview";
 import { KeyboardDiagnostic } from "./KeyboardDiagnostic";
+import { StylePreviewToggle } from "./StylePreviewToggle";
 import {
   OnboardingPreview,
+  OnboardingRun,
   type OnboardingPreviewStep,
 } from "./OnboardingPreview";
 
 interface DebugSettingsProps {
   onPreviewOnboarding?: (step: OnboardingPreviewStep) => void;
+  onRunOnboarding?: () => void;
 }
 
 export const DebugSettings: React.FC<DebugSettingsProps> = ({
   onPreviewOnboarding,
+  onRunOnboarding,
 }) => {
   const { t } = useTranslation();
 
@@ -33,9 +37,17 @@ export const DebugSettings: React.FC<DebugSettingsProps> = ({
       <SettingsGroup title={t("settings.debug.title")}>
         <LogLevelSelector grouped={true} />
         <WhatsNewPreview descriptionMode="tooltip" grouped={true} />
+        <StylePreviewToggle descriptionMode="tooltip" grouped={true} />
         {onPreviewOnboarding && (
           <OnboardingPreview
             onPreview={onPreviewOnboarding}
+            descriptionMode="tooltip"
+            grouped={true}
+          />
+        )}
+        {onRunOnboarding && (
+          <OnboardingRun
+            onRun={onRunOnboarding}
             descriptionMode="tooltip"
             grouped={true}
           />

@@ -22,6 +22,35 @@ pub fn redact_text(text: &str) -> &str {
     }
 }
 
+/// The page size Handy's main window opens at, in logical pixels.
+pub const MAIN_WINDOW_SIZE: (f64, f64) = (680.0, 570.0);
+
+static TITLE_BAR_HEIGHT: std::sync::OnceLock<f64> = std::sync::OnceLock::new();
+
+/// How far below a window's inner position its page starts, in logical
+/// pixels. On macOS Tauri draws the title bar inside the inner size (a
+/// full-size content view), so the page starts below the bar; elsewhere the
+/// inner size is the page. Measured from the main window at startup.
+pub fn title_bar_height() -> f64 {
+    TITLE_BAR_HEIGHT.get().copied().unwrap_or(0.0)
+}
+
+/// Measure the title bar of `window` (see `title_bar_height`). Call on the
+/// main thread.
+#[cfg(target_os = "macos")]
+pub fn measure_title_bar(window: &tauri::WebviewWindow) -> f64 {
+    let Ok(ptr) = window.ns_window() else {
+        return 0.0;
+    };
+    // SAFETY: `ns_window` is the live NSWindow behind `window`, and this runs
+    // on the main thread.
+    let ns_window = unsafe { &*(ptr as *const objc2_app_kit::NSWindow) };
+    let height =
+        (ns_window.frame().size.height - ns_window.contentLayoutRect().size.height).max(0.0);
+    let _ = TITLE_BAR_HEIGHT.set(height);
+    height
+}
+
 #[cfg(any(test, all(target_os = "windows", target_arch = "x86_64")))]
 const IMAGE_FILE_MACHINE_ARM64: u16 = 0xaa64;
 

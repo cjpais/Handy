@@ -9,8 +9,7 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
-import type { ModelCardStatus } from "@/components/onboarding";
-import { ModelCard } from "@/components/onboarding";
+import ModelCard, { type ModelCardStatus } from "./ModelCard";
 import { useModelStore } from "@/stores/modelStore";
 import RetiredModelsNotice from "./RetiredModelsNotice";
 import {

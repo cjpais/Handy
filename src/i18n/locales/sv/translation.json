@@ -19,11 +19,6 @@
     "about": "Om"
   },
   "onboarding": {
-    "subtitle": "För att komma igång, välj en transkriptionsmodell",
-    "existingModelsTitle": "Kompatibla modeller",
-    "downloadModelsTitle": "Tillgängliga för nedladdning",
-    "showAllModels": "Visa alla {{total}} modeller",
-    "showFewerModels": "Visa färre modeller",
     "recommended": "Rekommenderat",
     "customModelDescription": "Stöds inte officiellt",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Det gick inte att välja modell"
     },
     "permissions": {
-      "title": "Behörigheter krävs",
-      "description": "Handy behöver ett par behörigheter för att fungera korrekt.",
-      "microphone": {
-        "title": "Mikrofonåtkomst",
-        "description": "Krävs för att höra din röst för transkription."
-      },
-      "accessibility": {
-        "title": "Hjälpmedelsåtkomst",
-        "description": "Krävs för att skriva transkriberad text i dina program."
-      },
-      "grant": "Bevilja behörighet",
-      "granted": "Beviljad",
-      "waiting": "Väntar...",
-      "allGranted": "Allt klart!",
       "errors": {
         "checkFailed": "Misslyckades med att kontrollera behörigheter. Försök igen.",
         "requestFailed": "Misslyckades med att begära behörighet. Försök igen."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Förhandsvisa introduktionen",
         "description": "Förhandsvisa introduktionsskärmarna utan att ändra behörigheter, modeller eller slutförandestatus",
-        "permissionsButton": "Behörigheter",
-        "modelsButton": "Modellval",
         "exitButton": "Avsluta förhandsvisning"
       }
     },

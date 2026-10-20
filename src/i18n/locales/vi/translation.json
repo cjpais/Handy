@@ -19,11 +19,6 @@
     "about": "Giới thiệu"
   },
   "onboarding": {
-    "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
-    "existingModelsTitle": "Mô hình tương thích",
-    "downloadModelsTitle": "Có sẵn để tải xuống",
-    "showAllModels": "Hiển thị tất cả {{total}} mô hình",
-    "showFewerModels": "Hiển thị ít mô hình hơn",
     "recommended": "Đề xuất",
     "customModelDescription": "Không được hỗ trợ chính thức",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Không thể chọn mô hình"
     },
     "permissions": {
-      "title": "Cần cấp quyền",
-      "description": "Handy cần một số quyền để hoạt động bình thường.",
-      "microphone": {
-        "title": "Quyền truy cập Micrô",
-        "description": "Cần thiết để nghe giọng nói của bạn để chuyển đổi."
-      },
-      "accessibility": {
-        "title": "Quyền truy cập Trợ năng",
-        "description": "Cần thiết để nhập văn bản đã chuyển đổi vào các ứng dụng của bạn."
-      },
-      "grant": "Cấp quyền",
-      "granted": "Đã cấp",
-      "waiting": "Đang chờ...",
-      "allGranted": "Hoàn tất!",
       "errors": {
         "checkFailed": "Không thể kiểm tra quyền. Vui lòng thử lại.",
         "requestFailed": "Không thể yêu cầu quyền. Vui lòng thử lại."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Xem trước thiết lập ban đầu",
         "description": "Xem trước các màn hình thiết lập mà không thay đổi quyền, mô hình hoặc trạng thái hoàn tất",
-        "permissionsButton": "Quyền",
-        "modelsButton": "Chọn mô hình",
         "exitButton": "Thoát xem trước"
       }
     },

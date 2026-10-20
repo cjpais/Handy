@@ -19,11 +19,6 @@
     "about": "O programie"
   },
   "onboarding": {
-    "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
-    "existingModelsTitle": "Zgodne modele",
-    "downloadModelsTitle": "Dostępne do pobrania",
-    "showAllModels": "Pokaż wszystkie modele ({{total}})",
-    "showFewerModels": "Pokaż mniej modeli",
     "recommended": "Polecane",
     "customModelDescription": "Nieoficjalnie wspierane",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Nie udało się wybrać modelu"
     },
     "permissions": {
-      "title": "Wymagane uprawnienia",
-      "description": "Handy potrzebuje kilku uprawnień, aby działać poprawnie.",
-      "microphone": {
-        "title": "Dostęp do mikrofonu",
-        "description": "Wymagany do słyszenia Twojego głosu w celu transkrypcji."
-      },
-      "accessibility": {
-        "title": "Dostęp do dostępności",
-        "description": "Wymagany do wpisywania transkrybowanego tekstu w Twoich aplikacjach."
-      },
-      "grant": "Przyznaj uprawnienie",
-      "granted": "Przyznano",
-      "waiting": "Oczekiwanie...",
-      "allGranted": "Wszystko gotowe!",
       "errors": {
         "checkFailed": "Nie udało się sprawdzić uprawnień. Spróbuj ponownie.",
         "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."
@@ -589,8 +570,6 @@
       "onboardingPreview": {
         "title": "Podgląd konfiguracji początkowej",
         "description": "Wyświetl ekrany konfiguracji początkowej bez zmiany uprawnień, modeli ani stanu ukończenia",
-        "permissionsButton": "Uprawnienia",
-        "modelsButton": "Wybór modelu",
         "exitButton": "Zakończ podgląd"
       }
     },

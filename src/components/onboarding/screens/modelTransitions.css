@@ -1,0 +1,42 @@
+/* Model's motion (modelTransitions.ts). The view-transition pseudo-elements
+   hang off <html>, outside the app's tree, so they're plain CSS. */
+html[data-mflow]::view-transition-group(*) {
+  animation-duration: 0.38s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+html[data-mflow]::view-transition-old(*.mf-box),
+html[data-mflow]::view-transition-new(*.mf-box) {
+  height: 100%;
+}
+html[data-mflow]::view-transition-new(*.mf-row):only-child {
+  animation: mf-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html[data-mflow]::view-transition-old(*.mf-row):only-child {
+  animation: mf-sink 0.16s ease-in both;
+}
+@keyframes mf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@keyframes mf-sink {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* The full list's rows touch, with a hairline between them, except next to
+   the picked or hovered row. */
+.model-row + .model-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 14px;
+  border-top: 1px solid var(--color-line);
+}
+.model-row:is(.is-on, :hover)::before,
+.model-row:is(.is-on, :hover) + .model-row::before {
+  display: none;
+}

@@ -7,7 +7,7 @@ use crate::settings::{
     get_settings, update_checks_forced_disabled, write_settings, AppSettings, LogLevel,
 };
 use crate::utils::cancel_current_operation;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command]
@@ -192,5 +192,156 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     crate::secure_input::reconcile_fallback(&app);
 
     log::info!("Shortcuts initialized successfully");
+    Ok(())
+}
+
+/// Mark onboarding as finished. Onboarding calls this when the person closes
+/// its last screen; activating a model no longer counts as finishing, so
+/// someone who quits midway comes back to the rest of the flow.
+#[specta::specta]
+#[tauri::command]
+pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {
+    let mut settings = crate::settings::get_settings(&app);
+    settings.onboarding_completed = true;
+    crate::settings::write_settings(&app, settings);
+    close_practice_note(app)
+}
+
+/// When Handy's window closes it only hides, so the screen showing doesn't
+/// unmount: undo what onboarding's screens hold while they're up (the
+/// shortcuts Demo turns off, the practice note).
+pub fn on_main_window_hidden(app: &AppHandle) {
+    if app.try_state::<ShortcutsInitialized>().is_some() {
+        crate::shortcut::resume_all_shortcuts(app);
+    }
+    if let Err(e) = close_practice_note(app.clone()) {
+        log::warn!("Failed to close the practice note: {e}");
+    }
+}
+
+/// Close the main window as if the person closed it: it hides, and Handy keeps
+/// running in the tray (onboarding's last screen ends this way).
+#[specta::specta]
+#[tauri::command]
+pub fn close_main_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.close().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// The window label of onboarding's practice note.
+pub const PRACTICE_NOTE_LABEL: &str = "practice_note";
+
+/// Whether the practice note should be open: a close that lands while an open
+/// is still building the window wins once the build finishes.
+static PRACTICE_NOTE_WANTED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Open onboarding's practice note: a small blank note beside Handy's window
+/// to dictate into on the Try it screen, placed where the design puts it
+/// (over the right of Handy's window, a little lower), kept on screen.
+///
+/// Async because building a window from a synchronous command deadlocks on
+/// Windows (WebView2).
+#[specta::specta]
+#[tauri::command]
+pub async fn open_practice_note(app: AppHandle, title: String) -> Result<(), String> {
+    // Async commands can overlap (Try it re-runs its effect): one at a time,
+    // so two opens can't both build the window.
+    static OPENING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _opening = OPENING.lock().unwrap_or_else(|e| e.into_inner());
+    PRACTICE_NOTE_WANTED.store(true, std::sync::atomic::Ordering::SeqCst);
+
+    const WIDTH: f64 = 430.0;
+    // The note's page; on macOS its title bar is inside the window's height.
+    let height = 272.0 + crate::utils::title_bar_height();
+    // From the top left of Handy's content to the note's top left.
+    const OFFSET: (f64, f64) = (450.0, 74.0);
+
+    if let Some(note) = app.get_webview_window(PRACTICE_NOTE_LABEL) {
+        note.set_title(&title).map_err(|e| e.to_string())?;
+        note.show().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    let mut builder = tauri::WebviewWindowBuilder::new(
+        &app,
+        PRACTICE_NOTE_LABEL,
+        tauri::WebviewUrl::App("src/note/index.html".into()),
+    )
+    .title(title)
+    .inner_size(WIDTH, height)
+    .resizable(true)
+    .maximizable(false)
+    .minimizable(false)
+    .focused(false);
+
+    if let Some(main) = app.get_webview_window("main") {
+        let scale = main.scale_factor().map_err(|e| e.to_string())?;
+        let origin = main
+            .inner_position()
+            .map_err(|e| e.to_string())?
+            .to_logical::<f64>(scale);
+        let page_top = origin.y + crate::utils::title_bar_height();
+        let (mut x, mut y) = (origin.x + OFFSET.0, page_top + OFFSET.1);
+        if let Ok(Some(monitor)) = main.current_monitor() {
+            let area = monitor.work_area();
+            let left = area.position.x as f64 / scale;
+            let top = area.position.y as f64 / scale;
+            let right = left + area.size.width as f64 / scale;
+            let bottom = top + area.size.height as f64 / scale;
+            x = x.min(right - WIDTH - 16.0).max(left);
+            y = y.min(bottom - height - 48.0).max(top);
+        }
+        builder = builder.position(x, y);
+    }
+
+    let note = builder.build().map_err(|e| e.to_string())?;
+    if !PRACTICE_NOTE_WANTED.load(std::sync::atomic::Ordering::SeqCst) {
+        note.destroy().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Sent when the practice note has gone.
+pub const PRACTICE_NOTE_CLOSED_EVENT: &str = "practice-note-closed";
+
+/// The event that hands dictated text straight to the practice note.
+pub const PRACTICE_NOTE_INSERT_EVENT: &str = "practice-note-insert";
+
+/// Put dictated text into the practice note when it's the focused window,
+/// instead of pasting. A pasted Cmd+V can't reach it: the note lives in
+/// Handy, so the keystroke waits for the main thread, which has put the old
+/// clipboard back by the time the note reads it. Returns whether it did.
+pub fn insert_into_practice_note(app: &AppHandle, text: &str) -> bool {
+    let focused = app
+        .get_webview_window(PRACTICE_NOTE_LABEL)
+        .is_some_and(|note| note.is_focused().unwrap_or(false));
+    if !focused {
+        return false;
+    }
+    let text = if get_settings(app).append_trailing_space {
+        format!("{text} ")
+    } else {
+        text.to_string()
+    };
+    match app.emit_to(PRACTICE_NOTE_LABEL, PRACTICE_NOTE_INSERT_EVENT, text) {
+        Ok(()) => true,
+        Err(e) => {
+            log::warn!("Failed to send text to the practice note: {e}");
+            false
+        }
+    }
+}
+
+/// Close onboarding's practice note, if it's open.
+#[specta::specta]
+#[tauri::command]
+pub fn close_practice_note(app: AppHandle) -> Result<(), String> {
+    PRACTICE_NOTE_WANTED.store(false, std::sync::atomic::Ordering::SeqCst);
+    if let Some(note) = app.get_webview_window(PRACTICE_NOTE_LABEL) {
+        note.destroy().map_err(|e| e.to_string())?;
+    }
     Ok(())
 }

@@ -19,11 +19,6 @@
     "about": "Tentang"
   },
   "onboarding": {
-    "subtitle": "Untuk memulai, pilih model transkripsi",
-    "existingModelsTitle": "Model yang Kompatibel",
-    "downloadModelsTitle": "Tersedia untuk Diunduh",
-    "showAllModels": "Tampilkan semua {{total}} model",
-    "showFewerModels": "Tampilkan lebih sedikit model",
     "recommended": "Direkomendasikan",
     "customModelDescription": "Tidak didukung secara resmi",
     "migration": {
@@ -68,20 +63,6 @@
       "selectModel": "Gagal memilih model"
     },
     "permissions": {
-      "title": "Izin Diperlukan",
-      "description": "Handy memerlukan beberapa izin agar dapat berfungsi dengan baik.",
-      "microphone": {
-        "title": "Akses Mikrofon",
-        "description": "Diperlukan untuk menangkap suara Anda agar dapat ditranskripsikan."
-      },
-      "accessibility": {
-        "title": "Izin Aksesibilitas",
-        "description": "Diperlukan untuk mengetik teks hasil transkripsi ke aplikasi Anda."
-      },
-      "grant": "Berikan Izin",
-      "granted": "Diizinkan",
-      "waiting": "Menunggu...",
-      "allGranted": "Semua siap!",
       "errors": {
         "checkFailed": "Gagal memeriksa izin. Silakan coba lagi.",
         "requestFailed": "Gagal meminta izin. Silakan coba lagi."
@@ -496,8 +477,6 @@
       "onboardingPreview": {
         "title": "Pratinjau Penyiapan Awal",
         "description": "Pratinjau layar penyiapan awal tanpa mengubah izin, model, atau status penyelesaian",
-        "permissionsButton": "Izin",
-        "modelsButton": "Pemilihan Model",
         "exitButton": "Keluar dari Pratinjau"
       },
       "soundTheme": {
