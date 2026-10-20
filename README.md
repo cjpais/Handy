@@ -6,6 +6,8 @@
 
 Handy is a cross-platform desktop application that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field. This happens on your own computer without sending any information to the cloud.
 
+📖 **User documentation:** [handy.computer/docs](https://handy.computer/docs) covers settings, models, paste methods, post-processing, the CLI, troubleshooting, and the FAQ.
+
 ## Why Handy?
 
 Handy was created to fill the gap for a truly open source, extensible speech-to-text tool. As stated on [handy.computer](https://handy.computer):
@@ -17,18 +19,21 @@ Handy was created to fill the gap for a truly open source, extensible speech-to-
 
 ## How It Works
 
-1. **Press** a configurable keyboard shortcut: hold it to record and release to stop, or tap it to toggle recording on and off (Hold-only and Toggle-only modes are also available)
+1. **Press** the transcribe shortcut (`Option+Space` on macOS, `Ctrl+Space` on Windows and Linux by default): hold it to record and release to stop, or tap it to toggle recording on and off (Hold-only and Toggle-only modes are also available)
 2. **Speak** your words while the shortcut is active
-3. **Release** and Handy processes your speech using Whisper
+3. **Release** and Handy processes your speech using the local model you selected
 4. **Get** your transcribed text pasted directly into whatever app you're using
+
+A second shortcut (`Option+Shift+Space` on macOS, `Ctrl+Shift+Space` on Windows and Linux) transcribes with [post-processing](https://handy.computer/docs/post-processing), and `Escape` cancels a recording. All shortcuts can be changed in Settings.
 
 The process is entirely local:
 
 - Silence is filtered using VAD (Voice Activity Detection) with Silero
-- Transcription uses your choice of models:
-  - **Whisper models** (Small/Medium/Turbo/Large) with GPU acceleration when available
-  - **Parakeet V3** - CPU-optimized model with excellent performance and automatic language detection
+- Transcription uses your choice of open speech-to-text models, including Parakeet, Whisper, Canary, Cohere Transcribe, Moonshine, SenseVoice, and GigaAM. See [Models](https://handy.computer/docs/models) for languages, sizes, and trade-offs
+- GPU acceleration uses Metal on macOS and Vulkan on Windows and Linux where the model supports it
 - Works on Windows, macOS, and Linux
+
+Post-processing is optional and experimental. If you configure a cloud AI provider for it, the transcription text is sent to that provider.
 
 ## Quick Start
 
@@ -45,12 +50,32 @@ The process is entirely local:
      Do not use `dpkg -i` unless the dependencies are already installed. If you already used it, run `sudo apt --fix-broken install`.
 2. Install the application
 3. Launch Handy and grant necessary system permissions (microphone, accessibility)
-4. Configure your preferred keyboard shortcuts in Settings
-5. Start transcribing!
+4. Pick a speech-to-text model to download when prompted (see [Models](https://handy.computer/docs/models) if you are unsure)
+5. Configure your preferred keyboard shortcuts in Settings
+6. Start transcribing!
+
+See [Getting Started](https://handy.computer/docs) for a walkthrough of the first launch.
 
 ### Development Setup
 
-For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
+To contribute, start with [CONTRIBUTING.md](CONTRIBUTING.md). For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
+
+## Documentation
+
+The full user documentation lives at [handy.computer/docs](https://handy.computer/docs):
+
+- [Getting Started](https://handy.computer/docs): installation, permissions, first transcription
+- [General](https://handy.computer/docs/general): shortcuts, microphone, audio feedback
+- [Models](https://handy.computer/docs/models): supported models, languages, and hardware
+- [Advanced](https://handy.computer/docs/advanced): overlay, startup, custom words, history, experimental features
+- [Paste Methods](https://handy.computer/docs/paste-methods): paste options and Linux typing tools
+- [Post-Processing](https://handy.computer/docs/post-processing): cleaning up transcriptions with a cloud or local LLM
+- [History](https://handy.computer/docs/history): past transcriptions and recordings
+- [Debug](https://handy.computer/docs/debug): hidden debug settings, logs, and data directories
+- [CLI](https://handy.computer/docs/cli): command-line flags and window manager integration
+- [Troubleshooting](https://handy.computer/docs/troubleshooting) and [FAQ](https://handy.computer/docs/faq)
+
+Documentation issues can be reported in the [handy.computer repository](https://github.com/cjpais/handy.computer).
 
 ## Sponsors
 
@@ -82,16 +107,18 @@ Control Handy from [Raycast](https://www.raycast.com) — start/stop recording, 
 
 [Source](https://github.com/mattiacolombomc/raycast-handy) · by [@mattiacolombomc](https://github.com/mattiacolombomc)
 
-### Debug Mode
+## Debug Mode
 
 Handy includes an advanced debug mode for development and troubleshooting. Access it by pressing:
 
 - **macOS**: `Cmd+Shift+D`
 - **Windows/Linux**: `Ctrl+Shift+D`
 
-### CLI Parameters
+See [Debug](https://handy.computer/docs/debug) for the available settings and log locations.
 
-Handy supports command-line flags for controlling a running instance and customizing startup behavior. These work on all platforms (macOS, Windows, Linux). Largely this is a beta feature.
+## CLI Parameters
+
+Handy supports command-line flags for controlling a running instance and customizing startup behavior. These work on all platforms (macOS, Windows, Linux). Largely this is a beta feature. See [CLI](https://handy.computer/docs/cli) for window manager examples.
 
 **Remote control flags** (sent to an already-running instance via the single-instance plugin):
 
@@ -271,6 +298,8 @@ Signature and comment signature verified
 Do not use `gpg` for these `.sig` files.
 
 ## Troubleshooting
+
+The sections below cover issues that need extra detail. For common problems (no transcription, text not pasting, slow transcription, microphone not detected, Whisper crashes, macOS Secure Input), see [Troubleshooting](https://handy.computer/docs/troubleshooting) and the [FAQ](https://handy.computer/docs/faq) first.
 
 ### Previous Clipboard Content Is Pasted Instead of the Transcription
 
@@ -453,20 +482,22 @@ $env:HANDY_KEEP_VULKAN_IMPLICIT_LAYERS = "1"
 
 Adjust the executable path if needed. This override only applies to apps launched from that PowerShell session, not the Start menu. Handy also preserves any existing `VK_LOADER_LAYERS_DISABLE` value.
 
-### How to Contribute
+## How to Contribute
 
-1. **Check existing issues** at [github.com/cjpais/Handy/issues](https://github.com/cjpais/Handy/issues)
+Handy is currently in a feature freeze: bug fixes are the top priority, and new features need community support in [Discussions](https://github.com/cjpais/Handy/discussions) first. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+1. **Check existing issues and pull requests**, including closed ones, at [github.com/cjpais/Handy/issues](https://github.com/cjpais/Handy/issues)
 2. **Fork the repository** and create a feature branch
 3. **Test thoroughly** on your target platform
-4. **Submit a pull request** with clear description of changes
-5. **Join the discussion** - reach out at [contact@handy.computer](mailto:contact@handy.computer)
+4. **Submit a pull request** using the pull request template, one fix or feature per pull request
+5. **Join the discussion** on [Discord](https://discord.com/invite/WVBeWsNXK4) or reach out at [contact@handy.computer](mailto:contact@handy.computer)
 
 The goal is to create both a useful tool and a foundation for others to build upon—a well-patterned, simple codebase that serves the community.
 
 ## Related Projects
 
 - **[Handy CLI](https://github.com/cjpais/handy-cli)** - The original Python command-line version
-- **[handy.computer](https://handy.computer)** - Project website with demos and documentation
+- **[handy.computer](https://handy.computer)** - Project website with demos and [documentation](https://handy.computer/docs)
 
 ## License
 
