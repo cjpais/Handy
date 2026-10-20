@@ -19,9 +19,12 @@
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
     "check:model-languages": "bun scripts/check-model-language-coverage.ts",
+    "sync:catalog": "bun scripts/sync-catalog.ts",
+    "check:catalog": "bun scripts/sync-catalog.ts --check",
     "postinstall": "bun scripts/check-nix-deps.ts"
   },
   "dependencies": {
+    "@handy-computer/models": "0.2.2",
     "@tailwindcss/vite": "^4.1.16",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-autostart": "~2.5.1",

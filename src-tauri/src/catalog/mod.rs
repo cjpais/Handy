@@ -1,19 +1,23 @@
 //! The bundled, offline model catalog.
 //!
-//! `catalog.json` is generated at build time by `scripts/gen_catalog.py` from the
-//! `handy-computer` Hugging Face org (card `transcribe_cpp` capabilities +
-//! benchmarks, a GGUF header probe for name/params, and local curation for the
-//! recommended set). It is compiled into the binary so Handy ships a complete
-//! model list with zero network access.
+//! `catalog.json` is a verbatim copy of the `@handy-computer/models` package's
+//! catalog (the version pinned in `package.json`; `bun run check:catalog`
+//! keeps the two identical). It lists every model transcribe.cpp publishes,
+//! with pinned revisions, per-quant hashes and benchmark results, and marks
+//! the curated subset. It is compiled into the binary so Handy ships a
+//! complete model list with zero network access.
+//!
+//! Every supported transcription model is offered for download and mirrored
+//! at the package's default quant, independently of recommendation ranking.
 //!
 //! Each entry is normalised into a [`ModelDescriptor`] — the same source-agnostic
 //! shape every other producer (HF discovery, on-disk scans, the legacy table)
-//! yields — so the catalog is "just another producer". Its explicit `capabilities`
-//! map becomes a [`CapabilityProbe`] with confident `Some(..)` values; the runtime
+//! yields — so the catalog is "just another producer". Its explicit capabilities
+//! become a [`CapabilityProbe`] with confident `Some(..)` values; the runtime
 //! `GgufHeaderProber` is the same shape with `None` where a header omits a key,
 //! which is why the two are interchangeable (the catalog is a baked probe).
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -21,51 +25,240 @@ use serde::Deserialize;
 use crate::managers::model::{default_quant_file, ModelDescriptor, ModelSource, QuantFile};
 use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 
+/// Catalog schema this loader understands. The package bumps it on any
+/// breaking change; additive fields are ignored.
+const SCHEMA: u32 = 2;
+
+/// Base URLs tried in order when the Hugging Face download fails. The full
+/// file URL is `{mirror}/{repo_id}/{revision}/{filename}` — the same three
+/// values that form the HF resolve URL, so a mirror is a plain static host.
+/// `scripts/mirror_models.py` populates it from this catalog.
+const MIRRORS: &[&str] = &["https://blob.handy.computer"];
+
+/// Handy's list order and onboarding set, keyed by catalog id. Kept from the
+/// previous generator until onboarding moves to the package's recommendations.
+/// `(id, rank, recommended)`: rank is the editorial sort position (lower =
+/// higher); recommended is the small badged onboarding subset.
+const HANDY_RANKING: &[(&str, u32, bool)] = &[
+    ("parakeet-unified-en-0.6b", 1, true),
+    ("nemotron-3.5-asr-streaming-0.6b", 2, true),
+    ("canary-180m-flash", 3, true),
+    ("cohere-transcribe-03-2026", 4, true),
+    ("whisper-medium", 5, true),
+    ("Voxtral-Mini-4B-Realtime-2602", 6, false),
+    ("parakeet-tdt-0.6b-v3", 7, false),
+    ("parakeet-tdt-0.6b-v2", 8, false),
+    ("Qwen3-ASR-0.6B", 9, false),
+    ("Fun-ASR-MLT-Nano-2512", 10, false),
+];
+
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CatalogRoot {
-    /// Base URLs tried in order when the Hugging Face download fails. The full
-    /// file URL is `{mirror}/{repo_id}/{revision}/{filename}` — the same three
-    /// values that form the HF resolve URL, so a mirror is a plain static host.
-    #[serde(default)]
-    mirrors: Vec<String>,
+    schema: u32,
+    /// The transcribe.cpp release the catalog was built from.
+    #[cfg_attr(not(test), allow(dead_code))]
+    transcribe_cpp: String,
     models: Vec<CatalogModel>,
+    /// Benchmark results keyed by catalog id.
+    #[serde(default)]
+    results: HashMap<String, ModelResults>,
 }
 
-/// One model as written in `catalog.json`. Only the fields the descriptor needs
-/// are declared; serde ignores the rest (slug, family, license, …).
+/// One model as written in `catalog.json`. Only the fields Handy needs are
+/// declared; serde ignores the rest (license, parameters, …).
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CatalogModel {
-    /// HF repo id, e.g. `handy-computer/whisper-small-gguf`.
+    /// Stable package id: the HF repo name without `-gguf`.
     id: String,
-    /// Commit sha the catalog's sizes/hashes were generated from. Both HF
-    /// acquisition and mirror keys use it, so downloaded bytes provably match
-    /// the hashes regardless of source. Cache *lookup* additionally falls back
-    /// to `main` (see `hf_cached_path`) so downloads that predate pinning keep
-    /// resolving.
-    revision: Option<String>,
     name: String,
+    /// Editorial copy; empty for models that aren't curated.
     description: String,
-    architecture: Option<String>,
+    /// HF repo id, e.g. `handy-computer/whisper-small-gguf`.
+    repository: String,
+    /// Commit the files and hashes are pinned to. Both HF acquisition and
+    /// mirror keys use it, so downloaded bytes provably match the hashes.
+    revision: String,
+    /// The loader architecture (`general.architecture`).
+    family: String,
     languages: Vec<String>,
     capabilities: CatalogCaps,
-    speed_score: Option<f32>,
-    accuracy_score: Option<f32>,
-    files: Vec<QuantFile>,
-    default_quant: Option<String>,
-    recommended_rank: Option<u32>,
-    /// Part of the small curated onboarding set (badged "Recommended"). Distinct
-    /// from `recommended_rank`, which only orders the full list.
-    #[serde(default)]
-    recommended: bool,
+    /// Key of the default file in `files`.
+    quant: String,
+    /// `asr`, `langid`, `vad` or `diarize`; only `asr` models transcribe.
+    role: String,
+    /// Oldest transcribe.cpp release that can load these files.
+    #[cfg_attr(not(test), allow(dead_code))]
+    min_engine: Option<String>,
+    /// Every published file, keyed by quant.
+    files: HashMap<String, CatalogFile>,
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CatalogCaps {
     streaming: bool,
     translate: bool,
-    lang_detect: bool,
-    // `timestamps` (a string enum) is present in the catalog but has no
-    // `CapabilityProbe` field yet — wire it through when the probe gains one.
+    language_detection: bool,
+    #[serde(default)]
+    timestamps: bool,
+}
+
+#[derive(Deserialize)]
+struct CatalogFile {
+    filename: String,
+    size: u64,
+    sha256: String,
+}
+
+#[derive(Deserialize, Default)]
+struct ModelResults {
+    /// Error percent per language identity, measured at the default quant.
+    #[serde(default)]
+    accuracy: HashMap<String, AccuracyCell>,
+    #[serde(default)]
+    performance: Performance,
+}
+
+#[derive(Deserialize)]
+struct AccuracyCell {
+    error: f64,
+}
+
+#[derive(Deserialize, Default)]
+struct Performance {
+    /// Real-time factor on the benchmark GPU (Vulkan).
+    accelerated: Option<f64>,
+    cpu: Option<f64>,
+}
+
+impl CatalogModel {
+    fn default_file(&self) -> Option<&CatalogFile> {
+        self.files.get(&self.quant)
+    }
+
+    /// Handy uses a flat models directory for mirror downloads, so only
+    /// transcription models with root-level default files can be offered.
+    /// Must match `offered_models` in `scripts/mirror_models.py`.
+    fn is_offered(&self) -> bool {
+        self.role == "asr"
+            && self
+                .default_file()
+                .is_some_and(|file| !file.filename.contains('/'))
+    }
+
+    /// Files ordered largest first, so the list reads F32 → Q4 like the HF repo.
+    fn quant_files(&self) -> Vec<QuantFile> {
+        let mut files: Vec<QuantFile> = self
+            .files
+            .iter()
+            .map(|(quant, file)| QuantFile {
+                filename: file.filename.clone(),
+                quant: quant.clone(),
+                size_bytes: file.size,
+            })
+            .collect();
+        files.sort_by_key(|f| std::cmp::Reverse(f.size_bytes));
+        files
+    }
+}
+
+// ───────────────────────── scores ─────────────────────────
+// The list's 0–100 bars, from the package's benchmarks with the formulas the
+// previous generator used.
+
+/// speed = 100·(1 − e^(−rtf/8)), growing toward 100.
+const SPEED_SCALE: f64 = 8.0;
+/// accuracy = 100·e^(−error/15), decaying from 100.
+const ACCURACY_SCALE: f64 = 15.0;
+/// No benchmark speed (too heavy to measure): assume slow.
+const SPEED_FLOOR: f64 = 10.0;
+
+fn speed_score(results: Option<&ModelResults>) -> f32 {
+    let rtf = results.and_then(|r| r.performance.accelerated.or(r.performance.cpu));
+    let score = match rtf {
+        Some(rtf) if rtf > 0.0 => 100.0 * (1.0 - (-rtf / SPEED_SCALE).exp()),
+        _ => SPEED_FLOOR,
+    };
+    score.round() as f32
+}
+
+/// Accuracy on English when measured, else on the model's first language.
+fn accuracy_score(model: &CatalogModel, results: Option<&ModelResults>) -> f32 {
+    let Some(results) = results else {
+        return 0.0;
+    };
+    let headline = std::iter::once("en".to_string())
+        .chain(model.languages.first().map(|l| language_identity(l)))
+        .find_map(|language| results.accuracy.get(&language));
+    headline
+        .map(|cell| (100.0 * (-cell.error / ACCURACY_SCALE).exp()).round() as f32)
+        .unwrap_or(0.0)
+}
+
+/// The package's language identity (its `languageIdentity`): base code, with
+/// the aliases its benchmark keys use.
+fn language_identity(language: &str) -> String {
+    let base = language
+        .split(['-', '_'])
+        .next()
+        .unwrap_or(language)
+        .to_ascii_lowercase();
+    match base.as_str() {
+        "tl" => "fil".to_string(),
+        "no" => "nb".to_string(),
+        "iw" => "he".to_string(),
+        "jw" => "jv".to_string(),
+        _ => base,
+    }
+}
+
+// ───────────────────────── descriptions ─────────────────────────
+
+/// A factual one-liner for models the package has no editorial copy for.
+fn generated_description(model: &CatalogModel) -> String {
+    let mut features = Vec::new();
+    if model.capabilities.translate {
+        features.push("translation");
+    }
+    if model.capabilities.language_detection {
+        features.push("auto language detection");
+    }
+    if model.capabilities.streaming {
+        features.push("streaming");
+    }
+    if model.capabilities.timestamps {
+        features.push("timestamps");
+    }
+
+    let languages: BTreeSet<String> = model
+        .languages
+        .iter()
+        .map(|l| language_identity(l))
+        .collect();
+    let base = if languages.len() > 1 {
+        format!("{}-language speech-to-text", languages.len())
+    } else {
+        let name = match languages.iter().next().map(String::as_str) {
+            None | Some("en") => "English",
+            Some("ar") => "Arabic",
+            Some("ja") => "Japanese",
+            Some("ko") => "Korean",
+            Some("ru") => "Russian",
+            Some("uk") => "Ukrainian",
+            Some("vi") => "Vietnamese",
+            Some("zh") => "Chinese",
+            Some(other) => other,
+        };
+        format!("{name} speech-to-text")
+    };
+
+    if features.is_empty() {
+        format!("{base}.")
+    } else {
+        format!("{base} with {}.", features.join(", "))
+    }
 }
 
 impl From<&CatalogModel> for ModelDescriptor {
@@ -73,58 +266,78 @@ impl From<&CatalogModel> for ModelDescriptor {
         // The default download file. Its name is folded into the id so a catalog
         // entry collides (dedups) with the very same file later discovered in
         // the HF cache — both compute `"{repo_id}/{filename}"`.
-        let default_filename = default_quant_file(&m.files, m.default_quant.as_deref())
+        let files = m.quant_files();
+        let default_filename = default_quant_file(&files, Some(&m.quant))
             .map(|f| f.filename.clone())
             .unwrap_or_default();
+        let ranking = HANDY_RANKING.iter().find(|(id, _, _)| *id == m.id);
+        let results = ROOT.results.get(&m.id);
 
         ModelDescriptor {
-            id: format!("{}/{}", m.id, default_filename),
+            id: format!("{}/{}", m.repository, default_filename),
             source: ModelSource::HuggingFace {
-                repo_id: m.id.clone(),
+                repo_id: m.repository.clone(),
                 // Acquire at the pin: `resolve/<sha>` is immutable (CDN-friendly)
-                // and guarantees the bytes match the catalog's hashes. `main`
-                // only remains as a lookup fallback for pre-pinning caches.
-                revision: m.revision.clone().unwrap_or_else(|| "main".to_string()),
+                // and guarantees the bytes match the catalog's hashes.
+                revision: m.revision.clone(),
             },
             name: m.name.clone(),
-            description: m.description.clone(),
+            description: if m.description.is_empty() {
+                generated_description(m)
+            } else {
+                m.description.clone()
+            },
             caps: CapabilityProbe {
-                verdict: Compatibility::Compatible, // curated org models we ship support for
+                verdict: Compatibility::Compatible, // published by transcribe.cpp
                 display_name: None,
-                architecture: m.architecture.clone(),
+                architecture: Some(m.family.clone()),
                 variant: None,
                 languages: Some(m.languages.clone()),
                 supports_streaming: Some(m.capabilities.streaming),
                 supports_translation: Some(m.capabilities.translate),
-                supports_language_detect: Some(m.capabilities.lang_detect),
+                supports_language_detect: Some(m.capabilities.language_detection),
             },
-            files: m.files.clone(),
-            default_quant: m.default_quant.clone(),
-            // catalog scores are 0–100; ModelInfo / the UI bars use 0.0–1.0.
-            speed_score: m.speed_score.unwrap_or(0.0) / 100.0,
-            accuracy_score: m.accuracy_score.unwrap_or(0.0) / 100.0,
-            recommended_rank: m.recommended_rank,
-            recommended: m.recommended,
+            files,
+            default_quant: Some(m.quant.clone()),
+            // ModelInfo / the UI bars use 0.0–1.0.
+            speed_score: speed_score(results) / 100.0,
+            accuracy_score: accuracy_score(m, results) / 100.0,
+            recommended_rank: ranking.map(|(_, rank, _)| *rank),
+            recommended: ranking.is_some_and(|(_, _, recommended)| *recommended),
         }
     }
 }
 
-/// The raw parsed catalog. Kept alive (not consumed) so mirror metadata that
-/// deliberately stays out of [`ModelDescriptor`] can be looked up separately.
+/// The raw parsed catalog. Kept alive (not consumed) so data that deliberately
+/// stays out of [`ModelDescriptor`] (mirrors, results) can
+/// be looked up separately.
 static ROOT: Lazy<CatalogRoot> = Lazy::new(|| {
-    serde_json::from_str(include_str!("catalog.json"))
-        .expect("bundled catalog.json is valid JSON matching the catalog schema")
+    let root: CatalogRoot = serde_json::from_str(include_str!("catalog.json"))
+        .expect("bundled catalog.json is valid JSON matching the catalog schema");
+    assert_eq!(
+        root.schema, SCHEMA,
+        "bundled catalog.json has an unsupported schema"
+    );
+    root
 });
 
-/// The bundled catalog, parsed once and normalised into descriptors.
-pub static CATALOG: Lazy<Vec<ModelDescriptor>> =
-    Lazy::new(|| ROOT.models.iter().map(ModelDescriptor::from).collect());
+/// Transcription models: the only role Handy can load. Language ID, VAD and
+/// diarization models are published alongside them but produce no text.
+fn transcription_models() -> impl Iterator<Item = &'static CatalogModel> {
+    ROOT.models.iter().filter(|m| m.role == "asr")
+}
 
-/// A mirror copy of a catalog model's default file, with the expected content
-/// hash for end-to-end verification. Mirrors are untrusted bit-pipes: the
-/// sha256 here (from the catalog compiled into the binary) is the trust anchor,
-/// which is why it is mandatory — a file without one is never offered from a
-/// mirror at all.
+/// Every transcription model Handy can download, normalised into descriptors.
+pub static CATALOG: Lazy<Vec<ModelDescriptor>> = Lazy::new(|| {
+    transcription_models()
+        .filter(|m| m.is_offered())
+        .map(ModelDescriptor::from)
+        .collect()
+});
+
+/// A mirror copy of a catalog model's file, with the expected content hash for
+/// end-to-end verification. Mirrors are untrusted bit-pipes: the sha256 here
+/// (from the catalog compiled into the binary) is the trust anchor.
 pub struct MirrorFile {
     pub url: String,
     pub sha256: String,
@@ -132,48 +345,44 @@ pub struct MirrorFile {
     pub size_bytes: u64,
 }
 
-/// Ordered mirror URLs for a catalog model's file — any listed quant, not just
-/// the default — or empty when the model isn't from the catalog / no mirrors
-/// are configured. `model_id` is the registry id (`"{repo_id}/{filename}"`).
-/// (The mirror may only host default quants; a miss there just 404s and the
-/// caller reports it, so listing every quant here costs nothing.)
+/// Ordered mirror URLs for an offered catalog model's file — any listed quant,
+/// not just the default — or empty when the model isn't offered from the
+/// catalog. `model_id` is the registry id (`"{repo_id}/{filename}"`). (The
+/// mirror only hosts default quants; a miss there just 404s and the caller
+/// reports it, so listing every quant here costs nothing.)
 pub fn mirror_fallbacks(model_id: &str) -> Vec<MirrorFile> {
-    let Some((m, file)) = ROOT.models.iter().find_map(|m| {
-        m.files
-            .iter()
-            .find(|f| format!("{}/{}", m.id, f.filename) == model_id)
-            .map(|f| (m, f))
-    }) else {
+    let Some((m, file)) = transcription_models()
+        .filter(|m| m.is_offered())
+        .find_map(|m| {
+            m.files
+                .values()
+                .find(|f| format!("{}/{}", m.repository, f.filename) == model_id)
+                .map(|f| (m, f))
+        })
+    else {
         return Vec::new();
     };
-    let Some(revision) = m.revision.as_deref() else {
-        return Vec::new();
-    };
-    // No hash means no verification means no mirror: never fetch from an
-    // untrusted host without the catalog trust anchor.
-    let Some(sha256) = file.sha256.as_deref() else {
-        return Vec::new();
-    };
-    ROOT.mirrors
+    MIRRORS
         .iter()
         .map(|base| MirrorFile {
             url: format!(
                 "{}/{}/{}/{}",
                 base.trim_end_matches('/'),
-                m.id,
-                revision,
+                m.repository,
+                m.revision,
                 file.filename
             ),
-            sha256: sha256.to_string(),
-            size_bytes: file.size_bytes,
+            sha256: file.sha256.clone(),
+            size_bytes: file.size,
         })
         .collect()
 }
 
 /// The catalog descriptor + specific `files[]` entry owning `filename`,
-/// matched across every listed quant (not just the default). `repo_id`, when
-/// given, must also match — the HF-cache scan uses it to keep a foreign repo
-/// that happens to reuse a catalog filename from masquerading as ours.
+/// matched across every listed quant (not just the default) of every offered
+/// transcription model. `repo_id`, when given, must also match — the HF-cache
+/// scan uses it to keep a foreign repo that happens to reuse a catalog
+/// filename from masquerading as ours.
 pub fn file_in_catalog(
     filename: &str,
     repo_id: Option<&str>,
@@ -212,11 +421,10 @@ pub fn rank_of(model_id: &str) -> u32 {
 mod tests {
     use super::*;
     use crate::managers::model_capabilities::KNOWN_ARCHES;
-    use std::collections::BTreeSet;
 
     #[test]
-    fn catalog_parses_and_is_nonempty() {
-        assert!(!CATALOG.is_empty(), "bundled catalog should contain models");
+    fn catalog_parses_and_offers_models() {
+        assert!(!CATALOG.is_empty(), "bundled catalog should offer models");
     }
 
     #[test]
@@ -229,13 +437,32 @@ mod tests {
     }
 
     #[test]
-    fn pure_diarization_models_are_not_downloadable() {
-        assert!(
-            CATALOG
+    fn only_transcription_models_are_loaded() {
+        // Language ID (ecapa_tdnn), VAD (silero_vad) and diarization
+        // (sortformer) models are published but produce no transcription text.
+        for arch in ["ecapa_tdnn", "silero_vad", "sortformer"] {
+            assert!(
+                CATALOG
+                    .iter()
+                    .all(|d| d.caps.architecture.as_deref() != Some(arch)),
+                "{arch} must not be in the transcription catalog"
+            );
+        }
+    }
+
+    #[test]
+    fn all_flat_asr_models_are_offered_at_the_package_default() {
+        for m in transcription_models()
+            .filter(|m| m.default_file().is_some_and(|f| !f.filename.contains('/')))
+        {
+            let id = format!("{}/{}", m.repository, m.default_file().unwrap().filename);
+            let desc = CATALOG
                 .iter()
-                .all(|model| model.caps.architecture.as_deref() != Some("sortformer")),
-            "Sortformer produces speaker segments, not transcription text"
-        );
+                .find(|d| d.id == id)
+                .expect("ASR model is offered");
+            assert_eq!(desc.default_quant.as_deref(), Some(m.quant.as_str()));
+            assert_eq!(m.quant, "Q8_0");
+        }
     }
 
     #[test]
@@ -247,21 +474,72 @@ mod tests {
     }
 
     #[test]
-    fn every_catalog_model_has_mirror_fallbacks_with_hashes() {
+    fn every_description_is_filled() {
+        for d in CATALOG.iter() {
+            assert!(!d.description.is_empty(), "{}: empty description", d.id);
+        }
+    }
+
+    #[test]
+    fn handy_ranking_names_offered_models() {
+        for (id, _, _) in HANDY_RANKING {
+            let model = transcription_models()
+                .find(|m| m.id == *id)
+                .unwrap_or_else(|| panic!("ranked model {id} is not in the catalog"));
+            assert!(model.is_offered(), "ranked model {id} is not offered");
+        }
+        assert_eq!(
+            CATALOG.iter().filter(|d| d.recommended).count(),
+            HANDY_RANKING.iter().filter(|(_, _, r)| *r).count()
+        );
+    }
+
+    #[test]
+    fn every_offered_model_has_mirror_fallbacks_with_hashes() {
         // The mirror fallback is the safety net for HF outages and blocked
-        // networks; a catalog entry without one (missing revision, missing
-        // sha256, empty mirrors) silently loses that net.
+        // networks; an offered entry without one silently loses that net.
         for d in CATALOG.iter() {
             let mirrors = mirror_fallbacks(&d.id);
             assert!(!mirrors.is_empty(), "{}: no mirror fallbacks", d.id);
             for m in &mirrors {
-                assert!(
-                    m.sha256.len() == 64,
-                    "{}: mirror entry lacks a sha256",
-                    d.id
-                );
+                assert_eq!(m.sha256.len(), 64, "{}: mirror entry lacks a sha256", d.id);
                 assert!(m.size_bytes > 0, "{}: mirror entry lacks a size", d.id);
                 assert!(m.url.starts_with("https://"), "{}: bad url {}", d.id, m.url);
+            }
+        }
+    }
+
+    #[test]
+    fn catalog_matches_the_engine_handy_ships() {
+        // Every model must be loadable by the transcribe-cpp crate we link.
+        let cargo = include_str!("../../Cargo.toml");
+        let engine = cargo
+            .lines()
+            .find_map(|line| {
+                line.strip_prefix("transcribe-cpp = { version = \"")
+                    .and_then(|rest| rest.split('"').next())
+            })
+            .expect("Cargo.toml pins a transcribe-cpp version");
+        let parse = |v: &str| -> Vec<u32> {
+            v.trim_start_matches('v')
+                .split(['.', '-', '+'])
+                .take(3)
+                .map(|p| p.parse().unwrap_or(0))
+                .collect()
+        };
+        assert!(
+            parse(&ROOT.transcribe_cpp) <= parse(engine),
+            "catalog built for transcribe.cpp {} but Handy links {}",
+            ROOT.transcribe_cpp,
+            engine
+        );
+        for m in transcription_models() {
+            if let Some(min) = &m.min_engine {
+                assert!(
+                    parse(min) <= parse(engine),
+                    "{} needs transcribe.cpp {min}, Handy links {engine}",
+                    m.id
+                );
             }
         }
     }
@@ -279,5 +557,17 @@ mod tests {
             "catalog architecture(s) missing from KNOWN_ARCHES: {:?}",
             missing
         );
+    }
+
+    #[test]
+    fn generated_descriptions_read_naturally() {
+        let gigaam = transcription_models()
+            .find(|m| m.id == "gigaam-v3-ctc")
+            .unwrap();
+        assert!(generated_description(gigaam).starts_with("Russian speech-to-text"));
+        let whisper = transcription_models()
+            .find(|m| m.id == "whisper-tiny")
+            .unwrap();
+        assert!(generated_description(whisper).contains("-language speech-to-text with"));
     }
 }
