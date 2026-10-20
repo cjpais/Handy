@@ -24,4 +24,10 @@ assert.equal(
   "audiovolumeup",
 );
 
+for (const key of ["wakeup", "WakeUp", "XF86WakeUp"]) {
+  assert.equal(formatKeyCombination(key, "linux"), "Fn");
+  assert.equal(formatKeyCombination(`ctrl+${key}`, "linux"), "Ctrl + Fn");
+}
+assert.equal(getKeyName(keyboardEvent({ key: "WakeUp" })), "wakeup");
+
 console.log("keyboard: all assertions passed");

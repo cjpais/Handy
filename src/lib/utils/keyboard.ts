@@ -207,10 +207,19 @@ const formatKeyPart = (part: string): string => {
  */
 export const formatKeyCombination = (
   combination: string,
-  _osType: OSType,
+  osType: OSType,
 ): string => {
   if (!combination) return "";
-  return combination.split("+").map(formatKeyPart).join(" + ");
+  return combination
+    .split("+")
+    .map((part) => {
+      // Some Linux keyboards expose their Fn key as the WakeUp event.
+      if (osType === "linux" && /^(?:xf86)?wakeup$/i.test(part.trim())) {
+        return "Fn";
+      }
+      return formatKeyPart(part);
+    })
+    .join(" + ");
 };
 
 /**
