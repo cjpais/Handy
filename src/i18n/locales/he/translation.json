@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "פתח את GitHub Releases"
   },
   "common": {
+    "playbackPosition": "מיקום ההשמעה",
     "loading": "טוען...",
     "delete": "מחק",
     "back": "חזרה",

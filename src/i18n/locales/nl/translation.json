@@ -647,6 +647,7 @@
     "title": "Nieuw in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Afspeelpositie",
     "loading": "Laden...",
     "delete": "Verwijderen",
     "back": "Terug",

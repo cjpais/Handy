@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "Otevřít GitHub Releases"
   },
   "common": {
+    "playbackPosition": "Pozice přehrávání",
     "loading": "Načítání...",
     "delete": "Smazat",
     "back": "Zpět",

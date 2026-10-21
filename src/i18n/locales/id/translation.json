@@ -647,6 +647,7 @@
     "title": "Baru di Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Posisi pemutaran",
     "loading": "Memuat...",
     "delete": "Hapus",
     "back": "Kembali",

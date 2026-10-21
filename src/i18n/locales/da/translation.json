@@ -647,6 +647,7 @@
     "title": "Nyt i Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Afspilningsposition",
     "loading": "Indlæser...",
     "delete": "Slet",
     "back": "Tilbage",
