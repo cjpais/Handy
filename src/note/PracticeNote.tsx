@@ -1,11 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { emit, listen } from "@tauri-apps/api/event";
+import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import {
-  PRACTICE_NOTE_FOCUS_EVENT,
-  PRACTICE_NOTE_INSERT_EVENT,
-} from "./events";
+import { PRACTICE_NOTE_FOCUS_EVENT } from "./events";
 
 /**
  * A blank note to dictate into on onboarding's Try it screen. It's "another
@@ -32,27 +29,6 @@ export const PracticeNote: React.FC = () => {
       .isFocused()
       .then((on) => on && report(true))
       .catch(console.error);
-    return () => {
-      unlisten.then((off) => off());
-    };
-  }, []);
-
-  // Dictation lands at the cursor, as a paste would.
-  useEffect(() => {
-    const unlisten = listen<string>(
-      PRACTICE_NOTE_INSERT_EVENT,
-      ({ payload }) => {
-        const area = ref.current;
-        if (!area) return;
-        area.setRangeText(
-          payload,
-          area.selectionStart,
-          area.selectionEnd,
-          "end",
-        );
-        setText(area.value);
-      },
-    );
     return () => {
       unlisten.then((off) => off());
     };

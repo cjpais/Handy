@@ -812,28 +812,21 @@ impl ShortcutAction for TranscribeAction {
                                             return;
                                         }
 
-                                        let pasted = if crate::commands::insert_into_practice_note(
-                                            &ah_clone,
-                                            &final_text,
-                                        ) {
-                                            Ok(())
-                                        } else {
-                                            utils::paste(final_text, ah_clone.clone())
-                                        };
-                                        let outcome = match pasted {
-                                            Ok(()) => {
-                                                debug!(
-                                                    "Text pasted successfully in {:?}",
-                                                    paste_time.elapsed()
-                                                );
-                                                TranscriptionOutcome::Typed
-                                            }
-                                            Err(e) => {
-                                                error!("Failed to paste transcription: {}", e);
-                                                let _ = ah_clone.emit("paste-error", ());
-                                                TranscriptionOutcome::Failed
-                                            }
-                                        };
+                                        let outcome =
+                                            match utils::paste(final_text, ah_clone.clone()) {
+                                                Ok(()) => {
+                                                    debug!(
+                                                        "Text pasted successfully in {:?}",
+                                                        paste_time.elapsed()
+                                                    );
+                                                    TranscriptionOutcome::Typed
+                                                }
+                                                Err(e) => {
+                                                    error!("Failed to paste transcription: {}", e);
+                                                    let _ = ah_clone.emit("paste-error", ());
+                                                    TranscriptionOutcome::Failed
+                                                }
+                                            };
                                         // A new session may have started while
                                         // this paste ran; the UI is now its.
                                         if RECORDING_SESSION.load(Ordering::SeqCst) == session {

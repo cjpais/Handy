@@ -7,7 +7,7 @@ use crate::settings::{
     get_settings, update_checks_forced_disabled, write_settings, AppSettings, LogLevel,
 };
 use crate::utils::cancel_current_operation;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command]
@@ -306,34 +306,6 @@ pub async fn open_practice_note(app: AppHandle, title: String) -> Result<(), Str
 
 /// Sent when the practice note has gone.
 pub const PRACTICE_NOTE_CLOSED_EVENT: &str = "practice-note-closed";
-
-/// The event that hands dictated text straight to the practice note.
-pub const PRACTICE_NOTE_INSERT_EVENT: &str = "practice-note-insert";
-
-/// Put dictated text into the practice note when it's the focused window,
-/// instead of pasting. A pasted Cmd+V can't reach it: the note lives in
-/// Handy, so the keystroke waits for the main thread, which has put the old
-/// clipboard back by the time the note reads it. Returns whether it did.
-pub fn insert_into_practice_note(app: &AppHandle, text: &str) -> bool {
-    let focused = app
-        .get_webview_window(PRACTICE_NOTE_LABEL)
-        .is_some_and(|note| note.is_focused().unwrap_or(false));
-    if !focused {
-        return false;
-    }
-    let text = if get_settings(app).append_trailing_space {
-        format!("{text} ")
-    } else {
-        text.to_string()
-    };
-    match app.emit_to(PRACTICE_NOTE_LABEL, PRACTICE_NOTE_INSERT_EVENT, text) {
-        Ok(()) => true,
-        Err(e) => {
-            log::warn!("Failed to send text to the practice note: {e}");
-            false
-        }
-    }
-}
 
 /// Close onboarding's practice note, if it's open.
 #[specta::specta]
