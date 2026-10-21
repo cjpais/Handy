@@ -16,7 +16,8 @@
     "postProcessing": "Efterbearbetning",
     "history": "Historik",
     "debug": "Felsökning",
-    "about": "Om"
+    "about": "Om",
+    "close": "Stäng"
   },
   "onboarding": {
     "subtitle": "För att komma igång, välj en transkriptionsmodell",
