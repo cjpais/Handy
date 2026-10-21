@@ -647,6 +647,7 @@
     "title": "Nieuw in Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "{{setting}} terugzetten naar de standaardwaarde",
     "loading": "Laden...",
     "delete": "Verwijderen",
     "back": "Terug",

@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "פתח את GitHub Releases"
   },
   "common": {
+    "resetSetting": "איפוס {{setting}} לערך ברירת המחדל",
     "loading": "טוען...",
     "delete": "מחק",
     "back": "חזרה",

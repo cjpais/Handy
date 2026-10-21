@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "Mở GitHub Releases"
   },
   "common": {
+    "resetSetting": "Đặt lại {{setting}} về mặc định",
     "loading": "Đang tải...",
     "delete": "Xóa",
     "back": "Quay lại",

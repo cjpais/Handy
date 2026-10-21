@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "Otevřít GitHub Releases"
   },
   "common": {
+    "resetSetting": "Obnovit výchozí hodnotu: {{setting}}",
     "loading": "Načítání...",
     "delete": "Smazat",
     "back": "Zpět",

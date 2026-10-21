@@ -647,6 +647,7 @@
     "title": "Handy v{{version}} मा नयाँ"
   },
   "common": {
+    "resetSetting": "{{setting}}लाई पूर्वनिर्धारित मानमा रिसेट गर्नुहोस्",
     "loading": "लोड गरिँदैछ...",
     "delete": "मेटाउनुहोस्",
     "back": "पछाडि",

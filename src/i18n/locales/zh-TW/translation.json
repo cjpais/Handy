@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "開啟 GitHub Releases"
   },
   "common": {
+    "resetSetting": "將{{setting}}重設為預設值",
     "loading": "載入中...",
     "delete": "刪除",
     "back": "返回",

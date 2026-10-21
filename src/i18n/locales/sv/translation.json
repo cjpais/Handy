@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "Öppna GitHub Releases"
   },
   "common": {
+    "resetSetting": "Återställ {{setting}} till standardvärdet",
     "loading": "Laddar...",
     "delete": "Ta bort",
     "back": "Tillbaka",

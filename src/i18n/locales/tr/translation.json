@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "GitHub Releases’i aç"
   },
   "common": {
+    "resetSetting": "{{setting}} ayarını varsayılan değere sıfırla",
     "loading": "Yükleniyor...",
     "delete": "Sil",
     "back": "Geri",

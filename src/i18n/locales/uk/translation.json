@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "Відкрити GitHub Releases"
   },
   "common": {
+    "resetSetting": "Відновити значення за замовчуванням: {{setting}}",
     "loading": "Завантаження...",
     "delete": "Видалити",
     "back": "Назад",

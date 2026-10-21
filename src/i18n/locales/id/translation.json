@@ -647,6 +647,7 @@
     "title": "Baru di Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Atur ulang {{setting}} ke nilai bawaan",
     "loading": "Memuat...",
     "delete": "Hapus",
     "back": "Kembali",

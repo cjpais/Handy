@@ -212,6 +212,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           )}
         </div>
         <ResetButton
+          ariaLabel={t("common.resetSetting", {
+            setting: t("settings.general.language.title"),
+          })}
           onClick={handleReset}
           disabled={isUpdating("selected_language")}
         />

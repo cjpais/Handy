@@ -647,6 +647,7 @@
     "title": "Handy v{{version}} में नया क्या है"
   },
   "common": {
+    "resetSetting": "{{setting}}: डिफ़ॉल्ट मान पर रीसेट करें",
     "loading": "लोड हो रहा है...",
     "delete": "हटाएं",
     "back": "वापस",

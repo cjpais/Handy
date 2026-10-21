@@ -647,6 +647,7 @@
     "title": "New in Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Reset {{setting}} to default",
     "loading": "Loading...",
     "delete": "Delete",
     "back": "Back",

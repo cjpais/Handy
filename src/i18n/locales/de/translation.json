@@ -644,6 +644,7 @@
     "portableUpdateBrowseButton": "GitHub Releases öffnen"
   },
   "common": {
+    "resetSetting": "{{setting}} auf den Standardwert zurücksetzen",
     "loading": "Wird geladen...",
     "delete": "Löschen",
     "back": "Zurück",
