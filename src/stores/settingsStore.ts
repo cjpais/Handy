@@ -12,6 +12,13 @@ import type {
 } from "@/bindings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
+import {
+  modelListConnection,
+  PostProcessModelRequests,
+  sameModelListConnection,
+} from "./postProcessModelRequests";
+
+const modelListRequests = new PostProcessModelRequests();
 
 interface SettingsStore {
   settings: Settings | null;
@@ -216,7 +223,30 @@ export const useSettingsStore = create<SettingsStore>()(
     updateChecksLocked: null,
 
     // Internal setters
-    setSettings: (settings) => set({ settings }),
+    setSettings: (settings) => {
+      const state = get();
+      const providerIds = new Set([
+        ...Object.keys(state.postProcessModelOptions),
+        ...(state.settings?.post_process_providers ?? []).map((p) => p.id),
+        ...(settings?.post_process_providers ?? []).map((p) => p.id),
+      ]);
+      const postProcessModelOptions = { ...state.postProcessModelOptions };
+      const isUpdating = { ...state.isUpdating };
+      for (const providerId of providerIds) {
+        if (
+          !sameModelListConnection(
+            modelListConnection(state.settings, providerId),
+            modelListConnection(settings, providerId),
+          )
+        ) {
+          modelListRequests.invalidate(providerId);
+          postProcessModelOptions[providerId] = [];
+          isUpdating[`post_process_models_fetch:${providerId}`] =
+            modelListRequests.hasCurrent(providerId);
+        }
+      }
+      set({ settings, postProcessModelOptions, isUpdating });
+    },
     setDefaultSettings: (defaultSettings) => set({ defaultSettings }),
     setLoading: (isLoading) => set({ isLoading }),
     setUpdating: (key, updating) =>
@@ -245,7 +275,8 @@ export const useSettingsStore = create<SettingsStore>()(
             selected_output_device:
               settings.selected_output_device ?? "Default",
           };
-          set({ settings: normalizedSettings, isLoading: false });
+          get().setSettings(normalizedSettings);
+          set({ isLoading: false });
         } else {
           console.error("Failed to load settings:", result.error);
           set({ isLoading: false });
@@ -489,6 +520,11 @@ export const useSettingsStore = create<SettingsStore>()(
     ) => {
       const { setUpdating, refreshSettings } = get();
       const updateKey = `post_process_${settingType}:${providerId}`;
+      const endEdit =
+        settingType !== "model"
+          ? modelListRequests.beginEdit(providerId)
+          : undefined;
+      if (endEdit) get().setPostProcessModelOptions(providerId, []);
 
       setUpdating(updateKey, true);
 
@@ -500,13 +536,15 @@ export const useSettingsStore = create<SettingsStore>()(
         } else if (settingType === "model") {
           await commands.changePostProcessModelSetting(providerId, value);
         }
-        await refreshSettings();
+        if (!endEdit) await refreshSettings();
       } catch (error) {
         console.error(
           `Failed to update post-process ${settingType.replace("_", " ")}:`,
           error,
         );
       } finally {
+        if (endEdit) await refreshSettings();
+        endEdit?.();
         setUpdating(updateKey, false);
       }
     },
@@ -514,6 +552,8 @@ export const useSettingsStore = create<SettingsStore>()(
     updatePostProcessBaseUrl: async (providerId, baseUrl) => {
       const { setUpdating, refreshSettings } = get();
       const updateKey = `post_process_base_url:${providerId}`;
+      const endEdit = modelListRequests.beginEdit(providerId);
+      get().setPostProcessModelOptions(providerId, []);
 
       setUpdating(updateKey, true);
 
@@ -539,20 +579,13 @@ export const useSettingsStore = create<SettingsStore>()(
           console.error("Failed to reset model setting:", modelResult.error);
           return;
         }
-
-        // Clear cached model options only after both backend writes succeed.
-        set((state) => ({
-          postProcessModelOptions: {
-            ...state.postProcessModelOptions,
-            [providerId]: [],
-          },
-        }));
-
-        // Single refresh after both backend writes.
-        await refreshSettings();
       } catch (error) {
         console.error("Failed to update post-process base URL:", error);
       } finally {
+        // The URL write may succeed even if the subsequent model reset fails.
+        // Read back the effective connection before allowing another list.
+        await refreshSettings();
+        endEdit();
         setUpdating(updateKey, false);
       }
     },
@@ -560,15 +593,11 @@ export const useSettingsStore = create<SettingsStore>()(
     updatePostProcessApiFormat: async (providerId, apiFormat) => {
       const { setUpdating, refreshSettings } = get();
       const updateKey = `post_process_api_format:${providerId}`;
+      const endEdit = modelListRequests.beginEdit(providerId);
 
       // The format decides the auth headers, so models listed under the old
       // format may not reflect this one - user should click refresh after
-      set((state) => ({
-        postProcessModelOptions: {
-          ...state.postProcessModelOptions,
-          [providerId]: [],
-        },
-      }));
+      get().setPostProcessModelOptions(providerId, []);
       setUpdating(updateKey, true);
 
       try {
@@ -580,22 +609,16 @@ export const useSettingsStore = create<SettingsStore>()(
           console.error("Failed to update API format:", result.error);
           return;
         }
-        await refreshSettings();
       } catch (error) {
         console.error("Failed to update post-process API format:", error);
       } finally {
+        await refreshSettings();
+        endEdit();
         setUpdating(updateKey, false);
       }
     },
 
     updatePostProcessApiKey: async (providerId, apiKey) => {
-      // Clear cached models when API key changes - user should click refresh after
-      set((state) => ({
-        postProcessModelOptions: {
-          ...state.postProcessModelOptions,
-          [providerId]: [],
-        },
-      }));
       return get().updatePostProcessSetting("api_key", providerId, apiKey);
     },
 
@@ -605,36 +628,68 @@ export const useSettingsStore = create<SettingsStore>()(
 
     fetchPostProcessModels: async (providerId) => {
       const updateKey = `post_process_models_fetch:${providerId}`;
-      const { setUpdating, setPostProcessModelOptions } = get();
+      const { setUpdating } = get();
+      const request = modelListRequests.start(providerId);
+      let connection: ReturnType<typeof modelListConnection>;
+      const isCurrent = () =>
+        modelListRequests.isCurrent(providerId, request) &&
+        sameModelListConnection(
+          connection,
+          modelListConnection(get().settings, providerId),
+        );
 
       setUpdating(updateKey, true);
 
       try {
+        let pendingEdit;
+        while ((pendingEdit = modelListRequests.pendingEdit(providerId))) {
+          await pendingEdit;
+          if (!modelListRequests.isCurrent(providerId, request)) return [];
+        }
+        if (!modelListRequests.isCurrent(providerId, request)) return [];
+        connection = modelListConnection(get().settings, providerId);
+        if (!connection) return [];
+        modelListRequests.markStarted(providerId, request);
         // Call Tauri backend command instead of fetch
         const result = await commands.fetchPostProcessModels(providerId);
+        if (!isCurrent()) return [];
         if (result.status === "ok") {
-          setPostProcessModelOptions(providerId, result.data);
+          set((state) => ({
+            postProcessModelOptions: {
+              ...state.postProcessModelOptions,
+              [providerId]: result.data,
+            },
+          }));
           return result.data;
         } else {
           console.error("Failed to fetch models:", result.error);
           return [];
         }
       } catch (error) {
-        console.error("Failed to fetch models:", error);
+        if (isCurrent()) console.error("Failed to fetch models:", error);
         // Don't cache empty array on error - let user retry
         return [];
       } finally {
-        setUpdating(updateKey, false);
+        if (modelListRequests.finish(providerId, request)) {
+          setUpdating(updateKey, false);
+        }
       }
     },
 
-    setPostProcessModelOptions: (providerId, models) =>
+    setPostProcessModelOptions: (providerId, models) => {
+      modelListRequests.invalidate(providerId);
       set((state) => ({
         postProcessModelOptions: {
           ...state.postProcessModelOptions,
           [providerId]: models,
         },
-      })),
+        isUpdating: {
+          ...state.isUpdating,
+          [`post_process_models_fetch:${providerId}`]:
+            modelListRequests.hasCurrent(providerId),
+        },
+      }));
+    },
 
     // Load default settings from Rust
     loadDefaultSettings: async () => {
