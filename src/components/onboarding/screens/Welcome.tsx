@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Globe } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { Mascot } from "../../shared/Mascot";
@@ -17,7 +18,6 @@ import { CURATED_ASR, isWeakLanguage } from "../data/models";
 import { modelMatchesLanguage } from "@handy-computer/models";
 import { SUPPORTED_LANGUAGES, getSupportedLanguage } from "@/i18n";
 import { useSettings } from "@/hooks/useSettings";
-import type { PermissionPlatform } from "../usePermissions";
 
 // The mascot waves on the first visit only.
 let waved = false;
@@ -39,7 +39,6 @@ const RemoveIcon = () => (
 
 interface WelcomeProps {
   progress: { index: number; count: number };
-  platform: PermissionPlatform;
   /** Changing the menu language writes the setting (not in a preview). */
   preview: boolean;
   onContinue: () => void;
@@ -51,14 +50,12 @@ interface WelcomeProps {
  */
 export const Welcome: React.FC<WelcomeProps> = ({
   progress,
-  platform,
   preview,
   onContinue,
 }) => {
   const { t, i18n } = useTranslation();
   const { updateSetting } = useSettings();
-  const { languages, languagesFromOS, script, modelId, set } =
-    useOnboardingStore();
+  const { languages, script, modelId, set } = useOnboardingStore();
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const [wave] = useState(() => !waved);
@@ -85,7 +82,6 @@ export const Welcome: React.FC<WelcomeProps> = ({
     const stillFits =
       !picked || next.every((l) => modelMatchesLanguage(picked, l));
     set({
-      languagesFromOS: false,
       languages: next,
       ...(stillFits ? {} : { modelId: null }),
     });
@@ -118,15 +114,7 @@ export const Welcome: React.FC<WelcomeProps> = ({
           count: weak.length,
           languages: listOf(weak),
         })
-      : languagesFromOS
-        ? t(
-            platform === "macos"
-              ? "onboarding.welcome.hint.fromMac"
-              : platform === "windows"
-                ? "onboarding.welcome.hint.fromPc"
-                : "onboarding.welcome.hint.fromComputer",
-          )
-        : "";
+      : "";
 
   // What the menus are in right now (a preview never writes the setting).
   const uiLanguage = getSupportedLanguage(ui) || "en";
@@ -139,16 +127,19 @@ export const Welcome: React.FC<WelcomeProps> = ({
     <OnboardingShell
       progress={progress}
       left={
-        <label className="flex shrink-0 items-center gap-[6px] whitespace-nowrap text-small text-ink-3">
-          {t("onboarding.welcome.menusIn")}
+        <label
+          title={t("onboarding.welcome.appLanguage")}
+          className="flex shrink-0 items-center gap-[6px]"
+        >
+          <Globe size={16} aria-hidden="true" className="text-ink-3" />
           <select
-            aria-label={t("onboarding.welcome.menusLabel")}
+            aria-label={t("onboarding.welcome.appLanguage")}
             value={uiLanguage}
             onChange={(e) => changeUiLanguage(e.target.value)}
             className="rounded-[7px] border border-line bg-transparent px-[6px] py-[3px] text-small text-text"
           >
             {SUPPORTED_LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
+              <option key={l.code} value={l.code} lang={l.code}>
                 {l.nativeName}
               </option>
             ))}

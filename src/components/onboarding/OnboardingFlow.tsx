@@ -213,7 +213,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       return (
         <Welcome
           progress={progress}
-          platform={permissions.platform}
           preview={preview}
           onContinue={() => {
             saveLanguages();

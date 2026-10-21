@@ -65,14 +65,11 @@
     "permissions": {
       "microphone": {
         "name": "Microphone",
-        "why": "So Handy can hear you. Audio is turned into text on this computer and never uploaded.",
-        "waitingMac": "Waiting for your answer",
-        "waitingWindows": "Waiting for Windows"
+        "why": "So Handy can hear you. Audio is turned into text on this computer and never uploaded."
       },
       "accessibility": {
         "name": "Accessibility",
-        "why": "So your shortcut works in every app, and Handy can type the text where your cursor is.",
-        "waiting": "Turn on Handy in System Settings"
+        "why": "So your shortcut works in every app, and Handy can type the text where your cursor is."
       },
       "errors": {
         "checkFailed": "Failed to check permissions. Please try again.",
@@ -85,6 +82,9 @@
       "allow": "Allow",
       "openSettings": "Open settings",
       "allowed": "Allowed",
+      "waiting": "Waiting",
+      "turnOnMac": "Turn on Handy in System Settings, then come back here.",
+      "turnOnWindows": "Turn on microphone access in Windows Settings, then come back here.",
       "hintBoth": "Allow both to continue",
       "hintMicrophone": "Allow the microphone to continue",
       "welcomeBack": "Welcome back. Picking up where you left off.",
@@ -106,8 +106,7 @@
       "alreadyAdded_one": "{{languages}} is already added.",
       "alreadyAdded_other": "{{languages}} are already added.",
       "noMatch": "No language matches “{{query}}”. Handy's models cover about 100 languages; more are in settings.",
-      "menusIn": "Menus in",
-      "menusLabel": "Language for Handy's menus",
+      "appLanguage": "App language",
       "chinese": {
         "question": "You speak {{languages}}. Which characters should Handy write?",
         "label": "Chinese characters",
@@ -118,10 +117,7 @@
       "hint": {
         "pickOne": "Pick at least one language",
         "weak_one": "{{languages}}: no model hears it well yet",
-        "weak_other": "{{languages}}: no model hears these well yet",
-        "fromMac": "From your Mac's settings",
-        "fromPc": "From your PC's settings",
-        "fromComputer": "From your computer's settings"
+        "weak_other": "{{languages}}: no model hears these well yet"
       }
     },
     "download": {

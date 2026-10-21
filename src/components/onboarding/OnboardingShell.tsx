@@ -39,7 +39,9 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
       data-onboarding=""
       className="h-screen w-full flex overflow-hidden bg-background select-none cursor-default"
     >
-      <div className="relative m-auto grid h-[570px] w-[680px] shrink-0 grid-rows-[56px_1fr_76px] font-ui text-body leading-[1.6] text-text antialiased">
+      {/* A disabled button goes neutral, not faded pink: a screen's only pink
+          button is the one to press next. */}
+      <div className="relative m-auto grid h-[570px] w-[680px] shrink-0 grid-rows-[56px_1fr_76px] font-ui text-body leading-[1.6] text-text antialiased [&_button:disabled]:border-line [&_button:disabled]:bg-wash [&_button:disabled]:text-ink-3 [&_button:disabled]:opacity-100">
         <div className="relative flex items-center justify-between ps-[28px] pe-[20px]">
           {progress ? (
             <div

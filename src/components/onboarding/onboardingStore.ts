@@ -28,8 +28,6 @@ interface Persisted {
   step: OnboardingStep;
   /** Spoken languages (codes), in the order they were picked. */
   languages: string[];
-  /** Still the OS locale's guess: nobody has changed it. */
-  languagesFromOS: boolean;
   script: ChineseScriptChoice;
   /** The selected model (catalog id); null means the recommendation. */
   modelId: string | null;
@@ -64,7 +62,6 @@ const locale = () => navigator.language || "en-US";
 const fresh = (): Persisted => ({
   step: "welcome",
   languages: suggestedLanguages(locale()),
-  languagesFromOS: true,
   script: suggestedScript(locale()),
   modelId: null,
   extraModelId: null,
@@ -96,7 +93,6 @@ const load = (): Persisted => {
     return {
       step: pick("step", (v) => STEP_ORDER.includes(v as OnboardingStep)),
       languages: pick("languages", isStringList),
-      languagesFromOS: pick("languagesFromOS", isBool),
       script: pick("script", (v) => CHINESE_SCRIPTS.some((c) => c.id === v)),
       modelId: pick("modelId", isId),
       extraModelId: pick("extraModelId", isId),
@@ -122,7 +118,6 @@ const save = (state: OnboardingState) => {
   const persisted: Persisted = {
     step: state.step,
     languages: state.languages,
-    languagesFromOS: state.languagesFromOS,
     script: state.script,
     modelId: state.modelId,
     extraModelId: state.extraModelId,

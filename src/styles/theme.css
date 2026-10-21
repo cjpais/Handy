@@ -86,6 +86,18 @@
   --light-color-hand: var(--light-color-logo-stroke);
   --dark-color-hand: var(--dark-color-logo-primary);
 
+  /* The wordmark. In dark mode a white outline in place of the pale pink
+     keeps the screen to fewer pinks. */
+  --light-color-wordmark: var(--light-color-logo-primary);
+  --light-color-wordmark-stroke: var(--light-color-logo-stroke);
+  --dark-color-wordmark: var(--dark-color-logo-primary);
+  --dark-color-wordmark-stroke: var(--dark-color-text);
+
+  /* The mascot's outline and face. In dark mode they take the background, so
+     the glove reads as a cut-out sticker rather than edged in muddy plum. */
+  --light-color-mascot-line: var(--light-color-logo-stroke);
+  --dark-color-mascot-line: var(--dark-color-background);
+
   /* Demo's copy of the recording pill: its ring and shadow (the overlay's). */
   --light-demo-pill-shadow:
     0 0 0 1px color-mix(in srgb, var(--color-background-ui) 16%, transparent),
@@ -174,6 +186,9 @@
   --color-demo-screen: var(--light-color-demo-screen);
   --color-demo-window: var(--light-color-demo-window);
   --color-hand: var(--light-color-hand);
+  --color-wordmark: var(--light-color-wordmark);
+  --color-wordmark-stroke: var(--light-color-wordmark-stroke);
+  --color-mascot-line: var(--light-color-mascot-line);
   --color-pick-surface: var(--light-color-pick-surface);
   --color-pick-row: var(--light-color-pick-row);
   --pick-drop: var(--light-pick-drop);
@@ -211,6 +226,9 @@
     --color-demo-screen: var(--dark-color-demo-screen);
     --color-demo-window: var(--dark-color-demo-window);
     --color-hand: var(--dark-color-hand);
+    --color-wordmark: var(--dark-color-wordmark);
+    --color-wordmark-stroke: var(--dark-color-wordmark-stroke);
+    --color-mascot-line: var(--dark-color-mascot-line);
     --color-pick-surface: var(--dark-color-pick-surface);
     --color-pick-row: var(--dark-color-pick-row);
     --pick-drop: var(--dark-pick-drop);
@@ -250,6 +268,9 @@
   --color-demo-screen: var(--light-color-demo-screen);
   --color-demo-window: var(--light-color-demo-window);
   --color-hand: var(--light-color-hand);
+  --color-wordmark: var(--light-color-wordmark);
+  --color-wordmark-stroke: var(--light-color-wordmark-stroke);
+  --color-mascot-line: var(--light-color-mascot-line);
   --color-pick-surface: var(--light-color-pick-surface);
   --color-pick-row: var(--light-color-pick-row);
   --pick-drop: var(--light-pick-drop);
@@ -278,6 +299,9 @@
   --color-demo-screen: var(--dark-color-demo-screen);
   --color-demo-window: var(--dark-color-demo-window);
   --color-hand: var(--dark-color-hand);
+  --color-wordmark: var(--dark-color-wordmark);
+  --color-wordmark-stroke: var(--dark-color-wordmark-stroke);
+  --color-mascot-line: var(--dark-color-mascot-line);
   --color-pick-surface: var(--dark-color-pick-surface);
   --color-pick-row: var(--dark-color-pick-row);
   --pick-drop: var(--dark-pick-drop);

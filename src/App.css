@@ -21,6 +21,7 @@
   --color-demo-screen: var(--color-demo-screen);
   --color-demo-window: var(--color-demo-window);
   --color-hand: var(--color-hand);
+  --color-mascot-line: var(--color-mascot-line);
   --color-pick-surface: var(--color-pick-surface);
   --color-pick-row: var(--color-pick-row);
   --color-key-face: var(--color-key-face);
@@ -174,6 +175,18 @@
   /* Apply colors */
   color: var(--color-text);
   background-color: var(--color-background);
+
+  /* Native controls (select popups, scrollbars) follow the theme. Without
+     this, Windows draws a <select>'s popup white under light option text. */
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 .container {
@@ -225,11 +238,11 @@
 }
 
 .logo-primary {
-  fill: var(--color-logo-primary);
+  fill: var(--color-wordmark);
 }
 
 .logo-stroke {
-  fill: var(--color-logo-stroke);
-  stroke: var(--color-logo-stroke);
+  fill: var(--color-wordmark-stroke);
+  stroke: var(--color-wordmark-stroke);
   stroke-width: 1;
 }

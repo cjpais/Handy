@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { Button } from "../../ui/Button";
@@ -53,13 +53,19 @@ interface PermissionRowProps {
   title: string;
   why: string;
   status: PermissionsState["microphone"];
-  /** The next one to allow gets the filled button. */
+  /** Its turn: the rows are allowed in order, so only this one is live. */
   next: boolean;
   action: string;
-  waiting: string;
+  /** While waiting, what to do in the OS, in place of `why`. */
+  instruction?: string;
   onRequest: () => void;
 }
 
+/**
+ * One permission: what it is and why on the left, its status on the right
+ * (Allow, Waiting, Allowed). The status column keeps a minimum width so the
+ * text doesn't re-wrap as the status changes.
+ */
 const PermissionRow: React.FC<PermissionRowProps> = ({
   icon,
   title,
@@ -67,45 +73,46 @@ const PermissionRow: React.FC<PermissionRowProps> = ({
   status,
   next,
   action,
-  waiting,
+  instruction,
   onRequest,
 }) => {
   const { t } = useTranslation();
-  const granted = status === "granted";
+  const waiting = status === "waiting";
   return (
-    <div className="grid grid-cols-[46px_1fr_auto] items-center gap-[18px] py-[18px] [&+&]:border-t [&+&]:border-line">
-      <span
-        className={`grid size-[46px] place-items-center rounded-[11px] border-[1.5px] transition-[border-color,color] duration-[250ms] ${
-          granted
-            ? "border-moss bg-background text-moss"
-            : "border-plum-edge bg-key-face text-key-ink"
-        }`}
-      >
+    <div className="grid grid-cols-[46px_1fr_minmax(112px,auto)] items-center gap-[18px] py-[18px] [&+&]:border-t [&+&]:border-line">
+      {/* A label, not a key: neutral, and "Allowed" alone shows the grant. */}
+      <span className="grid size-[46px] place-items-center rounded-[11px] bg-wash text-ink-2">
         {icon}
       </span>
       <div>
         <b className="block font-display text-row font-[650] leading-[1.3]">
           {title}
         </b>
-        <p className="mt-[2px] mb-0 text-small leading-[1.45] text-ink-2 text-pretty">
-          {why}
+        <p
+          className={`mt-[2px] mb-0 text-small leading-[1.45] text-pretty ${
+            waiting && instruction ? "text-text" : "text-ink-2"
+          }`}
+        >
+          {(waiting && instruction) || why}
         </p>
       </div>
-      {granted ? (
-        <span className="inline-flex items-center gap-[6px] text-small font-semibold text-moss">
+      {status === "granted" ? (
+        <span className="inline-flex items-center justify-self-end gap-[6px] text-small font-semibold text-moss">
           <DoneMark />
           {t("onboarding.permissions.allowed")}
         </span>
-      ) : status === "waiting" ? (
-        <span className="inline-flex max-w-[130px] items-center gap-[6px] text-label leading-[1.35] text-ink-3">
+      ) : waiting ? (
+        <span className="inline-flex items-center justify-self-end gap-[6px] text-small text-ink-3">
           <Spinner className="shrink-0" />
-          <span>{waiting}</span>
+          {t("onboarding.permissions.waiting")}
         </span>
       ) : (
         <Button
-          variant={next ? "primary" : "outline"}
+          variant="primary"
           size="md"
+          disabled={!next}
           onClick={onRequest}
+          className="justify-self-end"
         >
           {action}
         </Button>
@@ -124,7 +131,7 @@ interface PermissionsProps {
 
 /**
  * Screen 2, where the OS asks: the microphone, and Accessibility on macOS.
- * Each row asks for its permission; the next one to allow is filled.
+ * The rows are allowed in order: only the next one's Allow is live.
  */
 export const Permissions: React.FC<PermissionsProps> = ({
   permissions,
@@ -139,6 +146,14 @@ export const Permissions: React.FC<PermissionsProps> = ({
     ? (["microphone", "accessibility"] as const)
     : (["microphone"] as const);
   const next = rows.find((r) => permissions[r] !== "granted");
+  // Asking for the microphone opens the OS settings on Windows, and on macOS
+  // once it has asked: then the row says what to turn on there.
+  const [micInSettings, setMicInSettings] = useState(false);
+  const turnOn = t(
+    isMac
+      ? "onboarding.permissions.turnOnMac"
+      : "onboarding.permissions.turnOnWindows",
+  );
 
   const relaunchHandy = async () => {
     if (preview) return;
@@ -194,7 +209,7 @@ export const Permissions: React.FC<PermissionsProps> = ({
               : "onboarding.permissions.subtitleWindows",
           )}
         </ScreenSub>
-        <div className="mt-[28px] flex w-full flex-col rounded-panel border-[1.5px] border-line-strong px-[22px] py-[4px] text-start">
+        <div className="mt-[28px] flex w-full flex-col rounded-panel border border-line-strong px-[22px] py-[4px] text-start">
           <PermissionRow
             icon={<MicIcon />}
             title={t("onboarding.permissions.microphone.name")}
@@ -206,12 +221,11 @@ export const Permissions: React.FC<PermissionsProps> = ({
                 ? "onboarding.permissions.openSettings"
                 : "onboarding.permissions.allow",
             )}
-            waiting={t(
-              isMac
-                ? "onboarding.permissions.microphone.waitingMac"
-                : "onboarding.permissions.microphone.waitingWindows",
-            )}
-            onRequest={permissions.requestMicrophone}
+            instruction={micInSettings ? turnOn : undefined}
+            onRequest={() => {
+              setMicInSettings(!isMac || permissions.microphoneAsked);
+              permissions.requestMicrophone();
+            }}
           />
           {isMac && (
             <PermissionRow
@@ -220,8 +234,8 @@ export const Permissions: React.FC<PermissionsProps> = ({
               why={t("onboarding.permissions.accessibility.why")}
               status={permissions.accessibility}
               next={next === "accessibility"}
-              action={t("onboarding.permissions.openSettings")}
-              waiting={t("onboarding.permissions.accessibility.waiting")}
+              action={t("onboarding.permissions.allow")}
+              instruction={turnOn}
               onRequest={permissions.requestAccessibility}
             />
           )}
