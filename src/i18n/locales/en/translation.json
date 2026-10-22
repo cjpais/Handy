@@ -160,11 +160,10 @@
       "speedWords": {
         "0": "Very slow",
         "1": "Slow",
-        "2": "A short wait",
+        "2": "Medium",
         "3": "Fast",
         "4": "Very fast"
       },
-      "speedLine": "{{speed}}, about {{wait}} after you stop",
       "speedUntested": "Speed not measured yet",
       "seconds": "{{value}}s",
       "showAll": "Show all {{count}} models",

@@ -130,20 +130,12 @@ export const Model: React.FC<ModelProps> = ({
   // In a column, an unknown size is a dash: "Unknown size" won't fit.
   const sizeCell = (m: CatalogModel) =>
     (models.infoFor(m)?.size_mb ?? 0) > 0 ? sizeOf(m) : "—";
-  const seconds = (s: number) =>
-    t("onboarding.model.seconds", {
-      value: new Intl.NumberFormat(ui, {
-        maximumFractionDigits: s < 10 ? 1 : 0,
-        minimumFractionDigits: s < 10 ? 1 : 0,
-      }).format(s),
-    });
+  // Only a word, no seconds: the wait is a benchmark from machines like this
+  // one, not measured on it, so a number would promise more than we know.
   const speedText = (wait: number | undefined) =>
     wait == null
       ? t("onboarding.model.speedUntested")
-      : t("onboarding.model.speedLine", {
-          speed: t(`onboarding.model.speedWords.${speedLevel(wait)}`),
-          wait: seconds(wait),
-        });
+      : t(`onboarding.model.speedWords.${speedLevel(wait)}`);
 
   const move = (kind: "grow" | "shrink" | "pick", update: () => void) =>
     moveModels(rootRef.current, kind, update);
