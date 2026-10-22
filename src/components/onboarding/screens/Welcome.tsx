@@ -1,22 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Globe } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
+import { ChevronDown, Globe } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { Mascot } from "../../shared/Mascot";
 import HandyTextLogo from "../../icons/HandyTextLogo";
 import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
-import {
-  CHINESE_SCRIPTS,
-  isChinese,
-  languageName,
-  searchLanguages,
-  spokenLanguage,
-} from "../data/languages";
+import { CHINESE_SCRIPTS, isChinese } from "../data/languages";
 import { CURATED_ASR, isWeakLanguage } from "../data/models";
 import { modelMatchesLanguage } from "@handy-computer/models";
 import { SUPPORTED_LANGUAGES, getSupportedLanguage } from "@/i18n";
+import {
+  getLanguage,
+  languageName,
+  searchLanguages,
+} from "@/lib/constants/languages";
 import { useSettings } from "@/hooks/useSettings";
 
 // The mascot waves on the first visit only.
@@ -118,6 +117,9 @@ export const Welcome: React.FC<WelcomeProps> = ({
 
   // What the menus are in right now (a preview never writes the setting).
   const uiLanguage = getSupportedLanguage(ui) || "en";
+  const uiLanguageName =
+    SUPPORTED_LANGUAGES.find((l) => l.code === uiLanguage)?.nativeName ??
+    uiLanguage;
   const changeUiLanguage = (code: string) => {
     i18n.changeLanguage(code);
     if (!preview) updateSetting("app_language", code);
@@ -126,23 +128,28 @@ export const Welcome: React.FC<WelcomeProps> = ({
   return (
     <OnboardingShell
       progress={progress}
-      left={
+      pill={
+        // Quiet, like Back: a setting for the window, not a step. The native
+        // menu sits invisibly over the words, which say what it changes (the
+        // menus) apart from the languages you dictate in below.
         <label
           title={t("onboarding.welcome.appLanguage")}
-          className="flex shrink-0 items-center gap-[6px]"
+          className="relative -me-[8px] flex shrink-0 cursor-pointer items-center gap-[6px] rounded-lg px-[8px] py-[4px] text-small text-ink-2 transition-colors hover:bg-wash hover:text-text has-[select:focus-visible]:bg-wash has-[select:focus-visible]:text-text"
         >
-          {/* ink-3's opacity on the whole icon, not its colour: a translucent
-              stroke darkens wherever the globe's lines cross */}
-          <Globe
-            size={20}
-            aria-hidden="true"
-            className="text-text opacity-46"
-          />
+          <Globe size={16} aria-hidden="true" />
+          <span>
+            <Trans
+              i18nKey="onboarding.welcome.menusIn"
+              values={{ language: uiLanguageName }}
+              components={{ b: <b className="font-semibold text-text" /> }}
+            />
+          </span>
+          <ChevronDown size={14} aria-hidden="true" />
           <select
             aria-label={t("onboarding.welcome.appLanguage")}
             value={uiLanguage}
             onChange={(e) => changeUiLanguage(e.target.value)}
-            className="rounded-[7px] border border-line bg-transparent px-[6px] py-[3px] text-small text-text"
+            className="absolute inset-0 cursor-pointer opacity-0"
           >
             {SUPPORTED_LANGUAGES.map((l) => (
               <option key={l.code} value={l.code} lang={l.code}>
@@ -194,7 +201,7 @@ export const Welcome: React.FC<WelcomeProps> = ({
                 }}
                 className="group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] border-line-strong bg-background ps-[12px] pe-[6px] text-small font-semibold text-text hover:border-plum-hover"
               >
-                <bdi lang={code}>{spokenLanguage(code)?.native ?? code}</bdi>
+                <bdi lang={code}>{getLanguage(code).native}</bdi>
                 <span className="grid size-[18px] place-items-center rounded-full leading-none text-ink-2 group-hover:bg-[color-mix(in_srgb,var(--color-text)_10%,transparent)]">
                   <RemoveIcon />
                 </span>

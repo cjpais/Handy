@@ -200,18 +200,7 @@ fn accuracy_score(model: &CatalogModel, results: Option<&ModelResults>) -> f32 {
 /// The package's language identity (its `languageIdentity`): base code, with
 /// the aliases its benchmark keys use.
 fn language_identity(language: &str) -> String {
-    let base = language
-        .split(['-', '_'])
-        .next()
-        .unwrap_or(language)
-        .to_ascii_lowercase();
-    match base.as_str() {
-        "tl" => "fil".to_string(),
-        "no" => "nb".to_string(),
-        "iw" => "he".to_string(),
-        "jw" => "jv".to_string(),
-        _ => base,
-    }
+    crate::managers::model::canonical_language_code(&language.to_ascii_lowercase()).to_string()
 }
 
 // ───────────────────────── descriptions ─────────────────────────

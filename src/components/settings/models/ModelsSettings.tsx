@@ -13,15 +13,16 @@ import ModelCard, { type ModelCardStatus } from "./ModelCard";
 import { useModelStore } from "@/stores/modelStore";
 import RetiredModelsNotice from "./RetiredModelsNotice";
 import {
-  getLanguageLabel,
-  MODEL_CAPABILITY_LANGUAGES,
-  supportsLanguageCode,
+  languageName,
+  languagesOf,
+  searchLanguages,
+  supportsLanguage,
 } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
-  return supportsLanguageCode(model.supported_languages, langCode);
+  return supportsLanguage(model.supported_languages, langCode);
 };
 
 // Legacy models are the blob (Url-sourced) .bin downloads, superseded by
@@ -31,7 +32,7 @@ const isLegacyModel = (model: ModelInfo): boolean =>
   typeof model.source === "object" && "Url" in model.source;
 
 export const ModelsSettings: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStreaming, setFilterStreaming] = useState(false);
@@ -79,20 +80,28 @@ export const ModelsSettings: React.FC = () => {
     }
   }, [languageDropdownOpen]);
 
-  // filtered languages for dropdown (exclude "auto")
-  const filteredLanguages = useMemo(() => {
-    return MODEL_CAPABILITY_LANGUAGES.filter((lang) =>
-      lang.label.toLowerCase().includes(languageSearch.toLowerCase()),
-    );
-  }, [languageSearch]);
+  // The languages the listed models hear, for the filter dropdown.
+  const ui = i18n.language;
+  const modelLanguages = useMemo(
+    () => languagesOf(models.flatMap((m) => m.supported_languages)),
+    [models],
+  );
+  const filteredLanguages = useMemo(
+    () =>
+      searchLanguages(languageSearch, ui, modelLanguages).map((l) => ({
+        value: l.code,
+        label: languageName(l.code, ui),
+      })),
+    [languageSearch, ui, modelLanguages],
+  );
 
   // Get selected language label
   const selectedLanguageLabel = useMemo(() => {
     if (languageFilter === "all") {
       return t("settings.models.filters.allLanguages");
     }
-    return getLanguageLabel(languageFilter) || "";
-  }, [languageFilter, t]);
+    return languageName(languageFilter, ui);
+  }, [languageFilter, ui, t]);
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in verifyingModels) {

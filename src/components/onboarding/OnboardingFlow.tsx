@@ -2,7 +2,6 @@ import React, { useEffect, useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
-import { recognitionLanguage } from "@/lib/constants/languages";
 import {
   STEP_ORDER,
   clearOnboardingProgress,
@@ -202,7 +201,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     updateSetting("spoken_languages", languages);
     updateSetting(
       "selected_language",
-      languages.length === 1 ? recognitionLanguage(languages[0]) : "auto",
+      languages.length === 1 ? languages[0] : "auto",
     );
     if (languages.some(isChinese))
       updateSetting("chinese_script", SCRIPT_SETTING[script]);

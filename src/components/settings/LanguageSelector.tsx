@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
+import { languageIdentity } from "@handy-computer/models";
 import {
-  getLanguageLabel,
   LANGUAGES,
-  recognitionLanguage,
-  supportsLanguageCode,
+  languageName,
+  languagesOf,
+  searchLanguages,
+  supportsLanguage,
 } from "../../lib/constants/languages";
 
 interface LanguageSelectorProps {
@@ -21,20 +23,20 @@ interface LanguageSelectorProps {
 
 // Mirrors the matching logic of `effective_language` in
 // src-tauri/src/managers/model.rs. The Rust function is authoritative for the
-// *concrete* code the engine receives (e.g. `nb`); this resolves the canonical
-// picker intent (e.g. `no`) so model switches preserve the user's language.
-// Model codes such as `en-US` and `nb` resolve to their `en` / `no` entry.
+// *concrete* code the engine receives (e.g. `jw`); this resolves the picker's
+// language identity (e.g. `jv`) so model switches preserve the user's
+// language. Codes such as `en-US` and a saved `no` resolve to `en` / `nb`.
 const effectiveLanguage = (
   intent: string,
   supported: string[],
   supportsDetection: boolean,
 ): string => {
-  if (supported.length === 0) return recognitionLanguage(intent);
-  if (intent !== "auto" && supportsLanguageCode(supported, intent))
-    return recognitionLanguage(intent);
+  const wanted = languageIdentity(intent);
+  if (supported.length === 0) return wanted;
+  if (wanted !== "auto" && supportsLanguage(supported, wanted)) return wanted;
   if (supportsDetection) return "auto";
-  if (supportsLanguageCode(supported, "en")) return "en";
-  return recognitionLanguage(supported[0]);
+  if (supportsLanguage(supported, "en")) return "en";
+  return languageIdentity(supported[0]);
 };
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
@@ -43,7 +45,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   supportedLanguages,
   supportsLanguageDetection = true,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,26 +84,40 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   }, [isOpen]);
 
-  const availableLanguages = useMemo(() => {
-    if (!supportedLanguages || supportedLanguages.length === 0)
-      return LANGUAGES;
-    return LANGUAGES.filter((lang) =>
-      lang.value === "auto"
-        ? supportsLanguageDetection
-        : supportsLanguageCode(supportedLanguages, lang.value),
-    );
-  }, [supportedLanguages, supportsLanguageDetection]);
-
-  const filteredLanguages = useMemo(
+  // The current model's own languages; every language before one is loaded.
+  const hasModelLanguages = !!supportedLanguages?.length;
+  const availableLanguages = useMemo(
     () =>
-      availableLanguages.filter((language) =>
-        language.label.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    [searchQuery, availableLanguages],
+      supportedLanguages?.length ? languagesOf(supportedLanguages) : LANGUAGES,
+    [supportedLanguages],
   );
 
+  const ui = i18n.language;
+  const autoLabel = t("settings.general.language.auto");
+  const filteredLanguages = useMemo(() => {
+    const showAuto =
+      (!hasModelLanguages || supportsLanguageDetection) &&
+      autoLabel.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    return [
+      ...(showAuto ? [{ value: "auto", label: autoLabel }] : []),
+      ...searchLanguages(searchQuery, ui, availableLanguages).map((l) => ({
+        value: l.code,
+        label: languageName(l.code, ui),
+      })),
+    ];
+  }, [
+    searchQuery,
+    ui,
+    autoLabel,
+    availableLanguages,
+    hasModelLanguages,
+    supportsLanguageDetection,
+  ]);
+
   const selectedLanguageName =
-    getLanguageLabel(selectedLanguage) || t("settings.general.language.auto");
+    selectedLanguage === "auto"
+      ? autoLabel
+      : languageName(selectedLanguage, ui);
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);

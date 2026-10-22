@@ -14,7 +14,7 @@ import {
   ScreenTitle,
 } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
-import { languageName } from "../data/languages";
+import { languageName } from "@/lib/constants/languages";
 import {
   gradeFor,
   gradeForError,

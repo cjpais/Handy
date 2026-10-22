@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 interface OnboardingShellProps {
   /** Where this screen is in the flow; no dashes on a standalone screen. */
   progress?: { index: number; count: number };
-  /** Top right: the download pill, from Model on. */
+  /** Top right: Welcome's menu language, then the download pill from Model on. */
   pill?: React.ReactNode;
   children: React.ReactNode;
   /** The footer's left slot; replaces Back. */

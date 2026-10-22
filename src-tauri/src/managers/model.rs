@@ -77,13 +77,17 @@ fn base_language(language: &str) -> &str {
 }
 
 /// The stable user intent used to compare language codes across model
-/// families. Norwegian Bokmål (`nb`) maps to Norwegian (`no`), while Nynorsk
-/// (`nn`) remains distinct; Filipino (`fil`) maps to Tagalog (`tl`). This is
-/// only for matching: callers must return/pass the model's original code.
+/// families: the model package's `languageIdentity`, which the frontend saves.
+/// Norwegian (`no`) is Bokmål (`nb`), while Nynorsk (`nn`) remains distinct;
+/// Tagalog (`tl`) is Filipino (`fil`); `iw` and Whisper's `jw` are the legacy
+/// codes for Hebrew (`he`) and Javanese (`jv`). This is only for matching:
+/// callers must return/pass the model's original code.
 pub(crate) fn canonical_language_code(language: &str) -> &str {
     match base_language(language) {
-        "nb" => "no",
-        "fil" => "tl",
+        "no" => "nb",
+        "tl" => "fil",
+        "iw" => "he",
+        "jw" => "jv",
         base => base,
     }
 }
@@ -2633,6 +2637,8 @@ mod tests {
         assert_eq!(effective_language("nb", &["no".to_string()], true), "no");
         assert_eq!(effective_language("tl", &["fil".to_string()], true), "fil");
         assert_eq!(effective_language("fil", &["tl".to_string()], true), "tl");
+        assert_eq!(effective_language("jv", &["jw".to_string()], true), "jw");
+        assert_eq!(effective_language("he", &["iw".to_string()], true), "iw");
     }
 
     #[test]

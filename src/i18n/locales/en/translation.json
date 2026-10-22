@@ -107,6 +107,7 @@
       "alreadyAdded_other": "{{languages}} are already added.",
       "noMatch": "No language matches “{{query}}”. Handy's models cover about 100 languages; more are in settings.",
       "appLanguage": "App language",
+      "menusIn": "Menus in <b>{{language}}</b>",
       "chinese": {
         "question": "You speak {{languages}}. Which characters should Handy write?",
         "label": "Chinese characters",
