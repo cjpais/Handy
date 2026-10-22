@@ -47,7 +47,6 @@ export const ModelsSettings: React.FC = () => {
     currentModel,
     downloadingModels,
     downloadProgress,
-    downloadStats,
     verifyingModels,
     loading,
     isRescanning,
@@ -131,8 +130,8 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const getDownloadSpeed = (modelId: string): number | undefined => {
-    const stats = downloadStats[modelId];
-    return stats?.speed;
+    const bytesPerSec = downloadProgress[modelId]?.bytes_per_sec;
+    return bytesPerSec != null ? bytesPerSec / (1024 * 1024) : undefined;
   };
 
   const handleModelSelect = async (modelId: string) => {

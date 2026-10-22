@@ -18,7 +18,9 @@ use tauri::{AppHandle, Emitter, Manager};
 
 mod download;
 
-use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT};
+use download::{
+    HttpDownloadOutcome, RateMeter, DOWNLOAD_STALL_TIMEOUT, PROGRESS_THROTTLE, PROGRESS_TICK,
+};
 
 /// Where a model comes from and how Handy obtains it — the routing discriminant
 /// for downloading and on-disk resolution.
@@ -295,6 +297,9 @@ pub struct DownloadProgress {
     pub downloaded: u64,
     pub total: u64,
     pub percentage: f64,
+    /// Measured over a trailing window of this transfer only (bytes resumed
+    /// from disk excluded); `None` until there is enough to measure.
+    pub bytes_per_sec: Option<f64>,
 }
 
 /// Return the active HF cache followed by the pre-v0.9.6 cache for portable
@@ -518,9 +523,14 @@ struct HfDownloadProgress {
     state: Arc<Mutex<HfProgressState>>,
 }
 
+/// `(downloaded, total, bytes_per_sec)` to emit.
+type HfProgressSnapshot = (u64, u64, Option<f64>);
+
 struct HfProgressState {
     total: u64,
     downloaded: u64,
+    /// `None` until hf-hub reports the resume offset; see [`Self::on_update`].
+    rate: Option<RateMeter>,
     last_emit: Instant,
     /// Every callback (even throttled-out ones) bumps this; the stall watchdog
     /// reads it. Starts at construction so a hang before the first byte —
@@ -528,17 +538,72 @@ struct HfProgressState {
     last_activity: Instant,
 }
 
+impl HfProgressState {
+    fn new(now: Instant) -> Self {
+        Self {
+            total: 0,
+            downloaded: 0,
+            rate: None,
+            last_emit: now,
+            last_activity: now,
+        }
+    }
+
+    fn on_init(&mut self, size: u64, now: Instant) {
+        self.total = size;
+        self.downloaded = 0;
+        self.rate = None;
+        self.last_activity = now;
+    }
+
+    fn on_update(&mut self, size: u64, now: Instant) -> Option<HfProgressSnapshot> {
+        self.last_activity = now;
+        let Some(rate) = self.rate.as_mut() else {
+            // hf-hub's `download_tempfile` reports the bytes already committed
+            // on disk as a single `update(start)` right after `init`, before
+            // any chunk request (even when `start` is 0). That is the resume
+            // offset, not transfer: take it as the baseline and emit it at
+            // once, so the bar doesn't flash 0% and the rate never counts it.
+            self.downloaded = size;
+            self.rate = Some(RateMeter::new(size));
+            self.last_emit = now;
+            return Some((self.downloaded, self.total, None));
+        };
+        self.downloaded = self.downloaded.saturating_add(size);
+        // Throttle, but always emit the final byte.
+        let done = self.total > 0 && self.downloaded >= self.total;
+        if !done && now.duration_since(self.last_emit) < PROGRESS_THROTTLE {
+            return None;
+        }
+        self.last_emit = now;
+        Some((
+            self.downloaded,
+            self.total,
+            rate.sample(self.downloaded, now),
+        ))
+    }
+
+    /// Re-emit during a lull so the rate decays instead of freezing.
+    fn on_tick(&mut self, now: Instant) -> Option<HfProgressSnapshot> {
+        let rate = self.rate.as_mut()?;
+        if now.duration_since(self.last_emit) < PROGRESS_TICK {
+            return None;
+        }
+        self.last_emit = now;
+        Some((
+            self.downloaded,
+            self.total,
+            rate.sample(self.downloaded, now),
+        ))
+    }
+}
+
 impl HfDownloadProgress {
     fn new(app_handle: AppHandle, model_id: String) -> Self {
         Self {
             app_handle,
             model_id,
-            state: Arc::new(Mutex::new(HfProgressState {
-                total: 0,
-                downloaded: 0,
-                last_emit: Instant::now(),
-                last_activity: Instant::now(),
-            })),
+            state: Arc::new(Mutex::new(HfProgressState::new(Instant::now()))),
         }
     }
 
@@ -547,7 +612,15 @@ impl HfDownloadProgress {
         self.state.lock().unwrap().last_activity
     }
 
-    fn emit(&self, downloaded: u64, total: u64) {
+    /// Called periodically by the stall watchdog.
+    fn tick(&self) {
+        let snapshot = self.state.lock().unwrap().on_tick(Instant::now());
+        if let Some(snapshot) = snapshot {
+            self.emit(snapshot);
+        }
+    }
+
+    fn emit(&self, (downloaded, total, bytes_per_sec): HfProgressSnapshot) {
         let percentage = if total > 0 {
             (downloaded as f64 / total as f64) * 100.0
         } else {
@@ -560,6 +633,7 @@ impl HfDownloadProgress {
                 downloaded,
                 total,
                 percentage,
+                bytes_per_sec,
             },
         );
     }
@@ -567,32 +641,21 @@ impl HfDownloadProgress {
 
 impl Progress for HfDownloadProgress {
     async fn init(&mut self, size: usize, _filename: &str) {
-        {
-            let mut st = self.state.lock().unwrap();
-            st.total = size as u64;
-            st.downloaded = 0;
-            st.last_emit = Instant::now();
-            st.last_activity = Instant::now();
-        }
-        self.emit(0, size as u64);
+        // No emit: the resume offset follows immediately (see `on_update`).
+        self.state
+            .lock()
+            .unwrap()
+            .on_init(size as u64, Instant::now());
     }
 
     async fn update(&mut self, size: usize) {
-        let (downloaded, total, emit) = {
-            let mut st = self.state.lock().unwrap();
-            st.downloaded = st.downloaded.saturating_add(size as u64);
-            let now = Instant::now();
-            st.last_activity = now;
-            // Throttle to ~10 updates/sec, but always emit the final byte.
-            let emit = now.duration_since(st.last_emit) >= Duration::from_millis(100)
-                || (st.total > 0 && st.downloaded >= st.total);
-            if emit {
-                st.last_emit = now;
-            }
-            (st.downloaded, st.total, emit)
-        };
-        if emit {
-            self.emit(downloaded, total);
+        let snapshot = self
+            .state
+            .lock()
+            .unwrap()
+            .on_update(size as u64, Instant::now());
+        if let Some(snapshot) = snapshot {
+            self.emit(snapshot);
         }
     }
 
@@ -601,7 +664,7 @@ impl Progress for HfDownloadProgress {
             let st = self.state.lock().unwrap();
             st.total.max(st.downloaded)
         };
-        self.emit(total, total);
+        self.emit((total, total, None));
     }
 }
 
@@ -1777,17 +1840,19 @@ impl ModelManager {
             // otherwise hang this attempt forever and neither the retry loop
             // nor the mirror fallback would ever fire. The watchdog cancels a
             // per-attempt child token when progress goes stale; a user cancel
-            // on the parent propagates through the same child.
+            // on the parent propagates through the same child. Each wake also
+            // re-emits progress, so the reported rate decays through a lull.
             let attempt_token = cancel_token.child_token();
             let watchdog = tokio::spawn({
                 let probe = progress.clone();
                 let attempt_token = attempt_token.clone();
                 async move {
                     loop {
-                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        tokio::time::sleep(PROGRESS_TICK).await;
                         if attempt_token.is_cancelled() {
                             break;
                         }
+                        probe.tick();
                         if probe.last_activity().elapsed() > DOWNLOAD_STALL_TIMEOUT {
                             attempt_token.cancel();
                             break;

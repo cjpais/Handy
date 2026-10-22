@@ -5,18 +5,13 @@ import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
 import { toast } from "sonner";
 
-interface DownloadProgress {
+export interface DownloadProgress {
   model_id: string;
   downloaded: number;
   total: number;
   percentage: number;
-}
-
-interface DownloadStats {
-  startTime: number;
-  lastUpdate: number;
-  totalDownloaded: number;
-  speed: number; // MB/s
+  /** Measured by the backend over this transfer only; null until known. */
+  bytes_per_sec: number | null;
 }
 
 // Using Record instead of Set/Map for Immer compatibility
@@ -26,7 +21,6 @@ interface ModelsStore {
   downloadingModels: Record<string, true>;
   verifyingModels: Record<string, true>;
   downloadProgress: Record<string, DownloadProgress>;
-  downloadStats: Record<string, DownloadStats>;
   loading: boolean;
   error: string | null;
   initialized: boolean;
@@ -60,7 +54,6 @@ export const useModelStore = create<ModelsStore>()(
     downloadingModels: {},
     verifyingModels: {},
     downloadProgress: {},
-    downloadStats: {},
     loading: true,
     error: null,
     initialized: false,
@@ -179,7 +172,6 @@ export const useModelStore = create<ModelsStore>()(
             produce((state) => {
               delete state.downloadingModels[modelId];
               delete state.downloadProgress[modelId];
-              delete state.downloadStats[modelId];
             }),
           );
         }
@@ -191,7 +183,6 @@ export const useModelStore = create<ModelsStore>()(
           produce((state) => {
             delete state.downloadingModels[modelId];
             delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
           }),
         );
         return false;
@@ -207,7 +198,6 @@ export const useModelStore = create<ModelsStore>()(
             produce((state) => {
               delete state.downloadingModels[modelId];
               delete state.downloadProgress[modelId];
-              delete state.downloadStats[modelId];
             }),
           );
 
@@ -274,42 +264,6 @@ export const useModelStore = create<ModelsStore>()(
             state.downloadProgress[progress.model_id] = progress;
           }),
         );
-
-        // Update download stats for speed calculation
-        const now = Date.now();
-        set(
-          produce((state) => {
-            const current = state.downloadStats[progress.model_id];
-
-            if (!current) {
-              state.downloadStats[progress.model_id] = {
-                startTime: now,
-                lastUpdate: now,
-                totalDownloaded: progress.downloaded,
-                speed: 0,
-              };
-            } else {
-              const timeDiff = (now - current.lastUpdate) / 1000;
-              const bytesDiff = progress.downloaded - current.totalDownloaded;
-
-              if (timeDiff > 0.5) {
-                const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff;
-                const validCurrentSpeed = Math.max(0, currentSpeed);
-                const smoothedSpeed =
-                  current.speed > 0
-                    ? current.speed * 0.8 + validCurrentSpeed * 0.2
-                    : validCurrentSpeed;
-
-                state.downloadStats[progress.model_id] = {
-                  startTime: current.startTime,
-                  lastUpdate: now,
-                  totalDownloaded: progress.downloaded,
-                  speed: Math.max(0, smoothedSpeed),
-                };
-              }
-            }
-          }),
-        );
       });
 
       listen<string>("model-download-complete", (event) => {
@@ -319,7 +273,6 @@ export const useModelStore = create<ModelsStore>()(
             delete state.downloadingModels[modelId];
             delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
           }),
         );
         get().loadModels();
@@ -334,7 +287,6 @@ export const useModelStore = create<ModelsStore>()(
               delete state.downloadingModels[modelId];
               delete state.verifyingModels[modelId];
               delete state.downloadProgress[modelId];
-              delete state.downloadStats[modelId];
               state.error = error;
             }),
           );
@@ -367,7 +319,6 @@ export const useModelStore = create<ModelsStore>()(
             delete state.downloadingModels[modelId];
             delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
           }),
         );
       });
