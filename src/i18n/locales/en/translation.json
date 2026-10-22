@@ -158,11 +158,11 @@
       "size": "Size",
       "model": "Model",
       "speedWords": {
-        "0": "Very slow",
-        "1": "Slow",
-        "2": "Medium",
-        "3": "Fast",
-        "4": "Very fast"
+        "0": "Very slow, words appear after a long wait",
+        "1": "Slow, words appear after a wait",
+        "2": "Moderate, words appear after a short wait",
+        "3": "Fast, words appear almost right away",
+        "4": "Very fast, words appear right away"
       },
       "speedUntested": "Speed not measured yet",
       "seconds": "{{value}}s",
