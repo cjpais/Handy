@@ -33,11 +33,8 @@ const nameAll = (root: HTMLElement): HTMLElement[] => {
     // In the list, only rows fully in view move; the rest are part of the page.
     if (row && scroll) {
       const s = scroll.getBoundingClientRect();
-      const head =
-        scroll.querySelector<HTMLElement>(".model-flow-thead")?.offsetHeight ??
-        0;
       const r = row.getBoundingClientRect();
-      ok = r.top >= s.top + head - 1 && r.bottom <= s.bottom + 1;
+      ok = r.top >= s.top - 1 && r.bottom <= s.bottom + 1;
     }
     el.style.viewTransitionName = ok ? (el.dataset.vt ?? "") : "none";
     if (ok && el.hasAttribute("data-vt-row")) rows.push(el);

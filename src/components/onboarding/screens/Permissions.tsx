@@ -7,6 +7,7 @@ import { TextLink } from "../../ui/TextLink";
 import { DoneMark } from "../../shared/DoneMark";
 import {
   OnboardingShell,
+  ScreenGap,
   ScreenMain,
   ScreenSub,
   ScreenTitle,
@@ -188,14 +189,14 @@ export const Permissions: React.FC<PermissionsProps> = ({
         </Button>
       }
     >
-      <ScreenMain task>
+      <ScreenMain>
         {welcomeBack && (
           <div className="mb-[18px] flex animate-rise items-center gap-[10px] text-small font-semibold text-moss">
             <DoneMark />
             {t("onboarding.permissions.welcomeBack")}
           </div>
         )}
-        <ScreenTitle task={!welcomeBack}>
+        <ScreenTitle>
           {t(
             isMac
               ? "onboarding.permissions.titleMac"
@@ -209,7 +210,8 @@ export const Permissions: React.FC<PermissionsProps> = ({
               : "onboarding.permissions.subtitleWindows",
           )}
         </ScreenSub>
-        <div className="mt-[28px] flex w-full flex-col rounded-panel border border-line-strong px-[22px] py-[4px] text-start">
+        <ScreenGap />
+        <div className="flex w-full flex-col rounded-panel border border-line-strong px-[22px] py-[4px] text-start">
           <PermissionRow
             icon={<MicIcon />}
             title={t("onboarding.permissions.microphone.name")}

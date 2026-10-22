@@ -31,7 +31,7 @@ export const GradeChip: React.FC<GradeChipProps> = ({
 }) => (
   <span
     title={title}
-    className={`inline-grid place-items-center rounded-chip border font-display leading-none ${dense ? "min-w-[24px] h-[20px] px-[3px] text-[11.5px]" : "min-w-[30px] h-[22px] px-[5px] text-small"} ${LETTER_CLASSES[letter]}`}
+    className={`inline-grid place-items-center rounded-chip border font-display leading-none h-[22px] ${dense ? "min-w-[24px] px-[3px] text-tag" : "min-w-[30px] px-[5px] text-small"} ${LETTER_CLASSES[letter]}`}
   >
     {label}
   </span>

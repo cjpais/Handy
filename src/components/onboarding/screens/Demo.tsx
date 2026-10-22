@@ -4,13 +4,15 @@ import { useSettings } from "@/hooks/useSettings";
 import { useShortcutPress, type PressKind } from "@/hooks/useShortcutPress";
 import { useShortcutCapture } from "@/hooks/useShortcutCapture";
 import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
-import { keycapParts, type OSType } from "@/lib/utils/keyboard";
+import { Pencil } from "lucide-react";
+import { type OSType } from "@/lib/utils/keyboard";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
 import { Keycaps } from "../../shared/Keycaps";
 import HandyHand from "../../icons/HandyHand";
 import {
   OnboardingShell,
+  ScreenGap,
   ScreenMain,
   ScreenSub,
   ScreenTitle,
@@ -20,15 +22,15 @@ import { demoLine } from "../data/samples";
 import "./demo.css";
 
 type Mode = "hold" | "tap";
-type Hand = "idle" | "down" | "off";
+type Hand = "rest" | "down";
 type PillState = "hidden" | "rec" | "work";
-type Beat = "reset" | "press" | "bounce" | "release" | "land";
+type Beat = "reset" | "press" | "lift" | "release" | "land";
 
 /**
- * Hold and tap take turns, so someone who only watches sees both. Each has
- * one picture, the opposite of the other's: in hold the hand stays on the key
- * while it records; in tap it touches the key (450 ms, so it's visible) and
- * drops away, and recording carries on until the next tap.
+ * Hold and tap take turns, so someone who only watches sees both. The hand
+ * has two poses, resting and pressed: in hold it stays pressed while it
+ * records; in tap it presses for less than the hold threshold and goes back
+ * to rest, and recording carries on (the pill says so) until the next tap.
  */
 const CHAPTERS: Record<
   Mode,
@@ -48,10 +50,10 @@ const CHAPTERS: Record<
     script: [
       [0, "reset"],
       [900, "press"],
-      [1350, "bounce"],
+      [1080, "lift"],
       [6000, "press"],
-      [6450, "release"],
-      [7050, "land"],
+      [6180, "release"],
+      [6780, "land"],
     ],
     ms: 9600,
     still: 3600,
@@ -285,7 +287,7 @@ export const Demo: React.FC<DemoProps> = ({
   onContinue,
 }) => {
   const { t } = useTranslation();
-  const { getSetting, resetBinding } = useSettings();
+  const { getSetting } = useSettings();
   const { languages, script, preview } = useOnboardingStore();
   const binding = getSetting("bindings")?.transcribe;
   const shortcut = binding?.current_binding ?? "";
@@ -294,7 +296,7 @@ export const Demo: React.FC<DemoProps> = ({
 
   const [chapter, setChapter] = useState<Mode>("hold");
   const [wayKey, setWayKey] = useState(0);
-  const [hand, setHand] = useState<Hand>("idle");
+  const [hand, setHand] = useState<Hand>("rest");
   const [pillState, setPillState] = useState<PillState>("hidden");
   const [text, setText] = useState({
     value: "",
@@ -330,14 +332,14 @@ export const Demo: React.FC<DemoProps> = ({
         showChapter(mode);
         setText((x) => ({ ...x, value: "", landed: false }));
         setPillState("hidden");
-        setHand("idle");
+        setHand("rest");
       } else if (beat === "press") {
         setHand("down");
         setPillState((p) => (p === "hidden" ? "rec" : p));
-      } else if (beat === "bounce") {
-        setHand("off");
+      } else if (beat === "lift") {
+        setHand("rest");
       } else if (beat === "release") {
-        setHand("idle");
+        setHand("rest");
         setPillState("work");
       } else {
         const line = demoLine(languages, script, mode);
@@ -381,7 +383,7 @@ export const Demo: React.FC<DemoProps> = ({
 
   const finish = (mode: Mode, ticked = true) => {
     clear();
-    setHand("idle");
+    setHand("rest");
     setPillState("work");
     user.current = "work";
     later(() => {
@@ -422,9 +424,10 @@ export const Demo: React.FC<DemoProps> = ({
     if (user.current === "down2") return finish("tap");
     if (user.current !== "down" && user.current !== "holding") return;
     if (kind === "hold") return finish("hold");
-    // A tap: the hand comes off and it keeps listening until the next tap.
+    // A tap: the hand goes back to rest and it keeps listening until the
+    // next tap.
     clear();
-    setHand("off");
+    setHand("rest");
     showChapter("tap");
     user.current = "toggled";
     later(
@@ -456,23 +459,6 @@ export const Demo: React.FC<DemoProps> = ({
     !capture.capturing,
   );
 
-  // Pressing the keycaps works like the keys.
-  const pressedAt = useRef<number | null>(null);
-  const keyHandlers = {
-    onPointerDown: (e: React.PointerEvent) => {
-      e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      pressedAt.current = performance.now();
-      onDown();
-    },
-    onPointerUp: () => {
-      if (pressedAt.current == null) return;
-      const held = performance.now() - pressedAt.current;
-      pressedAt.current = null;
-      onUp(held >= threshold ? "hold" : "tap");
-    },
-  };
-
   const startCapture = () => {
     suspended.current = true;
     clear();
@@ -485,18 +471,12 @@ export const Demo: React.FC<DemoProps> = ({
     chapter === "hold"
       ? [t("onboarding.demo.hold.what"), t("onboarding.demo.hold.then")]
       : [t("onboarding.demo.tap.what"), t("onboarding.demo.tap.then")];
-  const defaultShortcut = binding?.default_binding ?? "";
-  const shortcutLabel = (b: string) =>
-    keycapParts(b, os)
-      .map((p) => p.label)
-      .join(os === "macos" ? " " : " + ");
 
+  // Resting, the fingertips sit just under the key; pressed, they meet its
+  // bottom edge as the key drops its 3px. The hand rides inside the key, so
+  // it moves on the key's own timing.
   const handClass =
-    hand === "down"
-      ? "translate-y-[-2px] duration-[110ms]"
-      : hand === "off"
-        ? "translate-y-[15px] duration-200"
-        : "translate-y-[4px] duration-200";
+    hand === "down" ? "-translate-y-[2px]" : "translate-y-[7px]";
 
   return (
     <OnboardingShell
@@ -523,12 +503,9 @@ export const Demo: React.FC<DemoProps> = ({
         </Button>
       }
     >
-      <ScreenMain task className="gap-0">
-        <ScreenTitle task>{t("onboarding.demo.title")}</ScreenTitle>
-        <ScreenSub
-          key={wayKey}
-          className="demo-way-in mt-[8px]! min-h-[22px] max-w-none! text-center"
-        >
+      <ScreenMain>
+        <ScreenTitle>{t("onboarding.demo.title")}</ScreenTitle>
+        <ScreenSub key={wayKey} className="demo-way-in min-h-[22px]">
           <span aria-live="polite">
             {done[chapter] && (
               <span
@@ -539,7 +516,8 @@ export const Demo: React.FC<DemoProps> = ({
             <strong className="font-medium text-text">{what}</strong> {then}
           </span>
         </ScreenSub>
-        <div className="mt-[18px] flex w-full flex-col items-center">
+        <ScreenGap />
+        <div className="flex w-full flex-col items-center">
           <DemoScreen
             os={os}
             app={t(
@@ -555,65 +533,61 @@ export const Demo: React.FC<DemoProps> = ({
             still={still}
             label={t("onboarding.demo.screenLabel")}
           />
-          <p className="mt-[18px] mb-0 flex items-center justify-center gap-[10px] whitespace-nowrap pb-[26px] text-ink-2">
+          <p className="mt-[18px] mb-0 flex items-center justify-center gap-[10px] whitespace-nowrap text-ink-2">
             <span>{t("onboarding.demo.yourShortcut")}</span>
-            <span
-              className="-translate-y-[2px]"
-              {...(capture.capturing ? {} : keyHandlers)}
-            >
-              <Keycaps
-                binding={
-                  capture.capturing ? capture.partial || shortcut : shortcut
-                }
-                osType={os}
-                size="demo"
-                pressed={!capture.capturing && hand === "down"}
-                partial={capture.capturing && !!capture.partial}
-                className="cursor-pointer"
-                lastKeyChildren={
-                  capture.capturing ? null : (
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none absolute start-1/2 top-full z-[2] -ms-[13px] text-hand transition-transform ease-glide ${handClass}`}
-                    >
-                      <HandyHand width={26} height={28} tone="current" />
-                    </span>
-                  )
-                }
-              />
-            </span>
-            <span className="inline-flex items-center gap-[14px] font-ui text-small font-medium">
-              {capture.capturing ? (
-                <>
+            {capture.capturing ? (
+              <>
+                <Keycaps
+                  binding={capture.partial || shortcut}
+                  osType={os}
+                  size="demo"
+                  partial
+                  className="-translate-y-[2px]"
+                />
+                <span className="inline-flex items-center gap-[14px] font-ui text-small font-medium">
                   <span role="status" className="font-semibold text-text">
                     {t("onboarding.demo.pressKeys")}
                   </span>
                   <TextLink onClick={capture.cancel}>
                     {t("onboarding.demo.cancel")}
                   </TextLink>
-                </>
-              ) : (
-                <>
-                  <TextLink onClick={startCapture}>
-                    {t("onboarding.demo.change")}
-                  </TextLink>
-                  {defaultShortcut && shortcut !== defaultShortcut && (
-                    <TextLink
-                      onClick={async () => {
-                        if (preview) return;
-                        // Saving a binding registers it; keep it quiet here.
-                        await resetBinding("transcribe");
-                        suspendBindings();
-                      }}
+                </span>
+              </>
+            ) : (
+              // The keys are the way to change them: they lift on hover, as
+              // if you could pull them off and put others on.
+              <button
+                type="button"
+                onClick={startCapture}
+                // The shortcut may use Space; pressing it here mustn't click.
+                onKeyDown={(e) => e.key === " " && e.preventDefault()}
+                onKeyUp={(e) => e.key === " " && e.preventDefault()}
+                className="group/keycaps -my-[6px] -ms-[6px] inline-flex cursor-pointer items-center gap-[10px] rounded-control p-[6px] text-ink-2 transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+              >
+                <Keycaps
+                  binding={shortcut}
+                  osType={os}
+                  size="demo"
+                  pressed={hand === "down"}
+                  lift
+                  className="-translate-y-[2px]"
+                  lastKeyChildren={
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute start-1/2 top-full z-[2] -ms-[13px] text-plum transition-transform duration-[70ms] ease-out ${handClass}`}
                     >
-                      {t("onboarding.demo.useDefault", {
-                        shortcut: shortcutLabel(defaultShortcut),
-                      })}
-                    </TextLink>
-                  )}
-                </>
-              )}
-            </span>
+                      <HandyHand width={26} height={28} tone="current" />
+                    </span>
+                  }
+                />
+                <span className="inline-flex items-center gap-[5px] font-ui text-small font-medium">
+                  <Pencil size={13} strokeWidth={2} aria-hidden="true" />
+                  <span className="underline decoration-line-strong underline-offset-[3px] group-hover/keycaps:decoration-current">
+                    {t("onboarding.demo.change")}
+                  </span>
+                </span>
+              </button>
+            )}
           </p>
         </div>
       </ScreenMain>

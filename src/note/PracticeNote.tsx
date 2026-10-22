@@ -1,23 +1,19 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { PRACTICE_NOTE_FOCUS_EVENT } from "./events";
 
 /**
- * A blank note to dictate into on onboarding's Try it screen. It's "another
- * app", so it uses the system's plain colours and font rather than Handy's,
- * and a plum ring says "click here" until it has focus or text.
+ * A blank note to dictate into on onboarding's Try it screen, on Handy's own
+ * background so it sits with the window beside it.
  */
 export const PracticeNote: React.FC = () => {
   const { t } = useTranslation();
   const ref = useRef<HTMLTextAreaElement>(null);
-  const [focused, setFocused] = useState(false);
-  const [text, setText] = useState("");
 
   useEffect(() => {
     const report = (on: boolean) => {
-      setFocused(on);
       emit(PRACTICE_NOTE_FOCUS_EVENT, { focused: on });
       if (on) ref.current?.focus();
     };
@@ -35,21 +31,13 @@ export const PracticeNote: React.FC = () => {
   }, []);
 
   return (
-    <div
-      className={`h-screen w-full bg-note-surface text-note-ink ${
-        focused || text
-          ? ""
-          : "shadow-[inset_0_0_0_2px_var(--color-logo-stroke)]"
-      }`}
-    >
+    <div className="h-screen w-full bg-background text-text">
       <textarea
         ref={ref}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
         placeholder={t("onboarding.try.notePlaceholder")}
         aria-label={t("onboarding.try.noteLabel")}
         spellCheck={false}
-        className="block h-full w-full resize-none border-0 bg-transparent px-[18px] py-[16px] font-[-apple-system,system-ui,'Segoe_UI_Variable_Text','Segoe_UI',sans-serif] text-[15px] leading-[1.55] text-inherit outline-none placeholder:text-[rgba(127,127,127,0.8)]"
+        className="block h-full w-full resize-none border-0 bg-transparent px-[18px] py-[16px] font-[-apple-system,system-ui,'Segoe_UI_Variable_Text','Segoe_UI',sans-serif] text-[15px] leading-[1.55] text-inherit outline-none placeholder:text-ink-3"
       />
     </div>
   );

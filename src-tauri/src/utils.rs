@@ -23,7 +23,7 @@ pub fn redact_text(text: &str) -> &str {
 }
 
 /// The page size Handy's main window opens at, in logical pixels.
-pub const MAIN_WINDOW_SIZE: (f64, f64) = (680.0, 570.0);
+pub const MAIN_WINDOW_SIZE: (f64, f64) = (680.0, 600.0);
 
 static TITLE_BAR_HEIGHT: std::sync::OnceLock<f64> = std::sync::OnceLock::new();
 

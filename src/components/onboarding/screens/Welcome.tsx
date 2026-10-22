@@ -131,7 +131,13 @@ export const Welcome: React.FC<WelcomeProps> = ({
           title={t("onboarding.welcome.appLanguage")}
           className="flex shrink-0 items-center gap-[6px]"
         >
-          <Globe size={16} aria-hidden="true" className="text-ink-3" />
+          {/* ink-3's opacity on the whole icon, not its colour: a translucent
+              stroke darkens wherever the globe's lines cross */}
+          <Globe
+            size={20}
+            aria-hidden="true"
+            className="text-text opacity-46"
+          />
           <select
             aria-label={t("onboarding.welcome.appLanguage")}
             value={uiLanguage}
@@ -165,11 +171,9 @@ export const Welcome: React.FC<WelcomeProps> = ({
           <HandyTextLogo width={112} className="mb-[4px] block" />
         </div>
         <ScreenTitle>{t("onboarding.welcome.title")}</ScreenTitle>
-        <ScreenSub className="mt-[4px]! max-w-none!">
-          {t("onboarding.welcome.subtitle")}
-        </ScreenSub>
+        <ScreenSub>{t("onboarding.welcome.subtitle")}</ScreenSub>
 
-        <div className="mt-[18px] flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-panel border-[1.5px] border-line-strong bg-background">
+        <div className="mt-lead flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-panel border-[1.5px] border-line-strong bg-background">
           {/* Clicks around the chips go to the search (a <label> would hand
               them to the first chip, which removes it). */}
           <div
@@ -188,7 +192,7 @@ export const Welcome: React.FC<WelcomeProps> = ({
                   e.preventDefault();
                   toggle(code);
                 }}
-                className="group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] border-line-strong bg-background ps-[12px] pe-[6px] text-small font-semibold text-text hover:border-[color-mix(in_srgb,var(--color-logo-stroke)_40%,var(--color-line-strong))]"
+                className="group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] border-line-strong bg-background ps-[12px] pe-[6px] text-small font-semibold text-text hover:border-plum-hover"
               >
                 <bdi lang={code}>{spokenLanguage(code)?.native ?? code}</bdi>
                 <span className="grid size-[18px] place-items-center rounded-full leading-none text-ink-2 group-hover:bg-[color-mix(in_srgb,var(--color-text)_10%,transparent)]">
@@ -277,8 +281,8 @@ export const Welcome: React.FC<WelcomeProps> = ({
                     onClick={() => set({ script: s.id })}
                     className={`inline-flex h-[34px] cursor-pointer items-center gap-[8px] rounded-control border-[1.5px] bg-background ps-[10px] pe-[14px] text-small font-semibold text-text ${
                       picked
-                        ? "border-plum-pick"
-                        : "border-line-strong hover:border-[color-mix(in_srgb,var(--color-logo-stroke)_40%,var(--color-line-strong))]"
+                        ? "border-plum"
+                        : "border-line-strong hover:border-plum-hover"
                     }`}
                   >
                     <Radio checked={picked} />

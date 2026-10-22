@@ -209,13 +209,31 @@ pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {
 
 /// When Handy's window closes it only hides, so the screen showing doesn't
 /// unmount: undo what onboarding's screens hold while they're up (the
-/// shortcuts Demo turns off, the practice note).
+/// shortcuts Demo turns off), and hide the practice note with it.
 pub fn on_main_window_hidden(app: &AppHandle) {
     if app.try_state::<ShortcutsInitialized>().is_some() {
         crate::shortcut::resume_all_shortcuts(app);
     }
-    if let Err(e) = close_practice_note(app.clone()) {
-        log::warn!("Failed to close the practice note: {e}");
+    if let Some(note) = app.get_webview_window(PRACTICE_NOTE_LABEL) {
+        if let Err(e) = note.hide() {
+            log::warn!("Failed to hide the practice note: {e}");
+        }
+    }
+}
+
+/// Bring back a practice note hidden with Handy's window. It still exists only
+/// while Try it is up (leaving the screen destroys it), so Try it is what the
+/// window comes back to. Call before showing and focusing Handy's window, as
+/// showing the note focuses it.
+pub fn show_hidden_practice_note(app: &AppHandle) {
+    let Some(note) = app.get_webview_window(PRACTICE_NOTE_LABEL) else {
+        return;
+    };
+    if note.is_visible().unwrap_or(true) {
+        return;
+    }
+    if let Err(e) = note.show() {
+        log::warn!("Failed to show the practice note: {e}");
     }
 }
 
@@ -240,7 +258,8 @@ static PRACTICE_NOTE_WANTED: std::sync::atomic::AtomicBool =
 
 /// Open onboarding's practice note: a small blank note beside Handy's window
 /// to dictate into on the Try it screen, placed where the design puts it
-/// (over the right of Handy's window, a little lower), kept on screen.
+/// (over the right of Handy's window, centred top to bottom like the screen
+/// beside it), kept on screen.
 ///
 /// Async because building a window from a synchronous command deadlocks on
 /// Windows (WebView2).
@@ -254,10 +273,15 @@ pub async fn open_practice_note(app: AppHandle, title: String) -> Result<(), Str
     PRACTICE_NOTE_WANTED.store(true, std::sync::atomic::Ordering::SeqCst);
 
     const WIDTH: f64 = 430.0;
+    const PAGE_HEIGHT: f64 = 272.0;
     // The note's page; on macOS its title bar is inside the window's height.
-    let height = 272.0 + crate::utils::title_bar_height();
-    // From the top left of Handy's content to the note's top left.
-    const OFFSET: (f64, f64) = (450.0, 74.0);
+    let height = PAGE_HEIGHT + crate::utils::title_bar_height();
+    // Onboarding's screens sit between a 56px top bar and a 76px footer.
+    const SCREEN_TOP: f64 = 56.0;
+    let screen_height = crate::utils::MAIN_WINDOW_SIZE.1 - SCREEN_TOP - 76.0;
+    // From the top left of Handy's content to the note's top left: the note's
+    // page centred in the screen, as Try it is.
+    let offset = (450.0, SCREEN_TOP + (screen_height - PAGE_HEIGHT) / 2.0);
 
     if let Some(note) = app.get_webview_window(PRACTICE_NOTE_LABEL) {
         note.set_title(&title).map_err(|e| e.to_string())?;
@@ -275,6 +299,9 @@ pub async fn open_practice_note(app: AppHandle, title: String) -> Result<(), Str
     .resizable(true)
     .maximizable(false)
     .minimizable(false)
+    // Only Handy closes it (leaving Try it, or finishing): reopening it
+    // isn't offered, so its close button is off.
+    .closable(false)
     .focused(false);
 
     if let Some(main) = app.get_webview_window("main") {
@@ -284,7 +311,7 @@ pub async fn open_practice_note(app: AppHandle, title: String) -> Result<(), Str
             .map_err(|e| e.to_string())?
             .to_logical::<f64>(scale);
         let page_top = origin.y + crate::utils::title_bar_height();
-        let (mut x, mut y) = (origin.x + OFFSET.0, page_top + OFFSET.1);
+        let (mut x, mut y) = (origin.x + offset.0, page_top + offset.1);
         if let Ok(Some(monitor)) = main.current_monitor() {
             let area = monitor.work_area();
             let left = area.position.x as f64 / scale;
@@ -303,9 +330,6 @@ pub async fn open_practice_note(app: AppHandle, title: String) -> Result<(), Str
     }
     Ok(())
 }
-
-/// Sent when the practice note has gone.
-pub const PRACTICE_NOTE_CLOSED_EVENT: &str = "practice-note-closed";
 
 /// Close onboarding's practice note, if it's open.
 #[specta::specta]

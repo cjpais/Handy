@@ -14,7 +14,7 @@ interface DownloadPillProps {
 }
 
 /**
- * The model download, top right from Model on: a ring, then a moss check; a
+ * The model download, top right after Model: a ring, then a moss check; a
  * warning and a retry if it stops.
  */
 export const DownloadPill: React.FC<DownloadPillProps> = ({

@@ -14,19 +14,12 @@
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
   --color-moss: var(--color-moss);
-  --color-plum-edge: var(--color-plum-edge);
-  --color-plum-pick: var(--color-plum-pick);
-  --color-note-surface: var(--color-note-surface);
-  --color-note-ink: var(--color-note-ink);
+  --color-plum: var(--color-plum);
+  --color-plum-hover: var(--color-plum-hover);
   --color-demo-screen: var(--color-demo-screen);
   --color-demo-window: var(--color-demo-window);
-  --color-hand: var(--color-hand);
   --color-mascot-line: var(--color-mascot-line);
-  --color-pick-surface: var(--color-pick-surface);
   --color-pick-row: var(--color-pick-row);
-  --color-key-face: var(--color-key-face);
-  --color-key-ink: var(--color-key-ink);
-  --color-key-drop: var(--color-key-drop);
   --color-wash: var(--color-wash);
   --color-blush-wash: var(--color-blush-wash);
   --color-moss-wash: var(--color-moss-wash);
@@ -50,11 +43,12 @@
 
   --text-hero: 40px; /* All set's headline */
   --text-title: 26px; /* screen titles */
-  --text-name: 24px; /* the model name on Model's Full card */
+  --text-name: 20px; /* the model name on Model's Full card */
   --text-row: 17px; /* row titles */
   --text-body: 15px; /* body, subtitles */
   --text-small: 13px; /* buttons, secondary text, hints */
   --text-label: 12px; /* labels */
+  --text-tag: 11px; /* tags, column codes, small grade chips */
 
   --radius-panel: 16px; /* panels, the selected card */
   --radius-card: 12px;
@@ -65,6 +59,11 @@
      680px window's edges (552); Model's full list runs 40px in (600). */
   --spacing-gutter: 64px;
   --spacing-gutter-wide: 40px;
+  /* From a screen's title (and subtitle) to what comes under it: 20px when
+     the screen is full, up to 32px when there's room (ScreenGap). Screens
+     whose list fills the window keep 20px (mt-lead). */
+  --spacing-lead: 20px;
+  --spacing-lead-max: 32px;
 
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
 

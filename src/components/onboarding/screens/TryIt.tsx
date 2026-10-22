@@ -7,15 +7,17 @@ import { useSettings } from "@/hooks/useSettings";
 import { useShortcutPress } from "@/hooks/useShortcutPress";
 import type { OSType } from "@/lib/utils/keyboard";
 import { formatModelSize } from "@/lib/utils/format";
-import {
-  PRACTICE_NOTE_CLOSED_EVENT,
-  PRACTICE_NOTE_FOCUS_EVENT,
-  PRACTICE_NOTE_LABEL,
-} from "@/note/events";
+import { PRACTICE_NOTE_FOCUS_EVENT, PRACTICE_NOTE_LABEL } from "@/note/events";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
 import { Keycaps } from "../../shared/Keycaps";
-import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
+import {
+  OnboardingShell,
+  ScreenGap,
+  ScreenMain,
+  ScreenSub,
+  ScreenTitle,
+} from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
 import {
@@ -51,7 +53,6 @@ type Result =
   | { kind: "nothingTyped" }
   | { kind: "empty" }
   | { kind: "failed" }
-  | { kind: "noteClosed" }
   | { kind: "short"; wait: number }
   | { kind: "ok"; speech: number; wait: number }
   | { kind: "slow"; speech: number; wait: number }
@@ -103,14 +104,19 @@ export const TryIt: React.FC<TryItProps> = ({
   const [result, setResult] = useState<Result>({ kind: "none" });
   const [switchedTo, setSwitchedTo] = useState<string | null>(null);
   const focusedRef = useRef(false);
+  // The take in progress's mode; the steps show it only until a take is done.
   const modeRef = useRef<Mode | null>(null);
+  const finishedRef = useRef(false);
   const lockedRef = useRef(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const name = model?.name ?? "";
+  // Steps done stay done: it's a first try, and later takes only update the
+  // line under them.
   const setModeBoth = (m: Mode | null) => {
     modeRef.current = m;
-    setMode(m);
+    if (finishedRef.current) return;
+    setMode((cur) => m ?? cur);
   };
 
   /* ---------- the note, and Handy's input ---------- */
@@ -147,10 +153,7 @@ export const TryIt: React.FC<TryItProps> = ({
       PRACTICE_NOTE_FOCUS_EVENT,
       ({ payload }) => {
         focusedRef.current = payload.focused;
-        if (payload.focused) {
-          setClicked(true);
-          setResult((r) => (r.kind === "noteClosed" ? { kind: "none" } : r));
-        }
+        if (payload.focused) setClicked(true);
       },
     );
     // Already in front (this screen came back, or its event came first).
@@ -159,16 +162,8 @@ export const TryIt: React.FC<TryItProps> = ({
       focusedRef.current = true;
       setClicked(true);
     });
-    // Closed from its own title bar, or with Handy's window: start over at
-    // "click into the note", with a way to open it again.
-    const unlistenClosed = listen(PRACTICE_NOTE_CLOSED_EVENT, () => {
-      focusedRef.current = false;
-      setClicked(false);
-      setResult({ kind: "noteClosed" });
-    });
     return () => {
       unlisten.then((off) => off());
-      unlistenClosed.then((off) => off());
     };
   }, []);
 
@@ -180,7 +175,6 @@ export const TryIt: React.FC<TryItProps> = ({
       if (phase === "started") {
         lockedRef.current = false;
         setKeysDown(true);
-        setFinished(false);
         clearTimeout(holdTimer.current);
         // Still going at the threshold without locking on: they're holding.
         holdTimer.current = setTimeout(() => {
@@ -212,6 +206,7 @@ export const TryIt: React.FC<TryItProps> = ({
           setResult({ kind: "nothingTyped" });
           return;
         }
+        finishedRef.current = true;
         setFinished(true);
         setLessons({ [how]: true });
         const speech = payload.audio_seconds;
@@ -332,24 +327,6 @@ export const TryIt: React.FC<TryItProps> = ({
         return <p className="m-0">{t("onboarding.try.empty")}</p>;
       case "failed":
         return <p className="m-0">{t("onboarding.try.failed")}</p>;
-      case "noteClosed":
-        return (
-          <p className="m-0">
-            <Trans
-              i18nKey="onboarding.try.noteClosed"
-              components={{
-                link: (
-                  <TextLink
-                    onClick={() => {
-                      setResult({ kind: "none" });
-                      openNote();
-                    }}
-                  />
-                ),
-              }}
-            />
-          </p>
-        );
       case "nothingTyped":
         return (
           <p className="m-0">
@@ -458,78 +435,82 @@ export const TryIt: React.FC<TryItProps> = ({
         </Button>
       }
     >
-      <div className="flex h-full min-h-0 flex-col items-start justify-start ps-gutter pe-[270px] pt-[4px] text-start">
-        <ScreenTitle task>{t("onboarding.try.title")}</ScreenTitle>
-        <ScreenSub className="mt-[8px]!">
-          {t("onboarding.try.subtitle")}
-        </ScreenSub>
-        <ol className="m-0 mt-[22px] flex w-full list-none flex-col gap-[4px] p-0">
-          {steps.map((step, i) =>
-            step.shown ? (
-              <li
-                key={i}
-                className={`flex min-h-[40px] items-center gap-[12px] ${
-                  step.done
-                    ? "text-ink-2"
-                    : i === nowIndex
-                      ? "font-semibold text-text"
-                      : "text-ink-3"
-                }`}
-              >
-                <span
-                  className={`grid size-[22px] shrink-0 place-items-center rounded-full text-label font-bold ${
+      {/* The practice note covers the window's right side. */}
+      <ScreenMain align="start" className="pe-[270px]">
+        <ScreenTitle>{t("onboarding.try.title")}</ScreenTitle>
+        <ScreenSub>{t("onboarding.try.subtitle")}</ScreenSub>
+        {/* Room for the fullest state (three steps and the faster-model
+            card), so the centred screen doesn't shift as they appear. */}
+        <ScreenGap />
+        <div className="flex min-h-[272px] w-full flex-col">
+          <ol className="m-0 flex w-full list-none flex-col gap-[4px] p-0">
+            {steps.map((step, i) =>
+              step.shown ? (
+                <li
+                  key={i}
+                  className={`flex min-h-[40px] items-center gap-[12px] ${
                     step.done
-                      ? "border border-moss bg-moss text-background"
+                      ? "text-ink-2"
                       : i === nowIndex
-                        ? "border-[1.5px] border-plum-edge bg-background text-text"
-                        : "border border-line bg-wash text-ink-3"
+                        ? "font-semibold text-text"
+                        : "text-ink-3"
                   }`}
                 >
-                  {step.done ? "✓" : i + 1}
-                </span>
-                <span className="inline-flex flex-wrap items-center gap-[6px] leading-[1.4]">
-                  {step.label}
-                </span>
+                  <span
+                    className={`grid size-[22px] shrink-0 place-items-center rounded-full text-label font-bold ${
+                      step.done
+                        ? "border border-moss bg-moss text-background"
+                        : i === nowIndex
+                          ? "border-[1.5px] border-plum bg-background text-text"
+                          : "border border-line bg-wash text-ink-3"
+                    }`}
+                  >
+                    {step.done ? "✓" : i + 1}
+                  </span>
+                  <span className="inline-flex flex-wrap items-center gap-[6px] leading-[1.4]">
+                    {step.label}
+                  </span>
+                </li>
+              ) : null,
+            )}
+            {!ready && download.state === "failed" && (
+              <li className="ms-[34px] mt-[8px] text-small leading-[1.45] text-ink-2">
+                <span className="text-warning">
+                  {t("onboarding.try.downloadFailed", { name })}
+                </span>{" "}
+                <TextLink onClick={() => model && onSwitch(model.id)}>
+                  {t("onboarding.download.retry")}
+                </TextLink>
               </li>
-            ) : null,
-          )}
-          {!ready && download.state === "failed" && (
-            <li className="ms-[34px] mt-[8px] text-small leading-[1.45] text-ink-2">
-              <span className="text-warning">
-                {t("onboarding.try.downloadFailed", { name })}
-              </span>{" "}
-              <TextLink onClick={() => model && onSwitch(model.id)}>
-                {t("onboarding.download.retry")}
-              </TextLink>
-            </li>
-          )}
-          {!ready && download.state !== "failed" && (
-            <li className="ms-[34px] mt-[8px] text-small leading-[1.45] text-ink-2">
-              <div className="mb-[8px] h-[6px] overflow-hidden rounded-full bg-line">
-                <i
-                  className="block h-full rounded-[inherit] bg-background-ui transition-[width] duration-[120ms] ease-linear"
-                  style={{
-                    width: `${((download.state === "downloading" ? download.progress : 1) * 100).toFixed(1)}%`,
-                  }}
-                />
-              </div>
-              <span className="tabular-nums">
-                {download.state === "checking"
-                  ? t("onboarding.try.checking", { name })
-                  : stillDownloading}
-              </span>{" "}
-              {t("onboarding.try.worksOnceDone")}
-            </li>
-          )}
-        </ol>
-        <div
-          role="status"
-          aria-live="polite"
-          className="mt-[18px] w-full text-small leading-[1.45] text-ink-2 text-pretty"
-        >
-          {resultLine}
+            )}
+            {!ready && download.state !== "failed" && (
+              <li className="ms-[34px] mt-[8px] text-small leading-[1.45] text-ink-2">
+                <div className="mb-[8px] h-[6px] overflow-hidden rounded-full bg-line">
+                  <i
+                    className="block h-full rounded-[inherit] bg-background-ui transition-[width] duration-[120ms] ease-linear"
+                    style={{
+                      width: `${((download.state === "downloading" ? download.progress : 1) * 100).toFixed(1)}%`,
+                    }}
+                  />
+                </div>
+                <span className="tabular-nums">
+                  {download.state === "checking"
+                    ? t("onboarding.try.checking", { name })
+                    : stillDownloading}
+                </span>{" "}
+                {t("onboarding.try.worksOnceDone")}
+              </li>
+            )}
+          </ol>
+          <div
+            role="status"
+            aria-live="polite"
+            className="mt-[18px] w-full text-small leading-[1.45] text-ink-2 text-pretty"
+          >
+            {resultLine}
+          </div>
         </div>
-      </div>
+      </ScreenMain>
     </OnboardingShell>
   );
 };

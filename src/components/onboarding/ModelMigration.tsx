@@ -14,8 +14,10 @@ import { Spinner } from "../ui/Spinner";
 import { TextLink } from "../ui/TextLink";
 import { DoneMark } from "../shared/DoneMark";
 import { ProgressRing } from "../shared/ProgressRing";
+import { Tag } from "../shared/Tag";
 import {
   OnboardingShell,
+  ScreenGap,
   ScreenMain,
   ScreenSub,
   ScreenTitle,
@@ -325,10 +327,11 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
       hint={hint}
       primary={primary}
     >
-      <ScreenMain task>
-        <ScreenTitle task>{t("onboarding.migration.title")}</ScreenTitle>
+      <ScreenMain>
+        <ScreenTitle>{t("onboarding.migration.title")}</ScreenTitle>
         <ScreenSub>{t("onboarding.migration.description")}</ScreenSub>
-        <ul className="mt-[28px] mb-0 flex min-h-0 w-full flex-col overflow-y-auto rounded-panel border-[1.5px] border-line-strong px-[22px] py-[4px] text-start">
+        <ScreenGap />
+        <ul className="mb-0 flex min-h-0 w-full flex-col overflow-y-auto rounded-panel border-[1.5px] border-line-strong px-[22px] py-[4px] text-start">
           {rows.map((pair) => (
             <MigrationRow
               key={pair.retired.id}
@@ -442,9 +445,7 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
           <span className="truncate">
             {t("onboarding.migration.replaces", { name: retired.name })}
           </span>
-          <span className="shrink-0 rounded-full border border-line-strong px-[7px] text-[11px] leading-[17px] font-semibold text-ink-2">
-            {t("onboarding.migration.oldFormat")}
-          </span>
+          <Tag>{t("onboarding.migration.oldFormat")}</Tag>
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-[8px] text-label text-ink-3">

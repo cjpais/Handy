@@ -98,6 +98,7 @@ fn build_console_filter() -> env_filter::Filter {
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
+        commands::show_hidden_practice_note(app);
         if let Err(e) = main_window.unminimize() {
             log::error!("Failed to unminimize webview window: {}", e);
         }
@@ -971,7 +972,7 @@ pub fn run(cli_args: CliArgs) {
             let main_window = win_builder.build()?;
 
             // macOS puts the title bar inside the inner size, which would
-            // leave the page a bar short of 680×570. Grow the window by it.
+            // leave the page a bar short of 680×600. Grow the window by it.
             #[cfg(target_os = "macos")]
             {
                 let bar = utils::measure_title_bar(&main_window);
@@ -1087,16 +1088,13 @@ pub fn run(cli_args: CliArgs) {
             Ok(())
         })
         .on_window_event(|window, event| match event {
-            // Onboarding's practice note closes for real (it isn't Handy's
-            // window, and hiding it mustn't touch the Dock icon).
-            tauri::WindowEvent::CloseRequested { .. }
-                if window.label() == commands::PRACTICE_NOTE_LABEL => {}
-            // However it went (its own close button, or Handy's window hiding),
-            // Try it offers to open it again.
-            tauri::WindowEvent::Destroyed if window.label() == commands::PRACTICE_NOTE_LABEL => {
-                let _ = window
-                    .app_handle()
-                    .emit(commands::PRACTICE_NOTE_CLOSED_EVENT, ());
+            // Onboarding's practice note stays until Handy closes it (its
+            // close button is off; this catches Cmd+W and Alt+F4). It isn't
+            // Handy's window, so it skips the hide below.
+            tauri::WindowEvent::CloseRequested { api, .. }
+                if window.label() == commands::PRACTICE_NOTE_LABEL =>
+            {
+                api.prevent_close();
             }
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();

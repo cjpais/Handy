@@ -684,7 +684,8 @@ async closeMainWindow() : Promise<Result<null, string>> {
 /**
  * Open onboarding's practice note: a small blank note beside Handy's window
  * to dictate into on the Try it screen, placed where the design puts it
- * (over the right of Handy's window, a little lower), kept on screen.
+ * (over the right of Handy's window, centred top to bottom like the screen
+ * beside it), kept on screen.
  * 
  * Async because building a window from a synchronous command deadlocks on
  * Windows (WebView2).

@@ -4,8 +4,15 @@ import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { GradeChip } from "../../shared/GradeChip";
 import { SpeedBars, speedLevel } from "../../shared/SpeedBars";
+import { Tag } from "../../shared/Tag";
 import { formatModelSize } from "@/lib/utils/format";
-import { OnboardingShell, ScreenTitle } from "../OnboardingShell";
+import {
+  OnboardingShell,
+  ScreenGap,
+  ScreenMain,
+  ScreenSub,
+  ScreenTitle,
+} from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { languageName } from "../data/languages";
 import {
@@ -29,17 +36,11 @@ const ROLE_KEYS: Record<PickRole | "extra", string> = {
   extra: "fromAll",
 };
 
-const Chevron: React.FC<{ dir?: "down" | "up" | "left" }> = ({
-  dir = "down",
-}) => (
+const Chevron: React.FC<{ dir?: "down" | "up" }> = ({ dir = "down" }) => (
   <span
     aria-hidden="true"
     className={`inline-block size-[6px] shrink-0 border-e-[1.5px] border-b-[1.5px] border-current ${
-      dir === "down"
-        ? "-mt-[3px] rotate-45"
-        : dir === "up"
-          ? "mt-[3px] -rotate-[135deg]"
-          : "rotate-[135deg] rtl:-rotate-45"
+      dir === "down" ? "-mt-[3px] rotate-45" : "mt-[3px] -rotate-[135deg]"
     }`}
   />
 );
@@ -92,7 +93,6 @@ export const Model: React.FC<ModelProps> = ({
     useOnboardingStore();
   const [showAll, setShowAll] = useState(false);
   const [query, setQuery] = useState("");
-  const [foldOpen, setFoldOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -105,8 +105,14 @@ export const Model: React.FC<ModelProps> = ({
   const selectedId = modelId ?? downloadId ?? pick?.model.id ?? null;
   const isPick = (id: string | null) =>
     !!id && picks.some((p) => p.model.id === id);
-  // A model picked from the full list stays on Model as the fourth item.
-  const extraId = selectedId && !isPick(selectedId) ? selectedId : extraModelId;
+  // A model picked from the full list stays on Model as the fourth item,
+  // unless it's one of the picks now (new languages, or picked before).
+  const extraId =
+    selectedId && !isPick(selectedId)
+      ? selectedId
+      : isPick(extraModelId)
+        ? null
+        : extraModelId;
   useEffect(() => {
     if (extraId !== extraModelId) set({ extraModelId: extraId });
   }, [extraId, extraModelId, set]);
@@ -149,7 +155,6 @@ export const Model: React.FC<ModelProps> = ({
     move("shrink", () => {
       setShowAll(false);
       setQuery("");
-      setFoldOpen(false);
     });
 
   const choose = (id: string, animate: boolean) => {
@@ -260,7 +265,7 @@ export const Model: React.FC<ModelProps> = ({
         role="radio"
         aria-checked="true"
         tabIndex={0}
-        className="mb-[var(--pick-drop-space)] flex w-full min-w-0 flex-col items-stretch rounded-panel border-[1.5px] border-plum-pick bg-pick-surface px-[20px] py-[10px] text-start text-small text-text shadow-[var(--pick-drop)] [view-transition-class:mf-row_mf-box]"
+        className="flex w-full min-w-0 flex-col items-stretch rounded-panel border-[1.5px] border-plum/60 bg-background px-5 py-4 text-start text-small text-text [view-transition-class:mf-row_mf-box]"
       >
         <span className="flex min-w-0 items-center gap-[10px] whitespace-nowrap">
           {mark(id, true)}
@@ -283,7 +288,7 @@ export const Model: React.FC<ModelProps> = ({
               ? row.model.description
               : t(`onboarding.model.lines.${ROLE_KEYS[role]}`)}
           </span>
-          <span className="mt-[14px] grid grid-cols-[84px_1fr] items-center gap-x-[12px] gap-y-[8px] self-stretch">
+          <span className="mt-[10px] grid grid-cols-[84px_1fr] items-center gap-x-[12px] gap-y-[8px] self-stretch">
             <span className="text-ink-3">{t("onboarding.model.accuracy")}</span>
             <span
               className={`grid gap-x-[18px] gap-y-[5px] ${dense ? "grid-cols-[repeat(4,max-content)]" : "grid-cols-[repeat(3,max-content)]"}`}
@@ -297,7 +302,7 @@ export const Model: React.FC<ModelProps> = ({
                     className="inline-flex items-center gap-[6px]"
                   >
                     <GradeChip letter={grade.letter} label={grade.label} />
-                    <small className="text-small text-ink-2">
+                    <small className="text-small">
                       {dense ? l.toUpperCase() : nameOf(l)}
                     </small>
                   </span>
@@ -315,7 +320,10 @@ export const Model: React.FC<ModelProps> = ({
     );
   };
 
-  /** The column heads (EN … SPEED SIZE) over the values, one grid each. */
+  /**
+   * The column heads (EN … SPEED SIZE) over the values, one grid each. Many
+   * languages narrow the columns; the height stays the same.
+   */
   const columns = (row: ModelRow) => {
     const cols = dense
       ? "grid-cols-[repeat(var(--n),26px)_36px_44px] gap-x-[3px]"
@@ -355,7 +363,7 @@ export const Model: React.FC<ModelProps> = ({
           })}
           <span
             title={speedText(row.wait)}
-            className={`inline-grid place-items-center ${dense ? "h-[20px] w-[36px]" : "h-[22px] w-[40px]"}`}
+            className={`inline-grid h-[22px] place-items-center ${dense ? "w-[36px]" : "w-[40px]"}`}
           >
             <SpeedBars level={speedLevel(row.wait)} className="h-[12px]!" />
           </span>
@@ -383,7 +391,7 @@ export const Model: React.FC<ModelProps> = ({
         {...vt(id)}
         data-vt-row=""
         onClick={() => choose(id, true)}
-        className="grid w-full min-w-0 cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[10px] rounded-card border-[1.5px] border-line bg-background px-[20px] py-[10px] text-start text-small leading-[1.5] text-text hover:border-[color-mix(in_srgb,var(--color-logo-stroke)_40%,var(--color-line-strong))] hover:bg-wash [view-transition-class:mf-row_mf-box]"
+        className="grid w-full min-w-0 cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[10px] rounded-card border-[1.5px] border-line bg-background px-5 py-[8px] text-start text-small leading-[1.5] text-text hover:border-plum-hover hover:bg-wash [view-transition-class:mf-row_mf-box]"
       >
         {mark(id, false)}
         <span className="flex min-w-0 flex-col items-start">
@@ -432,7 +440,7 @@ export const Model: React.FC<ModelProps> = ({
         {...vt(id)}
         data-vt-row=""
         onClick={() => choose(id, true)}
-        className="flex w-full min-w-0 cursor-pointer items-center gap-[10px] whitespace-nowrap rounded-card border-[1.5px] border-line bg-background px-[20px] py-[8px] text-start text-small text-text hover:border-[color-mix(in_srgb,var(--color-logo-stroke)_40%,var(--color-line-strong))] hover:bg-wash [view-transition-class:mf-row_mf-box]"
+        className="flex w-full min-w-0 cursor-pointer items-center gap-[10px] whitespace-nowrap rounded-card border-[1.5px] border-line bg-background px-5 py-[8px] text-start text-small text-text hover:border-plum-hover hover:bg-wash [view-transition-class:mf-row_mf-box]"
       >
         {mark(id, false)}
         <b {...vt(id, "r")} className={roleClass}>
@@ -467,10 +475,12 @@ export const Model: React.FC<ModelProps> = ({
 
   /* ---------------- the footer ---------------- */
 
+  // Nothing to download for a model on disk, or the one already downloading.
   // Its download stopped: the button downloads it again.
+  const selectedState = models.downloadState(selected).state;
   const continuing =
-    downloadId === selectedId &&
-    models.downloadState(selected).state !== "failed";
+    selectedState === "ready" ||
+    (downloadId === selectedId && selectedState !== "failed");
   const primary = (
     <Button variant="primary" size="lg" onClick={() => onChoose(selectedId)}>
       {continuing
@@ -481,7 +491,7 @@ export const Model: React.FC<ModelProps> = ({
   const hint = continuing ? "" : t("onboarding.model.hint");
 
   const title = (
-    <ScreenTitle className="-mt-[14px]">
+    <ScreenTitle>
       <span data-vt="mf-title">{t("onboarding.model.title")}</span>
     </ScreenTitle>
   );
@@ -510,19 +520,14 @@ export const Model: React.FC<ModelProps> = ({
         hint={hint}
         primary={primary}
       >
-        <div
-          ref={rootRef}
-          data-model-root=""
-          className="flex h-full min-h-0 min-w-0 flex-col items-stretch px-gutter pt-[4px] text-center"
-        >
+        <ScreenMain ref={rootRef} data-model-root="" align="stretch">
           {title}
-          <p className="mx-auto mt-[6px] mb-0 text-small text-ink-2">
-            {t("onboarding.model.subtitle")}
-          </p>
+          <ScreenSub>{t("onboarding.model.subtitle")}</ScreenSub>
+          <ScreenGap />
           <div
             role="radiogroup"
             aria-label={t("onboarding.model.label")}
-            className="mt-[12px] flex w-full flex-none flex-col gap-[8px] text-start"
+            className="flex w-full flex-none flex-col gap-[8px] text-start"
           >
             {items}
           </div>
@@ -534,7 +539,7 @@ export const Model: React.FC<ModelProps> = ({
             {t("onboarding.model.showAll", { count: models.count })}
             <Chevron />
           </button>
-        </div>
+        </ScreenMain>
       </OnboardingShell>
     );
   }
@@ -562,10 +567,6 @@ export const Model: React.FC<ModelProps> = ({
   const picked = groups.picks.filter(matches);
   const others = groups.others.filter(matches);
   const partial = groups.partial.filter(matches);
-  const unfold = foldOpen || !!q;
-  const missingLangs = [...new Set(groups.partial.flatMap((r) => r.missing))];
-  const listOf = (codes: string[]) =>
-    new Intl.ListFormat(ui, { type: "conjunction" }).format(codes.map(nameOf));
   const select = (id: string) => choose(id, false);
 
   /** ↑↓ from the search box move the selection. */
@@ -618,12 +619,9 @@ export const Model: React.FC<ModelProps> = ({
               {row.model.name}
             </b>
             {row.role && (
-              <span
-                {...vt(id, "r")}
-                className={`shrink-0 whitespace-nowrap rounded-full border px-[7px] text-[11px] leading-[17px] font-semibold ${on ? "border-plum-pick text-text" : "border-line-strong text-ink-2"}`}
-              >
+              <Tag {...vt(id, "r")} on={on}>
                 {t(`onboarding.model.roles.${ROLE_KEYS[row.role]}`)}
-              </span>
+              </Tag>
             )}
           </span>
           <span
@@ -652,7 +650,7 @@ export const Model: React.FC<ModelProps> = ({
           })}
           <span
             title={speedText(row.wait)}
-            className={`inline-grid place-items-center rounded-chip border border-line bg-wash ${dense ? "h-[20px] w-[36px]" : "h-[22px] w-[40px]"}`}
+            className={`inline-grid h-[22px] place-items-center ${dense ? "w-[36px]" : "w-[40px]"}`}
           >
             <SpeedBars level={speedLevel(row.wait)} className="h-[12px]!" />
           </span>
@@ -673,46 +671,22 @@ export const Model: React.FC<ModelProps> = ({
     <OnboardingShell
       progress={progress}
       pill={pill}
-      left={
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={close}
-          className="-ms-[12px] px-[12px]!"
-        >
-          {t("onboarding.shell.back")}
-        </Button>
-      }
+      onBack={close}
       hint={hint}
       primary={primary}
     >
-      <div
-        ref={rootRef}
-        data-model-root=""
-        className="flex h-full min-h-0 min-w-0 flex-col items-stretch px-gutter-wide pt-[4px] text-center"
-      >
+      <ScreenMain ref={rootRef} data-model-root="" wide align="stretch">
         {title}
         <div
           data-vt="mf-tools"
-          className="mt-[12px] flex items-center gap-[10px] text-start"
+          className="mt-lead flex items-center gap-[10px] text-start"
         >
-          <Button
-            variant="outline"
-            size="md"
-            onClick={close}
-            className="h-[34px] ps-[12px]"
-          >
-            <span className="inline-flex items-center gap-[7.5px]">
-              <Chevron dir="left" />
-              {t("onboarding.model.recommendations")}
-            </span>
-          </Button>
           <label className="relative min-w-0 flex-1">
             <span className="pointer-events-none absolute start-[11px] top-1/2 grid -translate-y-1/2 text-ink-3">
               <SearchIcon />
             </span>
             {/* Quiet on focus: the caret says where typing goes, and the
-                picked row below stays the one pink thing. */}
+                picked row below stays the one marked thing. */}
             <input
               ref={searchRef}
               type="search"
@@ -735,14 +709,13 @@ export const Model: React.FC<ModelProps> = ({
             />
           </label>
         </div>
-        <div
-          ref={listRef}
-          role="radiogroup"
-          aria-label={t("onboarding.model.allLabel")}
-          className="model-flow-scroll relative -mx-[4px] mt-[4px] flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto px-[4px] pb-[12px] text-start [scrollbar-width:thin]"
-        >
-          {!empty && (
-            <div className="model-flow-thead sticky top-0 z-[2] mb-[2px] flex h-[30px] flex-none items-center justify-between bg-background ps-[42px] pe-[14px] uppercase shadow-[0_1px_0_var(--color-line)]">
+        {!empty && (
+          // The column heads sit above the list, not in it, so nothing
+          // scrolls behind or past them: rows are cut off at the rule. The
+          // same 4px bleed and scrollbar gutter as the list keep the
+          // columns over theirs.
+          <div className="-mx-[4px] mt-[4px] flex-none overflow-y-hidden px-[4px] [scrollbar-gutter:stable] [scrollbar-width:thin]">
+            <div className="flex h-[31px] items-center justify-between border-b border-line ps-[42px] pe-[14px] uppercase">
               <span className={CODE_CLASS}>{t("onboarding.model.model")}</span>
               <span
                 style={chipStyle}
@@ -761,49 +734,34 @@ export const Model: React.FC<ModelProps> = ({
                 </span>
               </span>
             </div>
-          )}
+          </div>
+        )}
+        <div
+          ref={listRef}
+          role="radiogroup"
+          aria-label={t("onboarding.model.allLabel")}
+          className="model-flow-scroll relative -mx-[4px] flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto scroll-pt-[12px] px-[4px] pt-[12px] pb-[12px] text-start [scrollbar-width:thin] [scrollbar-gutter:stable]"
+        >
           {picked.map(tableRow)}
-          {others.length > 0 && picked.length > 0 && (
-            <div className="mx-[2px] mt-[10px] flex-none text-label font-semibold text-ink-3">
-              {q
-                ? t("onboarding.model.otherMatches")
-                : langs.length <= 3
-                  ? t("onboarding.model.otherFor", {
-                      languages: listOf(langs),
-                    })
-                  : t("onboarding.model.otherForYours")}
+          {others.map(tableRow)}
+          {/* The models that miss one of their languages come last, under
+              a note that says so; their rows are dimmed and grade "—". */}
+          {partial.length > 0 && (
+            <div className="mt-[6px] flex h-[34px] flex-none items-center border-t border-line px-[2px] text-small text-ink-3">
+              {t("onboarding.model.missingLanguages")}
             </div>
           )}
-          {others.map(tableRow)}
-          {partial.length > 0 && (
-            <button
-              type="button"
-              aria-expanded={unfold}
-              onClick={() => setFoldOpen(!foldOpen)}
-              className="mt-[6px] flex h-[34px] flex-none cursor-pointer items-center gap-[8px] border-t border-line px-[2px] text-start text-small text-ink-3 hover:text-text"
-            >
-              {missingLangs.length === 1
-                ? t("onboarding.model.foldMissingOne", {
-                    count: partial.length,
-                    language: nameOf(missingLangs[0]),
-                  })
-                : t("onboarding.model.foldMissingSome", {
-                    count: partial.length,
-                  })}
-              <Chevron dir={unfold ? "up" : "down"} />
-            </button>
-          )}
-          {unfold && partial.map(tableRow)}
+          {partial.map(tableRow)}
           {empty && (
             <div className="px-[12px] py-[28px] text-center text-small text-ink-2">
               {t("onboarding.model.noMatch", { query: query.trim() })}
             </div>
           )}
         </div>
-      </div>
+      </ScreenMain>
     </OnboardingShell>
   );
 };
 
 const CODE_CLASS =
-  "text-[10.5px] font-semibold leading-[14px] tracking-[0.02em] text-ink-3";
+  "text-tag font-semibold leading-[14px] tracking-[0.02em] text-ink-3";

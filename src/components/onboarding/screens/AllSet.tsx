@@ -7,7 +7,12 @@ import { Button } from "../../ui/Button";
 import { Switch } from "../../ui/Switch";
 import { Keycaps } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
-import { OnboardingShell, ScreenMain, ScreenTitle } from "../OnboardingShell";
+import {
+  OnboardingShell,
+  ScreenMain,
+  ScreenSub,
+  ScreenTitle,
+} from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
 
@@ -112,8 +117,9 @@ export const AllSet: React.FC<AllSetProps> = ({
             </span>
           )}
         </button>
-        <ScreenTitle className="text-hero! font-[750]!">{title}</ScreenTitle>
-        <p className="mt-[12px] mb-0 max-w-[440px] leading-[2] text-ink-2 text-pretty">
+        <ScreenTitle hero>{title}</ScreenTitle>
+        {/* Tall lines leave room for the keycaps in the sentence. */}
+        <ScreenSub className="max-w-[440px] leading-[2]">
           <Trans
             i18nKey={
               os === "macos"
@@ -131,7 +137,7 @@ export const AllSet: React.FC<AllSetProps> = ({
               ),
             }}
           />
-        </p>
+        </ScreenSub>
       </ScreenMain>
     </OnboardingShell>
   );

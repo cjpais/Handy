@@ -46,7 +46,6 @@ export const ReplaceModel: React.FC<{
       modelId: null,
       extraModelId: null,
       downloadId: null,
-      downloadOnDisk: false,
     });
     // Once, on arrival.
   }, []);
@@ -94,7 +93,6 @@ export const ReplaceModel: React.FC<{
         store.set({
           modelId: id,
           downloadId: id,
-          downloadOnDisk: info.is_downloaded,
         });
       }}
     />

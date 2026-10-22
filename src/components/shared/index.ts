@@ -7,3 +7,4 @@ export { DoneMark } from "./DoneMark";
 export { ProgressRing } from "./ProgressRing";
 export { DownloadPill } from "./DownloadPill";
 export { Mascot } from "./Mascot";
+export { Tag } from "./Tag";

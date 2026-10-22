@@ -128,7 +128,6 @@
       "minutes_other": "{{count}} min",
       "checking": "Checking the download…",
       "ready": "{{name}} is ready",
-      "onDisk": "{{name}} is on this computer",
       "failed": "Download stopped",
       "retry": "Retry"
     },
@@ -170,16 +169,9 @@
       "showAll": "Show all {{count}} models",
       "download": "Download {{size}}",
       "hint": "Downloads while you finish setup",
-      "recommendations": "Recommendations",
       "searchPlaceholder": "Search models or languages",
       "searchLabel": "Search models",
-      "otherMatches": "Other matches",
-      "otherFor": "Other models for {{languages}}",
-      "otherForYours": "Other models for your languages",
-      "foldMissingOne_one": "{{count}} model doesn't speak {{language}}",
-      "foldMissingOne_other": "{{count}} models don't speak {{language}}",
-      "foldMissingSome_one": "{{count}} model misses some of your languages",
-      "foldMissingSome_other": "{{count}} models miss some of your languages",
+      "missingLanguages": "These models are missing some of your languages",
       "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet."
     },
     "demo": {
@@ -201,7 +193,6 @@
       "change": "Change shortcut",
       "pressKeys": "Press the keys you want",
       "cancel": "Cancel",
-      "useDefault": "Use {{shortcut}}",
       "tryIt": "Try it yourself",
       "hint": "You can try it once the download finishes",
       "hintFailed": "Retry the download to try it yourself"
@@ -222,7 +213,6 @@
       "nothingTyped": "<b>Nothing was typed.</b> The cursor wasn't in a text box. Click into the note, then try again.",
       "empty": "Handy didn't hear anything. Check your microphone, then try again.",
       "failed": "That one didn't come through. Try again.",
-      "noteClosed": "The note was closed. <link>Open it again</link>",
       "short": "It appeared {{wait}} after you stopped. Talk for 5 seconds or more and Handy checks its speed.",
       "ok_one": "You spoke for {{count}} second. It appeared {{wait}} after you stopped.",
       "ok_other": "You spoke for {{count}} seconds. It appeared {{wait}} after you stopped.",
@@ -234,7 +224,7 @@
       "switchedReady": "{{name}} is ready. Tap and talk for 5 seconds or more to check its speed.",
       "finish": "Finish setup",
       "skip": "Skip for now",
-      "noteTitle": "Untitled",
+      "noteTitle": "Handy Practice Note",
       "noteLabel": "Practice note",
       "notePlaceholder": "Click here, then talk"
     },

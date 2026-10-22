@@ -27,50 +27,16 @@
   --light-color-moss: #2f7d5b;
   --dark-color-moss: #86c9a4;
 
-  /* The plum edge on what you can press (keycaps, a hovered control). Plum
-     is pale in dark mode, so its edge sits back toward the background. */
-  --light-color-plum-edge: var(--light-color-logo-stroke);
-  --dark-color-plum-edge: color-mix(
-    in srgb,
-    var(--dark-color-logo-stroke) 70%,
-    var(--dark-color-background)
-  );
-
-  /* A picked surface's plum edge (Model's selected card, a picked script). */
-  --light-color-plum-pick: var(--light-color-logo-stroke);
-  --dark-color-plum-pick: color-mix(
-    in srgb,
-    var(--dark-color-logo-stroke) 55%,
-    var(--dark-color-background)
-  );
-
-  /* What you've picked: the selected card (paper with a plum drop; in dark
-     mode a plum tint and no drop) and the picked row in a list (a pink
-     tint). */
-  --light-color-pick-surface: var(--light-color-background);
-  --dark-color-pick-surface: color-mix(
-    in srgb,
-    var(--dark-color-logo-stroke) 5%,
-    var(--dark-color-background)
-  );
-  --light-pick-drop: 0 4px 0 0
-    color-mix(in srgb, var(--light-color-logo-stroke) 18%, transparent);
-  --dark-pick-drop: none;
-  --light-pick-drop-space: 4px;
-  --dark-pick-drop-space: 0px;
-  --light-color-pick-row: color-mix(
-    in srgb,
-    var(--color-background-ui) 9%,
-    var(--light-color-background)
-  );
-  --dark-color-pick-row: color-mix(
-    in srgb,
-    var(--color-background-ui) 14%,
-    var(--dark-color-background)
-  );
+  /* Plum: the one ink for what you can press or have picked: keycaps'
+     letters, edge and drop, Demo's hand, the picked card, chip and tag, a
+     hovered control's edge. Light mode's is the logo stroke; dark mode's is
+     its text white, so things at rest stay the page plus one ink, and pink
+     only arrives when something is pressed. */
+  --light-color-plum: var(--light-color-logo-stroke);
+  --dark-color-plum: var(--dark-color-text);
 
   /* Demo's drawing of a computer: the screen behind the app, the app's
-     window, and the logo hand that presses the keys. */
+     window. (The logo hand that presses the keys is plum.) */
   --light-color-demo-screen: var(--light-color-wash);
   --dark-color-demo-screen: color-mix(
     in srgb,
@@ -83,8 +49,6 @@
     #fff 4%,
     var(--dark-color-background)
   );
-  --light-color-hand: var(--light-color-logo-stroke);
-  --dark-color-hand: var(--dark-color-logo-primary);
 
   /* The wordmark. In dark mode a white outline in place of the pale pink
      keeps the screen to fewer pinks. */
@@ -106,30 +70,6 @@
     0 0 0 1px
       color-mix(in srgb, var(--dark-color-logo-primary) 20%, transparent),
     0 10px 26px -10px rgba(0, 0, 0, 0.6);
-
-  /* Onboarding's practice note is "another app": the system's plain
-     document colours, not Handy's. */
-  --light-color-note-surface: #ffffff;
-  --dark-color-note-surface: #1e1e1e;
-  --light-color-note-ink: #1d1d1f;
-  --dark-color-note-ink: #ececec;
-
-  /* Keycaps: a paper face with plum letters, edge and drop. In dark mode the
-     face takes a little plum and the drop sits back. */
-  --light-color-key-face: var(--light-color-background);
-  --dark-color-key-face: color-mix(
-    in srgb,
-    var(--dark-color-logo-stroke) 10%,
-    var(--dark-color-background)
-  );
-  --light-color-key-ink: var(--light-color-logo-stroke);
-  --dark-color-key-ink: var(--dark-color-text);
-  --light-color-key-drop: var(--light-color-logo-stroke);
-  --dark-color-key-drop: color-mix(
-    in srgb,
-    var(--dark-color-logo-stroke) 45%,
-    var(--dark-color-background)
-  );
 
   /* Quiet surfaces: hover and keyboard target, and the blush/moss tints.
      Mixed from the palette above; dark mode uses its own strengths. */
@@ -178,35 +118,35 @@
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
   --color-moss: var(--light-color-moss);
-  --color-plum-edge: var(--light-color-plum-edge);
-  --color-plum-pick: var(--light-color-plum-pick);
-  --color-note-surface: var(--light-color-note-surface);
-  --color-note-ink: var(--light-color-note-ink);
+  --color-plum: var(--light-color-plum);
   --demo-pill-shadow: var(--light-demo-pill-shadow);
   --color-demo-screen: var(--light-color-demo-screen);
   --color-demo-window: var(--light-color-demo-window);
-  --color-hand: var(--light-color-hand);
   --color-wordmark: var(--light-color-wordmark);
   --color-wordmark-stroke: var(--light-color-wordmark-stroke);
   --color-mascot-line: var(--light-color-mascot-line);
-  --color-pick-surface: var(--light-color-pick-surface);
-  --color-pick-row: var(--light-color-pick-row);
-  --pick-drop: var(--light-pick-drop);
-  --pick-drop-space: var(--light-pick-drop-space);
-  --color-key-face: var(--light-color-key-face);
-  --color-key-ink: var(--light-color-key-ink);
-  --color-key-drop: var(--light-color-key-drop);
   --color-wash: var(--light-color-wash);
   --color-blush-wash: var(--light-color-blush-wash);
   --color-moss-wash: var(--light-color-moss-wash);
 
   /* Text and edge steps, mixed from whichever text colour is active, so they
      follow the theme on their own: secondary text, hints, rest edges
-     (dividers, panels), control edges (buttons, fields). */
+     (dividers, panels), control edges (buttons, fields), and the picked row
+     in a list: a step past the hover wash, its radio carrying the pink. */
   --color-ink-2: color-mix(in srgb, var(--color-text) 68%, transparent);
   --color-ink-3: color-mix(in srgb, var(--color-text) 46%, transparent);
   --color-line: color-mix(in srgb, var(--color-text) 11%, transparent);
   --color-line-strong: color-mix(in srgb, var(--color-text) 20%, transparent);
+  --color-pick-row: color-mix(in srgb, var(--color-text) 8%, transparent);
+  /* A pickable edge under the pointer: on its way from rest to plum. What's
+     picked (Model's card, a script) is a plum edge alone: no fill and no
+     drop, which stay with the keys you press. A picked row in the full list
+     is the grey --color-pick-row instead. */
+  --color-plum-hover: color-mix(
+    in srgb,
+    var(--color-plum) 40%,
+    var(--color-line-strong)
+  );
 }
 
 @media (prefers-color-scheme: dark) {
@@ -218,24 +158,13 @@
     --color-warning: var(--dark-color-warning);
     --color-error: var(--dark-color-error);
     --color-moss: var(--dark-color-moss);
-    --color-plum-edge: var(--dark-color-plum-edge);
-    --color-plum-pick: var(--dark-color-plum-pick);
-    --color-note-surface: var(--dark-color-note-surface);
-    --color-note-ink: var(--dark-color-note-ink);
+    --color-plum: var(--dark-color-plum);
     --demo-pill-shadow: var(--dark-demo-pill-shadow);
     --color-demo-screen: var(--dark-color-demo-screen);
     --color-demo-window: var(--dark-color-demo-window);
-    --color-hand: var(--dark-color-hand);
     --color-wordmark: var(--dark-color-wordmark);
     --color-wordmark-stroke: var(--dark-color-wordmark-stroke);
     --color-mascot-line: var(--dark-color-mascot-line);
-    --color-pick-surface: var(--dark-color-pick-surface);
-    --color-pick-row: var(--dark-color-pick-row);
-    --pick-drop: var(--dark-pick-drop);
-    --pick-drop-space: var(--dark-pick-drop-space);
-    --color-key-face: var(--dark-color-key-face);
-    --color-key-ink: var(--dark-color-key-ink);
-    --color-key-drop: var(--dark-color-key-drop);
     --color-wash: var(--dark-color-wash);
     --color-blush-wash: var(--dark-color-blush-wash);
     --color-moss-wash: var(--dark-color-moss-wash);
@@ -260,24 +189,13 @@
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
   --color-moss: var(--light-color-moss);
-  --color-plum-edge: var(--light-color-plum-edge);
-  --color-plum-pick: var(--light-color-plum-pick);
-  --color-note-surface: var(--light-color-note-surface);
-  --color-note-ink: var(--light-color-note-ink);
+  --color-plum: var(--light-color-plum);
   --demo-pill-shadow: var(--light-demo-pill-shadow);
   --color-demo-screen: var(--light-color-demo-screen);
   --color-demo-window: var(--light-color-demo-window);
-  --color-hand: var(--light-color-hand);
   --color-wordmark: var(--light-color-wordmark);
   --color-wordmark-stroke: var(--light-color-wordmark-stroke);
   --color-mascot-line: var(--light-color-mascot-line);
-  --color-pick-surface: var(--light-color-pick-surface);
-  --color-pick-row: var(--light-color-pick-row);
-  --pick-drop: var(--light-pick-drop);
-  --pick-drop-space: var(--light-pick-drop-space);
-  --color-key-face: var(--light-color-key-face);
-  --color-key-ink: var(--light-color-key-ink);
-  --color-key-drop: var(--light-color-key-drop);
   --color-wash: var(--light-color-wash);
   --color-blush-wash: var(--light-color-blush-wash);
   --color-moss-wash: var(--light-color-moss-wash);
@@ -291,24 +209,13 @@
   --color-warning: var(--dark-color-warning);
   --color-error: var(--dark-color-error);
   --color-moss: var(--dark-color-moss);
-  --color-plum-edge: var(--dark-color-plum-edge);
-  --color-plum-pick: var(--dark-color-plum-pick);
-  --color-note-surface: var(--dark-color-note-surface);
-  --color-note-ink: var(--dark-color-note-ink);
+  --color-plum: var(--dark-color-plum);
   --demo-pill-shadow: var(--dark-demo-pill-shadow);
   --color-demo-screen: var(--dark-color-demo-screen);
   --color-demo-window: var(--dark-color-demo-window);
-  --color-hand: var(--dark-color-hand);
   --color-wordmark: var(--dark-color-wordmark);
   --color-wordmark-stroke: var(--dark-color-wordmark-stroke);
   --color-mascot-line: var(--dark-color-mascot-line);
-  --color-pick-surface: var(--dark-color-pick-surface);
-  --color-pick-row: var(--dark-color-pick-row);
-  --pick-drop: var(--dark-pick-drop);
-  --pick-drop-space: var(--dark-pick-drop-space);
-  --color-key-face: var(--dark-color-key-face);
-  --color-key-ink: var(--dark-color-key-ink);
-  --color-key-drop: var(--dark-color-key-drop);
   --color-wash: var(--dark-color-wash);
   --color-blush-wash: var(--dark-color-blush-wash);
   --color-moss-wash: var(--dark-color-moss-wash);

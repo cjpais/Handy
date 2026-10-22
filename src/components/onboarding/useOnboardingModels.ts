@@ -37,7 +37,7 @@ export type DownloadState =
   | { state: "none" }
   | { state: "downloading"; progress: number; etaSeconds: number | null }
   | { state: "checking" }
-  | { state: "ready"; onDisk: boolean }
+  | { state: "ready" }
   /** It stopped before it finished: failed, or cut off by a quit. */
   | { state: "failed" };
 
@@ -103,7 +103,7 @@ export const useOnboardingModels = (languages: string[]) => {
           remaining != null && speed && speed > 0 ? remaining / speed : null,
       };
     }
-    if (info.is_downloaded) return { state: "ready", onDisk: false };
+    if (info.is_downloaded) return { state: "ready" };
     if (model.id === failedId) return { state: "failed" };
     return { state: "none" };
   };

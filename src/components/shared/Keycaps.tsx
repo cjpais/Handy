@@ -12,6 +12,9 @@ interface KeycapsProps {
   pressed?: boolean;
   /** A combination still being captured: dashed, no drop. */
   partial?: boolean;
+  /** Inside a `group/keycaps` control: the keys rise on its hover or
+   *  keyboard focus, to say they can be changed. */
+  lift?: boolean;
   /** Placed inside the last key (Demo's hand presses it from below). */
   lastKeyChildren?: React.ReactNode;
   className?: string;
@@ -32,6 +35,7 @@ export const Keycaps: React.FC<KeycapsProps> = ({
   size = "sm",
   pressed = false,
   partial = false,
+  lift = false,
   lastKeyChildren,
   className = "",
 }) => {
@@ -40,10 +44,14 @@ export const Keycaps: React.FC<KeycapsProps> = ({
     .map((p) => p.label)
     .join(osType === "macos" ? " " : " + ");
   const state = pressed
-    ? "translate-y-[3px] shadow-none bg-logo-primary text-[var(--light-color-logo-stroke)] border-logo-stroke"
+    ? "translate-y-[3px] shadow-none bg-logo-primary text-[var(--light-color-logo-stroke)] border-plum"
     : partial
-      ? "translate-y-[3px] shadow-none border-dashed bg-key-face text-key-ink border-plum-edge"
-      : "shadow-[0_3px_0_0_var(--color-key-drop)] bg-key-face text-key-ink border-plum-edge";
+      ? "translate-y-[3px] shadow-none border-dashed bg-background text-plum border-plum"
+      : `shadow-[0_3px_0_0_var(--color-plum)] bg-background text-plum border-plum ${
+          lift
+            ? "group-hover/keycaps:-translate-y-[2px] group-hover/keycaps:shadow-[0_5px_0_0_var(--color-plum)] group-focus-visible/keycaps:-translate-y-[2px] group-focus-visible/keycaps:shadow-[0_5px_0_0_var(--color-plum)]"
+            : ""
+        }`;
 
   return (
     <span
