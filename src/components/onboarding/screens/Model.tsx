@@ -127,6 +127,9 @@ export const Model: React.FC<ModelProps> = ({
   const nameOf = (code: string) => languageName(code, ui);
   const sizeOf = (m: CatalogModel) =>
     formatModelSize(models.infoFor(m)?.size_mb);
+  // In a column, an unknown size is a dash: "Unknown size" won't fit.
+  const sizeCell = (m: CatalogModel) =>
+    (models.infoFor(m)?.size_mb ?? 0) > 0 ? sizeOf(m) : "—";
   const seconds = (s: number) =>
     t("onboarding.model.seconds", {
       value: new Intl.NumberFormat(ui, {
@@ -325,9 +328,7 @@ export const Model: React.FC<ModelProps> = ({
    * languages narrow the columns; the height stays the same.
    */
   const columns = (row: ModelRow) => {
-    const cols = dense
-      ? "grid-cols-[repeat(var(--n),26px)_36px_44px] gap-x-[3px]"
-      : "grid-cols-[repeat(var(--n),32px)_40px_44px] gap-x-[6px]";
+    const cols = columnsClass(dense);
     const style = { "--n": langs.length } as React.CSSProperties;
     const id = row.model.id;
     return (
@@ -371,7 +372,7 @@ export const Model: React.FC<ModelProps> = ({
             {...vt(id, "s")}
             className="whitespace-nowrap text-label text-ink-3 tabular-nums"
           >
-            {sizeOf(row.model)}
+            {sizeCell(row.model)}
           </span>
         </span>
       </span>
@@ -587,9 +588,7 @@ export const Model: React.FC<ModelProps> = ({
     );
   };
 
-  const chipCols = dense
-    ? "grid-cols-[repeat(var(--n),26px)_36px_48px] gap-x-[3px]"
-    : "grid-cols-[repeat(var(--n),32px)_40px_52px] gap-x-[6px]";
+  const chipCols = columnsClass(dense);
   const chipStyle = { "--n": langs.length } as React.CSSProperties;
 
   const tableRow = (row: ModelRow) => {
@@ -656,9 +655,9 @@ export const Model: React.FC<ModelProps> = ({
           </span>
           <span
             {...vt(id, "s")}
-            className="justify-self-end whitespace-nowrap text-label text-ink-3 tabular-nums"
+            className="whitespace-nowrap text-label text-ink-3 tabular-nums"
           >
-            {sizeOf(row.model)}
+            {sizeCell(row.model)}
           </span>
         </span>
       </button>
@@ -729,9 +728,7 @@ export const Model: React.FC<ModelProps> = ({
                 <span className={CODE_CLASS}>
                   {t("onboarding.model.speed")}
                 </span>
-                <span className={`${CODE_CLASS} justify-self-end`}>
-                  {t("onboarding.model.size")}
-                </span>
+                <span className={CODE_CLASS}>{t("onboarding.model.size")}</span>
               </span>
             </div>
           </div>
@@ -762,6 +759,16 @@ export const Model: React.FC<ModelProps> = ({
     </OnboardingShell>
   );
 };
+
+/**
+ * The grade, speed and size columns, the same in the pick cards and the
+ * table. Every column centers its head over its values; Size is as wide as
+ * its widest value ("99.0 MB").
+ */
+const columnsClass = (dense: boolean) =>
+  dense
+    ? "grid-cols-[repeat(var(--n),26px)_36px_48px] gap-x-[3px]"
+    : "grid-cols-[repeat(var(--n),32px)_40px_48px] gap-x-[6px]";
 
 const CODE_CLASS =
   "text-tag font-semibold leading-[14px] tracking-[0.02em] text-ink-3";
