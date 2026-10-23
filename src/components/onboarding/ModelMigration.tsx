@@ -326,6 +326,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
       primary={primary}
     >
       <ScreenMain
+        layout="top"
         header={
           <ScreenHeader
             title={t("onboarding.migration.title")}

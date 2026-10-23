@@ -248,10 +248,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         <TryIt
           progress={progress}
           os={osType}
-          models={models}
           model={downloaded}
           download={downloadNow}
-          onSwitch={startModel}
+          onChangeModel={() => go("model")}
           onBack={back}
           onFinish={next}
         />

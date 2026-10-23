@@ -53,13 +53,12 @@
   --radius-chip: 6px; /* grade chips */
 
   /* One content width: every screen's main block runs 64px in from the
-     window's edges (552 at the smallest window, 680, to 592 at the 720 it
-     opens at); Model's full list runs 40px in (600 to 640). */
+     window's edges, 592 of its 720; Model's full list runs 40px in (640). */
   --spacing-gutter: 64px;
   --spacing-gutter-wide: 40px;
   /* From a screen's title (and subtitle) to what comes under it: 20px when
-     the screen is full, up to 32px when there's room (ScreenGap). Screens
-     whose list fills the window keep 20px (mt-lead). */
+     the screen is full, up to 32px when there's room (ScreenMain's centre
+     layout); always 20px in its top layout. */
   --spacing-lead: 20px;
   --spacing-lead-max: 32px;
 

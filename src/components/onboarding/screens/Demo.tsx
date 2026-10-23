@@ -12,7 +12,6 @@ import { useShortcutCapture } from "@/hooks/useShortcutCapture";
 import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
 import { type OSType } from "@/lib/utils/keyboard";
 import { Button } from "../../ui/Button";
-import { TextLink } from "../../ui/TextLink";
 import { Keycaps } from "../../shared/Keycaps";
 import HandyHand from "../../icons/HandyHand";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
@@ -21,7 +20,6 @@ import { demoLine } from "../data/samples";
 import "./demo.css";
 
 type Mode = "hold" | "tap";
-type Hand = "rest" | "down";
 type PillState = "hidden" | "rec" | "work";
 /** The pointer on the drawn screen: off to the side, on the field, gone. */
 type Pointer = "rest" | "field" | "gone";
@@ -35,11 +33,11 @@ type Beat = "reset" | "point" | "click" | "press" | "lift" | "release" | "land";
  *   reset    the app is empty; "Click where you'd type." is lit
  *   point    the pointer glides to the app's text field
  *   click    it clicks: the caret appears
- *   press    the hand presses the keys; the pill starts listening, the
- *            pointer steps aside and "Hold (or Tap) your shortcut" is lit
- *   lift     (tap) the hand comes off; the pill keeps listening
- *   release  the hand lets go (hold) or taps again (tap): "Transcribing",
- *            and "…your words appear." is lit
+ *   press    the keys go down; the pill starts listening, the pointer
+ *            steps aside and "Hold (or Tap) your shortcut" is lit
+ *   lift     (tap) the keys come up; the pill keeps listening
+ *   release  the keys come up (hold) or are tapped again (tap):
+ *            "Transcribing", and "…your words appear." is lit
  *   land     the words appear in the app
  *
  * `ms` is the way's whole length; after it, the other way starts. `still` is
@@ -55,7 +53,7 @@ const CHAPTERS: Record<
       [0, "reset"],
       [300, "point"], //    the glide takes 850ms
       [1200, "click"],
-      [2400, "press"], //   the hand holds, Handy listens: 3.6s
+      [2400, "press"], //   the keys held, Handy listens: 3.6s
       [6000, "release"],
       [6600, "land"], //    the words stay 2s
     ],
@@ -189,6 +187,8 @@ const DemoPill: React.FC<{ state: PillState; still: boolean }> = ({
 
 const DemoLaptop: React.FC<{
   os: OSType;
+  shortcut: string;
+  keyDown: boolean;
   mode: Mode;
   text: string;
   landed: boolean;
@@ -204,6 +204,8 @@ const DemoLaptop: React.FC<{
   focused: boolean;
 }> = ({
   os,
+  shortcut,
+  keyDown,
   mode,
   text,
   landed,
@@ -222,16 +224,17 @@ const DemoLaptop: React.FC<{
   const fieldRef = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState({ x: 0, y: 0 });
   useLayoutEffect(() => {
-    const sc = screenRef.current?.getBoundingClientRect();
+    const screen = screenRef.current;
+    const sc = screen?.getBoundingClientRect();
     const f = fieldRef.current?.getBoundingClientRect();
-    if (!sc || !f || pointer === "gone") return;
+    if (!screen || !sc || !f || pointer === "gone") return;
     setAt(
       pointer === "field"
         ? {
-            x: f.left - sc.left + Math.min(46, f.width * 0.3),
+            x: f.left - sc.left + Math.min(58, f.width * 0.3),
             y: f.top - sc.top + f.height / 2,
           }
-        : { x: sc.width * 0.8, y: sc.height * 0.86 },
+        : { x: screen.offsetWidth * 0.8, y: screen.offsetHeight * 0.86 },
     );
   }, [pointer, mode, os]);
   const isMac = os === "macos";
@@ -240,7 +243,7 @@ const DemoLaptop: React.FC<{
     <span
       className={`grid transition-[color] duration-200 ${pill === "rec" ? "text-background-ui" : ""}`}
     >
-      <HandyHand width={10} height={11} tone="current" />
+      <HandyHand width={12.5} height={14} tone="current" />
     </span>
   );
   const clock = <span className="tabular-nums">9:41</span>;
@@ -259,9 +262,9 @@ const DemoLaptop: React.FC<{
           {isMac ? (
             <div className="demo-bar is-menu">
               <span className="demo-apple" />
-              <i className="w-[22px]" />
-              <i className="w-[16px]" />
-              <i className="w-[18px]" />
+              <i className="w-[27.5px]" />
+              <i className="w-[20px]" />
+              <i className="w-[22.5px]" />
               <span className="flex-1" />
               {tray}
               {clock}
@@ -288,7 +291,7 @@ const DemoLaptop: React.FC<{
             data-focused={focused || undefined}
           >
             <div className="demo-app-bar">
-              <span className="flex gap-[5px]">
+              <span className="flex gap-[6px]">
                 {[0, 1, 2].map((i) => (
                   <i key={i} />
                 ))}
@@ -325,13 +328,23 @@ const DemoLaptop: React.FC<{
           <div className="demo-pill-wrap">
             <DemoPill state={pill} still={still} />
           </div>
+          {/* The shortcut, as a screencast shows keys: in the corner, down
+              while it's pressed. */}
+          <div className="demo-keys">
+            <Keycaps
+              binding={shortcut}
+              osType={os}
+              size="screen"
+              pressed={keyDown}
+            />
+          </div>
           <span
             className="demo-pointer"
             data-p={pointer}
             style={{ transform: `translate(${at.x}px, ${at.y}px)` }}
           >
             {clickKey > 0 && <i key={clickKey} className="demo-click" />}
-            <svg width="11" height="16" viewBox="0 0 11 16" aria-hidden="true">
+            <svg width="14" height="20" viewBox="0 0 11 16" aria-hidden="true">
               <path
                 d="M1 1v12.2l3-2.9 1.9 4.5 2-.9-1.9-4.4h4.1z"
                 fill="#111"
@@ -431,8 +444,8 @@ interface DemoProps {
 /**
  * Screen 4, while the model downloads: how Handy works. A laptop, nearly all
  * screen, where a reply and a note get written by voice: the pointer clicks
- * into the app, then the logo hand presses the shortcut, drawn as large keys
- * under the laptop. Hold and tap take turns, each told by one sentence whose
+ * into the app, then the shortcut goes down in the screen's corner, as keys
+ * do in a screencast; under the laptop, the shortcut itself, to change. Hold and tap take turns, each told by one sentence whose
  * phrases light up as they happen. It's a demo, not a lesson: Try it teaches
  * the way they actually press. Pressing the real shortcut here stops the
  * loop and plays the way you used (Handy's rule: held 300 ms or longer is a
@@ -462,7 +475,7 @@ export const Demo: React.FC<DemoProps> = ({
   const [pointer, setPointer] = useState<Pointer>("rest");
   const [clickKey, setClickKey] = useState(0);
   const [focused, setFocused] = useState(false);
-  const [hand, setHand] = useState<Hand>("rest");
+  const [keyDown, setKeyDown] = useState(false);
   const [pillState, setPillState] = useState<PillState>("hidden");
   const [text, setText] = useState({
     value: "",
@@ -494,7 +507,7 @@ export const Demo: React.FC<DemoProps> = ({
         setPhrase(0);
         setText((x) => ({ ...x, value: "", landed: false }));
         setPillState("hidden");
-        setHand("rest");
+        setKeyDown(false);
         setPointer("rest");
         setFocused(false);
       } else if (beat === "point") {
@@ -504,16 +517,16 @@ export const Demo: React.FC<DemoProps> = ({
         setFocused(true);
         if (animate) setClickKey((k) => k + 1);
       } else if (beat === "press") {
-        setHand("down");
+        setKeyDown(true);
         // Out of the way while Handy listens; the still keeps it, so the
         // one picture shows the click as well.
         setPointer(animate ? "gone" : "field");
         setPillState((p) => (p === "hidden" ? "rec" : p));
         setPhrase(1);
       } else if (beat === "lift") {
-        setHand("rest");
+        setKeyDown(false);
       } else if (beat === "release") {
-        setHand("rest");
+        setKeyDown(false);
         setPillState("work");
         setPhrase(2);
       } else {
@@ -559,7 +572,7 @@ export const Demo: React.FC<DemoProps> = ({
 
   const finish = (mode: Mode) => {
     clear();
-    setHand("rest");
+    setKeyDown(false);
     setPillState("work");
     setPhrase(2);
     user.current = "work";
@@ -575,7 +588,7 @@ export const Demo: React.FC<DemoProps> = ({
     if (!user.current) {
       clear();
       setText((x) => ({ ...x, value: "", landed: false }));
-      setHand("down");
+      setKeyDown(true);
       setPillState("rec");
       setPointer("gone");
       setFocused(true);
@@ -590,7 +603,7 @@ export const Demo: React.FC<DemoProps> = ({
       }, threshold);
     } else if (user.current === "toggled") {
       clear();
-      setHand("down");
+      setKeyDown(true);
       user.current = "down2";
     }
   };
@@ -600,10 +613,10 @@ export const Demo: React.FC<DemoProps> = ({
     if (user.current === "down2") return finish("tap");
     if (user.current !== "down" && user.current !== "holding") return;
     if (kind === "hold") return finish("hold");
-    // A tap: the hand goes back to rest and it keeps listening until the
-    // next tap.
+    // A tap: the keys come back up and it keeps listening until the next
+    // tap.
     clear();
-    setHand("rest");
+    setKeyDown(false);
     setChapter("tap");
     user.current = "toggled";
     later(() => user.current === "toggled" && finish("tap"), TAP_TIMEOUT_MS);
@@ -672,12 +685,6 @@ export const Demo: React.FC<DemoProps> = ({
       ? { text: t("onboarding.demo.saved"), tone: "ok" as const }
       : null;
 
-  // Resting, the fingertips sit just under the key; pressed, they meet its
-  // bottom edge as the key drops its 3px. The hand rides inside the key, so
-  // it moves on the key's own timing.
-  const handClass =
-    hand === "down" ? "-translate-y-[2px]" : "translate-y-[7px]";
-
   return (
     <OnboardingShell
       progress={progress}
@@ -714,12 +721,15 @@ export const Demo: React.FC<DemoProps> = ({
           <ScreenHeader
             title={t("onboarding.demo.title")}
             sub={<DemoSentence mode={chapter} phrase={phrase} say={say} />}
-            subClassName="grid items-center justify-items-center"
+            // 8px, not 4: the bold lead-in would read as the title's next line.
+            subClassName="mt-[8px]! grid items-center justify-items-center"
           />
         }
       >
         <DemoLaptop
           os={os}
+          shortcut={shortcut}
+          keyDown={keyDown}
           mode={chapter}
           text={text.value}
           landed={text.landed}
@@ -732,67 +742,59 @@ export const Demo: React.FC<DemoProps> = ({
           clickKey={clickKey}
           focused={focused}
         />
-        {/* The keys, centred; Change hangs to their right. */}
-        <div className="relative mt-[12px]">
-          {capture.capturing ? (
-            partialKeys.length ? (
-              <Keycaps
-                binding={capture.partial}
-                osType={os}
-                size="demo"
-                partial
-                className="-translate-y-[3px]"
-              />
-            ) : (
-              <span
-                aria-hidden="true"
-                className="inline-block h-[36px] w-[112px] rounded-[9px] border border-dashed border-logo-primary align-middle"
-              />
-            )
-          ) : (
-            // The keys are the way to change them: they lift on hover, as
-            // if you could pull them off and put others on.
-            <button
-              type="button"
-              aria-label={t("onboarding.demo.changeShortcut")}
-              onClick={(e) => {
-                if (e.detail) e.currentTarget.blur();
-                startCapture();
-              }}
-              // The shortcut may use Space; pressing it here mustn't click.
-              onKeyDown={(e) => e.key === " " && e.preventDefault()}
-              onKeyUp={(e) => e.key === " " && e.preventDefault()}
-              className="group/keycaps peer block cursor-pointer rounded-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-logo-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background"
-            >
-              <Keycaps
-                binding={shortcut}
-                osType={os}
-                size="demo"
-                pressed={hand === "down"}
-                lift
-                className="-translate-y-[3px]"
-                lastKeyChildren={
-                  <span
-                    aria-hidden="true"
-                    className={`pointer-events-none absolute start-1/2 top-full z-[2] -ms-[13px] text-plum transition-transform duration-[70ms] ease-out ${handClass}`}
-                  >
-                    <HandyHand width={26} height={28} tone="current" />
-                  </span>
-                }
-              />
-            </button>
-          )}
-          <TextLink
-            onClick={capture.capturing ? capture.cancel : startCapture}
-            className="absolute start-[calc(100%+14px)] top-1/2 -translate-y-1/2 whitespace-nowrap peer-hover:text-text peer-hover:decoration-current"
-          >
+        {/* Your shortcut, as a caption to the drawing: the keys centred
+            under the laptop, what they are on their left, Change on their
+            right. One button, so there's one thing to focus. Changing happens
+            in place: the keys give way to a dashed slot that takes the new
+            ones, and Cancel (or Escape) stops. The press itself is shown in
+            the screen. */}
+        <button
+          type="button"
+          // Named by what it shows: "Your shortcut is ⌥ Space, Change".
+          onClick={(e) => {
+            if (e.detail) e.currentTarget.blur();
+            if (capture.capturing) capture.cancel();
+            else startCapture();
+          }}
+          // The shortcut may use Space; pressing it here mustn't click.
+          onKeyDown={(e) => e.key === " " && e.preventDefault()}
+          onKeyUp={(e) => e.key === " " && e.preventDefault()}
+          // Shrink-wrapped, the two 1fr sides size to the wider of the two,
+          // so the keys sit on the laptop's centre in any language.
+          className="group/keycaps mt-[26px] inline-grid cursor-pointer grid-cols-[1fr_auto_1fr] items-center gap-[14px] text-small focus-visible:outline-none"
+        >
+          <span className="justify-self-end whitespace-nowrap text-ink-3">
+            {t("onboarding.demo.yourShortcut")}
+          </span>
+          {/* The resting keys hold the cell's width while new ones go in,
+              so nothing beside them moves. */}
+          <span className="grid rounded-[9px] ring-offset-[6px] ring-offset-background group-focus-visible/keycaps:ring-2 group-focus-visible/keycaps:ring-logo-primary">
+            <Keycaps
+              binding={shortcut}
+              osType={os}
+              lift
+              className={`col-start-1 row-start-1 justify-self-center ${capture.capturing ? "invisible" : ""}`}
+            />
+            {capture.capturing &&
+              (partialKeys.length ? (
+                <Keycaps
+                  binding={capture.partial}
+                  osType={os}
+                  partial
+                  className="col-start-1 row-start-1 justify-self-center"
+                />
+              ) : (
+                <span className="col-start-1 row-start-1 h-[30px] min-w-[88px] translate-y-[3px] animate-pulse rounded-[7px] border border-dashed border-plum-pick" />
+              ))}
+          </span>
+          <span className="justify-self-start whitespace-nowrap text-ink-2 underline decoration-line underline-offset-[3px] transition-colors group-hover/keycaps:text-text group-hover/keycaps:decoration-current">
             {t(
               capture.capturing
                 ? "onboarding.demo.cancel"
-                : "onboarding.demo.changeShortcut",
+                : "onboarding.demo.change",
             )}
-          </TextLink>
-        </div>
+          </span>
+        </button>
       </ScreenMain>
     </OnboardingShell>
   );

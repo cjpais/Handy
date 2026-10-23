@@ -6,8 +6,9 @@ interface KeycapsProps {
   binding: string;
   osType: OSType;
   /** sm: in sentences and steps, 30px tall; demo: under Demo's laptop,
-   *  36px tall with 16px glyphs and a wider Space. */
-  size?: "sm" | "demo";
+   *  36px tall with 16px glyphs and a wider Space; screen: in the corner of
+   *  Demo's drawn screen, 24px tall. */
+  size?: "sm" | "demo" | "screen";
   /** Every key drops by its shadow with a blush face. */
   pressed?: boolean;
   /** A combination still being captured: dashed, no drop. */
@@ -15,8 +16,6 @@ interface KeycapsProps {
   /** Inside a `group/keycaps` control: the keys rise on its hover or
    *  keyboard focus, to say they can be changed. */
   lift?: boolean;
-  /** Placed inside the last key (Demo's hand presses it from below). */
-  lastKeyChildren?: React.ReactNode;
   className?: string;
 }
 
@@ -31,6 +30,11 @@ const SIZES = {
     narrow: "min-w-[36px]",
     wide: "min-w-[112px]",
   },
+  screen: {
+    key: "h-[24px] px-[7px] rounded-[6px] text-[11px]",
+    narrow: "min-w-[24px]",
+    wide: "",
+  },
 };
 
 /**
@@ -44,7 +48,6 @@ export const Keycaps: React.FC<KeycapsProps> = ({
   pressed = false,
   partial = false,
   lift = false,
-  lastKeyChildren,
   className = "",
 }) => {
   const parts = keycapParts(binding, osType);
@@ -74,7 +77,6 @@ export const Keycaps: React.FC<KeycapsProps> = ({
           className={`relative inline-flex items-center justify-center border font-display font-semibold leading-none select-none transition-[transform,box-shadow,background-color] duration-[70ms] ease-out ${SIZES[size].key} ${part.wide ? SIZES[size].wide : SIZES[size].narrow} ${state}`}
         >
           {part.label}
-          {i === parts.length - 1 && lastKeyChildren}
         </span>
       ))}
     </span>

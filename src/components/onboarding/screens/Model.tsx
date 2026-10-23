@@ -15,12 +15,7 @@ import { ProgressLine } from "../../shared/ProgressLine";
 import { SpeedBars, speedLevel } from "../../shared/SpeedBars";
 import { Tag } from "../../shared/Tag";
 import { formatModelSize } from "@/lib/utils/format";
-import {
-  OnboardingShell,
-  ScreenGap,
-  ScreenHeader,
-  ScreenMain,
-} from "../OnboardingShell";
+import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useDownloadWords } from "../DownloadStatus";
 import { useRubric } from "../Rubric";
@@ -544,7 +539,7 @@ export const Model: React.FC<ModelProps> = ({
         <span className="flex flex-col items-start">
           <span
             {...vt(id, "n")}
-            className="mt-[4px] font-display text-name font-[650] leading-[1.2] tracking-[-0.01em] text-ink-2"
+            className="mt-[4px] font-display text-name font-[650] leading-[1.2] tracking-[-0.01em]"
           >
             {row.model.name}
           </span>
@@ -558,7 +553,7 @@ export const Model: React.FC<ModelProps> = ({
             </span>
           )}
           <span className="mt-[10px] grid grid-cols-[84px_1fr] items-center gap-x-[12px] gap-y-[8px] self-stretch">
-            <span className="text-ink-3">{t("onboarding.model.accuracy")}</span>
+            <span className="text-ink-2">{t("onboarding.model.accuracy")}</span>
             <span
               className={`grid gap-x-[18px] gap-y-[5px] ${dense ? "grid-cols-[repeat(4,max-content)]" : "grid-cols-[repeat(3,max-content)]"}`}
             >
@@ -576,7 +571,7 @@ export const Model: React.FC<ModelProps> = ({
                 );
               })}
             </span>
-            <span className="text-ink-3">{t("onboarding.model.speed")}</span>
+            <span className="text-ink-2">{t("onboarding.model.speed")}</span>
             {/* The words are beside the bars already: the hint's title
                 names the row. */}
             {speedHint(
@@ -726,7 +721,7 @@ export const Model: React.FC<ModelProps> = ({
         className={`relative flex w-full min-w-0 cursor-pointer items-center gap-[10px] whitespace-nowrap rounded-card border-[1.5px] border-line bg-background px-5 text-start text-small text-text hover:border-ink-3 hover:bg-wash [view-transition-class:mf-row_mf-box] ${line ? "pt-[8px] pb-[15px]" : "py-[8px]"}`}
       >
         {mark(id, false)}
-        <b {...vt(id, "r")} className={roleClass}>
+        <b {...vt(id, "r")} className={`${roleClass} text-text`}>
           {t(`onboarding.model.roles.${ROLE_KEYS[role]}`)}
         </b>
         {capabilityTags(row.model)}
@@ -829,9 +824,14 @@ export const Model: React.FC<ModelProps> = ({
         hint={hint}
         primary={primary}
       >
-        <ScreenMain ref={rootRef} data-model-root="" align="stretch">
-          <ScreenHeader title={title} sub={t("onboarding.model.subtitle")} />
-          <ScreenGap />
+        <ScreenMain
+          ref={rootRef}
+          data-model-root=""
+          align="stretch"
+          header={
+            <ScreenHeader title={title} sub={t("onboarding.model.subtitle")} />
+          }
+        >
           <div
             role="radiogroup"
             aria-label={t("onboarding.model.label")}
@@ -1029,11 +1029,17 @@ export const Model: React.FC<ModelProps> = ({
       hint={hint}
       primary={primary}
     >
-      <ScreenMain ref={rootRef} data-model-root="" wide align="stretch">
-        <ScreenHeader title={title} />
+      <ScreenMain
+        ref={rootRef}
+        data-model-root=""
+        layout="top"
+        wide
+        align="stretch"
+        header={<ScreenHeader title={title} />}
+      >
         <div
           data-vt="mf-tools"
-          className="mt-lead flex items-center gap-[10px] text-start"
+          className="flex items-center gap-[10px] text-start"
         >
           {/* One field: the search, then its filters after a divider. */}
           <div className="flex h-[34px] min-w-0 flex-1 items-center gap-[4px] rounded-lg border border-line-strong bg-background pe-[4px]">

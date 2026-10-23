@@ -1,295 +1,380 @@
-/* Try it (TryIt.tsx): the two lessons, and a patch of desktop with the
-   lesson's app on it, so it reads as somewhere Handy types into, not part of
-   Handy. */
+/* Try it (TryIt.tsx): Demo's screen, close up, with one note on it, and
+   Handy's glove on the note's corner saying what to do next. The drawing is
+   demo.css's at about 1.75×: the same wallpaper, menu bar or taskbar, and
+   window, filling the screen's column under its title. */
 
-/* ---------- the lessons: hold, then tap ---------- */
-/* Picked is the plum-pick edge alone, as elsewhere: no fill, no drop. */
-.try-lessons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  width: 100%;
-  padding: 4px;
-  border-radius: 14px;
-  box-shadow: inset 0 0 0 1px var(--color-line);
-}
-.try-lesson {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  column-gap: 10px;
-  align-items: center;
-  padding: 9px 12px 9px 10px;
-  border-radius: 10px;
-  text-align: start;
-  color: var(--color-ink-2);
-  cursor: pointer;
-  transition:
-    background-color 160ms ease,
-    box-shadow 200ms ease,
-    color 200ms ease;
-}
-.try-lesson:hover:not([data-on]) {
-  background: var(--color-wash);
-  color: var(--color-text);
-}
-.try-lesson[data-on] {
-  color: var(--color-text);
-  box-shadow: 0 0 0 1.5px var(--color-plum-pick);
-}
-.try-lesson:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-logo-primary);
-}
-.try-lesson-mark {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-ink-3);
-  background: var(--color-wash);
-  box-shadow: inset 0 0 0 1px var(--color-line);
-  transition:
-    background-color 200ms ease,
-    box-shadow 200ms ease,
-    color 200ms ease;
-}
-.try-lesson[data-on] .try-lesson-mark {
-  color: var(--color-text);
-  background: var(--color-background);
-  box-shadow: inset 0 0 0 1.5px var(--color-plum);
-}
-.try-lesson[data-done] .try-lesson-mark {
-  color: var(--color-background);
-  background: var(--color-moss);
-  box-shadow: none;
-}
-.try-lesson-name {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 650;
-  line-height: 1.25;
-}
-/* the next lesson's steps, and its app, arriving */
-.try-swap,
-.try-app {
-  animation: try-swap 320ms var(--ease-glide);
-}
-@keyframes try-swap {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-/* ---------- the desk: Demo's wallpaper, the lesson's app on it ---------- */
-.try-desk {
-  position: relative;
-  isolation: isolate;
-  margin-block: 6px;
-  margin-inline-end: 16px;
-  border-radius: var(--radius-panel);
-  background: var(--demo-wallpaper);
-}
-
-/* The window. Changing lessons turns it into the other app: its title and
-   page arrive in place, the one moment that moves on its own. */
-.try-window {
-  position: absolute;
-  inset: 22px 14px 28px;
+/* The title tight under the progress dashes, and the screen taking all the
+   rest: out to the 28px edges of the dashes, Back and Finish, and down to
+   just above the footer. */
+.try-main {
   display: flex;
   flex-direction: column;
-  border-radius: 10px;
+  align-items: center;
+  height: 100%;
+  padding: 0 28px 12px;
+  text-align: center;
+}
+.try-main > h1 {
+  margin-top: 2px;
+}
+.try-screen {
+  position: relative;
+  align-self: stretch;
+  flex: 1;
+  min-height: 0;
+  margin-top: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  isolation: isolate;
+  text-align: start;
+  background: var(--demo-wallpaper);
+  /* Demo's lid, as a hairline: the screen's edge, not a frame. */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-text) 9%, transparent);
+}
+
+/* ---------- the menu bar (macOS) or the taskbar (Windows) ---------- */
+.try-bar {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 26px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+  background: color-mix(in srgb, var(--color-background) 62%, transparent);
+  backdrop-filter: blur(8px);
+}
+.try-bar.is-menu {
+  top: 0;
+}
+/* As tall as the menu bar, so the window's the same size on both. */
+.try-bar.is-task {
+  bottom: 0;
+  gap: 9px;
+}
+.try-bar i {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-line);
+}
+.try-bar b {
+  width: 15px;
+  height: 15px;
+  border-radius: 5px;
+  background: var(--color-line);
+}
+.try-apple {
+  width: 11px;
+  height: 13px;
+  border-radius: 45% 45% 50% 50%;
+  background: var(--color-ink-2);
+}
+.try-start {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 13px;
+  height: 13px;
+}
+.try-start i {
+  height: auto;
+  border-radius: 0;
+  background: var(--color-ink-2);
+}
+/* Handy's icon: pink while it listens, as on Demo. */
+.try-tray {
+  display: grid;
+  transition: color 200ms ease;
+}
+.try-tray[data-on] {
+  color: var(--color-background-ui);
+}
+
+/* ---------- the window: Demo's, bigger ---------- */
+/* Wallpaper on every side, below the menu bar or above the taskbar. */
+.try-notes {
+  position: absolute;
+  inset: 44px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
   overflow: hidden;
   background: var(--color-demo-window);
   box-shadow:
     0 0 0 0.5px var(--color-line),
-    0 8px 22px -6px rgb(40 20 50 / 0.18);
-  transition: box-shadow 260ms ease;
+    0 14px 40px rgb(40 20 50 / 0.16);
+  cursor: text;
 }
-/* the active window: the one with the cursor */
-.try-window[data-active] {
-  box-shadow:
-    0 0 0 0.5px var(--color-line),
-    0 18px 40px -8px rgb(40 20 50 / 0.32);
+.try-screen[data-os="win"] .try-notes {
+  inset: 18px 22px 44px;
 }
-
-.try-window-bar {
+.try-notes-bar {
   position: relative;
   flex: none;
   height: 30px;
   display: flex;
   align-items: center;
-  padding-inline: 11px;
-  border-bottom: 1px solid var(--color-line);
-  background: var(--color-wash);
-  font-family: var(--font-ui);
-}
-.try-window-title {
-  animation: try-fade 320ms ease;
-  font-size: 12px;
+  padding: 0 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-ink-3);
-  transition: color 220ms ease;
 }
-.try-window[data-active] .try-window-title {
-  color: var(--color-ink-2);
-}
-/* macOS: the lights at the start, the title centred */
-.try-window-bar[data-os="mac"] .try-window-title {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-}
-.try-window-lights {
-  display: flex;
-  gap: 7px;
-}
-.try-window-lights i {
+.try-notes-bar i {
   width: 11px;
   height: 11px;
   border-radius: 50%;
   background: var(--color-line);
-  transition: background-color 220ms ease;
-}
-.try-window[data-active] .try-window-lights i {
-  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.14);
-}
-.try-window[data-active] .try-window-lights i:nth-child(1) {
-  background: #ff5f57;
-}
-.try-window[data-active] .try-window-lights i:nth-child(2) {
-  background: #febc2e;
-}
-.try-window[data-active] .try-window-lights i:nth-child(3) {
-  background: #28c840;
-}
-/* Windows and Linux: the title at the start, the controls at the end */
-.try-window-bar[data-os="win"] {
-  justify-content: space-between;
-  padding-inline: 12px 14px;
-}
-.try-window-controls {
-  display: flex;
-  gap: 20px;
-  color: var(--color-ink-3);
-  transition: color 220ms ease;
-}
-.try-window[data-active] .try-window-controls {
-  color: var(--color-text);
-}
-.try-window-controls svg {
-  width: 9px;
-  height: 9px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1;
 }
 
-.try-window-body {
+/* The note: under the screen's title, so a step down from it. */
+.try-note {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  cursor: text;
+  padding: 4px 26px 0;
 }
-.try-app {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.try-window-body textarea {
-  display: block;
+.try-note-title {
   margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  cursor: default;
+}
+.try-note-page {
+  flex: 1;
+  width: 100%;
+  /* The page ends above the bubble, so what's typed scrolls up clear of
+     it rather than running under it. */
+  margin: 0 0 132px;
+  padding: 4px 0 10px;
+  /* Older lines scroll out under a soft edge rather than a hard cut. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
   border: 0;
   outline: none;
   resize: none;
   background: transparent;
+  font-family: var(--font-ui);
+  font-size: 17px;
+  line-height: 1.6;
   color: var(--color-text);
+  caret-color: var(--color-background-ui);
   user-select: text;
-  cursor: text;
 }
-.try-window-body textarea::placeholder {
+.try-note-page::placeholder {
   color: var(--color-ink-3);
 }
 
-/* Messages (hold): a friend's question, and the reply box at the bottom */
-.try-chat {
-  flex: 1;
-  min-height: 0;
+/* ---------- Handy on the window's corner ---------- */
+/* The glove on the window's bottom corner, 1px in from its edge, and the
+   bubble beside it, its tail to the glove's face. On Windows, never down
+   on the taskbar. */
+.try-guide {
+  position: absolute;
+  inset-inline-end: 23px;
+  bottom: 18px;
+  z-index: 5;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 12px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.4;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  gap: 14px;
+  pointer-events: none;
 }
-.try-them {
-  align-self: flex-start;
-  max-width: 82%;
+.try-screen[data-os="win"] .try-guide {
+  bottom: 44px;
+}
+
+/* The glove: a high five on click. */
+.try-glove {
+  position: relative;
   margin: 0;
-  padding: 7px 12px;
-  border-radius: 17px;
-  background: var(--color-line);
-  cursor: default;
+  padding: 2px;
+  border: 0;
+  border-radius: 28px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
 }
-.try-reply {
-  display: grid;
-  max-height: calc(1.4em * 6 + 16px);
-  padding: 8px 14px;
-  overflow-y: auto;
-  border-radius: 18px;
-  box-shadow: inset 0 0 0 1px var(--color-line-strong);
-  transition: box-shadow 200ms ease;
+.try-glove:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-logo-primary);
 }
-.try-window[data-active] .try-reply {
-  box-shadow: inset 0 0 0 1.5px var(--color-plum-pick);
+.try-pose {
+  display: block;
+  transform-origin: 50% 90%;
+  transition: transform 460ms var(--ease-glide);
 }
-.try-reply::after,
-.try-reply textarea {
-  grid-area: 1 / 1;
-  padding: 0;
-  font: inherit;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+/* Leaning in to the note, a little: listening keeps the lean and nods from
+   it, so pressing the keys never swings the glove somewhere new. */
+.try-glove[data-mood="point"] .try-pose,
+.try-glove[data-mood="listen"] .try-pose {
+  transform: rotate(-6deg);
 }
-.try-reply::after {
-  content: attr(data-text);
-  visibility: hidden;
+.try-glove[data-mood="oops"] .try-pose {
+  transform: rotate(-12deg);
 }
-.try-reply textarea {
+.try-glove[data-mood="listen"] .try-pose {
+  animation: try-nod 1.3s ease-in-out infinite;
+}
+@keyframes try-nod {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(-10deg) translateY(-3px);
+  }
+}
+/* Right to left, the note's on the other side: the glove leans that way. */
+[dir="rtl"] .try-glove[data-mood="point"] .try-pose,
+[dir="rtl"] .try-glove[data-mood="listen"] .try-pose {
+  transform: rotate(6deg);
+}
+[dir="rtl"] .try-glove[data-mood="oops"] .try-pose {
+  transform: rotate(12deg);
+}
+[dir="rtl"] .try-glove[data-mood="listen"] .try-pose {
+  animation-name: try-nod-rtl;
+}
+@keyframes try-nod-rtl {
+  0%,
+  100% {
+    transform: rotate(6deg);
+  }
+  50% {
+    transform: rotate(10deg) translateY(-3px);
+  }
+}
+
+/* ---------- the bubble ---------- */
+/* One width for every line, so only the height ever moves, and it eases.
+   The window's material, floating like the overlay's pill, and lifted a
+   little so its tail meets the glove's face, not its wrist. One neutral
+   edge colour, so the tail can share it. */
+.try-bubble {
+  --try-bubble-edge: color-mix(in srgb, var(--color-text) 15%, transparent);
+  --try-bubble-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.22);
+  position: relative;
+  width: 284px;
+  margin-bottom: 16px;
+  border: 1px solid var(--try-bubble-edge);
+  border-radius: 16px;
+  background: var(--color-demo-window);
+  box-shadow: var(--try-bubble-shadow);
+  pointer-events: auto;
+}
+/* The tail: a turned square with two edges drawn, half inside the bubble so
+   it hides the bubble's own edge there. It needs 17px of straight side:
+   centred on a one-line bubble (53px tall, straight from 16px to 37px up),
+   and level with the glove's face, 31px up, on a taller one. */
+.try-bubble::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -6.5px;
+  bottom: min(calc(50% - 6px), 25px);
+  width: 12px;
+  height: 12px;
+  border: 0 solid var(--try-bubble-edge);
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-radius: 0 3px 0 0;
+  background: var(--color-demo-window);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+[dir="rtl"] .try-bubble::after {
+  border-right-width: 0;
+  border-left-width: 1px;
+  border-radius: 3px 0 0 0;
+  transform: rotate(-45deg);
+}
+.try-eased {
   overflow: hidden;
+  border-radius: 15px;
+  transition: height 280ms var(--ease-glide);
 }
-
-/* Notes (tap): a blank page in a writing app's serif, not Handy's face */
-.try-window-body .try-page {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  padding: 14px 18px;
-  font-family:
-    ui-serif, "New York", Charter, "Iowan Old Style", Georgia, Cambria, serif;
-  font-size: 16px;
-  line-height: 1.6;
+/* A new line fades in where the old one was: no slide, no bounce. */
+.try-say {
+  padding: 14px 18px 15px;
+  animation: try-say-fade 220ms ease;
 }
-
-@keyframes try-fade {
+@keyframes try-say-fade {
   from {
     opacity: 0;
   }
 }
+.try-say-main {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--color-text);
+  text-wrap: balance;
+}
+.try-say-sub {
+  margin-top: 5px;
+  font-size: var(--text-small);
+  line-height: 1.45;
+  color: var(--color-ink-2);
+  text-wrap: pretty;
+}
 
+/* The keys, and beside them what Handy's doing: an always-there slot that
+   only fades, so the row never reflows. */
+.try-say-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 9px;
+}
+.try-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-ink-2);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.try-status[data-on] {
+  opacity: 1;
+}
+/* Pink: the app's colour for recording. Typing goes quiet. */
+.try-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-background-ui);
+  animation: try-pulse 1.1s ease-in-out infinite;
+}
+.try-status i[data-typing] {
+  background: var(--color-ink-3);
+  animation: none;
+}
+@keyframes try-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Infinite loops would strobe under the global 1ms rule: stop them. */
 @media (prefers-reduced-motion: reduce) {
-  .try-swap,
-  .try-app,
-  .try-window-title {
+  .try-eased {
+    transition: none;
+  }
+  .try-say,
+  .try-status i,
+  .try-glove .try-pose {
     animation: none !important;
   }
 }

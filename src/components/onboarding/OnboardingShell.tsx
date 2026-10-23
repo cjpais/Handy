@@ -19,10 +19,10 @@ interface OnboardingShellProps {
 /**
  * The window every onboarding screen draws in: progress dashes on top, the
  * screen, then a footer with Back (or the screen's own left slot), a hint (or
- * the download, beside the button it holds back) and the primary button. 600 tall, and as wide as
- * the window from its smallest (680) to the width it opens at (720,
- * MAIN_WINDOW_SIZE), so the header and footer sit at the window's edges;
- * centred in anything bigger.
+ * the download, beside the button it holds back) and the primary button.
+ * 720 by 600, the window's smallest and opening size (MAIN_WINDOW_SIZE), so
+ * the header and footer sit at the window's edges; centred in anything
+ * bigger.
  */
 export const OnboardingShell: React.FC<OnboardingShellProps> = ({
   progress,
@@ -43,7 +43,7 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
       {/* A disabled button goes neutral, not faded pink: a screen's only pink
           button is the one to press next. The one column is capped at the
           window's width, so a long row truncates instead of widening it. */}
-      <div className="relative m-auto grid h-[600px] w-full min-w-[680px] max-w-[720px] shrink-0 grid-cols-[minmax(0,1fr)] grid-rows-[56px_1fr_76px] font-ui text-body leading-[1.6] text-text antialiased [&_button:disabled]:border-line [&_button:disabled]:bg-wash [&_button:disabled]:text-ink-3 [&_button:disabled]:opacity-100">
+      <div className="relative m-auto grid h-[600px] w-[720px] shrink-0 grid-cols-[minmax(0,1fr)] grid-rows-[48px_1fr_76px] font-ui text-body leading-[1.6] text-text antialiased [&_button:disabled]:border-line [&_button:disabled]:bg-wash [&_button:disabled]:text-ink-3 [&_button:disabled]:opacity-100">
         <div className="relative flex items-center justify-between ps-[28px] pe-[20px]">
           {progress ? (
             <div
@@ -100,29 +100,41 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
   );
 };
 
+/** The column: how the content lines up across, and its text. */
 const ALIGN = {
-  center: "items-center text-center",
-  stretch: "items-stretch text-center",
-  start: "items-start text-start",
+  center: { items: "items-center", text: "text-center" },
+  stretch: { items: "items-stretch", text: "text-center" },
+  start: { items: "items-start", text: "text-start" },
+} as const;
+
+/** Between the header and the content, per layout. */
+const GAP = {
+  /* 20px when the screen is full, growing to 32px when there's room. */
+  center: "min-h-lead max-h-lead-max flex-[1_1_0]",
+  top: "h-lead flex-none",
 } as const;
 
 /**
- * A screen's main block, inside the design's gutters. Given a header, it's
- * two parts: the header at the same height on every screen, and under it the
- * body, which takes the rest and centres what's in it. A screen with a lot to
- * show fills the body from just under the header; one with little sits in the
- * middle of the space left, so both look balanced and the title never moves.
- * Without a header the whole block is centred top to bottom (All set).
+ * A screen's main block, inside the design's gutters: the header, a gap, and
+ * the content. Both layouts share one top line, the highest a title sits, so
+ * there's no padding above; the 8px below keeps content off the footer.
  */
 export const ScreenMain = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    /** Model's full list: 40px gutters (600 to 640 wide). */
+    /** Model's full list: 40px gutters (640 wide). */
     wide?: boolean;
     /** The column: centred (default), full width, or from the start edge. */
     align?: keyof typeof ALIGN;
-    /** A ScreenHeader, pinned above the body. */
+    /** The title block, usually a ScreenHeader. */
     header?: React.ReactNode;
+    /**
+     * "center" (default): header, gap and content centred together, on the
+     * top line once they fill the height; for content that fits. "top": the
+     * header on the top line and the content 20px under it, with the rest of
+     * the height to fill; for content that wants the room.
+     */
+    layout?: keyof typeof GAP;
   }
 >(
   (
@@ -131,6 +143,7 @@ export const ScreenMain = React.forwardRef<
       wide = false,
       align = "center",
       header,
+      layout = "center",
       className = "",
       ...rest
     },
@@ -139,18 +152,15 @@ export const ScreenMain = React.forwardRef<
     <div
       ref={ref}
       {...rest}
-      className={`flex h-full min-h-0 min-w-0 flex-col ${header ? "pt-[16px] pb-[8px]" : "justify-center-safe py-[8px]"} ${ALIGN[align]} ${wide ? "px-gutter-wide" : "px-gutter"} ${className}`}
+      className={`flex h-full min-h-0 min-w-0 flex-col ${layout === "center" ? "justify-center-safe" : ""} ${ALIGN[align].text} ${wide ? "px-gutter-wide" : "px-gutter"} ${className}`}
     >
       {header}
-      {header ? (
-        <div
-          className={`flex min-h-0 w-full flex-1 flex-col justify-center-safe pt-lead ${ALIGN[align]}`}
-        >
-          {children}
-        </div>
-      ) : (
-        children
-      )}
+      {header && <div aria-hidden="true" className={GAP[layout]} />}
+      <div
+        className={`flex min-h-0 w-full flex-col ${layout === "top" ? "flex-1" : ""} ${ALIGN[align].items}`}
+      >
+        {children}
+      </div>
     </div>
   ),
 );
@@ -158,7 +168,7 @@ ScreenMain.displayName = "ScreenMain";
 
 /**
  * A screen's title and the line under it, the same on every screen. Given to
- * ScreenMain as its header, the title lines up with every other screen's.
+ * ScreenMain as its header, the spacing around it is the same everywhere.
  */
 export const ScreenHeader: React.FC<{
   title: React.ReactNode;
@@ -200,12 +210,4 @@ export const ScreenSub: React.FC<{
   <p className={`mt-[4px] mb-0 text-ink-2 text-pretty ${className}`}>
     {children}
   </p>
-);
-
-/**
- * The space between a screen's header and its content: 20px when the screen
- * is full, growing to 32px when there's room.
- */
-export const ScreenGap: React.FC = () => (
-  <div aria-hidden="true" className="min-h-lead max-h-lead-max flex-[1_1_0]" />
 );
