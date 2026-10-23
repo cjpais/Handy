@@ -19,10 +19,13 @@ const normalizeCustomWord = (word: string) =>
 
 export const CustomWords: React.FC<CustomWordsProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const [newWord, setNewWord] = useState("");
     const customWords = getSetting("custom_words") || [];
+    const sortedWords = [...customWords].sort(
+      new Intl.Collator(i18n.resolvedLanguage, { sensitivity: "base" }).compare,
+    );
     const normalizedWord = normalizeCustomWord(newWord);
 
     const handleAddWord = () => {
@@ -91,7 +94,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
           <div
             className={`px-4 p-2 ${grouped ? "" : "rounded-lg border border-mid-gray/20"} flex flex-wrap gap-1`}
           >
-            {customWords.map((word) => (
+            {sortedWords.map((word) => (
               <Button
                 key={word}
                 onClick={() => handleRemoveWord(word)}
