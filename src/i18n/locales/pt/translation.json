@@ -317,7 +317,8 @@
     "modelError": "Erro no Modelo",
     "modelUnloaded": "Modelo Descarregado",
     "noModelDownloadRequired": "Sem Modelo - Download Necessário",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Os modelos podem ser trocados quando a transcrição do arquivo terminar."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Divisão de áudio longo",
-        "description": "Divide gravações longas nas pausas antes da transcrição, o que normalmente melhora o desempenho da transcrição."
+        "description": "Divide gravações longas nas pausas antes da transcrição, o que normalmente melhora o desempenho da transcrição. Arquivos transcritos e re-transcrições longas são sempre divididos."
       },
       "vadBackend": {
         "title": "Backend de detecção de voz",
@@ -682,7 +683,17 @@
       "retranscribe": "Re-transcrever",
       "retranscribeError": "Falha ao re-transcrever. Por favor, tente novamente.",
       "transcribing": "Transcrevendo...",
-      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente."
+      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente.",
+      "transcribeFile": "Transcrever arquivo",
+      "mediaFiles": "Áudio e vídeo",
+      "fileUnsupported": "Não foi possível ler o áudio de {{name}}.",
+      "transcribeFailed": "A transcrição falhou. Tente novamente.",
+      "waiting": "Aguardando transcrição",
+      "transcribingPercent": "Transcrevendo, {{percent}}%",
+      "showMore": "Mostrar mais",
+      "showLess": "Mostrar menos",
+      "dropTitle": "Solte para transcrever",
+      "dropDescription": "Ele aparecerá no histórico."
     },
     "debug": {
       "title": "Depuração",

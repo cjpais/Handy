@@ -317,7 +317,8 @@
     "modelError": "Error del model",
     "modelUnloaded": "Model alliberat de la memòria",
     "noModelDownloadRequired": "No hi ha cap model: cal baixar-ne un",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Els models es poden canviar quan s'acabi de transcriure el fitxer."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Divisió d'àudio llarg",
-        "description": "Divideix els enregistraments llargs a les pauses abans de transcriure'ls, cosa que normalment millora el rendiment de la transcripció."
+        "description": "Divideix els enregistraments llargs a les pauses abans de transcriure'ls, cosa que normalment millora el rendiment de la transcripció. Els fitxers transcrits i les retranscripcions llargues sempre es divideixen."
       },
       "vadBackend": {
         "title": "Motor de detecció d'activitat de veu",
@@ -682,7 +683,17 @@
       "retranscribe": "Torneu a transcriure",
       "retranscribeError": "No s'ha pogut tornar a transcriure. Torneu-ho a provar.",
       "transcribing": "S'està transcrivint...",
-      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent."
+      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent.",
+      "transcribeFile": "Transcriu un fitxer",
+      "mediaFiles": "Àudio i vídeo",
+      "fileUnsupported": "No s'ha pogut llegir l'àudio de {{name}}.",
+      "transcribeFailed": "La transcripció ha fallat. Torna-ho a provar.",
+      "waiting": "Esperant per transcriure",
+      "transcribingPercent": "Transcrivint, {{percent}}%",
+      "showMore": "Mostra'n més",
+      "showLess": "Mostra'n menys",
+      "dropTitle": "Deixa anar per transcriure",
+      "dropDescription": "Apareixerà a l'historial."
     },
     "debug": {
       "title": "Depuració",

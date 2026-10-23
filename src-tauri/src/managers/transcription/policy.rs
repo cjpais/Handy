@@ -36,7 +36,9 @@ pub enum LiveDecode {
 }
 
 /// How a whole clip is decoded: a recording without a live result, a
-/// re-transcribed history entry, or a file from the CLI.
+/// history entry of one chunk or less transcribed again, or a file from the
+/// CLI. A file brought into History, or a longer entry transcribed again, is
+/// a background job: see [`job_decode`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BatchDecode {
     /// Cut at pauses into chunks of about 30 s, each decoded in turn; a clip
@@ -66,4 +68,14 @@ pub fn batch_decode(model: ModelTraits, long_form_chunking: bool) -> BatchDecode
     } else {
         BatchDecode::Whole
     }
+}
+
+/// A background job is always chunked, whatever the model and the
+/// `long_form_chunking` setting: a chunk is the unit it reports progress in
+/// and steps aside for dictation between, and a dictation that cancels the
+/// job costs one chunk rather than the whole file. Even whisper, which
+/// handles long audio itself, loses no accuracy to it: on AMI meetings its
+/// chunked word error rate is within a point of its single run.
+pub fn job_decode() -> BatchDecode {
+    BatchDecode::Chunked
 }

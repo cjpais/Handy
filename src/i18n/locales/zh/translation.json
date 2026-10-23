@@ -317,7 +317,8 @@
     "modelError": "模型错误",
     "modelUnloaded": "模型已卸载",
     "noModelDownloadRequired": "无模型 - 需要下载",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "文件转录完成后才能更换模型。"
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "长音频分段",
-        "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。"
+        "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。转录文件与较长的重新转录始终会分段。"
       },
       "vadBackend": {
         "title": "语音活动检测后端",
@@ -682,7 +683,17 @@
       "retranscribe": "重新转录",
       "retranscribeError": "重新转录失败。请重试。",
       "transcribing": "转录中...",
-      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。"
+      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。",
+      "transcribeFile": "转录文件",
+      "mediaFiles": "音频和视频",
+      "fileUnsupported": "无法读取 {{name}} 中的音频。",
+      "transcribeFailed": "转录失败，请重试。",
+      "waiting": "等待转录",
+      "transcribingPercent": "正在转录，{{percent}}%",
+      "showMore": "显示更多",
+      "showLess": "收起",
+      "dropTitle": "拖放到此处进行转录",
+      "dropDescription": "它会出现在历史记录中。"
     },
     "debug": {
       "title": "调试",

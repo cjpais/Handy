@@ -317,7 +317,8 @@
     "modelError": "Modelfejl",
     "modelUnloaded": "Model frigjort",
     "noModelDownloadRequired": "Ingen model - download påkrævet",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Modeller kan skiftes, når filen er færdigtransskriberet."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Opdeling af lang lyd",
-        "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen."
+        "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen. Transskriberede filer og lange gentransskriberinger deles altid."
       },
       "vadBackend": {
         "title": "Stemmedetektions-backend",
@@ -682,7 +683,17 @@
       "retranscribe": "Transskribér igen",
       "retranscribeError": "Kunne ikke transskribere igen. Prøv igen.",
       "transcribing": "Transskriberer...",
-      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet."
+      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet.",
+      "transcribeFile": "Transskriber fil",
+      "mediaFiles": "Lyd og video",
+      "fileUnsupported": "Kunne ikke læse lyd fra {{name}}.",
+      "transcribeFailed": "Transskriptionen mislykkedes. Prøv igen.",
+      "waiting": "Venter på transskription",
+      "transcribingPercent": "Transskriberer, {{percent}} %",
+      "showMore": "Vis mere",
+      "showLess": "Vis mindre",
+      "dropTitle": "Slip for at transskribere",
+      "dropDescription": "Den vises i historikken."
     },
     "debug": {
       "title": "Fejlfinding",

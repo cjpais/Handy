@@ -56,6 +56,12 @@ earshot = "1.2.2"
 enigo = "0.6.1"
 # Feedback sounds. No `recording`: microphone capture is handy-recorder's.
 rodio = { version = "0.23.0", default-features = false, features = ["playback", "wav", "flac", "mp3", "vorbis"] }
+# Reads a file dropped in for transcription. Pinned to rodio's version so the
+# two share one copy; adds the M4A/MP4 (AAC, ALAC) and AIFF support rodio
+# leaves out.
+symphonia = { version = "0.5.5", features = ["aac", "alac", "isomp4", "mp3", "aiff"] }
+# Resamples a decoded file to 16 kHz; the version handy-recorder already uses.
+rubato = "5"
 handy-recorder = "0.1"
 reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "deflate"] }
 futures-util = "0.3"

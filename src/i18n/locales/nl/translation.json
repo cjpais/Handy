@@ -317,7 +317,8 @@
     "modelError": "Modelfout",
     "modelUnloaded": "Model ontladen",
     "noModelDownloadRequired": "Geen model - Download vereist",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Modellen kunnen worden gewisseld zodra het bestand is getranscribeerd."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Lange audio opsplitsen",
-        "description": "Splitst lange opnames bij pauzes op voordat ze worden getranscribeerd, wat de transcriptie doorgaans verbetert."
+        "description": "Splitst lange opnames bij pauzes op voordat ze worden getranscribeerd, wat de transcriptie doorgaans verbetert. Getranscribeerde bestanden en lange hertranscripties worden altijd opgesplitst."
       },
       "vadBackend": {
         "title": "VAD-backend",
@@ -682,7 +683,17 @@
       "retranscribe": "Opnieuw transcriberen",
       "retranscribeError": "Opnieuw transcriberen mislukt. Probeer het opnieuw.",
       "transcribing": "Transcriberen...",
-      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram."
+      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram.",
+      "transcribeFile": "Bestand transcriberen",
+      "mediaFiles": "Audio en video",
+      "fileUnsupported": "Kon geen audio lezen uit {{name}}.",
+      "transcribeFailed": "Transcriptie mislukt. Probeer het opnieuw.",
+      "waiting": "Wacht op transcriptie",
+      "transcribingPercent": "Transcriberen, {{percent}}%",
+      "showMore": "Meer tonen",
+      "showLess": "Minder tonen",
+      "dropTitle": "Loslaten om te transcriberen",
+      "dropDescription": "Het verschijnt in de geschiedenis."
     },
     "debug": {
       "title": "Probleemoplossing",

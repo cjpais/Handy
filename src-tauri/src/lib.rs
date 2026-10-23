@@ -39,6 +39,7 @@ use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+use managers::transcription_jobs::TranscriptionJobManager;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tauri::image::Image;
@@ -214,6 +215,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(tray::TrayState::new());
+    app_handle.manage(TranscriptionJobManager::new(app_handle));
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -302,6 +304,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 let transcription_manager = app.state::<Arc<TranscriptionManager>>();
                 if !transcription_manager.is_model_loaded() {
                     log::warn!("No model is currently loaded.");
+                    return;
+                }
+                if let Err(e) = transcription_manager.ensure_model_unlocked() {
+                    log::warn!("{}", e);
                     return;
                 }
                 transcription_manager.request_unload();
@@ -768,12 +774,15 @@ pub fn run(cli_args: CliArgs) {
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
             commands::history::retry_history_entry_transcription,
+            commands::history::transcribe_file,
+            commands::history::get_transcription_jobs,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,
+            managers::transcription_jobs::TranscriptionJob,
             managers::transcription::StreamTextEvent,
             managers::transcription::StreamPhaseEvent,
             transcription_coordinator::RecordingStateEvent,

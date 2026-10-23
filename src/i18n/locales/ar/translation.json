@@ -317,7 +317,8 @@
     "modelError": "خطأ في النموذج",
     "modelUnloaded": "تم إلغاء تحميل النموذج",
     "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
-    "downloadSpeed": "{{speed}} ميجابايت/ث"
+    "downloadSpeed": "{{speed}} ميجابايت/ث",
+    "lockedWhileTranscribing": "يمكن تغيير النماذج بعد انتهاء نسخ الملف."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "تقسيم الصوت الطويل",
-        "description": "يقسّم التسجيلات الطويلة عند فترات التوقف قبل نسخها، مما يحسّن أداء النسخ عادةً."
+        "description": "يقسّم التسجيلات الطويلة عند فترات التوقف قبل نسخها، مما يحسّن أداء النسخ عادةً. تُقسَّم الملفات المنسوخة وعمليات إعادة النسخ الطويلة دائمًا."
       },
       "vadBackend": {
         "title": "محرك كشف النشاط الصوتي",
@@ -682,7 +683,17 @@
       "retranscribe": "إعادة النسخ",
       "retranscribeError": "فشلت إعادة النسخ. يرجى المحاولة مرة أخرى.",
       "transcribing": "جارٍ النسخ...",
-      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة."
+      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة.",
+      "transcribeFile": "نسخ ملف",
+      "mediaFiles": "الصوت والفيديو",
+      "fileUnsupported": "تعذّرت قراءة الصوت من {{name}}.",
+      "transcribeFailed": "فشل النسخ. يرجى المحاولة مرة أخرى.",
+      "waiting": "في انتظار النسخ",
+      "transcribingPercent": "جارٍ النسخ، {{percent}}%",
+      "showMore": "عرض المزيد",
+      "showLess": "عرض أقل",
+      "dropTitle": "أفلت الملف لنسخه",
+      "dropDescription": "سيظهر في السجل."
     },
     "debug": {
       "title": "تصحيح الأخطاء",

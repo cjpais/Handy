@@ -1,0 +1,137 @@
+//! A long transcription in the background (a file, or a history entry
+//! transcribed again), decoded as [`job_decode`] decides: in chunks, so it can
+//! report progress and step aside for dictation between them.
+
+use anyhow::{anyhow, Result};
+use log::{debug, info, warn};
+use std::time::Instant;
+use transcribe_cpp::Transcript;
+
+use super::policy::{job_decode, BatchDecode};
+use super::{
+    effective_language_for_model, engine_error, post_process_transcription_text, real_time_factor,
+    run_setup, TranscriptionManager,
+};
+use crate::audio_toolkit::chunking::Chunker;
+use crate::engine_supervisor::EngineError;
+use crate::managers::audio::create_detector;
+use crate::settings::get_settings;
+
+/// How often one chunk is tried again after a cancel meant for a dictation.
+const MAX_CHUNK_ATTEMPTS: usize = 3;
+
+/// What a background transcription asks of whoever runs it.
+pub trait ChunkControl {
+    /// Called before each chunk. Blocks while dictation is using the engine;
+    /// `false` stops the transcription.
+    fn proceed(&self) -> bool;
+    /// `done` of `total` samples are transcribed.
+    fn progress(&self, done: usize, total: usize);
+}
+
+impl TranscriptionManager {
+    /// Transcribe `audio` chunk by chunk with the selected model, loading it
+    /// first if needed. Each chunk becomes a paragraph. `None` if `control`
+    /// stopped it.
+    pub fn transcribe_in_chunks(
+        &self,
+        audio: Vec<f32>,
+        control: &dyn ChunkControl,
+    ) -> Result<Option<String>> {
+        let started = Instant::now();
+        let total = audio.len();
+        if total == 0 {
+            return Ok(Some(String::new()));
+        }
+
+        self.touch_activity();
+        self.initiate_model_load();
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
+        let info = self
+            .engine
+            .loaded()
+            .ok_or_else(|| anyhow!("Model is not loaded for transcription."))?;
+
+        // The settings of the moment the transcription starts hold for all
+        // of it; the model can't change until it ends.
+        let settings = get_settings(&self.app_handle);
+        let active_model = self
+            .get_current_model()
+            .unwrap_or_else(|| settings.selected_model.clone());
+        let validated_language =
+            effective_language_for_model(&settings, self.model_manager.as_ref(), &active_model);
+        let setup = run_setup(&info, &settings, &validated_language);
+
+        let chunks = match job_decode() {
+            BatchDecode::Chunked => {
+                let backend = settings.vad_backend;
+                let app_handle = self.app_handle.clone();
+                let mut chunker =
+                    Chunker::new(Box::new(move || create_detector(backend, &app_handle)));
+                let mut chunks = chunker.push(audio);
+                chunks.extend(chunker.finish());
+                chunks
+            }
+            BatchDecode::Whole => vec![audio],
+        };
+        debug!("Transcribing {} chunks in the background", chunks.len());
+
+        let mut transcripts: Vec<Transcript> = Vec::with_capacity(chunks.len());
+        let mut done = 0;
+        control.progress(done, total);
+        for chunk in chunks {
+            let len = chunk.len();
+            let mut attempts = 0;
+            let transcript = loop {
+                if !control.proceed() {
+                    return Ok(None);
+                }
+                attempts += 1;
+                // A fresh mark per chunk: a dictation's cancel stops only the
+                // chunk it caught, which is then tried again.
+                let mark = self.engine.cancel_mark();
+                match self.run_batch(mark, chunk.clone(), &setup.run_options, &active_model) {
+                    Ok(transcript) => break transcript,
+                    Err(EngineError::Cancelled) if attempts < MAX_CHUNK_ATTEMPTS => {
+                        warn!("A background chunk was cancelled; trying it again");
+                    }
+                    Err(e) => return Err(engine_error(e)),
+                }
+            };
+            transcripts.push(transcript);
+            done += len;
+            control.progress(done, total);
+        }
+
+        let paragraphs: Vec<String> = transcripts
+            .into_iter()
+            .map(|t| {
+                let output_language = setup.output_language(&settings, t.language);
+                post_process_transcription_text(
+                    t.text,
+                    &settings,
+                    setup.custom_words_prompted(),
+                    &output_language,
+                    &setup.languages,
+                )
+            })
+            .filter(|p| !p.trim().is_empty())
+            .collect();
+
+        let elapsed_secs = started.elapsed().as_secs_f64();
+        let audio_secs = total as f64 / 16_000.0;
+        info!(
+            "Background transcription of {:.1}s of audio in {} paragraphs took {:.1}s ({:.1}x real time)",
+            audio_secs,
+            paragraphs.len(),
+            elapsed_secs,
+            real_time_factor(audio_secs, elapsed_secs)
+        );
+        Ok(Some(paragraphs.join("\n\n")))
+    }
+}

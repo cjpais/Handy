@@ -1,0 +1,58 @@
+import { open } from "@tauri-apps/plugin-dialog";
+import { toast } from "sonner";
+import i18n from "@/i18n";
+import { commands } from "@/bindings";
+
+// What the file picker offers. A dropped file of any other type is still
+// tried; the backend refuses it if it has no audio it can read.
+const MEDIA_EXTENSIONS = [
+  "mp3",
+  "m4a",
+  "aac",
+  "wav",
+  "flac",
+  "ogg",
+  "oga",
+  "aif",
+  "aiff",
+  "mp4",
+  "m4v",
+  "mov",
+];
+
+const fileName = (path: string) => path.split(/[\\/]/).pop() || path;
+
+// Adds each file to History and queues it to be transcribed. Resolves to
+// how many were added.
+export const transcribeFiles = async (paths: string[]): Promise<number> => {
+  let added = 0;
+  for (const path of paths) {
+    const result = await commands.transcribeFile(path);
+    if (result.status === "ok") {
+      added += 1;
+    } else {
+      console.error(`Failed to transcribe ${path}:`, result.error);
+      toast.error(
+        i18n.t("settings.history.fileUnsupported", { name: fileName(path) }),
+      );
+    }
+  }
+  return added;
+};
+
+// Asks for files to transcribe. Resolves to false if nothing was picked.
+export const pickAndTranscribeFiles = async (): Promise<boolean> => {
+  const selected = await open({
+    multiple: true,
+    directory: false,
+    filters: [
+      {
+        name: i18n.t("settings.history.mediaFiles"),
+        extensions: MEDIA_EXTENSIONS,
+      },
+    ],
+  });
+  if (!selected) return false;
+  await transcribeFiles(Array.isArray(selected) ? selected : [selected]);
+  return true;
+};

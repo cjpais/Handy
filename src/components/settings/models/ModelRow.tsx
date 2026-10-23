@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { ModelTableRow } from "@/components/shared/modelTable/ModelTableRow";
 import { formatModelSize } from "@/lib/utils/format";
 import { useModelStore } from "@/stores/modelStore";
+import { useModelsLocked } from "@/stores/transcriptionJobsStore";
 import {
   cancelDownload,
   pickModel,
@@ -19,6 +20,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
   const { t } = useTranslation();
   const place = usePlace(entry.id);
   const target = useIsTarget(entry.id);
+  const locked = useModelsLocked();
   const percent = useModelStore(
     (s) => s.downloadProgress[entry.id]?.percentage ?? 0,
   );
@@ -31,6 +33,8 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
 
   const onDisk = place === "active" || place === "ready" || place === "loading";
   const on = place === "active";
+  // While a file transcribes, the model in use can't change or go away.
+  const deletable = onDisk && !(locked && on);
   const size = formatModelSize(entry.sizeMb);
   const download =
     place === "downloading" || place === "checking"
@@ -85,7 +89,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
 
   // Pressing a download makes it the one to switch to when it's done.
   const act = () => {
-    if (asking || on || place === "loading") return;
+    if (asking || on || place === "loading" || (locked && onDisk)) return;
     pickModel(entry.id);
   };
 
@@ -109,7 +113,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
         </button>
       );
     }
-    if (onDisk) {
+    if (deletable) {
       const label = t("settings.models.deleteModel", { name: entry.name });
       return (
         <button
@@ -178,7 +182,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
           return;
         }
         if (e.target !== e.currentTarget) return;
-        if ((e.key === "Delete" || e.key === "Backspace") && onDisk) {
+        if ((e.key === "Delete" || e.key === "Backspace") && deletable) {
           e.preventDefault();
           setAsking(true);
         }
