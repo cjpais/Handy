@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Local, Utc};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use rusqlite::{params, Connection, OptionalExtension};
-use rusqlite_migration::{Migrations, M};
+use rusqlite_migration::{MigrationDefinitionError, Migrations, M};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::fs;
@@ -31,7 +31,6 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
-    M::up("ALTER TABLE transcription_history ADD COLUMN source_name TEXT;"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -109,20 +108,18 @@ impl HistoryManager {
         // tauri-plugin-sql used _sqlx_migrations table, rusqlite_migration uses user_version pragma
         self.migrate_from_tauri_plugin_sql(&conn)?;
 
-        // Create migrations object and run to latest version
-        let migrations = Migrations::new(MIGRATIONS.to_vec());
-
         // Validate migrations in debug builds
         #[cfg(debug_assertions)]
-        migrations.validate().expect("Invalid migrations");
+        Migrations::new(MIGRATIONS.to_vec())
+            .validate()
+            .expect("Invalid migrations");
 
         // Get current version before migration
         let version_before: i32 =
             conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
         debug!("Database version before migration: {}", version_before);
 
-        // Apply any pending migrations
-        migrations.to_latest(&mut conn)?;
+        Self::apply_migrations(&mut conn)?;
 
         // Get version after migration
         let version_after: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
@@ -134,6 +131,40 @@ impl HistoryManager {
             );
         } else {
             debug!("Database already at latest version {}", version_after);
+        }
+
+        Ok(())
+    }
+
+    /// Bring the schema up to date. A database from a newer Handy is opened
+    /// as it is rather than refused: migrations only ever add columns, and
+    /// every query names the columns it uses, so the extra ones are ignored.
+    fn apply_migrations(conn: &mut Connection) -> Result<()> {
+        match Migrations::new(MIGRATIONS.to_vec()).to_latest(conn) {
+            Err(rusqlite_migration::Error::MigrationDefinition(
+                MigrationDefinitionError::DatabaseTooFarAhead,
+            )) => {
+                warn!("history.db is from a newer version of Handy; opening it without migrating")
+            }
+            other => other?,
+        }
+
+        // Added outside MIGRATIONS on purpose: a new migration raises
+        // user_version, and released builds before the tolerance above refuse
+        // to open a database that is "too far ahead". An extra nullable column
+        // is invisible to them, so these columns keep the database openable
+        // by every version.
+        let has_source_name: bool = conn.query_row(
+            "SELECT COUNT(*) > 0 FROM pragma_table_info('transcription_history') WHERE name = 'source_name'",
+            [],
+            |row| row.get(0),
+        )?;
+        if !has_source_name {
+            conn.execute(
+                "ALTER TABLE transcription_history ADD COLUMN source_name TEXT",
+                [],
+            )?;
+            info!("Added the source_name column to transcription history");
         }
 
         Ok(())
@@ -732,6 +763,52 @@ mod tests {
             ],
         )
         .expect("insert history entry");
+    }
+
+    fn user_version(conn: &Connection) -> i32 {
+        conn.pragma_query_value(None, "user_version", |row| row.get(0))
+            .expect("read user_version")
+    }
+
+    fn has_column(conn: &Connection, name: &str) -> bool {
+        conn.query_row(
+            "SELECT COUNT(*) > 0 FROM pragma_table_info('transcription_history') WHERE name = ?1",
+            [name],
+            |row| row.get(0),
+        )
+        .expect("read table info")
+    }
+
+    #[test]
+    fn migrating_adds_source_name_without_raising_the_version() {
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        HistoryManager::apply_migrations(&mut conn).expect("migrate");
+        assert!(has_column(&conn, "source_name"));
+        assert_eq!(user_version(&conn), MIGRATIONS.len() as i32);
+
+        // Opening it again changes nothing.
+        HistoryManager::apply_migrations(&mut conn).expect("migrate again");
+        assert_eq!(user_version(&conn), MIGRATIONS.len() as i32);
+    }
+
+    #[test]
+    fn a_database_from_a_newer_handy_still_opens() {
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        HistoryManager::apply_migrations(&mut conn).expect("migrate");
+        conn.execute(
+            "ALTER TABLE transcription_history ADD COLUMN from_the_future TEXT",
+            [],
+        )
+        .expect("add newer column");
+        conn.pragma_update(None, "user_version", MIGRATIONS.len() as i32 + 3)
+            .expect("set newer version");
+
+        HistoryManager::apply_migrations(&mut conn).expect("open newer database");
+        insert_entry(&conn, 100, "still works", None);
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch latest entry")
+            .expect("entry exists");
+        assert_eq!(entry.transcription_text, "still works");
     }
 
     #[test]
