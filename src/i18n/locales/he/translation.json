@@ -117,7 +117,8 @@
       "translate": "תרגם לאנגלית",
       "streaming": "מציג תמלול חי תוך כדי דיבור"
     },
-    "legacy": "מדור קודם"
+    "legacy": "מדור קודם",
+    "lockedWhileTranscribing": "ניתן יהיה להחליף מודל לאחר סיום תמלול הקובץ."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "תמלל מחדש",
       "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
       "transcribing": "מתמלל...",
-      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר."
+      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
+      "transcribeFile": "תמלול קובץ",
+      "mediaFiles": "שמע ווידאו",
+      "fileUnsupported": "לא ניתן לקרוא שמע מ-{{name}}.",
+      "transcribeFailed": "התמלול נכשל. נסו שוב.",
+      "waiting": "ממתין לתמלול",
+      "transcribingPercent": "מתמלל, {{percent}}%",
+      "showMore": "הצג עוד",
+      "showLess": "הצג פחות",
+      "dropTitle": "שחררו כדי לתמלל",
+      "dropDescription": "הוא יופיע בהיסטוריה."
     },
     "debug": {
       "title": "ניפוי שגיאות",

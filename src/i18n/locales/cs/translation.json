@@ -117,7 +117,8 @@
     },
     "cancel": "Zrušit",
     "cancelDownload": "Zrušit stahování",
-    "legacy": "Zastaralé"
+    "legacy": "Zastaralé",
+    "lockedWhileTranscribing": "Modely lze změnit, až bude přepis souboru hotový."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Přepsat znovu",
       "retranscribeError": "Opětovný přepis se nezdařil. Zkuste to prosím znovu.",
       "transcribing": "Přepisuji...",
-      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování."
+      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování.",
+      "transcribeFile": "Přepsat soubor",
+      "mediaFiles": "Zvuk a video",
+      "fileUnsupported": "Ze souboru {{name}} se nepodařilo načíst zvuk.",
+      "transcribeFailed": "Přepis se nezdařil. Zkuste to prosím znovu.",
+      "waiting": "Čeká na přepis",
+      "transcribingPercent": "Přepisuji, {{percent}} %",
+      "showMore": "Zobrazit více",
+      "showLess": "Zobrazit méně",
+      "dropTitle": "Pusťte pro přepis",
+      "dropDescription": "Zobrazí se v historii."
     },
     "debug": {
       "title": "Ladění",

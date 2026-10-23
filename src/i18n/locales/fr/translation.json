@@ -117,7 +117,8 @@
     },
     "cancel": "Annuler",
     "cancelDownload": "Annuler le téléchargement",
-    "legacy": "Hérité"
+    "legacy": "Hérité",
+    "lockedWhileTranscribing": "Les modèles pourront être changés une fois la transcription du fichier terminée."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Re-transcrire",
       "retranscribeError": "Impossible de re-transcrire. Veuillez réessayer.",
       "transcribing": "Transcription en cours...",
-      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai."
+      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai.",
+      "transcribeFile": "Transcrire un fichier",
+      "mediaFiles": "Audio et vidéo",
+      "fileUnsupported": "Impossible de lire l'audio de {{name}}.",
+      "transcribeFailed": "La transcription a échoué. Veuillez réessayer.",
+      "waiting": "En attente de transcription",
+      "transcribingPercent": "Transcription, {{percent}} %",
+      "showMore": "Afficher plus",
+      "showLess": "Afficher moins",
+      "dropTitle": "Déposez pour transcrire",
+      "dropDescription": "Il apparaîtra dans l'historique."
     },
     "debug": {
       "title": "Débogage",

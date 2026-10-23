@@ -117,7 +117,8 @@
       "translation": "Can translate to English",
       "translate": "Translate",
       "streaming": "Shows live transcription as you speak"
-    }
+    },
+    "lockedWhileTranscribing": "Models can change once the file is done transcribing."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+      "transcribeFile": "Transcribe File",
+      "mediaFiles": "Audio and video",
+      "fileUnsupported": "Couldn't read audio from {{name}}.",
+      "transcribeFailed": "Transcription failed. Please try again.",
+      "waiting": "Waiting to transcribe",
+      "transcribingPercent": "Transcribing, {{percent}}%",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "dropTitle": "Drop to transcribe",
+      "dropDescription": "It'll show up in History."
     },
     "debug": {
       "title": "Debug",

@@ -117,7 +117,8 @@
     },
     "cancel": "Cancelar",
     "cancelDownload": "Cancelar download",
-    "legacy": "Legado"
+    "legacy": "Legado",
+    "lockedWhileTranscribing": "Os modelos podem ser trocados quando a transcrição do arquivo terminar."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Re-transcrever",
       "retranscribeError": "Falha ao re-transcrever. Por favor, tente novamente.",
       "transcribing": "Transcrevendo...",
-      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente."
+      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente.",
+      "transcribeFile": "Transcrever arquivo",
+      "mediaFiles": "Áudio e vídeo",
+      "fileUnsupported": "Não foi possível ler o áudio de {{name}}.",
+      "transcribeFailed": "A transcrição falhou. Tente novamente.",
+      "waiting": "Aguardando transcrição",
+      "transcribingPercent": "Transcrevendo, {{percent}}%",
+      "showMore": "Mostrar mais",
+      "showLess": "Mostrar menos",
+      "dropTitle": "Solte para transcrever",
+      "dropDescription": "Ele aparecerá no histórico."
     },
     "debug": {
       "title": "Depuração",

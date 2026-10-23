@@ -1,7 +1,22 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
+import {
+  Check,
+  Copy,
+  FileAudio,
+  FilePlus,
+  FolderOpen,
+  RotateCcw,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -11,10 +26,15 @@ import {
   type HistoryUpdatePayload,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
+import {
+  useTranscriptionJobsStore,
+  type ActiveJobStatus,
+} from "@/stores/transcriptionJobsStore";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 import { copyToClipboard } from "./clipboard";
+import { pickAndTranscribeFiles } from "./transcribeFiles";
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -39,14 +59,19 @@ const IconButton: React.FC<{
 
 const PAGE_SIZE = 30;
 
-interface OpenRecordingsButtonProps {
+// Long text folds to this many lines until "Show more".
+const FOLDED_LINES = 4;
+
+interface HeaderButtonProps {
   onClick: () => void;
   label: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
-const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
+const HeaderButton: React.FC<HeaderButtonProps> = ({
   onClick,
   label,
+  icon: Icon,
 }) => (
   <Button
     onClick={onClick}
@@ -55,7 +80,7 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
     className="flex items-center gap-2"
     title={label}
   >
-    <FolderOpen className="w-4 h-4" />
+    <Icon className="w-4 h-4" />
     <span>{label}</span>
   </Button>
 );
@@ -63,6 +88,7 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
+  const jobs = useTranscriptionJobsStore((state) => state.jobs);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -149,9 +175,13 @@ export const HistorySettings: React.FC = () => {
         setEntries((prev) =>
           prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
         );
+      } else if (payload.action === "deleted") {
+        // Usually already removed optimistically; also covers a file that
+        // turned out unreadable, whose entry the backend removes.
+        setEntries((prev) => prev.filter((e) => e.id !== payload.id));
       }
-      // "deleted" and "toggled" are handled by optimistic updates only,
-      // so we intentionally ignore them here to avoid double-mutation.
+      // "toggled" is handled by optimistic updates only, so we intentionally
+      // ignore it here to avoid double-mutation.
     });
 
     return () => {
@@ -217,6 +247,14 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const transcribeFile = async () => {
+    try {
+      await pickAndTranscribeFiles();
+    } catch (error) {
+      console.error("Failed to pick a file to transcribe:", error);
+    }
+  };
+
   const retryHistoryEntry = async (id: number) => {
     const result = await commands.retryHistoryEntryTranscription(id);
     if (result.status !== "ok") {
@@ -258,6 +296,7 @@ export const HistorySettings: React.FC = () => {
               <HistoryEntryComponent
                 key={entry.id}
                 entry={entry}
+                job={jobs[entry.id]}
                 onToggleSaved={() => toggleSaved(entry.id)}
                 onCopyText={() => copyToClipboard(entry.transcription_text)}
                 getAudioUrl={getAudioUrl}
@@ -282,10 +321,18 @@ export const HistorySettings: React.FC = () => {
               {t("settings.history.title")}
             </h2>
           </div>
-          <OpenRecordingsButton
-            onClick={openRecordingsFolder}
-            label={t("settings.history.openFolder")}
-          />
+          <div className="flex items-center gap-2">
+            <HeaderButton
+              onClick={transcribeFile}
+              label={t("settings.history.transcribeFile")}
+              icon={FilePlus}
+            />
+            <HeaderButton
+              onClick={openRecordingsFolder}
+              label={t("settings.history.openFolder")}
+              icon={FolderOpen}
+            />
+          </div>
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           {content}
@@ -297,6 +344,7 @@ export const HistorySettings: React.FC = () => {
 
 interface HistoryEntryProps {
   entry: HistoryEntry;
+  job?: ActiveJobStatus;
   onToggleSaved: () => void;
   onCopyText: () => Promise<boolean>;
   getAudioUrl: (fileName: string) => Promise<string | null>;
@@ -306,6 +354,7 @@ interface HistoryEntryProps {
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   entry,
+  job,
   onToggleSaved,
   onCopyText,
   getAudioUrl,
@@ -314,9 +363,26 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
-  const [retrying, setRetrying] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
 
+  // Queued or being transcribed in the background.
+  const retrying = requesting || job !== undefined;
   const hasTranscription = entry.transcription_text.trim().length > 0;
+  const folded = hasTranscription && !retrying && !expanded;
+
+  // Offer "Show more" only when the folded text is actually cut off.
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el || !folded) return;
+    const measure = () => setOverflows(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [folded, entry.transcription_text]);
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -349,23 +415,43 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
   const handleRetranscribe = async () => {
     try {
-      setRetrying(true);
+      setRequesting(true);
       await retryTranscription(entry.id);
     } catch (error) {
       console.error("Failed to re-transcribe:", error);
       toast.error(t("settings.history.retranscribeError"));
     } finally {
-      setRetrying(false);
+      setRequesting(false);
     }
   };
 
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
+  let progressText = t("settings.history.transcribing");
+  if (job?.state === "queued") {
+    progressText = t("settings.history.waiting");
+  } else if (job?.state === "running" && job.percent > 0) {
+    progressText = t("settings.history.transcribingPercent", {
+      percent: job.percent,
+    });
+  }
+
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
-      <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
-        <div className="flex items-center">
+      <div className="flex justify-between items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-sm font-medium shrink-0">{formattedDate}</p>
+          {entry.source_name && (
+            <span
+              className="flex items-center gap-1 min-w-0 text-sm text-text/50"
+              title={entry.source_name}
+            >
+              <FileAudio width={14} height={14} className="shrink-0" />
+              <span className="truncate">{entry.source_name}</span>
+            </span>
+          )}
+        </div>
+        <div className="flex items-center shrink-0">
           <IconButton
             onClick={handleCopyText}
             disabled={!hasTranscription || retrying}
@@ -379,7 +465,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </IconButton>
           <IconButton
             onClick={onToggleSaved}
-            disabled={retrying}
             active={entry.saved}
             title={
               entry.saved
@@ -410,7 +495,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </IconButton>
           <IconButton
             onClick={handleDeleteEntry}
-            disabled={retrying}
             title={t("settings.history.delete")}
           >
             <Trash2 width={16} height={16} />
@@ -418,34 +502,55 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         </div>
       </div>
 
-      <p
-        className={`italic text-sm pb-2 ${
-          retrying
-            ? ""
-            : hasTranscription
-              ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
-              : "text-text/40"
-        }`}
-        style={
-          retrying
-            ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
-            : undefined
-        }
-      >
-        {retrying && (
-          <style>{`
+      <div className="flex flex-col items-start gap-1 pb-2">
+        <p
+          ref={textRef}
+          className={`italic text-sm w-full ${
+            retrying
+              ? ""
+              : hasTranscription
+                ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
+                : "text-text/40"
+          }`}
+          style={
+            retrying
+              ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
+              : folded
+                ? {
+                    display: "-webkit-box",
+                    WebkitLineClamp: FOLDED_LINES,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }
+                : undefined
+          }
+        >
+          {retrying && (
+            <style>{`
             @keyframes transcribe-pulse {
               0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
               50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
             }
           `}</style>
+          )}
+          {retrying
+            ? progressText
+            : hasTranscription
+              ? entry.transcription_text
+              : t("settings.history.transcriptionFailed")}
+        </p>
+        {hasTranscription && !retrying && (expanded || overflows) && (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs font-medium text-text/50 hover:text-logo-primary cursor-pointer"
+          >
+            {expanded
+              ? t("settings.history.showLess")
+              : t("settings.history.showMore")}
+          </button>
         )}
-        {retrying
-          ? t("settings.history.transcribing")
-          : hasTranscription
-            ? entry.transcription_text
-            : t("settings.history.transcriptionFailed")}
-      </p>
+      </div>
 
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>

@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useState,
@@ -27,6 +28,7 @@ import {
   type OnboardingPreviewStep,
 } from "./components/settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { FileDropOverlay } from "./components/FileDropOverlay";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
@@ -68,6 +70,7 @@ function App() {
   const [migrationModelId, setMigrationModelId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
+  const showHistory = useCallback(() => setCurrentSection("history"), []);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -433,6 +436,7 @@ function App() {
         </div>
         {/* Fixed footer at bottom */}
         <Footer />
+        <FileDropOverlay onDropped={showHistory} />
       </div>
     );
   }

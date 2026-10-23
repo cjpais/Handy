@@ -1,8 +1,10 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
-    history::{HistoryManager, PaginatedHistory},
+    history::{HistoryEntry, HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
+    transcription_jobs::{TranscriptionJob, TranscriptionJobManager, BACKGROUND_RETRY_MIN_SAMPLES},
 };
+use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -51,22 +53,31 @@ pub async fn get_audio_file_path(
 pub async fn delete_history_entry(
     _app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
+    jobs: State<'_, Arc<TranscriptionJobManager>>,
     id: i64,
 ) -> Result<(), String> {
+    jobs.cancel(id);
     history_manager
         .delete_entry(id)
         .await
         .map_err(|e| e.to_string())
 }
 
+/// Transcribes the entry again with the current model and language. A
+/// recording longer than one chunk is queued instead, and its progress and
+/// outcome arrive as [`TranscriptionJob`] events.
 #[tauri::command]
 #[specta::specta]
 pub async fn retry_history_entry_transcription(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    jobs: State<'_, Arc<TranscriptionJobManager>>,
     id: i64,
 ) -> Result<(), String> {
+    if jobs.has(id) {
+        return Ok(());
+    }
     let entry = history_manager
         .get_entry_by_id(id)
         .await
@@ -79,6 +90,9 @@ pub async fn retry_history_entry_transcription(
 
     if samples.is_empty() {
         return Err("Recording has no audio samples".to_string());
+    }
+    if samples.len() > BACKGROUND_RETRY_MIN_SAMPLES {
+        return jobs.retry(id).map_err(|e| e.to_string());
     }
 
     transcription_manager.initiate_model_load();
@@ -104,6 +118,30 @@ pub async fn retry_history_entry_transcription(
         )
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+/// Adds an audio or video file to History and queues its transcription.
+/// Fails without adding anything if the file has no audio Handy can read.
+#[tauri::command]
+#[specta::specta]
+pub async fn transcribe_file(
+    jobs: State<'_, Arc<TranscriptionJobManager>>,
+    path: String,
+) -> Result<HistoryEntry, String> {
+    let jobs = Arc::clone(&jobs);
+    tauri::async_runtime::spawn_blocking(move || jobs.transcribe_file(PathBuf::from(path)))
+        .await
+        .map_err(|e| format!("Failed to read the file: {}", e))?
+        .map_err(|e| e.to_string())
+}
+
+/// Every background transcription not yet finished.
+#[tauri::command]
+#[specta::specta]
+pub fn get_transcription_jobs(
+    jobs: State<'_, Arc<TranscriptionJobManager>>,
+) -> Vec<TranscriptionJob> {
+    jobs.list()
 }
 
 #[tauri::command]

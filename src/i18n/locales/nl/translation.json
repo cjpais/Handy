@@ -117,7 +117,8 @@
       "translation": "Kan vertalen naar het Engels",
       "translate": "Vertalen",
       "streaming": "Toont live transcriptie tijdens het spreken"
-    }
+    },
+    "lockedWhileTranscribing": "Modellen kunnen worden gewisseld zodra het bestand is getranscribeerd."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Opnieuw transcriberen",
       "retranscribeError": "Opnieuw transcriberen mislukt. Probeer het opnieuw.",
       "transcribing": "Transcriberen...",
-      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram."
+      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram.",
+      "transcribeFile": "Bestand transcriberen",
+      "mediaFiles": "Audio en video",
+      "fileUnsupported": "Kon geen audio lezen uit {{name}}.",
+      "transcribeFailed": "Transcriptie mislukt. Probeer het opnieuw.",
+      "waiting": "Wacht op transcriptie",
+      "transcribingPercent": "Transcriberen, {{percent}}%",
+      "showMore": "Meer tonen",
+      "showLess": "Minder tonen",
+      "dropTitle": "Loslaten om te transcriberen",
+      "dropDescription": "Het verschijnt in de geschiedenis."
     },
     "debug": {
       "title": "Probleemoplossing",

@@ -117,7 +117,8 @@
     },
     "cancel": "Abbrechen",
     "cancelDownload": "Download abbrechen",
-    "legacy": "Veraltet"
+    "legacy": "Veraltet",
+    "lockedWhileTranscribing": "Modelle können gewechselt werden, sobald die Datei transkribiert ist."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Erneut transkribieren",
       "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
       "transcribing": "Transkribiere...",
-      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren.",
+      "transcribeFile": "Datei transkribieren",
+      "mediaFiles": "Audio und Video",
+      "fileUnsupported": "Audio aus {{name}} konnte nicht gelesen werden.",
+      "transcribeFailed": "Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "waiting": "Wartet auf Transkription",
+      "transcribingPercent": "Transkribiere, {{percent}} %",
+      "showMore": "Mehr anzeigen",
+      "showLess": "Weniger anzeigen",
+      "dropTitle": "Zum Transkribieren ablegen",
+      "dropDescription": "Es erscheint im Verlauf."
     },
     "debug": {
       "title": "Debug",

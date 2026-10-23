@@ -30,8 +30,11 @@ use tauri_specta::Event;
 use transcribe_cpp::{Backend, RunOptions, Task, Transcript};
 
 mod chunked;
+mod job;
 mod live;
 pub mod policy;
+
+pub use job::ChunkControl;
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -263,6 +266,10 @@ pub struct TranscriptionManager {
     /// yet. This prevents a second worker from starting after finalize/cancel
     /// closes the router but before the first worker has fully exited.
     active_stream_worker: Arc<AtomicU64>,
+    /// True while a file (or a long history entry) is queued or being
+    /// transcribed in chunks. The model stays loaded and can't be switched
+    /// until it ends, so one transcript is never written by two models.
+    job_active: Arc<AtomicBool>,
 }
 
 impl TranscriptionManager {
@@ -282,6 +289,7 @@ impl TranscriptionManager {
             stream_active: Arc::new(AtomicBool::new(false)),
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
+            job_active: Arc::new(AtomicBool::new(false)),
         };
 
         // Start the idle watcher
@@ -309,12 +317,12 @@ impl TranscriptionManager {
                         continue;
                     }
 
-                    // While recording, keep the idle timer fresh so the
-                    // model is never unloaded mid-session.
+                    // While recording or transcribing a file, keep the idle
+                    // timer fresh so the model is never unloaded mid-session.
                     let is_recording = app_handle_cloned
                         .try_state::<Arc<AudioRecordingManager>>()
                         .is_some_and(|a| a.is_recording());
-                    if is_recording {
+                    if is_recording || manager_cloned.job_active() {
                         manager_cloned.touch_activity();
                         continue;
                     }
@@ -484,6 +492,11 @@ impl TranscriptionManager {
     /// is loaded. Never waits for the worker to exit, so it is safe on any
     /// thread, including the event loop.
     pub fn maybe_unload_immediately(&self, context: &str) {
+        // A file job keeps the model for its remaining chunks; it unloads
+        // the model itself when it ends.
+        if self.job_active() {
+            return;
+        }
         let settings = get_settings(&self.app_handle);
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
             && self.is_model_loaded()
@@ -702,6 +715,24 @@ impl TranscriptionManager {
     /// than falling back to CPU/auto); `None` when no model is loaded.
     pub fn current_backend(&self) -> Option<String> {
         self.engine.loaded().map(|info| info.backend)
+    }
+
+    /// Whether a file job is queued or running, which holds the model.
+    pub fn job_active(&self) -> bool {
+        self.job_active.load(Ordering::Acquire)
+    }
+
+    pub fn set_job_active(&self, active: bool) {
+        self.job_active.store(active, Ordering::Release);
+    }
+
+    /// Refuses a model switch, unload or delete while a file job holds the
+    /// model.
+    pub fn ensure_model_unlocked(&self) -> std::result::Result<(), String> {
+        if self.job_active() {
+            return Err("The model can't change while a file is transcribing".to_string());
+        }
+        Ok(())
     }
 
     /// Whether a live streaming run is currently in flight.

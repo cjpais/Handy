@@ -117,7 +117,8 @@
     },
     "cancel": "キャンセル",
     "cancelDownload": "ダウンロードをキャンセル",
-    "legacy": "旧式"
+    "legacy": "旧式",
+    "lockedWhileTranscribing": "ファイルの文字起こしが終わるとモデルを変更できます。"
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "再文字起こし",
       "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
       "transcribing": "文字起こし中…",
-      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。",
+      "transcribeFile": "ファイルを文字起こし",
+      "mediaFiles": "音声と動画",
+      "fileUnsupported": "{{name}} から音声を読み込めませんでした。",
+      "transcribeFailed": "文字起こしに失敗しました。もう一度お試しください。",
+      "waiting": "文字起こし待ち",
+      "transcribingPercent": "文字起こし中… {{percent}}%",
+      "showMore": "もっと見る",
+      "showLess": "閉じる",
+      "dropTitle": "ドロップして文字起こし",
+      "dropDescription": "履歴に表示されます。"
     },
     "debug": {
       "title": "デバッグ",

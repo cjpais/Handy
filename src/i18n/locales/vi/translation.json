@@ -117,7 +117,8 @@
     },
     "cancel": "Hủy",
     "cancelDownload": "Hủy tải xuống",
-    "legacy": "Cũ"
+    "legacy": "Cũ",
+    "lockedWhileTranscribing": "Có thể đổi mô hình sau khi tệp được chép lời xong."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Phiên âm lại",
       "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
       "transcribing": "Đang phiên âm...",
-      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại."
+      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại.",
+      "transcribeFile": "Chép lời tệp",
+      "mediaFiles": "Âm thanh và video",
+      "fileUnsupported": "Không thể đọc âm thanh từ {{name}}.",
+      "transcribeFailed": "Chép lời thất bại. Vui lòng thử lại.",
+      "waiting": "Đang chờ chép lời",
+      "transcribingPercent": "Đang chép lời, {{percent}}%",
+      "showMore": "Xem thêm",
+      "showLess": "Thu gọn",
+      "dropTitle": "Thả để chép lời",
+      "dropDescription": "Nó sẽ xuất hiện trong Lịch sử."
     },
     "debug": {
       "title": "Gỡ lỗi",

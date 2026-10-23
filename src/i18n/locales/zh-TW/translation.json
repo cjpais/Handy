@@ -117,7 +117,8 @@
       "translate": "翻譯為英語",
       "streaming": "在您說話時即時顯示轉錄"
     },
-    "legacy": "舊版"
+    "legacy": "舊版",
+    "lockedWhileTranscribing": "檔案轉錄完成後才能更換模型。"
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "重新轉錄",
       "retranscribeError": "重新轉錄失敗，請重試。",
       "transcribing": "轉錄中...",
-      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。"
+      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。",
+      "transcribeFile": "轉錄檔案",
+      "mediaFiles": "音訊和影片",
+      "fileUnsupported": "無法讀取 {{name}} 中的音訊。",
+      "transcribeFailed": "轉錄失敗，請重試。",
+      "waiting": "等待轉錄",
+      "transcribingPercent": "正在轉錄，{{percent}}%",
+      "showMore": "顯示更多",
+      "showLess": "收合",
+      "dropTitle": "拖放到此處進行轉錄",
+      "dropDescription": "它會出現在歷史記錄中。"
     },
     "debug": {
       "title": "偵錯",

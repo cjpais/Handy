@@ -56,6 +56,9 @@ impl TrayIconState {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct MenuInputs {
     busy: bool,
+    /// A background transcription holds the model, so it can't be switched
+    /// or unloaded.
+    models_locked: bool,
     warning: bool,
     model_loaded: bool,
     selected_model: String,
@@ -219,6 +222,14 @@ pub fn set_tray_state(app: &AppHandle, state: TrayIconState) {
     sync_tray_with(app, |inner| inner.icon_state = state);
 }
 
+/// Whether a dictation is under way: recording, or transcribing and
+/// delivering what was recorded. Every start, finish and cancel of one sets
+/// the tray's state, which makes it the single record of that.
+pub fn dictation_in_progress(app: &AppHandle) -> bool {
+    app.try_state::<TrayState>()
+        .is_some_and(|state| state.lock().icon_state.is_busy())
+}
+
 /// Re-syncs the tray after something other than the recording state changed
 /// (theme, Secure Input warning). The recording state itself is preserved.
 pub fn refresh_tray_icon(app: &AppHandle) {
@@ -313,7 +324,9 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
     let settings = settings::get_settings(app);
     let theme = get_current_theme(app);
     let warning = crate::secure_input::tray_warning_active(app);
-    let model_loaded = app.state::<Arc<TranscriptionManager>>().is_model_loaded();
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    let model_loaded = tm.is_model_loaded();
+    let models_locked = tm.job_active();
 
     let mut downloaded_models: Vec<(String, String)> = app
         .state::<Arc<ModelManager>>()
@@ -328,6 +341,7 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
         icon_path: get_icon_path(theme, icon_state, warning),
         menu: MenuInputs {
             busy: icon_state.is_busy(),
+            models_locked,
             warning,
             model_loaded,
             selected_model: settings.selected_model,
@@ -538,7 +552,8 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
             .map(|(_, name)| name.clone())
             .unwrap_or_else(|| strings.model.clone());
 
-        let model_submenu = Submenu::with_id(app, "model_submenu", &submenu_label, true)?;
+        let model_submenu =
+            Submenu::with_id(app, "model_submenu", &submenu_label, !inputs.models_locked)?;
         for (id, name) in &inputs.downloaded_models {
             let is_active = *id == inputs.selected_model;
             let item_id = format!("model_select:{}", id);
@@ -550,7 +565,7 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
             app,
             "unload_model",
             &strings.unload_model,
-            inputs.model_loaded,
+            inputs.model_loaded && !inputs.models_locked,
             None::<&str>,
         )?;
 
@@ -682,12 +697,14 @@ mod tests {
             post_processed_text: post_processed.map(|text| text.to_string()),
             post_process_prompt: None,
             post_process_requested: false,
+            source_name: None,
         }
     }
 
     fn inputs(busy: bool) -> MenuInputs {
         MenuInputs {
             busy,
+            models_locked: false,
             warning: false,
             model_loaded: true,
             selected_model: "small".to_string(),

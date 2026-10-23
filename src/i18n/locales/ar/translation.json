@@ -117,7 +117,8 @@
       "translate": "ترجمة",
       "streaming": "يعرض النسخ المباشر أثناء التحدث"
     },
-    "legacy": "قديم"
+    "legacy": "قديم",
+    "lockedWhileTranscribing": "يمكن تغيير النماذج بعد انتهاء نسخ الملف."
   },
   "settings": {
     "general": {
@@ -428,7 +429,17 @@
       "retranscribe": "إعادة النسخ",
       "retranscribeError": "فشلت إعادة النسخ. يرجى المحاولة مرة أخرى.",
       "transcribing": "جارٍ النسخ...",
-      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة."
+      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة.",
+      "transcribeFile": "نسخ ملف",
+      "mediaFiles": "الصوت والفيديو",
+      "fileUnsupported": "تعذّرت قراءة الصوت من {{name}}.",
+      "transcribeFailed": "فشل النسخ. يرجى المحاولة مرة أخرى.",
+      "waiting": "في انتظار النسخ",
+      "transcribingPercent": "جارٍ النسخ، {{percent}}%",
+      "showMore": "عرض المزيد",
+      "showLess": "عرض أقل",
+      "dropTitle": "أفلت الملف لنسخه",
+      "dropDescription": "سيظهر في السجل."
     },
     "debug": {
       "title": "تصحيح الأخطاء",

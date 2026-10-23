@@ -117,7 +117,8 @@
       "translate": "Översätt till engelska",
       "streaming": "Visar transkription i realtid medan du talar"
     },
-    "legacy": "Äldre"
+    "legacy": "Äldre",
+    "lockedWhileTranscribing": "Modeller kan bytas när filen är färdigtranskriberad."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Transkribera igen",
       "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
       "transcribing": "Transkriberar...",
-      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök."
+      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök.",
+      "transcribeFile": "Transkribera fil",
+      "mediaFiles": "Ljud och video",
+      "fileUnsupported": "Kunde inte läsa ljud från {{name}}.",
+      "transcribeFailed": "Transkriberingen misslyckades. Försök igen.",
+      "waiting": "Väntar på transkribering",
+      "transcribingPercent": "Transkriberar, {{percent}} %",
+      "showMore": "Visa mer",
+      "showLess": "Visa mindre",
+      "dropTitle": "Släpp för att transkribera",
+      "dropDescription": "Den visas i historiken."
     },
     "debug": {
       "title": "Felsökning",

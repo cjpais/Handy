@@ -117,7 +117,8 @@
       "translation": "Kan oversætte til engelsk",
       "translate": "Oversæt",
       "streaming": "Viser live transskription, mens du taler"
-    }
+    },
+    "lockedWhileTranscribing": "Modeller kan skiftes, når filen er færdigtransskriberet."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Transskribér igen",
       "retranscribeError": "Kunne ikke transskribere igen. Prøv igen.",
       "transcribing": "Transskriberer...",
-      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet."
+      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet.",
+      "transcribeFile": "Transskriber fil",
+      "mediaFiles": "Lyd og video",
+      "fileUnsupported": "Kunne ikke læse lyd fra {{name}}.",
+      "transcribeFailed": "Transskriptionen mislykkedes. Prøv igen.",
+      "waiting": "Venter på transskription",
+      "transcribingPercent": "Transskriberer, {{percent}} %",
+      "showMore": "Vis mere",
+      "showLess": "Vis mindre",
+      "dropTitle": "Slip for at transskribere",
+      "dropDescription": "Den vises i historikken."
     },
     "debug": {
       "title": "Fejlfinding",
