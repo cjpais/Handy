@@ -3,7 +3,7 @@ use super::model_capabilities::{
 };
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
-use hf_hub::api::tokio::{ApiBuilder, CancellationToken, Progress};
+use hf_hub::api::tokio::{ApiBuilder, CancellationToken};
 use hf_hub::{Cache, Repo, RepoType};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -13,12 +13,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
 mod download;
+mod hf_download;
 
 use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT};
+use hf_download::HfDownloadProgress;
 
 /// Where a model comes from and how Handy obtains it — the routing discriminant
 /// for downloading and on-disk resolution.
@@ -502,102 +504,6 @@ fn local_caps(probe: &CapabilityProbe) -> LocalCaps {
         supports_language_selection: languages.len() > 1,
         supports_language_detection: probe.supports_language_detect.unwrap_or(false),
         supported_languages: languages,
-    }
-}
-
-/// Bridges hf-hub's async download progress to Handy's `model-download-progress`
-/// event. hf-hub clones the reporter, so shared state lives behind an `Arc`.
-#[derive(Clone)]
-struct HfDownloadProgress {
-    app_handle: AppHandle,
-    model_id: String,
-    state: Arc<Mutex<HfProgressState>>,
-}
-
-struct HfProgressState {
-    total: u64,
-    downloaded: u64,
-    last_emit: Instant,
-    /// Every callback (even throttled-out ones) bumps this; the stall watchdog
-    /// reads it. Starts at construction so a hang before the first byte —
-    /// e.g. a wedged metadata/resolve request — also counts as a stall.
-    last_activity: Instant,
-}
-
-impl HfDownloadProgress {
-    fn new(app_handle: AppHandle, model_id: String) -> Self {
-        Self {
-            app_handle,
-            model_id,
-            state: Arc::new(Mutex::new(HfProgressState {
-                total: 0,
-                downloaded: 0,
-                last_emit: Instant::now(),
-                last_activity: Instant::now(),
-            })),
-        }
-    }
-
-    /// Instant of the most recent sign of life from the transfer.
-    fn last_activity(&self) -> Instant {
-        self.state.lock().unwrap().last_activity
-    }
-
-    fn emit(&self, downloaded: u64, total: u64) {
-        let percentage = if total > 0 {
-            (downloaded as f64 / total as f64) * 100.0
-        } else {
-            0.0
-        };
-        let _ = self.app_handle.emit(
-            "model-download-progress",
-            &DownloadProgress {
-                model_id: self.model_id.clone(),
-                downloaded,
-                total,
-                percentage,
-            },
-        );
-    }
-}
-
-impl Progress for HfDownloadProgress {
-    async fn init(&mut self, size: usize, _filename: &str) {
-        {
-            let mut st = self.state.lock().unwrap();
-            st.total = size as u64;
-            st.downloaded = 0;
-            st.last_emit = Instant::now();
-            st.last_activity = Instant::now();
-        }
-        self.emit(0, size as u64);
-    }
-
-    async fn update(&mut self, size: usize) {
-        let (downloaded, total, emit) = {
-            let mut st = self.state.lock().unwrap();
-            st.downloaded = st.downloaded.saturating_add(size as u64);
-            let now = Instant::now();
-            st.last_activity = now;
-            // Throttle to ~10 updates/sec, but always emit the final byte.
-            let emit = now.duration_since(st.last_emit) >= Duration::from_millis(100)
-                || (st.total > 0 && st.downloaded >= st.total);
-            if emit {
-                st.last_emit = now;
-            }
-            (st.downloaded, st.total, emit)
-        };
-        if emit {
-            self.emit(downloaded, total);
-        }
-    }
-
-    async fn finish(&mut self) {
-        let total = {
-            let st = self.state.lock().unwrap();
-            st.total.max(st.downloaded)
-        };
-        self.emit(total, total);
     }
 }
 
@@ -1767,14 +1673,31 @@ impl ModelManager {
                 RepoType::Model,
                 revision.clone(),
             ));
-            let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
+            let attempt_token = cancel_token.child_token();
+            let app_handle = self.app_handle.clone();
+            let progress_model_id = model_id.clone();
+            let progress =
+                HfDownloadProgress::new(attempt_token.clone(), move |downloaded, total| {
+                    let _ = app_handle.emit(
+                        "model-download-progress",
+                        &DownloadProgress {
+                            model_id: progress_model_id.clone(),
+                            downloaded,
+                            total,
+                            percentage: if total > 0 {
+                                (downloaded as f64 / total as f64) * 100.0
+                            } else {
+                                0.0
+                            },
+                        },
+                    );
+                });
 
             // hf-hub has no internal timeouts, so a wedged connection would
             // otherwise hang this attempt forever and neither the retry loop
             // nor the mirror fallback would ever fire. The watchdog cancels a
             // per-attempt child token when progress goes stale; a user cancel
             // on the parent propagates through the same child.
-            let attempt_token = cancel_token.child_token();
             let watchdog = tokio::spawn({
                 let probe = progress.clone();
                 let attempt_token = attempt_token.clone();
@@ -1800,7 +1723,7 @@ impl ModelManager {
             // which aborts whatever request it was wedged in.
             let mut download = std::pin::pin!(repo.download_with_progress_cancellable(
                 &filename,
-                progress,
+                progress.clone(),
                 attempt_token.clone()
             ));
             let result = tokio::select! {
@@ -1813,6 +1736,22 @@ impl ModelManager {
                 }
             };
             watchdog.abort();
+
+            // A live stream can keep the stall watchdog alive while hf-hub
+            // buffers whole-file responses for each requested range. Skip the
+            // remaining HF retries and use the bounded, hash-verified mirror
+            // path. Cancelling an attempt must not masquerade as user cancel.
+            if let Some((expected, received)) = progress.exceeded_total() {
+                if cancel_token.is_cancelled() {
+                    info!("HF download cancelled for: {}", model_id);
+                    return Ok(());
+                }
+                break Some(anyhow::anyhow!(
+                    "HF download exceeded the expected {} bytes (received {}); server may have ignored Range requests",
+                    expected,
+                    received
+                ));
+            }
 
             match result {
                 Ok(_) => break None,
