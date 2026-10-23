@@ -9,20 +9,17 @@
   --color-background-ui: var(--color-background-ui);
   --color-logo-primary: var(--color-logo-primary);
   --color-logo-stroke: var(--color-logo-stroke);
-  --color-text-stroke: var(--color-text-stroke);
-  --color-mid-gray: var(--color-mid-gray);
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
   --color-moss: var(--color-moss);
   --color-plum: var(--color-plum);
-  --color-plum-hover: var(--color-plum-hover);
-  --color-demo-screen: var(--color-demo-screen);
+  --color-plum-pick: var(--color-plum-pick);
   --color-demo-window: var(--color-demo-window);
   --color-mascot-line: var(--color-mascot-line);
-  --color-pick-row: var(--color-pick-row);
   --color-wash: var(--color-wash);
-  --color-blush-wash: var(--color-blush-wash);
   --color-moss-wash: var(--color-moss-wash);
+  --color-warning-wash: var(--color-warning-wash);
+  --color-error-wash: var(--color-error-wash);
   --color-ink-2: var(--color-ink-2);
   --color-ink-3: var(--color-ink-3);
   --color-line: var(--color-line);
@@ -43,7 +40,7 @@
 
   --text-hero: 40px; /* All set's headline */
   --text-title: 26px; /* screen titles */
-  --text-name: 20px; /* the model name on Model's Full card */
+  --text-name: 15px; /* the model name on Model's Full card */
   --text-row: 17px; /* row titles */
   --text-body: 15px; /* body, subtitles */
   --text-small: 13px; /* buttons, secondary text, hints */
@@ -56,7 +53,8 @@
   --radius-chip: 6px; /* grade chips */
 
   /* One content width: every screen's main block runs 64px in from the
-     680px window's edges (552); Model's full list runs 40px in (600). */
+     window's edges (552 at the smallest window, 680, to 592 at the 720 it
+     opens at); Model's full list runs 40px in (600 to 640). */
   --spacing-gutter: 64px;
   --spacing-gutter-wide: 40px;
   /* From a screen's title (and subtitle) to what comes under it: 20px when
@@ -228,12 +226,6 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--scrollbar-thumb-hover);
-}
-
-@layer utilities {
-  .text-stroke {
-    -webkit-text-stroke: 2px var(--color-text-stroke);
-  }
 }
 
 .logo-primary {

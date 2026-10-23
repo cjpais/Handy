@@ -28,7 +28,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
         r={r}
         fill="none"
         strokeWidth="2.5"
-        className="stroke-line-strong"
+        className="stroke-line"
       />
       <circle
         cx={m}

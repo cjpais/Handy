@@ -7,12 +7,7 @@ import { Button } from "../../ui/Button";
 import { Switch } from "../../ui/Switch";
 import { Keycaps } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
-import {
-  OnboardingShell,
-  ScreenMain,
-  ScreenSub,
-  ScreenTitle,
-} from "../OnboardingShell";
+import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
 
@@ -20,10 +15,9 @@ const LINES = ["highFive", "upTop", "again", "reallySet"] as const;
 
 interface AllSetProps {
   progress: { index: number; count: number };
-  pill?: React.ReactNode;
   os: OSType;
   onBack: () => void;
-  onClose: () => void;
+  onFinish: () => void;
 }
 
 /**
@@ -33,10 +27,9 @@ interface AllSetProps {
  */
 export const AllSet: React.FC<AllSetProps> = ({
   progress,
-  pill,
   os,
   onBack,
-  onClose,
+  onFinish,
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting } = useSettings();
@@ -45,9 +38,14 @@ export const AllSet: React.FC<AllSetProps> = ({
   const threshold = getSetting("hold_threshold_ms") ?? 300;
   const [fives, setFives] = useState(0);
   const [down, setDown] = useState(false);
-  const [launchAtLogin, setLaunchAtLogin] = useState(
-    () => getSetting("autostart_enabled") ?? false,
-  );
+  // On by default; the choice is applied on Finish so toggling here doesn't
+  // register and unregister the login item (each one posts a macOS notice).
+  const [launchAtLogin, setLaunchAtLogin] = useState(true);
+
+  const finish = async () => {
+    if (!preview) await updateSetting("autostart_enabled", launchAtLogin);
+    onFinish();
+  };
 
   useSuspendedShortcuts(!preview);
 
@@ -67,17 +65,13 @@ export const AllSet: React.FC<AllSetProps> = ({
   return (
     <OnboardingShell
       progress={progress}
-      pill={pill}
       onBack={onBack}
       left={
         <label className="inline-flex cursor-pointer items-center gap-[10px] text-small text-ink-2">
           <Switch
             checked={launchAtLogin}
             ariaLabelledBy="onboarding-login-label"
-            onChange={(on) => {
-              setLaunchAtLogin(on);
-              if (!preview) updateSetting("autostart_enabled", on);
-            }}
+            onChange={setLaunchAtLogin}
           />
           <span id="onboarding-login-label">
             {t("onboarding.done.atLogin")}
@@ -85,8 +79,8 @@ export const AllSet: React.FC<AllSetProps> = ({
         </label>
       }
       primary={
-        <Button variant="primary" size="lg" onClick={onClose}>
-          {t("onboarding.done.close")}
+        <Button variant="primary" size="lg" onClick={finish}>
+          {t("onboarding.done.finish")}
         </Button>
       }
     >
@@ -117,27 +111,31 @@ export const AllSet: React.FC<AllSetProps> = ({
             </span>
           )}
         </button>
-        <ScreenTitle hero>{title}</ScreenTitle>
         {/* Tall lines leave room for the keycaps in the sentence. */}
-        <ScreenSub className="max-w-[440px] leading-[2]">
-          <Trans
-            i18nKey={
-              os === "macos"
-                ? "onboarding.done.bodyMac"
-                : "onboarding.done.bodyTray"
-            }
-            components={{
-              keys: (
-                <Keycaps
-                  binding={shortcut}
-                  osType={os}
-                  pressed={down}
-                  className="mx-[2px] align-middle"
-                />
-              ),
-            }}
-          />
-        </ScreenSub>
+        <ScreenHeader
+          hero
+          title={title}
+          subClassName="mx-auto max-w-[440px] leading-[2]"
+          sub={
+            <Trans
+              i18nKey={
+                os === "macos"
+                  ? "onboarding.done.bodyMac"
+                  : "onboarding.done.bodyTray"
+              }
+              components={{
+                keys: (
+                  <Keycaps
+                    binding={shortcut}
+                    osType={os}
+                    pressed={down}
+                    className="mx-[2px] align-middle"
+                  />
+                ),
+              }}
+            />
+          }
+        />
       </ScreenMain>
     </OnboardingShell>
   );

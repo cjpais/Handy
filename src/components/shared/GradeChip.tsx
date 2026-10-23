@@ -11,18 +11,19 @@ interface GradeChipProps {
   dense?: boolean;
 }
 
-// Each letter's whole look, so no two classes compete for a property.
-const NEUTRAL = "bg-wash border-line";
+// Each letter's whole look, so no two classes compete for a property. One
+// ink, no hue: the better the grade, the heavier the chip (solid, fill,
+// outline, dashed, the bare letter). No grade (— or ?) is the faint ink.
 const LETTER_CLASSES: Record<GradeLetter, string> = {
-  A: "text-moss font-bold bg-moss-wash border-[color-mix(in_srgb,var(--color-moss)_30%,transparent)]",
-  B: `text-ink-2 font-bold ${NEUTRAL}`,
-  C: `text-ink-2 font-bold ${NEUTRAL}`,
-  D: `text-error font-bold ${NEUTRAL}`,
-  F: `text-error font-bold ${NEUTRAL}`,
-  none: `text-ink-3 font-medium ${NEUTRAL}`,
+  A: "text-background font-bold border-transparent bg-text",
+  B: "text-text font-bold border-transparent bg-line",
+  C: "text-text font-bold bg-transparent border-ink-3",
+  D: "text-text font-bold bg-transparent border-dashed border-ink-3",
+  F: "text-text font-bold bg-transparent border-transparent",
+  none: "text-ink-3 font-medium bg-transparent border-transparent",
 };
 
-/** A model's accuracy for one language: A is moss, D and F are error red. */
+/** A model's accuracy for one language, in one ink: A solid down to a bare F. */
 export const GradeChip: React.FC<GradeChipProps> = ({
   letter,
   label,
@@ -31,6 +32,7 @@ export const GradeChip: React.FC<GradeChipProps> = ({
 }) => (
   <span
     title={title}
+    data-grade={letter}
     className={`inline-grid place-items-center rounded-chip border font-display leading-none h-[22px] ${dense ? "min-w-[24px] px-[3px] text-tag" : "min-w-[30px] px-[5px] text-small"} ${LETTER_CLASSES[letter]}`}
   >
     {label}

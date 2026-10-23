@@ -15,13 +15,7 @@ import { TextLink } from "../ui/TextLink";
 import { DoneMark } from "../shared/DoneMark";
 import { ProgressRing } from "../shared/ProgressRing";
 import { Tag } from "../shared/Tag";
-import {
-  OnboardingShell,
-  ScreenGap,
-  ScreenMain,
-  ScreenSub,
-  ScreenTitle,
-} from "./OnboardingShell";
+import { OnboardingShell, ScreenHeader, ScreenMain } from "./OnboardingShell";
 import { useModelStore } from "../../stores/modelStore";
 import { formatModelSize } from "../../lib/utils/format";
 import { commands } from "@/bindings";
@@ -331,10 +325,14 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
       hint={hint}
       primary={primary}
     >
-      <ScreenMain>
-        <ScreenTitle>{t("onboarding.migration.title")}</ScreenTitle>
-        <ScreenSub>{t("onboarding.migration.description")}</ScreenSub>
-        <ScreenGap />
+      <ScreenMain
+        header={
+          <ScreenHeader
+            title={t("onboarding.migration.title")}
+            sub={t("onboarding.migration.description")}
+          />
+        }
+      >
         <ul className="mb-0 flex min-h-0 w-full flex-col overflow-y-auto rounded-panel border-[1.5px] border-line-strong px-[22px] py-[4px] text-start">
           {rows.map((pair) => (
             <MigrationRow

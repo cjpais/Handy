@@ -6,7 +6,7 @@
   flex-direction: column;
   width: 172px;
   border-radius: 24px;
-  background: color-mix(in srgb, var(--color-background) 98%, transparent);
+  background: var(--color-background);
   box-shadow: var(--demo-pill-shadow);
   color: var(--color-text);
   font-size: 12px;
@@ -70,7 +70,7 @@
   }
 }
 
-/* the text caret in the drawn app */
+/* the text caret in the drawn app: only once the field is clicked */
 .demo-caret {
   animation: demo-caret 1.05s steps(1) infinite;
 }
@@ -101,15 +101,302 @@
   }
 }
 
-/* the line under the title, each time it changes */
-.demo-way-in {
-  animation: demo-way-in 360ms var(--ease-glide);
+/* ---------- the sentence: the phrase that's happening is lit ---------- */
+/* Weight by stroke, not font-weight: a real bold is wider and would shift
+   the line under the reader. */
+.demo-phrase {
+  -webkit-text-stroke: 0.55px transparent;
+  transition:
+    color 220ms ease,
+    -webkit-text-stroke-color 220ms ease;
 }
-@keyframes demo-way-in {
+.demo-phrase.is-on {
+  color: var(--color-text);
+  -webkit-text-stroke-color: currentColor;
+}
+/* the other way's sentence arriving */
+.demo-swap {
+  animation: demo-swap 280ms var(--ease-glide);
+}
+@keyframes demo-swap {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(5px);
   }
+}
+
+/* ---------- the laptop: nearly all screen, from the front ---------- */
+.demo-laptop {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+.demo-lid {
+  position: relative;
+  padding: 9px 9px 11px;
+  border-radius: 16px 16px 6px 6px;
+  background: var(--color-demo-lid);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.demo-cam {
+  position: absolute;
+  top: 3.5px;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.25);
+}
+.demo-screen {
+  position: relative;
+  width: 330px;
+  height: 196px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--demo-wallpaper);
+}
+/* while you change the shortcut, the screen steps back */
+.demo-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--color-background);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+.demo-screen.is-dimmed::after {
+  opacity: 0.55;
+}
+/* the menu bar (macOS) or the taskbar (Windows), where Handy's icon lives */
+.demo-bar {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 8px;
+  font-size: 8.5px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+  background: color-mix(in srgb, var(--color-background) 62%, transparent);
+  backdrop-filter: blur(8px);
+}
+.demo-bar.is-menu {
+  top: 0;
+  height: 16px;
+}
+.demo-bar.is-task {
+  bottom: 0;
+  height: 20px;
+  gap: 6px;
+}
+.demo-bar i {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-line);
+}
+.demo-bar b {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--color-line);
+}
+.demo-apple {
+  width: 7px;
+  height: 8px;
+  border-radius: 45% 45% 50% 50%;
+  background: var(--color-ink-2);
+}
+.demo-start {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5px;
+  width: 10px;
+  height: 10px;
+}
+.demo-start i {
+  height: auto;
+  border-radius: 0;
+  background: var(--color-ink-2);
+}
+/* the app: Messages for hold (a reply), Notes for tap (something longer) */
+.demo-app {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  width: 256px;
+  margin-left: -128px;
+  border-radius: 9px;
+  overflow: hidden;
+  text-align: start;
+  background: var(--color-demo-window);
+  box-shadow:
+    0 0 0 0.5px var(--color-line),
+    0 8px 24px rgb(40 20 50 / 0.16);
+}
+.demo-screen:has(.is-task) .demo-app {
+  top: 16px;
+}
+.demo-app-bar {
+  position: relative;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+.demo-app-bar i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-line);
+}
+.demo-app-body {
+  min-height: 86px;
+  padding: 4px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--color-text);
+}
+.demo-app[data-mode="tap"] .demo-app-body {
+  justify-content: flex-start;
+  gap: 4px;
+}
+.demo-them {
+  align-self: flex-start;
+  max-width: 78%;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 13px;
+  background: var(--color-line);
+}
+.demo-note-title {
+  margin: 2px 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.demo-field {
+  min-height: 28px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  transition: box-shadow 200ms ease;
+}
+.demo-app[data-mode="tap"] .demo-field {
+  padding: 2px;
+  box-shadow: none;
+  font-size: 12.5px;
+}
+/* the caret, and the reply box's focus ring, only once it's clicked */
+.demo-app:not([data-focused]) .demo-caret {
+  visibility: hidden;
+}
+.demo-app[data-mode="hold"][data-focused] .demo-field {
+  box-shadow: inset 0 0 0 1.5px var(--color-plum-pick);
+}
+/* the pointer: it clicks into the app before the shortcut is pressed */
+.demo-pointer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: 11px;
+  height: 16px;
+  margin: -1px 0 0 -1px; /* the arrow's tip sits on the point */
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.25));
+}
+.demo-pointer svg {
+  display: block;
+}
+/* Off to the side it jumps into place; to the field it glides. */
+.demo-pointer[data-p="rest"] {
+  transition: opacity 300ms ease;
+}
+.demo-pointer[data-p="field"] {
+  transition:
+    transform 850ms var(--ease-glide),
+    opacity 200ms ease;
+}
+.demo-pointer[data-p="gone"] {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+.demo-click {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-logo-primary);
+  animation: demo-click 520ms var(--ease-glide) both;
+}
+@keyframes demo-click {
+  from {
+    opacity: 1;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+/* the pill, as the overlay sits: bottom centre, above the taskbar */
+.demo-pill-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 3;
+  transform: translateX(-50%) scale(0.78);
+  transform-origin: bottom center;
+}
+.demo-screen:has(.is-task) .demo-pill-wrap {
+  bottom: 27px;
+}
+.demo-base {
+  position: relative;
+  width: 364px;
+  height: 11px;
+  margin-top: -1px;
+  border-radius: 2px 2px 10px 10px / 2px 2px 8px 8px;
+  background: linear-gradient(
+    var(--color-demo-alu-hi),
+    var(--color-demo-alu-lo)
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+.demo-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 56px;
+  height: 4px;
+  margin-left: -28px;
+  border-radius: 0 0 5px 5px;
+  background: #000;
+  opacity: 0.12;
+}
+.demo-floor {
+  position: relative;
+  z-index: -1;
+  width: 420px;
+  height: 18px;
+  margin-top: -10px;
+  background: radial-gradient(closest-side, var(--color-line), transparent);
 }
 
 /* Infinite loops would strobe under the global 1ms rule: stop them. */
@@ -118,7 +405,8 @@
   .demo-pill-spin,
   .demo-caret,
   .demo-landed,
-  .demo-way-in {
+  .demo-swap,
+  .demo-click {
     animation: none !important;
   }
 }

@@ -38,6 +38,13 @@ export interface Grade {
   unrated?: boolean;
 }
 
+/**
+ * The error each letter stays under, in percent; F is beyond D's. The
+ * package's display bands (ACCURACY_CEILINGS in its recommendations.js),
+ * which it doesn't export: keep the two the same.
+ */
+export const GRADE_CEILINGS = { A: 5, B: 10, C: 20, D: 30 } as const;
+
 // The package writes the minus as a hyphen; the design sets a real minus.
 const minus = (label: string) => label.replace("-", "−");
 
@@ -62,7 +69,7 @@ export const waitFor = (
 ): number | undefined => catalog.modelWaitSeconds(model, tier);
 
 /** Several languages: the geometric mean of their errors. */
-const geoMean = (xs: number[]) =>
+export const geoMean = (xs: number[]) =>
   Math.exp(xs.reduce((a, x) => a + Math.log(x), 0) / xs.length);
 
 /** No curated model hears this language well (under 20% errors). */

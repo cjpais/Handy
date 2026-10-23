@@ -5,7 +5,7 @@ import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { Mascot } from "../../shared/Mascot";
 import HandyTextLogo from "../../icons/HandyTextLogo";
-import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
+import { OnboardingShell, ScreenHeader } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { CHINESE_SCRIPTS, isChinese } from "../data/languages";
 import { CURATED_ASR, isWeakLanguage } from "../data/models";
@@ -177,8 +177,10 @@ export const Welcome: React.FC<WelcomeProps> = ({
           <Mascot size={54} animation={wave ? "wave" : null} />
           <HandyTextLogo width={112} className="mb-[4px] block" />
         </div>
-        <ScreenTitle>{t("onboarding.welcome.title")}</ScreenTitle>
-        <ScreenSub>{t("onboarding.welcome.subtitle")}</ScreenSub>
+        <ScreenHeader
+          title={t("onboarding.welcome.title")}
+          sub={t("onboarding.welcome.subtitle")}
+        />
 
         <div className="mt-lead flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-panel border-[1.5px] border-line-strong bg-background">
           {/* Clicks around the chips go to the search (a <label> would hand
@@ -199,10 +201,10 @@ export const Welcome: React.FC<WelcomeProps> = ({
                   e.preventDefault();
                   toggle(code);
                 }}
-                className="group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] border-line-strong bg-background ps-[12px] pe-[6px] text-small font-semibold text-text hover:border-plum-hover"
+                className="group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] border-line-strong bg-background ps-[12px] pe-[6px] text-small font-semibold text-text hover:border-ink-3"
               >
                 <bdi lang={code}>{getLanguage(code).native}</bdi>
-                <span className="grid size-[18px] place-items-center rounded-full leading-none text-ink-2 group-hover:bg-[color-mix(in_srgb,var(--color-text)_10%,transparent)]">
+                <span className="grid size-[18px] place-items-center rounded-full leading-none text-ink-2 group-hover:bg-line">
                   <RemoveIcon />
                 </span>
               </button>
@@ -288,8 +290,8 @@ export const Welcome: React.FC<WelcomeProps> = ({
                     onClick={() => set({ script: s.id })}
                     className={`inline-flex h-[34px] cursor-pointer items-center gap-[8px] rounded-control border-[1.5px] bg-background ps-[10px] pe-[14px] text-small font-semibold text-text ${
                       picked
-                        ? "border-plum"
-                        : "border-line-strong hover:border-plum-hover"
+                        ? "border-plum-pick"
+                        : "border-line-strong hover:border-ink-3"
                     }`}
                   >
                     <Radio checked={picked} />

@@ -33,7 +33,7 @@ export const DownloadPill: React.FC<DownloadPillProps> = ({
       title={title}
       className={`flex items-center gap-[8px] h-[28px] max-w-[340px] ps-[6px] pe-[11px] rounded-full border text-label tabular-nums whitespace-nowrap ${
         ready
-          ? "text-moss bg-moss-wash border-[color-mix(in_srgb,var(--color-moss)_25%,transparent)]"
+          ? "text-moss bg-moss-wash border-transparent"
           : failed
             ? "ps-[11px] text-warning bg-wash border-line"
             : "text-ink-2 bg-wash border-line"

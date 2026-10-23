@@ -5,13 +5,7 @@ import { Button } from "../../ui/Button";
 import { Spinner } from "../../ui/Spinner";
 import { TextLink } from "../../ui/TextLink";
 import { DoneMark } from "../../shared/DoneMark";
-import {
-  OnboardingShell,
-  ScreenGap,
-  ScreenMain,
-  ScreenSub,
-  ScreenTitle,
-} from "../OnboardingShell";
+import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import type { Permissions as PermissionsState } from "../usePermissions";
 
@@ -189,28 +183,30 @@ export const Permissions: React.FC<PermissionsProps> = ({
         </Button>
       }
     >
-      <ScreenMain>
-        {welcomeBack && (
-          <div className="mb-[18px] flex animate-rise items-center gap-[10px] text-small font-semibold text-moss">
-            <DoneMark />
-            {t("onboarding.permissions.welcomeBack")}
-          </div>
-        )}
-        <ScreenTitle>
-          {t(
-            isMac
-              ? "onboarding.permissions.titleMac"
-              : "onboarding.permissions.titleWindows",
-          )}
-        </ScreenTitle>
-        <ScreenSub>
-          {t(
-            isMac
-              ? "onboarding.permissions.subtitleMac"
-              : "onboarding.permissions.subtitleWindows",
-          )}
-        </ScreenSub>
-        <ScreenGap />
+      <ScreenMain
+        header={
+          <ScreenHeader
+            above={
+              welcomeBack && (
+                <div className="flex animate-rise items-center justify-center gap-[10px] text-small font-semibold text-moss">
+                  <DoneMark />
+                  {t("onboarding.permissions.welcomeBack")}
+                </div>
+              )
+            }
+            title={t(
+              isMac
+                ? "onboarding.permissions.titleMac"
+                : "onboarding.permissions.titleWindows",
+            )}
+            sub={t(
+              isMac
+                ? "onboarding.permissions.subtitleMac"
+                : "onboarding.permissions.subtitleWindows",
+            )}
+          />
+        }
+      >
         <div className="flex w-full flex-col rounded-panel border border-line-strong px-[22px] py-[4px] text-start">
           <PermissionRow
             icon={<MicIcon />}

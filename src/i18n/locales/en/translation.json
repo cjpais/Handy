@@ -96,8 +96,8 @@
       "progress": "Step {{step}} of {{count}}"
     },
     "welcome": {
-      "title": "Speak instead of typing, in any app.",
-      "subtitle": "Which languages do you speak? Pick every one you'll dictate in.",
+      "title": "Speak instead of typing, in any app",
+      "subtitle": "Pick the languages you will dictate in",
       "searchLabel": "Search languages",
       "searchPlaceholder": "Search languages",
       "addAnother": "Add another",
@@ -130,7 +130,18 @@
       "checking": "Checking the download…",
       "ready": "{{name}} is ready",
       "failed": "Download stopped",
-      "retry": "Retry"
+      "retry": "Retry",
+      "downloading": "Downloading {{name}}",
+      "progress": "{{done}} of {{total}}",
+      "progressLeft": "{{done}} of {{total}}, {{time}} left",
+      "checkingName": "Checking {{name}}",
+      "checkingDetail": "Making sure the download is complete",
+      "stopped": "{{name}} stopped downloading",
+      "retryDetail": "Retry picks up where it stopped",
+      "retryDownload": "Retry download",
+      "cardProgress": "Downloading {{percent}}%, {{done}} of {{total}}",
+      "timeLeft": "{{time}} left",
+      "speedLeft": "{{speed}}, {{time}} left"
     },
     "model": {
       "title": "Choose a speech model",
@@ -164,55 +175,118 @@
         "3": "Fast, words appear almost right away",
         "4": "Very fast, words appear right away"
       },
+      "speedWordsPreview": {
+        "0": "Very slow, with a live preview while you talk",
+        "1": "Slow, with a live preview while you talk",
+        "2": "Moderate, with a live preview while you talk",
+        "3": "Fast, with a live preview while you talk",
+        "4": "Very fast, with a live preview while you talk"
+      },
       "speedUntested": "Speed not measured yet",
+      "rubric": {
+        "gradeTitle": "{{language}} accuracy: {{grade}}",
+        "accuracyTitle": "{{language}} accuracy",
+        "overallTitle": "Accuracy across your languages: {{grade}}",
+        "overall": "Accuracy across your languages",
+        "meaning": {
+          "A": "Very few mistakes: your words usually come out as you said them.",
+          "B": "Some mistakes: expect to fix a word here and there.",
+          "C": "Frequent mistakes: some details may get lost.",
+          "D": "Many mistakes: expect to check and correct what it types.",
+          "F": "Often unclear: much of what you say may come out wrong."
+        },
+        "measured": "It got {{error}}% of words wrong in our test recordings ({{letter}} is {{band}}).",
+        "measuredAverage": "On average, it got {{error}}% of words wrong in our test recordings ({{letter}} is {{band}}).",
+        "unsupported": "This model doesn't understand {{language}}, so it can't type it.",
+        "unrated": "This model understands {{language}}, but we haven't measured how well yet.",
+        "under": "under {{max}}%",
+        "between": "{{min}} to {{max}}%",
+        "over": "{{min}}% or more",
+        "speedText": {
+          "accelerated": "Takes {{band}} to type out 30 seconds of speech on our test laptop's graphics chip. This computer may differ.",
+          "cpu": "Takes {{band}} to type out 30 seconds of speech on our test laptop's processor. This computer may differ."
+        },
+        "untimed": "Not timed on our test laptop yet.",
+        "underSeconds": "under {{max}} s",
+        "betweenSeconds": "{{min}} to {{max}} s",
+        "overSeconds": "{{min}} s or more"
+      },
+      "tags": {
+        "preview": "Live preview",
+        "previewTitle": "Shows your words in the Live overlay while you talk, then types them when you stop.",
+        "translate": "Translates",
+        "translateTitle": "Can turn what you say into English text. Turn it on in settings."
+      },
       "seconds": "{{value}}s",
       "showAll": "Show all {{count}} models",
       "download": "Download {{size}}",
+      "downloadInstead": "Download {{size}} instead",
+      "pauses": "{{name}} pauses at {{percent}}%",
+      "resumeLater": "Pick it again to pick up where it left off",
       "hint": "Downloads while you finish setup",
       "searchPlaceholder": "Search models or languages",
       "searchLabel": "Search models",
       "missingLanguages": "These models are missing some of your languages",
-      "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet."
+      "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet.",
+      "noFilterMatch": "No models match these filters."
     },
     "demo": {
-      "title": "Here's how Handy works",
-      "hold": {
-        "what": "Hold the shortcut and talk.",
-        "then": "Let go, and your words appear."
-      },
-      "tap": {
-        "what": "Tap the shortcut, talk, and tap again.",
-        "then": "Your words appear."
-      },
+      "title": "Talk in any app, with one shortcut",
+      "hold": "<0>Click where you’d type.</0> <1>Hold your shortcut and talk.</1> <2>Let go, and your words appear.</2>",
+      "tap": "<0>Click where you’d type.</0> <1>Tap your shortcut and talk.</1> <2>Tap again, and your words appear.</2>",
       "apps": {
         "messages": "Messages",
-        "mail": "Mail"
+        "notes": "Notes"
       },
-      "screenLabel": "A laptop: the shortcut is pressed while someone talks, and the words appear in the app.",
-      "yourShortcut": "Your shortcut is",
-      "change": "Change shortcut",
-      "pressKeys": "Press the keys you want",
+      "chat": "Are you still coming tonight?",
+      "noteTitle": "Weekend plans",
+      "screenLabel": "A laptop: someone clicks into an app, presses the shortcut and talks, and the words appear where they clicked.",
+      "change": "Change",
+      "changeShortcut": "Change shortcut",
+      "pressKeys": "Press the new keys",
+      "addKey": "Now add a key",
+      "saved": "Saved",
       "cancel": "Cancel",
       "tryIt": "Try it yourself",
       "hint": "You can try it once the download finishes",
       "hintFailed": "Retry the download to try it yourself"
     },
     "try": {
-      "title": "Try it in a real app",
-      "subtitle": "Handy types wherever your cursor is. We opened a blank note to practice in.",
-      "stepClick": "Click into the note",
-      "stepTalk": "Hold or tap <keys/> and talk",
-      "stepLetGo": "Let go to get the text",
-      "stepTapAgain": "Tap <keys/> again to finish",
+      "title": "Try both ways",
+      "titleOne": "Try it yourself",
+      "subtitle": "Handy types wherever your cursor is, in any app.",
+      "lessons": "Ways to use your shortcut",
+      "hold": {
+        "name": "Hold",
+        "stepClick": "Click the reply box",
+        "stepTalk": "Hold <keys/> and talk",
+        "stepEnd": "Let go to type it",
+        "field": "Reply",
+        "placeholder": "Reply",
+        "wrongWayLive": "<b>That was a tap,</b> so Handy keeps listening. Tap again to stop, then this time hold the keys down while you talk.",
+        "wrongWay": "<b>That was a tap.</b> For this one, keep the keys held down while you talk, then let go.",
+        "nothingTyped": "<b>Nothing was typed.</b> The cursor wasn't in a text box. Click the reply box, then try again."
+      },
+      "tap": {
+        "name": "Tap",
+        "stepClick": "Click into the note",
+        "stepTalk": "Tap <keys/> and talk",
+        "stepEnd": "Tap <keys/> again to finish",
+        "field": "Note",
+        "placeholder": "New note",
+        "wrongWayLive": "<b>That was a hold.</b> For this one, tap the keys once, talk, then tap them again.",
+        "wrongWay": "<b>That was a hold.</b> For this one, tap the keys once, talk, then tap them again.",
+        "nothingTyped": "<b>Nothing was typed.</b> The cursor wasn't in a text box. Click into the note, then try again."
+      },
       "downloading": "{{name}} is still downloading.",
       "downloadingEta": "{{name}} is still downloading, {{time}} left.",
       "checking": "Checking the {{name}} download.",
       "worksOnceDone": "The shortcut works once it's done.",
       "downloadFailed": "{{name}} stopped downloading.",
       "notYet": "Not yet. {{text}}",
-      "nothingTyped": "<b>Nothing was typed.</b> The cursor wasn't in a text box. Click into the note, then try again.",
       "empty": "Handy didn't hear anything. Check your microphone, then try again.",
       "failed": "That one didn't come through. Try again.",
+      "shortHold": "It appeared {{wait}} after you let go.",
       "short": "It appeared {{wait}} after you stopped. Talk for 5 seconds or more and Handy checks its speed.",
       "ok_one": "You spoke for {{count}} second. It appeared {{wait}} after you stopped.",
       "ok_other": "You spoke for {{count}} seconds. It appeared {{wait}} after you stopped.",
@@ -223,10 +297,7 @@
       "switched": "Switched to {{name}}.",
       "switchedReady": "{{name}} is ready. Tap and talk for 5 seconds or more to check its speed.",
       "finish": "Finish setup",
-      "skip": "Skip for now",
-      "noteTitle": "Handy Practice Note",
-      "noteLabel": "Practice note",
-      "notePlaceholder": "Click here, then talk"
+      "skip": "Skip for now"
     },
     "done": {
       "highFive": "High five!",
@@ -237,7 +308,7 @@
       "bodyMac": "Setup's done. Handy waits in your menu bar, so press <keys/> in any app and start talking.",
       "bodyTray": "Setup's done. Handy waits in your system tray, so press <keys/> in any app and start talking.",
       "atLogin": "Start Handy when I log in",
-      "close": "Close window"
+      "finish": "Done"
     }
   },
   "modelSelector": {
@@ -661,7 +732,7 @@
       },
       "onboardingRun": {
         "title": "Run Onboarding",
-        "description": "Go through onboarding for real from the start: it asks for permissions, downloads models, opens the practice note and saves your choices",
+        "description": "Go through onboarding for real from the start: it asks for permissions, downloads models and saves your choices",
         "button": "Start"
       },
       "soundTheme": {

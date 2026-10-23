@@ -22,10 +22,11 @@ const SAMPLES: Record<string, string> = {
   it: "Possiamo spostare la revisione del design di domani alle tre? Vorrei un po' più di tempo per finire i prototipi.",
 };
 
-// English gets its own line per app; tap is for anything longer.
+// English gets its own line per app: hold answers the friend in Messages,
+// tap (for anything longer) fills a note.
 const ENGLISH = {
-  hold: "Running ten minutes late, save me a seat?",
-  tap: "Thanks for the photos, they came out great. Let's do it again next weekend.",
+  hold: "Yes! Running ten minutes late, save me a seat.",
+  tap: "Picnic in the park on Saturday, then dinner at Rosa's. Bring the blue blanket and the good speaker.",
 };
 
 /**

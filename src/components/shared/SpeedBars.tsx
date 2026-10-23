@@ -30,7 +30,7 @@ export const SpeedBars: React.FC<SpeedBarsProps> = ({
     {HEIGHTS.map((height, i) => (
       <i
         key={i}
-        className={`w-[4px] rounded-[1px] ${height} ${i < level ? "bg-ink-2" : "bg-line-strong"}`}
+        className={`w-[4px] rounded-[1px] ${height} ${i < level ? "bg-ink-2" : "bg-line"}`}
       />
     ))}
   </span>

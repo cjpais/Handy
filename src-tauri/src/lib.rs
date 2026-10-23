@@ -98,7 +98,6 @@ fn build_console_filter() -> env_filter::Filter {
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
-        commands::show_hidden_practice_note(app);
         if let Err(e) = main_window.unminimize() {
             log::error!("Failed to unminimize webview window: {}", e);
         }
@@ -732,8 +731,6 @@ pub fn run(cli_args: CliArgs) {
             commands::initialize_shortcuts,
             commands::complete_onboarding,
             commands::close_main_window,
-            commands::open_practice_note,
-            commands::close_practice_note,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
@@ -954,7 +951,10 @@ pub fn run(cli_args: CliArgs) {
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                     .title("Handy")
                     .inner_size(utils::MAIN_WINDOW_SIZE.0, utils::MAIN_WINDOW_SIZE.1)
-                    .min_inner_size(utils::MAIN_WINDOW_SIZE.0, utils::MAIN_WINDOW_SIZE.1)
+                    .min_inner_size(
+                        utils::MAIN_WINDOW_MIN_SIZE.0,
+                        utils::MAIN_WINDOW_MIN_SIZE.1,
+                    )
                     .resizable(true)
                     .maximizable(true)
                     .visible(false);
@@ -972,14 +972,16 @@ pub fn run(cli_args: CliArgs) {
             let main_window = win_builder.build()?;
 
             // macOS puts the title bar inside the inner size, which would
-            // leave the page a bar short of 680×600. Grow the window by it.
+            // leave the page a bar short. Grow the window, and its minimum, by it.
             #[cfg(target_os = "macos")]
             {
                 let bar = utils::measure_title_bar(&main_window);
                 if bar > 0.0 {
                     let (width, height) = utils::MAIN_WINDOW_SIZE;
+                    let (min_width, min_height) = utils::MAIN_WINDOW_MIN_SIZE;
                     let size = tauri::LogicalSize::new(width, height + bar);
-                    let _ = main_window.set_min_size(Some(size));
+                    let min = tauri::LogicalSize::new(min_width, min_height + bar);
+                    let _ = main_window.set_min_size(Some(min));
                     let _ = main_window.set_size(size);
                     let _ = main_window.center();
                 }
@@ -1088,14 +1090,6 @@ pub fn run(cli_args: CliArgs) {
             Ok(())
         })
         .on_window_event(|window, event| match event {
-            // Onboarding's practice note stays until Handy closes it (its
-            // close button is off; this catches Cmd+W and Alt+F4). It isn't
-            // Handy's window, so it skips the hide below.
-            tauri::WindowEvent::CloseRequested { api, .. }
-                if window.label() == commands::PRACTICE_NOTE_LABEL =>
-            {
-                api.prevent_close();
-            }
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 let _res = window.hide();

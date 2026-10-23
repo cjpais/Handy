@@ -4,7 +4,6 @@ import { useModelStore } from "@/stores/modelStore";
 import { clearOnboardingProgress, useOnboardingStore } from "./onboardingStore";
 import { usePermissions } from "./usePermissions";
 import { useOnboardingModels } from "./useOnboardingModels";
-import { OnboardingPill } from "./OnboardingPill";
 import { Permissions } from "./screens/Permissions";
 import { Model } from "./screens/Model";
 
@@ -68,7 +67,6 @@ export const ReplaceModel: React.FC<{
   return (
     <Model
       models={models}
-      pill={<OnboardingPill models={models} />}
       onBack={onBack}
       onChoose={(id) => {
         const model = models.offered.find((m) => m.id === id);

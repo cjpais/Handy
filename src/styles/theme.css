@@ -1,4 +1,28 @@
-/* Handy Colors */
+/* Handy Colors
+ *
+ * The whole palette, and every color the app uses comes from it. Pick by job:
+ *
+ *   Greys, one set for Settings, onboarding and the overlay:
+ *     text         primary text
+ *     ink-2        secondary text: descriptions, labels (text at 60%)
+ *     ink-3        hints, metadata, icons, a hovered edge (mid-gray)
+ *     line-strong  control edges: fields, dropdowns, buttons (mid-gray/80)
+ *     line         dividers, resting edges, tracks, a pressed fill (/20)
+ *     wash         hover and quiet fills (mid-gray/10)
+ *   Pink: logo-primary (brand fills, toggles, focus, a hovered edge) with /80
+ *     (the selected sidebar item, a hovered solid), /50 (a picked card's
+ *     edge), /20 (selected) and /10 (hover) in Settings; background-ui (the
+ *     primary button, the checked radio, progress) with /80 under the pointer.
+ *   Plum (onboarding): plum (pressed keys, Demo's hand), plum-pick (a picked
+ *     card's edge).
+ *   Status: moss, warning, error, each with its -wash tint for the box behind
+ *     it. A tinted box has no edge.
+ *
+ * White is the text on a pink solid, the background color the text on a
+ * status solid (dark mode's status colors are light); text/20 is a disabled
+ * icon; black/50 is the dim behind a dialog. Demo's drawing (demo-*,
+ * wordmark, mascot) is illustration, not UI.
+ */
 
 :root {
   /* Palette source of truth. Each themed color is defined once as a
@@ -14,41 +38,66 @@
   --dark-color-logo-primary: #f28cbb;
   --dark-color-logo-stroke: #fad1ed;
 
-  /* Semantic status colors. First used by SecureInputWarning; intended to
-     replace the ad-hoc yellow-500/red-500 usages (e.g. ui/Alert.tsx) over
-     time so status styling is themeable from one place. */
+  /* Status colors: alerts, failed downloads, the log's levels, the model
+     status dot. Each has a -wash tint below for the box behind it. */
   --light-color-warning: #d97706;
   --light-color-error: #dc2626;
   --dark-color-warning: #fbbf24;
   --dark-color-error: #f87171;
 
-  /* Done, granted, ready (and grade A). Pink already means "recording", so
+  /* Done, granted, ready. Pink already means "recording", so
      success gets its own hue. */
   --light-color-moss: #2f7d5b;
   --dark-color-moss: #86c9a4;
 
   /* Plum: the one ink for what you can press or have picked: keycaps'
-     letters, edge and drop, Demo's hand, the picked card, chip and tag, a
-     hovered control's edge. Light mode's is the logo stroke; dark mode's is
+     letters, edge and drop, Demo's hand, the picked card, chip and tag. Light mode's is the logo stroke; dark mode's is
      its text white, so things at rest stay the page plus one ink, and pink
      only arrives when something is pressed. */
   --light-color-plum: var(--light-color-logo-stroke);
   --dark-color-plum: var(--dark-color-text);
 
-  /* Demo's drawing of a computer: the screen behind the app, the app's
-     window. (The logo hand that presses the keys is plum.) */
-  --light-color-demo-screen: var(--light-color-wash);
-  --dark-color-demo-screen: color-mix(
-    in srgb,
-    #000 14%,
-    var(--dark-color-background)
-  );
+  /* Demo's drawing of a computer: the app's window. (The logo hand that
+     presses the keys is plum.) */
   --light-color-demo-window: var(--light-color-background);
   --dark-color-demo-window: color-mix(
     in srgb,
     #fff 4%,
     var(--dark-color-background)
   );
+
+  /* The laptop around Demo's drawing: the lid's black, the base's aluminium
+     (top and bottom of its gradient), and the wallpaper behind the app. */
+  --light-color-demo-lid: #1f1e21;
+  --dark-color-demo-lid: #0f0e10;
+  --light-color-demo-alu-hi: #ececee;
+  --dark-color-demo-alu-hi: #5a585d;
+  --light-color-demo-alu-lo: #cdccd1;
+  --dark-color-demo-alu-lo: #3b3a3e;
+  --light-demo-wallpaper:
+    radial-gradient(
+      110% 80% at 90% 105%,
+      color-mix(in srgb, var(--light-color-logo-primary) 50%, #fbfbfb) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      90% 80% at 5% -5%,
+      color-mix(in srgb, #c7b9ef 55%, #fbfbfb) 0%,
+      transparent 62%
+    ),
+    color-mix(in srgb, #e9e1f3 60%, #fbfbfb);
+  --dark-demo-wallpaper:
+    radial-gradient(
+      110% 80% at 90% 105%,
+      color-mix(in srgb, var(--dark-color-logo-primary) 26%, #1b1719) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      90% 80% at 5% -5%,
+      color-mix(in srgb, #7c68c0 38%, #1b1719) 0%,
+      transparent 62%
+    ),
+    #1f1a1e;
 
   /* The wordmark. In dark mode a white outline in place of the pale pink
      keeps the screen to fewer pinks. */
@@ -71,28 +120,8 @@
       color-mix(in srgb, var(--dark-color-logo-primary) 20%, transparent),
     0 10px 26px -10px rgba(0, 0, 0, 0.6);
 
-  /* Quiet surfaces: hover and keyboard target, and the blush/moss tints.
-     Mixed from the palette above; dark mode uses its own strengths. */
-  --light-color-wash: color-mix(
-    in srgb,
-    var(--light-color-text) 4%,
-    var(--light-color-background)
-  );
-  --dark-color-wash: color-mix(
-    in srgb,
-    var(--dark-color-text) 5%,
-    var(--dark-color-background)
-  );
-  --light-color-blush-wash: color-mix(
-    in srgb,
-    var(--light-color-logo-primary) 22%,
-    var(--light-color-background)
-  );
-  --dark-color-blush-wash: color-mix(
-    in srgb,
-    var(--dark-color-logo-primary) 14%,
-    var(--dark-color-background)
-  );
+  /* The status tints, for the box behind a status color. Mixed from the
+     palette above; dark mode uses its own strengths. */
   --light-color-moss-wash: color-mix(
     in srgb,
     var(--light-color-moss) 12%,
@@ -103,10 +132,29 @@
     var(--dark-color-moss) 14%,
     var(--dark-color-background)
   );
+  --light-color-warning-wash: color-mix(
+    in srgb,
+    var(--light-color-warning) 12%,
+    var(--light-color-background)
+  );
+  --dark-color-warning-wash: color-mix(
+    in srgb,
+    var(--dark-color-warning) 14%,
+    var(--dark-color-background)
+  );
+  --light-color-error-wash: color-mix(
+    in srgb,
+    var(--light-color-error) 12%,
+    var(--light-color-background)
+  );
+  --dark-color-error-wash: color-mix(
+    in srgb,
+    var(--dark-color-error) 14%,
+    var(--dark-color-background)
+  );
 
   /* Tokens that do not change between light and dark */
   --color-background-ui: #da5893;
-  --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
 
   /* Active palette — defaults to light, follows the OS via the media query
@@ -120,33 +168,36 @@
   --color-moss: var(--light-color-moss);
   --color-plum: var(--light-color-plum);
   --demo-pill-shadow: var(--light-demo-pill-shadow);
-  --color-demo-screen: var(--light-color-demo-screen);
   --color-demo-window: var(--light-color-demo-window);
+  --color-demo-lid: var(--light-color-demo-lid);
+  --color-demo-alu-hi: var(--light-color-demo-alu-hi);
+  --color-demo-alu-lo: var(--light-color-demo-alu-lo);
+  --demo-wallpaper: var(--light-demo-wallpaper);
   --color-wordmark: var(--light-color-wordmark);
   --color-wordmark-stroke: var(--light-color-wordmark-stroke);
   --color-mascot-line: var(--light-color-mascot-line);
-  --color-wash: var(--light-color-wash);
-  --color-blush-wash: var(--light-color-blush-wash);
   --color-moss-wash: var(--light-color-moss-wash);
+  --color-warning-wash: var(--light-color-warning-wash);
+  --color-error-wash: var(--light-color-error-wash);
 
-  /* Text and edge steps, mixed from whichever text colour is active, so they
-     follow the theme on their own: secondary text, hints, rest edges
-     (dividers, panels), control edges (buttons, fields), and the picked row
-     in a list: a step past the hover wash, its radio carrying the pink. */
-  --color-ink-2: color-mix(in srgb, var(--color-text) 68%, transparent);
-  --color-ink-3: color-mix(in srgb, var(--color-text) 46%, transparent);
-  --color-line: color-mix(in srgb, var(--color-text) 11%, transparent);
-  --color-line-strong: color-mix(in srgb, var(--color-text) 20%, transparent);
-  --color-pick-row: color-mix(in srgb, var(--color-text) 8%, transparent);
-  /* A pickable edge under the pointer: on its way from rest to plum. What's
-     picked (Model's card, a script) is a plum edge alone: no fill and no
-     drop, which stay with the keys you press. A picked row in the full list
-     is the grey --color-pick-row instead. */
-  --color-plum-hover: color-mix(
+  /* The grey steps, Settings' long-standing values: secondary text from the
+     active text colour, the rest from mid-gray, which reads on both themes.
+     Hints and icons, control edges (fields, buttons, chips), dividers and
+     tracks, and the hover and quiet fill. */
+  --color-ink-2: color-mix(in srgb, var(--color-text) 60%, transparent);
+  --color-ink-3: var(--color-mid-gray);
+  --color-line-strong: color-mix(
     in srgb,
-    var(--color-plum) 40%,
-    var(--color-line-strong)
+    var(--color-mid-gray) 80%,
+    transparent
   );
+  --color-line: color-mix(in srgb, var(--color-mid-gray) 20%, transparent);
+  --color-wash: color-mix(in srgb, var(--color-mid-gray) 10%, transparent);
+  /* What's picked (Model's card and its full list's row, a script, Demo's
+     way, a picked row's tag) is the softer plum edge alone: no fill and no
+     drop, which stay with the keys you press. Under the pointer, a pickable
+     edge is ink-3. */
+  --color-plum-pick: color-mix(in srgb, var(--color-plum) 60%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -160,14 +211,17 @@
     --color-moss: var(--dark-color-moss);
     --color-plum: var(--dark-color-plum);
     --demo-pill-shadow: var(--dark-demo-pill-shadow);
-    --color-demo-screen: var(--dark-color-demo-screen);
     --color-demo-window: var(--dark-color-demo-window);
+    --color-demo-lid: var(--dark-color-demo-lid);
+    --color-demo-alu-hi: var(--dark-color-demo-alu-hi);
+    --color-demo-alu-lo: var(--dark-color-demo-alu-lo);
+    --demo-wallpaper: var(--dark-demo-wallpaper);
     --color-wordmark: var(--dark-color-wordmark);
     --color-wordmark-stroke: var(--dark-color-wordmark-stroke);
     --color-mascot-line: var(--dark-color-mascot-line);
-    --color-wash: var(--dark-color-wash);
-    --color-blush-wash: var(--dark-color-blush-wash);
     --color-moss-wash: var(--dark-color-moss-wash);
+    --color-warning-wash: var(--dark-color-warning-wash);
+    --color-error-wash: var(--dark-color-error-wash);
   }
 }
 
@@ -191,14 +245,17 @@
   --color-moss: var(--light-color-moss);
   --color-plum: var(--light-color-plum);
   --demo-pill-shadow: var(--light-demo-pill-shadow);
-  --color-demo-screen: var(--light-color-demo-screen);
   --color-demo-window: var(--light-color-demo-window);
+  --color-demo-lid: var(--light-color-demo-lid);
+  --color-demo-alu-hi: var(--light-color-demo-alu-hi);
+  --color-demo-alu-lo: var(--light-color-demo-alu-lo);
+  --demo-wallpaper: var(--light-demo-wallpaper);
   --color-wordmark: var(--light-color-wordmark);
   --color-wordmark-stroke: var(--light-color-wordmark-stroke);
   --color-mascot-line: var(--light-color-mascot-line);
-  --color-wash: var(--light-color-wash);
-  --color-blush-wash: var(--light-color-blush-wash);
   --color-moss-wash: var(--light-color-moss-wash);
+  --color-warning-wash: var(--light-color-warning-wash);
+  --color-error-wash: var(--light-color-error-wash);
 }
 
 :root[data-theme="dark"] {
@@ -211,12 +268,15 @@
   --color-moss: var(--dark-color-moss);
   --color-plum: var(--dark-color-plum);
   --demo-pill-shadow: var(--dark-demo-pill-shadow);
-  --color-demo-screen: var(--dark-color-demo-screen);
   --color-demo-window: var(--dark-color-demo-window);
+  --color-demo-lid: var(--dark-color-demo-lid);
+  --color-demo-alu-hi: var(--dark-color-demo-alu-hi);
+  --color-demo-alu-lo: var(--dark-color-demo-alu-lo);
+  --demo-wallpaper: var(--dark-demo-wallpaper);
   --color-wordmark: var(--dark-color-wordmark);
   --color-wordmark-stroke: var(--dark-color-wordmark-stroke);
   --color-mascot-line: var(--dark-color-mascot-line);
-  --color-wash: var(--dark-color-wash);
-  --color-blush-wash: var(--dark-color-blush-wash);
   --color-moss-wash: var(--dark-color-moss-wash);
+  --color-warning-wash: var(--dark-color-warning-wash);
+  --color-error-wash: var(--dark-color-error-wash);
 }

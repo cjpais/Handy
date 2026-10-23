@@ -5,6 +5,8 @@ export { GradeChip, type GradeLetter } from "./GradeChip";
 export { SpeedBars, speedLevel, SPEED_CUTOFFS } from "./SpeedBars";
 export { DoneMark } from "./DoneMark";
 export { ProgressRing } from "./ProgressRing";
+export { ProgressLine } from "./ProgressLine";
 export { DownloadPill } from "./DownloadPill";
 export { Mascot } from "./Mascot";
 export { Tag } from "./Tag";
+export { Hint } from "./Hint";

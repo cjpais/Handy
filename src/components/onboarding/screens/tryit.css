@@ -1,0 +1,295 @@
+/* Try it (TryIt.tsx): the two lessons, and a patch of desktop with the
+   lesson's app on it, so it reads as somewhere Handy types into, not part of
+   Handy. */
+
+/* ---------- the lessons: hold, then tap ---------- */
+/* Picked is the plum-pick edge alone, as elsewhere: no fill, no drop. */
+.try-lessons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+  padding: 4px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+.try-lesson {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  padding: 9px 12px 9px 10px;
+  border-radius: 10px;
+  text-align: start;
+  color: var(--color-ink-2);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    box-shadow 200ms ease,
+    color 200ms ease;
+}
+.try-lesson:hover:not([data-on]) {
+  background: var(--color-wash);
+  color: var(--color-text);
+}
+.try-lesson[data-on] {
+  color: var(--color-text);
+  box-shadow: 0 0 0 1.5px var(--color-plum-pick);
+}
+.try-lesson:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-logo-primary);
+}
+.try-lesson-mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-3);
+  background: var(--color-wash);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    color 200ms ease;
+}
+.try-lesson[data-on] .try-lesson-mark {
+  color: var(--color-text);
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 1.5px var(--color-plum);
+}
+.try-lesson[data-done] .try-lesson-mark {
+  color: var(--color-background);
+  background: var(--color-moss);
+  box-shadow: none;
+}
+.try-lesson-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+/* the next lesson's steps, and its app, arriving */
+.try-swap,
+.try-app {
+  animation: try-swap 320ms var(--ease-glide);
+}
+@keyframes try-swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* ---------- the desk: Demo's wallpaper, the lesson's app on it ---------- */
+.try-desk {
+  position: relative;
+  isolation: isolate;
+  margin-block: 6px;
+  margin-inline-end: 16px;
+  border-radius: var(--radius-panel);
+  background: var(--demo-wallpaper);
+}
+
+/* The window. Changing lessons turns it into the other app: its title and
+   page arrive in place, the one moment that moves on its own. */
+.try-window {
+  position: absolute;
+  inset: 22px 14px 28px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-demo-window);
+  box-shadow:
+    0 0 0 0.5px var(--color-line),
+    0 8px 22px -6px rgb(40 20 50 / 0.18);
+  transition: box-shadow 260ms ease;
+}
+/* the active window: the one with the cursor */
+.try-window[data-active] {
+  box-shadow:
+    0 0 0 0.5px var(--color-line),
+    0 18px 40px -8px rgb(40 20 50 / 0.32);
+}
+
+.try-window-bar {
+  position: relative;
+  flex: none;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding-inline: 11px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-wash);
+  font-family: var(--font-ui);
+}
+.try-window-title {
+  animation: try-fade 320ms ease;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+  transition: color 220ms ease;
+}
+.try-window[data-active] .try-window-title {
+  color: var(--color-ink-2);
+}
+/* macOS: the lights at the start, the title centred */
+.try-window-bar[data-os="mac"] .try-window-title {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.try-window-lights {
+  display: flex;
+  gap: 7px;
+}
+.try-window-lights i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--color-line);
+  transition: background-color 220ms ease;
+}
+.try-window[data-active] .try-window-lights i {
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.14);
+}
+.try-window[data-active] .try-window-lights i:nth-child(1) {
+  background: #ff5f57;
+}
+.try-window[data-active] .try-window-lights i:nth-child(2) {
+  background: #febc2e;
+}
+.try-window[data-active] .try-window-lights i:nth-child(3) {
+  background: #28c840;
+}
+/* Windows and Linux: the title at the start, the controls at the end */
+.try-window-bar[data-os="win"] {
+  justify-content: space-between;
+  padding-inline: 12px 14px;
+}
+.try-window-controls {
+  display: flex;
+  gap: 20px;
+  color: var(--color-ink-3);
+  transition: color 220ms ease;
+}
+.try-window[data-active] .try-window-controls {
+  color: var(--color-text);
+}
+.try-window-controls svg {
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.try-window-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  cursor: text;
+}
+.try-app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.try-window-body textarea {
+  display: block;
+  margin: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--color-text);
+  user-select: text;
+  cursor: text;
+}
+.try-window-body textarea::placeholder {
+  color: var(--color-ink-3);
+}
+
+/* Messages (hold): a friend's question, and the reply box at the bottom */
+.try-chat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.try-them {
+  align-self: flex-start;
+  max-width: 82%;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 17px;
+  background: var(--color-line);
+  cursor: default;
+}
+.try-reply {
+  display: grid;
+  max-height: calc(1.4em * 6 + 16px);
+  padding: 8px 14px;
+  overflow-y: auto;
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  transition: box-shadow 200ms ease;
+}
+.try-window[data-active] .try-reply {
+  box-shadow: inset 0 0 0 1.5px var(--color-plum-pick);
+}
+.try-reply::after,
+.try-reply textarea {
+  grid-area: 1 / 1;
+  padding: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.try-reply::after {
+  content: attr(data-text);
+  visibility: hidden;
+}
+.try-reply textarea {
+  overflow: hidden;
+}
+
+/* Notes (tap): a blank page in a writing app's serif, not Handy's face */
+.try-window-body .try-page {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 14px 18px;
+  font-family:
+    ui-serif, "New York", Charter, "Iowan Old Style", Georgia, Cambria, serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+@keyframes try-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .try-swap,
+  .try-app,
+  .try-window-title {
+    animation: none !important;
+  }
+}

@@ -65,7 +65,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         type="button"
-        className={`px-2 py-[5px] text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
+        className={`px-2 py-[5px] text-sm font-semibold bg-wash border border-line-strong rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
           disabled
             ? "opacity-50 cursor-not-allowed"
             : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
@@ -90,12 +90,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </button>
       {isOpen && !disabled && (
         <div
-          className={`absolute top-full mt-1 bg-background border border-mid-gray/80 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
+          className={`absolute top-full mt-1 bg-background border border-line-strong rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
             menuClassName ?? "left-0 right-0"
           }`}
         >
           {options.length === 0 ? (
-            <div className="px-2 py-1 text-sm text-mid-gray">
+            <div className="px-2 py-1 text-sm text-ink-3">
               {t("common.noOptionsFound")}
             </div>
           ) : (
@@ -121,7 +121,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   {option.label}
                 </span>
                 {option.description && (
-                  <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-mid-gray">
+                  <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-ink-3">
                     {option.description}
                   </span>
                 )}

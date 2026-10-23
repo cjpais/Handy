@@ -681,34 +681,6 @@ async closeMainWindow() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-/**
- * Open onboarding's practice note: a small blank note beside Handy's window
- * to dictate into on the Try it screen, placed where the design puts it
- * (over the right of Handy's window, centred top to bottom like the screen
- * beside it), kept on screen.
- * 
- * Async because building a window from a synchronous command deadlocks on
- * Windows (WebView2).
- */
-async openPracticeNote(title: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("open_practice_note", { title }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
- * Close onboarding's practice note, if it's open.
- */
-async closePracticeNote() : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("close_practice_note") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_models") };

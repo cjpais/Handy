@@ -18,7 +18,7 @@ import { Demo } from "./screens/Demo";
 import { TryIt } from "./screens/TryIt";
 import { AllSet } from "./screens/AllSet";
 import { useOsType } from "@/hooks/useOsType";
-import { OnboardingPill } from "./OnboardingPill";
+import { DownloadStatus } from "./DownloadStatus";
 import { useOnboardingModels } from "./useOnboardingModels";
 import { useModelStore } from "@/stores/modelStore";
 
@@ -27,7 +27,7 @@ interface OnboardingFlowProps {
   preview?: boolean;
   /** The screen a preview opens on. */
   previewStep?: OnboardingStep;
-  /** Called once the person closes the last screen. */
+  /** Called once the person leaves the last screen, for Settings. */
   onComplete: () => void;
 }
 
@@ -142,13 +142,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     if (i > 0) go(steps[i - 1]);
   };
 
+  // Into Settings, not closed: the person may want to look around, and can
+  // close the window themselves.
   const finish = async () => {
-    if (!preview) {
-      await commands.completeOnboarding();
-      await commands.closeMainWindow();
-    }
+    if (!preview) await commands.completeOnboarding();
     onComplete();
-    // After the window has gone, so the flow doesn't flash back to Welcome.
+    // After Settings has replaced the flow, so it doesn't flash back to Welcome.
     if (!preview) clearOnboardingProgress();
   };
 
@@ -188,12 +187,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     ? ({ state: "ready" } as const)
     : models.downloadState(downloaded);
   const modelReady = downloadNow.state === "ready";
-  // From Model on. On a first visit to Model there's nothing to report yet;
-  // coming back to it mid-download, the pill shows how far it's got.
-  const pill =
-    steps.indexOf(step) >= steps.indexOf("model") ? (
-      <OnboardingPill models={models} />
-    ) : undefined;
 
   const saveLanguages = () => {
     if (preview) return;
@@ -233,7 +226,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         <Model
           progress={progress}
           models={models}
-          pill={pill}
           onBack={back}
           onChoose={chooseModel}
         />
@@ -242,10 +234,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       return (
         <Demo
           progress={progress}
-          pill={pill}
           os={osType}
           ready={modelReady}
           downloadFailed={downloadNow.state === "failed"}
+          download={<DownloadStatus models={models} model={downloaded} />}
+          onRetry={() => downloaded && startModel(downloaded.id)}
           onBack={back}
           onContinue={next}
         />
@@ -254,7 +247,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       return (
         <TryIt
           progress={progress}
-          pill={pill}
           os={osType}
           models={models}
           model={downloaded}
@@ -268,10 +260,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       return (
         <AllSet
           progress={progress}
-          pill={pill}
           os={osType}
           onBack={back}
-          onClose={finish}
+          onFinish={finish}
         />
       );
     default:

@@ -35,7 +35,16 @@ export const useMachineTier = (): MachineTier => {
 
 export type DownloadState =
   | { state: "none" }
-  | { state: "downloading"; progress: number; etaSeconds: number | null }
+  | {
+      state: "downloading";
+      progress: number;
+      etaSeconds: number | null;
+      /** Bytes so far, of `total` (0 until the size is known). */
+      downloaded: number;
+      total: number;
+      /** null until the speed is known. */
+      bytesPerSec: number | null;
+    }
   | { state: "checking" }
   | { state: "ready" }
   /** It stopped before it finished: failed, or cut off by a quit. */
@@ -101,6 +110,9 @@ export const useOnboardingModels = (languages: string[]) => {
           p && p.total > 0 && rate && rate > 0
             ? (p.total - p.downloaded) / rate
             : null,
+        downloaded: p?.downloaded ?? 0,
+        total: p?.total ?? 0,
+        bytesPerSec: rate && rate > 0 ? rate : null,
       };
     }
     if (info.is_downloaded) return { state: "ready" };
