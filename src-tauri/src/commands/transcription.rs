@@ -35,6 +35,7 @@ pub fn get_model_load_status(
 pub fn unload_model_manually(
     transcription_manager: State<Arc<TranscriptionManager>>,
 ) -> Result<(), String> {
+    transcription_manager.ensure_model_unlocked()?;
     transcription_manager.request_unload();
     Ok(())
 }

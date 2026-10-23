@@ -9,23 +9,32 @@ import {
 interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
+  // A file is transcribing: show the models, but don't let them be picked.
+  locked?: boolean;
   onModelSelect: (modelId: string) => void;
 }
 
 const ModelDropdown: React.FC<ModelDropdownProps> = ({
   models,
   currentModelId,
+  locked = false,
   onModelSelect,
 }) => {
   const { t } = useTranslation();
   const downloadedModels = models.filter((m) => m.is_downloaded);
 
   const handleModelClick = (modelId: string) => {
+    if (locked) return;
     onModelSelect(modelId);
   };
 
   return (
     <div className="absolute bottom-full start-0 mb-2 w-64 max-h-[60vh] overflow-y-auto bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
+      {locked && (
+        <div className="px-3 pb-2 mb-1 text-xs text-text/60 border-b border-mid-gray/20">
+          {t("modelSelector.lockedWhileTranscribing")}
+        </div>
+      )}
       {downloadedModels.length > 0 ? (
         <div>
           {downloadedModels.map((model) => (
@@ -38,9 +47,14 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                   handleModelClick(model.id);
                 }
               }}
-              tabIndex={0}
+              tabIndex={locked ? -1 : 0}
               role="button"
-              className={`w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
+              aria-disabled={locked}
+              className={`w-full px-3 py-2 text-start transition-colors focus:outline-none ${
+                locked
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-mid-gray/10 cursor-pointer"
+              } ${
                 currentModelId === model.id
                   ? "bg-logo-primary/10 text-logo-primary"
                   : ""

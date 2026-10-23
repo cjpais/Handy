@@ -12,6 +12,7 @@ import {
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
+import { useModelsLocked } from "@/stores/transcriptionJobsStore";
 import RetiredModelsNotice from "./RetiredModelsNotice";
 import {
   getLanguageLabel,
@@ -57,6 +58,7 @@ export const ModelsSettings: React.FC = () => {
     deleteModel,
     rescanLocalModels,
   } = useModelStore();
+  const modelsLocked = useModelsLocked();
 
   // click outside handler for language dropdown
   useEffect(() => {
@@ -128,6 +130,7 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const handleModelSelect = async (modelId: string) => {
+    if (modelsLocked) return;
     setSwitchingModelId(modelId);
     try {
       await selectModel(modelId);
@@ -404,14 +407,24 @@ export const ModelsSettings: React.FC = () => {
               </div>
             </div>
           </div>
+          {modelsLocked && (
+            <p className="text-xs text-text/60">
+              {t("modelSelector.lockedWhileTranscribing")}
+            </p>
+          )}
           {downloadedModels.map((model: ModelInfo) => (
             <ModelCard
               key={model.id}
               model={model}
               status={getModelStatus(model.id)}
+              disabled={modelsLocked}
               onSelect={handleModelSelect}
               onDownload={handleModelDownload}
-              onDelete={handleModelDelete}
+              onDelete={
+                modelsLocked && model.id === currentModel
+                  ? undefined
+                  : handleModelDelete
+              }
               onCancel={handleModelCancel}
               downloadProgress={getDownloadProgress(model.id)}
               downloadSpeed={getDownloadSpeed(model.id)}

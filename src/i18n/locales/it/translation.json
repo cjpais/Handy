@@ -117,7 +117,8 @@
     },
     "cancel": "Annulla",
     "cancelDownload": "Annulla download",
-    "legacy": "Obsoleto"
+    "legacy": "Obsoleto",
+    "lockedWhileTranscribing": "I modelli si potranno cambiare al termine della trascrizione del file."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Ri-trascrivere",
       "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
       "transcribing": "Trascrizione in corso...",
-      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione."
+      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione.",
+      "transcribeFile": "Trascrivi file",
+      "mediaFiles": "Audio e video",
+      "fileUnsupported": "Impossibile leggere l'audio da {{name}}.",
+      "transcribeFailed": "Trascrizione non riuscita. Riprova.",
+      "waiting": "In attesa di trascrizione",
+      "transcribingPercent": "Trascrizione, {{percent}}%",
+      "showMore": "Mostra di più",
+      "showLess": "Mostra di meno",
+      "dropTitle": "Rilascia per trascrivere",
+      "dropDescription": "Comparirà nella cronologia."
     },
     "debug": {
       "title": "Debug",

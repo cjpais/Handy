@@ -117,7 +117,8 @@
       "translation": "Pot traduir a l'anglès",
       "translate": "Tradueix",
       "streaming": "Mostra la transcripció en temps real mentre parleu"
-    }
+    },
+    "lockedWhileTranscribing": "Els models es poden canviar quan s'acabi de transcriure el fitxer."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Torneu a transcriure",
       "retranscribeError": "No s'ha pogut tornar a transcriure. Torneu-ho a provar.",
       "transcribing": "S'està transcrivint...",
-      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent."
+      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent.",
+      "transcribeFile": "Transcriu un fitxer",
+      "mediaFiles": "Àudio i vídeo",
+      "fileUnsupported": "No s'ha pogut llegir l'àudio de {{name}}.",
+      "transcribeFailed": "La transcripció ha fallat. Torna-ho a provar.",
+      "waiting": "Esperant per transcriure",
+      "transcribingPercent": "Transcrivint, {{percent}}%",
+      "showMore": "Mostra'n més",
+      "showLess": "Mostra'n menys",
+      "dropTitle": "Deixa anar per transcriure",
+      "dropDescription": "Apareixerà a l'historial."
     },
     "debug": {
       "title": "Depuració",

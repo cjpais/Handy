@@ -117,7 +117,8 @@
     },
     "cancel": "İptal",
     "cancelDownload": "İndirmeyi iptal et",
-    "legacy": "Eski"
+    "legacy": "Eski",
+    "lockedWhileTranscribing": "Dosyanın yazıya dökülmesi bitince model değiştirilebilir."
   },
   "settings": {
     "modelSettings": {
@@ -458,7 +459,17 @@
       "retranscribe": "Yeniden transkribe et",
       "retranscribeError": "Yeniden transkripsiyon başarısız oldu. Lütfen tekrar deneyin.",
       "transcribing": "Transkribe ediliyor...",
-      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz."
+      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz.",
+      "transcribeFile": "Dosyayı Yazıya Dök",
+      "mediaFiles": "Ses ve video",
+      "fileUnsupported": "{{name}} dosyasından ses okunamadı.",
+      "transcribeFailed": "Yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
+      "waiting": "Yazıya dökülmeyi bekliyor",
+      "transcribingPercent": "Yazıya dökülüyor, %{{percent}}",
+      "showMore": "Daha fazla göster",
+      "showLess": "Daha az göster",
+      "dropTitle": "Yazıya dökmek için bırakın",
+      "dropDescription": "Geçmiş'te görünecek."
     },
     "debug": {
       "title": "Hata Ayıklama",
