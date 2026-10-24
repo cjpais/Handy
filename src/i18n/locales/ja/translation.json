@@ -30,8 +30,7 @@
       "retry": "再試行",
       "chooseAnother": "別のモデルを選択",
       "download": "モデルをダウンロード ({{size}})",
-      "continue": "続行",
-      "timeRemaining": "残り {{time}}"
+      "continue": "続行"
     },
     "modelCard": {
       "accuracy": "精度",

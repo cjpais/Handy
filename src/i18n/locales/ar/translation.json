@@ -30,8 +30,7 @@
       "retry": "حاول مرة أخرى",
       "chooseAnother": "اختر نموذجًا مختلفًا",
       "download": "تنزيل النماذج ({{size}})",
-      "continue": "متابعة",
-      "timeRemaining": "متبقٍ {{time}}"
+      "continue": "متابعة"
     },
     "modelCard": {
       "accuracy": "الدقة",

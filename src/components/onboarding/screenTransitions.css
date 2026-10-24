@@ -43,7 +43,7 @@ html[data-sflow]::view-transition-group(sf-guide) {
 /* The move: one length and one ease for everything that travels. */
 html[data-sflow]::view-transition-group(*) {
   animation-duration: 0.56s;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-timing-function: var(--ease-glide);
 }
 
 /* The pictures hand over early, so the old, scaled-up one (soft, it's a
@@ -86,20 +86,20 @@ html[data-sflow]::view-transition-new(sf-sub) {
 html[data-sflow="in"]::view-transition-old(sf-laptop) {
   transform-origin: var(--sf-ox) var(--sf-oy);
   animation:
-    sf-push 0.56s cubic-bezier(0.22, 1, 0.36, 1) both,
+    sf-push 0.56s var(--ease-glide) both,
     sf-fade-out 0.3s ease both;
 }
 /* Back: they close in around the screen as it shrinks. */
 html[data-sflow="out"]::view-transition-new(sf-laptop) {
   transform-origin: var(--sf-ox) var(--sf-oy);
   animation:
-    sf-pull 0.56s cubic-bezier(0.22, 1, 0.36, 1) both,
+    sf-pull 0.56s var(--ease-glide) both,
     sf-fade-in 0.3s ease 0.16s both;
 }
 
 /* Handy steps in once you're close, and steps out first on the way back. */
 html[data-sflow="in"]::view-transition-new(sf-guide) {
-  animation: sf-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.38s both;
+  animation: sf-rise 0.34s var(--ease-glide) 0.38s both;
 }
 html[data-sflow="out"]::view-transition-old(sf-guide) {
   animation: sf-fade-out 0.14s ease both;

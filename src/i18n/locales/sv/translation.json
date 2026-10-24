@@ -30,8 +30,7 @@
       "retry": "Försök igen",
       "chooseAnother": "Välj en annan modell",
       "download": "Ladda ner modeller ({{size}})",
-      "continue": "Fortsätt",
-      "timeRemaining": "{{time}} kvar"
+      "continue": "Fortsätt"
     },
     "modelCard": {
       "accuracy": "noggrannhet",

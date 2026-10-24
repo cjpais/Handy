@@ -5,14 +5,16 @@ import {
   isOnlyModifiers,
   keycapLabel,
   type OSType,
+  spaceDoesNotClick,
 } from "@/lib/utils/keyboard";
 import { prefersReducedMotion } from "@/lib/utils/motion";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
-import { Keycaps } from "../../shared/Keycaps";
+import { Keycaps, KeySlot } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
 import TrayIcon from "../../icons/TrayIcon";
 import { DesktopBar } from "../DesktopBar";
+import { WindowBar } from "../WindowBar";
 import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
 import { LinuxGuide } from "../LinuxGuide";
 import { TrayPanel } from "../TrayPanel";
@@ -21,7 +23,6 @@ import { useTryEngine } from "../useTryEngine";
 import { MicrophoneDropdown } from "../../settings/MicrophoneSelector";
 import { useSettings } from "@/hooks/useSettings";
 import type { CatalogModel } from "../data/models";
-import type { DownloadState } from "../useOnboardingModels";
 import "./tryit.css";
 
 type Mood = "point" | "listen" | "cheer" | "oops" | "ready" | "windup";
@@ -149,9 +150,7 @@ const LineKeys: React.FC<{
       aria-label={label}
       // The cursor stays in the note, so the next take still lands there.
       onMouseDown={(ev) => ev.preventDefault()}
-      // The shortcut may use Space; pressing it here mustn't click.
-      onKeyDown={(ev) => ev.key === " " && ev.preventDefault()}
-      onKeyUp={(ev) => ev.key === " " && ev.preventDefault()}
+      {...spaceDoesNotClick}
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={(ev) => ev.currentTarget.matches(":focus-visible") && show(ev)}
@@ -173,9 +172,10 @@ interface TryItProps {
   finished: boolean;
   /** The model in use (on disk: Demo won't continue until it is). */
   model: CatalogModel | undefined;
-  download: DownloadState;
+  /** The model is on disk. */
+  ready: boolean;
   /** The download, as Demo shows it: All set's panel, while it's going. */
-  downloadStatus: React.ReactNode;
+  download: React.ReactNode;
   /** A take was too slow: back to Model, for a faster one. */
   onChangeModel: () => void;
   /** From All set's panel: to Welcome or Model, and straight back. */
@@ -208,8 +208,8 @@ export const TryIt: React.FC<TryItProps> = ({
   os,
   finished,
   model,
+  ready,
   download,
-  downloadStatus,
   onChangeModel,
   onEdit,
   onBack,
@@ -415,7 +415,8 @@ export const TryIt: React.FC<TryItProps> = ({
           }}
         />
       ),
-      mood: e.phase === "idle" ? "point" : "listen",
+      // Only read while idle: mid-take the glove listens (data-mood below).
+      mood: "point",
     });
     // New keys going in: one line, the slot that takes them, and Cancel.
     if (capturing)
@@ -438,7 +439,7 @@ export const TryIt: React.FC<TryItProps> = ({
                 partial
               />
             ) : (
-              <span className="try-keys try-slot" aria-hidden="true" />
+              <KeySlot size="line" className="try-keys try-slot" />
             )}
             <TextLink className="try-cancel" onClick={e.capture.cancel}>
               {t("onboarding.demo.cancel")}
@@ -667,16 +668,7 @@ export const TryIt: React.FC<TryItProps> = ({
               e.field.current?.focus();
             }}
           >
-            <div className="try-notes-bar">
-              <span className="flex gap-[6px]" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span className="absolute inset-0 grid place-items-center">
-                {t("onboarding.demo.apps.notes")}
-              </span>
-            </div>
+            <WindowBar size="lg" title={t("onboarding.demo.apps.notes")} />
             <div className="try-note">
               <p className="try-note-title">{t("onboarding.demo.noteTitle")}</p>
               <textarea
@@ -788,8 +780,8 @@ export const TryIt: React.FC<TryItProps> = ({
               os={os}
               languages={languages}
               modelName={name}
-              ready={download.state === "ready"}
-              download={downloadStatus}
+              ready={ready}
+              download={download}
               shortcut={e.shortcut}
               keysDown={e.keysDown}
               capture={e.capture}

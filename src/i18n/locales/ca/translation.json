@@ -30,8 +30,7 @@
       "retry": "Torna-ho a provar",
       "chooseAnother": "Trieu un altre model",
       "download": "Baixa els models ({{size}})",
-      "continue": "Continua",
-      "timeRemaining": "Queden {{time}}"
+      "continue": "Continua"
     },
     "modelCard": {
       "accuracy": "precisió",

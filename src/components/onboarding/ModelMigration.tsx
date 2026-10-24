@@ -16,6 +16,7 @@ import { DoneMark } from "../shared/DoneMark";
 import { ProgressRing } from "../shared/ProgressRing";
 import { Tag } from "../shared/Tag";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "./OnboardingShell";
+import { useDownloadWords } from "./DownloadStatus";
 import { useModelStore } from "../../stores/modelStore";
 import { BYTES_PER_MB, formatModelSize } from "../../lib/utils/format";
 import { commands } from "@/bindings";
@@ -42,7 +43,8 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   onChooseAnother,
   inUseModelId,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const words = useDownloadWords();
   const {
     models,
     loading,
@@ -169,21 +171,9 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
         ? progress.total - progress.downloaded
         : Number(p.replacement.size_mb) * BYTES_PER_MB * (1 - state / 100);
   }
-  const secondsLeft = measured && rate > 0 ? remainingBytes / rate : 0;
-  // Unit formatting is localized by the browser ("3 min", "3 Min."), so only
-  // the "remaining" wrapper needs translating.
-  const timeLeft =
-    secondsLeft > 0
-      ? new Intl.NumberFormat(i18n.language, {
-          style: "unit",
-          unit: secondsLeft < 60 ? "second" : "minute",
-          unitDisplay: "short",
-        }).format(
-          secondsLeft < 60
-            ? Math.ceil(secondsLeft)
-            : Math.ceil(secondsLeft / 60),
-        )
-      : null;
+  const timeLeft = words.time(
+    measured && rate > 0 && remainingBytes > 0 ? remainingBytes / rate : null,
+  );
 
   const setOutcome = (retiredId: string, outcome?: Outcome) =>
     setOutcomes((prev) => ({ ...prev, [retiredId]: outcome }));
@@ -300,16 +290,10 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
         t("modelSelector.loading", { modelName: target.replacement.name })}
       {timeLeft && (
         <span className="tabular-nums">
-          {t("onboarding.migration.timeRemaining", { time: timeLeft })}
+          {t("onboarding.download.timeLeft", { time: timeLeft })}
         </span>
       )}
-      {rate > 0 && (
-        <span className="tabular-nums">
-          {t("modelSelector.downloadSpeed", {
-            speed: (rate / BYTES_PER_MB).toFixed(1),
-          })}
-        </span>
-      )}
+      {rate > 0 && <span className="tabular-nums">{words.speed(rate)}</span>}
     </span>
   ) : undefined;
 

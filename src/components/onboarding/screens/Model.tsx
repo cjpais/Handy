@@ -1,4 +1,5 @@
 import React, {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -6,11 +7,11 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Languages, Radio as LiveIcon } from "lucide-react";
+import { Languages, Radio as LiveIcon, Search } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { GradeChip } from "../../shared/GradeChip";
-import { Hint } from "../../shared/Hint";
+import { Tooltip } from "../../ui/Tooltip";
 import { ProgressLine } from "../../shared/ProgressLine";
 import { SpeedBars, speedLevel } from "../../shared/SpeedBars";
 import { Tag } from "../../shared/Tag";
@@ -30,7 +31,7 @@ import {
   type PickRole,
 } from "../data/models";
 import type { useOnboardingModels } from "../useOnboardingModels";
-import { moveModels, type ModelMove } from "./modelTransitions";
+import { moveModels } from "./modelTransitions";
 import "./modelTransitions.css";
 
 type Models = ReturnType<typeof useOnboardingModels>;
@@ -43,27 +44,15 @@ const ROLE_KEYS: Record<PickRole | "extra", string> = {
   extra: "fromAll",
 };
 
+/** A printable key with no shortcut modifier, Space aside. */
+const isTyping = (e: KeyboardEvent) =>
+  e.key.length === 1 && e.key !== " " && !e.metaKey && !e.ctrlKey && !e.altKey;
+
 const Chevron = () => (
   <span
     aria-hidden="true"
     className="inline-block size-[6px] shrink-0 border-e-[1.5px] border-b-[1.5px] border-current -mt-[3px] rotate-45"
   />
-);
-
-const SearchIcon = () => (
-  <svg
-    width="15"
-    height="15"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    aria-hidden="true"
-  >
-    <circle cx="11" cy="11" r="7" />
-    <path d="M20 20l-3.5-3.5" />
-  </svg>
 );
 
 /** The view-transition name of a model's part, the same in every state. */
@@ -184,7 +173,7 @@ export const Model: React.FC<ModelProps> = ({
         : undefined;
     const key = (k: string) => `onboarding.model.rubric.${k}`;
     return (
-      <Hint
+      <Tooltip
         key={ls.join()}
         title={
           one
@@ -219,7 +208,7 @@ export const Model: React.FC<ModelProps> = ({
         }
       >
         {chip}
-      </Hint>
+      </Tooltip>
     );
   };
 
@@ -233,7 +222,7 @@ export const Model: React.FC<ModelProps> = ({
     bars: React.ReactElement,
     className = "",
   ) => (
-    <Hint
+    <Tooltip
       className={className}
       title={speedText(row.wait, previews(row.model))}
       text={
@@ -245,7 +234,7 @@ export const Model: React.FC<ModelProps> = ({
       }
     >
       {bars}
-    </Hint>
+    </Tooltip>
   );
 
   /**
@@ -266,7 +255,7 @@ export const Model: React.FC<ModelProps> = ({
     const { Icon, has } = CAPABILITIES[c];
     return (
       has(m) && (
-        <Hint text={capabilityLine(c)}>
+        <Tooltip text={capabilityLine(c)}>
           <Tag className="inline-flex items-center gap-[4px]">
             <Icon
               aria-hidden="true"
@@ -275,12 +264,10 @@ export const Model: React.FC<ModelProps> = ({
             />
             {capabilityName(c)}
           </Tag>
-        </Hint>
+        </Tooltip>
       )
     );
   };
-  const previewTag = (m: CatalogModel) => capabilityTag(m, "preview");
-  const translateTag = (m: CatalogModel) => capabilityTag(m, "translate");
 
   /** Show all's version: the icons alone after the role, words on hover. */
   const capabilityIcons = (m: CatalogModel) =>
@@ -290,7 +277,11 @@ export const Model: React.FC<ModelProps> = ({
           const { Icon, has } = CAPABILITIES[c];
           return (
             has(m) && (
-              <Hint key={c} title={capabilityName(c)} text={capabilityLine(c)}>
+              <Tooltip
+                key={c}
+                title={capabilityName(c)}
+                text={capabilityLine(c)}
+              >
                 <span className="grid size-[20px] place-items-center hover:text-text">
                   <Icon
                     role="img"
@@ -298,7 +289,7 @@ export const Model: React.FC<ModelProps> = ({
                     className="size-[14px]"
                   />
                 </span>
-              </Hint>
+              </Tooltip>
             )
           );
         })}
@@ -306,38 +297,31 @@ export const Model: React.FC<ModelProps> = ({
     );
 
   /** What a model can do besides transcribe, beside its role. */
-  const capabilityTags = (m: CatalogModel) => (
-    <>
-      {previewTag(m)}
-      {translateTag(m)}
-    </>
-  );
+  const capabilityTags = (m: CatalogModel) =>
+    (Object.keys(CAPABILITIES) as Capability[]).map((c) => (
+      <Fragment key={c}>{capabilityTag(m, c)}</Fragment>
+    ));
 
-  const move = (kind: ModelMove, update: () => void) =>
-    moveModels(rootRef.current, kind, update);
+  const move = (update: () => void) => moveModels(rootRef.current, update);
 
   const open = (initialQuery = "") =>
-    move("grow", () => {
+    move(() => {
       focusSearch.current = true;
       setQuery(initialQuery);
       setShowAll(true);
     });
   const close = () =>
-    move("shrink", () => {
+    move(() => {
       setShowAll(false);
       setQuery("");
       setOnlyPreview(false);
       setOnlyTranslate(false);
     });
 
+  // The extra model follows from modelId (extraId above).
   const choose = (id: string, animate: boolean) => {
-    const update = () => {
-      set({
-        modelId: id,
-        ...(isPick(id) ? {} : { extraModelId: id }),
-      });
-    };
-    if (animate) move("pick", update);
+    const update = () => set({ modelId: id });
+    if (animate) move(update);
     else update();
   };
 
@@ -347,8 +331,7 @@ export const Model: React.FC<ModelProps> = ({
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-      if (e.key.length !== 1 || e.key === " ") return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!isTyping(e)) return;
       e.preventDefault();
       open(e.key);
     };
@@ -376,15 +359,7 @@ export const Model: React.FC<ModelProps> = ({
         return;
       }
       // Space stays with what has focus: it presses a filter or a row.
-      if (
-        input &&
-        document.activeElement !== input &&
-        e.key.length === 1 &&
-        e.key !== " " &&
-        !e.metaKey &&
-        !e.ctrlKey &&
-        !e.altKey
-      )
+      if (input && document.activeElement !== input && isTyping(e))
         input.focus({ preventScroll: true });
     };
     window.addEventListener("keydown", onKey, true);
@@ -474,8 +449,8 @@ export const Model: React.FC<ModelProps> = ({
         s,
         loading && models.infoFor(loading)?.size_mb,
       );
-      const speed = words.speed(s);
-      const time = words.time(s);
+      const speed = words.speed(s.bytesPerSec);
+      const time = words.time(s.etaSeconds);
       left = t("onboarding.download.cardProgress", {
         percent: words.percent(s),
         done,
@@ -506,7 +481,6 @@ export const Model: React.FC<ModelProps> = ({
   );
 
   const roleBase = "shrink-0 font-[650] uppercase tracking-[0.04em]";
-  const roleClass = `${roleBase} text-label text-ink-2`;
   const sizeClass =
     "ms-auto min-w-[50px] text-end text-label text-ink-3 tabular-nums";
 
@@ -734,7 +708,7 @@ export const Model: React.FC<ModelProps> = ({
         className={`relative flex w-full min-w-0 cursor-pointer items-center gap-[10px] whitespace-nowrap rounded-card border-[1.5px] border-line bg-background px-5 text-start text-small text-text hover:border-ink-3 hover:bg-wash [view-transition-class:mf-row_mf-box] ${line ? "pt-[8px] pb-[15px]" : "py-[8px]"}`}
       >
         {mark(id, false)}
-        <b {...vt(id, "r")} className={`${roleClass} text-text`}>
+        <b {...vt(id, "r")} className={`${roleBase} text-label text-text`}>
           {t(`onboarding.model.roles.${ROLE_KEYS[role]}`)}
         </b>
         {capabilityTags(row.model)}
@@ -857,7 +831,7 @@ export const Model: React.FC<ModelProps> = ({
             onClick={() => open()}
             className="mt-[8px] flex h-[38px] flex-none cursor-pointer items-center gap-[8px] self-stretch rounded-card border-[1.5px] border-dashed border-line-strong px-[20px] text-start text-small font-semibold text-ink-2 hover:border-solid hover:bg-wash hover:text-text"
           >
-            {t("onboarding.model.showAll", { count: models.count })}
+            {t("onboarding.model.showAll", { count: models.offered.length })}
             <Chevron />
           </button>
         </ScreenMain>
@@ -905,7 +879,7 @@ export const Model: React.FC<ModelProps> = ({
   const filter = (c: Capability, on: boolean, toggle: () => void) => {
     const { Icon } = CAPABILITIES[c];
     return (
-      <Hint text={capabilityLine(c)}>
+      <Tooltip text={capabilityLine(c)}>
         <button
           type="button"
           aria-pressed={on}
@@ -922,10 +896,9 @@ export const Model: React.FC<ModelProps> = ({
           <Icon aria-hidden="true" className="size-[14px]" />
           {capabilityName(c)}
         </button>
-      </Hint>
+      </Tooltip>
     );
   };
-  const select = (id: string) => choose(id, false);
 
   /** ↑↓ from the search box move the selection. */
   const step = (d: number) => {
@@ -958,7 +931,7 @@ export const Model: React.FC<ModelProps> = ({
         aria-checked={on}
         {...vt(id)}
         data-vt-row=""
-        onClick={() => select(id)}
+        onClick={() => choose(id, false)}
         className={`relative grid w-full min-w-0 flex-none cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[10px] rounded-control px-[14px] text-start text-small leading-[1.5] text-text [view-transition-class:mf-row_mf-box] ${line ? "pt-[9px] pb-[16px]" : "py-[9px]"} ${
           // Picked: the picks' plum edge (the Full card's), drawn inside so
           // the columns stay under their heads.
@@ -1022,7 +995,7 @@ export const Model: React.FC<ModelProps> = ({
           <div className="flex h-[34px] min-w-0 flex-1 items-center gap-[4px] rounded-lg border border-line-strong bg-background pe-[4px]">
             <label className="flex h-full min-w-0 flex-1 cursor-text items-center gap-[7px] ps-[11px]">
               <span className="grid shrink-0 text-ink-3">
-                <SearchIcon />
+                <Search size={15} aria-hidden="true" />
               </span>
               {/* Quiet on focus: the caret says where typing goes, and the
                   picked row below stays the one marked thing. No ×:

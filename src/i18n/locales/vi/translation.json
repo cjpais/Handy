@@ -30,8 +30,7 @@
       "retry": "Thử lại",
       "chooseAnother": "Chọn mô hình khác",
       "download": "Tải mô hình ({{size}})",
-      "continue": "Tiếp tục",
-      "timeRemaining": "Còn {{time}}"
+      "continue": "Tiếp tục"
     },
     "modelCard": {
       "accuracy": "độ chính xác",

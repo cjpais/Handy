@@ -30,8 +30,7 @@
       "retry": "फिर से कोशिश करें",
       "chooseAnother": "कोई दूसरा मॉडल चुनें",
       "download": "मॉडल डाउनलोड करें ({{size}})",
-      "continue": "जारी रखें",
-      "timeRemaining": "{{time}} शेष"
+      "continue": "जारी रखें"
     },
     "modelCard": {
       "accuracy": "सटीकता",

@@ -110,14 +110,12 @@ export const useTryEngine = ({ os }: { os: OSType }) => {
 
   /* ---------- Handy's input ---------- */
 
-  useEffect(() => {
-    if (!preview) commands.initializeEnigo().catch(console.error);
-  }, [preview]);
-
   // Normally on since Permissions; this is for when that screen was skipped.
   // Without a model the backend ignores the shortcut until one is on disk.
   useEffect(() => {
-    if (!preview) commands.initializeShortcuts().catch(console.error);
+    if (preview) return;
+    commands.initializeEnigo().catch(console.error);
+    commands.initializeShortcuts().catch(console.error);
   }, [preview]);
 
   /* ---------- takes ---------- */

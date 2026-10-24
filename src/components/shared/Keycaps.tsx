@@ -68,3 +68,25 @@ export const Keycaps: React.FC<KeycapsProps> = ({
     </span>
   );
 };
+
+const SLOT_SIZES = {
+  sm: "h-[30px] min-w-[88px] px-[9px] rounded-[7px] text-small",
+  line: "h-[25px] min-w-[64px] px-[8px] rounded-[6px] text-[13px]",
+};
+
+/**
+ * Where new keys go while a shortcut is being captured: a dashed key, sunk
+ * like the dashed keys that replace it, its edge breathing. Empty, or with
+ * a few words ("Press keys…").
+ */
+export const KeySlot: React.FC<
+  React.HTMLAttributes<HTMLSpanElement> & { size?: "sm" | "line" }
+> = ({ size = "sm", className = "", children, ...rest }) => (
+  <span
+    aria-hidden={children ? undefined : true}
+    {...rest}
+    className={`inline-flex translate-y-[3px] items-center justify-center whitespace-nowrap border border-dashed border-plum-pick font-display font-semibold leading-none text-ink-2 animate-key-slot motion-reduce:animate-none ${SLOT_SIZES[size]} ${className}`}
+  >
+    {children}
+  </span>
+);

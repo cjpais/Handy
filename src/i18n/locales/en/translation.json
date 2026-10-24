@@ -30,8 +30,7 @@
       "retry": "Try again",
       "chooseAnother": "Choose a different model",
       "download": "Download models ({{size}})",
-      "continue": "Continue",
-      "timeRemaining": "{{time}} remaining"
+      "continue": "Continue"
     },
     "modelCard": {
       "accuracy": "accuracy",
@@ -122,10 +121,6 @@
       }
     },
     "download": {
-      "seconds_one": "{{count}} sec",
-      "seconds_other": "{{count}} sec",
-      "minutes_one": "{{count}} min",
-      "minutes_other": "{{count}} min",
       "checking": "Checking the download…",
       "ready": "{{name}} is ready",
       "failed": "Download stopped",

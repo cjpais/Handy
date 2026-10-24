@@ -14,11 +14,7 @@ import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
 import { UpdateChecksToggle } from "../UpdateChecksToggle";
 import { WhatsNewPreview } from "./WhatsNewPreview";
 import { KeyboardDiagnostic } from "./KeyboardDiagnostic";
-import {
-  ModelMigrationRun,
-  OnboardingPreview,
-  OnboardingRun,
-} from "./OnboardingPreview";
+import { DebugRun, OnboardingPreview } from "./OnboardingPreview";
 import type { OnboardingStep } from "../../onboarding/onboardingStore";
 
 interface DebugSettingsProps {
@@ -44,12 +40,14 @@ export const DebugSettings: React.FC<DebugSettingsProps> = ({
           descriptionMode="tooltip"
           grouped={true}
         />
-        <OnboardingRun
+        <DebugRun
+          run="onboardingRun"
           onRun={onRunOnboarding}
           descriptionMode="tooltip"
           grouped={true}
         />
-        <ModelMigrationRun
+        <DebugRun
+          run="modelMigration"
           onRun={onRunModelMigration}
           descriptionMode="tooltip"
           grouped={true}

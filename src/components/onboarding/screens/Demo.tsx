@@ -13,11 +13,13 @@ import {
   bindingKeys,
   isOnlyModifiers,
   type OSType,
+  spaceDoesNotClick,
 } from "@/lib/utils/keyboard";
 import { prefersReducedMotion } from "@/lib/utils/motion";
 import { Button } from "../../ui/Button";
-import { Keycaps } from "../../shared/Keycaps";
+import { Keycaps, KeySlot } from "../../shared/Keycaps";
 import { DesktopBar } from "../DesktopBar";
+import { WindowBar } from "../WindowBar";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { demoLine } from "../data/samples";
@@ -246,20 +248,14 @@ const DemoLaptop: React.FC<{
             data-mode={mode}
             data-focused={focused || undefined}
           >
-            <div className="demo-app-bar">
-              <span className="flex gap-[6px]">
-                {[0, 1, 2].map((i) => (
-                  <i key={i} />
-                ))}
-              </span>
-              <span className="absolute inset-0 grid place-items-center">
-                {t(
-                  mode === "hold"
-                    ? "onboarding.demo.apps.messages"
-                    : "onboarding.demo.apps.notes",
-                )}
-              </span>
-            </div>
+            <WindowBar
+              size="sm"
+              title={t(
+                mode === "hold"
+                  ? "onboarding.demo.apps.messages"
+                  : "onboarding.demo.apps.notes",
+              )}
+            />
             <div className="demo-app-body">
               {mode === "hold" ? (
                 <p className="demo-them">{t("onboarding.demo.chat")}</p>
@@ -602,9 +598,7 @@ export const Demo: React.FC<DemoProps> = ({
             if (capture.capturing) capture.cancel();
             else startCapture();
           }}
-          // The shortcut may use Space; pressing it here mustn't click.
-          onKeyDown={(e) => e.key === " " && e.preventDefault()}
-          onKeyUp={(e) => e.key === " " && e.preventDefault()}
+          {...spaceDoesNotClick}
           // Shrink-wrapped, the two 1fr sides size to the wider of the two,
           // so the keys sit on the laptop's centre in any language.
           className="group/keycaps mt-[26px] inline-grid cursor-pointer grid-cols-[1fr_auto_1fr] items-center gap-[14px] text-small focus-visible:outline-none"
@@ -630,7 +624,7 @@ export const Demo: React.FC<DemoProps> = ({
                   className="col-start-1 row-start-1 justify-self-center"
                 />
               ) : (
-                <span className="col-start-1 row-start-1 h-[30px] min-w-[88px] translate-y-[3px] animate-pulse rounded-[7px] border border-dashed border-plum-pick" />
+                <KeySlot className="col-start-1 row-start-1" />
               ))}
           </span>
           <span className="justify-self-start whitespace-nowrap text-ink-2 underline decoration-line underline-offset-[3px] transition-colors group-hover/keycaps:text-text group-hover/keycaps:decoration-current">

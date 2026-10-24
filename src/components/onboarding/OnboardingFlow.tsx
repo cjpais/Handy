@@ -77,12 +77,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       (m) => models.infoFor(m)?.is_downloaded,
     );
     if (!onDisk.length) return;
+    const selected = models.catalogFor(settings?.selected_model ?? "");
     const chosen =
-      models.catalogFor(settings?.selected_model ?? "") ??
+      onDisk.find((m) => m.id === selected?.id) ??
       onDisk.find((m) => models.picks.some((p) => p.model.id === m.id)) ??
       onDisk[0];
-    if (chosen?.id && models.infoFor(chosen)?.is_downloaded)
-      store.set({ downloadId: chosen.id });
+    store.set({ downloadId: chosen.id });
     // Decided once the model list is in.
   }, [models.offered.length]);
 
@@ -248,8 +248,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           model={
             downloaded ?? models.catalogFor(settings?.selected_model ?? "")
           }
-          download={downloadNow}
-          downloadStatus={<DownloadStatus models={models} model={downloaded} />}
+          ready={modelReady}
+          download={<DownloadStatus models={models} model={downloaded} />}
           onChangeModel={() => go("model")}
           onEdit={(to) => store.set({ step: to, returnTo: "done" })}
           onBack={() => moveScreens("out", back)}

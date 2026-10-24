@@ -14,7 +14,7 @@ type Downloading = Extract<DownloadState, { state: "downloading" }>;
  * left and the speed, as the Models page's cards give them.
  */
 export const useDownloadWords = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // At least a byte: formatModelSize calls 0 an unknown size.
   const bytes = (n: number) => formatModelSize(Math.max(n, 1) / BYTES_PER_MB);
   return {
@@ -25,21 +25,23 @@ export const useDownloadWords = () => {
       done: bytes(d.downloaded),
       total: d.total > 0 ? bytes(d.total) : formatModelSize(sizeMb),
     }),
-    time: (d: Downloading) =>
-      d.etaSeconds == null
-        ? null
-        : d.etaSeconds < 60
-          ? t("onboarding.download.seconds", {
-              count: Math.ceil(d.etaSeconds),
-            })
-          : t("onboarding.download.minutes", {
-              count: Math.ceil(d.etaSeconds / 60),
-            }),
-    speed: (d: Downloading) =>
-      d.bytesPerSec == null
+    /** "3 min", in the app's language (the browser localizes the unit);
+     *  takes seconds left (ModelMigration sums several downloads). */
+    time: (etaSeconds: number | null) => {
+      if (etaSeconds == null) return null;
+      const minutes = etaSeconds >= 60;
+      return new Intl.NumberFormat(i18n.language, {
+        style: "unit",
+        unit: minutes ? "minute" : "second",
+        unitDisplay: "short",
+      }).format(Math.ceil(minutes ? etaSeconds / 60 : etaSeconds));
+    },
+    /** "4.2 MB/s"; takes bytes per second. */
+    speed: (bytesPerSec: number | null) =>
+      bytesPerSec == null
         ? null
         : t("modelSelector.downloadSpeed", {
-            speed: (d.bytesPerSec / BYTES_PER_MB).toFixed(1),
+            speed: (bytesPerSec / BYTES_PER_MB).toFixed(1),
           }),
   };
 };
@@ -78,7 +80,7 @@ export const DownloadStatus: React.FC<{
   switch (d.state) {
     case "downloading": {
       const { done, total } = words.sizes(d, models.infoFor(model)?.size_mb);
-      const time = words.time(d);
+      const time = words.time(d.etaSeconds);
       icon = <ProgressRing value={d.progress} size={20} />;
       one = t("onboarding.download.downloading", { name });
       two = time

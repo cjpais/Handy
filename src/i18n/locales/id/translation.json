@@ -30,8 +30,7 @@
       "retry": "Coba lagi",
       "chooseAnother": "Pilih model lain",
       "download": "Unduh model ({{size}})",
-      "continue": "Lanjutkan",
-      "timeRemaining": "Sisa {{time}}"
+      "continue": "Lanjutkan"
     },
     "modelCard": {
       "accuracy": "akurasi",

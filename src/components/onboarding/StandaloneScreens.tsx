@@ -23,7 +23,7 @@ export const ReturningPermissions: React.FC<{ onComplete: () => void }> = ({
 };
 
 export const ReplaceModel: React.FC<{
-  onBack?: () => void;
+  onBack: () => void;
   /** The new model is downloaded and in use. */
   onComplete: () => void;
 }> = ({ onBack, onComplete }) => {

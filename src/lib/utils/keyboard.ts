@@ -2,7 +2,19 @@
  * Keyboard utility functions for handling keyboard events
  */
 
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+
 export type OSType = "macos" | "windows" | "linux" | "unknown";
+
+const keepSpace = (e: ReactKeyboardEvent<HTMLElement>) => {
+  if (e.key === " ") e.preventDefault();
+};
+
+/**
+ * Spread on a control that changes the shortcut: the shortcut may use Space,
+ * and pressing it there mustn't click the control.
+ */
+export const spaceDoesNotClick = { onKeyDown: keepSpace, onKeyUp: keepSpace };
 
 // Shortcut parsers require compact tokens; keep display labels separate.
 const COMPOUND_KEY_DISPLAY: Record<string, string> = {

@@ -191,22 +191,6 @@
 .demo-screen:has(.is-task) .demo-app {
   top: 20px;
 }
-.demo-app-bar {
-  position: relative;
-  height: 27.5px;
-  display: flex;
-  align-items: center;
-  padding: 0 11px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-ink-3);
-}
-.demo-app-bar i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--color-line);
-}
 .demo-app-body {
   min-height: 107.5px;
   padding: 5px 12.5px 12.5px;

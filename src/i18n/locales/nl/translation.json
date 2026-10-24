@@ -30,8 +30,7 @@
       "retry": "Opnieuw proberen",
       "chooseAnother": "Kies een ander model",
       "download": "Modellen downloaden ({{size}})",
-      "continue": "Doorgaan",
-      "timeRemaining": "Nog {{time}}"
+      "continue": "Doorgaan"
     },
     "modelCard": {
       "accuracy": "nauwkeurigheid",

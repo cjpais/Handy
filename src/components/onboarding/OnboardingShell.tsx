@@ -100,10 +100,10 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
   );
 };
 
-/** The column: how the content lines up across, and its text. */
+/** The column: how the content lines up across. Text is always centred. */
 const ALIGN = {
-  center: { items: "items-center", text: "text-center" },
-  stretch: { items: "items-stretch", text: "text-center" },
+  center: "items-center",
+  stretch: "items-stretch",
 } as const;
 
 /** Between the header and the content, per layout. */
@@ -151,12 +151,12 @@ export const ScreenMain = React.forwardRef<
     <div
       ref={ref}
       {...rest}
-      className={`flex h-full min-h-0 min-w-0 flex-col ${layout === "center" ? "justify-center-safe" : ""} ${ALIGN[align].text} ${wide ? "px-gutter-wide" : "px-gutter"} ${className}`}
+      className={`flex h-full min-h-0 min-w-0 flex-col ${layout === "center" ? "justify-center-safe" : ""} text-center ${wide ? "px-gutter-wide" : "px-gutter"} ${className}`}
     >
       {header}
       {header && <div aria-hidden="true" className={GAP[layout]} />}
       <div
-        className={`flex min-h-0 w-full flex-col ${layout === "top" ? "flex-1" : ""} ${ALIGN[align].items}`}
+        className={`flex min-h-0 w-full flex-col ${layout === "top" ? "flex-1" : ""} ${ALIGN[align]}`}
       >
         {children}
       </div>

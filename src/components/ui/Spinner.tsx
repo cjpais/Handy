@@ -6,6 +6,6 @@ export const Spinner: React.FC<{ className?: string }> = ({
 }) => (
   <span
     aria-hidden="true"
-    className={`inline-block size-[14px] rounded-full border-2 border-line-strong border-t-background-ui animate-spin ${className}`}
+    className={`inline-block size-[14px] rounded-full border-2 border-line-strong border-t-background-ui animate-spin motion-reduce:animate-none ${className}`}
   />
 );

@@ -86,7 +86,6 @@ const ROLE_ORDER: PickRole[] = ["pick", "faster", "accurate"];
 interface ModelPick {
   model: CatalogModel;
   role: PickRole;
-  wait: number | undefined;
 }
 
 // A model the package gives several roles shows the strongest: Recommended,
@@ -104,7 +103,6 @@ const PACKAGE_ROLES = [
  */
 export const picksFor = (
   languages: string[],
-  tier: MachineTier,
   offered: (model: CatalogModel) => boolean,
 ): ModelPick[] =>
   catalog
@@ -112,9 +110,7 @@ export const picksFor = (
     .filter((r) => offered(r.model))
     .map((r) => {
       const role = PACKAGE_ROLES.find(([p]) => r.roles.includes(p))?.[1];
-      return role
-        ? { model: r.model, role, wait: waitFor(r.model, tier) }
-        : null;
+      return role ? { model: r.model, role } : null;
     })
     .filter((p): p is ModelPick => p !== null)
     .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));

@@ -42,17 +42,22 @@ export const OnboardingPreview: React.FC<OnboardingPreviewProps> = ({
   );
 };
 
-interface OnboardingRunProps {
+interface DebugRunProps {
+  /**
+   * `onboardingRun`: the real onboarding from Welcome (permission prompts,
+   * downloads, the practice note and setting writes), exactly as a new person
+   * gets it. `modelMigration`: the real model migration screen, which needs
+   * old-format models on disk to have anything to show.
+   */
+  run: "onboardingRun" | "modelMigration";
   onRun: () => void;
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
-/**
- * Runs the real onboarding from Welcome: permission prompts, downloads, the
- * practice note and setting writes, exactly as a new person gets it.
- */
-export const OnboardingRun: React.FC<OnboardingRunProps> = ({
+/** Runs a real onboarding flow, not a preview. */
+export const DebugRun: React.FC<DebugRunProps> = ({
+  run,
   onRun,
   descriptionMode = "tooltip",
   grouped = false,
@@ -61,44 +66,13 @@ export const OnboardingRun: React.FC<OnboardingRunProps> = ({
 
   return (
     <SettingContainer
-      title={t("settings.debug.onboardingRun.title")}
-      description={t("settings.debug.onboardingRun.description")}
+      title={t(`settings.debug.${run}.title`)}
+      description={t(`settings.debug.${run}.description`)}
       descriptionMode={descriptionMode}
       grouped={grouped}
     >
       <Button variant="secondary" size="sm" onClick={onRun}>
-        {t("settings.debug.onboardingRun.button")}
-      </Button>
-    </SettingContainer>
-  );
-};
-
-interface ModelMigrationRunProps {
-  onRun: () => void;
-  descriptionMode?: "inline" | "tooltip";
-  grouped?: boolean;
-}
-
-/**
- * Opens the real model migration screen. It needs old-format models on disk
- * to have anything to show.
- */
-export const ModelMigrationRun: React.FC<ModelMigrationRunProps> = ({
-  onRun,
-  descriptionMode = "tooltip",
-  grouped = false,
-}) => {
-  const { t } = useTranslation();
-
-  return (
-    <SettingContainer
-      title={t("settings.debug.modelMigration.title")}
-      description={t("settings.debug.modelMigration.description")}
-      descriptionMode={descriptionMode}
-      grouped={grouped}
-    >
-      <Button variant="secondary" size="sm" onClick={onRun}>
-        {t("settings.debug.modelMigration.button")}
+        {t(`settings.debug.${run}.button`)}
       </Button>
     </SettingContainer>
   );

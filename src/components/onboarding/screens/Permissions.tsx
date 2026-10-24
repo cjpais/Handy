@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { Keyboard, Mic } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Spinner } from "../../ui/Spinner";
 import { TextLink } from "../../ui/TextLink";
@@ -8,40 +9,6 @@ import { DoneMark } from "../../shared/DoneMark";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import type { Permissions as PermissionsState } from "../usePermissions";
-
-const MicIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <rect x="9" y="2" width="6" height="12" rx="3" />
-    <path d="M5 10a7 7 0 0 0 14 0M12 17v4" />
-  </svg>
-);
-
-const KeyboardIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <rect x="2" y="6" width="20" height="13" rx="2" />
-    <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 15h10" />
-  </svg>
-);
 
 interface PermissionRowProps {
   icon: React.ReactNode;
@@ -209,7 +176,7 @@ export const Permissions: React.FC<PermissionsProps> = ({
       >
         <div className="flex w-full flex-col rounded-panel border border-line-strong px-[22px] py-[4px] text-start">
           <PermissionRow
-            icon={<MicIcon />}
+            icon={<Mic size={20} aria-hidden="true" />}
             title={t("onboarding.permissions.microphone.name")}
             why={t("onboarding.permissions.microphone.why")}
             status={permissions.microphone}
@@ -227,7 +194,7 @@ export const Permissions: React.FC<PermissionsProps> = ({
           />
           {isMac && (
             <PermissionRow
-              icon={<KeyboardIcon />}
+              icon={<Keyboard size={20} aria-hidden="true" />}
               title={t("onboarding.permissions.accessibility.name")}
               why={t("onboarding.permissions.accessibility.why")}
               status={permissions.accessibility}

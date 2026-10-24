@@ -30,8 +30,7 @@
       "retry": "Zkusit znovu",
       "chooseAnother": "Vybrat jiný model",
       "download": "Stáhnout modely ({{size}})",
-      "continue": "Pokračovat",
-      "timeRemaining": "Zbývá {{time}}"
+      "continue": "Pokračovat"
     },
     "modelCard": {
       "accuracy": "přesnost",

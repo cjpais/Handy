@@ -79,8 +79,8 @@ export const useOnboardingModels = (languages: string[]) => {
   );
 
   const picks = useMemo(
-    () => picksFor(languages, tier, (m) => infoByRepo.has(m.repository)),
-    [languages, tier, infoByRepo],
+    () => picksFor(languages, (m) => infoByRepo.has(m.repository)),
+    [languages, infoByRepo],
   );
 
   const groups = useMemo(
@@ -140,6 +140,5 @@ export const useOnboardingModels = (languages: string[]) => {
     catalogFor,
     downloadState,
     startDownload,
-    count: offered.length,
   };
 };

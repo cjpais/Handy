@@ -36,7 +36,6 @@
   --dark-color-text: #fbfbfb;
   --dark-color-background: #2c2b29;
   --dark-color-logo-primary: #f28cbb;
-  --dark-color-logo-stroke: #fad1ed;
 
   /* Status colors: alerts, failed downloads, the log's levels, the model
      status dot. Each has a -wash tint below for the box behind it. */
@@ -163,7 +162,6 @@
   --color-text: var(--light-color-text);
   --color-background: var(--light-color-background);
   --color-logo-primary: var(--light-color-logo-primary);
-  --color-logo-stroke: var(--light-color-logo-stroke);
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
   --color-moss: var(--light-color-moss);
@@ -199,6 +197,8 @@
      drop, which stay with the keys you press. Under the pointer, a pickable
      edge is ink-3. */
   --color-plum-pick: color-mix(in srgb, var(--color-plum) 60%, transparent);
+  /* The far end of a capture slot's breathing edge (KeySlot). */
+  --color-plum-faint: color-mix(in srgb, var(--color-plum) 22%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -206,7 +206,6 @@
     --color-text: var(--dark-color-text);
     --color-background: var(--dark-color-background);
     --color-logo-primary: var(--dark-color-logo-primary);
-    --color-logo-stroke: var(--dark-color-logo-stroke);
     --color-warning: var(--dark-color-warning);
     --color-error: var(--dark-color-error);
     --color-moss: var(--dark-color-moss);
@@ -240,7 +239,6 @@
   --color-text: var(--light-color-text);
   --color-background: var(--light-color-background);
   --color-logo-primary: var(--light-color-logo-primary);
-  --color-logo-stroke: var(--light-color-logo-stroke);
   --color-warning: var(--light-color-warning);
   --color-error: var(--light-color-error);
   --color-moss: var(--light-color-moss);
@@ -263,7 +261,6 @@
   --color-text: var(--dark-color-text);
   --color-background: var(--dark-color-background);
   --color-logo-primary: var(--dark-color-logo-primary);
-  --color-logo-stroke: var(--dark-color-logo-stroke);
   --color-warning: var(--dark-color-warning);
   --color-error: var(--dark-color-error);
   --color-moss: var(--dark-color-moss);

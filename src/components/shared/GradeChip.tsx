@@ -29,7 +29,6 @@ export const GradeChip: React.FC<GradeChipProps> = ({
   dense = false,
 }) => (
   <span
-    data-grade={letter}
     className={`inline-grid place-items-center rounded-chip border font-display leading-none h-[22px] ${dense ? "min-w-[24px] px-[3px] text-tag" : "min-w-[30px] px-[5px] text-small"} ${LETTER_CLASSES[letter]}`}
   >
     {label}

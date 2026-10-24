@@ -71,23 +71,6 @@
 .try-screen[data-os="win"] .try-notes {
   inset: 18px 22px 44px;
 }
-.try-notes-bar {
-  position: relative;
-  flex: none;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-ink-3);
-}
-.try-notes-bar i {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--color-line);
-}
 
 /* The note: under the screen's title, so a step down from it. */
 .try-note {
@@ -352,22 +335,10 @@
   pointer-events: none;
   animation: try-say-fade 120ms ease;
 }
-/* Recording new keys: a dashed slot where they'll go, sunk like the dashed
+/* Recording new keys: the empty slot (KeySlot) sits on the line like the
    keys that fill it, then Cancel, quiet, on the line's baseline. */
 .try-say-main .try-slot {
-  display: inline-block;
-  width: 64px;
-  height: 25px;
   vertical-align: -6px;
-  border: 1px dashed var(--color-plum-pick);
-  border-radius: 6px;
-  transform: translateY(3px);
-  animation: try-slot-pulse 1.2s ease-in-out infinite;
-}
-@keyframes try-slot-pulse {
-  50% {
-    opacity: 0.35;
-  }
 }
 .try-say-main .try-cancel {
   margin-inline-start: 8px;
@@ -670,26 +641,6 @@ button.try-panel-row:focus-visible {
 [dir="rtl"] .try-panel-chevron {
   transform: scaleX(-1);
 }
-/* Recording: a key-sized, dashed "Press keys…" where the keys were, sunk
-   by their drop like the dashed keys that replace it, the edge breathing. */
-.try-panel-slot {
-  display: inline-flex;
-  align-items: center;
-  height: 25px;
-  padding: 0 8px;
-  border: 1px dashed var(--color-plum-pick);
-  border-radius: 6px;
-  font: 600 13px/1 var(--font-display);
-  color: var(--color-ink-2);
-  white-space: nowrap;
-  transform: translateY(3px);
-  animation: try-panel-listen 1.2s ease-in-out infinite;
-}
-@keyframes try-panel-listen {
-  50% {
-    border-color: color-mix(in srgb, var(--color-plum) 22%, transparent);
-  }
-}
 .try-panel-rule {
   margin: 4px 10px;
   border: 0;
@@ -720,13 +671,11 @@ button.try-panel-row:focus-visible {
   .try-say-sub,
   .try-after > *,
   .try-tip,
-  .try-say-main .try-slot,
   .try-glove .try-pose,
   .try-swap,
   .desktop-tray[data-caught],
   .try-leaving,
-  .try-panel,
-  .try-panel-slot {
+  .try-panel {
     animation: none !important;
   }
 }

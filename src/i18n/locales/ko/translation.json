@@ -30,8 +30,7 @@
       "retry": "다시 시도",
       "chooseAnother": "다른 모델 선택",
       "download": "모델 다운로드 ({{size}})",
-      "continue": "계속",
-      "timeRemaining": "{{time}} 남음"
+      "continue": "계속"
     },
     "modelCard": {
       "accuracy": "정확도",

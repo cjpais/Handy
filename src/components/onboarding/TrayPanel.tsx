@@ -1,8 +1,13 @@
 import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { bindingKeys, keycapLabel, type OSType } from "@/lib/utils/keyboard";
+import {
+  bindingKeys,
+  keycapLabel,
+  spaceDoesNotClick,
+  type OSType,
+} from "@/lib/utils/keyboard";
 import { languageList } from "@/lib/constants/languages";
-import { Keycaps } from "../shared/Keycaps";
+import { Keycaps, KeySlot } from "../shared/Keycaps";
 import { Switch } from "../ui/Switch";
 import TrayIcon from "../icons/TrayIcon";
 
@@ -165,9 +170,7 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
               ? t("onboarding.demo.pressKeys")
               : t("onboarding.try.changeKeys", { keys: keysLabel })
           }
-          // The shortcut may use Space; pressing it here mustn't click.
-          onKeyDown={(ev) => ev.key === " " && ev.preventDefault()}
-          onKeyUp={(ev) => ev.key === " " && ev.preventDefault()}
+          {...spaceDoesNotClick}
           onClick={() => {
             // The same click that reset it (a press and release, well
             // under a second): leave it reset.
@@ -195,9 +198,9 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
                 partial
               />
             ) : (
-              <span className="try-panel-slot" role="status">
+              <KeySlot size="line" role="status">
                 {t("settings.general.shortcut.pressKeys")}
-              </span>
+              </KeySlot>
             )}
           </span>
         </button>

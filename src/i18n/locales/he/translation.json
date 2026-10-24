@@ -30,8 +30,7 @@
       "retry": "ניסיון חוזר",
       "chooseAnother": "בחירת מודל אחר",
       "download": "הורדת מודלים ({{size}})",
-      "continue": "המשך",
-      "timeRemaining": "נותרו {{time}}"
+      "continue": "המשך"
     },
     "modelCard": {
       "accuracy": "דיוק",

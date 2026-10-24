@@ -30,8 +30,7 @@
       "retry": "Spróbuj ponownie",
       "chooseAnother": "Wybierz inny model",
       "download": "Pobierz modele ({{size}})",
-      "continue": "Kontynuuj",
-      "timeRemaining": "Pozostało {{time}}"
+      "continue": "Kontynuuj"
     },
     "modelCard": {
       "accuracy": "dokładność",

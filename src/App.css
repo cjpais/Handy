@@ -11,7 +11,6 @@
   --color-background: var(--color-background);
   --color-background-ui: var(--color-background-ui);
   --color-logo-primary: var(--color-logo-primary);
-  --color-logo-stroke: var(--color-logo-stroke);
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
   --color-moss: var(--color-moss);
@@ -73,6 +72,8 @@
   --animate-burst: burst 420ms var(--ease-glide);
   /* Something new rises into place */
   --animate-rise: rise 260ms var(--ease-glide);
+  /* A shortcut being captured: the empty slot's dashed edge breathes */
+  --animate-key-slot: key-slot 1.2s ease-in-out infinite;
 
   @keyframes wave {
     0% {
@@ -131,6 +132,13 @@
     from {
       opacity: 0;
       translate: 0 6px;
+    }
+  }
+  /* Through a variable: Tailwind can't polyfill a color-mix inside a
+     keyframe, and empties it. */
+  @keyframes key-slot {
+    50% {
+      border-color: var(--color-plum-faint);
     }
   }
 }

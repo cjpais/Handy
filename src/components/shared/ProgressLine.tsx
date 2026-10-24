@@ -24,7 +24,7 @@ export const ProgressLine: React.FC<ProgressLineProps> = ({
   >
     <i
       className={`block h-full rounded-[inherit] bg-background-ui transition-[width] duration-[120ms] ease-linear ${
-        busy ? "animate-pulse" : ""
+        busy ? "animate-pulse motion-reduce:animate-none" : ""
       }`}
       style={{
         width: `${(Math.min(1, Math.max(0, value)) * 100).toFixed(1)}%`,

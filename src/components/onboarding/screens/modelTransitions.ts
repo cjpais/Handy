@@ -5,12 +5,11 @@ import { viewTransitions } from "../viewTransitions";
  * Model's motion: the same model carries the same view-transition name in
  * every state (mf-<id>, and -n name, -s size, -g grades, -m check, -r role,
  * -d words, -c codes), so the browser moves it from where it was to where it
- * is. "grow" / "shrink" open and fold the full list in place (the picks glide
- * into the table's first rows); "pick" swaps which card is the big one. Rows
+ * is: the full list opens and folds in place (the picks glide into the
+ * table's first rows), and picking swaps which card is the big one. Rows
  * that weren't on screen before rise in one after another. Without View
  * Transitions (older webviews) or with reduced motion it just changes.
  */
-export type ModelMove = "grow" | "shrink" | "pick";
 
 const moves = viewTransitions();
 let stagger: HTMLStyleElement | null = null;
@@ -39,11 +38,7 @@ const clearNames = (root: HTMLElement) =>
     .querySelectorAll<HTMLElement>("[data-vt]")
     .forEach((el) => (el.style.viewTransitionName = ""));
 
-export const moveModels = (
-  root: HTMLElement | null,
-  kind: ModelMove,
-  update: () => void,
-) => {
+export const moveModels = (root: HTMLElement | null, update: () => void) => {
   if (!root || !moves.canMove()) {
     update();
     return;
@@ -51,7 +46,7 @@ export const moveModels = (
   moves.skip();
   const before = new Set(nameAll(root).map((el) => el.dataset.vt));
   const html = document.documentElement;
-  html.dataset.mflow = kind;
+  html.dataset.mflow = "";
   if (!stagger) {
     stagger = document.createElement("style");
     document.head.appendChild(stagger);

@@ -328,12 +328,10 @@ function App() {
   };
 
   const handleModelSelected = async () => {
-    // Coming from the model update: the user picked a different model instead
-    // of updating, so the retired models left on disk can't run anymore.
-    if (migrationModelId) {
-      for (const model of await commands.getRetiredModels()) {
-        await deleteRetiredModel(model.id);
-      }
+    // Only reached from the model update: the user picked a different model
+    // instead of updating, so the retired models left on disk can't run anymore.
+    for (const model of await commands.getRetiredModels()) {
+      await deleteRetiredModel(model.id);
     }
     setOnboardingStep("done");
   };
@@ -407,9 +405,7 @@ function App() {
   } else if (onboardingStep === "replaceModel") {
     content = (
       <ReplaceModel
-        onBack={
-          migrationModelId ? () => setOnboardingStep("migration") : undefined
-        }
+        onBack={() => setOnboardingStep("migration")}
         onComplete={handleModelSelected}
       />
     );

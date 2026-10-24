@@ -30,8 +30,7 @@
       "retry": "Tekrar dene",
       "chooseAnother": "Farklı bir model seçin",
       "download": "Modelleri indir ({{size}})",
-      "continue": "Devam et",
-      "timeRemaining": "{{time}} kaldı"
+      "continue": "Devam et"
     },
     "modelCard": {
       "accuracy": "doğruluk",

@@ -30,8 +30,7 @@
       "retry": "Спробувати ще раз",
       "chooseAnother": "Обрати іншу модель",
       "download": "Завантажити моделі ({{size}})",
-      "continue": "Продовжити",
-      "timeRemaining": "Залишилося {{time}}"
+      "continue": "Продовжити"
     },
     "modelCard": {
       "accuracy": "точність",

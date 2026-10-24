@@ -30,8 +30,7 @@
       "retry": "重試",
       "chooseAnother": "選擇其他模型",
       "download": "下載模型（{{size}}）",
-      "continue": "繼續",
-      "timeRemaining": "剩餘 {{time}}"
+      "continue": "繼續"
     },
     "modelCard": {
       "accuracy": "準確度",

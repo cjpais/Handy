@@ -34,6 +34,10 @@ const MAX_POLLING_ERRORS = 3;
 // No answer seen this long after asking: offer the button again.
 const WAITING_TIMEOUT_MS = 15_000;
 
+/** macOS's answers: `[accessibility, microphone]`. */
+const readMac = () =>
+  Promise.all([checkAccessibilityPermission(), checkMicrophonePermission()]);
+
 const currentPlatform = (): PermissionPlatform => {
   const p = platform();
   return p === "macos" ? "macos" : p === "windows" ? "windows" : "other";
@@ -108,10 +112,7 @@ export const usePermissions = (preview: boolean): Permissions => {
     const check = async () => {
       if (isMacOS) {
         try {
-          const [acc, mic] = await Promise.all([
-            checkAccessibilityPermission(),
-            checkMicrophonePermission(),
-          ]);
+          const [acc, mic] = await readMac();
           if (acc) await initializeAfterAccessibility();
           setAccessibility(acc ? "granted" : "needed");
           setMicrophone(mic ? "granted" : "needed");
@@ -155,10 +156,7 @@ export const usePermissions = (preview: boolean): Permissions => {
           errorCountRef.current = 0;
           return;
         }
-        const [acc, mic] = await Promise.all([
-          checkAccessibilityPermission(),
-          checkMicrophonePermission(),
-        ]);
+        const [acc, mic] = await readMac();
         setAccessibility((prev) => {
           if (acc && prev !== "granted") initializeAfterAccessibility();
           return acc ? "granted" : prev;
@@ -193,10 +191,7 @@ export const usePermissions = (preview: boolean): Permissions => {
         return;
       }
       if (!isMacOS) return;
-      const [acc, mic] = await Promise.all([
-        checkAccessibilityPermission(),
-        checkMicrophonePermission(),
-      ]);
+      const [acc, mic] = await readMac();
       setAccessibility((prev) =>
         prev === "waiting" ? (acc ? "granted" : "needed") : prev,
       );
