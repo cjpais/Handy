@@ -602,11 +602,12 @@
       },
       "chineseScript": {
         "title": "Chinese Script",
-        "description": "Writes Mandarin and Cantonese transcriptions in Simplified or Traditional characters. Other languages are left unchanged.",
+        "description": "Writes Mandarin and Cantonese transcriptions in Simplified characters, or in Traditional characters as written in Taiwan or Hong Kong. Other languages are left unchanged.",
         "options": {
           "asTranscribed": "As Transcribed",
           "simplified": "Simplified",
-          "traditional": "Traditional"
+          "traditionalTw": "Traditional (Taiwan)",
+          "traditionalHk": "Traditional (Hong Kong)"
         }
       }
     },

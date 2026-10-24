@@ -1091,13 +1091,24 @@ export type AvailableAccelerators = { transcribe: string[]; gpu_devices: GpuDevi
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 /**
  * Script applied to Mandarin and Cantonese output. Other languages are never
- * converted.
+ * converted. Taiwan and Hong Kong both write Traditional characters, each
+ * with its own standard forms (裡/裏, 著/着), so the region is part of the
+ * choice rather than guessed from what was spoken.
  */
 export type ChineseScript = 
 /**
  * Keep whatever script the model produced.
  */
-"as_transcribed" | "simplified" | "traditional"
+"as_transcribed" | "simplified" | 
+/**
+ * Traditional, in Taiwan's standard forms. Also reads the old single
+ * `traditional` value, which the settings migration then settles.
+ */
+"traditional_tw" | 
+/**
+ * Traditional, in Hong Kong's standard forms.
+ */
+"traditional_hk"
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type GpuDeviceOption = { id: string; name: string; total_vram_mb: number }

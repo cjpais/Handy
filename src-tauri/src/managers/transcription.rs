@@ -1872,7 +1872,7 @@ mod tests {
     #[test]
     fn non_chinese_output_is_never_converted() {
         let settings = AppSettings {
-            chinese_script: ChineseScript::Traditional,
+            chinese_script: ChineseScript::TraditionalTw,
             ..Default::default()
         };
         for evidence in [

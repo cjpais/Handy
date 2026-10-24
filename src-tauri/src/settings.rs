@@ -194,7 +194,9 @@ pub enum ClipboardHandling {
 }
 
 /// Script applied to Mandarin and Cantonese output. Other languages are never
-/// converted.
+/// converted. Taiwan and Hong Kong both write Traditional characters, each
+/// with its own standard forms (裡/裏, 著/着), so the region is part of the
+/// choice rather than guessed from what was spoken.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ChineseScript {
@@ -202,7 +204,12 @@ pub enum ChineseScript {
     #[default]
     AsTranscribed,
     Simplified,
-    Traditional,
+    /// Traditional, in Taiwan's standard forms. Also reads the old single
+    /// `traditional` value, which the settings migration then settles.
+    #[serde(alias = "traditional")]
+    TraditionalTw,
+    /// Traditional, in Hong Kong's standard forms.
+    TraditionalHk,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
@@ -1200,12 +1207,34 @@ fn apply_settings_migrations(
     if settings_value.get("chinese_script").is_none() {
         settings.chinese_script = match settings.selected_language.as_str() {
             "zh-Hans" => ChineseScript::Simplified,
-            "zh-Hant" => ChineseScript::Traditional,
+            "zh-Hant" => ChineseScript::TraditionalTw,
             _ => ChineseScript::AsTranscribed,
         };
         if settings.chinese_script != ChineseScript::AsTranscribed {
             settings.selected_language = "zh".to_string();
         }
+        updated = true;
+    }
+
+    // One-time Traditional split: `traditional` used to take its regional
+    // forms from what was spoken (Hong Kong's for Cantonese, Taiwan's for
+    // Mandarin). Keep Hong Kong's for people who are in Hong Kong or Macau or
+    // speak Cantonese, so nobody's output changes on upgrade.
+    if settings_value
+        .get("chinese_script")
+        .and_then(|v| v.as_str())
+        == Some("traditional")
+    {
+        let hong_kong = settings.spoken_languages.iter().any(|l| l == "yue")
+            || tauri_plugin_os::locale().is_some_and(|locale| {
+                crate::chinese_script::chinese_script_for_locale(&locale)
+                    == Some(ChineseScript::TraditionalHk)
+            });
+        settings.chinese_script = if hong_kong {
+            ChineseScript::TraditionalHk
+        } else {
+            ChineseScript::TraditionalTw
+        };
         updated = true;
     }
 
@@ -1650,12 +1679,12 @@ mod tests {
     fn chinese_script_migration_only_carries_over_legacy_intents() {
         for (intent, language, script) in [
             ("zh-Hans", "zh", ChineseScript::Simplified),
-            ("zh-Hant", "zh", ChineseScript::Traditional),
+            ("zh-Hant", "zh", ChineseScript::TraditionalTw),
             ("auto", "auto", ChineseScript::AsTranscribed),
         ] {
             let mut settings = get_default_settings();
             settings.selected_language = intent.to_string();
-            settings.chinese_script = ChineseScript::Traditional;
+            settings.chinese_script = ChineseScript::TraditionalTw;
             let raw = serde_json::json!({ "selected_language": intent });
 
             assert!(apply_settings_migrations(&mut settings, &raw));

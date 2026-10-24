@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { commands } from "@/bindings";
+import { commands, type ChineseScript } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
 import {
   STEP_ORDER,
@@ -33,13 +33,10 @@ interface OnboardingFlowProps {
 }
 
 // The backend's chinese_script values for the script picked on Welcome.
-const SCRIPT_SETTING: Record<
-  ChineseScriptChoice,
-  "simplified" | "traditional"
-> = {
+const SCRIPT_SETTING: Record<ChineseScriptChoice, ChineseScript> = {
   "zh-Hans": "simplified",
-  "zh-Hant": "traditional",
-  "zh-HK": "traditional",
+  "zh-Hant": "traditional_tw",
+  "zh-HK": "traditional_hk",
 };
 
 /**
