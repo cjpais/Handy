@@ -285,11 +285,19 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
+  let streamWorkingLabel = transcribingLabel;
+  if (workKind === "polishing") streamWorkingLabel = t("overlay.processing");
+
   // ---- Live overlay: a pill that sculpts open into a panel ----
   if (state === "streaming") {
     const hasText =
       streamText.committed.length > 0 || streamText.tentative.length > 0;
     const working = phase === "working";
+    // Recovery stops live decoding while the recorder still captures the full
+    // clip. Keep the microphone meter and timer under the notice: the normal
+    // working spinner would suggest capture had stopped. Finalize replaces this
+    // state with normal transcription; each recording starts with fresh state.
+    const recovering = working && workKind === "recovering";
     // While listening, a slow model load opens the panel with a notice where the
     // text would be, so speech that isn't transcribing yet doesn't look ignored.
     const loadingNotice = modelLoadSlow && !working && !hasText;
@@ -305,8 +313,8 @@ const RecordingOverlay: React.FC = () => {
         <div
           key={session}
           className={`scard ${open ? "open" : ""} ${collapsed ? "working" : ""} ${
-            isVisible ? "" : "leaving"
-          }`}
+            recovering ? "recovering" : ""
+          } ${isVisible ? "" : "leaving"}`}
         >
           <div className="stext">
             <div className="stext-clip">
@@ -332,14 +340,14 @@ const RecordingOverlay: React.FC = () => {
               </div>
             </div>
           </div>
-          {working
-            ? workingRow(
-                workKind === "polishing"
-                  ? t("overlay.processing")
-                  : transcribingLabel,
-                true,
-              )
-            : listeningRow(open, true)}
+          {recovering && (
+            <div className="srecovery-notice" role="status">
+              {t("overlay.recovering")}
+            </div>
+          )}
+          {working && !recovering
+            ? workingRow(streamWorkingLabel, true)
+            : listeningRow(open || recovering, true)}
         </div>
       </div>
     );
