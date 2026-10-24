@@ -88,7 +88,7 @@
       "hintBoth": "Allow both to continue",
       "hintMicrophone": "Allow the microphone to continue",
       "welcomeBack": "Welcome back. Picking up where you left off.",
-      "relaunch": "Shortcut not responding after this? <link>Relaunch Handy</link> and you'll land right back here."
+      "relaunch": "Shortcut not responding after this? <relaunch>Relaunch Handy</relaunch> and you'll land right back here."
     },
     "shell": {
       "back": "Back",
@@ -122,7 +122,6 @@
       }
     },
     "download": {
-      "left": "{{name}}, {{time}} left",
       "seconds_one": "{{count}} sec",
       "seconds_other": "{{count}} sec",
       "minutes_one": "{{count}} min",
@@ -130,7 +129,6 @@
       "checking": "Checking the download…",
       "ready": "{{name}} is ready",
       "failed": "Download stopped",
-      "retry": "Retry",
       "downloading": "Downloading {{name}}",
       "progress": "{{done}} of {{total}}",
       "progressLeft": "{{done}} of {{total}}, {{time}} left",
@@ -184,7 +182,7 @@
       },
       "speedUntested": "Speed not measured yet",
       "rubric": {
-        "gradeTitle": "{{language}} accuracy: {{grade}}",
+        "gradeTitle": "{{language}} accuracy grade: {{grade}}",
         "accuracyTitle": "{{language}} accuracy",
         "overallTitle": "Accuracy across your languages: {{grade}}",
         "overall": "Accuracy across your languages",
@@ -217,7 +215,6 @@
         "translate": "Translates",
         "translateTitle": "Can turn what you say into English text. Turn it on in settings."
       },
-      "seconds": "{{value}}s",
       "showAll": "Show all {{count}} models",
       "download": "Download {{size}}",
       "downloadInstead": "Download {{size}} instead",
@@ -242,14 +239,11 @@
       "noteTitle": "Weekend plans",
       "screenLabel": "A laptop: someone clicks into an app, presses the shortcut and talks, and the words appear where they clicked.",
       "change": "Change",
-      "changeShortcut": "Change shortcut",
       "yourShortcut": "Your shortcut is",
       "pressKeys": "Press the new keys",
       "addKey": "Now add a key",
       "cancel": "Cancel",
-      "tryIt": "Try it yourself",
-      "hint": "You can try it once the download finishes",
-      "hintFailed": "Retry the download to try it yourself"
+      "tryIt": "Try it yourself"
     },
     "try": {
       "title": "Give it a try!",
@@ -276,7 +270,8 @@
       "noWords": "I didn't catch any words.",
       "noWordsSub": "Try again, and say a whole sentence.",
       "finish": "Finish",
-      "skip": "Skip"
+      "skip": "Skip",
+      "seconds": "{{value}}s"
     },
     "done": {
       "title": "You're all set",
@@ -297,8 +292,8 @@
       }
     },
     "linux": {
-      "tryIt": "Not working? <link>Linux setup guide</link>",
-      "done": "Not working in other apps? <link>Linux setup guide</link>"
+      "tryIt": "Not working? <guide>Linux setup guide</guide>",
+      "done": "Not working in other apps? <guide>Linux setup guide</guide>"
     }
   },
   "modelSelector": {
@@ -360,9 +355,7 @@
           }
         },
         "errors": {
-          "restore": "Failed to restore original shortcut",
-          "set": "Failed to set shortcut: {{error}}",
-          "reset": "Failed to reset shortcut to original value"
+          "set": "Failed to set shortcut: {{error}}"
         }
       },
       "language": {
@@ -796,11 +789,6 @@
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
-      "paths": {
-        "appData": "App Data:",
-        "models": "Models:",
-        "settings": "Settings:"
-      },
       "pasteDelay": {
         "title": "Paste Delay (Before)",
         "description": "Delay (in milliseconds) after copying text, before sending the paste keystroke. Increase if nothing gets pasted."
@@ -897,7 +885,6 @@
   "common": {
     "loading": "Loading...",
     "delete": "Delete",
-    "back": "Back",
     "close": "Close",
     "open": "Open",
     "copy": "Copy",

@@ -1,4 +1,7 @@
-@import "tailwindcss";
+/* Scope class detection to src/. Auto-detection from the project root walks
+   every directory (including gitignored Rust build output) to compute watch
+   globs, which made the first dev-server CSS compile take ~16s. */
+@import "tailwindcss" source(".");
 @import "./styles/theme.css";
 
 /* Register the shared color tokens (src/styles/theme.css) as Tailwind
@@ -38,7 +41,6 @@
     system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
     "Noto Sans", sans-serif;
 
-  --text-hero: 40px; /* All set's headline */
   --text-title: 26px; /* screen titles */
   --text-name: 15px; /* the model name on Model's Full card */
   --text-row: 17px; /* row titles */

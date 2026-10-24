@@ -9,10 +9,15 @@ import { Trans, useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
 import { useShortcutCapture } from "@/hooks/useShortcutCapture";
-import { type OSType } from "@/lib/utils/keyboard";
+import {
+  bindingKeys,
+  isOnlyModifiers,
+  type OSType,
+} from "@/lib/utils/keyboard";
+import { prefersReducedMotion } from "@/lib/utils/motion";
 import { Button } from "../../ui/Button";
 import { Keycaps } from "../../shared/Keycaps";
-import TrayIcon from "../../icons/TrayIcon";
+import { DesktopBar } from "../DesktopBar";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { demoLine } from "../data/samples";
@@ -77,24 +82,6 @@ const CHAPTERS: Record<
 
 /** Under reduced motion: each way's still picture, in turn. */
 const STILL_MS = 5000;
-
-const MODIFIERS = [
-  "ctrl",
-  "control",
-  "shift",
-  "alt",
-  "option",
-  "meta",
-  "command",
-  "cmd",
-  "super",
-  "win",
-  "windows",
-  "fn",
-];
-
-const reducedMotion = () =>
-  matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------------- the recording pill ---------------- */
 
@@ -228,24 +215,6 @@ const DemoLaptop: React.FC<{
         : { x: screen.offsetWidth * 0.8, y: screen.offsetHeight * 0.86 },
     );
   }, [pointer, mode, os]);
-  const isMac = os === "macos";
-  // Handy's own icon, in the menu bar or the tray, as the real one changes:
-  // an ear while it listens, a brain while it transcribes.
-  const tray = (
-    <span className="grid">
-      <TrayIcon
-        state={
-          pill === "rec"
-            ? "recording"
-            : pill === "work"
-              ? "transcribing"
-              : "idle"
-        }
-        size={15}
-      />
-    </span>
-  );
-  const clock = <span className="tabular-nums">9:41</span>;
   return (
     <div
       role="img"
@@ -258,32 +227,20 @@ const DemoLaptop: React.FC<{
           ref={screenRef}
           className={`demo-screen ${dimmed ? "is-dimmed" : ""}`}
         >
-          {isMac ? (
-            <div className="demo-bar is-menu">
-              <span className="demo-apple" />
-              <i className="w-[27.5px]" />
-              <i className="w-[20px]" />
-              <i className="w-[22.5px]" />
-              <span className="flex-1" />
-              {tray}
-              {clock}
-            </div>
-          ) : (
-            <div className="demo-bar is-task">
-              <span className="flex-1" />
-              <span className="demo-start">
-                {[0, 1, 2, 3].map((i) => (
-                  <i key={i} />
-                ))}
-              </span>
-              {[0, 1, 2].map((i) => (
-                <b key={i} />
-              ))}
-              <span className="flex-1" />
-              {tray}
-              {clock}
-            </div>
-          )}
+          {/* Handy's own icon, in the menu bar or the tray, as the real one
+              changes: an ear while it listens, a brain while it
+              transcribes. */}
+          <DesktopBar
+            os={os}
+            size="demo"
+            state={
+              pill === "rec"
+                ? "recording"
+                : pill === "work"
+                  ? "transcribing"
+                  : "idle"
+            }
+          />
           <div
             className="demo-app"
             data-mode={mode}
@@ -427,10 +384,10 @@ interface DemoProps {
   /** The model is ready, so Try it can start. */
   ready: boolean;
   /** Its download stopped: the button retries it. */
-  downloadFailed?: boolean;
+  downloadFailed: boolean;
   /** The download's status, beside the button it's holding back. */
-  download?: React.ReactNode;
-  onRetry?: () => void;
+  download: React.ReactNode;
+  onRetry: () => void;
   onBack: () => void;
   onContinue: () => void;
 }
@@ -439,15 +396,16 @@ interface DemoProps {
  * Screen 4, while the model downloads: how Handy works. A laptop, nearly all
  * screen, where a reply and a note get written by voice: the pointer clicks
  * into the app, then the shortcut goes down in the screen's corner, as keys
- * do in a screencast; under the laptop, the shortcut itself, to change. Hold and tap take turns, each told by one sentence whose
- * phrases light up as they happen. It's a demo, not a lesson: Try it teaches
- * the way they actually press.
+ * do in a screencast; under the laptop, the shortcut itself, to change. Hold
+ * and tap take turns, each told by one sentence whose phrases light up as
+ * they happen. It's a demo, not a lesson: Try it teaches the way they
+ * actually press.
  */
 export const Demo: React.FC<DemoProps> = ({
   progress,
   os,
   ready,
-  downloadFailed = false,
+  downloadFailed,
   download,
   onRetry,
   onBack,
@@ -458,7 +416,7 @@ export const Demo: React.FC<DemoProps> = ({
   const { languages, script, preview } = useOnboardingStore();
   const binding = getSetting("bindings")?.transcribe;
   const shortcut = binding?.current_binding ?? "";
-  const [still] = useState(reducedMotion);
+  const [still] = useState(prefersReducedMotion);
 
   const [chapter, setChapter] = useState<Mode>("hold");
   const [phrase, setPhrase] = useState<Phrase>(0);
@@ -573,32 +531,22 @@ export const Demo: React.FC<DemoProps> = ({
     capture.start().then((began) => began || play(chapter));
   };
 
-  const partialKeys = capture.partial
-    ? capture.partial.split("+").filter(Boolean)
-    : [];
-  const onlyModifiers =
-    partialKeys.length > 0 &&
-    partialKeys.every((k) => MODIFIERS.includes(k.toLowerCase()));
+  const partialKeys = bindingKeys(capture.partial);
   const say = capture.capturing
-    ? t(onlyModifiers ? "onboarding.demo.addKey" : "onboarding.demo.pressKeys")
+    ? t(
+        isOnlyModifiers(partialKeys)
+          ? "onboarding.demo.addKey"
+          : "onboarding.demo.pressKeys",
+      )
     : null;
 
   return (
     <OnboardingShell
       progress={progress}
       onBack={onBack}
-      hint={
-        download ??
-        (ready
-          ? ""
-          : t(
-              downloadFailed
-                ? "onboarding.demo.hintFailed"
-                : "onboarding.demo.hint",
-            ))
-      }
+      hint={download}
       primary={
-        downloadFailed && onRetry ? (
+        downloadFailed ? (
           <Button variant="primary" size="lg" onClick={onRetry}>
             {t("onboarding.download.retryDownload")}
           </Button>

@@ -30,12 +30,11 @@ export const errorFor = (
 ): number | undefined =>
   catalog.data.results[model.id]?.accuracy[languageIdentity(language)]?.error;
 
-export interface Grade {
+interface Grade {
   letter: GradeLetter;
   /** "A+", "B−"; "—" when the model doesn't speak it, "?" when unmeasured. */
   label: string;
   unsupported?: boolean;
-  unrated?: boolean;
 }
 
 /**
@@ -52,7 +51,7 @@ export const gradeFor = (model: CatalogModel, language: string): Grade => {
   if (!modelMatchesLanguage(model, language))
     return { letter: "none", label: "—", unsupported: true };
   const grade = catalog.languageAccuracyGrade(model, language);
-  if (!grade) return { letter: "none", label: "?", unrated: true };
+  if (!grade) return { letter: "none", label: "?" };
   return { letter: grade.letter, label: minus(grade.label) };
 };
 
@@ -63,10 +62,8 @@ export const gradeForError = (error: number): Grade => {
 };
 
 /** Seconds after a 30-second dictation, on this machine's tier. */
-export const waitFor = (
-  model: CatalogModel,
-  tier: MachineTier,
-): number | undefined => catalog.modelWaitSeconds(model, tier);
+const waitFor = (model: CatalogModel, tier: MachineTier): number | undefined =>
+  catalog.modelWaitSeconds(model, tier);
 
 /** Several languages: the geometric mean of their errors. */
 export const geoMean = (xs: number[]) =>
@@ -84,9 +81,9 @@ export const isWeakLanguage = (language: string): boolean => {
 
 /** Recommended, Faster, More accurate: always in this order. */
 export type PickRole = "pick" | "faster" | "accurate";
-export const ROLE_ORDER: PickRole[] = ["pick", "faster", "accurate"];
+const ROLE_ORDER: PickRole[] = ["pick", "faster", "accurate"];
 
-export interface Pick {
+interface ModelPick {
   model: CatalogModel;
   role: PickRole;
   wait: number | undefined;
@@ -109,7 +106,7 @@ export const picksFor = (
   languages: string[],
   tier: MachineTier,
   offered: (model: CatalogModel) => boolean,
-): Pick[] =>
+): ModelPick[] =>
   catalog
     .recommend(languages)
     .filter((r) => offered(r.model))
@@ -119,7 +116,7 @@ export const picksFor = (
         ? { model: r.model, role, wait: waitFor(r.model, tier) }
         : null;
     })
-    .filter((p): p is Pick => p !== null)
+    .filter((p): p is ModelPick => p !== null)
     .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
 
 /**
@@ -127,7 +124,7 @@ export const picksFor = (
  * penalty for each second past the free wait (the package's overall cost),
  * judged on this machine's tier. For ordering the full list.
  */
-export const rankFor = (
+const rankFor = (
   languages: string[],
   tier: MachineTier,
   models: CatalogModel[],
@@ -167,7 +164,7 @@ export interface ModelRow {
   wait: number | undefined;
 }
 
-export interface ModelGroups {
+interface ModelGroups {
   /** The picks, in order. */
   picks: ModelRow[];
   /** The rest that speak every one of your languages, best value first. */
@@ -180,7 +177,7 @@ export const groupModels = (
   languages: string[],
   tier: MachineTier,
   models: CatalogModel[],
-  picks: Pick[],
+  picks: ModelPick[],
 ): ModelGroups => {
   const roles = new Map(picks.map((p) => [p.model.id, p.role]));
   const rank = rankFor(languages, tier, models);
@@ -224,59 +221,3 @@ export const isTooSlow = (speechSeconds: number, waitSeconds: number) =>
   speechSeconds >= 5 &&
   speechSeconds / Math.max(waitSeconds, 0.05) <
     M.dictationSeconds / M.overallMaxWaitSeconds;
-
-export interface FasterOption {
-  model: CatalogModel;
-  wait: number;
-  /** More mistakes than the current model. */
-  worse: boolean;
-}
-
-/**
- * A quicker model to offer after a slow take: Recommended or Faster if it's
- * quicker, else the most accurate model that speaks every language well
- * enough and is at least three times quicker (or under 5s).
- */
-export const fasterOption = (
-  current: CatalogModel,
-  languages: string[],
-  tier: MachineTier,
-  picks: Pick[],
-  models: CatalogModel[],
-): FasterOption | null => {
-  const currentWait = waitFor(current, tier) ?? 99;
-  const quicker = picks.find(
-    (p) =>
-      (p.role === "pick" || p.role === "faster") &&
-      p.model.id !== current.id &&
-      p.wait != null &&
-      p.wait < currentWait,
-  );
-  if (quicker?.wait != null)
-    return { model: quicker.model, wait: quicker.wait, worse: false };
-  const meanError = (m: CatalogModel) =>
-    languages.reduce((a, l) => a + (errorFor(m, l) ?? 60), 0) /
-    languages.length;
-  const goodEnough = (m: CatalogModel) =>
-    languages.every((l) => !["D", "F", "none"].includes(gradeFor(m, l).letter));
-  const alt = models
-    .filter(
-      (m) =>
-        m.id !== current.id &&
-        languages.every((l) => modelMatchesLanguage(m, l)) &&
-        goodEnough(m),
-    )
-    .map((m) => ({ model: m, wait: waitFor(m, tier) }))
-    .filter(
-      (x): x is { model: CatalogModel; wait: number } =>
-        x.wait != null && x.wait <= Math.max(5, currentWait / 3),
-    )
-    .sort((a, b) => meanError(a.model) - meanError(b.model))[0];
-  if (!alt) return null;
-  return {
-    ...alt,
-    worse: meanError(alt.model) > meanError(current) * 1.15,
-  };
-};
-
-export const DICTATION_SECONDS = M.dictationSeconds;

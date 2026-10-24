@@ -128,9 +128,7 @@
           }
         },
         "errors": {
-          "restore": "Herstellen van originele sneltoets mislukt",
-          "set": "Instellen van sneltoets mislukt: {{error}}",
-          "reset": "Sneltoets terugzetten naar standaardwaarde mislukt"
+          "set": "Instellen van sneltoets mislukt: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Schrijft Mandarijn- en Kantonese transcripties in vereenvoudigde of traditionele karakters. Andere talen blijven ongewijzigd.",
         "options": {
           "asTranscribed": "Zoals getranscribeerd",
-          "simplified": "Vereenvoudigd",
-          "traditional": "Traditioneel"
+          "simplified": "Vereenvoudigd"
         }
       }
     },
@@ -527,11 +524,6 @@
         "description": "Kies de backend voor sneltoetsen.",
         "bindingsReset": "Sneltoetsen waren incompatibel en zijn teruggezet naar de standaardwaarden"
       },
-      "paths": {
-        "appData": "App-data:",
-        "models": "Modellen:",
-        "settings": "Instellingen:"
-      },
       "pasteDelay": {
         "title": "Plakvertraging (voor)",
         "description": "Vertraging (in milliseconden) na het kopiëren van de tekst, voordat de plak-toetsaanslag wordt verzonden. Verhoog dit als er niets wordt geplakt."
@@ -628,7 +620,6 @@
   "common": {
     "loading": "Laden...",
     "delete": "Verwijderen",
-    "back": "Terug",
     "close": "Sluiten",
     "open": "Openen",
     "copy": "Kopiëren",

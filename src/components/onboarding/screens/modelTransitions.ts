@@ -1,4 +1,5 @@
 import { flushSync } from "react-dom";
+import { viewTransitions } from "../viewTransitions";
 
 /**
  * Model's motion: the same model carries the same view-transition name in
@@ -11,16 +12,7 @@ import { flushSync } from "react-dom";
  */
 export type ModelMove = "grow" | "shrink" | "pick";
 
-type ViewTransition = {
-  ready: Promise<void>;
-  finished: Promise<void>;
-  skipTransition: () => void;
-};
-type WithViewTransitions = Document & {
-  startViewTransition?: (update: () => void) => ViewTransition;
-};
-
-let running: ViewTransition | null = null;
+const moves = viewTransitions();
 let stagger: HTMLStyleElement | null = null;
 
 /** Name what should move; returns the rows that got a name, in order. */
@@ -52,13 +44,11 @@ export const moveModels = (
   kind: ModelMove,
   update: () => void,
 ) => {
-  const doc = document as WithViewTransitions;
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!root || !doc.startViewTransition || reduce) {
+  if (!root || !moves.canMove()) {
     update();
     return;
   }
-  running?.skipTransition();
+  moves.skip();
   const before = new Set(nameAll(root).map((el) => el.dataset.vt));
   const html = document.documentElement;
   html.dataset.mflow = kind;
@@ -67,31 +57,28 @@ export const moveModels = (
     document.head.appendChild(stagger);
   }
   const sheet = stagger;
-  const transition = doc.startViewTransition(() => {
-    flushSync(update);
-    // The screen may have re-rendered into a new root; name what's there now.
-    const now = document.querySelector<HTMLElement>("[data-model-root]");
-    if (!now) return;
-    const fresh = nameAll(now).filter((el) => !before.has(el.dataset.vt));
-    sheet.textContent = fresh
-      .slice(0, 14)
-      .map((el, i) => {
-        const parts = [el, ...el.querySelectorAll<HTMLElement>("[data-vt]")]
-          .map((p) => `::view-transition-new(${p.dataset.vt})`)
-          .join(",");
-        return `${parts}{animation-delay:${60 + i * 18}ms}`;
-      })
-      .join("\n");
-  });
-  running = transition;
-  // Skipped by a newer transition: fine, the DOM is already updated.
-  transition.ready.catch(() => {});
-  transition.finished.finally(() => {
-    if (running !== transition) return;
-    running = null;
-    delete html.dataset.mflow;
-    sheet.textContent = "";
-    const now = document.querySelector<HTMLElement>("[data-model-root]");
-    if (now) clearNames(now);
-  });
+  moves.start(
+    () => {
+      flushSync(update);
+      // The screen may have re-rendered into a new root; name what's there now.
+      const now = document.querySelector<HTMLElement>("[data-model-root]");
+      if (!now) return;
+      const fresh = nameAll(now).filter((el) => !before.has(el.dataset.vt));
+      sheet.textContent = fresh
+        .slice(0, 14)
+        .map((el, i) => {
+          const parts = [el, ...el.querySelectorAll<HTMLElement>("[data-vt]")]
+            .map((p) => `::view-transition-new(${p.dataset.vt})`)
+            .join(",");
+          return `${parts}{animation-delay:${60 + i * 18}ms}`;
+        })
+        .join("\n");
+    },
+    () => {
+      delete html.dataset.mflow;
+      sheet.textContent = "";
+      const now = document.querySelector<HTMLElement>("[data-model-root]");
+      if (now) clearNames(now);
+    },
+  );
 };

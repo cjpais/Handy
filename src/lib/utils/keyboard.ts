@@ -228,11 +228,29 @@ export const normalizeKey = (key: string): string => {
   return key;
 };
 
-/** One keycap: its label, and whether it's a wide key (Space). */
-export interface KeycapPart {
-  label: string;
-  wide: boolean;
-}
+/** Keys that only modify another: a binding needs a key besides these. */
+export const MODIFIERS = [
+  "ctrl",
+  "control",
+  "shift",
+  "alt",
+  "option",
+  "meta",
+  "command",
+  "cmd",
+  "super",
+  "win",
+  "windows",
+  "fn",
+];
+
+/** The keys in a binding, or in one still being captured ("option+space"). */
+export const bindingKeys = (binding: string | null | undefined): string[] =>
+  binding ? binding.split("+").filter(Boolean) : [];
+
+/** Only modifiers are held so far: the binding still needs a key. */
+export const isOnlyModifiers = (keys: string[]): boolean =>
+  keys.length > 0 && keys.every((k) => MODIFIERS.includes(k.toLowerCase()));
 
 // Keycaps show the symbols printed on the keys: glyphs on macOS, names
 // elsewhere. A key's side (option_left) isn't printed on it.
@@ -259,17 +277,21 @@ const PC_KEYCAPS: Record<string, string> = {
 };
 
 /**
- * Split a binding ("option+space") into the keycaps that draw it:
- * [{ label: "⌥" }, { label: "Space", wide: true }] on macOS.
+ * Split a binding ("option+space") into the labels of the keycaps that draw
+ * it: ["⌥", "Space"] on macOS.
  */
-export const keycapParts = (binding: string, osType: OSType): KeycapPart[] =>
+export const keycapLabels = (binding: string, osType: OSType): string[] =>
   binding
     .split("+")
     .map((part) => part.trim())
     .filter(Boolean)
     .map((part) => {
       const key = part.replace(/_(left|right)$/, "");
-      if (key === "space") return { label: capitalizeKey(key), wide: true };
       const glyphs = osType === "macos" ? MAC_KEYCAPS : PC_KEYCAPS;
-      return { label: glyphs[key] ?? capitalizeKey(key), wide: false };
+      return glyphs[key] ?? capitalizeKey(key);
     });
+
+/** A binding as its keycaps read aloud: "⌥ Space" on macOS, "Alt + Space"
+ *  elsewhere. */
+export const keycapLabel = (binding: string, osType: OSType): string =>
+  keycapLabels(binding, osType).join(osType === "macos" ? " " : " + ");

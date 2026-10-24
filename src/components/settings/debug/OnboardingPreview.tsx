@@ -8,10 +8,8 @@ import {
   type OnboardingStep,
 } from "../../onboarding/onboardingStore";
 
-export type OnboardingPreviewStep = OnboardingStep;
-
 interface OnboardingPreviewProps {
-  onPreview: (step: OnboardingPreviewStep) => void;
+  onPreview: (step: OnboardingStep) => void;
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
@@ -38,7 +36,7 @@ export const OnboardingPreview: React.FC<OnboardingPreviewProps> = ({
         }))}
         selectedValue={null}
         placeholder={t("settings.debug.onboardingPreview.choose")}
-        onSelect={(value) => onPreview(value as OnboardingPreviewStep)}
+        onSelect={(value) => onPreview(value as OnboardingStep)}
       />
     </SettingContainer>
   );

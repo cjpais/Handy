@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DoneMark } from "@/components/shared/DoneMark";
 import { ProgressRing } from "@/components/shared/ProgressRing";
-import { formatModelSize } from "@/lib/utils/format";
+import { BYTES_PER_MB, formatModelSize } from "@/lib/utils/format";
 import { useOnboardingStore } from "./onboardingStore";
 import type { DownloadState, useOnboardingModels } from "./useOnboardingModels";
 import type { CatalogModel } from "./data/models";
@@ -16,7 +16,7 @@ type Downloading = Extract<DownloadState, { state: "downloading" }>;
 export const useDownloadWords = () => {
   const { t } = useTranslation();
   // At least a byte: formatModelSize calls 0 an unknown size.
-  const bytes = (n: number) => formatModelSize(Math.max(n, 1) / 1048576);
+  const bytes = (n: number) => formatModelSize(Math.max(n, 1) / BYTES_PER_MB);
   return {
     /** Whole percent, never 100 before it's done. */
     percent: (d: Downloading) => Math.min(99, Math.floor(d.progress * 100)),
@@ -39,7 +39,7 @@ export const useDownloadWords = () => {
       d.bytesPerSec == null
         ? null
         : t("modelSelector.downloadSpeed", {
-            speed: (d.bytesPerSec / 1048576).toFixed(1),
+            speed: (d.bytesPerSec / BYTES_PER_MB).toFixed(1),
           }),
   };
 };

@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "无法恢复原始快捷键",
-          "set": "无法设置快捷键: {{error}}",
-          "reset": "无法将快捷键重置为原始值"
+          "set": "无法设置快捷键: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "将普通话和粤语转录输出为简体或繁体中文。其他语言不受影响。",
         "options": {
           "asTranscribed": "保持原样",
-          "simplified": "简体",
-          "traditional": "繁体"
+          "simplified": "简体"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "选择键盘快捷键的后端。",
         "bindingsReset": "键盘快捷键不兼容，已重置为默认值"
       },
-      "paths": {
-        "appData": "应用数据:",
-        "models": "模型:",
-        "settings": "设置:"
-      },
       "pasteDelay": {
         "title": "粘贴延迟（前）",
         "description": "复制文本后、发送粘贴按键前的延迟（毫秒）。如果没有粘贴任何内容，请增加此值。"
@@ -625,7 +617,6 @@
   "common": {
     "loading": "加载中...",
     "delete": "删除",
-    "back": "返回",
     "close": "关闭",
     "open": "打开",
     "copy": "复制",

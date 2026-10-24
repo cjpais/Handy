@@ -1,12 +1,9 @@
 const HandyHand = ({
   width,
   height,
-  tone = "text",
 }: {
   width?: number | string;
   height?: number | string;
-  /** text: the theme's text colour; current: the surrounding colour. */
-  tone?: "text" | "current";
   // The sidebar passes a className for its icons; the hand ignores it.
   className?: string;
 }) => (
@@ -14,11 +11,7 @@ const HandyHand = ({
     width={width || 126}
     height={height || 135}
     viewBox="0 0 126 135"
-    className={
-      tone === "current"
-        ? "fill-current stroke-current"
-        : "fill-text stroke-text"
-    }
+    className="fill-text stroke-text"
     xmlns="http://www.w3.org/2000/svg"
   >
     <path

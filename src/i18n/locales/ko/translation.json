@@ -128,9 +128,7 @@
           }
         },
         "errors": {
-          "restore": "원래 단축키 복원에 실패했습니다",
-          "set": "단축키 설정 실패: {{error}}",
-          "reset": "단축키를 원래 값으로 재설정하는데 실패했습니다"
+          "set": "단축키 설정 실패: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "표준 중국어와 광둥어 전사를 간체 또는 번체로 표기합니다. 다른 언어는 변경되지 않습니다.",
         "options": {
           "asTranscribed": "전사된 그대로",
-          "simplified": "간체",
-          "traditional": "번체"
+          "simplified": "간체"
         }
       }
     },
@@ -555,11 +552,6 @@
         "verdictNoEvents": "이벤트가 감지되지 않았습니다. 테스트 중에 키를 누르셨나요?",
         "failed": "진단 실패: {{error}}"
       },
-      "paths": {
-        "appData": "앱 데이터:",
-        "models": "모델:",
-        "settings": "설정:"
-      },
       "whatsNewPreview": {
         "title": "새 소식 미리보기",
         "description": "최신 내장 릴리스 노트를 본 것으로 표시하지 않고 엽니다",
@@ -625,7 +617,6 @@
   "common": {
     "loading": "로딩 중...",
     "delete": "삭제",
-    "back": "뒤로",
     "close": "닫기",
     "open": "열기",
     "copy": "복사",

@@ -53,60 +53,6 @@
   animation: try-say-fade 220ms ease;
 }
 
-/* ---------- the menu bar (macOS) or the taskbar (Windows) ---------- */
-.try-bar {
-  position: absolute;
-  inset-inline: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  height: 26px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-ink-2);
-  background: color-mix(in srgb, var(--color-background) 62%, transparent);
-  backdrop-filter: blur(8px);
-}
-.try-bar.is-menu {
-  top: 0;
-}
-/* As tall as the menu bar, so the window's the same size on both. */
-.try-bar.is-task {
-  bottom: 0;
-  gap: 9px;
-}
-.try-bar i {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-line);
-}
-.try-bar b {
-  width: 15px;
-  height: 15px;
-  border-radius: 5px;
-  background: var(--color-line);
-}
-.try-apple {
-  width: 11px;
-  height: 13px;
-  border-radius: 45% 45% 50% 50%;
-  background: var(--color-ink-2);
-}
-.try-start {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  width: 13px;
-  height: 13px;
-}
-.try-start i {
-  height: auto;
-  border-radius: 0;
-  background: var(--color-ink-2);
-}
-
 /* ---------- the window: Demo's, bigger ---------- */
 /* Wallpaper on every side, below the menu bar or above the taskbar. */
 .try-notes {
@@ -459,10 +405,7 @@
 
 /* Handy's icon in the bar; it catches the glove: a pop as it lands. Scale
    only: the icon's shape already says what Handy's doing. */
-.try-tray {
-  display: grid;
-}
-.try-tray[data-caught] {
+.desktop-tray[data-caught] {
   animation: try-catch 560ms var(--ease-glide);
 }
 @keyframes try-catch {
@@ -780,7 +723,7 @@ button.try-panel-row:focus-visible {
   .try-say-main .try-slot,
   .try-glove .try-pose,
   .try-swap,
-  .try-tray[data-caught],
+  .desktop-tray[data-caught],
   .try-leaving,
   .try-panel,
   .try-panel-slot {

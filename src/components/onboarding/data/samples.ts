@@ -43,8 +43,7 @@ export const demoLine = (
   const langs = languages.length ? languages : ["en"];
   const language = langs[i % langs.length];
   const sample = isChinese(language) ? SAMPLES[script] : SAMPLES[language];
-  if (!sample || language === "en")
-    return { language: "en", text: ENGLISH[mode] };
+  if (!sample) return { language: "en", text: ENGLISH[mode] };
   const sentences = sample.split(/(?<=[?？。！!.])\s*/).filter(Boolean);
-  return { language, text: sentences[i % sentences.length] ?? sentences[0] };
+  return { language, text: sentences[i % sentences.length] };
 };

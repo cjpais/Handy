@@ -1,15 +1,14 @@
 import React from "react";
-import { keycapParts, type OSType } from "@/lib/utils/keyboard";
+import { keycapLabel, keycapLabels, type OSType } from "@/lib/utils/keyboard";
 
 interface KeycapsProps {
   /** The binding to draw, e.g. "option+space". */
   binding: string;
   osType: OSType;
-  /** sm: in sentences and steps, 30px tall; demo: under Demo's laptop,
-   *  36px tall with 16px glyphs and a wider Space; screen: in the corner of
+  /** sm: in sentences and steps, 30px tall; screen: in the corner of
    *  Demo's drawn screen, 24px tall; line: inside a line of 17px text, as
    *  in Try it's "Hold [fn] and talk.", 25px tall. */
-  size?: "sm" | "demo" | "screen" | "line";
+  size?: "sm" | "screen" | "line";
   /** Every key drops by its shadow and fills with its plum. */
   pressed?: boolean;
   /** A combination still being captured: dashed, no drop. */
@@ -21,26 +20,9 @@ interface KeycapsProps {
 }
 
 const SIZES = {
-  sm: {
-    key: "h-[30px] px-[9px] rounded-[7px] text-small",
-    narrow: "min-w-[30px]",
-    wide: "",
-  },
-  demo: {
-    key: "h-[36px] px-[11px] rounded-[9px] text-[16px]",
-    narrow: "min-w-[36px]",
-    wide: "min-w-[112px]",
-  },
-  screen: {
-    key: "h-[24px] px-[7px] rounded-[6px] text-[11px]",
-    narrow: "min-w-[24px]",
-    wide: "",
-  },
-  line: {
-    key: "h-[25px] px-[7px] rounded-[6px] text-[13px]",
-    narrow: "min-w-[25px]",
-    wide: "",
-  },
+  sm: "h-[30px] min-w-[30px] px-[9px] rounded-[7px] text-small",
+  screen: "h-[24px] min-w-[24px] px-[7px] rounded-[6px] text-[11px]",
+  line: "h-[25px] min-w-[25px] px-[7px] rounded-[6px] text-[13px]",
 };
 
 /**
@@ -57,10 +39,7 @@ export const Keycaps: React.FC<KeycapsProps> = ({
   lift = false,
   className = "",
 }) => {
-  const parts = keycapParts(binding, osType);
-  const label = parts
-    .map((p) => p.label)
-    .join(osType === "macos" ? " " : " + ");
+  const labels = keycapLabels(binding, osType);
   const state = pressed
     ? "translate-y-[3px] shadow-none bg-plum text-background border-plum"
     : partial
@@ -75,15 +54,15 @@ export const Keycaps: React.FC<KeycapsProps> = ({
     <span
       className={`inline-flex items-center gap-[4px] align-middle ${className}`}
       role="img"
-      aria-label={label}
+      aria-label={keycapLabel(binding, osType)}
     >
-      {parts.map((part, i) => (
+      {labels.map((label, i) => (
         <span
           key={i}
           aria-hidden="true"
-          className={`relative inline-flex items-center justify-center border font-display font-semibold leading-none select-none transition-[transform,box-shadow,background-color] duration-[70ms] ease-out ${SIZES[size].key} ${part.wide ? SIZES[size].wide : SIZES[size].narrow} ${state}`}
+          className={`relative inline-flex items-center justify-center border font-display font-semibold leading-none select-none transition-[transform,box-shadow,background-color] duration-[70ms] ease-out ${SIZES[size]} ${state}`}
         >
-          {part.label}
+          {label}
         </span>
       ))}
     </span>

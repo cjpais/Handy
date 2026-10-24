@@ -33,6 +33,12 @@ export const languageName = (code: string, uiLanguage: string): string => {
   }
 };
 
+/** Languages' names as a list in the UI language ("English and Chinese"). */
+export const languageList = (codes: string[], uiLanguage: string): string =>
+  new Intl.ListFormat(uiLanguage, { type: "conjunction" }).format(
+    codes.map((code) => languageName(code, uiLanguage)),
+  );
+
 // Scripts that capitalize a name's first letter. (Georgian has capitals but
 // doesn't start words with them.)
 const CASED =

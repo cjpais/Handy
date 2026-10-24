@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "Échec de la restauration du raccourci original",
-          "set": "Échec de la définition du raccourci : {{error}}",
-          "reset": "Échec de la réinitialisation du raccourci à sa valeur d'origine"
+          "set": "Échec de la définition du raccourci : {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Écrit les transcriptions en mandarin et en cantonais en caractères simplifiés ou traditionnels. Les autres langues ne sont pas modifiées.",
         "options": {
           "asTranscribed": "Tel que transcrit",
-          "simplified": "Simplifié",
-          "traditional": "Traditionnel"
+          "simplified": "Simplifié"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Choisissez le système des raccourcis clavier.",
         "bindingsReset": "Raccourcis clavier étaient incompatibles et ont été réinitialisés aux valeurs par défaut"
       },
-      "paths": {
-        "appData": "Données de l'application :",
-        "models": "Modèles :",
-        "settings": "Paramètres :"
-      },
       "pasteDelay": {
         "title": "Délai de collage (avant)",
         "description": "Délai (en millisecondes) après la copie du texte, avant l'envoi de la touche de collage. Augmentez si rien n'est collé."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Chargement...",
     "delete": "Supprimer",
-    "back": "Retour",
     "close": "Fermer",
     "open": "Ouvrir",
     "copy": "Copier",

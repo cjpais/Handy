@@ -16,7 +16,11 @@ import { CHINESE_SCRIPTS, isChinese } from "../data/languages";
 import { CURATED_ASR, isWeakLanguage } from "../data/models";
 import { modelMatchesLanguage } from "@handy-computer/models";
 import { SUPPORTED_LANGUAGES, getSupportedLanguage } from "@/i18n";
-import { languageName, searchLanguages } from "@/lib/constants/languages";
+import {
+  languageList,
+  languageName,
+  searchLanguages,
+} from "@/lib/constants/languages";
 import { useSettings } from "@/hooks/useSettings";
 
 // The mascot waves on the first visit only.
@@ -24,8 +28,6 @@ let waved = false;
 
 interface WelcomeProps {
   progress: { index: number; count: number };
-  /** Changing the menu language writes the setting (not in a preview). */
-  preview: boolean;
   onContinue: () => void;
 }
 
@@ -33,14 +35,10 @@ interface WelcomeProps {
  * Screen 1: the greeting, the languages you speak, and which Chinese
  * characters Handy writes when you speak Chinese or Cantonese.
  */
-export const Welcome: React.FC<WelcomeProps> = ({
-  progress,
-  preview,
-  onContinue,
-}) => {
+export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
   const { t, i18n } = useTranslation();
   const { updateSetting } = useSettings();
-  const { languages, script, modelId, set } = useOnboardingStore();
+  const { languages, script, modelId, preview, set } = useOnboardingStore();
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const [wave] = useState(() => !waved);
@@ -55,8 +53,6 @@ export const Welcome: React.FC<WelcomeProps> = ({
 
   const ui = i18n.language;
   const nameOf = (code: string) => languageName(code, ui);
-  const listOf = (codes: string[]) =>
-    new Intl.ListFormat(ui, { type: "conjunction" }).format(codes.map(nameOf));
 
   const toggle = (code: string) => {
     const next = languages.includes(code)
@@ -93,7 +89,7 @@ export const Welcome: React.FC<WelcomeProps> = ({
     : weak.length
       ? t("onboarding.welcome.hint.weak", {
           count: weak.length,
-          languages: listOf(weak),
+          languages: languageList(weak, ui),
         })
       : "";
 
@@ -142,7 +138,7 @@ export const Welcome: React.FC<WelcomeProps> = ({
         </label>
       }
       hint={hint}
-      hintTone={languages.length && weak.length ? "warning" : "quiet"}
+      hintTone={weak.length ? "warning" : "quiet"}
       primary={
         <Button
           variant="primary"
@@ -217,7 +213,10 @@ export const Welcome: React.FC<WelcomeProps> = ({
                 {matches.length
                   ? t("onboarding.welcome.alreadyAdded", {
                       count: matches.length,
-                      languages: listOf(matches.map((l) => l.code)),
+                      languages: languageList(
+                        matches.map((l) => l.code),
+                        ui,
+                      ),
                     })
                   : t("onboarding.welcome.noMatch", { query })}
               </div>
@@ -229,7 +228,7 @@ export const Welcome: React.FC<WelcomeProps> = ({
           <div className="w-full animate-rise pt-[12px] text-start">
             <p className="mt-0 mb-[8px] text-small font-semibold text-text">
               {t("onboarding.welcome.chinese.question", {
-                languages: listOf(chinese),
+                languages: languageList(chinese, ui),
               })}
             </p>
             <div

@@ -128,9 +128,7 @@
           }
         },
         "errors": {
-          "restore": "Gagal memulihkan pintasan asli",
-          "set": "Gagal mengatur pintasan: {{error}}",
-          "reset": "Gagal mengembalikan pintasan ke nilai awal"
+          "set": "Gagal mengatur pintasan: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Menulis transkripsi Mandarin dan Kanton dengan aksara Sederhana atau Tradisional. Bahasa lain tidak diubah.",
         "options": {
           "asTranscribed": "Sesuai transkripsi",
-          "simplified": "Sederhana",
-          "traditional": "Tradisional"
+          "simplified": "Sederhana"
         }
       }
     },
@@ -527,11 +524,6 @@
         "description": "Pilih backend pintasan keyboard.",
         "bindingsReset": "Pintasan keyboard tidak kompatibel dan telah dikembalikan ke nilai awal"
       },
-      "paths": {
-        "appData": "Data Aplikasi:",
-        "models": "Model:",
-        "settings": "Pengaturan:"
-      },
       "pasteDelay": {
         "title": "Jeda Tempel (Sebelum)",
         "description": "Jeda (dalam milidetik) setelah menyalin teks sebelum mengirim perintah tempel. Tingkatkan jika tidak ada yang ditempel."
@@ -628,7 +620,6 @@
   "common": {
     "loading": "Memuat...",
     "delete": "Hapus",
-    "back": "Kembali",
     "close": "Tutup",
     "open": "Buka",
     "copy": "Salin",

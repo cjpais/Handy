@@ -9,7 +9,7 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
-import ModelCard, { type ModelCardStatus } from "./ModelCard";
+import ModelCard, { isLegacyModel, type ModelCardStatus } from "./ModelCard";
 import { useModelStore } from "@/stores/modelStore";
 import RetiredModelsNotice from "./RetiredModelsNotice";
 import {
@@ -18,18 +18,13 @@ import {
   searchLanguages,
   supportsLanguage,
 } from "@/lib/constants/languages.ts";
+import { BYTES_PER_MB } from "@/lib/utils/format";
 import type { ModelInfo } from "@/bindings";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
   return supportsLanguage(model.supported_languages, langCode);
 };
-
-// Legacy models are the blob (Url-sourced) .bin downloads, superseded by
-// the catalog GGUFs. They stay runnable when already on disk, but we no longer
-// advertise the download.
-const isLegacyModel = (model: ModelInfo): boolean =>
-  typeof model.source === "object" && "Url" in model.source;
 
 export const ModelsSettings: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -131,7 +126,7 @@ export const ModelsSettings: React.FC = () => {
 
   const getDownloadSpeed = (modelId: string): number | undefined => {
     const bytesPerSec = downloadProgress[modelId]?.bytes_per_sec;
-    return bytesPerSec != null ? bytesPerSec / (1024 * 1024) : undefined;
+    return bytesPerSec != null ? bytesPerSec / BYTES_PER_MB : undefined;
   };
 
   const handleModelSelect = async (modelId: string) => {
@@ -295,7 +290,7 @@ export const ModelsSettings: React.FC = () => {
                 aria-pressed={filterStreaming}
                 className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
                   filterStreaming
-                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/20"
+                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
                     : "bg-wash text-ink-2 hover:bg-line"
                 }`}
               >
@@ -309,7 +304,7 @@ export const ModelsSettings: React.FC = () => {
                 aria-pressed={filterTranslation}
                 className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
                   filterTranslation
-                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/20"
+                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
                     : "bg-wash text-ink-2 hover:bg-line"
                 }`}
               >

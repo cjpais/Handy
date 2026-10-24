@@ -11,6 +11,7 @@ import { isWeakLanguage } from "../onboarding/data/models";
 import { useSettings } from "../../hooks/useSettings";
 import { useModelStore } from "../../stores/modelStore";
 import {
+  languageList,
   languageName,
   searchLanguages,
   supportsLanguage,
@@ -43,8 +44,6 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
 
   const ui = i18n.language;
   const nameOf = (code: string) => languageName(code, ui);
-  const listOf = (codes: string[]) =>
-    new Intl.ListFormat(ui, { type: "conjunction" }).format(codes.map(nameOf));
 
   // With none picked yet (onboarded before Handy asked), their own language
   // leads, and the grid stays open: the invitation to pick.
@@ -203,7 +202,10 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
                   {matches.length
                     ? t("settings.general.preferredLanguages.alreadyAdded", {
                         count: matches.length,
-                        languages: listOf(matches.map((l) => l.code)),
+                        languages: languageList(
+                          matches.map((l) => l.code),
+                          ui,
+                        ),
                       })
                     : t("settings.general.preferredLanguages.noMatch", {
                         query: query.trim(),
@@ -219,14 +221,14 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
         <p className="mt-[8px] mb-0 text-small text-warning">
           {t("settings.general.preferredLanguages.unheard", {
             model: modelInfo.name,
-            languages: listOf(unheard),
+            languages: languageList(unheard, ui),
           })}
         </p>
       )}
       {weak.length > 0 && (
         <p className="mt-[4px] mb-0 text-small text-ink-3">
           {t("settings.general.preferredLanguages.weak", {
-            languages: listOf(weak),
+            languages: languageList(weak, ui),
           })}
         </p>
       )}

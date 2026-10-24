@@ -21,6 +21,7 @@ import { DownloadStatus } from "./DownloadStatus";
 import { useOnboardingModels } from "./useOnboardingModels";
 import { useModelStore } from "@/stores/modelStore";
 import { moveScreens } from "./screenTransitions";
+import { downloadPick } from "./downloadPick";
 import "./screenTransitions.css";
 
 interface OnboardingFlowProps {
@@ -41,8 +42,9 @@ const SCRIPT_SETTING: Record<ChineseScriptChoice, ChineseScript> = {
 
 /**
  * First-run onboarding: Welcome, Permissions (where the OS asks), Model,
- * Demo, Try it, and All set (Try it's screen, finished). Remembers where it is, so a relaunch (the macOS
- * Accessibility fallback) or a quit comes back to the same screen.
+ * Demo, Try it, and All set (Try it's screen, finished). Remembers where it
+ * is, so a relaunch (the macOS Accessibility fallback) or a quit comes back
+ * to the same screen.
  */
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   preview = false,
@@ -56,7 +58,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const osType = useOsType();
   const models = useOnboardingModels(store.languages);
   const currentModel = useModelStore((s) => s.currentModel);
-  const cancelDownload = useModelStore((s) => s.cancelDownload);
   const selectModel = useModelStore((s) => s.selectModel);
 
   // Once the model list is in (read from the store, not this render: the
@@ -168,25 +169,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
   /** Make this the model: download it unless it's on disk already. */
   const startModel = (id: string) => {
-    const model = models.offered.find((m) => m.id === id);
-    const info = model && models.infoFor(model);
-    if (!preview && model && info) {
-      const previous = models.offered.find((m) => m.id === store.downloadId);
-      const previousInfo = previous && models.infoFor(previous);
-      if (
-        previousInfo &&
-        previousInfo.id !== info.id &&
-        models.downloadState(previous).state === "downloading"
-      )
-        cancelDownload(previousInfo.id);
-      // A new pick, or the same one again after its download stopped.
-      if (
-        !info.is_downloaded &&
-        (store.downloadId !== id ||
-          models.downloadState(model).state === "failed")
-      )
-        models.startDownload(model);
-    }
+    if (!preview) downloadPick(models, id, store.downloadId);
     store.set({
       modelId: id,
       downloadId: id,
@@ -212,7 +195,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       return (
         <Welcome
           progress={progress}
-          preview={preview}
           onContinue={() => {
             saveLanguages();
             onward();
@@ -276,7 +258,5 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           onDone={finish}
         />
       );
-    default:
-      return null;
   }
 };

@@ -104,7 +104,6 @@ export const OnboardingShell: React.FC<OnboardingShellProps> = ({
 const ALIGN = {
   center: { items: "items-center", text: "text-center" },
   stretch: { items: "items-stretch", text: "text-center" },
-  start: { items: "items-start", text: "text-start" },
 } as const;
 
 /** Between the header and the content, per layout. */
@@ -124,7 +123,7 @@ export const ScreenMain = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement> & {
     /** Model's full list: 40px gutters (640 wide). */
     wide?: boolean;
-    /** The column: centred (default), full width, or from the start edge. */
+    /** The column: centred (default) or full width. */
     align?: keyof typeof ALIGN;
     /** The title block, usually a ScreenHeader. */
     header?: React.ReactNode;
@@ -173,30 +172,27 @@ ScreenMain.displayName = "ScreenMain";
 export const ScreenHeader: React.FC<{
   title: React.ReactNode;
   sub?: React.ReactNode;
-  /** All set's 40px finish line. */
-  hero?: boolean;
   subClassName?: string;
   /** A note over the title (Permissions' welcome back), kept out of the
    *  flow so it doesn't push the title down. */
   above?: React.ReactNode;
-}> = ({ title, sub, hero = false, subClassName, above }) => (
+}> = ({ title, sub, subClassName, above }) => (
   <div className="relative w-full flex-none">
     {above && (
       <div className="absolute inset-x-0 bottom-full mb-[12px]">{above}</div>
     )}
-    <ScreenTitle hero={hero}>{title}</ScreenTitle>
+    <ScreenTitle>{title}</ScreenTitle>
     {sub && <ScreenSub className={subClassName}>{sub}</ScreenSub>}
   </div>
 );
 
-/** A screen title: 26px display, or 40px for a finish line (All set). */
+/** A screen title: 26px display. */
 export const ScreenTitle: React.FC<{
   children: React.ReactNode;
-  hero?: boolean;
   className?: string;
-}> = ({ children, hero = false, className = "" }) => (
+}> = ({ children, className = "" }) => (
   <h1
-    className={`m-0 font-display leading-[1.15] tracking-[-0.015em] text-balance ${hero ? "text-hero font-[750]" : "text-title font-[650]"} ${className}`}
+    className={`m-0 font-display leading-[1.15] tracking-[-0.015em] text-balance text-title font-[650] ${className}`}
   >
     {children}
   </h1>

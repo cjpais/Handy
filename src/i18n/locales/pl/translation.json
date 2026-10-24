@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "Nie udało się przywrócić oryginalnego skrótu",
-          "set": "Nie udało się ustawić skrótu: {{error}}",
-          "reset": "Nie udało się zresetować skrótu do wartości domyślnej"
+          "set": "Nie udało się ustawić skrótu: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Zapisuje transkrypcje w języku mandaryńskim i kantońskim znakami uproszczonymi lub tradycyjnymi. Inne języki pozostają bez zmian.",
         "options": {
           "asTranscribed": "Jak w transkrypcji",
-          "simplified": "Uproszczone",
-          "traditional": "Tradycyjne"
+          "simplified": "Uproszczone"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Wybierz backend dla skrótów klawiaturowych.",
         "bindingsReset": "Skróty klawiaturowe były niekompatybilne i zostały zresetowane do wartości domyślnych"
       },
-      "paths": {
-        "appData": "Dane aplikacji:",
-        "models": "Modele:",
-        "settings": "Ustawienia:"
-      },
       "pasteDelay": {
         "title": "Opóźnienie wklejania (przed)",
         "description": "Opóźnienie (w milisekundach) po skopiowaniu tekstu, przed wysłaniem klawisza wklejania. Zwiększ, jeśli nic nie jest wklejane."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Wczytywanie...",
     "delete": "Usuń",
-    "back": "Wstecz",
     "close": "Zamknij",
     "open": "Otwórz",
     "copy": "Kopiuj",

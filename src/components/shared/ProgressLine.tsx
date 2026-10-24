@@ -3,8 +3,6 @@ import React from "react";
 interface ProgressLineProps {
   /** 0–1 */
   value: number;
-  /** Magenta while it fills; warning once it stopped. */
-  tone?: "progress" | "stopped";
   /** Checking: full, and pulsing while it waits. */
   busy?: boolean;
   /** The line's height and placement; 6px tall by default. */
@@ -17,7 +15,6 @@ interface ProgressLineProps {
  */
 export const ProgressLine: React.FC<ProgressLineProps> = ({
   value,
-  tone = "progress",
   busy = false,
   className = "h-[6px]",
 }) => (
@@ -26,9 +23,9 @@ export const ProgressLine: React.FC<ProgressLineProps> = ({
     className={`block overflow-hidden rounded-full bg-line ${className}`}
   >
     <i
-      className={`block h-full rounded-[inherit] transition-[width] duration-[120ms] ease-linear ${
-        tone === "stopped" ? "bg-warning" : "bg-background-ui"
-      } ${busy ? "animate-pulse" : ""}`}
+      className={`block h-full rounded-[inherit] bg-background-ui transition-[width] duration-[120ms] ease-linear ${
+        busy ? "animate-pulse" : ""
+      }`}
       style={{
         width: `${(Math.min(1, Math.max(0, value)) * 100).toFixed(1)}%`,
       }}

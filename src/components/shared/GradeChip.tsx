@@ -6,7 +6,6 @@ interface GradeChipProps {
   letter: GradeLetter;
   /** What the chip says: "A+", "B−", or "—" / "?" when there's no grade. */
   label: string;
-  title?: string;
   /** Narrow, for past five languages in a row of columns. */
   dense?: boolean;
 }
@@ -27,11 +26,9 @@ const LETTER_CLASSES: Record<GradeLetter, string> = {
 export const GradeChip: React.FC<GradeChipProps> = ({
   letter,
   label,
-  title,
   dense = false,
 }) => (
   <span
-    title={title}
     data-grade={letter}
     className={`inline-grid place-items-center rounded-chip border font-display leading-none h-[22px] ${dense ? "min-w-[24px] px-[3px] text-tag" : "min-w-[30px] px-[5px] text-small"} ${LETTER_CLASSES[letter]}`}
   >

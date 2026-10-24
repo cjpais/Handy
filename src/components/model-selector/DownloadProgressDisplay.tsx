@@ -1,6 +1,7 @@
 import React from "react";
 import { ProgressBar, ProgressData } from "../shared";
 import type { DownloadProgress } from "@/stores/modelStore";
+import { BYTES_PER_MB } from "@/lib/utils/format";
 
 interface DownloadProgressDisplayProps {
   downloadProgress: Record<string, DownloadProgress>;
@@ -21,7 +22,7 @@ const DownloadProgressDisplay: React.FC<DownloadProgressDisplayProps> = ({
     percentage: progress.percentage,
     speed:
       progress.bytes_per_sec != null
-        ? progress.bytes_per_sec / (1024 * 1024)
+        ? progress.bytes_per_sec / BYTES_PER_MB
         : undefined,
   }));
 

@@ -1,14 +1,10 @@
 import React from "react";
 
-interface DoneMarkProps {
-  className?: string;
-}
-
 /** Done, granted, ready: a 16px moss circle with a paper check. */
-export const DoneMark: React.FC<DoneMarkProps> = ({ className = "" }) => (
+export const DoneMark: React.FC = () => (
   <span
     aria-hidden="true"
-    className={`inline-grid place-items-center shrink-0 size-[16px] rounded-full bg-moss text-background ${className}`}
+    className="inline-grid place-items-center shrink-0 size-[16px] rounded-full bg-moss text-background"
   >
     <svg
       width="11"

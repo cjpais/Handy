@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "Orijinal kısayol geri yüklenemedi",
-          "set": "Kısayol ayarlanamadı: {{error}}",
-          "reset": "Kısayol orijinal değerine sıfırlanamadı"
+          "set": "Kısayol ayarlanamadı: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Mandarin ve Kantonca transkripsiyonları Basitleştirilmiş veya Geleneksel karakterlerle yazar. Diğer diller değiştirilmez.",
         "options": {
           "asTranscribed": "Transkripsiyondaki gibi",
-          "simplified": "Basitleştirilmiş",
-          "traditional": "Geleneksel"
+          "simplified": "Basitleştirilmiş"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Klavye kısayolları için kullanılacak altyapıyı seçin.",
         "bindingsReset": "Klavye kısayolları uyumsuzdu ve varsayılan ayarlara sıfırlandı"
       },
-      "paths": {
-        "appData": "Uygulama Verileri:",
-        "models": "Modeller:",
-        "settings": "Ayarlar:"
-      },
       "pasteDelay": {
         "title": "Yapıştırma Gecikmesi (Önce)",
         "description": "Metin kopyalandıktan sonra, yapıştırma tuşu gönderilmeden önceki gecikme (milisaniye cinsinden). Hiçbir şey yapıştırılmıyorsa artırın."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Yükleniyor...",
     "delete": "Sil",
-    "back": "Geri",
     "close": "Kapat",
     "open": "Aç",
     "copy": "Kopyala",

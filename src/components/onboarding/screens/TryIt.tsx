@@ -1,11 +1,18 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { keycapParts, type OSType } from "@/lib/utils/keyboard";
+import {
+  bindingKeys,
+  isOnlyModifiers,
+  keycapLabel,
+  type OSType,
+} from "@/lib/utils/keyboard";
+import { prefersReducedMotion } from "@/lib/utils/motion";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
 import { Keycaps } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
 import TrayIcon from "../../icons/TrayIcon";
+import { DesktopBar } from "../DesktopBar";
 import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
 import { LinuxGuide } from "../LinuxGuide";
 import { TrayPanel } from "../TrayPanel";
@@ -32,9 +39,6 @@ type How = "auto" | "five" | "skip";
 const WINDUP_MS = 1300;
 /** The flight from the note's corner to the icon. */
 const FLIGHT_MS = 860;
-
-const reducedMotion = () =>
-  matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * What the glove says, in one of three shapes: an instruction (one line, the
@@ -107,22 +111,6 @@ const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </div>
   );
 };
-
-/** Keys that need another key with them (as Demo's recorder reads them). */
-const MODIFIERS = [
-  "ctrl",
-  "control",
-  "shift",
-  "alt",
-  "option",
-  "meta",
-  "command",
-  "cmd",
-  "super",
-  "win",
-  "windows",
-  "fn",
-];
 
 /**
  * The shortcut's keys, in a line of the bubble. While nothing's going on
@@ -245,7 +233,7 @@ export const TryIt: React.FC<TryItProps> = ({
   const name = model?.name ?? "";
 
   const seconds = (s: number) =>
-    t("onboarding.model.seconds", {
+    t("onboarding.try.seconds", {
       value: new Intl.NumberFormat(i18n.language, {
         minimumFractionDigits: s < 10 ? 1 : 0,
         maximumFractionDigits: s < 10 ? 1 : 0,
@@ -262,7 +250,7 @@ export const TryIt: React.FC<TryItProps> = ({
   // Title and line fade only once they've swapped (into All set and back),
   // not on arrival, where Demo's camera move carries them.
   const [swapped, setSwapped] = useState(false);
-  const [tail, setTail] = useState<{ end: number; tail: number }>();
+  const [tail, setTail] = useState<number>();
   const screen = useRef<HTMLDivElement>(null);
   const tray = useRef<HTMLSpanElement>(null);
   const glove = useRef<HTMLButtonElement>(null);
@@ -271,7 +259,7 @@ export const TryIt: React.FC<TryItProps> = ({
     if (stage !== "try") return;
     setHow(by);
     setSwapped(true);
-    if (reducedMotion()) {
+    if (prefersReducedMotion()) {
       setStage("set");
       onArrive();
       return;
@@ -373,7 +361,7 @@ export const TryIt: React.FC<TryItProps> = ({
       parseFloat(
         getComputedStyle(screen.current!).getPropertyValue("--try-panel-end"),
       ) || 0;
-    setTail({ end, tail: Math.max(24, fromEnd - end) });
+    setTail(Math.max(24, fromEnd - end));
   }, [stage, os]);
 
   const moving = stage === "windup" || stage === "five" || stage === "fly";
@@ -392,13 +380,9 @@ export const TryIt: React.FC<TryItProps> = ({
     setTip({ x: keys.left + keys.width / 2 - box.left, y: keys.top - box.top });
   };
   const { capturing, partial } = e.capture;
-  const partialKeys = partial ? partial.split("+").filter(Boolean) : [];
-  const onlyModifiers =
-    partialKeys.length > 0 &&
-    partialKeys.every((k) => MODIFIERS.includes(k.toLowerCase()));
-  const keysLabel = keycapParts(e.shortcut, os)
-    .map((part) => part.label)
-    .join(os === "macos" ? " " : " + ");
+  const partialKeys = bindingKeys(partial);
+  const onlyModifiers = isOnlyModifiers(partialKeys);
+  const keysLabel = keycapLabel(e.shortcut, os);
 
   /* ---------- what the glove says ---------- */
 
@@ -597,23 +581,6 @@ export const TryIt: React.FC<TryItProps> = ({
   );
 
   const isMac = os === "macos";
-  // Handy's icon, in the menu bar or the tray, as on Demo: an ear while it
-  // listens, a brain while it transcribes. It catches the glove.
-  const trayIcon = (
-    <span ref={tray} className="try-tray" data-caught={caught || undefined}>
-      <TrayIcon
-        state={
-          e.phase === "listening"
-            ? "recording"
-            : e.phase === "typing"
-              ? "transcribing"
-              : "idle"
-        }
-        size={19}
-      />
-    </span>
-  );
-  const clock = <span className="tabular-nums">9:41</span>;
 
   return (
     <OnboardingShell
@@ -675,32 +642,22 @@ export const TryIt: React.FC<TryItProps> = ({
           className="try-screen"
           data-os={isMac ? "mac" : "win"}
         >
-          {isMac ? (
-            <div className="try-bar is-menu" aria-hidden="true">
-              <span className="try-apple" />
-              <i className="w-[30px]" />
-              <i className="w-[22px]" />
-              <i className="w-[26px]" />
-              <span className="flex-1" />
-              {trayIcon}
-              {clock}
-            </div>
-          ) : (
-            <div className="try-bar is-task" aria-hidden="true">
-              <span className="flex-1" />
-              <span className="try-start">
-                {[0, 1, 2, 3].map((i) => (
-                  <i key={i} />
-                ))}
-              </span>
-              {[0, 1, 2].map((i) => (
-                <b key={i} />
-              ))}
-              <span className="flex-1" />
-              {trayIcon}
-              {clock}
-            </div>
-          )}
+          {/* Handy's icon, in the menu bar or the tray, as on Demo: an ear
+              while it listens, a brain while it transcribes. It catches the
+              glove. */}
+          <DesktopBar
+            os={os}
+            size="try"
+            state={
+              e.phase === "listening"
+                ? "recording"
+                : e.phase === "typing"
+                  ? "transcribing"
+                  : "idle"
+            }
+            trayRef={tray}
+            caught={caught}
+          />
           <div
             className="try-notes"
             // A click anywhere in the window puts the cursor in the note.
@@ -826,7 +783,7 @@ export const TryIt: React.FC<TryItProps> = ({
           )}
 
           {/* All set: the icon's panel, the bubble's material come back. */}
-          {stage === "set" && tail && (
+          {stage === "set" && tail != null && (
             <TrayPanel
               os={os}
               languages={languages}
@@ -840,7 +797,7 @@ export const TryIt: React.FC<TryItProps> = ({
               onAtLogin={(on) => set({ atLogin: on })}
               onChangeLanguages={() => onEdit("welcome")}
               onChangeModel={() => onEdit("model")}
-              tailAt={tail.tail}
+              tailAt={tail}
             />
           )}
         </div>

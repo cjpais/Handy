@@ -12,9 +12,9 @@ import type { OSType } from "@/lib/utils/keyboard";
 import { useOnboardingStore } from "./onboardingStore";
 import { isTooSlow } from "./data/models";
 
-export type Mode = "hold" | "tap";
-export type Phase = "idle" | "listening" | "typing";
-export type TakeResult =
+type Mode = "hold" | "tap";
+type Phase = "idle" | "listening" | "typing";
+type TakeResult =
   | { kind: "none" }
   /** A way done for the first time, with the other still to do. */
   | { kind: "done"; way: Mode }
@@ -273,7 +273,6 @@ export const useTryEngine = ({ os }: { os: OSType }) => {
   });
 
   return {
-    preview,
     shortcut,
     lessons,
     todo,

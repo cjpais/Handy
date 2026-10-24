@@ -128,9 +128,7 @@
           }
         },
         "errors": {
-          "restore": "Falha ao restaurar atalho original",
-          "set": "Falha ao definir atalho: {{error}}",
-          "reset": "Falha ao redefinir atalho para o valor original"
+          "set": "Falha ao definir atalho: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Escreve as transcrições em mandarim e cantonês com caracteres simplificados ou tradicionais. Os outros idiomas não são alterados.",
         "options": {
           "asTranscribed": "Como transcrito",
-          "simplified": "Simplificado",
-          "traditional": "Tradicional"
+          "simplified": "Simplificado"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Escolha o sistema responsável pelos atalhos de teclado.",
         "bindingsReset": "Os atalhos de teclado eram incompatíveis e foram redefinidos para os padrões"
       },
-      "paths": {
-        "appData": "Dados do App:",
-        "models": "Modelos:",
-        "settings": "Configurações:"
-      },
       "pasteDelay": {
         "title": "Atraso de colagem (antes)",
         "description": "Atraso (em milissegundos) após copiar o texto, antes de enviar a tecla de colar. Aumente se nada for colado."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Carregando...",
     "delete": "Excluir",
-    "back": "Voltar",
     "close": "Fechar",
     "open": "Abrir",
     "copy": "Copiar",

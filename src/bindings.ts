@@ -669,18 +669,6 @@ async completeOnboarding() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-/**
- * Close the main window as if the person closed it: it hides, and Handy keeps
- * running in the tray (onboarding's last screen ends this way).
- */
-async closeMainWindow() : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("close_main_window") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_models") };

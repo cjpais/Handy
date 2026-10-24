@@ -206,14 +206,3 @@ pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {
     crate::settings::write_settings(&app, settings);
     Ok(())
 }
-
-/// Close the main window as if the person closed it: it hides, and Handy keeps
-/// running in the tray (onboarding's last screen ends this way).
-#[specta::specta]
-#[tauri::command]
-pub fn close_main_window(app: AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
-        window.close().map_err(|e| e.to_string())?;
-    }
-    Ok(())
-}

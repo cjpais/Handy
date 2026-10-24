@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { prefersReducedMotion } from "@/lib/utils/motion";
 
 interface HintProps {
   /** A name over the line, for an icon with no words of its own. */
@@ -89,7 +90,7 @@ export const Hint: React.FC<HintProps> = ({
       arrow: Math.min(Math.max(center - left, 12), w - 12),
       below,
     });
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    if (!prefersReducedMotion())
       hint.animate(
         [
           { opacity: 0, translate: `0 ${below ? -3 : 3}px` },

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { keycapParts, type OSType } from "@/lib/utils/keyboard";
-import { languageName } from "@/lib/constants/languages";
+import { bindingKeys, keycapLabel, type OSType } from "@/lib/utils/keyboard";
+import { languageList } from "@/lib/constants/languages";
 import { Keycaps } from "../shared/Keycaps";
 import { Switch } from "../ui/Switch";
 import TrayIcon from "../icons/TrayIcon";
@@ -77,16 +77,9 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
   style,
 }) => {
   const { t, i18n } = useTranslation();
-  const ui = i18n.language;
-  const languageList = new Intl.ListFormat(ui, { type: "conjunction" }).format(
-    languages.map((code) => languageName(code, ui)),
-  );
-  const keysLabel = keycapParts(shortcut, os)
-    .map((part) => part.label)
-    .join(os === "macos" ? " " : " + ");
-  const partialKeys = capture.partial
-    ? capture.partial.split("+").filter(Boolean)
-    : [];
+  const languagesText = languageList(languages, i18n.language);
+  const keysLabel = keycapLabel(shortcut, os);
+  const partialKeys = bindingKeys(capture.partial);
 
   // New keys going in: a click anywhere but the keys' box puts the old ones
   // back, the row's own words too. That click mustn't then start again.
@@ -129,14 +122,14 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
         type="button"
         className="try-panel-row"
         aria-label={t("onboarding.done.panel.changeLanguages", {
-          languages: languageList,
+          languages: languagesText,
         })}
         onClick={onChangeLanguages}
       >
         <span className="try-panel-label">
           {t("onboarding.done.panel.languages")}
         </span>
-        <span className="try-panel-value">{languageList}</span>
+        <span className="try-panel-value">{languagesText}</span>
         <Chevron />
       </button>
       <button

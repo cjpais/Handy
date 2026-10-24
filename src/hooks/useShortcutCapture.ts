@@ -6,7 +6,12 @@ import { toast } from "sonner";
 import { commands } from "@/bindings";
 import { SECURE_INPUT_HELP_URL } from "@/components/SecureInputWarning";
 import { useSettings } from "@/hooks/useSettings";
-import { getKeyName, normalizeKey, type OSType } from "@/lib/utils/keyboard";
+import {
+  getKeyName,
+  MODIFIERS,
+  normalizeKey,
+  type OSType,
+} from "@/lib/utils/keyboard";
 
 interface HandyKeysEvent {
   modifiers: string[];
@@ -14,20 +19,6 @@ interface HandyKeysEvent {
   is_key_down: boolean;
   hotkey_string: string;
 }
-
-const MODIFIERS = [
-  "ctrl",
-  "control",
-  "shift",
-  "alt",
-  "option",
-  "meta",
-  "command",
-  "cmd",
-  "super",
-  "win",
-  "windows",
-];
 
 /**
  * Records a new combination for a binding: with the handy-keys backend's key

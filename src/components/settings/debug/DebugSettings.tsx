@@ -18,13 +18,13 @@ import {
   ModelMigrationRun,
   OnboardingPreview,
   OnboardingRun,
-  type OnboardingPreviewStep,
 } from "./OnboardingPreview";
+import type { OnboardingStep } from "../../onboarding/onboardingStore";
 
 interface DebugSettingsProps {
-  onPreviewOnboarding?: (step: OnboardingPreviewStep) => void;
-  onRunOnboarding?: () => void;
-  onRunModelMigration?: () => void;
+  onPreviewOnboarding: (step: OnboardingStep) => void;
+  onRunOnboarding: () => void;
+  onRunModelMigration: () => void;
 }
 
 export const DebugSettings: React.FC<DebugSettingsProps> = ({
@@ -39,27 +39,21 @@ export const DebugSettings: React.FC<DebugSettingsProps> = ({
       <SettingsGroup title={t("settings.debug.title")}>
         <LogLevelSelector grouped={true} />
         <WhatsNewPreview descriptionMode="tooltip" grouped={true} />
-        {onPreviewOnboarding && (
-          <OnboardingPreview
-            onPreview={onPreviewOnboarding}
-            descriptionMode="tooltip"
-            grouped={true}
-          />
-        )}
-        {onRunOnboarding && (
-          <OnboardingRun
-            onRun={onRunOnboarding}
-            descriptionMode="tooltip"
-            grouped={true}
-          />
-        )}
-        {onRunModelMigration && (
-          <ModelMigrationRun
-            onRun={onRunModelMigration}
-            descriptionMode="tooltip"
-            grouped={true}
-          />
-        )}
+        <OnboardingPreview
+          onPreview={onPreviewOnboarding}
+          descriptionMode="tooltip"
+          grouped={true}
+        />
+        <OnboardingRun
+          onRun={onRunOnboarding}
+          descriptionMode="tooltip"
+          grouped={true}
+        />
+        <ModelMigrationRun
+          onRun={onRunModelMigration}
+          descriptionMode="tooltip"
+          grouped={true}
+        />
         <UpdateChecksToggle descriptionMode="tooltip" grouped={true} />
         <SoundPicker
           label={t("settings.debug.soundTheme.label")}

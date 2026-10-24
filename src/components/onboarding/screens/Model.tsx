@@ -19,7 +19,7 @@ import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useDownloadWords } from "../DownloadStatus";
 import { useRubric } from "../Rubric";
-import { languageName } from "@/lib/constants/languages";
+import { languageList, languageName } from "@/lib/constants/languages";
 import {
   errorFor,
   geoMean,
@@ -30,7 +30,7 @@ import {
   type PickRole,
 } from "../data/models";
 import type { useOnboardingModels } from "../useOnboardingModels";
-import { moveModels } from "./modelTransitions";
+import { moveModels, type ModelMove } from "./modelTransitions";
 import "./modelTransitions.css";
 
 type Models = ReturnType<typeof useOnboardingModels>;
@@ -43,12 +43,10 @@ const ROLE_KEYS: Record<PickRole | "extra", string> = {
   extra: "fromAll",
 };
 
-const Chevron: React.FC<{ dir?: "down" | "up" }> = ({ dir = "down" }) => (
+const Chevron = () => (
   <span
     aria-hidden="true"
-    className={`inline-block size-[6px] shrink-0 border-e-[1.5px] border-b-[1.5px] border-current ${
-      dir === "down" ? "-mt-[3px] rotate-45" : "mt-[3px] -rotate-[135deg]"
-    }`}
+    className="inline-block size-[6px] shrink-0 border-e-[1.5px] border-b-[1.5px] border-current -mt-[3px] rotate-45"
   />
 );
 
@@ -155,10 +153,6 @@ export const Model: React.FC<ModelProps> = ({
           `onboarding.model.${preview ? "speedWordsPreview" : "speedWords"}.${speedLevel(wait)}`,
         );
 
-  /** "English", "English and Spanish": names in a sentence. */
-  const listOf = (codes: string[]) =>
-    new Intl.ListFormat(ui, { type: "conjunction" }).format(codes.map(nameOf));
-
   /**
    * A grade chip's hint, as the capability tags have, the same for one
    * language's grade and for one grade over all of them: that it grades how
@@ -184,7 +178,10 @@ export const Model: React.FC<ModelProps> = ({
         ? gradeForError(error)
         : undefined;
     const missing = ls.filter((l) => gradeFor(m, l).unsupported);
-    const graded = grade && grade.letter !== "none" ? grade : undefined;
+    const graded =
+      grade && grade.letter !== "none"
+        ? { label: grade.label, letter: grade.letter }
+        : undefined;
     const key = (k: string) => `onboarding.model.rubric.${k}`;
     return (
       <Hint
@@ -202,11 +199,14 @@ export const Model: React.FC<ModelProps> = ({
         text={
           missing.length
             ? t(key("unsupported"), {
-                language: listOf(missing),
+                language: languageList(missing, ui),
               })
-            : error == null || !graded || graded.letter === "none"
+            : error == null || !graded
               ? t(key("unrated"), {
-                  language: listOf(ls.filter((l) => errorFor(m, l) == null)),
+                  language: languageList(
+                    ls.filter((l) => errorFor(m, l) == null),
+                    ui,
+                  ),
                 })
               : `${t(key(`meaning.${graded.letter}`))} ${t(
                   key(one ? "measured" : "measuredAverage"),
@@ -313,7 +313,7 @@ export const Model: React.FC<ModelProps> = ({
     </>
   );
 
-  const move = (kind: "grow" | "shrink" | "pick", update: () => void) =>
+  const move = (kind: ModelMove, update: () => void) =>
     moveModels(rootRef.current, kind, update);
 
   const open = (initialQuery = "") =>
@@ -591,66 +591,79 @@ export const Model: React.FC<ModelProps> = ({
     );
   };
 
-  /**
-   * The column heads (EN … SPEED SIZE) over the values, one grid each. Many
-   * languages narrow the columns; the height stays the same.
-   */
-  const columns = (row: ModelRow) => {
-    const cols = columnsClass(dense);
-    const style = { "--n": langs.length } as React.CSSProperties;
+  const cols = COLUMNS[dense ? "dense" : "normal"];
+  const colsStyle = { "--n": langs.length } as React.CSSProperties;
+
+  /** The column heads: each language's code, then Speed and Size. */
+  const columnHeads = (
+    <>
+      {langs.map((l) => (
+        <span key={l} title={nameOf(l)} className={CODE_CLASS}>
+          {l.toUpperCase()}
+        </span>
+      ))}
+      <span className={CODE_CLASS}>{t("onboarding.model.speed")}</span>
+      <span className={CODE_CLASS}>{t("onboarding.model.size")}</span>
+    </>
+  );
+
+  /** A model's values under the heads: a grade per language, speed, size. */
+  const columnValues = (row: ModelRow) => {
     const id = row.model.id;
     return (
-      <span className="flex flex-col gap-[5px]">
-        <span
-          {...vt(id, "c")}
-          style={style}
-          className={`grid items-center justify-items-center uppercase ${cols}`}
-        >
-          {langs.map((l) => (
-            <span key={l} title={nameOf(l)} className={CODE_CLASS}>
-              {l.toUpperCase()}
-            </span>
-          ))}
-          <span className={CODE_CLASS}>{t("onboarding.model.speed")}</span>
-          <span className={CODE_CLASS}>{t("onboarding.model.size")}</span>
-        </span>
-        <span
-          {...vt(id, "g")}
-          style={style}
-          className={`grid items-center justify-items-center ${cols}`}
-        >
-          {langs.map((l) => {
-            const grade = gradeFor(row.model, l);
-            return gradeHint(
-              row.model,
-              [l],
-              <span className="inline-grid">
-                <GradeChip
-                  letter={grade.letter}
-                  label={grade.label}
-                  dense={dense}
-                />
-              </span>,
-            );
-          })}
-          {speedHint(
-            row,
-            <span
-              className={`inline-grid h-[22px] place-items-center ${dense ? "w-[36px]" : "w-[40px]"}`}
-            >
-              <SpeedBars level={speedLevel(row.wait)} className="h-[12px]!" />
+      <span
+        {...vt(id, "g")}
+        style={colsStyle}
+        className={`grid items-center justify-items-center ${cols.grid}`}
+      >
+        {langs.map((l) => {
+          const grade = gradeFor(row.model, l);
+          return gradeHint(
+            row.model,
+            [l],
+            <span className="inline-grid">
+              <GradeChip
+                letter={grade.letter}
+                label={grade.label}
+                dense={dense}
+              />
             </span>,
-          )}
+          );
+        })}
+        {speedHint(
+          row,
           <span
-            {...vt(id, "s")}
-            className="whitespace-nowrap text-label text-ink-3 tabular-nums"
+            className={`inline-grid h-[22px] place-items-center ${cols.speed}`}
           >
-            {sizeCell(row.model)}
-          </span>
+            <SpeedBars level={speedLevel(row.wait)} className="h-[12px]!" />
+          </span>,
+        )}
+        <span
+          {...vt(id, "s")}
+          className="whitespace-nowrap text-label text-ink-3 tabular-nums"
+        >
+          {sizeCell(row.model)}
         </span>
       </span>
     );
   };
+
+  /**
+   * The column heads (EN … SPEED SIZE) over the values, one grid each. Many
+   * languages narrow the columns; the height stays the same.
+   */
+  const columns = (row: ModelRow) => (
+    <span className="flex flex-col gap-[5px]">
+      <span
+        {...vt(row.model.id, "c")}
+        style={colsStyle}
+        className={`grid items-center justify-items-center uppercase ${cols.grid}`}
+      >
+        {columnHeads}
+      </span>
+      {columnValues(row)}
+    </span>
+  );
 
   /** A pick that isn't selected: role, name and few words, then columns. */
   const card = (row: ModelRow, role: PickRole) => {
@@ -932,9 +945,6 @@ export const Model: React.FC<ModelProps> = ({
     );
   };
 
-  const chipCols = columnsClass(dense);
-  const chipStyle = { "--n": langs.length } as React.CSSProperties;
-
   const tableRow = (row: ModelRow) => {
     const id = row.model.id;
     const on = id === selectedId;
@@ -981,40 +991,7 @@ export const Model: React.FC<ModelProps> = ({
             {row.model.description}
           </span>
         </span>
-        <span
-          {...vt(id, "g")}
-          style={chipStyle}
-          className={`grid items-center justify-items-center ${chipCols}`}
-        >
-          {langs.map((l) => {
-            const grade = gradeFor(row.model, l);
-            return gradeHint(
-              row.model,
-              [l],
-              <span className="inline-grid">
-                <GradeChip
-                  letter={grade.letter}
-                  label={grade.label}
-                  dense={dense}
-                />
-              </span>,
-            );
-          })}
-          {speedHint(
-            row,
-            <span
-              className={`inline-grid h-[22px] place-items-center ${dense ? "w-[36px]" : "w-[40px]"}`}
-            >
-              <SpeedBars level={speedLevel(row.wait)} className="h-[12px]!" />
-            </span>,
-          )}
-          <span
-            {...vt(id, "s")}
-            className="whitespace-nowrap text-label text-ink-3 tabular-nums"
-          >
-            {sizeCell(row.model)}
-          </span>
-        </span>
+        {columnValues(row)}
         {line && thinLine("inset-x-[14px] bottom-[7px]")}
       </button>
     );
@@ -1091,18 +1068,10 @@ export const Model: React.FC<ModelProps> = ({
             <div className="flex h-[31px] items-center justify-between border-b border-line ps-[42px] pe-[14px] uppercase">
               <span className={CODE_CLASS}>{t("onboarding.model.model")}</span>
               <span
-                style={chipStyle}
-                className={`grid items-center justify-items-center ${chipCols}`}
+                style={colsStyle}
+                className={`grid items-center justify-items-center ${cols.grid}`}
               >
-                {langs.map((l) => (
-                  <span key={l} title={nameOf(l)} className={CODE_CLASS}>
-                    {l.toUpperCase()}
-                  </span>
-                ))}
-                <span className={CODE_CLASS}>
-                  {t("onboarding.model.speed")}
-                </span>
-                <span className={CODE_CLASS}>{t("onboarding.model.size")}</span>
+                {columnHeads}
               </span>
             </div>
           </div>
@@ -1139,12 +1108,18 @@ export const Model: React.FC<ModelProps> = ({
 /**
  * The grade, speed and size columns, the same in the pick cards and the
  * table. Every column centers its head over its values; Size is as wide as
- * its widest value ("99.0 MB").
+ * its widest value ("99.0 MB"). `speed` sizes the bars' cell to its column.
  */
-const columnsClass = (dense: boolean) =>
-  dense
-    ? "grid-cols-[repeat(var(--n),26px)_36px_48px] gap-x-[3px]"
-    : "grid-cols-[repeat(var(--n),32px)_40px_48px] gap-x-[6px]";
+const COLUMNS = {
+  normal: {
+    grid: "grid-cols-[repeat(var(--n),32px)_40px_48px] gap-x-[6px]",
+    speed: "w-[40px]",
+  },
+  dense: {
+    grid: "grid-cols-[repeat(var(--n),26px)_36px_48px] gap-x-[3px]",
+    speed: "w-[36px]",
+  },
+};
 
 const CODE_CLASS =
   "text-tag font-semibold leading-[14px] tracking-[0.02em] text-ink-3";

@@ -128,9 +128,7 @@
           }
         },
         "errors": {
-          "restore": "No s'ha pogut restaurar la drecera original",
-          "set": "No s'ha pogut definir la drecera: {{error}}",
-          "reset": "No s'ha pogut restablir la drecera al valor original"
+          "set": "No s'ha pogut definir la drecera: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Escriu les transcripcions en mandarí i cantonès amb caràcters simplificats o tradicionals. Els altres idiomes no es modifiquen.",
         "options": {
           "asTranscribed": "Tal com s'ha transcrit",
-          "simplified": "Simplificat",
-          "traditional": "Tradicional"
+          "simplified": "Simplificat"
         }
       }
     },
@@ -527,11 +524,6 @@
         "description": "Tria el motor de dreceres de teclat.",
         "bindingsReset": "Les dreceres de teclat eren incompatibles i s'han restablert als valors per defecte"
       },
-      "paths": {
-        "appData": "Dades de l'aplicació:",
-        "models": "Models:",
-        "settings": "Configuració:"
-      },
       "pasteDelay": {
         "title": "Retard abans d'enganxar",
         "description": "Retard (en mil·lisegons) després de copiar el text i abans d'enviar la combinació de tecles per enganxar-lo. Augmenteu-lo si no s'enganxa res."
@@ -628,7 +620,6 @@
   "common": {
     "loading": "S'està carregant...",
     "delete": "Suprimeix",
-    "back": "Enrere",
     "close": "Tanca",
     "open": "Obre",
     "copy": "Copia",

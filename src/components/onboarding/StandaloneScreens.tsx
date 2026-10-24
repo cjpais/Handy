@@ -4,6 +4,7 @@ import { useModelStore } from "@/stores/modelStore";
 import { clearOnboardingProgress, useOnboardingStore } from "./onboardingStore";
 import { usePermissions } from "./usePermissions";
 import { useOnboardingModels } from "./useOnboardingModels";
+import { downloadPick } from "./downloadPick";
 import { Permissions } from "./screens/Permissions";
 import { Model } from "./screens/Model";
 
@@ -29,7 +30,6 @@ export const ReplaceModel: React.FC<{
   const { settings } = useSettings();
   const store = useOnboardingStore();
   const models = useOnboardingModels(store.languages);
-  const cancelDownload = useModelStore((s) => s.cancelDownload);
   const selectModel = useModelStore((s) => s.selectModel);
   // Switching to the model is under way, or failed: wait for the next pick
   // rather than retrying (a failed load re-renders this screen).
@@ -69,23 +69,7 @@ export const ReplaceModel: React.FC<{
       models={models}
       onBack={onBack}
       onChoose={(id) => {
-        const model = models.offered.find((m) => m.id === id);
-        const info = model && models.infoFor(model);
-        if (!model || !info) return;
-        const previous = models.offered.find((m) => m.id === store.downloadId);
-        const previousInfo = previous && models.infoFor(previous);
-        if (
-          previousInfo &&
-          previousInfo.id !== info.id &&
-          models.downloadState(previous).state === "downloading"
-        )
-          cancelDownload(previousInfo.id);
-        if (
-          !info.is_downloaded &&
-          (store.downloadId !== id ||
-            models.downloadState(model).state === "failed")
-        )
-          models.startDownload(model);
+        if (!downloadPick(models, id, store.downloadId)) return;
         finishing.current = false;
         setAttempt((n) => n + 1);
         store.set({

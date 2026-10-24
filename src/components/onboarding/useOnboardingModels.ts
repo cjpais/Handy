@@ -10,17 +10,13 @@ import {
   type CatalogModel,
   type MachineTier,
 } from "./data/models";
-
-const repoOf = (info: ModelInfo): string | null =>
-  typeof info.source === "object" && "HuggingFace" in info.source
-    ? info.source.HuggingFace.repo_id
-    : null;
+import { repoIdOf } from "./retiredModels";
 
 /**
  * Which benchmark tier this computer is closest to: "accelerated" when the
  * engine sees a GPU and transcription isn't forced onto the CPU.
  */
-export const useMachineTier = (): MachineTier => {
+const useMachineTier = (): MachineTier => {
   const { getSetting } = useSettings();
   const accelerator = getSetting("transcribe_accelerator");
   const [hasGpu, setHasGpu] = useState(true);
@@ -69,7 +65,7 @@ export const useOnboardingModels = (languages: string[]) => {
   const infoByRepo = useMemo(() => {
     const map = new Map<string, ModelInfo>();
     for (const info of infos) {
-      const repo = repoOf(info);
+      const repo = repoIdOf(info);
       if (repo && !info.is_custom && !map.has(repo)) map.set(repo, info);
     }
     return map;

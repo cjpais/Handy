@@ -1,4 +1,5 @@
 import { flushSync } from "react-dom";
+import { viewTransitions } from "./viewTransitions";
 
 /**
  * Demo to Try it, and back: one camera move. Try it's screen is Demo's
@@ -13,16 +14,7 @@ import { flushSync } from "react-dom";
  */
 export type ScreenMove = "in" | "out";
 
-type ViewTransition = {
-  ready: Promise<void>;
-  finished: Promise<void>;
-  skipTransition: () => void;
-};
-type WithViewTransitions = Document & {
-  startViewTransition?: (update: () => void) => ViewTransition;
-};
-
-let running: ViewTransition | null = null;
+const moves = viewTransitions();
 
 const rect = (selector: string) =>
   document.querySelector<HTMLElement>(selector)?.getBoundingClientRect();
@@ -49,32 +41,27 @@ const setPush = (
 };
 
 export const moveScreens = (kind: ScreenMove, update: () => void) => {
-  const doc = document as WithViewTransitions;
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!doc.startViewTransition || reduce) {
+  if (!moves.canMove()) {
     update();
     return;
   }
-  running?.skipTransition();
+  moves.skip();
   const html = document.documentElement;
   // Before the old picture is taken, so it's taken with the names on.
   html.dataset.sflow = kind;
   const laptop = rect(".demo-laptop");
   const drawn = rect(".demo-screen");
   const real = rect(".try-screen");
-  const transition = doc.startViewTransition(() => {
-    flushSync(update);
-    if (kind === "in") setPush(laptop, drawn, rect(".try-screen"));
-    else setPush(rect(".demo-laptop"), rect(".demo-screen"), real);
-  });
-  running = transition;
-  // Skipped by a newer transition: fine, the DOM is already updated.
-  transition.ready.catch(() => {});
-  transition.finished.finally(() => {
-    if (running !== transition) return;
-    running = null;
-    delete html.dataset.sflow;
-    for (const v of ["--sf-ox", "--sf-oy", "--sf-x", "--sf-y", "--sf-s"])
-      html.style.removeProperty(v);
-  });
+  moves.start(
+    () => {
+      flushSync(update);
+      if (kind === "in") setPush(laptop, drawn, rect(".try-screen"));
+      else setPush(rect(".demo-laptop"), rect(".demo-screen"), real);
+    },
+    () => {
+      delete html.dataset.sflow;
+      for (const v of ["--sf-ox", "--sf-oy", "--sf-x", "--sf-y", "--sf-s"])
+        html.style.removeProperty(v);
+    },
+  );
 };

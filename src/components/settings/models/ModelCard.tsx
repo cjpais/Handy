@@ -37,9 +37,10 @@ const getLanguageDisplayText = (
   });
 };
 
-// Legacy = a blob (Url-sourced) .bin model, kept runnable but no longer the
-// advertised download (catalog GGUFs supersede it).
-export const isLegacySource = (model: ModelInfo): boolean =>
+// Legacy models are the blob (Url-sourced) .bin downloads, superseded by
+// the catalog GGUFs. They stay runnable when already on disk, but we no longer
+// advertise the download.
+export const isLegacyModel = (model: ModelInfo): boolean =>
   typeof model.source === "object" && "Url" in model.source;
 
 // Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").
@@ -60,10 +61,7 @@ export type ModelCardStatus =
 
 interface ModelCardProps {
   model: ModelInfo;
-  variant?: "default" | "featured";
   status?: ModelCardStatus;
-  disabled?: boolean;
-  className?: string;
   onSelect: (modelId: string) => void;
   onDownload?: (modelId: string) => void;
   onDelete?: (modelId: string) => void;
@@ -75,10 +73,7 @@ interface ModelCardProps {
 
 const ModelCard: React.FC<ModelCardProps> = ({
   model,
-  variant = "default",
   status = "downloadable",
-  disabled = false,
-  className = "",
   onSelect,
   onDownload,
   onDelete,
@@ -91,7 +86,6 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const debugMode = useSettingsStore(
     (state) => state.settings?.debug_mode ?? false,
   );
-  const isFeatured = variant === "featured";
   // The active model is already loaded — re-selecting it just reloads it for no
   // gain, so it is deliberately not clickable.
   const isClickable = status === "available" || status === "downloadable";
@@ -112,20 +106,16 @@ const ModelCard: React.FC<ModelCardProps> = ({
     if (status === "active") {
       return "border-2 border-logo-primary/50 bg-logo-primary/10";
     }
-    if (isFeatured) {
-      return "border-2 border-logo-primary/50";
-    }
     return "border-2 border-line";
   };
 
   const getInteractiveClasses = () => {
     if (!isClickable) return "";
-    if (disabled) return "opacity-50 cursor-not-allowed";
     return "cursor-pointer hover:border-logo-primary/50 hover:bg-logo-primary/10 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] group";
   };
 
   const handleClick = () => {
-    if (!isClickable || disabled) return;
+    if (!isClickable) return;
     if (status === "downloadable" && onDownload) {
       onDownload(model.id);
     } else {
@@ -146,12 +136,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
       }}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      className={[
-        baseClasses,
-        getVariantClasses(),
-        getInteractiveClasses(),
-        className,
-      ]
+      className={[baseClasses, getVariantClasses(), getInteractiveClasses()]
         .filter(Boolean)
         .join(" ")}
     >
@@ -176,7 +161,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             {model.is_custom && (
               <Badge variant="secondary">{t("modelSelector.custom")}</Badge>
             )}
-            {isLegacySource(model) && (
+            {isLegacyModel(model) && (
               <Badge variant="secondary">{t("modelSelector.legacy")}</Badge>
             )}
             {status === "switching" && (

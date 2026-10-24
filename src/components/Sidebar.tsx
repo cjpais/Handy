@@ -8,7 +8,6 @@ import {
   GeneralSettings,
   AdvancedSettings,
   HistorySettings,
-  DebugSettings,
   AboutSettings,
   PostProcessingSettings,
   ModelsSettings,
@@ -27,7 +26,8 @@ interface IconProps {
 interface SectionConfig {
   labelKey: string;
   icon: React.ComponentType<IconProps>;
-  component: React.ComponentType;
+  /** `null` when App renders the section itself (Debug, with its handlers). */
+  component: React.ComponentType | null;
   enabled: (settings: any) => boolean;
 }
 
@@ -65,7 +65,7 @@ export const SECTIONS_CONFIG = {
   debug: {
     labelKey: "sidebar.debug",
     icon: FlaskConical,
-    component: DebugSettings,
+    component: null,
     enabled: (settings) => settings?.debug_mode ?? false,
   },
   about: {

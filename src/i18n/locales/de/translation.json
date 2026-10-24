@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "Ursprüngliches Tastenkürzel konnte nicht wiederhergestellt werden",
-          "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}",
-          "reset": "Tastenkürzel konnte nicht auf Originalwert zurückgesetzt werden"
+          "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Schreibt Transkriptionen auf Mandarin und Kantonesisch in vereinfachten oder traditionellen Schriftzeichen. Andere Sprachen bleiben unverändert.",
         "options": {
           "asTranscribed": "Wie transkribiert",
-          "simplified": "Vereinfacht",
-          "traditional": "Traditionell"
+          "simplified": "Vereinfacht"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Wähle das Backend für Tastaturkürzel.",
         "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
       },
-      "paths": {
-        "appData": "App-Daten:",
-        "models": "Modelle:",
-        "settings": "Einstellungen:"
-      },
       "pasteDelay": {
         "title": "Einfügeverzögerung (vorher)",
         "description": "Verzögerung (in Millisekunden) nach dem Kopieren des Textes, bevor der Einfüge-Tastendruck gesendet wird. Erhöhe den Wert, wenn nichts eingefügt wird."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Wird geladen...",
     "delete": "Löschen",
-    "back": "Zurück",
     "close": "Schließen",
     "open": "Öffnen",
     "copy": "Kopieren",

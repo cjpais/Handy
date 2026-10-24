@@ -22,13 +22,10 @@ pub fn redact_text(text: &str) -> &str {
     }
 }
 
-/// The page size Handy's main window opens at, in logical pixels.
+/// The page size Handy's main window opens at, and the smallest it can be, in
+/// logical pixels: onboarding's stage (OnboardingShell), centred in a larger
+/// window.
 pub const MAIN_WINDOW_SIZE: (f64, f64) = (720.0, 600.0);
-
-/// The smallest the main window's page can be, in logical pixels: the size it
-/// opens at, which is onboarding's stage (OnboardingShell), centred in a
-/// larger window.
-pub const MAIN_WINDOW_MIN_SIZE: (f64, f64) = MAIN_WINDOW_SIZE;
 
 /// Measure the title bar of `window`, in logical pixels: on macOS Tauri draws
 /// it inside the inner size (a full-size content view), so the page starts

@@ -128,9 +128,7 @@
           }
         },
         "errors": {
-          "restore": "Kunne ikke gendanne den oprindelige genvej",
-          "set": "Kunne ikke indstille genvej: {{error}}",
-          "reset": "Kunne ikke nulstille genvej til oprindelig indstilling"
+          "set": "Kunne ikke indstille genvej: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Skriver mandarin- og kantonesisk-transskriptioner med forenklede eller traditionelle tegn. Andre sprog ændres ikke.",
         "options": {
           "asTranscribed": "Som transskriberet",
-          "simplified": "Forenklet",
-          "traditional": "Traditionel"
+          "simplified": "Forenklet"
         }
       }
     },
@@ -527,11 +524,6 @@
         "description": "Vælg backend til tastaturgenveje.",
         "bindingsReset": "Tastaturgenveje var inkompatible og blev nulstillet til standard"
       },
-      "paths": {
-        "appData": "Appdata:",
-        "models": "Modeller:",
-        "settings": "Indstillinger:"
-      },
       "pasteDelay": {
         "title": "Forsinkelse af indsættelse (før)",
         "description": "Forsinkelse (i millisekunder) efter kopiering af tekst, før tastetrykket for indsætning sendes. Øg, hvis intet bliver indsat."
@@ -628,7 +620,6 @@
   "common": {
     "loading": "Indlæser...",
     "delete": "Slet",
-    "back": "Tilbage",
     "close": "Luk",
     "open": "Åbn",
     "copy": "Kopiér",

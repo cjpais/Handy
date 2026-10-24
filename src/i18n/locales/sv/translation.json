@@ -128,9 +128,7 @@
           }
         },
         "errors": {
-          "restore": "Misslyckades med att återställa ursprungligt kortkommando",
-          "set": "Misslyckades med att ställa in kortkommando: {{error}}",
-          "reset": "Misslyckades med att återställa kortkommando till ursprungsvärdet"
+          "set": "Misslyckades med att ställa in kortkommando: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Skriver mandarin- och kantonesiska transkriptioner med förenklade eller traditionella tecken. Andra språk lämnas oförändrade.",
         "options": {
           "asTranscribed": "Som transkriberat",
-          "simplified": "Förenklad",
-          "traditional": "Traditionell"
+          "simplified": "Förenklad"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Välj tangentbordsgenvägens implementation.",
         "bindingsReset": "Kortkommandona var inkompatibla och återställdes till standardvärden"
       },
-      "paths": {
-        "appData": "Appdata:",
-        "models": "Modeller:",
-        "settings": "Inställningar:"
-      },
       "pasteDelay": {
         "title": "Fördröjning vid klistra in (före)",
         "description": "Fördröjning (i millisekunder) efter att text kopierats, innan tangenttryckningen för att klistra in skickas. Öka om ingenting klistras in."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Laddar...",
     "delete": "Ta bort",
-    "back": "Tillbaka",
     "close": "Stäng",
     "open": "Öppna",
     "copy": "Kopiera",

@@ -4,7 +4,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { ExternalLink } from "lucide-react";
 import { TextLink } from "../ui/TextLink";
 
-export const LINUX_SETUP_URL = "https://handy.computer/docs/linux";
+const LINUX_SETUP_URL = "https://handy.computer/docs/linux";
 
 /**
  * A footer hint for Linux, where the shortcut and pasting depend on the
@@ -13,12 +13,7 @@ export const LINUX_SETUP_URL = "https://handy.computer/docs/linux";
 export const LinuxGuide: React.FC<{
   i18nKey: "onboarding.linux.tryIt" | "onboarding.linux.done";
 }> = ({ i18nKey }) => (
-  <Trans
-    i18nKey={i18nKey}
-    components={{
-      link: <GuideLink />,
-    }}
-  />
+  <Trans i18nKey={i18nKey} components={{ guide: <GuideLink /> }} />
 );
 
 const GuideLink: React.FC<{ children?: React.ReactNode }> = ({ children }) => (

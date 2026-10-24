@@ -247,7 +247,7 @@ export const Permissions: React.FC<PermissionsProps> = ({
         >
           <Trans
             i18nKey="onboarding.permissions.relaunch"
-            components={{ link: <TextLink onClick={relaunchHandy} /> }}
+            components={{ relaunch: <TextLink onClick={relaunchHandy} /> }}
           />
         </p>
       </ScreenMain>

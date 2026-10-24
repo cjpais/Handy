@@ -17,7 +17,7 @@ import { ProgressRing } from "../shared/ProgressRing";
 import { Tag } from "../shared/Tag";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "./OnboardingShell";
 import { useModelStore } from "../../stores/modelStore";
-import { formatModelSize } from "../../lib/utils/format";
+import { BYTES_PER_MB, formatModelSize } from "../../lib/utils/format";
 import { commands } from "@/bindings";
 import {
   deleteRetiredModel,
@@ -167,7 +167,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     remainingBytes +=
       progress && progress.total > 0
         ? progress.total - progress.downloaded
-        : Number(p.replacement.size_mb) * 1024 * 1024 * (1 - state / 100);
+        : Number(p.replacement.size_mb) * BYTES_PER_MB * (1 - state / 100);
   }
   const secondsLeft = measured && rate > 0 ? remainingBytes / rate : 0;
   // Unit formatting is localized by the browser ("3 min", "3 Min."), so only
@@ -306,7 +306,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
       {rate > 0 && (
         <span className="tabular-nums">
           {t("modelSelector.downloadSpeed", {
-            speed: (rate / (1024 * 1024)).toFixed(1),
+            speed: (rate / BYTES_PER_MB).toFixed(1),
           })}
         </span>
       )}

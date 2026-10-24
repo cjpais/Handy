@@ -12,8 +12,8 @@ import { toast } from "sonner";
 import { commands } from "@/bindings";
 import { useSettingsStore } from "@/stores/settingsStore";
 
-export type PermissionStatus = "checking" | "needed" | "waiting" | "granted";
-export type PermissionPlatform = "macos" | "windows" | "other";
+type PermissionStatus = "checking" | "needed" | "waiting" | "granted";
+type PermissionPlatform = "macos" | "windows" | "other";
 
 export interface Permissions {
   platform: PermissionPlatform;

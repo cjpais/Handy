@@ -28,15 +28,19 @@ export const useRubric = () => {
       : t(key("under"), { max: n(GRADE_CEILINGS[letter]) });
   };
 
-  // SPEED_CUTOFFS runs slowest to fastest: four bars beat all of them.
-  const fastest = [...SPEED_CUTOFFS].sort((a, b) => a - b);
+  // SPEED_CUTOFFS runs fastest to slowest: four bars beat all of them.
   const speedBand = (level: number) => {
-    const i = fastest.length - level;
-    if (i >= fastest.length)
-      return t(key("overSeconds"), { min: n(fastest[fastest.length - 1]) });
+    const i = SPEED_CUTOFFS.length - level;
+    if (i >= SPEED_CUTOFFS.length)
+      return t(key("overSeconds"), {
+        min: n(SPEED_CUTOFFS[SPEED_CUTOFFS.length - 1]),
+      });
     return i
-      ? t(key("betweenSeconds"), { min: n(fastest[i - 1]), max: n(fastest[i]) })
-      : t(key("underSeconds"), { max: n(fastest[i]) });
+      ? t(key("betweenSeconds"), {
+          min: n(SPEED_CUTOFFS[i - 1]),
+          max: n(SPEED_CUTOFFS[i]),
+        })
+      : t(key("underSeconds"), { max: n(SPEED_CUTOFFS[i]) });
   };
 
   return { gradeBand, speedBand, number: n };

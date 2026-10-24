@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "Errore nel ripristino della scorciatoia originale",
-          "set": "Errore nella configurazione della scorciatoia: {{error}}",
-          "reset": "Errore nella reinizializzazione della scorciatoia al valore originale"
+          "set": "Errore nella configurazione della scorciatoia: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Scrive le trascrizioni in mandarino e cantonese con caratteri semplificati o tradizionali. Le altre lingue restano invariate.",
         "options": {
           "asTranscribed": "Come trascritto",
-          "simplified": "Semplificato",
-          "traditional": "Tradizionale"
+          "simplified": "Semplificato"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Scegli il backend per le scorciatoie da tastiera.",
         "bindingsReset": "Le scorciatoie da tastiera erano incompatibili e sono state ripristinate ai valori predefiniti"
       },
-      "paths": {
-        "appData": "Dati App:",
-        "models": "Modelli:",
-        "settings": "Impostazioni:"
-      },
       "pasteDelay": {
         "title": "Ritardo incolla (prima)",
         "description": "Ritardo (in millisecondi) dopo aver copiato il testo, prima di inviare il tasto incolla. Aumentare se non viene incollato nulla."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Caricamento...",
     "delete": "Elimina",
-    "back": "Indietro",
     "close": "Chiudi",
     "open": "Apri",
     "copy": "Copia",

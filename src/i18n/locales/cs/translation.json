@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "Nepodařilo se obnovit původní zkratku",
-          "set": "Nepodařilo se nastavit zkratku: {{error}}",
-          "reset": "Nepodařilo se vrátit zkratku na původní hodnotu"
+          "set": "Nepodařilo se nastavit zkratku: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Zapisuje přepisy v mandarínštině a kantonštině zjednodušenými nebo tradičními znaky. Ostatní jazyky zůstávají beze změny.",
         "options": {
           "asTranscribed": "Jak bylo přepsáno",
-          "simplified": "Zjednodušené",
-          "traditional": "Tradiční"
+          "simplified": "Zjednodušené"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Zvolte backend pro klávesové zkratky.",
         "bindingsReset": "Klávesové zkratky byly nekompatibilní a byly obnoveny na výchozí hodnoty"
       },
-      "paths": {
-        "appData": "Data aplikace:",
-        "models": "Modely:",
-        "settings": "Nastavení:"
-      },
       "pasteDelay": {
         "title": "Zpoždění vložení (před)",
         "description": "Zpoždění (v milisekundách) po zkopírování textu, před odesláním klávesy pro vložení. Zvyšte, pokud se nic nevloží."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Načítání...",
     "delete": "Smazat",
-    "back": "Zpět",
     "close": "Zavřít",
     "open": "Otevřít",
     "copy": "Kopírovat",

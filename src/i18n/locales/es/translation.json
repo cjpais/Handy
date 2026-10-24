@@ -155,9 +155,7 @@
           }
         },
         "errors": {
-          "restore": "Error al restaurar el atajo original",
-          "set": "Error al configurar el atajo: {{error}}",
-          "reset": "Error al restablecer el atajo al valor original"
+          "set": "Error al configurar el atajo: {{error}}"
         }
       },
       "language": {
@@ -357,8 +355,7 @@
         "description": "Escribe las transcripciones en mandarín y cantonés con caracteres simplificados o tradicionales. Los demás idiomas no se modifican.",
         "options": {
           "asTranscribed": "Tal como se transcribió",
-          "simplified": "Simplificado",
-          "traditional": "Tradicional"
+          "simplified": "Simplificado"
         }
       }
     },
@@ -515,11 +512,6 @@
         "description": "Elige el sistema que gestiona los atajos de teclado.",
         "bindingsReset": "Los atajos de teclado eran incompatibles y se restablecieron a los valores predeterminados"
       },
-      "paths": {
-        "appData": "Datos de la aplicación:",
-        "models": "Modelos:",
-        "settings": "Configuración:"
-      },
       "pasteDelay": {
         "title": "Retraso de pegado (antes)",
         "description": "Retraso (en milisegundos) después de copiar el texto, antes de enviar la pulsación de tecla de pegar. Auméntelo si no se pega nada."
@@ -625,7 +617,6 @@
   "common": {
     "loading": "Cargando...",
     "delete": "Eliminar",
-    "back": "Atrás",
     "close": "Cerrar",
     "open": "Abrir",
     "copy": "Copiar",

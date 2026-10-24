@@ -173,59 +173,6 @@
 .demo-screen.is-dimmed::after {
   opacity: 0.55;
 }
-/* the menu bar (macOS) or the taskbar (Windows), where Handy's icon lives */
-.demo-bar {
-  position: absolute;
-  inset-inline: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 10px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--color-ink-2);
-  background: color-mix(in srgb, var(--color-background) 62%, transparent);
-  backdrop-filter: blur(8px);
-}
-.demo-bar.is-menu {
-  top: 0;
-  height: 20px;
-}
-.demo-bar.is-task {
-  bottom: 0;
-  height: 25px;
-  gap: 7.5px;
-}
-.demo-bar i {
-  height: 5px;
-  border-radius: 2.5px;
-  background: var(--color-line);
-}
-.demo-bar b {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  background: var(--color-line);
-}
-.demo-apple {
-  width: 9px;
-  height: 10px;
-  border-radius: 45% 45% 50% 50%;
-  background: var(--color-ink-2);
-}
-.demo-start {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  width: 12.5px;
-  height: 12.5px;
-}
-.demo-start i {
-  height: auto;
-  border-radius: 0;
-  background: var(--color-ink-2);
-}
 /* the app: Messages for hold (a reply), Notes for tap (something longer) */
 .demo-app {
   position: absolute;

@@ -3,14 +3,11 @@ import React from "react";
 interface ProgressRingProps {
   /** 0–1 */
   value: number;
-  size?: number;
+  size: number;
 }
 
 /** A small magenta ring that fills clockwise from the top. */
-export const ProgressRing: React.FC<ProgressRingProps> = ({
-  value,
-  size = 18,
-}) => {
+export const ProgressRing: React.FC<ProgressRingProps> = ({ value, size }) => {
   const r = size / 2 - 2;
   const c = 2 * Math.PI * r;
   const m = size / 2;
