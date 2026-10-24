@@ -53,12 +53,12 @@ const CHAPTERS: Record<
       [0, "reset"],
       [300, "point"], //    the glide takes 850ms
       [1200, "click"],
-      [2400, "press"], //   the keys held, Handy listens: 3.6s
-      [6000, "release"],
-      [6600, "land"], //    the words stay 2s
+      [2400, "press"], //   the keys held, Handy listens: 2s
+      [4400, "release"],
+      [5200, "land"], //    the words stay 2s
     ],
-    ms: 8600,
-    still: 4000,
+    ms: 7200,
+    still: 3400,
   },
   tap: {
     script: [
@@ -66,12 +66,12 @@ const CHAPTERS: Record<
       [300, "point"],
       [1200, "click"],
       [2400, "press"],
-      [2580, "lift"], //    a tap; Handy keeps listening: 4.4s
-      [7000, "press"],
-      [7180, "release"], // the second tap
-      [7780, "land"], //    the words stay 2s
+      [2580, "lift"], //    a tap; Handy keeps listening: 2.8s
+      [5400, "press"],
+      [5580, "release"], // the second tap
+      [6180, "land"], //    the words stay 2s
     ],
-    ms: 9780,
+    ms: 8180,
     still: 4000,
   },
 };
