@@ -249,8 +249,14 @@ impl ModelDescriptor {
 /// *concrete* code, so a bare intent (`en`) resolves to the exact string the
 /// engine's prompt table expects (`en-US`) for models that advertise full
 /// BCP-47 locales.
+///
+/// `preferred_languages` (the person's `spoken_languages`) only matters when
+/// the model can't auto-detect and the intent isn't usable: someone who speaks
+/// exactly one language the model hears gets that language rather than the
+/// English fallback.
 pub fn effective_language(
     intent: &str,
+    preferred_languages: &[String],
     supported_languages: &[String],
     supports_language_detection: bool,
 ) -> String {
@@ -259,19 +265,7 @@ pub fn effective_language(
     }
 
     if intent != "auto" {
-        // Prefer the same base code before considering an equivalence alias. If
-        // a future model advertises both `no` and `nb`, an explicit `nb` intent
-        // must select `nb`, regardless of capability-list order.
-        let exact_base_match = supported_languages
-            .iter()
-            .find(|language| base_language(language) == base_language(intent));
-        let equivalent_match = || {
-            supported_languages.iter().find(|language| {
-                canonical_language_code(language) == canonical_language_code(intent)
-            })
-        };
-
-        if let Some(code) = exact_base_match.or_else(equivalent_match) {
+        if let Some(code) = supported_code(intent, supported_languages) {
             return code.clone();
         }
     }
@@ -281,7 +275,13 @@ pub fn effective_language(
     }
 
     // Model can't auto-detect and the intent isn't usable: fall back to a
-    // concrete language (prefer English) so we never hand the engine "auto".
+    // concrete language so we never hand the engine "auto". The one language
+    // they speak, if the model hears it; else English; else the model's first.
+    if let [only] = preferred_languages {
+        if let Some(code) = supported_code(only, supported_languages) {
+            return code.clone();
+        }
+    }
     if let Some(en) = supported_languages
         .iter()
         .find(|language| base_language(language) == "en")
@@ -289,6 +289,21 @@ pub fn effective_language(
         return en.clone();
     }
     recognition_language(&supported_languages[0]).to_string()
+}
+
+/// The model's own code for `language`, if it hears it.
+fn supported_code<'a>(language: &str, supported_languages: &'a [String]) -> Option<&'a String> {
+    // Prefer the same base code before considering an equivalence alias. If
+    // a future model advertises both `no` and `nb`, an explicit `nb` intent
+    // must select `nb`, regardless of capability-list order.
+    supported_languages
+        .iter()
+        .find(|code| base_language(code) == base_language(language))
+        .or_else(|| {
+            supported_languages
+                .iter()
+                .find(|code| canonical_language_code(code) == canonical_language_code(language))
+        })
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -2671,7 +2686,36 @@ mod tests {
     fn test_effective_language_falls_back_to_canonical_chinese() {
         let languages = vec!["zh-Hant".to_string()];
 
-        assert_eq!(effective_language("auto", &languages, false), "zh");
+        assert_eq!(effective_language("auto", &[], &languages, false), "zh");
+    }
+
+    #[test]
+    fn test_effective_language_falls_back_to_the_one_preferred_language() {
+        let languages = vec!["en".to_string(), "es-ES".to_string(), "de".to_string()];
+        let spanish = vec!["es".to_string()];
+        let several = vec!["es".to_string(), "de".to_string()];
+        let unheard = vec!["ja".to_string()];
+
+        // A model that must be told: the one language they speak.
+        assert_eq!(
+            effective_language("auto", &spanish, &languages, false),
+            "es-ES"
+        );
+        // Several, or one the model doesn't hear: the English fallback.
+        assert_eq!(
+            effective_language("auto", &several, &languages, false),
+            "en"
+        );
+        assert_eq!(
+            effective_language("auto", &unheard, &languages, false),
+            "en"
+        );
+        // A model that detects stays on auto; a usable intent still wins.
+        assert_eq!(
+            effective_language("auto", &spanish, &languages, true),
+            "auto"
+        );
+        assert_eq!(effective_language("de", &spanish, &languages, false), "de");
     }
 
     #[test]
@@ -2687,31 +2731,49 @@ mod tests {
             "ja-JP".to_string(),
         ];
 
-        assert_eq!(effective_language("en", &languages, true), "en-US");
-        assert_eq!(effective_language("es", &languages, true), "es-ES");
+        assert_eq!(effective_language("en", &[], &languages, true), "en-US");
+        assert_eq!(effective_language("es", &[], &languages, true), "es-ES");
         // `zh`/`ja` have no bare entry in this model's table; resolve to locale.
-        assert_eq!(effective_language("zh", &languages, true), "zh-CN");
-        assert_eq!(effective_language("ja", &languages, true), "ja-JP");
+        assert_eq!(effective_language("zh", &[], &languages, true), "zh-CN");
+        assert_eq!(effective_language("ja", &[], &languages, true), "ja-JP");
         // An unsupported intent still auto-detects when the model can.
-        assert_eq!(effective_language("fr", &languages, true), "auto");
+        assert_eq!(effective_language("fr", &[], &languages, true), "auto");
     }
 
     #[test]
     fn test_effective_language_preserves_intent_across_model_code_variants() {
-        assert_eq!(effective_language("no", &["nb".to_string()], true), "nb");
-        assert_eq!(effective_language("nb", &["no".to_string()], true), "no");
-        assert_eq!(effective_language("tl", &["fil".to_string()], true), "fil");
-        assert_eq!(effective_language("fil", &["tl".to_string()], true), "tl");
-        assert_eq!(effective_language("jv", &["jw".to_string()], true), "jw");
-        assert_eq!(effective_language("he", &["iw".to_string()], true), "iw");
+        assert_eq!(
+            effective_language("no", &[], &["nb".to_string()], true),
+            "nb"
+        );
+        assert_eq!(
+            effective_language("nb", &[], &["no".to_string()], true),
+            "no"
+        );
+        assert_eq!(
+            effective_language("tl", &[], &["fil".to_string()], true),
+            "fil"
+        );
+        assert_eq!(
+            effective_language("fil", &[], &["tl".to_string()], true),
+            "tl"
+        );
+        assert_eq!(
+            effective_language("jv", &[], &["jw".to_string()], true),
+            "jw"
+        );
+        assert_eq!(
+            effective_language("he", &[], &["iw".to_string()], true),
+            "iw"
+        );
     }
 
     #[test]
     fn test_effective_language_prefers_exact_norwegian_code() {
         let languages = vec!["no".to_string(), "nb".to_string()];
 
-        assert_eq!(effective_language("nb", &languages, true), "nb");
-        assert_eq!(effective_language("no", &languages, true), "no");
+        assert_eq!(effective_language("nb", &[], &languages, true), "nb");
+        assert_eq!(effective_language("no", &[], &languages, true), "no");
     }
 
     #[test]

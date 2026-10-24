@@ -230,7 +230,7 @@ export const TryIt: React.FC<TryItProps> = ({
   onDone,
 }) => {
   const { t, i18n } = useTranslation();
-  const e = useTryEngine({ ready: download.state === "ready", os });
+  const e = useTryEngine({ os });
   const anyDone = e.lessons.hold || e.lessons.tap;
   const { languages, atLogin, set } = useOnboardingStore();
   const { refreshAudioDevices } = useSettings();

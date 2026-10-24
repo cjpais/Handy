@@ -6,10 +6,9 @@ import React, {
   useState,
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { commands } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
-import { useShortcutPress, type PressKind } from "@/hooks/useShortcutPress";
 import { useShortcutCapture } from "@/hooks/useShortcutCapture";
-import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
 import { type OSType } from "@/lib/utils/keyboard";
 import { Button } from "../../ui/Button";
 import { Keycaps } from "../../shared/Keycaps";
@@ -76,12 +75,6 @@ const CHAPTERS: Record<
   },
 };
 
-/** Your own press, here: how long "Transcribing" shows before the words. */
-const USER_TRANSCRIBE_MS = 600;
-/** …and how long your words stay before the loop picks up again. */
-const USER_LINGER_MS = 3600;
-/** A tap of yours that nobody taps again: Handy stops for you. */
-const TAP_TIMEOUT_MS = 12000;
 /** Under reduced motion: each way's still picture, in turn. */
 const STILL_MS = 5000;
 
@@ -448,10 +441,7 @@ interface DemoProps {
  * into the app, then the shortcut goes down in the screen's corner, as keys
  * do in a screencast; under the laptop, the shortcut itself, to change. Hold and tap take turns, each told by one sentence whose
  * phrases light up as they happen. It's a demo, not a lesson: Try it teaches
- * the way they actually press. Pressing the real shortcut here stops the
- * loop and plays the way you used (Handy's rule: held 300 ms or longer is a
- * hold). The global shortcut is suspended while this screen is up, so
- * pressing it doesn't record.
+ * the way they actually press.
  */
 export const Demo: React.FC<DemoProps> = ({
   progress,
@@ -468,7 +458,6 @@ export const Demo: React.FC<DemoProps> = ({
   const { languages, script, preview } = useOnboardingStore();
   const binding = getSetting("bindings")?.transcribe;
   const shortcut = binding?.current_binding ?? "";
-  const threshold = getSetting("hold_threshold_ms") ?? 300;
   const [still] = useState(reducedMotion);
 
   const [chapter, setChapter] = useState<Mode>("hold");
@@ -488,10 +477,6 @@ export const Demo: React.FC<DemoProps> = ({
   // The engine's own bookkeeping, outside React's renders.
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const nextMode = useRef<Mode>("hold");
-  const user = useRef<null | "down" | "holding" | "toggled" | "down2" | "work">(
-    null,
-  );
-  const suspended = useRef(false);
 
   const clear = () => {
     timers.current.forEach(clearTimeout);
@@ -546,7 +531,6 @@ export const Demo: React.FC<DemoProps> = ({
   const play = useCallback(
     (mode: Mode = nextMode.current) => {
       clear();
-      user.current = null;
       nextMode.current = mode === "hold" ? "tap" : "hold";
       const { script: beats, ms, still: at } = CHAPTERS[mode];
       if (still) {
@@ -568,89 +552,25 @@ export const Demo: React.FC<DemoProps> = ({
     // The loop starts once; it reschedules itself.
   }, []);
 
-  /* ---------- their own keys ---------- */
+  /* ---------- changing the shortcut ---------- */
 
-  const finish = (mode: Mode) => {
-    clear();
-    setKeyDown(false);
-    setPillState("work");
-    setPhrase(2);
-    user.current = "work";
-    later(() => {
-      apply(mode, "land");
-      user.current = null;
-      later(() => play(mode === "hold" ? "tap" : "hold"), USER_LINGER_MS);
-    }, USER_TRANSCRIBE_MS);
-  };
+  // Normally on since Permissions; this is for when that screen was skipped
+  // (Windows and Linux, mostly), so Change has shortcuts to change.
+  useEffect(() => {
+    if (!preview) commands.initializeShortcuts().catch(console.error);
+  }, [preview]);
 
-  const onDown = () => {
-    if (suspended.current || user.current === "work") return;
-    if (!user.current) {
-      clear();
-      setText((x) => ({ ...x, value: "", landed: false }));
-      setKeyDown(true);
-      setPillState("rec");
-      setPointer("gone");
-      setFocused(true);
-      setPhrase(1);
-      user.current = "down";
-      // Still down at the threshold: it's a hold.
-      later(() => {
-        if (user.current === "down") {
-          user.current = "holding";
-          setChapter("hold");
-        }
-      }, threshold);
-    } else if (user.current === "toggled") {
-      clear();
-      setKeyDown(true);
-      user.current = "down2";
-    }
-  };
-
-  const onUp = (kind: PressKind) => {
-    if (suspended.current || !user.current) return;
-    if (user.current === "down2") return finish("tap");
-    if (user.current !== "down" && user.current !== "holding") return;
-    if (kind === "hold") return finish("hold");
-    // A tap: the keys come back up and it keeps listening until the next
-    // tap.
-    clear();
-    setKeyDown(false);
-    setChapter("tap");
-    user.current = "toggled";
-    later(() => user.current === "toggled" && finish("tap"), TAP_TIMEOUT_MS);
-  };
-
-  /* ---------- the shortcut: suspended globally, heard here ---------- */
-
-  const suspendBindings = useSuspendedShortcuts(!preview);
-
-  const capture = useShortcutCapture(
-    "transcribe",
-    os,
-    () => {
-      suspended.current = false;
-      suspendBindings();
-      play("hold");
-    },
-    preview,
-  );
-
-  useShortcutPress(
-    shortcut,
-    os,
-    threshold,
-    { onDown, onUp },
-    !capture.capturing,
-  );
+  // The loop stops while new keys go in, and starts over after.
+  const capture = useShortcutCapture("transcribe", os, {
+    onDone: () => play("hold"),
+    inert: preview,
+    escapeCancels: true,
+  });
 
   const startCapture = () => {
-    suspended.current = true;
     clear();
-    user.current = null;
     apply(chapter, "reset");
-    capture.start();
+    capture.start().then((began) => began || play(chapter));
   };
 
   const partialKeys = capture.partial

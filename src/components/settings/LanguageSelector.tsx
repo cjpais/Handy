@@ -26,8 +26,11 @@ interface LanguageSelectorProps {
 // *concrete* code the engine receives (e.g. `jw`); this resolves the picker's
 // language identity (e.g. `jv`) so model switches preserve the user's
 // language. Codes such as `en-US` and a saved `no` resolve to `en` / `nb`.
+// A model that can't detect falls back to the one language they speak, if
+// it hears it, before English.
 const effectiveLanguage = (
   intent: string,
+  preferred: string[],
   supported: string[],
   supportsDetection: boolean,
 ): string => {
@@ -35,6 +38,8 @@ const effectiveLanguage = (
   if (supported.length === 0) return wanted;
   if (wanted !== "auto" && supportsLanguage(supported, wanted)) return wanted;
   if (supportsDetection) return "auto";
+  if (preferred.length === 1 && supportsLanguage(supported, preferred[0]))
+    return languageIdentity(preferred[0]);
   if (supportsLanguage(supported, "en")) return "en";
   return languageIdentity(supported[0]);
 };
@@ -57,6 +62,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const intent = getSetting("selected_language") || "auto";
   const selectedLanguage = effectiveLanguage(
     intent,
+    getSetting("spoken_languages") ?? [],
     supportedLanguages ?? [],
     supportsLanguageDetection,
   );
@@ -86,11 +92,22 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   // The current model's own languages; every language before one is loaded.
   const hasModelLanguages = !!supportedLanguages?.length;
-  const availableLanguages = useMemo(
-    () =>
-      supportedLanguages?.length ? languagesOf(supportedLanguages) : LANGUAGES,
-    [supportedLanguages],
-  );
+  // The languages they speak lead, in the order they added them.
+  const spoken = getSetting("spoken_languages");
+  const availableLanguages = useMemo(() => {
+    const all = supportedLanguages?.length
+      ? languagesOf(supportedLanguages)
+      : LANGUAGES;
+    const rank = (code: string) => {
+      const i = spoken?.indexOf(code) ?? -1;
+      return i < 0 ? Infinity : i;
+    };
+    return [...all].sort((a, b) => {
+      const ra = rank(a.code);
+      const rb = rank(b.code);
+      return ra === rb ? 0 : ra < rb ? -1 : 1;
+    });
+  }, [supportedLanguages, spoken]);
 
   const ui = i18n.language;
   const autoLabel = t("settings.general.language.auto");

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { commands } from "@/bindings";
+import { SECURE_INPUT_HELP_URL } from "@/components/SecureInputWarning";
 import { useSettings } from "@/hooks/useSettings";
 import { getKeyName, normalizeKey, type OSType } from "@/lib/utils/keyboard";
 
@@ -28,17 +30,25 @@ const MODIFIERS = [
 ];
 
 /**
- * Records a new combination for a binding the way Settings does: with the
- * handy-keys backend's key events where that's the keyboard implementation,
- * else from this window's own key events. `partial` is what's held so far.
- * Calls onDone once the binding is saved or capture is cancelled. `inert`
- * (onboarding's preview) records from this window and saves nothing.
+ * Records a new combination for a binding: with the handy-keys backend's key
+ * events where that's the keyboard implementation, else from this window's
+ * own key events (with every binding suspended, so none fires or swallows the
+ * keys). `partial` is what's held so far. Calls onDone once the binding is
+ * saved or capture is cancelled. `inert` (onboarding's preview) records from
+ * this window and saves nothing. `escapeCancels` makes Escape a way out
+ * rather than a key to record (Settings records it: Cancel's default).
+ *
+ * A failed save needs no undo here: the backend keeps the old shortcut
+ * registered and the store rolls itself back.
  */
 export const useShortcutCapture = (
   bindingId: string,
   osType: OSType,
-  onDone?: () => void,
-  inert = false,
+  {
+    onDone,
+    inert = false,
+    escapeCancels = false,
+  }: { onDone?: () => void; inert?: boolean; escapeCancels?: boolean } = {},
 ) => {
   const { t } = useTranslation();
   const { getSetting, updateBinding } = useSettings();
@@ -49,13 +59,30 @@ export const useShortcutCapture = (
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
+  // What a capture in progress holds in the backend, to give back when it
+  // ends, even by unmounting mid-capture.
+  const held = useRef<"handyKeys" | "bindings" | null>(null);
+  const release = useCallback(async () => {
+    const was = held.current;
+    held.current = null;
+    if (was === "handyKeys")
+      await commands.stopHandyKeysRecording().catch(console.error);
+    else if (was === "bindings")
+      await commands.resumeAllBindings().catch(console.error);
+  }, []);
+  useEffect(
+    () => () => {
+      release();
+    },
+    [release],
+  );
+
   const finish = useCallback(async () => {
-    if (handyKeys) await commands.stopHandyKeysRecording().catch(console.error);
-    else if (!inert) await commands.resumeAllBindings().catch(console.error);
     setCapturing(false);
     setPartial("");
+    await release();
     onDoneRef.current?.();
-  }, [handyKeys, inert]);
+  }, [release]);
 
   const commit = useCallback(
     async (binding: string) => {
@@ -72,29 +99,47 @@ export const useShortcutCapture = (
     [bindingId, finish, inert, t, updateBinding],
   );
 
+  /** Resolves to whether capture began. */
   const start = useCallback(async () => {
+    if (held.current) return false;
     if (handyKeys) {
-      const result = await commands.startHandyKeysRecording(bindingId);
+      // The backend refuses while macOS Secure Input is active (its listener
+      // would get no key events and capture just the modifier); it also
+      // turns the warning banner on, which the toast points at.
+      const result = await commands
+        .startHandyKeysRecording(bindingId)
+        .catch((error) => ({ status: "error" as const, error: String(error) }));
       if (result.status === "error") {
-        toast.error(
-          t("settings.general.shortcut.errors.set", { error: result.error }),
-        );
-        return;
+        if (String(result.error).includes("secure-input-active")) {
+          toast.error(t("secureInput.recorderBlocked"), {
+            action: {
+              label: t("secureInput.learnMore"),
+              onClick: () => openUrl(SECURE_INPUT_HELP_URL),
+            },
+          });
+        } else {
+          toast.error(
+            t("settings.general.shortcut.errors.set", { error: result.error }),
+          );
+        }
+        return false;
       }
+      held.current = "handyKeys";
     } else if (!inert) {
       await commands.suspendAllBindings().catch(console.error);
+      held.current = "bindings";
     }
     setPartial("");
     setCapturing(true);
+    return true;
   }, [bindingId, handyKeys, inert, t]);
 
   const cancel = useCallback(() => {
     if (capturing) finish();
   }, [capturing, finish]);
 
-  // Escape cancels.
   useEffect(() => {
-    if (!capturing) return;
+    if (!capturing || !escapeCancels) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       e.preventDefault();
@@ -103,7 +148,7 @@ export const useShortcutCapture = (
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [capturing, finish]);
+  }, [capturing, escapeCancels, finish]);
 
   // handy-keys: the backend reports keys while recording.
   useEffect(() => {
@@ -145,7 +190,7 @@ export const useShortcutCapture = (
     const pressed = new Set<string>();
     const recorded: string[] = [];
     const onDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") return;
+      if (escapeCancels && e.key === "Escape") return;
       e.preventDefault();
       const key = normalizeKey(getKeyName(e, osType));
       pressed.add(key);
@@ -167,7 +212,7 @@ export const useShortcutCapture = (
       window.removeEventListener("keydown", onDown);
       window.removeEventListener("keyup", onUp);
     };
-  }, [capturing, handyKeys, commit, osType]);
+  }, [capturing, handyKeys, commit, escapeCancels, osType]);
 
   return { capturing, partial, start, cancel };
 };

@@ -4,6 +4,11 @@ import { ChevronDown, Globe } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { Mascot } from "../../shared/Mascot";
+import {
+  LanguageChip,
+  LanguageOption,
+  languageSearchKeys,
+} from "../../shared/LanguagePicker";
 import HandyTextLogo from "../../icons/HandyTextLogo";
 import { OnboardingShell, ScreenHeader } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
@@ -11,30 +16,11 @@ import { CHINESE_SCRIPTS, isChinese } from "../data/languages";
 import { CURATED_ASR, isWeakLanguage } from "../data/models";
 import { modelMatchesLanguage } from "@handy-computer/models";
 import { SUPPORTED_LANGUAGES, getSupportedLanguage } from "@/i18n";
-import {
-  getLanguage,
-  languageName,
-  searchLanguages,
-} from "@/lib/constants/languages";
+import { languageName, searchLanguages } from "@/lib/constants/languages";
 import { useSettings } from "@/hooks/useSettings";
 
 // The mascot waves on the first visit only.
 let waved = false;
-
-const RemoveIcon = () => (
-  <svg
-    width="10"
-    height="10"
-    viewBox="0 0 10 10"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    aria-hidden="true"
-  >
-    <path d="M2 2l6 6M8 2L2 8" />
-  </svg>
-);
 
 interface WelcomeProps {
   progress: { index: number; count: number };
@@ -93,18 +79,14 @@ export const Welcome: React.FC<WelcomeProps> = ({
   const chinese = languages.filter(isChinese);
   const weak = languages.filter(isWeakLanguage);
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.nativeEvent.isComposing) return;
-    if (e.key === "Enter" && query) {
-      e.preventDefault();
-      if (available[0]) toggle(available[0].code);
-    } else if (e.key === "Backspace" && !query && languages.length) {
-      e.preventDefault();
-      toggle(languages[languages.length - 1]);
-    } else if (e.key === "Escape" && query) {
-      setQuery("");
-    }
-  };
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    languageSearchKeys(e, {
+      query,
+      first: available[0]?.code,
+      last: languages[languages.length - 1],
+      toggle,
+      clear: () => setQuery(""),
+    });
 
   const hint = !languages.length
     ? t("onboarding.welcome.hint.pickOne")
@@ -190,24 +172,14 @@ export const Welcome: React.FC<WelcomeProps> = ({
             className="flex min-h-[46px] cursor-text flex-wrap items-center gap-[4px] border-b border-line px-[8px] py-[7px] text-start"
           >
             {languages.map((code) => (
-              <button
+              <LanguageChip
                 key={code}
-                type="button"
-                aria-label={t("onboarding.welcome.remove", {
+                code={code}
+                removeLabel={t("onboarding.welcome.remove", {
                   language: nameOf(code),
                 })}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={(e) => {
-                  e.preventDefault();
-                  toggle(code);
-                }}
-                className="group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] border-line-strong bg-background ps-[12px] pe-[6px] text-small font-semibold text-text hover:border-ink-3"
-              >
-                <bdi lang={code}>{getLanguage(code).native}</bdi>
-                <span className="grid size-[18px] place-items-center rounded-full leading-none text-ink-2 group-hover:bg-line">
-                  <RemoveIcon />
-                </span>
-              </button>
+                onRemove={() => toggle(code)}
+              />
             ))}
             <input
               ref={inputRef}
@@ -231,29 +203,15 @@ export const Welcome: React.FC<WelcomeProps> = ({
             aria-label={t("onboarding.welcome.languagesLabel")}
             className="grid min-h-0 flex-1 grid-cols-3 content-start gap-[2px] overflow-y-auto p-[6px] pb-[14px] text-start [scrollbar-width:thin] [mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
           >
-            {available.map((l, i) => {
-              const name = nameOf(l.code);
-              const first = !!query && i === 0;
-              return (
-                <button
-                  key={l.code}
-                  type="button"
-                  onClick={() => toggle(l.code)}
-                  className={`flex h-[46px] cursor-pointer flex-col justify-center rounded-[9px] px-[12px] text-start leading-[1.25] hover:bg-wash ${
-                    first
-                      ? "border-[1.5px] border-line-strong bg-wash"
-                      : "border border-transparent"
-                  }`}
-                >
-                  <b lang={l.code} className="font-semibold">
-                    {l.native}
-                  </b>
-                  <small className="text-label text-ink-3">
-                    {l.native !== name ? name : " "}
-                  </small>
-                </button>
-              );
-            })}
+            {available.map((l, i) => (
+              <LanguageOption
+                key={l.code}
+                language={l}
+                name={nameOf(l.code)}
+                highlighted={!!query && i === 0}
+                onPick={() => toggle(l.code)}
+              />
+            ))}
             {!available.length && (
               <div className="col-span-full p-[24px] text-center text-small text-ink-3">
                 {matches.length

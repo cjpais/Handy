@@ -207,15 +207,6 @@ pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// When Handy's window closes it only hides, so the screen showing doesn't
-/// unmount: undo what onboarding's screens hold while they're up (the
-/// shortcuts Demo turns off).
-pub fn on_main_window_hidden(app: &AppHandle) {
-    if app.try_state::<ShortcutsInitialized>().is_some() {
-        crate::shortcut::resume_all_shortcuts(app);
-    }
-}
-
 /// Close the main window as if the person closed it: it hides, and Handy keeps
 /// running in the tray (onboarding's last screen ends this way).
 #[specta::specta]

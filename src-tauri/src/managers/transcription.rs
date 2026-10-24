@@ -1348,6 +1348,7 @@ fn effective_language_for_model(
     match model_manager.get_model_info(model_id) {
         Some(info) => crate::managers::model::effective_language(
             &settings.selected_language,
+            &settings.spoken_languages,
             &info.supported_languages,
             info.supports_language_detection,
         ),

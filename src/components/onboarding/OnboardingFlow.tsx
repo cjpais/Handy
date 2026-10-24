@@ -203,11 +203,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const saveLanguages = () => {
     if (preview) return;
     const { languages, script } = useOnboardingStore.getState();
+    // The model's Language stays as it is (Auto, fresh): a model that can't
+    // detect uses their one language from these at transcription time.
     updateSetting("spoken_languages", languages);
-    updateSetting(
-      "selected_language",
-      languages.length === 1 ? languages[0] : "auto",
-    );
     if (languages.some(isChinese))
       updateSetting("chinese_script", SCRIPT_SETTING[script]);
   };

@@ -372,6 +372,19 @@
         "noResults": "No languages found",
         "auto": "Auto"
       },
+      "preferredLanguages": {
+        "title": "Preferred Languages",
+        "description": "The languages you speak. Handy uses them to recommend models.",
+        "searchLabel": "Search languages",
+        "placeholder": "Search languages",
+        "addAnother": "Add another",
+        "remove": "Remove {{language}}",
+        "alreadyAdded_one": "{{languages}} is already added.",
+        "alreadyAdded_other": "{{languages}} are already added.",
+        "noMatch": "No language matches “{{query}}”",
+        "unheard": "{{model}} doesn't recognize {{languages}}. Switch to a model that does in Models.",
+        "weak": "No model recognizes {{languages}} well yet."
+      },
       "shortcutActivation": {
         "title": "Shortcut Behavior",
         "description": "Choose how the transcribe shortcut starts and stops recording.",
@@ -413,6 +426,9 @@
         "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy"
       },
       "noModelsMatch": "No models match this filter."
+    },
+    "languages": {
+      "title": "Languages"
     },
     "sound": {
       "title": "Sound",

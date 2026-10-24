@@ -1093,7 +1093,6 @@ pub fn run(cli_args: CliArgs) {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 let _res = window.hide();
-                commands::on_main_window_hidden(window.app_handle());
 
                 #[cfg(target_os = "macos")]
                 {

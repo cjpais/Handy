@@ -8,10 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { commands, events } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
 import { useShortcutCapture } from "@/hooks/useShortcutCapture";
-import { useShortcutPress } from "@/hooks/useShortcutPress";
 import type { OSType } from "@/lib/utils/keyboard";
 import { useOnboardingStore } from "./onboardingStore";
-import { useSuspendedShortcuts } from "./useSuspendedShortcuts";
 import { isTooSlow } from "./data/models";
 
 export type Mode = "hold" | "tap";
@@ -53,14 +51,7 @@ const WAIT_AFTER_MS = 400;
 /** Once the wait's been said, it stays this long, so it never just flashes. */
 const WAIT_SHOWN_MS = 500;
 
-export const useTryEngine = ({
-  ready,
-  os,
-}: {
-  /** The model is on disk: the shortcut records. */
-  ready: boolean;
-  os: OSType;
-}) => {
+export const useTryEngine = ({ os }: { os: OSType }) => {
   const { getSetting } = useSettings();
   const { preview, lessons, setLessons } = useOnboardingStore();
   const shortcut = getSetting("bindings")?.transcribe?.current_binding ?? "";
@@ -72,9 +63,7 @@ export const useTryEngine = ({
   /** The way of the take in progress, once it's known. */
   const [take, setTake] = useState<Mode | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
-  // The keys on screen: down by this window's key events, or by Handy's own
-  // when the global shortcut keeps them from reaching the window.
-  const [pressDown, setPressDown] = useState(false);
+  /** The keys on screen, down while Handy says it's recording. */
   const [recordDown, setRecordDown] = useState(false);
   const [result, setResult] = useState<TakeResult>({ kind: "none" });
   const [fives, setFives] = useState(0);
@@ -125,15 +114,11 @@ export const useTryEngine = ({
     if (!preview) commands.initializeEnigo().catch(console.error);
   }, [preview]);
 
-  // The shortcut records only once there's a model to transcribe with.
-  useSuspendedShortcuts(!preview && !ready);
+  // Normally on since Permissions; this is for when that screen was skipped.
+  // Without a model the backend ignores the shortcut until one is on disk.
   useEffect(() => {
-    if (preview || !ready) return;
-    commands
-      .initializeShortcuts()
-      .then(() => commands.resumeAllBindings())
-      .catch(console.error);
-  }, [preview, ready]);
+    if (!preview) commands.initializeShortcuts().catch(console.error);
+  }, [preview]);
 
   /* ---------- takes ---------- */
 
@@ -278,29 +263,14 @@ export const useTryEngine = ({
     };
   }, [setLessons, threshold]);
 
-  // Changing the shortcut, from the keys in the line: Settings' and Demo's
-  // recorder, which turns Handy's shortcuts off while it listens and back on
-  // after. The cursor goes back to the note, so the next take lands there.
-  const capture = useShortcutCapture(
-    "transcribe",
-    os,
-    () => field.current?.focus({ preventScroll: true }),
-    preview,
-  );
-
-  // The keys on screen follow the keys under the fingers where the window
-  // hears them: a tap that stops a take still shows as pressed. Not while
-  // new keys are going in.
-  useShortcutPress(
-    shortcut,
-    os,
-    threshold,
-    {
-      onDown: () => setPressDown(true),
-      onUp: () => setPressDown(false),
-    },
-    !capture.capturing,
-  );
+  // Changing the shortcut, from the keys in the line: the recorder Settings
+  // and Demo use, which turns Handy's shortcuts off while it listens and back
+  // on after. The cursor goes back to the note, so the next take lands there.
+  const capture = useShortcutCapture("transcribe", os, {
+    onDone: () => field.current?.focus({ preventScroll: true }),
+    inert: preview,
+    escapeCancels: true,
+  });
 
   return {
     preview,
@@ -310,7 +280,7 @@ export const useTryEngine = ({
     take,
     phase,
     waiting,
-    keysDown: pressDown || recordDown,
+    keysDown: recordDown,
     result,
     /** Back to what's next, after a problem's been dealt with. */
     dismiss: () => setResult({ kind: "none" }),
