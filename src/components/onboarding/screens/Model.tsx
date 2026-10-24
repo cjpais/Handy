@@ -1087,7 +1087,7 @@ export const Model: React.FC<ModelProps> = ({
           // scrolls behind or past them: rows are cut off at the rule. The
           // same 4px bleed and scrollbar gutter as the list keep the
           // columns over theirs.
-          <div className="-mx-[4px] mt-[4px] flex-none overflow-y-hidden px-[4px] [scrollbar-gutter:stable] [scrollbar-width:thin]">
+          <div className="-mx-[4px] mt-3 flex-none overflow-y-hidden px-[4px] [scrollbar-gutter:stable] [scrollbar-width:thin]">
             <div className="flex h-[31px] items-center justify-between border-b border-line ps-[42px] pe-[14px] uppercase">
               <span className={CODE_CLASS}>{t("onboarding.model.model")}</span>
               <span
