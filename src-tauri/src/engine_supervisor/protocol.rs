@@ -58,9 +58,11 @@ pub enum Request {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DeviceSelector {
     Auto,
-    /// Persisted identity from [`device_key`]. Falls back to automatic
-    /// selection when the device is no longer present.
+    /// Persisted identity from [`device_key`]. Uses only this GPU, with CPU
+    /// fallback when it is no longer present.
     Key(String),
+    /// Recovery must use this healthy device or fail, never choose a failed GPU.
+    RecoveryKey(String),
     /// Registry index from `--list-devices`. Fails if not a usable device.
     Index(usize),
 }
@@ -85,6 +87,10 @@ pub enum Response {
     },
     Ok,
     Error(String),
+    /// The native backend failed; its context must not be reused.
+    BackendError(String),
+    /// May mean memory pressure or a removed GPU; the parent checks which.
+    AllocationError(String),
 }
 
 /// Serializable mirror of `transcribe_cpp::Device` (which holds a
@@ -149,6 +155,8 @@ pub struct LoadedInfo {
     pub backend: String,
     /// Label of the device the model actually bound to.
     pub device: String,
+    /// Stable identity of the device this worker actually loaded on.
+    pub device_key: Option<String>,
     /// Whether that device is a GPU (a crash there may be the GPU's fault).
     pub on_gpu: bool,
     pub capabilities: Capabilities,

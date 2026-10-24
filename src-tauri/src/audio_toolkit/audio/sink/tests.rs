@@ -150,3 +150,43 @@ fn finish_returns_the_detector_for_the_next_recording() {
     assert_eq!(captured.vad.frame_samples(), FRAME);
     assert_eq!(captured.vad.hangover_for(VadPolicy::Streaming), 20);
 }
+
+#[test]
+fn blocked_meter_cannot_stall_audio_delivery_or_build_an_unbounded_queue() {
+    use std::sync::Barrier;
+    use std::time::Duration;
+    let gate = Arc::new(Barrier::new(2));
+    let blocked = gate.clone();
+    let (entered, waiting) = mpsc::channel();
+    let (reported, updates) = mpsc::channel();
+    let callback = super::nonblocking_level_callback(Arc::new(move |levels| {
+        if levels == vec![1.0] {
+            let _ = entered.send(());
+            blocked.wait();
+        }
+        let _ = reported.send(levels);
+    }))
+    .unwrap();
+    callback(vec![1.0]);
+    waiting.recv_timeout(Duration::from_secs(2)).unwrap();
+    let (finished, done) = mpsc::channel();
+    let capture = std::thread::spawn(move || {
+        for value in 2..1002 {
+            callback(vec![value as f32]);
+        }
+        let _ = finished.send(());
+    });
+    let returned_while_ui_blocked = done.recv_timeout(Duration::from_secs(2)).is_ok();
+    gate.wait();
+    capture.join().unwrap();
+    assert!(returned_while_ui_blocked, "meter delivery blocked capture");
+    assert_eq!(
+        updates.recv_timeout(Duration::from_secs(2)).unwrap(),
+        vec![1.0]
+    );
+    assert_eq!(
+        updates.recv_timeout(Duration::from_secs(2)).unwrap(),
+        vec![2.0]
+    );
+    assert!(updates.recv_timeout(Duration::from_millis(100)).is_err());
+}

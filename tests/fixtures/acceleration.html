@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Acceleration setting test</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import React from "react";
+      import { createRoot } from "react-dom/client";
+      import i18n from "i18next";
+      import { initReactI18next } from "react-i18next";
+      import en from "/src/i18n/locales/en/translation.json";
+      import { AccelerationSelector } from "/src/components/settings/AccelerationSelector.tsx";
+      import "/src/App.css";
+      await i18n.use(initReactI18next).init({
+        lng: "en",
+        resources: { en: { translation: en } },
+        interpolation: { escapeValue: false },
+      });
+      createRoot(document.getElementById("root")).render(
+        React.createElement(AccelerationSelector),
+      );
+    </script>
+  </body>
+</html>

@@ -504,7 +504,9 @@ impl AudioRecordingManager {
 
         let on_levels: LevelCallback = {
             let app_handle = app.clone();
-            Arc::new(move |levels| utils::emit_levels(&app_handle, &levels))
+            crate::audio_toolkit::audio::nonblocking_level_callback(Arc::new(move |levels| {
+                utils::emit_levels(&app_handle, &levels)
+            }))?
         };
         let on_audio: AudioFrameCallback = Arc::new(move |frame| stream_router.feed(frame));
 

@@ -206,6 +206,26 @@
   width: var(--ov-work-w);
   border-radius: 18px;
 }
+/* Recovery still captures audio: show its message above the live meter,
+   within the existing Live window, even before any preview text appears. */
+.scard.recovering {
+  width: var(--ov-open-w);
+}
+.srecovery-notice {
+  flex: none;
+  padding: 4px 12px;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--s-muted);
+}
+/* Make room for the 24px notice without clipping the meter or cancel button. */
+.scard.recovering .stext-cap {
+  max-height: min(
+    calc(var(--ov-cap-max-h) - 24px),
+    calc(100vh - var(--ov-base-h) - 44px)
+  );
+}
 
 /* Compact form: two fixed widths so the recording→working change is an animatable
    width transition (intrinsic max-content can't be transitioned, and every label
