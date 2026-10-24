@@ -8,6 +8,8 @@ import { Mascot } from "../../shared/Mascot";
 import TrayIcon from "../../icons/TrayIcon";
 import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
 import { LinuxGuide } from "../LinuxGuide";
+import { TrayPanel } from "../TrayPanel";
+import { useOnboardingStore } from "../onboardingStore";
 import { useTryEngine } from "../useTryEngine";
 import { MicrophoneDropdown } from "../../settings/MicrophoneSelector";
 import { useSettings } from "@/hooks/useSettings";
@@ -15,7 +17,24 @@ import type { CatalogModel } from "../data/models";
 import type { DownloadState } from "../useOnboardingModels";
 import "./tryit.css";
 
-type Mood = "point" | "listen" | "cheer" | "oops";
+type Mood = "point" | "listen" | "cheer" | "oops" | "ready" | "windup";
+
+/**
+ * Try it's end, the move into All set: the glove winds up (only when the last
+ * take finishes it), high-fives (not for Skip), flies into Handy's icon in
+ * the menu bar or tray, and the icon's panel opens.
+ */
+type Stage = "try" | "windup" | "five" | "fly" | "set";
+/** What started it: the last take, the High five button (or Finish), Skip. */
+type How = "auto" | "five" | "skip";
+
+/** "Give me five" is up this long, the glove winding up, before it's given. */
+const WINDUP_MS = 1300;
+/** The flight from the note's corner to the icon. */
+const FLIGHT_MS = 860;
+
+const reducedMotion = () =>
+  matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * What the glove says, in one of three shapes: an instruction (one line, the
@@ -69,8 +88,16 @@ const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
     const ro = new ResizeObserver(measure);
     ro.observe(el);
+    // The box is pinned to its width, so content that gets narrower without
+    // wrapping less (a shorter shortcut in the same line) never resizes it:
+    // a change inside measures it again too.
+    const mo = new MutationObserver(measure);
+    mo.observe(el, { childList: true, subtree: true, characterData: true });
     measure();
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
   }, []);
   return (
     <div className="try-eased" style={size}>
@@ -154,13 +181,24 @@ const LineKeys: React.FC<{
 interface TryItProps {
   progress: { index: number; count: number };
   os: OSType;
+  /** All set: opens on the panel (a relaunch, or back from its rows). */
+  finished: boolean;
   /** The model in use (on disk: Demo won't continue until it is). */
   model: CatalogModel | undefined;
   download: DownloadState;
+  /** The download, as Demo shows it: All set's panel, while it's going. */
+  downloadStatus: React.ReactNode;
   /** A take was too slow: back to Model, for a faster one. */
   onChangeModel: () => void;
+  /** From All set's panel: to Welcome or Model, and straight back. */
+  onEdit: (to: "welcome" | "model") => void;
   onBack: () => void;
-  onFinish: () => void;
+  /** The move's under way: the flow's on All set now. */
+  onArrive: () => void;
+  /** Back from All set to Try it, on the same screen. */
+  onUnfinish: () => void;
+  /** Done, on All set: setup's over. */
+  onDone: () => void;
 }
 
 /**
@@ -180,15 +218,21 @@ interface TryItProps {
 export const TryIt: React.FC<TryItProps> = ({
   progress,
   os,
+  finished,
   model,
   download,
+  downloadStatus,
   onChangeModel,
+  onEdit,
   onBack,
-  onFinish,
+  onArrive,
+  onUnfinish,
+  onDone,
 }) => {
   const { t, i18n } = useTranslation();
   const e = useTryEngine({ ready: download.state === "ready", os });
   const anyDone = e.lessons.hold || e.lessons.tap;
+  const { languages, atLogin, set } = useOnboardingStore();
   const { refreshAudioDevices } = useSettings();
 
   // The microphone list is only loaded once onboarding's done, and an empty
@@ -207,6 +251,134 @@ export const TryIt: React.FC<TryItProps> = ({
         maximumFractionDigits: s < 10 ? 1 : 0,
       }).format(s),
     });
+
+  /* ---------- the move into All set ---------- */
+
+  // Owned here once mounted: `finished` only says where a fresh mount opens.
+  const [stage, setStage] = useState<Stage>(finished ? "set" : "try");
+  const [how, setHow] = useState<How>("five");
+  // The icon catches the glove: only after the flight, not on a relaunch.
+  const [caught, setCaught] = useState(false);
+  // Title and line fade only once they've swapped (into All set and back),
+  // not on arrival, where Demo's camera move carries them.
+  const [swapped, setSwapped] = useState(false);
+  const [tail, setTail] = useState<{ end: number; tail: number }>();
+  const screen = useRef<HTMLDivElement>(null);
+  const tray = useRef<HTMLSpanElement>(null);
+  const glove = useRef<HTMLButtonElement>(null);
+
+  const start = (by: How) => {
+    if (stage !== "try") return;
+    setHow(by);
+    setSwapped(true);
+    if (reducedMotion()) {
+      setStage("set");
+      onArrive();
+      return;
+    }
+    setStage(by === "auto" ? "windup" : "five");
+  };
+
+  // The last take lands: no click, the glove asks for five and takes it.
+  const finale = e.result.kind === "finale";
+  useEffect(() => {
+    if (!finale) return;
+    e.dismiss();
+    start("auto");
+  }, [finale]);
+
+  useEffect(() => {
+    if (stage !== "windup" && stage !== "five") return;
+    const next = setTimeout(
+      () => setStage(stage === "windup" ? "five" : "fly"),
+      stage === "windup"
+        ? WINDUP_MS
+        : how === "skip"
+          ? 220
+          : how === "auto"
+            ? 540
+            : 440,
+    );
+    return () => clearTimeout(next);
+  }, [stage, how]);
+
+  // The flight: an arc from the note's corner into the icon, bowing in over
+  // the desktop up to a menu bar, hopping along to a tray, a little big as it
+  // arrives and gone into it as it lands.
+  useLayoutEffect(() => {
+    if (stage !== "fly") return;
+    onArrive();
+    const el = glove.current;
+    const from = el?.getBoundingClientRect();
+    const to = tray.current?.getBoundingClientRect();
+    if (!el || !from || !to) {
+      setStage("set");
+      return;
+    }
+    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    const s = to.height / from.height;
+    const rtl = document.documentElement.dir === "rtl";
+    const up = os === "macos";
+    const bow = up ? (rtl ? 70 : -70) : 0;
+    const hop = up ? 0 : -70;
+    const flight = el.animate(
+      [
+        { transform: "translate(0, 0) scale(1) rotate(0deg)", opacity: 1 },
+        {
+          transform: `translate(${dx * 0.45 + bow}px, ${dy * 0.5 + hop}px) scale(0.55) rotate(-18deg)`,
+          opacity: 1,
+          offset: 0.5,
+        },
+        {
+          transform: `translate(${dx}px, ${dy}px) scale(${s * 1.6}) rotate(0deg)`,
+          opacity: 1,
+          offset: 0.86,
+        },
+        {
+          transform: `translate(${dx}px, ${dy}px) scale(${s}) rotate(0deg)`,
+          opacity: 0,
+        },
+      ],
+      {
+        duration: FLIGHT_MS,
+        easing: "cubic-bezier(0.55, 0, 0.25, 1)",
+        fill: "both",
+      },
+    );
+    // The icon catches it as it lands, not after its fade, so the panel
+    // opens while the room for it is still opening.
+    const land = setTimeout(() => {
+      setCaught(true);
+      setStage("set");
+    }, FLIGHT_MS * 0.88);
+    return () => {
+      clearTimeout(land);
+      flight.cancel();
+    };
+  }, [stage]);
+
+  // The panel's tail points at the icon, wherever the bar puts it.
+  useLayoutEffect(() => {
+    if (stage !== "set") return;
+    const box = screen.current?.getBoundingClientRect();
+    const icon = tray.current?.getBoundingClientRect();
+    if (!box || !icon) return;
+    const rtl = document.documentElement.dir === "rtl";
+    const mid = icon.left + icon.width / 2;
+    const fromEnd = rtl ? mid - box.left : box.right - mid;
+    // Its edge and size are tryit.css's (--try-panel-*); the tail goes
+    // wherever the icon is.
+    const end =
+      parseFloat(
+        getComputedStyle(screen.current!).getPropertyValue("--try-panel-end"),
+      ) || 0;
+    setTail({ end, tail: Math.max(24, fromEnd - end) });
+  }, [stage, os]);
+
+  const moving = stage === "windup" || stage === "five" || stage === "fly";
+  const after = stage === "fly" || stage === "set";
+  const fived = (stage === "five" || stage === "fly") && how !== "skip";
 
   /* ---------- changing the shortcut ---------- */
 
@@ -231,6 +403,14 @@ export const TryIt: React.FC<TryItProps> = ({
   /* ---------- what the glove says ---------- */
 
   const say = ((): Say => {
+    // The finale: the glove asks, winds up, gives it.
+    if (moving && how === "auto")
+      return {
+        shape: "instruction",
+        id: "giveFive",
+        line: t("onboarding.try.giveFive"),
+        mood: "cheer",
+      };
     const instruction = (key: string): Say => ({
       shape: "instruction",
       id: key,
@@ -354,14 +534,28 @@ export const TryIt: React.FC<TryItProps> = ({
           mood: "oops",
         };
     }
-    // Both done: the finale, until the next press.
+    // Both done before (back from All set, or a relaunch): the glove asks
+    // for five, and the button gives it.
     if (!e.todo)
       return {
         shape: "outcome",
-        id: "allDone",
-        line: t("onboarding.try.allDone"),
-        sub: t("onboarding.try.allDoneSub"),
-        mood: "cheer",
+        id: "ask",
+        line: t("onboarding.try.giveFive"),
+        sub: (
+          <Button
+            variant="primary"
+            size="md"
+            className="try-five"
+            // The cursor stays in the note.
+            onMouseDown={(ev) => ev.preventDefault()}
+            onClick={() => start("five")}
+            disabled={stage !== "try"}
+          >
+            <TrayIcon state="idle" size={16} />
+            {t("onboarding.try.highFive")}
+          </Button>
+        ),
+        mood: "ready",
       };
     return instruction(
       e.todo === "hold" ? "onboarding.try.hold" : "onboarding.try.tapNext",
@@ -371,30 +565,42 @@ export const TryIt: React.FC<TryItProps> = ({
   // The tip goes with the keys: a new line, a take or recording ends it.
   useEffect(() => setTip(null), [say.id, e.phase, capturing]);
 
-  // Someone whose dictation can't work here yet can still finish setting up.
-  // On Linux, where the shortcut often does nothing at all, the guide's beside
-  // it.
-  const skip = (
-    <TextLink onClick={onFinish}>{t("onboarding.try.skip")}</TextLink>
-  );
-  const hint = anyDone ? (
-    ""
-  ) : os === "linux" ? (
-    <span className="flex items-center gap-[18px]">
-      <span>
-        <LinuxGuide i18nKey="onboarding.linux.tryIt" />
-      </span>
-      {skip}
-    </span>
+  // The footer's button is the way out, named for how far they've got: Skip
+  // before either way (someone whose dictation can't work here yet can still
+  // finish setting up), Finish after one. With both done the glove asks for
+  // five, and the bubble has the only button. On All set, Done.
+  const hint = after ? (
+    // Linux: a pass here doesn't promise the shortcut or pasting work in
+    // other apps.
+    os === "linux" ? (
+      <LinuxGuide i18nKey="onboarding.linux.done" />
+    ) : (
+      t("onboarding.done.hint")
+    )
+  ) : !anyDone && os === "linux" ? (
+    <LinuxGuide i18nKey="onboarding.linux.tryIt" />
   ) : (
-    skip
+    ""
+  );
+  const primary = after ? (
+    <Button variant="primary" size="lg" onClick={onDone}>
+      {t("onboarding.done.finish")}
+    </Button>
+  ) : stage !== "try" || !e.todo ? null : (
+    <Button
+      variant="outline"
+      size="lg"
+      onClick={() => start(anyDone ? "five" : "skip")}
+    >
+      {t(anyDone ? "onboarding.try.finish" : "onboarding.try.skip")}
+    </Button>
   );
 
   const isMac = os === "macos";
   // Handy's icon, in the menu bar or the tray, as on Demo: an ear while it
-  // listens, a brain while it transcribes.
-  const tray = (
-    <span className="grid">
+  // listens, a brain while it transcribes. It catches the glove.
+  const trayIcon = (
+    <span ref={tray} className="try-tray" data-caught={caught || undefined}>
       <TrayIcon
         state={
           e.phase === "listening"
@@ -412,26 +618,63 @@ export const TryIt: React.FC<TryItProps> = ({
   return (
     <OnboardingShell
       progress={progress}
-      onBack={onBack}
-      hint={hint}
-      primary={
-        <Button
-          variant="primary"
-          size="lg"
-          disabled={!e.preview && !anyDone}
-          onClick={onFinish}
-        >
-          {t("onboarding.try.finish")}
-        </Button>
+      onBack={
+        stage === "set"
+          ? () => {
+              setStage("try");
+              setCaught(false);
+              onUnfinish();
+            }
+          : stage === "try"
+            ? onBack
+            : undefined
       }
+      hint={hint}
+      primary={primary}
     >
-      <div className="try-main">
-        <ScreenTitle>{t("onboarding.try.title")}</ScreenTitle>
+      <div className="try-main" data-stage={stage}>
+        {/* Title and line swap with a fade as the glove leaves; the line
+            keeps its height, so the screen under it never jumps. */}
+        <ScreenTitle
+          key={after ? "done" : "try"}
+          className={swapped ? "try-swap" : ""}
+        >
+          {t(after ? "onboarding.done.title" : "onboarding.try.title")}
+        </ScreenTitle>
         {/* Where to look: the bubble says each thing to do when it's time,
-            but it's down in the corner, far from where reading starts. */}
-        <ScreenSub>{t("onboarding.try.subtitle")}</ScreenSub>
+            but it's down in the corner, far from where reading starts. On
+            All set, where Handy went and how to use it anywhere. */}
+        <ScreenSub
+          key={after ? "done-sub" : "try-sub"}
+          className={swapped ? "try-swap" : ""}
+        >
+          {after ? (
+            <Trans
+              i18nKey={
+                isMac ? "onboarding.done.subMac" : "onboarding.done.subTray"
+              }
+              components={{
+                keys: (
+                  <Keycaps
+                    className="try-sub-keys"
+                    binding={e.shortcut}
+                    osType={os}
+                    size="line"
+                    pressed={e.keysDown}
+                  />
+                ),
+              }}
+            />
+          ) : (
+            t("onboarding.try.subtitle")
+          )}
+        </ScreenSub>
         {/* Demo's screen, at Demo's proportions, without the laptop. */}
-        <div className="try-screen" data-os={isMac ? "mac" : "win"}>
+        <div
+          ref={screen}
+          className="try-screen"
+          data-os={isMac ? "mac" : "win"}
+        >
           {isMac ? (
             <div className="try-bar is-menu" aria-hidden="true">
               <span className="try-apple" />
@@ -439,7 +682,7 @@ export const TryIt: React.FC<TryItProps> = ({
               <i className="w-[22px]" />
               <i className="w-[26px]" />
               <span className="flex-1" />
-              {tray}
+              {trayIcon}
               {clock}
             </div>
           ) : (
@@ -454,7 +697,7 @@ export const TryIt: React.FC<TryItProps> = ({
                 <b key={i} />
               ))}
               <span className="flex-1" />
-              {tray}
+              {trayIcon}
               {clock}
             </div>
           )}
@@ -489,80 +732,117 @@ export const TryIt: React.FC<TryItProps> = ({
             </div>
           </div>
 
-          {/* Handy, on the note's corner. */}
-          <div className="try-guide">
-            <button
-              type="button"
-              className="try-glove"
-              // Nodding along from the moment the keys go down.
-              data-mood={e.phase === "idle" ? say.mood : "listen"}
-              aria-label={t("onboarding.done.highFiveLabel")}
-              // A high five leaves the cursor in the note.
-              onMouseDown={(ev) => ev.preventDefault()}
-              onClick={e.slap}
-            >
-              <span className="try-pose">
-                <Mascot
-                  key={e.fives}
-                  size={88}
-                  animation={e.fives ? "slap" : "wave"}
-                />
-              </span>
-              {e.fives > 0 && (
-                <span
-                  key={`burst-${e.fives}`}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute start-1/2 -top-[22px] -ms-[20px] animate-burst opacity-0"
-                >
-                  <svg
-                    viewBox="0 0 60 60"
-                    width="40"
-                    height="40"
-                    className="block fill-none stroke-background-ui"
-                    strokeWidth="4"
-                    strokeLinecap="round"
+          {/* Handy, on the note's corner, until it flies to the icon. */}
+          {stage !== "set" && (
+            <div className="try-guide">
+              <button
+                ref={glove}
+                type="button"
+                className="try-glove"
+                // Nodding along from the moment the keys go down.
+                data-mood={
+                  stage === "windup"
+                    ? "windup"
+                    : moving
+                      ? "cheer"
+                      : e.phase === "idle"
+                        ? say.mood
+                        : "listen"
+                }
+                data-how={how}
+                aria-label={t("onboarding.done.highFiveLabel")}
+                // A high five leaves the cursor in the note.
+                onMouseDown={(ev) => ev.preventDefault()}
+                // Asked for five, a high five finishes; otherwise it's just one.
+                onClick={() =>
+                  stage === "try" && !e.todo ? start("five") : e.slap()
+                }
+              >
+                <span className="try-pose">
+                  <Mascot
+                    key={fived ? "finale" : e.fives}
+                    size={88}
+                    animation={fived || e.fives ? "slap" : "wave"}
+                  />
+                </span>
+                {(fived || e.fives > 0) && (
+                  <span
+                    key={fived ? "burst-finale" : `burst-${e.fives}`}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute start-1/2 -top-[22px] -ms-[20px] animate-burst opacity-0"
                   >
-                    <path d="M30 22V6M40 26l10-10M20 26 10 16" />
-                  </svg>
-                </span>
-              )}
-            </button>
-            <div
-              ref={bubble}
-              className="try-bubble"
-              data-shape={say.shape}
-              role="status"
-              aria-live="polite"
-            >
-              <EasedSize>
-                <div
-                  className="try-say"
-                  // Handy's turn: what they did stays, quieter.
-                  data-dim={(e.phase === "typing" && !e.waiting) || undefined}
-                >
-                  {/* A new line fades in; the same one stays put, so the
+                    <svg
+                      viewBox="0 0 60 60"
+                      width="40"
+                      height="40"
+                      className="block fill-none stroke-background-ui"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    >
+                      <path d="M30 22V6M40 26l10-10M20 26 10 16" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+              <div
+                ref={bubble}
+                className={`try-bubble ${stage === "five" || stage === "fly" ? "try-leaving" : ""}`}
+                data-shape={say.shape}
+                role="status"
+                aria-live="polite"
+              >
+                <EasedSize>
+                  <div
+                    className="try-say"
+                    // Handy's turn: what they did stays, quieter.
+                    data-dim={(e.phase === "typing" && !e.waiting) || undefined}
+                  >
+                    {/* A new line fades in; the same one stays put, so the
                       keys in it press without remounting. */}
-                  <p key={`line:${say.id}`} className="try-say-main">
-                    {say.line}
-                  </p>
-                  {say.shape !== "instruction" && (
-                    <div key={`sub:${say.id}`} className="try-say-sub">
-                      {say.sub}
-                    </div>
-                  )}
-                </div>
-              </EasedSize>
-              {tip && (
-                <span
-                  className="try-tip"
-                  aria-hidden="true"
-                  style={{ left: tip.x, top: tip.y }}
-                >
-                  {t("onboarding.demo.change")}
-                </span>
-              )}
+                    <p key={`line:${say.id}`} className="try-say-main">
+                      {say.line}
+                    </p>
+                    {say.shape !== "instruction" && (
+                      <div
+                        key={`sub:${say.id}`}
+                        className={`try-say-sub ${say.id === "ask" ? "try-ask" : ""}`}
+                      >
+                        {say.sub}
+                      </div>
+                    )}
+                  </div>
+                </EasedSize>
+                {tip && (
+                  <span
+                    className="try-tip"
+                    aria-hidden="true"
+                    style={{ left: tip.x, top: tip.y }}
+                  >
+                    {t("onboarding.demo.change")}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* All set: the icon's panel, the bubble's material come back. */}
+          {stage === "set" && tail && (
+            <TrayPanel
+              os={os}
+              languages={languages}
+              modelName={name}
+              ready={download.state === "ready"}
+              download={downloadStatus}
+              shortcut={e.shortcut}
+              keysDown={e.keysDown}
+              capture={e.capture}
+              atLogin={atLogin}
+              onAtLogin={(on) => set({ atLogin: on })}
+              onChangeLanguages={() => onEdit("welcome")}
+              onChangeModel={() => onEdit("model")}
+              tailAt={tail.tail}
+            />
+          )}
         </div>
         {/* Under the screen: a suggestion, not a problem, so not the glove's.
             Its height is always kept, so the screen never jumps for it. */}
@@ -573,7 +853,14 @@ export const TryIt: React.FC<TryItProps> = ({
                 i18nKey="onboarding.try.slowLine"
                 values={{ name, wait: seconds(e.slowWait) }}
                 // Not <link>: a void element in HTML, so its words would fall out.
-                components={{ faster: <TextLink onClick={onChangeModel} /> }}
+                components={{
+                  // From All set, Model comes straight back here.
+                  faster: (
+                    <TextLink
+                      onClick={after ? () => onEdit("model") : onChangeModel}
+                    />
+                  ),
+                }}
               />
             </span>
           )}

@@ -18,6 +18,11 @@
   margin-top: 2px;
 }
 .try-screen {
+  /* All set's panel: how far in from the screen's edge, how wide, and the
+     room between it and the note, which makes way for it. */
+  --try-panel-end: 12px;
+  --try-panel-width: 310px;
+  --try-panel-gap: 14px;
   position: relative;
   align-self: stretch;
   flex: 1;
@@ -436,12 +441,336 @@
   overflow: visible;
 }
 
+/* ---------- the end: the move into All set (TryIt's stages) ---------- */
+
+/* Title and line swap with a fade, no slide. The line keeps its one-line
+   height with keys in it (they hang a little into the gap), so the screen
+   under it never jumps. */
+.try-swap {
+  animation: try-say-fade 260ms ease both;
+}
+.try-main > p.try-swap {
+  height: 24px;
+  line-height: 24px;
+}
+.try-sub-keys {
+  margin: 0 3px;
+}
+
+/* Handy's icon in the bar; it catches the glove: a pop as it lands. Scale
+   only: the icon's shape already says what Handy's doing. */
+.try-tray {
+  display: grid;
+}
+.try-tray[data-caught] {
+  animation: try-catch 560ms var(--ease-glide);
+}
+@keyframes try-catch {
+  0% {
+    scale: 0.5;
+  }
+  40% {
+    scale: 1.5;
+  }
+}
+
+/* The note makes room for the panel and keeps the cursor. It waits for the
+   glove to be most of the way up, so the room opens as the panel arrives. */
+.try-notes,
+.try-note-page {
+  transition:
+    inset 640ms var(--ease-glide) 480ms,
+    margin-bottom 640ms var(--ease-glide) 480ms;
+}
+.try-main:is([data-stage="fly"], [data-stage="set"]) .try-notes {
+  inset-inline-end: calc(
+    var(--try-panel-end) + var(--try-panel-width) + var(--try-panel-gap)
+  );
+}
+.try-main:is([data-stage="fly"], [data-stage="set"]) .try-note-page {
+  margin-bottom: 14px;
+}
+
+/* The bubble goes as the glove high-fives; its material comes back as the
+   panel. */
+.try-leaving {
+  animation: try-leave 220ms ease both;
+}
+@keyframes try-leave {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Asked for five: the button, the line's width, Handy's icon in it (the one
+   it's about to become). The screen's one pink button. */
+.try-say-sub.try-ask {
+  margin-top: 12px;
+}
+.try-five {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding-block: 7px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+}
+/* Waiting for it: upright, palm out, a small bob now and then; leaning in
+   when the pointer gets to the button or the glove. */
+.try-glove[data-mood="ready"] .try-pose {
+  animation: try-ready 2.8s ease-in-out 600ms infinite;
+}
+@keyframes try-ready {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  80% {
+    transform: rotate(3deg) translateY(-4px);
+  }
+  90% {
+    transform: rotate(-2deg) translateY(0);
+  }
+}
+.try-guide:has(.try-five:hover, .try-five:focus-visible)
+  .try-glove[data-mood="ready"]
+  .try-pose,
+.try-glove[data-mood="ready"]:hover .try-pose {
+  animation: none;
+  transform: rotate(6deg) translateY(-4px) scale(1.04);
+}
+/* The last take: "Give me five", and it winds up, rearing back palm up,
+   holding until it swings in… */
+.try-glove[data-mood="windup"] .try-pose {
+  transform: rotate(18deg) translate(6px, -10px) scale(1.08);
+  transition-duration: 700ms;
+}
+[dir="rtl"] .try-glove[data-mood="windup"] .try-pose {
+  transform: rotate(-18deg) translate(-6px, -10px) scale(1.08);
+}
+/* …and comes at you, bigger, then settles, its slap squashing it. */
+.try-main[data-stage="five"] .try-glove[data-how="auto"] .try-pose {
+  animation: try-lunge 520ms var(--ease-glide) both;
+}
+@keyframes try-lunge {
+  0% {
+    transform: rotate(18deg) translate(6px, -10px) scale(1.08);
+  }
+  38% {
+    transform: rotate(-8deg) translate(-10px, -6px) scale(1.3);
+  }
+}
+
+/* ---------- All set's panel (TrayPanel.tsx) ---------- */
+
+/* The bubble's material, hanging off the icon: under the menu bar, or over
+   the taskbar. */
+.try-panel {
+  --try-panel-edge: color-mix(in srgb, var(--color-text) 15%, transparent);
+  --try-panel-fill: var(--color-demo-window);
+  position: absolute;
+  z-index: 4;
+  /* Level with the note window (44px in from the bar), its tail reaching
+     up to the icon. */
+  top: 44px;
+  inset-inline-end: var(--try-panel-end);
+  width: var(--try-panel-width);
+  padding: 6px;
+  border: 1px solid var(--try-panel-edge);
+  border-radius: 16px;
+  background: var(--try-panel-fill);
+  box-shadow: 0 14px 34px -12px rgb(0 0 0 / 0.3);
+  font-size: var(--text-small);
+  line-height: 1.35;
+  text-align: start;
+  transform-origin: calc(100% - var(--try-tail)) 0;
+  animation: try-drop 360ms var(--ease-glide) both;
+}
+.try-screen[data-os="win"] .try-panel {
+  top: auto;
+  bottom: 44px;
+  transform-origin: calc(100% - var(--try-tail)) 100%;
+  animation-name: try-rise;
+}
+[dir="rtl"] .try-panel {
+  transform-origin: var(--try-tail) 0;
+}
+[dir="rtl"] .try-screen[data-os="win"] .try-panel {
+  transform-origin: var(--try-tail) 100%;
+}
+@keyframes try-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+}
+@keyframes try-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+}
+/* The bubble's tail, turned up to the icon (down to it on the taskbar). */
+.try-panel::before {
+  content: "";
+  position: absolute;
+  top: -6.5px;
+  inset-inline-end: calc(var(--try-tail) - 6.5px);
+  width: 12px;
+  height: 12px;
+  border: 0 solid var(--try-panel-edge);
+  border-top-width: 1px;
+  border-left-width: 1px;
+  border-radius: 3px 0 0 0;
+  background: var(--try-panel-fill);
+  transform: rotate(45deg);
+}
+.try-screen[data-os="win"] .try-panel::before {
+  top: auto;
+  bottom: -6.5px;
+  border-width: 0 1px 1px 0;
+  border-radius: 0 0 3px 0;
+}
+.try-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 4px;
+  padding: 6px 6px 10px;
+  border-bottom: 1px solid var(--color-line);
+}
+.try-panel-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+}
+/* Ready: moss, the done colour. */
+.try-panel-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+  color: var(--color-ink-2);
+}
+.try-panel-ready::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-moss);
+}
+.try-panel-download {
+  padding: 2px 10px 8px;
+}
+/* Rows: what it is, what's set, and how it changes: a chevron where it
+   leads to another screen, the keys themselves (they lift) where it
+   changes here. */
+.try-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  color: var(--color-text);
+  text-align: start;
+  cursor: pointer;
+}
+button.try-panel-row:hover,
+button.try-panel-row:focus-visible {
+  background: var(--color-wash);
+}
+button.try-panel-row:focus-visible {
+  outline: 2px solid var(--color-logo-primary);
+  outline-offset: -2px;
+}
+/* The label keeps its words; what's set takes the rest of the row, from
+   the end, and a long one (a model's name) is cut short, never under it. */
+.try-panel-label {
+  flex: none;
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+.try-panel-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 500;
+  text-align: end;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.try-panel-keybox {
+  display: inline-flex;
+  margin-inline-start: auto;
+}
+/* The shortcut's row: one button, so the keys keep their place. Recording,
+   it isn't a hover target. */
+.try-panel-keys[data-capturing] > .try-panel-row {
+  background: none;
+  cursor: default;
+}
+.try-panel-chevron {
+  flex: none;
+  margin-inline: -4px -2px;
+  color: var(--color-ink-3);
+}
+[dir="rtl"] .try-panel-chevron {
+  transform: scaleX(-1);
+}
+/* Recording: a key-sized, dashed "Press keys…" where the keys were, sunk
+   by their drop like the dashed keys that replace it, the edge breathing. */
+.try-panel-slot {
+  display: inline-flex;
+  align-items: center;
+  height: 25px;
+  padding: 0 8px;
+  border: 1px dashed var(--color-plum-pick);
+  border-radius: 6px;
+  font: 600 13px/1 var(--font-display);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+  transform: translateY(3px);
+  animation: try-panel-listen 1.2s ease-in-out infinite;
+}
+@keyframes try-panel-listen {
+  50% {
+    border-color: color-mix(in srgb, var(--color-plum) 22%, transparent);
+  }
+}
+.try-panel-rule {
+  margin: 4px 10px;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+.try-panel-row.is-switch {
+  cursor: default;
+}
+.try-panel-row.is-switch .try-panel-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text);
+  white-space: normal;
+  cursor: pointer;
+}
+
 /* Infinite loops would strobe under the global 1ms rule: stop them. */
 @media (prefers-reduced-motion: reduce) {
   .try-eased,
   .try-bubble,
   .try-bubble::after,
-  .try-say {
+  .try-say,
+  .try-notes,
+  .try-note-page {
     transition: none;
   }
   .try-say-main,
@@ -449,7 +778,12 @@
   .try-after > *,
   .try-tip,
   .try-say-main .try-slot,
-  .try-glove .try-pose {
+  .try-glove .try-pose,
+  .try-swap,
+  .try-tray[data-caught],
+  .try-leaving,
+  .try-panel,
+  .try-panel-slot {
     animation: none !important;
   }
 }

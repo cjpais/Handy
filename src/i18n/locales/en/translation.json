@@ -266,8 +266,8 @@
       "doneHoldNext": "Next, the hands-free way.",
       "doneTap": "Up top! That's tapping.",
       "doneTapNext": "Now try holding them while you talk.",
-      "allDone": "That's both. You're ready!",
-      "allDoneSub": "Keep going, or finish setup.",
+      "giveFive": "That's both! Give me five.",
+      "highFive": "High five",
       "slowLine": "{{name}} took {{wait}} on this computer. <faster>Try a faster model</faster>",
       "nothingTyped": "Hmm, nothing landed.",
       "nothingTypedSub": "Click into the note first, then try again.",
@@ -275,19 +275,26 @@
       "silentSub": "No sound came from this microphone. Try another:",
       "noWords": "I didn't catch any words.",
       "noWordsSub": "Try again, and say a whole sentence.",
-      "finish": "Finish setup",
+      "finish": "Finish",
       "skip": "Skip"
     },
     "done": {
-      "highFive": "High five!",
-      "upTop": "Up top!",
-      "again": "Again!",
-      "reallySet": "Okay, you're really set.",
+      "title": "You're all set",
+      "subMac": "Handy's in your menu bar now. Hold or tap <keys/> in any app to talk.",
+      "subTray": "Handy's in your system tray now. Hold or tap <keys/> in any app to talk.",
+      "hint": "You can change these later in Settings",
       "highFiveLabel": "High five",
-      "bodyMac": "Setup's done. Handy waits in your menu bar, so press <keys/> in any app and start talking.",
-      "bodyTray": "Setup's done. Handy waits in your system tray, so press <keys/> in any app and start talking.",
       "atLogin": "Start Handy when I log in",
-      "finish": "Done"
+      "finish": "Done",
+      "panel": {
+        "name": "Handy",
+        "ready": "Ready",
+        "languages": "Languages",
+        "model": "Speech model",
+        "shortcut": "Shortcut",
+        "changeLanguages": "Change languages, {{languages}}",
+        "changeModel": "Change speech model, {{model}}"
+      }
     },
     "linux": {
       "tryIt": "Not working? <link>Linux setup guide</link>",

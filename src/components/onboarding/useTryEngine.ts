@@ -20,6 +20,8 @@ export type TakeResult =
   | { kind: "none" }
   /** A way done for the first time, with the other still to do. */
   | { kind: "done"; way: Mode }
+  /** The last way done: Try it's finale (the high five and All set) plays. */
+  | { kind: "finale" }
   /** It transcribed, but the cursor wasn't in the note. */
   | { kind: "nothingTyped" }
   /** The microphone sent only digital silence. */
@@ -31,7 +33,7 @@ export type TakeResult =
 const WAYS: Mode[] = ["hold", "tap"];
 
 /** A way done: the cheer stays this long before the next way's line. */
-const ADVANCE_MS = 2600;
+const ADVANCE_MS = 2000;
 /** "I didn't catch any words" stays this long, then back to what's next. */
 const NO_WORDS_MS = 5000;
 
@@ -241,12 +243,13 @@ export const useTryEngine = ({
           setResult({ kind: "none" });
           return;
         }
-        setFives((n) => n + 1);
-        // The last way: the finale shows whenever nothing's left to do.
+        // The last way: the finale, whose high five comes after a wind-up,
+        // so the glove doesn't slap here.
         if (!WAYS.some((w) => w !== way && !before[w])) {
-          setResult({ kind: "none" });
+          setResult({ kind: "finale" });
           return;
         }
+        setFives((n) => n + 1);
         setResult({ kind: "done", way });
         resultTimer.current = setTimeout(
           () => setResult({ kind: "none" }),

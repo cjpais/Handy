@@ -16,7 +16,6 @@ import { Permissions } from "./screens/Permissions";
 import { Model } from "./screens/Model";
 import { Demo } from "./screens/Demo";
 import { TryIt } from "./screens/TryIt";
-import { AllSet } from "./screens/AllSet";
 import { useOsType } from "@/hooks/useOsType";
 import { DownloadStatus } from "./DownloadStatus";
 import { useOnboardingModels } from "./useOnboardingModels";
@@ -45,7 +44,7 @@ const SCRIPT_SETTING: Record<
 
 /**
  * First-run onboarding: Welcome, Permissions (where the OS asks), Model,
- * Demo, Try it, All set. Remembers where it is, so a relaunch (the macOS
+ * Demo, Try it, and All set (Try it's screen, finished). Remembers where it is, so a relaunch (the macOS
  * Accessibility fallback) or a quit comes back to the same screen.
  */
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
@@ -132,7 +131,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   );
   const step = steps.includes(store.step) ? store.step : steps[0];
   const progress = { index: steps.indexOf(step), count: steps.length };
-  const go = (to: OnboardingStep) => store.set({ step: to });
+  // Arriving where a panel row came from ends the detour.
+  const go = (to: OnboardingStep) =>
+    store.set(
+      to === store.returnTo ? { step: to, returnTo: null } : { step: to },
+    );
+  /** On, or straight back to All set after a detour from its panel. */
+  const onward = () => (store.returnTo ? go(store.returnTo) : next());
   const next = () => {
     const i = steps.indexOf(step);
     if (i < steps.length - 1) go(steps[i + 1]);
@@ -147,7 +152,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   // Into Settings, not closed: the person may want to look around, and can
   // close the window themselves.
   const finish = async () => {
-    if (!preview) await commands.completeOnboarding();
+    // Set on All set, saved now: each change to the login item posts a macOS
+    // notice, so toggling there doesn't register and unregister it.
+    if (!preview) {
+      await updateSetting("autostart_enabled", store.atLogin);
+      await commands.completeOnboarding();
+    }
     onComplete();
     // After Settings has replaced the flow, so it doesn't flash back to Welcome.
     if (!preview) clearOnboardingProgress();
@@ -156,7 +166,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   /** Download (or keep) the picked model, then move on. */
   const chooseModel = (id: string) => {
     startModel(id);
-    next();
+    onward();
   };
 
   /** Make this the model: download it unless it's on disk already. */
@@ -210,7 +220,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           preview={preview}
           onContinue={() => {
             saveLanguages();
-            next();
+            onward();
           }}
         />
       );
@@ -228,7 +238,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         <Model
           progress={progress}
           models={models}
-          onBack={back}
+          onBack={store.returnTo ? () => go(store.returnTo!) : back}
           onChoose={chooseModel}
         />
       );
@@ -246,25 +256,29 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           onContinue={() => moveScreens("in", next)}
         />
       );
+    // All set is Try it's screen, finished: the same element for both, so it
+    // stays mounted (the note, its cursor, the live shortcut) as the glove
+    // flies to the icon and the flow moves on underneath it.
     case "try":
-      return (
-        <TryIt
-          progress={progress}
-          os={osType}
-          model={downloaded}
-          download={downloadNow}
-          onChangeModel={() => go("model")}
-          onBack={() => moveScreens("out", back)}
-          onFinish={next}
-        />
-      );
     case "done":
       return (
-        <AllSet
+        <TryIt
+          key="try"
           progress={progress}
           os={osType}
-          onBack={back}
-          onFinish={finish}
+          finished={step === "done"}
+          // The model in use: the one picked here, else Handy's (a preview).
+          model={
+            downloaded ?? models.catalogFor(settings?.selected_model ?? "")
+          }
+          download={downloadNow}
+          downloadStatus={<DownloadStatus models={models} model={downloaded} />}
+          onChangeModel={() => go("model")}
+          onEdit={(to) => store.set({ step: to, returnTo: "done" })}
+          onBack={() => moveScreens("out", back)}
+          onArrive={() => go("done")}
+          onUnfinish={() => go("try")}
+          onDone={finish}
         />
       );
     default:
