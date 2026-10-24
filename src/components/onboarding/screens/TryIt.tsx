@@ -1,11 +1,10 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import type { OSType } from "@/lib/utils/keyboard";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
 import { Keycaps } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
-import { ProgressLine } from "../../shared/ProgressLine";
 import HandyHand from "../../icons/HandyHand";
 import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
 import { useTryEngine } from "../useTryEngine";
@@ -13,36 +12,68 @@ import type { CatalogModel } from "../data/models";
 import type { DownloadState } from "../useOnboardingModels";
 import "./tryit.css";
 
-type Mood = "point" | "listen" | "cheer" | "oops" | "wait";
-
-/** One thing the glove says. A new `id` is a new line (it fades in). */
-interface Say {
-  id: string;
-  main: React.ReactNode;
-  sub?: React.ReactNode;
-  /** The shortcut, under the line, with the listening status beside it. */
-  keys?: boolean;
-  mood: Mood;
-}
+type Mood = "point" | "listen" | "cheer" | "oops";
 
 /**
- * The bubble eases to the height of what it says instead of jumping, so a
- * line with keys and one without hand over smoothly.
+ * What the glove says, in one of three shapes: an instruction (one line, the
+ * keys in it: "Hold [fn] and talk."), an outcome (what happened, and what's
+ * next), or a problem (what went wrong, and how to fix it). `id` names the
+ * line, so a new one fades in and the same one stays put.
  */
-const EasedHeight: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+type Say =
+  | { shape: "instruction"; id: string; line: React.ReactNode; mood: Mood }
+  | {
+      shape: "outcome" | "problem";
+      id: string;
+      line: string;
+      sub: React.ReactNode;
+      mood: Mood;
+    };
+
+/**
+ * The bubble eases to the size of what it says instead of jumping: as wide
+ * as its widest line (up to a cap), as tall as its parts, so a short line
+ * never sits in a long box and a line with keys and one without hand over
+ * smoothly. Text that wraps would leave the box at the cap with room to its
+ * right, so it's then narrowed as far as it goes without another line.
+ */
+const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const inner = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number | undefined>(undefined);
+  const [size, setSize] = useState<{ width: number; height: number }>();
   useLayoutEffect(() => {
     const el = inner.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+    const measure = () => {
+      el.style.width = "";
+      const height = el.offsetHeight;
+      // offsetWidth rounds, and a box a fraction narrower than its text
+      // wraps it: a pixel over always fits. (Layout sizes, not
+      // getBoundingClientRect's, so the camera move's scale can't skew it.)
+      let fits = el.offsetWidth + 1;
+      let wraps = 0;
+      while (fits - wraps > 1) {
+        const mid = Math.floor((fits + wraps) / 2);
+        el.style.width = `${mid}px`;
+        if (el.offsetHeight > height) wraps = mid;
+        else fits = mid;
+      }
+      el.style.width = `${fits}px`;
+      setSize((was) =>
+        was?.width === fits && was.height === height
+          ? was
+          : { width: fits, height },
+      );
+    };
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    setHeight(el.offsetHeight);
+    measure();
     return () => ro.disconnect();
   }, []);
   return (
-    <div className="try-eased" style={{ height }}>
-      <div ref={inner}>{children}</div>
+    <div className="try-eased" style={size}>
+      <div ref={inner} className="try-eased-inner">
+        {children}
+      </div>
     </div>
   );
 };
@@ -50,7 +81,7 @@ const EasedHeight: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 interface TryItProps {
   progress: { index: number; count: number };
   os: OSType;
-  /** The model in use (being downloaded or on disk). */
+  /** The model in use (on disk: Demo won't continue until it is). */
   model: CatalogModel | undefined;
   download: DownloadState;
   /** A take was too slow: back to Model, for a faster one. */
@@ -61,15 +92,17 @@ interface TryItProps {
 
 /**
  * Screen 5: the first real dictation. Demo's screen, close up, with one note
- * on it, and Handy's glove on the note's corner with a speech bubble saying
- * what to do next. Click into the note, use the shortcut, and the words land
+ * on it that already has the cursor, and Handy's glove on the note's corner
+ * with a speech bubble saying what to do. Use the shortcut and the words land
  * at the cursor, as they will in any app. Hold, then tap: either way counts
- * for itself, and one is enough to finish.
+ * for itself, in either order, and one is enough to finish.
  *
- * The rule for the bubble: while you're doing what it says, it doesn't
- * change. Pressing the keys presses them on screen, and a status beside them
- * says Listening, then Typing; the words only change for an outcome (a high
- * five, a slip, a problem) or the next thing to do.
+ * The bubble's line is always the next thing to do, with the shortcut's keys
+ * in it, so it names them. It changes once the way they're pressing is known
+ * (how to stop); in between, the keys in the line press with the real ones,
+ * and the glove nods along. When the keys come up, that line dims while the
+ * words are on their way, and only a wait long enough to notice says "Watch
+ * the note."
  */
 export const TryIt: React.FC<TryItProps> = ({
   progress,
@@ -81,13 +114,9 @@ export const TryIt: React.FC<TryItProps> = ({
   onFinish,
 }) => {
   const { t, i18n } = useTranslation();
-  const ready = download.state === "ready";
-  const e = useTryEngine({ ready, os });
-  const anyDone = e.ways.some((w) => e.lessons[w]);
-  const allDone = e.ways.every((w) => e.lessons[w]);
-  const both = e.ways.length > 1;
+  const e = useTryEngine({ ready: download.state === "ready", os });
+  const anyDone = e.lessons.hold || e.lessons.tap;
   const name = model?.name ?? "";
-  const busy = e.phase !== "idle";
 
   const seconds = (s: number) =>
     t("onboarding.model.seconds", {
@@ -96,141 +125,67 @@ export const TryIt: React.FC<TryItProps> = ({
         maximumFractionDigits: s < 10 ? 1 : 0,
       }).format(s),
     });
-  const eta =
-    download.state === "downloading" && download.etaSeconds != null
-      ? download.etaSeconds < 60
-        ? t("onboarding.download.seconds", {
-            count: Math.ceil(download.etaSeconds),
-          })
-        : t("onboarding.download.minutes", {
-            count: Math.ceil(download.etaSeconds / 60),
-          })
-      : null;
 
   /* ---------- what the glove says ---------- */
 
-  const instruction = (): Say => {
-    if (allDone)
-      return {
-        id: "allDone",
-        main: t(both ? "onboarding.try.allDone" : "onboarding.try.allDoneOne"),
-        sub: t("onboarding.try.allDoneSub"),
-        mood: "point",
-      };
-    if (!e.clicked)
-      return {
-        id: "click",
-        main: t(anyDone ? "onboarding.try.clickBack" : "onboarding.try.click"),
-        mood: "point",
-      };
-    return e.lesson === "hold"
-      ? {
-          id: "hold",
-          main: t("onboarding.try.hold"),
-          keys: true,
-          sub: t("onboarding.try.holdSub"),
-          mood: "point",
-        }
-      : {
-          id: "tap",
-          main: t(anyDone ? "onboarding.try.tapNext" : "onboarding.try.tap"),
-          keys: true,
-          sub: t("onboarding.try.tapSub"),
-          mood: "point",
-        };
-  };
-
   const say = ((): Say => {
-    if (!ready)
-      return download.state === "failed"
-        ? {
-            id: "downloadFailed",
-            main: t("onboarding.try.downloadFailed", { name }),
-            sub: t("onboarding.try.downloadFailedSub"),
-            mood: "oops",
-          }
-        : {
-            id: "downloading",
-            main: t("onboarding.try.gettingReady"),
-            sub: (
-              <>
-                <ProgressLine
-                  value={
-                    download.state === "downloading" ? download.progress : 1
-                  }
-                  className="mt-[6px] mb-[6px] h-[5px]"
-                />
-                <span className="tabular-nums">
-                  {download.state === "checking"
-                    ? t("onboarding.try.checking", { name })
-                    : eta
-                      ? t("onboarding.try.downloadingEta", { name, time: eta })
-                      : t("onboarding.try.downloading", { name })}
-                </span>
-              </>
+    const instruction = (key: string): Say => ({
+      shape: "instruction",
+      id: key,
+      line: (
+        <Trans
+          i18nKey={key}
+          components={{
+            keys: (
+              <Keycaps
+                className="try-keys"
+                binding={e.shortcut}
+                osType={os}
+                size="line"
+                pressed={e.keysDown}
+              />
             ),
-            mood: "wait",
-          };
-
-    // Mid-take the line stays what it was. The one exception: a tap where a
-    // hold was asked for, because Handy won't stop until the next tap.
-    if (busy) {
-      if (e.lesson === "hold" && e.take === "tap")
-        return {
-          id: "tapInHold",
-          main: t("onboarding.try.tapInHold"),
-          keys: true,
-          sub: t("onboarding.try.tapInHoldSub"),
-          mood: "listen",
-        };
-      return { ...instruction(), mood: "listen" };
-    }
+          }}
+        />
+      ),
+      mood: e.phase === "idle" ? "point" : "listen",
+    });
+    // Keys up, words on their way: usually they land in a blink, so the line
+    // stays (dimmed, below); only a real wait gets its own.
+    if (e.phase === "typing" && e.waiting)
+      return instruction("onboarding.try.watch");
+    // Keys down: how to stop, for the way they're actually going. Until
+    // that's known, whatever was up stays (an instruction, a cheer, a
+    // problem), so the bubble changes once, straight to this, not to a
+    // guess first.
+    if (e.phase !== "idle" && e.take)
+      return instruction(
+        e.take === "tap" ? "onboarding.try.tapAgain" : "onboarding.try.letGo",
+      );
 
     const r = e.result;
     switch (r.kind) {
       case "done":
         return r.way === "hold"
           ? {
+              shape: "outcome",
               id: "doneHold",
-              main: t("onboarding.try.doneHold"),
-              sub:
-                both && !e.lessons.tap
-                  ? t("onboarding.try.doneHoldNext")
-                  : allDone
-                    ? t("onboarding.try.readySub")
-                    : undefined,
+              line: t("onboarding.try.doneHold"),
+              sub: t("onboarding.try.doneHoldNext"),
               mood: "cheer",
             }
           : {
+              shape: "outcome",
               id: "doneTap",
-              main: t(
-                allDone && both
-                  ? "onboarding.try.doneBoth"
-                  : "onboarding.try.doneTap",
-              ),
-              sub: allDone ? t("onboarding.try.readySub") : undefined,
-              mood: "cheer",
-            };
-      case "credited":
-        return r.way === "tap"
-          ? {
-              id: "creditedTap",
-              main: t("onboarding.try.creditedTap"),
-              keys: true,
-              sub: t("onboarding.try.creditedTapSub"),
-              mood: "cheer",
-            }
-          : {
-              id: "creditedHold",
-              main: t("onboarding.try.creditedHold"),
-              keys: true,
-              sub: t("onboarding.try.creditedHoldSub"),
+              line: t("onboarding.try.doneTap"),
+              sub: t("onboarding.try.doneTapNext"),
               mood: "cheer",
             };
       case "slow":
         return {
+          shape: "problem",
           id: "slow",
-          main: t("onboarding.try.slow", { wait: seconds(r.wait) }),
+          line: t("onboarding.try.slow", { wait: seconds(r.wait) }),
           sub: (
             <>
               {t("onboarding.try.slowSub", { name })}{" "}
@@ -245,32 +200,34 @@ export const TryIt: React.FC<TryItProps> = ({
       case "empty":
       case "failed":
         return {
+          shape: "problem",
           id: r.kind,
-          main: t(`onboarding.try.${r.kind}`),
+          line: t(`onboarding.try.${r.kind}`),
           sub: t(`onboarding.try.${r.kind}Sub`),
           mood: "oops",
         };
     }
-    return instruction();
+    // Both done: the finale, until the next press.
+    if (!e.todo)
+      return {
+        shape: "outcome",
+        id: "allDone",
+        line: t("onboarding.try.allDone"),
+        sub: t("onboarding.try.allDoneSub"),
+        mood: "cheer",
+      };
+    return instruction(
+      e.todo === "hold" ? "onboarding.try.hold" : "onboarding.try.tapNext",
+    );
   })();
 
-  // Beside the keys: what Handy's doing, in a slot that's always there.
-  const status =
-    e.phase === "listening"
-      ? t("onboarding.try.listening")
-      : e.phase === "typing"
-        ? t("onboarding.try.typing")
-        : null;
-
-  // Once the model is ready, someone whose dictation can't work here yet can
-  // still finish setting up; after one way, the other is optional.
-  const hint = !ready ? (
-    ""
-  ) : !anyDone ? (
+  // Someone whose dictation can't work here yet can still finish setting
+  // up; after one way, the other is optional.
+  const hint = !anyDone ? (
     <TextLink onClick={onFinish}>{t("onboarding.try.skip")}</TextLink>
-  ) : !allDone ? (
+  ) : e.todo ? (
     t(
-      e.ways.find((w) => !e.lessons[w]) === "tap"
+      e.todo === "tap"
         ? "onboarding.try.finishOrTap"
         : "onboarding.try.finishOrHold",
     )
@@ -363,7 +320,6 @@ export const TryIt: React.FC<TryItProps> = ({
                 placeholder={t("onboarding.try.placeholder")}
                 aria-label={t("onboarding.try.noteLabel")}
                 spellCheck={false}
-                {...e.fieldProps}
               />
             </div>
           </div>
@@ -373,7 +329,8 @@ export const TryIt: React.FC<TryItProps> = ({
             <button
               type="button"
               className="try-glove"
-              data-mood={say.mood}
+              // Nodding along from the moment the keys go down.
+              data-mood={e.phase === "idle" ? say.mood : "listen"}
               aria-label={t("onboarding.done.highFiveLabel")}
               // A high five leaves the cursor in the note.
               onMouseDown={(ev) => ev.preventDefault()}
@@ -405,32 +362,30 @@ export const TryIt: React.FC<TryItProps> = ({
                 </span>
               )}
             </button>
-            <div className="try-bubble" role="status" aria-live="polite">
-              <EasedHeight>
-                <div key={say.id} className="try-say">
-                  <p className="try-say-main">{say.main}</p>
-                  {say.keys && (
-                    <div className="try-say-keys">
-                      <Keycaps
-                        binding={e.shortcut}
-                        osType={os}
-                        pressed={e.keysDown}
-                      />
-                      <span
-                        className="try-status"
-                        data-on={status || undefined}
-                      >
-                        <i
-                          aria-hidden="true"
-                          data-typing={e.phase === "typing" || undefined}
-                        />
-                        {status ?? t("onboarding.try.listening")}
-                      </span>
+            <div
+              className="try-bubble"
+              data-shape={say.shape}
+              role="status"
+              aria-live="polite"
+            >
+              <EasedSize>
+                <div
+                  className="try-say"
+                  // Handy's turn: what they did stays, quieter.
+                  data-dim={(e.phase === "typing" && !e.waiting) || undefined}
+                >
+                  {/* A new line fades in; the same one stays put, so the
+                      keys in it press without remounting. */}
+                  <p key={`line:${say.id}`} className="try-say-main">
+                    {say.line}
+                  </p>
+                  {say.shape !== "instruction" && (
+                    <div key={`sub:${say.id}`} className="try-say-sub">
+                      {say.sub}
                     </div>
                   )}
-                  {say.sub && <div className="try-say-sub">{say.sub}</div>}
                 </div>
-              </EasedHeight>
+              </EasedSize>
             </div>
           </div>
         </div>

@@ -7,9 +7,10 @@ interface KeycapsProps {
   osType: OSType;
   /** sm: in sentences and steps, 30px tall; demo: under Demo's laptop,
    *  36px tall with 16px glyphs and a wider Space; screen: in the corner of
-   *  Demo's drawn screen, 24px tall. */
-  size?: "sm" | "demo" | "screen";
-  /** Every key drops by its shadow with a blush face. */
+   *  Demo's drawn screen, 24px tall; line: inside a line of 17px text, as
+   *  in Try it's "Hold [fn] and talk.", 25px tall. */
+  size?: "sm" | "demo" | "screen" | "line";
+  /** Every key drops by its shadow and fills with its plum. */
   pressed?: boolean;
   /** A combination still being captured: dashed, no drop. */
   partial?: boolean;
@@ -35,11 +36,17 @@ const SIZES = {
     narrow: "min-w-[24px]",
     wide: "",
   },
+  line: {
+    key: "h-[25px] px-[7px] rounded-[6px] text-[13px]",
+    narrow: "min-w-[25px]",
+    wide: "",
+  },
 };
 
 /**
  * The shortcut as physical keys: a paper face with a plum edge and a plum
- * drop that the key falls into when it's pressed. Handy's signature element.
+ * drop that the key falls into when it's pressed, filling with the plum, its
+ * letters turning paper. Handy's signature element.
  */
 export const Keycaps: React.FC<KeycapsProps> = ({
   binding,
@@ -55,7 +62,7 @@ export const Keycaps: React.FC<KeycapsProps> = ({
     .map((p) => p.label)
     .join(osType === "macos" ? " " : " + ");
   const state = pressed
-    ? "translate-y-[3px] shadow-none bg-logo-primary text-[var(--light-color-logo-stroke)] border-plum"
+    ? "translate-y-[3px] shadow-none bg-plum text-background border-plum"
     : partial
       ? "translate-y-[3px] shadow-none border-dashed bg-background text-plum border-plum"
       : `shadow-[0_3px_0_0_var(--color-plum)] bg-background text-plum border-plum ${

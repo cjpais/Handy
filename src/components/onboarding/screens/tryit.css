@@ -178,7 +178,7 @@
    on the taskbar. */
 .try-guide {
   position: absolute;
-  inset-inline-end: 23px;
+  inset-inline-end: 18px;
   bottom: 18px;
   z-index: 5;
   display: flex;
@@ -254,21 +254,31 @@
 }
 
 /* ---------- the bubble ---------- */
-/* One width for every line, so only the height ever moves, and it eases.
+/* As big as what it says (see .try-eased), never wider than 420px.
    The window's material, floating like the overlay's pill, and lifted a
    little so its tail meets the glove's face, not its wrist. One neutral
-   edge colour, so the tail can share it. */
+   edge colour and fill, so the tail can share them. */
 .try-bubble {
   --try-bubble-edge: color-mix(in srgb, var(--color-text) 15%, transparent);
+  --try-bubble-fill: var(--color-demo-window);
   --try-bubble-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.22);
   position: relative;
-  width: 284px;
   margin-bottom: 16px;
   border: 1px solid var(--try-bubble-edge);
   border-radius: 16px;
-  background: var(--color-demo-window);
+  background: var(--try-bubble-fill);
   box-shadow: var(--try-bubble-shadow);
   pointer-events: auto;
+  /* Into or out of a problem, the warmth fades with the line rather than
+     snapping while the height eases. */
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease;
+}
+/* A problem: warm, so it never reads as a win. */
+.try-bubble[data-shape="problem"] {
+  --try-bubble-edge: color-mix(in srgb, var(--color-warning) 32%, transparent);
+  --try-bubble-fill: var(--color-warning-wash);
 }
 /* The tail: a turned square with two edges drawn, half inside the bubble so
    it hides the bubble's own edge there. It needs 17px of straight side:
@@ -285,8 +295,11 @@
   border-top-width: 1px;
   border-right-width: 1px;
   border-radius: 0 3px 0 0;
-  background: var(--color-demo-window);
+  background: var(--try-bubble-fill);
   transform: rotate(45deg);
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease;
   pointer-events: none;
 }
 [dir="rtl"] .try-bubble::after {
@@ -298,11 +311,29 @@
 .try-eased {
   overflow: hidden;
   border-radius: 15px;
-  transition: height 280ms var(--ease-glide);
+  transition:
+    width 280ms var(--ease-glide),
+    height 280ms var(--ease-glide);
 }
-/* A new line fades in where the old one was: no slide, no bounce. */
+/* Measured at its natural size, wrapping only past the cap (420px less
+   the bubble's border): wide enough that a line with a three-key shortcut
+   in it still fits on one line, with most of the note left showing. */
+.try-eased-inner {
+  width: max-content;
+  max-width: 418px;
+}
+/* A new line fades in where the old one was: no slide, no bounce. Each
+   part fades on its own, so the keys can stay while the line changes. */
 .try-say {
   padding: 14px 18px 15px;
+  transition: opacity 220ms ease;
+}
+/* Keys up, words on their way: the line steps back while Handy works. */
+.try-say[data-dim] {
+  opacity: 0.45;
+}
+.try-say-main,
+.try-say-sub {
   animation: try-say-fade 220ms ease;
 }
 @keyframes try-say-fade {
@@ -327,53 +358,23 @@
   text-wrap: pretty;
 }
 
-/* The keys, and beside them what Handy's doing: an always-there slot that
-   only fades, so the row never reflows. */
-.try-say-keys {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  margin-top: 9px;
-}
-.try-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-small);
-  font-weight: 600;
-  color: var(--color-ink-2);
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
-.try-status[data-on] {
-  opacity: 1;
-}
-/* Pink: the app's colour for recording. Typing goes quiet. */
-.try-status i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--color-background-ui);
-  animation: try-pulse 1.1s ease-in-out infinite;
-}
-.try-status i[data-typing] {
-  background: var(--color-ink-3);
-  animation: none;
-}
-@keyframes try-pulse {
-  50% {
-    opacity: 0.35;
-  }
+/* The shortcut's keys, in the line: riding just above the baseline, a
+   breath of space either side of the words. */
+.try-say-main .try-keys {
+  vertical-align: 1px;
+  margin: 0 2px;
 }
 
 /* Infinite loops would strobe under the global 1ms rule: stop them. */
 @media (prefers-reduced-motion: reduce) {
-  .try-eased {
+  .try-eased,
+  .try-bubble,
+  .try-bubble::after,
+  .try-say {
     transition: none;
   }
-  .try-say,
-  .try-status i,
+  .try-say-main,
+  .try-say-sub,
   .try-glove .try-pose {
     animation: none !important;
   }

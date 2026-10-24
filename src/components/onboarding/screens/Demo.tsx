@@ -82,8 +82,6 @@ const USER_TRANSCRIBE_MS = 600;
 const USER_LINGER_MS = 3600;
 /** A tap of yours that nobody taps again: Handy stops for you. */
 const TAP_TIMEOUT_MS = 12000;
-/** "Saved" after a new shortcut, before the loop starts again. */
-const SAVED_MS = 1500;
 /** Under reduced motion: each way's still picture, in turn. */
 const STILL_MS = 5000;
 
@@ -383,7 +381,7 @@ const DemoSentence: React.FC<{
   mode: Mode;
   phrase: Phrase;
   /** While changing the shortcut, one line in the sentence's place. */
-  say: { text: string; tone: "" | "ok" } | null;
+  say: string | null;
 }> = ({ mode, phrase, say }) => {
   const { t } = useTranslation();
   const cell = "col-start-1 row-start-1";
@@ -406,21 +404,16 @@ const DemoSentence: React.FC<{
           </span>
         );
       })}
-      {[
-        t("onboarding.demo.pressKeys"),
-        t("onboarding.demo.addKey"),
-        t("onboarding.demo.saved"),
-      ].map((line) => (
-        <span key={line} aria-hidden="true" className={`${cell} invisible`}>
-          {line}
-        </span>
-      ))}
+      {[t("onboarding.demo.pressKeys"), t("onboarding.demo.addKey")].map(
+        (line) => (
+          <span key={line} aria-hidden="true" className={`${cell} invisible`}>
+            {line}
+          </span>
+        ),
+      )}
       {say && (
-        <span
-          role="status"
-          className={`${cell} font-[650] ${say.tone === "ok" ? "text-moss" : "text-text"}`}
-        >
-          {say.text}
+        <span role="status" className={`${cell} font-[650] text-text`}>
+          {say}
         </span>
       )}
     </>
@@ -483,7 +476,6 @@ export const Demo: React.FC<DemoProps> = ({
     landed: false,
     key: 0,
   });
-  const [saved, setSaved] = useState(false);
 
   // The engine's own bookkeeping, outside React's renders.
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -625,9 +617,6 @@ export const Demo: React.FC<DemoProps> = ({
   /* ---------- the shortcut: suspended globally, heard here ---------- */
 
   const suspendBindings = useSuspendedShortcuts(!preview);
-  const shortcutNow = useRef(shortcut);
-  shortcutNow.current = shortcut;
-  const shortcutBefore = useRef(shortcut);
 
   const capture = useShortcutCapture(
     "transcribe",
@@ -635,16 +624,7 @@ export const Demo: React.FC<DemoProps> = ({
     () => {
       suspended.current = false;
       suspendBindings();
-      // Wait a tick for the new binding to arrive from the store.
-      setTimeout(() => {
-        if (shortcutNow.current !== shortcutBefore.current) {
-          setSaved(true);
-          later(() => {
-            setSaved(false);
-            play("hold");
-          }, SAVED_MS);
-        } else play("hold");
-      });
+      play("hold");
     },
     preview,
   );
@@ -659,7 +639,6 @@ export const Demo: React.FC<DemoProps> = ({
 
   const startCapture = () => {
     suspended.current = true;
-    shortcutBefore.current = shortcut;
     clear();
     user.current = null;
     apply(chapter, "reset");
@@ -673,17 +652,8 @@ export const Demo: React.FC<DemoProps> = ({
     partialKeys.length > 0 &&
     partialKeys.every((k) => MODIFIERS.includes(k.toLowerCase()));
   const say = capture.capturing
-    ? {
-        text: t(
-          onlyModifiers
-            ? "onboarding.demo.addKey"
-            : "onboarding.demo.pressKeys",
-        ),
-        tone: "" as const,
-      }
-    : saved
-      ? { text: t("onboarding.demo.saved"), tone: "ok" as const }
-      : null;
+    ? t(onlyModifiers ? "onboarding.demo.addKey" : "onboarding.demo.pressKeys")
+    : null;
 
   return (
     <OnboardingShell

@@ -51,9 +51,10 @@
   --dark-color-moss: #86c9a4;
 
   /* Plum: the one ink for what you can press or have picked: keycaps'
-     letters, edge and drop, Demo's hand, the picked card, chip and tag. Light mode's is the logo stroke; dark mode's is
-     its text white, so things at rest stay the page plus one ink, and pink
-     only arrives when something is pressed. */
+     letters, edge and drop (and a pressed key's whole face), Demo's hand,
+     the picked card, chip and tag. Light mode's is the logo stroke; dark
+     mode's is its text white, so the keys stay the page plus one ink,
+     pressed or not. */
   --light-color-plum: var(--light-color-logo-stroke);
   --dark-color-plum: var(--dark-color-text);
 
