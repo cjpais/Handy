@@ -21,6 +21,8 @@ import { useOsType } from "@/hooks/useOsType";
 import { DownloadStatus } from "./DownloadStatus";
 import { useOnboardingModels } from "./useOnboardingModels";
 import { useModelStore } from "@/stores/modelStore";
+import { moveScreens } from "./screenTransitions";
+import "./screenTransitions.css";
 
 interface OnboardingFlowProps {
   /** Debug preview: inert (no prompts, downloads or setting writes). */
@@ -240,7 +242,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           download={<DownloadStatus models={models} model={downloaded} />}
           onRetry={() => downloaded && startModel(downloaded.id)}
           onBack={back}
-          onContinue={next}
+          // Try it is Demo's screen, close up: the camera moves in.
+          onContinue={() => moveScreens("in", next)}
         />
       );
     case "try":
@@ -251,7 +254,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           model={downloaded}
           download={downloadNow}
           onChangeModel={() => go("model")}
-          onBack={back}
+          onBack={() => moveScreens("out", back)}
           onFinish={next}
         />
       );

@@ -51,12 +51,14 @@ const renderSettingsContent = (
   section: SidebarSection,
   onPreviewOnboarding: (step: OnboardingPreviewStep) => void,
   onRunOnboarding: () => void,
+  onRunModelMigration: () => void,
 ) => {
   if (section === "debug") {
     return (
       <DebugSettings
         onPreviewOnboarding={onPreviewOnboarding}
         onRunOnboarding={onRunOnboarding}
+        onRunModelMigration={onRunModelMigration}
       />
     );
   }
@@ -310,6 +312,21 @@ function App() {
     setOnboardingStep("flow");
   };
 
+  // Debug: the real model migration screen. It leads with the selected model
+  // if that's retired, otherwise with the first retired model on disk.
+  const runModelMigration = async () => {
+    const retired = await commands.getRetiredModels();
+    if (retired.length === 0) {
+      toast.info(t("settings.debug.modelMigration.noRetired"));
+      return;
+    }
+    const selected = settings?.selected_model;
+    setMigrationModelId(
+      retired.find((m) => m.id === selected)?.id ?? retired[0].id,
+    );
+    setOnboardingStep("migration");
+  };
+
   const handleModelSelected = async () => {
     // Coming from the model update: the user picked a different model instead
     // of updating, so the retired models left on disk can't run anymore.
@@ -421,6 +438,7 @@ function App() {
                   currentSection,
                   setOnboardingPreview,
                   runOnboarding,
+                  runModelMigration,
                 )}
               </div>
             </div>

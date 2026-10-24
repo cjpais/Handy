@@ -74,3 +74,34 @@ export const OnboardingRun: React.FC<OnboardingRunProps> = ({
     </SettingContainer>
   );
 };
+
+interface ModelMigrationRunProps {
+  onRun: () => void;
+  descriptionMode?: "inline" | "tooltip";
+  grouped?: boolean;
+}
+
+/**
+ * Opens the real model migration screen. It needs old-format models on disk
+ * to have anything to show.
+ */
+export const ModelMigrationRun: React.FC<ModelMigrationRunProps> = ({
+  onRun,
+  descriptionMode = "tooltip",
+  grouped = false,
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <SettingContainer
+      title={t("settings.debug.modelMigration.title")}
+      description={t("settings.debug.modelMigration.description")}
+      descriptionMode={descriptionMode}
+      grouped={grouped}
+    >
+      <Button variant="secondary" size="sm" onClick={onRun}>
+        {t("settings.debug.modelMigration.button")}
+      </Button>
+    </SettingContainer>
+  );
+};

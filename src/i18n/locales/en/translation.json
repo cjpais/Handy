@@ -736,6 +736,12 @@
         "description": "Go through onboarding for real from the start: it asks for permissions, downloads models and saves your choices",
         "button": "Start"
       },
+      "modelMigration": {
+        "title": "Model Migration",
+        "description": "Open the old-format model update screen for real: it downloads replacements, switches models and deletes old files",
+        "button": "Open",
+        "noRetired": "No old-format models on disk"
+      },
       "soundTheme": {
         "label": "Sound Theme",
         "description": "Choose a sound theme for recording start and stop feedback"

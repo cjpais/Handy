@@ -15,6 +15,7 @@ import { UpdateChecksToggle } from "../UpdateChecksToggle";
 import { WhatsNewPreview } from "./WhatsNewPreview";
 import { KeyboardDiagnostic } from "./KeyboardDiagnostic";
 import {
+  ModelMigrationRun,
   OnboardingPreview,
   OnboardingRun,
   type OnboardingPreviewStep,
@@ -23,11 +24,13 @@ import {
 interface DebugSettingsProps {
   onPreviewOnboarding?: (step: OnboardingPreviewStep) => void;
   onRunOnboarding?: () => void;
+  onRunModelMigration?: () => void;
 }
 
 export const DebugSettings: React.FC<DebugSettingsProps> = ({
   onPreviewOnboarding,
   onRunOnboarding,
+  onRunModelMigration,
 }) => {
   const { t } = useTranslation();
 
@@ -46,6 +49,13 @@ export const DebugSettings: React.FC<DebugSettingsProps> = ({
         {onRunOnboarding && (
           <OnboardingRun
             onRun={onRunOnboarding}
+            descriptionMode="tooltip"
+            grouped={true}
+          />
+        )}
+        {onRunModelMigration && (
+          <ModelMigrationRun
+            onRun={onRunModelMigration}
             descriptionMode="tooltip"
             grouped={true}
           />

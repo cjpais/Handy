@@ -539,7 +539,7 @@ export const Model: React.FC<ModelProps> = ({
         <span className="flex flex-col items-start">
           <span
             {...vt(id, "n")}
-            className="mt-[4px] font-display text-name font-[650] leading-[1.2] tracking-[-0.01em]"
+            className="mt-[4px] font-display text-name font-[650] leading-[1.2] tracking-[-0.01em] text-ink-2"
           >
             {row.model.name}
           </span>
