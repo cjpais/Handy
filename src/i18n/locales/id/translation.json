@@ -19,7 +19,6 @@
     "about": "Tentang"
   },
   "onboarding": {
-    "recommended": "Direkomendasikan",
     "customModelDescription": "Tidak didukung secara resmi",
     "migration": {
       "title": "Model Anda perlu diperbarui",
@@ -31,10 +30,6 @@
       "chooseAnother": "Pilih model lain",
       "download": "Unduh model ({{size}})",
       "continue": "Lanjutkan"
-    },
-    "modelCard": {
-      "accuracy": "akurasi",
-      "speed": "kecepatan"
     },
     "models": {
       "small": {
@@ -70,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Kustom",
-    "legacy": "Legacy",
     "streaming": "Streaming",
     "active": "Aktif",
-    "switching": "Beralih...",
     "noModelsAvailable": "Tidak ada model yang tersedia",
     "verifying": "Memverifikasi {{modelName}}...",
     "verifyingGeneric": "Memverifikasi...",
@@ -85,19 +78,7 @@
     "modelError": "Kesalahan Model",
     "modelUnloaded": "Model Dikeluarkan dari Memori",
     "noModelDownloadRequired": "Model Belum Tersedia — Perlu Diunduh",
-    "deleteModel": "Hapus {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Batal",
-    "cancelDownload": "Batalkan unduhan",
-    "capabilities": {
-      "languageSelection": "Mendukung beberapa bahasa masukan",
-      "singleLanguage": "Hanya mendukung bahasa ini",
-      "languageCount": "{{total}} bahasa",
-      "languageOnly": "Hanya {{language}}",
-      "translation": "Dapat menerjemahkan ke bahasa Inggris",
-      "translate": "Terjemahkan",
-      "streaming": "Menampilkan transkripsi langsung saat Anda berbicara"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -154,13 +135,6 @@
     },
     "models": {
       "title": "Model Transkripsi",
-      "description": "Pilih model transkripsi atau unduh model tambahan. Setiap model menawarkan tingkat akurasi dan kecepatan yang berbeda.",
-      "searchPlaceholder": "Cari model berdasarkan nama…",
-      "yourModels": "Model yang Diunduh",
-      "availableModels": "Tersedia untuk Diunduh",
-      "deleteConfirm": "Yakin ingin menghapus {{modelName}}? Anda harus mengunduhnya lagi untuk menggunakannya.",
-      "deleteActiveConfirm": "{{modelName}} adalah model aktif Anda. Menghapusnya akan menghentikan transkripsi sampai Anda memilih model baru. Yakin ingin melanjutkan?",
-      "deleteTitle": "Hapus Model",
       "retiredNotice": {
         "title": "Model lama tidak lagi berfungsi dengan Handy",
         "description": "Model tersebut memakan {{size}} di komputer Anda.",
@@ -168,16 +142,10 @@
         "deleted": "Model lama telah dihapus",
         "deleteFailed": "Beberapa model lama tidak dapat dihapus. Periksa log untuk detailnya."
       },
-      "filters": {
-        "allLanguages": "Semua Bahasa",
-        "streaming": "Saring model yang mendukung transkripsi waktu nyata",
-        "translation": "Saring model yang mendukung penerjemahan ke bahasa Inggris"
-      },
       "rescan": {
         "label": "Pindai Ulang",
         "tooltip": "Pindai ulang model yang ditambahkan ke folder model atau cache Hugging Face dari luar Handy"
-      },
-      "noModelsMatch": "Tidak ada model yang cocok dengan kriteria ini."
+      }
     },
     "sound": {
       "title": "Suara",

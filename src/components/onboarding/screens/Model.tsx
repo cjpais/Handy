@@ -787,6 +787,7 @@ export const Model: React.FC<ModelProps> = ({
   );
 
   const title = <span data-vt="mf-title">{t("onboarding.model.title")}</span>;
+  const sub = <span data-vt="mf-sub">{t("onboarding.model.subtitle")}</span>;
 
   /* ---------------- the picks ---------------- */
 
@@ -815,9 +816,7 @@ export const Model: React.FC<ModelProps> = ({
           ref={rootRef}
           data-model-root=""
           align="stretch"
-          header={
-            <ScreenHeader title={title} sub={t("onboarding.model.subtitle")} />
-          }
+          header={<ScreenHeader title={title} sub={sub} />}
         >
           <div
             role="radiogroup"
@@ -933,11 +932,9 @@ export const Model: React.FC<ModelProps> = ({
         data-vt-row=""
         onClick={() => choose(id, false)}
         className={`relative grid w-full min-w-0 flex-none cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[10px] rounded-control px-[14px] text-start text-small leading-[1.5] text-text [view-transition-class:mf-row_mf-box] ${line ? "pt-[9px] pb-[16px]" : "py-[9px]"} ${
-          // Picked: the picks' plum edge (the Full card's), drawn inside so
-          // the columns stay under their heads.
-          on
-            ? "is-on shadow-[inset_0_0_0_1.5px_var(--color-plum-pick)]"
-            : "hover:bg-wash"
+          // Picked: a quiet grey fill, a step past hover's wash, the same as
+          // a pressed filter above.
+          on ? "is-on bg-line" : "hover:bg-wash"
         }`}
       >
         {mark(id, on)}
@@ -950,7 +947,7 @@ export const Model: React.FC<ModelProps> = ({
               {row.model.name}
             </b>
             {row.role && (
-              <Tag {...vt(id, "r")} on={on}>
+              <Tag {...vt(id, "r")}>
                 {t(`onboarding.model.roles.${ROLE_KEYS[row.role]}`)}
               </Tag>
             )}
@@ -983,95 +980,99 @@ export const Model: React.FC<ModelProps> = ({
         ref={rootRef}
         data-model-root=""
         layout="top"
-        wide
+        wide={dense}
         align="stretch"
-        header={<ScreenHeader title={title} />}
+        header={<ScreenHeader title={title} sub={sub} />}
       >
-        <div
-          data-vt="mf-tools"
-          className="flex items-center gap-[10px] text-start"
-        >
-          {/* One field: the search, then its filters after a divider. */}
-          <div className="flex h-[34px] min-w-0 flex-1 items-center gap-[4px] rounded-lg border border-line-strong bg-background pe-[4px]">
-            <label className="flex h-full min-w-0 flex-1 cursor-text items-center gap-[7px] ps-[11px]">
-              <span className="grid shrink-0 text-ink-3">
-                <Search size={15} aria-hidden="true" />
-              </span>
-              {/* Quiet on focus: the caret says where typing goes, and the
-                  picked row below stays the one marked thing. No ×:
-                  Escape clears. */}
-              <input
-                ref={searchRef}
-                type="search"
-                value={query}
-                placeholder={t("onboarding.model.searchPlaceholder")}
-                aria-label={t("onboarding.model.searchLabel")}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  if (listRef.current) listRef.current.scrollTop = 0;
-                }}
-                onKeyDown={(e) => {
-                  const d =
-                    e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
-                  if (d) {
-                    e.preventDefault();
-                    step(d);
-                  }
-                }}
-                className="h-full min-w-0 flex-1 bg-transparent text-small text-text outline-none placeholder:text-ink-3 [&::-webkit-search-cancel-button]:appearance-none"
+        {/* Welcome's panel: the search is its first row, the list under a
+            rule, the bottom fading while there's more. Header and list keep
+            the same scrollbar gutter so the codes sit over their columns. */}
+        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-panel border-[1.5px] border-line-strong bg-background text-start">
+          <div className="flex-none overflow-y-hidden border-b border-line px-[6px] [scrollbar-gutter:stable] [scrollbar-width:thin]">
+            {/* The magnifier sits in the radio column and the typing starts
+                where the names do. */}
+            <div className="flex h-[46px] items-center gap-[4px] ps-[14px] pe-[4px]">
+              <label className="flex h-full min-w-0 flex-1 cursor-text items-center gap-[10px]">
+                <span className="grid w-[18px] shrink-0 place-items-center text-ink-3">
+                  <Search size={15} aria-hidden="true" />
+                </span>
+                {/* Quiet on focus: the caret says where typing goes, and the
+                    picked row below stays the one marked thing. No ×:
+                    Escape clears. */}
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={query}
+                  placeholder={t("onboarding.model.searchPlaceholder")}
+                  aria-label={t("onboarding.model.searchLabel")}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    if (listRef.current) listRef.current.scrollTop = 0;
+                  }}
+                  onKeyDown={(e) => {
+                    const d =
+                      e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
+                    if (d) {
+                      e.preventDefault();
+                      step(d);
+                    }
+                  }}
+                  className="h-full min-w-0 flex-1 bg-transparent text-body text-text outline-none placeholder:text-ink-3 [&::-webkit-search-cancel-button]:appearance-none"
+                />
+              </label>
+              <span
+                aria-hidden="true"
+                className="me-[2px] h-[16px] w-px shrink-0 bg-line"
               />
-            </label>
-            <span
-              aria-hidden="true"
-              className="me-[2px] h-[16px] w-px shrink-0 bg-line"
-            />
-            {canPreview &&
-              filter("preview", onlyPreview, () => setOnlyPreview((v) => !v))}
-            {filter("translate", onlyTranslate, () =>
-              setOnlyTranslate((v) => !v),
+              {canPreview &&
+                filter("preview", onlyPreview, () => setOnlyPreview((v) => !v))}
+              {filter("translate", onlyTranslate, () =>
+                setOnlyTranslate((v) => !v),
+              )}
+            </div>
+          </div>
+          <div
+            ref={listRef}
+            role="radiogroup"
+            aria-label={t("onboarding.model.allLabel")}
+            className="model-flow-scroll relative flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto scroll-pt-[36px] px-[6px] pb-[12px] [scrollbar-gutter:stable] [scrollbar-width:thin] data-more:[mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
+          >
+            {!empty && (
+              // The column heads stick to the list's top: the same scroller,
+              // so they stay over their columns.
+              <div className="sticky top-0 z-[1] -mx-[6px] flex h-[32px] flex-none items-center justify-between bg-background ps-[48px] pe-[20px] uppercase">
+                <span className={CODE_CLASS}>
+                  {t("onboarding.model.model")}
+                </span>
+                <span
+                  style={colsStyle}
+                  className={`grid items-center justify-items-center ${cols.grid}`}
+                >
+                  {columnHeads}
+                </span>
+              </div>
+            )}
+            {picked.map(tableRow)}
+            {others.map(tableRow)}
+            {/* The models that miss one of their languages come last, under
+                a line in the heads' small capitals; their rows are dimmed
+                and grade "—". */}
+            {partial.length > 0 && (
+              <div
+                className={`mt-[6px] flex h-[33px] flex-none items-center border-t border-line ps-[42px] uppercase ${CODE_CLASS}`}
+              >
+                {t("onboarding.model.missingLanguage")}
+              </div>
+            )}
+            {partial.map(tableRow)}
+            {empty && (
+              <div className="px-[12px] py-[28px] text-center text-small text-ink-2">
+                {query.trim()
+                  ? t("onboarding.model.noMatch", { query: query.trim() })
+                  : t("onboarding.model.noFilterMatch")}
+              </div>
             )}
           </div>
-        </div>
-        {!empty && (
-          // The column heads sit above the list, not in it, so nothing
-          // scrolls behind or past them: rows are cut off at the rule. The
-          // same 4px bleed and scrollbar gutter as the list keep the
-          // columns over theirs.
-          <div className="-mx-[4px] mt-3 flex-none overflow-y-hidden px-[4px] [scrollbar-gutter:stable] [scrollbar-width:thin]">
-            <div className="flex h-[31px] items-center justify-between border-b border-line ps-[42px] pe-[14px] uppercase">
-              <span className={CODE_CLASS}>{t("onboarding.model.model")}</span>
-              <span
-                style={colsStyle}
-                className={`grid items-center justify-items-center ${cols.grid}`}
-              >
-                {columnHeads}
-              </span>
-            </div>
-          </div>
-        )}
-        <div
-          ref={listRef}
-          role="radiogroup"
-          aria-label={t("onboarding.model.allLabel")}
-          className="model-flow-scroll relative -mx-[4px] flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto scroll-pt-[12px] px-[4px] pt-[12px] pb-[12px] text-start [scrollbar-width:thin] [scrollbar-gutter:stable] data-more:[mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
-        >
-          {picked.map(tableRow)}
-          {others.map(tableRow)}
-          {/* The models that miss one of their languages come last, under
-              a note that says so; their rows are dimmed and grade "—". */}
-          {partial.length > 0 && (
-            <div className="mt-[6px] flex h-[34px] flex-none items-center border-t border-line px-[2px] text-small text-ink-3">
-              {t("onboarding.model.missingLanguages")}
-            </div>
-          )}
-          {partial.map(tableRow)}
-          {empty && (
-            <div className="px-[12px] py-[28px] text-center text-small text-ink-2">
-              {query.trim()
-                ? t("onboarding.model.noMatch", { query: query.trim() })
-                : t("onboarding.model.noFilterMatch")}
-            </div>
-          )}
         </div>
       </ScreenMain>
     </OnboardingShell>

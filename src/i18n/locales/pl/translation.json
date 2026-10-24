@@ -19,7 +19,6 @@
     "about": "O programie"
   },
   "onboarding": {
-    "recommended": "Polecane",
     "customModelDescription": "Nieoficjalnie wspierane",
     "migration": {
       "title": "Twoje modele wymagają aktualizacji",
@@ -31,10 +30,6 @@
       "chooseAnother": "Wybierz inny model",
       "download": "Pobierz modele ({{size}})",
       "continue": "Kontynuuj"
-    },
-    "modelCard": {
-      "accuracy": "dokładność",
-      "speed": "szybkość"
     },
     "models": {
       "small": {
@@ -72,7 +67,6 @@
     "custom": "Własny",
     "streaming": "Streaming",
     "active": "Aktywny",
-    "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
     "verifying": "Weryfikacja {{modelName}}...",
     "verifyingGeneric": "Weryfikacja...",
@@ -84,20 +78,7 @@
     "modelError": "Błąd modelu",
     "modelUnloaded": "Model wyładowany",
     "noModelDownloadRequired": "Brak modelu – wymagane pobranie",
-    "deleteModel": "Usuń {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Obsługuje wiele języków wejściowych",
-      "languageCount": "{{total}} języków",
-      "translation": "Może tłumaczyć na angielski",
-      "translate": "Tłumacz na angielski",
-      "singleLanguage": "Obsługuje tylko ten język",
-      "languageOnly": "Tylko {{language}}",
-      "streaming": "Pokazuje transkrypcję na żywo podczas mówienia"
-    },
-    "cancel": "Anuluj",
-    "cancelDownload": "Anuluj pobieranie",
-    "legacy": "Przestarzałe"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -105,10 +86,6 @@
     },
     "models": {
       "title": "Modele transkrypcji",
-      "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
-      "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
-      "deleteActiveConfirm": "{{modelName}} jest Twoim aktywnym modelem. Usunięcie go zatrzyma transkrypcje, dopóki nie wybierzesz nowego modelu. Czy na pewno chcesz kontynuować?",
-      "deleteTitle": "Usuń model",
       "retiredNotice": {
         "title": "Stare modele nie działają już z Handy",
         "description": "Zajmują {{size}} na Twoim komputerze.",
@@ -116,15 +93,6 @@
         "deleted": "Usunięto stare modele",
         "deleteFailed": "Nie udało się usunąć niektórych starych modeli. Szczegóły znajdziesz w dzienniku."
       },
-      "filters": {
-        "allLanguages": "Wszystkie języki",
-        "streaming": "Filtruj modele obsługujące transkrypcję na żywo",
-        "translation": "Filtruj modele obsługujące tłumaczenie na język angielski"
-      },
-      "noModelsMatch": "Żadne modele nie pasują do tego filtra.",
-      "yourModels": "Pobrane modele",
-      "availableModels": "Dostępne do pobrania",
-      "searchPlaceholder": "Szukaj modeli według nazwy…",
       "rescan": {
         "label": "Skanuj ponownie",
         "tooltip": "Skanuj ponownie w poszukiwaniu modeli dodanych do folderu modeli lub pamięci podręcznej Hugging Face poza Handy"

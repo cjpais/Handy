@@ -72,6 +72,8 @@
   --animate-burst: burst 420ms var(--ease-glide);
   /* Something new rises into place */
   --animate-rise: rise 260ms var(--ease-glide);
+  /* A word swapped in place (the Models page's pinned section name) */
+  --animate-fade: fade 180ms ease-out;
   /* A shortcut being captured: the empty slot's dashed edge breathes */
   --animate-key-slot: key-slot 1.2s ease-in-out infinite;
 
@@ -126,6 +128,11 @@
       opacity: 0;
       scale: 1.3;
       translate: 0 -6px;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
     }
   }
   @keyframes rise {

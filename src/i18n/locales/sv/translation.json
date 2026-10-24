@@ -19,7 +19,6 @@
     "about": "Om"
   },
   "onboarding": {
-    "recommended": "Rekommenderat",
     "customModelDescription": "Stöds inte officiellt",
     "migration": {
       "title": "Dina modeller behöver uppdateras",
@@ -31,10 +30,6 @@
       "chooseAnother": "Välj en annan modell",
       "download": "Ladda ner modeller ({{size}})",
       "continue": "Fortsätt"
-    },
-    "modelCard": {
-      "accuracy": "noggrannhet",
-      "speed": "hastighet"
     },
     "models": {
       "small": {
@@ -72,7 +67,6 @@
     "custom": "Anpassad",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Byter...",
     "noModelsAvailable": "Inga modeller tillgängliga",
     "verifying": "Verifierar {{modelName}}...",
     "verifyingGeneric": "Verifierar...",
@@ -84,20 +78,7 @@
     "modelError": "Modellfel",
     "modelUnloaded": "Modell avlastad",
     "noModelDownloadRequired": "Ingen modell - Nedladdning krävs",
-    "deleteModel": "Ta bort {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Avbryt",
-    "cancelDownload": "Avbryt nedladdning",
-    "capabilities": {
-      "languageSelection": "Stöder flera indataspråk",
-      "singleLanguage": "Stöder endast detta språk",
-      "languageCount": "{{total}} språk",
-      "languageOnly": "Endast {{language}}",
-      "translation": "Kan översätta till engelska",
-      "translate": "Översätt till engelska",
-      "streaming": "Visar transkription i realtid medan du talar"
-    },
-    "legacy": "Äldre"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -154,12 +135,6 @@
     },
     "models": {
       "title": "Transkriptionsmodeller",
-      "description": "Välj en transkriptionsmodell eller ladda ner ytterligare modeller. Olika modeller erbjuder varierande nivåer av noggrannhet och hastighet.",
-      "yourModels": "Nedladdade modeller",
-      "availableModels": "Tillgängliga att ladda ner",
-      "deleteConfirm": "Är du säker på att du vill ta bort {{modelName}}? Du måste ladda ner den igen för att använda den.",
-      "deleteActiveConfirm": "{{modelName}} är din aktiva modell. Om du tar bort den avbryts transkriptioner tills du väljer en ny modell. Är du säker?",
-      "deleteTitle": "Ta bort modell",
       "retiredNotice": {
         "title": "Gamla modeller fungerar inte längre med Handy",
         "description": "De tar upp {{size}} på din dator.",
@@ -167,13 +142,6 @@
         "deleted": "Gamla modeller borttagna",
         "deleteFailed": "Vissa gamla modeller kunde inte tas bort. Se loggen för mer information."
       },
-      "filters": {
-        "allLanguages": "Alla språk",
-        "streaming": "Filtrera modeller som stöder transkription i realtid",
-        "translation": "Filtrera modeller som stöder översättning till engelska"
-      },
-      "noModelsMatch": "Inga modeller matchar detta filter.",
-      "searchPlaceholder": "Sök modeller efter namn…",
       "rescan": {
         "label": "Skanna om",
         "tooltip": "Skanna om efter modeller som lagts till i modellmappen eller Hugging Face-cachen utanför Handy"

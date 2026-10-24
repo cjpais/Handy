@@ -19,7 +19,6 @@
     "about": "정보"
   },
   "onboarding": {
-    "recommended": "추천",
     "customModelDescription": "공식 지원되지 않음",
     "migration": {
       "title": "모델 업데이트가 필요합니다",
@@ -31,10 +30,6 @@
       "chooseAnother": "다른 모델 선택",
       "download": "모델 다운로드 ({{size}})",
       "continue": "계속"
-    },
-    "modelCard": {
-      "accuracy": "정확도",
-      "speed": "속도"
     },
     "models": {
       "small": {
@@ -72,7 +67,6 @@
     "custom": "사용자 정의",
     "streaming": "스트리밍",
     "active": "활성",
-    "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
     "verifying": "{{modelName}} 검증 중...",
     "verifyingGeneric": "검증 중...",
@@ -84,20 +78,7 @@
     "modelError": "모델 오류",
     "modelUnloaded": "모델 언로드됨",
     "noModelDownloadRequired": "모델 없음 - 다운로드 필요",
-    "deleteModel": "{{modelName}} 삭제",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "취소",
-    "cancelDownload": "다운로드 취소",
-    "capabilities": {
-      "languageSelection": "여러 입력 언어를 지원합니다",
-      "singleLanguage": "이 언어만 지원합니다",
-      "languageCount": "{{total}}개 언어",
-      "languageOnly": "{{language}} 전용",
-      "translation": "영어로 번역 가능",
-      "translate": "영어로 번역",
-      "streaming": "말하는 동안 실시간으로 음성 인식 결과를 표시"
-    },
-    "legacy": "레거시"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -183,12 +164,6 @@
     },
     "models": {
       "title": "음성 인식 모델",
-      "description": "음성 인식 모델을 선택하거나 추가 모델을 다운로드하세요. 모델마다 정확도와 속도가 다릅니다.",
-      "yourModels": "다운로드된 모델",
-      "availableModels": "다운로드 가능",
-      "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
-      "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
-      "deleteTitle": "모델 삭제",
       "retiredNotice": {
         "title": "이전 모델은 더 이상 Handy에서 작동하지 않습니다",
         "description": "컴퓨터에서 {{size}}을(를) 차지하고 있습니다.",
@@ -196,13 +171,6 @@
         "deleted": "이전 모델을 삭제했습니다",
         "deleteFailed": "일부 이전 모델을 삭제할 수 없습니다. 자세한 내용은 로그를 확인하세요."
       },
-      "filters": {
-        "allLanguages": "모든 언어",
-        "streaming": "실시간 음성 인식을 지원하는 모델 필터링",
-        "translation": "영어 번역을 지원하는 모델 필터링"
-      },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
-      "searchPlaceholder": "이름으로 모델 검색…",
       "rescan": {
         "label": "다시 스캔",
         "tooltip": "Handy 외부에서 모델 폴더 또는 Hugging Face 캐시에 추가된 모델을 다시 스캔합니다"

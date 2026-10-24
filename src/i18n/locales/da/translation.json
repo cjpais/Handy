@@ -19,7 +19,6 @@
     "about": "Om"
   },
   "onboarding": {
-    "recommended": "Anbefalet",
     "customModelDescription": "Ikke officielt understøttet",
     "migration": {
       "title": "Dine modeller skal opdateres",
@@ -31,10 +30,6 @@
       "chooseAnother": "Vælg en anden model",
       "download": "Download modeller ({{size}})",
       "continue": "Fortsæt"
-    },
-    "modelCard": {
-      "accuracy": "nøjagtighed",
-      "speed": "hastighed"
     },
     "models": {
       "small": {
@@ -70,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Brugerdefineret",
-    "legacy": "Forældet",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Skifter...",
     "noModelsAvailable": "Ingen modeller tilgængelige",
     "verifying": "Verificerer {{modelName}}...",
     "verifyingGeneric": "Verificerer...",
@@ -85,19 +78,7 @@
     "modelError": "Modelfejl",
     "modelUnloaded": "Model frigjort",
     "noModelDownloadRequired": "Ingen model - download påkrævet",
-    "deleteModel": "Slet {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Annuller",
-    "cancelDownload": "Annuller download",
-    "capabilities": {
-      "languageSelection": "Understøtter flere inputsprog",
-      "singleLanguage": "Understøtter kun dette sprog",
-      "languageCount": "{{total}} sprog",
-      "languageOnly": "Kun {{language}}",
-      "translation": "Kan oversætte til engelsk",
-      "translate": "Oversæt",
-      "streaming": "Viser live transskription, mens du taler"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -154,13 +135,6 @@
     },
     "models": {
       "title": "Transskriptionsmodeller",
-      "description": "Vælg en transskriptionsmodel, eller download flere modeller. Forskellige modeller tilbyder varierende niveauer af nøjagtighed og hastighed.",
-      "searchPlaceholder": "Søg efter modeller ved navn…",
-      "yourModels": "Downloadede modeller",
-      "availableModels": "Tilgængelig til download",
-      "deleteConfirm": "Er du sikker på, at du vil slette {{modelName}}? Du skal downloade den igen for at bruge den.",
-      "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
-      "deleteTitle": "Slet model",
       "retiredNotice": {
         "title": "Gamle modeller virker ikke længere med Handy",
         "description": "De fylder {{size}} på din computer.",
@@ -168,16 +142,10 @@
         "deleted": "Gamle modeller er slettet",
         "deleteFailed": "Nogle gamle modeller kunne ikke slettes. Se loggen for detaljer."
       },
-      "filters": {
-        "allLanguages": "Alle sprog",
-        "streaming": "Filtrer modeller, der understøtter live transskription",
-        "translation": "Filtrer modeller, der understøtter oversættelse til engelsk"
-      },
       "rescan": {
         "label": "Søg igen",
         "tooltip": "Søg igen efter modeller, der er tilføjet til modelmappen eller Hugging Face-cachen uden for Handy"
-      },
-      "noModelsMatch": "Ingen modeller matcher dette filter."
+      }
     },
     "sound": {
       "title": "Lyd",

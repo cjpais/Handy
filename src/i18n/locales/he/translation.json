@@ -19,7 +19,6 @@
     "about": "אודות"
   },
   "onboarding": {
-    "recommended": "מומלץ",
     "customModelDescription": "לא נתמך באופן רשמי",
     "migration": {
       "title": "המודלים שלך צריכים עדכון",
@@ -31,10 +30,6 @@
       "chooseAnother": "בחירת מודל אחר",
       "download": "הורדת מודלים ({{size}})",
       "continue": "המשך"
-    },
-    "modelCard": {
-      "accuracy": "דיוק",
-      "speed": "מהירות"
     },
     "models": {
       "small": {
@@ -72,7 +67,6 @@
     "custom": "מותאם אישית",
     "streaming": "סטרימינג",
     "active": "פעיל",
-    "switching": "מחליף...",
     "noModelsAvailable": "אין מודלים זמינים",
     "verifying": "מאמת את {{modelName}}...",
     "verifyingGeneric": "מאמת...",
@@ -84,20 +78,7 @@
     "modelError": "שגיאת מודל",
     "modelUnloaded": "המודל נפרק",
     "noModelDownloadRequired": "אין מודל, נדרשת הורדה",
-    "deleteModel": "מחק את {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "ביטול",
-    "cancelDownload": "בטל הורדה",
-    "capabilities": {
-      "languageSelection": "תומך בכמה שפות קלט",
-      "singleLanguage": "תומך רק בשפה הזו",
-      "languageCount": "{{total}} שפות",
-      "languageOnly": "{{language}} בלבד",
-      "translation": "יכול לתרגם לאנגלית",
-      "translate": "תרגם לאנגלית",
-      "streaming": "מציג תמלול חי תוך כדי דיבור"
-    },
-    "legacy": "מדור קודם"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -154,12 +135,6 @@
     },
     "models": {
       "title": "מודלי תמלול",
-      "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
-      "yourModels": "מודלים שהורדו",
-      "availableModels": "זמינים להורדה",
-      "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
-      "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
-      "deleteTitle": "מחיקת מודל",
       "retiredNotice": {
         "title": "מודלים ישנים כבר לא עובדים עם Handy",
         "description": "הם תופסים {{size}} במחשב שלך.",
@@ -167,13 +142,6 @@
         "deleted": "המודלים הישנים נמחקו",
         "deleteFailed": "לא ניתן היה למחוק חלק מהמודלים הישנים. פרטים נוספים ביומן."
       },
-      "filters": {
-        "allLanguages": "כל השפות",
-        "streaming": "סינון דגמים התומכים בתמלול חי",
-        "translation": "סינון דגמים התומכים בתרגום לאנגלית"
-      },
-      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
-      "searchPlaceholder": "חיפוש מודלים לפי שם…",
       "rescan": {
         "label": "סריקה מחדש",
         "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Handy"

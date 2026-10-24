@@ -16,7 +16,7 @@ import { repoIdOf } from "./retiredModels";
  * Which benchmark tier this computer is closest to: "accelerated" when the
  * engine sees a GPU and transcription isn't forced onto the CPU.
  */
-const useMachineTier = (): MachineTier => {
+export const useMachineTier = (): MachineTier => {
   const { getSetting } = useSettings();
   const accelerator = getSetting("transcribe_accelerator");
   const [hasGpu, setHasGpu] = useState(true);

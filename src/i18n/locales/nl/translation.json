@@ -19,7 +19,6 @@
     "about": "Over Handy"
   },
   "onboarding": {
-    "recommended": "Aanbevolen",
     "customModelDescription": "Niet officieel ondersteund",
     "migration": {
       "title": "Je modellen moeten worden bijgewerkt",
@@ -31,10 +30,6 @@
       "chooseAnother": "Kies een ander model",
       "download": "Modellen downloaden ({{size}})",
       "continue": "Doorgaan"
-    },
-    "modelCard": {
-      "accuracy": "nauwkeurigheid",
-      "speed": "snelheid"
     },
     "models": {
       "small": {
@@ -70,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Aangepast",
-    "legacy": "Klassiek",
     "streaming": "Streaming",
     "active": "Actief",
-    "switching": "Wisselen...",
     "noModelsAvailable": "Geen modellen beschikbaar",
     "verifying": "Verifiëren van {{modelName}}...",
     "verifyingGeneric": "Verifiëren...",
@@ -85,19 +78,7 @@
     "modelError": "Modelfout",
     "modelUnloaded": "Model ontladen",
     "noModelDownloadRequired": "Geen model - Download vereist",
-    "deleteModel": "{{modelName}} verwijderen",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Annuleren",
-    "cancelDownload": "Download annuleren",
-    "capabilities": {
-      "languageSelection": "Ondersteunt meerdere invoertalen",
-      "singleLanguage": "Ondersteunt alleen deze taal",
-      "languageCount": "{{total}} talen",
-      "languageOnly": "Alleen {{language}}",
-      "translation": "Kan vertalen naar het Engels",
-      "translate": "Vertalen",
-      "streaming": "Toont live transcriptie tijdens het spreken"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -154,13 +135,6 @@
     },
     "models": {
       "title": "Transcriptiemodellen",
-      "description": "Selecteer een transcriptiemodel of download extra modellen. Verschillende modellen bieden variërende niveaus van nauwkeurigheid en snelheid.",
-      "searchPlaceholder": "Modellen zoeken op naam...",
-      "yourModels": "Gedownloade modellen",
-      "availableModels": "Beschikbaar voor download",
-      "deleteConfirm": "Weet je zeker dat je {{modelName}} wilt verwijderen? Je moet het model opnieuw downloaden om het weer te gebruiken.",
-      "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
-      "deleteTitle": "Model verwijderen",
       "retiredNotice": {
         "title": "Oude modellen werken niet meer met Handy",
         "description": "Ze nemen {{size}} in beslag op je computer.",
@@ -168,16 +142,10 @@
         "deleted": "Oude modellen verwijderd",
         "deleteFailed": "Sommige oude modellen konden niet worden verwijderd. Bekijk het logboek voor details."
       },
-      "filters": {
-        "allLanguages": "Alle talen",
-        "streaming": "Filter modellen die live transcriptie ondersteunen",
-        "translation": "Filter modellen die vertaling naar het Engels ondersteunen"
-      },
       "rescan": {
         "label": "Opnieuw scannen",
         "tooltip": "Scannen naar modellen die buiten Handy om zijn toegevoegd aan de modellenmap of Hugging Face-cache"
-      },
-      "noModelsMatch": "Geen modellen voldoen aan dit filter."
+      }
     },
     "sound": {
       "title": "Geluid",

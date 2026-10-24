@@ -19,7 +19,6 @@
     "about": "За приложението"
   },
   "onboarding": {
-    "recommended": "Препоръчан",
     "customModelDescription": "Не се поддържа официално",
     "migration": {
       "title": "Моделите ви се нуждаят от обновяване",
@@ -31,10 +30,6 @@
       "chooseAnother": "Изберете друг модел",
       "download": "Изтегляне на модели ({{size}})",
       "continue": "Продължи"
-    },
-    "modelCard": {
-      "accuracy": "точност",
-      "speed": "скорост"
     },
     "models": {
       "small": {
@@ -72,7 +67,6 @@
     "custom": "Персонализиран",
     "streaming": "Стрийминг",
     "active": "Активен",
-    "switching": "Превключване...",
     "noModelsAvailable": "Няма налични модели",
     "verifying": "Проверка на {{modelName}}...",
     "verifyingGeneric": "Проверка...",
@@ -84,20 +78,7 @@
     "modelError": "Грешка в модела",
     "modelUnloaded": "Моделът е разтоварен",
     "noModelDownloadRequired": "Няма модел – необходимо е изтегляне",
-    "deleteModel": "Изтриване на {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Отказ",
-    "cancelDownload": "Отказ на изтеглянето",
-    "capabilities": {
-      "languageSelection": "Поддържа няколко входни езика",
-      "singleLanguage": "Поддържа само този език",
-      "languageCount": "{{total}} езика",
-      "languageOnly": "Само {{language}}",
-      "translation": "Може да превежда на английски",
-      "translate": "Превод на английски",
-      "streaming": "Показва транскрипция на живо, докато говорите"
-    },
-    "legacy": "Наследен"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -154,12 +135,6 @@
     },
     "models": {
       "title": "Модели за транскрипция",
-      "description": "Изберете модел за транскрипция или изтеглете допълнителни. Различните модели предлагат различна точност и скорост.",
-      "yourModels": "Изтеглени модели",
-      "availableModels": "Налични за изтегляне",
-      "deleteConfirm": "Сигурни ли сте, че искате да изтриете {{modelName}}? Ще трябва да го изтеглите отново, за да го използвате.",
-      "deleteActiveConfirm": "{{modelName}} е вашият активен модел. Изтриването му ще спре транскрипциите, докато не изберете нов модел. Сигурни ли сте?",
-      "deleteTitle": "Изтриване на модел",
       "retiredNotice": {
         "title": "Старите модели вече не работят с Handy",
         "description": "Заемат {{size}} на компютъра ви.",
@@ -167,13 +142,6 @@
         "deleted": "Старите модели са изтрити",
         "deleteFailed": "Някои стари модели не можаха да бъдат изтрити. Проверете журнала за подробности."
       },
-      "filters": {
-        "allLanguages": "Всички езици",
-        "streaming": "Филтриране на моделите, които поддържат транскрипция на живо",
-        "translation": "Филтриране на моделите, които поддържат превод на английски"
-      },
-      "noModelsMatch": "Няма модели, отговарящи на този филтър.",
-      "searchPlaceholder": "Търсене на модели по име…",
       "rescan": {
         "label": "Сканиране отново",
         "tooltip": "Сканиране отново за модели, добавени в папката с модели или кеша на Hugging Face извън Handy"

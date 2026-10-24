@@ -192,10 +192,10 @@
   );
   --color-line: color-mix(in srgb, var(--color-mid-gray) 20%, transparent);
   --color-wash: color-mix(in srgb, var(--color-mid-gray) 10%, transparent);
-  /* What's picked (Model's card and its full list's row, a script, Demo's
-     way, a picked row's tag) is the softer plum edge alone: no fill and no
-     drop, which stay with the keys you press. Under the pointer, a pickable
-     edge is ink-3. */
+  /* What's picked (Model's card, a script, Demo's way) is the softer plum
+     edge alone: no fill and no drop, which stay with the keys you press.
+     Under the pointer, a pickable edge is ink-3. A picked row in a model
+     list is a grey fill instead (bg-line). */
   --color-plum-pick: color-mix(in srgb, var(--color-plum) 60%, transparent);
   /* The far end of a capture slot's breathing edge (KeySlot). */
   --color-plum-faint: color-mix(in srgb, var(--color-plum) 22%, transparent);

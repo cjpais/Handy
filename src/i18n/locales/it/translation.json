@@ -19,7 +19,6 @@
     "about": "Informazioni"
   },
   "onboarding": {
-    "recommended": "Raccomandato",
     "customModelDescription": "Non ufficialmente supportato",
     "migration": {
       "title": "I tuoi modelli devono essere aggiornati",
@@ -31,10 +30,6 @@
       "chooseAnother": "Scegli un altro modello",
       "download": "Scarica modelli ({{size}})",
       "continue": "Continua"
-    },
-    "modelCard": {
-      "accuracy": "accuratezza",
-      "speed": "velocità"
     },
     "models": {
       "small": {
@@ -72,7 +67,6 @@
     "custom": "Personalizzato",
     "streaming": "Streaming",
     "active": "Attivo",
-    "switching": "Cambio...",
     "noModelsAvailable": "Nessun modello disponibile",
     "verifying": "Verifica di {{modelName}}...",
     "verifyingGeneric": "Verifica...",
@@ -84,20 +78,7 @@
     "modelError": "Errore del Modello",
     "modelUnloaded": "Modello Disattivato",
     "noModelDownloadRequired": "Nessun Modello - Download Richiesto",
-    "deleteModel": "Elimina {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Supporta più lingue di input",
-      "languageCount": "{{total}} lingue",
-      "translation": "Può tradurre in inglese",
-      "translate": "Traduci in inglese",
-      "singleLanguage": "Supporta solo questa lingua",
-      "languageOnly": "Solo {{language}}",
-      "streaming": "Mostra la trascrizione in tempo reale mentre parli"
-    },
-    "cancel": "Annulla",
-    "cancelDownload": "Annulla download",
-    "legacy": "Obsoleto"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -105,10 +86,6 @@
     },
     "models": {
       "title": "Modelli di Trascrizione",
-      "description": "Seleziona un modello di trascrizione o scarica modelli aggiuntivi. Diversi modelli offrono diversi livelli di accuratezza e velocità.",
-      "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
-      "deleteActiveConfirm": "{{modelName}} è il tuo modello attivo. Eliminarlo interromperà le trascrizioni fino a quando non selezionerai un nuovo modello. Sei sicuro?",
-      "deleteTitle": "Elimina modello",
       "retiredNotice": {
         "title": "I modelli precedenti non funzionano più con Handy",
         "description": "Occupano {{size}} sul tuo computer.",
@@ -116,15 +93,6 @@
         "deleted": "Modelli precedenti eliminati",
         "deleteFailed": "Non è stato possibile eliminare alcuni modelli precedenti. Controlla il log per i dettagli."
       },
-      "filters": {
-        "allLanguages": "Tutte le lingue",
-        "streaming": "Filtra i modelli che supportano la trascrizione in tempo reale",
-        "translation": "Filtra i modelli che supportano la traduzione in inglese"
-      },
-      "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
-      "yourModels": "Modelli scaricati",
-      "availableModels": "Disponibili per il Download",
-      "searchPlaceholder": "Cerca modelli per nome…",
       "rescan": {
         "label": "Riscansiona",
         "tooltip": "Riscansiona per trovare modelli aggiunti alla cartella dei modelli o alla cache di Hugging Face al di fuori di Handy"

@@ -28,7 +28,7 @@ import {
   clearOnboardingProgress,
   type OnboardingStep as OnboardingPreviewStep,
 } from "./components/onboarding/onboardingStore";
-import { DebugSettings } from "./components/settings";
+import { DebugSettings, ModelsSettings } from "./components/settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
@@ -52,7 +52,13 @@ const renderSettingsContent = (
   onPreviewOnboarding: (step: OnboardingPreviewStep) => void,
   onRunOnboarding: () => void,
   onRunModelMigration: () => void,
+  onSectionChange: (section: SidebarSection) => void,
 ) => {
+  if (section === "models") {
+    return (
+      <ModelsSettings onChangeLanguages={() => onSectionChange("general")} />
+    );
+  }
   if (section === "debug") {
     return (
       <DebugSettings
@@ -435,6 +441,7 @@ function App() {
                   setOnboardingPreview,
                   runOnboarding,
                   runModelMigration,
+                  setCurrentSection,
                 )}
               </div>
             </div>

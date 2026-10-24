@@ -19,7 +19,6 @@
     "about": "Quant a"
   },
   "onboarding": {
-    "recommended": "Recomanat",
     "customModelDescription": "Sense suport oficial",
     "migration": {
       "title": "Cal actualitzar els vostres models",
@@ -31,10 +30,6 @@
       "chooseAnother": "Trieu un altre model",
       "download": "Baixa els models ({{size}})",
       "continue": "Continua"
-    },
-    "modelCard": {
-      "accuracy": "precisió",
-      "speed": "velocitat"
     },
     "models": {
       "small": {
@@ -70,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Personalitzat",
-    "legacy": "Antic",
     "streaming": "En temps real",
     "active": "Actiu",
-    "switching": "S'està canviant...",
     "noModelsAvailable": "No hi ha models disponibles",
     "verifying": "S'està verificant {{modelName}}...",
     "verifyingGeneric": "S'està verificant...",
@@ -85,19 +78,7 @@
     "modelError": "Error del model",
     "modelUnloaded": "Model alliberat de la memòria",
     "noModelDownloadRequired": "No hi ha cap model: cal baixar-ne un",
-    "deleteModel": "Suprimiu {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Cancel·la",
-    "cancelDownload": "Cancel·la la baixada",
-    "capabilities": {
-      "languageSelection": "Admet diverses llengües d'entrada",
-      "singleLanguage": "Només admet aquesta llengua",
-      "languageCount": "{{total}} llengües",
-      "languageOnly": "Només {{language}}",
-      "translation": "Pot traduir a l'anglès",
-      "translate": "Tradueix",
-      "streaming": "Mostra la transcripció en temps real mentre parleu"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -154,13 +135,6 @@
     },
     "models": {
       "title": "Models de transcripció",
-      "description": "Seleccioneu un model de transcripció o baixeu-ne més. Els models ofereixen diferents nivells de precisió i velocitat.",
-      "searchPlaceholder": "Cerqueu models pel nom…",
-      "yourModels": "Models baixats",
-      "availableModels": "Disponibles per baixar",
-      "deleteConfirm": "Segur que voleu suprimir {{modelName}}? Haureu de tornar-lo a baixar per utilitzar-lo.",
-      "deleteActiveConfirm": "{{modelName}} és el model actiu. Si el suprimiu, no podreu fer transcripcions fins que seleccioneu un altre model. N'esteu segur?",
-      "deleteTitle": "Suprimeix el model",
       "retiredNotice": {
         "title": "Els models antics ja no funcionen amb Handy",
         "description": "Ocupen {{size}} a l'ordinador.",
@@ -168,16 +142,10 @@
         "deleted": "S'han suprimit els models antics",
         "deleteFailed": "No s'han pogut suprimir alguns models antics. Consulteu el registre per a més detalls."
       },
-      "filters": {
-        "allLanguages": "Totes les llengües",
-        "streaming": "Filtra els models que admeten la transcripció en temps real",
-        "translation": "Filtra els models que admeten la traducció a l'anglès"
-      },
       "rescan": {
         "label": "Torna a cercar",
         "tooltip": "Torna a cercar models afegits a la carpeta de models o a la memòria cau de Hugging Face des de fora del Handy"
-      },
-      "noModelsMatch": "Cap model no coincideix amb aquest filtre."
+      }
     },
     "sound": {
       "title": "So",

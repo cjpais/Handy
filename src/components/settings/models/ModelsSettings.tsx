@@ -1,229 +1,218 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ask } from "@tauri-apps/plugin-dialog";
-import {
-  Radio as LiveIcon,
-  ChevronDown,
-  Globe,
-  Languages,
-  RefreshCw,
-  Search,
-} from "lucide-react";
-import ModelCard, { isLegacyModel, type ModelCardStatus } from "./ModelCard";
+import { Languages, Radio as LiveIcon, RefreshCw, Search } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { languageName } from "@/lib/constants/languages";
 import { useModelStore } from "@/stores/modelStore";
 import RetiredModelsNotice from "./RetiredModelsNotice";
-import {
-  languageName,
-  languagesOf,
-  searchLanguages,
-  supportsLanguage,
-} from "@/lib/constants/languages.ts";
-import { BYTES_PER_MB } from "@/lib/utils/format";
-import type { ModelInfo } from "@/bindings";
+import { ModelRow } from "./ModelRow";
+import { Legend } from "./Legend";
+import { CODE_CLASS, Codes, ROW_GRID } from "./columns";
+import { useModelEntries, type Entry } from "./modelEntries";
 
-// check if model supports a language based on its supported_languages list
-const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
-  return supportsLanguage(model.supported_languages, langCode);
+/** Past this many models on disk, the rest fold under "Show N more". */
+const YOURS_LIMIT = 5;
+
+interface Filters {
+  query: string;
+  preview: boolean;
+  translate: boolean;
+}
+const NO_FILTERS: Filters = { query: "", preview: false, translate: false };
+
+/** The small print, its words over the names (14 + 18 + 10, in the panel's 6). */
+const Note: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className="ps-[42px] pe-[12px] pt-[2px] pb-[6px] text-small text-ink-3">
+    {children}
+  </p>
+);
+
+/** Look for model files added outside Handy: quiet, beside its section's name. */
+const Rescan: React.FC = () => {
+  const { t } = useTranslation();
+  const rescanning = useModelStore((s) => s.isRescanning);
+  return (
+    <Tooltip text={t("settings.models.rescan.tooltip")}>
+      <button
+        type="button"
+        onClick={() => useModelStore.getState().rescanLocalModels()}
+        disabled={rescanning}
+        aria-label={t("settings.models.rescan.tooltip")}
+        className="ms-[6px] grid size-[22px] cursor-pointer place-items-center rounded-full text-ink-3 hover:bg-wash hover:text-text disabled:cursor-default focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+      >
+        <RefreshCw
+          className={`size-[12px] ${rescanning ? "animate-spin" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+    </Tooltip>
+  );
 };
 
-export const ModelsSettings: React.FC = () => {
+interface Section {
+  key: string;
+  label: React.ReactNode;
+  rows: Entry[];
+  note?: string;
+}
+
+interface ModelsSettingsProps {
+  /** Where the languages are changed (General). */
+  onChangeLanguages?: () => void;
+}
+
+/**
+ * Every model, as onboarding's Show all panel: the search its first row, then
+ * the column heads, both pinned while the page scrolls; one list in sections
+ * (on this computer, for your languages, missing one of them, and untested
+ * models only when searching), the heads naming the section under them.
+ */
+export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
+  onChangeLanguages,
+}) => {
   const { t, i18n } = useTranslation();
-  const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStreaming, setFilterStreaming] = useState(false);
-  const [filterTranslation, setFilterTranslation] = useState(false);
-  const [languageFilter, setLanguageFilter] = useState("all");
-  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  const [languageSearch, setLanguageSearch] = useState("");
-  const languageDropdownRef = useRef<HTMLDivElement>(null);
-  const languageSearchInputRef = useRef<HTMLInputElement>(null);
-  const {
-    models,
-    currentModel,
-    downloadingModels,
-    downloadProgress,
-    verifyingModels,
-    loading,
-    isRescanning,
-    downloadModel,
-    cancelDownload,
-    selectModel,
-    deleteModel,
-    rescanLocalModels,
-  } = useModelStore();
-
-  // click outside handler for language dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        languageDropdownRef.current &&
-        !languageDropdownRef.current.contains(event.target as Node)
-      ) {
-        setLanguageDropdownOpen(false);
-        setLanguageSearch("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // focus search input when dropdown opens
-  useEffect(() => {
-    if (languageDropdownOpen && languageSearchInputRef.current) {
-      languageSearchInputRef.current.focus();
-    }
-  }, [languageDropdownOpen]);
-
-  // The languages the listed models hear, for the filter dropdown.
+  const loading = useModelStore((s) => s.loading);
+  const { facts, lists } = useModelEntries();
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [more, setMore] = useState(false);
+  const [stuck, setStuck] = useState(false);
+  /** The section under the pinned heads, whose name the heads carry. */
+  const [current, setCurrent] = useState("yours");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+  const headsRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const { langs } = facts;
   const ui = i18n.language;
-  const modelLanguages = useMemo(
-    () => languagesOf(models.flatMap((m) => m.supported_languages)),
-    [models],
-  );
-  const filteredLanguages = useMemo(
-    () =>
-      searchLanguages(languageSearch, ui, modelLanguages).map((l) => ({
-        value: l.code,
-        label: languageName(l.code, ui),
-      })),
-    [languageSearch, ui, modelLanguages],
-  );
-
-  // Get selected language label
-  const selectedLanguageLabel = useMemo(() => {
-    if (languageFilter === "all") {
-      return t("settings.models.filters.allLanguages");
-    }
-    return languageName(languageFilter, ui);
-  }, [languageFilter, ui, t]);
-
-  const getModelStatus = (modelId: string): ModelCardStatus => {
-    if (modelId in verifyingModels) {
-      return "verifying";
-    }
-    if (modelId in downloadingModels) {
-      return "downloading";
-    }
-    if (switchingModelId === modelId) {
-      return "switching";
-    }
-    const model = models.find((m: ModelInfo) => m.id === modelId);
-    // A stale persisted selection must never make a missing model look Active.
-    // Catalog models without files should offer their recovery action instead.
-    if (!model?.is_downloaded) {
-      return "downloadable";
-    }
-    if (modelId === currentModel) {
-      return "active";
-    }
-    return "available";
-  };
-
-  const getDownloadProgress = (modelId: string): number | undefined => {
-    const progress = downloadProgress[modelId];
-    return progress?.percentage;
-  };
-
-  const getDownloadSpeed = (modelId: string): number | undefined => {
-    const bytesPerSec = downloadProgress[modelId]?.bytes_per_sec;
-    return bytesPerSec != null ? bytesPerSec / BYTES_PER_MB : undefined;
-  };
-
-  const handleModelSelect = async (modelId: string) => {
-    setSwitchingModelId(modelId);
-    try {
-      await selectModel(modelId);
-    } finally {
-      setSwitchingModelId(null);
-    }
-  };
-
-  const handleModelDownload = async (modelId: string) => {
-    await downloadModel(modelId);
-  };
-
-  const handleModelDelete = async (modelId: string) => {
-    const model = models.find((m: ModelInfo) => m.id === modelId);
-    const modelName = model?.name || modelId;
-    const isActive = modelId === currentModel;
-
-    const confirmed = await ask(
-      isActive
-        ? t("settings.models.deleteActiveConfirm", { modelName })
-        : t("settings.models.deleteConfirm", { modelName }),
-      {
-        title: t("settings.models.deleteTitle"),
-        kind: "warning",
-      },
+  const listOf = (codes: string[]) =>
+    new Intl.ListFormat(ui, { type: "conjunction" }).format(
+      codes.map((c) => languageName(c, ui)),
     );
 
-    if (confirmed) {
-      try {
-        await deleteModel(modelId);
-      } catch (err) {
-        console.error(`Failed to delete model ${modelId}:`, err);
+  // Typing anywhere on the page goes into the search; Escape clears it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (e.key === "Escape" && filters.query) {
+        setFilters((f) => ({ ...f, query: "" }));
+        return;
       }
-    }
-  };
-
-  const handleModelCancel = async (modelId: string) => {
-    try {
-      await cancelDownload(modelId);
-    } catch (err) {
-      console.error(`Failed to cancel download for ${modelId}:`, err);
-    }
-  };
-
-  // Filter models by search query (name + description), language filter, and toggles
-  const filteredModels = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return models.filter((model: ModelInfo) => {
-      // Hide deprecated legacy (.bin) downloads unless already on disk.
-      if (isLegacyModel(model) && !model.is_downloaded) return false;
-      if (languageFilter !== "all") {
-        if (!modelSupportsLanguage(model, languageFilter)) return false;
-      }
-      if (filterStreaming && !model.supports_streaming) return false;
-      if (filterTranslation && !model.supports_translation) return false;
-
-      if (q) {
-        const haystack = `${model.name} ${model.description}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [models, languageFilter, filterStreaming, filterTranslation, searchQuery]);
-
-  // Split filtered models into downloaded (including custom) and available sections
-  const { downloadedModels, availableModels } = useMemo(() => {
-    const downloaded: ModelInfo[] = [];
-    const available: ModelInfo[] = [];
-
-    for (const model of filteredModels) {
-      if (
-        model.is_custom ||
-        model.is_downloaded ||
-        model.id in downloadingModels
-      ) {
-        downloaded.push(model);
-      } else {
-        available.push(model);
-      }
-    }
-
-    // Sort: active model first, then non-custom, then custom at the bottom
-    downloaded.sort((a, b) => {
-      if (a.id === currentModel) return -1;
-      if (b.id === currentModel) return 1;
-      if (a.is_custom !== b.is_custom) return a.is_custom ? 1 : -1;
-      return 0;
-    });
-
-    return {
-      downloadedModels: downloaded,
-      availableModels: available,
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      if (e.key.length !== 1 || e.key === " ") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      searchRef.current?.focus();
     };
-  }, [filteredModels, downloadingModels, currentModel]);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  });
+
+  const searching =
+    !!filters.query.trim() || filters.preview || filters.translate;
+  const matches = (e: Entry) => {
+    if (filters.preview && !e.streaming) return false;
+    if (filters.translate && !e.translate) return false;
+    const q = filters.query.trim().toLowerCase();
+    if (!q) return true;
+    const hay = [
+      e.name,
+      e.description,
+      e.streaming ? t("onboarding.model.tags.preview") : "",
+      e.translate ? t("onboarding.model.tags.translate") : "",
+      ...e.languages.flatMap((l) => [
+        languageName(l, ui),
+        languageName(l, "en"),
+      ]),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return q.split(/\s+/).every((w) => hay.includes(w));
+  };
+  const keep = (xs: Entry[]) => xs.filter(matches);
+
+  const sections: Section[] = searching
+    ? [
+        {
+          key: "yours",
+          label: t("settings.models.sections.yours"),
+          rows: keep(lists.yours),
+        },
+        {
+          key: "fits",
+          label: t("settings.models.sections.fits"),
+          rows: keep(lists.fits),
+        },
+        {
+          key: "partial",
+          label: t("settings.models.sections.missing"),
+          rows: keep(lists.partial),
+        },
+        {
+          key: "untested",
+          label: t("settings.models.sections.untested"),
+          rows: filters.query.trim() ? keep(lists.untested) : [],
+          note: t("settings.models.untestedNote"),
+        },
+      ]
+    : [
+        {
+          key: "yours",
+          label: (
+            <>
+              {t("settings.models.sections.yours")}
+              <Rescan />
+            </>
+          ),
+          rows: more ? lists.yours : lists.yours.slice(0, YOURS_LIMIT),
+        },
+        {
+          key: "fits",
+          label: t("settings.models.sections.fits"),
+          rows: lists.fits,
+        },
+        {
+          key: "partial",
+          label: t("settings.models.sections.missing"),
+          rows: lists.partial,
+        },
+      ];
+
+  // Yours always shows at rest (its empty note says how to get one); a
+  // search shows only the sections it found something in.
+  const visible = sections.filter(
+    (s) => s.rows.length || (s.key === "yours" && !searching),
+  );
+
+  // Pinned with rows passing under it: a rule under the heads, as Show all's
+  // list is cut off at its top edge. At rest there's nothing under it to cut.
+  // The heads name the section you're in, as a sticky heading does: the
+  // first at rest, then each next one once its own line is half under them.
+  const follow = useRef(() => {});
+  follow.current = () => {
+    const top = topRef.current;
+    const heads = headsRef.current;
+    const body = bodyRef.current;
+    const scroller = top?.closest<HTMLElement>(".overflow-y-auto");
+    if (!top || !heads || !body || !scroller) return;
+    setStuck(
+      top.getBoundingClientRect().top <=
+        scroller.getBoundingClientRect().top + 0.5,
+    );
+    const edge = heads.getBoundingClientRect().bottom;
+    let key = visible[0]?.key ?? "";
+    for (const el of body.querySelectorAll<HTMLElement>("[data-section]"))
+      if (el.getBoundingClientRect().top + el.offsetHeight / 2 < edge)
+        key = el.dataset.section!;
+    setCurrent(key);
+  };
+  useLayoutEffect(() => follow.current());
+  useEffect(() => {
+    const scroller = topRef.current?.closest<HTMLElement>(".overflow-y-auto");
+    if (!scroller) return;
+    const onScroll = () => follow.current();
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, [loading]);
+  const heading = visible.find((s) => s.key === current) ?? visible[0];
 
   if (loading) {
     return (
@@ -235,216 +224,184 @@ export const ModelsSettings: React.FC = () => {
     );
   }
 
+  /** Show all's filter: icon and word after the divider; pressed fills grey. */
+  const filter = (key: "preview" | "translate", Icon: typeof LiveIcon) => (
+    <Tooltip text={t(`onboarding.model.tags.${key}Title`)}>
+      <button
+        type="button"
+        aria-pressed={filters[key]}
+        onClick={() => setFilters((f) => ({ ...f, [key]: !f[key] }))}
+        className={`flex h-[26px] shrink-0 cursor-pointer items-center gap-[6px] whitespace-nowrap rounded-[7px] px-[8px] text-small font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary ${
+          filters[key]
+            ? "bg-line text-text"
+            : "text-ink-3 hover:bg-wash hover:text-text"
+        }`}
+      >
+        <Icon aria-hidden="true" className="size-[14px]" />
+        {t(`onboarding.model.tags.${key}`)}
+      </button>
+    </Tooltip>
+  );
+
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-4">
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold mb-2">
+    <div className="max-w-3xl w-full mx-auto">
+      {/* Whose page it is: graded for your languages, timed for a computer
+          like this one, and where to change them. */}
+      <div className="mb-[14px] px-[12px]">
+        <h1 className="mb-[2px] text-xl font-semibold">
           {t("settings.models.title")}
         </h1>
-        <p className="text-sm text-ink-2">{t("settings.models.description")}</p>
+        <p className="text-sm text-ink-2">
+          {langs.length > 3 ? (
+            <Tooltip text={listOf(langs)}>
+              <span>
+                {t("settings.models.lensMany", { count: langs.length })}
+              </span>
+            </Tooltip>
+          ) : (
+            t("settings.models.lens", { languages: listOf(langs) })
+          )}
+          {onChangeLanguages && (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={onChangeLanguages}
+                className="cursor-pointer text-text underline decoration-line-strong underline-offset-[3px] hover:decoration-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+              >
+                {t("settings.models.changeLanguages")}
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+      <div className="mx-[12px] mb-[12px] empty:hidden">
+        <RetiredModelsNotice />
       </div>
 
-      <RetiredModelsNotice />
-
-      {/* Search bar — filter the catalog by name or description */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 pointer-events-none" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("settings.models.searchPlaceholder")}
-          className="w-full pl-9 pr-3 py-2 text-sm bg-wash border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-logo-primary placeholder:text-ink-3"
-        />
-      </div>
-
-      <div className="space-y-6">
-        {/* Downloaded Models Section — header always visible so filter stays accessible */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-ink-2">
-              {t("settings.models.yourModels")}
-            </h2>
-            <div className="flex items-center gap-2">
-              {/* Rescan local sources for models added outside Handy */}
-              <button
-                type="button"
-                onClick={() => rescanLocalModels()}
-                disabled={isRescanning}
-                title={t("settings.models.rescan.tooltip")}
-                aria-label={t("settings.models.rescan.tooltip")}
-                className="flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg bg-wash text-ink-2 hover:bg-line transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      {/* The panel's top, pinned: the search, then the heads, named for
+          the section under them. */}
+      <div
+        ref={topRef}
+        className="sticky -top-[16px] z-20 bg-background pt-[16px]"
+      >
+        <div className="rounded-t-panel border-[1.5px] border-b-0 border-line-strong bg-background">
+          {/* The magnifier sits in the marks' column and the typing starts
+              where the names do. */}
+          <div className="flex h-[46px] items-center gap-[4px] border-b border-line ps-[20px] pe-[10px]">
+            <label className="flex h-full min-w-0 flex-1 cursor-text items-center gap-[10px]">
+              <span className="grid w-[18px] shrink-0 place-items-center text-ink-3">
+                <Search size={15} aria-hidden="true" />
+              </span>
+              <input
+                ref={searchRef}
+                type="search"
+                value={filters.query}
+                placeholder={t("onboarding.model.searchPlaceholder")}
+                aria-label={t("onboarding.model.searchLabel")}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, query: e.target.value }))
+                }
+                className="h-full min-w-0 flex-1 bg-transparent text-body text-text outline-none placeholder:text-ink-3 [&::-webkit-search-cancel-button]:appearance-none"
+              />
+            </label>
+            <span
+              aria-hidden="true"
+              className="me-[2px] h-[16px] w-px shrink-0 bg-line"
+            />
+            {filter("preview", LiveIcon)}
+            {filter("translate", Languages)}
+          </div>
+          <div
+            className={`border-b px-[6px] transition-[border-color] ${stuck ? "border-line" : "border-transparent"}`}
+          >
+            <div ref={headsRef} className={`${ROW_GRID} h-[32px] px-[14px]`}>
+              <span />
+              {/* Keyed by section: a new name mounts and fades in. */}
+              <span
+                key={heading?.key}
+                className={`flex min-w-0 items-center truncate motion-safe:animate-fade ${CODE_CLASS}`}
               >
-                <RefreshCw
-                  className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
-                />
-              </button>
-
-              {/* Vertical divider separating action from filters */}
-              <div className="h-4 w-px bg-line mx-0.5" />
-              <button
-                type="button"
-                onClick={() => setFilterStreaming((enabled) => !enabled)}
-                title={t("settings.models.filters.streaming")}
-                aria-label={t("settings.models.filters.streaming")}
-                aria-pressed={filterStreaming}
-                className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
-                  filterStreaming
-                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                    : "bg-wash text-ink-2 hover:bg-line"
-                }`}
-              >
-                <LiveIcon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterTranslation((enabled) => !enabled)}
-                title={t("settings.models.filters.translation")}
-                aria-label={t("settings.models.filters.translation")}
-                aria-pressed={filterTranslation}
-                className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
-                  filterTranslation
-                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                    : "bg-wash text-ink-2 hover:bg-line"
-                }`}
-              >
-                <Languages className="w-3.5 h-3.5" />
-              </button>
-              {/* Language filter dropdown */}
-              <div className="relative" ref={languageDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                  className={`flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
-                    languageFilter !== "all"
-                      ? "bg-logo-primary/20 text-logo-primary"
-                      : "bg-wash text-ink-2 hover:bg-line"
-                  }`}
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span className="max-w-[120px] truncate">
-                    {selectedLanguageLabel}
-                  </span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${
-                      languageDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {languageDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-line-strong rounded-lg shadow-lg z-50 overflow-hidden">
-                    <div className="p-2 border-b border-line">
-                      <input
-                        ref={languageSearchInputRef}
-                        type="text"
-                        value={languageSearch}
-                        onChange={(e) => setLanguageSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            filteredLanguages.length > 0
-                          ) {
-                            setLanguageFilter(filteredLanguages[0].value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          } else if (e.key === "Escape") {
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }
-                        }}
-                        placeholder={t(
-                          "settings.general.language.searchPlaceholder",
-                        )}
-                        className="w-full px-2 py-1 text-sm bg-wash border border-line rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLanguageFilter("all");
-                          setLanguageDropdownOpen(false);
-                          setLanguageSearch("");
-                        }}
-                        className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                          languageFilter === "all"
-                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                            : "hover:bg-wash"
-                        }`}
-                      >
-                        {t("settings.models.filters.allLanguages")}
-                      </button>
-                      {filteredLanguages.map((lang) => (
-                        <button
-                          key={lang.value}
-                          type="button"
-                          onClick={() => {
-                            setLanguageFilter(lang.value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                            languageFilter === lang.value
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                              : "hover:bg-wash"
-                          }`}
-                        >
-                          {lang.label}
-                        </button>
-                      ))}
-                      {filteredLanguages.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-ink-3 text-center">
-                          {t("settings.general.language.noResults")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                {heading?.label}
+              </span>
+              <Codes langs={langs} />
+              <span className="grid place-items-center">
+                <Legend tier={facts.tier} />
+              </span>
             </div>
           </div>
-          {downloadedModels.map((model: ModelInfo) => (
-            <ModelCard
-              key={model.id}
-              model={model}
-              status={getModelStatus(model.id)}
-              onSelect={handleModelSelect}
-              onDownload={handleModelDownload}
-              onDelete={handleModelDelete}
-              onCancel={handleModelCancel}
-              downloadProgress={getDownloadProgress(model.id)}
-              downloadSpeed={getDownloadSpeed(model.id)}
-              showRecommended={false}
-            />
-          ))}
         </div>
+      </div>
 
-        {/* Available Models Section */}
-        {availableModels.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-sm font-medium text-ink-2">
-              {t("settings.models.availableModels")}
-            </h2>
-            {availableModels.map((model: ModelInfo) => (
-              <ModelCard
-                key={model.id}
-                model={model}
-                status={getModelStatus(model.id)}
-                onSelect={handleModelSelect}
-                onDownload={handleModelDownload}
-                onDelete={handleModelDelete}
-                onCancel={handleModelCancel}
-                downloadProgress={getDownloadProgress(model.id)}
-                downloadSpeed={getDownloadSpeed(model.id)}
-                showRecommended={true}
-              />
-            ))}
+      {/* flow-root: the first row's margin stays inside the edge. */}
+      <div
+        ref={bodyRef}
+        role="radiogroup"
+        aria-label={t("onboarding.model.allLabel")}
+        className="flow-root rounded-b-panel border-[1.5px] border-t-0 border-line-strong px-[6px] pb-[6px]"
+      >
+        {!visible.some((s) => s.rows.length) && (
+          <div className="px-[12px] py-[28px] text-center text-small text-ink-2">
+            {filters.query.trim()
+              ? t("onboarding.model.noMatch", { query: filters.query.trim() })
+              : t("onboarding.model.noFilterMatch")}
           </div>
         )}
-        {filteredModels.length === 0 && (
-          <div className="text-center py-8 text-ink-3">
-            {t("settings.models.noModelsMatch")}
+        {visible.map((s, i) => (
+          <section key={s.key}>
+            {/* The first section's name is the heads'. The others open with
+                Show all's quiet line, a rule across and its words over the
+                names; scrolled under the heads, the heads take its name. */}
+            {i > 0 && (
+              <div
+                data-section={s.key}
+                className={`${ROW_GRID} mt-[6px] h-[33px] border-t border-line px-[14px]`}
+              >
+                <span />
+                <span
+                  className={`flex min-w-0 items-center truncate ${CODE_CLASS}`}
+                >
+                  {s.label}
+                </span>
+              </div>
+            )}
+            {s.note && <Note>{s.note}</Note>}
+            <div className="flex flex-col gap-[4px]">
+              {s.rows.map((e) => (
+                <ModelRow key={e.id} entry={e} facts={facts} />
+              ))}
+            </div>
+            {s.key === "yours" && !s.rows.length && !searching && (
+              <Note>{t("settings.models.emptyYours")}</Note>
+            )}
+            {s.key === "yours" &&
+              !searching &&
+              lists.yours.length > YOURS_LIMIT && (
+                <button
+                  type="button"
+                  onClick={() => setMore((m) => !m)}
+                  className="ms-[40px] mt-[2px] flex h-[28px] cursor-pointer items-center gap-[8px] rounded-[7px] px-[2px] text-small font-medium text-ink-2 hover:text-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+                >
+                  {more
+                    ? t("settings.models.showFewer")
+                    : t("settings.models.showMore", {
+                        count: lists.yours.length - YOURS_LIMIT,
+                      })}
+                  <span
+                    aria-hidden="true"
+                    className={`inline-block size-[6px] shrink-0 border-e-[1.5px] border-b-[1.5px] border-current ${more ? "mt-[3px] -rotate-[135deg]" : "-mt-[3px] rotate-45"}`}
+                  />
+                </button>
+              )}
+          </section>
+        ))}
+        {!searching && lists.untested.length > 0 && (
+          <div className="mt-[6px] border-t border-line pt-[8px]">
+            <Note>
+              {t("settings.models.untestedHidden", {
+                count: lists.untested.length,
+              })}
+            </Note>
           </div>
         )}
       </div>

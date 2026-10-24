@@ -19,7 +19,6 @@
     "about": "About"
   },
   "onboarding": {
-    "recommended": "Recommended",
     "customModelDescription": "Not officially supported",
     "migration": {
       "title": "Your models need an update",
@@ -31,10 +30,6 @@
       "chooseAnother": "Choose a different model",
       "download": "Download models ({{size}})",
       "continue": "Continue"
-    },
-    "modelCard": {
-      "accuracy": "accuracy",
-      "speed": "speed"
     },
     "models": {
       "small": {
@@ -218,7 +213,7 @@
       "hint": "Downloads while you finish setup",
       "searchPlaceholder": "Search models or languages",
       "searchLabel": "Search models",
-      "missingLanguages": "These models are missing some of your languages",
+      "missingLanguage": "Missing a language",
       "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet.",
       "noFilterMatch": "No models match these filters."
     },
@@ -293,10 +288,8 @@
   },
   "modelSelector": {
     "custom": "Custom",
-    "legacy": "Legacy",
     "streaming": "Streaming",
     "active": "Active",
-    "switching": "Switching...",
     "noModelsAvailable": "No models available",
     "verifying": "Verifying {{modelName}}...",
     "verifyingGeneric": "Verifying...",
@@ -308,19 +301,7 @@
     "modelError": "Model Error",
     "modelUnloaded": "Model Unloaded",
     "noModelDownloadRequired": "No Model - Download Required",
-    "deleteModel": "Delete {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Cancel",
-    "cancelDownload": "Cancel download",
-    "capabilities": {
-      "languageSelection": "Supports multiple input languages",
-      "singleLanguage": "Supports this language only",
-      "languageCount": "{{total}} languages",
-      "languageOnly": "{{language}} only",
-      "translation": "Can translate to English",
-      "translate": "Translate",
-      "streaming": "Shows live transcription as you speak"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -389,14 +370,46 @@
       }
     },
     "models": {
-      "title": "Transcription Models",
-      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
-      "searchPlaceholder": "Search models by name…",
-      "yourModels": "Downloaded Models",
-      "availableModels": "Available to Download",
-      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
-      "deleteActiveConfirm": "{{modelName}} is your active model. Deleting it will stop transcriptions until you select a new model. Are you sure?",
-      "deleteTitle": "Delete Model",
+      "title": "Models",
+      "lens": "Graded for {{languages}}, speeds from a laptop like yours.",
+      "lensMany": "Graded for your {{count}} languages, speeds from a laptop like yours.",
+      "changeLanguages": "Change languages",
+      "sections": {
+        "yours": "On this computer",
+        "fits": "For your languages",
+        "missing": "Missing a language",
+        "untested": "Untested"
+      },
+      "allLanguages": "All",
+      "doesntHear": "Doesn’t hear {{languages}}",
+      "untestedNote": "Not tested with Handy. They may be slower or make more mistakes.",
+      "untestedHidden_one": "{{count}} more model isn’t tuned for dictation. Search to find it.",
+      "untestedHidden_other": "{{count}} more models aren’t tuned for dictation. Search to find one.",
+      "emptyYours": "No models yet. Pick one below: it downloads, then Handy uses it.",
+      "showMore": "Show {{count}} more",
+      "showFewer": "Show fewer",
+      "download": "Download and use",
+      "downloadingLine": "Downloading {{percent}}% of {{total}}",
+      "downloadingThenUse": "{{percent}}% of {{total}}, then switches",
+      "loading": "Loading…",
+      "deleteAsk": "Delete {{name}}? It frees {{size}}.",
+      "deleteAskActive": "Delete {{name}}? Handy can’t transcribe until you pick another.",
+      "cancel": "Cancel",
+      "deleteModel": "Delete {{name}}",
+      "cancelDownload": "Stop downloading {{name}}",
+      "customLine": "Added from your models folder. Not graded.",
+      "legacyLine": "An older download. Not graded.",
+      "legend": {
+        "open": "How models are graded",
+        "accuracy": "Accuracy",
+        "accuracyNote": "For each of your languages: how many words a model got wrong in our test recordings.",
+        "speed": "Speed",
+        "speedNote": {
+          "accelerated": "How long 30 seconds of speech takes to type out on our test laptop’s graphics chip. This computer may differ.",
+          "cpu": "How long 30 seconds of speech takes to type out on our test laptop’s processor. This computer may differ."
+        },
+        "marks": "? hasn’t been measured yet. — doesn’t hear that language."
+      },
       "retiredNotice": {
         "title": "Old models no longer work with Handy",
         "description": "They're taking up {{size}} on your computer.",
@@ -404,16 +417,10 @@
         "deleted": "Deleted old models",
         "deleteFailed": "Some old models couldn't be deleted. Check the log for details."
       },
-      "filters": {
-        "allLanguages": "All Languages",
-        "streaming": "Filter models that support live streaming transcription",
-        "translation": "Filter models that support translation to English"
-      },
       "rescan": {
         "label": "Rescan",
         "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy"
-      },
-      "noModelsMatch": "No models match this filter."
+      }
     },
     "languages": {
       "title": "Languages"
