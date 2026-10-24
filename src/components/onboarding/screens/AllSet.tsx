@@ -8,6 +8,7 @@ import { Switch } from "../../ui/Switch";
 import { Keycaps } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
+import { LinuxGuide } from "../LinuxGuide";
 import { useOnboardingStore } from "../onboardingStore";
 import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
 
@@ -78,6 +79,9 @@ export const AllSet: React.FC<AllSetProps> = ({
           </span>
         </label>
       }
+      // Linux: a pass in Try it doesn't promise the shortcut or pasting work
+      // in other apps.
+      hint={os === "linux" && <LinuxGuide i18nKey="onboarding.linux.done" />}
       primary={
         <Button variant="primary" size="lg" onClick={finish}>
           {t("onboarding.done.finish")}

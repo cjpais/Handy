@@ -1,0 +1,32 @@
+import React from "react";
+import { Trans } from "react-i18next";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { ExternalLink } from "lucide-react";
+import { TextLink } from "../ui/TextLink";
+
+export const LINUX_SETUP_URL = "https://handy.computer/docs/linux";
+
+/**
+ * A footer hint for Linux, where the shortcut and pasting depend on the
+ * desktop: a line with a link to the setup guide, which opens in the browser.
+ */
+export const LinuxGuide: React.FC<{
+  i18nKey: "onboarding.linux.tryIt" | "onboarding.linux.done";
+}> = ({ i18nKey }) => (
+  <Trans
+    i18nKey={i18nKey}
+    components={{
+      link: <GuideLink />,
+    }}
+  />
+);
+
+const GuideLink: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+  <TextLink
+    className="inline-flex items-center gap-[3px]"
+    onClick={() => openUrl(LINUX_SETUP_URL).catch(console.error)}
+  >
+    {children}
+    <ExternalLink className="size-[11px]" aria-hidden="true" />
+  </TextLink>
+);

@@ -1309,6 +1309,11 @@ export type TranscriptionOutcome =
  */
 "empty" | 
 /**
+ * The microphone sent only digital silence (a muted mic, or a headset
+ * connected to another device), so nothing was typed.
+ */
+"silent" | 
+/**
  * Transcribing or pasting failed.
  */
 "failed"

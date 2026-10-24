@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { commands, events } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
+import { useShortcutCapture } from "@/hooks/useShortcutCapture";
 import { useShortcutPress } from "@/hooks/useShortcutPress";
 import type { OSType } from "@/lib/utils/keyboard";
 import { useOnboardingStore } from "./onboardingStore";
@@ -19,17 +20,20 @@ export type TakeResult =
   | { kind: "none" }
   /** A way done for the first time, with the other still to do. */
   | { kind: "done"; way: Mode }
+  /** It transcribed, but the cursor wasn't in the note. */
   | { kind: "nothingTyped" }
-  | { kind: "empty" }
-  | { kind: "failed" }
-  /** It landed (and counts), but too slowly for this model here. */
-  | { kind: "slow"; wait: number };
+  /** The microphone sent only digital silence. */
+  | { kind: "silent" }
+  /** Sound, but no words in it. */
+  | { kind: "noWords" };
 
 /** The ways, in the order they're asked for. */
 const WAYS: Mode[] = ["hold", "tap"];
 
 /** A way done: the cheer stays this long before the next way's line. */
 const ADVANCE_MS = 2600;
+/** "I didn't catch any words" stays this long, then back to what's next. */
+const NO_WORDS_MS = 5000;
 
 /**
  * Past the hold threshold, how long to wait before calling a take a hold. A
@@ -72,6 +76,8 @@ export const useTryEngine = ({
   const [recordDown, setRecordDown] = useState(false);
   const [result, setResult] = useState<TakeResult>({ kind: "none" });
   const [fives, setFives] = useState(0);
+  /** The last take that landed too slowly for this model here: its wait. */
+  const [slowWait, setSlowWait] = useState<number | null>(null);
   /** Typing has taken long enough to say so. */
   const [waiting, setWaiting] = useState(false);
 
@@ -93,8 +99,22 @@ export const useTryEngine = ({
   };
 
   // The note has the cursor from the start, so the first press types there.
+  // The cursor back in it, with Handy in front, is the fix for "nothing
+  // landed", so that goes: the note getting focus, or Handy coming back to
+  // the front with the note still focused.
   useEffect(() => {
-    field.current?.focus({ preventScroll: true });
+    const note = field.current;
+    note?.focus({ preventScroll: true });
+    const fixed = () => {
+      if (document.activeElement !== note) return;
+      setResult((r) => (r.kind === "nothingTyped" ? { kind: "none" } : r));
+    };
+    note?.addEventListener("focus", fixed);
+    window.addEventListener("focus", fixed);
+    return () => {
+      note?.removeEventListener("focus", fixed);
+      window.removeEventListener("focus", fixed);
+    };
   }, []);
 
   /* ---------- Handy's input ---------- */
@@ -181,8 +201,25 @@ export const useTryEngine = ({
         setWaiting(false);
         setPhase("idle");
         setWay(null);
-        if (payload.outcome !== "typed") {
-          setResult({ kind: payload.outcome });
+        // A failure has the app's own error toast; the glove goes on with
+        // what's next.
+        if (payload.outcome === "failed") {
+          setResult({ kind: "none" });
+          return;
+        }
+        if (payload.outcome === "silent") {
+          setResult({ kind: "silent" });
+          return;
+        }
+        // No words: nothing to fix but trying again, so it doesn't stay.
+        if (payload.outcome === "empty") {
+          setResult({ kind: "noWords" });
+          clearTimeout(resultTimer.current);
+          resultTimer.current = setTimeout(
+            () =>
+              setResult((r) => (r.kind === "noWords" ? { kind: "none" } : r)),
+            NO_WORDS_MS,
+          );
           return;
         }
         // The words go wherever the cursor is: only into the note if it's
@@ -195,11 +232,10 @@ export const useTryEngine = ({
         const before = useOnboardingStore.getState().lessons;
         const fresh = !before[way];
         if (fresh) setLessons({ [way]: true });
-        // Slow still counts, but it's a problem to fix, not a high five.
-        if (isTooSlow(payload.audio_seconds, payload.wait_seconds)) {
-          setResult({ kind: "slow", wait: payload.wait_seconds });
-          return;
-        }
+        // Slow still counts, high five and all; the screen suggests a
+        // faster model under itself.
+        if (isTooSlow(payload.audio_seconds, payload.wait_seconds))
+          setSlowWait(payload.wait_seconds);
         // A way already done: the words landing say enough.
         if (!fresh) {
           setResult({ kind: "none" });
@@ -239,12 +275,29 @@ export const useTryEngine = ({
     };
   }, [setLessons, threshold]);
 
+  // Changing the shortcut, from the keys in the line: Settings' and Demo's
+  // recorder, which turns Handy's shortcuts off while it listens and back on
+  // after. The cursor goes back to the note, so the next take lands there.
+  const capture = useShortcutCapture(
+    "transcribe",
+    os,
+    () => field.current?.focus({ preventScroll: true }),
+    preview,
+  );
+
   // The keys on screen follow the keys under the fingers where the window
-  // hears them: a tap that stops a take still shows as pressed.
-  useShortcutPress(shortcut, os, threshold, {
-    onDown: () => setPressDown(true),
-    onUp: () => setPressDown(false),
-  });
+  // hears them: a tap that stops a take still shows as pressed. Not while
+  // new keys are going in.
+  useShortcutPress(
+    shortcut,
+    os,
+    threshold,
+    {
+      onDown: () => setPressDown(true),
+      onUp: () => setPressDown(false),
+    },
+    !capture.capturing,
+  );
 
   return {
     preview,
@@ -256,7 +309,12 @@ export const useTryEngine = ({
     waiting,
     keysDown: pressDown || recordDown,
     result,
+    /** Back to what's next, after a problem's been dealt with. */
+    dismiss: () => setResult({ kind: "none" }),
+    slowWait,
     fives,
+    /** Recording a new shortcut: `capturing`, what's `partial`ly held, start, cancel. */
+    capture,
     /** A high five from a click on the glove. */
     slap: () => setFives((n) => n + 1),
     field,

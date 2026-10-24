@@ -36,6 +36,9 @@ pub enum TranscriptionOutcome {
     Typed,
     /// Nothing was heard, so nothing was typed.
     Empty,
+    /// The microphone sent only digital silence (a muted mic, or a headset
+    /// connected to another device), so nothing was typed.
+    Silent,
     /// Transcribing or pasting failed.
     Failed,
 }
@@ -64,6 +67,15 @@ fn emit_transcription_complete(
     };
     if let Err(e) = event.emit(app) {
         warn!("Failed to emit transcription complete: {e}");
+    }
+}
+
+/// Nothing to type: `Silent` if the microphone sent only zeros, else `Empty`.
+fn empty_outcome(input_silent: bool) -> TranscriptionOutcome {
+    if input_silent {
+        TranscriptionOutcome::Silent
+    } else {
+        TranscriptionOutcome::Empty
     }
 }
 
@@ -662,6 +674,9 @@ impl ShortcutAction for TranscribeAction {
 
             let stop_recording_time = Instant::now();
             if let Some(samples) = rm.stop_recording(&binding_id, cancel_generation) {
+                // Read now: by the time transcribing ends, another take may
+                // have replaced it.
+                let input_silent = rm.last_input_silent();
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
@@ -683,7 +698,7 @@ impl ShortcutAction for TranscribeAction {
                     tm.cancel_stream();
                     utils::hide_recording_overlay(&ah);
                     set_tray_state(&ah, TrayIconState::Idle);
-                    emit_transcription_complete(&ah, TranscriptionOutcome::Empty, 0, stop_time);
+                    emit_transcription_complete(&ah, empty_outcome(input_silent), 0, stop_time);
                 } else {
                     // Save WAV concurrently with transcription
                     let sample_count = samples.len();
@@ -785,7 +800,7 @@ impl ShortcutAction for TranscribeAction {
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 emit_transcription_complete(
                                     &ah,
-                                    TranscriptionOutcome::Empty,
+                                    empty_outcome(input_silent),
                                     sample_count,
                                     stop_time,
                                 );

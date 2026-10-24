@@ -1,13 +1,16 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import type { OSType } from "@/lib/utils/keyboard";
+import { keycapParts, type OSType } from "@/lib/utils/keyboard";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
 import { Keycaps } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
-import HandyHand from "../../icons/HandyHand";
+import TrayIcon from "../../icons/TrayIcon";
 import { OnboardingShell, ScreenSub, ScreenTitle } from "../OnboardingShell";
+import { LinuxGuide } from "../LinuxGuide";
 import { useTryEngine } from "../useTryEngine";
+import { MicrophoneDropdown } from "../../settings/MicrophoneSelector";
+import { useSettings } from "@/hooks/useSettings";
 import type { CatalogModel } from "../data/models";
 import type { DownloadState } from "../useOnboardingModels";
 import "./tryit.css";
@@ -78,6 +81,76 @@ const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
+/** Keys that need another key with them (as Demo's recorder reads them). */
+const MODIFIERS = [
+  "ctrl",
+  "control",
+  "shift",
+  "alt",
+  "option",
+  "meta",
+  "command",
+  "cmd",
+  "super",
+  "win",
+  "windows",
+  "fn",
+];
+
+/**
+ * The shortcut's keys, in a line of the bubble. While nothing's going on
+ * they're also the way to change it: they lift under the pointer, a "Change"
+ * tip shows over them (`onTip`, drawn by the bubble so its edge can't clip
+ * it), and a click starts recording new ones.
+ */
+const LineKeys: React.FC<{
+  binding: string;
+  os: OSType;
+  pressed: boolean;
+  /** Start changing them; absent while a take's going on. */
+  onChange?: () => void;
+  /** The keys' element while the tip should show over them, else null. */
+  onTip?: (el: HTMLElement | null) => void;
+  label?: string;
+}> = ({ binding, os, pressed, onChange, onTip, label }) => {
+  const keys = (
+    <Keycaps
+      className={onChange ? "" : "try-keys"}
+      binding={binding}
+      osType={os}
+      size="line"
+      pressed={pressed}
+      lift={!!onChange}
+    />
+  );
+  if (!onChange) return keys;
+  const show = (ev: React.SyntheticEvent<HTMLElement>) =>
+    onTip?.(ev.currentTarget);
+  const hide = () => onTip?.(null);
+  return (
+    <button
+      type="button"
+      className="try-keys try-keys-change group/keycaps"
+      aria-label={label}
+      // The cursor stays in the note, so the next take still lands there.
+      onMouseDown={(ev) => ev.preventDefault()}
+      // The shortcut may use Space; pressing it here mustn't click.
+      onKeyDown={(ev) => ev.key === " " && ev.preventDefault()}
+      onKeyUp={(ev) => ev.key === " " && ev.preventDefault()}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={(ev) => ev.currentTarget.matches(":focus-visible") && show(ev)}
+      onBlur={hide}
+      onClick={() => {
+        hide();
+        onChange();
+      }}
+    >
+      {keys}
+    </button>
+  );
+};
+
 interface TryItProps {
   progress: { index: number; count: number };
   os: OSType;
@@ -116,6 +189,15 @@ export const TryIt: React.FC<TryItProps> = ({
   const { t, i18n } = useTranslation();
   const e = useTryEngine({ ready: download.state === "ready", os });
   const anyDone = e.lessons.hold || e.lessons.tap;
+  const { refreshAudioDevices } = useSettings();
+
+  // The microphone list is only loaded once onboarding's done, and an empty
+  // one can't be opened: load it when it's needed. (The mic's allowed by
+  // now; it just recorded.)
+  const silent = e.result.kind === "silent";
+  useEffect(() => {
+    if (silent) refreshAudioDevices();
+  }, [silent, refreshAudioDevices]);
   const name = model?.name ?? "";
 
   const seconds = (s: number) =>
@@ -125,6 +207,26 @@ export const TryIt: React.FC<TryItProps> = ({
         maximumFractionDigits: s < 10 ? 1 : 0,
       }).format(s),
     });
+
+  /* ---------- changing the shortcut ---------- */
+
+  const bubble = useRef<HTMLDivElement>(null);
+  // The "Change" tip, placed over the keys from the bubble's corner.
+  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
+  const placeTip = (el: HTMLElement | null) => {
+    const box = bubble.current?.getBoundingClientRect();
+    if (!el || !box) return setTip(null);
+    const keys = el.getBoundingClientRect();
+    setTip({ x: keys.left + keys.width / 2 - box.left, y: keys.top - box.top });
+  };
+  const { capturing, partial } = e.capture;
+  const partialKeys = partial ? partial.split("+").filter(Boolean) : [];
+  const onlyModifiers =
+    partialKeys.length > 0 &&
+    partialKeys.every((k) => MODIFIERS.includes(k.toLowerCase()));
+  const keysLabel = keycapParts(e.shortcut, os)
+    .map((part) => part.label)
+    .join(os === "macos" ? " " : " + ");
 
   /* ---------- what the glove says ---------- */
 
@@ -137,12 +239,13 @@ export const TryIt: React.FC<TryItProps> = ({
           i18nKey={key}
           components={{
             keys: (
-              <Keycaps
-                className="try-keys"
+              <LineKeys
                 binding={e.shortcut}
-                osType={os}
-                size="line"
+                os={os}
                 pressed={e.keysDown}
+                onChange={e.phase === "idle" ? e.capture.start : undefined}
+                onTip={placeTip}
+                label={t("onboarding.try.changeKeys", { keys: keysLabel })}
               />
             ),
           }}
@@ -150,6 +253,36 @@ export const TryIt: React.FC<TryItProps> = ({
       ),
       mood: e.phase === "idle" ? "point" : "listen",
     });
+    // New keys going in: one line, the slot that takes them, and Cancel.
+    if (capturing)
+      return {
+        shape: "instruction",
+        id: onlyModifiers ? "addKey" : "pressKeys",
+        line: (
+          <>
+            {t(
+              onlyModifiers
+                ? "onboarding.demo.addKey"
+                : "onboarding.demo.pressKeys",
+            )}{" "}
+            {partialKeys.length ? (
+              <Keycaps
+                className="try-keys"
+                binding={partial}
+                osType={os}
+                size="line"
+                partial
+              />
+            ) : (
+              <span className="try-keys try-slot" aria-hidden="true" />
+            )}
+            <TextLink className="try-cancel" onClick={e.capture.cancel}>
+              {t("onboarding.demo.cancel")}
+            </TextLink>
+          </>
+        ),
+        mood: "point",
+      };
     // Keys up, words on their way: usually they land in a blink, so the line
     // stays (dimmed, below); only a real wait gets its own.
     if (e.phase === "typing" && e.waiting)
@@ -181,24 +314,38 @@ export const TryIt: React.FC<TryItProps> = ({
               sub: t("onboarding.try.doneTapNext"),
               mood: "cheer",
             };
-      case "slow":
+      // The mic sent nothing at all: Settings' microphone list, right here.
+      // Picking one is the fix, so it's back to what's next, the cursor in
+      // the note. The note keeps the cursor while the list is used, and the
+      // list isn't read out as the bubble's news.
+      case "silent":
         return {
           shape: "problem",
-          id: "slow",
-          line: t("onboarding.try.slow", { wait: seconds(r.wait) }),
+          id: "silent",
+          line: t("onboarding.try.silent"),
           sub: (
             <>
-              {t("onboarding.try.slowSub", { name })}{" "}
-              <TextLink onClick={onChangeModel}>
-                {t("onboarding.try.pickFaster")}
-              </TextLink>
+              {t("onboarding.try.silentSub")}
+              <div
+                className="try-mic-pick"
+                aria-live="off"
+                onMouseDown={(ev) => ev.preventDefault()}
+              >
+                <MicrophoneDropdown
+                  placement="above"
+                  tone="neutral"
+                  onPicked={() => {
+                    e.dismiss();
+                    e.field.current?.focus({ preventScroll: true });
+                  }}
+                />
+              </div>
             </>
           ),
           mood: "oops",
         };
       case "nothingTyped":
-      case "empty":
-      case "failed":
+      case "noWords":
         return {
           shape: "problem",
           id: r.kind,
@@ -221,25 +368,43 @@ export const TryIt: React.FC<TryItProps> = ({
     );
   })();
 
-  // Someone whose dictation can't work here yet can still finish setting
-  // up; after one way, the other is optional.
-  const hint = !anyDone ? (
+  // The tip goes with the keys: a new line, a take or recording ends it.
+  useEffect(() => setTip(null), [say.id, e.phase, capturing]);
+
+  // Someone whose dictation can't work here yet can still finish setting up.
+  // On Linux, where the shortcut often does nothing at all, the guide's beside
+  // it.
+  const skip = (
     <TextLink onClick={onFinish}>{t("onboarding.try.skip")}</TextLink>
-  ) : e.todo ? (
-    t(
-      e.todo === "tap"
-        ? "onboarding.try.finishOrTap"
-        : "onboarding.try.finishOrHold",
-    )
-  ) : (
+  );
+  const hint = anyDone ? (
     ""
+  ) : os === "linux" ? (
+    <span className="flex items-center gap-[18px]">
+      <span>
+        <LinuxGuide i18nKey="onboarding.linux.tryIt" />
+      </span>
+      {skip}
+    </span>
+  ) : (
+    skip
   );
 
   const isMac = os === "macos";
-  // Handy's icon, in the menu bar or the tray: pink while it listens.
+  // Handy's icon, in the menu bar or the tray, as on Demo: an ear while it
+  // listens, a brain while it transcribes.
   const tray = (
-    <span className="try-tray" data-on={e.phase === "listening" || undefined}>
-      <HandyHand width={13} height={14} tone="current" />
+    <span className="grid">
+      <TrayIcon
+        state={
+          e.phase === "listening"
+            ? "recording"
+            : e.phase === "typing"
+              ? "transcribing"
+              : "idle"
+        }
+        size={19}
+      />
     </span>
   );
   const clock = <span className="tabular-nums">9:41</span>;
@@ -363,6 +528,7 @@ export const TryIt: React.FC<TryItProps> = ({
               )}
             </button>
             <div
+              ref={bubble}
               className="try-bubble"
               data-shape={say.shape}
               role="status"
@@ -386,8 +552,31 @@ export const TryIt: React.FC<TryItProps> = ({
                   )}
                 </div>
               </EasedSize>
+              {tip && (
+                <span
+                  className="try-tip"
+                  aria-hidden="true"
+                  style={{ left: tip.x, top: tip.y }}
+                >
+                  {t("onboarding.demo.change")}
+                </span>
+              )}
             </div>
           </div>
+        </div>
+        {/* Under the screen: a suggestion, not a problem, so not the glove's.
+            Its height is always kept, so the screen never jumps for it. */}
+        <div className="try-after">
+          {e.slowWait != null && (
+            <span>
+              <Trans
+                i18nKey="onboarding.try.slowLine"
+                values={{ name, wait: seconds(e.slowWait) }}
+                // Not <link>: a void element in HTML, so its words would fall out.
+                components={{ faster: <TextLink onClick={onChangeModel} /> }}
+              />
+            </span>
+          )}
         </div>
       </div>
     </OnboardingShell>

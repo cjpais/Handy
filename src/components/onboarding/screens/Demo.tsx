@@ -13,7 +13,7 @@ import { useSuspendedShortcuts } from "../useSuspendedShortcuts";
 import { type OSType } from "@/lib/utils/keyboard";
 import { Button } from "../../ui/Button";
 import { Keycaps } from "../../shared/Keycaps";
-import HandyHand from "../../icons/HandyHand";
+import TrayIcon from "../../icons/TrayIcon";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { demoLine } from "../data/samples";
@@ -236,12 +236,20 @@ const DemoLaptop: React.FC<{
     );
   }, [pointer, mode, os]);
   const isMac = os === "macos";
-  // Handy's own icon, in the menu bar or the tray: pink while it listens.
+  // Handy's own icon, in the menu bar or the tray, as the real one changes:
+  // an ear while it listens, a brain while it transcribes.
   const tray = (
-    <span
-      className={`grid transition-[color] duration-200 ${pill === "rec" ? "text-background-ui" : ""}`}
-    >
-      <HandyHand width={12.5} height={14} tone="current" />
+    <span className="grid">
+      <TrayIcon
+        state={
+          pill === "rec"
+            ? "recording"
+            : pill === "work"
+              ? "transcribing"
+              : "idle"
+        }
+        size={15}
+      />
     </span>
   );
   const clock = <span className="tabular-nums">9:41</span>;

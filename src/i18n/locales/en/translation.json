@@ -145,7 +145,7 @@
     },
     "model": {
       "title": "Choose a speech model",
-      "subtitle": "The speech model turns your voice into text, right on this computer.",
+      "subtitle": "The speech model turns your voice into text, right on this computer",
       "label": "Speech model",
       "allLabel": "Speech models",
       "roles": {
@@ -252,8 +252,8 @@
       "hintFailed": "Retry the download to try it yourself"
     },
     "try": {
-      "title": "Try it yourself",
-      "subtitle": "Handy's in the corner to walk you through it.",
+      "title": "Give it a try!",
+      "subtitle": "Handy's in the corner to help walk you through it",
       "noteLabel": "Note",
       "placeholder": "New note",
       "hold": "Hold <keys/> and talk.",
@@ -261,25 +261,22 @@
       "letGo": "Let go of <keys/> when you're done.",
       "tapAgain": "Tap <keys/> again when you're done.",
       "watch": "Watch the note.",
+      "changeKeys": "Change your shortcut, {{keys}}",
       "doneHold": "High five! That's holding.",
       "doneHoldNext": "Next, the hands-free way.",
       "doneTap": "Up top! That's tapping.",
       "doneTapNext": "Now try holding them while you talk.",
       "allDone": "That's both. You're ready!",
       "allDoneSub": "Keep going, or finish setup.",
-      "slow": "That took {{wait}}.",
-      "slowSub": "{{name}} is slow on this computer.",
-      "pickFaster": "Pick a faster model",
+      "slowLine": "{{name}} took {{wait}} on this computer. <faster>Try a faster model</faster>",
       "nothingTyped": "Hmm, nothing landed.",
       "nothingTypedSub": "Click into the note first, then try again.",
-      "empty": "I didn't hear anything.",
-      "emptySub": "Check your microphone, then try again.",
-      "failed": "That one didn't come through.",
-      "failedSub": "Give it another go.",
-      "finishOrTap": "You can finish now, or try tapping too.",
-      "finishOrHold": "You can finish now, or try holding too.",
+      "silent": "I didn't hear anything.",
+      "silentSub": "No sound came from this microphone. Try another:",
+      "noWords": "I didn't catch any words.",
+      "noWordsSub": "Try again, and say a whole sentence.",
       "finish": "Finish setup",
-      "skip": "Skip for now"
+      "skip": "Skip"
     },
     "done": {
       "highFive": "High five!",
@@ -291,6 +288,10 @@
       "bodyTray": "Setup's done. Handy waits in your system tray, so press <keys/> in any app and start talking.",
       "atLogin": "Start Handy when I log in",
       "finish": "Done"
+    },
+    "linux": {
+      "tryIt": "Not working? <link>Linux setup guide</link>",
+      "done": "Not working in other apps? <link>Linux setup guide</link>"
     }
   },
   "modelSelector": {

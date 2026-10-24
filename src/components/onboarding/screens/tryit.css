@@ -32,6 +32,22 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-text) 9%, transparent);
 }
 
+/* Under the screen: one quiet line, a suggestion after a slow take. Its
+   height is always kept, so the screen never jumps when it comes. */
+.try-after {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  margin-top: 8px;
+  font-size: var(--text-small);
+  color: var(--color-ink-3);
+}
+.try-after > * {
+  animation: try-say-fade 220ms ease;
+}
+
 /* ---------- the menu bar (macOS) or the taskbar (Windows) ---------- */
 .try-bar {
   position: absolute;
@@ -84,14 +100,6 @@
   height: auto;
   border-radius: 0;
   background: var(--color-ink-2);
-}
-/* Handy's icon: pink while it listens, as on Demo. */
-.try-tray {
-  display: grid;
-  transition: color 200ms ease;
-}
-.try-tray[data-on] {
-  color: var(--color-background-ui);
 }
 
 /* ---------- the window: Demo's, bigger ---------- */
@@ -364,6 +372,69 @@
   vertical-align: 1px;
   margin: 0 2px;
 }
+/* The same keys as a button, to change them: no button chrome of its own
+   (the keys lift under the pointer), a ring when it has keyboard focus. */
+.try-keys-change {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.try-keys-change:focus-visible {
+  outline: 2px solid var(--color-logo-primary);
+  outline-offset: 3px;
+}
+/* Over the keys, from the bubble (whose easing box would clip it): "Change". */
+.try-tip {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 3px 8px;
+  border-radius: 6px;
+  font: 600 12px/1.3 var(--font-ui);
+  color: var(--color-background);
+  background: var(--color-plum);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: try-say-fade 120ms ease;
+}
+/* Recording new keys: a dashed slot where they'll go, sunk like the dashed
+   keys that fill it, then Cancel, quiet, on the line's baseline. */
+.try-say-main .try-slot {
+  display: inline-block;
+  width: 64px;
+  height: 25px;
+  vertical-align: -6px;
+  border: 1px dashed var(--color-plum-pick);
+  border-radius: 6px;
+  transform: translateY(3px);
+  animation: try-slot-pulse 1.2s ease-in-out infinite;
+}
+@keyframes try-slot-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.try-say-main .try-cancel {
+  margin-inline-start: 8px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* The microphone list, under a problem's line, in the text's own colour.
+   While it's open its menu rises out of the bubble, so the easing box lets
+   it show. */
+.try-mic-pick {
+  margin-top: 8px;
+  color: var(--color-text);
+}
+.try-eased:has([aria-expanded="true"]) {
+  overflow: visible;
+}
 
 /* Infinite loops would strobe under the global 1ms rule: stop them. */
 @media (prefers-reduced-motion: reduce) {
@@ -375,6 +446,9 @@
   }
   .try-say-main,
   .try-say-sub,
+  .try-after > *,
+  .try-tip,
+  .try-say-main .try-slot,
   .try-glove .try-pose {
     animation: none !important;
   }
