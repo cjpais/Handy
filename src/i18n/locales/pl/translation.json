@@ -19,12 +19,6 @@
     "about": "O programie"
   },
   "onboarding": {
-    "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
-    "existingModelsTitle": "Zgodne modele",
-    "downloadModelsTitle": "Dostępne do pobrania",
-    "showAllModels": "Pokaż wszystkie modele ({{total}})",
-    "showFewerModels": "Pokaż mniej modeli",
-    "recommended": "Polecane",
     "customModelDescription": "Nieoficjalnie wspierane",
     "migration": {
       "title": "Twoje modele wymagają aktualizacji",
@@ -35,12 +29,7 @@
       "retry": "Spróbuj ponownie",
       "chooseAnother": "Wybierz inny model",
       "download": "Pobierz modele ({{size}})",
-      "continue": "Kontynuuj",
-      "timeRemaining": "Pozostało {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "dokładność",
-      "speed": "szybkość"
+      "continue": "Kontynuuj"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Nie udało się wybrać modelu"
     },
     "permissions": {
-      "title": "Wymagane uprawnienia",
-      "description": "Handy potrzebuje kilku uprawnień, aby działać poprawnie.",
-      "microphone": {
-        "title": "Dostęp do mikrofonu",
-        "description": "Wymagany do słyszenia Twojego głosu w celu transkrypcji."
-      },
-      "accessibility": {
-        "title": "Dostęp do dostępności",
-        "description": "Wymagany do wpisywania transkrybowanego tekstu w Twoich aplikacjach."
-      },
-      "grant": "Przyznaj uprawnienie",
-      "granted": "Przyznano",
-      "waiting": "Oczekiwanie...",
-      "allGranted": "Wszystko gotowe!",
       "errors": {
         "checkFailed": "Nie udało się sprawdzić uprawnień. Spróbuj ponownie.",
         "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."
@@ -92,7 +67,6 @@
     "custom": "Własny",
     "streaming": "Streaming",
     "active": "Aktywny",
-    "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
     "verifying": "Weryfikacja {{modelName}}...",
     "verifyingGeneric": "Weryfikacja...",
@@ -104,20 +78,7 @@
     "modelError": "Błąd modelu",
     "modelUnloaded": "Model wyładowany",
     "noModelDownloadRequired": "Brak modelu – wymagane pobranie",
-    "deleteModel": "Usuń {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Obsługuje wiele języków wejściowych",
-      "languageCount": "{{total}} języków",
-      "translation": "Może tłumaczyć na angielski",
-      "translate": "Tłumacz na angielski",
-      "singleLanguage": "Obsługuje tylko ten język",
-      "languageOnly": "Tylko {{language}}",
-      "streaming": "Pokazuje transkrypcję na żywo podczas mówienia"
-    },
-    "cancel": "Anuluj",
-    "cancelDownload": "Anuluj pobieranie",
-    "legacy": "Przestarzałe"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -125,10 +86,6 @@
     },
     "models": {
       "title": "Modele transkrypcji",
-      "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
-      "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
-      "deleteActiveConfirm": "{{modelName}} jest Twoim aktywnym modelem. Usunięcie go zatrzyma transkrypcje, dopóki nie wybierzesz nowego modelu. Czy na pewno chcesz kontynuować?",
-      "deleteTitle": "Usuń model",
       "retiredNotice": {
         "title": "Stare modele nie działają już z Handy",
         "description": "Zajmują {{size}} na Twoim komputerze.",
@@ -136,15 +93,6 @@
         "deleted": "Usunięto stare modele",
         "deleteFailed": "Nie udało się usunąć niektórych starych modeli. Szczegóły znajdziesz w dzienniku."
       },
-      "filters": {
-        "allLanguages": "Wszystkie języki",
-        "streaming": "Filtruj modele obsługujące transkrypcję na żywo",
-        "translation": "Filtruj modele obsługujące tłumaczenie na język angielski"
-      },
-      "noModelsMatch": "Żadne modele nie pasują do tego filtra.",
-      "yourModels": "Pobrane modele",
-      "availableModels": "Dostępne do pobrania",
-      "searchPlaceholder": "Szukaj modeli według nazwy…",
       "rescan": {
         "label": "Skanuj ponownie",
         "tooltip": "Skanuj ponownie w poszukiwaniu modeli dodanych do folderu modeli lub pamięci podręcznej Hugging Face poza Handy"
@@ -174,9 +122,7 @@
           }
         },
         "errors": {
-          "restore": "Nie udało się przywrócić oryginalnego skrótu",
-          "set": "Nie udało się ustawić skrótu: {{error}}",
-          "reset": "Nie udało się zresetować skrótu do wartości domyślnej"
+          "set": "Nie udało się ustawić skrótu: {{error}}"
         }
       },
       "language": {
@@ -376,8 +322,7 @@
         "description": "Zapisuje transkrypcje w języku mandaryńskim i kantońskim znakami uproszczonymi lub tradycyjnymi. Inne języki pozostają bez zmian.",
         "options": {
           "asTranscribed": "Jak w transkrypcji",
-          "simplified": "Uproszczone",
-          "traditional": "Tradycyjne"
+          "simplified": "Uproszczone"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "Wybierz backend dla skrótów klawiaturowych.",
         "bindingsReset": "Skróty klawiaturowe były niekompatybilne i zostały zresetowane do wartości domyślnych"
       },
-      "paths": {
-        "appData": "Dane aplikacji:",
-        "models": "Modele:",
-        "settings": "Ustawienia:"
-      },
       "pasteDelay": {
         "title": "Opóźnienie wklejania (przed)",
         "description": "Opóźnienie (w milisekundach) po skopiowaniu tekstu, przed wysłaniem klawisza wklejania. Zwiększ, jeśli nic nie jest wklejane."
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "Podgląd konfiguracji początkowej",
         "description": "Wyświetl ekrany konfiguracji początkowej bez zmiany uprawnień, modeli ani stanu ukończenia",
-        "permissionsButton": "Uprawnienia",
-        "modelsButton": "Wybór modelu",
         "exitButton": "Zakończ podgląd"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "Wczytywanie...",
     "delete": "Usuń",
-    "back": "Wstecz",
     "close": "Zamknij",
     "open": "Otwórz",
     "copy": "Kopiuj",

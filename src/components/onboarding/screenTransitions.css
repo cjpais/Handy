@@ -1,0 +1,137 @@
+/* Demo to Try it, and back (screenTransitions.ts). The names only exist
+   while html carries data-sflow; the view-transition pseudo-elements hang
+   off <html>, outside the app's tree, so they're plain CSS.
+
+   What moves: the screen (wallpaper, menu bar or taskbar, pill and keys
+   ride along in its picture), the window, the title and the line under it.
+   What doesn't have a partner: the laptop, pushed out of frame, and Handy
+   with the bubble, arriving once the move has settled. */
+html[data-sflow] .demo-screen,
+html[data-sflow] .try-screen {
+  view-transition-name: sf-screen;
+}
+html[data-sflow] .demo-app,
+html[data-sflow] .try-notes {
+  view-transition-name: sf-window;
+}
+html[data-sflow] .demo-laptop {
+  view-transition-name: sf-laptop;
+}
+html[data-sflow] .try-guide {
+  view-transition-name: sf-guide;
+}
+/* One title and one line under it per screen. */
+html[data-sflow] [data-onboarding] h1 {
+  view-transition-name: sf-title;
+}
+html[data-sflow] [data-onboarding] h1 + p {
+  view-transition-name: sf-sub;
+}
+
+/* The laptop stays under everything else that moves. Groups stack in the
+   order their names were first seen, old picture first, so going back the
+   laptop (only in the new one) would land on top: a big, dark lid over the
+   screen until the move ends. */
+html[data-sflow]::view-transition-group(sf-screen),
+html[data-sflow]::view-transition-group(sf-window),
+html[data-sflow]::view-transition-group(sf-title),
+html[data-sflow]::view-transition-group(sf-sub),
+html[data-sflow]::view-transition-group(sf-guide) {
+  z-index: 1;
+}
+
+/* The move: one length and one ease for everything that travels. */
+html[data-sflow]::view-transition-group(*) {
+  animation-duration: 0.56s;
+  animation-timing-function: var(--ease-glide);
+}
+
+/* The pictures hand over early, so the old, scaled-up one (soft, it's a
+   bitmap) is gone before it's big and the new one carries the move. */
+html[data-sflow]::view-transition-old(*) {
+  animation: sf-fade-out 0.24s ease both;
+}
+html[data-sflow]::view-transition-new(*) {
+  animation: sf-fade-in 0.24s ease both;
+}
+
+/* The screen keeps nearly the same shape, so fill it. The window doesn't
+   (a short Messages window to a tall Notes one): cover it from the top, so
+   its title bar stays put and nothing squashes. */
+html[data-sflow]::view-transition-old(sf-screen),
+html[data-sflow]::view-transition-new(sf-screen) {
+  height: 100%;
+}
+html[data-sflow]::view-transition-old(sf-window),
+html[data-sflow]::view-transition-new(sf-window) {
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+}
+
+/* Text slides at its own size, centred on where it's going: two different
+   lines, so scaling one into the other would squish them. */
+html[data-sflow]::view-transition-old(sf-title),
+html[data-sflow]::view-transition-new(sf-title),
+html[data-sflow]::view-transition-old(sf-sub),
+html[data-sflow]::view-transition-new(sf-sub) {
+  width: auto;
+  height: auto;
+  left: 50%;
+  translate: -50% 0;
+}
+
+/* In: the lid and base grow with their screen and are gone before it's
+   full size, as if the camera went through them. */
+html[data-sflow="in"]::view-transition-old(sf-laptop) {
+  transform-origin: var(--sf-ox) var(--sf-oy);
+  animation:
+    sf-push 0.56s var(--ease-glide) both,
+    sf-fade-out 0.3s ease both;
+}
+/* Back: they close in around the screen as it shrinks. */
+html[data-sflow="out"]::view-transition-new(sf-laptop) {
+  transform-origin: var(--sf-ox) var(--sf-oy);
+  animation:
+    sf-pull 0.56s var(--ease-glide) both,
+    sf-fade-in 0.3s ease 0.16s both;
+}
+
+/* Handy steps in once you're close, and steps out first on the way back. */
+html[data-sflow="in"]::view-transition-new(sf-guide) {
+  animation: sf-rise 0.34s var(--ease-glide) 0.38s both;
+}
+html[data-sflow="out"]::view-transition-old(sf-guide) {
+  animation: sf-fade-out 0.14s ease both;
+}
+/* …and waves when it gets there, not while it's still out of sight. */
+html[data-sflow="in"] .try-glove .animate-wave {
+  animation-play-state: paused;
+}
+
+@keyframes sf-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sf-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sf-push {
+  to {
+    transform: translate(var(--sf-x), var(--sf-y)) scale(var(--sf-s));
+  }
+}
+@keyframes sf-pull {
+  from {
+    transform: translate(var(--sf-x), var(--sf-y)) scale(var(--sf-s));
+  }
+}
+@keyframes sf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}

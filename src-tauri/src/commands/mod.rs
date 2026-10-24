@@ -194,3 +194,15 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }
+
+/// Mark onboarding as finished. Onboarding calls this when the person closes
+/// its last screen; activating a model no longer counts as finishing, so
+/// someone who quits midway comes back to the rest of the flow.
+#[specta::specta]
+#[tauri::command]
+pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {
+    let mut settings = crate::settings::get_settings(&app);
+    settings.onboarding_completed = true;
+    crate::settings::write_settings(&app, settings);
+    Ok(())
+}

@@ -19,12 +19,6 @@
     "about": "O aplikaci"
   },
   "onboarding": {
-    "subtitle": "Pro začátek vyberte model pro přepis",
-    "existingModelsTitle": "Kompatibilní modely",
-    "downloadModelsTitle": "Dostupné ke stažení",
-    "showAllModels": "Zobrazit všech {{total}} modelů",
-    "showFewerModels": "Zobrazit méně modelů",
-    "recommended": "Doporučeno",
     "customModelDescription": "Oficiálně nepodporováno",
     "migration": {
       "title": "Vaše modely potřebují aktualizaci",
@@ -35,12 +29,7 @@
       "retry": "Zkusit znovu",
       "chooseAnother": "Vybrat jiný model",
       "download": "Stáhnout modely ({{size}})",
-      "continue": "Pokračovat",
-      "timeRemaining": "Zbývá {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "přesnost",
-      "speed": "rychlost"
+      "continue": "Pokračovat"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Nepodařilo se vybrat model"
     },
     "permissions": {
-      "title": "Vyžadována oprávnění",
-      "description": "Handy potřebuje několik oprávnění pro správné fungování.",
-      "microphone": {
-        "title": "Přístup k mikrofonu",
-        "description": "Potřebný pro zachycení vašeho hlasu k přepisu."
-      },
-      "accessibility": {
-        "title": "Přístup k usnadnění",
-        "description": "Potřebný pro psaní přepsaného textu do vašich aplikací."
-      },
-      "grant": "Udělit oprávnění",
-      "granted": "Uděleno",
-      "waiting": "Čekání...",
-      "allGranted": "Vše připraveno!",
       "errors": {
         "checkFailed": "Nepodařilo se zkontrolovat oprávnění. Zkuste to prosím znovu.",
         "requestFailed": "Nepodařilo se požádat o oprávnění. Zkuste to prosím znovu."
@@ -103,21 +78,7 @@
     "modelError": "Chyba modelu",
     "modelUnloaded": "Model uvolněn",
     "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
-    "deleteModel": "Smazat {{modelName}}",
-    "switching": "Přepínání...",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Podporuje více vstupních jazyků",
-      "languageCount": "{{total}} jazyků",
-      "translation": "Umí překládat do angličtiny",
-      "translate": "Přeložit do angličtiny",
-      "singleLanguage": "Podporuje pouze tento jazyk",
-      "languageOnly": "Pouze {{language}}",
-      "streaming": "Zobrazuje přepis živě, jak mluvíte"
-    },
-    "cancel": "Zrušit",
-    "cancelDownload": "Zrušit stahování",
-    "legacy": "Zastaralé"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -125,10 +86,6 @@
     },
     "models": {
       "title": "Modely přepisu",
-      "description": "Vyberte model přepisu nebo stáhněte další modely. Různé modely nabízejí různé úrovně přesnosti a rychlosti.",
-      "deleteConfirm": "Opravdu chcete smazat {{modelName}}? Pro opětovné použití jej budete muset znovu stáhnout.",
-      "deleteActiveConfirm": "{{modelName}} je váš aktivní model. Jeho smazáním se zastaví přepisy, dokud nevyberete nový model. Opravdu chcete pokračovat?",
-      "deleteTitle": "Smazat model",
       "retiredNotice": {
         "title": "Staré modely už s Handy nefungují",
         "description": "Zabírají {{size}} na vašem počítači.",
@@ -136,15 +93,6 @@
         "deleted": "Staré modely byly smazány",
         "deleteFailed": "Některé staré modely se nepodařilo smazat. Podrobnosti najdete v protokolu."
       },
-      "filters": {
-        "allLanguages": "Všechny jazyky",
-        "streaming": "Filtrovat modely podporující živý přepis",
-        "translation": "Filtrovat modely podporující překlad do angličtiny"
-      },
-      "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
-      "yourModels": "Stažené modely",
-      "availableModels": "Dostupné ke stažení",
-      "searchPlaceholder": "Hledat modely podle názvu…",
       "rescan": {
         "label": "Znovu prohledat",
         "tooltip": "Znovu prohledat modely přidané do složky modelů nebo mezipaměti Hugging Face mimo Handy"
@@ -174,9 +122,7 @@
           }
         },
         "errors": {
-          "restore": "Nepodařilo se obnovit původní zkratku",
-          "set": "Nepodařilo se nastavit zkratku: {{error}}",
-          "reset": "Nepodařilo se vrátit zkratku na původní hodnotu"
+          "set": "Nepodařilo se nastavit zkratku: {{error}}"
         }
       },
       "language": {
@@ -376,8 +322,7 @@
         "description": "Zapisuje přepisy v mandarínštině a kantonštině zjednodušenými nebo tradičními znaky. Ostatní jazyky zůstávají beze změny.",
         "options": {
           "asTranscribed": "Jak bylo přepsáno",
-          "simplified": "Zjednodušené",
-          "traditional": "Tradiční"
+          "simplified": "Zjednodušené"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "Zvolte backend pro klávesové zkratky.",
         "bindingsReset": "Klávesové zkratky byly nekompatibilní a byly obnoveny na výchozí hodnoty"
       },
-      "paths": {
-        "appData": "Data aplikace:",
-        "models": "Modely:",
-        "settings": "Nastavení:"
-      },
       "pasteDelay": {
         "title": "Zpoždění vložení (před)",
         "description": "Zpoždění (v milisekundách) po zkopírování textu, před odesláním klávesy pro vložení. Zvyšte, pokud se nic nevloží."
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "Náhled úvodního nastavení",
         "description": "Prohlédněte si obrazovky úvodního nastavení beze změny oprávnění, modelů nebo stavu dokončení",
-        "permissionsButton": "Oprávnění",
-        "modelsButton": "Výběr modelu",
         "exitButton": "Ukončit náhled"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "Načítání...",
     "delete": "Smazat",
-    "back": "Zpět",
     "close": "Zavřít",
     "open": "Otevřít",
     "copy": "Kopírovat",

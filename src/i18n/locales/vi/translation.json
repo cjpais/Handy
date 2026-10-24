@@ -19,12 +19,6 @@
     "about": "Giới thiệu"
   },
   "onboarding": {
-    "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
-    "existingModelsTitle": "Mô hình tương thích",
-    "downloadModelsTitle": "Có sẵn để tải xuống",
-    "showAllModels": "Hiển thị tất cả {{total}} mô hình",
-    "showFewerModels": "Hiển thị ít mô hình hơn",
-    "recommended": "Đề xuất",
     "customModelDescription": "Không được hỗ trợ chính thức",
     "migration": {
       "title": "Các mô hình của bạn cần được cập nhật",
@@ -35,12 +29,7 @@
       "retry": "Thử lại",
       "chooseAnother": "Chọn mô hình khác",
       "download": "Tải mô hình ({{size}})",
-      "continue": "Tiếp tục",
-      "timeRemaining": "Còn {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "độ chính xác",
-      "speed": "tốc độ"
+      "continue": "Tiếp tục"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Không thể chọn mô hình"
     },
     "permissions": {
-      "title": "Cần cấp quyền",
-      "description": "Handy cần một số quyền để hoạt động bình thường.",
-      "microphone": {
-        "title": "Quyền truy cập Micrô",
-        "description": "Cần thiết để nghe giọng nói của bạn để chuyển đổi."
-      },
-      "accessibility": {
-        "title": "Quyền truy cập Trợ năng",
-        "description": "Cần thiết để nhập văn bản đã chuyển đổi vào các ứng dụng của bạn."
-      },
-      "grant": "Cấp quyền",
-      "granted": "Đã cấp",
-      "waiting": "Đang chờ...",
-      "allGranted": "Hoàn tất!",
       "errors": {
         "checkFailed": "Không thể kiểm tra quyền. Vui lòng thử lại.",
         "requestFailed": "Không thể yêu cầu quyền. Vui lòng thử lại."
@@ -92,7 +67,6 @@
     "custom": "Tùy chỉnh",
     "streaming": "Truyền trực tiếp",
     "active": "Đang hoạt động",
-    "switching": "Đang chuyển...",
     "noModelsAvailable": "Không có mô hình nào",
     "verifying": "Đang xác minh {{modelName}}...",
     "verifyingGeneric": "Đang xác minh...",
@@ -104,20 +78,7 @@
     "modelError": "Lỗi Mô Hình",
     "modelUnloaded": "Mô Hình Đã Gỡ",
     "noModelDownloadRequired": "Chưa Có Mô Hình - Cần Tải Xuống",
-    "deleteModel": "Xóa {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Hỗ trợ nhiều ngôn ngữ đầu vào",
-      "languageCount": "{{total}} ngôn ngữ",
-      "translation": "Có thể dịch sang tiếng Anh",
-      "translate": "Dịch sang tiếng Anh",
-      "singleLanguage": "Chỉ hỗ trợ ngôn ngữ này",
-      "languageOnly": "Chỉ {{language}}",
-      "streaming": "Hiển thị phiên âm trực tiếp khi bạn nói"
-    },
-    "cancel": "Hủy",
-    "cancelDownload": "Hủy tải xuống",
-    "legacy": "Cũ"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -125,10 +86,6 @@
     },
     "models": {
       "title": "Mô hình chuyển đổi",
-      "description": "Chọn mô hình chuyển đổi hoặc tải thêm mô hình. Các mô hình khác nhau có mức độ chính xác và tốc độ khác nhau.",
-      "deleteConfirm": "Bạn có chắc chắn muốn xóa {{modelName}}? Bạn sẽ cần tải lại để sử dụng.",
-      "deleteActiveConfirm": "{{modelName}} là mô hình đang hoạt động của bạn. Xóa nó sẽ dừng phiên âm cho đến khi bạn chọn một mô hình mới. Bạn có chắc không?",
-      "deleteTitle": "Xóa mô hình",
       "retiredNotice": {
         "title": "Các mô hình cũ không còn hoạt động với Handy",
         "description": "Chúng đang chiếm {{size}} trên máy tính của bạn.",
@@ -136,15 +93,6 @@
         "deleted": "Đã xóa các mô hình cũ",
         "deleteFailed": "Không thể xóa một số mô hình cũ. Hãy kiểm tra nhật ký để biết chi tiết."
       },
-      "filters": {
-        "allLanguages": "Tất cả ngôn ngữ",
-        "streaming": "Lọc các mô hình hỗ trợ phiên âm trực tiếp",
-        "translation": "Lọc các mô hình hỗ trợ dịch sang tiếng Anh"
-      },
-      "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này.",
-      "yourModels": "Mô hình đã tải",
-      "availableModels": "Có sẵn để tải xuống",
-      "searchPlaceholder": "Tìm mô hình theo tên…",
       "rescan": {
         "label": "Quét lại",
         "tooltip": "Quét lại các mô hình được thêm vào thư mục mô hình hoặc bộ nhớ đệm Hugging Face bên ngoài Handy"
@@ -174,9 +122,7 @@
           }
         },
         "errors": {
-          "restore": "Không thể khôi phục phím tắt gốc",
-          "set": "Không thể đặt phím tắt: {{error}}",
-          "reset": "Không thể đặt lại phím tắt về giá trị gốc"
+          "set": "Không thể đặt phím tắt: {{error}}"
         }
       },
       "language": {
@@ -376,8 +322,7 @@
         "description": "Ghi bản chép tiếng Quan Thoại và tiếng Quảng Đông bằng chữ Giản thể hoặc Phồn thể. Các ngôn ngữ khác không bị thay đổi.",
         "options": {
           "asTranscribed": "Giữ nguyên bản chép",
-          "simplified": "Giản thể",
-          "traditional": "Phồn thể"
+          "simplified": "Giản thể"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "Chọn hệ thống xử lý phím tắt.",
         "bindingsReset": "Các phím tắt không tương thích và đã được đặt lại về mặc định"
       },
-      "paths": {
-        "appData": "Dữ liệu ứng dụng:",
-        "models": "Mô hình:",
-        "settings": "Cài đặt:"
-      },
       "pasteDelay": {
         "title": "Độ trễ dán (trước)",
         "description": "Độ trễ (tính bằng mili giây) sau khi sao chép văn bản, trước khi gửi phím dán. Tăng nếu không có gì được dán."
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "Xem trước thiết lập ban đầu",
         "description": "Xem trước các màn hình thiết lập mà không thay đổi quyền, mô hình hoặc trạng thái hoàn tất",
-        "permissionsButton": "Quyền",
-        "modelsButton": "Chọn mô hình",
         "exitButton": "Thoát xem trước"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "Đang tải...",
     "delete": "Xóa",
-    "back": "Quay lại",
     "close": "Đóng",
     "open": "Mở",
     "copy": "Sao chép",

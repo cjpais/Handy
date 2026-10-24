@@ -19,12 +19,6 @@
     "about": "Quant a"
   },
   "onboarding": {
-    "subtitle": "Per començar, trieu un model de transcripció",
-    "existingModelsTitle": "Models compatibles",
-    "downloadModelsTitle": "Disponibles per baixar",
-    "showAllModels": "Mostra tots els {{total}} models",
-    "showFewerModels": "Mostra menys models",
-    "recommended": "Recomanat",
     "customModelDescription": "Sense suport oficial",
     "migration": {
       "title": "Cal actualitzar els vostres models",
@@ -35,12 +29,7 @@
       "retry": "Torna-ho a provar",
       "chooseAnother": "Trieu un altre model",
       "download": "Baixa els models ({{size}})",
-      "continue": "Continua",
-      "timeRemaining": "Queden {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "precisió",
-      "speed": "velocitat"
+      "continue": "Continua"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "No s'ha pogut seleccionar el model"
     },
     "permissions": {
-      "title": "Permisos necessaris",
-      "description": "El Handy demana alguns permisos per funcionar correctament.",
-      "microphone": {
-        "title": "Accés al micròfon",
-        "description": "Necessari per escoltar la vostra veu i transcriure-la."
-      },
-      "accessibility": {
-        "title": "Accés a l'accessibilitat",
-        "description": "Necessari per escriure el text transcrit a les aplicacions."
-      },
-      "grant": "Concediu el permís",
-      "granted": "Concedit",
-      "waiting": "S'està esperant...",
-      "allGranted": "Tot a punt!",
       "errors": {
         "checkFailed": "No s'han pogut comprovar els permisos. Torneu-ho a provar.",
         "requestFailed": "No s'ha pogut sol·licitar el permís. Torneu-ho a provar."
@@ -90,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Personalitzat",
-    "legacy": "Antic",
     "streaming": "En temps real",
     "active": "Actiu",
-    "switching": "S'està canviant...",
     "noModelsAvailable": "No hi ha models disponibles",
     "verifying": "S'està verificant {{modelName}}...",
     "verifyingGeneric": "S'està verificant...",
@@ -105,19 +78,7 @@
     "modelError": "Error del model",
     "modelUnloaded": "Model alliberat de la memòria",
     "noModelDownloadRequired": "No hi ha cap model: cal baixar-ne un",
-    "deleteModel": "Suprimiu {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Cancel·la",
-    "cancelDownload": "Cancel·la la baixada",
-    "capabilities": {
-      "languageSelection": "Admet diverses llengües d'entrada",
-      "singleLanguage": "Només admet aquesta llengua",
-      "languageCount": "{{total}} llengües",
-      "languageOnly": "Només {{language}}",
-      "translation": "Pot traduir a l'anglès",
-      "translate": "Tradueix",
-      "streaming": "Mostra la transcripció en temps real mentre parleu"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +108,7 @@
           }
         },
         "errors": {
-          "restore": "No s'ha pogut restaurar la drecera original",
-          "set": "No s'ha pogut definir la drecera: {{error}}",
-          "reset": "No s'ha pogut restablir la drecera al valor original"
+          "set": "No s'ha pogut definir la drecera: {{error}}"
         }
       },
       "language": {
@@ -176,13 +135,6 @@
     },
     "models": {
       "title": "Models de transcripció",
-      "description": "Seleccioneu un model de transcripció o baixeu-ne més. Els models ofereixen diferents nivells de precisió i velocitat.",
-      "searchPlaceholder": "Cerqueu models pel nom…",
-      "yourModels": "Models baixats",
-      "availableModels": "Disponibles per baixar",
-      "deleteConfirm": "Segur que voleu suprimir {{modelName}}? Haureu de tornar-lo a baixar per utilitzar-lo.",
-      "deleteActiveConfirm": "{{modelName}} és el model actiu. Si el suprimiu, no podreu fer transcripcions fins que seleccioneu un altre model. N'esteu segur?",
-      "deleteTitle": "Suprimeix el model",
       "retiredNotice": {
         "title": "Els models antics ja no funcionen amb Handy",
         "description": "Ocupen {{size}} a l'ordinador.",
@@ -190,16 +142,10 @@
         "deleted": "S'han suprimit els models antics",
         "deleteFailed": "No s'han pogut suprimir alguns models antics. Consulteu el registre per a més detalls."
       },
-      "filters": {
-        "allLanguages": "Totes les llengües",
-        "streaming": "Filtra els models que admeten la transcripció en temps real",
-        "translation": "Filtra els models que admeten la traducció a l'anglès"
-      },
       "rescan": {
         "label": "Torna a cercar",
         "tooltip": "Torna a cercar models afegits a la carpeta de models o a la memòria cau de Hugging Face des de fora del Handy"
-      },
-      "noModelsMatch": "Cap model no coincideix amb aquest filtre."
+      }
     },
     "sound": {
       "title": "So",
@@ -376,8 +322,7 @@
         "description": "Escriu les transcripcions en mandarí i cantonès amb caràcters simplificats o tradicionals. Els altres idiomes no es modifiquen.",
         "options": {
           "asTranscribed": "Tal com s'ha transcrit",
-          "simplified": "Simplificat",
-          "traditional": "Tradicional"
+          "simplified": "Simplificat"
         }
       }
     },
@@ -496,8 +441,6 @@
       "onboardingPreview": {
         "title": "Previsualització de la configuració inicial",
         "description": "Previsualitza les pantalles de configuració inicial sense canviar els permisos, os models ni l'estat de compleció",
-        "permissionsButton": "Permisos",
-        "modelsButton": "Selecció del model",
         "exitButton": "Sortiu de la previsualització"
       },
       "soundTheme": {
@@ -547,11 +490,6 @@
         "title": "Implementació del teclat",
         "description": "Tria el motor de dreceres de teclat.",
         "bindingsReset": "Les dreceres de teclat eren incompatibles i s'han restablert als valors per defecte"
-      },
-      "paths": {
-        "appData": "Dades de l'aplicació:",
-        "models": "Models:",
-        "settings": "Configuració:"
       },
       "pasteDelay": {
         "title": "Retard abans d'enganxar",
@@ -649,7 +587,6 @@
   "common": {
     "loading": "S'està carregant...",
     "delete": "Suprimeix",
-    "back": "Enrere",
     "close": "Tanca",
     "open": "Obre",
     "copy": "Copia",

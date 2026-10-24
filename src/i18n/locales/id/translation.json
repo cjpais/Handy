@@ -19,12 +19,6 @@
     "about": "Tentang"
   },
   "onboarding": {
-    "subtitle": "Untuk memulai, pilih model transkripsi",
-    "existingModelsTitle": "Model yang Kompatibel",
-    "downloadModelsTitle": "Tersedia untuk Diunduh",
-    "showAllModels": "Tampilkan semua {{total}} model",
-    "showFewerModels": "Tampilkan lebih sedikit model",
-    "recommended": "Direkomendasikan",
     "customModelDescription": "Tidak didukung secara resmi",
     "migration": {
       "title": "Model Anda perlu diperbarui",
@@ -35,12 +29,7 @@
       "retry": "Coba lagi",
       "chooseAnother": "Pilih model lain",
       "download": "Unduh model ({{size}})",
-      "continue": "Lanjutkan",
-      "timeRemaining": "Sisa {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "akurasi",
-      "speed": "kecepatan"
+      "continue": "Lanjutkan"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Gagal memilih model"
     },
     "permissions": {
-      "title": "Izin Diperlukan",
-      "description": "Handy memerlukan beberapa izin agar dapat berfungsi dengan baik.",
-      "microphone": {
-        "title": "Akses Mikrofon",
-        "description": "Diperlukan untuk menangkap suara Anda agar dapat ditranskripsikan."
-      },
-      "accessibility": {
-        "title": "Izin Aksesibilitas",
-        "description": "Diperlukan untuk mengetik teks hasil transkripsi ke aplikasi Anda."
-      },
-      "grant": "Berikan Izin",
-      "granted": "Diizinkan",
-      "waiting": "Menunggu...",
-      "allGranted": "Semua siap!",
       "errors": {
         "checkFailed": "Gagal memeriksa izin. Silakan coba lagi.",
         "requestFailed": "Gagal meminta izin. Silakan coba lagi."
@@ -90,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Kustom",
-    "legacy": "Legacy",
     "streaming": "Streaming",
     "active": "Aktif",
-    "switching": "Beralih...",
     "noModelsAvailable": "Tidak ada model yang tersedia",
     "verifying": "Memverifikasi {{modelName}}...",
     "verifyingGeneric": "Memverifikasi...",
@@ -105,19 +78,7 @@
     "modelError": "Kesalahan Model",
     "modelUnloaded": "Model Dikeluarkan dari Memori",
     "noModelDownloadRequired": "Model Belum Tersedia — Perlu Diunduh",
-    "deleteModel": "Hapus {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Batal",
-    "cancelDownload": "Batalkan unduhan",
-    "capabilities": {
-      "languageSelection": "Mendukung beberapa bahasa masukan",
-      "singleLanguage": "Hanya mendukung bahasa ini",
-      "languageCount": "{{total}} bahasa",
-      "languageOnly": "Hanya {{language}}",
-      "translation": "Dapat menerjemahkan ke bahasa Inggris",
-      "translate": "Terjemahkan",
-      "streaming": "Menampilkan transkripsi langsung saat Anda berbicara"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +108,7 @@
           }
         },
         "errors": {
-          "restore": "Gagal memulihkan pintasan asli",
-          "set": "Gagal mengatur pintasan: {{error}}",
-          "reset": "Gagal mengembalikan pintasan ke nilai awal"
+          "set": "Gagal mengatur pintasan: {{error}}"
         }
       },
       "language": {
@@ -176,13 +135,6 @@
     },
     "models": {
       "title": "Model Transkripsi",
-      "description": "Pilih model transkripsi atau unduh model tambahan. Setiap model menawarkan tingkat akurasi dan kecepatan yang berbeda.",
-      "searchPlaceholder": "Cari model berdasarkan nama…",
-      "yourModels": "Model yang Diunduh",
-      "availableModels": "Tersedia untuk Diunduh",
-      "deleteConfirm": "Yakin ingin menghapus {{modelName}}? Anda harus mengunduhnya lagi untuk menggunakannya.",
-      "deleteActiveConfirm": "{{modelName}} adalah model aktif Anda. Menghapusnya akan menghentikan transkripsi sampai Anda memilih model baru. Yakin ingin melanjutkan?",
-      "deleteTitle": "Hapus Model",
       "retiredNotice": {
         "title": "Model lama tidak lagi berfungsi dengan Handy",
         "description": "Model tersebut memakan {{size}} di komputer Anda.",
@@ -190,16 +142,10 @@
         "deleted": "Model lama telah dihapus",
         "deleteFailed": "Beberapa model lama tidak dapat dihapus. Periksa log untuk detailnya."
       },
-      "filters": {
-        "allLanguages": "Semua Bahasa",
-        "streaming": "Saring model yang mendukung transkripsi waktu nyata",
-        "translation": "Saring model yang mendukung penerjemahan ke bahasa Inggris"
-      },
       "rescan": {
         "label": "Pindai Ulang",
         "tooltip": "Pindai ulang model yang ditambahkan ke folder model atau cache Hugging Face dari luar Handy"
-      },
-      "noModelsMatch": "Tidak ada model yang cocok dengan kriteria ini."
+      }
     },
     "sound": {
       "title": "Suara",
@@ -376,8 +322,7 @@
         "description": "Menulis transkripsi Mandarin dan Kanton dengan aksara Sederhana atau Tradisional. Bahasa lain tidak diubah.",
         "options": {
           "asTranscribed": "Sesuai transkripsi",
-          "simplified": "Sederhana",
-          "traditional": "Tradisional"
+          "simplified": "Sederhana"
         }
       }
     },
@@ -496,8 +441,6 @@
       "onboardingPreview": {
         "title": "Pratinjau Penyiapan Awal",
         "description": "Pratinjau layar penyiapan awal tanpa mengubah izin, model, atau status penyelesaian",
-        "permissionsButton": "Izin",
-        "modelsButton": "Pemilihan Model",
         "exitButton": "Keluar dari Pratinjau"
       },
       "soundTheme": {
@@ -547,11 +490,6 @@
         "title": "Implementasi Keyboard",
         "description": "Pilih backend pintasan keyboard.",
         "bindingsReset": "Pintasan keyboard tidak kompatibel dan telah dikembalikan ke nilai awal"
-      },
-      "paths": {
-        "appData": "Data Aplikasi:",
-        "models": "Model:",
-        "settings": "Pengaturan:"
       },
       "pasteDelay": {
         "title": "Jeda Tempel (Sebelum)",
@@ -649,7 +587,6 @@
   "common": {
     "loading": "Memuat...",
     "delete": "Hapus",
-    "back": "Kembali",
     "close": "Tutup",
     "open": "Buka",
     "copy": "Salin",

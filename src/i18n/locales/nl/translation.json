@@ -19,12 +19,6 @@
     "about": "Over Handy"
   },
   "onboarding": {
-    "subtitle": "Kies een transcriptiemodel om aan de slag te gaan",
-    "existingModelsTitle": "Compatibele modellen",
-    "downloadModelsTitle": "Beschikbaar voor download",
-    "showAllModels": "Toon alle {{total}} modellen",
-    "showFewerModels": "Minder modellen tonen",
-    "recommended": "Aanbevolen",
     "customModelDescription": "Niet officieel ondersteund",
     "migration": {
       "title": "Je modellen moeten worden bijgewerkt",
@@ -35,12 +29,7 @@
       "retry": "Opnieuw proberen",
       "chooseAnother": "Kies een ander model",
       "download": "Modellen downloaden ({{size}})",
-      "continue": "Doorgaan",
-      "timeRemaining": "Nog {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "nauwkeurigheid",
-      "speed": "snelheid"
+      "continue": "Doorgaan"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Model selecteren mislukt"
     },
     "permissions": {
-      "title": "Machtigingen vereist",
-      "description": "Handy heeft een aantal machtigingen nodig om goed te kunnen werken.",
-      "microphone": {
-        "title": "Microfoontoegang",
-        "description": "Vereist om je stem op te nemen voor transcriptie."
-      },
-      "accessibility": {
-        "title": "Toegankelijkheid",
-        "description": "Vereist om getranscribeerde tekst in je applicaties te kunnen typen."
-      },
-      "grant": "Machtiging verlenen",
-      "granted": "Verleend",
-      "waiting": "Wachten...",
-      "allGranted": "Alles ingesteld!",
       "errors": {
         "checkFailed": "Machtigingen controleren mislukt. Probeer het opnieuw.",
         "requestFailed": "Machtiging aanvragen mislukt. Probeer het opnieuw."
@@ -90,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Aangepast",
-    "legacy": "Klassiek",
     "streaming": "Streaming",
     "active": "Actief",
-    "switching": "Wisselen...",
     "noModelsAvailable": "Geen modellen beschikbaar",
     "verifying": "Verifiëren van {{modelName}}...",
     "verifyingGeneric": "Verifiëren...",
@@ -105,19 +78,7 @@
     "modelError": "Modelfout",
     "modelUnloaded": "Model ontladen",
     "noModelDownloadRequired": "Geen model - Download vereist",
-    "deleteModel": "{{modelName}} verwijderen",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Annuleren",
-    "cancelDownload": "Download annuleren",
-    "capabilities": {
-      "languageSelection": "Ondersteunt meerdere invoertalen",
-      "singleLanguage": "Ondersteunt alleen deze taal",
-      "languageCount": "{{total}} talen",
-      "languageOnly": "Alleen {{language}}",
-      "translation": "Kan vertalen naar het Engels",
-      "translate": "Vertalen",
-      "streaming": "Toont live transcriptie tijdens het spreken"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +108,7 @@
           }
         },
         "errors": {
-          "restore": "Herstellen van originele sneltoets mislukt",
-          "set": "Instellen van sneltoets mislukt: {{error}}",
-          "reset": "Sneltoets terugzetten naar standaardwaarde mislukt"
+          "set": "Instellen van sneltoets mislukt: {{error}}"
         }
       },
       "language": {
@@ -176,13 +135,6 @@
     },
     "models": {
       "title": "Transcriptiemodellen",
-      "description": "Selecteer een transcriptiemodel of download extra modellen. Verschillende modellen bieden variërende niveaus van nauwkeurigheid en snelheid.",
-      "searchPlaceholder": "Modellen zoeken op naam...",
-      "yourModels": "Gedownloade modellen",
-      "availableModels": "Beschikbaar voor download",
-      "deleteConfirm": "Weet je zeker dat je {{modelName}} wilt verwijderen? Je moet het model opnieuw downloaden om het weer te gebruiken.",
-      "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
-      "deleteTitle": "Model verwijderen",
       "retiredNotice": {
         "title": "Oude modellen werken niet meer met Handy",
         "description": "Ze nemen {{size}} in beslag op je computer.",
@@ -190,16 +142,10 @@
         "deleted": "Oude modellen verwijderd",
         "deleteFailed": "Sommige oude modellen konden niet worden verwijderd. Bekijk het logboek voor details."
       },
-      "filters": {
-        "allLanguages": "Alle talen",
-        "streaming": "Filter modellen die live transcriptie ondersteunen",
-        "translation": "Filter modellen die vertaling naar het Engels ondersteunen"
-      },
       "rescan": {
         "label": "Opnieuw scannen",
         "tooltip": "Scannen naar modellen die buiten Handy om zijn toegevoegd aan de modellenmap of Hugging Face-cache"
-      },
-      "noModelsMatch": "Geen modellen voldoen aan dit filter."
+      }
     },
     "sound": {
       "title": "Geluid",
@@ -376,8 +322,7 @@
         "description": "Schrijft Mandarijn- en Kantonese transcripties in vereenvoudigde of traditionele karakters. Andere talen blijven ongewijzigd.",
         "options": {
           "asTranscribed": "Zoals getranscribeerd",
-          "simplified": "Vereenvoudigd",
-          "traditional": "Traditioneel"
+          "simplified": "Vereenvoudigd"
         }
       }
     },
@@ -496,8 +441,6 @@
       "onboardingPreview": {
         "title": "Voorbeeld van onboarding",
         "description": "Bekijk de onboardingschermen zonder machtigingen, modellen of de voltooiingsstatus te wijzigen",
-        "permissionsButton": "Machtigingen",
-        "modelsButton": "Modelselectie",
         "exitButton": "Voorbeeld sluiten"
       },
       "soundTheme": {
@@ -547,11 +490,6 @@
         "title": "Toetsenbord-implementatie",
         "description": "Kies de backend voor sneltoetsen.",
         "bindingsReset": "Sneltoetsen waren incompatibel en zijn teruggezet naar de standaardwaarden"
-      },
-      "paths": {
-        "appData": "App-data:",
-        "models": "Modellen:",
-        "settings": "Instellingen:"
       },
       "pasteDelay": {
         "title": "Plakvertraging (voor)",
@@ -649,7 +587,6 @@
   "common": {
     "loading": "Laden...",
     "delete": "Verwijderen",
-    "back": "Terug",
     "close": "Sluiten",
     "open": "Openen",
     "copy": "Kopiëren",

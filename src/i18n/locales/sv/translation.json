@@ -19,12 +19,6 @@
     "about": "Om"
   },
   "onboarding": {
-    "subtitle": "För att komma igång, välj en transkriptionsmodell",
-    "existingModelsTitle": "Kompatibla modeller",
-    "downloadModelsTitle": "Tillgängliga för nedladdning",
-    "showAllModels": "Visa alla {{total}} modeller",
-    "showFewerModels": "Visa färre modeller",
-    "recommended": "Rekommenderat",
     "customModelDescription": "Stöds inte officiellt",
     "migration": {
       "title": "Dina modeller behöver uppdateras",
@@ -35,12 +29,7 @@
       "retry": "Försök igen",
       "chooseAnother": "Välj en annan modell",
       "download": "Ladda ner modeller ({{size}})",
-      "continue": "Fortsätt",
-      "timeRemaining": "{{time}} kvar"
-    },
-    "modelCard": {
-      "accuracy": "noggrannhet",
-      "speed": "hastighet"
+      "continue": "Fortsätt"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Det gick inte att välja modell"
     },
     "permissions": {
-      "title": "Behörigheter krävs",
-      "description": "Handy behöver ett par behörigheter för att fungera korrekt.",
-      "microphone": {
-        "title": "Mikrofonåtkomst",
-        "description": "Krävs för att höra din röst för transkription."
-      },
-      "accessibility": {
-        "title": "Hjälpmedelsåtkomst",
-        "description": "Krävs för att skriva transkriberad text i dina program."
-      },
-      "grant": "Bevilja behörighet",
-      "granted": "Beviljad",
-      "waiting": "Väntar...",
-      "allGranted": "Allt klart!",
       "errors": {
         "checkFailed": "Misslyckades med att kontrollera behörigheter. Försök igen.",
         "requestFailed": "Misslyckades med att begära behörighet. Försök igen."
@@ -92,7 +67,6 @@
     "custom": "Anpassad",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Byter...",
     "noModelsAvailable": "Inga modeller tillgängliga",
     "verifying": "Verifierar {{modelName}}...",
     "verifyingGeneric": "Verifierar...",
@@ -104,20 +78,7 @@
     "modelError": "Modellfel",
     "modelUnloaded": "Modell avlastad",
     "noModelDownloadRequired": "Ingen modell - Nedladdning krävs",
-    "deleteModel": "Ta bort {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Avbryt",
-    "cancelDownload": "Avbryt nedladdning",
-    "capabilities": {
-      "languageSelection": "Stöder flera indataspråk",
-      "singleLanguage": "Stöder endast detta språk",
-      "languageCount": "{{total}} språk",
-      "languageOnly": "Endast {{language}}",
-      "translation": "Kan översätta till engelska",
-      "translate": "Översätt till engelska",
-      "streaming": "Visar transkription i realtid medan du talar"
-    },
-    "legacy": "Äldre"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +108,7 @@
           }
         },
         "errors": {
-          "restore": "Misslyckades med att återställa ursprungligt kortkommando",
-          "set": "Misslyckades med att ställa in kortkommando: {{error}}",
-          "reset": "Misslyckades med att återställa kortkommando till ursprungsvärdet"
+          "set": "Misslyckades med att ställa in kortkommando: {{error}}"
         }
       },
       "language": {
@@ -176,12 +135,6 @@
     },
     "models": {
       "title": "Transkriptionsmodeller",
-      "description": "Välj en transkriptionsmodell eller ladda ner ytterligare modeller. Olika modeller erbjuder varierande nivåer av noggrannhet och hastighet.",
-      "yourModels": "Nedladdade modeller",
-      "availableModels": "Tillgängliga att ladda ner",
-      "deleteConfirm": "Är du säker på att du vill ta bort {{modelName}}? Du måste ladda ner den igen för att använda den.",
-      "deleteActiveConfirm": "{{modelName}} är din aktiva modell. Om du tar bort den avbryts transkriptioner tills du väljer en ny modell. Är du säker?",
-      "deleteTitle": "Ta bort modell",
       "retiredNotice": {
         "title": "Gamla modeller fungerar inte längre med Handy",
         "description": "De tar upp {{size}} på din dator.",
@@ -189,13 +142,6 @@
         "deleted": "Gamla modeller borttagna",
         "deleteFailed": "Vissa gamla modeller kunde inte tas bort. Se loggen för mer information."
       },
-      "filters": {
-        "allLanguages": "Alla språk",
-        "streaming": "Filtrera modeller som stöder transkription i realtid",
-        "translation": "Filtrera modeller som stöder översättning till engelska"
-      },
-      "noModelsMatch": "Inga modeller matchar detta filter.",
-      "searchPlaceholder": "Sök modeller efter namn…",
       "rescan": {
         "label": "Skanna om",
         "tooltip": "Skanna om efter modeller som lagts till i modellmappen eller Hugging Face-cachen utanför Handy"
@@ -376,8 +322,7 @@
         "description": "Skriver mandarin- och kantonesiska transkriptioner med förenklade eller traditionella tecken. Andra språk lämnas oförändrade.",
         "options": {
           "asTranscribed": "Som transkriberat",
-          "simplified": "Förenklad",
-          "traditional": "Traditionell"
+          "simplified": "Förenklad"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "Välj tangentbordsgenvägens implementation.",
         "bindingsReset": "Kortkommandona var inkompatibla och återställdes till standardvärden"
       },
-      "paths": {
-        "appData": "Appdata:",
-        "models": "Modeller:",
-        "settings": "Inställningar:"
-      },
       "pasteDelay": {
         "title": "Fördröjning vid klistra in (före)",
         "description": "Fördröjning (i millisekunder) efter att text kopierats, innan tangenttryckningen för att klistra in skickas. Öka om ingenting klistras in."
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "Förhandsvisa introduktionen",
         "description": "Förhandsvisa introduktionsskärmarna utan att ändra behörigheter, modeller eller slutförandestatus",
-        "permissionsButton": "Behörigheter",
-        "modelsButton": "Modellval",
         "exitButton": "Avsluta förhandsvisning"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "Laddar...",
     "delete": "Ta bort",
-    "back": "Tillbaka",
     "close": "Stäng",
     "open": "Öppna",
     "copy": "Kopiera",

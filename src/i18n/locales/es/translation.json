@@ -19,12 +19,6 @@
     "about": "Acerca de"
   },
   "onboarding": {
-    "subtitle": "Para comenzar, elige un modelo de transcripción",
-    "existingModelsTitle": "Modelos compatibles",
-    "downloadModelsTitle": "Disponibles para descargar",
-    "showAllModels": "Mostrar los {{total}} modelos",
-    "showFewerModels": "Mostrar menos modelos",
-    "recommended": "Recomendado",
     "customModelDescription": "Sin soporte oficial",
     "migration": {
       "title": "Tus modelos necesitan una actualización",
@@ -35,12 +29,7 @@
       "retry": "Intentar de nuevo",
       "chooseAnother": "Elegir otro modelo",
       "download": "Descargar modelos ({{size}})",
-      "continue": "Continuar",
-      "timeRemaining": "Quedan {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "precisión",
-      "speed": "velocidad"
+      "continue": "Continuar"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Error al seleccionar el modelo"
     },
     "permissions": {
-      "title": "Permisos requeridos",
-      "description": "Handy necesita algunos permisos para funcionar correctamente.",
-      "microphone": {
-        "title": "Acceso al micrófono",
-        "description": "Necesario para escuchar tu voz para la transcripción."
-      },
-      "accessibility": {
-        "title": "Acceso de accesibilidad",
-        "description": "Necesario para escribir el texto transcrito en tus aplicaciones."
-      },
-      "grant": "Conceder permiso",
-      "granted": "Concedido",
-      "waiting": "Esperando...",
-      "allGranted": "¡Todo listo!",
       "errors": {
         "checkFailed": "Error al verificar permisos. Por favor, inténtalo de nuevo.",
         "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
@@ -92,7 +67,6 @@
     "custom": "Personalizado",
     "streaming": "Streaming",
     "active": "Activo",
-    "switching": "Cambiando...",
     "noModelsAvailable": "No hay modelos disponibles",
     "verifying": "Verificando {{modelName}}...",
     "verifyingGeneric": "Verificando...",
@@ -104,20 +78,7 @@
     "modelError": "Error del modelo",
     "modelUnloaded": "Modelo descargado",
     "noModelDownloadRequired": "Sin modelo - descarga requerida",
-    "deleteModel": "Eliminar {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Soporta múltiples idiomas de entrada",
-      "languageCount": "{{total}} idiomas",
-      "translation": "Puede traducir al inglés",
-      "translate": "Traducir al inglés",
-      "singleLanguage": "Solo admite este idioma",
-      "languageOnly": "Solo {{language}}",
-      "streaming": "Muestra la transcripción en vivo mientras hablas"
-    },
-    "cancel": "Cancelar",
-    "cancelDownload": "Cancelar descarga",
-    "legacy": "Heredado"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -125,10 +86,6 @@
     },
     "models": {
       "title": "Modelos de transcripción",
-      "description": "Selecciona un modelo de transcripción o descarga modelos adicionales. Diferentes modelos ofrecen distintos niveles de precisión y velocidad.",
-      "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
-      "deleteActiveConfirm": "{{modelName}} es tu modelo activo. Eliminarlo detendrá las transcripciones hasta que selecciones un nuevo modelo. ¿Estás seguro?",
-      "deleteTitle": "Eliminar modelo",
       "retiredNotice": {
         "title": "Los modelos antiguos ya no funcionan con Handy",
         "description": "Ocupan {{size}} en tu equipo.",
@@ -136,15 +93,6 @@
         "deleted": "Modelos antiguos eliminados",
         "deleteFailed": "No se pudieron eliminar algunos modelos antiguos. Consulta el registro para más detalles."
       },
-      "filters": {
-        "allLanguages": "Todos los idiomas",
-        "streaming": "Filtrar modelos compatibles con la transcripción en vivo",
-        "translation": "Filtrar modelos compatibles con la traducción al inglés"
-      },
-      "noModelsMatch": "Ningún modelo coincide con este filtro.",
-      "yourModels": "Modelos descargados",
-      "availableModels": "Disponibles para descargar",
-      "searchPlaceholder": "Buscar modelos por nombre…",
       "rescan": {
         "label": "Volver a escanear",
         "tooltip": "Vuelve a escanear en busca de modelos añadidos a la carpeta de modelos o a la caché de Hugging Face fuera de Handy"
@@ -174,9 +122,7 @@
           }
         },
         "errors": {
-          "restore": "Error al restaurar el atajo original",
-          "set": "Error al configurar el atajo: {{error}}",
-          "reset": "Error al restablecer el atajo al valor original"
+          "set": "Error al configurar el atajo: {{error}}"
         }
       },
       "language": {
@@ -376,8 +322,7 @@
         "description": "Escribe las transcripciones en mandarín y cantonés con caracteres simplificados o tradicionales. Los demás idiomas no se modifican.",
         "options": {
           "asTranscribed": "Tal como se transcribió",
-          "simplified": "Simplificado",
-          "traditional": "Tradicional"
+          "simplified": "Simplificado"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "Elige el sistema que gestiona los atajos de teclado.",
         "bindingsReset": "Los atajos de teclado eran incompatibles y se restablecieron a los valores predeterminados"
       },
-      "paths": {
-        "appData": "Datos de la aplicación:",
-        "models": "Modelos:",
-        "settings": "Configuración:"
-      },
       "pasteDelay": {
         "title": "Retraso de pegado (antes)",
         "description": "Retraso (en milisegundos) después de copiar el texto, antes de enviar la pulsación de tecla de pegar. Auméntelo si no se pega nada."
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "Vista previa de la configuración inicial",
         "description": "Previsualiza las pantallas de configuración inicial sin cambiar permisos, modelos ni el estado de finalización",
-        "permissionsButton": "Permisos",
-        "modelsButton": "Selección de modelo",
         "exitButton": "Salir de la vista previa"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "Cargando...",
     "delete": "Eliminar",
-    "back": "Atrás",
     "close": "Cerrar",
     "open": "Abrir",
     "copy": "Copiar",

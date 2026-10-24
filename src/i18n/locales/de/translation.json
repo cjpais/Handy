@@ -19,12 +19,6 @@
     "about": "Info"
   },
   "onboarding": {
-    "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
-    "existingModelsTitle": "Kompatible Modelle",
-    "downloadModelsTitle": "Verfügbar zum Download",
-    "showAllModels": "Alle {{total}} Modelle anzeigen",
-    "showFewerModels": "Weniger Modelle anzeigen",
-    "recommended": "Empfohlen",
     "customModelDescription": "Nicht offiziell unterstützt",
     "migration": {
       "title": "Deine Modelle brauchen ein Update",
@@ -35,12 +29,7 @@
       "retry": "Erneut versuchen",
       "chooseAnother": "Anderes Modell wählen",
       "download": "Modelle herunterladen ({{size}})",
-      "continue": "Weiter",
-      "timeRemaining": "Noch {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "Genauigkeit",
-      "speed": "Geschwindigkeit"
+      "continue": "Weiter"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Modellauswahl fehlgeschlagen"
     },
     "permissions": {
-      "title": "Berechtigungen erforderlich",
-      "description": "Handy benötigt einige Berechtigungen, um richtig zu funktionieren.",
-      "microphone": {
-        "title": "Mikrofonzugriff",
-        "description": "Erforderlich, um deine Stimme für die Transkription zu hören."
-      },
-      "accessibility": {
-        "title": "Bedienungshilfen-Zugriff",
-        "description": "Erforderlich, um transkribierten Text in deine Anwendungen einzugeben."
-      },
-      "grant": "Berechtigung erteilen",
-      "granted": "Erteilt",
-      "waiting": "Warten...",
-      "allGranted": "Alles bereit!",
       "errors": {
         "checkFailed": "Berechtigungsprüfung fehlgeschlagen. Bitte erneut versuchen.",
         "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."
@@ -92,7 +67,6 @@
     "custom": "Benutzerdefiniert",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",
     "verifying": "Überprüfung von {{modelName}}...",
     "verifyingGeneric": "Überprüfung...",
@@ -104,20 +78,7 @@
     "modelError": "Modellfehler",
     "modelUnloaded": "Modell entladen",
     "noModelDownloadRequired": "Kein Modell - Download erforderlich",
-    "deleteModel": "{{modelName}} löschen",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Unterstützt mehrere Eingabesprachen",
-      "languageCount": "{{total}} Sprachen",
-      "translation": "Kann ins Englische übersetzen",
-      "translate": "Ins Englische übersetzen",
-      "singleLanguage": "Unterstützt nur diese Sprache",
-      "languageOnly": "Nur {{language}}",
-      "streaming": "Zeigt die Transkription live während des Sprechens an"
-    },
-    "cancel": "Abbrechen",
-    "cancelDownload": "Download abbrechen",
-    "legacy": "Veraltet"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -125,10 +86,6 @@
     },
     "models": {
       "title": "Transkriptionsmodelle",
-      "description": "Wähle ein Transkriptionsmodell aus oder lade zusätzliche Modelle herunter. Verschiedene Modelle bieten unterschiedliche Genauigkeits- und Geschwindigkeitsstufen.",
-      "deleteConfirm": "Bist du sicher, dass du {{modelName}} löschen möchtest? Du musst es erneut herunterladen, um es zu verwenden.",
-      "deleteActiveConfirm": "{{modelName}} ist dein aktives Modell. Das Löschen stoppt Transkriptionen, bis du ein neues Modell auswählst. Bist du sicher?",
-      "deleteTitle": "Modell löschen",
       "retiredNotice": {
         "title": "Alte Modelle funktionieren nicht mehr mit Handy",
         "description": "Sie belegen {{size}} auf deinem Computer.",
@@ -136,15 +93,6 @@
         "deleted": "Alte Modelle gelöscht",
         "deleteFailed": "Einige alte Modelle konnten nicht gelöscht werden. Details findest du im Protokoll."
       },
-      "filters": {
-        "allLanguages": "Alle Sprachen",
-        "streaming": "Modelle filtern, die Live-Transkription unterstützen",
-        "translation": "Modelle filtern, die Übersetzungen ins Englische unterstützen"
-      },
-      "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
-      "yourModels": "Heruntergeladene Modelle",
-      "availableModels": "Zum Download verfügbar",
-      "searchPlaceholder": "Modelle nach Namen suchen…",
       "rescan": {
         "label": "Neu scannen",
         "tooltip": "Erneut nach Modellen scannen, die außerhalb von Handy zum Modellordner oder Hugging-Face-Cache hinzugefügt wurden"
@@ -174,9 +122,7 @@
           }
         },
         "errors": {
-          "restore": "Ursprüngliches Tastenkürzel konnte nicht wiederhergestellt werden",
-          "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}",
-          "reset": "Tastenkürzel konnte nicht auf Originalwert zurückgesetzt werden"
+          "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}"
         }
       },
       "language": {
@@ -376,8 +322,7 @@
         "description": "Schreibt Transkriptionen auf Mandarin und Kantonesisch in vereinfachten oder traditionellen Schriftzeichen. Andere Sprachen bleiben unverändert.",
         "options": {
           "asTranscribed": "Wie transkribiert",
-          "simplified": "Vereinfacht",
-          "traditional": "Traditionell"
+          "simplified": "Vereinfacht"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "Wähle das Backend für Tastaturkürzel.",
         "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
       },
-      "paths": {
-        "appData": "App-Daten:",
-        "models": "Modelle:",
-        "settings": "Einstellungen:"
-      },
       "pasteDelay": {
         "title": "Einfügeverzögerung (vorher)",
         "description": "Verzögerung (in Millisekunden) nach dem Kopieren des Textes, bevor der Einfüge-Tastendruck gesendet wird. Erhöhe den Wert, wenn nichts eingefügt wird."
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "Ersteinrichtung ansehen",
         "description": "Vorschau der Einrichtungsbildschirme, ohne Berechtigungen, Modelle oder den Abschlussstatus zu ändern",
-        "permissionsButton": "Berechtigungen",
-        "modelsButton": "Modellauswahl",
         "exitButton": "Vorschau beenden"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "Wird geladen...",
     "delete": "Löschen",
-    "back": "Zurück",
     "close": "Schließen",
     "open": "Öffnen",
     "copy": "Kopieren",

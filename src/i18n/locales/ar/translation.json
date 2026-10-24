@@ -19,12 +19,6 @@
     "models": "النماذج"
   },
   "onboarding": {
-    "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
-    "existingModelsTitle": "النماذج المتوافقة",
-    "downloadModelsTitle": "متاح للتنزيل",
-    "showAllModels": "عرض كل النماذج ({{total}})",
-    "showFewerModels": "عرض عدد أقل من النماذج",
-    "recommended": "موصى به",
     "customModelDescription": "غير مدعوم رسميًا",
     "migration": {
       "title": "نماذجك بحاجة إلى تحديث",
@@ -35,12 +29,7 @@
       "retry": "حاول مرة أخرى",
       "chooseAnother": "اختر نموذجًا مختلفًا",
       "download": "تنزيل النماذج ({{size}})",
-      "continue": "متابعة",
-      "timeRemaining": "متبقٍ {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "الدقة",
-      "speed": "السرعة"
+      "continue": "متابعة"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "فشل تحديد النموذج"
     },
     "permissions": {
-      "title": "الأذونات المطلوبة",
-      "description": ".يحتاج Handy إلى بعض الأذونات ليعمل بشكل صحيح",
-      "microphone": {
-        "title": "الوصول إلى الميكروفون",
-        "description": ".مطلوب لسماع صوتك من أجل التفريغ الصوتي"
-      },
-      "accessibility": {
-        "title": "إمكانية الوصول",
-        "description": ".مطلوب لكتابة النص المفرغ في تطبيقاتك"
-      },
-      "grant": "منح الإذن",
-      "granted": "تم المنح",
-      "waiting": "في الانتظار...",
-      "allGranted": "كل شيء جاهز!",
       "errors": {
         "checkFailed": "فشل التحقق من الأذونات. يرجير المحاولة مرة أخرى.",
         "requestFailed": "فشل طلب الإذن. يرجى المحاولة مرة أخرى."
@@ -103,21 +78,7 @@
     "modelError": "خطأ في النموذج",
     "modelUnloaded": "تم إلغاء تحميل النموذج",
     "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
-    "deleteModel": "حذف {{modelName}}",
-    "switching": "جارٍ التبديل...",
-    "downloadSpeed": "{{speed}} ميجابايت/ث",
-    "cancel": "إلغاء",
-    "cancelDownload": "إلغاء التنزيل",
-    "capabilities": {
-      "languageSelection": "يدعم اختيار اللغة",
-      "singleLanguage": "يدعم هذه اللغة فقط",
-      "languageCount": "{{total}} لغة",
-      "languageOnly": "{{language}} فقط",
-      "translation": "يدعم الترجمة",
-      "translate": "ترجمة",
-      "streaming": "يعرض النسخ المباشر أثناء التحدث"
-    },
-    "legacy": "قديم"
+    "downloadSpeed": "{{speed}} ميجابايت/ث"
   },
   "settings": {
     "general": {
@@ -144,9 +105,7 @@
           }
         },
         "errors": {
-          "restore": "فشل استعادة الاختصار الأصلي",
-          "set": "فشل تعيين الاختصار: {{error}}",
-          "reset": "فشل إعادة تعيين الاختصار إلى قيمته الأصلية"
+          "set": "فشل تعيين الاختصار: {{error}}"
         }
       },
       "language": {
@@ -346,8 +305,7 @@
         "description": "يكتب نصوص الماندرين والكانتونية بالأحرف المبسطة أو التقليدية. لا تتغير اللغات الأخرى.",
         "options": {
           "asTranscribed": "كما نُسخ",
-          "simplified": "مبسطة",
-          "traditional": "تقليدية"
+          "simplified": "مبسطة"
         }
       }
     },
@@ -504,11 +462,6 @@
         "description": ".اختر الواجهة الخلفية لاختصارات لوحة المفاتيح",
         "bindingsReset": "كانت اختصارات لوحة المفاتيح غير متوافقة وتمت إعادة تعيينها إلى القيم الافتراضية"
       },
-      "paths": {
-        "appData": "بيانات التطبيق:",
-        "models": "النماذج:",
-        "settings": "الإعدادات:"
-      },
       "pasteDelay": {
         "title": "تأخير اللصق (قبل)",
         "description": "التأخير (بالمللي ثانية) بعد نسخ النص وقبل إرسال ضغطة مفتاح اللصق. قم بزيادته إذا لم يتم لصق أي شيء."
@@ -559,8 +512,6 @@
       "onboardingPreview": {
         "title": "معاينة الإعداد الأولي",
         "description": "عاين شاشات الإعداد الأولي دون تغيير الأذونات أو النماذج أو حالة الإكمال",
-        "permissionsButton": "الأذونات",
-        "modelsButton": "اختيار النموذج",
         "exitButton": "إنهاء المعاينة"
       }
     },
@@ -602,12 +553,6 @@
     },
     "models": {
       "title": "نماذج النسخ",
-      "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
-      "yourModels": "النماذج المحمّلة",
-      "availableModels": "متاح للتنزيل",
-      "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
-      "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
-      "deleteTitle": "حذف النموذج",
       "retiredNotice": {
         "title": "النماذج القديمة لم تعد تعمل مع Handy",
         "description": "إنها تشغل {{size}} على جهاز الكمبيوتر الخاص بك.",
@@ -615,13 +560,6 @@
         "deleted": "تم حذف النماذج القديمة",
         "deleteFailed": "تعذّر حذف بعض النماذج القديمة. تحقق من السجل لمزيد من التفاصيل."
       },
-      "filters": {
-        "allLanguages": "جميع اللغات",
-        "streaming": "تصفية النماذج التي تدعم النسخ المباشر",
-        "translation": "تصفية النماذج التي تدعم الترجمة إلى الإنجليزية"
-      },
-      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
-      "searchPlaceholder": "ابحث عن النماذج بالاسم…",
       "rescan": {
         "label": "إعادة الفحص",
         "tooltip": "إعادة الفحص بحثًا عن النماذج المضافة إلى مجلد النماذج أو ذاكرة Hugging Face التخزينية المؤقتة خارج Handy"
@@ -646,7 +584,6 @@
   "common": {
     "loading": "جاري التحميل...",
     "delete": "حذف",
-    "back": "رجوع",
     "close": "إغلاق",
     "open": "فتح",
     "copy": "نسخ",

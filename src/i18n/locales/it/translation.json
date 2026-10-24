@@ -19,12 +19,6 @@
     "about": "Informazioni"
   },
   "onboarding": {
-    "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
-    "existingModelsTitle": "Modelli compatibili",
-    "downloadModelsTitle": "Disponibile per il download",
-    "showAllModels": "Mostra tutti e {{total}} modelli",
-    "showFewerModels": "Mostra meno modelli",
-    "recommended": "Raccomandato",
     "customModelDescription": "Non ufficialmente supportato",
     "migration": {
       "title": "I tuoi modelli devono essere aggiornati",
@@ -35,12 +29,7 @@
       "retry": "Riprova",
       "chooseAnother": "Scegli un altro modello",
       "download": "Scarica modelli ({{size}})",
-      "continue": "Continua",
-      "timeRemaining": "{{time}} rimanenti"
-    },
-    "modelCard": {
-      "accuracy": "accuratezza",
-      "speed": "velocità"
+      "continue": "Continua"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Impossibile selezionare il modello"
     },
     "permissions": {
-      "title": "Permessi Richiesti",
-      "description": "Handy ha bisogno di alcuni permessi per funzionare correttamente.",
-      "microphone": {
-        "title": "Accesso al Microfono",
-        "description": "Necessario per sentire la tua voce per la trascrizione."
-      },
-      "accessibility": {
-        "title": "Accesso all'Accessibilità",
-        "description": "Necessario per digitare il testo trascritto nelle tue applicazioni."
-      },
-      "grant": "Concedi Permesso",
-      "granted": "Concesso",
-      "waiting": "In attesa...",
-      "allGranted": "Tutto pronto!",
       "errors": {
         "checkFailed": "Impossibile verificare i permessi. Riprova.",
         "requestFailed": "Impossibile richiedere il permesso. Riprova."
@@ -92,7 +67,6 @@
     "custom": "Personalizzato",
     "streaming": "Streaming",
     "active": "Attivo",
-    "switching": "Cambio...",
     "noModelsAvailable": "Nessun modello disponibile",
     "verifying": "Verifica di {{modelName}}...",
     "verifyingGeneric": "Verifica...",
@@ -104,20 +78,7 @@
     "modelError": "Errore del Modello",
     "modelUnloaded": "Modello Disattivato",
     "noModelDownloadRequired": "Nessun Modello - Download Richiesto",
-    "deleteModel": "Elimina {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Supporta più lingue di input",
-      "languageCount": "{{total}} lingue",
-      "translation": "Può tradurre in inglese",
-      "translate": "Traduci in inglese",
-      "singleLanguage": "Supporta solo questa lingua",
-      "languageOnly": "Solo {{language}}",
-      "streaming": "Mostra la trascrizione in tempo reale mentre parli"
-    },
-    "cancel": "Annulla",
-    "cancelDownload": "Annulla download",
-    "legacy": "Obsoleto"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -125,10 +86,6 @@
     },
     "models": {
       "title": "Modelli di Trascrizione",
-      "description": "Seleziona un modello di trascrizione o scarica modelli aggiuntivi. Diversi modelli offrono diversi livelli di accuratezza e velocità.",
-      "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
-      "deleteActiveConfirm": "{{modelName}} è il tuo modello attivo. Eliminarlo interromperà le trascrizioni fino a quando non selezionerai un nuovo modello. Sei sicuro?",
-      "deleteTitle": "Elimina modello",
       "retiredNotice": {
         "title": "I modelli precedenti non funzionano più con Handy",
         "description": "Occupano {{size}} sul tuo computer.",
@@ -136,15 +93,6 @@
         "deleted": "Modelli precedenti eliminati",
         "deleteFailed": "Non è stato possibile eliminare alcuni modelli precedenti. Controlla il log per i dettagli."
       },
-      "filters": {
-        "allLanguages": "Tutte le lingue",
-        "streaming": "Filtra i modelli che supportano la trascrizione in tempo reale",
-        "translation": "Filtra i modelli che supportano la traduzione in inglese"
-      },
-      "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
-      "yourModels": "Modelli scaricati",
-      "availableModels": "Disponibili per il Download",
-      "searchPlaceholder": "Cerca modelli per nome…",
       "rescan": {
         "label": "Riscansiona",
         "tooltip": "Riscansiona per trovare modelli aggiunti alla cartella dei modelli o alla cache di Hugging Face al di fuori di Handy"
@@ -174,9 +122,7 @@
           }
         },
         "errors": {
-          "restore": "Errore nel ripristino della scorciatoia originale",
-          "set": "Errore nella configurazione della scorciatoia: {{error}}",
-          "reset": "Errore nella reinizializzazione della scorciatoia al valore originale"
+          "set": "Errore nella configurazione della scorciatoia: {{error}}"
         }
       },
       "language": {
@@ -376,8 +322,7 @@
         "description": "Scrive le trascrizioni in mandarino e cantonese con caratteri semplificati o tradizionali. Le altre lingue restano invariate.",
         "options": {
           "asTranscribed": "Come trascritto",
-          "simplified": "Semplificato",
-          "traditional": "Tradizionale"
+          "simplified": "Semplificato"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "Scegli il backend per le scorciatoie da tastiera.",
         "bindingsReset": "Le scorciatoie da tastiera erano incompatibili e sono state ripristinate ai valori predefiniti"
       },
-      "paths": {
-        "appData": "Dati App:",
-        "models": "Modelli:",
-        "settings": "Impostazioni:"
-      },
       "pasteDelay": {
         "title": "Ritardo incolla (prima)",
         "description": "Ritardo (in millisecondi) dopo aver copiato il testo, prima di inviare il tasto incolla. Aumentare se non viene incollato nulla."
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "Anteprima della configurazione iniziale",
         "description": "Visualizza le schermate di configurazione senza modificare autorizzazioni, modelli o stato di completamento",
-        "permissionsButton": "Autorizzazioni",
-        "modelsButton": "Selezione del modello",
         "exitButton": "Esci dall’anteprima"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "Caricamento...",
     "delete": "Elimina",
-    "back": "Indietro",
     "close": "Chiudi",
     "open": "Apri",
     "copy": "Copia",

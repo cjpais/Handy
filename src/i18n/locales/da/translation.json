@@ -19,12 +19,6 @@
     "about": "Om"
   },
   "onboarding": {
-    "subtitle": "For at komme i gang skal du vælge en transskriptionsmodel",
-    "existingModelsTitle": "Kompatible modeller",
-    "downloadModelsTitle": "Tilgængelig til download",
-    "showAllModels": "Vis alle {{total}} modeller",
-    "showFewerModels": "Vis færre modeller",
-    "recommended": "Anbefalet",
     "customModelDescription": "Ikke officielt understøttet",
     "migration": {
       "title": "Dine modeller skal opdateres",
@@ -35,12 +29,7 @@
       "retry": "Prøv igen",
       "chooseAnother": "Vælg en anden model",
       "download": "Download modeller ({{size}})",
-      "continue": "Fortsæt",
-      "timeRemaining": "{{time}} tilbage"
-    },
-    "modelCard": {
-      "accuracy": "nøjagtighed",
-      "speed": "hastighed"
+      "continue": "Fortsæt"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "Kunne ikke vælge model"
     },
     "permissions": {
-      "title": "Tilladelser påkrævet",
-      "description": "Handy har brug for et par tilladelser for at fungere korrekt.",
-      "microphone": {
-        "title": "Mikrofonadgang",
-        "description": "Påkrævet for at høre din stemme til transskription."
-      },
-      "accessibility": {
-        "title": "Tilgængelighedsadgang",
-        "description": "Påkrævet for at skrive den transskriberede tekst ind i dine programmer."
-      },
-      "grant": "Giv tilladelse",
-      "granted": "Givet",
-      "waiting": "Venter...",
-      "allGranted": "Alt er klar!",
       "errors": {
         "checkFailed": "Kunne ikke tjekke tilladelser. Prøv igen.",
         "requestFailed": "Kunne ikke anmode om tilladelse. Prøv igen."
@@ -90,10 +65,8 @@
   },
   "modelSelector": {
     "custom": "Brugerdefineret",
-    "legacy": "Forældet",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Skifter...",
     "noModelsAvailable": "Ingen modeller tilgængelige",
     "verifying": "Verificerer {{modelName}}...",
     "verifyingGeneric": "Verificerer...",
@@ -105,19 +78,7 @@
     "modelError": "Modelfejl",
     "modelUnloaded": "Model frigjort",
     "noModelDownloadRequired": "Ingen model - download påkrævet",
-    "deleteModel": "Slet {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Annuller",
-    "cancelDownload": "Annuller download",
-    "capabilities": {
-      "languageSelection": "Understøtter flere inputsprog",
-      "singleLanguage": "Understøtter kun dette sprog",
-      "languageCount": "{{total}} sprog",
-      "languageOnly": "Kun {{language}}",
-      "translation": "Kan oversætte til engelsk",
-      "translate": "Oversæt",
-      "streaming": "Viser live transskription, mens du taler"
-    }
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +108,7 @@
           }
         },
         "errors": {
-          "restore": "Kunne ikke gendanne den oprindelige genvej",
-          "set": "Kunne ikke indstille genvej: {{error}}",
-          "reset": "Kunne ikke nulstille genvej til oprindelig indstilling"
+          "set": "Kunne ikke indstille genvej: {{error}}"
         }
       },
       "language": {
@@ -176,13 +135,6 @@
     },
     "models": {
       "title": "Transskriptionsmodeller",
-      "description": "Vælg en transskriptionsmodel, eller download flere modeller. Forskellige modeller tilbyder varierende niveauer af nøjagtighed og hastighed.",
-      "searchPlaceholder": "Søg efter modeller ved navn…",
-      "yourModels": "Downloadede modeller",
-      "availableModels": "Tilgængelig til download",
-      "deleteConfirm": "Er du sikker på, at du vil slette {{modelName}}? Du skal downloade den igen for at bruge den.",
-      "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
-      "deleteTitle": "Slet model",
       "retiredNotice": {
         "title": "Gamle modeller virker ikke længere med Handy",
         "description": "De fylder {{size}} på din computer.",
@@ -190,16 +142,10 @@
         "deleted": "Gamle modeller er slettet",
         "deleteFailed": "Nogle gamle modeller kunne ikke slettes. Se loggen for detaljer."
       },
-      "filters": {
-        "allLanguages": "Alle sprog",
-        "streaming": "Filtrer modeller, der understøtter live transskription",
-        "translation": "Filtrer modeller, der understøtter oversættelse til engelsk"
-      },
       "rescan": {
         "label": "Søg igen",
         "tooltip": "Søg igen efter modeller, der er tilføjet til modelmappen eller Hugging Face-cachen uden for Handy"
-      },
-      "noModelsMatch": "Ingen modeller matcher dette filter."
+      }
     },
     "sound": {
       "title": "Lyd",
@@ -376,8 +322,7 @@
         "description": "Skriver mandarin- og kantonesisk-transskriptioner med forenklede eller traditionelle tegn. Andre sprog ændres ikke.",
         "options": {
           "asTranscribed": "Som transskriberet",
-          "simplified": "Forenklet",
-          "traditional": "Traditionel"
+          "simplified": "Forenklet"
         }
       }
     },
@@ -496,8 +441,6 @@
       "onboardingPreview": {
         "title": "Forhåndsvis introduktion",
         "description": "Forhåndsvis introduktionsskærmene uden at ændre tilladelser, modeller eller fuldførelsesstatus",
-        "permissionsButton": "Tilladelser",
-        "modelsButton": "Modelvalg",
         "exitButton": "Afslut forhåndsvisning"
       },
       "soundTheme": {
@@ -547,11 +490,6 @@
         "title": "Tastaturimplementering",
         "description": "Vælg backend til tastaturgenveje.",
         "bindingsReset": "Tastaturgenveje var inkompatible og blev nulstillet til standard"
-      },
-      "paths": {
-        "appData": "Appdata:",
-        "models": "Modeller:",
-        "settings": "Indstillinger:"
       },
       "pasteDelay": {
         "title": "Forsinkelse af indsættelse (før)",
@@ -649,7 +587,6 @@
   "common": {
     "loading": "Indlæser...",
     "delete": "Slet",
-    "back": "Tilbage",
     "close": "Luk",
     "open": "Åbn",
     "copy": "Kopiér",

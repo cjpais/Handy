@@ -19,12 +19,6 @@
     "about": "정보"
   },
   "onboarding": {
-    "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
-    "existingModelsTitle": "호환 가능한 모델",
-    "downloadModelsTitle": "다운로드 가능",
-    "showAllModels": "전체 {{total}}개 모델 표시",
-    "showFewerModels": "간략히 표시",
-    "recommended": "추천",
     "customModelDescription": "공식 지원되지 않음",
     "migration": {
       "title": "모델 업데이트가 필요합니다",
@@ -35,12 +29,7 @@
       "retry": "다시 시도",
       "chooseAnother": "다른 모델 선택",
       "download": "모델 다운로드 ({{size}})",
-      "continue": "계속",
-      "timeRemaining": "{{time}} 남음"
-    },
-    "modelCard": {
-      "accuracy": "정확도",
-      "speed": "속도"
+      "continue": "계속"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "모델을 선택하지 못했습니다"
     },
     "permissions": {
-      "title": "권한 필요",
-      "description": "Handy가 제대로 작동하려면 몇 가지 권한이 필요합니다.",
-      "microphone": {
-        "title": "마이크 접근",
-        "description": "음성 인식을 위해 마이크 접근 권한이 필요합니다."
-      },
-      "accessibility": {
-        "title": "접근성 권한",
-        "description": "녹음된 텍스트를 애플리케이션에 입력하기 위해 필요합니다."
-      },
-      "grant": "권한 부여",
-      "granted": "승인됨",
-      "waiting": "대기 중...",
-      "allGranted": "모두 설정 완료!",
       "errors": {
         "checkFailed": "권한 확인에 실패했습니다. 다시 시도해주세요.",
         "requestFailed": "권한 요청에 실패했습니다. 다시 시도해주세요."
@@ -92,7 +67,6 @@
     "custom": "사용자 정의",
     "streaming": "스트리밍",
     "active": "활성",
-    "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
     "verifying": "{{modelName}} 검증 중...",
     "verifyingGeneric": "검증 중...",
@@ -104,20 +78,7 @@
     "modelError": "모델 오류",
     "modelUnloaded": "모델 언로드됨",
     "noModelDownloadRequired": "모델 없음 - 다운로드 필요",
-    "deleteModel": "{{modelName}} 삭제",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "취소",
-    "cancelDownload": "다운로드 취소",
-    "capabilities": {
-      "languageSelection": "여러 입력 언어를 지원합니다",
-      "singleLanguage": "이 언어만 지원합니다",
-      "languageCount": "{{total}}개 언어",
-      "languageOnly": "{{language}} 전용",
-      "translation": "영어로 번역 가능",
-      "translate": "영어로 번역",
-      "streaming": "말하는 동안 실시간으로 음성 인식 결과를 표시"
-    },
-    "legacy": "레거시"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +108,7 @@
           }
         },
         "errors": {
-          "restore": "원래 단축키 복원에 실패했습니다",
-          "set": "단축키 설정 실패: {{error}}",
-          "reset": "단축키를 원래 값으로 재설정하는데 실패했습니다"
+          "set": "단축키 설정 실패: {{error}}"
         }
       },
       "language": {
@@ -205,12 +164,6 @@
     },
     "models": {
       "title": "음성 인식 모델",
-      "description": "음성 인식 모델을 선택하거나 추가 모델을 다운로드하세요. 모델마다 정확도와 속도가 다릅니다.",
-      "yourModels": "다운로드된 모델",
-      "availableModels": "다운로드 가능",
-      "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
-      "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
-      "deleteTitle": "모델 삭제",
       "retiredNotice": {
         "title": "이전 모델은 더 이상 Handy에서 작동하지 않습니다",
         "description": "컴퓨터에서 {{size}}을(를) 차지하고 있습니다.",
@@ -218,13 +171,6 @@
         "deleted": "이전 모델을 삭제했습니다",
         "deleteFailed": "일부 이전 모델을 삭제할 수 없습니다. 자세한 내용은 로그를 확인하세요."
       },
-      "filters": {
-        "allLanguages": "모든 언어",
-        "streaming": "실시간 음성 인식을 지원하는 모델 필터링",
-        "translation": "영어 번역을 지원하는 모델 필터링"
-      },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
-      "searchPlaceholder": "이름으로 모델 검색…",
       "rescan": {
         "label": "다시 스캔",
         "tooltip": "Handy 외부에서 모델 폴더 또는 Hugging Face 캐시에 추가된 모델을 다시 스캔합니다"
@@ -376,8 +322,7 @@
         "description": "표준 중국어와 광둥어 전사를 간체 또는 번체로 표기합니다. 다른 언어는 변경되지 않습니다.",
         "options": {
           "asTranscribed": "전사된 그대로",
-          "simplified": "간체",
-          "traditional": "번체"
+          "simplified": "간체"
         }
       }
     },
@@ -574,11 +519,6 @@
         "verdictNoEvents": "이벤트가 감지되지 않았습니다. 테스트 중에 키를 누르셨나요?",
         "failed": "진단 실패: {{error}}"
       },
-      "paths": {
-        "appData": "앱 데이터:",
-        "models": "모델:",
-        "settings": "설정:"
-      },
       "whatsNewPreview": {
         "title": "새 소식 미리보기",
         "description": "최신 내장 릴리스 노트를 본 것으로 표시하지 않고 엽니다",
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "온보딩 미리보기",
         "description": "권한, 모델 또는 완료 상태를 변경하지 않고 온보딩 화면을 미리 봅니다",
-        "permissionsButton": "권한",
-        "modelsButton": "모델 선택",
         "exitButton": "미리보기 종료"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "로딩 중...",
     "delete": "삭제",
-    "back": "뒤로",
     "close": "닫기",
     "open": "열기",
     "copy": "복사",

@@ -22,6 +22,25 @@ pub fn redact_text(text: &str) -> &str {
     }
 }
 
+/// The page size Handy's main window opens at, and the smallest it can be, in
+/// logical pixels: onboarding's stage (OnboardingShell), centred in a larger
+/// window.
+pub const MAIN_WINDOW_SIZE: (f64, f64) = (720.0, 600.0);
+
+/// Measure the title bar of `window`, in logical pixels: on macOS Tauri draws
+/// it inside the inner size (a full-size content view), so the page starts
+/// below it. Call on the main thread.
+#[cfg(target_os = "macos")]
+pub fn measure_title_bar(window: &tauri::WebviewWindow) -> f64 {
+    let Ok(ptr) = window.ns_window() else {
+        return 0.0;
+    };
+    // SAFETY: `ns_window` is the live NSWindow behind `window`, and this runs
+    // on the main thread.
+    let ns_window = unsafe { &*(ptr as *const objc2_app_kit::NSWindow) };
+    (ns_window.frame().size.height - ns_window.contentLayoutRect().size.height).max(0.0)
+}
+
 #[cfg(any(test, all(target_os = "windows", target_arch = "x86_64")))]
 const IMAGE_FILE_MACHINE_ARM64: u16 = 0xaa64;
 

@@ -9,7 +9,7 @@ export interface ModelMigrationPair {
   replacement: ModelInfo;
 }
 
-const repoIdOf = (model: ModelInfo): string | null =>
+export const repoIdOf = (model: ModelInfo): string | null =>
   typeof model.source === "object" && "HuggingFace" in model.source
     ? model.source.HuggingFace.repo_id
     : null;

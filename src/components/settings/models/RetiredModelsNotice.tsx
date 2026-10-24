@@ -50,14 +50,14 @@ const RetiredModelsNotice: React.FC = () => {
   return (
     <div
       role="status"
-      className="flex items-center gap-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5"
+      className="flex items-center gap-3 rounded-lg border border-transparent bg-warning-wash px-3 py-2.5"
     >
       <TriangleAlert className="h-5 w-5 shrink-0 text-warning" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium leading-5">
           {t("settings.models.retiredNotice.title")}
         </p>
-        <p className="text-sm leading-5 text-text/70">
+        <p className="text-sm leading-5 text-ink-2">
           {t("settings.models.retiredNotice.description", { size })}
         </p>
       </div>

@@ -19,12 +19,6 @@
     "about": "关于"
   },
   "onboarding": {
-    "subtitle": "请选择一个转录模型以开始使用",
-    "existingModelsTitle": "兼容的模型",
-    "downloadModelsTitle": "可供下载",
-    "showAllModels": "显示全部 {{total}} 个模型",
-    "showFewerModels": "显示较少模型",
-    "recommended": "推荐",
     "customModelDescription": "非官方支持",
     "migration": {
       "title": "您的模型需要更新",
@@ -35,12 +29,7 @@
       "retry": "重试",
       "chooseAnother": "选择其他模型",
       "download": "下载模型（{{size}}）",
-      "continue": "继续",
-      "timeRemaining": "剩余 {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "准确度",
-      "speed": "速度"
+      "continue": "继续"
     },
     "models": {
       "small": {
@@ -68,20 +57,6 @@
       "selectModel": "选择模型失败"
     },
     "permissions": {
-      "title": "需要权限",
-      "description": "Handy 需要一些权限才能正常工作。",
-      "microphone": {
-        "title": "麦克风访问",
-        "description": "需要听取您的语音进行转录。"
-      },
-      "accessibility": {
-        "title": "辅助功能访问",
-        "description": "需要将转录文本输入到您的应用程序中。"
-      },
-      "grant": "授予权限",
-      "granted": "已授予",
-      "waiting": "等待中...",
-      "allGranted": "全部完成！",
       "errors": {
         "checkFailed": "检查权限失败。请重试。",
         "requestFailed": "请求权限失败。请重试。"
@@ -92,7 +67,6 @@
     "custom": "自定义",
     "streaming": "流式",
     "active": "活跃",
-    "switching": "切换中...",
     "noModelsAvailable": "没有可用的模型",
     "verifying": "正在验证 {{modelName}}...",
     "verifyingGeneric": "正在验证...",
@@ -104,20 +78,7 @@
     "modelError": "模型错误",
     "modelUnloaded": "模型已卸载",
     "noModelDownloadRequired": "无模型 - 需要下载",
-    "deleteModel": "删除 {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "支持多种输入语言",
-      "languageCount": "{{total}} 种语言",
-      "translation": "可翻译为英语",
-      "translate": "翻译为英语",
-      "singleLanguage": "仅支持此语言",
-      "languageOnly": "仅 {{language}}",
-      "streaming": "在您说话时实时显示转录"
-    },
-    "cancel": "取消",
-    "cancelDownload": "取消下载",
-    "legacy": "旧版"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -125,10 +86,6 @@
     },
     "models": {
       "title": "转录模型",
-      "description": "选择转录模型或下载其他模型。不同模型提供不同的准确度和速度。",
-      "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
-      "deleteActiveConfirm": "{{modelName}} 是您当前使用的模型。删除后将停止转录，直到您选择新的模型。确定要删除吗？",
-      "deleteTitle": "删除模型",
       "retiredNotice": {
         "title": "旧模型已无法在 Handy 中使用",
         "description": "它们占用了您电脑上 {{size}} 的空间。",
@@ -136,15 +93,6 @@
         "deleted": "已删除旧模型",
         "deleteFailed": "部分旧模型无法删除。请查看日志了解详情。"
       },
-      "filters": {
-        "allLanguages": "所有语言",
-        "streaming": "筛选支持实时转录的模型",
-        "translation": "筛选支持翻译为英语的模型"
-      },
-      "noModelsMatch": "没有符合此筛选条件的模型。",
-      "yourModels": "已下载的模型",
-      "availableModels": "可供下载",
-      "searchPlaceholder": "按名称搜索模型…",
       "rescan": {
         "label": "重新扫描",
         "tooltip": "重新扫描在 Handy 之外添加到模型文件夹或 Hugging Face 缓存中的模型"
@@ -174,9 +122,7 @@
           }
         },
         "errors": {
-          "restore": "无法恢复原始快捷键",
-          "set": "无法设置快捷键: {{error}}",
-          "reset": "无法将快捷键重置为原始值"
+          "set": "无法设置快捷键: {{error}}"
         }
       },
       "language": {
@@ -376,8 +322,7 @@
         "description": "将普通话和粤语转录输出为简体或繁体中文。其他语言不受影响。",
         "options": {
           "asTranscribed": "保持原样",
-          "simplified": "简体",
-          "traditional": "繁体"
+          "simplified": "简体"
         }
       }
     },
@@ -534,11 +479,6 @@
         "description": "选择键盘快捷键的后端。",
         "bindingsReset": "键盘快捷键不兼容，已重置为默认值"
       },
-      "paths": {
-        "appData": "应用数据:",
-        "models": "模型:",
-        "settings": "设置:"
-      },
       "pasteDelay": {
         "title": "粘贴延迟（前）",
         "description": "复制文本后、发送粘贴按键前的延迟（毫秒）。如果没有粘贴任何内容，请增加此值。"
@@ -589,8 +529,6 @@
       "onboardingPreview": {
         "title": "预览新手引导",
         "description": "预览新手引导界面，而不更改权限、模型或完成状态",
-        "permissionsButton": "权限",
-        "modelsButton": "模型选择",
         "exitButton": "退出预览"
       }
     },
@@ -646,7 +584,6 @@
   "common": {
     "loading": "加载中...",
     "delete": "删除",
-    "back": "返回",
     "close": "关闭",
     "open": "打开",
     "copy": "复制",
