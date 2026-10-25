@@ -317,7 +317,8 @@
     "modelError": "Modelfejl",
     "modelUnloaded": "Model frigjort",
     "noModelDownloadRequired": "Ingen model - download påkrævet",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Du kan skifte model, når transskriberingen i Historik er færdig."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Opdeling af lang lyd",
-        "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen."
+        "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen. Transskriberede filer og lange gentransskriberinger deles altid."
       },
       "vadBackend": {
         "title": "Stemmedetektions-backend",
@@ -680,9 +681,21 @@
       "delete": "Slet post",
       "deleteError": "Kunne ikke slette posten. Prøv igen.",
       "retranscribe": "Transskribér igen",
-      "retranscribeError": "Kunne ikke transskribere igen. Prøv igen.",
+      "cancelTranscription": "Annuller transskription",
       "transcribing": "Transskriberer...",
-      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet."
+      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet.",
+      "notTranscribed": "Ikke transskriberet. Du kan transskribere den ved hjælp af genforsøgsikonet.",
+      "transcribeFile": "Transskriber fil",
+      "mediaFiles": "Lyd og video",
+      "fileUnsupported": "Kunne ikke læse lyd fra {{name}}.",
+      "readingFile": "Læser {{name}}...",
+      "transcribeFailed": "Transskriptionen mislykkedes. Prøv igen.",
+      "waiting": "Venter på transskription",
+      "transcribingPercent": "Transskriberer, {{percent}} %",
+      "showMore": "Vis mere",
+      "showLess": "Vis mindre",
+      "dropTitle": "Slip for at transskribere",
+      "dropDescription": "Den vises i historikken."
     },
     "debug": {
       "title": "Fejlfinding",

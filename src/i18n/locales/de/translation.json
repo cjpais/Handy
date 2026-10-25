@@ -317,7 +317,8 @@
     "modelError": "Modellfehler",
     "modelUnloaded": "Modell entladen",
     "noModelDownloadRequired": "Kein Modell - Download erforderlich",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Du kannst das Modell wechseln, sobald die Transkription im Verlauf fertig ist."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Lange Aufnahmen aufteilen",
-        "description": "Teilt lange Aufnahmen vor der Transkription an Sprechpausen auf, was die Transkription in der Regel verbessert."
+        "description": "Teilt lange Aufnahmen vor der Transkription an Sprechpausen auf, was die Transkription in der Regel verbessert. Transkribierte Dateien und lange erneute Transkriptionen werden immer aufgeteilt."
       },
       "vadBackend": {
         "title": "VAD-Backend",
@@ -680,9 +681,21 @@
       "delete": "Eintrag löschen",
       "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
       "retranscribe": "Erneut transkribieren",
-      "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "cancelTranscription": "Transkription abbrechen",
       "transcribing": "Transkribiere...",
-      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren.",
+      "notTranscribed": "Nicht transkribiert. Du kannst es über das Wiederholen-Symbol transkribieren.",
+      "transcribeFile": "Datei transkribieren",
+      "mediaFiles": "Audio und Video",
+      "fileUnsupported": "Audio aus {{name}} konnte nicht gelesen werden.",
+      "readingFile": "{{name}} wird gelesen...",
+      "transcribeFailed": "Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "waiting": "Wartet auf Transkription",
+      "transcribingPercent": "Transkribiere, {{percent}} %",
+      "showMore": "Mehr anzeigen",
+      "showLess": "Weniger anzeigen",
+      "dropTitle": "Zum Transkribieren ablegen",
+      "dropDescription": "Es erscheint im Verlauf."
     },
     "debug": {
       "title": "Debug",

@@ -317,7 +317,8 @@
     "modelError": "Błąd modelu",
     "modelUnloaded": "Model wyładowany",
     "noModelDownloadRequired": "Brak modelu – wymagane pobranie",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Model będzie można zmienić po zakończeniu transkrypcji w Historii."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Dzielenie długich nagrań",
-        "description": "Dzieli długie nagrania w miejscach pauz przed transkrypcją, co zwykle poprawia jakość transkrypcji."
+        "description": "Dzieli długie nagrania w miejscach pauz przed transkrypcją, co zwykle poprawia jakość transkrypcji. Transkrybowane pliki i długie ponowne transkrypcje są zawsze dzielone."
       },
       "vadBackend": {
         "title": "Backend wykrywania głosu",
@@ -680,9 +681,21 @@
       "delete": "Usuń wpis",
       "deleteError": "Nie udało się usunąć wpisu. Spróbuj ponownie.",
       "retranscribe": "Transkrybuj ponownie",
-      "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
+      "cancelTranscription": "Anuluj transkrypcję",
       "transcribing": "Transkrybuję...",
-      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia."
+      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia.",
+      "notTranscribed": "Nie przetranskrybowano. Możesz to przetranskrybować za pomocą ikony ponowienia.",
+      "transcribeFile": "Transkrybuj plik",
+      "mediaFiles": "Audio i wideo",
+      "fileUnsupported": "Nie udało się odczytać dźwięku z {{name}}.",
+      "readingFile": "Wczytywanie {{name}}...",
+      "transcribeFailed": "Transkrypcja nie powiodła się. Spróbuj ponownie.",
+      "waiting": "Oczekuje na transkrypcję",
+      "transcribingPercent": "Transkrypcja, {{percent}}%",
+      "showMore": "Pokaż więcej",
+      "showLess": "Pokaż mniej",
+      "dropTitle": "Upuść, aby transkrybować",
+      "dropDescription": "Pojawi się w historii."
     },
     "debug": {
       "title": "Debugowanie",

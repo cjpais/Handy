@@ -317,7 +317,8 @@
     "modelError": "모델 오류",
     "modelUnloaded": "모델 언로드됨",
     "noModelDownloadRequired": "모델 없음 - 다운로드 필요",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "히스토리의 받아쓰기가 끝나면 모델을 변경할 수 있습니다."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "긴 오디오 분할",
-        "description": "전사하기 전에 긴 녹음을 쉬는 구간에서 나눕니다. 일반적으로 전사 성능이 향상됩니다."
+        "description": "전사하기 전에 긴 녹음을 쉬는 구간에서 나눕니다. 일반적으로 전사 성능이 향상됩니다. 파일 전사와 긴 재전사는 항상 나누어 처리됩니다."
       },
       "vadBackend": {
         "title": "음성 활동 감지 백엔드",
@@ -680,9 +681,21 @@
       "delete": "항목 삭제",
       "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요.",
       "retranscribe": "다시 전사",
-      "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
+      "cancelTranscription": "전사 취소",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "notTranscribed": "전사되지 않았습니다. 재시도 아이콘을 사용하여 전사할 수 있습니다.",
+      "transcribeFile": "파일 받아쓰기",
+      "mediaFiles": "오디오 및 비디오",
+      "fileUnsupported": "{{name}}에서 오디오를 읽을 수 없습니다.",
+      "readingFile": "{{name}} 읽는 중...",
+      "transcribeFailed": "받아쓰기에 실패했습니다. 다시 시도해 주세요.",
+      "waiting": "받아쓰기 대기 중",
+      "transcribingPercent": "받아쓰는 중, {{percent}}%",
+      "showMore": "더 보기",
+      "showLess": "간략히 보기",
+      "dropTitle": "놓아서 받아쓰기",
+      "dropDescription": "기록에 표시됩니다."
     },
     "debug": {
       "title": "디버그",

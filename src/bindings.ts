@@ -930,9 +930,28 @@ async deleteHistoryEntry(id: number) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async retryHistoryEntryTranscription(id: number) : Promise<Result<null, string>> {
+/**
+ * Queues the entry to be transcribed again with the current model. Its
+ * progress and outcome arrive as `TranscriptionJob` events.
+ */
+async retryHistoryEntryTranscription(id: number) : Promise<void> {
+    await TAURI_INVOKE("retry_history_entry_transcription", { id });
+},
+/**
+ * Stops the entry's background transcription: a queued one is dropped, a
+ * running one stops after the chunk it is on. The entry keeps the text it
+ * had before.
+ */
+async cancelHistoryEntryTranscription(id: number) : Promise<void> {
+    await TAURI_INVOKE("cancel_history_entry_transcription", { id });
+},
+/**
+ * Adds an audio or video file to History and queues its transcription.
+ * Fails without adding anything if the file has no audio Handy can read.
+ */
+async transcribeFile(path: string) : Promise<Result<HistoryEntry, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("retry_history_entry_transcription", { id }) };
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_file", { path }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -978,13 +997,15 @@ historyUpdatePayload: HistoryUpdatePayload,
 recordingStateEvent: RecordingStateEvent,
 streamPhaseEvent: StreamPhaseEvent,
 streamTextEvent: StreamTextEvent,
-transcriptionCompleteEvent: TranscriptionCompleteEvent
+transcriptionCompleteEvent: TranscriptionCompleteEvent,
+transcriptionJob: TranscriptionJob
 }>({
 historyUpdatePayload: "history-update-payload",
 recordingStateEvent: "recording-state-event",
 streamPhaseEvent: "stream-phase-event",
 streamTextEvent: "stream-text-event",
-transcriptionCompleteEvent: "transcription-complete-event"
+transcriptionCompleteEvent: "transcription-complete-event",
+transcriptionJob: "transcription-job"
 })
 
 /** user-defined constants **/
@@ -1096,7 +1117,12 @@ export type ChineseScript =
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type GpuDeviceOption = { id: string; name: string; total_vram_mb: number }
-export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean }
+export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean; 
+/**
+ * The name of the file this entry was transcribed from; `None` for a
+ * dictation.
+ */
+source_name: string | null }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
  * Result of changing keyboard implementation
@@ -1288,6 +1314,23 @@ export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
  * Emitted when a dictation finishes (not on cancel); onboarding uses it to measure speed.
  */
 export type TranscriptionCompleteEvent = { outcome: TranscriptionOutcome; audio_seconds: number; wait_seconds: number }
+/**
+ * A background transcription of one History entry.
+ */
+export type TranscriptionJob = { entry_id: number; status: TranscriptionJobStatus }
+export type TranscriptionJobStatus = 
+/**
+ * Waiting behind another job.
+ */
+{ state: "queued" } | 
+/**
+ * `percent` of the audio is transcribed.
+ */
+{ state: "running"; percent: number } | 
+/**
+ * The entry has its new text, or the job was cancelled.
+ */
+{ state: "finished" } | { state: "failed"; error: string }
 /**
  * How a dictation ended.
  */

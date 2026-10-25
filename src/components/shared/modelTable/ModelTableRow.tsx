@@ -40,6 +40,10 @@ interface ModelTableRowProps {
   /** Runs first; preventDefault() keeps Enter and Space from activating. */
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   hint?: string;
+  /** Can't be picked right now: no hover, a faded mark. Still clickable. */
+  inert?: boolean;
+  /** Downloaded: never faded for missing your languages. */
+  onDisk?: boolean;
   /** View-transition names for onboarding's animations. */
   vt?: VtName;
 }
@@ -56,13 +60,15 @@ export const ModelTableRow: React.FC<ModelTableRowProps> = ({
   onActivate,
   onKeyDown,
   hint,
+  inert = false,
+  onDisk = false,
   vt,
 }) => {
   const { t } = useTranslation();
   const { grading, actions, highlighted } = useModelTable();
   const debug = useSettingsStore((s) => s.settings?.debug_mode ?? false);
   const role = grading.roleOf(entry.model);
-  const dim = grading.missing(entry.model).length > 0 && !tail;
+  const dim = grading.missing(entry.model).length > 0 && !tail && !onDisk;
   const capabilities = CAPABILITY_KEYS.filter(
     (c) => entry[CAPABILITIES[c].flag],
   );
@@ -124,6 +130,7 @@ export const ModelTableRow: React.FC<ModelTableRowProps> = ({
     <div
       role="radio"
       aria-checked={selected}
+      aria-disabled={inert || undefined}
       tabIndex={0}
       data-row={entry.id}
       {...vt?.()}
@@ -144,10 +151,13 @@ export const ModelTableRow: React.FC<ModelTableRowProps> = ({
           : selected
             ? // A quiet grey fill, a step past hover's wash.
               "cursor-default bg-line"
-            : `cursor-pointer hover:bg-wash ${highlighted === entry.id ? "bg-wash" : ""}`
+            : `${inert ? "cursor-default" : "cursor-pointer hover:bg-wash"} ${highlighted === entry.id ? "bg-wash" : ""}`
       }`}
     >
-      <span {...vt?.("m")} className="grid place-items-center">
+      <span
+        {...vt?.("m")}
+        className={`grid place-items-center ${inert ? "opacity-40" : ""}`}
+      >
         {shownMark}
       </span>
       <span className="flex min-w-0 flex-col items-start">

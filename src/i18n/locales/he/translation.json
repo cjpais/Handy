@@ -317,7 +317,8 @@
     "modelError": "שגיאת מודל",
     "modelUnloaded": "המודל נפרק",
     "noModelDownloadRequired": "אין מודל, נדרשת הורדה",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "אפשר יהיה להחליף מודל אחרי שהתמלול בהיסטוריה יסתיים."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "פיצול שמע ארוך",
-        "description": "מפצל הקלטות ארוכות בהפסקות לפני התמלול, מה שבדרך כלל משפר את איכות התמלול."
+        "description": "מפצל הקלטות ארוכות בהפסקות לפני התמלול, מה שבדרך כלל משפר את איכות התמלול. קבצים מתומללים ותמלולים חוזרים ארוכים מפוצלים תמיד."
       },
       "vadBackend": {
         "title": "מנוע זיהוי פעילות קולית",
@@ -680,9 +681,21 @@
       "delete": "מחק רשומה",
       "deleteError": "מחיקת הרשומה נכשלה. נסה שוב.",
       "retranscribe": "תמלל מחדש",
-      "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
+      "cancelTranscription": "ביטול התמלול",
       "transcribing": "מתמלל...",
-      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר."
+      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
+      "notTranscribed": "לא תומלל. אפשר לתמלל באמצעות אייקון הניסיון החוזר.",
+      "transcribeFile": "תמלול קובץ",
+      "mediaFiles": "שמע ווידאו",
+      "fileUnsupported": "לא ניתן לקרוא שמע מ-{{name}}.",
+      "readingFile": "קורא את {{name}}...",
+      "transcribeFailed": "התמלול נכשל. נסו שוב.",
+      "waiting": "ממתין לתמלול",
+      "transcribingPercent": "מתמלל, {{percent}}%",
+      "showMore": "הצג עוד",
+      "showLess": "הצג פחות",
+      "dropTitle": "שחררו כדי לתמלל",
+      "dropDescription": "הוא יופיע בהיסטוריה."
     },
     "debug": {
       "title": "ניפוי שגיאות",

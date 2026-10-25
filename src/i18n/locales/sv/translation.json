@@ -317,7 +317,8 @@
     "modelError": "Modellfel",
     "modelUnloaded": "Modell avlastad",
     "noModelDownloadRequired": "Ingen modell - Nedladdning krävs",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Du kan byta modell när transkriberingen i Historik är klar."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Dela upp långt ljud",
-        "description": "Delar upp långa inspelningar vid pauser före transkribering, vilket oftast förbättrar transkriberingen."
+        "description": "Delar upp långa inspelningar vid pauser före transkribering, vilket oftast förbättrar transkriberingen. Transkriberade filer och långa omtranskriberingar delas alltid upp."
       },
       "vadBackend": {
         "title": "Backend för röstdetektering",
@@ -680,9 +681,21 @@
       "delete": "Ta bort post",
       "deleteError": "Misslyckades med att ta bort post. Försök igen.",
       "retranscribe": "Transkribera igen",
-      "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
+      "cancelTranscription": "Avbryt transkribering",
       "transcribing": "Transkriberar...",
-      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök."
+      "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök.",
+      "notTranscribed": "Inte transkriberad. Du kan transkribera den med hjälp av ikonen för nytt försök.",
+      "transcribeFile": "Transkribera fil",
+      "mediaFiles": "Ljud och video",
+      "fileUnsupported": "Kunde inte läsa ljud från {{name}}.",
+      "readingFile": "Läser {{name}}...",
+      "transcribeFailed": "Transkriberingen misslyckades. Försök igen.",
+      "waiting": "Väntar på transkribering",
+      "transcribingPercent": "Transkriberar, {{percent}} %",
+      "showMore": "Visa mer",
+      "showLess": "Visa mindre",
+      "dropTitle": "Släpp för att transkribera",
+      "dropDescription": "Den visas i historiken."
     },
     "debug": {
       "title": "Felsökning",

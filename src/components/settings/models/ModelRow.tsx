@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, Loader2, Trash2, X } from "lucide-react";
+import { ArrowDown, Loader2, Lock, Trash2, X } from "lucide-react";
 import { Radio } from "@/components/ui/Radio";
 import { Button } from "@/components/ui/Button";
 import { ModelTableRow } from "@/components/shared/modelTable/ModelTableRow";
 import { formatModelSize } from "@/lib/utils/format";
 import { useModelStore } from "@/stores/modelStore";
+import { useModelsLocked } from "@/stores/transcriptionJobsStore";
 import {
   cancelDownload,
   pickModel,
@@ -19,11 +20,18 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
   const { t } = useTranslation();
   const place = usePlace(entry.id);
   const target = useIsTarget(entry.id);
+  const locked = useModelsLocked();
   const percent = useModelStore(
     (s) => s.downloadProgress[entry.id]?.percentage ?? 0,
   );
   const [asking, setAsking] = useState(false);
+  // Pressed while locked: this row says why nothing happened.
+  const [told, setTold] = useState(false);
   const askRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!locked) setTold(false);
+  }, [locked]);
 
   useEffect(() => {
     if (asking) askRef.current?.querySelector("button")?.focus();
@@ -31,6 +39,9 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
 
   const onDisk = place === "active" || place === "ready" || place === "loading";
   const on = place === "active";
+  // While History transcribes, the model in use can't change or go away.
+  const deletable = onDisk && !(locked && on);
+  const inert = locked && place === "ready";
   const size = formatModelSize(entry.sizeMb);
   const download =
     place === "downloading" || place === "checking"
@@ -72,9 +83,11 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
         size,
       })}
     </span>
+  ) : (locked && on) || (told && inert) ? (
+    t("modelSelector.lockedWhileTranscribing")
   ) : place === "loading" ? (
     t("settings.models.loading")
-  ) : place === "downloading" && target ? (
+  ) : place === "downloading" && target && !locked ? (
     <span className="tabular-nums">
       {t("settings.models.downloadingThenUse", {
         percent: Math.round(percent),
@@ -86,6 +99,10 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
   // Pressing a download makes it the one to switch to when it's done.
   const act = () => {
     if (asking || on || place === "loading") return;
+    if (inert) {
+      setTold(true);
+      return;
+    }
     pickModel(entry.id);
   };
 
@@ -109,7 +126,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
         </button>
       );
     }
-    if (onDisk) {
+    if (deletable) {
       const label = t("settings.models.deleteModel", { name: entry.name });
       return (
         <button
@@ -126,6 +143,9 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
         </button>
       );
     }
+    // Where the trash was: the reason it's gone.
+    if (locked && on)
+      return <Lock className="size-[13px] text-ink-3" aria-hidden="true" />;
     return <span />;
   })();
 
@@ -167,6 +187,8 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
       line={line}
       slot={slot}
       tail={ask || undefined}
+      inert={inert}
+      onDisk={onDisk}
       onActivate={act}
       onKeyDown={(e) => {
         // Escape closes the delete question from its buttons too.
@@ -178,7 +200,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
           return;
         }
         if (e.target !== e.currentTarget) return;
-        if ((e.key === "Delete" || e.key === "Backspace") && onDisk) {
+        if ((e.key === "Delete" || e.key === "Backspace") && deletable) {
           e.preventDefault();
           setAsking(true);
         }

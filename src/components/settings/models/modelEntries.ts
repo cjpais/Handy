@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
 import { useModelStore } from "@/stores/modelStore";
+import { areModelsLocked } from "@/stores/transcriptionJobsStore";
 import { useSettings } from "@/hooks/useSettings";
 import { useModelCatalog } from "@/hooks/useModelCatalog";
 import { averageError, type Grading } from "@/lib/models/grading";
@@ -140,6 +141,11 @@ export const usePlace = (id: string): Place => {
 export const useIsTarget = (id: string) => usePageState((s) => s.target === id);
 
 const select = async (id: string) => {
+  // A file is transcribing, so the model in use can't change.
+  if (areModelsLocked()) {
+    usePageState.setState({ target: null });
+    return;
+  }
   usePageState.setState({ switching: id, target: null });
   try {
     await useModelStore.getState().selectModel(id);
@@ -174,7 +180,8 @@ export const pickModel = (id: string) => {
     void select(id);
     return;
   }
-  usePageState.setState({ target: id });
+  // Locked: download it, but don't promise to switch to it.
+  if (!areModelsLocked()) usePageState.setState({ target: id });
   const done =
     id in store.downloadingModels
       ? whenDownloadEnds(id)

@@ -317,7 +317,8 @@
     "modelError": "Model Error",
     "modelUnloaded": "Model Unloaded",
     "noModelDownloadRequired": "No Model - Download Required",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "You can switch models once History finishes transcribing."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Long Audio Chunking",
-        "description": "Splits long recordings at pauses before transcribing, which typically improves transcription performance."
+        "description": "Splits long recordings at pauses before transcribing, which typically improves transcription performance. Transcribed files and long re-transcriptions are always split."
       },
       "vadBackend": {
         "title": "Voice Activity Backend",
@@ -680,9 +681,21 @@
       "delete": "Delete entry",
       "deleteError": "Failed to delete entry. Please try again.",
       "retranscribe": "Re-transcribe",
-      "retranscribeError": "Failed to re-transcribe. Please try again.",
+      "cancelTranscription": "Cancel transcription",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+      "notTranscribed": "Not transcribed. You can transcribe it using the retry icon.",
+      "transcribeFile": "Transcribe File",
+      "mediaFiles": "Audio and video",
+      "fileUnsupported": "Couldn't read audio from {{name}}.",
+      "readingFile": "Reading {{name}}...",
+      "transcribeFailed": "Transcription failed. Please try again.",
+      "waiting": "Waiting to transcribe",
+      "transcribingPercent": "Transcribing, {{percent}}%",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "dropTitle": "Drop to transcribe",
+      "dropDescription": "It'll show up in History."
     },
     "debug": {
       "title": "Debug",

@@ -317,7 +317,8 @@
     "modelError": "モデルエラー",
     "modelUnloaded": "モデルがアンロードされました",
     "noModelDownloadRequired": "モデルなし - ダウンロードが必要",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "履歴の文字起こしが終わるとモデルを変更できます。"
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "長い音声の分割",
-        "description": "文字起こしの前に長い録音を無音部分で分割します。通常、文字起こしの精度が向上します。"
+        "description": "文字起こしの前に長い録音を無音部分で分割します。通常、文字起こしの精度が向上します。ファイルの文字起こしと長い再文字起こしは常に分割されます。"
       },
       "vadBackend": {
         "title": "音声区間検出バックエンド",
@@ -680,9 +681,21 @@
       "delete": "エントリーを削除",
       "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。",
       "retranscribe": "再文字起こし",
-      "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
+      "cancelTranscription": "文字起こしをキャンセル",
       "transcribing": "文字起こし中…",
-      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。",
+      "notTranscribed": "文字起こしされていません。リトライアイコンを使用して文字起こしできます。",
+      "transcribeFile": "ファイルを文字起こし",
+      "mediaFiles": "音声と動画",
+      "fileUnsupported": "{{name}} から音声を読み込めませんでした。",
+      "readingFile": "{{name}} を読み込み中...",
+      "transcribeFailed": "文字起こしに失敗しました。もう一度お試しください。",
+      "waiting": "文字起こし待ち",
+      "transcribingPercent": "文字起こし中… {{percent}}%",
+      "showMore": "もっと見る",
+      "showLess": "閉じる",
+      "dropTitle": "ドロップして文字起こし",
+      "dropDescription": "履歴に表示されます。"
     },
     "debug": {
       "title": "デバッグ",

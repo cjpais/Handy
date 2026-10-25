@@ -317,7 +317,8 @@
     "modelError": "Chyba modelu",
     "modelUnloaded": "Model uvolněn",
     "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
-    "downloadSpeed": "{{speed}} MB/s"
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Model můžete změnit, až se dokončí přepis v Historii."
   },
   "settings": {
     "modelSettings": {
@@ -580,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Dělení dlouhého zvuku",
-        "description": "Před přepisem rozdělí dlouhé nahrávky v pauzách, což obvykle zlepšuje kvalitu přepisu."
+        "description": "Před přepisem rozdělí dlouhé nahrávky v pauzách, což obvykle zlepšuje kvalitu přepisu. Přepisované soubory a dlouhé opakované přepisy se rozdělují vždy."
       },
       "vadBackend": {
         "title": "Backend detekce hlasu",
@@ -680,9 +681,21 @@
       "delete": "Smazat záznam",
       "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu.",
       "retranscribe": "Přepsat znovu",
-      "retranscribeError": "Opětovný přepis se nezdařil. Zkuste to prosím znovu.",
+      "cancelTranscription": "Zrušit přepis",
       "transcribing": "Přepisuji...",
-      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování."
+      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování.",
+      "notTranscribed": "Nepřepsáno. Můžete to přepsat pomocí ikony opakování.",
+      "transcribeFile": "Přepsat soubor",
+      "mediaFiles": "Zvuk a video",
+      "fileUnsupported": "Ze souboru {{name}} se nepodařilo načíst zvuk.",
+      "readingFile": "Načítání {{name}}...",
+      "transcribeFailed": "Přepis se nezdařil. Zkuste to prosím znovu.",
+      "waiting": "Čeká na přepis",
+      "transcribingPercent": "Přepisuji, {{percent}} %",
+      "showMore": "Zobrazit více",
+      "showLess": "Zobrazit méně",
+      "dropTitle": "Pusťte pro přepis",
+      "dropDescription": "Zobrazí se v historii."
     },
     "debug": {
       "title": "Ladění",
