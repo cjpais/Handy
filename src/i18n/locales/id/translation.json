@@ -16,7 +16,8 @@
     "postProcessing": "Pascaproses",
     "history": "Riwayat",
     "debug": "Debug",
-    "about": "Tentang"
+    "about": "Tentang",
+    "close": "Tutup"
   },
   "onboarding": {
     "customModelDescription": "Tidak didukung secara resmi",
