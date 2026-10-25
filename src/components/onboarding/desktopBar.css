@@ -53,6 +53,14 @@
 .desktop-bar.is-task {
   bottom: 0;
   height: var(--bar-task-height);
+  /* Three columns, the outer two equal, so the apps sit at the bar's centre
+     (the screen's, the laptop's), not the centre of what the tray leaves. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+.desktop-task-group {
+  display: flex;
+  align-items: center;
   gap: var(--bar-task-gap);
 }
 /* the menus, as blanks */

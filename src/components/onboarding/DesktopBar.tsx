@@ -61,22 +61,26 @@ export const DesktopBar: React.FC<{
     </div>
   ) : (
     <div className={`desktop-bar is-task ${scale}`} aria-hidden="true">
-      <span className="flex-1" />
-      {os === "linux" ? (
-        <Tux />
-      ) : (
-        <span className="desktop-start">
-          {[0, 1, 2, 3].map((i) => (
-            <i key={i} />
-          ))}
-        </span>
-      )}
-      {[0, 1, 2].map((i) => (
-        <b key={i} />
-      ))}
-      <span className="flex-1" />
-      {tray}
-      {clock}
+      <span />
+      {/* the apps, at the bar's centre whatever the tray takes */}
+      <span className="desktop-task-group">
+        {os === "linux" ? (
+          <Tux />
+        ) : (
+          <span className="desktop-start">
+            {[0, 1, 2, 3].map((i) => (
+              <i key={i} />
+            ))}
+          </span>
+        )}
+        {[0, 1, 2].map((i) => (
+          <b key={i} />
+        ))}
+      </span>
+      <span className="desktop-task-group justify-self-end">
+        {tray}
+        {clock}
+      </span>
     </div>
   );
 };
