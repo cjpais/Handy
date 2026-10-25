@@ -106,7 +106,7 @@ async fn oversized_hub_fallback(streams: usize, resume_mirror: bool, corrupt_mir
     let attempt = parent.child_token();
     let progress_events = Arc::new(Mutex::new(Vec::new()));
     let captured = progress_events.clone();
-    let progress = HfDownloadProgress::new(attempt.clone(), move |received, total| {
+    let progress = HfDownloadProgress::new(attempt.clone(), move |received, total, _rate| {
         captured.lock().unwrap().push((received, total));
     });
     let result = download_from_hub(&server, dir.path(), streams, progress.clone(), attempt).await;
@@ -180,7 +180,7 @@ async fn hf_valid_ranges_still_complete_byte_exactly() {
         let dir = TempDir::new().unwrap();
         let parent = CancellationToken::new();
         let attempt = parent.child_token();
-        let progress = HfDownloadProgress::new(attempt.clone(), |received, total| {
+        let progress = HfDownloadProgress::new(attempt.clone(), |received, total, _rate| {
             assert!(received <= total);
         });
         let path = download_from_hub(&server, dir.path(), streams, progress.clone(), attempt)

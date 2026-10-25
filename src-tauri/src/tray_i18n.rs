@@ -35,7 +35,7 @@ pub fn get_tray_translations(locale: Option<String>) -> TrayStrings {
         .iter()
         .find_map(|(code, strings)| code.eq_ignore_ascii_case(&normalized).then_some(strings));
     let fallback = match chinese_script_for_locale(&normalized) {
-        Some(ChineseScript::Traditional) => "zh-TW",
+        Some(ChineseScript::TraditionalTw | ChineseScript::TraditionalHk) => "zh-TW",
         Some(_) => "zh",
         None => language,
     };

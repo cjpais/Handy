@@ -7,18 +7,24 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Check, Loader2 } from "lucide-react";
 import type { RetiredModel } from "@/bindings";
-import HandyTextLogo from "../icons/HandyTextLogo";
 import { Button } from "../ui/Button";
+import { Radio } from "../ui/Radio";
+import { Spinner } from "../ui/Spinner";
+import { TextLink } from "../ui/TextLink";
+import { DoneMark } from "../shared/DoneMark";
+import { ProgressRing } from "../shared/ProgressRing";
+import { Tag } from "../shared/Tag";
+import { OnboardingShell, ScreenHeader, ScreenMain } from "./OnboardingShell";
+import { useDownloadWords } from "./DownloadStatus";
 import { useModelStore } from "../../stores/modelStore";
-import { formatModelSize } from "../../lib/utils/format";
+import { BYTES_PER_MB, formatModelSize } from "../../lib/utils/format";
 import { commands } from "@/bindings";
 import {
   deleteRetiredModel,
   findReplacement,
   type ModelMigrationPair,
-} from "./retiredModels";
+} from "@/lib/models/retired";
 
 interface ModelMigrationProps {
   onComplete: () => void;
@@ -37,14 +43,14 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
   onChooseAnother,
   inUseModelId,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const words = useDownloadWords();
   const {
     models,
     loading,
     downloadingModels,
     verifyingModels,
     downloadProgress,
-    downloadStats,
     downloadModel,
     selectModel,
   } = useModelStore();
@@ -148,35 +154,24 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     !outcomes[target.retired.id] &&
     isReplacementReady(target);
 
-  // Combined speed and time remaining across the parallel downloads.
-  let speed = 0;
-  let remainingMb = 0;
+  // Combined speed and ETA; none until every active download has a measured rate.
+  let rate = 0;
+  let remainingBytes = 0;
+  let measured = true;
   for (const p of chosen) {
     const state = rowState(p);
     if (typeof state !== "number" || state >= 100) continue;
-    const id = p.replacement.id;
-    const progress = downloadProgress[id];
-    speed += downloadStats[id]?.speed ?? 0;
-    remainingMb +=
+    const progress = downloadProgress[p.replacement.id];
+    if (progress?.bytes_per_sec == null) measured = false;
+    rate += progress?.bytes_per_sec ?? 0;
+    remainingBytes +=
       progress && progress.total > 0
-        ? (progress.total - progress.downloaded) / (1024 * 1024)
-        : Number(p.replacement.size_mb) * (1 - state / 100);
+        ? progress.total - progress.downloaded
+        : Number(p.replacement.size_mb) * BYTES_PER_MB * (1 - state / 100);
   }
-  const secondsLeft = speed > 0 ? remainingMb / speed : 0;
-  // Unit formatting is localized by the browser ("3 min", "3 Min."), so only
-  // the "remaining" wrapper needs translating.
-  const timeLeft =
-    secondsLeft > 0
-      ? new Intl.NumberFormat(i18n.language, {
-          style: "unit",
-          unit: secondsLeft < 60 ? "second" : "minute",
-          unitDisplay: "short",
-        }).format(
-          secondsLeft < 60
-            ? Math.ceil(secondsLeft)
-            : Math.ceil(secondsLeft / 60),
-        )
-      : null;
+  const timeLeft = words.time(
+    measured && rate > 0 && remainingBytes > 0 ? remainingBytes / rate : null,
+  );
 
   const setOutcome = (retiredId: string, outcome?: Outcome) =>
     setOutcomes((prev) => ({ ...prev, [retiredId]: outcome }));
@@ -257,141 +252,86 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     })();
   }, [phase, targetId, picked, outcomes, chosen, rows, onComplete]);
 
-  if (!snapshot) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-text/50" />
-      </div>
-    );
-  }
+  if (!snapshot) return null;
 
   const showChecks = rows.length > 1;
   // Nothing ticked: the only way on is the picker.
   const noWayForward = chosen.length === 0;
+  const migrating = phase === "migrating";
+  const working = migrating && (downloading || !targetFailed);
+
+  const primary =
+    phase === "choose" ? (
+      noWayForward ? (
+        <Button variant="primary" size="lg" onClick={onChooseAnother}>
+          {t("onboarding.migration.chooseAnother")}
+        </Button>
+      ) : (
+        <Button variant="primary" size="lg" onClick={handleStart}>
+          {toDownload.length > 0
+            ? t("onboarding.migration.download", {
+                size: formatModelSize(downloadMb),
+              })
+            : t("onboarding.migration.continue")}
+        </Button>
+      )
+    ) : targetFailed && !downloading ? (
+      <Button variant="primary" size="lg" onClick={onChooseAnother}>
+        {t("onboarding.migration.chooseAnother")}
+      </Button>
+    ) : undefined;
+
+  const hint = working ? (
+    <span className="inline-flex items-center gap-[8px]" aria-live="polite">
+      <Spinner />
+      {loadingTarget &&
+        t("modelSelector.loading", { modelName: target.replacement.name })}
+      {timeLeft && (
+        <span className="tabular-nums">
+          {t("onboarding.download.timeLeft", { time: timeLeft })}
+        </span>
+      )}
+      {rate > 0 && <span className="tabular-nums">{words.speed(rate)}</span>}
+    </span>
+  ) : undefined;
 
   return (
-    <div className="h-screen w-full flex flex-col p-6 gap-5 items-center justify-center">
-      <HandyTextLogo width={160} className="shrink-0" />
-
-      <div className="text-center max-w-md shrink-0">
-        <h2 className="text-xl font-semibold text-text mb-1.5">
-          {t("onboarding.migration.title")}
-        </h2>
-        <p className="text-sm text-text/70">
-          {t("onboarding.migration.description")}
-        </p>
-      </div>
-
-      <ul className="w-full max-w-[560px] min-h-0 overflow-y-auto rounded-xl border-2 border-mid-gray/20 divide-y divide-mid-gray/20">
-        {rows.map((pair) => (
-          <MigrationRow
-            key={pair.retired.id}
-            pair={pair}
-            phase={phase}
-            chosen={isChosen(pair)}
-            showCheck={showChecks}
-            state={rowState(pair)}
-            onToggle={toggle}
-            onRetry={handleRetry}
-          />
-        ))}
-      </ul>
-
-      <div className="w-full max-w-[560px] flex flex-col items-center shrink-0">
-        {phase === "choose" ? (
-          noWayForward ? (
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full"
-              onClick={onChooseAnother}
-            >
-              {t("onboarding.migration.chooseAnother")}
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full"
-              onClick={handleStart}
-            >
-              {toDownload.length > 0
-                ? t("onboarding.migration.download", {
-                    size: formatModelSize(downloadMb),
-                  })
-                : t("onboarding.migration.continue")}
-            </Button>
-          )
-        ) : downloading || !targetFailed ? (
-          <p
-            className="flex items-center gap-2 h-10 text-sm text-text/70"
-            aria-live="polite"
-          >
-            <Loader2 className="w-4 h-4 animate-spin" />
-            {loadingTarget && (
-              <span>
-                {t("modelSelector.loading", {
-                  modelName: target.replacement.name,
-                })}
-              </span>
-            )}
-            {timeLeft && (
-              <span className="tabular-nums text-text/50">
-                {t("onboarding.migration.timeRemaining", { time: timeLeft })}
-              </span>
-            )}
-            {timeLeft && speed > 0 && (
-              <span className="text-text/30" aria-hidden="true">
-                ·
-              </span>
-            )}
-            {speed > 0 && (
-              <span className="tabular-nums text-text/50">
-                {t("modelSelector.downloadSpeed", {
-                  speed: speed.toFixed(1),
-                })}
-              </span>
-            )}
-          </p>
-        ) : (
-          <Button
-            variant="ghost"
-            size="md"
-            className="h-10 text-text/70 hover:text-text"
-            onClick={onChooseAnother}
-          >
+    <OnboardingShell
+      left={
+        phase === "choose" && !noWayForward ? (
+          <TextLink onClick={onChooseAnother}>
             {t("onboarding.migration.chooseAnother")}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const ProgressRing: React.FC<{ progress: number }> = ({ progress }) => {
-  const circumference = 2 * Math.PI * 9;
-  return (
-    <svg className="w-[22px] h-[22px] -rotate-90" viewBox="0 0 22 22">
-      <circle
-        cx="11"
-        cy="11"
-        r="9"
-        fill="none"
-        strokeWidth="2.5"
-        className="stroke-mid-gray/25"
-      />
-      <circle
-        cx="11"
-        cy="11"
-        r="9"
-        fill="none"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={circumference * (1 - progress / 100)}
-        className="stroke-logo-primary transition-[stroke-dashoffset] duration-150 ease-linear motion-reduce:transition-none"
-      />
-    </svg>
+          </TextLink>
+        ) : undefined
+      }
+      hint={hint}
+      primary={primary}
+    >
+      <ScreenMain
+        layout="top"
+        header={
+          <ScreenHeader
+            title={t("onboarding.migration.title")}
+            sub={t("onboarding.migration.description")}
+          />
+        }
+      >
+        <ul className="mb-0 flex min-h-0 w-full flex-col overflow-y-auto rounded-panel border-[1.5px] border-line-strong px-[22px] py-[4px] text-start">
+          {rows.map((pair) => (
+            <MigrationRow
+              key={pair.retired.id}
+              pair={pair}
+              phase={phase}
+              chosen={isChosen(pair)}
+              showCheck={showChecks}
+              state={rowState(pair)}
+              onToggle={toggle}
+              onRetry={handleRetry}
+            />
+          ))}
+        </ul>
+      </ScreenMain>
+    </OnboardingShell>
   );
 };
 
@@ -405,6 +345,7 @@ interface MigrationRowProps {
   onRetry: (pair: ModelMigrationPair) => void;
 }
 
+/** One model to update: its replacement, what it replaces, and its state. */
 const MigrationRow: React.FC<MigrationRowProps> = ({
   pair,
   phase,
@@ -416,7 +357,6 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
 }) => {
   const { t } = useTranslation();
   const { retired, replacement } = pair;
-  const oldName = retired.name;
   // Checkbox semantics only while choosing; later the row may hold a button.
   const toggleable = showCheck && phase === "choose";
 
@@ -428,7 +368,7 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
         <>
           <span className="text-error">{t("onboarding.migration.failed")}</span>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
@@ -443,27 +383,21 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
     // Already-downloaded picks are as good as ready before anything starts.
     if (state === "ready" || (chosen && replacement.is_downloaded)) {
       return (
-        <span
-          role="img"
-          aria-label={t("modelSelector.modelReady")}
-          className="grid place-items-center w-[22px] h-[22px] rounded-full bg-emerald-500/20 text-emerald-500"
-        >
-          <Check className="w-3 h-3" strokeWidth={3} />
+        <span role="img" aria-label={t("modelSelector.modelReady")}>
+          <DoneMark />
         </span>
       );
     }
     if (typeof state === "number") {
       return (
         <>
-          <span className="tabular-nums text-text/50">
-            {Math.round(state)}%
-          </span>
-          <ProgressRing progress={state} />
+          <span className="tabular-nums">{Math.round(state)}%</span>
+          <ProgressRing value={state / 100} size={22} />
         </>
       );
     }
     return (
-      <span className="text-text/50">
+      <span className="tabular-nums">
         {formatModelSize(Number(replacement.size_mb))}
       </span>
     );
@@ -481,40 +415,27 @@ const MigrationRow: React.FC<MigrationRowProps> = ({
           onToggle(retired.id);
         }
       }}
-      className={`flex items-center gap-3 px-4 py-3 ${
-        toggleable
-          ? "cursor-pointer hover:bg-mid-gray/5 focus-visible:outline-none focus-visible:bg-mid-gray/10"
-          : ""
+      className={`flex items-center gap-[14px] py-[14px] [&+&]:border-t [&+&]:border-line ${
+        toggleable ? "cursor-pointer" : ""
       }`}
     >
       {showCheck && (
-        <span
-          aria-hidden
-          className={`grid place-items-center w-5 h-5 shrink-0 rounded-full border-2 transition-colors ${
-            chosen
-              ? "bg-background-ui border-background-ui text-white"
-              : "border-mid-gray/45"
-          } ${toggleable ? "" : "opacity-55"}`}
-        >
-          {chosen && <Check className="w-3 h-3" strokeWidth={3} />}
-        </span>
+        <Radio checked={chosen} className={toggleable ? "" : "opacity-55"} />
       )}
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-text truncate">
+      <div className="min-w-0 flex-1">
+        <p className="m-0 truncate font-display text-row font-[650] leading-[1.3]">
           {replacement.name}
         </p>
-        <div className="flex items-center gap-2 text-xs text-text/40">
+        <div className="flex items-center gap-[8px] text-small text-ink-2">
           <span className="truncate">
-            {t("onboarding.migration.replaces", { name: oldName })}
+            {t("onboarding.migration.replaces", { name: retired.name })}
           </span>
-          <span className="shrink-0 rounded border border-mid-gray/35 px-1.5 text-[11px] font-medium text-text/55">
-            {t("onboarding.migration.oldFormat")}
-          </span>
+          <Tag>{t("onboarding.migration.oldFormat")}</Tag>
         </div>
       </div>
-
-      <div className="flex items-center gap-2 shrink-0 text-xs">{status()}</div>
+      <div className="flex shrink-0 items-center gap-[8px] text-label text-ink-3">
+        {status()}
+      </div>
     </li>
   );
 };

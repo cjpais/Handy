@@ -19,12 +19,6 @@
     "about": "Quant a"
   },
   "onboarding": {
-    "subtitle": "Per començar, trieu un model de transcripció",
-    "existingModelsTitle": "Models compatibles",
-    "downloadModelsTitle": "Disponibles per baixar",
-    "showAllModels": "Mostra tots els {{total}} models",
-    "showFewerModels": "Mostra menys models",
-    "recommended": "Recomanat",
     "customModelDescription": "Sense suport oficial",
     "migration": {
       "title": "Cal actualitzar els vostres models",
@@ -35,12 +29,7 @@
       "retry": "Torna-ho a provar",
       "chooseAnother": "Trieu un altre model",
       "download": "Baixa els models ({{size}})",
-      "continue": "Continua",
-      "timeRemaining": "Queden {{time}}"
-    },
-    "modelCard": {
-      "accuracy": "precisió",
-      "speed": "velocitat"
+      "continue": "Continua"
     },
     "models": {
       "small": {
@@ -68,32 +57,255 @@
       "selectModel": "No s'ha pogut seleccionar el model"
     },
     "permissions": {
-      "title": "Permisos necessaris",
-      "description": "El Handy demana alguns permisos per funcionar correctament.",
       "microphone": {
-        "title": "Accés al micròfon",
-        "description": "Necessari per escoltar la vostra veu i transcriure-la."
+        "name": "Micròfon",
+        "why": "Perquè el Handy us pugui sentir. L'àudio es converteix en text en aquest ordinador i no es puja mai enlloc."
       },
       "accessibility": {
-        "title": "Accés a l'accessibilitat",
-        "description": "Necessari per escriure el text transcrit a les aplicacions."
+        "name": "Accessibilitat",
+        "why": "Perquè la drecera funcioni a totes les aplicacions i el Handy pugui escriure el text on tingueu el cursor."
       },
-      "grant": "Concediu el permís",
-      "granted": "Concedit",
-      "waiting": "S'està esperant...",
-      "allGranted": "Tot a punt!",
       "errors": {
         "checkFailed": "No s'han pogut comprovar els permisos. Torneu-ho a provar.",
         "requestFailed": "No s'ha pogut sol·licitar el permís. Torneu-ho a provar."
+      },
+      "titleMac": "Dos permisos i ja està",
+      "titleWindows": "Un permís i ja està",
+      "subtitleMac": "El macOS pregunta abans que qualsevol aplicació pugui escoltar o escriure.",
+      "subtitleWindows": "El Windows pregunta abans que qualsevol aplicació pugui escoltar.",
+      "allow": "Permet",
+      "openSettings": "Obre la configuració",
+      "allowed": "Permès",
+      "waiting": "En espera",
+      "turnOnMac": "Activeu el Handy a Configuració del Sistema i torneu aquí.",
+      "turnOnWindows": "Activeu l'accés al micròfon a Configuració de Windows i torneu aquí.",
+      "hintBoth": "Permeteu-los tots dos per continuar",
+      "hintMicrophone": "Permeteu el micròfon per continuar",
+      "welcomeBack": "Us donem la benvinguda de nou. Continuem on ho havíeu deixat.",
+      "relaunch": "La drecera no respon després d'això? <relaunch>Reinicieu el Handy</relaunch> i tornareu a aparèixer just aquí."
+    },
+    "shell": {
+      "back": "Enrere",
+      "continue": "Continua",
+      "progress": "Pas {{step}} de {{count}}"
+    },
+    "welcome": {
+      "title": "Parleu en lloc d'escriure, a qualsevol aplicació",
+      "subtitle": "Trieu les llengües en què dictareu",
+      "languagesLabel": "Llengües",
+      "noMatch": "Cap llengua coincideix amb «{{query}}». Els models del Handy cobreixen unes 100 llengües; en trobareu més a la configuració.",
+      "appLanguage": "Llengua de l'aplicació",
+      "menusIn": "Menús en <b>{{language}}</b>",
+      "chinese": {
+        "question": "Parleu {{languages}}. Quins caràcters ha d'escriure el Handy?",
+        "label": "Caràcters xinesos",
+        "zh-Hans": "Simplificat",
+        "zh-Hant": "Taiwan",
+        "zh-HK": "Hong Kong"
+      },
+      "hint": {
+        "pickOne": "Trieu almenys una llengua",
+        "weak_one": "{{languages}}: cap model l'entén bé encara",
+        "weak_other": "{{languages}}: cap model les entén bé encara"
       }
+    },
+    "download": {
+      "checking": "S'està comprovant la baixada…",
+      "ready": "{{name}} està a punt",
+      "failed": "La baixada s'ha aturat",
+      "downloading": "S'està baixant {{name}}",
+      "progress": "{{done}} de {{total}}",
+      "progressLeft": "{{done}} de {{total}}, queden {{time}}",
+      "checkingName": "S'està comprovant {{name}}",
+      "checkingDetail": "Ens assegurem que la baixada estigui completa",
+      "stopped": "{{name}} ha deixat de baixar-se",
+      "retryDetail": "En tornar-ho a provar, continua on s'havia aturat",
+      "retryDownload": "Torna a provar la baixada",
+      "cardProgress": "S'està baixant {{percent}} %, {{done}} de {{total}}",
+      "timeLeft": "Queden {{time}}",
+      "speedLeft": "{{speed}}, queden {{time}}"
+    },
+    "model": {
+      "title": "Trieu un model de veu",
+      "subtitle": "El model de veu converteix la vostra parla en text, directament en aquest ordinador",
+      "label": "Model de veu",
+      "lines": {
+        "recommended": "El millor equilibri entre velocitat i precisió per a les vostres llengües",
+        "faster": "Més ràpid, amb alguns errors més",
+        "accurate": "Menys errors, però més lent"
+      },
+      "shorts": {
+        "recommended": "El millor equilibri per a vós",
+        "faster": "Més ràpid, uns quants errors més",
+        "accurate": "Menys errors, però més lent"
+      },
+      "model": "Model",
+      "showAll": "Mostra els {{count}} models",
+      "download": "Baixa {{size}}",
+      "downloadInstead": "Baixa {{size}} en lloc seu",
+      "pauses": "{{name}} es posa en pausa al {{percent}} %",
+      "resumeLater": "Torneu-lo a triar per continuar on s'havia quedat",
+      "hint": "Es baixa mentre acabeu la configuració"
+    },
+    "demo": {
+      "title": "Parleu a qualsevol aplicació, amb una sola drecera",
+      "hold": "<0>Feu clic on voldríeu escriure.</0> <1>Manteniu premuda la drecera i parleu.</1> <2>Deixeu-la anar i les paraules apareixeran.</2>",
+      "tap": "<0>Feu clic on voldríeu escriure.</0> <1>Premeu la drecera i parleu.</1> <2>Torneu-la a prémer i les paraules apareixeran.</2>",
+      "apps": {
+        "messages": "Missatges",
+        "notes": "Notes"
+      },
+      "chat": "Al final vindràs aquesta nit?",
+      "noteTitle": "Plans per al cap de setmana",
+      "screenLabel": "Un portàtil: algú fa clic en una aplicació, prem la drecera i parla, i les paraules apareixen on ha fet clic.",
+      "change": "Canvia",
+      "yourShortcut": "La vostra drecera és",
+      "pressKeys": "Premeu les tecles noves",
+      "addKey": "Ara afegiu-hi una tecla",
+      "cancel": "Cancel·la",
+      "tryIt": "Proveu-ho vosaltres mateixos"
+    },
+    "try": {
+      "title": "Proveu-ho!",
+      "subtitle": "El Handy és a la cantonada per guiar-vos",
+      "noteLabel": "Nota",
+      "placeholder": "Nota nova",
+      "hold": "Manteniu premut <keys/> i parleu.",
+      "tapNext": "Ara premeu <keys/> una vegada i parleu.",
+      "letGo": "Deixeu anar <keys/> quan acabeu.",
+      "tapAgain": "Torneu a prémer <keys/> quan acabeu.",
+      "watch": "Mireu la nota.",
+      "changeKeys": "Canvia la drecera, {{keys}}",
+      "doneHold": "Xoqueu-la! Això era mantenir premut.",
+      "doneHoldNext": "Ara, la manera sense mans.",
+      "doneTap": "Xoqueu-la! Això era prémer una vegada.",
+      "doneTapNext": "Ara proveu de mantenir-les premudes mentre parleu.",
+      "giveFive": "Ho heu aconseguit! Xoqueu-la",
+      "highFive": "Xoqueu-la",
+      "slowLine": "{{name}} ha trigat {{wait}} en aquest ordinador. <faster>Proveu un model més ràpid</faster>",
+      "nothingTyped": "Mmm, no ha arribat res.",
+      "nothingTypedSub": "Feu clic primer a la nota i torneu-ho a provar.",
+      "silent": "No he sentit res.",
+      "silentSub": "Aquest micròfon no ha captat cap so. Proveu-ne un altre:",
+      "noWords": "No he entès cap paraula.",
+      "noWordsSub": "Torneu-ho a provar i digueu una frase sencera.",
+      "finish": "Acaba",
+      "skip": "Omet",
+      "seconds": "{{value}} s"
+    },
+    "done": {
+      "title": "Tot a punt",
+      "subMac": "El Handy ja és a la barra de menús. Manteniu premut o premeu <keys/> a qualsevol aplicació per parlar.",
+      "subTray": "El Handy ja és a la safata del sistema. Manteniu premut o premeu <keys/> a qualsevol aplicació per parlar.",
+      "hint": "Podeu canviar-ho més tard a la configuració",
+      "highFiveLabel": "Xoqueu-la",
+      "atLogin": "Inicia el Handy quan entri a la sessió",
+      "finish": "Fet",
+      "panel": {
+        "name": "Handy",
+        "ready": "A punt",
+        "languages": "Llengües",
+        "model": "Model de veu",
+        "shortcut": "Drecera",
+        "changeLanguages": "Canvia les llengües, {{languages}}",
+        "changeModel": "Canvia el model de veu, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "No funciona? <guide>Guia de configuració per a Linux</guide>",
+      "done": "No funciona a altres aplicacions? <guide>Guia de configuració per a Linux</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Vista prèvia en directe",
+      "previewTitle": "Mostra les paraules a la finestra superposada En directe mentre parleu i les escriu quan acabeu",
+      "translate": "Tradueix",
+      "translateTitle": "Pot convertir el que digueu en text en anglès. Activeu-ho a la configuració"
+    },
+    "rubric": {
+      "gradeTitle": "Precisió en {{language}}: {{grade}}",
+      "accuracyTitle": "Precisió en {{language}}",
+      "overallTitle": "Precisió en les vostres llengües: {{grade}}",
+      "overall": "Precisió en les vostres llengües",
+      "meaning": {
+        "A": "Molt pocs errors: les paraules solen sortir tal com les dieu",
+        "B": "Alguns errors: caldrà corregir alguna paraula de tant en tant",
+        "C": "Errors freqüents: pot ser que es perdin alguns detalls",
+        "D": "Molts errors: caldrà revisar i corregir el que escriu",
+        "F": "Sovint poc clar: gran part del que digueu pot sortir malament"
+      },
+      "unsupported": "Aquest model no entén {{language}}, així que no el pot escriure",
+      "unrated": "Aquest model entén {{language}}, però encara no hem mesurat com de bé",
+      "under": "menys del {{max}} %",
+      "between": "del {{min}} al {{max}} %",
+      "over": "{{min}} % o més",
+      "speedTitle": "Velocitat: {{speed}}",
+      "speedName": {
+        "0": "Molt lent",
+        "1": "Lent",
+        "2": "Moderat",
+        "3": "Ràpid",
+        "4": "Molt ràpid"
+      },
+      "speedMeaning": {
+        "0": "Les paraules apareixen després d'una espera llarga",
+        "1": "Les paraules apareixen després d'una espera",
+        "2": "Les paraules apareixen després d'una espera breu",
+        "3": "Les paraules apareixen gairebé a l'instant",
+        "4": "Les paraules apareixen a l'instant"
+      },
+      "speedPreview": "{{meaning}}, amb una vista prèvia en directe mentre parleu",
+      "untimed": "Encara no hem mesurat com de ràpid és",
+      "underSeconds": "menys de {{max}} s",
+      "betweenSeconds": "de {{min}} a {{max}} s",
+      "overSeconds": "{{min}} s o més"
+    },
+    "roles": {
+      "recommended": "Recomanat",
+      "faster": "Més ràpid",
+      "accurate": "Més precís",
+      "fromAll": "De tots els models"
+    },
+    "speed": "Velocitat",
+    "size": "Mida",
+    "accuracy": "Precisió",
+    "search": "Cerca models",
+    "allLabel": "Models de veu",
+    "noMatch": "Cap resultat per a «{{query}}». Proveu una llengua o una família com Whisper o Parakeet",
+    "noFilterMatch": "Cap model coincideix amb aquests filtres",
+    "speedUntested": "Velocitat encara sense mesurar",
+    "speedWords": {
+      "0": "Molt lent, les paraules apareixen després d'una espera llarga",
+      "1": "Lent, les paraules apareixen després d'una espera",
+      "2": "Moderat, les paraules apareixen després d'una espera breu",
+      "3": "Ràpid, les paraules apareixen gairebé a l'instant",
+      "4": "Molt ràpid, les paraules apareixen a l'instant"
+    },
+    "speedWordsPreview": {
+      "0": "Molt lent, amb una vista prèvia en directe mentre parleu",
+      "1": "Lent, amb una vista prèvia en directe mentre parleu",
+      "2": "Moderat, amb una vista prèvia en directe mentre parleu",
+      "3": "Ràpid, amb una vista prèvia en directe mentre parleu",
+      "4": "Molt ràpid, amb una vista prèvia en directe mentre parleu"
+    },
+    "missingLanguage": "Falta una llengua",
+    "allLanguages": "Totes",
+    "downloadingLine": "S'està baixant el {{percent}} % de {{total}}",
+    "customLine": "Afegit des de la carpeta de models. Sense puntuar.",
+    "legacyLine": "Una baixada antiga. Sense puntuar."
+  },
+  "languagePicker": {
+    "search": "Cerca llengües",
+    "addAnother": "Afegeix-ne una altra",
+    "remove": "Elimina {{language}}",
+    "alreadyAdded_one": "{{languages}} ja està afegida.",
+    "alreadyAdded_other": "{{languages}} ja estan afegides."
   },
   "modelSelector": {
     "custom": "Personalitzat",
-    "legacy": "Antic",
     "streaming": "En temps real",
     "active": "Actiu",
-    "switching": "S'està canviant...",
     "noModelsAvailable": "No hi ha models disponibles",
     "verifying": "S'està verificant {{modelName}}...",
     "verifyingGeneric": "S'està verificant...",
@@ -105,19 +317,8 @@
     "modelError": "Error del model",
     "modelUnloaded": "Model alliberat de la memòria",
     "noModelDownloadRequired": "No hi ha cap model: cal baixar-ne un",
-    "deleteModel": "Suprimiu {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Cancel·la",
-    "cancelDownload": "Cancel·la la baixada",
-    "capabilities": {
-      "languageSelection": "Admet diverses llengües d'entrada",
-      "singleLanguage": "Només admet aquesta llengua",
-      "languageCount": "{{total}} llengües",
-      "languageOnly": "Només {{language}}",
-      "translation": "Pot traduir a l'anglès",
-      "translate": "Tradueix",
-      "streaming": "Mostra la transcripció en temps real mentre parleu"
-    }
+    "lockedWhileTranscribing": "Podràs canviar de model quan acabi la transcripció a l'Historial."
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +348,7 @@
           }
         },
         "errors": {
-          "restore": "No s'ha pogut restaurar la drecera original",
-          "set": "No s'ha pogut definir la drecera: {{error}}",
-          "reset": "No s'ha pogut restablir la drecera al valor original"
+          "set": "No s'ha pogut definir la drecera: {{error}}"
         }
       },
       "language": {
@@ -158,6 +357,12 @@
         "searchPlaceholder": "Cerca llengües...",
         "noResults": "No s'ha trobat cap llengua",
         "auto": "Automàtica"
+      },
+      "preferredLanguages": {
+        "title": "Llengües preferides",
+        "description": "Les llengües que parleu. El Handy les utilitza per recomanar models.",
+        "noMatch": "Cap llengua coincideix amb «{{query}}»",
+        "weak": "Cap model reconeix bé {{languages}} encara."
       },
       "shortcutActivation": {
         "title": "Comportament de la drecera",
@@ -175,14 +380,36 @@
       }
     },
     "models": {
-      "title": "Models de transcripció",
-      "description": "Seleccioneu un model de transcripció o baixeu-ne més. Els models ofereixen diferents nivells de precisió i velocitat.",
-      "searchPlaceholder": "Cerqueu models pel nom…",
-      "yourModels": "Models baixats",
-      "availableModels": "Disponibles per baixar",
-      "deleteConfirm": "Segur que voleu suprimir {{modelName}}? Haureu de tornar-lo a baixar per utilitzar-lo.",
-      "deleteActiveConfirm": "{{modelName}} és el model actiu. Si el suprimiu, no podreu fer transcripcions fins que seleccioneu un altre model. N'esteu segur?",
-      "deleteTitle": "Suprimeix el model",
+      "title": "Models",
+      "changeLanguages": "Canvia les llengües",
+      "sections": {
+        "yours": "En aquest ordinador",
+        "fits": "Per a les vostres llengües",
+        "untested": "Sense provar"
+      },
+      "untestedNote": "No s'han provat amb el Handy. Poden ser més lents o cometre més errors.",
+      "untestedHidden_one": "{{count}} model més no està ajustat per al dictat. Cerqueu-lo per trobar-lo.",
+      "untestedHidden_other": "{{count}} models més no estan ajustats per al dictat. Cerqueu per trobar-ne algun.",
+      "emptyYours": "Encara no hi ha models. Trieu-ne un a sota: es baixa i el Handy l'utilitza.",
+      "showMore": "Mostra'n {{count}} més",
+      "showFewer": "Mostra'n menys",
+      "download": "Baixa i utilitza",
+      "downloadingThenUse": "{{percent}} % de {{total}}, i després canvia",
+      "loading": "S'està carregant…",
+      "deleteAsk": "Voleu suprimir {{name}}? S'alliberen {{size}}.",
+      "deleteAskActive": "Voleu suprimir {{name}}? El Handy no podrà transcriure fins que en trieu un altre.",
+      "cancel": "Cancel·la",
+      "deleteModel": "Suprimeix {{name}}",
+      "cancelDownload": "Atura la baixada de {{name}}",
+      "legend": {
+        "open": "Com es puntuen els models",
+        "accuracyNote": "Per a cadascuna de les vostres llengües: quantes paraules ha fallat un model en les nostres gravacions de prova.",
+        "speedNote": {
+          "accelerated": "Quant triguen a escriure's 30 segons de veu amb el xip gràfic del nostre portàtil de prova. Aquest ordinador pot ser diferent.",
+          "cpu": "Quant triguen a escriure's 30 segons de veu amb el processador del nostre portàtil de prova. Aquest ordinador pot ser diferent."
+        },
+        "marks": "? encara no s'ha mesurat. — no entén aquesta llengua."
+      },
       "retiredNotice": {
         "title": "Els models antics ja no funcionen amb Handy",
         "description": "Ocupen {{size}} a l'ordinador.",
@@ -190,16 +417,13 @@
         "deleted": "S'han suprimit els models antics",
         "deleteFailed": "No s'han pogut suprimir alguns models antics. Consulteu el registre per a més detalls."
       },
-      "filters": {
-        "allLanguages": "Totes les llengües",
-        "streaming": "Filtra els models que admeten la transcripció en temps real",
-        "translation": "Filtra els models que admeten la traducció a l'anglès"
-      },
       "rescan": {
         "label": "Torna a cercar",
         "tooltip": "Torna a cercar models afegits a la carpeta de models o a la memòria cau de Hugging Face des de fora del Handy"
-      },
-      "noModelsMatch": "Cap model no coincideix amb aquest filtre."
+      }
+    },
+    "languages": {
+      "title": "Llengües"
     },
     "sound": {
       "title": "So",
@@ -357,7 +581,7 @@
       },
       "longFormChunking": {
         "title": "Divisió d'àudio llarg",
-        "description": "Divideix els enregistraments llargs a les pauses abans de transcriure'ls, cosa que normalment millora el rendiment de la transcripció."
+        "description": "Divideix els enregistraments llargs a les pauses abans de transcriure'ls, cosa que normalment millora el rendiment de la transcripció. Els fitxers transcrits i les retranscripcions llargues sempre es divideixen."
       },
       "vadBackend": {
         "title": "Motor de detecció d'activitat de veu",
@@ -373,11 +597,12 @@
       },
       "chineseScript": {
         "title": "Escriptura xinesa",
-        "description": "Escriu les transcripcions en mandarí i cantonès amb caràcters simplificats o tradicionals. Els altres idiomes no es modifiquen.",
+        "description": "Escriu les transcripcions en mandarí i cantonès amb caràcters simplificats, o amb caràcters tradicionals tal com s'escriuen a Taiwan o a Hong Kong. Les altres llengües es deixen tal qual.",
         "options": {
           "asTranscribed": "Tal com s'ha transcrit",
           "simplified": "Simplificat",
-          "traditional": "Tradicional"
+          "traditionalTw": "Tradicional (Taiwan)",
+          "traditionalHk": "Tradicional (Hong Kong)"
         }
       }
     },
@@ -456,9 +681,21 @@
       "delete": "Suprimeix l'entrada",
       "deleteError": "No s'ha pogut suprimir l'entrada. Torneu-ho a provar.",
       "retranscribe": "Torneu a transcriure",
-      "retranscribeError": "No s'ha pogut tornar a transcriure. Torneu-ho a provar.",
+      "cancelTranscription": "Cancel·la la transcripció",
       "transcribing": "S'està transcrivint...",
-      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent."
+      "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent.",
+      "notTranscribed": "No s'ha transcrit. Podeu transcriure-ho amb la icona de reintent.",
+      "transcribeFile": "Transcriu un fitxer",
+      "mediaFiles": "Àudio i vídeo",
+      "fileUnsupported": "No s'ha pogut llegir l'àudio de {{name}}.",
+      "readingFile": "S'està llegint {{name}}...",
+      "transcribeFailed": "La transcripció ha fallat. Torna-ho a provar.",
+      "waiting": "Esperant per transcriure",
+      "transcribingPercent": "Transcrivint, {{percent}}%",
+      "showMore": "Mostra'n més",
+      "showLess": "Mostra'n menys",
+      "dropTitle": "Deixa anar per transcriure",
+      "dropDescription": "Apareixerà a l'historial."
     },
     "debug": {
       "title": "Depuració",
@@ -496,9 +733,27 @@
       "onboardingPreview": {
         "title": "Previsualització de la configuració inicial",
         "description": "Previsualitza les pantalles de configuració inicial sense canviar els permisos, os models ni l'estat de compleció",
-        "permissionsButton": "Permisos",
-        "modelsButton": "Selecció del model",
-        "exitButton": "Sortiu de la previsualització"
+        "exitButton": "Sortiu de la previsualització",
+        "choose": "Trieu una pantalla",
+        "screens": {
+          "welcome": "Benvinguda",
+          "permissions": "Permisos",
+          "model": "Model",
+          "demo": "Demostració",
+          "try": "Prova-ho",
+          "done": "Tot a punt"
+        }
+      },
+      "onboardingRun": {
+        "title": "Executa la introducció",
+        "description": "Fa la introducció de debò des del principi: demana permisos, baixa models i desa les vostres opcions",
+        "button": "Inicia"
+      },
+      "modelMigration": {
+        "title": "Migració de models",
+        "description": "Obre de debò la pantalla d'actualització de models de format antic: baixa els substituts, canvia de model i elimina els fitxers antics",
+        "button": "Obre",
+        "noRetired": "No hi ha models de format antic al disc"
       },
       "soundTheme": {
         "label": "Tema de so",
@@ -547,11 +802,6 @@
         "title": "Implementació del teclat",
         "description": "Tria el motor de dreceres de teclat.",
         "bindingsReset": "Les dreceres de teclat eren incompatibles i s'han restablert als valors per defecte"
-      },
-      "paths": {
-        "appData": "Dades de l'aplicació:",
-        "models": "Models:",
-        "settings": "Configuració:"
       },
       "pasteDelay": {
         "title": "Retard abans d'enganxar",
@@ -649,16 +899,11 @@
   "common": {
     "loading": "S'està carregant...",
     "delete": "Suprimeix",
-    "back": "Enrere",
     "close": "Tanca",
     "open": "Obre",
     "copy": "Copia",
     "clear": "Neteja",
     "noOptionsFound": "No s'ha trobat cap opció"
-  },
-  "accessibility": {
-    "permissionsDescription": "El Handy necessita permisos d'accessibilitat per escriure el text transcrit.",
-    "openSettings": "Obriu la configuració del sistema"
   },
   "errors": {
     "loadDirectory": "Error en carregar el directori: {{error}}",

@@ -19,7 +19,7 @@ use tauri::{AppHandle, Emitter, Manager};
 mod download;
 mod hf_download;
 
-use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT};
+use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT, PROGRESS_TICK};
 use hf_download::HfDownloadProgress;
 
 /// Where a model comes from and how Handy obtains it — the routing discriminant
@@ -78,14 +78,14 @@ fn base_language(language: &str) -> &str {
     language.split(&['-', '_'][..]).next().unwrap_or(language)
 }
 
-/// The stable user intent used to compare language codes across model
-/// families. Norwegian Bokmål (`nb`) maps to Norwegian (`no`), while Nynorsk
-/// (`nn`) remains distinct; Filipino (`fil`) maps to Tagalog (`tl`). This is
-/// only for matching: callers must return/pass the model's original code.
+/// The package's `languageIdentity` for a code (`no`→`nb`, `tl`→`fil`, `iw`→`he`,
+/// `jw`→`jv`). For matching only: pass on the model's own code.
 pub(crate) fn canonical_language_code(language: &str) -> &str {
     match base_language(language) {
-        "nb" => "no",
-        "fil" => "tl",
+        "no" => "nb",
+        "tl" => "fil",
+        "iw" => "he",
+        "jw" => "jv",
         base => base,
     }
 }
@@ -245,8 +245,12 @@ impl ModelDescriptor {
 /// *concrete* code, so a bare intent (`en`) resolves to the exact string the
 /// engine's prompt table expects (`en-US`) for models that advertise full
 /// BCP-47 locales.
+///
+/// `preferred_languages` (`spoken_languages`) only matters when the model can't
+/// detect and the intent isn't usable: a single spoken language beats English.
 pub fn effective_language(
     intent: &str,
+    preferred_languages: &[String],
     supported_languages: &[String],
     supports_language_detection: bool,
 ) -> String {
@@ -255,19 +259,7 @@ pub fn effective_language(
     }
 
     if intent != "auto" {
-        // Prefer the same base code before considering an equivalence alias. If
-        // a future model advertises both `no` and `nb`, an explicit `nb` intent
-        // must select `nb`, regardless of capability-list order.
-        let exact_base_match = supported_languages
-            .iter()
-            .find(|language| base_language(language) == base_language(intent));
-        let equivalent_match = || {
-            supported_languages.iter().find(|language| {
-                canonical_language_code(language) == canonical_language_code(intent)
-            })
-        };
-
-        if let Some(code) = exact_base_match.or_else(equivalent_match) {
+        if let Some(code) = supported_code(intent, supported_languages) {
             return code.clone();
         }
     }
@@ -277,7 +269,13 @@ pub fn effective_language(
     }
 
     // Model can't auto-detect and the intent isn't usable: fall back to a
-    // concrete language (prefer English) so we never hand the engine "auto".
+    // concrete language so we never hand the engine "auto". The one language
+    // they speak, if the model hears it; else English; else the model's first.
+    if let [only] = preferred_languages {
+        if let Some(code) = supported_code(only, supported_languages) {
+            return code.clone();
+        }
+    }
     if let Some(en) = supported_languages
         .iter()
         .find(|language| base_language(language) == "en")
@@ -287,12 +285,28 @@ pub fn effective_language(
     recognition_language(&supported_languages[0]).to_string()
 }
 
+/// The model's own code for `language`, if it hears it.
+fn supported_code<'a>(language: &str, supported_languages: &'a [String]) -> Option<&'a String> {
+    // Exact base first, then aliases: with both `no` and `nb` listed, `nb` must pick `nb`.
+    supported_languages
+        .iter()
+        .find(|code| base_language(code) == base_language(language))
+        .or_else(|| {
+            supported_languages
+                .iter()
+                .find(|code| canonical_language_code(code) == canonical_language_code(language))
+        })
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct DownloadProgress {
     pub model_id: String,
     pub downloaded: u64,
     pub total: u64,
     pub percentage: f64,
+    /// Measured over a trailing window of this transfer only (bytes resumed
+    /// from disk excluded); `None` until there is enough to measure.
+    pub bytes_per_sec: Option<f64>,
 }
 
 /// Return the active HF cache followed by the pre-v0.9.6 cache for portable
@@ -1676,8 +1690,9 @@ impl ModelManager {
             let attempt_token = cancel_token.child_token();
             let app_handle = self.app_handle.clone();
             let progress_model_id = model_id.clone();
-            let progress =
-                HfDownloadProgress::new(attempt_token.clone(), move |downloaded, total| {
+            let progress = HfDownloadProgress::new(
+                attempt_token.clone(),
+                move |downloaded, total, bytes_per_sec| {
                     let _ = app_handle.emit(
                         "model-download-progress",
                         &DownloadProgress {
@@ -1689,24 +1704,28 @@ impl ModelManager {
                             } else {
                                 0.0
                             },
+                            bytes_per_sec,
                         },
                     );
-                });
+                },
+            );
 
             // hf-hub has no internal timeouts, so a wedged connection would
             // otherwise hang this attempt forever and neither the retry loop
             // nor the mirror fallback would ever fire. The watchdog cancels a
             // per-attempt child token when progress goes stale; a user cancel
-            // on the parent propagates through the same child.
+            // on the parent propagates through the same child. Each wake also
+            // re-emits progress, so the reported rate decays through a lull.
             let watchdog = tokio::spawn({
                 let probe = progress.clone();
                 let attempt_token = attempt_token.clone();
                 async move {
                     loop {
-                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        tokio::time::sleep(PROGRESS_TICK).await;
                         if attempt_token.is_cancelled() {
                             break;
                         }
+                        probe.tick();
                         if probe.last_activity().elapsed() > DOWNLOAD_STALL_TIMEOUT {
                             attempt_token.cancel();
                             break;
@@ -1737,10 +1756,8 @@ impl ModelManager {
             };
             watchdog.abort();
 
-            // A live stream can keep the stall watchdog alive while hf-hub
-            // buffers whole-file responses for each requested range. Skip the
-            // remaining HF retries and use the bounded, hash-verified mirror
-            // path. Cancelling an attempt must not masquerade as user cancel.
+            // A live stream can exceed the byte budget without ever stalling.
+            // Skip further HF retries and reach the bounded, verified mirror.
             if let Some((expected, received)) = progress.exceeded_total() {
                 if cancel_token.is_cancelled() {
                     info!("HF download cancelled for: {}", model_id);
@@ -2541,7 +2558,36 @@ mod tests {
     fn test_effective_language_falls_back_to_canonical_chinese() {
         let languages = vec!["zh-Hant".to_string()];
 
-        assert_eq!(effective_language("auto", &languages, false), "zh");
+        assert_eq!(effective_language("auto", &[], &languages, false), "zh");
+    }
+
+    #[test]
+    fn test_effective_language_falls_back_to_the_one_preferred_language() {
+        let languages = vec!["en".to_string(), "es-ES".to_string(), "de".to_string()];
+        let spanish = vec!["es".to_string()];
+        let several = vec!["es".to_string(), "de".to_string()];
+        let unheard = vec!["ja".to_string()];
+
+        // A model that must be told: the one language they speak.
+        assert_eq!(
+            effective_language("auto", &spanish, &languages, false),
+            "es-ES"
+        );
+        // Several, or one the model doesn't hear: the English fallback.
+        assert_eq!(
+            effective_language("auto", &several, &languages, false),
+            "en"
+        );
+        assert_eq!(
+            effective_language("auto", &unheard, &languages, false),
+            "en"
+        );
+        // A model that detects stays on auto; a usable intent still wins.
+        assert_eq!(
+            effective_language("auto", &spanish, &languages, true),
+            "auto"
+        );
+        assert_eq!(effective_language("de", &spanish, &languages, false), "de");
     }
 
     #[test]
@@ -2557,29 +2603,49 @@ mod tests {
             "ja-JP".to_string(),
         ];
 
-        assert_eq!(effective_language("en", &languages, true), "en-US");
-        assert_eq!(effective_language("es", &languages, true), "es-ES");
+        assert_eq!(effective_language("en", &[], &languages, true), "en-US");
+        assert_eq!(effective_language("es", &[], &languages, true), "es-ES");
         // `zh`/`ja` have no bare entry in this model's table; resolve to locale.
-        assert_eq!(effective_language("zh", &languages, true), "zh-CN");
-        assert_eq!(effective_language("ja", &languages, true), "ja-JP");
+        assert_eq!(effective_language("zh", &[], &languages, true), "zh-CN");
+        assert_eq!(effective_language("ja", &[], &languages, true), "ja-JP");
         // An unsupported intent still auto-detects when the model can.
-        assert_eq!(effective_language("fr", &languages, true), "auto");
+        assert_eq!(effective_language("fr", &[], &languages, true), "auto");
     }
 
     #[test]
     fn test_effective_language_preserves_intent_across_model_code_variants() {
-        assert_eq!(effective_language("no", &["nb".to_string()], true), "nb");
-        assert_eq!(effective_language("nb", &["no".to_string()], true), "no");
-        assert_eq!(effective_language("tl", &["fil".to_string()], true), "fil");
-        assert_eq!(effective_language("fil", &["tl".to_string()], true), "tl");
+        assert_eq!(
+            effective_language("no", &[], &["nb".to_string()], true),
+            "nb"
+        );
+        assert_eq!(
+            effective_language("nb", &[], &["no".to_string()], true),
+            "no"
+        );
+        assert_eq!(
+            effective_language("tl", &[], &["fil".to_string()], true),
+            "fil"
+        );
+        assert_eq!(
+            effective_language("fil", &[], &["tl".to_string()], true),
+            "tl"
+        );
+        assert_eq!(
+            effective_language("jv", &[], &["jw".to_string()], true),
+            "jw"
+        );
+        assert_eq!(
+            effective_language("he", &[], &["iw".to_string()], true),
+            "iw"
+        );
     }
 
     #[test]
     fn test_effective_language_prefers_exact_norwegian_code() {
         let languages = vec!["no".to_string(), "nb".to_string()];
 
-        assert_eq!(effective_language("nb", &languages, true), "nb");
-        assert_eq!(effective_language("no", &languages, true), "no");
+        assert_eq!(effective_language("nb", &[], &languages, true), "nb");
+        assert_eq!(effective_language("no", &[], &languages, true), "no");
     }
 
     #[test]
