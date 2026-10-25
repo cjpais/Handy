@@ -681,7 +681,6 @@
       "delete": "Hapus entri",
       "deleteError": "Gagal menghapus entri. Silakan coba lagi.",
       "retranscribe": "Transkripsikan ulang",
-      "retranscribeError": "Gagal mentranskripsikan ulang. Silakan coba lagi.",
       "transcribing": "Mentranskripsikan...",
       "transcriptionFailed": "Transkripsi gagal. Anda dapat mentranskripsikan ulang menggunakan ikon coba lagi.",
       "transcribeFile": "Transkripsikan File",

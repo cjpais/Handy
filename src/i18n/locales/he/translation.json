@@ -681,7 +681,6 @@
       "delete": "מחק רשומה",
       "deleteError": "מחיקת הרשומה נכשלה. נסה שוב.",
       "retranscribe": "תמלל מחדש",
-      "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
       "transcribing": "מתמלל...",
       "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
       "transcribeFile": "תמלול קובץ",

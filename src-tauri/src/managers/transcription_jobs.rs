@@ -54,8 +54,11 @@ struct Running {
 
 #[derive(Default)]
 struct Jobs {
-    /// Entry ids waiting to be transcribed from their recordings.
-    queue: VecDeque<i64>,
+    /// Entry ids waiting to be transcribed again. They go before files:
+    /// someone is waiting on them.
+    retries: VecDeque<i64>,
+    /// Entry ids of files waiting to be transcribed.
+    files: VecDeque<i64>,
     running: Option<Running>,
 }
 
@@ -64,11 +67,20 @@ impl Jobs {
         self.running
             .as_ref()
             .is_some_and(|r| r.entry_id == entry_id)
-            || self.queue.contains(&entry_id)
+            || self.retries.contains(&entry_id)
+            || self.files.contains(&entry_id)
     }
 
     fn is_idle(&self) -> bool {
-        self.running.is_none() && self.queue.is_empty()
+        self.running.is_none() && self.retries.is_empty() && self.files.is_empty()
+    }
+
+    /// Drops the entry from the queues; whether it was in one.
+    fn unqueue(&mut self, entry_id: i64) -> bool {
+        let before = self.retries.len() + self.files.len();
+        self.retries.retain(|&id| id != entry_id);
+        self.files.retain(|&id| id != entry_id);
+        self.retries.len() + self.files.len() != before
     }
 }
 
@@ -141,24 +153,29 @@ impl TranscriptionJobManager {
             }
         };
         info!("Queued file transcription for history entry {}", entry.id);
-        self.queue(entry.id);
+        self.queue(entry.id, false);
         Ok(entry)
     }
 
-    /// Whether the entry is queued or being transcribed.
-    pub fn has(&self, entry_id: i64) -> bool {
-        self.lock().has(entry_id)
+    /// Queues the entry to be transcribed again from its recording, ahead
+    /// of any file.
+    pub fn retry(&self, entry_id: i64) {
+        self.queue(entry_id, true);
     }
 
     /// Queues the entry to be transcribed from its recording, unless it
     /// already is.
-    pub fn queue(&self, entry_id: i64) {
+    fn queue(&self, entry_id: i64, retry: bool) {
         {
             let mut jobs = self.lock();
             if jobs.has(entry_id) {
                 return;
             }
-            jobs.queue.push_back(entry_id);
+            if retry {
+                jobs.retries.push_back(entry_id);
+            } else {
+                jobs.files.push_back(entry_id);
+            }
             self.sync_job_active(&jobs);
         }
         self.emit(entry_id, TranscriptionJobStatus::Queued);
@@ -169,12 +186,26 @@ impl TranscriptionJobManager {
     /// Stops the entry's job: a queued one is dropped, a running one stops
     /// before its next chunk.
     pub fn cancel(&self, entry_id: i64) {
-        let mut jobs = self.lock();
-        jobs.queue.retain(|&id| id != entry_id);
-        if let Some(running) = jobs.running.as_ref().filter(|r| r.entry_id == entry_id) {
-            running.cancelled.store(true, Ordering::Release);
+        let (was_queued, idle) = {
+            let mut jobs = self.lock();
+            let was_queued = jobs.unqueue(entry_id);
+            if let Some(running) = jobs.running.as_ref().filter(|r| r.entry_id == entry_id) {
+                running.cancelled.store(true, Ordering::Release);
+            }
+            self.sync_job_active(&jobs);
+            (was_queued, jobs.is_idle())
+        };
+        // A running job reports its own end from the job loop; a queued one
+        // never reaches it, so it is reported here.
+        if was_queued {
+            if idle && !crate::tray::dictation_in_progress(&self.app) {
+                self.app
+                    .state::<Arc<TranscriptionManager>>()
+                    .maybe_unload_immediately("background transcription");
+            }
+            crate::tray::update_tray_menu(&self.app);
+            self.emit(entry_id, TranscriptionJobStatus::Finished);
         }
-        self.sync_job_active(&jobs);
     }
 
     /// Keeps the model held for as long as any job is queued or running.
@@ -195,7 +226,9 @@ impl TranscriptionJobManager {
             let (entry_id, cancelled) = {
                 let mut jobs = self.lock();
                 let entry_id = loop {
-                    if let Some(entry_id) = jobs.queue.pop_front() {
+                    if let Some(entry_id) =
+                        jobs.retries.pop_front().or_else(|| jobs.files.pop_front())
+                    {
                         break entry_id;
                     }
                     jobs = self

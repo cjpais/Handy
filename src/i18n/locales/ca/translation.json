@@ -681,7 +681,6 @@
       "delete": "Suprimeix l'entrada",
       "deleteError": "No s'ha pogut suprimir l'entrada. Torneu-ho a provar.",
       "retranscribe": "Torneu a transcriure",
-      "retranscribeError": "No s'ha pogut tornar a transcriure. Torneu-ho a provar.",
       "transcribing": "S'està transcrivint...",
       "transcriptionFailed": "La transcripció ha fallat. Podeu tornar a transcriure amb la icona de reintent.",
       "transcribeFile": "Transcriu un fitxer",

@@ -681,7 +681,6 @@
       "delete": "Ta bort post",
       "deleteError": "Misslyckades med att ta bort post. Försök igen.",
       "retranscribe": "Transkribera igen",
-      "retranscribeError": "Misslyckades med att transkribera igen. Försök igen.",
       "transcribing": "Transkriberar...",
       "transcriptionFailed": "Transkribering misslyckades. Du kan transkribera igen med hjälp av ikonen för nytt försök.",
       "transcribeFile": "Transkribera fil",

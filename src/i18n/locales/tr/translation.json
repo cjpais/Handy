@@ -681,7 +681,6 @@
       "delete": "Kaydı sil",
       "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
       "retranscribe": "Yeniden transkribe et",
-      "retranscribeError": "Yeniden transkripsiyon başarısız oldu. Lütfen tekrar deneyin.",
       "transcribing": "Transkribe ediliyor...",
       "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar transkribe edebilirsiniz.",
       "transcribeFile": "Dosyayı Yazıya Dök",

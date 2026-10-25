@@ -252,13 +252,6 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
-  const retryHistoryEntry = async (id: number) => {
-    const result = await commands.retryHistoryEntryTranscription(id);
-    if (result.status !== "ok") {
-      throw new Error(String(result.error));
-    }
-  };
-
   const openRecordingsFolder = async () => {
     try {
       const result = await commands.openRecordingsFolder();
@@ -298,7 +291,7 @@ export const HistorySettings: React.FC = () => {
                 onCopyText={() => copyToClipboard(entry.transcription_text)}
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
-                retryTranscription={retryHistoryEntry}
+                retryTranscription={commands.retryHistoryEntryTranscription}
               />
             ))}
           </div>
@@ -360,13 +353,12 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
-  const [requesting, setRequesting] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
 
   // Queued or being transcribed in the background.
-  const retrying = requesting || job !== undefined;
+  const retrying = job !== undefined;
   const hasTranscription = entry.transcription_text.trim().length > 0;
   const folded = hasTranscription && !retrying && !expanded;
 
@@ -407,18 +399,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     } catch (error) {
       console.error("Failed to delete entry:", error);
       toast.error(t("settings.history.deleteError"));
-    }
-  };
-
-  const handleRetranscribe = async () => {
-    try {
-      setRequesting(true);
-      await retryTranscription(entry.id);
-    } catch (error) {
-      console.error("Failed to re-transcribe:", error);
-      toast.error(t("settings.history.retranscribeError"));
-    } finally {
-      setRequesting(false);
     }
   };
 
@@ -476,7 +456,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             />
           </IconButton>
           <IconButton
-            onClick={handleRetranscribe}
+            onClick={() => retryTranscription(entry.id)}
             disabled={retrying}
             title={t("settings.history.retranscribe")}
           >

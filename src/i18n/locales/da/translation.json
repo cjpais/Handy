@@ -681,7 +681,6 @@
       "delete": "Slet post",
       "deleteError": "Kunne ikke slette posten. Prøv igen.",
       "retranscribe": "Transskribér igen",
-      "retranscribeError": "Kunne ikke transskribere igen. Prøv igen.",
       "transcribing": "Transskriberer...",
       "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet.",
       "transcribeFile": "Transskriber fil",

@@ -931,16 +931,11 @@ async deleteHistoryEntry(id: number) : Promise<Result<null, string>> {
 }
 },
 /**
- * Transcribes the entry again with the current model. A recording over one
- * chunk is queued instead and reports through [`TranscriptionJob`] events.
+ * Queues the entry to be transcribed again with the current model. Its
+ * progress and outcome arrive as `TranscriptionJob` events.
  */
-async retryHistoryEntryTranscription(id: number) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("retry_history_entry_transcription", { id }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
+async retryHistoryEntryTranscription(id: number) : Promise<void> {
+    await TAURI_INVOKE("retry_history_entry_transcription", { id });
 },
 /**
  * Adds an audio or video file to History and queues its transcription.

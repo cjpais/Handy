@@ -22,7 +22,7 @@ const RATE: usize = constants::WHISPER_SAMPLE_RATE as usize;
 
 const TARGET_SECONDS: f64 = 30.0;
 /// Audio up to this many samples is decoded in one piece; longer audio is cut.
-pub const MAX_CHUNK_SAMPLES: usize = 40 * RATE;
+const MAX_CHUNK_SAMPLES: usize = 40 * RATE;
 const MIN_CHUNK_SAMPLES: usize = 5 * RATE;
 /// Live, a cut is only final once this much audio past its window is scored:
 /// then no cut it allows can leave a short rest, so live cuts match the plan

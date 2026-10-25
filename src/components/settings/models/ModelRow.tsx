@@ -89,7 +89,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
 
   // Pressing a download makes it the one to switch to when it's done.
   const act = () => {
-    if (asking || on || place === "loading" || (locked && onDisk)) return;
+    if (asking || on || place === "loading") return;
     pickModel(entry.id);
   };
 
