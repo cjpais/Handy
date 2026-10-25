@@ -29,8 +29,6 @@ interface LanguageChipProps {
   onRemove: () => void;
   /** The last language can't go: the chip stays, without its ×. */
   locked?: boolean;
-  /** A language that needs attention (the model in use doesn't hear it). */
-  warning?: boolean;
 }
 
 /**
@@ -43,17 +41,11 @@ export const LanguageChip: React.FC<LanguageChipProps> = ({
   removeLabel,
   onRemove,
   locked = false,
-  warning = false,
 }) => {
   const name = <bdi lang={code}>{getLanguage(code).native}</bdi>;
-  const tone = warning
-    ? "border-warning/60 bg-warning-wash"
-    : "border-line-strong bg-background";
   if (locked)
     return (
-      <span
-        className={`inline-flex h-[28px] items-center rounded-full border-[1.5px] px-[12px] text-small font-semibold text-text ${tone}`}
-      >
+      <span className="inline-flex h-[28px] items-center rounded-full border-[1.5px] border-line-strong bg-background px-[12px] text-small font-semibold text-text">
         {name}
       </span>
     );
@@ -66,9 +58,7 @@ export const LanguageChip: React.FC<LanguageChipProps> = ({
         e.preventDefault();
         onRemove();
       }}
-      className={`group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] ps-[12px] pe-[6px] text-small font-semibold text-text ${tone} ${
-        warning ? "hover:border-warning" : "hover:border-ink-3"
-      }`}
+      className="group inline-flex h-[28px] cursor-pointer items-center gap-[6px] rounded-full border-[1.5px] border-line-strong bg-background ps-[12px] pe-[6px] text-small font-semibold text-text hover:border-ink-3"
     >
       {name}
       <span className="grid size-[18px] place-items-center rounded-full leading-none text-ink-2 group-hover:bg-line">

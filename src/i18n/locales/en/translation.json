@@ -348,7 +348,6 @@
         "alreadyAdded_one": "{{languages}} is already added.",
         "alreadyAdded_other": "{{languages}} are already added.",
         "noMatch": "No language matches “{{query}}”",
-        "unheard": "{{model}} doesn't recognize {{languages}}. Switch to a model that does in Models.",
         "weak": "No model recognizes {{languages}} well yet."
       },
       "shortcutActivation": {

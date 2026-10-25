@@ -20,8 +20,11 @@ export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { audioFeedbackEnabled, getSetting } = useSettings();
   const isLinux = type() === "linux";
-  // Which characters to write only matters to people who speak Chinese.
-  const speaksChinese = (getSetting("spoken_languages") ?? []).some(isChinese);
+  // Which characters to write only matters to people who speak Chinese, or
+  // who picked a script before Handy asked.
+  const speaksChinese =
+    (getSetting("spoken_languages") ?? []).some(isChinese) ||
+    (getSetting("chinese_script") ?? "as_transcribed") !== "as_transcribed";
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.general.title")}>

@@ -622,9 +622,12 @@ fn default_filler_word_removal_enabled() -> bool {
 }
 
 fn default_chinese_script() -> ChineseScript {
-    tauri_plugin_os::locale()
-        .and_then(|locale| crate::chinese_script::chinese_script_for_locale(&locale))
-        .unwrap_or_default()
+    crate::system_languages::suggested_chinese_script(
+        crate::system_languages::system_languages()
+            .iter()
+            .map(String::as_str),
+    )
+    .unwrap_or_default()
 }
 
 fn default_debug_mode() -> bool {
@@ -1200,6 +1203,19 @@ fn apply_settings_migrations(
         }
     }
 
+    // One-time spoken languages backfill: people onboarded before Handy asked
+    // which languages they speak, so guess from what they already told it and
+    // the OS's languages. English rides along with any other language, so the
+    // guess never decides a transcription (`effective_language` only uses a
+    // lone language) and a wrong one is just a chip to remove. The script
+    // stays as it was: converting would change their output. Before the Chinese script
+    // migrations: the guess reads the legacy `zh-Hans`/`zh-Hant` intents, and
+    // the Traditional split reads the guess. Waits for onboarding, which asks.
+    if settings.onboarding_completed && settings.spoken_languages.is_empty() {
+        settings.spoken_languages = guessed_spoken_languages(settings, settings_value);
+        updated = true;
+    }
+
     // One-time Chinese script migration: the script used to be chosen through
     // `zh-Hans`/`zh-Hant` language intents. Split those into the recognition
     // language and the script setting; every other upgrading user keeps the
@@ -1289,6 +1305,43 @@ fn apply_settings_migrations(
     }
 
     updated
+}
+
+/// The languages someone likely speaks, most likely first: the language they
+/// picked, Chinese if they picked a script, the app's language, then the OS's
+/// languages. Always includes English.
+fn guessed_spoken_languages(
+    settings: &AppSettings,
+    settings_value: &serde_json::Value,
+) -> Vec<String> {
+    // The stored value: when the key is missing, the field may hold the
+    // locale's default (salvaged settings), which isn't a choice.
+    let picked_script = settings_value
+        .get("chinese_script")
+        .and_then(|v| v.as_str())
+        .is_some_and(|script| script != "as_transcribed");
+    let intent = settings.selected_language.as_str();
+    // A script says Chinese, unless the language they picked already does.
+    let picked_chinese = crate::chinese_script::chinese_script_for_locale(intent).is_some();
+    let tags = [
+        (intent != "auto").then_some(intent),
+        (picked_script && !picked_chinese).then_some("zh"),
+        Some(settings.app_language.as_str()),
+    ]
+    .into_iter()
+    .flatten()
+    .chain(os_languages().iter().map(String::as_str));
+    crate::system_languages::suggested_languages(tags)
+}
+
+/// The OS's languages; none under test, so migrations don't depend on the
+/// machine running them.
+fn os_languages() -> &'static [String] {
+    if cfg!(test) {
+        &[]
+    } else {
+        crate::system_languages::system_languages()
+    }
 }
 
 /// Update checks are forced off (without touching the persisted setting) when
@@ -1691,6 +1744,93 @@ mod tests {
             assert_eq!(settings.selected_language, language);
             assert_eq!(settings.chinese_script, script);
         }
+    }
+
+    /// Spoken languages backfilled for an onboarded upgrader with these stored
+    /// settings (merged over the defaults, as a stored file deserializes).
+    fn backfilled(stored: serde_json::Value) -> AppSettings {
+        let mut raw = serde_json::json!({
+            "onboarding_completed": true,
+            "selected_language": "auto",
+            "app_language": "en"
+        });
+        raw.as_object_mut()
+            .unwrap()
+            .extend(stored.as_object().unwrap().clone());
+        let mut settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
+        apply_settings_migrations(&mut settings, &raw);
+        settings
+    }
+
+    #[test]
+    fn spoken_languages_backfill_guesses_with_english_included() {
+        for (stored, spoken) in [
+            (
+                serde_json::json!({ "selected_language": "de" }),
+                vec!["de", "en"],
+            ),
+            (serde_json::json!({ "selected_language": "en" }), vec!["en"]),
+            (
+                serde_json::json!({ "selected_language": "zh-Hant" }),
+                vec!["zh", "en"],
+            ),
+            (
+                serde_json::json!({ "chinese_script": "traditional" }),
+                vec!["zh", "en"],
+            ),
+            (
+                serde_json::json!({ "chinese_script": "as_transcribed" }),
+                vec!["en"],
+            ),
+            (
+                serde_json::json!({ "app_language": "pt-BR" }),
+                vec!["pt", "en"],
+            ),
+            (
+                serde_json::json!({ "app_language": "zh-TW" }),
+                vec!["zh", "en"],
+            ),
+            (serde_json::json!({ "app_language": "en-US" }), vec!["en"]),
+            // A picked language leads, the app's follows.
+            (
+                serde_json::json!({ "selected_language": "fr", "app_language": "de" }),
+                vec!["fr", "de", "en"],
+            ),
+            // Nothing the picker offers: English.
+            (serde_json::json!({ "app_language": "xx" }), vec!["en"]),
+        ] {
+            assert_eq!(
+                backfilled(stored.clone()).spoken_languages,
+                spoken,
+                "{stored}"
+            );
+        }
+    }
+
+    #[test]
+    fn spoken_languages_backfill_keeps_cantonese_on_hong_kong_forms() {
+        let settings = backfilled(serde_json::json!({
+            "selected_language": "yue",
+            "chinese_script": "traditional"
+        }));
+
+        assert_eq!(settings.spoken_languages, vec!["yue", "en"]);
+        assert_eq!(settings.chinese_script, ChineseScript::TraditionalHk);
+    }
+
+    #[test]
+    fn spoken_languages_backfill_leaves_chosen_and_unasked_alone() {
+        let chosen = backfilled(serde_json::json!({
+            "selected_language": "de",
+            "spoken_languages": ["ja"]
+        }));
+        assert_eq!(chosen.spoken_languages, vec!["ja"]);
+
+        let unasked = backfilled(serde_json::json!({
+            "onboarding_completed": false,
+            "selected_language": "de"
+        }));
+        assert!(unasked.spoken_languages.is_empty());
     }
 
     #[test]

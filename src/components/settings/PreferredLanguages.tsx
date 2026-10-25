@@ -9,12 +9,10 @@ import {
 import { suggestedLanguages } from "../onboarding/data/languages";
 import { isWeakLanguage } from "../onboarding/data/models";
 import { useSettings } from "../../hooks/useSettings";
-import { useModelStore } from "../../stores/modelStore";
 import {
   languageList,
   languageName,
   searchLanguages,
-  supportsLanguage,
 } from "../../lib/constants/languages";
 
 interface PreferredLanguagesProps {
@@ -25,8 +23,8 @@ interface PreferredLanguagesProps {
 /**
  * The languages someone speaks (`spoken_languages`), drawn as onboarding
  * draws them: chips in a panel whose search opens a grid of every language
- * by its own name. Below: what the model in use can't hear. Only the list
- * changes here; the model's own Language is left as it is.
+ * by its own name. Below: what no model hears well. Only the list changes
+ * here; the model's own Language is left as it is.
  */
 export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
   descriptionMode = "tooltip",
@@ -34,7 +32,6 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { getSetting, updateSetting } = useSettings();
-  const { currentModel, models } = useModelStore();
   const languages = getSetting("spoken_languages") ?? [];
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
@@ -47,9 +44,7 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
 
   // With none picked yet (onboarded before Handy asked), their own language
   // leads, and the grid stays open: the invitation to pick.
-  const suggestion = languages.length
-    ? null
-    : suggestedLanguages(navigator.language || "en-US")[0];
+  const suggestion = languages.length ? null : suggestedLanguages()[0];
   const matches = useMemo(() => {
     const found = searchLanguages(query, ui);
     if (!suggestion || query) return found;
@@ -97,15 +92,7 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
     if (!handled && e.key === "Escape") inputRef.current?.blur();
   };
 
-  const modelInfo = models.find((m) => m.id === currentModel);
-  const modelCodes = modelInfo?.supported_languages ?? [];
   const weak = languages.filter(isWeakLanguage);
-  // Languages the model in use doesn't hear, where another model would.
-  const unheard = modelCodes.length
-    ? languages.filter(
-        (code) => !weak.includes(code) && !supportsLanguage(modelCodes, code),
-      )
-    : [];
 
   return (
     <SettingContainer
@@ -142,7 +129,6 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
               })}
               onRemove={() => toggle(code)}
               locked={languages.length === 1}
-              warning={unheard.includes(code)}
             />
           ))}
           <input
@@ -217,14 +203,6 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
         </div>
       </div>
 
-      {modelInfo && unheard.length > 0 && (
-        <p className="mt-[8px] mb-0 text-small text-warning">
-          {t("settings.general.preferredLanguages.unheard", {
-            model: modelInfo.name,
-            languages: languageList(unheard, ui),
-          })}
-        </p>
-      )}
       {weak.length > 0 && (
         <p className="mt-[4px] mb-0 text-small text-ink-3">
           {t("settings.general.preferredLanguages.weak", {

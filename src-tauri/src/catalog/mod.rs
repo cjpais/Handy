@@ -17,7 +17,7 @@
 //! `GgufHeaderProber` is the same shape with `None` where a header omits a key,
 //! which is why the two are interchangeable (the catalog is a baked probe).
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -199,7 +199,7 @@ fn accuracy_score(model: &CatalogModel, results: Option<&ModelResults>) -> f32 {
 
 /// The package's language identity (its `languageIdentity`): base code, with
 /// the aliases its benchmark keys use.
-fn language_identity(language: &str) -> String {
+pub(crate) fn language_identity(language: &str) -> String {
     crate::managers::model::canonical_language_code(&language.to_ascii_lowercase()).to_string()
 }
 
@@ -314,6 +314,19 @@ static ROOT: Lazy<CatalogRoot> = Lazy::new(|| {
 /// diarization models are published alongside them but produce no text.
 fn transcription_models() -> impl Iterator<Item = &'static CatalogModel> {
     ROOT.models.iter().filter(|m| m.role == "asr")
+}
+
+/// Every language a transcription model in the catalog hears, as identities:
+/// the languages the frontend's picker offers (its `LANGUAGES`).
+static LANGUAGES: Lazy<HashSet<String>> = Lazy::new(|| {
+    transcription_models()
+        .flat_map(|m| m.languages.iter().map(|l| language_identity(l)))
+        .collect()
+});
+
+/// Whether the picker offers this language identity.
+pub fn offers_language(identity: &str) -> bool {
+    LANGUAGES.contains(identity)
 }
 
 /// Every transcription model Handy can download, normalised into descriptors.

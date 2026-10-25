@@ -23,6 +23,7 @@ import {
 import type { TableModel } from "@/components/shared/modelTable/context";
 import { useMachineTier } from "@/components/onboarding/useOnboardingModels";
 import { repoIdOf } from "@/components/onboarding/retiredModels";
+import { suggestedLanguages } from "@/components/onboarding/data/languages";
 import {
   getTranslatedModelDescription,
   getTranslatedModelName,
@@ -79,7 +80,7 @@ export const useModelEntries = () => {
   const { getSetting } = useSettings();
   const spoken = getSetting("spoken_languages");
   const langs = useMemo(
-    () => (spoken?.length ? spoken : ["en"]),
+    () => (spoken?.length ? spoken : suggestedLanguages()),
     [spoken?.join()],
   );
   const tier = useMachineTier();

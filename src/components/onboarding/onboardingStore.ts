@@ -62,12 +62,10 @@ interface OnboardingState extends Persisted {
 
 const STORAGE_KEY = "handy.onboarding";
 
-const locale = () => navigator.language || "en-US";
-
 const fresh = (): Persisted => ({
   step: "welcome",
-  languages: suggestedLanguages(locale()),
-  script: suggestedScript(locale()),
+  languages: suggestedLanguages(),
+  script: suggestedScript(),
   modelId: null,
   extraModelId: null,
   downloadId: null,
