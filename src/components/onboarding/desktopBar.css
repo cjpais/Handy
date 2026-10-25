@@ -1,6 +1,7 @@
-/* The menu bar (macOS) or the taskbar (Windows) on Demo's and Try it's drawn
-   screens (DesktopBar.tsx), where Handy's icon lives. Demo draws it small, on
-   the laptop; Try it close up: .is-demo and .is-try set the sizes. */
+/* The menu bar (macOS) or the taskbar (Windows, Linux) on Demo's and Try
+   it's drawn screens (DesktopBar.tsx), where Handy's icon lives. Demo draws
+   it small, on the laptop; Try it close up: .is-demo and .is-try set the
+   sizes. */
 .desktop-bar.is-demo {
   --bar-gap: 11px;
   --bar-pad: 10px;
@@ -84,6 +85,11 @@
   height: auto;
   border-radius: 0;
   background: var(--color-ink-2);
+}
+.desktop-tux {
+  width: calc(var(--bar-start) * 1.2);
+  height: calc(var(--bar-start) * 1.2);
+  fill: var(--color-ink-2);
 }
 .desktop-tray {
   display: grid;

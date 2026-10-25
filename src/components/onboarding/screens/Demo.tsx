@@ -200,6 +200,11 @@ const DemoLaptop: React.FC<{
   focused,
 }) => {
   const { t } = useTranslation();
+  // On Linux the pointer stays on the field and only clicks: WebKitGTK paints
+  // its glide and fades unevenly. It sits near the field's right end, away
+  // from where the words start.
+  const settled = os === "linux";
+  const place: Pointer = settled ? "field" : pointer;
   // The pointer aims at the field, wherever this app and OS put it.
   const screenRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
@@ -208,16 +213,18 @@ const DemoLaptop: React.FC<{
     const screen = screenRef.current;
     const sc = screen?.getBoundingClientRect();
     const f = fieldRef.current?.getBoundingClientRect();
-    if (!screen || !sc || !f || pointer === "gone") return;
+    if (!screen || !sc || !f || place === "gone") return;
     setAt(
-      pointer === "field"
+      place === "field"
         ? {
-            x: f.left - sc.left + Math.min(58, f.width * 0.3),
+            x: settled
+              ? f.right - sc.left - 22
+              : f.left - sc.left + Math.min(58, f.width * 0.3),
             y: f.top - sc.top + f.height / 2,
           }
         : { x: screen.offsetWidth * 0.8, y: screen.offsetHeight * 0.86 },
     );
-  }, [pointer, mode, os]);
+  }, [place, settled, mode, os]);
   return (
     <div
       role="img"
@@ -293,7 +300,8 @@ const DemoLaptop: React.FC<{
           </div>
           <span
             className="demo-pointer"
-            data-p={pointer}
+            data-p={place}
+            data-settled={settled || undefined}
             style={{ transform: `translate(${at.x}px, ${at.y}px)` }}
           >
             {clickKey > 0 && <i key={clickKey} className="demo-click" />}
