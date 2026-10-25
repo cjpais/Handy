@@ -6,33 +6,27 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
-import {
-  catalog,
-  modelMatchesLanguage,
-  type CatalogModel,
-} from "@handy-computer/models";
+import { catalog } from "@handy-computer/models";
 import type { ModelInfo } from "@/bindings";
 import { useModelStore } from "@/stores/modelStore";
 import { useSettings } from "@/hooks/useSettings";
 import {
   CURATED_ASR,
-  errorFor,
-  geoMean,
-  gradeFor,
-  gradeForError,
   groupModels,
   picksFor,
-  type MachineTier,
-  type PickRole,
 } from "@/components/onboarding/data/models";
+import {
+  averageError,
+  makeGrading,
+  type Grading,
+} from "@/components/shared/modelTable/grading";
+import type { TableModel } from "@/components/shared/modelTable/context";
 import { useMachineTier } from "@/components/onboarding/useOnboardingModels";
 import { repoIdOf } from "@/components/onboarding/retiredModels";
 import {
   getTranslatedModelDescription,
   getTranslatedModelName,
 } from "@/lib/utils/modelTranslation";
-
-type Grade = ReturnType<typeof gradeFor>;
 
 // Legacy models are the blob (Url-sourced) .bin downloads, superseded by
 // the catalog GGUFs. They stay runnable when already on disk, but we no longer
@@ -48,22 +42,8 @@ const quantOf = (filename: string): string | null => {
   return match ? match[1].toUpperCase() : null;
 };
 
-/** Curated (onboarding offers it), catalog (untested), custom or legacy. */
-export type EntryKind = "curated" | "catalog" | "custom" | "legacy";
-
-export interface Entry {
-  id: string;
-  name: string;
-  description: string;
-  languages: string[];
-  streaming: boolean;
-  translate: boolean;
-  sizeMb: number;
-  quant: string | null;
-  kind: EntryKind;
-  /** Its catalog entry, which grades it; none for custom and legacy. */
-  model?: CatalogModel;
-}
+/** A model on the page: the table's own shape. */
+export type Entry = TableModel;
 
 const CATALOG_BY_REPO = new Map(
   catalog.models
@@ -71,19 +51,11 @@ const CATALOG_BY_REPO = new Map(
     .map((m) => [m.repository, m] as const),
 );
 
-const UNGRADED: Grade = { letter: "none", label: "?" };
-
-export interface Facts {
-  langs: string[];
-  tier: MachineTier;
-  roleOf: (e: Entry) => PickRole | null;
-  grade: (e: Entry, language: string) => Grade;
-  /** One grade over all your languages; "—" when it misses one. */
-  overall: (e: Entry) => Grade;
-  wait: (e: Entry) => number | undefined;
-  /** Your languages it doesn't hear. */
-  missing: (e: Entry) => string[];
-}
+/** The table's grading, and where each model ranks for your languages. */
+export type Facts = Grading & {
+  /** Lower is a better fit; the uncurated after every curated model. */
+  rankOf: (e: Entry) => number;
+};
 
 export interface Lists {
   /** On disk: the one in use first, then best fit; custom and old last. */
@@ -146,7 +118,7 @@ export const useModelEntries = () => {
     [infos, t],
   );
 
-  const facts = useMemo((): Facts & { rankOf: (e: Entry) => number } => {
+  const facts = useMemo((): Facts => {
     const offered = new Set(
       entries.flatMap((e) => (e.kind === "curated" ? [e.model!.id] : [])),
     );
@@ -159,37 +131,19 @@ export const useModelEntries = () => {
         i,
       ]),
     );
-    const roles = new Map(picks.map((p) => [p.model.id, p.role]));
-    const missing = (e: Entry) =>
-      e.model ? langs.filter((l) => !modelMatchesLanguage(e.model!, l)) : [];
-    const error = (e: Entry) => {
-      if (!e.model) return null;
-      const errors = langs.map((l) => errorFor(e.model!, l));
-      return errors.every((x) => x != null)
-        ? geoMean(errors as number[])
-        : null;
-    };
+    const grading = makeGrading(langs, tier, picks);
     return {
-      langs,
-      tier,
-      roleOf: (e) => (e.model && roles.get(e.model.id)) ?? null,
-      // Lower is a better fit; the uncurated after every curated model.
+      ...grading,
       rankOf: (e) => {
         const r = e.model && rank.get(e.model.id);
         if (r != null) return r;
         if (!e.model) return 10_000;
-        return 1000 + missing(e).length * 100 + (error(e) ?? 99);
+        return (
+          1000 +
+          grading.missing(e.model).length * 100 +
+          (averageError(e.model, langs) ?? 99)
+        );
       },
-      grade: (e, l) => (e.model ? gradeFor(e.model, l) : UNGRADED),
-      overall: (e) => {
-        if (!e.model) return UNGRADED;
-        if (missing(e).length) return { letter: "none", label: "—" };
-        const x = error(e);
-        return x == null ? UNGRADED : gradeForError(x);
-      },
-      wait: (e) =>
-        e.model ? catalog.modelWaitSeconds(e.model, tier) : undefined,
-      missing,
     };
   }, [entries, langs, tier]);
 
@@ -210,8 +164,8 @@ export const useModelEntries = () => {
     const curated = rest.filter((e) => e.kind === "curated").sort(byFit);
     return {
       yours,
-      fits: curated.filter((e) => !facts.missing(e).length),
-      partial: curated.filter((e) => facts.missing(e).length > 0),
+      fits: curated.filter((e) => !facts.missing(e.model).length),
+      partial: curated.filter((e) => facts.missing(e.model).length > 0),
       untested: rest.filter((e) => e.kind !== "curated").sort(byFit),
     };
   }, [entries, infos, current, facts]);

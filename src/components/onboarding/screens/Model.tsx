@@ -1,13 +1,6 @@
-import React, {
-  Fragment,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Languages, Radio as LiveIcon, Search } from "lucide-react";
+import { Languages, Radio as LiveIcon } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { GradeChip } from "../../shared/GradeChip";
@@ -15,21 +8,28 @@ import { Tooltip } from "../../ui/Tooltip";
 import { ProgressLine } from "../../shared/ProgressLine";
 import { SpeedBars, speedLevel } from "../../shared/SpeedBars";
 import { Tag } from "../../shared/Tag";
+import {
+  Codes,
+  GradeTip,
+  SpeedTip,
+  Values,
+  useSpeedWords,
+} from "../../shared/modelTable/columns";
+import { makeGrading } from "../../shared/modelTable/grading";
+import type { TableModel } from "../../shared/modelTable/context";
+import {
+  ModelTable,
+  NO_FILTERS,
+  useModelFilters,
+  type TableSection,
+} from "../../shared/modelTable/ModelTable";
+import { ModelTableRow } from "../../shared/modelTable/ModelTableRow";
 import { formatModelSize } from "@/lib/utils/format";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useDownloadWords } from "../DownloadStatus";
-import { useRubric } from "../Rubric";
-import { languageList, languageName } from "@/lib/constants/languages";
-import {
-  errorFor,
-  geoMean,
-  gradeFor,
-  gradeForError,
-  type CatalogModel,
-  type ModelRow,
-  type PickRole,
-} from "../data/models";
+import { languageName } from "@/lib/constants/languages";
+import type { CatalogModel, ModelRow, PickRole } from "../data/models";
 import type { useOnboardingModels } from "../useOnboardingModels";
 import { moveModels } from "./modelTransitions";
 import "./modelTransitions.css";
@@ -82,18 +82,12 @@ export const Model: React.FC<ModelProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const words = useDownloadWords();
-  const rubric = useRubric();
+  const speedWords = useSpeedWords();
   const { languages, modelId, extraModelId, downloadId, set } =
     useOnboardingStore();
   const [showAll, setShowAll] = useState(false);
-  const [query, setQuery] = useState("");
-  // Show all's filters: only models that preview, only models that translate.
-  const [onlyPreview, setOnlyPreview] = useState(false);
-  const [onlyTranslate, setOnlyTranslate] = useState(false);
+  const { filters, setFilters, matches } = useModelFilters();
   const rootRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const focusSearch = useRef(false);
 
   const langs = languages.length ? languages : ["en"];
   const dense = langs.length > 5;
@@ -129,113 +123,26 @@ export const Model: React.FC<ModelProps> = ({
   const nameOf = (code: string) => languageName(code, ui);
   const sizeOf = (m: CatalogModel) =>
     formatModelSize(models.infoFor(m)?.size_mb);
-  // In a column, an unknown size is a dash: "Unknown size" won't fit.
-  const sizeCell = (m: CatalogModel) =>
-    (models.infoFor(m)?.size_mb ?? 0) > 0 ? sizeOf(m) : "—";
-  // Only a word, no seconds: the wait is a benchmark from machines like this
-  // one, not measured on it, so a number would promise more than we know.
-  // A model that previews says so after its speed.
-  const speedText = (wait: number | undefined, preview = false) =>
-    wait == null
-      ? t("onboarding.model.speedUntested")
-      : t(
-          `onboarding.model.${preview ? "speedWordsPreview" : "speedWords"}.${speedLevel(wait)}`,
-        );
-
-  /**
-   * A grade chip's hint, as the capability tags have, the same for one
-   * language's grade and for one grade over all of them: that it grades how
-   * well the model hears that language, what the letter means for your
-   * words, and the error it was measured at. Over several languages the
-   * error is their average, as the chip's.
-   */
-  const gradeHint = (
-    m: CatalogModel,
-    ls: string[],
-    chip: React.ReactElement,
-  ) => {
-    const one = ls.length === 1;
-    const errors = ls.map((l) => errorFor(m, l));
-    const error = errors.every((e) => e != null)
-      ? one
-        ? errors[0]
-        : geoMean(errors as number[])
-      : undefined;
-    const grade = one
-      ? gradeFor(m, ls[0])
-      : error != null
-        ? gradeForError(error)
-        : undefined;
-    const missing = ls.filter((l) => gradeFor(m, l).unsupported);
-    const graded =
-      grade && grade.letter !== "none"
-        ? { label: grade.label, letter: grade.letter }
-        : undefined;
-    const key = (k: string) => `onboarding.model.rubric.${k}`;
-    return (
-      <Tooltip
-        key={ls.join()}
-        title={
-          one
-            ? t(key(graded ? "gradeTitle" : "accuracyTitle"), {
-                language: nameOf(ls[0]),
-                grade: graded?.label,
-              })
-            : t(key(graded ? "overallTitle" : "overall"), {
-                grade: graded?.label,
-              })
-        }
-        text={
-          missing.length
-            ? t(key("unsupported"), {
-                language: languageList(missing, ui),
-              })
-            : error == null || !graded
-              ? t(key("unrated"), {
-                  language: languageList(
-                    ls.filter((l) => errorFor(m, l) == null),
-                    ui,
-                  ),
-                })
-              : `${t(key(`meaning.${graded.letter}`))} ${t(
-                  key(one ? "measured" : "measuredAverage"),
-                  {
-                    error: rubric.number(error),
-                    letter: graded.letter,
-                    band: rubric.gradeBand(graded.letter),
-                  },
-                )}`
-        }
-      >
-        {chip}
-      </Tooltip>
-    );
-  };
-
-  /**
-   * The speed bars' hint, the same wherever they are: how fast in words,
-   * what was timed on which test machine, and the seconds its bars stand
-   * for. `className` is the anchor's, the grid item.
-   */
-  const speedHint = (
-    row: ModelRow,
-    bars: React.ReactElement,
-    className = "",
-  ) => (
-    <Tooltip
-      className={className}
-      title={speedText(row.wait, previews(row.model))}
-      text={
-        row.wait == null
-          ? t("onboarding.model.rubric.untimed")
-          : t(`onboarding.model.rubric.speedText.${models.tier}`, {
-              band: rubric.speedBand(speedLevel(row.wait)),
-            })
-      }
-    >
-      {bars}
-    </Tooltip>
+  // The table's grading, so the cards' columns and hints are the table's.
+  // By the languages' codes: langs is a new array every render.
+  const langsKey = langs.join();
+  const grading = useMemo(
+    () => makeGrading(langsKey.split(","), models.tier, picks),
+    [langsKey, models.tier, picks],
   );
+  /** A model as the table shows it. */
+  const entryFor = (row: ModelRow): TableModel => ({
+    id: row.model.id,
+    name: row.model.name,
+    description: row.model.description,
+    languages: [...row.model.languages],
+    streaming: previews(row.model),
+    translate: translates(row.model),
+    sizeMb: Number(models.infoFor(row.model)?.size_mb ?? 0),
+    quant: row.model.quant ?? null,
+    kind: "curated",
+    model: row.model,
+  });
 
   /**
    * What a model can do besides transcribe: its word, icon and the line its
@@ -269,33 +176,6 @@ export const Model: React.FC<ModelProps> = ({
     );
   };
 
-  /** Show all's version: the icons alone after the role, words on hover. */
-  const capabilityIcons = (m: CatalogModel) =>
-    (previews(m) || translates(m)) && (
-      <span className="inline-flex shrink-0 items-center gap-[2px] text-ink-3">
-        {(Object.keys(CAPABILITIES) as Capability[]).map((c) => {
-          const { Icon, has } = CAPABILITIES[c];
-          return (
-            has(m) && (
-              <Tooltip
-                key={c}
-                title={capabilityName(c)}
-                text={capabilityLine(c)}
-              >
-                <span className="grid size-[20px] place-items-center hover:text-text">
-                  <Icon
-                    role="img"
-                    aria-label={capabilityName(c)}
-                    className="size-[14px]"
-                  />
-                </span>
-              </Tooltip>
-            )
-          );
-        })}
-      </span>
-    );
-
   /** What a model can do besides transcribe, beside its role. */
   const capabilityTags = (m: CatalogModel) =>
     (Object.keys(CAPABILITIES) as Capability[]).map((c) => (
@@ -306,16 +186,13 @@ export const Model: React.FC<ModelProps> = ({
 
   const open = (initialQuery = "") =>
     move(() => {
-      focusSearch.current = true;
-      setQuery(initialQuery);
+      setFilters({ ...NO_FILTERS, query: initialQuery });
       setShowAll(true);
     });
   const close = () =>
     move(() => {
       setShowAll(false);
-      setQuery("");
-      setOnlyPreview(false);
-      setOnlyTranslate(false);
+      setFilters(NO_FILTERS);
     });
 
   // The extra model follows from modelId (extraId above).
@@ -338,71 +215,6 @@ export const Model: React.FC<ModelProps> = ({
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
     // open() is stable enough for a listener re-added with showAll
-  }, [showAll]);
-
-  // In the full list: Escape clears the search, then folds the list; typing
-  // anywhere goes into the search.
-  useEffect(() => {
-    if (!showAll) return;
-    if (focusSearch.current) {
-      focusSearch.current = false;
-      const input = searchRef.current;
-      input?.focus({ preventScroll: true });
-      input?.setSelectionRange(input.value.length, input.value.length);
-    }
-    const onKey = (e: KeyboardEvent) => {
-      const input = searchRef.current;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        if (input?.value) setQuery("");
-        else close();
-        return;
-      }
-      // Space stays with what has focus: it presses a filter or a row.
-      if (input && document.activeElement !== input && isTyping(e))
-        input.focus({ preventScroll: true });
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [showAll]);
-
-  // The full list fades out at the bottom while there's more below, as
-  // Welcome's languages do; scrolled to the end, the last row shows whole.
-  // Checked on every render (a search or filter changes what's below) and
-  // on scroll.
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const edge = () =>
-      list.toggleAttribute(
-        "data-more",
-        list.scrollTop + list.clientHeight < list.scrollHeight - 1,
-      );
-    edge();
-    list.addEventListener("scroll", edge, { passive: true });
-    return () => list.removeEventListener("scroll", edge);
-  });
-
-  // Coming into the full list: the selected row in view, once the list has
-  // laid out (it can take a frame or two to get its height).
-  useEffect(() => {
-    if (!showAll) return;
-    let id = 0;
-    let tries = 0;
-    const reveal = () => {
-      const list = listRef.current;
-      if (!list) return;
-      if (!list.clientHeight && tries++ < 10) {
-        id = requestAnimationFrame(reveal);
-        return;
-      }
-      const row = list.querySelector<HTMLElement>("[data-vt-row].is-on");
-      if (!row) return;
-      const bottom = row.offsetTop + row.offsetHeight + 12 - list.clientHeight;
-      if (list.scrollTop < bottom) list.scrollTop = bottom;
-    };
-    id = requestAnimationFrame(reveal);
-    return () => cancelAnimationFrame(id);
   }, [showAll]);
 
   if (!pick || !selectedId) return null;
@@ -532,32 +344,40 @@ export const Model: React.FC<ModelProps> = ({
               className={`grid gap-x-[18px] gap-y-[5px] ${dense ? "grid-cols-[repeat(4,max-content)]" : "grid-cols-[repeat(3,max-content)]"}`}
             >
               {langs.map((l) => {
-                const grade = gradeFor(row.model, l);
-                return gradeHint(
-                  row.model,
-                  [l],
-                  <span className="inline-flex items-center gap-[6px]">
-                    <GradeChip letter={grade.letter} label={grade.label} />
-                    <small className="text-small">
-                      {dense ? l.toUpperCase() : nameOf(l)}
-                    </small>
-                  </span>,
+                const grade = grading.grade(row.model, l);
+                return (
+                  <GradeTip
+                    key={l}
+                    grading={grading}
+                    model={row.model}
+                    langs={[l]}
+                  >
+                    <span className="inline-flex items-center gap-[6px]">
+                      <GradeChip letter={grade.letter} label={grade.label} />
+                      <small className="text-small">
+                        {dense ? l.toUpperCase() : nameOf(l)}
+                      </small>
+                    </span>
+                  </GradeTip>
                 );
               })}
             </span>
             <span className="text-ink-2">{t("onboarding.model.speed")}</span>
             {/* The words are beside the bars already: the hint's title
                 names the row. */}
-            {speedHint(
-              row,
+            {/* Over the bars and words, not the whole column. */}
+            <SpeedTip
+              grading={grading}
+              model={row.model}
+              streaming={previews(row.model)}
+              className="justify-self-start"
+            >
               <span className="flex flex-wrap items-center gap-x-[12px] gap-y-[5px]">
                 <SpeedBars level={speedLevel(row.wait)} />
                 {/* Plain: the Live preview tag on line 1 says it previews. */}
-                {speedText(row.wait)}
-              </span>,
-              // Over the bars and words, not the whole column.
-              "justify-self-start",
-            )}
+                {speedWords(row.wait)}
+              </span>
+            </SpeedTip>
           </span>
         </span>
         {showsDownload(id) && fullLine()}
@@ -565,79 +385,22 @@ export const Model: React.FC<ModelProps> = ({
     );
   };
 
-  const cols = COLUMNS[dense ? "dense" : "normal"];
-  const colsStyle = { "--n": langs.length } as React.CSSProperties;
-
-  /** The column heads: each language's code, then Speed and Size. */
-  const columnHeads = (
-    <>
-      {langs.map((l) => (
-        <span key={l} title={nameOf(l)} className={CODE_CLASS}>
-          {l.toUpperCase()}
-        </span>
-      ))}
-      <span className={CODE_CLASS}>{t("onboarding.model.speed")}</span>
-      <span className={CODE_CLASS}>{t("onboarding.model.size")}</span>
-    </>
-  );
-
-  /** A model's values under the heads: a grade per language, speed, size. */
-  const columnValues = (row: ModelRow) => {
+  /** The table's codes (EN … SPEED SIZE) over the table's values. */
+  const columns = (row: ModelRow) => {
     const id = row.model.id;
     return (
-      <span
-        {...vt(id, "g")}
-        style={colsStyle}
-        className={`grid items-center justify-items-center ${cols.grid}`}
-      >
-        {langs.map((l) => {
-          const grade = gradeFor(row.model, l);
-          return gradeHint(
-            row.model,
-            [l],
-            <span className="inline-grid">
-              <GradeChip
-                letter={grade.letter}
-                label={grade.label}
-                dense={dense}
-              />
-            </span>,
-          );
-        })}
-        {speedHint(
-          row,
-          <span
-            className={`inline-grid h-[22px] place-items-center ${cols.speed}`}
-          >
-            <SpeedBars level={speedLevel(row.wait)} className="h-[12px]!" />
-          </span>,
-        )}
-        <span
-          {...vt(id, "s")}
-          className="whitespace-nowrap text-label text-ink-3 tabular-nums"
-        >
-          {sizeCell(row.model)}
-        </span>
+      <span className="flex flex-col gap-[5px]">
+        <Codes langs={langs} vt={(part) => vt(id, part)} />
+        <Values
+          grading={grading}
+          model={row.model}
+          streaming={previews(row.model)}
+          sizeMb={entryFor(row).sizeMb}
+          vt={(part) => vt(id, part)}
+        />
       </span>
     );
   };
-
-  /**
-   * The column heads (EN … SPEED SIZE) over the values, one grid each. Many
-   * languages narrow the columns; the height stays the same.
-   */
-  const columns = (row: ModelRow) => (
-    <span className="flex flex-col gap-[5px]">
-      <span
-        {...vt(row.model.id, "c")}
-        style={colsStyle}
-        className={`grid items-center justify-items-center uppercase ${cols.grid}`}
-      >
-        {columnHeads}
-      </span>
-      {columnValues(row)}
-    </span>
-  );
 
   /** A pick that isn't selected: role, name and few words, then columns. */
   const card = (row: ModelRow, role: PickRole) => {
@@ -690,12 +453,7 @@ export const Model: React.FC<ModelProps> = ({
   const oneLine = (row: ModelRow, role: PickRole | "extra") => {
     const id = row.model.id;
     const line = lineFor(id);
-    const overall =
-      row.error != null
-        ? gradeForError(row.error)
-        : row.missing.length
-          ? ({ letter: "none", label: "—" } as const)
-          : ({ letter: "none", label: "?" } as const);
+    const overall = grading.overall(row.model);
     return (
       <button
         key={id}
@@ -722,19 +480,20 @@ export const Model: React.FC<ModelProps> = ({
         </span>
         <span className="ms-auto flex shrink-0 items-center gap-[10px]">
           <span {...vt(id, "g")} className="flex items-center gap-[10px]">
-            {gradeHint(
-              row.model,
-              langs,
+            <GradeTip grading={grading} model={row.model} langs={langs}>
               <span className="inline-grid">
                 <GradeChip letter={overall.letter} label={overall.label} />
-              </span>,
-            )}
-            {speedHint(
-              row,
+              </span>
+            </GradeTip>
+            <SpeedTip
+              grading={grading}
+              model={row.model}
+              streaming={previews(row.model)}
+            >
               <span className="inline-grid">
                 <SpeedBars level={speedLevel(row.wait)} />
-              </span>,
-            )}
+              </span>
+            </SpeedTip>
           </span>
           <span {...vt(id, "s")} className={`${sizeClass} ms-0`}>
             {sizeOf(row.model)}
@@ -840,134 +599,47 @@ export const Model: React.FC<ModelProps> = ({
 
   /* ---------------- every model ---------------- */
 
-  const q = query.trim().toLowerCase();
-  const matches = (row: ModelRow) =>
-    !q ||
-    q
-      .split(/\s+/)
-      .every((w) =>
-        [
-          row.model.name,
-          row.model.description,
-          previews(row.model) ? t("onboarding.model.tags.preview") : "",
-          translates(row.model) ? t("onboarding.model.tags.translate") : "",
-          ...row.model.languages.flatMap((l) => [
-            languageName(l, ui),
-            languageName(l, "en"),
-          ]),
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(w),
-      );
-  const kept = (row: ModelRow) =>
-    matches(row) &&
-    (!onlyPreview || previews(row.model)) &&
-    (!onlyTranslate || translates(row.model));
-  const picked = groups.picks.filter(kept);
-  const others = groups.others.filter(kept);
-  const partial = groups.partial.filter(kept);
-  // The preview filter only when some model can preview.
-  const canPreview = offered.some(previews);
+  const kept = (rows: ModelRow[]) => rows.map(entryFor).filter(matches);
+  // The picks first, then the rest for your languages, best value first;
+  // the models that miss one of them last, under their own line.
+  const sections: TableSection[] = [
+    {
+      key: "fits",
+      label: t("onboarding.model.model"),
+      rows: [...kept(groups.picks), ...kept(groups.others)],
+    },
+    {
+      key: "partial",
+      label: t("onboarding.model.missingLanguage"),
+      rows: kept(groups.partial),
+    },
+  ].filter((s) => s.rows.length);
 
-  /**
-   * A filter in the search field, after a divider: the rows' icon and word at
-   * the field's own size, pressed to keep only the models that have it.
-   * Quieter than the search, which is what's mostly used; pressed fills grey.
-   */
-  const filter = (c: Capability, on: boolean, toggle: () => void) => {
-    const { Icon } = CAPABILITIES[c];
-    return (
-      <Tooltip text={capabilityLine(c)}>
-        <button
-          type="button"
-          aria-pressed={on}
-          onClick={() => {
-            toggle();
-            if (listRef.current) listRef.current.scrollTop = 0;
-          }}
-          className={`flex h-[26px] shrink-0 cursor-pointer items-center gap-[6px] whitespace-nowrap rounded-[7px] px-[8px] text-small font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary ${
-            on
-              ? "bg-line text-text"
-              : "text-ink-3 hover:bg-wash hover:text-text"
-          }`}
-        >
-          <Icon aria-hidden="true" className="size-[14px]" />
-          {capabilityName(c)}
-        </button>
-      </Tooltip>
-    );
-  };
-
-  /** ↑↓ from the search box move the selection. */
-  const step = (d: number) => {
-    const rows = [
-      ...(listRef.current?.querySelectorAll<HTMLElement>("[data-vt-row]") ??
-        []),
-    ];
-    if (!rows.length) return;
-    const i = rows.findIndex((el) => el.classList.contains("is-on"));
-    const next =
-      rows[Math.max(0, Math.min(rows.length - 1, i < 0 ? 0 : i + d))];
-    next.click();
-    requestAnimationFrame(() =>
-      listRef.current
-        ?.querySelector(".is-on")
-        ?.scrollIntoView({ block: "nearest" }),
-    );
-  };
-
-  const tableRow = (row: ModelRow) => {
-    const id = row.model.id;
+  const tableRow = (entry: TableModel) => {
+    const id = entry.id;
     const on = id === selectedId;
-    const dim = row.missing.length > 0;
-    const line = lineFor(id);
     return (
-      <button
+      <ModelTableRow
         key={id}
-        type="button"
-        role="radio"
-        aria-checked={on}
-        {...vt(id)}
-        data-vt-row=""
-        onClick={() => choose(id, false)}
-        className={`relative grid w-full min-w-0 flex-none cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[10px] rounded-control px-[14px] text-start text-small leading-[1.5] text-text [view-transition-class:mf-row_mf-box] ${line ? "pt-[9px] pb-[16px]" : "py-[9px]"} ${
-          // Picked: a quiet grey fill, a step past hover's wash, the same as
-          // a pressed filter above.
-          on ? "is-on bg-line" : "hover:bg-wash"
-        }`}
-      >
-        {mark(id, on)}
-        <span className="flex min-w-[150px] flex-col items-start">
-          <span className="flex min-w-0 max-w-full items-center gap-[8px]">
-            <b
-              {...vt(id, "n")}
-              className={`min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-[650] ${dim ? "opacity-60" : ""}`}
-            >
-              {row.model.name}
-            </b>
-            {row.role && (
-              <Tag {...vt(id, "r")}>
-                {t(`onboarding.model.roles.${ROLE_KEYS[row.role]}`)}
-              </Tag>
-            )}
-            {capabilityIcons(row.model)}
-          </span>
-          <span
-            {...vt(id, "d")}
-            title={row.model.description}
-            className={`max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-ink-3 ${dim ? "opacity-60" : ""}`}
-          >
-            {row.model.description}
-          </span>
-        </span>
-        {columnValues(row)}
-        {line && thinLine("inset-x-[14px] bottom-[7px]")}
-      </button>
+        entry={entry}
+        selected={on}
+        mark={<Radio checked={on} />}
+        download={
+          lineFor(id)
+            ? {
+                state:
+                  loadingState.state === "checking"
+                    ? "checking"
+                    : "downloading",
+                percent: lineValue * 100,
+              }
+            : null
+        }
+        onActivate={() => choose(id, false)}
+        vt={(part) => vt(id, part)}
+      />
     );
   };
-
-  const empty = !picked.length && !others.length && !partial.length;
 
   return (
     <OnboardingShell
@@ -980,120 +652,19 @@ export const Model: React.FC<ModelProps> = ({
         ref={rootRef}
         data-model-root=""
         layout="top"
-        wide={dense}
         align="stretch"
         header={<ScreenHeader title={title} sub={sub} />}
       >
-        {/* Welcome's panel: the search is its first row, the list under a
-            rule, the bottom fading while there's more. Header and list keep
-            the same scrollbar gutter so the codes sit over their columns. */}
-        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-panel border-[1.5px] border-line-strong bg-background text-start">
-          <div className="flex-none overflow-y-hidden border-b border-line px-[6px] [scrollbar-gutter:stable] [scrollbar-width:thin]">
-            {/* The magnifier sits in the radio column and the typing starts
-                where the names do. */}
-            <div className="flex h-[46px] items-center gap-[4px] ps-[14px] pe-[4px]">
-              <label className="flex h-full min-w-0 flex-1 cursor-text items-center gap-[10px]">
-                <span className="grid w-[18px] shrink-0 place-items-center text-ink-3">
-                  <Search size={15} aria-hidden="true" />
-                </span>
-                {/* Quiet on focus: the caret says where typing goes, and the
-                    picked row below stays the one marked thing. No ×:
-                    Escape clears. */}
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  placeholder={t("onboarding.model.searchPlaceholder")}
-                  aria-label={t("onboarding.model.searchLabel")}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    if (listRef.current) listRef.current.scrollTop = 0;
-                  }}
-                  onKeyDown={(e) => {
-                    const d =
-                      e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
-                    if (d) {
-                      e.preventDefault();
-                      step(d);
-                    }
-                  }}
-                  className="h-full min-w-0 flex-1 bg-transparent text-body text-text outline-none placeholder:text-ink-3 [&::-webkit-search-cancel-button]:appearance-none"
-                />
-              </label>
-              <span
-                aria-hidden="true"
-                className="me-[2px] h-[16px] w-px shrink-0 bg-line"
-              />
-              {canPreview &&
-                filter("preview", onlyPreview, () => setOnlyPreview((v) => !v))}
-              {filter("translate", onlyTranslate, () =>
-                setOnlyTranslate((v) => !v),
-              )}
-            </div>
-          </div>
-          <div
-            ref={listRef}
-            role="radiogroup"
-            aria-label={t("onboarding.model.allLabel")}
-            className="model-flow-scroll relative flex min-h-0 flex-1 flex-col gap-[4px] overflow-y-auto scroll-pt-[36px] px-[6px] pb-[12px] [scrollbar-gutter:stable] [scrollbar-width:thin] data-more:[mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
-          >
-            {!empty && (
-              // The column heads stick to the list's top: the same scroller,
-              // so they stay over their columns.
-              <div className="sticky top-0 z-[1] -mx-[6px] flex h-[32px] flex-none items-center justify-between bg-background ps-[48px] pe-[20px] uppercase">
-                <span className={CODE_CLASS}>
-                  {t("onboarding.model.model")}
-                </span>
-                <span
-                  style={colsStyle}
-                  className={`grid items-center justify-items-center ${cols.grid}`}
-                >
-                  {columnHeads}
-                </span>
-              </div>
-            )}
-            {picked.map(tableRow)}
-            {others.map(tableRow)}
-            {/* The models that miss one of their languages come last, under
-                a line in the heads' small capitals; their rows are dimmed
-                and grade "—". */}
-            {partial.length > 0 && (
-              <div
-                className={`mt-[6px] flex h-[33px] flex-none items-center border-t border-line ps-[42px] uppercase ${CODE_CLASS}`}
-              >
-                {t("onboarding.model.missingLanguage")}
-              </div>
-            )}
-            {partial.map(tableRow)}
-            {empty && (
-              <div className="px-[12px] py-[28px] text-center text-small text-ink-2">
-                {query.trim()
-                  ? t("onboarding.model.noMatch", { query: query.trim() })
-                  : t("onboarding.model.noFilterMatch")}
-              </div>
-            )}
-          </div>
-        </div>
+        <ModelTable
+          grading={grading}
+          filters={filters}
+          setFilters={setFilters}
+          sections={sections}
+          renderRow={tableRow}
+          onEscape={close}
+          focusOnMount
+        />
       </ScreenMain>
     </OnboardingShell>
   );
 };
-
-/**
- * The grade, speed and size columns, the same in the pick cards and the
- * table. Every column centers its head over its values; Size is as wide as
- * its widest value ("99.0 MB"). `speed` sizes the bars' cell to its column.
- */
-const COLUMNS = {
-  normal: {
-    grid: "grid-cols-[repeat(var(--n),32px)_40px_48px] gap-x-[6px]",
-    speed: "w-[40px]",
-  },
-  dense: {
-    grid: "grid-cols-[repeat(var(--n),26px)_36px_48px] gap-x-[3px]",
-    speed: "w-[36px]",
-  },
-};
-
-const CODE_CLASS =
-  "text-tag font-semibold leading-[14px] tracking-[0.02em] text-ink-3";

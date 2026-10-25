@@ -30,7 +30,7 @@ export const errorFor = (
 ): number | undefined =>
   catalog.data.results[model.id]?.accuracy[languageIdentity(language)]?.error;
 
-interface Grade {
+export interface Grade {
   letter: GradeLetter;
   /** "A+", "B−"; "—" when the model doesn't speak it, "?" when unmeasured. */
   label: string;

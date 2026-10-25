@@ -19,7 +19,7 @@ const nameAll = (root: HTMLElement): HTMLElement[] => {
   const rows: HTMLElement[] = [];
   for (const el of root.querySelectorAll<HTMLElement>("[data-vt]")) {
     const row = el.closest<HTMLElement>("[data-vt-row]");
-    const scroll = el.closest<HTMLElement>(".model-flow-scroll");
+    const scroll = el.closest<HTMLElement>("[data-model-scroll]");
     let ok = true;
     // In the list, only rows fully in view move; the rest are part of the page.
     if (row && scroll) {

@@ -121,8 +121,6 @@ const GAP = {
 export const ScreenMain = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    /** Model's full list: 40px gutters (640 wide). */
-    wide?: boolean;
     /** The column: centred (default) or full width. */
     align?: keyof typeof ALIGN;
     /** The title block, usually a ScreenHeader. */
@@ -139,7 +137,6 @@ export const ScreenMain = React.forwardRef<
   (
     {
       children,
-      wide = false,
       align = "center",
       header,
       layout = "center",
@@ -151,7 +148,7 @@ export const ScreenMain = React.forwardRef<
     <div
       ref={ref}
       {...rest}
-      className={`flex h-full min-h-0 min-w-0 flex-col ${layout === "center" ? "justify-center-safe" : ""} text-center ${wide ? "px-gutter-wide" : "px-gutter"} ${className}`}
+      className={`flex h-full min-h-0 min-w-0 flex-col ${layout === "center" ? "justify-center-safe" : ""} text-center px-gutter ${className}`}
     >
       {header}
       {header && <div aria-hidden="true" className={GAP[layout]} />}

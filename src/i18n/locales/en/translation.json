@@ -183,8 +183,6 @@
           "D": "Many mistakes: expect to check and correct what it types.",
           "F": "Often unclear: much of what you say may come out wrong."
         },
-        "measured": "It got {{error}}% of words wrong in our test recordings ({{letter}} is {{band}}).",
-        "measuredAverage": "On average, it got {{error}}% of words wrong in our test recordings ({{letter}} is {{band}}).",
         "unsupported": "This model doesn't understand {{language}}, so it can't type it.",
         "unrated": "This model understands {{language}}, but we haven't measured how well yet.",
         "under": "under {{max}}%",
@@ -211,8 +209,7 @@
       "pauses": "{{name}} pauses at {{percent}}%",
       "resumeLater": "Pick it again to pick up where it left off",
       "hint": "Downloads while you finish setup",
-      "searchPlaceholder": "Search models or languages",
-      "searchLabel": "Search models",
+      "search": "Search models",
       "missingLanguage": "Missing a language",
       "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet.",
       "noFilterMatch": "No models match these filters."
@@ -371,8 +368,6 @@
     },
     "models": {
       "title": "Models",
-      "lens": "Graded for {{languages}}, speeds from a laptop like yours.",
-      "lensMany": "Graded for your {{count}} languages, speeds from a laptop like yours.",
       "changeLanguages": "Change languages",
       "sections": {
         "yours": "On this computer",
@@ -381,7 +376,6 @@
         "untested": "Untested"
       },
       "allLanguages": "All",
-      "doesntHear": "Doesn’t hear {{languages}}",
       "untestedNote": "Not tested with Handy. They may be slower or make more mistakes.",
       "untestedHidden_one": "{{count}} more model isn’t tuned for dictation. Search to find it.",
       "untestedHidden_other": "{{count}} more models aren’t tuned for dictation. Search to find one.",
