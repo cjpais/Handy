@@ -1,5 +1,6 @@
 import React from "react";
 import { getLanguage, type Language } from "@/lib/constants/languages";
+import { cjkSubsetFont } from "@/lib/utils/cjkFont";
 
 /**
  * The parts of picking the languages someone speaks, shared by onboarding's
@@ -42,7 +43,12 @@ export const LanguageChip: React.FC<LanguageChipProps> = ({
   onRemove,
   locked = false,
 }) => {
-  const name = <bdi lang={code}>{getLanguage(code).native}</bdi>;
+  const { native } = getLanguage(code);
+  const name = (
+    <bdi lang={code} className={cjkSubsetFont(native)}>
+      {native}
+    </bdi>
+  );
   if (locked)
     return (
       <span className="inline-flex h-[28px] items-center rounded-full border-[1.5px] border-line-strong bg-background px-[12px] text-small font-semibold text-text">
@@ -96,7 +102,10 @@ export const LanguageOption: React.FC<LanguageOptionProps> = ({
         : "border border-transparent"
     }`}
   >
-    <b lang={language.code} className="font-semibold">
+    <b
+      lang={language.code}
+      className={`font-semibold ${cjkSubsetFont(language.native) ?? ""}`}
+    >
       {language.native}
     </b>
     <small className="text-label text-ink-3">

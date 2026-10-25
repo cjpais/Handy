@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 export interface DropdownOption {
   value: string;
-  label: string;
+  label: React.ReactNode;
   description?: string;
   disabled?: boolean;
 }

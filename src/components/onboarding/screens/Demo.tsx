@@ -16,6 +16,7 @@ import {
   spaceDoesNotClick,
 } from "@/lib/utils/keyboard";
 import { prefersReducedMotion } from "@/lib/utils/motion";
+import { cjkSubsetFont } from "@/lib/utils/cjkFont";
 import { Button } from "../../ui/Button";
 import { Keycaps, KeySlot } from "../../shared/Keycaps";
 import { DesktopBar } from "../DesktopBar";
@@ -269,7 +270,7 @@ const DemoLaptop: React.FC<{
                   key={landKey}
                   dir="auto"
                   lang={lang}
-                  className={landed ? "demo-landed" : ""}
+                  className={`${landed ? "demo-landed" : ""} ${cjkSubsetFont(text) ?? ""}`}
                 >
                   {text}
                 </span>

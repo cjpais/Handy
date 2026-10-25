@@ -5,7 +5,7 @@
  */
 import { isChinese, type ChineseScriptChoice } from "./languages";
 
-const SAMPLES: Record<string, string> = {
+export const SAMPLES: Record<string, string> = {
   es: "Oye, ¿podemos mover la revisión de diseño de mañana a las tres? Quiero un poco más de tiempo para terminar las maquetas.",
   fr: "Est-ce qu'on peut décaler la revue de design de demain à quinze heures ? J'aimerais un peu plus de temps pour finir les maquettes.",
   de: "Können wir die Design-Besprechung morgen auf drei Uhr verschieben? Ich brauche noch etwas Zeit für die Entwürfe.",

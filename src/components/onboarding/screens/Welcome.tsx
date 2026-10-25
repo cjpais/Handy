@@ -253,7 +253,9 @@ export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
                   >
                     <Radio checked={picked} />
                     <span>
-                      <span lang={s.lang}>{s.native}</span>{" "}
+                      <span lang={s.lang} className="font-cjk-subset">
+                        {s.native}
+                      </span>{" "}
                       {t(`onboarding.welcome.chinese.${s.id}`)}
                     </span>
                   </button>

@@ -28,6 +28,16 @@
   --color-line-strong: var(--color-line-strong);
 }
 
+/* Noto Sans CJK (OFL) cut to a few characters; see src/lib/utils/cjkFont.ts.
+   Windows draws Chinese, Japanese and Korean each in its own font, none with
+   a semibold to sit beside Segoe UI's. Variable, so every weight. */
+@font-face {
+  font-family: "Handy CJK Subset";
+  src: url("./assets/fonts/cjk-subset.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: block;
+}
+
 /* The onboarding design's scale, in px: the root font size is 15px, so
    Tailwind's rem-based steps (text-sm, rounded-lg, ...) land on fractions.
    Names avoid Tailwind's defaults (text-sm, text-xl, ease-out, ...), which
@@ -39,6 +49,9 @@
   --font-ui:
     system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
     "Noto Sans", sans-serif;
+  --font-cjk-subset:
+    "Handy CJK Subset", -apple-system, "Segoe UI Variable Text", "Segoe UI",
+    system-ui, sans-serif;
 
   --text-title: 26px; /* screen titles */
   --text-name: 15px; /* the model name on Model's Full card */
@@ -215,6 +228,11 @@
     /* Just a bit darker than the (already dark) background, keeping its warm tint */
     --color-log-surface: color-mix(in srgb, var(--color-background), black 15%);
   }
+}
+
+/* macOS's own CJK fonts already share their weights. */
+:root[data-platform="macos"] {
+  --font-cjk-subset: var(--font-ui);
 }
 
 /* macOS - tint native overlay scrollbar thumb */
