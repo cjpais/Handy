@@ -1,3 +1,4 @@
+import { type } from "@tauri-apps/plugin-os";
 import {
   prefersReducedMotion,
   type ViewTransition,
@@ -6,16 +7,19 @@ import {
 
 /**
  * One kind of View Transition (Demo to Try it, Model's moves), one at a
- * time. `canMove` is false without View Transitions (older webviews) or with
- * reduced motion: then it just changes. `skip` ends the last move of this
- * kind; `start` runs the next, and `onDone` cleans up after it unless a
- * newer one took over first. Each kind keeps its own: one kind starting
- * never cuts off another's cleanup.
+ * time. `canMove` is false without View Transitions (older webviews), on
+ * Linux, or with reduced motion: then it just changes. WebKitGTK segfaults
+ * entering accelerated compositing for a transition while the DMABUF
+ * renderer is off, which main.rs does on Linux. `skip` ends the last move
+ * of this kind; `start` runs the next, and `onDone` cleans up after it
+ * unless a newer one took over first. Each kind keeps its own: one kind
+ * starting never cuts off another's cleanup.
  */
 export const viewTransitions = () => {
   let running: ViewTransition | null = null;
   return {
     canMove: () =>
+      type() !== "linux" &&
       !!(document as WithViewTransitions).startViewTransition &&
       !prefersReducedMotion(),
     skip: () => running?.skipTransition(),

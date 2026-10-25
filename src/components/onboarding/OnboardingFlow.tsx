@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { commands, type ChineseScript } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
@@ -100,6 +100,18 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     currentModel,
     selectModel,
   ]);
+
+  // Demo and Try it teach both hold and tap, and only hold-or-toggle does
+  // both. Settings migrated from the old push_to_talk bool kept Toggle or
+  // PushToTalk, so switch them over. Once, when the settings are in.
+  const activationSet = useRef(false);
+  const activation = settings?.shortcut_activation;
+  useEffect(() => {
+    if (preview || !activation || activationSet.current) return;
+    activationSet.current = true;
+    if (activation !== "hold_or_toggle")
+      updateSetting("shortcut_activation", "hold_or_toggle");
+  }, [preview, activation]);
 
   // Before the first paint, so a preview never shows the saved step. Leaving
   // a preview puts the real progress back.
