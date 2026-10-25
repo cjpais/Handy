@@ -20,16 +20,17 @@
     "close": "關閉"
   },
   "onboarding": {
-    "subtitle": "首先，請選擇一種模型",
-    "existingModelsTitle": "相容的模型",
-    "downloadModelsTitle": "可供下載",
-    "showAllModels": "顯示全部 {{total}} 個模型",
-    "showFewerModels": "顯示較少模型",
-    "recommended": "推薦",
     "customModelDescription": "官方不支援",
-    "modelCard": {
-      "accuracy": "準確度",
-      "speed": "速度"
+    "migration": {
+      "title": "您的模型需要更新",
+      "description": "Handy 現在使用更新的模型類型。請下載新版本以繼續轉錄。舊版本將會移除。",
+      "replaces": "取代 {{name}}",
+      "oldFormat": "舊格式",
+      "failed": "下載失敗",
+      "retry": "重試",
+      "chooseAnother": "選擇其他模型",
+      "download": "下載模型（{{size}}）",
+      "continue": "繼續"
     },
     "models": {
       "small": {
@@ -48,90 +49,267 @@
         "name": "Whisper Large",
         "description": "準確度高，但速度較慢"
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "僅支援英語，英語使用者的最佳模型"
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "快速且準確"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "速度極快，僅支援英語，擅長處理各種口音"
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "超快速，僅支援英語"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "快速，僅支援英語。速度與準確度的良好平衡。"
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "僅支援英語。高品質。"
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "針對臺灣華語最佳化。支援語碼轉換。"
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "速度極快。支援中文、英語、日語、韓語、粵語。"
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "俄語語音辨識。快速且準確。"
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "速度極快。支援英語、德語、西班牙語、法語。支援翻譯。"
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "準確的多語言模型。25種歐洲語言。支援翻譯。"
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "大型模型，速度較慢，但多語言辨識非常準確。"
       }
     },
     "errors": {
       "selectModel": "選擇模型失敗"
     },
     "permissions": {
-      "title": "需要權限",
-      "description": "Handy 需要一些權限才能正常運作",
       "microphone": {
-        "title": "麥克風存取",
-        "description": "需要聽取您的語音進行轉錄"
+        "name": "麥克風",
+        "why": "讓 Handy 聽得到您說話。音訊只會在這台電腦上轉成文字，絕不會上傳。"
       },
       "accessibility": {
-        "title": "輔助使用存取",
-        "description": "需要將轉錄文字輸入到您的應用程式中"
+        "name": "輔助使用",
+        "why": "讓快捷鍵在每個應用程式中都能使用，也讓 Handy 能把文字打在游標所在的位置。"
       },
-      "grant": "授予權限",
-      "granted": "已授予",
-      "waiting": "等待中...",
-      "allGranted": "全部完成！",
       "errors": {
         "checkFailed": "檢查權限失敗，請重試",
         "requestFailed": "請求權限失敗，請重試"
+      },
+      "titleMac": "兩項權限，然後就大功告成",
+      "titleWindows": "一項權限，然後就大功告成",
+      "subtitleMac": "macOS 會先詢問，才允許應用程式聆聽或輸入。",
+      "subtitleWindows": "Windows 會先詢問，才允許應用程式聆聽。",
+      "allow": "允許",
+      "openSettings": "開啟設定",
+      "allowed": "已允許",
+      "waiting": "等待中",
+      "turnOnMac": "請在「系統設定」中開啟 Handy，然後回到這裡。",
+      "turnOnWindows": "請在「Windows 設定」中開啟麥克風存取權，然後回到這裡。",
+      "hintBoth": "請允許兩項權限以繼續",
+      "hintMicrophone": "請允許麥克風以繼續",
+      "welcomeBack": "歡迎回來，我們從上次中斷的地方繼續。",
+      "relaunch": "之後快捷鍵沒有反應嗎？<relaunch>重新啟動 Handy</relaunch>，就會直接回到這裡。"
+    },
+    "shell": {
+      "back": "返回",
+      "continue": "繼續",
+      "progress": "第 {{step}} 步，共 {{count}} 步"
+    },
+    "welcome": {
+      "title": "在任何應用程式中，用說的取代打字",
+      "subtitle": "選擇您要用來聽寫的語言",
+      "languagesLabel": "語言",
+      "noMatch": "找不到符合「{{query}}」的語言。Handy 的模型涵蓋約 100 種語言，更多語言可在設定中找到。",
+      "appLanguage": "應用程式語言",
+      "menusIn": "選單使用<b>{{language}}</b>",
+      "chinese": {
+        "question": "您說{{languages}}。Handy 該使用哪種字體書寫？",
+        "label": "中文字體",
+        "zh-Hans": "簡體",
+        "zh-Hant": "臺灣",
+        "zh-HK": "香港"
+      },
+      "hint": {
+        "pickOne": "請至少選擇一種語言",
+        "weak_one": "{{languages}}：目前還沒有模型能聽得很準",
+        "weak_other": "{{languages}}：目前還沒有模型能聽得很準"
       }
+    },
+    "download": {
+      "checking": "正在檢查下載內容…",
+      "ready": "{{name}} 已就緒",
+      "failed": "下載已中斷",
+      "downloading": "正在下載 {{name}}",
+      "progress": "{{done}} / {{total}}",
+      "progressLeft": "{{done}} / {{total}}，還需 {{time}}",
+      "checkingName": "正在檢查 {{name}}",
+      "checkingDetail": "確認下載是否完整",
+      "stopped": "{{name}} 已停止下載",
+      "retryDetail": "重試時會從中斷處繼續",
+      "retryDownload": "重試下載",
+      "cardProgress": "已下載 {{percent}}%，{{done}} / {{total}}",
+      "timeLeft": "還需 {{time}}",
+      "speedLeft": "{{speed}}，還需 {{time}}"
+    },
+    "model": {
+      "title": "選擇語音模型",
+      "subtitle": "語音模型會直接在這台電腦上把您的語音轉成文字",
+      "label": "語音模型",
+      "lines": {
+        "recommended": "最適合您所用語言的速度與準確度平衡",
+        "faster": "速度較快，但錯誤稍多",
+        "accurate": "錯誤最少，但速度較慢"
+      },
+      "shorts": {
+        "recommended": "最適合您的平衡",
+        "faster": "較快，錯誤稍多",
+        "accurate": "錯誤最少，但較慢"
+      },
+      "model": "模型",
+      "showAll": "顯示全部 {{count}} 個模型",
+      "download": "下載 {{size}}",
+      "downloadInstead": "改為下載 {{size}}",
+      "pauses": "{{name}} 會在 {{percent}}% 暫停",
+      "resumeLater": "再次選擇它即可從中斷處繼續",
+      "hint": "會在您完成設定的同時下載"
+    },
+    "demo": {
+      "title": "一個快捷鍵，在任何應用程式中開口說話",
+      "hold": "<0>點一下想輸入文字的地方。</0><1>按住快捷鍵並開始說話。</1><2>放開後，文字就會出現。</2>",
+      "tap": "<0>點一下想輸入文字的地方。</0><1>輕按快捷鍵並開始說話。</1><2>再按一次，文字就會出現。</2>",
+      "apps": {
+        "messages": "訊息",
+        "notes": "備忘錄"
+      },
+      "chat": "你今晚還會來嗎？",
+      "noteTitle": "週末計畫",
+      "screenLabel": "一台筆記型電腦：有人點進應用程式、按下快捷鍵並開始說話，文字就出現在剛才點選的位置。",
+      "change": "變更",
+      "yourShortcut": "您的快捷鍵是",
+      "pressKeys": "請按下新的按鍵",
+      "addKey": "再加上一個按鍵",
+      "cancel": "取消",
+      "tryIt": "親自試試看"
+    },
+    "try": {
+      "title": "來試試看吧！",
+      "subtitle": "Handy 就在角落，陪您一步步操作",
+      "noteLabel": "備忘錄",
+      "placeholder": "新增備忘錄",
+      "hold": "按住 <keys/> 並開始說話。",
+      "tapNext": "現在輕按 <keys/> 一下，然後說話。",
+      "letGo": "說完後放開 <keys/>。",
+      "tapAgain": "說完後再按一次 <keys/>。",
+      "watch": "看看備忘錄。",
+      "changeKeys": "變更快捷鍵，{{keys}}",
+      "doneHold": "擊掌！這就是按住的用法。",
+      "doneHoldNext": "接下來，試試免持的方式。",
+      "doneTap": "擊掌！這就是輕按的用法。",
+      "doneTapNext": "現在試試邊說話邊按住。",
+      "giveFive": "你學會了！擊個掌吧",
+      "highFive": "擊掌",
+      "slowLine": "{{name}} 在這台電腦上花了 {{wait}}。<faster>試試更快的模型</faster>",
+      "nothingTyped": "嗯，什麼都沒有輸入進去。",
+      "nothingTypedSub": "請先點一下備忘錄，再試一次。",
+      "silent": "我什麼都沒聽到。",
+      "silentSub": "這支麥克風沒有收到任何聲音。換一支試試：",
+      "noWords": "我沒聽清楚任何字詞。",
+      "noWordsSub": "再試一次，這次請說完整的一句話。",
+      "finish": "完成",
+      "skip": "略過",
+      "seconds": "{{value}} 秒"
+    },
+    "done": {
+      "title": "全部設定完成",
+      "subMac": "Handy 現在位於選單列中。在任何應用程式中按住或輕按 <keys/> 即可開口說話。",
+      "subTray": "Handy 現在位於系統匣中。在任何應用程式中按住或輕按 <keys/> 即可開口說話。",
+      "hint": "之後可以隨時在「設定」中變更",
+      "highFiveLabel": "擊掌",
+      "atLogin": "登入時啟動 Handy",
+      "finish": "完成",
+      "panel": {
+        "name": "Handy",
+        "ready": "已就緒",
+        "languages": "語言",
+        "model": "語音模型",
+        "shortcut": "快捷鍵",
+        "changeLanguages": "變更語言，{{languages}}",
+        "changeModel": "變更語音模型，{{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "沒有作用嗎？<guide>Linux 設定指南</guide>",
+      "done": "在其他應用程式中沒有作用嗎？<guide>Linux 設定指南</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "即時預覽",
+      "previewTitle": "說話時在「即時」懸浮窗中顯示您的文字，停止後再輸入",
+      "translate": "可翻譯",
+      "translateTitle": "可以把您說的話轉成英文文字。請在設定中開啟"
+    },
+    "rubric": {
+      "gradeTitle": "{{language}}準確度：{{grade}}",
+      "accuracyTitle": "{{language}}準確度",
+      "overallTitle": "您所用語言的準確度：{{grade}}",
+      "overall": "您所用語言的準確度",
+      "meaning": {
+        "A": "錯誤非常少：您說的話通常都能原樣呈現",
+        "B": "有些錯誤：偶爾需要修正幾個字",
+        "C": "錯誤頻繁：部分細節可能會遺漏",
+        "D": "錯誤很多：需要檢查並修正輸入的內容",
+        "F": "常常聽不清楚：您說的話有許多可能會出錯"
+      },
+      "unsupported": "這個模型聽不懂{{language}}，所以無法輸入",
+      "unrated": "這個模型聽得懂{{language}}，但我們還沒測量過準確度",
+      "under": "低於 {{max}}%",
+      "between": "{{min}} 至 {{max}}%",
+      "over": "{{min}}% 以上",
+      "speedTitle": "速度：{{speed}}",
+      "speedName": {
+        "0": "非常慢",
+        "1": "慢",
+        "2": "普通",
+        "3": "快",
+        "4": "非常快"
+      },
+      "speedMeaning": {
+        "0": "要等很久文字才會出現",
+        "1": "要等一下文字才會出現",
+        "2": "稍等一下文字就會出現",
+        "3": "文字幾乎立刻出現",
+        "4": "文字立刻出現"
+      },
+      "speedPreview": "{{meaning}}，說話時有即時預覽",
+      "untimed": "我們還沒測量過它的速度",
+      "underSeconds": "少於 {{max}} 秒",
+      "betweenSeconds": "{{min}} 至 {{max}} 秒",
+      "overSeconds": "{{min}} 秒以上"
+    },
+    "roles": {
+      "recommended": "推薦",
+      "faster": "更快",
+      "accurate": "更準確",
+      "fromAll": "所有模型"
+    },
+    "speed": "速度",
+    "size": "大小",
+    "accuracy": "準確度",
+    "search": "搜尋模型",
+    "allLabel": "語音模型",
+    "noMatch": "找不到符合「{{query}}」的項目。試試輸入語言，或是 Whisper、Parakeet 這類系列名稱",
+    "noFilterMatch": "沒有符合這些篩選條件的模型",
+    "speedUntested": "尚未測量速度",
+    "speedWords": {
+      "0": "非常慢，要等很久文字才會出現",
+      "1": "慢，要等一下文字才會出現",
+      "2": "普通，稍等一下文字就會出現",
+      "3": "快，文字幾乎立刻出現",
+      "4": "非常快，文字立刻出現"
+    },
+    "speedWordsPreview": {
+      "0": "非常慢，說話時有即時預覽",
+      "1": "慢，說話時有即時預覽",
+      "2": "普通，說話時有即時預覽",
+      "3": "快，說話時有即時預覽",
+      "4": "非常快，說話時有即時預覽"
+    },
+    "missingLanguage": "缺少某種語言",
+    "allLanguages": "全部",
+    "downloadingLine": "已下載 {{percent}}%（共 {{total}}）",
+    "customLine": "從您的模型資料夾新增。未評分。",
+    "legacyLine": "較舊的下載項目。未評分。"
+  },
+  "languagePicker": {
+    "search": "搜尋語言",
+    "addAnother": "新增其他語言",
+    "remove": "移除{{language}}",
+    "alreadyAdded_one": "已新增{{languages}}。",
+    "alreadyAdded_other": "已新增{{languages}}。"
   },
   "modelSelector": {
     "custom": "自訂",
     "streaming": "串流",
     "active": "使用中",
-    "switching": "切換中...",
     "noModelsAvailable": "沒有可用的模型",
     "verifying": "正在驗證 {{modelName}}...",
     "verifyingGeneric": "正在驗證...",
-    "extracting": "正在解壓 {{modelName}}...",
-    "extractingMultiple": "正在解壓 {{count}} 個模型...",
-    "extractingGeneric": "解壓中...",
     "downloading": "下載中 {{percentage}}%",
     "downloadingMultiple": "正在下載 {{count}} 個模型...",
     "modelReady": "模型已就緒",
@@ -140,20 +318,8 @@
     "modelError": "模型錯誤",
     "modelUnloaded": "模型已卸載",
     "noModelDownloadRequired": "無模型 - 需要下載",
-    "deleteModel": "刪除 {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "取消",
-    "cancelDownload": "取消下載",
-    "capabilities": {
-      "languageSelection": "支援多種輸入語言",
-      "singleLanguage": "僅支援此語言",
-      "languageCount": "{{total}} 種語言",
-      "languageOnly": "僅 {{language}}",
-      "translation": "可翻譯為英語",
-      "translate": "翻譯為英語",
-      "streaming": "在您說話時即時顯示轉錄"
-    },
-    "legacy": "舊版"
+    "lockedWhileTranscribing": "歷史紀錄中的轉錄完成後才能更換模型。"
   },
   "settings": {
     "modelSettings": {
@@ -183,9 +349,7 @@
           }
         },
         "errors": {
-          "restore": "無法還原原始快捷鍵",
-          "set": "無法設定快捷鍵: {{error}}",
-          "reset": "無法將快捷鍵重設為原始值"
+          "set": "無法設定快捷鍵: {{error}}"
         }
       },
       "language": {
@@ -194,6 +358,12 @@
         "searchPlaceholder": "搜尋語言...",
         "noResults": "未找到語言",
         "auto": "自動"
+      },
+      "preferredLanguages": {
+        "title": "偏好語言",
+        "description": "您所說的語言。Handy 會依據這些語言推薦模型。",
+        "noMatch": "找不到符合「{{query}}」的語言",
+        "weak": "目前還沒有模型能把{{languages}}辨識得很準。"
       },
       "shortcutActivation": {
         "title": "快捷鍵行為",
@@ -211,24 +381,50 @@
       }
     },
     "models": {
-      "title": "轉錄模型",
-      "description": "選擇轉錄模型或下載其他模型。不同模型提供不同的準確度和速度",
-      "yourModels": "已下載的模型",
-      "availableModels": "可供下載",
-      "deleteConfirm": "確定要刪除 {{modelName}} 嗎？刪除後須重新下載才能使用",
-      "deleteActiveConfirm": "{{modelName}} 是您目前使用的模型。刪除後將停止轉錄，直到您選擇新的模型。確定要刪除嗎？",
-      "deleteTitle": "刪除模型",
-      "filters": {
-        "allLanguages": "所有語言",
-        "streaming": "篩選支援即時轉錄的模型",
-        "translation": "篩選支援翻譯為英語的模型"
+      "title": "模型",
+      "changeLanguages": "變更語言",
+      "sections": {
+        "yours": "在這台電腦上",
+        "fits": "適用於您的語言",
+        "untested": "未測試"
       },
-      "noModelsMatch": "沒有符合此篩選條件的模型",
-      "searchPlaceholder": "依名稱搜尋模型…",
+      "untestedNote": "尚未經過 Handy 測試，可能較慢或錯誤較多。",
+      "untestedHidden_one": "另有 {{count}} 個模型並未針對聽寫調校，請搜尋以找到它。",
+      "untestedHidden_other": "另有 {{count}} 個模型並未針對聽寫調校，請搜尋以找到它們。",
+      "emptyYours": "尚無模型。請從下方選擇一個：下載完成後 Handy 就會使用它。",
+      "showMore": "再顯示 {{count}} 個",
+      "showFewer": "顯示較少",
+      "download": "下載並使用",
+      "downloadingThenUse": "{{percent}}%（共 {{total}}），完成後自動切換",
+      "loading": "載入中…",
+      "deleteAsk": "要刪除 {{name}} 嗎？這會釋出 {{size}} 的空間。",
+      "deleteAskActive": "要刪除 {{name}} 嗎？在您選擇其他模型之前，Handy 無法進行轉錄。",
+      "cancel": "取消",
+      "deleteModel": "刪除 {{name}}",
+      "cancelDownload": "停止下載 {{name}}",
+      "legend": {
+        "open": "模型如何評分",
+        "accuracyNote": "針對您的每一種語言：模型在我們的測試錄音中聽錯了多少字。",
+        "speedNote": {
+          "accelerated": "在我們的測試筆電的顯示晶片上，輸入 30 秒語音所需的時間。這台電腦可能不同。",
+          "cpu": "在我們的測試筆電的處理器上，輸入 30 秒語音所需的時間。這台電腦可能不同。"
+        },
+        "marks": "? 表示尚未測量。— 表示聽不懂該語言。"
+      },
+      "retiredNotice": {
+        "title": "舊模型已無法在 Handy 中使用",
+        "description": "它們佔用了您電腦上 {{size}} 的空間。",
+        "delete": "刪除模型",
+        "deleted": "已刪除舊模型",
+        "deleteFailed": "部分舊模型無法刪除。請查看記錄檔以了解詳情。"
+      },
       "rescan": {
         "label": "重新掃描",
         "tooltip": "重新掃描在 Handy 之外新增到模型資料夾或 Hugging Face 快取中的模型"
       }
+    },
+    "languages": {
+      "title": "語言"
     },
     "sound": {
       "title": "聲音",
@@ -277,12 +473,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper 加速",
-          "description": "Whisper 模型的硬體加速。自動模式在可用時使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
-        },
-        "ort": {
-          "title": "ONNX 加速",
-          "description": "ONNX 模型的硬體加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 為實驗性功能。模型可能無法正常轉錄。"
+          "title": "硬體加速",
+          "description": "選擇用於轉錄的硬體。自動模式在可用時使用 GPU，否則改用 CPU。"
         },
         "gpuDevice": {
           "auto": "自動"
@@ -388,6 +580,10 @@
         "title": "語音活動偵測",
         "description": "過濾錄音中的靜音。支援串流的模型會使用較長的 VAD 尾段；停用 VAD 則會錄製原始音訊"
       },
+      "longFormChunking": {
+        "title": "長音訊分段",
+        "description": "在轉錄前依停頓處將長錄音分段，通常可以提升轉錄效果。轉錄檔案與較長的重新轉錄一律會分段。"
+      },
       "vadBackend": {
         "title": "語音活動偵測後端",
         "description": "選擇用於過濾靜音的偵測器。Earshot 為實驗性功能；若語音被截斷或雜訊被保留，請切換回 Silero。",
@@ -399,6 +595,16 @@
       "fillerWordRemoval": {
         "title": "移除語助詞",
         "description": "從轉錄中移除常見的語助詞。關閉此選項即可保留這些詞。"
+      },
+      "chineseScript": {
+        "title": "繁簡轉換",
+        "description": "將國語和粵語的轉錄內容以簡體字輸出，或以臺灣或香港使用的繁體字輸出。其他語言不受影響。",
+        "options": {
+          "asTranscribed": "保持原樣",
+          "simplified": "簡體",
+          "traditionalTw": "繁體（臺灣）",
+          "traditionalHk": "繁體（香港）"
+        }
       }
     },
     "postProcessing": {
@@ -406,10 +612,18 @@
         "title": "快捷鍵"
       },
       "api": {
-        "title": "API（相容 OpenAI）",
+        "title": "API",
         "provider": {
           "title": "供應商",
-          "description": "選擇一個相容 OpenAI 的供應商"
+          "description": "選擇一個相容 OpenAI 或 Anthropic 的供應商"
+        },
+        "apiFormat": {
+          "title": "API 格式",
+          "description": "自訂端點所需的請求格式",
+          "options": {
+            "openai": "相容 OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence 在此裝置上不可用。需要執行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，並在系統設定中啟用 Apple Intelligence"
@@ -417,7 +631,8 @@
         "baseUrl": {
           "title": "基礎網址",
           "description": "所選供應商的 API 基礎網址，僅自訂供應商可編輯",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API 金鑰",
@@ -461,14 +676,27 @@
       "loading": "載入歷史紀錄中...",
       "empty": "還沒有轉錄紀錄。開始錄製以建立您的歷史紀錄！",
       "copyToClipboard": "複製轉錄到剪貼簿",
+      "copyError": "無法將轉錄複製到剪貼簿。",
       "save": "儲存轉錄",
       "unsave": "從已儲存中移除",
       "delete": "刪除條目",
       "deleteError": "刪除條目失敗，請重試",
       "retranscribe": "重新轉錄",
-      "retranscribeError": "重新轉錄失敗，請重試。",
+      "cancelTranscription": "取消轉錄",
       "transcribing": "轉錄中...",
-      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。"
+      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。",
+      "notTranscribed": "尚未轉錄。您可以使用重試圖示進行轉錄。",
+      "transcribeFile": "轉錄檔案",
+      "mediaFiles": "音訊和影片",
+      "fileUnsupported": "無法讀取 {{name}} 中的音訊。",
+      "readingFile": "正在讀取 {{name}}...",
+      "transcribeFailed": "轉錄失敗，請重試。",
+      "waiting": "等待轉錄",
+      "transcribingPercent": "正在轉錄，{{percent}}%",
+      "showMore": "顯示更多",
+      "showLess": "收合",
+      "dropTitle": "拖放到此處進行轉錄",
+      "dropDescription": "它會出現在歷史記錄中。"
     },
     "debug": {
       "title": "偵錯",
@@ -495,6 +723,38 @@
         "label": "檢查更新",
         "description": "自動檢查 Handy 的新版本",
         "lockedDescription": "已被系統設定停用 (HANDY_DISABLE_UPDATER)"
+      },
+      "whatsNewPreview": {
+        "title": "預覽新功能",
+        "description": "開啟最新內建版本資訊，且不標記為已看過",
+        "button": "預覽",
+        "noNotes": "找不到內建版本資訊",
+        "error": "無法預覽版本資訊"
+      },
+      "onboardingPreview": {
+        "title": "預覽新手引導",
+        "description": "預覽新手引導畫面，而不變更權限、模型或完成狀態",
+        "exitButton": "結束預覽",
+        "choose": "選擇畫面",
+        "screens": {
+          "welcome": "歡迎",
+          "permissions": "權限",
+          "model": "模型",
+          "demo": "示範",
+          "try": "試用",
+          "done": "設定完成"
+        }
+      },
+      "onboardingRun": {
+        "title": "執行新手引導",
+        "description": "從頭實際跑一遍新手引導：會要求權限、下載模型並儲存您的選擇",
+        "button": "開始"
+      },
+      "modelMigration": {
+        "title": "模型遷移",
+        "description": "實際開啟舊格式模型更新畫面：會下載替代模型、切換模型並刪除舊檔案",
+        "button": "開啟",
+        "noRetired": "磁碟上沒有舊格式模型"
       },
       "soundTheme": {
         "label": "聲音主題",
@@ -544,11 +804,6 @@
         "description": "選擇鍵盤快捷鍵的後端",
         "bindingsReset": "鍵盤快捷鍵不相容，已重設為預設值"
       },
-      "paths": {
-        "appData": "應用程式資料:",
-        "models": "模型:",
-        "settings": "設定:"
-      },
       "pasteDelay": {
         "title": "貼上延遲（前）",
         "description": "複製文字後、發送貼上按鍵前的延遲（毫秒）。如果沒有貼上任何內容，請增加此值。"
@@ -588,13 +843,6 @@
         "verdictOk": "按鍵事件正常送達 Handy。",
         "verdictNoEvents": "未擷取到任何事件——測試期間您有按鍵嗎？",
         "failed": "診斷失敗：{{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "預覽新功能",
-        "description": "開啟最新內建版本資訊，且不標記為已看過",
-        "button": "預覽",
-        "noNotes": "找不到內建版本資訊",
-        "error": "無法預覽版本資訊"
       }
     },
     "about": {
@@ -602,6 +850,10 @@
       "version": {
         "title": "版本",
         "description": "Handy 的目前版本"
+      },
+      "whatsNewUpdates": {
+        "label": "顯示新功能",
+        "description": "Handy 更新後顯示版本資訊"
       },
       "appDataDirectory": {
         "title": "應用程式資料目錄",
@@ -624,10 +876,6 @@
           "description": "針對 OpenAI Whisper 自動語音辨識模型的高效能推理引擎",
           "details": "Handy 使用 ggml 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
-      },
-      "whatsNewUpdates": {
-        "label": "顯示新功能",
-        "description": "Handy 更新後顯示版本資訊"
       }
     }
   },
@@ -646,6 +894,9 @@
     "portableUpdateBrowseMessage": "可攜式安裝無法自動更新。請從 GitHub Releases 下載適用於你的系統的最新版本，並安裝到相同資料夾，你的 Data/ 資料夾（設定、模型、錄音）會保留在原處。",
     "portableUpdateBrowseButton": "開啟 GitHub Releases"
   },
+  "whatsNew": {
+    "title": "Handy v{{version}} 新功能"
+  },
   "common": {
     "loading": "載入中...",
     "delete": "刪除",
@@ -654,10 +905,6 @@
     "copy": "複製",
     "clear": "清除",
     "noOptionsFound": "未找到選項"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy 需要輔助使用權限才能輸入轉錄的文字",
-    "openSettings": "開啟系統設定"
   },
   "errors": {
     "loadDirectory": "載入目錄時發生錯誤: {{error}}",
@@ -692,10 +939,8 @@
   },
   "overlay": {
     "transcribing": "正在轉錄...",
-    "processing": "處理中..."
-  },
-  "whatsNew": {
-    "title": "Handy v{{version}} 新功能"
+    "processing": "處理中...",
+    "loadingModel": "正在載入模型..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} 可能正在阻擋 1 個快捷鍵",

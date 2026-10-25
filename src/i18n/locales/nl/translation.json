@@ -20,16 +20,17 @@
     "close": "Sluiten"
   },
   "onboarding": {
-    "subtitle": "Kies een transcriptiemodel om aan de slag te gaan",
-    "existingModelsTitle": "Compatibele modellen",
-    "downloadModelsTitle": "Beschikbaar voor download",
-    "showAllModels": "Toon alle {{total}} modellen",
-    "showFewerModels": "Minder modellen tonen",
-    "recommended": "Aanbevolen",
     "customModelDescription": "Niet officieel ondersteund",
-    "modelCard": {
-      "accuracy": "nauwkeurigheid",
-      "speed": "snelheid"
+    "migration": {
+      "title": "Je modellen moeten worden bijgewerkt",
+      "description": "Handy gebruikt nu een nieuwer soort model. Download de nieuwe versie om te blijven transcriberen. Oude versies worden verwijderd.",
+      "replaces": "Vervangt {{name}}",
+      "oldFormat": "Oud formaat",
+      "failed": "Downloaden mislukt",
+      "retry": "Opnieuw proberen",
+      "chooseAnother": "Kies een ander model",
+      "download": "Modellen downloaden ({{size}})",
+      "continue": "Doorgaan"
     },
     "models": {
       "small": {
@@ -48,91 +49,267 @@
         "name": "Whisper Large",
         "description": "Hoge nauwkeurigheid, maar traag."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Alleen Engels. Het beste model voor Engelstaligen."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Snel en nauwkeurig."
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Zeer snel, alleen Engels. Gaat goed om met accenten."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrasnel, alleen Engels."
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Snel, alleen Engels. Goede balans tussen snelheid en nauwkeurigheid."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Alleen Engels. Hoge kwaliteit."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Geoptimaliseerd voor Taiwanees-Mandarijn. Ondersteunt codewisseling."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Zeer snel. Chinees, Engels, Japans, Koreaans, Kantonees."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russische spraakherkenning. Snel en nauwkeurig."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Zeer snel. Engels, Duits, Spaans, Frans. Ondersteunt vertaling."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Nauwkeurig meertalig. 25 Europese talen. Ondersteunt vertaling."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Een groot, trager, maar zeer nauwkeurig meertalig model."
       }
     },
     "errors": {
       "selectModel": "Model selecteren mislukt"
     },
     "permissions": {
-      "title": "Machtigingen vereist",
-      "description": "Handy heeft een aantal machtigingen nodig om goed te kunnen werken.",
       "microphone": {
-        "title": "Microfoontoegang",
-        "description": "Vereist om je stem op te nemen voor transcriptie."
+        "name": "Microfoon",
+        "why": "Zodat Handy je kan horen. Audio wordt op deze computer omgezet in tekst en nooit geüpload."
       },
       "accessibility": {
-        "title": "Toegankelijkheid",
-        "description": "Vereist om getranscribeerde tekst in je applicaties te kunnen typen."
+        "name": "Toegankelijkheid",
+        "why": "Zodat je sneltoets in elke app werkt en Handy de tekst kan typen waar je cursor staat."
       },
-      "grant": "Machtiging verlenen",
-      "granted": "Verleend",
-      "waiting": "Wachten...",
-      "allGranted": "Alles ingesteld!",
       "errors": {
         "checkFailed": "Machtigingen controleren mislukt. Probeer het opnieuw.",
         "requestFailed": "Machtiging aanvragen mislukt. Probeer het opnieuw."
+      },
+      "titleMac": "Twee machtigingen, en klaar",
+      "titleWindows": "Eén machtiging, en klaar",
+      "subtitleMac": "macOS vraagt eerst toestemming voordat een app kan luisteren of typen.",
+      "subtitleWindows": "Windows vraagt eerst toestemming voordat een app kan luisteren.",
+      "allow": "Toestaan",
+      "openSettings": "Instellingen openen",
+      "allowed": "Toegestaan",
+      "waiting": "Wachten",
+      "turnOnMac": "Zet Handy aan in Systeeminstellingen en kom dan hier terug.",
+      "turnOnWindows": "Zet toegang tot de microfoon aan in Windows-instellingen en kom dan hier terug.",
+      "hintBoth": "Sta beide toe om door te gaan",
+      "hintMicrophone": "Sta de microfoon toe om door te gaan",
+      "welcomeBack": "Welkom terug. We gaan verder waar je was gebleven.",
+      "relaunch": "Reageert de sneltoets hierna niet? <relaunch>Start Handy opnieuw</relaunch> en je komt direct weer hier uit."
+    },
+    "shell": {
+      "back": "Terug",
+      "continue": "Doorgaan",
+      "progress": "Stap {{step}} van {{count}}"
+    },
+    "welcome": {
+      "title": "Praat in plaats van typen, in elke app",
+      "subtitle": "Kies de talen waarin je gaat dicteren",
+      "languagesLabel": "Talen",
+      "noMatch": "Geen taal gevonden voor „{{query}}”. De modellen van Handy dekken ongeveer 100 talen; meer vind je in de instellingen.",
+      "appLanguage": "App-taal",
+      "menusIn": "Menu’s in het <b>{{language}}</b>",
+      "chinese": {
+        "question": "Je spreekt {{languages}}. Welke tekens moet Handy schrijven?",
+        "label": "Chinese tekens",
+        "zh-Hans": "Vereenvoudigd",
+        "zh-Hant": "Taiwan",
+        "zh-HK": "Hongkong"
+      },
+      "hint": {
+        "pickOne": "Kies minstens één taal",
+        "weak_one": "{{languages}}: geen enkel model verstaat die taal al goed",
+        "weak_other": "{{languages}}: geen enkel model verstaat deze talen al goed"
       }
+    },
+    "download": {
+      "checking": "Download controleren…",
+      "ready": "{{name}} is klaar",
+      "failed": "Download gestopt",
+      "downloading": "{{name}} downloaden",
+      "progress": "{{done}} van {{total}}",
+      "progressLeft": "{{done}} van {{total}}, nog {{time}}",
+      "checkingName": "{{name}} controleren",
+      "checkingDetail": "Controleren of de download compleet is",
+      "stopped": "Downloaden van {{name}} is gestopt",
+      "retryDetail": "Opnieuw proberen gaat verder waar het stopte",
+      "retryDownload": "Download opnieuw proberen",
+      "cardProgress": "{{percent}}% gedownload, {{done}} van {{total}}",
+      "timeLeft": "nog {{time}}",
+      "speedLeft": "{{speed}}, nog {{time}}"
+    },
+    "model": {
+      "title": "Kies een spraakmodel",
+      "subtitle": "Het spraakmodel zet je spraak om in tekst, rechtstreeks op deze computer",
+      "label": "Spraakmodel",
+      "lines": {
+        "recommended": "De beste balans tussen snelheid en nauwkeurigheid voor jouw talen",
+        "faster": "Sneller, met iets meer fouten",
+        "accurate": "Minste fouten, maar langzamer"
+      },
+      "shorts": {
+        "recommended": "Beste balans voor jou",
+        "faster": "Sneller, iets meer fouten",
+        "accurate": "Minste fouten, maar langzamer"
+      },
+      "model": "Model",
+      "showAll": "Alle {{count}} modellen tonen",
+      "download": "{{size}} downloaden",
+      "downloadInstead": "In plaats daarvan {{size}} downloaden",
+      "pauses": "{{name}} pauzeert bij {{percent}}%",
+      "resumeLater": "Kies het opnieuw om verder te gaan waar je was gebleven",
+      "hint": "Wordt gedownload terwijl je de installatie afrondt"
+    },
+    "demo": {
+      "title": "Praat in elke app, met één sneltoets",
+      "hold": "<0>Klik waar je wilt typen.</0> <1>Houd je sneltoets ingedrukt en praat.</1> <2>Laat los en je woorden verschijnen.</2>",
+      "tap": "<0>Klik waar je wilt typen.</0> <1>Tik op je sneltoets en praat.</1> <2>Tik nogmaals en je woorden verschijnen.</2>",
+      "apps": {
+        "messages": "Berichten",
+        "notes": "Notities"
+      },
+      "chat": "Kom je vanavond nog?",
+      "noteTitle": "Plannen voor het weekend",
+      "screenLabel": "Een laptop: iemand klikt in een app, drukt op de sneltoets en praat, en de woorden verschijnen waar is geklikt.",
+      "change": "Wijzigen",
+      "yourShortcut": "Je sneltoets is",
+      "pressKeys": "Druk op de nieuwe toetsen",
+      "addKey": "Voeg nu een toets toe",
+      "cancel": "Annuleren",
+      "tryIt": "Probeer het zelf"
+    },
+    "try": {
+      "title": "Probeer het maar!",
+      "subtitle": "Handy staat in de hoek om je er doorheen te helpen",
+      "noteLabel": "Notitie",
+      "placeholder": "Nieuwe notitie",
+      "hold": "Houd <keys/> ingedrukt en praat.",
+      "tapNext": "Tik nu één keer op <keys/> en praat dan.",
+      "letGo": "Laat <keys/> los als je klaar bent.",
+      "tapAgain": "Tik nogmaals op <keys/> als je klaar bent.",
+      "watch": "Kijk naar de notitie.",
+      "changeKeys": "Wijzig je sneltoets, {{keys}}",
+      "doneHold": "High five! Dat was ingedrukt houden.",
+      "doneHoldNext": "Nu de handsfree manier.",
+      "doneTap": "Top! Dat was tikken.",
+      "doneTapNext": "Probeer ze nu ingedrukt te houden terwijl je praat.",
+      "giveFive": "Gelukt! Geef me een high five",
+      "highFive": "High five",
+      "slowLine": "{{name}} deed er {{wait}} over op deze computer. <faster>Probeer een sneller model</faster>",
+      "nothingTyped": "Hm, er is niets aangekomen.",
+      "nothingTypedSub": "Klik eerst in de notitie en probeer het dan opnieuw.",
+      "silent": "Ik hoorde niets.",
+      "silentSub": "Deze microfoon gaf geen geluid. Probeer een andere:",
+      "noWords": "Ik verstond geen woorden.",
+      "noWordsSub": "Probeer het opnieuw en zeg een hele zin.",
+      "finish": "Afronden",
+      "skip": "Overslaan",
+      "seconds": "{{value}} s"
+    },
+    "done": {
+      "title": "Alles is klaar",
+      "subMac": "Handy staat nu in je menubalk. Houd <keys/> ingedrukt of tik erop in elke app om te praten.",
+      "subTray": "Handy staat nu in je systeemvak. Houd <keys/> ingedrukt of tik erop in elke app om te praten.",
+      "hint": "Je kunt dit later wijzigen in de instellingen",
+      "highFiveLabel": "High five",
+      "atLogin": "Handy starten als ik inlog",
+      "finish": "Klaar",
+      "panel": {
+        "name": "Handy",
+        "ready": "Klaar",
+        "languages": "Talen",
+        "model": "Spraakmodel",
+        "shortcut": "Sneltoets",
+        "changeLanguages": "Talen wijzigen, {{languages}}",
+        "changeModel": "Spraakmodel wijzigen, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Werkt het niet? <guide>Linux-installatiegids</guide>",
+      "done": "Werkt het niet in andere apps? <guide>Linux-installatiegids</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Live voorvertoning",
+      "previewTitle": "Toont je woorden in de Live-overlay terwijl je praat en typt ze zodra je stopt",
+      "translate": "Vertaalt",
+      "translateTitle": "Kan wat je zegt omzetten in Engelse tekst. Zet dit aan in de instellingen"
+    },
+    "rubric": {
+      "gradeTitle": "Nauwkeurigheid {{language}}: {{grade}}",
+      "accuracyTitle": "Nauwkeurigheid {{language}}",
+      "overallTitle": "Nauwkeurigheid in jouw talen: {{grade}}",
+      "overall": "Nauwkeurigheid in jouw talen",
+      "meaning": {
+        "A": "Zeer weinig fouten: je woorden komen meestal precies zo uit als je ze zei",
+        "B": "Enkele fouten: af en toe moet je een woord verbeteren",
+        "C": "Regelmatig fouten: sommige details kunnen verloren gaan",
+        "D": "Veel fouten: controleer en corrigeer wat het typt",
+        "F": "Vaak onduidelijk: veel van wat je zegt kan fout uitkomen"
+      },
+      "unsupported": "Dit model verstaat geen {{language}} en kan het dus niet typen",
+      "unrated": "Dit model verstaat {{language}}, maar we hebben nog niet gemeten hoe goed",
+      "under": "onder {{max}}%",
+      "between": "{{min}} tot {{max}}%",
+      "over": "{{min}}% of meer",
+      "speedTitle": "Snelheid: {{speed}}",
+      "speedName": {
+        "0": "Zeer langzaam",
+        "1": "Langzaam",
+        "2": "Gemiddeld",
+        "3": "Snel",
+        "4": "Zeer snel"
+      },
+      "speedMeaning": {
+        "0": "Je woorden verschijnen na lang wachten",
+        "1": "Je woorden verschijnen na een tijdje wachten",
+        "2": "Je woorden verschijnen na even wachten",
+        "3": "Je woorden verschijnen bijna meteen",
+        "4": "Je woorden verschijnen meteen"
+      },
+      "speedPreview": "{{meaning}}, met een live voorvertoning terwijl je praat",
+      "untimed": "We hebben nog niet gemeten hoe snel het is",
+      "underSeconds": "onder {{max}} s",
+      "betweenSeconds": "{{min}} tot {{max}} s",
+      "overSeconds": "{{min}} s of meer"
+    },
+    "roles": {
+      "recommended": "Aanbevolen",
+      "faster": "Sneller",
+      "accurate": "Nauwkeuriger",
+      "fromAll": "Uit alle modellen"
+    },
+    "speed": "Snelheid",
+    "size": "Grootte",
+    "accuracy": "Nauwkeurigheid",
+    "search": "Modellen zoeken",
+    "allLabel": "Spraakmodellen",
+    "noMatch": "Niets gevonden voor „{{query}}”. Probeer een taal of een familie zoals Whisper of Parakeet",
+    "noFilterMatch": "Geen modellen die bij deze filters passen",
+    "speedUntested": "Snelheid nog niet gemeten",
+    "speedWords": {
+      "0": "Zeer langzaam, woorden verschijnen na lang wachten",
+      "1": "Langzaam, woorden verschijnen na een tijdje wachten",
+      "2": "Gemiddeld, woorden verschijnen na even wachten",
+      "3": "Snel, woorden verschijnen bijna meteen",
+      "4": "Zeer snel, woorden verschijnen meteen"
+    },
+    "speedWordsPreview": {
+      "0": "Zeer langzaam, met een live voorvertoning terwijl je praat",
+      "1": "Langzaam, met een live voorvertoning terwijl je praat",
+      "2": "Gemiddeld, met een live voorvertoning terwijl je praat",
+      "3": "Snel, met een live voorvertoning terwijl je praat",
+      "4": "Zeer snel, met een live voorvertoning terwijl je praat"
+    },
+    "missingLanguage": "Een taal ontbreekt",
+    "allLanguages": "Alle",
+    "downloadingLine": "{{percent}}% van {{total}} gedownload",
+    "customLine": "Toegevoegd vanuit je modellenmap. Niet beoordeeld.",
+    "legacyLine": "Een oudere download. Niet beoordeeld."
+  },
+  "languagePicker": {
+    "search": "Talen zoeken",
+    "addAnother": "Nog een toevoegen",
+    "remove": "{{language}} verwijderen",
+    "alreadyAdded_one": "{{languages}} is al toegevoegd.",
+    "alreadyAdded_other": "{{languages}} zijn al toegevoegd."
   },
   "modelSelector": {
     "custom": "Aangepast",
-    "legacy": "Klassiek",
     "streaming": "Streaming",
     "active": "Actief",
-    "switching": "Wisselen...",
     "noModelsAvailable": "Geen modellen beschikbaar",
     "verifying": "Verifiëren van {{modelName}}...",
     "verifyingGeneric": "Verifiëren...",
-    "extracting": "Uitpakken van {{modelName}}...",
-    "extractingMultiple": "Uitpakken van {{count}} modellen...",
-    "extractingGeneric": "Uitpakken...",
     "downloading": "Downloaden {{percentage}}%",
     "downloadingMultiple": "Downloaden van {{count}} modellen...",
     "modelReady": "Model gereed",
@@ -141,19 +318,8 @@
     "modelError": "Modelfout",
     "modelUnloaded": "Model ontladen",
     "noModelDownloadRequired": "Geen model - Download vereist",
-    "deleteModel": "{{modelName}} verwijderen",
     "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Annuleren",
-    "cancelDownload": "Download annuleren",
-    "capabilities": {
-      "languageSelection": "Ondersteunt meerdere invoertalen",
-      "singleLanguage": "Ondersteunt alleen deze taal",
-      "languageCount": "{{total}} talen",
-      "languageOnly": "Alleen {{language}}",
-      "translation": "Kan vertalen naar het Engels",
-      "translate": "Vertalen",
-      "streaming": "Toont live transcriptie tijdens het spreken"
-    }
+    "lockedWhileTranscribing": "Je kunt van model wisselen zodra het transcriberen in Geschiedenis klaar is."
   },
   "settings": {
     "modelSettings": {
@@ -183,9 +349,7 @@
           }
         },
         "errors": {
-          "restore": "Herstellen van originele sneltoets mislukt",
-          "set": "Instellen van sneltoets mislukt: {{error}}",
-          "reset": "Sneltoets terugzetten naar standaardwaarde mislukt"
+          "set": "Instellen van sneltoets mislukt: {{error}}"
         }
       },
       "language": {
@@ -194,6 +358,12 @@
         "searchPlaceholder": "Talen zoeken...",
         "noResults": "Geen talen gevonden",
         "auto": "Automatisch"
+      },
+      "preferredLanguages": {
+        "title": "Voorkeurstalen",
+        "description": "De talen die je spreekt. Handy gebruikt ze om modellen aan te bevelen.",
+        "noMatch": "Geen taal gevonden voor „{{query}}”",
+        "weak": "Geen enkel model herkent {{languages}} al goed."
       },
       "shortcutActivation": {
         "title": "Gedrag van sneltoets",
@@ -211,24 +381,50 @@
       }
     },
     "models": {
-      "title": "Transcriptiemodellen",
-      "description": "Selecteer een transcriptiemodel of download extra modellen. Verschillende modellen bieden variërende niveaus van nauwkeurigheid en snelheid.",
-      "searchPlaceholder": "Modellen zoeken op naam...",
-      "yourModels": "Gedownloade modellen",
-      "availableModels": "Beschikbaar voor download",
-      "deleteConfirm": "Weet je zeker dat je {{modelName}} wilt verwijderen? Je moet het model opnieuw downloaden om het weer te gebruiken.",
-      "deleteActiveConfirm": "{{modelName}} is je actieve model. Als je dit verwijdert, stoppen de transcripties totdat je een nieuw model selecteert. Weet je het zeker?",
-      "deleteTitle": "Model verwijderen",
-      "filters": {
-        "allLanguages": "Alle talen",
-        "streaming": "Filter modellen die live transcriptie ondersteunen",
-        "translation": "Filter modellen die vertaling naar het Engels ondersteunen"
+      "title": "Modellen",
+      "changeLanguages": "Talen wijzigen",
+      "sections": {
+        "yours": "Op deze computer",
+        "fits": "Voor jouw talen",
+        "untested": "Niet getest"
+      },
+      "untestedNote": "Niet getest met Handy. Ze kunnen langzamer zijn of meer fouten maken.",
+      "untestedHidden_one": "{{count}} ander model is niet afgestemd op dicteren. Zoek om het te vinden.",
+      "untestedHidden_other": "{{count}} andere modellen zijn niet afgestemd op dicteren. Zoek om er een te vinden.",
+      "emptyYours": "Nog geen modellen. Kies hieronder een model: het wordt gedownload en daarna gebruikt Handy het.",
+      "showMore": "{{count}} meer tonen",
+      "showFewer": "Minder tonen",
+      "download": "Downloaden en gebruiken",
+      "downloadingThenUse": "{{percent}}% van {{total}}, daarna wordt overgeschakeld",
+      "loading": "Laden…",
+      "deleteAsk": "{{name}} verwijderen? Dit maakt {{size}} vrij.",
+      "deleteAskActive": "{{name}} verwijderen? Handy kan niet transcriberen totdat je een ander model kiest.",
+      "cancel": "Annuleren",
+      "deleteModel": "{{name}} verwijderen",
+      "cancelDownload": "Downloaden van {{name}} stoppen",
+      "legend": {
+        "open": "Hoe modellen worden beoordeeld",
+        "accuracyNote": "Per taal van jou: hoeveel woorden een model fout had in onze testopnames.",
+        "speedNote": {
+          "accelerated": "Hoe lang het duurt om 30 seconden spraak uit te typen op de grafische chip van onze testlaptop. Deze computer kan afwijken.",
+          "cpu": "Hoe lang het duurt om 30 seconden spraak uit te typen op de processor van onze testlaptop. Deze computer kan afwijken."
+        },
+        "marks": "? is nog niet gemeten. — verstaat die taal niet."
+      },
+      "retiredNotice": {
+        "title": "Oude modellen werken niet meer met Handy",
+        "description": "Ze nemen {{size}} in beslag op je computer.",
+        "delete": "Modellen verwijderen",
+        "deleted": "Oude modellen verwijderd",
+        "deleteFailed": "Sommige oude modellen konden niet worden verwijderd. Bekijk het logboek voor details."
       },
       "rescan": {
         "label": "Opnieuw scannen",
         "tooltip": "Scannen naar modellen die buiten Handy om zijn toegevoegd aan de modellenmap of Hugging Face-cache"
-      },
-      "noModelsMatch": "Geen modellen voldoen aan dit filter."
+      }
+    },
+    "languages": {
+      "title": "Talen"
     },
     "sound": {
       "title": "Geluid",
@@ -277,12 +473,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp-versnelling",
-          "description": "Hardwareversnelling voor transcribe.cpp-modellen (Whisper-familie). 'Automatisch' gebruikt de GPU indien beschikbaar (Metal op macOS, Vulkan op Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX-versnelling",
-          "description": "Hardwareversnelling voor ONNX-modellen (Parakeet, Canary, Moonshine, etc.). DirectML op Windows is experimenteel; modellen kunnen daardoor haperen."
+          "title": "Hardwareversnelling",
+          "description": "Kies de hardware die voor transcriptie wordt gebruikt. 'Automatisch' gebruikt de GPU indien beschikbaar en valt anders terug op de CPU."
         },
         "gpuDevice": {
           "auto": "Automatisch"
@@ -388,6 +580,10 @@
         "title": "Spraakactiviteitsdetectie (VAD)",
         "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."
       },
+      "longFormChunking": {
+        "title": "Lange audio opsplitsen",
+        "description": "Splitst lange opnames bij pauzes op voordat ze worden getranscribeerd, wat de transcriptie doorgaans verbetert. Getranscribeerde bestanden en lange hertranscripties worden altijd opgesplitst."
+      },
       "vadBackend": {
         "title": "VAD-backend",
         "description": "Kies de detector die stilte filtert. Earshot is experimenteel; schakel terug naar Silero als spraak wordt afgekapt of ruis behouden blijft.",
@@ -399,6 +595,16 @@
       "fillerWordRemoval": {
         "title": "Opvulwoorden verwijderen",
         "description": "Verwijdert veelvoorkomende aarzelwoorden uit transcripties. Schakel dit uit om ze te behouden."
+      },
+      "chineseScript": {
+        "title": "Chinees schrift",
+        "description": "Schrijft Mandarijnse en Kantonese transcripties in vereenvoudigde tekens, of in traditionele tekens zoals gebruikt in Taiwan of Hongkong. Andere talen blijven ongewijzigd.",
+        "options": {
+          "asTranscribed": "Zoals getranscribeerd",
+          "simplified": "Vereenvoudigd",
+          "traditionalTw": "Traditioneel (Taiwan)",
+          "traditionalHk": "Traditioneel (Hongkong)"
+        }
       }
     },
     "postProcessing": {
@@ -406,10 +612,18 @@
         "title": "Sneltoets"
       },
       "api": {
-        "title": "API (OpenAI-compatibel)",
+        "title": "API",
         "provider": {
           "title": "Provider",
-          "description": "Selecteer een OpenAI-compatibele provider."
+          "description": "Selecteer een OpenAI- of Anthropic-compatibele provider."
+        },
+        "apiFormat": {
+          "title": "API-indeling",
+          "description": "Verzoekindeling die door je aangepaste eindpunt wordt verwacht.",
+          "options": {
+            "openai": "OpenAI-compatibel (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence is niet beschikbaar op dit apparaat. Vereist een Apple Silicon Mac met macOS Tahoe (26.0) of nieuwer waarop Apple Intelligence is ingeschakeld via de Systeeminstellingen."
@@ -417,7 +631,8 @@
         "baseUrl": {
           "title": "Basis-URL",
           "description": "API-basis-URL voor de geselecteerde provider. Alleen de aangepaste provider kan worden bewerkt.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-sleutel",
@@ -461,14 +676,27 @@
       "loading": "Geschiedenis laden...",
       "empty": "Nog geen transcripties. Start met opnemen om je geschiedenis op te bouwen!",
       "copyToClipboard": "Transcriptie naar klembord kopiëren",
+      "copyError": "Transcriptie naar het klembord kopiëren mislukt.",
       "save": "Transcriptie opslaan",
       "unsave": "Verwijderen uit opgeslagen",
       "delete": "Item verwijderen",
       "deleteError": "Item verwijderen mislukt. Probeer het opnieuw.",
       "retranscribe": "Opnieuw transcriberen",
-      "retranscribeError": "Opnieuw transcriberen mislukt. Probeer het opnieuw.",
+      "cancelTranscription": "Transcriptie annuleren",
       "transcribing": "Transcriberen...",
-      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram."
+      "transcriptionFailed": "Transcriptie mislukt. Je kunt het opnieuw proberen via het herlaad-pictogram.",
+      "notTranscribed": "Niet getranscribeerd. Je kunt het transcriberen via het herlaad-pictogram.",
+      "transcribeFile": "Bestand transcriberen",
+      "mediaFiles": "Audio en video",
+      "fileUnsupported": "Kon geen audio lezen uit {{name}}.",
+      "readingFile": "{{name}} wordt gelezen...",
+      "transcribeFailed": "Transcriptie mislukt. Probeer het opnieuw.",
+      "waiting": "Wacht op transcriptie",
+      "transcribingPercent": "Transcriberen, {{percent}}%",
+      "showMore": "Meer tonen",
+      "showLess": "Minder tonen",
+      "dropTitle": "Loslaten om te transcriberen",
+      "dropDescription": "Het verschijnt in de geschiedenis."
     },
     "debug": {
       "title": "Probleemoplossing",
@@ -502,6 +730,31 @@
         "button": "Voorbeeld",
         "noNotes": "Geen meegeleverde release-notes gevonden",
         "error": "Voorbeeld van release-notes laden mislukt"
+      },
+      "onboardingPreview": {
+        "title": "Voorbeeld van onboarding",
+        "description": "Bekijk de onboardingschermen zonder machtigingen, modellen of de voltooiingsstatus te wijzigen",
+        "exitButton": "Voorbeeld sluiten",
+        "choose": "Kies een scherm",
+        "screens": {
+          "welcome": "Welkom",
+          "permissions": "Machtigingen",
+          "model": "Model",
+          "demo": "Demo",
+          "try": "Proberen",
+          "done": "Klaar"
+        }
+      },
+      "onboardingRun": {
+        "title": "Onboarding uitvoeren",
+        "description": "Doorloop de onboarding echt vanaf het begin: er wordt om machtigingen gevraagd, modellen worden gedownload en je keuzes worden opgeslagen",
+        "button": "Starten"
+      },
+      "modelMigration": {
+        "title": "Modelmigratie",
+        "description": "Open het updatescherm voor modellen in het oude formaat echt: het downloadt vervangers, wisselt van model en verwijdert oude bestanden",
+        "button": "Openen",
+        "noRetired": "Geen modellen in het oude formaat op schijf"
       },
       "soundTheme": {
         "label": "Geluidsthema",
@@ -550,11 +803,6 @@
         "title": "Toetsenbord-implementatie",
         "description": "Kies de backend voor sneltoetsen.",
         "bindingsReset": "Sneltoetsen waren incompatibel en zijn teruggezet naar de standaardwaarden"
-      },
-      "paths": {
-        "appData": "App-data:",
-        "models": "Modellen:",
-        "settings": "Instellingen:"
       },
       "pasteDelay": {
         "title": "Plakvertraging (voor)",
@@ -658,10 +906,6 @@
     "clear": "Wissen",
     "noOptionsFound": "Geen opties gevonden"
   },
-  "accessibility": {
-    "permissionsDescription": "Handy heeft toegankelijkheidsmachtigingen nodig om getranscribeerde tekst te kunnen typen.",
-    "openSettings": "Systeeminstellingen openen"
-  },
   "errors": {
     "loadDirectory": "Fout bij laden van map: {{error}}",
     "micPermissionDeniedTitle": "Microfoontoegang geweigerd",
@@ -695,7 +939,8 @@
   },
   "overlay": {
     "transcribing": "Transcriberen...",
-    "processing": "Verwerken..."
+    "processing": "Verwerken...",
+    "loadingModel": "Model laden..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokkeert mogelijk 1 sneltoets",

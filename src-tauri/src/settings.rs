@@ -94,6 +94,18 @@ pub struct LLMPrompt {
     pub prompt: String,
 }
 
+/// Request format a post-processing endpoint speaks. Built-in providers have a
+/// fixed format; only the custom provider lets the user change it.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum PostProcessApiFormat {
+    /// OpenAI-compatible Chat Completions (`/chat/completions`)
+    #[default]
+    OpenAi,
+    /// Anthropic Messages (`/messages`)
+    Anthropic,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct PostProcessProvider {
     pub id: String,
@@ -105,6 +117,8 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
     #[serde(default)]
     pub supports_structured_output: bool,
+    #[serde(default)]
+    pub api_format: PostProcessApiFormat,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -177,6 +191,22 @@ pub enum ClipboardHandling {
     #[default]
     DontModify,
     CopyToClipboard,
+}
+
+/// Script applied to Mandarin and Cantonese output. Traditional carries its region
+/// (Taiwan vs Hong Kong forms, e.g. 裡/裏) rather than guessing it.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ChineseScript {
+    /// Keep whatever script the model produced.
+    #[default]
+    AsTranscribed,
+    Simplified,
+    /// Traditional, Taiwan forms. Also reads legacy `traditional` (migrated on load).
+    #[serde(alias = "traditional")]
+    TraditionalTw,
+    /// Traditional, in Hong Kong's standard forms.
+    TraditionalHk,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
@@ -307,18 +337,6 @@ pub enum TranscribeAcceleratorSetting {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
-pub enum OrtAcceleratorSetting {
-    #[default]
-    Auto,
-    Cpu,
-    Cuda,
-    #[serde(rename = "directml")]
-    DirectMl,
-    Rocm,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
-#[serde(rename_all = "snake_case")]
 pub enum VadBackend {
     #[default]
     Silero,
@@ -419,6 +437,10 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    /// Every language the person dictates in (codes, e.g. ["en", "zh"]),
+    /// picked during onboarding. Empty until then.
+    #[serde(default)]
+    pub spoken_languages: Vec<String>,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -490,10 +512,12 @@ pub struct AppSettings {
     pub filler_word_removal_enabled: bool,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
+    /// Fresh installs default from the OS locale; existing stores are migrated
+    /// in `apply_settings_migrations`.
+    #[serde(default)]
+    pub chinese_script: ChineseScript,
     #[serde(default)]
     pub transcribe_accelerator: TranscribeAcceleratorSetting,
-    #[serde(default)]
-    pub ort_accelerator: OrtAcceleratorSetting,
     /// Stable transcribe.cpp device selector. This is derived from the backend's
     /// `device_id` when available (or its name for backends such as Metal),
     /// never from the process-local device registry index.
@@ -509,6 +533,11 @@ pub struct AppSettings {
     /// Experimental detector implementation. Silero remains the stable default.
     #[serde(default)]
     pub vad_backend: VadBackend,
+    /// Decode long audio in chunks cut at pauses, for models whose accuracy
+    /// degrades on long audio. Independent of `vad_enabled`, which only
+    /// decides whether silence is dropped from recordings.
+    #[serde(default = "default_long_form_chunking")]
+    pub long_form_chunking: bool,
     /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
     /// not gated on this — that follows model capability. Migrated from the old
     /// `overlay_position` (position `none` → style `None`).
@@ -581,8 +610,21 @@ fn default_vad_enabled() -> bool {
     true
 }
 
+fn default_long_form_chunking() -> bool {
+    true
+}
+
 fn default_filler_word_removal_enabled() -> bool {
     true
+}
+
+fn default_chinese_script() -> ChineseScript {
+    crate::system_languages::suggested_chinese_script(
+        crate::system_languages::system_languages()
+            .iter()
+            .map(String::as_str),
+    )
+    .unwrap_or_default()
 }
 
 fn default_debug_mode() -> bool {
@@ -656,6 +698,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_format: PostProcessApiFormat::OpenAi,
         },
         PostProcessProvider {
             id: "zai".to_string(),
@@ -664,6 +707,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_format: PostProcessApiFormat::OpenAi,
         },
         PostProcessProvider {
             id: "openrouter".to_string(),
@@ -672,6 +716,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_format: PostProcessApiFormat::OpenAi,
         },
         PostProcessProvider {
             id: "anthropic".to_string(),
@@ -680,6 +725,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
+            api_format: PostProcessApiFormat::Anthropic,
         },
         PostProcessProvider {
             id: "groq".to_string(),
@@ -688,6 +734,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
+            api_format: PostProcessApiFormat::OpenAi,
         },
         PostProcessProvider {
             id: "cerebras".to_string(),
@@ -696,6 +743,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_format: PostProcessApiFormat::OpenAi,
         },
     ];
 
@@ -712,6 +760,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: None,
             supports_structured_output: true,
+            api_format: PostProcessApiFormat::OpenAi,
         });
     }
 
@@ -723,6 +772,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         allow_base_url_edit: false,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: true,
+        api_format: PostProcessApiFormat::OpenAi,
     });
 
     // Custom provider always comes last
@@ -733,6 +783,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         allow_base_url_edit: true,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: false,
+        api_format: PostProcessApiFormat::OpenAi,
     });
 
     providers
@@ -816,6 +867,17 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                         provider.supports_structured_output
                     );
                     existing.supports_structured_output = provider.supports_structured_output;
+                    changed = true;
+                }
+
+                // Built-in providers have a fixed API format (migration); the
+                // custom provider's format is a user choice and is left alone.
+                if provider.id != "custom" && existing.api_format != provider.api_format {
+                    debug!(
+                        "Updating api_format for provider '{}' from {:?} to {:?}",
+                        provider.id, existing.api_format, provider.api_format
+                    );
+                    existing.api_format = provider.api_format;
                     changed = true;
                 }
             }
@@ -923,6 +985,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_model: "".to_string(),
         onboarding_completed: false,
         always_on_microphone: false,
+        spoken_languages: Vec::new(),
         selected_microphone: None,
         selected_channel: None,
         clamshell_microphone: None,
@@ -963,12 +1026,13 @@ pub fn get_default_settings() -> AppSettings {
         external_script_path: None,
         filler_word_removal_enabled: default_filler_word_removal_enabled(),
         custom_filler_words: None,
+        chinese_script: default_chinese_script(),
         transcribe_accelerator: TranscribeAcceleratorSetting::default(),
-        ort_accelerator: OrtAcceleratorSetting::default(),
         transcribe_gpu_device: default_transcribe_gpu_device(),
         extra_recording_buffer_ms: 0,
         vad_enabled: default_vad_enabled(),
         vad_backend: VadBackend::default(),
+        long_form_chunking: default_long_form_chunking(),
         overlay_style: default_overlay_style(),
     }
 }
@@ -1136,6 +1200,58 @@ fn apply_settings_migrations(
         }
     }
 
+    // One-time spoken languages backfill for users onboarded before it was asked.
+    // The guess always includes English, so it never decides a transcription
+    // (`effective_language` only uses a lone language). Must run before the
+    // Chinese script migrations: it reads `zh-Hans`/`zh-Hant`, and they read it.
+    if settings.onboarding_completed && settings.spoken_languages.is_empty() {
+        settings.spoken_languages = guessed_spoken_languages(settings, settings_value);
+        updated = true;
+    }
+
+    // One-time Chinese script migration: the script used to be chosen through
+    // `zh-Hans`/`zh-Hant` language intents. Split those into the recognition
+    // language and the script setting; every other upgrading user keeps the
+    // unconverted output they had. Only fresh installs get the locale default.
+    if settings_value.get("chinese_script").is_none() {
+        settings.chinese_script = match settings.selected_language.as_str() {
+            "zh-Hans" => ChineseScript::Simplified,
+            "zh-Hant" => ChineseScript::TraditionalTw,
+            _ => ChineseScript::AsTranscribed,
+        };
+        if settings.chinese_script != ChineseScript::AsTranscribed {
+            settings.selected_language = "zh".to_string();
+        }
+        updated = true;
+    }
+
+    // One-time Traditional split: `traditional` took its regional forms from
+    // what was spoken (Hong Kong's for Cantonese, Taiwan's for Mandarin).
+    // Keep Hong Kong's for people who speak Cantonese or whose OS's first
+    // Traditional Chinese language is Hong Kong's or Macau's. People who
+    // dictated both now get one region's forms for both.
+    if settings_value
+        .get("chinese_script")
+        .and_then(|v| v.as_str())
+        == Some("traditional")
+    {
+        let hong_kong = settings.spoken_languages.iter().any(|l| l == "yue")
+            || os_languages().iter().find_map(|tag| {
+                match crate::chinese_script::chinese_script_for_locale(tag) {
+                    Some(s @ (ChineseScript::TraditionalTw | ChineseScript::TraditionalHk)) => {
+                        Some(s)
+                    }
+                    _ => None,
+                }
+            }) == Some(ChineseScript::TraditionalHk);
+        settings.chinese_script = if hong_kong {
+            ChineseScript::TraditionalHk
+        } else {
+            ChineseScript::TraditionalTw
+        };
+        updated = true;
+    }
+
     let stored_schema_version = settings_value
         .get("settings_schema_version")
         .and_then(|v| v.as_u64())
@@ -1189,6 +1305,39 @@ fn apply_settings_migrations(
     updated
 }
 
+/// Likely spoken languages from existing settings and the OS; always includes English.
+fn guessed_spoken_languages(
+    settings: &AppSettings,
+    settings_value: &serde_json::Value,
+) -> Vec<String> {
+    // Read the stored value: a missing key may hold the locale default, not a choice.
+    let picked_script = settings_value
+        .get("chinese_script")
+        .and_then(|v| v.as_str())
+        .is_some_and(|script| script != "as_transcribed");
+    let intent = settings.selected_language.as_str();
+    // A script says Chinese, unless the language they picked already does.
+    let picked_chinese = crate::chinese_script::chinese_script_for_locale(intent).is_some();
+    let tags = [
+        (intent != "auto").then_some(intent),
+        (picked_script && !picked_chinese).then_some("zh"),
+        Some(settings.app_language.as_str()),
+    ]
+    .into_iter()
+    .flatten()
+    .chain(os_languages().iter().map(String::as_str));
+    crate::system_languages::suggested_languages(tags)
+}
+
+/// The OS's languages; empty under test so migrations are deterministic.
+fn os_languages() -> &'static [String] {
+    if cfg!(test) {
+        &[]
+    } else {
+        crate::system_languages::system_languages()
+    }
+}
+
 /// Update checks are forced off (without touching the persisted setting) when
 /// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
 /// can't work against an immutable /nix/store install.
@@ -1220,12 +1369,12 @@ pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
     settings.bindings
 }
 
-pub fn get_stored_binding(app: &AppHandle, id: &str) -> ShortcutBinding {
-    let bindings = get_bindings(app);
-
-    let binding = bindings.get(id).unwrap().clone();
-
-    binding
+pub fn get_stored_binding(settings: &AppSettings, id: &str) -> Result<ShortcutBinding, String> {
+    settings
+        .bindings
+        .get(id)
+        .cloned()
+        .ok_or_else(|| format!("Binding with id '{}' not found", id))
 }
 
 pub fn get_history_limit(app: &AppHandle) -> usize {
@@ -1241,6 +1390,24 @@ pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeri
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stored_binding_returns_the_requested_binding() {
+        let settings = get_default_settings();
+
+        let result = get_stored_binding(&settings, "transcribe");
+
+        assert_eq!(result.unwrap().id, "transcribe");
+    }
+
+    #[test]
+    fn unknown_stored_binding_returns_an_error() {
+        let settings = get_default_settings();
+
+        let result = get_stored_binding(&settings, "unknown");
+
+        assert_eq!(result.unwrap_err(), "Binding with id 'unknown' not found");
+    }
 
     fn default_settings_json() -> serde_json::Value {
         serde_json::to_value(get_default_settings()).unwrap()
@@ -1379,6 +1546,10 @@ mod tests {
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
         assert!(settings.filler_word_removal_enabled);
         assert_eq!(settings.vad_backend, VadBackend::Silero);
+        assert!(
+            settings.long_form_chunking,
+            "chunking is on for settings saved before it existed"
+        );
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.
@@ -1552,6 +1723,100 @@ mod tests {
     }
 
     #[test]
+    fn chinese_script_migration_only_carries_over_legacy_intents() {
+        for (intent, language, script) in [
+            ("zh-Hans", "zh", ChineseScript::Simplified),
+            ("zh-Hant", "zh", ChineseScript::TraditionalTw),
+            ("auto", "auto", ChineseScript::AsTranscribed),
+        ] {
+            let mut settings = get_default_settings();
+            settings.selected_language = intent.to_string();
+            settings.chinese_script = ChineseScript::TraditionalTw;
+            let raw = serde_json::json!({ "selected_language": intent });
+
+            assert!(apply_settings_migrations(&mut settings, &raw));
+            assert_eq!(settings.selected_language, language);
+            assert_eq!(settings.chinese_script, script);
+        }
+    }
+
+    /// Spoken languages backfilled for an onboarded upgrader with these stored
+    /// settings (merged over the defaults, as a stored file deserializes).
+    fn backfilled(stored: serde_json::Value) -> AppSettings {
+        let mut raw = serde_json::json!({
+            "onboarding_completed": true,
+            "selected_language": "auto",
+            "app_language": "en"
+        });
+        raw.as_object_mut()
+            .unwrap()
+            .extend(stored.as_object().unwrap().clone());
+        let mut settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
+        apply_settings_migrations(&mut settings, &raw);
+        settings
+    }
+
+    #[test]
+    fn spoken_languages_backfill_guesses_with_english_included() {
+        for (stored, spoken) in [
+            (
+                serde_json::json!({ "selected_language": "de" }),
+                vec!["de", "en"],
+            ),
+            (serde_json::json!({ "selected_language": "en" }), vec!["en"]),
+            (
+                serde_json::json!({ "selected_language": "zh-Hant" }),
+                vec!["zh", "en"],
+            ),
+            (
+                serde_json::json!({ "chinese_script": "traditional" }),
+                vec!["zh", "en"],
+            ),
+            (
+                serde_json::json!({ "chinese_script": "as_transcribed" }),
+                vec!["en"],
+            ),
+            // A picked language leads, the app's follows.
+            (
+                serde_json::json!({ "selected_language": "fr", "app_language": "de" }),
+                vec!["fr", "de", "en"],
+            ),
+        ] {
+            assert_eq!(
+                backfilled(stored.clone()).spoken_languages,
+                spoken,
+                "{stored}"
+            );
+        }
+    }
+
+    #[test]
+    fn spoken_languages_backfill_keeps_cantonese_on_hong_kong_forms() {
+        let settings = backfilled(serde_json::json!({
+            "selected_language": "yue",
+            "chinese_script": "traditional"
+        }));
+
+        assert_eq!(settings.spoken_languages, vec!["yue", "en"]);
+        assert_eq!(settings.chinese_script, ChineseScript::TraditionalHk);
+    }
+
+    #[test]
+    fn spoken_languages_backfill_leaves_chosen_and_unasked_alone() {
+        let chosen = backfilled(serde_json::json!({
+            "selected_language": "de",
+            "spoken_languages": ["ja"]
+        }));
+        assert_eq!(chosen.spoken_languages, vec!["ja"]);
+
+        let unasked = backfilled(serde_json::json!({
+            "onboarding_completed": false,
+            "selected_language": "de"
+        }));
+        assert!(unasked.spoken_languages.is_empty());
+    }
+
+    #[test]
     fn shortcut_activation_migration_maps_push_to_talk_true() {
         let mut settings = get_default_settings();
         let raw = serde_json::json!({
@@ -1674,6 +1939,7 @@ mod tests {
             "onboarding_completed": false,
             "whats_new_last_seen_version": default_whats_new_last_seen_version(),
             "overlay_style": "live",
+            "chinese_script": "as_transcribed",
             "transcribe_accelerator": "gpu",
             "transcribe_gpu_device": settings.transcribe_gpu_device
         });
@@ -1683,6 +1949,25 @@ mod tests {
             settings.transcribe_gpu_device.as_deref(),
             Some("[\"vulkan\",\"id\",\"0000:01:00.0\"]")
         );
+    }
+
+    #[test]
+    fn post_process_defaults_sync_builtin_api_format_but_keep_custom() {
+        let mut settings = get_default_settings();
+        for provider in settings.post_process_providers.iter_mut() {
+            match provider.id.as_str() {
+                // Settings saved before the built-in provider moved to Messages
+                "anthropic" => provider.api_format = PostProcessApiFormat::OpenAi,
+                "custom" => provider.api_format = PostProcessApiFormat::Anthropic,
+                _ => {}
+            }
+        }
+
+        assert!(ensure_post_process_defaults(&mut settings));
+
+        let format_of = |id: &str| settings.post_process_provider(id).unwrap().api_format;
+        assert_eq!(format_of("anthropic"), PostProcessApiFormat::Anthropic);
+        assert_eq!(format_of("custom"), PostProcessApiFormat::Anthropic);
     }
 
     #[test]

@@ -68,7 +68,7 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
                 isLoading ||
                 outputDevices.length === 0
               }
-              onRefresh={refreshOutputDevices}
+              onOpen={refreshOutputDevices}
             />
             <ResetButton
               onClick={handleReset}

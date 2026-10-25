@@ -2,7 +2,26 @@
  * Keyboard utility functions for handling keyboard events
  */
 
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+
 export type OSType = "macos" | "windows" | "linux" | "unknown";
+
+const keepSpace = (e: ReactKeyboardEvent<HTMLElement>) => {
+  if (e.key === " ") e.preventDefault();
+};
+
+/** Spread on shortcut controls so a Space in the shortcut doesn't click them. */
+export const spaceDoesNotClick = { onKeyDown: keepSpace, onKeyUp: keepSpace };
+
+// Shortcut parsers require compact tokens; keep display labels separate.
+const COMPOUND_KEY_DISPLAY: Record<string, string> = {
+  capslock: "Caps Lock",
+  numlock: "Num Lock",
+  pageup: "Page Up",
+  pagedown: "Page Down",
+  printscreen: "Print Screen",
+  scrolllock: "Scroll Lock",
+};
 
 /**
  * Extract a consistent key name from a KeyboardEvent
@@ -66,7 +85,7 @@ export const getKeyName = (
       MetaRight: getModifierName("meta"),
       OSLeft: getModifierName("meta"),
       OSRight: getModifierName("meta"),
-      CapsLock: "caps lock",
+      CapsLock: "capslock",
       Tab: "tab",
       Enter: "enter",
       Space: "space",
@@ -79,11 +98,11 @@ export const getKeyName = (
       ArrowRight: "right",
       Home: "home",
       End: "end",
-      PageUp: "page up",
-      PageDown: "page down",
+      PageUp: "pageup",
+      PageDown: "pagedown",
       Insert: "insert",
-      PrintScreen: "print screen",
-      ScrollLock: "scroll lock",
+      PrintScreen: "printscreen",
+      ScrollLock: "scrolllock",
       Pause: "pause",
       ContextMenu: "menu",
       NumpadMultiply: "numpad *",
@@ -91,7 +110,7 @@ export const getKeyName = (
       NumpadSubtract: "numpad -",
       NumpadDecimal: "numpad .",
       NumpadDivide: "numpad /",
-      NumLock: "num lock",
+      NumLock: "numlock",
     };
 
     if (modifierMap[code]) {
@@ -117,8 +136,8 @@ export const getKeyName = (
       return punctuationMap[code];
     }
 
-    // For any other codes, try to convert to a reasonable format
-    return code.toLowerCase().replace(/([a-z])([A-Z])/g, "$1 $2");
+    // Parser names mirror KeyboardEvent.code without spaces.
+    return code.toLowerCase();
   }
 
   // Fallback to e.key if e.code is not available
@@ -134,7 +153,7 @@ export const getKeyName = (
         osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
       OS:
         osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
-      CapsLock: "caps lock",
+      CapsLock: "capslock",
       ArrowUp: "up",
       ArrowDown: "down",
       ArrowLeft: "left",
@@ -164,6 +183,7 @@ const capitalizeKey = (key: string): string => {
   if (/^f\d+$/.test(key)) return key.toUpperCase();
   // Single char: a -> A
   if (key.length === 1) return key.toUpperCase();
+  if (COMPOUND_KEY_DISPLAY[key]) return COMPOUND_KEY_DISPLAY[key];
   // Multi-word: capitalize first letter of each word
   return key.replace(/\b\w/g, (c) => c.toUpperCase());
 };
@@ -216,3 +236,66 @@ export const normalizeKey = (key: string): string => {
   }
   return key;
 };
+
+/** Keys that only modify another: a binding needs a key besides these. */
+export const MODIFIERS = [
+  "ctrl",
+  "control",
+  "shift",
+  "alt",
+  "option",
+  "meta",
+  "command",
+  "cmd",
+  "super",
+  "win",
+  "windows",
+  "fn",
+];
+
+/** The keys in a binding, or in one still being captured ("option+space"). */
+export const bindingKeys = (binding: string | null | undefined): string[] =>
+  binding ? binding.split("+").filter(Boolean) : [];
+
+/** Only modifiers are held so far: the binding still needs a key. */
+export const isOnlyModifiers = (keys: string[]): boolean =>
+  keys.length > 0 && keys.every((k) => MODIFIERS.includes(k.toLowerCase()));
+
+// Labels as printed on the keys; a key's side (option_left) isn't printed.
+const MAC_KEYCAPS: Record<string, string> = {
+  option: "⌥",
+  alt: "⌥",
+  command: "⌘",
+  cmd: "⌘",
+  meta: "⌘",
+  super: "⌘",
+  ctrl: "⌃",
+  control: "⌃",
+  shift: "⇧",
+};
+const PC_KEYCAPS: Record<string, string> = {
+  alt: "Alt",
+  option: "Alt",
+  ctrl: "Ctrl",
+  control: "Ctrl",
+  shift: "Shift",
+  meta: "⊞",
+  super: "⊞",
+  command: "⊞",
+};
+
+/** "option+space" → ["⌥", "Space"] on macOS. */
+export const keycapLabels = (binding: string, osType: OSType): string[] =>
+  binding
+    .split("+")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const key = part.replace(/_(left|right)$/, "");
+      const glyphs = osType === "macos" ? MAC_KEYCAPS : PC_KEYCAPS;
+      return glyphs[key] ?? capitalizeKey(key);
+    });
+
+/** "⌥ Space" on macOS, "Alt + Space" elsewhere. */
+export const keycapLabel = (binding: string, osType: OSType): string =>
+  keycapLabels(binding, osType).join(osType === "macos" ? " " : " + ");

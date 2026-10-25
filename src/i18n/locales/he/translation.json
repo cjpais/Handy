@@ -20,16 +20,17 @@
     "close": "סגור"
   },
   "onboarding": {
-    "subtitle": "כדי להתחיל, בחר מודל תמלול",
-    "existingModelsTitle": "מודלים תואמים",
-    "downloadModelsTitle": "זמינים להורדה",
-    "showAllModels": "הצג את כל {{total}} המודלים",
-    "showFewerModels": "הצג פחות מודלים",
-    "recommended": "מומלץ",
     "customModelDescription": "לא נתמך באופן רשמי",
-    "modelCard": {
-      "accuracy": "דיוק",
-      "speed": "מהירות"
+    "migration": {
+      "title": "המודלים שלך צריכים עדכון",
+      "description": "Handy משתמש כעת בסוג חדש יותר של מודלים. יש להוריד את הגרסה החדשה כדי להמשיך לתמלל. גרסאות ישנות יוסרו.",
+      "replaces": "מחליף את {{name}}",
+      "oldFormat": "פורמט ישן",
+      "failed": "ההורדה נכשלה",
+      "retry": "ניסיון חוזר",
+      "chooseAnother": "בחירת מודל אחר",
+      "download": "הורדת מודלים ({{size}})",
+      "continue": "המשך"
     },
     "models": {
       "small": {
@@ -48,90 +49,267 @@
         "name": "Whisper Large",
         "description": "דיוק טוב, אבל איטי."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "אנגלית בלבד. המודל הטוב ביותר לדוברי אנגלית."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "מהיר ומדויק"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "מהיר מאוד, אנגלית בלבד. מתמודד היטב עם מבטאים."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "מהיר במיוחד, אנגלית בלבד"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "מהיר, אנגלית בלבד. איזון טוב בין מהירות לדיוק."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "אנגלית בלבד. איכות גבוהה."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "מותאם למנדרינית טאיוואנית. תמיכה במעבר בין שפות."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "מהיר מאוד. סינית, אנגלית, יפנית, קוריאנית וקנטונזית."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "זיהוי דיבור ברוסית. מהיר ומדויק."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "מהיר מאוד. אנגלית, גרמנית, ספרדית וצרפתית. תומך בתרגום."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "רב-לשוני ומדויק. 25 שפות אירופיות. תומך בתרגום."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "מודל גדול, איטי יותר, אך מדויק מאוד ורב-לשוני."
       }
     },
     "errors": {
       "selectModel": "בחירת המודל נכשלה"
     },
     "permissions": {
-      "title": "נדרשות הרשאות",
-      "description": "Handy צריך כמה הרשאות כדי לעבוד כמו שצריך.",
       "microphone": {
-        "title": "גישה למיקרופון",
-        "description": "נדרש כדי לשמוע את הקול שלך לצורך תמלול."
+        "name": "מיקרופון",
+        "why": "כדי ש-Handy ישמע אותך. השמע הופך לטקסט במחשב הזה ולא מועלה לשום מקום."
       },
       "accessibility": {
-        "title": "גישת נגישות",
-        "description": "נדרש כדי להקליד את הטקסט המתומלל לתוך האפליקציות שלך."
+        "name": "נגישות",
+        "why": "כדי שקיצור המקשים שלך יעבוד בכל אפליקציה, ו-Handy יוכל להקליד את הטקסט איפה שהסמן נמצא."
       },
-      "grant": "תן הרשאה",
-      "granted": "ניתנה",
-      "waiting": "ממתין...",
-      "allGranted": "הכול מוכן!",
       "errors": {
         "checkFailed": "בדיקת ההרשאות נכשלה. נסה שוב.",
         "requestFailed": "בקשת ההרשאה נכשלה. נסה שוב."
+      },
+      "titleMac": "שתי הרשאות ואתה מוכן",
+      "titleWindows": "הרשאה אחת ואתה מוכן",
+      "subtitleMac": "macOS שואלת לפני שאפליקציה יכולה להאזין או להקליד.",
+      "subtitleWindows": "Windows שואלת לפני שאפליקציה יכולה להאזין.",
+      "allow": "אפשר",
+      "openSettings": "פתח הגדרות",
+      "allowed": "מאושר",
+      "waiting": "ממתין",
+      "turnOnMac": "הפעל את Handy בהגדרות המערכת ואז חזור לכאן.",
+      "turnOnWindows": "הפעל גישה למיקרופון ב-הגדרות Windows ואז חזור לכאן.",
+      "hintBoth": "אשר את שתיהן כדי להמשיך",
+      "hintMicrophone": "אשר את המיקרופון כדי להמשיך",
+      "welcomeBack": "ברוך שובך. ממשיכים מהמקום שבו עצרת.",
+      "relaunch": "קיצור המקשים לא מגיב אחרי זה? <relaunch>הפעל מחדש את Handy</relaunch> ותחזור בדיוק לכאן."
+    },
+    "shell": {
+      "back": "חזרה",
+      "continue": "המשך",
+      "progress": "שלב {{step}} מתוך {{count}}"
+    },
+    "welcome": {
+      "title": "דבר במקום להקליד, בכל אפליקציה",
+      "subtitle": "בחר את השפות שבהן תכתיב",
+      "languagesLabel": "שפות",
+      "noMatch": "אין שפה שתואמת ל„{{query}}”. המודלים של Handy מכסים כ-100 שפות; עוד שפות זמינות בהגדרות.",
+      "appLanguage": "שפת האפליקציה",
+      "menusIn": "תפריטים ב<b>{{language}}</b>",
+      "chinese": {
+        "question": "אתה מדבר {{languages}}. באילו תווים Handy צריך לכתוב?",
+        "label": "תווים סיניים",
+        "zh-Hans": "מפושטת",
+        "zh-Hant": "טייוואן",
+        "zh-HK": "הונג קונג"
+      },
+      "hint": {
+        "pickOne": "בחר לפחות שפה אחת",
+        "weak_one": "{{languages}}: עדיין אין מודל ששומע אותה היטב",
+        "weak_other": "{{languages}}: עדיין אין מודל ששומע אותן היטב"
       }
+    },
+    "download": {
+      "checking": "בודק את ההורדה…",
+      "ready": "{{name}} מוכן",
+      "failed": "ההורדה נעצרה",
+      "downloading": "מוריד את {{name}}",
+      "progress": "{{done}} מתוך {{total}}",
+      "progressLeft": "{{done}} מתוך {{total}}, נותרו {{time}}",
+      "checkingName": "בודק את {{name}}",
+      "checkingDetail": "מוודא שההורדה הושלמה",
+      "stopped": "ההורדה של {{name}} נעצרה",
+      "retryDetail": "ניסיון חוזר ממשיך מהמקום שבו עצרנו",
+      "retryDownload": "נסה להוריד שוב",
+      "cardProgress": "מוריד {{percent}}%, {{done}} מתוך {{total}}",
+      "timeLeft": "נותרו {{time}}",
+      "speedLeft": "{{speed}}, נותרו {{time}}"
+    },
+    "model": {
+      "title": "בחר מודל דיבור",
+      "subtitle": "מודל הדיבור הופך את הדיבור שלך לטקסט, ישירות במחשב הזה",
+      "label": "מודל דיבור",
+      "lines": {
+        "recommended": "האיזון הטוב ביותר בין מהירות לדיוק עבור השפות שלך",
+        "faster": "מהיר יותר, עם קצת יותר טעויות",
+        "accurate": "הכי פחות טעויות, אבל איטי יותר"
+      },
+      "shorts": {
+        "recommended": "האיזון הטוב ביותר עבורך",
+        "faster": "מהיר, קצת יותר טעויות",
+        "accurate": "הכי פחות טעויות, אבל איטי יותר"
+      },
+      "model": "מודל",
+      "showAll": "הצג את כל {{count}} המודלים",
+      "download": "הורד {{size}}",
+      "downloadInstead": "הורד {{size}} במקום זאת",
+      "pauses": "{{name}} נעצר ב-{{percent}}%",
+      "resumeLater": "בחר בו שוב כדי להמשיך מהמקום שבו עצר",
+      "hint": "יורד בזמן שאתה מסיים את ההגדרה"
+    },
+    "demo": {
+      "title": "דבר בכל אפליקציה, עם קיצור מקשים אחד",
+      "hold": "<0>לחץ במקום שבו היית מקליד.</0> <1>החזק את קיצור המקשים ודבר.</1> <2>שחרר, והמילים שלך יופיעו.</2>",
+      "tap": "<0>לחץ במקום שבו היית מקליד.</0> <1>הקש על קיצור המקשים ודבר.</1> <2>הקש שוב, והמילים שלך יופיעו.</2>",
+      "apps": {
+        "messages": "הודעות",
+        "notes": "פתקים"
+      },
+      "chat": "אתה עדיין בא הערב?",
+      "noteTitle": "תוכניות לסוף השבוע",
+      "screenLabel": "מחשב נייד: מישהו לוחץ בתוך אפליקציה, מקיש על קיצור המקשים ומדבר, והמילים מופיעות במקום שבו לחץ.",
+      "change": "שינוי",
+      "yourShortcut": "קיצור המקשים שלך הוא",
+      "pressKeys": "לחץ על המקשים החדשים",
+      "addKey": "עכשיו הוסף מקש",
+      "cancel": "ביטול",
+      "tryIt": "נסה בעצמך"
+    },
+    "try": {
+      "title": "בוא ננסה!",
+      "subtitle": "Handy בפינה, ילווה אותך בדרך",
+      "noteLabel": "פתק",
+      "placeholder": "פתק חדש",
+      "hold": "החזק את <keys/> ודבר.",
+      "tapNext": "עכשיו הקש פעם אחת על <keys/>, ואז דבר.",
+      "letGo": "שחרר את <keys/> כשתסיים.",
+      "tapAgain": "הקש שוב על <keys/> כשתסיים.",
+      "watch": "תסתכל על הפתק.",
+      "changeKeys": "שנה את קיצור המקשים, {{keys}}",
+      "doneHold": "כיף! ככה מחזיקים.",
+      "doneHoldNext": "הלאה, בלי ידיים.",
+      "doneTap": "תן כאן כיף! ככה מקישים.",
+      "doneTapNext": "עכשיו נסה להחזיק אותם בזמן שאתה מדבר.",
+      "giveFive": "הצלחת! תן כיף",
+      "highFive": "כיף",
+      "slowLine": "{{name}} לקח {{wait}} במחשב הזה. <faster>נסה מודל מהיר יותר</faster>",
+      "nothingTyped": "הממ, שום דבר לא נחת.",
+      "nothingTypedSub": "לחץ קודם בתוך הפתק, ואז נסה שוב.",
+      "silent": "לא שמעתי כלום.",
+      "silentSub": "לא הגיע צליל מהמיקרופון הזה. נסה אחר:",
+      "noWords": "לא קלטתי מילים.",
+      "noWordsSub": "נסה שוב, ואמור משפט שלם.",
+      "finish": "סיום",
+      "skip": "דלג",
+      "seconds": "{{value}} שנ׳"
+    },
+    "done": {
+      "title": "הכול מוכן",
+      "subMac": "Handy נמצא עכשיו בשורת התפריטים. החזק או הקש על <keys/> בכל אפליקציה כדי לדבר.",
+      "subTray": "Handy נמצא עכשיו במגש המערכת. החזק או הקש על <keys/> בכל אפליקציה כדי לדבר.",
+      "hint": "אפשר לשנות את אלה אחר כך בהגדרות",
+      "highFiveLabel": "כיף",
+      "atLogin": "הפעל את Handy כשאני נכנס למערכת",
+      "finish": "סיום",
+      "panel": {
+        "name": "Handy",
+        "ready": "מוכן",
+        "languages": "שפות",
+        "model": "מודל דיבור",
+        "shortcut": "קיצור מקשים",
+        "changeLanguages": "שנה שפות, {{languages}}",
+        "changeModel": "שנה מודל דיבור, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "לא עובד? <guide>מדריך ההתקנה ללינוקס</guide>",
+      "done": "לא עובד באפליקציות אחרות? <guide>מדריך ההתקנה ללינוקס</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "תצוגה חיה",
+      "previewTitle": "מציג את המילים שלך בשכבת התצוגה החיה בזמן שאתה מדבר, ומקליד אותן כשאתה מפסיק",
+      "translate": "מתרגם",
+      "translateTitle": "יכול להפוך את מה שאתה אומר לטקסט באנגלית. אפשר להפעיל בהגדרות"
+    },
+    "rubric": {
+      "gradeTitle": "דיוק ב{{language}}: {{grade}}",
+      "accuracyTitle": "דיוק ב{{language}}",
+      "overallTitle": "דיוק בשפות שלך: {{grade}}",
+      "overall": "דיוק בשפות שלך",
+      "meaning": {
+        "A": "טעויות מעטות מאוד: המילים שלך בדרך כלל יוצאות בדיוק כפי שאמרת אותן",
+        "B": "כמה טעויות: צפה לתקן מילה פה ושם",
+        "C": "טעויות תכופות: חלק מהפרטים עלולים ללכת לאיבוד",
+        "D": "הרבה טעויות: צפה לבדוק ולתקן את מה שהוא מקליד",
+        "F": "לעיתים קרובות לא ברור: הרבה ממה שתאמר עלול לצאת שגוי"
+      },
+      "unsupported": "המודל הזה לא מבין {{language}}, ולכן לא יכול להקליד בה",
+      "unrated": "המודל הזה מבין {{language}}, אבל עדיין לא מדדנו עד כמה טוב",
+      "under": "מתחת ל-{{max}}%",
+      "between": "{{min}} עד {{max}}%",
+      "over": "{{min}}% ומעלה",
+      "speedTitle": "מהירות: {{speed}}",
+      "speedName": {
+        "0": "איטי מאוד",
+        "1": "איטי",
+        "2": "בינוני",
+        "3": "מהיר",
+        "4": "מהיר מאוד"
+      },
+      "speedMeaning": {
+        "0": "המילים שלך מופיעות אחרי המתנה ארוכה",
+        "1": "המילים שלך מופיעות אחרי המתנה",
+        "2": "המילים שלך מופיעות אחרי המתנה קצרה",
+        "3": "המילים שלך מופיעות כמעט מיד",
+        "4": "המילים שלך מופיעות מיד"
+      },
+      "speedPreview": "{{meaning}}, עם תצוגה מקדימה חיה בזמן שאתה מדבר",
+      "untimed": "עדיין לא מדדנו כמה הוא מהיר",
+      "underSeconds": "מתחת ל-{{max}} שנ׳",
+      "betweenSeconds": "{{min}} עד {{max}} שנ׳",
+      "overSeconds": "{{min}} שנ׳ ומעלה"
+    },
+    "roles": {
+      "recommended": "מומלץ",
+      "faster": "מהיר יותר",
+      "accurate": "מדויק יותר",
+      "fromAll": "מכל המודלים"
+    },
+    "speed": "מהירות",
+    "size": "גודל",
+    "accuracy": "דיוק",
+    "search": "חיפוש מודלים",
+    "allLabel": "מודלי דיבור",
+    "noMatch": "אין תוצאות עבור „{{query}}”. נסה שפה, או משפחה כמו Whisper או Parakeet",
+    "noFilterMatch": "אין מודלים שמתאימים למסננים האלה",
+    "speedUntested": "המהירות עדיין לא נמדדה",
+    "speedWords": {
+      "0": "איטי מאוד, המילים מופיעות אחרי המתנה ארוכה",
+      "1": "איטי, המילים מופיעות אחרי המתנה",
+      "2": "בינוני, המילים מופיעות אחרי המתנה קצרה",
+      "3": "מהיר, המילים מופיעות כמעט מיד",
+      "4": "מהיר מאוד, המילים מופיעות מיד"
+    },
+    "speedWordsPreview": {
+      "0": "איטי מאוד, עם תצוגה מקדימה חיה בזמן שאתה מדבר",
+      "1": "איטי, עם תצוגה מקדימה חיה בזמן שאתה מדבר",
+      "2": "בינוני, עם תצוגה מקדימה חיה בזמן שאתה מדבר",
+      "3": "מהיר, עם תצוגה מקדימה חיה בזמן שאתה מדבר",
+      "4": "מהיר מאוד, עם תצוגה מקדימה חיה בזמן שאתה מדבר"
+    },
+    "missingLanguage": "חסרה שפה",
+    "allLanguages": "הכול",
+    "downloadingLine": "מוריד {{percent}}% מתוך {{total}}",
+    "customLine": "נוסף מתיקיית המודלים שלך. לא מדורג.",
+    "legacyLine": "הורדה ישנה יותר. לא מדורג."
+  },
+  "languagePicker": {
+    "search": "חיפוש שפות",
+    "addAnother": "הוסף עוד",
+    "remove": "הסר את {{language}}",
+    "alreadyAdded_one": "{{languages}} כבר נוספה.",
+    "alreadyAdded_other": "{{languages}} כבר נוספו."
   },
   "modelSelector": {
     "custom": "מותאם אישית",
     "streaming": "סטרימינג",
     "active": "פעיל",
-    "switching": "מחליף...",
     "noModelsAvailable": "אין מודלים זמינים",
     "verifying": "מאמת את {{modelName}}...",
     "verifyingGeneric": "מאמת...",
-    "extracting": "מחלץ את {{modelName}}...",
-    "extractingMultiple": "מחלץ {{count}} מודלים...",
-    "extractingGeneric": "מחלץ...",
     "downloading": "מוריד {{percentage}}%",
     "downloadingMultiple": "מוריד {{count}} מודלים...",
     "modelReady": "המודל מוכן",
@@ -140,20 +318,8 @@
     "modelError": "שגיאת מודל",
     "modelUnloaded": "המודל נפרק",
     "noModelDownloadRequired": "אין מודל, נדרשת הורדה",
-    "deleteModel": "מחק את {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "ביטול",
-    "cancelDownload": "בטל הורדה",
-    "capabilities": {
-      "languageSelection": "תומך בכמה שפות קלט",
-      "singleLanguage": "תומך רק בשפה הזו",
-      "languageCount": "{{total}} שפות",
-      "languageOnly": "{{language}} בלבד",
-      "translation": "יכול לתרגם לאנגלית",
-      "translate": "תרגם לאנגלית",
-      "streaming": "מציג תמלול חי תוך כדי דיבור"
-    },
-    "legacy": "מדור קודם"
+    "lockedWhileTranscribing": "אפשר יהיה להחליף מודל אחרי שהתמלול בהיסטוריה יסתיים."
   },
   "settings": {
     "modelSettings": {
@@ -183,9 +349,7 @@
           }
         },
         "errors": {
-          "restore": "שחזור קיצור הדרך המקורי נכשל",
-          "set": "הגדרת קיצור הדרך נכשלה: {{error}}",
-          "reset": "איפוס קיצור הדרך לערך המקורי נכשל"
+          "set": "הגדרת קיצור הדרך נכשלה: {{error}}"
         }
       },
       "language": {
@@ -194,6 +358,12 @@
         "searchPlaceholder": "חפש שפות...",
         "noResults": "לא נמצאו שפות",
         "auto": "אוטומטי"
+      },
+      "preferredLanguages": {
+        "title": "שפות מועדפות",
+        "description": "השפות שאתה מדבר. Handy משתמש בהן כדי להמליץ על מודלים.",
+        "noMatch": "אין שפה שתואמת ל„{{query}}”",
+        "weak": "עדיין אין מודל שמזהה היטב את {{languages}}."
       },
       "shortcutActivation": {
         "title": "התנהגות קיצור הדרך",
@@ -211,24 +381,50 @@
       }
     },
     "models": {
-      "title": "מודלי תמלול",
-      "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
-      "yourModels": "מודלים שהורדו",
-      "availableModels": "זמינים להורדה",
-      "deleteConfirm": "האם למחוק את {{modelName}}? יהיה צורך להוריד אותו שוב כדי להשתמש בו.",
-      "deleteActiveConfirm": "{{modelName}} הוא המודל הפעיל שלך כרגע. מחיקה שלו תעצור את התמלול עד שתבחר מודל חדש. להמשיך?",
-      "deleteTitle": "מחיקת מודל",
-      "filters": {
-        "allLanguages": "כל השפות",
-        "streaming": "סינון דגמים התומכים בתמלול חי",
-        "translation": "סינון דגמים התומכים בתרגום לאנגלית"
+      "title": "מודלים",
+      "changeLanguages": "שנה שפות",
+      "sections": {
+        "yours": "במחשב הזה",
+        "fits": "עבור השפות שלך",
+        "untested": "לא נבדקו"
       },
-      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
-      "searchPlaceholder": "חיפוש מודלים לפי שם…",
+      "untestedNote": "לא נבדקו עם Handy. ייתכן שהם איטיים יותר או שיעשו יותר טעויות.",
+      "untestedHidden_one": "עוד מודל {{count}} לא מותאם להכתבה. חפש כדי למצוא אותו.",
+      "untestedHidden_other": "עוד {{count}} מודלים לא מותאמים להכתבה. חפש כדי למצוא אותם.",
+      "emptyYours": "עדיין אין מודלים. בחר אחד למטה: הוא יורד, ואז Handy משתמש בו.",
+      "showMore": "הצג עוד {{count}}",
+      "showFewer": "הצג פחות",
+      "download": "הורד והשתמש",
+      "downloadingThenUse": "{{percent}}% מתוך {{total}}, ואז עובר אליו",
+      "loading": "טוען…",
+      "deleteAsk": "למחוק את {{name}}? זה ישחרר {{size}}.",
+      "deleteAskActive": "למחוק את {{name}}? Handy לא יוכל לתמלל עד שתבחר מודל אחר.",
+      "cancel": "ביטול",
+      "deleteModel": "מחק את {{name}}",
+      "cancelDownload": "הפסק להוריד את {{name}}",
+      "legend": {
+        "open": "איך המודלים מדורגים",
+        "accuracyNote": "לכל אחת מהשפות שלך: כמה מילים המודל שגה בהן בהקלטות הבדיקה שלנו.",
+        "speedNote": {
+          "accelerated": "כמה זמן לוקח להקליד 30 שניות של דיבור על שבב הגרפיקה של מחשב הבדיקה שלנו. במחשב הזה זה עשוי להיות שונה.",
+          "cpu": "כמה זמן לוקח להקליד 30 שניות של דיבור על המעבד של מחשב הבדיקה שלנו. במחשב הזה זה עשוי להיות שונה."
+        },
+        "marks": "? עדיין לא נמדד. — לא שומע את השפה הזו."
+      },
+      "retiredNotice": {
+        "title": "מודלים ישנים כבר לא עובדים עם Handy",
+        "description": "הם תופסים {{size}} במחשב שלך.",
+        "delete": "מחיקת מודלים",
+        "deleted": "המודלים הישנים נמחקו",
+        "deleteFailed": "לא ניתן היה למחוק חלק מהמודלים הישנים. פרטים נוספים ביומן."
+      },
       "rescan": {
         "label": "סריקה מחדש",
         "tooltip": "סריקה מחדש לאיתור מודלים שנוספו לתיקיית המודלים או למטמון של Hugging Face מחוץ ל-Handy"
       }
+    },
+    "languages": {
+      "title": "שפות"
     },
     "sound": {
       "title": "שמע",
@@ -277,12 +473,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "האצת Whisper",
-          "description": "האצת חומרה למודלי Whisper. מצב אוטומטי משתמש ב-GPU אם זמין (Metal ב-macOS, Vulkan ב-Windows/Linux)."
-        },
-        "ort": {
-          "title": "האצת ONNX",
-          "description": "האצת חומרה למודלי ONNX (Parakeet, Canary, Moonshine ועוד). DirectML ב-Windows הוא ניסיוני. ייתכן שמודלים ייכשלו בתמלול."
+          "title": "האצת חומרה",
+          "description": "בחר את החומרה שמשמשת לתמלול. מצב אוטומטי משתמש ב-GPU כשהוא זמין, ואחרת עובר ל-CPU."
         },
         "gpuDevice": {
           "auto": "אוטומטי"
@@ -388,6 +580,10 @@
         "title": "זיהוי פעילות קולית",
         "description": "סינון שקט מההקלטות. מודלים התומכים בסטרימינג משתמשים בזנב VAD ארוך יותר; ביטול VAD מקליט אודיו גולמי."
       },
+      "longFormChunking": {
+        "title": "פיצול שמע ארוך",
+        "description": "מפצל הקלטות ארוכות בהפסקות לפני התמלול, מה שבדרך כלל משפר את איכות התמלול. קבצים מתומללים ותמלולים חוזרים ארוכים מפוצלים תמיד."
+      },
       "vadBackend": {
         "title": "מנוע זיהוי פעילות קולית",
         "description": "בחרו את הגלאי המשמש לסינון שקט. Earshot ניסיוני; חזרו ל-Silero אם הדיבור נחתך או שרעש נשמר.",
@@ -399,6 +595,16 @@
       "fillerWordRemoval": {
         "title": "הסרת מילות מילוי",
         "description": "מסיר מילות היסוס נפוצות מתמלולים. השבת כדי להשאיר אותן."
+      },
+      "chineseScript": {
+        "title": "כתב סיני",
+        "description": "כותב תמלולים של מנדרינית וקנטונזית בתווים מפושטים, או בתווים מסורתיים כפי שכותבים בטייוואן או בהונג קונג. שפות אחרות נשארות ללא שינוי.",
+        "options": {
+          "asTranscribed": "כפי שתומלל",
+          "simplified": "מפושט",
+          "traditionalTw": "מסורתית (טייוואן)",
+          "traditionalHk": "מסורתית (הונג קונג)"
+        }
       }
     },
     "postProcessing": {
@@ -406,10 +612,18 @@
         "title": "קיצור מקשים"
       },
       "api": {
-        "title": "API (תואם OpenAI)",
+        "title": "API",
         "provider": {
           "title": "ספק",
-          "description": "בחר ספק שתואם ל-OpenAI."
+          "description": "בחר ספק שתואם ל-OpenAI או ל-Anthropic."
+        },
+        "apiFormat": {
+          "title": "פורמט API",
+          "description": "פורמט הבקשה שה-endpoint המותאם שלך מצפה לו.",
+          "options": {
+            "openai": "תואם OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
@@ -417,7 +631,8 @@
         "baseUrl": {
           "title": "כתובת URL בסיסית",
           "description": "כתובת ה-API הבסיסית עבור הספק הנבחר. רק ספק מותאם אישית ניתן לעריכה.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "מפתח API",
@@ -461,14 +676,27 @@
       "loading": "טוען היסטוריה...",
       "empty": "עדיין אין תמלולים. התחל להקליט כדי לבנות את ההיסטוריה שלך!",
       "copyToClipboard": "העתק תמלול ללוח",
+      "copyError": "לא ניתן להעתיק את התמלול ללוח.",
       "save": "שמור תמלול",
       "unsave": "הסר משמורים",
       "delete": "מחק רשומה",
       "deleteError": "מחיקת הרשומה נכשלה. נסה שוב.",
       "retranscribe": "תמלל מחדש",
-      "retranscribeError": "תמלול מחדש נכשל. נסה שוב.",
+      "cancelTranscription": "ביטול התמלול",
       "transcribing": "מתמלל...",
-      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר."
+      "transcriptionFailed": "התמלול נכשל. אפשר לתמלל מחדש באמצעות אייקון הניסיון החוזר.",
+      "notTranscribed": "לא תומלל. אפשר לתמלל באמצעות אייקון הניסיון החוזר.",
+      "transcribeFile": "תמלול קובץ",
+      "mediaFiles": "שמע ווידאו",
+      "fileUnsupported": "לא ניתן לקרוא שמע מ-{{name}}.",
+      "readingFile": "קורא את {{name}}...",
+      "transcribeFailed": "התמלול נכשל. נסו שוב.",
+      "waiting": "ממתין לתמלול",
+      "transcribingPercent": "מתמלל, {{percent}}%",
+      "showMore": "הצג עוד",
+      "showLess": "הצג פחות",
+      "dropTitle": "שחררו כדי לתמלל",
+      "dropDescription": "הוא יופיע בהיסטוריה."
     },
     "debug": {
       "title": "ניפוי שגיאות",
@@ -495,6 +723,38 @@
         "label": "בדוק עדכונים",
         "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של Handy",
         "lockedDescription": "מושבת על ידי תצורת המערכת (HANDY_DISABLE_UPDATER)"
+      },
+      "whatsNewPreview": {
+        "title": "תצוגה מקדימה של מה חדש",
+        "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
+        "button": "תצוגה מקדימה",
+        "noNotes": "לא נמצאו הערות גרסה מצורפות",
+        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
+      },
+      "onboardingPreview": {
+        "title": "תצוגה מקדימה של ההגדרה הראשונית",
+        "description": "הצג את מסכי ההגדרה הראשונית בלי לשנות הרשאות, מודלים או את מצב ההשלמה",
+        "exitButton": "יציאה מהתצוגה המקדימה",
+        "choose": "בחר מסך",
+        "screens": {
+          "welcome": "ברוכים הבאים",
+          "permissions": "הרשאות",
+          "model": "מודל",
+          "demo": "הדגמה",
+          "try": "נסה",
+          "done": "הכול מוכן"
+        }
+      },
+      "onboardingRun": {
+        "title": "הרצת היכרות ראשונית",
+        "description": "עבור על תהליך ההיכרות באמת מההתחלה: הוא מבקש הרשאות, מוריד מודלים ושומר את הבחירות שלך",
+        "button": "התחל"
+      },
+      "modelMigration": {
+        "title": "העברת מודלים",
+        "description": "פתח באמת את מסך עדכון המודלים בפורמט הישן: הוא מוריד תחליפים, מחליף מודלים ומוחק קבצים ישנים",
+        "button": "פתח",
+        "noRetired": "אין מודלים בפורמט ישן בדיסק"
       },
       "soundTheme": {
         "label": "ערכת צלילים",
@@ -544,11 +804,6 @@
         "description": "בחר את מנגנון קיצורי המקלדת.",
         "bindingsReset": "קיצורי המקלדת לא היו תואמים ואופסו לברירות המחדל"
       },
-      "paths": {
-        "appData": "נתוני אפליקציה:",
-        "models": "מודלים:",
-        "settings": "הגדרות:"
-      },
       "pasteDelay": {
         "title": "השהיית הדבקה (לפני)",
         "description": "השהיה (במילישניות) לאחר העתקת הטקסט, לפני שליחת צירוף ההדבקה. הגדל אם דבר אינו מודבק."
@@ -588,13 +843,6 @@
         "verdictOk": "אירועי מקשים מגיעים ל-Handy כרגיל.",
         "verdictNoEvents": "לא נקלטו אירועים — האם הקשת על מקשים במהלך הבדיקה?",
         "failed": "האבחון נכשל: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "תצוגה מקדימה של מה חדש",
-        "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
-        "button": "תצוגה מקדימה",
-        "noNotes": "לא נמצאו הערות גרסה מצורפות",
-        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
       }
     },
     "about": {
@@ -602,6 +850,10 @@
       "version": {
         "title": "גרסה",
         "description": "הגרסה הנוכחית של Handy"
+      },
+      "whatsNewUpdates": {
+        "label": "הצג מה חדש",
+        "description": "הצג הערות גרסה לאחר עדכוני Handy"
       },
       "appDataDirectory": {
         "title": "תיקיית נתוני אפליקציה",
@@ -624,10 +876,6 @@
           "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
           "details": "Handy משתמש ב-ggml לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "הצג מה חדש",
-        "description": "הצג הערות גרסה לאחר עדכוני Handy"
       }
     }
   },
@@ -646,6 +894,9 @@
     "portableUpdateBrowseMessage": "התקנות ניידות אינן מתעדכנות אוטומטית. הורד את הגרסה האחרונה המתאימה למערכת שלך מ-GitHub Releases והתקן אותה לאותה תיקייה — תיקיית Data/ (הגדרות, מודלים, הקלטות) נשמרת במקומה.",
     "portableUpdateBrowseButton": "פתח את GitHub Releases"
   },
+  "whatsNew": {
+    "title": "חדש ב-Handy v{{version}}"
+  },
   "common": {
     "loading": "טוען...",
     "delete": "מחק",
@@ -654,10 +905,6 @@
     "copy": "העתק",
     "clear": "נקה",
     "noOptionsFound": "לא נמצאו אפשרויות"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
-    "openSettings": "פתח את הגדרות המערכת"
   },
   "errors": {
     "loadDirectory": "שגיאה בטעינת תיקייה: {{error}}",
@@ -692,10 +939,8 @@
   },
   "overlay": {
     "transcribing": "מתמלל...",
-    "processing": "מעבד..."
-  },
-  "whatsNew": {
-    "title": "חדש ב-Handy v{{version}}"
+    "processing": "מעבד...",
+    "loadingModel": "טוען מודל..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "ייתכן ש-{{name}} חוסם קיצור דרך אחד",

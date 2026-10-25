@@ -22,6 +22,22 @@ pub fn redact_text(text: &str) -> &str {
     }
 }
 
+/// Main window's opening and minimum page size, in logical pixels.
+pub const MAIN_WINDOW_SIZE: (f64, f64) = (720.0, 600.0);
+
+/// Title bar height in logical pixels (macOS draws it inside the inner size).
+/// Call on the main thread.
+#[cfg(target_os = "macos")]
+pub fn measure_title_bar(window: &tauri::WebviewWindow) -> f64 {
+    let Ok(ptr) = window.ns_window() else {
+        return 0.0;
+    };
+    // SAFETY: `ns_window` is the live NSWindow behind `window`, and this runs
+    // on the main thread.
+    let ns_window = unsafe { &*(ptr as *const objc2_app_kit::NSWindow) };
+    (ns_window.frame().size.height - ns_window.contentLayoutRect().size.height).max(0.0)
+}
+
 #[cfg(any(test, all(target_os = "windows", target_arch = "x86_64")))]
 const IMAGE_FILE_MACHINE_ARM64: u16 = 0xaa64;
 
@@ -94,15 +110,19 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let recording_was_active = audio_manager.is_recording();
     audio_manager.cancel_recording();
 
-    // Abandon any live streaming transcription
+    // Abandon any live streaming transcription, and stop a transcription
+    // already in progress
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.cancel_stream();
+    tm.cancel_transcription();
 
     // Update tray icon and hide overlay
     set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
-    // Unload model if immediate unload is enabled
+    // Unload model if immediate unload is enabled. Done before notifying the
+    // coordinator, so a recording started next always loads afresh; it
+    // doesn't wait for the cancelled work, so it never blocks this thread.
     tm.maybe_unload_immediately("cancellation");
 
     // Notify coordinator so it can keep lifecycle state coherent.

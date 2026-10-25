@@ -1,4 +1,4 @@
-use crate::managers::model::{ModelInfo, ModelManager};
+use crate::managers::model::{ModelInfo, ModelManager, RetiredModel};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use log::error;
@@ -63,6 +63,24 @@ pub async fn download_model(
 
 #[tauri::command]
 #[specta::specta]
+pub fn get_retired_models(model_manager: State<'_, Arc<ModelManager>>) -> Vec<RetiredModel> {
+    model_manager.get_retired_models()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_retired_model(
+    model_manager: State<'_, Arc<ModelManager>>,
+    model_id: String,
+) -> Result<(), String> {
+    model_manager.delete_retired_model(&model_id).map_err(|e| {
+        error!("Retired model delete failed for {}: {}", model_id, e);
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn delete_model(
     app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
@@ -72,8 +90,13 @@ pub async fn delete_model(
     // If deleting the active model, unload it and clear the setting
     let settings = get_settings(&app_handle);
     if settings.selected_model == model_id {
-        transcription_manager
-            .unload_model()
+        transcription_manager.ensure_model_unlocked()?;
+        // Waits for the worker to exit (behind any transcription in progress)
+        // before the file is deleted, so keep it off the async workers.
+        let tm = Arc::clone(&transcription_manager);
+        tauri::async_runtime::spawn_blocking(move || tm.unload_model())
+            .await
+            .map_err(|e| format!("Failed to unload model: {}", e))?
             .map_err(|e| format!("Failed to unload model: {}", e))?;
 
         let mut settings = get_settings(&app_handle);
@@ -81,9 +104,11 @@ pub async fn delete_model(
         write_settings(&app_handle, settings);
     }
 
-    model_manager
-        .delete_model(&model_id)
-        .map_err(|e| e.to_string())
+    model_manager.delete_model(&model_id).map_err(|e| {
+        // The UI only shows a generic failure toast, so the cause has to be logged.
+        error!("Model delete failed for {}: {}", model_id, e);
+        e.to_string()
+    })
 }
 
 /// Shared logic for switching the active model, used by both the Tauri command
@@ -95,6 +120,7 @@ pub async fn delete_model(
 pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String> {
     let model_manager = app.state::<Arc<ModelManager>>();
     let transcription_manager = app.state::<Arc<TranscriptionManager>>();
+    transcription_manager.ensure_model_unlocked()?;
 
     // Atomically claim the loading slot — prevents concurrent model loads
     // from tray double-clicks or overlapping commands. The guard resets the
@@ -115,13 +141,11 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let settings = get_settings(app);
     let unload_timeout = settings.model_unload_timeout;
     let old_model = settings.selected_model.clone();
-    let old_onboarding_completed = settings.onboarding_completed;
 
     // Persist the new selection early so the frontend sees the correct model
     // when it reacts to events emitted by load_model.
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
-    settings.onboarding_completed = true;
 
     write_settings(app, settings);
 
@@ -150,7 +174,6 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     if let Err(e) = transcription_manager.load_model(model_id) {
         let mut settings = get_settings(app);
         settings.selected_model = old_model;
-        settings.onboarding_completed = old_onboarding_completed;
         write_settings(app, settings);
         return Err(e.to_string());
     }
