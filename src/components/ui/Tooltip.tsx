@@ -132,7 +132,10 @@ export const Tooltip: React.FC<TooltipProps> = ({
             className="pointer-events-none fixed z-[9999] w-max max-w-[248px] rounded-[9px] bg-plum px-[11px] py-[7px] text-start font-ui text-label leading-[17px] text-background shadow-[0_8px_24px_-10px_rgba(0,0,0,0.45)]"
           >
             {title && <b className="block font-semibold">{title}</b>}
-            <span className={title ? "opacity-75" : ""}>{text}</span>
+            {/* A block, not inline: a grid in an inline span gets its margin
+                late in WebKit, once the entrance animation ends, and the
+                tooltip grows down onto its element. */}
+            <span className={`block ${title ? "opacity-75" : ""}`}>{text}</span>
             <span
               aria-hidden="true"
               style={{ left: place?.arrow ?? 0 }}

@@ -393,8 +393,8 @@
 .try-notes,
 .try-note-page {
   transition:
-    inset 640ms var(--ease-glide) 480ms,
-    margin-bottom 640ms var(--ease-glide) 480ms;
+    inset 620ms var(--ease-glide) 280ms,
+    margin-bottom 620ms var(--ease-glide) 280ms;
 }
 .try-main:is([data-stage="fly"], [data-stage="set"]) .try-notes {
   inset-inline-end: calc(
@@ -462,13 +462,16 @@
    holding until it swings in… */
 .try-glove[data-mood="windup"] .try-pose {
   transform: rotate(18deg) translate(6px, -10px) scale(1.08);
-  transition-duration: 700ms;
+  transition-duration: 550ms;
 }
 [dir="rtl"] .try-glove[data-mood="windup"] .try-pose {
   transform: rotate(-18deg) translate(-6px, -10px) scale(1.08);
 }
-/* …and comes at you, bigger, then settles, its slap squashing it. */
-.try-main[data-stage="five"] .try-glove[data-how="auto"] .try-pose {
+/* …and comes at you, bigger, then settles, its slap squashing it. It takes
+   off from the slap, so the settle plays on in flight. */
+.try-main:is([data-stage="five"], [data-stage="fly"])
+  .try-glove[data-how="auto"]
+  .try-pose {
   animation: try-lunge 520ms var(--ease-glide) both;
 }
 @keyframes try-lunge {

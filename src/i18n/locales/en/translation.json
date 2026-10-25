@@ -133,7 +133,7 @@
     },
     "model": {
       "title": "Choose a speech model",
-      "subtitle": "The speech model turns your voice into text, right on this computer",
+      "subtitle": "The speech model turns your speech into text, right on this computer",
       "label": "Speech model",
       "allLabel": "Speech models",
       "roles": {
@@ -143,9 +143,9 @@
         "fromAll": "From all models"
       },
       "lines": {
-        "recommended": "The best balance of speed and accuracy for your languages.",
-        "faster": "Quicker, with a few more mistakes.",
-        "accurate": "Fewest mistakes, but slower."
+        "recommended": "The best balance of speed and accuracy for your languages",
+        "faster": "Quicker, with a few more mistakes",
+        "accurate": "Fewest mistakes, but slower"
       },
       "shorts": {
         "recommended": "Best balance for you",
@@ -172,36 +172,48 @@
       },
       "speedUntested": "Speed not measured yet",
       "rubric": {
-        "gradeTitle": "{{language}} accuracy grade: {{grade}}",
+        "gradeTitle": "{{language}} accuracy: {{grade}}",
         "accuracyTitle": "{{language}} accuracy",
-        "overallTitle": "Accuracy across your languages: {{grade}}",
-        "overall": "Accuracy across your languages",
+        "overallTitle": "Accuracy in your languages: {{grade}}",
+        "overall": "Accuracy in your languages",
         "meaning": {
-          "A": "Very few mistakes: your words usually come out as you said them.",
-          "B": "Some mistakes: expect to fix a word here and there.",
-          "C": "Frequent mistakes: some details may get lost.",
-          "D": "Many mistakes: expect to check and correct what it types.",
-          "F": "Often unclear: much of what you say may come out wrong."
+          "A": "Very few mistakes: your words usually come out as you said them",
+          "B": "Some mistakes: expect to fix a word here and there",
+          "C": "Frequent mistakes: some details may get lost",
+          "D": "Many mistakes: expect to check and correct what it types",
+          "F": "Often unclear: much of what you say may come out wrong"
         },
-        "unsupported": "This model doesn't understand {{language}}, so it can't type it.",
-        "unrated": "This model understands {{language}}, but we haven't measured how well yet.",
+        "unsupported": "This model doesn't understand {{language}}, so it can't type it",
+        "unrated": "This model understands {{language}}, but we haven't measured how well yet",
         "under": "under {{max}}%",
         "between": "{{min}} to {{max}}%",
         "over": "{{min}}% or more",
-        "speedText": {
-          "accelerated": "Takes {{band}} to type out 30 seconds of speech on our test laptop's graphics chip. This computer may differ.",
-          "cpu": "Takes {{band}} to type out 30 seconds of speech on our test laptop's processor. This computer may differ."
+        "speedTitle": "Speed: {{speed}}",
+        "speedName": {
+          "0": "Very slow",
+          "1": "Slow",
+          "2": "Moderate",
+          "3": "Fast",
+          "4": "Very fast"
         },
-        "untimed": "Not timed on our test laptop yet.",
+        "speedMeaning": {
+          "0": "Your words appear after a long wait",
+          "1": "Your words appear after a wait",
+          "2": "Your words appear after a short wait",
+          "3": "Your words appear almost right away",
+          "4": "Your words appear right away"
+        },
+        "speedPreview": "{{meaning}}, with a live preview while you talk",
+        "untimed": "We haven't measured how fast it is yet",
         "underSeconds": "under {{max}} s",
         "betweenSeconds": "{{min}} to {{max}} s",
         "overSeconds": "{{min}} s or more"
       },
       "tags": {
         "preview": "Live preview",
-        "previewTitle": "Shows your words in the Live overlay while you talk, then types them when you stop.",
+        "previewTitle": "Shows your words in the Live overlay while you talk, then types them when you stop",
         "translate": "Translates",
-        "translateTitle": "Can turn what you say into English text. Turn it on in settings."
+        "translateTitle": "Can turn what you say into English text. Turn it on in settings"
       },
       "showAll": "Show all {{count}} models",
       "download": "Download {{size}}",
@@ -211,8 +223,8 @@
       "hint": "Downloads while you finish setup",
       "search": "Search models",
       "missingLanguage": "Missing a language",
-      "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet.",
-      "noFilterMatch": "No models match these filters."
+      "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet",
+      "noFilterMatch": "No models match these filters"
     },
     "demo": {
       "title": "Talk in any app, with one shortcut",

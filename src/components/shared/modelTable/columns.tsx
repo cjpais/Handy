@@ -4,7 +4,6 @@ import type { CatalogModel } from "@handy-computer/models";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { GradeChip } from "@/components/shared/GradeChip";
 import { SpeedBars, speedLevel } from "@/components/shared/SpeedBars";
-import { useRubric } from "@/components/onboarding/Rubric";
 import { languageName } from "@/lib/constants/languages";
 import { formatModelSize } from "@/lib/utils/format";
 import type { Grading } from "./grading";
@@ -104,17 +103,20 @@ export const GradeTip: React.FC<{
     text = t(key("unrated"), { language: list(langs) });
   else text = t(key(`meaning.${grade.letter}`));
   // Several languages: each one's grade under the line, as words (the
-  // chips' greys are for the page, not the tooltip's plum).
+  // chips' greys are for the page, not the tooltip's plum). The letters
+  // in one column and the + and − in the next, so they line up down it.
   const breakdown = !one && (
-    <span className="mt-[6px] grid grid-cols-[1fr_auto] gap-x-[16px] tabular-nums">
-      {langs.map((l) => (
-        <React.Fragment key={l}>
-          <span>{nameOf(l)}</span>
-          <b className="text-end font-semibold">
-            {grading.grade(model, l).label}
-          </b>
-        </React.Fragment>
-      ))}
+    <span className="mt-[6px] grid grid-cols-[1fr_auto_auto]">
+      {langs.map((l) => {
+        const { label } = grading.grade(model, l);
+        return (
+          <React.Fragment key={l}>
+            <span className="me-[16px]">{nameOf(l)}</span>
+            <b className="text-center font-semibold">{label.slice(0, 1)}</b>
+            <b className="font-semibold">{label.slice(1)}</b>
+          </React.Fragment>
+        );
+      })}
     </span>
   );
   return (
@@ -153,8 +155,8 @@ export const useSpeedWords = () => {
 };
 
 /**
- * The speed bars' hint: how fast in words, and the seconds its bars stand
- * for on this tier's test machine. `className` is the anchor's.
+ * The speed bars' hint, in the grade hint's shape: "Speed: Fast" over what
+ * that means for you, or why there's no speed. `className` is the anchor's.
  */
 export const SpeedTip: React.FC<{
   grading: Grading;
@@ -165,19 +167,25 @@ export const SpeedTip: React.FC<{
   children: React.ReactElement;
 }> = ({ grading, model, streaming, className, children }) => {
   const { t } = useTranslation();
-  const rubric = useRubric();
-  const words = useSpeedWords();
+  const key = (k: string) => `onboarding.model.rubric.${k}`;
   const wait = grading.wait(model);
+  const level = speedLevel(wait);
   return (
     <Tooltip
       className={className}
-      title={words(wait, streaming)}
+      title={
+        wait == null
+          ? t("onboarding.model.speed")
+          : t(key("speedTitle"), { speed: t(key(`speedName.${level}`)) })
+      }
       text={
         wait == null
-          ? t("onboarding.model.rubric.untimed")
-          : t(`onboarding.model.rubric.speedText.${grading.tier}`, {
-              band: rubric.speedBand(speedLevel(wait)),
-            })
+          ? t(key("untimed"))
+          : streaming
+            ? t(key("speedPreview"), {
+                meaning: t(key(`speedMeaning.${level}`)),
+              })
+            : t(key(`speedMeaning.${level}`))
       }
     >
       {children}

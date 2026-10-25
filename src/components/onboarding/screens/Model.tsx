@@ -363,8 +363,6 @@ export const Model: React.FC<ModelProps> = ({
               })}
             </span>
             <span className="text-ink-2">{t("onboarding.model.speed")}</span>
-            {/* The words are beside the bars already: the hint's title
-                names the row. */}
             {/* Over the bars and words, not the whole column. */}
             <SpeedTip
               grading={grading}

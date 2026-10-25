@@ -37,9 +37,11 @@ type Stage = "try" | "windup" | "five" | "fly" | "set";
 type How = "auto" | "five" | "skip";
 
 /** "Give me five" is up this long, the glove winding up, before it's given. */
-const WINDUP_MS = 1300;
-/** The flight from the note's corner to the icon. */
-const FLIGHT_MS = 860;
+const WINDUP_MS = 950;
+/** The flight from the note's corner into the icon. */
+const FLIGHT_MS = 560;
+/** How far through the flight the glove starts fading into the icon. */
+const FADE_FROM = 0.7;
 
 /**
  * What the glove says, in one of three shapes: an instruction (one line, the
@@ -279,20 +281,18 @@ export const TryIt: React.FC<TryItProps> = ({
     if (stage !== "windup" && stage !== "five") return;
     const next = setTimeout(
       () => setStage(stage === "windup" ? "five" : "fly"),
-      stage === "windup"
-        ? WINDUP_MS
-        : how === "skip"
-          ? 220
-          : how === "auto"
-            ? 540
-            : 440,
+      // A high five takes off from the slap, not after it settles: the
+      // settle plays on in flight.
+      stage === "windup" ? WINDUP_MS : how === "skip" ? 220 : 260,
     );
     return () => clearTimeout(next);
   }, [stage, how]);
 
-  // The flight: an arc from the note's corner into the icon, bowing in over
-  // the desktop up to a menu bar, hopping along to a tray, a little big as it
-  // arrives and gone into it as it lands.
+  // The flight: from the note's corner into the icon, straight up to a menu
+  // bar (it's right above), a hop down into a tray, shrinking to the icon's
+  // size and fading into it as it lands, so it's gone when the icon catches
+  // it (and the glove unmounts). Each leg has its own easing, so the offsets
+  // are real time.
   useLayoutEffect(() => {
     if (stage !== "fly") return;
     onArrive();
@@ -306,40 +306,44 @@ export const TryIt: React.FC<TryItProps> = ({
     const dx = to.left + to.width / 2 - (from.left + from.width / 2);
     const dy = to.top + to.height / 2 - (from.top + from.height / 2);
     const s = to.height / from.height;
-    const rtl = document.documentElement.dir === "rtl";
-    const up = os === "macos";
-    const bow = up ? (rtl ? 70 : -70) : 0;
-    const hop = up ? 0 : -70;
+    const at = (x: number, y: number, scale: number) =>
+      `translate(${x}px, ${y}px) scale(${scale})`;
+    // A tray's just below: up first, slowing to the top of the hop, then
+    // falling into it.
+    const legs: Keyframe[] =
+      os === "macos"
+        ? [
+            {
+              transform: at(0, 0, 1),
+              opacity: 1,
+              easing: "cubic-bezier(0.35, 0, 0.15, 1)",
+            },
+          ]
+        : [
+            {
+              transform: at(0, 0, 1),
+              opacity: 1,
+              easing: "cubic-bezier(0.33, 1, 0.68, 1)",
+            },
+            {
+              transform: at(dx * 0.4, Math.min(dy, 0) - 40, 0.7),
+              opacity: 1,
+              offset: 0.32,
+              easing: "cubic-bezier(0.32, 0, 0.67, 0)",
+            },
+          ];
     const flight = el.animate(
       [
-        { transform: "translate(0, 0) scale(1) rotate(0deg)", opacity: 1 },
-        {
-          transform: `translate(${dx * 0.45 + bow}px, ${dy * 0.5 + hop}px) scale(0.55) rotate(-18deg)`,
-          opacity: 1,
-          offset: 0.5,
-        },
-        {
-          transform: `translate(${dx}px, ${dy}px) scale(${s * 1.6}) rotate(0deg)`,
-          opacity: 1,
-          offset: 0.86,
-        },
-        {
-          transform: `translate(${dx}px, ${dy}px) scale(${s}) rotate(0deg)`,
-          opacity: 0,
-        },
+        ...legs,
+        { opacity: 1, offset: FADE_FROM },
+        { transform: at(dx, dy, s), opacity: 0 },
       ],
-      {
-        duration: FLIGHT_MS,
-        easing: "cubic-bezier(0.55, 0, 0.25, 1)",
-        fill: "both",
-      },
+      { duration: FLIGHT_MS, fill: "both" },
     );
-    // The icon catches it as it lands, not after its fade, so the panel
-    // opens while the room for it is still opening.
     const land = setTimeout(() => {
       setCaught(true);
       setStage("set");
-    }, FLIGHT_MS * 0.88);
+    }, FLIGHT_MS);
     return () => {
       clearTimeout(land);
       flight.cancel();
