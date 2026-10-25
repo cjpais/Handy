@@ -3,8 +3,7 @@ import { toast } from "sonner";
 import i18n from "@/i18n";
 import { commands } from "@/bindings";
 
-// What the file picker offers. A dropped file of any other type is still
-// tried; the backend refuses it if it has no audio it can read.
+// What the file picker offers. Dropped files of any type are still tried.
 const MEDIA_EXTENSIONS = [
   "mp3",
   "m4a",

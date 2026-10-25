@@ -222,9 +222,8 @@ pub fn set_tray_state(app: &AppHandle, state: TrayIconState) {
     sync_tray_with(app, |inner| inner.icon_state = state);
 }
 
-/// Whether a dictation is under way: recording, or transcribing and
-/// delivering what was recorded. Every start, finish and cancel of one sets
-/// the tray's state, which makes it the single record of that.
+/// Whether a dictation is recording, transcribing or delivering. Every start,
+/// finish and cancel sets the tray state, so it's the record of that.
 pub fn dictation_in_progress(app: &AppHandle) -> bool {
     app.try_state::<TrayState>()
         .is_some_and(|state| state.lock().icon_state.is_busy())

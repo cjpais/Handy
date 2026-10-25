@@ -931,9 +931,8 @@ async deleteHistoryEntry(id: number) : Promise<Result<null, string>> {
 }
 },
 /**
- * Transcribes the entry again with the current model and language. A
- * recording longer than one chunk is queued instead, and its progress and
- * outcome arrive as [`TranscriptionJob`] events.
+ * Transcribes the entry again with the current model. A recording over one
+ * chunk is queued instead and reports through [`TranscriptionJob`] events.
  */
 async retryHistoryEntryTranscription(id: number) : Promise<Result<null, string>> {
     try {

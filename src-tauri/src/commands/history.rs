@@ -64,9 +64,8 @@ pub async fn delete_history_entry(
         .map_err(|e| e.to_string())
 }
 
-/// Transcribes the entry again with the current model and language. A
-/// recording longer than one chunk is queued instead, and its progress and
-/// outcome arrive as [`TranscriptionJob`] events.
+/// Transcribes the entry again with the current model. A recording over one
+/// chunk is queued instead and reports through [`TranscriptionJob`] events.
 #[tauri::command]
 #[specta::specta]
 pub async fn retry_history_entry_transcription(

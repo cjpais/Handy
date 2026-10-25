@@ -1,6 +1,5 @@
-//! A long transcription in the background (a file, or a history entry
-//! transcribed again): always chunked, whatever the model or `long_form_chunking`,
-//! since chunks are the unit of progress, of yielding to dictation, and of retry.
+//! Background transcription, always chunked: chunks are the unit of
+//! progress, of yielding to dictation, and of retry.
 
 use anyhow::{anyhow, Result};
 use log::{debug, info, warn};
@@ -16,7 +15,7 @@ use crate::engine_supervisor::EngineError;
 use crate::managers::audio::create_detector;
 use crate::settings::get_settings;
 
-/// How often one chunk is tried again after a cancel meant for a dictation.
+/// Tries per chunk when a dictation's cancel interrupts it.
 const MAX_CHUNK_ATTEMPTS: usize = 3;
 
 /// What a background transcription asks of whoever runs it.
@@ -29,9 +28,8 @@ pub trait ChunkControl {
 }
 
 impl TranscriptionManager {
-    /// Transcribe `audio` chunk by chunk with the selected model, loading it
-    /// first if needed. Each chunk becomes a paragraph. `None` if `control`
-    /// stopped it.
+    /// Transcribe `audio` chunk by chunk with the selected model, one
+    /// paragraph per chunk. `None` if `control` stopped it.
     pub fn transcribe_in_chunks(
         &self,
         audio: Vec<f32>,

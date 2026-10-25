@@ -1,6 +1,5 @@
-//! Background transcriptions (a file brought into History, or an entry
-//! transcribed again), run one at a time in chunks that yield to dictation.
-//! Progress lives here in memory; the entry gets its text only when done.
+//! Background transcriptions (a file, or an entry transcribed again), one at
+//! a time in chunks that yield to dictation. Progress is kept in memory.
 
 use anyhow::{anyhow, Result};
 use log::{error, info, warn};
@@ -101,14 +100,10 @@ impl TranscriptionJobManager {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Decodes `path` into a recording, adds it to History as a starred
-    /// entry and queues its transcription. Fails without an entry if the
-    /// file has no audio Handy can read. The recording is complete before
-    /// the entry exists, so an entry always has its audio, even if Handy
-    /// quits before transcribing it.
+    /// Decodes `path` into a recording, then adds it to History and queues
+    /// it. The recording exists first, so no entry is ever without audio.
     pub fn transcribe_file(&self, path: PathBuf) -> Result<HistoryEntry> {
-        // A malformed file may panic the decoder; that fails like any
-        // unreadable file.
+        // A malformed file may panic the decoder.
         let samples = catch_unwind(AssertUnwindSafe(|| decode_audio_file(&path))).unwrap_or_else(
             |payload| {
                 Err(anyhow!(
@@ -124,8 +119,7 @@ impl TranscriptionJobManager {
         let hm = self.app.state::<Arc<HistoryManager>>();
         let file_name = format!("handy-file-{}.wav", chrono::Utc::now().timestamp_millis());
         let recording = hm.get_audio_file_path(&file_name);
-        // Written aside and then renamed, so a crash mid-write never leaves
-        // a partial recording under the entry's name.
+        // Written aside and renamed, so a crash never leaves a partial one.
         let partial = recording.with_extension("wav.partial");
         if let Err(e) = save_wav_file(&partial, &samples)
             .and_then(|()| std::fs::rename(&partial, &recording).map_err(Into::into))
@@ -157,7 +151,7 @@ impl TranscriptionJobManager {
     }
 
     /// Queues the entry to be transcribed from its recording, unless it
-    /// already is queued or running.
+    /// already is.
     pub fn queue(&self, entry_id: i64) {
         {
             let mut jobs = self.lock();
@@ -306,8 +300,7 @@ impl TranscriptionJobManager {
     }
 }
 
-/// Cleans up after a file that could not be added. Its failure is already
-/// being reported, so a file left behind is only logged.
+/// Best-effort cleanup; the caller is already reporting the failure.
 fn remove_recording(path: &Path) {
     if let Err(e) = std::fs::remove_file(path) {
         if e.kind() != std::io::ErrorKind::NotFound {

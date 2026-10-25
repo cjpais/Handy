@@ -25,9 +25,8 @@ export const useTranscriptionJobsStore = create<TranscriptionJobsStore>()(
       if (get().initialized) return;
       set({ initialized: true });
 
-      // Jobs an event has reported on. The list fetched below may be older
-      // than an event that arrived first, so it never overrides one: a job
-      // that just finished would otherwise come back and stay forever.
+      // The list fetched below may predate events already received, so it
+      // never overrides them (a finished job would come back for good).
       const reported = new Set<number>();
       await events.transcriptionJob.listen(({ payload }) => {
         const { entry_id: entryId, status } = payload;

@@ -136,9 +136,8 @@ impl HistoryManager {
         Ok(())
     }
 
-    /// Bring the schema up to date. A database from a newer Handy is opened
-    /// as it is rather than refused: migrations only ever add columns, and
-    /// every query names the columns it uses, so the extra ones are ignored.
+    /// Bring the schema up to date. A newer Handy's database opens as is:
+    /// migrations only add columns, and every query names its columns.
     fn apply_migrations(conn: &mut Connection) -> Result<()> {
         match Migrations::new(MIGRATIONS.to_vec()).to_latest(conn) {
             Err(rusqlite_migration::Error::MigrationDefinition(
@@ -151,12 +150,7 @@ impl HistoryManager {
 
         // Not a migration: a higher user_version makes released builds refuse
         // the database, while an extra nullable column is invisible to them.
-        let has_source_name: bool = conn.query_row(
-            "SELECT COUNT(*) > 0 FROM pragma_table_info('transcription_history') WHERE name = 'source_name'",
-            [],
-            |row| row.get(0),
-        )?;
-        if !has_source_name {
+        if !Self::has_column(conn, "source_name")? {
             conn.execute(
                 "ALTER TABLE transcription_history ADD COLUMN source_name TEXT",
                 [],
@@ -165,6 +159,14 @@ impl HistoryManager {
         }
 
         Ok(())
+    }
+
+    fn has_column(conn: &Connection, name: &str) -> Result<bool> {
+        Ok(conn.query_row(
+            "SELECT COUNT(*) > 0 FROM pragma_table_info('transcription_history') WHERE name = ?1",
+            [name],
+            |row| row.get(0),
+        )?)
     }
 
     /// Migrate from tauri-plugin-sql's migration tracking to rusqlite_migration's.
@@ -275,9 +277,8 @@ impl HistoryManager {
         Ok(entry)
     }
 
-    /// Save the entry for a file about to be transcribed: its audio already
-    /// copied to `file_name`, no text yet. It arrives starred, so retention
-    /// never removes it, and is never post-processed.
+    /// Save the entry for a file whose audio is already at `file_name`.
+    /// Starred, so retention keeps it; never post-processed.
     pub fn save_file_entry(&self, file_name: String, source_name: String) -> Result<HistoryEntry> {
         self.insert_entry(HistoryEntry {
             id: 0,
@@ -767,20 +768,11 @@ mod tests {
             .expect("read user_version")
     }
 
-    fn has_column(conn: &Connection, name: &str) -> bool {
-        conn.query_row(
-            "SELECT COUNT(*) > 0 FROM pragma_table_info('transcription_history') WHERE name = ?1",
-            [name],
-            |row| row.get(0),
-        )
-        .expect("read table info")
-    }
-
     #[test]
     fn migrating_adds_source_name_without_raising_the_version() {
         let mut conn = Connection::open_in_memory().expect("open in-memory db");
         HistoryManager::apply_migrations(&mut conn).expect("migrate");
-        assert!(has_column(&conn, "source_name"));
+        assert!(HistoryManager::has_column(&conn, "source_name").expect("read table info"));
         assert_eq!(user_version(&conn), MIGRATIONS.len() as i32);
 
         // Opening it again changes nothing.

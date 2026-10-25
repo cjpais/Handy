@@ -175,13 +175,9 @@ export const HistorySettings: React.FC = () => {
         setEntries((prev) =>
           prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
         );
-      } else if (payload.action === "deleted") {
-        // Usually already removed optimistically; also covers a file that
-        // turned out unreadable, whose entry the backend removes.
-        setEntries((prev) => prev.filter((e) => e.id !== payload.id));
       }
-      // "toggled" is handled by optimistic updates only, so we intentionally
-      // ignore it here to avoid double-mutation.
+      // "deleted" and "toggled" are handled by optimistic updates only,
+      // so we intentionally ignore them here to avoid double-mutation.
     });
 
     return () => {

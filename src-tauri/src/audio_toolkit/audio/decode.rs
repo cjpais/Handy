@@ -1,6 +1,5 @@
-//! Reads the audio of a file brought in for transcription (any common audio
-//! format, or the sound track of a video) as 16 kHz mono, the format every
-//! recording is transcribed and kept in.
+//! Decodes a file's audio (or a video's sound track) to 16 kHz mono, the
+//! format every recording is transcribed and kept in.
 
 use anyhow::{anyhow, Context, Result};
 use log::{debug, warn};
@@ -271,38 +270,29 @@ mod tests {
     use super::*;
     use hound::{SampleFormat, WavSpec, WavWriter};
 
-    fn write_wav(path: &Path, rate: u32, channels: u16, seconds: f32) {
+    #[test]
+    fn stereo_44k_file_becomes_16k_mono() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("stereo.wav");
         let spec = WavSpec {
-            channels,
-            sample_rate: rate,
+            channels: 2,
+            sample_rate: 44_100,
             bits_per_sample: 16,
             sample_format: SampleFormat::Int,
         };
-        let mut writer = WavWriter::create(path, spec).unwrap();
-        let frames = (rate as f32 * seconds) as usize;
-        for i in 0..frames {
-            let t = i as f32 / rate as f32;
-            let value = ((t * 440.0 * std::f32::consts::TAU).sin() * 0.5 * i16::MAX as f32) as i16;
-            for _ in 0..channels {
-                writer.write_sample(value).unwrap();
-            }
+        let mut writer = WavWriter::create(&path, spec).unwrap();
+        for sample in tone(44_100, 88_200) {
+            let value = (sample * i16::MAX as f32) as i16;
+            writer.write_sample(value).unwrap();
+            writer.write_sample(value).unwrap();
         }
         writer.finalize().unwrap();
-    }
-
-    #[test]
-    fn stereo_44k_file_becomes_16k_mono() {
-        let dir = std::env::temp_dir().join(format!("handy-decode-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("stereo.wav");
-        write_wav(&path, 44_100, 2, 2.0);
 
         let samples = decode_audio_file(&path).unwrap();
 
         assert_eq!(samples.len(), 32_000);
         let peak = samples.iter().fold(0.0f32, |m, s| m.max(s.abs()));
         assert!((0.4..0.6).contains(&peak), "peak {}", peak);
-        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     fn resample_in_packets(mono: &[f32], rate: u32, packet: usize) -> Vec<f32> {
@@ -330,7 +320,7 @@ mod tests {
                 for packet in [333, 4096] {
                     assert_eq!(resample_in_packets(&mono, rate, packet), whole);
                 }
-                // Delay trimmed: within half a sample of the tone at 16 kHz (one sample is ~0.09).
+                // Delay trimmed: within half a sample of the 16 kHz tone.
                 let reference = tone(16_000, whole.len());
                 let interior = 100..whole.len().saturating_sub(100);
                 let max_error = interior
@@ -343,12 +333,9 @@ mod tests {
 
     #[test]
     fn a_file_that_is_not_audio_fails_to_decode() {
-        let dir = std::env::temp_dir().join(format!("handy-decode-bad-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("notes.txt");
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("notes.txt");
         std::fs::write(&path, "not audio at all").unwrap();
-
         assert!(decode_audio_file(&path).is_err());
-        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

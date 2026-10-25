@@ -266,9 +266,8 @@ pub struct TranscriptionManager {
     /// yet. This prevents a second worker from starting after finalize/cancel
     /// closes the router but before the first worker has fully exited.
     active_stream_worker: Arc<AtomicU64>,
-    /// True while a file (or a long history entry) is queued or being
-    /// transcribed in chunks. The model stays loaded and can't be switched
-    /// until it ends, so one transcript is never written by two models.
+    /// True while a background job is queued or running. It holds the model,
+    /// so one transcript is never written by two models.
     job_active: Arc<AtomicBool>,
 }
 
