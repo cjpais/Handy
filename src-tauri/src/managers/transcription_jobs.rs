@@ -17,13 +17,9 @@ use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
 use crate::actions::process_transcription_output;
-use crate::audio_toolkit::{decode_audio_file, probe_audio_file, read_wav_samples, save_wav_file};
+use crate::audio_toolkit::{decode_audio_file, read_wav_samples, save_wav_file};
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::transcription::{panic_payload_message, ChunkControl, TranscriptionManager};
-
-/// A recording longer than this (one chunk) is transcribed again in the
-/// background; a shorter one directly.
-pub const BACKGROUND_RETRY_MIN_SAMPLES: usize = 40 * 16_000;
 
 /// How often a waiting chunk checks whether dictation has finished.
 const DICTATION_POLL: Duration = Duration::from_millis(200);
@@ -51,18 +47,6 @@ pub struct TranscriptionJob {
     pub status: TranscriptionJobStatus,
 }
 
-enum JobKind {
-    /// Decode this file into the entry's recording first.
-    File(PathBuf),
-    /// The entry's recording is already there.
-    Retry,
-}
-
-struct Job {
-    entry_id: i64,
-    kind: JobKind,
-}
-
 struct Running {
     entry_id: i64,
     percent: u8,
@@ -71,7 +55,8 @@ struct Running {
 
 #[derive(Default)]
 struct Jobs {
-    queue: VecDeque<Job>,
+    /// Entry ids waiting to be transcribed from their recordings.
+    queue: VecDeque<i64>,
     running: Option<Running>,
 }
 
@@ -80,7 +65,7 @@ impl Jobs {
         self.running
             .as_ref()
             .is_some_and(|r| r.entry_id == entry_id)
-            || self.queue.iter().any(|j| j.entry_id == entry_id)
+            || self.queue.contains(&entry_id)
     }
 
     fn is_idle(&self) -> bool {
@@ -116,25 +101,53 @@ impl TranscriptionJobManager {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Adds `path` to History as a starred entry and queues its
-    /// transcription. Fails at once, without an entry, if the file has no
-    /// audio Handy can read.
+    /// Decodes `path` into a recording, adds it to History as a starred
+    /// entry and queues its transcription. Fails without an entry if the
+    /// file has no audio Handy can read. The recording is complete before
+    /// the entry exists, so an entry always has its audio, even if Handy
+    /// quits before transcribing it.
     pub fn transcribe_file(&self, path: PathBuf) -> Result<HistoryEntry> {
-        probe_audio_file(&path)?;
+        // A malformed file may panic the decoder; that fails like any
+        // unreadable file.
+        let samples = catch_unwind(AssertUnwindSafe(|| decode_audio_file(&path))).unwrap_or_else(
+            |payload| {
+                Err(anyhow!(
+                    "Failed to read the file: {}",
+                    panic_payload_message(payload.as_ref())
+                ))
+            },
+        )?;
+        if samples.is_empty() {
+            return Err(anyhow!("The file has no audio"));
+        }
+
+        let hm = self.app.state::<Arc<HistoryManager>>();
+        let file_name = format!("handy-file-{}.wav", chrono::Utc::now().timestamp_millis());
+        let recording = hm.get_audio_file_path(&file_name);
+        // Written aside and then renamed, so a crash mid-write never leaves
+        // a partial recording under the entry's name.
+        let partial = recording.with_extension("wav.partial");
+        if let Err(e) = save_wav_file(&partial, &samples)
+            .and_then(|()| std::fs::rename(&partial, &recording).map_err(Into::into))
+        {
+            remove_recording(&partial);
+            return Err(e);
+        }
+        drop(samples);
+
         let source_name = path
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| path.display().to_string());
-        let file_name = format!("handy-file-{}.wav", chrono::Utc::now().timestamp_millis());
-        let entry = self
-            .app
-            .state::<Arc<HistoryManager>>()
-            .save_file_entry(file_name, source_name)?;
+        let entry = match hm.save_file_entry(file_name, source_name) {
+            Ok(entry) => entry,
+            Err(e) => {
+                remove_recording(&recording);
+                return Err(e);
+            }
+        };
         info!("Queued file transcription for history entry {}", entry.id);
-        self.enqueue(Job {
-            entry_id: entry.id,
-            kind: JobKind::File(path),
-        });
+        self.queue(entry.id);
         Ok(entry)
     }
 
@@ -143,23 +156,27 @@ impl TranscriptionJobManager {
         self.lock().has(entry_id)
     }
 
-    /// Queues the entry to be transcribed again from its recording.
-    pub fn retry(&self, entry_id: i64) -> Result<()> {
-        if self.has(entry_id) {
-            return Ok(());
+    /// Queues the entry to be transcribed from its recording, unless it
+    /// already is queued or running.
+    pub fn queue(&self, entry_id: i64) {
+        {
+            let mut jobs = self.lock();
+            if jobs.has(entry_id) {
+                return;
+            }
+            jobs.queue.push_back(entry_id);
+            self.sync_job_active(&jobs);
         }
-        self.enqueue(Job {
-            entry_id,
-            kind: JobKind::Retry,
-        });
-        Ok(())
+        self.emit(entry_id, TranscriptionJobStatus::Queued);
+        crate::tray::update_tray_menu(&self.app);
+        self.wake.notify_one();
     }
 
     /// Stops the entry's job: a queued one is dropped, a running one stops
     /// before its next chunk.
     pub fn cancel(&self, entry_id: i64) {
         let mut jobs = self.lock();
-        jobs.queue.retain(|j| j.entry_id != entry_id);
+        jobs.queue.retain(|&id| id != entry_id);
         if let Some(running) = jobs.running.as_ref().filter(|r| r.entry_id == entry_id) {
             running.cancelled.store(true, Ordering::Release);
         }
@@ -173,23 +190,11 @@ impl TranscriptionJobManager {
             entry_id: r.entry_id,
             status: TranscriptionJobStatus::Running { percent: r.percent },
         });
-        let queued = jobs.queue.iter().map(|j| TranscriptionJob {
-            entry_id: j.entry_id,
+        let queued = jobs.queue.iter().map(|&entry_id| TranscriptionJob {
+            entry_id,
             status: TranscriptionJobStatus::Queued,
         });
         running.chain(queued).collect()
-    }
-
-    fn enqueue(&self, job: Job) {
-        let entry_id = job.entry_id;
-        {
-            let mut jobs = self.lock();
-            jobs.queue.push_back(job);
-            self.sync_job_active(&jobs);
-        }
-        self.emit(entry_id, TranscriptionJobStatus::Queued);
-        crate::tray::update_tray_menu(&self.app);
-        self.wake.notify_one();
     }
 
     /// Keeps the model held for as long as any job is queued or running.
@@ -207,11 +212,11 @@ impl TranscriptionJobManager {
 
     fn run_jobs(&self) {
         loop {
-            let (job, cancelled) = {
+            let (entry_id, cancelled) = {
                 let mut jobs = self.lock();
-                let job = loop {
-                    if let Some(job) = jobs.queue.pop_front() {
-                        break job;
+                let entry_id = loop {
+                    if let Some(entry_id) = jobs.queue.pop_front() {
+                        break entry_id;
                     }
                     jobs = self
                         .wake
@@ -220,18 +225,17 @@ impl TranscriptionJobManager {
                 };
                 let cancelled = Arc::new(AtomicBool::new(false));
                 jobs.running = Some(Running {
-                    entry_id: job.entry_id,
+                    entry_id,
                     percent: 0,
                     cancelled: Arc::clone(&cancelled),
                 });
-                (job, cancelled)
+                (entry_id, cancelled)
             };
-            let entry_id = job.entry_id;
             self.emit(entry_id, TranscriptionJobStatus::Running { percent: 0 });
 
             // A panic fails only this job; the rest of the loop still has to
             // run, or the model would stay held and the queue stuck.
-            let result = catch_unwind(AssertUnwindSafe(|| self.run_job(job, &cancelled)))
+            let result = catch_unwind(AssertUnwindSafe(|| self.run_job(entry_id, &cancelled)))
                 .unwrap_or_else(|payload| Err(crashed(payload.as_ref())));
 
             let idle = {
@@ -261,32 +265,13 @@ impl TranscriptionJobManager {
         }
     }
 
-    fn run_job(&self, job: Job, cancelled: &Arc<AtomicBool>) -> Result<()> {
+    fn run_job(&self, entry_id: i64, cancelled: &AtomicBool) -> Result<()> {
         let hm = Arc::clone(&self.app.state::<Arc<HistoryManager>>());
         let tm = Arc::clone(&self.app.state::<Arc<TranscriptionManager>>());
-        let entry = tauri::async_runtime::block_on(hm.get_entry_by_id(job.entry_id))?
-            .ok_or_else(|| anyhow!("History entry {} not found", job.entry_id))?;
-        let recording = hm.get_audio_file_path(&entry.file_name);
-
-        let samples = match job.kind {
-            JobKind::File(source) => match self.copy_file(&source, &recording, cancelled) {
-                Ok(Some(samples)) => samples,
-                Ok(None) => return Ok(()),
-                Err(e) => {
-                    // An entry with no recording could never be transcribed;
-                    // the file is still where it was, to bring in again.
-                    if let Err(delete_err) =
-                        tauri::async_runtime::block_on(hm.delete_entry(entry.id))
-                    {
-                        error!("Failed to remove entry {}: {}", entry.id, delete_err);
-                    }
-                    return Err(e);
-                }
-            },
-            JobKind::Retry => {
-                read_wav_samples(&recording).map_err(|e| anyhow!("Failed to load audio: {}", e))?
-            }
-        };
+        let entry = tauri::async_runtime::block_on(hm.get_entry_by_id(entry_id))?
+            .ok_or_else(|| anyhow!("History entry {} not found", entry_id))?;
+        let samples = read_wav_samples(hm.get_audio_file_path(&entry.file_name))
+            .map_err(|e| anyhow!("Failed to load audio: {}", e))?;
         if samples.is_empty() {
             return Err(anyhow!("Recording has no audio samples"));
         }
@@ -319,29 +304,15 @@ impl TranscriptionJobManager {
         )?;
         Ok(())
     }
+}
 
-    /// Decodes `source` once and keeps it as the entry's recording. `None` if
-    /// the job was cancelled meanwhile.
-    fn copy_file(
-        &self,
-        source: &Path,
-        recording: &Path,
-        cancelled: &AtomicBool,
-    ) -> Result<Option<Vec<f32>>> {
-        // A malformed file may panic the decoder; that fails the copy like
-        // any unreadable file, which removes the entry.
-        let samples = catch_unwind(AssertUnwindSafe(|| decode_audio_file(source)))
-            .unwrap_or_else(|payload| Err(crashed(payload.as_ref())))?;
-        if cancelled.load(Ordering::Acquire) {
-            return Ok(None);
+/// Cleans up after a file that could not be added. Its failure is already
+/// being reported, so a file left behind is only logged.
+fn remove_recording(path: &Path) {
+    if let Err(e) = std::fs::remove_file(path) {
+        if e.kind() != std::io::ErrorKind::NotFound {
+            error!("Failed to remove {}: {}", path.display(), e);
         }
-        save_wav_file(recording, &samples)?;
-        // The entry may have been deleted while the copy was written.
-        if cancelled.load(Ordering::Acquire) {
-            let _ = std::fs::remove_file(recording);
-            return Ok(None);
-        }
-        Ok(Some(samples))
     }
 }
 

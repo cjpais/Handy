@@ -5,8 +5,8 @@ import { commands } from "@/bindings";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import { useModelStore } from "../../stores/modelStore";
 import {
+  areModelsLocked,
   useModelsLocked,
-  useTranscriptionJobsStore,
 } from "../../stores/transcriptionJobsStore";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
@@ -108,9 +108,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           try {
             const isRecording = await commands.isRecording();
             // A file job holds the current model until it's done.
-            const jobsRunning =
-              Object.keys(useTranscriptionJobsStore.getState().jobs).length > 0;
-            if (!isRecording && !jobsRunning) {
+            if (!isRecording && !areModelsLocked()) {
               setPendingModelId(modelId);
               setModelError(null);
               setShowModelDropdown(false);

@@ -27,7 +27,16 @@ const fileName = (path: string) => path.split(/[\\/]/).pop() || path;
 export const transcribeFiles = async (paths: string[]): Promise<number> => {
   let added = 0;
   for (const path of paths) {
-    const result = await commands.transcribeFile(path);
+    // Its audio is read in full before it appears in History.
+    const reading = toast.loading(
+      i18n.t("settings.history.readingFile", { name: fileName(path) }),
+    );
+    let result;
+    try {
+      result = await commands.transcribeFile(path);
+    } finally {
+      toast.dismiss(reading);
+    }
     if (result.status === "ok") {
       added += 1;
     } else {

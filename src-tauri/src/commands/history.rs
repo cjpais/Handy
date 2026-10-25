@@ -1,8 +1,9 @@
 use crate::actions::process_transcription_output;
+use crate::audio_toolkit::chunking::MAX_CHUNK_SAMPLES;
 use crate::managers::{
     history::{HistoryEntry, HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
-    transcription_jobs::{TranscriptionJob, TranscriptionJobManager, BACKGROUND_RETRY_MIN_SAMPLES},
+    transcription_jobs::{TranscriptionJob, TranscriptionJobManager},
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -91,8 +92,10 @@ pub async fn retry_history_entry_transcription(
     if samples.is_empty() {
         return Err("Recording has no audio samples".to_string());
     }
-    if samples.len() > BACKGROUND_RETRY_MIN_SAMPLES {
-        return jobs.retry(id).map_err(|e| e.to_string());
+    // Longer than one chunk: transcribed in the background instead.
+    if samples.len() > MAX_CHUNK_SAMPLES {
+        jobs.queue(id);
+        return Ok(());
     }
 
     transcription_manager.initiate_model_load();

@@ -687,6 +687,7 @@
       "transcribeFile": "Transkribera fil",
       "mediaFiles": "Ljud och video",
       "fileUnsupported": "Kunde inte läsa ljud från {{name}}.",
+      "readingFile": "Läser {{name}}...",
       "transcribeFailed": "Transkriberingen misslyckades. Försök igen.",
       "waiting": "Väntar på transkribering",
       "transcribingPercent": "Transkriberar, {{percent}} %",

@@ -5,7 +5,7 @@ mod sink;
 mod utils;
 mod visualizer;
 
-pub use decode::{decode_audio_file, probe_audio_file};
+pub use decode::decode_audio_file;
 pub use device::{list_output_devices, output_device_name, OutputDeviceInfo};
 pub use sink::{
     AudioFrameCallback, CaptureSink, CaptureVad, CapturedAudio, LevelCallback, VadPolicy,

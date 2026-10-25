@@ -275,9 +275,9 @@ impl HistoryManager {
         Ok(entry)
     }
 
-    /// Save the entry for a file about to be transcribed: no text yet, its
-    /// copy of the audio still to be written to `file_name`. It arrives
-    /// starred, so retention never removes it, and is never post-processed.
+    /// Save the entry for a file about to be transcribed: its audio already
+    /// copied to `file_name`, no text yet. It arrives starred, so retention
+    /// never removes it, and is never post-processed.
     pub fn save_file_entry(&self, file_name: String, source_name: String) -> Result<HistoryEntry> {
         self.insert_entry(HistoryEntry {
             id: 0,

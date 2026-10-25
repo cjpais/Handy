@@ -687,6 +687,7 @@
       "transcribeFile": "ファイルを文字起こし",
       "mediaFiles": "音声と動画",
       "fileUnsupported": "{{name}} から音声を読み込めませんでした。",
+      "readingFile": "{{name}} を読み込み中...",
       "transcribeFailed": "文字起こしに失敗しました。もう一度お試しください。",
       "waiting": "文字起こし待ち",
       "transcribingPercent": "文字起こし中… {{percent}}%",

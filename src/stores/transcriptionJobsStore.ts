@@ -25,8 +25,13 @@ export const useTranscriptionJobsStore = create<TranscriptionJobsStore>()(
       if (get().initialized) return;
       set({ initialized: true });
 
+      // Jobs an event has reported on. The list fetched below may be older
+      // than an event that arrived first, so it never overrides one: a job
+      // that just finished would otherwise come back and stay forever.
+      const reported = new Set<number>();
       await events.transcriptionJob.listen(({ payload }) => {
         const { entry_id: entryId, status } = payload;
+        reported.add(entryId);
         set((state) => {
           const jobs = { ...state.jobs };
           if (status.state === "queued" || status.state === "running") {
@@ -46,8 +51,9 @@ export const useTranscriptionJobsStore = create<TranscriptionJobsStore>()(
       set((state) => {
         const merged = { ...state.jobs };
         for (const job of jobs) {
+          if (reported.has(job.entry_id)) continue;
           if (job.status.state === "queued" || job.status.state === "running") {
-            merged[job.entry_id] ??= job.status;
+            merged[job.entry_id] = job.status;
           }
         }
         return { jobs: merged };
@@ -56,7 +62,13 @@ export const useTranscriptionJobsStore = create<TranscriptionJobsStore>()(
   }),
 );
 
+const hasJobs = (state: TranscriptionJobsStore) =>
+  Object.keys(state.jobs).length > 0;
+
 // While a background transcription runs, the model can't be switched,
 // unloaded or deleted, so one transcript is never written by two models.
-export const useModelsLocked = () =>
-  useTranscriptionJobsStore((state) => Object.keys(state.jobs).length > 0);
+export const useModelsLocked = () => useTranscriptionJobsStore(hasJobs);
+
+// The same, read once outside React.
+export const areModelsLocked = () =>
+  hasJobs(useTranscriptionJobsStore.getState());

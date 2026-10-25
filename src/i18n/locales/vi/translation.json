@@ -687,6 +687,7 @@
       "transcribeFile": "Chép lời tệp",
       "mediaFiles": "Âm thanh và video",
       "fileUnsupported": "Không thể đọc âm thanh từ {{name}}.",
+      "readingFile": "Đang đọc {{name}}...",
       "transcribeFailed": "Chép lời thất bại. Vui lòng thử lại.",
       "waiting": "Đang chờ chép lời",
       "transcribingPercent": "Đang chép lời, {{percent}}%",

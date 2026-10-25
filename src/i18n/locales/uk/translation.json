@@ -687,6 +687,7 @@
       "transcribeFile": "Розшифрувати файл",
       "mediaFiles": "Аудіо та відео",
       "fileUnsupported": "Не вдалося прочитати аудіо з {{name}}.",
+      "readingFile": "Читання {{name}}...",
       "transcribeFailed": "Не вдалося розшифрувати. Спробуйте ще раз.",
       "waiting": "Очікує на розшифрування",
       "transcribingPercent": "Розшифрування, {{percent}}%",

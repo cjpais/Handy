@@ -687,6 +687,7 @@
       "transcribeFile": "Transcriu un fitxer",
       "mediaFiles": "Àudio i vídeo",
       "fileUnsupported": "No s'ha pogut llegir l'àudio de {{name}}.",
+      "readingFile": "S'està llegint {{name}}...",
       "transcribeFailed": "La transcripció ha fallat. Torna-ho a provar.",
       "waiting": "Esperant per transcriure",
       "transcribingPercent": "Transcrivint, {{percent}}%",

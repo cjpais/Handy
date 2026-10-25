@@ -687,6 +687,7 @@
       "transcribeFile": "Транскрибиране на файл",
       "mediaFiles": "Аудио и видео",
       "fileUnsupported": "Не може да се прочете аудио от {{name}}.",
+      "readingFile": "Четене на {{name}}...",
       "transcribeFailed": "Транскрипцията не бе успешна. Моля, опитайте отново.",
       "waiting": "Изчаква транскрибиране",
       "transcribingPercent": "Транскрибиране, {{percent}}%",

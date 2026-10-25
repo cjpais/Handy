@@ -687,6 +687,7 @@
       "transcribeFile": "Transcribir archivo",
       "mediaFiles": "Audio y vídeo",
       "fileUnsupported": "No se pudo leer el audio de {{name}}.",
+      "readingFile": "Leyendo {{name}}...",
       "transcribeFailed": "La transcripción falló. Inténtalo de nuevo.",
       "waiting": "Esperando para transcribir",
       "transcribingPercent": "Transcribiendo, {{percent}} %",

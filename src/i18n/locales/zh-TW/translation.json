@@ -687,6 +687,7 @@
       "transcribeFile": "轉錄檔案",
       "mediaFiles": "音訊和影片",
       "fileUnsupported": "無法讀取 {{name}} 中的音訊。",
+      "readingFile": "正在讀取 {{name}}...",
       "transcribeFailed": "轉錄失敗，請重試。",
       "waiting": "等待轉錄",
       "transcribingPercent": "正在轉錄，{{percent}}%",

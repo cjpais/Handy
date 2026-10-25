@@ -687,6 +687,7 @@
       "transcribeFile": "Dosyayı Yazıya Dök",
       "mediaFiles": "Ses ve video",
       "fileUnsupported": "{{name}} dosyasından ses okunamadı.",
+      "readingFile": "{{name}} okunuyor...",
       "transcribeFailed": "Yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
       "waiting": "Yazıya dökülmeyi bekliyor",
       "transcribingPercent": "Yazıya dökülüyor, %{{percent}}",

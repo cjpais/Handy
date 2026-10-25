@@ -687,6 +687,7 @@
       "transcribeFile": "Bestand transcriberen",
       "mediaFiles": "Audio en video",
       "fileUnsupported": "Kon geen audio lezen uit {{name}}.",
+      "readingFile": "{{name}} wordt gelezen...",
       "transcribeFailed": "Transcriptie mislukt. Probeer het opnieuw.",
       "waiting": "Wacht op transcriptie",
       "transcribingPercent": "Transcriberen, {{percent}}%",

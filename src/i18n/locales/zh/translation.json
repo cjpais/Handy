@@ -687,6 +687,7 @@
       "transcribeFile": "转录文件",
       "mediaFiles": "音频和视频",
       "fileUnsupported": "无法读取 {{name}} 中的音频。",
+      "readingFile": "正在读取 {{name}}...",
       "transcribeFailed": "转录失败，请重试。",
       "waiting": "等待转录",
       "transcribingPercent": "正在转录，{{percent}}%",

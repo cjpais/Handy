@@ -687,6 +687,7 @@
       "transcribeFile": "Transskriber fil",
       "mediaFiles": "Lyd og video",
       "fileUnsupported": "Kunne ikke læse lyd fra {{name}}.",
+      "readingFile": "Læser {{name}}...",
       "transcribeFailed": "Transskriptionen mislykkedes. Prøv igen.",
       "waiting": "Venter på transskription",
       "transcribingPercent": "Transskriberer, {{percent}} %",

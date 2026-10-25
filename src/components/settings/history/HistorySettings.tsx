@@ -252,6 +252,7 @@ export const HistorySettings: React.FC = () => {
       await pickAndTranscribeFiles();
     } catch (error) {
       console.error("Failed to pick a file to transcribe:", error);
+      toast.error(t("settings.history.transcribeFailed"));
     }
   };
 

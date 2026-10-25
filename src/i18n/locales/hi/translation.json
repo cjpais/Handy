@@ -687,6 +687,7 @@
       "transcribeFile": "फ़ाइल ट्रांसक्राइब करें",
       "mediaFiles": "ऑडियो और वीडियो",
       "fileUnsupported": "{{name}} से ऑडियो नहीं पढ़ा जा सका।",
+      "readingFile": "{{name}} पढ़ा जा रहा है...",
       "transcribeFailed": "ट्रांसक्रिप्शन विफल रहा। कृपया फिर से प्रयास करें।",
       "waiting": "ट्रांसक्राइब होने की प्रतीक्षा में",
       "transcribingPercent": "ट्रांसक्राइब हो रहा है, {{percent}}%",

@@ -687,6 +687,7 @@
       "transcribeFile": "Transkripsikan File",
       "mediaFiles": "Audio dan video",
       "fileUnsupported": "Tidak dapat membaca audio dari {{name}}.",
+      "readingFile": "Membaca {{name}}...",
       "transcribeFailed": "Transkripsi gagal. Silakan coba lagi.",
       "waiting": "Menunggu untuk ditranskripsi",
       "transcribingPercent": "Mentranskripsi, {{percent}}%",

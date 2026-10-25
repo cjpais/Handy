@@ -687,6 +687,7 @@
       "transcribeFile": "Přepsat soubor",
       "mediaFiles": "Zvuk a video",
       "fileUnsupported": "Ze souboru {{name}} se nepodařilo načíst zvuk.",
+      "readingFile": "Načítání {{name}}...",
       "transcribeFailed": "Přepis se nezdařil. Zkuste to prosím znovu.",
       "waiting": "Čeká na přepis",
       "transcribingPercent": "Přepisuji, {{percent}} %",

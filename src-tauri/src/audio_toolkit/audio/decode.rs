@@ -64,12 +64,6 @@ fn open(path: &Path) -> Result<AudioTrack> {
     })
 }
 
-/// Checks that `path` has an audio track Handy can decode, reading only its
-/// header.
-pub fn probe_audio_file(path: &Path) -> Result<()> {
-    open(path).map(|_| ())
-}
-
 /// The whole of `path`'s first audio track, downmixed to mono and resampled
 /// to 16 kHz.
 pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
@@ -303,7 +297,6 @@ mod tests {
         let path = dir.join("stereo.wav");
         write_wav(&path, 44_100, 2, 2.0);
 
-        probe_audio_file(&path).unwrap();
         let samples = decode_audio_file(&path).unwrap();
 
         assert_eq!(samples.len(), 32_000);
@@ -349,13 +342,13 @@ mod tests {
     }
 
     #[test]
-    fn a_file_that_is_not_audio_fails_the_probe() {
+    fn a_file_that_is_not_audio_fails_to_decode() {
         let dir = std::env::temp_dir().join(format!("handy-decode-bad-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("notes.txt");
         std::fs::write(&path, "not audio at all").unwrap();
 
-        assert!(probe_audio_file(&path).is_err());
+        assert!(decode_audio_file(&path).is_err());
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }

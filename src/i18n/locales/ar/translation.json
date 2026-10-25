@@ -687,6 +687,7 @@
       "transcribeFile": "نسخ ملف",
       "mediaFiles": "الصوت والفيديو",
       "fileUnsupported": "تعذّرت قراءة الصوت من {{name}}.",
+      "readingFile": "جارٍ قراءة {{name}}...",
       "transcribeFailed": "فشل النسخ. يرجى المحاولة مرة أخرى.",
       "waiting": "في انتظار النسخ",
       "transcribingPercent": "جارٍ النسخ، {{percent}}%",

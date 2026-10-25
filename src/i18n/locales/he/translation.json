@@ -687,6 +687,7 @@
       "transcribeFile": "תמלול קובץ",
       "mediaFiles": "שמע ווידאו",
       "fileUnsupported": "לא ניתן לקרוא שמע מ-{{name}}.",
+      "readingFile": "קורא את {{name}}...",
       "transcribeFailed": "התמלול נכשל. נסו שוב.",
       "waiting": "ממתין לתמלול",
       "transcribingPercent": "מתמלל, {{percent}}%",
