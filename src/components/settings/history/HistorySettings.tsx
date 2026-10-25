@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Star,
   Trash2,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -292,6 +293,7 @@ export const HistorySettings: React.FC = () => {
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
                 retryTranscription={commands.retryHistoryEntryTranscription}
+                cancelTranscription={commands.cancelHistoryEntryTranscription}
               />
             ))}
           </div>
@@ -340,6 +342,7 @@ interface HistoryEntryProps {
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
   retryTranscription: (id: number) => Promise<void>;
+  cancelTranscription: (id: number) => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -350,15 +353,21 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   getAudioUrl,
   deleteAudio,
   retryTranscription,
+  cancelTranscription,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
+  // Pressed cancel: a running job stops after its current chunk.
+  const [cancelling, setCancelling] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
 
   // Queued or being transcribed in the background.
   const retrying = job !== undefined;
+  useEffect(() => {
+    if (!retrying) setCancelling(false);
+  }, [retrying]);
   const hasTranscription = entry.transcription_text.trim().length > 0;
   const folded = hasTranscription && !retrying && !expanded;
 
@@ -455,21 +464,25 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               fill={entry.saved ? "currentColor" : "none"}
             />
           </IconButton>
-          <IconButton
-            onClick={() => retryTranscription(entry.id)}
-            disabled={retrying}
-            title={t("settings.history.retranscribe")}
-          >
-            <RotateCcw
-              width={16}
-              height={16}
-              style={
-                retrying
-                  ? { animation: "spin 1s linear infinite reverse" }
-                  : undefined
-              }
-            />
-          </IconButton>
+          {retrying ? (
+            <IconButton
+              onClick={() => {
+                setCancelling(true);
+                void cancelTranscription(entry.id);
+              }}
+              disabled={cancelling}
+              title={t("settings.history.cancelTranscription")}
+            >
+              <X width={16} height={16} />
+            </IconButton>
+          ) : (
+            <IconButton
+              onClick={() => retryTranscription(entry.id)}
+              title={t("settings.history.retranscribe")}
+            >
+              <RotateCcw width={16} height={16} />
+            </IconButton>
+          )}
           <IconButton
             onClick={handleDeleteEntry}
             title={t("settings.history.delete")}
@@ -514,7 +527,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             ? progressText
             : hasTranscription
               ? entry.transcription_text
-              : t("settings.history.transcriptionFailed")}
+              : entry.source_name
+                ? // Cancelled, interrupted by a quit, or failed.
+                  t("settings.history.notTranscribed")
+                : t("settings.history.transcriptionFailed")}
         </p>
         {hasTranscription && !retrying && (expanded || overflows) && (
           <button

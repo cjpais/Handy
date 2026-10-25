@@ -938,6 +938,14 @@ async retryHistoryEntryTranscription(id: number) : Promise<void> {
     await TAURI_INVOKE("retry_history_entry_transcription", { id });
 },
 /**
+ * Stops the entry's background transcription: a queued one is dropped, a
+ * running one stops after the chunk it is on. The entry keeps the text it
+ * had before.
+ */
+async cancelHistoryEntryTranscription(id: number) : Promise<void> {
+    await TAURI_INVOKE("cancel_history_entry_transcription", { id });
+},
+/**
  * Adds an audio or video file to History and queues its transcription.
  * Fails without adding anything if the file has no audio Handy can read.
  */

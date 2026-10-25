@@ -69,6 +69,15 @@ pub fn retry_history_entry_transcription(jobs: State<'_, Arc<TranscriptionJobMan
     jobs.retry(id);
 }
 
+/// Stops the entry's background transcription: a queued one is dropped, a
+/// running one stops after the chunk it is on. The entry keeps the text it
+/// had before.
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_history_entry_transcription(jobs: State<'_, Arc<TranscriptionJobManager>>, id: i64) {
+    jobs.cancel(id);
+}
+
 /// Adds an audio or video file to History and queues its transcription.
 /// Fails without adding anything if the file has no audio Handy can read.
 #[tauri::command]

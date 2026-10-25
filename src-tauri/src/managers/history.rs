@@ -278,13 +278,14 @@ impl HistoryManager {
     }
 
     /// Save the entry for a file whose audio is already at `file_name`.
-    /// Starred, so retention keeps it; never post-processed.
+    /// Retention never removes it (only deleting it does); never
+    /// post-processed.
     pub fn save_file_entry(&self, file_name: String, source_name: String) -> Result<HistoryEntry> {
         self.insert_entry(HistoryEntry {
             id: 0,
             file_name,
             timestamp: Utc::now().timestamp(),
-            saved: true,
+            saved: false,
             title: String::new(),
             transcription_text: String::new(),
             post_processed_text: None,
@@ -440,9 +441,10 @@ impl HistoryManager {
     fn cleanup_by_count(&self, limit: usize) -> Result<()> {
         let conn = self.get_connection()?;
 
-        // Get all entries that are not saved, ordered by timestamp desc
+        // Unsaved dictations, newest first. Transcribed files are only ever
+        // deleted explicitly, and don't count toward the limit.
         let mut stmt = conn.prepare(
-            "SELECT id, file_name FROM transcription_history WHERE saved = 0 ORDER BY timestamp DESC"
+            "SELECT id, file_name FROM transcription_history WHERE saved = 0 AND source_name IS NULL ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -481,9 +483,10 @@ impl HistoryManager {
             _ => unreachable!("Should not reach here"),
         };
 
-        // Get all unsaved entries older than the cutoff timestamp
+        // Unsaved dictations older than the cutoff; transcribed files are only
+        // ever deleted explicitly.
         let mut stmt = conn.prepare(
-            "SELECT id, file_name FROM transcription_history WHERE saved = 0 AND timestamp < ?1",
+            "SELECT id, file_name FROM transcription_history WHERE saved = 0 AND source_name IS NULL AND timestamp < ?1",
         )?;
 
         let rows = stmt.query_map(params![cutoff_timestamp], |row| {
@@ -587,7 +590,8 @@ impl HistoryManager {
         Ok(entry)
     }
 
-    /// Get the latest entry with non-empty transcription text.
+    /// Get the latest dictation with non-empty transcription text. Files are
+    /// left out: a long file's transcript is never the "last transcript".
     pub fn get_latest_completed_entry(&self) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         Self::get_latest_completed_entry_with_conn(&conn)
@@ -607,7 +611,7 @@ impl HistoryManager {
                 post_process_requested,
                 source_name
              FROM transcription_history
-             WHERE transcription_text != ''
+             WHERE transcription_text != '' AND source_name IS NULL
              ORDER BY timestamp DESC
              LIMIT 1",
         )?;
@@ -834,5 +838,23 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn get_latest_completed_entry_skips_files() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "dictated", None);
+        conn.execute(
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, source_name)
+             VALUES ('handy-file-1.wav', 200, 1, 'file', 'from a file', 'talk.mp3')",
+            [],
+        )
+        .expect("insert file entry");
+
+        let entry = HistoryManager::get_latest_completed_entry_with_conn(&conn)
+            .expect("fetch latest completed entry")
+            .expect("completed entry exists");
+
+        assert_eq!(entry.transcription_text, "dictated");
     }
 }

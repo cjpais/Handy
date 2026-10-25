@@ -774,6 +774,7 @@ pub fn run(cli_args: CliArgs) {
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
             commands::history::retry_history_entry_transcription,
+            commands::history::cancel_history_entry_transcription,
             commands::history::transcribe_file,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,

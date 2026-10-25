@@ -309,6 +309,10 @@ impl TranscriptionJobManager {
             &text,
             entry.post_process_requested,
         ));
+        // Post-processing can take a while; a cancel during it still wins.
+        if cancelled.load(Ordering::Acquire) {
+            return Ok(());
+        }
         hm.update_transcription(
             entry.id,
             text,
@@ -356,6 +360,10 @@ impl ChunkControl for Control<'_> {
     }
 
     fn progress(&self, done: usize, total: usize) {
+        // The chunk a cancel caught still finishes; don't report it as running.
+        if self.cancelled.load(Ordering::Acquire) {
+            return;
+        }
         let percent = (done * 100 / total.max(1)).min(100) as u8;
         if self.percent.replace(percent) == percent {
             return;

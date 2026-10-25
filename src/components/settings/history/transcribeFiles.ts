@@ -4,14 +4,14 @@ import i18n from "@/i18n";
 import { commands } from "@/bindings";
 
 // What the file picker offers. Dropped files of any type are still tried.
+// No ogg/oga/opus/webm: they're mostly Opus (voice notes), which can't be
+// decoded yet, though Vorbis .ogg works if dropped.
 const MEDIA_EXTENSIONS = [
   "mp3",
   "m4a",
   "aac",
   "wav",
   "flac",
-  "ogg",
-  "oga",
   "aif",
   "aiff",
   "mp4",
