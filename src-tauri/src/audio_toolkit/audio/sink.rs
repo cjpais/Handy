@@ -71,10 +71,11 @@ pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 pub struct CapturedAudio {
     /// 16 kHz mono samples that passed the VAD policy.
     pub samples: Vec<f32>,
-    /// Some chunk, before VAD, wasn't digital silence. False when every sample
-    /// the device sent was exactly zero: a muted mic, or a headset connected
-    /// to another device.
-    pub heard_sound: bool,
+    /// The device sent audio and every sample of it was exactly zero (before
+    /// VAD): a muted mic, or a headset connected to another device. False
+    /// when no audio arrived at all (stopped before the device was ready),
+    /// which says nothing about the microphone.
+    pub input_silent: bool,
     /// The detector the recording borrowed, for the next one.
     pub vad: CaptureVad,
 }
@@ -158,7 +159,8 @@ impl CaptureSink {
         }
         CapturedAudio {
             samples: self.samples,
-            heard_sound: self.heard_sound,
+            // `ready` is spent on the first chunk, so `None` means audio came.
+            input_silent: self.ready.is_none() && !self.heard_sound,
             vad: self.vad,
         }
     }

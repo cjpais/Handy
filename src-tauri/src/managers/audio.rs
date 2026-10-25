@@ -946,7 +946,7 @@ impl AudioRecordingManager {
                 let captured = stopped.sink.finish();
                 self.return_vad(captured.vad);
                 self.last_input_silent
-                    .store(!captured.heard_sound, Ordering::Release);
+                    .store(captured.input_silent, Ordering::Release);
                 captured.samples
             }
             Err(e) => {

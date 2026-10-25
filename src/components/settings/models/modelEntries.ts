@@ -225,19 +225,45 @@ const select = async (id: string) => {
   }
 };
 
+const isOnDisk = (id: string) =>
+  !!useModelStore.getState().models.find((m) => m.id === id)?.is_downloaded;
+
+/**
+ * For a download started elsewhere (onboarding, the model dropdown, the
+ * update), which this page has no promise for: resolves once it ends, with
+ * whether the model is now on disk.
+ */
+const whenDownloadEnds = (id: string) =>
+  new Promise<boolean>((resolve) => {
+    const unsubscribe = useModelStore.subscribe(
+      (s) => id in s.downloadingModels || id in s.verifyingModels,
+      async (inFlight) => {
+        if (inFlight) return;
+        unsubscribe();
+        // The store clears the flag before it reloads the model list, so
+        // read the list fresh before saying whether it landed.
+        await useModelStore.getState().loadModels();
+        resolve(isOnDisk(id));
+      },
+    );
+  });
+
 /**
  * Use a model: at once when it's on disk, else download it and then use it.
  * The last one pressed wins; the others carry on downloading.
  */
 export const pickModel = (id: string) => {
   const store = useModelStore.getState();
-  if (store.models.find((m) => m.id === id)?.is_downloaded) {
+  if (isOnDisk(id)) {
     void select(id);
     return;
   }
   usePageState.setState({ target: id });
-  if (id in store.downloadingModels) return;
-  void store.downloadModel(id).then((ok) => {
+  const done =
+    id in store.downloadingModels
+      ? whenDownloadEnds(id)
+      : store.downloadModel(id);
+  void done.then((ok) => {
     if (ok && usePageState.getState().target === id) void select(id);
   });
 };
