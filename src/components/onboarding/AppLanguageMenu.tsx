@@ -10,11 +10,7 @@ interface AppLanguageMenuProps {
   onChange: (code: string) => void;
 }
 
-/**
- * Welcome's "Menus in …": which language Handy's own menus are in. Drawn by
- * hand rather than a native <select>, whose popup Windows paints light
- * (white list, white scrollbar) whatever the theme.
- */
+/** App language menu; custom because Windows paints a <select> popup light. */
 export const AppLanguageMenu: React.FC<AppLanguageMenuProps> = ({
   value,
   onChange,
@@ -47,7 +43,7 @@ export const AppLanguageMenu: React.FC<AppLanguageMenuProps> = ({
     close();
   };
 
-  // Opened: focus the list, the current language in view.
+  // Focus the list, current language in view.
   useEffect(() => {
     if (!open) return;
     listRef.current?.focus({ preventScroll: true });
@@ -56,7 +52,7 @@ export const AppLanguageMenu: React.FC<AppLanguageMenuProps> = ({
       ?.scrollIntoView({ block: "center" });
   }, [open]);
 
-  // The highlight kept in view as the keys move it.
+  // Keep the highlight in view.
   useEffect(() => {
     if (!open) return;
     document
@@ -64,7 +60,7 @@ export const AppLanguageMenu: React.FC<AppLanguageMenuProps> = ({
       ?.scrollIntoView({ block: "nearest" });
   }, [open, active, id]);
 
-  // A press anywhere else closes it.
+  // Close on outside press.
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
@@ -92,7 +88,7 @@ export const AppLanguageMenu: React.FC<AppLanguageMenuProps> = ({
       handle();
       return;
     }
-    // Typing a letter jumps to the next language starting with it.
+    // Typeahead.
     if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
       const ch = e.key.toLocaleLowerCase();
       const n = SUPPORTED_LANGUAGES.length;
@@ -110,9 +106,6 @@ export const AppLanguageMenu: React.FC<AppLanguageMenuProps> = ({
 
   return (
     <div ref={rootRef} className="relative -me-[8px] shrink-0">
-      {/* Quiet, like Back: a setting for the window, not a step. The words
-          say what it changes (the menus), apart from the languages you
-          dictate in below. */}
       <button
         ref={triggerRef}
         type="button"
@@ -184,9 +177,7 @@ export const AppLanguageMenu: React.FC<AppLanguageMenuProps> = ({
                     <Check size={15} strokeWidth={2.5} aria-hidden="true" />
                   )}
                 </span>
-                {/* The name inline in a span of the menu's own direction:
-                    as the grid cell, a <bdi> takes the name's, and an
-                    Arabic or Hebrew name would sit at the far edge. */}
+                {/* Span keeps RTL names aligned with the rest. */}
                 <span
                   className={`truncate text-text ${selected ? "font-semibold" : "font-medium"}`}
                 >
