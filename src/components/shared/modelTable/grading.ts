@@ -14,10 +14,8 @@ import {
 } from "@/components/onboarding/data/models";
 
 /**
- * How a model reads for your languages on this computer: a grade per
- * language and one over all of them, the wait on this tier, its pick role,
- * the languages it misses. The same on onboarding and on the Models page;
- * a model with no catalog entry (custom, old format) is ungraded.
+ * Grades models for the user's languages on this machine's tier. Shared by
+ * onboarding and the Models page; models without a catalog entry are ungraded.
  */
 export interface Grading {
   langs: string[];

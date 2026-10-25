@@ -44,10 +44,8 @@ export const OnboardingPreview: React.FC<OnboardingPreviewProps> = ({
 
 interface DebugRunProps {
   /**
-   * `onboardingRun`: the real onboarding from Welcome (permission prompts,
-   * downloads, the practice note and setting writes), exactly as a new person
-   * gets it. `modelMigration`: the real model migration screen, which needs
-   * old-format models on disk to have anything to show.
+   * Runs the real flow (prompts, downloads, setting writes).
+   * `modelMigration` needs old-format models on disk.
    */
   run: "onboardingRun" | "modelMigration";
   onRun: () => void;

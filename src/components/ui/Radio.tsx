@@ -5,11 +5,7 @@ interface RadioProps {
   className?: string;
 }
 
-/**
- * The mark for picking one of a few: an 18px ring, filled magenta with a
- * white check when picked. Decorative: the row around it carries the radio
- * role and the click.
- */
+/** Decorative radio mark; the surrounding row owns the role and click. */
 export const Radio: React.FC<RadioProps> = ({ checked, className = "" }) => (
   <span
     aria-hidden="true"

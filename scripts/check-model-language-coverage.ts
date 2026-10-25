@@ -9,10 +9,8 @@ interface CatalogModel {
 
 const failures: string[] = [];
 
-// These model-code variants intentionally share one saved language. Keep this
-// assertion beside catalog coverage so a separate picker entry can't silently
-// break language continuity when users switch model families. Mirrors
-// `canonical_language_code` in src-tauri/src/managers/model.rs.
+// These code variants must share one saved language so switching model families
+// keeps it. Mirrors `canonical_language_code` in src-tauri/src/managers/model.rs.
 for (const [a, b] of [
   ["no", "nb"],
   ["tl", "fil"],

@@ -44,13 +44,7 @@ interface ModelsSettingsProps {
   onChangeLanguages?: () => void;
 }
 
-/**
- * Every model, in the table onboarding's Show all has: the title over it,
- * and the table filling the rest of the window, scrolling inside. One list
- * in sections (on this computer, for your languages, missing one of them,
- * and untested models only when searching), with delete and stop in a last
- * column.
- */
+/** The Models page: onboarding's model table, filling the window. */
 export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
   onChangeLanguages,
 }) => {
@@ -164,8 +158,7 @@ export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
         grading={facts}
         filters={filters}
         setFilters={setFilters}
-        // Yours always shows at rest (its empty note says how to get one);
-        // a search shows only the sections it found something in.
+        // "Yours" always shows at rest; a search hides empty sections.
         sections={sections.filter(
           (s) => s.rows.length || (s.key === "yours" && !searching),
         )}

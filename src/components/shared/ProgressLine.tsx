@@ -3,16 +3,13 @@ import React from "react";
 interface ProgressLineProps {
   /** 0–1 */
   value: number;
-  /** Checking: full, and pulsing while it waits. */
+  /** Pulse while waiting. */
   busy?: boolean;
-  /** The line's height and placement; 6px tall by default. */
+  /** Height and placement classes. */
   className?: string;
 }
 
-/**
- * A download's line: rounded, magenta on the line colour, as on Try it and
- * the model cards. The words go beside it; the line itself is for the eye.
- */
+/** A decorative progress line; put the accessible text beside it. */
 export const ProgressLine: React.FC<ProgressLineProps> = ({
   value,
   busy = false,

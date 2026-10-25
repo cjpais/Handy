@@ -38,8 +38,7 @@ import { commands } from "@/bindings";
 import { deleteRetiredModel } from "@/components/onboarding/retiredModels";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
-// flow: first-run onboarding. permissions, migration and replaceModel are its
-// screens on their own, for returning users.
+// flow is first-run onboarding; the rest are single screens for returning users.
 type OnboardingStep =
   | "flow"
   | "permissions"
@@ -334,8 +333,7 @@ function App() {
   };
 
   const handleModelSelected = async () => {
-    // Only reached from the model update: the user picked a different model
-    // instead of updating, so the retired models left on disk can't run anymore.
+    // Reached when the user picks a different model instead of updating.
     for (const model of await commands.getRetiredModels()) {
       await deleteRetiredModel(model.id);
     }

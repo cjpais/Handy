@@ -71,10 +71,8 @@ pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 pub struct CapturedAudio {
     /// 16 kHz mono samples that passed the VAD policy.
     pub samples: Vec<f32>,
-    /// The device sent audio and every sample of it was exactly zero (before
-    /// VAD): a muted mic, or a headset connected to another device. False
-    /// when no audio arrived at all (stopped before the device was ready),
-    /// which says nothing about the microphone.
+    /// Every sample received (pre-VAD) was exactly zero, e.g. a muted mic.
+    /// False when no audio arrived at all.
     pub input_silent: bool,
     /// The detector the recording borrowed, for the next one.
     pub vad: CaptureVad,

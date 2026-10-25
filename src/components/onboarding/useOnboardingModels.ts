@@ -12,10 +12,7 @@ import {
 } from "./data/models";
 import { repoIdOf } from "./retiredModels";
 
-/**
- * Which benchmark tier this computer is closest to: "accelerated" when the
- * engine sees a GPU and transcription isn't forced onto the CPU.
- */
+/** Benchmark tier: "accelerated" when there's a GPU and CPU isn't forced. */
 export const useMachineTier = (): MachineTier => {
   const { getSetting } = useSettings();
   const accelerator = getSetting("transcribe_accelerator");
@@ -46,11 +43,7 @@ export type DownloadState =
   /** It stopped before it finished: failed, or cut off by a quit. */
   | { state: "failed" };
 
-/**
- * The catalog's curated models joined to the app's own list (download state,
- * the id the backend knows them by). Only models the app can download are
- * offered.
- */
+/** Catalog models joined to the app's model list; only downloadable ones are offered. */
 export const useOnboardingModels = (languages: string[]) => {
   const tier = useMachineTier();
   const infos = useModelStore((s) => s.models);

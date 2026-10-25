@@ -1,9 +1,4 @@
-/**
- * Handy's tray / menu bar icon, traced from src-tauri/resources/tray_*.png so
- * the onboarding screens can show the icon people will actually see: a hand
- * while idle, an ear while recording, a brain while transcribing. Drawn in
- * the surrounding text colour, as macOS draws it (a template image).
- */
+/** The tray icon, traced from src-tauri/resources/tray_*.png; uses currentColor like a macOS template image. */
 type TrayIconState = "idle" | "recording" | "transcribing";
 
 const PATHS: Record<TrayIconState, string> = {

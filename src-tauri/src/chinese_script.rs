@@ -11,9 +11,7 @@ use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::error;
 use std::sync::OnceLock;
 
-/// The Chinese language a transcription was produced in. Picks the tables
-/// for Simplified output, whose phrasing differs between Mandarin and
-/// Cantonese text.
+/// Spoken Chinese variety; selects the Simplified tables, which differ for Cantonese.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ChineseVariety {
     Mandarin,
@@ -57,11 +55,8 @@ pub fn chinese_script_for_locale(locale: &str) -> Option<ChineseScript> {
     Some(script)
 }
 
-/// The OpenCC conversion that writes a variety's output in a script.
-/// Traditional goes straight to the chosen region's forms: text already in
-/// Traditional keeps any forms the tables don't map (Taiwan's 裡 under Hong
-/// Kong), since detouring through Simplified to catch those would mangle
-/// correct text (颱風後 → 台風后).
+/// The OpenCC conversion for a variety and script. Traditional converts directly to
+/// the region's forms; going via Simplified would mangle correct text (颱風後 → 台風后).
 fn conversion(variety: ChineseVariety, script: ChineseScript) -> Option<BuiltinConfig> {
     match (variety, script) {
         (_, ChineseScript::AsTranscribed) => None,

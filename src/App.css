@@ -1,6 +1,5 @@
-/* Scope class detection to src/. Auto-detection from the project root walks
-   every directory (including gitignored Rust build output) to compute watch
-   globs, which made the first dev-server CSS compile take ~16s. */
+/* Scope class detection to src/: scanning the project root walks Rust build
+   output and made the first dev CSS compile take ~16s. */
 @import "tailwindcss" source(".");
 @import "./styles/theme.css";
 
@@ -28,9 +27,8 @@
   --color-line-strong: var(--color-line-strong);
 }
 
-/* Noto Sans CJK (OFL) cut to a few characters; see src/lib/utils/cjkFont.ts.
-   Windows draws Chinese, Japanese and Korean each in its own font, none with
-   a semibold to sit beside Segoe UI's. Variable, so every weight. */
+/* Noto Sans CJK subset (see src/lib/utils/cjkFont.ts): Windows' CJK fonts
+   have no semibold to match Segoe UI. */
 @font-face {
   font-family: "Handy CJK Subset";
   src: url("./assets/fonts/cjk-subset.woff2") format("woff2");
@@ -38,10 +36,8 @@
   font-display: block;
 }
 
-/* The onboarding design's scale, in px: the root font size is 15px, so
-   Tailwind's rem-based steps (text-sm, rounded-lg, ...) land on fractions.
-   Names avoid Tailwind's defaults (text-sm, text-xl, ease-out, ...), which
-   Settings uses at their current values. */
+/* Onboarding's scale in px (rem steps land on fractions at a 15px root).
+   Names avoid Tailwind's defaults, which Settings still uses. */
 @theme {
   --font-display:
     ui-rounded, "SF Pro Rounded", system-ui, -apple-system,
@@ -66,12 +62,9 @@
   --radius-control: 10px; /* buttons, fields, table rows */
   --radius-chip: 6px; /* grade chips */
 
-  /* One content width: every screen's main block runs 64px in from the
-     window's edges, 592 of its 720. */
+  /* Onboarding's side gutter. */
   --spacing-gutter: 64px;
-  /* From a screen's title (and subtitle) to what comes under it: 20px when
-     the screen is full, up to 32px when there's room (ScreenMain's centre
-     layout); always 20px in its top layout. */
+  /* Gap under a screen's title; grows to the max when there's room. */
   --spacing-lead: 20px;
   --spacing-lead-max: 32px;
 
@@ -153,8 +146,7 @@
       translate: 0 6px;
     }
   }
-  /* Through a variable: Tailwind can't polyfill a color-mix inside a
-     keyframe, and empties it. */
+  /* Via a variable: Tailwind can't polyfill color-mix inside a keyframe. */
   @keyframes key-slot {
     50% {
       border-color: var(--color-plum-faint);
@@ -201,8 +193,7 @@
   color: var(--color-text);
   background-color: var(--color-background);
 
-  /* Native controls (select popups, scrollbars) follow the theme. Without
-     this, Windows draws a <select>'s popup white under light option text. */
+  /* Without this, Windows draws a <select> popup white under light text. */
   color-scheme: light dark;
 }
 

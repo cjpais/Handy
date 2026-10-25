@@ -486,8 +486,7 @@ pub struct AudioRecordingManager {
     /// retry re-enumerates. The system-default case is never cached — the
     /// recorder resolves the current default itself.
     cached_device: Arc<Mutex<Option<(String, String)>>>,
-    /// The last recording's device sent only digital silence (every sample
-    /// exactly zero), as opposed to sound with no speech in it.
+    /// The last recording was all-zero samples, not just audio without speech.
     last_input_silent: Arc<AtomicBool>,
 }
 

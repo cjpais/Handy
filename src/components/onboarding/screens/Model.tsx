@@ -69,11 +69,7 @@ interface ModelProps {
   onChoose: (modelId: string) => void;
 }
 
-/**
- * Screen 3: a speech model for your languages and this computer. Three picks
- * (Recommended, Faster, More accurate), the selected one as the Full card;
- * Show all opens every model in place as a table with search.
- */
+/** Screen 3: pick one of three suggested models, or Show all for the table. */
 export const Model: React.FC<ModelProps> = ({
   progress,
   models,
@@ -91,9 +87,7 @@ export const Model: React.FC<ModelProps> = ({
 
   const langs = languages.length ? languages : ["en"];
   const dense = langs.length > 5;
-  // Both are shown whatever your settings: they're what the model can do,
-  // the same as on the Models page, and the hints say where to see them. A
-  // streaming model previews your words in the Live overlay while you talk.
+  // Shown regardless of settings: they're capabilities, as on the Models page.
   const previews = (m: CatalogModel) => m.capabilities.streaming;
   const translates = (m: CatalogModel) => m.capabilities.translate;
   const { picks, groups, offered } = models;
@@ -101,8 +95,7 @@ export const Model: React.FC<ModelProps> = ({
   const selectedId = modelId ?? downloadId ?? pick?.model.id ?? null;
   const isPick = (id: string | null) =>
     !!id && picks.some((p) => p.model.id === id);
-  // A model picked from the full list stays on Model as the fourth item,
-  // unless it's one of the picks now (new languages, or picked before).
+  // A model picked from the full list stays as a fourth card unless a pick.
   const extraId =
     selectedId && !isPick(selectedId)
       ? selectedId
@@ -123,8 +116,7 @@ export const Model: React.FC<ModelProps> = ({
   const nameOf = (code: string) => languageName(code, ui);
   const sizeOf = (m: CatalogModel) =>
     formatModelSize(models.infoFor(m)?.size_mb);
-  // The table's grading, so the cards' columns and hints are the table's.
-  // By the languages' codes: langs is a new array every render.
+  // Keyed by the codes: langs is a new array every render.
   const langsKey = langs.join();
   const grading = useMemo(
     () => makeGrading(langsKey.split(","), models.tier, picks),
@@ -144,10 +136,7 @@ export const Model: React.FC<ModelProps> = ({
     model: row.model,
   });
 
-  /**
-   * What a model can do besides transcribe: its word, icon and the line its
-   * hint says. The same icon marks the rows, their tags and Show all's filter.
-   */
+  /** Capabilities beyond transcription; icons shared by rows, tags, filters. */
   const CAPABILITIES = {
     preview: { Icon: LiveIcon, has: previews },
     translate: { Icon: Languages, has: translates },
@@ -222,9 +211,7 @@ export const Model: React.FC<ModelProps> = ({
 
   /* ---------------- the download ---------------- */
 
-  // The model downloading carries the Models page's line on its card,
-  // wherever that card is: selected, small, or in Show all. One already on
-  // disk has nothing to show; one that stopped says so on its full card.
+  // The downloading model's card shows progress; a failed one, its full card.
   const loading = downloadId ? byId.get(downloadId) : undefined;
   const loadingState = models.downloadState(loading);
   const lineFor = (id: string) =>
@@ -235,7 +222,7 @@ export const Model: React.FC<ModelProps> = ({
     lineFor(id) || (id === downloadId && loadingState.state === "failed");
   const lineValue =
     loadingState.state === "downloading" ? loadingState.progress : 1;
-  /** A small card's line: 3px along its bottom, inside its padding. */
+  /** A small card's progress line. */
   const thinLine = (place: string) => (
     <ProgressLine
       value={lineValue}
@@ -296,10 +283,7 @@ export const Model: React.FC<ModelProps> = ({
   const sizeClass =
     "ms-auto min-w-[50px] text-end text-label text-ink-3 tabular-nums";
 
-  /**
-   * The selected model: role and capability tags (as on the small cards) over
-   * the name, its line, Accuracy and Speed.
-   */
+  /** The selected model's card. */
   const fullCard = (row: ModelRow, role: PickRole | "extra") => {
     const id = row.model.id;
     return (
@@ -329,8 +313,7 @@ export const Model: React.FC<ModelProps> = ({
           >
             {row.model.name}
           </span>
-          {/* Many languages take two rows of grades: a download has no
-            room left for the line, so it takes this one's. */}
+          {/* With two rows of grades, the download takes this line's room. */}
           {!(dense && showsDownload(id)) && (
             <span {...vt(id, "d")} className="mt-[2px] text-ink-2">
               {role === "extra"
@@ -510,8 +493,7 @@ export const Model: React.FC<ModelProps> = ({
   const continuing =
     selectedState === "ready" ||
     (downloadId === selectedId && selectedState !== "failed");
-  // Another model picked mid-download: what the switch costs, where it's
-  // made. The download pauses (its part stays on disk), so no dialog.
+  // Switching mid-download pauses it (the partial stays on disk), so no dialog.
   const switching =
     loading && loading.id !== selectedId && loadingState.state === "downloading"
       ? { name: loading.name, percent: words.percent(loadingState) }
@@ -598,8 +580,7 @@ export const Model: React.FC<ModelProps> = ({
   /* ---------------- every model ---------------- */
 
   const kept = (rows: ModelRow[]) => rows.map(entryFor).filter(matches);
-  // The picks first, then the rest for your languages, best value first;
-  // the models that miss one of them last, under their own line.
+  // Picks, then the rest by value; models missing a language last.
   const sections: TableSection[] = [
     {
       key: "fits",

@@ -61,7 +61,7 @@ export const useModelFilters = () => {
 
 export interface TableSection {
   key: string;
-  /** Its name: in the heads while it's the one under them, else its line. */
+  /** Shown in the sticky heads while scrolled under them, else as a divider label. */
   label: React.ReactNode;
   rows: TableModel[];
   /** Small print over its rows. */
@@ -70,7 +70,7 @@ export interface TableSection {
   after?: React.ReactNode;
 }
 
-/** The small print, its words over the names (14 + 18 + 10, in the list's 6). */
+/** A section's small print, indented to align with the names column. */
 export const Note: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="ps-[42px] pe-[12px] pt-[2px] pb-[6px] text-small text-ink-3">
     {children}
@@ -85,32 +85,22 @@ interface ModelTableProps {
   grading: Grading;
   filters: Filters;
   setFilters: Dispatch<SetStateAction<Filters>>;
-  /** The sections to show, in order; empty ones are the page's to drop. */
+  /** Sections in order; the caller drops empty ones. */
   sections: TableSection[];
   renderRow: (entry: TableModel) => React.ReactNode;
-  /** The delete/stop column's head; without it there's no such column. */
+  /** Head for the delete/stop column; omit for no such column. */
   actionsHead?: React.ReactNode;
   /** After the last section, under a rule. */
   footer?: React.ReactNode;
   /** Escape with nothing in the search. */
   onEscape?: () => void;
-  /** Into the search once it's shown, as Show all opens. */
+  /** Focus the search on mount. */
   focusOnMount?: boolean;
-  /**
-   * TEMPORARY: the Models page's 1px edge in Settings' grey, to sit with the
-   * rest of Settings until its redesign. Remove with it.
-   */
+  /** TEMPORARY: Settings' thinner edge until the Settings redesign; remove with it. */
   thinEdge?: boolean;
 }
 
-/**
- * Every model, the same on onboarding's Show all and the Models page: the
- * search with its filters, then one scrolling list in sections under column
- * heads that stay on top and name the section under them. The list fades
- * at either end while there's more past it. Typing anywhere goes into the
- * search; ↑↓ there move a highlight, Enter presses it; Escape clears the
- * search, then hands over to the page.
- */
+/** The searchable, sectioned model list shared by onboarding's Show all and the Models page. */
 export const ModelTable: React.FC<ModelTableProps> = ({
   grading,
   filters,
@@ -133,8 +123,8 @@ export const ModelTable: React.FC<ModelTableProps> = ({
   const empty = !sections.some((s) => s.rows.length);
   const actions = !!actionsHead;
 
-  // Typing anywhere goes into the search; Escape clears it, then is the
-  // page's. Space stays with what has focus: it presses a filter or a row.
+  // Typing anywhere goes into the search; Escape clears it, then falls to the
+  // page. Space is left alone so it still presses the focused filter or row.
   const escape = useRef(onEscape);
   escape.current = onEscape;
   const query = useRef(filters.query);
@@ -159,8 +149,8 @@ export const ModelTable: React.FC<ModelTableProps> = ({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [setFilters]);
 
-  // Shown: into the search, and the picked row in view. In a layout effect,
-  // so a move into the list (onboarding's) starts from where it'll be.
+  // Focus the search and scroll the picked row into view. A layout effect, so
+  // onboarding's view transition starts from the scrolled position.
   useLayoutEffect(() => {
     if (focusOnMount) {
       const input = searchRef.current;
@@ -188,11 +178,8 @@ export const ModelTable: React.FC<ModelTableProps> = ({
     return () => cancelAnimationFrame(frame);
   }, []); // Once, when shown.
 
-  // The ends fade while there's more past them, and the heads name the
-  // section under them, as a sticky heading does: the first at the top,
-  // then each next one once its own line is half under them. Checked on
-  // every render (a search or filter changes what's there), on scroll and
-  // on resize.
+  // Edge fades and the sticky section name. Re-checked on every render (search
+  // and filters change the content), scroll and resize.
   const follow = useRef(() => {});
   follow.current = () => {
     const panel = panelRef.current;
@@ -226,7 +213,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
   }, []);
   const heading = sections.find((s) => s.key === current) ?? sections[0];
 
-  /** From the search: ↑↓ move the highlight, from the picked row at first. */
+  /** ↑↓ from the search move the highlight, starting at the picked row. */
   const step = (d: number) => {
     const rows = [
       ...(listRef.current?.querySelectorAll<HTMLElement>("[data-row]") ?? []),
@@ -249,7 +236,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
       ?.click();
   };
 
-  /** A filter after the search's divider: icon and word; pressed fills grey. */
+  /** A toggle filter beside the search. */
   const filter = (key: "preview" | "translate", Icon: typeof LiveIcon) => (
     <Tooltip text={t(`onboarding.model.tags.${key}Title`)}>
       <button
@@ -280,17 +267,14 @@ export const ModelTable: React.FC<ModelTableProps> = ({
           thinEdge ? "border border-line" : "border-[1.5px] border-line-strong"
         }`}
       >
-        {/* The search is the first row, the heads and list under a rule. The
-            magnifier sits in the marks' column and the typing starts where
-            the names do. */}
+        {/* The magnifier and input align with the marks and names columns. */}
         <div className="flex-none border-b border-line px-[6px]">
           <div className="flex h-[46px] items-center gap-[4px] ps-[14px] pe-[4px]">
             <label className="flex h-full min-w-0 flex-1 cursor-text items-center gap-[10px]">
               <span className="grid w-[18px] shrink-0 place-items-center text-ink-3">
                 <Search size={15} aria-hidden="true" />
               </span>
-              {/* Quiet on focus: the caret says where typing goes. No ×:
-                  Escape clears. */}
+              {/* No clear button: Escape clears. */}
               <input
                 ref={searchRef}
                 type="search"
@@ -326,11 +310,8 @@ export const ModelTable: React.FC<ModelTableProps> = ({
           </div>
         </div>
         {!empty && (
-          // The heads, over the list rather than in it, so rows only ever
-          // pass out of sight at the list's edge (scrolling or bouncing).
-          // Under them, once rows pass beneath, a soft edge instead of a
-          // hard line; it starts 1px up, inside them, so no sliver of a row
-          // shows between the two at fractional pixels.
+          // Heads sit outside the list so rows only clip at the list's edge. The
+          // fade starts 1px up so no row sliver shows at fractional pixels.
           <div className="relative z-[1] flex-none bg-background px-[6px] after:pointer-events-none after:absolute after:inset-x-0 after:top-[calc(100%-1px)] after:h-[21px] after:bg-linear-to-b after:from-background after:to-transparent after:opacity-0 after:transition-opacity group-data-scrolled/list:after:opacity-100">
             <div
               ref={headsRef}
@@ -351,8 +332,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
             </div>
           </div>
         )}
-        {/* The list's scrollbar floats over it (ScrollThumb), so rows and
-            dividers run the full width on every platform. */}
+        {/* ScrollThumb overlays the list so rows run full width on every platform. */}
         <div className="group/scroll relative flex min-h-0 flex-1 flex-col">
           <div
             ref={listRef}
@@ -375,9 +355,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
             {!empty &&
               sections.map((s, i) => (
                 <section key={s.key} className="flex-none">
-                  {/* The first section's name is the heads'. The others open
-                    with a rule across the list and their name over the
-                    names; scrolled under the heads, the heads take it. */}
+                  {/* The first section's name lives in the heads; later ones get a divider. */}
                   {i > 0 && (
                     <div
                       data-section={s.key}

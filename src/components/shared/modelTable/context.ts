@@ -24,7 +24,7 @@ interface TableContext {
   grading: Grading;
   /** The delete/stop column (the Models page's). */
   actions: boolean;
-  /** The row ↑↓ from the search are on. */
+  /** The row highlighted by ↑↓ from the search. */
   highlighted: string | null;
 }
 

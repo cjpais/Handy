@@ -1,6 +1,6 @@
 import React from "react";
 
-/** A quiet action in a sentence: secondary text, underlined. */
+/** An inline, low-emphasis action within a sentence. */
 export const TextLink: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement>
 > = ({ className = "", type = "button", ...props }) => (

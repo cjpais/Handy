@@ -1,13 +1,11 @@
 import React from "react";
 
 const SIZES = {
-  /** Demo's laptop drawing. */
   sm: { bar: "h-[27.5px] px-[11px]", dot: "size-[9px]" },
-  /** Try it: the same window, close up. */
   lg: { bar: "h-[30px] px-[14px]", dot: "size-[11px]" },
 };
 
-/** The title bar of a drawn app window: three dots, the app's name centred. */
+/** Title bar of a drawn app window. */
 export const WindowBar: React.FC<{
   title: React.ReactNode;
   size: keyof typeof SIZES;

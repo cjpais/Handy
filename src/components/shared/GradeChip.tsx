@@ -10,9 +10,7 @@ interface GradeChipProps {
   dense?: boolean;
 }
 
-// Each letter's whole look, so no two classes compete for a property. One
-// ink, no hue: the better the grade, the heavier the chip (solid, fill,
-// outline, dashed, the bare letter). No grade (— or ?) is the faint ink.
+// Each letter's full class set, so no two classes compete for a property.
 const LETTER_CLASSES: Record<GradeLetter, string> = {
   A: "text-background font-bold border-transparent bg-text",
   B: "text-text font-bold border-transparent bg-line",
@@ -22,7 +20,7 @@ const LETTER_CLASSES: Record<GradeLetter, string> = {
   none: "text-ink-3 font-medium bg-transparent border-transparent",
 };
 
-/** A model's accuracy for one language, in one ink: A solid down to a bare F. */
+/** A model's accuracy grade for one language. */
 export const GradeChip: React.FC<GradeChipProps> = ({
   letter,
   label,

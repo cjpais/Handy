@@ -6,7 +6,7 @@ interface ProgressRingProps {
   size: number;
 }
 
-/** A small magenta ring that fills clockwise from the top. */
+/** A small progress ring that fills clockwise from the top. */
 export const ProgressRing: React.FC<ProgressRingProps> = ({ value, size }) => {
   const r = size / 2 - 2;
   const c = 2 * Math.PI * r;

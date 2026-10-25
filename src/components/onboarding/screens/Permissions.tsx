@@ -23,11 +23,7 @@ interface PermissionRowProps {
   onRequest: () => void;
 }
 
-/**
- * One permission: what it is and why on the left, its status on the right
- * (Allow, Waiting, Allowed). The status column keeps a minimum width so the
- * text doesn't re-wrap as the status changes.
- */
+/** One permission row; the status column's min width stops text re-wrapping. */
 const PermissionRow: React.FC<PermissionRowProps> = ({
   icon,
   title,
@@ -91,10 +87,7 @@ interface PermissionsProps {
   onContinue: () => void;
 }
 
-/**
- * Screen 2, where the OS asks: the microphone, and Accessibility on macOS.
- * The rows are allowed in order: only the next one's Allow is live.
- */
+/** Screen 2: microphone, plus Accessibility on macOS, granted in order. */
 export const Permissions: React.FC<PermissionsProps> = ({
   permissions,
   progress,

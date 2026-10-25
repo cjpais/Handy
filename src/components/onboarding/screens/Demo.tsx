@@ -32,25 +32,13 @@ type PillState = "hidden" | "rec" | "work";
 type Pointer = "rest" | "field" | "gone";
 /** The sentence's lit phrase: click, press and talk, the words appear. */
 type Phrase = 0 | 1 | 2;
+/** `lift` is a tap's first key-up, while Handy keeps listening. */
 type Beat = "reset" | "point" | "click" | "press" | "lift" | "release" | "land";
 
-/* ------------------------------------------------------------------------
- * Timing. Everything the loop does, in ms from the start of each way.
- *
- *   reset    the app is empty; "Click where you'd type." is lit
- *   point    the pointer glides to the app's text field
- *   click    it clicks: the caret appears
- *   press    the keys go down; the pill starts listening, the pointer
- *            steps aside and "Hold (or Tap) your shortcut" is lit
- *   lift     (tap) the keys come up; the pill keeps listening
- *   release  the keys come up (hold) or are tapped again (tap):
- *            "Transcribing", and "…your words appear." is lit
- *   land     the words appear in the app
- *
- * `ms` is the way's whole length; after it, the other way starts. `still` is
- * the moment drawn as a still picture when the system asks for reduced
- * motion.
- * ------------------------------------------------------------------------ */
+/**
+ * Each way's beats, in ms from its start. `ms` is its full length (then the
+ * other way plays); `still` is the moment shown under reduced motion.
+ */
 const CHAPTERS: Record<
   Mode,
   { script: [number, Beat][]; ms: number; still: number }
@@ -200,12 +188,11 @@ const DemoLaptop: React.FC<{
   focused,
 }) => {
   const { t } = useTranslation();
-  // On Linux the pointer stays on the field and only clicks: WebKitGTK paints
-  // its glide and fades unevenly. It sits near the field's right end, away
-  // from where the words start.
+  // On Linux the pointer stays put and only clicks: WebKitGTK renders the
+  // glide and fade unevenly. It sits at the field's end, clear of the text.
   const settled = os === "linux";
   const place: Pointer = settled ? "field" : pointer;
-  // The pointer aims at the field, wherever this app and OS put it.
+  // Measured: the field's position varies by app and OS.
   const screenRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState({ x: 0, y: 0 });
@@ -237,9 +224,6 @@ const DemoLaptop: React.FC<{
           ref={screenRef}
           className={`demo-screen ${dimmed ? "is-dimmed" : ""}`}
         >
-          {/* Handy's own icon, in the menu bar or the tray, as the real one
-              changes: an ear while it listens, a brain while it
-              transcribes. */}
           <DesktopBar
             os={os}
             size="demo"
@@ -288,8 +272,6 @@ const DemoLaptop: React.FC<{
           <div className="demo-pill-wrap">
             <DemoPill state={pill} still={still} />
           </div>
-          {/* The shortcut, as a screencast shows keys: in the corner, down
-              while it's pressed. */}
           <div className="demo-keys">
             <Keycaps
               binding={shortcut}
@@ -334,11 +316,8 @@ const Lit: React.FC<{ on?: boolean; children?: React.ReactNode }> = ({
 }) => <span className={`demo-phrase ${on ? "is-on" : ""}`}>{children}</span>;
 
 /**
- * What to do, said once per way: click, press and talk, let go (or tap
- * again). The phrase that's happening is lit. Both ways' sentences, and the
- * shortcut prompts that stand in for them while you change it, are stacked
- * in one cell, so switching never moves anything, even when a translation
- * wraps.
+ * Each way's instructions, current phrase lit. All variants share one grid
+ * cell so switching never shifts layout, even when a translation wraps.
  */
 const DemoSentence: React.FC<{
   mode: Mode;
@@ -397,15 +376,7 @@ interface DemoProps {
   onContinue: () => void;
 }
 
-/**
- * Screen 4, while the model downloads: how Handy works. A laptop, nearly all
- * screen, where a reply and a note get written by voice: the pointer clicks
- * into the app, then the shortcut goes down in the screen's corner, as keys
- * do in a screencast; under the laptop, the shortcut itself, to change. Hold
- * and tap take turns, each told by one sentence whose phrases light up as
- * they happen. It's a demo, not a lesson: Try it teaches the way they
- * actually press.
- */
+/** Screen 4: an animated demo of hold and tap while the model downloads. */
 export const Demo: React.FC<DemoProps> = ({
   progress,
   os,
@@ -466,8 +437,7 @@ export const Demo: React.FC<DemoProps> = ({
         if (animate) setClickKey((k) => k + 1);
       } else if (beat === "press") {
         setKeyDown(true);
-        // Out of the way while Handy listens; the still keeps it, so the
-        // one picture shows the click as well.
+        // Hide while listening; the still frame keeps it to show the click.
         setPointer(animate ? "gone" : "field");
         setPillState((p) => (p === "hidden" ? "rec" : p));
         setPhrase(1);
@@ -593,12 +563,7 @@ export const Demo: React.FC<DemoProps> = ({
           clickKey={clickKey}
           focused={focused}
         />
-        {/* Your shortcut, as a caption to the drawing: the keys centred
-            under the laptop, what they are on their left, Change on their
-            right. One button, so there's one thing to focus. Changing happens
-            in place: the keys give way to a dashed slot that takes the new
-            ones, and Cancel (or Escape) stops. The press itself is shown in
-            the screen. */}
+        {/* The shortcut and Change as one button; capture happens in place. */}
         <button
           type="button"
           // Named by what it shows: "Your shortcut is ⌥ Space, Change".

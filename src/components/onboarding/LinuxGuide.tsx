@@ -6,10 +6,7 @@ import { TextLink } from "../ui/TextLink";
 
 const LINUX_SETUP_URL = "https://handy.computer/docs/linux";
 
-/**
- * A footer hint for Linux, where the shortcut and pasting depend on the
- * desktop: a line with a link to the setup guide, which opens in the browser.
- */
+/** Linux footer hint linking the setup guide; shortcuts and pasting vary by desktop. */
 export const LinuxGuide: React.FC<{
   i18nKey: "onboarding.linux.tryIt" | "onboarding.linux.done";
 }> = ({ i18nKey }) => (

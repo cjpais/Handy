@@ -154,9 +154,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
     !outcomes[target.retired.id] &&
     isReplacementReady(target);
 
-  // Combined speed and time remaining across the parallel downloads. Until
-  // every active row has a measured rate, its remaining bytes would count
-  // with no speed behind them, so no estimate is shown.
+  // Combined speed and ETA; none until every active download has a measured rate.
   let rate = 0;
   let remainingBytes = 0;
   let measured = true;

@@ -14,13 +14,7 @@ import {
   type Entry,
 } from "./modelEntries";
 
-/**
- * A model on the Models page: the table's row, with what's only here. Its
- * mark says where it is (in use, on disk, or an arrow while it's only in
- * the catalog); pressing it uses it, downloading it first if need be. The
- * last column stops a download or deletes the model, asking first in the
- * row.
- */
+/** A Models page row: the shared table row plus use, stop and delete. */
 export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
   const { t } = useTranslation();
   const place = usePlace(entry.id);
@@ -70,8 +64,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
     }
   })();
 
-  // Only this page's own states; downloads, custom and old models are the
-  // table's.
+  // Page-only states; the table handles downloads, custom and old models.
   const line = asking ? (
     <span className="text-text">
       {t(on ? "settings.models.deleteAskActive" : "settings.models.deleteAsk", {

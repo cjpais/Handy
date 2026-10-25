@@ -19,7 +19,7 @@ interface DropdownProps {
   onOpen?: () => void;
   /** Where the menu opens: below the button (default), or above it. */
   placement?: "below" | "above";
-  /** Hover and selected highlights: brand pink (default), or neutral grey. */
+  /** Highlight colour for hover and selection. */
   tone?: "brand" | "neutral";
 }
 

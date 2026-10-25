@@ -27,11 +27,7 @@ const GAP = 8;
 // running along a row of icons reads each without waiting again.
 let lastHidden = 0;
 
-/**
- * A few words about what's under the pointer, in plum: the ink for what you
- * can press. Shows after a beat on hover, at once on keyboard focus; on its
- * `placement` side of the element, or the other when there's no room.
- */
+/** Shows after a delay on hover, immediately on keyboard focus; flips sides when there's no room. */
 export const Tooltip: React.FC<TooltipProps> = ({
   title,
   text,
@@ -132,9 +128,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
             className="pointer-events-none fixed z-[9999] w-max max-w-[248px] rounded-[9px] bg-plum px-[11px] py-[7px] text-start font-ui text-label leading-[17px] text-background shadow-[0_8px_24px_-10px_rgba(0,0,0,0.45)]"
           >
             {title && <b className="block font-semibold">{title}</b>}
-            {/* A block, not inline: a grid in an inline span gets its margin
-                late in WebKit, once the entrance animation ends, and the
-                tooltip grows down onto its element. */}
+            {/* Block, not inline: WebKit applies a grid's margin in an inline span only
+                after the entrance animation, so the tooltip grows onto its element. */}
             <span className={`block ${title ? "opacity-75" : ""}`}>{text}</span>
             <span
               aria-hidden="true"

@@ -4,10 +4,7 @@ import { LANGUAGES } from "@/lib/constants/languages";
 
 declare global {
   interface Window {
-    /**
-     * The guesses from the OS's preferred languages (`system_languages.rs`),
-     * set before any script runs. Missing outside the app (a plain browser).
-     */
+    /** Injected before scripts run (`system_languages.rs`); absent in a browser. */
     __HANDY_SYSTEM_LANGUAGES__?: {
       languages: string[];
       chinese_script: ChineseScript | null;
@@ -20,11 +17,7 @@ const locale = () => navigator.language || "en-US";
 
 export const isChinese = (code: string) => code === "zh" || code === "yue";
 
-/**
- * The languages someone likely speaks, from the OS's preferred languages,
- * with English among them: the same guess the settings migration backfills.
- * Outside the app, the browser locale's language.
- */
+/** Likely spoken languages (always with English), falling back to the browser locale. */
 export const suggestedLanguages = (): string[] => {
   const guessed = system()?.languages;
   if (guessed?.length) return guessed;
@@ -55,10 +48,7 @@ const SCRIPT_CHOICE: Partial<Record<ChineseScript, ChineseScriptChoice>> = {
   traditional_hk: "zh-HK",
 };
 
-/**
- * The script their OS's first Chinese language names (`zh-Hant-US` →
- * Traditional), else the browser locale's, else Simplified.
- */
+/** Chinese script from the OS's languages, else the browser locale, else Simplified. */
 export const suggestedScript = (): ChineseScriptChoice => {
   const script = system()?.chinese_script;
   const guessed = script ? SCRIPT_CHOICE[script] : undefined;

@@ -10,10 +10,7 @@ const keepSpace = (e: ReactKeyboardEvent<HTMLElement>) => {
   if (e.key === " ") e.preventDefault();
 };
 
-/**
- * Spread on a control that changes the shortcut: the shortcut may use Space,
- * and pressing it there mustn't click the control.
- */
+/** Spread on shortcut controls so a Space in the shortcut doesn't click them. */
 export const spaceDoesNotClick = { onKeyDown: keepSpace, onKeyUp: keepSpace };
 
 // Shortcut parsers require compact tokens; keep display labels separate.
@@ -264,8 +261,7 @@ export const bindingKeys = (binding: string | null | undefined): string[] =>
 export const isOnlyModifiers = (keys: string[]): boolean =>
   keys.length > 0 && keys.every((k) => MODIFIERS.includes(k.toLowerCase()));
 
-// Keycaps show the symbols printed on the keys: glyphs on macOS, names
-// elsewhere. A key's side (option_left) isn't printed on it.
+// Labels as printed on the keys; a key's side (option_left) isn't printed.
 const MAC_KEYCAPS: Record<string, string> = {
   option: "⌥",
   alt: "⌥",
@@ -288,10 +284,7 @@ const PC_KEYCAPS: Record<string, string> = {
   command: "⊞",
 };
 
-/**
- * Split a binding ("option+space") into the labels of the keycaps that draw
- * it: ["⌥", "Space"] on macOS.
- */
+/** "option+space" → ["⌥", "Space"] on macOS. */
 export const keycapLabels = (binding: string, osType: OSType): string[] =>
   binding
     .split("+")
@@ -303,7 +296,6 @@ export const keycapLabels = (binding: string, osType: OSType): string[] =>
       return glyphs[key] ?? capitalizeKey(key);
     });
 
-/** A binding as its keycaps read aloud: "⌥ Space" on macOS, "Alt + Space"
- *  elsewhere. */
+/** "⌥ Space" on macOS, "Alt + Space" elsewhere. */
 export const keycapLabel = (binding: string, osType: OSType): string =>
   keycapLabels(binding, osType).join(osType === "macos" ? " " : " + ");

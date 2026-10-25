@@ -1,11 +1,6 @@
-/* Try it (TryIt.tsx): Demo's screen, close up, with one note on it, and
-   Handy's glove on the note's corner saying what to do next. The drawing is
-   demo.css's at about 1.75×: the same wallpaper, menu bar or taskbar, and
-   window, filling the screen's column under its title. */
+/* Try it (TryIt.tsx): Demo's drawn screen at about 1.75×. */
 
-/* The title tight under the progress dashes, and the screen taking all the
-   rest: out to the 28px edges of the dashes, Back and Finish, and down to
-   just above the footer. */
+/* The title tight under the progress dashes; the screen fills the rest. */
 .try-main {
   display: flex;
   flex-direction: column;
@@ -18,8 +13,7 @@
   margin-top: 2px;
 }
 .try-screen {
-  /* All set's panel: how far in from the screen's edge, how wide, and the
-     room between it and the note, which makes way for it. */
+  /* All set's panel: inset, width, and the room the note makes for it. */
   --try-panel-end: 12px;
   --try-panel-width: 310px;
   --try-panel-gap: 14px;
@@ -37,8 +31,7 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-text) 9%, transparent);
 }
 
-/* Under the screen: one quiet line, a suggestion after a slow take. Its
-   height is always kept, so the screen never jumps when it comes. */
+/* The slow-take hint; its height is always kept so the screen never jumps. */
 .try-after {
   flex: none;
   display: flex;
@@ -72,7 +65,6 @@
   inset: 18px 22px 44px;
 }
 
-/* The note: under the screen's title, so a step down from it. */
 .try-note {
   flex: 1;
   min-height: 0;
@@ -93,8 +85,7 @@
 .try-note-page {
   flex: 1;
   width: 100%;
-  /* The page ends above the bubble, so what's typed scrolls up clear of
-     it rather than running under it. */
+  /* The page ends above the bubble, so typed text scrolls clear of it. */
   margin: 0 0 132px;
   padding: 4px 0 10px;
   /* Older lines scroll out under a soft edge rather than a hard cut. */
@@ -115,9 +106,8 @@
 }
 
 /* ---------- Handy on the window's corner ---------- */
-/* The glove on the window's bottom corner, 1px in from its edge, and the
-   bubble beside it, its tail to the glove's face. On Windows, never down
-   on the taskbar. */
+/* The glove on the window's bottom corner, the bubble beside it. Never on the
+   Windows taskbar. */
 .try-guide {
   position: absolute;
   inset-inline-end: 18px;
@@ -153,8 +143,8 @@
   transform-origin: 50% 90%;
   transition: transform 460ms var(--ease-glide);
 }
-/* Leaning in to the note, a little: listening keeps the lean and nods from
-   it, so pressing the keys never swings the glove somewhere new. */
+/* A slight lean toward the note; listening nods from it, so pressing never
+   swings the glove. */
 .try-glove[data-mood="point"] .try-pose,
 .try-glove[data-mood="listen"] .try-pose {
   transform: rotate(-6deg);
@@ -174,7 +164,7 @@
     transform: rotate(-10deg) translateY(-3px);
   }
 }
-/* Right to left, the note's on the other side: the glove leans that way. */
+/* RTL: the note's on the other side. */
 [dir="rtl"] .try-glove[data-mood="point"] .try-pose,
 [dir="rtl"] .try-glove[data-mood="listen"] .try-pose {
   transform: rotate(6deg);
@@ -196,10 +186,8 @@
 }
 
 /* ---------- the bubble ---------- */
-/* As big as what it says (see .try-eased), never wider than 420px.
-   The window's material, floating like the overlay's pill, and lifted a
-   little so its tail meets the glove's face, not its wrist. One neutral
-   edge colour and fill, so the tail can share them. */
+/* Sized by .try-eased, up to 420px, and lifted so the tail meets the glove's
+   face. One edge colour and fill, so the tail can share them. */
 .try-bubble {
   --try-bubble-edge: color-mix(in srgb, var(--color-text) 15%, transparent);
   --try-bubble-fill: var(--color-demo-window);
@@ -211,8 +199,7 @@
   background: var(--try-bubble-fill);
   box-shadow: var(--try-bubble-shadow);
   pointer-events: auto;
-  /* Into or out of a problem, the warmth fades with the line rather than
-     snapping while the height eases. */
+  /* Fade the problem tint with the line instead of snapping. */
   transition:
     background-color 220ms ease,
     border-color 220ms ease,
@@ -223,10 +210,9 @@
   --try-bubble-edge: color-mix(in srgb, var(--color-warning) 32%, transparent);
   --try-bubble-fill: var(--color-warning-wash);
 }
-/* The tail: a turned square with two edges drawn, half inside the bubble so
-   it hides the bubble's own edge there. It needs 17px of straight side:
-   centred on a one-line bubble (53px tall, straight from 16px to 37px up),
-   and level with the glove's face, 31px up, on a taller one. */
+/* Rotated square, half inside the bubble to cover its edge. It needs 17px of
+   straight side: centred on a one-line bubble, else at the glove's face (31px
+   up). */
 .try-bubble::after {
   content: "";
   position: absolute;
@@ -258,20 +244,18 @@
     width 280ms var(--ease-glide),
     height 280ms var(--ease-glide);
 }
-/* Measured at its natural size, wrapping only past the cap (420px less
-   the bubble's border): wide enough that a line with a three-key shortcut
-   in it still fits on one line, with most of the note left showing. */
+/* Natural width, wrapping only past the cap; wide enough for a line with a
+   three-key shortcut. */
 .try-eased-inner {
   width: max-content;
   max-width: 418px;
 }
-/* A new line fades in where the old one was: no slide, no bounce. Each
-   part fades on its own, so the keys can stay while the line changes. */
+/* New lines fade in place; each part fades on its own so the keys can stay. */
 .try-say {
   padding: 14px 18px 15px;
   transition: opacity 220ms ease;
 }
-/* Keys up, words on their way: the line steps back while Handy works. */
+/* Dimmed while Handy transcribes. */
 .try-say[data-dim] {
   opacity: 0.45;
 }
@@ -301,14 +285,12 @@
   text-wrap: pretty;
 }
 
-/* The shortcut's keys, in the line: riding just above the baseline, a
-   breath of space either side of the words. */
+/* Keys in the line, just above the baseline. */
 .try-say-main .try-keys {
   vertical-align: 1px;
   margin: 0 2px;
 }
-/* The same keys as a button, to change them: no button chrome of its own
-   (the keys lift under the pointer), a ring when it has keyboard focus. */
+/* The keys as a button: no chrome, a ring on keyboard focus. */
 .try-keys-change {
   display: inline-flex;
   padding: 0;
@@ -336,8 +318,7 @@
   pointer-events: none;
   animation: try-say-fade 120ms ease;
 }
-/* Recording new keys: the empty slot (KeySlot) sits on the line like the
-   keys that fill it, then Cancel, quiet, on the line's baseline. */
+/* Capturing: the empty slot sits on the line, then Cancel on the baseline. */
 .try-say-main .try-slot {
   vertical-align: -6px;
 }
@@ -348,9 +329,8 @@
   white-space: nowrap;
 }
 
-/* The microphone list, under a problem's line, in the text's own colour.
-   While it's open its menu rises out of the bubble, so the easing box lets
-   it show. */
+/* The mic picker in a problem's line. Its menu rises out of the bubble, so
+   the easing box lets it overflow. */
 .try-mic-pick {
   margin-top: 8px;
   color: var(--color-text);
@@ -361,9 +341,8 @@
 
 /* ---------- the end: the move into All set (TryIt's stages) ---------- */
 
-/* Title and line swap with a fade, no slide. The line keeps its one-line
-   height with keys in it (they hang a little into the gap), so the screen
-   under it never jumps. */
+/* Title and line cross-fade. The line keeps its one-line height with keys in
+   it, so the screen never jumps. */
 .try-swap {
   animation: try-say-fade 260ms ease both;
 }
@@ -375,8 +354,7 @@
   margin: 0 3px;
 }
 
-/* Handy's icon in the bar; it catches the glove: a pop as it lands. Scale
-   only: the icon's shape already says what Handy's doing. */
+/* The tray icon pops as it catches the glove (scale only). */
 .desktop-tray[data-caught] {
   animation: try-catch 560ms var(--ease-glide);
 }
@@ -389,8 +367,7 @@
   }
 }
 
-/* The note makes room for the panel and keeps the cursor. It waits for the
-   glove to be most of the way up, so the room opens as the panel arrives. */
+/* The note makes room for the panel, timed to the glove's flight. */
 .try-notes,
 .try-note-page {
   transition:
@@ -406,8 +383,7 @@
   margin-bottom: 14px;
 }
 
-/* The bubble goes as the glove high-fives; its material comes back as the
-   panel. */
+/* The bubble leaves with the high five. */
 .try-leaving {
   animation: try-leave 220ms ease both;
 }
@@ -418,8 +394,7 @@
   }
 }
 
-/* Asked for five: the button, the line's width, Handy's icon in it (the one
-   it's about to become). The screen's one pink button. */
+/* The High five button, full line width. */
 .try-say-sub.try-ask {
   margin-top: 12px;
 }
@@ -434,8 +409,7 @@
   font-size: 15px;
   font-weight: 650;
 }
-/* Waiting for it: upright, palm out, a small bob now and then; leaning in
-   when the pointer gets to the button or the glove. */
+/* Waiting for five: upright with an occasional bob; leans in on hover. */
 .try-glove[data-mood="ready"] .try-pose {
   animation: try-ready 2.8s ease-in-out 600ms infinite;
 }
@@ -459,8 +433,7 @@
   animation: none;
   transform: rotate(6deg) translateY(-4px) scale(1.04);
 }
-/* The last take: "Give me five", and it winds up, rearing back palm up,
-   holding until it swings in… */
+/* The finale wind-up: rears back and holds… */
 .try-glove[data-mood="windup"] .try-pose {
   transform: rotate(18deg) translate(6px, -10px) scale(1.08);
   transition-duration: 550ms;
@@ -468,8 +441,7 @@
 [dir="rtl"] .try-glove[data-mood="windup"] .try-pose {
   transform: rotate(-18deg) translate(-6px, -10px) scale(1.08);
 }
-/* The bubble goes with it, so its tail stays at the glove's face, and stays
-   there as it fades with the high five. */
+/* The bubble moves with the glove so its tail stays at the face. */
 .try-main:is([data-stage="windup"], [data-stage="five"])
   .try-glove[data-how="auto"]
   + .try-bubble {
@@ -481,8 +453,8 @@
   + .try-bubble {
   translate: -24px -8px;
 }
-/* …and comes at you, bigger, then settles, its slap squashing it. It takes
-   off from the slap, so the settle plays on in flight. */
+/* …then swings in and settles. It takes off on the slap, so the settle plays
+   in flight. */
 .try-main:is([data-stage="five"], [data-stage="fly"])
   .try-glove[data-how="auto"]
   .try-pose {
@@ -499,15 +471,13 @@
 
 /* ---------- All set's panel (TrayPanel.tsx) ---------- */
 
-/* The bubble's material, hanging off the icon: under the menu bar, or over
-   the taskbar. */
+/* Hangs off the tray icon: under the menu bar, or above the taskbar. */
 .try-panel {
   --try-panel-edge: color-mix(in srgb, var(--color-text) 15%, transparent);
   --try-panel-fill: var(--color-demo-window);
   position: absolute;
   z-index: 4;
-  /* Level with the note window (44px in from the bar), its tail reaching
-     up to the icon. */
+  /* Level with the note window, its tail up to the icon. */
   top: 44px;
   inset-inline-end: var(--try-panel-end);
   width: var(--try-panel-width);
@@ -598,9 +568,8 @@
 .try-panel-download {
   padding: 2px 10px 8px;
 }
-/* Rows: what it is, what's set, and how it changes: a chevron where it
-   leads to another screen, the keys themselves (they lift) where it
-   changes here. */
+/* Rows: label, value, then a chevron (another screen) or the keys (changed
+   here). */
 .try-panel-row {
   display: flex;
   align-items: center;
@@ -624,8 +593,7 @@ button.try-panel-row:focus-visible {
   outline: 2px solid var(--color-logo-primary);
   outline-offset: -2px;
 }
-/* The label keeps its words; what's set takes the rest of the row, from
-   the end, and a long one (a model's name) is cut short, never under it. */
+/* The value fills the row from the end; a long one is truncated. */
 .try-panel-label {
   flex: none;
   color: var(--color-ink-2);
@@ -644,8 +612,8 @@ button.try-panel-row:focus-visible {
   display: inline-flex;
   margin-inline-start: auto;
 }
-/* The shortcut's row: one button, so the keys keep their place. Recording,
-   it isn't a hover target. */
+/* The shortcut row is one button so the keys keep their place; no hover
+   while recording. */
 .try-panel-keys[data-capturing] > .try-panel-row {
   background: none;
   cursor: default;

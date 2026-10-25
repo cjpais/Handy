@@ -21,13 +21,8 @@ interface LanguageSelectorProps {
   supportsLanguageDetection?: boolean;
 }
 
-// Mirrors the matching logic of `effective_language` in
-// src-tauri/src/managers/model.rs. The Rust function is authoritative for the
-// *concrete* code the engine receives (e.g. `jw`); this resolves the picker's
-// language identity (e.g. `jv`) so model switches preserve the user's
-// language. Codes such as `en-US` and a saved `no` resolve to `en` / `nb`.
-// A model that can't detect falls back to the one language they speak, if
-// it hears it, before English.
+// Mirrors `effective_language` in src-tauri/src/managers/model.rs, but returns
+// the picker's language identity (`jv`), not the model's concrete code (`jw`).
 const effectiveLanguage = (
   intent: string,
   preferred: string[],

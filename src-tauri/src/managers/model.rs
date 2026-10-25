@@ -78,12 +78,8 @@ fn base_language(language: &str) -> &str {
     language.split(&['-', '_'][..]).next().unwrap_or(language)
 }
 
-/// The stable user intent used to compare language codes across model
-/// families: the model package's `languageIdentity`, which the frontend saves.
-/// Norwegian (`no`) is Bokmål (`nb`), while Nynorsk (`nn`) remains distinct;
-/// Tagalog (`tl`) is Filipino (`fil`); `iw` and Whisper's `jw` are the legacy
-/// codes for Hebrew (`he`) and Javanese (`jv`). This is only for matching:
-/// callers must return/pass the model's original code.
+/// The package's `languageIdentity` for a code (`no`→`nb`, `tl`→`fil`, `iw`→`he`,
+/// `jw`→`jv`). For matching only: pass on the model's own code.
 pub(crate) fn canonical_language_code(language: &str) -> &str {
     match base_language(language) {
         "no" => "nb",
@@ -250,10 +246,8 @@ impl ModelDescriptor {
 /// engine's prompt table expects (`en-US`) for models that advertise full
 /// BCP-47 locales.
 ///
-/// `preferred_languages` (the person's `spoken_languages`) only matters when
-/// the model can't auto-detect and the intent isn't usable: someone who speaks
-/// exactly one language the model hears gets that language rather than the
-/// English fallback.
+/// `preferred_languages` (`spoken_languages`) only matters when the model can't
+/// detect and the intent isn't usable: a single spoken language beats English.
 pub fn effective_language(
     intent: &str,
     preferred_languages: &[String],
@@ -293,9 +287,7 @@ pub fn effective_language(
 
 /// The model's own code for `language`, if it hears it.
 fn supported_code<'a>(language: &str, supported_languages: &'a [String]) -> Option<&'a String> {
-    // Prefer the same base code before considering an equivalence alias. If
-    // a future model advertises both `no` and `nb`, an explicit `nb` intent
-    // must select `nb`, regardless of capability-list order.
+    // Exact base first, then aliases: with both `no` and `nb` listed, `nb` must pick `nb`.
     supported_languages
         .iter()
         .find(|code| base_language(code) == base_language(language))
@@ -574,11 +566,9 @@ impl HfProgressState {
     fn on_update(&mut self, size: u64, now: Instant) -> Option<HfProgressSnapshot> {
         self.last_activity = now;
         let Some(rate) = self.rate.as_mut() else {
-            // hf-hub's `download_tempfile` reports the bytes already committed
-            // on disk as a single `update(start)` right after `init`, before
-            // any chunk request (even when `start` is 0). That is the resume
-            // offset, not transfer: take it as the baseline and emit it at
-            // once, so the bar doesn't flash 0% and the rate never counts it.
+            // hf-hub's first `update(start)` after `init` is the resume offset already
+            // on disk, not transfer: use it as the rate baseline and emit it at once
+            // so the bar doesn't flash 0%.
             self.downloaded = size;
             self.rate = Some(RateMeter::new(size));
             self.last_emit = now;

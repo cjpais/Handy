@@ -3,15 +3,13 @@ import type { OSType } from "@/lib/utils/keyboard";
 import TrayIcon from "../icons/TrayIcon";
 import "./desktopBar.css";
 
-// Demo draws the bar small, on the laptop; Try it close up. The menu bar's
-// menus, as blanks, at each size.
+// Placeholder menu widths per size.
 const MENUS = {
   demo: ["w-[27.5px]", "w-[20px]", "w-[22.5px]"],
   try: ["w-[30px]", "w-[22px]", "w-[26px]"],
 };
 const ICON_SIZE = { demo: 15, try: 19 };
 
-/** Tux, flat like the other marks: the belly and eyes are cut out. */
 const Tux = () => (
   <svg className="desktop-tux" viewBox="0 0 16 16">
     <path
@@ -23,19 +21,13 @@ const Tux = () => (
   </svg>
 );
 
-/**
- * The menu bar (macOS) or the taskbar (Windows, Linux) on Demo's and Try
- * it's drawn screens, where Handy's icon lives.
- */
+/** The drawn menu bar (macOS) or taskbar (Windows, Linux) holding Handy's icon. */
 export const DesktopBar: React.FC<{
   os: OSType;
   size: "demo" | "try";
-  /** Handy's icon, as the real one changes: an ear while it listens, a
-   *  brain while it transcribes. */
   state: React.ComponentProps<typeof TrayIcon>["state"];
-  /** Handy's icon: Try it's glove flies into it. */
+  /** Try it's glove flies into this. */
   trayRef?: React.Ref<HTMLSpanElement>;
-  /** The icon just caught the glove. */
   caught?: boolean;
 }> = ({ os, size, state, trayRef, caught }) => {
   const tray = (

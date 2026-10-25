@@ -195,9 +195,8 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Mark onboarding as finished. Onboarding calls this when the person closes
-/// its last screen; activating a model no longer counts as finishing, so
-/// someone who quits midway comes back to the rest of the flow.
+/// Mark onboarding as finished; called when its last screen closes, so quitting
+/// midway resumes the flow.
 #[specta::specta]
 #[tauri::command]
 pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {

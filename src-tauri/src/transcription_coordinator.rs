@@ -14,8 +14,7 @@ use tauri_specta::Event;
 const DEBOUNCE: Duration = Duration::from_millis(30);
 const RELEASE_GRACE: Duration = Duration::from_millis(50);
 
-/// Where a transcribe session is, for windows that follow along (onboarding's
-/// Try it), independent of whether the overlay is shown.
+/// Recording phase events for windows that follow along (onboarding's Try it).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum RecordingPhase {

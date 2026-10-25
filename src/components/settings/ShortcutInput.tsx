@@ -15,10 +15,8 @@ interface ShortcutInputProps {
 }
 
 /**
- * A binding's shortcut, click to record a new one. Recording goes through
- * useShortcutCapture, which picks the keyboard implementation's way of
- * hearing keys (the same recorder onboarding uses). Clicking elsewhere
- * cancels; Escape records like any key (Cancel's default is Escape).
+ * A binding's shortcut; click to record a new one. Clicking elsewhere cancels;
+ * Escape is recorded like any key (Cancel's default is Escape).
  */
 export const ShortcutInput: React.FC<ShortcutInputProps> = ({
   descriptionMode = "tooltip",

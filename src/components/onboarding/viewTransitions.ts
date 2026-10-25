@@ -6,14 +6,9 @@ import {
 } from "@/lib/utils/motion";
 
 /**
- * One kind of View Transition (Demo to Try it, Model's moves), one at a
- * time. `canMove` is false without View Transitions (older webviews), on
- * Linux, or with reduced motion: then it just changes. WebKitGTK segfaults
- * entering accelerated compositing for a transition while the DMABUF
- * renderer is off, which main.rs does on Linux. `skip` ends the last move
- * of this kind; `start` runs the next, and `onDone` cleans up after it
- * unless a newer one took over first. Each kind keeps its own: one kind
- * starting never cuts off another's cleanup.
+ * One View Transition at a time per kind; `onDone` is skipped if a newer one took over.
+ * Off on Linux: WebKitGTK segfaults entering accelerated compositing with the
+ * DMABUF renderer disabled (main.rs).
  */
 export const viewTransitions = () => {
   let running: ViewTransition | null = null;

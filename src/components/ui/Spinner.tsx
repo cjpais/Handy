@@ -1,6 +1,6 @@
 import React from "react";
 
-/** A 14px ring that spins: something is waiting on the system. */
+/** Small spinner for waiting on the system. */
 export const Spinner: React.FC<{ className?: string }> = ({
   className = "",
 }) => (

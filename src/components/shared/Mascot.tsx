@@ -2,18 +2,16 @@ import React from "react";
 import HandyMascot from "../icons/HandyMascot";
 
 interface MascotProps {
-  /** Height in px: 54 beside the wordmark, 88 on All set. */
+  /** Height in px. */
   size: number;
   /** Wave once on arrival, or high-five (re-key it to play again). */
   animation?: "wave" | "slap" | null;
 }
 
-// The design sized the glove as an image with room around it (357 × 400,
-// the glove inset 12.6% from the left and 7.25% from the top, 85% tall);
-// the same box keeps every size and the wave's pivot where they were.
+// The design's 357×400 image box, kept so sizes and the wave's pivot match it.
 const BOX_ASPECT = 357 / 400;
 
-/** Handy's glove, tilted -8deg like it's about to wave. */
+/** Handy's mascot glove, optionally animated. */
 export const Mascot: React.FC<MascotProps> = ({ size, animation = null }) => (
   <span
     style={{ width: size * BOX_ASPECT, height: size }}

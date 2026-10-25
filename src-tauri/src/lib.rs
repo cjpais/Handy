@@ -970,8 +970,7 @@ pub fn run(cli_args: CliArgs) {
             )]
             let main_window = win_builder.build()?;
 
-            // macOS puts the title bar inside the inner size, which would
-            // leave the page a bar short. Grow the window, and its minimum, by it.
+            // macOS draws the title bar inside the inner size; grow the window to fit it.
             #[cfg(target_os = "macos")]
             {
                 let bar = utils::measure_title_bar(&main_window);

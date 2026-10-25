@@ -44,12 +44,9 @@ const currentPlatform = (): PermissionPlatform => {
 };
 
 /**
- * The OS permissions Handy needs: the microphone on macOS and Windows, and
- * Accessibility on macOS. Checks on mount, asks on request, then polls every
- * second until granted. A row waits until Handy's window is back in front
- * (the prompt or Settings was dismissed) and goes back to asking if it still
- * isn't allowed. Granting Accessibility initializes typing and the shortcut
- * so no relaunch is needed. A preview never touches the OS.
+ * Microphone (macOS, Windows) and Accessibility (macOS) permissions: check,
+ * request, then poll until granted. Granting Accessibility initializes input
+ * so no relaunch is needed.
  */
 export const usePermissions = (preview: boolean): Permissions => {
   const { t } = useTranslation();

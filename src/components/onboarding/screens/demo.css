@@ -290,8 +290,7 @@
     transform: scale(1.6);
   }
 }
-/* the pill, as the overlay sits: bottom centre, above the taskbar. The one
-   scale left: the pill above is a copy of the real overlay, at its size. */
+/* The pill where the overlay sits, at the real overlay's size. */
 .demo-pill-wrap {
   position: absolute;
   left: 50%;
@@ -303,9 +302,8 @@
 .demo-screen:has(.is-task) .demo-pill-wrap {
   bottom: 34px;
 }
-/* the shortcut, as a screencast shows keys: bottom left, above the
-   taskbar. Under the pill, which floats over everything as the overlay does,
-   should a long shortcut reach it. */
+/* The shortcut, bottom left like a screencast; under the pill if a long one
+   reaches it. */
 .demo-keys {
   position: absolute;
   left: 9px;

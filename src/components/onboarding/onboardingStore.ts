@@ -39,10 +39,7 @@ interface Persisted {
   welcomeBack: boolean;
   /** Which ways of using the shortcut they've done for real (Try it). */
   lessons: { hold: boolean; tap: boolean };
-  /**
-   * A row of All set's panel led back to an earlier screen: going on from
-   * it comes straight back here, not through the screens in between.
-   */
+  /** Set when All set's panel jumps back to a screen; continuing returns here. */
   returnTo: OnboardingStep | null;
   /** Start Handy at login: set on All set, saved when they finish. */
   atLogin: boolean;

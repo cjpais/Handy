@@ -1,8 +1,6 @@
 /**
- * The speech models onboarding offers, and what it says about them, from the
- * app's catalog (@handy-computer/models, the same file as
- * src-tauri/src/catalog/catalog.json): accuracy per language, the wait on
- * this machine's tier, and the package's picks for the chosen languages.
+ * Grades, speeds and picks from @handy-computer/models (the same catalog as
+ * src-tauri/src/catalog/catalog.json).
  */
 import {
   accuracyGrade,
@@ -18,7 +16,7 @@ export type { CatalogModel, MachineTier };
 
 const M = catalog.methodology;
 
-/** The models onboarding can offer: curated speech models. */
+/** Curated speech models. */
 export const CURATED_ASR: CatalogModel[] = catalog.curatedModels.filter(
   (m) => m.role === "asr",
 );
@@ -38,9 +36,8 @@ export interface Grade {
 }
 
 /**
- * The error each letter stays under, in percent; F is beyond D's. The
- * package's display bands (ACCURACY_CEILINGS in its recommendations.js),
- * which it doesn't export: keep the two the same.
+ * Max error % per grade (F beyond D). Keep in sync with the package's
+ * ACCURACY_CEILINGS, which it doesn't export.
  */
 export const GRADE_CEILINGS = { A: 5, B: 10, C: 20, D: 30 } as const;
 
@@ -96,11 +93,7 @@ const PACKAGE_ROLES = [
   ["accurate", "accurate"],
 ] as const;
 
-/**
- * The package's picks for these languages, one card per model, in the order
- * Recommended, Faster, More accurate. Only models in `offered` (the ones the
- * app can download) count.
- */
+/** The package's picks for these languages, one per model, limited to `offered`. */
 export const picksFor = (
   languages: string[],
   offered: (model: CatalogModel) => boolean,
@@ -115,11 +108,7 @@ export const picksFor = (
     .filter((p): p is ModelPick => p !== null)
     .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
 
-/**
- * Every usable model for these languages, best value first: error plus a
- * penalty for each second past the free wait (the package's overall cost),
- * judged on this machine's tier. For ordering the full list.
- */
+/** Usable models for these languages, ordered by the package's overall cost on this tier. */
 const rankFor = (
   languages: string[],
   tier: MachineTier,
@@ -209,10 +198,7 @@ export const groupModels = (
 
 /* ---------------- speed on this computer (Try it) ---------------- */
 
-/**
- * Only takes of 5 seconds or more are judged. Comfortable is a 30-second
- * dictation back within 5 seconds (the overall pick's budget).
- */
+/** Slower than the overall pick's budget; takes under 5 s aren't judged. */
 export const isTooSlow = (speechSeconds: number, waitSeconds: number) =>
   speechSeconds >= 5 &&
   speechSeconds / Math.max(waitSeconds, 0.05) <

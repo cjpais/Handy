@@ -15,18 +15,12 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(target_os = "linux")]
 use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 
-/// Serializes pastes. Each one snapshots and restores the clipboard, so two
-/// overlapping pastes would save each other's transcript as "the user's
-/// clipboard". Only taken by `paste`, which never runs on the main thread.
+/// Serializes pastes: overlapping ones would restore each other's transcript as
+/// the user's clipboard. Only taken by `paste`, which never runs on the main thread.
 static PASTE_LOCK: Mutex<()> = Mutex::new(());
 
-/// Runs `f` with the shared Enigo on the main thread and waits for its result.
-///
-/// Paste runs on a worker thread so the main thread stays free while it
-/// sleeps, which lets Handy's own windows handle a paste aimed at them. Input
-/// injection hops back here because macOS's TIS keyboard layout APIs must run
-/// on the main thread. Tauri runs the closure inline when already on the main
-/// thread, so nested calls can't deadlock.
+/// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
+/// and waits for the result. Runs inline if already on the main thread, so no deadlock.
 fn with_enigo<T: Send + 'static>(
     app_handle: &AppHandle,
     f: impl FnOnce(&mut Enigo) -> Result<T, String> + Send + 'static,
@@ -800,9 +794,8 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
-/// Pastes `text` into the focused application. Call it from a worker thread,
-/// never the main thread: it sleeps between steps, and only the input
-/// injection hops to the main thread (see `with_enigo`).
+/// Pastes `text` into the focused app. Call from a worker thread, never the main
+/// thread: it sleeps between steps (input injection hops via `with_enigo`).
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);

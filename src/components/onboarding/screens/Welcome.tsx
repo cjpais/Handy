@@ -31,10 +31,7 @@ interface WelcomeProps {
   onContinue: () => void;
 }
 
-/**
- * Screen 1: the greeting, the languages you speak, and which Chinese
- * characters Handy writes when you speak Chinese or Cantonese.
- */
+/** Screen 1: greeting, spoken languages, and Chinese script. */
 export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
   const { t, i18n } = useTranslation();
   const { updateSetting } = useSettings();
@@ -107,9 +104,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
     <OnboardingShell
       progress={progress}
       pill={
-        // Quiet, like Back: a setting for the window, not a step. The native
-        // menu sits invisibly over the words, which say what it changes (the
-        // menus) apart from the languages you dictate in below.
+        // App language: a native <select> laid invisibly over the label.
         <label
           title={t("onboarding.welcome.appLanguage")}
           className="relative -me-[8px] flex shrink-0 cursor-pointer items-center gap-[6px] rounded-lg px-[8px] py-[4px] text-small text-ink-2 transition-colors hover:bg-wash hover:text-text has-[select:focus-visible]:bg-wash has-[select:focus-visible]:text-text"

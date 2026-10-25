@@ -1,15 +1,8 @@
 /**
- * Builds src/assets/fonts/cjk-subset.woff2: Noto Sans CJK (variable, every
- * weight) cut to the Chinese, Japanese and Korean characters Handy sets
- * beside other languages (see src/lib/utils/cjkFont.ts):
- *
- * - every language's own name Intl can give in those scripts, with their
- *   script and region forms (a webview's ICU may spell one differently)
- * - the app-language menu's and Chinese script choice's names
- * - Demo's sample lines
- *
- * Run after changing any of those: `bun run build:cjk-font`.
- * `--check` fails if the committed font is out of date.
+ * Builds src/assets/fonts/cjk-subset.woff2: Noto Sans CJK subset to the CJK
+ * characters in language endonyms (incl. script/region forms, since ICU
+ * spellings vary), the app-language and Chinese script names, and Demo's samples.
+ * Rerun after changing any of those: `bun run build:cjk-font` (`--check` verifies).
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -29,8 +22,7 @@ const CACHE = join(
 );
 const OUT = join(import.meta.dir, "../src/assets/fonts/cjk-subset.woff2");
 
-// The scripts by their extensions, so marks they share count too (ー, 。),
-// and the full-width forms (？).
+// Script extensions so shared marks (ー, 。) and full-width forms (？) count.
 const CJK =
   /[\p{scx=Han}\p{scx=Hangul}\p{scx=Hiragana}\p{scx=Katakana}\uff00-\uffef]/gu;
 

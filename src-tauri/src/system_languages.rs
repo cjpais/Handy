@@ -1,6 +1,5 @@
-//! The languages the OS says someone uses, and the guesses Handy makes from
-//! them: which languages they speak, and which Chinese characters they read.
-//! Onboarding suggests these; the settings migration backfills from them.
+//! OS preferred languages and the spoken-language / Chinese-script guesses made
+//! from them, for onboarding and the settings migration.
 
 use log::{info, warn};
 use once_cell::sync::Lazy;
@@ -27,8 +26,7 @@ pub fn system_languages() -> &'static [String] {
     &READ.languages
 }
 
-/// Logs what the OS said. Called from setup: the first read happens while
-/// the app is built (for [`init`]), before logging is up.
+/// Logs what was read. Called from setup, since the first read precedes logging.
 pub fn log_system_languages() {
     if let Some(problem) = &READ.problem {
         warn!("{problem}");
@@ -36,9 +34,8 @@ pub fn log_system_languages() {
     info!("System languages: {:?}", READ.languages);
 }
 
-/// Settings → Time & Language's list, which also holds every keyboard's
-/// language. (`sys-locale` reads the display languages, which can miss a
-/// language added only to type in.)
+/// Time & Language's list, which includes keyboard-only languages that
+/// `sys-locale`'s display languages miss.
 #[cfg(windows)]
 fn read() -> Read {
     use windows::System::UserProfile::GlobalizationPreferences;
@@ -73,9 +70,7 @@ fn read() -> Read {
     }
 }
 
-/// The spoken languages to suggest from language tags, most likely first:
-/// those the picker offers, once each, at most [`MAX_GUESSED`], then English
-/// if it isn't among them. Never empty.
+/// Up to [`MAX_GUESSED`] picker languages from `tags`, deduplicated, plus English.
 pub fn suggested_languages<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut languages: Vec<String> = Vec::new();
     for language in tags.into_iter().map(crate::catalog::language_identity) {
@@ -108,9 +103,8 @@ struct Suggestion {
     chinese_script: Option<ChineseScript>,
 }
 
-/// Hands the suggestion to every webview before its scripts run, as
-/// `window.__HANDY_SYSTEM_LANGUAGES__`: onboarding builds its first state
-/// synchronously, before a command could answer.
+/// Injects the suggestion as `window.__HANDY_SYSTEM_LANGUAGES__`, since onboarding
+/// needs it synchronously before a command could answer.
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     let tags = system_languages().iter().map(String::as_str);
     let suggestion = Suggestion {

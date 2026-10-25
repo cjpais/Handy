@@ -24,32 +24,27 @@ export interface RowDownload {
 
 interface ModelTableRowProps {
   entry: TableModel;
-  /** The page's picked one: in use (Models page), to download (onboarding). */
+  /** In use (Models page) or picked to download (onboarding). */
   selected: boolean;
-  /** The page's mark in the first column, while nothing downloads. */
+  /** First-column mark; replaced by a ring while downloading. */
   mark: React.ReactNode;
-  /** Downloading: a ring in the mark's place, how far on the second line. */
+  /** Download progress, shown as a ring and on the second line. */
   download?: RowDownload | null;
-  /** The page's own second line, over the download's and the description. */
+  /** Second line; takes precedence over download progress and description. */
   line?: React.ReactNode;
-  /** The delete/stop column's button (the Models page's). */
+  /** Delete/stop button (Models page). */
   slot?: React.ReactNode;
-  /** Takes the columns' and the slot's place (the delete question). */
+  /** Replaces the columns and slot (the delete confirmation). */
   tail?: React.ReactNode;
   onActivate: () => void;
   /** Runs first; preventDefault() keeps Enter and Space from activating. */
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   hint?: string;
-  /** Onboarding's moves: the row's parts carry view-transition names. */
+  /** View-transition names for onboarding's animations. */
   vt?: VtName;
 }
 
-/**
- * One model in the table, the same on onboarding and the Models page: the
- * page's mark (a ring while it downloads), the name with its role, kind and
- * what it can do besides transcribe, its description (or how far the
- * download is), then the columns and, on the Models page, delete or stop.
- */
+/** One model row, shared by onboarding and the Models page. */
 export const ModelTableRow: React.FC<ModelTableRowProps> = ({
   entry,
   selected,

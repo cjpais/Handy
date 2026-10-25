@@ -7,9 +7,7 @@
   --s-surface: color-mix(in srgb, var(--color-background) 98%, transparent);
   /* Accent = logo pink; flips automatically via --color-logo-primary. */
   --s-accent: var(--color-logo-primary);
-  /* The rest are the app's palette (theme.css), which already follows the
-     theme and the `data-theme` setting: the pink tint, secondary and tertiary
-     text, edges and hairlines. */
+  /* The rest come from theme.css, which already follows the theme setting. */
   --s-accent-soft: color-mix(
     in srgb,
     var(--color-logo-primary) 20%,

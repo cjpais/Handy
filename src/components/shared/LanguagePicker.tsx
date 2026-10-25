@@ -2,11 +2,7 @@ import React from "react";
 import { getLanguage, type Language } from "@/lib/constants/languages";
 import { cjkSubsetFont } from "@/lib/utils/cjkFont";
 
-/**
- * The parts of picking the languages someone speaks, shared by onboarding's
- * Welcome and the Preferred Languages setting: a chip for each picked
- * language, a cell for each one to pick, and the search's keys.
- */
+/** Spoken-language picker pieces shared by onboarding's Welcome and the Preferred Languages setting. */
 
 const RemoveIcon = () => (
   <svg
@@ -32,11 +28,7 @@ interface LanguageChipProps {
   locked?: boolean;
 }
 
-/**
- * A language someone speaks, by its own name (the endonym, the same in every
- * UI language), with a × that removes it. Pressing it keeps focus in the
- * search beside it.
- */
+/** A picked language by its endonym, with a remove button that keeps focus in the search. */
 export const LanguageChip: React.FC<LanguageChipProps> = ({
   code,
   removeLabel,
@@ -83,10 +75,7 @@ interface LanguageOptionProps {
   onPick: () => void;
 }
 
-/**
- * A language to add: its own name over its name in the UI language (left
- * blank when they're the same, so the cells line up).
- */
+/** A language to add: endonym over its UI-language name (blank when equal, so cells align). */
 export const LanguageOption: React.FC<LanguageOptionProps> = ({
   language,
   name,
@@ -114,11 +103,7 @@ export const LanguageOption: React.FC<LanguageOptionProps> = ({
   </button>
 );
 
-/**
- * The keys of a language search beside its chips: Enter adds the first match,
- * Backspace in an empty search removes the last language, Escape clears the
- * search. Returns whether it handled the key.
- */
+/** Search keys: Enter adds, Backspace on empty removes the last, Escape clears. Returns true if handled. */
 export const languageSearchKeys = (
   e: React.KeyboardEvent<HTMLInputElement>,
   {

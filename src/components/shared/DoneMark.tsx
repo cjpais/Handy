@@ -1,6 +1,6 @@
 import React from "react";
 
-/** Done, granted, ready: a 16px moss circle with a paper check. */
+/** Check mark for done, granted or ready. */
 export const DoneMark: React.FC = () => (
   <span
     aria-hidden="true"

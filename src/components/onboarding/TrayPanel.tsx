@@ -13,16 +13,14 @@ import TrayIcon from "../icons/TrayIcon";
 
 interface TrayPanelProps {
   os: OSType;
-  /** Spoken languages (codes), as picked on Welcome. */
   languages: string[];
   modelName: string;
-  /** The model's on disk: Handy's ready. */
+  /** The model is on disk. */
   ready: boolean;
-  /** While it isn't: the download, as Demo shows it. */
+  /** Shown while not ready. */
   download: React.ReactNode;
   shortcut: string;
   keysDown: boolean;
-  /** Try it's recorder for new keys. */
   capture: {
     capturing: boolean;
     partial: string;
@@ -58,12 +56,8 @@ const Chevron = () => (
 );
 
 /**
- * All set's panel, hanging off Handy's icon in the drawn menu bar or tray, in
- * the bubble's material (the glove's speech, come back as its menu): what
- * they set up. Languages and the model lead back to their screens, which
- * come straight back here; the shortcut and login change in place. Clicks
- * here never take the cursor out of the note, so the shortcut keeps typing
- * there.
+ * All set's summary panel under the drawn tray icon. Clicks here never take
+ * focus from the note, so the shortcut keeps typing there.
  */
 export const TrayPanel: React.FC<TrayPanelProps> = ({
   os,
@@ -86,11 +80,10 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
   const keysLabel = keycapLabel(shortcut, os);
   const partialKeys = bindingKeys(capture.partial);
 
-  // New keys going in: a click anywhere but the keys' box puts the old ones
-  // back, the row's own words too. That click mustn't then start again.
+  // While capturing, a click outside the keys box cancels; that same click
+  // must not then restart capture.
   const keysRow = useRef<HTMLDivElement>(null);
   const keysBox = useRef<HTMLSpanElement>(null);
-  /** When a click on the row's words reset it, so that click doesn't start it again. */
   const resetAt = useRef(-Infinity);
   const { capturing, cancel } = capture;
   useEffect(() => {
@@ -153,10 +146,6 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
         </span>
         <Chevron />
       </button>
-      {/* As in Settings: a click on the row turns the keys into "Press
-          keys…", then what's held; a click anywhere but that box puts the
-          old ones back. One row throughout, the keys' place at its end, so
-          nothing moves. */}
       <div
         ref={keysRow}
         className="try-panel-keys"
@@ -172,8 +161,7 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
           }
           {...spaceDoesNotClick}
           onClick={() => {
-            // The same click that reset it (a press and release, well
-            // under a second): leave it reset.
+            // The click that just cancelled capture.
             if (performance.now() - resetAt.current < 800) return;
             if (!capturing) capture.start();
           }}

@@ -2,13 +2,8 @@ import { flushSync } from "react-dom";
 import { viewTransitions } from "../viewTransitions";
 
 /**
- * Model's motion: the same model carries the same view-transition name in
- * every state (mf-<id>, and -n name, -s size, -g grades, -m check, -r role,
- * -d words, -c codes), so the browser moves it from where it was to where it
- * is: the full list opens and folds in place (the picks glide into the
- * table's first rows), and picking swaps which card is the big one. Rows
- * that weren't on screen before rise in one after another. Without View
- * Transitions (older webviews) or with reduced motion it just changes.
+ * Model screen view transitions. Each model keeps the same names in every state
+ * (mf-<id>, plus -n/-s/-g/-m/-r/-d/-c for parts) so the browser animates it.
  */
 
 const moves = viewTransitions();

@@ -1,18 +1,10 @@
 /**
- * The spoken languages Handy offers, everywhere it offers them (onboarding,
- * the language setting, the model filters), from the model catalog. Codes are
- * the package's language identities (`languageIdentity`): the catalog spells
- * some languages several ways (en-US, no/nb, tl/fil, jw/jv), and the identity
- * is the one spelling compared and saved. The backend matches it to the code
- * each model advertises.
+ * Spoken languages from the model catalog. Codes are `languageIdentity`s,
+ * one spelling per language (no/nb → nb), compared and saved as is.
  */
 import { catalog, languageIdentity } from "@handy-computer/models";
 
-/**
- * A spoken language. `native` is the endonym, so people find their own
- * language in their own script; it's the same in every UI language, so it
- * isn't translated. Its name in the UI language comes from `languageName`.
- */
+/** `native` is the endonym, never translated. UI names: `languageName`. */
 export interface Language {
   code: string;
   native: string;
@@ -61,11 +53,7 @@ for (const model of catalog.models.filter((m) => m.role === "asr"))
 const byEnglishName = (a: string, b: string) =>
   languageName(a, "en").localeCompare(languageName(b, "en"));
 
-/**
- * Every language a speech model in the catalog hears: the most widely
- * supported first, then by English name, so the order doesn't shift with the
- * UI language.
- */
+/** Catalog languages, most supported first, then by English name. */
 export const LANGUAGES: Language[] = [...SUPPORT]
   .sort(
     ([a, aModels], [b, bModels]) => bModels - aModels || byEnglishName(a, b),
@@ -81,11 +69,7 @@ export const getLanguage = (code: string): Language => {
   return BY_CODE.get(identity) ?? { code: identity, native: endonym(identity) };
 };
 
-/**
- * The languages behind a model's codes, once each, in the catalog's order.
- * (Models outside the catalog, like the legacy downloads, can list languages
- * it doesn't; those go last.)
- */
+/** A model's languages, deduped, in catalog order; unknown codes go last. */
 export const languagesOf = (codes: readonly string[]): Language[] =>
   [...new Set(codes.map(languageIdentity))]
     .sort(
@@ -129,11 +113,7 @@ const ALIASES: Record<string, string[]> = {
   ko: ["hangul", "hangugeo"],
 };
 
-/**
- * Languages matching what's typed, best first: a prefix of any name (the
- * endonym, the name in the UI language or English, the code, an alias) beats
- * a match inside one.
- */
+/** Languages matching a query; a prefix match on any name beats a substring. */
 export const searchLanguages = (
   query: string,
   uiLanguage: string,

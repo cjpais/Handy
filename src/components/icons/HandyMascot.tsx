@@ -1,8 +1,4 @@
-/**
- * Handy's mascot: the white glove with a face, in its own colours except
- * the outline and face, which follow the theme (`mascot-line`). From
- * handy.computer's logo.
- */
+/** Handy's mascot; the outline and face follow the theme (`mascot-line`). */
 const HandyMascot = ({ className = "" }: { className?: string }) => {
   return (
     <svg

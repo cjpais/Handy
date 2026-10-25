@@ -9,24 +9,19 @@ import type { CatalogModel } from "./data/models";
 
 type Downloading = Extract<DownloadState, { state: "downloading" }>;
 
-/**
- * A download's numbers in words: how far ("297 MB of 706 MB"), the time
- * left and the speed, as the Models page's cards give them.
- */
+/** Formatters for a download's size, time left and speed. */
 export const useDownloadWords = () => {
   const { t, i18n } = useTranslation();
   // At least a byte: formatModelSize calls 0 an unknown size.
   const bytes = (n: number) => formatModelSize(Math.max(n, 1) / BYTES_PER_MB);
   return {
-    /** Whole percent, never 100 before it's done. */
+    /** Never 100 before it's done. */
     percent: (d: Downloading) => Math.min(99, Math.floor(d.progress * 100)),
-    /** "297 MB of 706 MB"; the catalog's size until the download knows. */
+    /** Falls back to the catalog size until the download knows the total. */
     sizes: (d: Downloading, sizeMb: number | undefined) => ({
       done: bytes(d.downloaded),
       total: d.total > 0 ? bytes(d.total) : formatModelSize(sizeMb),
     }),
-    /** "3 min", in the app's language (the browser localizes the unit);
-     *  takes seconds left (ModelMigration sums several downloads). */
     time: (etaSeconds: number | null) => {
       if (etaSeconds == null) return null;
       const minutes = etaSeconds >= 60;
@@ -36,7 +31,6 @@ export const useDownloadWords = () => {
         unitDisplay: "short",
       }).format(Math.ceil(minutes ? etaSeconds / 60 : etaSeconds));
     },
-    /** "4.2 MB/s"; takes bytes per second. */
     speed: (bytesPerSec: number | null) =>
       bytesPerSec == null
         ? null
@@ -47,10 +41,8 @@ export const useDownloadWords = () => {
 };
 
 /**
- * The download, beside the button it's holding back (Demo): a ring, what's
- * happening, then how far. Only the first line is announced, so a screen
- * reader hears each change of state, not every megabyte. "Ready" shows only
- * for a download that finished here, not a model that was already on disk.
+ * Footer download status. Only the state line is announced, not every
+ * megabyte; "Ready" shows only for a download that finished on this screen.
  */
 export const DownloadStatus: React.FC<{
   models: ReturnType<typeof useOnboardingModels>;
@@ -63,8 +55,7 @@ export const DownloadStatus: React.FC<{
     ? ({ state: "none" } as const)
     : models.downloadState(model);
 
-  // Seen loading on this screen: noted as it renders, so "ready" shows in
-  // the same render the download finishes, on the same node.
+  // Set during render so "ready" appears in the same render the download ends.
   const loaded = useRef(false);
   if (d.state === "downloading" || d.state === "checking")
     loaded.current = true;

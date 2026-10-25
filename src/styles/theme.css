@@ -1,27 +1,8 @@
-/* Handy Colors
- *
- * The whole palette, and every color the app uses comes from it. Pick by job:
- *
- *   Greys, one set for Settings, onboarding and the overlay:
- *     text         primary text
- *     ink-2        secondary text: descriptions, labels (text at 60%)
- *     ink-3        hints, metadata, icons, a hovered edge (mid-gray)
- *     line-strong  control edges: fields, dropdowns, buttons (mid-gray/80)
- *     line         dividers, resting edges, tracks, a pressed fill (/20)
- *     wash         hover and quiet fills (mid-gray/10)
- *   Pink: logo-primary (brand fills, toggles, focus, a hovered edge) with /80
- *     (the selected sidebar item, a hovered solid), /50 (a picked card's
- *     edge), /20 (selected) and /10 (hover) in Settings; background-ui (the
- *     primary button, the checked radio, progress) with /80 under the pointer.
- *   Plum (onboarding): plum (pressed keys, Demo's hand), plum-pick (a picked
- *     card's edge).
- *   Status: moss, warning, error, each with its -wash tint for the box behind
- *     it. A tinted box has no edge.
- *
- * White is the text on a pink solid, the background color the text on a
- * status solid (dark mode's status colors are light); text/20 is a disabled
- * icon; black/50 is the dim behind a dialog. Demo's drawing (demo-*,
- * wordmark, mascot) is illustration, not UI.
+/* Handy Colors: every color the app uses comes from here. Pick by job:
+ * greys (ink-2, ink-3, line-strong, line, wash) for text, edges and fills;
+ * logo-primary / background-ui for brand and primary actions; plum for keys
+ * and picks (onboarding); moss / warning / error (+ -wash) for status.
+ * demo-*, wordmark and mascot are illustration, not UI.
  */
 
 :root {
@@ -37,28 +18,21 @@
   --dark-color-background: #2c2b29;
   --dark-color-logo-primary: #f28cbb;
 
-  /* Status colors: alerts, failed downloads, the log's levels, the model
-     status dot. Each has a -wash tint below for the box behind it. */
+  /* Status colors. Each has a -wash tint below. */
   --light-color-warning: #d97706;
   --light-color-error: #dc2626;
   --dark-color-warning: #fbbf24;
   --dark-color-error: #f87171;
 
-  /* Done, granted, ready. Pink already means "recording", so
-     success gets its own hue. */
+  /* Success. Pink already means "recording", so it gets its own hue. */
   --light-color-moss: #2f7d5b;
   --dark-color-moss: #86c9a4;
 
-  /* Plum: the one ink for what you can press or have picked: keycaps'
-     letters, edge and drop (and a pressed key's whole face), Demo's hand,
-     the picked card, chip and tag. Light mode's is the logo stroke; dark
-     mode's is its text white, so the keys stay the page plus one ink,
-     pressed or not. */
+  /* Plum: the ink for keycaps and picked items. */
   --light-color-plum: var(--light-color-logo-stroke);
   --dark-color-plum: var(--dark-color-text);
 
-  /* Demo's drawing of a computer: the app's window. (The logo hand that
-     presses the keys is plum.) */
+  /* Demo's drawn app window. */
   --light-color-demo-window: var(--light-color-background);
   --dark-color-demo-window: color-mix(
     in srgb,
@@ -66,8 +40,7 @@
     var(--dark-color-background)
   );
 
-  /* The laptop around Demo's drawing: the lid's black, the base's aluminium
-     (top and bottom of its gradient), and the wallpaper behind the app. */
+  /* Demo's laptop: lid, base gradient and wallpaper. */
   --light-color-demo-lid: #1f1e21;
   --dark-color-demo-lid: #0f0e10;
   --light-color-demo-alu-hi: #ececee;
@@ -99,19 +72,17 @@
     ),
     #1f1a1e;
 
-  /* The wordmark. In dark mode a white outline in place of the pale pink
-     keeps the screen to fewer pinks. */
+  /* The wordmark. Dark mode outlines it in white to cut down on pinks. */
   --light-color-wordmark: var(--light-color-logo-primary);
   --light-color-wordmark-stroke: var(--light-color-logo-stroke);
   --dark-color-wordmark: var(--dark-color-logo-primary);
   --dark-color-wordmark-stroke: var(--dark-color-text);
 
-  /* The mascot's outline and face. In dark mode they take the background, so
-     the glove reads as a cut-out sticker rather than edged in muddy plum. */
+  /* Mascot outline and face; dark mode uses the background, not muddy plum. */
   --light-color-mascot-line: var(--light-color-logo-stroke);
   --dark-color-mascot-line: var(--dark-color-background);
 
-  /* Demo's copy of the recording pill: its ring and shadow (the overlay's). */
+  /* Demo's recording pill ring and shadow. */
   --light-demo-pill-shadow:
     0 0 0 1px color-mix(in srgb, var(--color-background-ui) 16%, transparent),
     0 10px 26px -10px rgba(0, 0, 0, 0.35);
@@ -120,8 +91,7 @@
       color-mix(in srgb, var(--dark-color-logo-primary) 20%, transparent),
     0 10px 26px -10px rgba(0, 0, 0, 0.6);
 
-  /* The status tints, for the box behind a status color. Mixed from the
-     palette above; dark mode uses its own strengths. */
+  /* Status tints for the box behind a status color. */
   --light-color-moss-wash: color-mix(
     in srgb,
     var(--light-color-moss) 12%,
@@ -179,10 +149,7 @@
   --color-warning-wash: var(--light-color-warning-wash);
   --color-error-wash: var(--light-color-error-wash);
 
-  /* The grey steps, Settings' long-standing values: secondary text from the
-     active text colour, the rest from mid-gray, which reads on both themes.
-     Hints and icons, control edges (fields, buttons, chips), dividers and
-     tracks, and the hover and quiet fill. */
+  /* Grey steps: secondary text, hints/icons, control edges, dividers, hover fill. */
   --color-ink-2: color-mix(in srgb, var(--color-text) 60%, transparent);
   --color-ink-3: var(--color-mid-gray);
   --color-line-strong: color-mix(
@@ -192,10 +159,7 @@
   );
   --color-line: color-mix(in srgb, var(--color-mid-gray) 20%, transparent);
   --color-wash: color-mix(in srgb, var(--color-mid-gray) 10%, transparent);
-  /* What's picked (Model's card, a script, Demo's way) is the softer plum
-     edge alone: no fill and no drop, which stay with the keys you press.
-     Under the pointer, a pickable edge is ink-3. A picked row in a model
-     list is a grey fill instead (bg-line). */
+  /* Edge of a picked card or option. */
   --color-plum-pick: color-mix(in srgb, var(--color-plum) 60%, transparent);
   /* The far end of a capture slot's breathing edge (KeySlot). */
   --color-plum-faint: color-mix(in srgb, var(--color-plum) 22%, transparent);

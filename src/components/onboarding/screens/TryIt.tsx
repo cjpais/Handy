@@ -28,9 +28,8 @@ import "./tryit.css";
 type Mood = "point" | "listen" | "cheer" | "oops" | "ready" | "windup";
 
 /**
- * Try it's end, the move into All set: the glove winds up (only when the last
- * take finishes it), high-fives (not for Skip), flies into Handy's icon in
- * the menu bar or tray, and the icon's panel opens.
+ * Moving into All set: wind up (auto only), high five (not Skip), fly to the
+ * tray icon, open its panel.
  */
 type Stage = "try" | "windup" | "five" | "fly" | "set";
 /** What started it: the last take, the High five button (or Finish), Skip. */
@@ -43,12 +42,7 @@ const FLIGHT_MS = 560;
 /** How far through the flight the glove starts fading into the icon. */
 const FADE_FROM = 0.7;
 
-/**
- * What the glove says, in one of three shapes: an instruction (one line, the
- * keys in it: "Hold [fn] and talk."), an outcome (what happened, and what's
- * next), or a problem (what went wrong, and how to fix it). `id` names the
- * line, so a new one fades in and the same one stays put.
- */
+/** The bubble's content. A new `id` fades in; the same `id` stays mounted. */
 type Say =
   | { shape: "instruction"; id: string; line: React.ReactNode; mood: Mood }
   | {
@@ -60,11 +54,8 @@ type Say =
     };
 
 /**
- * The bubble eases to the size of what it says instead of jumping: as wide
- * as its widest line (up to a cap), as tall as its parts, so a short line
- * never sits in a long box and a line with keys and one without hand over
- * smoothly. Text that wraps would leave the box at the cap with room to its
- * right, so it's then narrowed as far as it goes without another line.
+ * Animates to its content's size. Wrapped text is narrowed as far as it goes
+ * without adding a line.
  */
 const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const inner = useRef<HTMLDivElement>(null);
@@ -75,9 +66,8 @@ const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const measure = () => {
       el.style.width = "";
       const height = el.offsetHeight;
-      // offsetWidth rounds, and a box a fraction narrower than its text
-      // wraps it: a pixel over always fits. (Layout sizes, not
-      // getBoundingClientRect's, so the camera move's scale can't skew it.)
+      // offsetWidth rounds down, so +1 guarantees no wrap. Layout sizes, not
+      // getBoundingClientRect, so the transition's scale can't skew them.
       let fits = el.offsetWidth + 1;
       let wraps = 0;
       while (fits - wraps > 1) {
@@ -95,9 +85,7 @@ const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    // The box is pinned to its width, so content that gets narrower without
-    // wrapping less (a shorter shortcut in the same line) never resizes it:
-    // a change inside measures it again too.
+    // The pinned width hides content shrinking: remeasure on DOM changes too.
     const mo = new MutationObserver(measure);
     mo.observe(el, { childList: true, subtree: true, characterData: true });
     measure();
@@ -115,19 +103,14 @@ const EasedSize: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
-/**
- * The shortcut's keys, in a line of the bubble. While nothing's going on
- * they're also the way to change it: they lift under the pointer, a "Change"
- * tip shows over them (`onTip`, drawn by the bubble so its edge can't clip
- * it), and a click starts recording new ones.
- */
+/** The shortcut's keys in a bubble line; when idle, click to record new ones. */
 const LineKeys: React.FC<{
   binding: string;
   os: OSType;
   pressed: boolean;
   /** Start changing them; absent while a take's going on. */
   onChange?: () => void;
-  /** The keys' element while the tip should show over them, else null. */
+  /** Tip anchor; drawn by the bubble so its edge can't clip it. */
   onTip?: (el: HTMLElement | null) => void;
   label?: string;
 }> = ({ binding, os, pressed, onChange, onTip, label }) => {
@@ -170,41 +153,24 @@ const LineKeys: React.FC<{
 interface TryItProps {
   progress: { index: number; count: number };
   os: OSType;
-  /** All set: opens on the panel (a relaunch, or back from its rows). */
+  /** Open directly on All set. */
   finished: boolean;
-  /** The model in use (on disk: Demo won't continue until it is). */
   model: CatalogModel | undefined;
   /** The model is on disk. */
   ready: boolean;
-  /** The download, as Demo shows it: All set's panel, while it's going. */
+  /** Download status, shown in All set's panel while in progress. */
   download: React.ReactNode;
-  /** A take was too slow: back to Model, for a faster one. */
+  /** A take was too slow: go pick a faster model. */
   onChangeModel: () => void;
-  /** From All set's panel: to Welcome or Model, and straight back. */
+  /** Edit from All set's panel, then return here. */
   onEdit: (to: "welcome" | "model") => void;
   onBack: () => void;
-  /** The move's under way: the flow's on All set now. */
   onArrive: () => void;
-  /** Back from All set to Try it, on the same screen. */
   onUnfinish: () => void;
-  /** Done, on All set: setup's over. */
   onDone: () => void;
 }
 
-/**
- * Screen 5: the first real dictation. Demo's screen, close up, with one note
- * on it that already has the cursor, and Handy's glove on the note's corner
- * with a speech bubble saying what to do. Use the shortcut and the words land
- * at the cursor, as they will in any app. Hold, then tap: either way counts
- * for itself, in either order, and one is enough to finish.
- *
- * The bubble's line is always the next thing to do, with the shortcut's keys
- * in it, so it names them. It changes once the way they're pressing is known
- * (how to stop); in between, the keys in the line press with the real ones,
- * and the glove nods along. When the keys come up, that line dims while the
- * words are on their way, and only a wait long enough to notice says "Watch
- * the note."
- */
+/** Screen 5: first real dictation into a note; one take (hold or tap) ends it. */
 export const TryIt: React.FC<TryItProps> = ({
   progress,
   os,
@@ -225,9 +191,7 @@ export const TryIt: React.FC<TryItProps> = ({
   const { languages, atLogin, set } = useOnboardingStore();
   const { refreshAudioDevices } = useSettings();
 
-  // The microphone list is only loaded once onboarding's done, and an empty
-  // one can't be opened: load it when it's needed. (The mic's allowed by
-  // now; it just recorded.)
+  // The mic list isn't loaded until onboarding ends; load it for the picker.
   const silent = e.result.kind === "silent";
   useEffect(() => {
     if (silent) refreshAudioDevices();
@@ -247,10 +211,9 @@ export const TryIt: React.FC<TryItProps> = ({
   // Owned here once mounted: `finished` only says where a fresh mount opens.
   const [stage, setStage] = useState<Stage>(finished ? "set" : "try");
   const [how, setHow] = useState<How>("five");
-  // The icon catches the glove: only after the flight, not on a relaunch.
+  // Only after the flight, not on a relaunch.
   const [caught, setCaught] = useState(false);
-  // Title and line fade only once they've swapped (into All set and back),
-  // not on arrival, where Demo's camera move carries them.
+  // Fade the title only after a swap; on arrival Demo's transition carries it.
   const [swapped, setSwapped] = useState(false);
   const [tail, setTail] = useState<number>();
   const screen = useRef<HTMLDivElement>(null);
@@ -269,7 +232,7 @@ export const TryIt: React.FC<TryItProps> = ({
     setStage(by === "auto" ? "windup" : "five");
   };
 
-  // The last take lands: no click, the glove asks for five and takes it.
+  // The last take finishes it automatically.
   const finale = e.result.kind === "finale";
   useEffect(() => {
     if (!finale) return;
@@ -281,18 +244,13 @@ export const TryIt: React.FC<TryItProps> = ({
     if (stage !== "windup" && stage !== "five") return;
     const next = setTimeout(
       () => setStage(stage === "windup" ? "five" : "fly"),
-      // A high five takes off from the slap, not after it settles: the
-      // settle plays on in flight.
+      // Take off on the slap; its settle plays during the flight.
       stage === "windup" ? WINDUP_MS : how === "skip" ? 220 : 260,
     );
     return () => clearTimeout(next);
   }, [stage, how]);
 
-  // The flight: from the note's corner into the icon, straight up to a menu
-  // bar (it's right above), a hop down into a tray, shrinking to the icon's
-  // size and fading into it as it lands, so it's gone when the icon catches
-  // it (and the glove unmounts). Each leg has its own easing, so the offsets
-  // are real time.
+  // Fly the glove into the tray icon: straight up on macOS, else a hop down.
   useLayoutEffect(() => {
     if (stage !== "fly") return;
     onArrive();
@@ -308,8 +266,6 @@ export const TryIt: React.FC<TryItProps> = ({
     const s = to.height / from.height;
     const at = (x: number, y: number, scale: number) =>
       `translate(${x}px, ${y}px) scale(${scale})`;
-    // A tray's just below: up first, slowing to the top of the hop, then
-    // falling into it.
     const legs: Keyframe[] =
       os === "macos"
         ? [
@@ -359,8 +315,7 @@ export const TryIt: React.FC<TryItProps> = ({
     const rtl = document.documentElement.dir === "rtl";
     const mid = icon.left + icon.width / 2;
     const fromEnd = rtl ? mid - box.left : box.right - mid;
-    // Its edge and size are tryit.css's (--try-panel-*); the tail goes
-    // wherever the icon is.
+    // The panel's inset comes from tryit.css (--try-panel-end).
     const end =
       parseFloat(
         getComputedStyle(screen.current!).getPropertyValue("--try-panel-end"),
@@ -391,7 +346,6 @@ export const TryIt: React.FC<TryItProps> = ({
   /* ---------- what the glove says ---------- */
 
   const say = ((): Say => {
-    // The finale: the glove asks, winds up, gives it.
     if (moving && how === "auto")
       return {
         shape: "instruction",
@@ -419,10 +373,9 @@ export const TryIt: React.FC<TryItProps> = ({
           }}
         />
       ),
-      // Only read while idle: mid-take the glove listens (data-mood below).
+      // Only used while idle (see data-mood).
       mood: "point",
     });
-    // New keys going in: one line, the slot that takes them, and Cancel.
     if (capturing)
       return {
         shape: "instruction",
@@ -452,14 +405,10 @@ export const TryIt: React.FC<TryItProps> = ({
         ),
         mood: "point",
       };
-    // Keys up, words on their way: usually they land in a blink, so the line
-    // stays (dimmed, below); only a real wait gets its own.
+    // Only a noticeable wait replaces the (dimmed) line.
     if (e.phase === "typing" && e.waiting)
       return instruction("onboarding.try.watch");
-    // Keys down: how to stop, for the way they're actually going. Until
-    // that's known, whatever was up stays (an instruction, a cheer, a
-    // problem), so the bubble changes once, straight to this, not to a
-    // guess first.
+    // Keys down: wait until hold vs. tap is known so the bubble changes once.
     if (e.phase !== "idle" && e.take)
       return instruction(
         e.take === "tap" ? "onboarding.try.tapAgain" : "onboarding.try.letGo",
@@ -483,10 +432,7 @@ export const TryIt: React.FC<TryItProps> = ({
               sub: t("onboarding.try.doneTapNext"),
               mood: "cheer",
             };
-      // The mic sent nothing at all: Settings' microphone list, right here.
-      // Picking one is the fix, so it's back to what's next, the cursor in
-      // the note. The note keeps the cursor while the list is used, and the
-      // list isn't read out as the bubble's news.
+      // Silent mic: offer the picker inline, keeping focus in the note.
       case "silent":
         return {
           shape: "problem",
@@ -523,8 +469,7 @@ export const TryIt: React.FC<TryItProps> = ({
           mood: "oops",
         };
     }
-    // Both done before (back from All set, or a relaunch): the glove asks
-    // for five, and the button gives it.
+    // Both already done (back from All set, or a relaunch).
     if (!e.todo)
       return {
         shape: "outcome",
@@ -551,16 +496,13 @@ export const TryIt: React.FC<TryItProps> = ({
     );
   })();
 
-  // The tip goes with the keys: a new line, a take or recording ends it.
+  // Hide the tip on a new line, a take, or capture.
   useEffect(() => setTip(null), [say.id, e.phase, capturing]);
 
-  // The footer's button is the way out, named for how far they've got: Skip
-  // before either way (someone whose dictation can't work here yet can still
-  // finish setting up), Finish after one. With both done the glove asks for
-  // five, and the bubble has the only button. On All set, Done.
+  // Skip before any take (dictation may not work here yet), Finish after one,
+  // none once both are done (the bubble has the button), Done on All set.
   const hint = after ? (
-    // Linux: a pass here doesn't promise the shortcut or pasting work in
-    // other apps.
+    // On Linux, working here doesn't guarantee it works in other apps.
     os === "linux" ? (
       <LinuxGuide i18nKey="onboarding.linux.done" />
     ) : (
@@ -605,17 +547,12 @@ export const TryIt: React.FC<TryItProps> = ({
       primary={primary}
     >
       <div className="try-main" data-stage={stage}>
-        {/* Title and line swap with a fade as the glove leaves; the line
-            keeps its height, so the screen under it never jumps. */}
         <ScreenTitle
           key={after ? "done" : "try"}
           className={swapped ? "try-swap" : ""}
         >
           {t(after ? "onboarding.done.title" : "onboarding.try.title")}
         </ScreenTitle>
-        {/* Where to look: the bubble says each thing to do when it's time,
-            but it's down in the corner, far from where reading starts. On
-            All set, where Handy went and how to use it anywhere. */}
         <ScreenSub
           key={after ? "done-sub" : "try-sub"}
           className={swapped ? "try-swap" : ""}
@@ -641,15 +578,11 @@ export const TryIt: React.FC<TryItProps> = ({
             t("onboarding.try.subtitle")
           )}
         </ScreenSub>
-        {/* Demo's screen, at Demo's proportions, without the laptop. */}
         <div
           ref={screen}
           className="try-screen"
           data-os={isMac ? "mac" : "win"}
         >
-          {/* Handy's icon, in the menu bar or the tray, as on Demo: an ear
-              while it listens, a brain while it transcribes. It catches the
-              glove. */}
           <DesktopBar
             os={os}
             size="try"
@@ -685,14 +618,12 @@ export const TryIt: React.FC<TryItProps> = ({
             </div>
           </div>
 
-          {/* Handy, on the note's corner, until it flies to the icon. */}
           {stage !== "set" && (
             <div className="try-guide">
               <button
                 ref={glove}
                 type="button"
                 className="try-glove"
-                // Nodding along from the moment the keys go down.
                 data-mood={
                   stage === "windup"
                     ? "windup"
@@ -704,9 +635,8 @@ export const TryIt: React.FC<TryItProps> = ({
                 }
                 data-how={how}
                 aria-label={t("onboarding.done.highFiveLabel")}
-                // A high five leaves the cursor in the note.
                 onMouseDown={(ev) => ev.preventDefault()}
-                // Asked for five, a high five finishes; otherwise it's just one.
+                // Finishes when both ways are done; otherwise just a slap.
                 onClick={() =>
                   stage === "try" && !e.todo ? start("five") : e.slap()
                 }
@@ -747,11 +677,8 @@ export const TryIt: React.FC<TryItProps> = ({
                 <EasedSize>
                   <div
                     className="try-say"
-                    // Handy's turn: what they did stays, quieter.
                     data-dim={(e.phase === "typing" && !e.waiting) || undefined}
                   >
-                    {/* A new line fades in; the same one stays put, so the
-                      keys in it press without remounting. */}
                     <p key={`line:${say.id}`} className="try-say-main">
                       {say.line}
                     </p>
@@ -778,7 +705,6 @@ export const TryIt: React.FC<TryItProps> = ({
             </div>
           )}
 
-          {/* All set: the icon's panel, the bubble's material come back. */}
           {stage === "set" && tail != null && (
             <TrayPanel
               os={os}
@@ -797,17 +723,15 @@ export const TryIt: React.FC<TryItProps> = ({
             />
           )}
         </div>
-        {/* Under the screen: a suggestion, not a problem, so not the glove's.
-            Its height is always kept, so the screen never jumps for it. */}
+        {/* Always reserves its height so the screen doesn't jump. */}
         <div className="try-after">
           {e.slowWait != null && (
             <span>
               <Trans
                 i18nKey="onboarding.try.slowLine"
                 values={{ name, wait: seconds(e.slowWait) }}
-                // Not <link>: a void element in HTML, so its words would fall out.
+                // Not <link>: it's a void element in HTML.
                 components={{
-                  // From All set, Model comes straight back here.
                   faster: (
                     <TextLink
                       onClick={after ? () => onEdit("model") : onChangeModel}

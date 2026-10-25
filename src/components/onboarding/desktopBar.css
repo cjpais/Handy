@@ -1,7 +1,4 @@
-/* The menu bar (macOS) or the taskbar (Windows, Linux) on Demo's and Try
-   it's drawn screens (DesktopBar.tsx), where Handy's icon lives. Demo draws
-   it small, on the laptop; Try it close up: .is-demo and .is-try set the
-   sizes. */
+/* Drawn menu bar / taskbar (DesktopBar.tsx); .is-demo and .is-try set sizes. */
 .desktop-bar.is-demo {
   --bar-gap: 11px;
   --bar-pad: 10px;
@@ -16,8 +13,7 @@
   --bar-apple-height: 10px;
   --bar-start: 12.5px;
 }
-/* The taskbar as tall as the menu bar, so Try it's window is the same size
-   on both. */
+/* Taskbar matches the menu bar's height so Try it's window is the same size. */
 .desktop-bar.is-try {
   --bar-gap: 14px;
   --bar-pad: 14px;
@@ -53,8 +49,7 @@
 .desktop-bar.is-task {
   bottom: 0;
   height: var(--bar-task-height);
-  /* Three columns, the outer two equal, so the apps sit at the bar's centre
-     (the screen's, the laptop's), not the centre of what the tray leaves. */
+  /* Equal outer columns keep the apps centred on the bar, not the space left by the tray. */
   display: grid;
   grid-template-columns: 1fr auto 1fr;
 }

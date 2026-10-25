@@ -9,10 +9,8 @@ import { formatModelSize } from "@/lib/utils/format";
 import type { Grading } from "./grading";
 
 /**
- * A grade for each language up to three; four and five take the dense
- * chips; past five the grades fold into one overall grade per row, as at
- * the Models page's width (about 540px) a sixth column leaves the name no
- * room. Hovering the overall grade lists each language's.
+ * One grade column per language up to 3, dense chips for 4–5, and past 5 a
+ * single overall grade: at the Models page's ~540px a sixth column crowds out the name.
  */
 const MAX_COLUMNS = 5;
 const MAX_ROOMY = 3;
@@ -43,7 +41,7 @@ export const CODE_CLASS =
 /** A part's view-transition name (onboarding's moves), or nothing. */
 export type VtName = (part?: string) => Record<string, string> | undefined;
 
-/** The column codes (EN ES … SPEED SIZE), over the columns they name. */
+/** The column heads (EN ES … SPEED SIZE). */
 export const Codes: React.FC<{ langs: string[]; vt?: VtName }> = ({
   langs,
   vt,
@@ -76,10 +74,7 @@ export const Codes: React.FC<{ langs: string[]; vt?: VtName }> = ({
   );
 };
 
-/**
- * A grade chip's hint: what the letter means for these languages (one, or
- * all of yours with each one's grade under it), or why there's none.
- */
+/** Tooltip for a grade chip: what the letter means, or why there's no grade. */
 export const GradeTip: React.FC<{
   grading: Grading;
   model: CatalogModel | undefined;
@@ -102,9 +97,8 @@ export const GradeTip: React.FC<{
   else if (grade.letter === "none")
     text = t(key("unrated"), { language: list(langs) });
   else text = t(key(`meaning.${grade.letter}`));
-  // Several languages: each one's grade under the line, as words (the
-  // chips' greys are for the page, not the tooltip's plum). The letters
-  // in one column and the + and − in the next, so they line up down it.
+  // Per-language breakdown as text (chip greys don't work on the tooltip);
+  // letters and +/− in separate columns so they line up.
   const breakdown = !one && (
     <span className="mt-[6px] grid grid-cols-[1fr_auto_auto]">
       {langs.map((l) => {
@@ -154,10 +148,7 @@ export const useSpeedWords = () => {
         );
 };
 
-/**
- * The speed bars' hint, in the grade hint's shape: "Speed: Fast" over what
- * that means for you, or why there's no speed. `className` is the anchor's.
- */
+/** Tooltip for the speed bars, shaped like the grade hint. */
 export const SpeedTip: React.FC<{
   grading: Grading;
   model: CatalogModel | undefined;
@@ -193,7 +184,7 @@ export const SpeedTip: React.FC<{
   );
 };
 
-/** A model's values under the codes: its grades, speed and size. */
+/** A row's grade, speed and size cells. */
 export const Values: React.FC<{
   grading: Grading;
   model: CatalogModel | undefined;

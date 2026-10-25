@@ -1,22 +1,16 @@
 import React, { useEffect, useLayoutEffect, useRef } from "react";
 
-/** The app's scrollbar (App.css): a 7px pill, 3px in, at least 32px tall. */
+/** Matches the app's scrollbar in App.css. */
 const INSET = 3;
 const MIN_HEIGHT = 32;
-/** How long it stays after the scrolling stops. */
+/** How long it stays visible after scrolling stops. */
 const LINGER_MS = 800;
 
 /**
- * A list's scrollbar drawn over it instead of beside it, so its rows and
- * their dividers run the full width whatever the platform's scrollbars do.
- * It looks like the app's own (--scrollbar-thumb in a 14px strip) and, as
- * macOS's do, shows while scrolling or with the pointer over the list; it
- * can be dragged. The list hides its native one. Goes after the list, in a
- * `relative group/scroll` box around it.
- *
- * Solid, not see-through as the native one is: over a picked row or a
- * divider a see-through thumb mixes into a third grey. Its colours are what
- * --scrollbar-thumb (15% text) and its hover (30%) look like on the page.
+ * Overlay scrollbar so rows run full width on every platform. Render after the
+ * list inside a `relative group/scroll` box; the list hides its native one.
+ * Solid, not translucent: over a picked row or divider a translucent thumb
+ * blends into a third grey.
  */
 export const ScrollThumb: React.FC<{
   listRef: React.RefObject<HTMLElement | null>;
@@ -25,7 +19,7 @@ export const ScrollThumb: React.FC<{
   const drag = useRef<{ y: number; top: number } | null>(null);
   const linger = useRef(0);
 
-  /** Its length is how much of the list shows; its place, how far down. */
+  /** Size and position the thumb from the list's scroll metrics. */
   const place = useRef(() => {});
   place.current = () => {
     const list = listRef.current;
@@ -37,7 +31,7 @@ export const ScrollThumb: React.FC<{
     if (thumb.hidden) return;
     const track = clientHeight - INSET * 2;
     const height = Math.max(MIN_HEIGHT, (track * clientHeight) / scrollHeight);
-    // Past either end (a bounce), it stays at that end.
+    // Clamp during overscroll bounce.
     const at = Math.min(1, Math.max(0, scrollTop / max));
     thumb.style.height = `${height}px`;
     thumb.style.transform = `translateY(${INSET + at * (track - height)}px)`;
@@ -53,7 +47,7 @@ export const ScrollThumb: React.FC<{
     }, LINGER_MS);
   };
 
-  // Every render: a search or a filter changes how much there is.
+  // Every render: search and filters change the content height.
   useLayoutEffect(() => place.current());
   useEffect(() => {
     const list = listRef.current;

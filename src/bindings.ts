@@ -657,9 +657,8 @@ async initializeShortcuts() : Promise<Result<null, string>> {
 }
 },
 /**
- * Mark onboarding as finished. Onboarding calls this when the person closes
- * its last screen; activating a model no longer counts as finishing, so
- * someone who quits midway comes back to the rest of the flow.
+ * Mark onboarding as finished; called when its last screen closes, so quitting
+ * midway resumes the flow.
  */
 async completeOnboarding() : Promise<Result<null, string>> {
     try {
@@ -1078,10 +1077,8 @@ export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { transcribe: string[]; gpu_devices: GpuDeviceOption[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 /**
- * Script applied to Mandarin and Cantonese output. Other languages are never
- * converted. Taiwan and Hong Kong both write Traditional characters, each
- * with its own standard forms (裡/裏, 著/着), so the region is part of the
- * choice rather than guessed from what was spoken.
+ * Script applied to Mandarin and Cantonese output. Traditional carries its region
+ * (Taiwan vs Hong Kong forms, e.g. 裡/裏) rather than guessing it.
  */
 export type ChineseScript = 
 /**
@@ -1089,8 +1086,7 @@ export type ChineseScript =
  */
 "as_transcribed" | "simplified" | 
 /**
- * Traditional, in Taiwan's standard forms. Also reads the old single
- * `traditional` value, which the settings migration then settles.
+ * Traditional, Taiwan forms. Also reads legacy `traditional` (migrated on load).
  */
 "traditional_tw" | 
 /**
@@ -1171,8 +1167,7 @@ export type PostProcessApiFormat =
 "anthropic"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean; api_format?: PostProcessApiFormat }
 /**
- * Where a transcribe session is, for windows that follow along (onboarding's
- * Try it), independent of whether the overlay is shown.
+ * Recording phase events for windows that follow along (onboarding's Try it).
  */
 export type RecordingPhase = 
 /**
@@ -1290,9 +1285,7 @@ export type StreamWorkKind = "transcribing" | "polishing"
 export type Theme = "system" | "light" | "dark"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 /**
- * A dictation that finished: how it ended, how long the person spoke, and
- * how long after they stopped it ended (onboarding's Try it measures speed
- * with it). A cancelled one sends a cancelled recording phase instead.
+ * Emitted when a dictation finishes (not on cancel); onboarding uses it to measure speed.
  */
 export type TranscriptionCompleteEvent = { outcome: TranscriptionOutcome; audio_seconds: number; wait_seconds: number }
 /**
@@ -1308,8 +1301,7 @@ export type TranscriptionOutcome =
  */
 "empty" | 
 /**
- * The microphone sent only digital silence (a muted mic, or a headset
- * connected to another device), so nothing was typed.
+ * The microphone sent only digital silence (e.g. muted).
  */
 "silent" | 
 /**

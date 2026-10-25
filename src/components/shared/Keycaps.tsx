@@ -5,16 +5,13 @@ interface KeycapsProps {
   /** The binding to draw, e.g. "option+space". */
   binding: string;
   osType: OSType;
-  /** sm: in sentences and steps, 30px tall; screen: in the corner of
-   *  Demo's drawn screen, 24px tall; line: inside a line of 17px text, as
-   *  in Try it's "Hold [fn] and talk.", 25px tall. */
+  /** sm: standalone; screen: Demo's drawn screen; line: inline in body text. */
   size?: "sm" | "screen" | "line";
-  /** Every key drops by its shadow and fills with its plum. */
+  /** Draw every key as held down. */
   pressed?: boolean;
   /** A combination still being captured: dashed, no drop. */
   partial?: boolean;
-  /** Inside a `group/keycaps` control: the keys rise on its hover or
-   *  keyboard focus, to say they can be changed. */
+  /** Raise the keys on hover/focus of a parent `group/keycaps` control. */
   lift?: boolean;
   className?: string;
 }
@@ -25,11 +22,7 @@ const SIZES = {
   line: "h-[25px] min-w-[25px] px-[7px] rounded-[6px] text-[13px]",
 };
 
-/**
- * The shortcut as physical keys: a paper face with a plum edge and a plum
- * drop that the key falls into when it's pressed, filling with the plum, its
- * letters turning paper. Handy's signature element.
- */
+/** A shortcut binding drawn as physical keycaps. */
 export const Keycaps: React.FC<KeycapsProps> = ({
   binding,
   osType,
@@ -74,11 +67,7 @@ const SLOT_SIZES = {
   line: "h-[25px] min-w-[64px] px-[8px] rounded-[6px] text-[13px]",
 };
 
-/**
- * Where new keys go while a shortcut is being captured: a dashed key, sunk
- * like the dashed keys that replace it, its edge breathing. Empty, or with
- * a few words ("Press keys…").
- */
+/** Placeholder key shown while a shortcut is being captured. */
 export const KeySlot: React.FC<
   React.HTMLAttributes<HTMLSpanElement> & { size?: "sm" | "line" }
 > = ({ size = "sm", className = "", children, ...rest }) => (

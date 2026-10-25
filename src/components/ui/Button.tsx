@@ -30,8 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
       "text-text bg-logo-primary/20 border-transparent hover:bg-logo-primary/20 focus:ring-1 focus:ring-logo-primary",
     secondary:
       "bg-wash border-line hover:bg-logo-primary/20 hover:border-logo-primary focus:outline-none",
-    // Secondary on the page's own background with a firm edge, for screens
-    // where a grey fill reads as disabled (onboarding)
+    // For screens where secondary's grey fill reads as disabled (onboarding)
     outline:
       "text-text bg-background border-line-strong hover:border-plum focus-visible:ring-1 focus-visible:ring-logo-primary",
     // Secondary's neutral resting look, but hover/focus use the semantic

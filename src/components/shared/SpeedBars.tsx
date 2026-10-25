@@ -16,7 +16,7 @@ interface SpeedBarsProps {
   className?: string;
 }
 
-/** Four bars of rising height, filled up to the model's speed. */
+/** Four bars filled up to the model's speed level. */
 export const SpeedBars: React.FC<SpeedBarsProps> = ({
   level,
   className = "",

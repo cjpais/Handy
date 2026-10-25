@@ -2,15 +2,9 @@ import { flushSync } from "react-dom";
 import { viewTransitions } from "./viewTransitions";
 
 /**
- * Demo to Try it, and back: one camera move. Try it's screen is Demo's
- * laptop screen, close up, so going in, the drawn screen grows into the real
- * one, its window into the Notes window, and the laptop's lid and base pass
- * out of frame around it. The title rides up into place and Handy's glove
- * steps in last, once you're close. Back plays it the other way. Without
- * View Transitions (older webviews) or with reduced motion it just changes.
- *
- * What moves is named in screenTransitions.css, only while html carries
- * data-sflow, so Model's own transitions never see these names.
+ * Demo ↔ Try it zoom: Demo's drawn screen scales into Try it's.
+ * Transition names apply only while html has data-sflow (screenTransitions.css),
+ * so Model's transitions never see them.
  */
 export type ScreenMove = "in" | "out";
 
@@ -19,11 +13,7 @@ const moves = viewTransitions();
 const rect = (selector: string) =>
   document.querySelector<HTMLElement>(selector)?.getBoundingClientRect();
 
-/**
- * The laptop's push: the transform that puts its screen where Try it's
- * screen is, about the drawn screen's centre. Going in it's where the lid
- * ends up; going back, where it starts.
- */
+/** Sets the transform that maps the drawn screen onto Try it's real one. */
 const setPush = (
   laptop: DOMRect | undefined,
   drawn: DOMRect | undefined,
@@ -47,7 +37,7 @@ export const moveScreens = (kind: ScreenMove, update: () => void) => {
   }
   moves.skip();
   const html = document.documentElement;
-  // Before the old picture is taken, so it's taken with the names on.
+  // Before the old snapshot, so it's captured with the names applied.
   html.dataset.sflow = kind;
   const laptop = rect(".demo-laptop");
   const drawn = rect(".demo-screen");

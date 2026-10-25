@@ -21,16 +21,9 @@ interface HandyKeysEvent {
 }
 
 /**
- * Records a new combination for a binding: with the handy-keys backend's key
- * events where that's the keyboard implementation, else from this window's
- * own key events (with every binding suspended, so none fires or swallows the
- * keys). `partial` is what's held so far. Calls onDone once the binding is
- * saved or capture is cancelled. `inert` (onboarding's preview) records from
- * this window and saves nothing. `escapeCancels` makes Escape a way out
- * rather than a key to record (Settings records it: Cancel's default).
- *
- * A failed save needs no undo here: the backend keeps the old shortcut
- * registered and the store rolls itself back.
+ * Records a new binding via handy-keys events, or this window's key events
+ * with all bindings suspended. `inert` records without saving;
+ * `escapeCancels` makes Escape exit instead of recording.
  */
 export const useShortcutCapture = (
   bindingId: string,
@@ -50,8 +43,7 @@ export const useShortcutCapture = (
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
-  // What a capture in progress holds in the backend, to give back when it
-  // ends, even by unmounting mid-capture.
+  // What the capture holds in the backend, released on end or unmount.
   const held = useRef<"handyKeys" | "bindings" | null>(null);
   const release = useCallback(async () => {
     const was = held.current;
@@ -94,9 +86,8 @@ export const useShortcutCapture = (
   const start = useCallback(async () => {
     if (held.current) return false;
     if (handyKeys) {
-      // The backend refuses while macOS Secure Input is active (its listener
-      // would get no key events and capture just the modifier); it also
-      // turns the warning banner on, which the toast points at.
+      // Refused while macOS Secure Input is on (no key events would arrive);
+      // the backend also shows the warning banner the toast points at.
       const result = await commands
         .startHandyKeysRecording(bindingId)
         .catch((error) => ({ status: "error" as const, error: String(error) }));
@@ -155,8 +146,7 @@ export const useShortcutCapture = (
         else modifierOnly = hotkey_string;
         setPartial(hotkey_string);
       } else if (!is_key_down && key) {
-        // The key came up: commit the keyed combination (never just the
-        // modifiers, which is how bindings used to get overwritten).
+        // Commit the keyed combo, never bare modifiers (that overwrote bindings).
         const binding = keyed || hotkey_string;
         if (binding) {
           stopped = true;

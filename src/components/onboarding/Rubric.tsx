@@ -3,11 +3,7 @@ import { SPEED_CUTOFFS } from "../shared/SpeedBars";
 import type { GradeLetter } from "../shared/GradeChip";
 import { GRADE_CEILINGS } from "./data/models";
 
-/**
- * What one grade or one count of speed bars stands for, in a few words for
- * a hint: "5–10%", "under 2 s". Only the band of what's under the pointer,
- * not the whole scale, so the hint stays a line or two.
- */
+/** The band one grade or speed-bar count stands for, e.g. "5–10%" or "under 2 s". */
 export const useRubric = () => {
   const { t, i18n } = useTranslation();
   const n = (x: number) =>

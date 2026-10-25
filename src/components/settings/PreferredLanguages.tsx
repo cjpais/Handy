@@ -20,12 +20,7 @@ interface PreferredLanguagesProps {
   grouped?: boolean;
 }
 
-/**
- * The languages someone speaks (`spoken_languages`), drawn as onboarding
- * draws them: chips in a panel whose search opens a grid of every language
- * by its own name. Below: what no model hears well. Only the list changes
- * here; the model's own Language is left as it is.
- */
+/** Edits `spoken_languages`; leaves the model's own Language as is. */
 export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
@@ -42,8 +37,7 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
   const ui = i18n.language;
   const nameOf = (code: string) => languageName(code, ui);
 
-  // With none picked yet (onboarded before Handy asked), their own language
-  // leads, and the grid stays open: the invitation to pick.
+  // Nothing picked yet (onboarded before this setting): suggest their language.
   const suggestion = languages.length ? null : suggestedLanguages()[0];
   const matches = useMemo(() => {
     const found = searchLanguages(query, ui);
@@ -159,9 +153,8 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
           <div ref={drawerRef} className="min-h-0">
             <div
               ref={gridRef}
-              // Pressing a language keeps focus in the search. WebKit doesn't
-              // focus a pressed button, so the search's blur would close the
-              // grid (and make it inert) before the click lands.
+              // Keep focus in the search: WebKit doesn't focus a pressed button,
+              // so the blur would close the grid before the click lands.
               onMouseDown={(e) => {
                 if ((e.target as HTMLElement).closest("button"))
                   e.preventDefault();

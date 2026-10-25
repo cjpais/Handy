@@ -29,21 +29,17 @@ pub(super) const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(60);
 /// Throttle for progress events while bytes are flowing.
 pub(super) const PROGRESS_THROTTLE: Duration = Duration::from_millis(100);
 
-/// With no bytes arriving, progress is still re-emitted this often so the
-/// reported rate decays through a lull instead of freezing at its last value.
+/// Re-emit interval with no bytes arriving, so the rate decays instead of freezing.
 pub(super) const PROGRESS_TICK: Duration = Duration::from_secs(1);
 
-/// Trailing window the reported rate averages over: long enough to smooth
-/// hf-hub's bursty parallel chunks, short enough that a slowdown shows.
+/// Rate window: smooths hf-hub's bursty parallel chunks, still shows a slowdown.
 const RATE_WINDOW: Duration = Duration::from_secs(5);
 
-/// No rate is reported until bytes have flowed for this long; a sub-second
-/// sample is mostly burst noise.
+/// No rate until bytes have flowed this long; shorter samples are burst noise.
 const RATE_MIN_SPAN: Duration = Duration::from_secs(1);
 
-/// Transfer rate over a trailing window. Bytes resumed from disk never count
-/// as speed, and the clock starts at the first byte off the wire, so time
-/// spent resolving and connecting doesn't drag the early estimate down.
+/// Transfer rate over a trailing window, excluding resumed bytes and timed from
+/// the first byte received (so connecting doesn't drag it down).
 pub(super) struct RateMeter {
     start_bytes: u64,
     /// `(when, cumulative bytes)`; the front is the window's anchor. Empty

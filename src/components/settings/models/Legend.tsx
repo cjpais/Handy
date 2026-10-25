@@ -7,11 +7,7 @@ import { useRubric } from "@/components/onboarding/Rubric";
 
 const LETTERS = ["A", "B", "C", "D", "F"] as const;
 
-/**
- * How the grades and bars are read, for anyone who asks: a small "?" at the
- * end of the column heads, opening the whole scale at once (each hint shows
- * only its own band).
- */
+/** The "?" in the column heads: opens the full grade and speed scale. */
 export const Legend: React.FC<{ tier: "accelerated" | "cpu" }> = ({ tier }) => {
   const { t } = useTranslation();
   const rubric = useRubric();

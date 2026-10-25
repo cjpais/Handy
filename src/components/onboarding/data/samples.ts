@@ -1,8 +1,4 @@
-/**
- * What Demo's animation "says": a line in the person's own language, so they
- * see their language land. This is dictation, not UI copy, so it's written
- * in each language rather than translated.
- */
+/** Demo's dictated lines per language. Sample speech, not UI copy, so not in i18n. */
 import { isChinese, type ChineseScriptChoice } from "./languages";
 
 export const SAMPLES: Record<string, string> = {
@@ -19,18 +15,13 @@ export const SAMPLES: Record<string, string> = {
   it: "Possiamo spostare la revisione del design di domani alle tre? Vorrei un po' più di tempo per finire i prototipi.",
 };
 
-// English gets its own line per app: hold answers the friend in Messages,
-// tap (for anything longer) fills a note.
+// English has a separate line per mode: a short reply (hold), a longer note (tap).
 const ENGLISH = {
   hold: "Yes! Running ten minutes late, save me a seat.",
   tap: "Picnic in the park on Saturday, then dinner at Rosa's. Bring the blue blanket and the good speaker.",
 };
 
-/**
- * The line for one way of using the shortcut: hold shows the first spoken
- * language, tap the second (or the first again). Languages without a sample
- * fall back to English.
- */
+/** Hold uses the first spoken language, tap the second; no sample falls back to English. */
 export const demoLine = (
   languages: string[],
   script: ChineseScriptChoice,

@@ -1,8 +1,4 @@
-/**
- * What the Models page knows about each model: the app's own list (what's on
- * disk, downloading, in use) joined to the catalog by repository, so the
- * grades, speeds and picks are onboarding's own for your languages.
- */
+/** Models page data: the app's model list joined to the catalog by repo. */
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
@@ -29,9 +25,7 @@ import {
   getTranslatedModelName,
 } from "@/lib/utils/modelTranslation";
 
-// Legacy models are the blob (Url-sourced) .bin downloads, superseded by
-// the catalog GGUFs. They stay runnable when already on disk, but we no longer
-// advertise the download.
+// Legacy (Url-sourced .bin) models still run from disk but aren't offered.
 export const isLegacyModel = (model: ModelInfo): boolean =>
   typeof model.source === "object" && "Url" in model.source;
 
@@ -71,10 +65,7 @@ export interface Lists {
 
 const KIND_ORDER = { curated: 0, catalog: 0, custom: 1, legacy: 2 } as const;
 
-/**
- * Every model the page shows, graded for your languages (`spoken_languages`)
- * on this computer's tier, and sorted into the page's sections.
- */
+/** Every model on the page, graded for `spoken_languages`, in sections. */
 export const useModelEntries = () => {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
@@ -228,11 +219,7 @@ const select = async (id: string) => {
 const isOnDisk = (id: string) =>
   !!useModelStore.getState().models.find((m) => m.id === id)?.is_downloaded;
 
-/**
- * For a download started elsewhere (onboarding, the model dropdown, the
- * update), which this page has no promise for: resolves once it ends, with
- * whether the model is now on disk.
- */
+/** Waits for a download started elsewhere; resolves to whether it's on disk. */
 const whenDownloadEnds = (id: string) =>
   new Promise<boolean>((resolve) => {
     const unsubscribe = useModelStore.subscribe(
@@ -240,18 +227,14 @@ const whenDownloadEnds = (id: string) =>
       async (inFlight) => {
         if (inFlight) return;
         unsubscribe();
-        // The store clears the flag before it reloads the model list, so
-        // read the list fresh before saying whether it landed.
+        // The flag clears before the list reloads, so reload it first.
         await useModelStore.getState().loadModels();
         resolve(isOnDisk(id));
       },
     );
   });
 
-/**
- * Use a model: at once when it's on disk, else download it and then use it.
- * The last one pressed wins; the others carry on downloading.
- */
+/** Use a model, downloading it first if needed. The last one pressed wins. */
 export const pickModel = (id: string) => {
   const store = useModelStore.getState();
   if (isOnDisk(id)) {

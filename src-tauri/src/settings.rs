@@ -193,10 +193,8 @@ pub enum ClipboardHandling {
     CopyToClipboard,
 }
 
-/// Script applied to Mandarin and Cantonese output. Other languages are never
-/// converted. Taiwan and Hong Kong both write Traditional characters, each
-/// with its own standard forms (裡/裏, 著/着), so the region is part of the
-/// choice rather than guessed from what was spoken.
+/// Script applied to Mandarin and Cantonese output. Traditional carries its region
+/// (Taiwan vs Hong Kong forms, e.g. 裡/裏) rather than guessing it.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ChineseScript {
@@ -204,8 +202,7 @@ pub enum ChineseScript {
     #[default]
     AsTranscribed,
     Simplified,
-    /// Traditional, in Taiwan's standard forms. Also reads the old single
-    /// `traditional` value, which the settings migration then settles.
+    /// Traditional, Taiwan forms. Also reads legacy `traditional` (migrated on load).
     #[serde(alias = "traditional")]
     TraditionalTw,
     /// Traditional, in Hong Kong's standard forms.
@@ -1203,14 +1200,10 @@ fn apply_settings_migrations(
         }
     }
 
-    // One-time spoken languages backfill: people onboarded before Handy asked
-    // which languages they speak, so guess from what they already told it and
-    // the OS's languages. English rides along with any other language, so the
-    // guess never decides a transcription (`effective_language` only uses a
-    // lone language) and a wrong one is just a chip to remove. The script
-    // stays as it was: converting would change their output. Before the Chinese script
-    // migrations: the guess reads the legacy `zh-Hans`/`zh-Hant` intents, and
-    // the Traditional split reads the guess. Waits for onboarding, which asks.
+    // One-time spoken languages backfill for users onboarded before it was asked.
+    // The guess always includes English, so it never decides a transcription
+    // (`effective_language` only uses a lone language). Must run before the
+    // Chinese script migrations: it reads `zh-Hans`/`zh-Hant`, and they read it.
     if settings.onboarding_completed && settings.spoken_languages.is_empty() {
         settings.spoken_languages = guessed_spoken_languages(settings, settings_value);
         updated = true;
@@ -1232,20 +1225,25 @@ fn apply_settings_migrations(
         updated = true;
     }
 
-    // One-time Traditional split: `traditional` used to take its regional
-    // forms from what was spoken (Hong Kong's for Cantonese, Taiwan's for
-    // Mandarin). Keep Hong Kong's for people who are in Hong Kong or Macau or
-    // speak Cantonese, so nobody's output changes on upgrade.
+    // One-time Traditional split: `traditional` took its regional forms from
+    // what was spoken (Hong Kong's for Cantonese, Taiwan's for Mandarin).
+    // Keep Hong Kong's for people who speak Cantonese or whose OS's first
+    // Traditional Chinese language is Hong Kong's or Macau's. People who
+    // dictated both now get one region's forms for both.
     if settings_value
         .get("chinese_script")
         .and_then(|v| v.as_str())
         == Some("traditional")
     {
         let hong_kong = settings.spoken_languages.iter().any(|l| l == "yue")
-            || tauri_plugin_os::locale().is_some_and(|locale| {
-                crate::chinese_script::chinese_script_for_locale(&locale)
-                    == Some(ChineseScript::TraditionalHk)
-            });
+            || os_languages().iter().find_map(|tag| {
+                match crate::chinese_script::chinese_script_for_locale(tag) {
+                    Some(s @ (ChineseScript::TraditionalTw | ChineseScript::TraditionalHk)) => {
+                        Some(s)
+                    }
+                    _ => None,
+                }
+            }) == Some(ChineseScript::TraditionalHk);
         settings.chinese_script = if hong_kong {
             ChineseScript::TraditionalHk
         } else {
@@ -1307,15 +1305,12 @@ fn apply_settings_migrations(
     updated
 }
 
-/// The languages someone likely speaks, most likely first: the language they
-/// picked, Chinese if they picked a script, the app's language, then the OS's
-/// languages. Always includes English.
+/// Likely spoken languages from existing settings and the OS; always includes English.
 fn guessed_spoken_languages(
     settings: &AppSettings,
     settings_value: &serde_json::Value,
 ) -> Vec<String> {
-    // The stored value: when the key is missing, the field may hold the
-    // locale's default (salvaged settings), which isn't a choice.
+    // Read the stored value: a missing key may hold the locale default, not a choice.
     let picked_script = settings_value
         .get("chinese_script")
         .and_then(|v| v.as_str())
@@ -1334,8 +1329,7 @@ fn guessed_spoken_languages(
     crate::system_languages::suggested_languages(tags)
 }
 
-/// The OS's languages; none under test, so migrations don't depend on the
-/// machine running them.
+/// The OS's languages; empty under test so migrations are deterministic.
 fn os_languages() -> &'static [String] {
     if cfg!(test) {
         &[]
