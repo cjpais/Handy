@@ -266,6 +266,10 @@
   opacity: 0;
   transition: opacity 260ms ease;
 }
+/* Linux: it stays on the field, so it jumps when the app changes. */
+.demo-pointer[data-settled] {
+  transition: none;
+}
 .demo-click {
   position: absolute;
   top: -7.5px;
