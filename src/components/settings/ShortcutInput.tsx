@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { formatKeyCombination } from "../../lib/utils/keyboard";
 import { ResetButton } from "../ui/ResetButton";
@@ -6,6 +6,7 @@ import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import { useShortcutCapture } from "../../hooks/useShortcutCapture";
+import { usePressAway } from "../../hooks/usePressAway";
 
 interface ShortcutInputProps {
   descriptionMode?: "inline" | "tooltip";
@@ -35,20 +36,7 @@ export const ShortcutInput: React.FC<ShortcutInputProps> = ({
 
   const bindings = getSetting("bindings") || {};
 
-  // Click outside cancels
-  useEffect(() => {
-    if (!capturing) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        shortcutRef.current &&
-        !shortcutRef.current.contains(e.target as Node)
-      ) {
-        cancel();
-      }
-    };
-    window.addEventListener("click", handleClickOutside);
-    return () => window.removeEventListener("click", handleClickOutside);
-  }, [capturing, cancel]);
+  usePressAway(capturing, shortcutRef, cancel);
 
   // If still loading, show loading state
   if (isLoading) {

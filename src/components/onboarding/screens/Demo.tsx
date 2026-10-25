@@ -9,16 +9,11 @@ import { Trans, useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
 import { useShortcutCapture } from "@/hooks/useShortcutCapture";
-import {
-  bindingKeys,
-  isOnlyModifiers,
-  type OSType,
-  spaceDoesNotClick,
-} from "@/lib/utils/keyboard";
+import { type OSType, spaceDoesNotClick } from "@/lib/utils/keyboard";
 import { prefersReducedMotion } from "@/lib/utils/motion";
 import { cjkSubsetFont } from "@/lib/utils/cjkFont";
 import { Button } from "../../ui/Button";
-import { Keycaps, KeySlot } from "../../shared/Keycaps";
+import { CapturedKeys, captureHintKey, Keycaps } from "../../shared/Keycaps";
 import { DesktopBar } from "../DesktopBar";
 import { WindowBar } from "../WindowBar";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
@@ -506,14 +501,7 @@ export const Demo: React.FC<DemoProps> = ({
     capture.start().then((began) => began || play(chapter));
   };
 
-  const partialKeys = bindingKeys(capture.partial);
-  const say = capture.capturing
-    ? t(
-        isOnlyModifiers(partialKeys)
-          ? "onboarding.demo.addKey"
-          : "onboarding.demo.pressKeys",
-      )
-    : null;
+  const say = capture.capturing ? t(captureHintKey(capture.partial)) : null;
 
   return (
     <OnboardingShell
@@ -589,17 +577,14 @@ export const Demo: React.FC<DemoProps> = ({
               lift
               className={`col-start-1 row-start-1 justify-self-center ${capture.capturing ? "invisible" : ""}`}
             />
-            {capture.capturing &&
-              (partialKeys.length ? (
-                <Keycaps
-                  binding={capture.partial}
-                  osType={os}
-                  partial
-                  className="col-start-1 row-start-1 justify-self-center"
-                />
-              ) : (
-                <KeySlot className="col-start-1 row-start-1" />
-              ))}
+            {capture.capturing && (
+              <CapturedKeys
+                partial={capture.partial}
+                osType={os}
+                className="col-start-1 row-start-1"
+                keysClassName="justify-self-center"
+              />
+            )}
           </span>
           <span className="justify-self-start whitespace-nowrap text-ink-2 underline decoration-line underline-offset-[3px] transition-colors group-hover/keycaps:text-text group-hover/keycaps:decoration-current">
             {t(

@@ -11,7 +11,7 @@ import {
   gradeForError,
   type Grade,
   type PickRole,
-} from "@/components/onboarding/data/models";
+} from "./catalog";
 
 /**
  * Grades models for the user's languages on this machine's tier. Shared by

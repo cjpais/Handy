@@ -24,7 +24,7 @@ import {
   deleteRetiredModel,
   findReplacement,
   type ModelMigrationPair,
-} from "./retiredModels";
+} from "@/lib/models/retired";
 
 interface ModelMigrationProps {
   onComplete: () => void;

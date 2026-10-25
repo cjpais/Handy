@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Fale em vez de digitar, em qualquer app",
       "subtitle": "Escolha os idiomas em que você vai ditar",
-      "searchLabel": "Buscar idiomas",
-      "searchPlaceholder": "Buscar idiomas",
-      "addAnother": "Adicionar outro",
-      "remove": "Remover {{language}}",
       "languagesLabel": "Idiomas",
-      "alreadyAdded_one": "{{languages}} já foi adicionado.",
-      "alreadyAdded_other": "{{languages}} já foram adicionados.",
       "noMatch": "Nenhum idioma corresponde a “{{query}}”. Os modelos do Handy cobrem cerca de 100 idiomas; há mais nos ajustes.",
       "appLanguage": "Idioma do app",
       "menusIn": "Menus em <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Escolha um modelo de fala",
       "subtitle": "O modelo de fala transforma sua voz em texto, aqui mesmo neste computador",
       "label": "Modelo de fala",
-      "allLabel": "Modelos de fala",
-      "roles": {
-        "recommended": "Recomendado",
-        "faster": "Mais rápido",
-        "accurate": "Mais preciso",
-        "fromAll": "De todos os modelos"
-      },
       "lines": {
         "recommended": "O melhor equilíbrio entre velocidade e precisão para os seus idiomas",
         "faster": "Mais veloz, com alguns erros a mais",
@@ -152,79 +139,13 @@
         "faster": "Mais veloz, mais alguns erros",
         "accurate": "Menos erros, mas mais lento"
       },
-      "accuracy": "Precisão",
-      "speed": "Velocidade",
-      "size": "Tamanho",
       "model": "Modelo",
-      "speedWords": {
-        "0": "Muito lento, as palavras aparecem após uma longa espera",
-        "1": "Lento, as palavras aparecem após uma espera",
-        "2": "Moderado, as palavras aparecem após uma espera curta",
-        "3": "Rápido, as palavras aparecem quase na hora",
-        "4": "Muito rápido, as palavras aparecem na hora"
-      },
-      "speedWordsPreview": {
-        "0": "Muito lento, com prévia ao vivo enquanto você fala",
-        "1": "Lento, com prévia ao vivo enquanto você fala",
-        "2": "Moderado, com prévia ao vivo enquanto você fala",
-        "3": "Rápido, com prévia ao vivo enquanto você fala",
-        "4": "Muito rápido, com prévia ao vivo enquanto você fala"
-      },
-      "speedUntested": "Velocidade ainda não medida",
-      "rubric": {
-        "gradeTitle": "Precisão em {{language}}: {{grade}}",
-        "accuracyTitle": "Precisão em {{language}}",
-        "overallTitle": "Precisão nos seus idiomas: {{grade}}",
-        "overall": "Precisão nos seus idiomas",
-        "meaning": {
-          "A": "Pouquíssimos erros: suas palavras geralmente saem como você as disse",
-          "B": "Alguns erros: espere corrigir uma palavra ou outra",
-          "C": "Erros frequentes: alguns detalhes podem se perder",
-          "D": "Muitos erros: espere ter que revisar e corrigir o que ele digita",
-          "F": "Muitas vezes confuso: boa parte do que você diz pode sair errada"
-        },
-        "unsupported": "Este modelo não entende {{language}}, então não consegue digitar nesse idioma",
-        "unrated": "Este modelo entende {{language}}, mas ainda não medimos o quanto",
-        "under": "abaixo de {{max}}%",
-        "between": "{{min}} a {{max}}%",
-        "over": "{{min}}% ou mais",
-        "speedTitle": "Velocidade: {{speed}}",
-        "speedName": {
-          "0": "Muito lento",
-          "1": "Lento",
-          "2": "Moderado",
-          "3": "Rápido",
-          "4": "Muito rápido"
-        },
-        "speedMeaning": {
-          "0": "Suas palavras aparecem após uma longa espera",
-          "1": "Suas palavras aparecem após uma espera",
-          "2": "Suas palavras aparecem após uma espera curta",
-          "3": "Suas palavras aparecem quase na hora",
-          "4": "Suas palavras aparecem na hora"
-        },
-        "speedPreview": "{{meaning}}, com prévia ao vivo enquanto você fala",
-        "untimed": "Ainda não medimos a velocidade dele",
-        "underSeconds": "abaixo de {{max}} s",
-        "betweenSeconds": "{{min}} a {{max}} s",
-        "overSeconds": "{{min}} s ou mais"
-      },
-      "tags": {
-        "preview": "Prévia ao vivo",
-        "previewTitle": "Mostra suas palavras na sobreposição Ao vivo enquanto você fala e as digita quando você para",
-        "translate": "Traduz",
-        "translateTitle": "Pode transformar o que você diz em texto em inglês. Ative nos ajustes"
-      },
       "showAll": "Mostrar todos os {{count}} modelos",
       "download": "Baixar {{size}}",
       "downloadInstead": "Baixar {{size}} em vez disso",
       "pauses": "{{name}} pausa em {{percent}}%",
       "resumeLater": "Escolha-o de novo para continuar de onde parou",
-      "hint": "Baixa enquanto você termina a configuração",
-      "search": "Buscar modelos",
-      "missingLanguage": "Falta um idioma",
-      "noMatch": "Nada corresponde a “{{query}}”. Tente um idioma ou uma família, como Whisper ou Parakeet",
-      "noFilterMatch": "Nenhum modelo corresponde a esses filtros"
+      "hint": "Baixa enquanto você termina a configuração"
     },
     "demo": {
       "title": "Fale em qualquer app, com um único atalho",
@@ -295,6 +216,92 @@
       "done": "Não funciona em outros apps? <guide>Guia de configuração do Linux</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Prévia ao vivo",
+      "previewTitle": "Mostra suas palavras na sobreposição Ao vivo enquanto você fala e as digita quando você para",
+      "translate": "Traduz",
+      "translateTitle": "Pode transformar o que você diz em texto em inglês. Ative nos ajustes"
+    },
+    "rubric": {
+      "gradeTitle": "Precisão em {{language}}: {{grade}}",
+      "accuracyTitle": "Precisão em {{language}}",
+      "overallTitle": "Precisão nos seus idiomas: {{grade}}",
+      "overall": "Precisão nos seus idiomas",
+      "meaning": {
+        "A": "Pouquíssimos erros: suas palavras geralmente saem como você as disse",
+        "B": "Alguns erros: espere corrigir uma palavra ou outra",
+        "C": "Erros frequentes: alguns detalhes podem se perder",
+        "D": "Muitos erros: espere ter que revisar e corrigir o que ele digita",
+        "F": "Muitas vezes confuso: boa parte do que você diz pode sair errada"
+      },
+      "unsupported": "Este modelo não entende {{language}}, então não consegue digitar nesse idioma",
+      "unrated": "Este modelo entende {{language}}, mas ainda não medimos o quanto",
+      "under": "abaixo de {{max}}%",
+      "between": "{{min}} a {{max}}%",
+      "over": "{{min}}% ou mais",
+      "speedTitle": "Velocidade: {{speed}}",
+      "speedName": {
+        "0": "Muito lento",
+        "1": "Lento",
+        "2": "Moderado",
+        "3": "Rápido",
+        "4": "Muito rápido"
+      },
+      "speedMeaning": {
+        "0": "Suas palavras aparecem após uma longa espera",
+        "1": "Suas palavras aparecem após uma espera",
+        "2": "Suas palavras aparecem após uma espera curta",
+        "3": "Suas palavras aparecem quase na hora",
+        "4": "Suas palavras aparecem na hora"
+      },
+      "speedPreview": "{{meaning}}, com prévia ao vivo enquanto você fala",
+      "untimed": "Ainda não medimos a velocidade dele",
+      "underSeconds": "abaixo de {{max}} s",
+      "betweenSeconds": "{{min}} a {{max}} s",
+      "overSeconds": "{{min}} s ou mais"
+    },
+    "roles": {
+      "recommended": "Recomendado",
+      "faster": "Mais rápido",
+      "accurate": "Mais preciso",
+      "fromAll": "De todos os modelos"
+    },
+    "speed": "Velocidade",
+    "size": "Tamanho",
+    "accuracy": "Precisão",
+    "search": "Buscar modelos",
+    "allLabel": "Modelos de fala",
+    "noMatch": "Nada corresponde a “{{query}}”. Tente um idioma ou uma família, como Whisper ou Parakeet",
+    "noFilterMatch": "Nenhum modelo corresponde a esses filtros",
+    "speedUntested": "Velocidade ainda não medida",
+    "speedWords": {
+      "0": "Muito lento, as palavras aparecem após uma longa espera",
+      "1": "Lento, as palavras aparecem após uma espera",
+      "2": "Moderado, as palavras aparecem após uma espera curta",
+      "3": "Rápido, as palavras aparecem quase na hora",
+      "4": "Muito rápido, as palavras aparecem na hora"
+    },
+    "speedWordsPreview": {
+      "0": "Muito lento, com prévia ao vivo enquanto você fala",
+      "1": "Lento, com prévia ao vivo enquanto você fala",
+      "2": "Moderado, com prévia ao vivo enquanto você fala",
+      "3": "Rápido, com prévia ao vivo enquanto você fala",
+      "4": "Muito rápido, com prévia ao vivo enquanto você fala"
+    },
+    "missingLanguage": "Falta um idioma",
+    "allLanguages": "Todos",
+    "downloadingLine": "Baixando {{percent}}% de {{total}}",
+    "customLine": "Adicionado da sua pasta de modelos. Sem nota.",
+    "legacyLine": "Um download antigo. Sem nota."
+  },
+  "languagePicker": {
+    "search": "Buscar idiomas",
+    "addAnother": "Adicionar outro",
+    "remove": "Remover {{language}}",
+    "alreadyAdded_one": "{{languages}} já foi adicionado.",
+    "alreadyAdded_other": "{{languages}} já foram adicionados."
+  },
   "modelSelector": {
     "custom": "Personalizado",
     "streaming": "Streaming",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Idiomas preferidos",
         "description": "Os idiomas que você fala. O Handy os usa para recomendar modelos.",
-        "searchLabel": "Buscar idiomas",
-        "placeholder": "Buscar idiomas",
-        "addAnother": "Adicionar outro",
-        "remove": "Remover {{language}}",
-        "alreadyAdded_one": "{{languages}} já foi adicionado.",
-        "alreadyAdded_other": "{{languages}} já foram adicionados.",
         "noMatch": "Nenhum idioma corresponde a “{{query}}”",
         "weak": "Nenhum modelo reconhece bem {{languages}} ainda."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "Neste computador",
         "fits": "Para os seus idiomas",
-        "missing": "Falta um idioma",
         "untested": "Não testados"
       },
-      "allLanguages": "Todos",
       "untestedNote": "Não testados com o Handy. Podem ser mais lentos ou cometer mais erros.",
       "untestedHidden_one": "Mais {{count}} modelo não é otimizado para ditado. Busque para encontrá-lo.",
       "untestedHidden_other": "Mais {{count}} modelos não são otimizados para ditado. Busque para encontrar um.",
@@ -394,7 +393,6 @@
       "showMore": "Mostrar mais {{count}}",
       "showFewer": "Mostrar menos",
       "download": "Baixar e usar",
-      "downloadingLine": "Baixando {{percent}}% de {{total}}",
       "downloadingThenUse": "{{percent}}% de {{total}}, depois troca",
       "loading": "Carregando…",
       "deleteAsk": "Excluir {{name}}? Libera {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Cancelar",
       "deleteModel": "Excluir {{name}}",
       "cancelDownload": "Parar o download de {{name}}",
-      "customLine": "Adicionado da sua pasta de modelos. Sem nota.",
-      "legacyLine": "Um download antigo. Sem nota.",
       "legend": {
         "open": "Como os modelos são avaliados",
-        "accuracy": "Precisão",
         "accuracyNote": "Para cada um dos seus idiomas: quantas palavras um modelo errou em nossas gravações de teste.",
-        "speed": "Velocidade",
         "speedNote": {
           "accelerated": "Quanto tempo 30 segundos de fala levam para ser digitados na placa gráfica do nosso laptop de teste. Este computador pode ser diferente.",
           "cpu": "Quanto tempo 30 segundos de fala levam para ser digitados no processador do nosso laptop de teste. Este computador pode ser diferente."
@@ -897,10 +891,6 @@
     "copy": "Copiar",
     "clear": "Limpar",
     "noOptionsFound": "Nenhuma opção encontrada"
-  },
-  "accessibility": {
-    "permissionsDescription": "O Handy precisa de permissões de acessibilidade para digitar o texto transcrito.",
-    "openSettings": "Abrir Configurações do Sistema"
   },
   "errors": {
     "loadDirectory": "Erro ao carregar diretório: {{error}}",

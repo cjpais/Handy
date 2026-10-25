@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Parleu en lloc d'escriure, a qualsevol aplicació",
       "subtitle": "Trieu les llengües en què dictareu",
-      "searchLabel": "Cerca llengües",
-      "searchPlaceholder": "Cerca llengües",
-      "addAnother": "Afegeix-ne una altra",
-      "remove": "Elimina {{language}}",
       "languagesLabel": "Llengües",
-      "alreadyAdded_one": "{{languages}} ja està afegida.",
-      "alreadyAdded_other": "{{languages}} ja estan afegides.",
       "noMatch": "Cap llengua coincideix amb «{{query}}». Els models del Handy cobreixen unes 100 llengües; en trobareu més a la configuració.",
       "appLanguage": "Llengua de l'aplicació",
       "menusIn": "Menús en <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Trieu un model de veu",
       "subtitle": "El model de veu converteix la vostra parla en text, directament en aquest ordinador",
       "label": "Model de veu",
-      "allLabel": "Models de veu",
-      "roles": {
-        "recommended": "Recomanat",
-        "faster": "Més ràpid",
-        "accurate": "Més precís",
-        "fromAll": "De tots els models"
-      },
       "lines": {
         "recommended": "El millor equilibri entre velocitat i precisió per a les vostres llengües",
         "faster": "Més ràpid, amb alguns errors més",
@@ -152,79 +139,13 @@
         "faster": "Més ràpid, uns quants errors més",
         "accurate": "Menys errors, però més lent"
       },
-      "accuracy": "Precisió",
-      "speed": "Velocitat",
-      "size": "Mida",
       "model": "Model",
-      "speedWords": {
-        "0": "Molt lent, les paraules apareixen després d'una espera llarga",
-        "1": "Lent, les paraules apareixen després d'una espera",
-        "2": "Moderat, les paraules apareixen després d'una espera breu",
-        "3": "Ràpid, les paraules apareixen gairebé a l'instant",
-        "4": "Molt ràpid, les paraules apareixen a l'instant"
-      },
-      "speedWordsPreview": {
-        "0": "Molt lent, amb una vista prèvia en directe mentre parleu",
-        "1": "Lent, amb una vista prèvia en directe mentre parleu",
-        "2": "Moderat, amb una vista prèvia en directe mentre parleu",
-        "3": "Ràpid, amb una vista prèvia en directe mentre parleu",
-        "4": "Molt ràpid, amb una vista prèvia en directe mentre parleu"
-      },
-      "speedUntested": "Velocitat encara sense mesurar",
-      "rubric": {
-        "gradeTitle": "Precisió en {{language}}: {{grade}}",
-        "accuracyTitle": "Precisió en {{language}}",
-        "overallTitle": "Precisió en les vostres llengües: {{grade}}",
-        "overall": "Precisió en les vostres llengües",
-        "meaning": {
-          "A": "Molt pocs errors: les paraules solen sortir tal com les dieu",
-          "B": "Alguns errors: caldrà corregir alguna paraula de tant en tant",
-          "C": "Errors freqüents: pot ser que es perdin alguns detalls",
-          "D": "Molts errors: caldrà revisar i corregir el que escriu",
-          "F": "Sovint poc clar: gran part del que digueu pot sortir malament"
-        },
-        "unsupported": "Aquest model no entén {{language}}, així que no el pot escriure",
-        "unrated": "Aquest model entén {{language}}, però encara no hem mesurat com de bé",
-        "under": "menys del {{max}} %",
-        "between": "del {{min}} al {{max}} %",
-        "over": "{{min}} % o més",
-        "speedTitle": "Velocitat: {{speed}}",
-        "speedName": {
-          "0": "Molt lent",
-          "1": "Lent",
-          "2": "Moderat",
-          "3": "Ràpid",
-          "4": "Molt ràpid"
-        },
-        "speedMeaning": {
-          "0": "Les paraules apareixen després d'una espera llarga",
-          "1": "Les paraules apareixen després d'una espera",
-          "2": "Les paraules apareixen després d'una espera breu",
-          "3": "Les paraules apareixen gairebé a l'instant",
-          "4": "Les paraules apareixen a l'instant"
-        },
-        "speedPreview": "{{meaning}}, amb una vista prèvia en directe mentre parleu",
-        "untimed": "Encara no hem mesurat com de ràpid és",
-        "underSeconds": "menys de {{max}} s",
-        "betweenSeconds": "de {{min}} a {{max}} s",
-        "overSeconds": "{{min}} s o més"
-      },
-      "tags": {
-        "preview": "Vista prèvia en directe",
-        "previewTitle": "Mostra les paraules a la finestra superposada En directe mentre parleu i les escriu quan acabeu",
-        "translate": "Tradueix",
-        "translateTitle": "Pot convertir el que digueu en text en anglès. Activeu-ho a la configuració"
-      },
       "showAll": "Mostra els {{count}} models",
       "download": "Baixa {{size}}",
       "downloadInstead": "Baixa {{size}} en lloc seu",
       "pauses": "{{name}} es posa en pausa al {{percent}} %",
       "resumeLater": "Torneu-lo a triar per continuar on s'havia quedat",
-      "hint": "Es baixa mentre acabeu la configuració",
-      "search": "Cerca models",
-      "missingLanguage": "Falta una llengua",
-      "noMatch": "Cap resultat per a «{{query}}». Proveu una llengua o una família com Whisper o Parakeet",
-      "noFilterMatch": "Cap model coincideix amb aquests filtres"
+      "hint": "Es baixa mentre acabeu la configuració"
     },
     "demo": {
       "title": "Parleu a qualsevol aplicació, amb una sola drecera",
@@ -295,6 +216,92 @@
       "done": "No funciona a altres aplicacions? <guide>Guia de configuració per a Linux</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Vista prèvia en directe",
+      "previewTitle": "Mostra les paraules a la finestra superposada En directe mentre parleu i les escriu quan acabeu",
+      "translate": "Tradueix",
+      "translateTitle": "Pot convertir el que digueu en text en anglès. Activeu-ho a la configuració"
+    },
+    "rubric": {
+      "gradeTitle": "Precisió en {{language}}: {{grade}}",
+      "accuracyTitle": "Precisió en {{language}}",
+      "overallTitle": "Precisió en les vostres llengües: {{grade}}",
+      "overall": "Precisió en les vostres llengües",
+      "meaning": {
+        "A": "Molt pocs errors: les paraules solen sortir tal com les dieu",
+        "B": "Alguns errors: caldrà corregir alguna paraula de tant en tant",
+        "C": "Errors freqüents: pot ser que es perdin alguns detalls",
+        "D": "Molts errors: caldrà revisar i corregir el que escriu",
+        "F": "Sovint poc clar: gran part del que digueu pot sortir malament"
+      },
+      "unsupported": "Aquest model no entén {{language}}, així que no el pot escriure",
+      "unrated": "Aquest model entén {{language}}, però encara no hem mesurat com de bé",
+      "under": "menys del {{max}} %",
+      "between": "del {{min}} al {{max}} %",
+      "over": "{{min}} % o més",
+      "speedTitle": "Velocitat: {{speed}}",
+      "speedName": {
+        "0": "Molt lent",
+        "1": "Lent",
+        "2": "Moderat",
+        "3": "Ràpid",
+        "4": "Molt ràpid"
+      },
+      "speedMeaning": {
+        "0": "Les paraules apareixen després d'una espera llarga",
+        "1": "Les paraules apareixen després d'una espera",
+        "2": "Les paraules apareixen després d'una espera breu",
+        "3": "Les paraules apareixen gairebé a l'instant",
+        "4": "Les paraules apareixen a l'instant"
+      },
+      "speedPreview": "{{meaning}}, amb una vista prèvia en directe mentre parleu",
+      "untimed": "Encara no hem mesurat com de ràpid és",
+      "underSeconds": "menys de {{max}} s",
+      "betweenSeconds": "de {{min}} a {{max}} s",
+      "overSeconds": "{{min}} s o més"
+    },
+    "roles": {
+      "recommended": "Recomanat",
+      "faster": "Més ràpid",
+      "accurate": "Més precís",
+      "fromAll": "De tots els models"
+    },
+    "speed": "Velocitat",
+    "size": "Mida",
+    "accuracy": "Precisió",
+    "search": "Cerca models",
+    "allLabel": "Models de veu",
+    "noMatch": "Cap resultat per a «{{query}}». Proveu una llengua o una família com Whisper o Parakeet",
+    "noFilterMatch": "Cap model coincideix amb aquests filtres",
+    "speedUntested": "Velocitat encara sense mesurar",
+    "speedWords": {
+      "0": "Molt lent, les paraules apareixen després d'una espera llarga",
+      "1": "Lent, les paraules apareixen després d'una espera",
+      "2": "Moderat, les paraules apareixen després d'una espera breu",
+      "3": "Ràpid, les paraules apareixen gairebé a l'instant",
+      "4": "Molt ràpid, les paraules apareixen a l'instant"
+    },
+    "speedWordsPreview": {
+      "0": "Molt lent, amb una vista prèvia en directe mentre parleu",
+      "1": "Lent, amb una vista prèvia en directe mentre parleu",
+      "2": "Moderat, amb una vista prèvia en directe mentre parleu",
+      "3": "Ràpid, amb una vista prèvia en directe mentre parleu",
+      "4": "Molt ràpid, amb una vista prèvia en directe mentre parleu"
+    },
+    "missingLanguage": "Falta una llengua",
+    "allLanguages": "Totes",
+    "downloadingLine": "S'està baixant el {{percent}} % de {{total}}",
+    "customLine": "Afegit des de la carpeta de models. Sense puntuar.",
+    "legacyLine": "Una baixada antiga. Sense puntuar."
+  },
+  "languagePicker": {
+    "search": "Cerca llengües",
+    "addAnother": "Afegeix-ne una altra",
+    "remove": "Elimina {{language}}",
+    "alreadyAdded_one": "{{languages}} ja està afegida.",
+    "alreadyAdded_other": "{{languages}} ja estan afegides."
+  },
   "modelSelector": {
     "custom": "Personalitzat",
     "streaming": "En temps real",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Llengües preferides",
         "description": "Les llengües que parleu. El Handy les utilitza per recomanar models.",
-        "searchLabel": "Cerca llengües",
-        "placeholder": "Cerca llengües",
-        "addAnother": "Afegeix-ne una altra",
-        "remove": "Elimina {{language}}",
-        "alreadyAdded_one": "{{languages}} ja està afegida.",
-        "alreadyAdded_other": "{{languages}} ja estan afegides.",
         "noMatch": "Cap llengua coincideix amb «{{query}}»",
         "weak": "Cap model reconeix bé {{languages}} encara."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "En aquest ordinador",
         "fits": "Per a les vostres llengües",
-        "missing": "Falta una llengua",
         "untested": "Sense provar"
       },
-      "allLanguages": "Totes",
       "untestedNote": "No s'han provat amb el Handy. Poden ser més lents o cometre més errors.",
       "untestedHidden_one": "{{count}} model més no està ajustat per al dictat. Cerqueu-lo per trobar-lo.",
       "untestedHidden_other": "{{count}} models més no estan ajustats per al dictat. Cerqueu per trobar-ne algun.",
@@ -394,7 +393,6 @@
       "showMore": "Mostra'n {{count}} més",
       "showFewer": "Mostra'n menys",
       "download": "Baixa i utilitza",
-      "downloadingLine": "S'està baixant el {{percent}} % de {{total}}",
       "downloadingThenUse": "{{percent}} % de {{total}}, i després canvia",
       "loading": "S'està carregant…",
       "deleteAsk": "Voleu suprimir {{name}}? S'alliberen {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Cancel·la",
       "deleteModel": "Suprimeix {{name}}",
       "cancelDownload": "Atura la baixada de {{name}}",
-      "customLine": "Afegit des de la carpeta de models. Sense puntuar.",
-      "legacyLine": "Una baixada antiga. Sense puntuar.",
       "legend": {
         "open": "Com es puntuen els models",
-        "accuracy": "Precisió",
         "accuracyNote": "Per a cadascuna de les vostres llengües: quantes paraules ha fallat un model en les nostres gravacions de prova.",
-        "speed": "Velocitat",
         "speedNote": {
           "accelerated": "Quant triguen a escriure's 30 segons de veu amb el xip gràfic del nostre portàtil de prova. Aquest ordinador pot ser diferent.",
           "cpu": "Quant triguen a escriure's 30 segons de veu amb el processador del nostre portàtil de prova. Aquest ordinador pot ser diferent."
@@ -897,10 +891,6 @@
     "copy": "Copia",
     "clear": "Neteja",
     "noOptionsFound": "No s'ha trobat cap opció"
-  },
-  "accessibility": {
-    "permissionsDescription": "El Handy necessita permisos d'accessibilitat per escriure el text transcrit.",
-    "openSettings": "Obriu la configuració del sistema"
   },
   "errors": {
     "loadDirectory": "Error en carregar el directori: {{error}}",

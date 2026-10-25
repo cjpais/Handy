@@ -7,21 +7,17 @@ import React, {
   type SetStateAction,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Languages, Radio as LiveIcon, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { languageName } from "@/lib/constants/languages";
+import { CAPABILITIES, CAPABILITY_KEYS, type Capability } from "./capabilities";
 import { CODE_CLASS, Codes, rowGrid } from "./columns";
 import { ModelTableContext, type TableModel } from "./context";
-import type { Grading } from "./grading";
+import type { Grading } from "@/lib/models/grading";
 import { ScrollThumb } from "./ScrollThumb";
 
-export interface Filters {
-  query: string;
-  /** Only models that preview your words while you talk. */
-  preview: boolean;
-  /** Only models that translate. */
-  translate: boolean;
-}
+/** The search, and per capability whether only models with it are kept. */
+export type Filters = { query: string } & Record<Capability, boolean>;
 export const NO_FILTERS: Filters = {
   query: "",
   preview: false,
@@ -34,14 +30,13 @@ export const useModelFilters = () => {
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const q = filters.query.trim().toLowerCase();
   const matches = (e: TableModel) => {
-    if (filters.preview && !e.streaming) return false;
-    if (filters.translate && !e.translate) return false;
+    const has = (c: Capability) => e[CAPABILITIES[c].flag];
+    if (CAPABILITY_KEYS.some((c) => filters[c] && !has(c))) return false;
     if (!q) return true;
     const hay = [
       e.name,
       e.description,
-      e.streaming ? t("onboarding.model.tags.preview") : "",
-      e.translate ? t("onboarding.model.tags.translate") : "",
+      ...CAPABILITY_KEYS.filter(has).map((c) => t(`modelTable.tags.${c}`)),
       ...e.languages.flatMap((l) => [
         languageName(l, i18n.language),
         languageName(l, "en"),
@@ -54,7 +49,7 @@ export const useModelFilters = () => {
   return {
     filters,
     setFilters,
-    searching: !!q || filters.preview || filters.translate,
+    searching: !!q || CAPABILITY_KEYS.some((c) => filters[c]),
     matches,
   };
 };
@@ -237,27 +232,30 @@ export const ModelTable: React.FC<ModelTableProps> = ({
   };
 
   /** A toggle filter beside the search. */
-  const filter = (key: "preview" | "translate", Icon: typeof LiveIcon) => (
-    <Tooltip text={t(`onboarding.model.tags.${key}Title`)}>
-      <button
-        type="button"
-        aria-pressed={filters[key]}
-        onClick={() => {
-          setFilters((f) => ({ ...f, [key]: !f[key] }));
-          setHighlighted(null);
-          if (listRef.current) listRef.current.scrollTop = 0;
-        }}
-        className={`flex h-[26px] shrink-0 cursor-pointer items-center gap-[6px] whitespace-nowrap rounded-[7px] px-[8px] text-small font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary ${
-          filters[key]
-            ? "bg-line text-text"
-            : "text-ink-3 hover:bg-wash hover:text-text"
-        }`}
-      >
-        <Icon aria-hidden="true" className="size-[14px]" />
-        {t(`onboarding.model.tags.${key}`)}
-      </button>
-    </Tooltip>
-  );
+  const filter = (key: Capability) => {
+    const { Icon } = CAPABILITIES[key];
+    return (
+      <Tooltip key={key} text={t(`modelTable.tags.${key}Title`)}>
+        <button
+          type="button"
+          aria-pressed={filters[key]}
+          onClick={() => {
+            setFilters((f) => ({ ...f, [key]: !f[key] }));
+            setHighlighted(null);
+            if (listRef.current) listRef.current.scrollTop = 0;
+          }}
+          className={`flex h-[26px] shrink-0 cursor-pointer items-center gap-[6px] whitespace-nowrap rounded-[7px] px-[8px] text-small font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary ${
+            filters[key]
+              ? "bg-line text-text"
+              : "text-ink-3 hover:bg-wash hover:text-text"
+          }`}
+        >
+          <Icon aria-hidden="true" className="size-[14px]" />
+          {t(`modelTable.tags.${key}`)}
+        </button>
+      </Tooltip>
+    );
+  };
 
   return (
     <ModelTableContext.Provider value={{ grading, actions, highlighted }}>
@@ -279,8 +277,8 @@ export const ModelTable: React.FC<ModelTableProps> = ({
                 ref={searchRef}
                 type="search"
                 value={filters.query}
-                placeholder={t("onboarding.model.search")}
-                aria-label={t("onboarding.model.search")}
+                placeholder={t("modelTable.search")}
+                aria-label={t("modelTable.search")}
                 onChange={(e) => {
                   const value = e.target.value;
                   setFilters((f) => ({ ...f, query: value }));
@@ -305,8 +303,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
               aria-hidden="true"
               className="me-[2px] h-[16px] w-px shrink-0 bg-line"
             />
-            {filter("preview", LiveIcon)}
-            {filter("translate", Languages)}
+            {CAPABILITY_KEYS.map(filter)}
           </div>
         </div>
         {!empty && (
@@ -338,7 +335,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
             ref={listRef}
             data-model-scroll=""
             role="radiogroup"
-            aria-label={t("onboarding.model.allLabel")}
+            aria-label={t("modelTable.allLabel")}
             // The pointer takes over from the keys.
             onPointerMove={() => highlighted && setHighlighted(null)}
             className="relative flex min-h-0 flex-1 flex-col overflow-y-auto scroll-pt-[20px] scroll-pb-[12px] px-[6px] pb-[6px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden data-more:[mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
@@ -346,10 +343,10 @@ export const ModelTable: React.FC<ModelTableProps> = ({
             {empty && (
               <div className="px-[12px] py-[28px] text-center text-small text-ink-2">
                 {filters.query.trim()
-                  ? t("onboarding.model.noMatch", {
+                  ? t("modelTable.noMatch", {
                       query: filters.query.trim(),
                     })
-                  : t("onboarding.model.noFilterMatch")}
+                  : t("modelTable.noFilterMatch")}
               </div>
             )}
             {!empty &&

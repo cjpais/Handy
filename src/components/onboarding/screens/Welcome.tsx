@@ -1,26 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { Mascot } from "../../shared/Mascot";
 import {
-  LanguageChip,
-  LanguageOption,
-  languageSearchKeys,
+  LanguageOptions,
+  LanguageSearchField,
+  useLanguagePicker,
 } from "../../shared/LanguagePicker";
 import HandyTextLogo from "../../icons/HandyTextLogo";
 import { OnboardingShell, ScreenHeader } from "../OnboardingShell";
 import { AppLanguageMenu } from "../AppLanguageMenu";
 import { useOnboardingStore } from "../onboardingStore";
-import { CHINESE_SCRIPTS, isChinese } from "../data/languages";
-import { CURATED_ASR, isWeakLanguage } from "../data/models";
+import { CHINESE_SCRIPTS, isChinese } from "@/lib/utils/languageSuggestions";
+import { CURATED_ASR, isWeakLanguage } from "@/lib/models/catalog";
 import { modelMatchesLanguage } from "@handy-computer/models";
 import { getSupportedLanguage } from "@/i18n";
-import {
-  languageList,
-  languageName,
-  searchLanguages,
-} from "@/lib/constants/languages";
+import { languageList } from "@/lib/constants/languages";
 import { useSettings } from "@/hooks/useSettings";
 
 // The mascot waves on the first visit only.
@@ -36,50 +32,32 @@ export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
   const { t, i18n } = useTranslation();
   const { updateSetting } = useSettings();
   const { languages, script, modelId, preview, set } = useOnboardingStore();
-  const [query, setQuery] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const picker = useLanguagePicker({
+    languages,
+    onChange: (next) => {
+      // A model picked for other languages no longer counts as the pick.
+      const picked = CURATED_ASR.find((m) => m.id === modelId);
+      const stillFits =
+        !picked || next.every((l) => modelMatchesLanguage(picked, l));
+      set({
+        languages: next,
+        ...(stillFits ? {} : { modelId: null }),
+      });
+    },
+  });
   const [wave] = useState(() => !waved);
   useEffect(() => {
     waved = true;
     const id = setTimeout(
-      () => inputRef.current?.focus({ preventScroll: true }),
+      () => picker.inputRef.current?.focus({ preventScroll: true }),
       50,
     );
     return () => clearTimeout(id);
   }, []);
 
   const ui = i18n.language;
-  const nameOf = (code: string) => languageName(code, ui);
-
-  const toggle = (code: string) => {
-    const next = languages.includes(code)
-      ? languages.filter((c) => c !== code)
-      : [...languages, code];
-    // A model picked for other languages no longer counts as the pick.
-    const picked = CURATED_ASR.find((m) => m.id === modelId);
-    const stillFits =
-      !picked || next.every((l) => modelMatchesLanguage(picked, l));
-    set({
-      languages: next,
-      ...(stillFits ? {} : { modelId: null }),
-    });
-    setQuery("");
-    inputRef.current?.focus({ preventScroll: true });
-  };
-
-  const matches = useMemo(() => searchLanguages(query, ui), [query, ui]);
-  const available = matches.filter((l) => !languages.includes(l.code));
   const chinese = languages.filter(isChinese);
   const weak = languages.filter(isWeakLanguage);
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
-    languageSearchKeys(e, {
-      query,
-      first: available[0]?.code,
-      last: languages[languages.length - 1],
-      toggle,
-      clear: () => setQuery(""),
-    });
 
   const hint = !languages.length
     ? t("onboarding.welcome.hint.pickOne")
@@ -125,66 +103,23 @@ export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
         />
 
         <div className="mt-lead flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-panel border-[1.5px] border-line-strong bg-background">
-          {/* Clicks around the chips go to the search (a <label> would hand
-              them to the first chip, which removes it). */}
-          <div
-            onClick={() => inputRef.current?.focus({ preventScroll: true })}
-            className="flex min-h-[46px] cursor-text flex-wrap items-center gap-[4px] border-b border-line px-[8px] py-[7px] text-start"
-          >
-            {languages.map((code) => (
-              <LanguageChip
-                key={code}
-                code={code}
-                removeLabel={t("onboarding.welcome.remove", {
-                  language: nameOf(code),
-                })}
-                onRemove={() => toggle(code)}
-              />
-            ))}
-            <input
-              ref={inputRef}
-              type="text"
-              autoComplete="off"
-              spellCheck={false}
-              aria-label={t("onboarding.welcome.searchLabel")}
-              placeholder={
-                languages.length
-                  ? t("onboarding.welcome.addAnother")
-                  : t("onboarding.welcome.searchPlaceholder")
-              }
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={onKeyDown}
-              className="h-[30px] min-w-[120px] flex-1 border-0 bg-transparent px-[8px] text-body text-text outline-none placeholder:text-ink-3"
-            />
-          </div>
+          <LanguageSearchField
+            picker={picker}
+            className="border-b border-line"
+            inputClassName="min-w-[120px] text-body"
+          />
           <div
             role="group"
             aria-label={t("onboarding.welcome.languagesLabel")}
             className="grid min-h-0 flex-1 grid-cols-3 content-start gap-[2px] overflow-y-auto p-[6px] pb-[14px] text-start [mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
           >
-            {available.map((l, i) => (
-              <LanguageOption
-                key={l.code}
-                language={l}
-                name={nameOf(l.code)}
-                highlighted={!!query && i === 0}
-                onPick={() => toggle(l.code)}
-              />
-            ))}
-            {!available.length && (
-              <div className="col-span-full p-[24px] text-center text-small text-ink-3">
-                {matches.length
-                  ? t("onboarding.welcome.alreadyAdded", {
-                      count: matches.length,
-                      languages: languageList(
-                        matches.map((l) => l.code),
-                        ui,
-                      ),
-                    })
-                  : t("onboarding.welcome.noMatch", { query })}
-              </div>
-            )}
+            <LanguageOptions
+              picker={picker}
+              noMatch={t("onboarding.welcome.noMatch", {
+                query: picker.query,
+              })}
+              emptyClassName="p-[24px]"
+            />
           </div>
         </div>
 

@@ -2,49 +2,20 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
-import { catalog } from "@handy-computer/models";
-import type { ModelInfo } from "@/bindings";
 import { useModelStore } from "@/stores/modelStore";
 import { useSettings } from "@/hooks/useSettings";
-import {
-  CURATED_ASR,
-  groupModels,
-  picksFor,
-} from "@/components/onboarding/data/models";
-import {
-  averageError,
-  makeGrading,
-  type Grading,
-} from "@/components/shared/modelTable/grading";
+import { useModelCatalog } from "@/hooks/useModelCatalog";
+import { averageError, type Grading } from "@/lib/models/grading";
+import { downloadStateOf } from "@/lib/models/downloadState";
 import type { TableModel } from "@/components/shared/modelTable/context";
-import { useMachineTier } from "@/components/onboarding/useOnboardingModels";
-import { repoIdOf } from "@/components/onboarding/retiredModels";
-import { suggestedLanguages } from "@/components/onboarding/data/languages";
 import {
-  getTranslatedModelDescription,
-  getTranslatedModelName,
-} from "@/lib/utils/modelTranslation";
-
-// Legacy (Url-sourced .bin) models still run from disk but aren't offered.
-export const isLegacyModel = (model: ModelInfo): boolean =>
-  typeof model.source === "object" && "Url" in model.source;
-
-// Extract a GGUF quantization label from a filename, if present (e.g. "Q8_0").
-const quantOf = (filename: string): string | null => {
-  const match = filename.match(
-    /[._-](IQ\d+_\w+|Q\d+(?:_\w+)?|F16|BF16|F32)\.gguf$/i,
-  );
-  return match ? match[1].toUpperCase() : null;
-};
+  isLegacyModel,
+  toTableModel,
+} from "@/components/shared/modelTable/tableModel";
+import { suggestedLanguages } from "@/lib/utils/languageSuggestions";
 
 /** A model on the page: the table's own shape. */
 export type Entry = TableModel;
-
-const CATALOG_BY_REPO = new Map(
-  catalog.models
-    .filter((m) => m.role === "asr")
-    .map((m) => [m.repository, m] as const),
-);
 
 /** The table's grading, and where each model ranks for your languages. */
 export type Facts = Grading & {
@@ -70,11 +41,8 @@ export const useModelEntries = () => {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
   const spoken = getSetting("spoken_languages");
-  const langs = useMemo(
-    () => (spoken?.length ? spoken : suggestedLanguages()),
-    [spoken?.join()],
-  );
-  const tier = useMachineTier();
+  const langs = spoken?.length ? spoken : suggestedLanguages();
+  const { groups, grading } = useModelCatalog(langs);
   const infos = useModelStore((s) => s.models);
   const current = useModelStore((s) => s.currentModel);
 
@@ -83,47 +51,17 @@ export const useModelEntries = () => {
       infos
         // Old .bin downloads only while they're still on disk.
         .filter((info) => !isLegacyModel(info) || info.is_downloaded)
-        .map((info): Entry => {
-          const repo = repoIdOf(info);
-          const model =
-            info.is_custom || !repo ? undefined : CATALOG_BY_REPO.get(repo);
-          return {
-            id: info.id,
-            name: getTranslatedModelName(info, t),
-            description: getTranslatedModelDescription(info, t),
-            languages: info.supported_languages,
-            streaming: info.supports_streaming,
-            translate: info.supports_translation,
-            sizeMb: Number(info.size_mb),
-            // The file's own, so a different quant found on disk says so.
-            quant: quantOf(info.filename) ?? model?.quant ?? null,
-            kind: info.is_custom
-              ? "custom"
-              : isLegacyModel(info)
-                ? "legacy"
-                : model?.curated
-                  ? "curated"
-                  : "catalog",
-            model,
-          };
-        }),
+        .map((info) => toTableModel(info, t)),
     [infos, t],
   );
 
   const facts = useMemo((): Facts => {
-    const offered = new Set(
-      entries.flatMap((e) => (e.kind === "curated" ? [e.model!.id] : [])),
-    );
-    const curated = CURATED_ASR.filter((m) => offered.has(m.id));
-    const picks = picksFor(langs, (m) => offered.has(m.id));
-    const groups = groupModels(langs, tier, curated, picks);
     const rank = new Map(
       [...groups.picks, ...groups.others, ...groups.partial].map((r, i) => [
         r.model.id,
         i,
       ]),
     );
-    const grading = makeGrading(langs, tier, picks);
     return {
       ...grading,
       rankOf: (e) => {
@@ -133,11 +71,11 @@ export const useModelEntries = () => {
         return (
           1000 +
           grading.missing(e.model).length * 100 +
-          (averageError(e.model, langs) ?? 99)
+          (averageError(e.model, grading.langs) ?? 99)
         );
       },
     };
-  }, [entries, langs, tier]);
+  }, [groups, grading]);
 
   const lists = useMemo((): Lists => {
     const infoById = new Map(infos.map((i) => [i.id, i]));
@@ -190,17 +128,12 @@ export type Place =
 
 export const usePlace = (id: string): Place => {
   const switching = usePageState((s) => s.switching === id);
-  const verifying = useModelStore((s) => id in s.verifyingModels);
-  const downloading = useModelStore((s) => id in s.downloadingModels);
+  const state = useModelStore((s) => downloadStateOf(s, id).state);
   const current = useModelStore((s) => s.currentModel === id);
-  const downloaded = useModelStore(
-    (s) => !!s.models.find((m) => m.id === id)?.is_downloaded,
-  );
   if (switching) return "loading";
-  if (verifying) return "checking";
-  if (downloading) return "downloading";
+  if (state === "checking" || state === "downloading") return state;
   // A stale selection must never make a missing model look in use.
-  if (!downloaded) return "remote";
+  if (state !== "ready") return "remote";
   return current ? "active" : "ready";
 };
 

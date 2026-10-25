@@ -1,5 +1,8 @@
 /** Demo's dictated lines per language. Sample speech, not UI copy, so not in i18n. */
-import { isChinese, type ChineseScriptChoice } from "./languages";
+import {
+  isChinese,
+  type ChineseScriptChoice,
+} from "@/lib/utils/languageSuggestions";
 
 export const SAMPLES: Record<string, string> = {
   es: "Oye, ¿podemos mover la revisión de diseño de mañana a las tres? Quiero un poco más de tiempo para terminar las maquetas.",

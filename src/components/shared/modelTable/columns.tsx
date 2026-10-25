@@ -6,7 +6,7 @@ import { GradeChip } from "@/components/shared/GradeChip";
 import { SpeedBars, speedLevel } from "@/components/shared/SpeedBars";
 import { languageName } from "@/lib/constants/languages";
 import { formatModelSize } from "@/lib/utils/format";
-import type { Grading } from "./grading";
+import type { Grading } from "@/lib/models/grading";
 
 /**
  * One grade column per language up to 3, dense chips for 4–5, and past 5 a
@@ -64,12 +64,12 @@ export const Codes: React.FC<{ langs: string[]; vt?: VtName }> = ({
           </span>
         ))
       ) : (
-        <span className={CODE_CLASS} title={t("onboarding.model.accuracy")}>
-          {t("settings.models.allLanguages")}
+        <span className={CODE_CLASS} title={t("modelTable.accuracy")}>
+          {t("modelTable.allLanguages")}
         </span>
       )}
-      <span className={CODE_CLASS}>{t("onboarding.model.speed")}</span>
-      <span className={CODE_CLASS}>{t("onboarding.model.size")}</span>
+      <span className={CODE_CLASS}>{t("modelTable.speed")}</span>
+      <span className={CODE_CLASS}>{t("modelTable.size")}</span>
     </span>
   );
 };
@@ -89,7 +89,7 @@ export const GradeTip: React.FC<{
     new Intl.ListFormat(ui, { type: "conjunction" }).format(codes.map(nameOf));
   const one = langs.length === 1;
   const grade = one ? grading.grade(model, langs[0]) : grading.overall(model);
-  const key = (k: string) => `onboarding.model.rubric.${k}`;
+  const key = (k: string) => `modelTable.rubric.${k}`;
   const miss = langs.filter((l) => grading.grade(model, l).unsupported);
   let text: React.ReactNode;
   if (!model) text = t(key("unrated"), { language: list(langs) });
@@ -142,9 +142,9 @@ export const useSpeedWords = () => {
   const { t } = useTranslation();
   return (wait: number | undefined, preview = false) =>
     wait == null
-      ? t("onboarding.model.speedUntested")
+      ? t("modelTable.speedUntested")
       : t(
-          `onboarding.model.${preview ? "speedWordsPreview" : "speedWords"}.${speedLevel(wait)}`,
+          `modelTable.${preview ? "speedWordsPreview" : "speedWords"}.${speedLevel(wait)}`,
         );
 };
 
@@ -158,7 +158,7 @@ export const SpeedTip: React.FC<{
   children: React.ReactElement;
 }> = ({ grading, model, streaming, className, children }) => {
   const { t } = useTranslation();
-  const key = (k: string) => `onboarding.model.rubric.${k}`;
+  const key = (k: string) => `modelTable.rubric.${k}`;
   const wait = grading.wait(model);
   const level = speedLevel(wait);
   return (
@@ -166,7 +166,7 @@ export const SpeedTip: React.FC<{
       className={className}
       title={
         wait == null
-          ? t("onboarding.model.speed")
+          ? t("modelTable.speed")
           : t(key("speedTitle"), { speed: t(key(`speedName.${level}`)) })
       }
       text={

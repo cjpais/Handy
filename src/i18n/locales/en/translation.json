@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Speak instead of typing, in any app",
       "subtitle": "Pick the languages you will dictate in",
-      "searchLabel": "Search languages",
-      "searchPlaceholder": "Search languages",
-      "addAnother": "Add another",
-      "remove": "Remove {{language}}",
       "languagesLabel": "Languages",
-      "alreadyAdded_one": "{{languages}} is already added.",
-      "alreadyAdded_other": "{{languages}} are already added.",
       "noMatch": "No language matches “{{query}}”. Handy's models cover about 100 languages; more are in settings.",
       "appLanguage": "App language",
       "menusIn": "Menus in <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Choose a speech model",
       "subtitle": "The speech model turns your speech into text, right on this computer",
       "label": "Speech model",
-      "allLabel": "Speech models",
-      "roles": {
-        "recommended": "Recommended",
-        "faster": "Faster",
-        "accurate": "More accurate",
-        "fromAll": "From all models"
-      },
       "lines": {
         "recommended": "The best balance of speed and accuracy for your languages",
         "faster": "Quicker, with a few more mistakes",
@@ -152,79 +139,13 @@
         "faster": "Quicker, a few more mistakes",
         "accurate": "Fewest mistakes, but slower"
       },
-      "accuracy": "Accuracy",
-      "speed": "Speed",
-      "size": "Size",
       "model": "Model",
-      "speedWords": {
-        "0": "Very slow, words appear after a long wait",
-        "1": "Slow, words appear after a wait",
-        "2": "Moderate, words appear after a short wait",
-        "3": "Fast, words appear almost right away",
-        "4": "Very fast, words appear right away"
-      },
-      "speedWordsPreview": {
-        "0": "Very slow, with a live preview while you talk",
-        "1": "Slow, with a live preview while you talk",
-        "2": "Moderate, with a live preview while you talk",
-        "3": "Fast, with a live preview while you talk",
-        "4": "Very fast, with a live preview while you talk"
-      },
-      "speedUntested": "Speed not measured yet",
-      "rubric": {
-        "gradeTitle": "{{language}} accuracy: {{grade}}",
-        "accuracyTitle": "{{language}} accuracy",
-        "overallTitle": "Accuracy in your languages: {{grade}}",
-        "overall": "Accuracy in your languages",
-        "meaning": {
-          "A": "Very few mistakes: your words usually come out as you said them",
-          "B": "Some mistakes: expect to fix a word here and there",
-          "C": "Frequent mistakes: some details may get lost",
-          "D": "Many mistakes: expect to check and correct what it types",
-          "F": "Often unclear: much of what you say may come out wrong"
-        },
-        "unsupported": "This model doesn't understand {{language}}, so it can't type it",
-        "unrated": "This model understands {{language}}, but we haven't measured how well yet",
-        "under": "under {{max}}%",
-        "between": "{{min}} to {{max}}%",
-        "over": "{{min}}% or more",
-        "speedTitle": "Speed: {{speed}}",
-        "speedName": {
-          "0": "Very slow",
-          "1": "Slow",
-          "2": "Moderate",
-          "3": "Fast",
-          "4": "Very fast"
-        },
-        "speedMeaning": {
-          "0": "Your words appear after a long wait",
-          "1": "Your words appear after a wait",
-          "2": "Your words appear after a short wait",
-          "3": "Your words appear almost right away",
-          "4": "Your words appear right away"
-        },
-        "speedPreview": "{{meaning}}, with a live preview while you talk",
-        "untimed": "We haven't measured how fast it is yet",
-        "underSeconds": "under {{max}} s",
-        "betweenSeconds": "{{min}} to {{max}} s",
-        "overSeconds": "{{min}} s or more"
-      },
-      "tags": {
-        "preview": "Live preview",
-        "previewTitle": "Shows your words in the Live overlay while you talk, then types them when you stop",
-        "translate": "Translates",
-        "translateTitle": "Can turn what you say into English text. Turn it on in settings"
-      },
       "showAll": "Show all {{count}} models",
       "download": "Download {{size}}",
       "downloadInstead": "Download {{size}} instead",
       "pauses": "{{name}} pauses at {{percent}}%",
       "resumeLater": "Pick it again to pick up where it left off",
-      "hint": "Downloads while you finish setup",
-      "search": "Search models",
-      "missingLanguage": "Missing a language",
-      "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet",
-      "noFilterMatch": "No models match these filters"
+      "hint": "Downloads while you finish setup"
     },
     "demo": {
       "title": "Talk in any app, with one shortcut",
@@ -295,6 +216,92 @@
       "done": "Not working in other apps? <guide>Linux setup guide</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Live preview",
+      "previewTitle": "Shows your words in the Live overlay while you talk, then types them when you stop",
+      "translate": "Translates",
+      "translateTitle": "Can turn what you say into English text. Turn it on in settings"
+    },
+    "rubric": {
+      "gradeTitle": "{{language}} accuracy: {{grade}}",
+      "accuracyTitle": "{{language}} accuracy",
+      "overallTitle": "Accuracy in your languages: {{grade}}",
+      "overall": "Accuracy in your languages",
+      "meaning": {
+        "A": "Very few mistakes: your words usually come out as you said them",
+        "B": "Some mistakes: expect to fix a word here and there",
+        "C": "Frequent mistakes: some details may get lost",
+        "D": "Many mistakes: expect to check and correct what it types",
+        "F": "Often unclear: much of what you say may come out wrong"
+      },
+      "unsupported": "This model doesn't understand {{language}}, so it can't type it",
+      "unrated": "This model understands {{language}}, but we haven't measured how well yet",
+      "under": "under {{max}}%",
+      "between": "{{min}} to {{max}}%",
+      "over": "{{min}}% or more",
+      "speedTitle": "Speed: {{speed}}",
+      "speedName": {
+        "0": "Very slow",
+        "1": "Slow",
+        "2": "Moderate",
+        "3": "Fast",
+        "4": "Very fast"
+      },
+      "speedMeaning": {
+        "0": "Your words appear after a long wait",
+        "1": "Your words appear after a wait",
+        "2": "Your words appear after a short wait",
+        "3": "Your words appear almost right away",
+        "4": "Your words appear right away"
+      },
+      "speedPreview": "{{meaning}}, with a live preview while you talk",
+      "untimed": "We haven't measured how fast it is yet",
+      "underSeconds": "under {{max}} s",
+      "betweenSeconds": "{{min}} to {{max}} s",
+      "overSeconds": "{{min}} s or more"
+    },
+    "roles": {
+      "recommended": "Recommended",
+      "faster": "Faster",
+      "accurate": "More accurate",
+      "fromAll": "From all models"
+    },
+    "speed": "Speed",
+    "size": "Size",
+    "accuracy": "Accuracy",
+    "search": "Search models",
+    "allLabel": "Speech models",
+    "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet",
+    "noFilterMatch": "No models match these filters",
+    "speedUntested": "Speed not measured yet",
+    "speedWords": {
+      "0": "Very slow, words appear after a long wait",
+      "1": "Slow, words appear after a wait",
+      "2": "Moderate, words appear after a short wait",
+      "3": "Fast, words appear almost right away",
+      "4": "Very fast, words appear right away"
+    },
+    "speedWordsPreview": {
+      "0": "Very slow, with a live preview while you talk",
+      "1": "Slow, with a live preview while you talk",
+      "2": "Moderate, with a live preview while you talk",
+      "3": "Fast, with a live preview while you talk",
+      "4": "Very fast, with a live preview while you talk"
+    },
+    "missingLanguage": "Missing a language",
+    "allLanguages": "All",
+    "downloadingLine": "Downloading {{percent}}% of {{total}}",
+    "customLine": "Added from your models folder. Not graded.",
+    "legacyLine": "An older download. Not graded."
+  },
+  "languagePicker": {
+    "search": "Search languages",
+    "addAnother": "Add another",
+    "remove": "Remove {{language}}",
+    "alreadyAdded_one": "{{languages}} is already added.",
+    "alreadyAdded_other": "{{languages}} are already added."
+  },
   "modelSelector": {
     "custom": "Custom",
     "streaming": "Streaming",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Preferred Languages",
         "description": "The languages you speak. Handy uses them to recommend models.",
-        "searchLabel": "Search languages",
-        "placeholder": "Search languages",
-        "addAnother": "Add another",
-        "remove": "Remove {{language}}",
-        "alreadyAdded_one": "{{languages}} is already added.",
-        "alreadyAdded_other": "{{languages}} are already added.",
         "noMatch": "No language matches “{{query}}”",
         "weak": "No model recognizes {{languages}} well yet."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "On this computer",
         "fits": "For your languages",
-        "missing": "Missing a language",
         "untested": "Untested"
       },
-      "allLanguages": "All",
       "untestedNote": "Not tested with Handy. They may be slower or make more mistakes.",
       "untestedHidden_one": "{{count}} more model isn’t tuned for dictation. Search to find it.",
       "untestedHidden_other": "{{count}} more models aren’t tuned for dictation. Search to find one.",
@@ -394,7 +393,6 @@
       "showMore": "Show {{count}} more",
       "showFewer": "Show fewer",
       "download": "Download and use",
-      "downloadingLine": "Downloading {{percent}}% of {{total}}",
       "downloadingThenUse": "{{percent}}% of {{total}}, then switches",
       "loading": "Loading…",
       "deleteAsk": "Delete {{name}}? It frees {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Cancel",
       "deleteModel": "Delete {{name}}",
       "cancelDownload": "Stop downloading {{name}}",
-      "customLine": "Added from your models folder. Not graded.",
-      "legacyLine": "An older download. Not graded.",
       "legend": {
         "open": "How models are graded",
-        "accuracy": "Accuracy",
         "accuracyNote": "For each of your languages: how many words a model got wrong in our test recordings.",
-        "speed": "Speed",
         "speedNote": {
           "accelerated": "How long 30 seconds of speech takes to type out on our test laptop’s graphics chip. This computer may differ.",
           "cpu": "How long 30 seconds of speech takes to type out on our test laptop’s processor. This computer may differ."
@@ -897,10 +891,6 @@
     "copy": "Copy",
     "clear": "Clear",
     "noOptionsFound": "No options found"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
-    "openSettings": "Open System Settings"
   },
   "errors": {
     "loadDirectory": "Error loading directory: {{error}}",

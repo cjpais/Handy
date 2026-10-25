@@ -1,13 +1,13 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  bindingKeys,
   keycapLabel,
   spaceDoesNotClick,
   type OSType,
 } from "@/lib/utils/keyboard";
+import { usePressAway } from "@/hooks/usePressAway";
 import { languageList } from "@/lib/constants/languages";
-import { Keycaps, KeySlot } from "../shared/Keycaps";
+import { CapturedKeys, Keycaps } from "../shared/Keycaps";
 import { Switch } from "../ui/Switch";
 import TrayIcon from "../icons/TrayIcon";
 
@@ -78,25 +78,17 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
   const { t, i18n } = useTranslation();
   const languagesText = languageList(languages, i18n.language);
   const keysLabel = keycapLabel(shortcut, os);
-  const partialKeys = bindingKeys(capture.partial);
 
   // While capturing, a click outside the keys box cancels; that same click
   // must not then restart capture.
   const keysRow = useRef<HTMLDivElement>(null);
   const keysBox = useRef<HTMLSpanElement>(null);
   const resetAt = useRef(-Infinity);
-  const { capturing, cancel } = capture;
-  useEffect(() => {
-    if (!capturing) return;
-    const away = (ev: PointerEvent) => {
-      const at = ev.target as Node;
-      if (keysBox.current?.contains(at)) return;
-      if (keysRow.current?.contains(at)) resetAt.current = performance.now();
-      cancel();
-    };
-    document.addEventListener("pointerdown", away, true);
-    return () => document.removeEventListener("pointerdown", away, true);
-  }, [capturing, cancel]);
+  const { capturing } = capture;
+  usePressAway(capturing, keysBox, (at) => {
+    if (keysRow.current?.contains(at)) resetAt.current = performance.now();
+    capture.cancel();
+  });
 
   return (
     <div
@@ -178,17 +170,13 @@ export const TrayPanel: React.FC<TrayPanelProps> = ({
                 pressed={keysDown}
                 lift
               />
-            ) : partialKeys.length ? (
-              <Keycaps
-                binding={capture.partial}
+            ) : (
+              <CapturedKeys
+                partial={capture.partial}
                 osType={os}
                 size="line"
-                partial
+                slotLabel={t("settings.general.shortcut.pressKeys")}
               />
-            ) : (
-              <KeySlot size="line" role="status">
-                {t("settings.general.shortcut.pressKeys")}
-              </KeySlot>
             )}
           </span>
         </button>

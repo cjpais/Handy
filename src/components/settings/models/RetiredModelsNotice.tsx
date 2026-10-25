@@ -5,7 +5,7 @@ import { Loader2, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { commands, type RetiredModel } from "@/bindings";
 import { useModelStore } from "@/stores/modelStore";
-import { deleteRetiredModel } from "@/components/onboarding/retiredModels";
+import { deleteRetiredModel } from "@/lib/models/retired";
 import { formatModelSize } from "@/lib/utils/format";
 
 /**

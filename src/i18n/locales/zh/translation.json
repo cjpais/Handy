@@ -92,13 +92,7 @@
     "welcome": {
       "title": "在任何应用中，动口不动手",
       "subtitle": "选择您要用来听写的语言",
-      "searchLabel": "搜索语言",
-      "searchPlaceholder": "搜索语言",
-      "addAnother": "再添加一种",
-      "remove": "移除{{language}}",
       "languagesLabel": "语言",
-      "alreadyAdded_one": "已添加{{languages}}。",
-      "alreadyAdded_other": "已添加{{languages}}。",
       "noMatch": "没有与“{{query}}”匹配的语言。Handy 的模型涵盖约 100 种语言，更多语言可在设置中找到。",
       "appLanguage": "应用语言",
       "menusIn": "菜单语言：<b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "选择语音模型",
       "subtitle": "语音模型直接在这台电脑上把您的语音转成文字",
       "label": "语音模型",
-      "allLabel": "语音模型",
-      "roles": {
-        "recommended": "推荐",
-        "faster": "更快",
-        "accurate": "更准确",
-        "fromAll": "全部模型"
-      },
       "lines": {
         "recommended": "针对您的语言，速度与准确度的最佳平衡",
         "faster": "更快，但错误稍多",
@@ -152,79 +139,13 @@
         "faster": "更快，错误稍多",
         "accurate": "错误最少，但更慢"
       },
-      "accuracy": "准确度",
-      "speed": "速度",
-      "size": "大小",
       "model": "模型",
-      "speedWords": {
-        "0": "很慢，要等很久才会出字",
-        "1": "较慢，要等一会儿才会出字",
-        "2": "中等，稍等片刻就会出字",
-        "3": "较快，几乎立刻出字",
-        "4": "很快，立刻出字"
-      },
-      "speedWordsPreview": {
-        "0": "很慢，说话时可实时预览",
-        "1": "较慢，说话时可实时预览",
-        "2": "中等，说话时可实时预览",
-        "3": "较快，说话时可实时预览",
-        "4": "很快，说话时可实时预览"
-      },
-      "speedUntested": "尚未测速",
-      "rubric": {
-        "gradeTitle": "{{language}}准确度：{{grade}}",
-        "accuracyTitle": "{{language}}准确度",
-        "overallTitle": "您所选语言的准确度：{{grade}}",
-        "overall": "您所选语言的准确度",
-        "meaning": {
-          "A": "错误很少：您说的话通常都能原样输出",
-          "B": "有些错误：偶尔需要改一两个字词",
-          "C": "错误较多：部分细节可能会丢失",
-          "D": "错误很多：输入的内容需要检查并修改",
-          "F": "常常不清楚：您说的话可能大部分都会出错"
-        },
-        "unsupported": "此模型听不懂{{language}}，因此无法输入该语言",
-        "unrated": "此模型能听懂{{language}}，但我们还没有测过效果如何",
-        "under": "低于 {{max}}%",
-        "between": "{{min}}% 至 {{max}}%",
-        "over": "{{min}}% 或更高",
-        "speedTitle": "速度：{{speed}}",
-        "speedName": {
-          "0": "很慢",
-          "1": "较慢",
-          "2": "中等",
-          "3": "较快",
-          "4": "很快"
-        },
-        "speedMeaning": {
-          "0": "要等很久才会出字",
-          "1": "要等一会儿才会出字",
-          "2": "稍等片刻就会出字",
-          "3": "几乎立刻出字",
-          "4": "立刻出字"
-        },
-        "speedPreview": "{{meaning}}，说话时可实时预览",
-        "untimed": "我们还没有测过它的速度",
-        "underSeconds": "低于 {{max}} 秒",
-        "betweenSeconds": "{{min}} 至 {{max}} 秒",
-        "overSeconds": "{{min}} 秒或更久"
-      },
-      "tags": {
-        "preview": "实时预览",
-        "previewTitle": "说话时在“实时”悬浮窗中显示您的文字，停止后再输入",
-        "translate": "可翻译",
-        "translateTitle": "可以把您说的话转成英文文本，需在设置中开启"
-      },
       "showAll": "显示全部 {{count}} 个模型",
       "download": "下载（{{size}}）",
       "downloadInstead": "改为下载（{{size}}）",
       "pauses": "{{name}}将在 {{percent}}% 时暂停",
       "resumeLater": "再次选择它，即可从中断处继续",
-      "hint": "在您完成设置的同时下载",
-      "search": "搜索模型",
-      "missingLanguage": "缺少某种语言",
-      "noMatch": "没有与“{{query}}”匹配的内容。试试语言名称，或 Whisper、Parakeet 这样的模型系列",
-      "noFilterMatch": "没有符合这些筛选条件的模型"
+      "hint": "在您完成设置的同时下载"
     },
     "demo": {
       "title": "一个快捷键，在任何应用中开口就写",
@@ -295,6 +216,92 @@
       "done": "在其他应用中不起作用？<guide>Linux 设置指南</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "实时预览",
+      "previewTitle": "说话时在“实时”悬浮窗中显示您的文字，停止后再输入",
+      "translate": "可翻译",
+      "translateTitle": "可以把您说的话转成英文文本，需在设置中开启"
+    },
+    "rubric": {
+      "gradeTitle": "{{language}}准确度：{{grade}}",
+      "accuracyTitle": "{{language}}准确度",
+      "overallTitle": "您所选语言的准确度：{{grade}}",
+      "overall": "您所选语言的准确度",
+      "meaning": {
+        "A": "错误很少：您说的话通常都能原样输出",
+        "B": "有些错误：偶尔需要改一两个字词",
+        "C": "错误较多：部分细节可能会丢失",
+        "D": "错误很多：输入的内容需要检查并修改",
+        "F": "常常不清楚：您说的话可能大部分都会出错"
+      },
+      "unsupported": "此模型听不懂{{language}}，因此无法输入该语言",
+      "unrated": "此模型能听懂{{language}}，但我们还没有测过效果如何",
+      "under": "低于 {{max}}%",
+      "between": "{{min}}% 至 {{max}}%",
+      "over": "{{min}}% 或更高",
+      "speedTitle": "速度：{{speed}}",
+      "speedName": {
+        "0": "很慢",
+        "1": "较慢",
+        "2": "中等",
+        "3": "较快",
+        "4": "很快"
+      },
+      "speedMeaning": {
+        "0": "要等很久才会出字",
+        "1": "要等一会儿才会出字",
+        "2": "稍等片刻就会出字",
+        "3": "几乎立刻出字",
+        "4": "立刻出字"
+      },
+      "speedPreview": "{{meaning}}，说话时可实时预览",
+      "untimed": "我们还没有测过它的速度",
+      "underSeconds": "低于 {{max}} 秒",
+      "betweenSeconds": "{{min}} 至 {{max}} 秒",
+      "overSeconds": "{{min}} 秒或更久"
+    },
+    "roles": {
+      "recommended": "推荐",
+      "faster": "更快",
+      "accurate": "更准确",
+      "fromAll": "全部模型"
+    },
+    "speed": "速度",
+    "size": "大小",
+    "accuracy": "准确度",
+    "search": "搜索模型",
+    "allLabel": "语音模型",
+    "noMatch": "没有与“{{query}}”匹配的内容。试试语言名称，或 Whisper、Parakeet 这样的模型系列",
+    "noFilterMatch": "没有符合这些筛选条件的模型",
+    "speedUntested": "尚未测速",
+    "speedWords": {
+      "0": "很慢，要等很久才会出字",
+      "1": "较慢，要等一会儿才会出字",
+      "2": "中等，稍等片刻就会出字",
+      "3": "较快，几乎立刻出字",
+      "4": "很快，立刻出字"
+    },
+    "speedWordsPreview": {
+      "0": "很慢，说话时可实时预览",
+      "1": "较慢，说话时可实时预览",
+      "2": "中等，说话时可实时预览",
+      "3": "较快，说话时可实时预览",
+      "4": "很快，说话时可实时预览"
+    },
+    "missingLanguage": "缺少某种语言",
+    "allLanguages": "全部",
+    "downloadingLine": "正在下载 {{percent}}%（共 {{total}}）",
+    "customLine": "从您的模型文件夹添加，未评级。",
+    "legacyLine": "较早下载的版本，未评级。"
+  },
+  "languagePicker": {
+    "search": "搜索语言",
+    "addAnother": "再添加一种",
+    "remove": "移除{{language}}",
+    "alreadyAdded_one": "已添加{{languages}}。",
+    "alreadyAdded_other": "已添加{{languages}}。"
+  },
   "modelSelector": {
     "custom": "自定义",
     "streaming": "流式",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "常用语言",
         "description": "您会说的语言。Handy 会据此推荐模型。",
-        "searchLabel": "搜索语言",
-        "placeholder": "搜索语言",
-        "addAnother": "再添加一种",
-        "remove": "移除{{language}}",
-        "alreadyAdded_one": "已添加{{languages}}。",
-        "alreadyAdded_other": "已添加{{languages}}。",
         "noMatch": "没有与“{{query}}”匹配的语言",
         "weak": "目前还没有模型能很好地识别{{languages}}。"
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "在这台电脑上",
         "fits": "适合您的语言",
-        "missing": "缺少某种语言",
         "untested": "未测试"
       },
-      "allLanguages": "全部",
       "untestedNote": "尚未经过 Handy 测试，可能更慢或错误更多。",
       "untestedHidden_one": "另有 {{count}} 个模型未针对听写优化，可通过搜索找到。",
       "untestedHidden_other": "另有 {{count}} 个模型未针对听写优化，可通过搜索找到。",
@@ -394,7 +393,6 @@
       "showMore": "再显示 {{count}} 个",
       "showFewer": "收起",
       "download": "下载并使用",
-      "downloadingLine": "正在下载 {{percent}}%（共 {{total}}）",
       "downloadingThenUse": "{{percent}}%（共 {{total}}），完成后自动切换",
       "loading": "加载中…",
       "deleteAsk": "删除{{name}}？这将释放 {{size}}。",
@@ -402,13 +400,9 @@
       "cancel": "取消",
       "deleteModel": "删除{{name}}",
       "cancelDownload": "停止下载{{name}}",
-      "customLine": "从您的模型文件夹添加，未评级。",
-      "legacyLine": "较早下载的版本，未评级。",
       "legend": {
         "open": "模型如何评级",
-        "accuracy": "准确度",
         "accuracyNote": "针对您选择的每种语言：模型在我们的测试录音中听错了多少词。",
-        "speed": "速度",
         "speedNote": {
           "accelerated": "在我们的测试笔记本电脑的显卡上，输出 30 秒语音所需的时间。这台电脑可能有所不同。",
           "cpu": "在我们的测试笔记本电脑的处理器上，输出 30 秒语音所需的时间。这台电脑可能有所不同。"
@@ -897,10 +891,6 @@
     "copy": "复制",
     "clear": "清除",
     "noOptionsFound": "未找到选项"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
-    "openSettings": "打开系统设置"
   },
   "errors": {
     "loadDirectory": "加载目录时出错: {{error}}",

@@ -4,7 +4,7 @@ import {
   suggestedLanguages,
   suggestedScript,
   type ChineseScriptChoice,
-} from "./data/languages";
+} from "@/lib/utils/languageSuggestions";
 
 export type OnboardingStep =
   | "welcome"

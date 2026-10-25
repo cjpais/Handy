@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Nói thay vì gõ, trong mọi ứng dụng",
       "subtitle": "Chọn các ngôn ngữ bạn sẽ dùng để đọc chính tả",
-      "searchLabel": "Tìm kiếm ngôn ngữ",
-      "searchPlaceholder": "Tìm kiếm ngôn ngữ",
-      "addAnother": "Thêm ngôn ngữ khác",
-      "remove": "Xóa {{language}}",
       "languagesLabel": "Ngôn ngữ",
-      "alreadyAdded_one": "Đã thêm {{languages}} rồi.",
-      "alreadyAdded_other": "Đã thêm {{languages}} rồi.",
       "noMatch": "Không có ngôn ngữ nào khớp với “{{query}}”. Các mô hình của Handy hỗ trợ khoảng 100 ngôn ngữ; còn nhiều ngôn ngữ khác trong cài đặt.",
       "appLanguage": "Ngôn ngữ ứng dụng",
       "menusIn": "Menu bằng <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Chọn mô hình giọng nói",
       "subtitle": "Mô hình giọng nói biến lời nói của bạn thành văn bản, ngay trên máy tính này",
       "label": "Mô hình giọng nói",
-      "allLabel": "Các mô hình giọng nói",
-      "roles": {
-        "recommended": "Được đề xuất",
-        "faster": "Nhanh hơn",
-        "accurate": "Chính xác hơn",
-        "fromAll": "Từ tất cả mô hình"
-      },
       "lines": {
         "recommended": "Cân bằng tốt nhất giữa tốc độ và độ chính xác cho các ngôn ngữ của bạn",
         "faster": "Nhanh hơn, nhưng sai nhiều hơn một chút",
@@ -152,79 +139,13 @@
         "faster": "Nhanh hơn, sai nhiều hơn chút",
         "accurate": "Ít lỗi nhất, nhưng chậm hơn"
       },
-      "accuracy": "Độ chính xác",
-      "speed": "Tốc độ",
-      "size": "Dung lượng",
       "model": "Mô hình",
-      "speedWords": {
-        "0": "Rất chậm, chữ hiện ra sau một lúc lâu",
-        "1": "Chậm, chữ hiện ra sau một lúc",
-        "2": "Vừa phải, chữ hiện ra sau một lát",
-        "3": "Nhanh, chữ hiện ra gần như ngay lập tức",
-        "4": "Rất nhanh, chữ hiện ra ngay lập tức"
-      },
-      "speedWordsPreview": {
-        "0": "Rất chậm, có xem trước trực tiếp khi bạn nói",
-        "1": "Chậm, có xem trước trực tiếp khi bạn nói",
-        "2": "Vừa phải, có xem trước trực tiếp khi bạn nói",
-        "3": "Nhanh, có xem trước trực tiếp khi bạn nói",
-        "4": "Rất nhanh, có xem trước trực tiếp khi bạn nói"
-      },
-      "speedUntested": "Chưa đo tốc độ",
-      "rubric": {
-        "gradeTitle": "Độ chính xác {{language}}: {{grade}}",
-        "accuracyTitle": "Độ chính xác {{language}}",
-        "overallTitle": "Độ chính xác cho các ngôn ngữ của bạn: {{grade}}",
-        "overall": "Độ chính xác cho các ngôn ngữ của bạn",
-        "meaning": {
-          "A": "Rất ít lỗi: lời bạn nói thường được gõ ra đúng như vậy",
-          "B": "Có một số lỗi: thỉnh thoảng bạn sẽ phải sửa vài từ",
-          "C": "Lỗi khá thường xuyên: một số chi tiết có thể bị mất",
-          "D": "Nhiều lỗi: bạn nên kiểm tra và sửa lại những gì nó gõ",
-          "F": "Thường không rõ ràng: phần lớn lời bạn nói có thể bị sai"
-        },
-        "unsupported": "Mô hình này không hiểu {{language}}, nên không thể gõ ngôn ngữ này",
-        "unrated": "Mô hình này hiểu {{language}}, nhưng chúng tôi chưa đo mức độ tốt đến đâu",
-        "under": "dưới {{max}}%",
-        "between": "{{min}} đến {{max}}%",
-        "over": "{{min}}% trở lên",
-        "speedTitle": "Tốc độ: {{speed}}",
-        "speedName": {
-          "0": "Rất chậm",
-          "1": "Chậm",
-          "2": "Vừa phải",
-          "3": "Nhanh",
-          "4": "Rất nhanh"
-        },
-        "speedMeaning": {
-          "0": "Chữ của bạn hiện ra sau một lúc lâu",
-          "1": "Chữ của bạn hiện ra sau một lúc",
-          "2": "Chữ của bạn hiện ra sau một lát",
-          "3": "Chữ của bạn hiện ra gần như ngay lập tức",
-          "4": "Chữ của bạn hiện ra ngay lập tức"
-        },
-        "speedPreview": "{{meaning}}, có xem trước trực tiếp khi bạn nói",
-        "untimed": "Chúng tôi chưa đo tốc độ của mô hình này",
-        "underSeconds": "dưới {{max}} giây",
-        "betweenSeconds": "{{min}} đến {{max}} giây",
-        "overSeconds": "{{min}} giây trở lên"
-      },
-      "tags": {
-        "preview": "Xem trước trực tiếp",
-        "previewTitle": "Hiển thị lời bạn nói trong lớp phủ Trực tiếp khi bạn nói, rồi gõ ra khi bạn dừng",
-        "translate": "Dịch",
-        "translateTitle": "Có thể chuyển lời bạn nói thành văn bản tiếng Anh. Bật trong cài đặt"
-      },
       "showAll": "Hiển thị cả {{count}} mô hình",
       "download": "Tải xuống {{size}}",
       "downloadInstead": "Tải xuống {{size}} thay thế",
       "pauses": "{{name}} tạm dừng ở {{percent}}%",
       "resumeLater": "Chọn lại để tiếp tục từ chỗ đã dừng",
-      "hint": "Tải xuống trong lúc bạn hoàn tất thiết lập",
-      "search": "Tìm kiếm mô hình",
-      "missingLanguage": "Thiếu một ngôn ngữ",
-      "noMatch": "Không có gì khớp với “{{query}}”. Hãy thử một ngôn ngữ, hoặc một dòng mô hình như Whisper hay Parakeet",
-      "noFilterMatch": "Không có mô hình nào khớp với các bộ lọc này"
+      "hint": "Tải xuống trong lúc bạn hoàn tất thiết lập"
     },
     "demo": {
       "title": "Nói trong mọi ứng dụng, chỉ với một phím tắt",
@@ -295,6 +216,92 @@
       "done": "Không hoạt động trong các ứng dụng khác? <guide>Hướng dẫn thiết lập Linux</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Xem trước trực tiếp",
+      "previewTitle": "Hiển thị lời bạn nói trong lớp phủ Trực tiếp khi bạn nói, rồi gõ ra khi bạn dừng",
+      "translate": "Dịch",
+      "translateTitle": "Có thể chuyển lời bạn nói thành văn bản tiếng Anh. Bật trong cài đặt"
+    },
+    "rubric": {
+      "gradeTitle": "Độ chính xác {{language}}: {{grade}}",
+      "accuracyTitle": "Độ chính xác {{language}}",
+      "overallTitle": "Độ chính xác cho các ngôn ngữ của bạn: {{grade}}",
+      "overall": "Độ chính xác cho các ngôn ngữ của bạn",
+      "meaning": {
+        "A": "Rất ít lỗi: lời bạn nói thường được gõ ra đúng như vậy",
+        "B": "Có một số lỗi: thỉnh thoảng bạn sẽ phải sửa vài từ",
+        "C": "Lỗi khá thường xuyên: một số chi tiết có thể bị mất",
+        "D": "Nhiều lỗi: bạn nên kiểm tra và sửa lại những gì nó gõ",
+        "F": "Thường không rõ ràng: phần lớn lời bạn nói có thể bị sai"
+      },
+      "unsupported": "Mô hình này không hiểu {{language}}, nên không thể gõ ngôn ngữ này",
+      "unrated": "Mô hình này hiểu {{language}}, nhưng chúng tôi chưa đo mức độ tốt đến đâu",
+      "under": "dưới {{max}}%",
+      "between": "{{min}} đến {{max}}%",
+      "over": "{{min}}% trở lên",
+      "speedTitle": "Tốc độ: {{speed}}",
+      "speedName": {
+        "0": "Rất chậm",
+        "1": "Chậm",
+        "2": "Vừa phải",
+        "3": "Nhanh",
+        "4": "Rất nhanh"
+      },
+      "speedMeaning": {
+        "0": "Chữ của bạn hiện ra sau một lúc lâu",
+        "1": "Chữ của bạn hiện ra sau một lúc",
+        "2": "Chữ của bạn hiện ra sau một lát",
+        "3": "Chữ của bạn hiện ra gần như ngay lập tức",
+        "4": "Chữ của bạn hiện ra ngay lập tức"
+      },
+      "speedPreview": "{{meaning}}, có xem trước trực tiếp khi bạn nói",
+      "untimed": "Chúng tôi chưa đo tốc độ của mô hình này",
+      "underSeconds": "dưới {{max}} giây",
+      "betweenSeconds": "{{min}} đến {{max}} giây",
+      "overSeconds": "{{min}} giây trở lên"
+    },
+    "roles": {
+      "recommended": "Được đề xuất",
+      "faster": "Nhanh hơn",
+      "accurate": "Chính xác hơn",
+      "fromAll": "Từ tất cả mô hình"
+    },
+    "speed": "Tốc độ",
+    "size": "Dung lượng",
+    "accuracy": "Độ chính xác",
+    "search": "Tìm kiếm mô hình",
+    "allLabel": "Các mô hình giọng nói",
+    "noMatch": "Không có gì khớp với “{{query}}”. Hãy thử một ngôn ngữ, hoặc một dòng mô hình như Whisper hay Parakeet",
+    "noFilterMatch": "Không có mô hình nào khớp với các bộ lọc này",
+    "speedUntested": "Chưa đo tốc độ",
+    "speedWords": {
+      "0": "Rất chậm, chữ hiện ra sau một lúc lâu",
+      "1": "Chậm, chữ hiện ra sau một lúc",
+      "2": "Vừa phải, chữ hiện ra sau một lát",
+      "3": "Nhanh, chữ hiện ra gần như ngay lập tức",
+      "4": "Rất nhanh, chữ hiện ra ngay lập tức"
+    },
+    "speedWordsPreview": {
+      "0": "Rất chậm, có xem trước trực tiếp khi bạn nói",
+      "1": "Chậm, có xem trước trực tiếp khi bạn nói",
+      "2": "Vừa phải, có xem trước trực tiếp khi bạn nói",
+      "3": "Nhanh, có xem trước trực tiếp khi bạn nói",
+      "4": "Rất nhanh, có xem trước trực tiếp khi bạn nói"
+    },
+    "missingLanguage": "Thiếu một ngôn ngữ",
+    "allLanguages": "Tất cả",
+    "downloadingLine": "Đang tải xuống {{percent}}% của {{total}}",
+    "customLine": "Được thêm từ thư mục mô hình của bạn. Không xếp hạng.",
+    "legacyLine": "Một bản tải xuống cũ. Không xếp hạng."
+  },
+  "languagePicker": {
+    "search": "Tìm kiếm ngôn ngữ",
+    "addAnother": "Thêm ngôn ngữ khác",
+    "remove": "Xóa {{language}}",
+    "alreadyAdded_one": "Đã thêm {{languages}} rồi.",
+    "alreadyAdded_other": "Đã thêm {{languages}} rồi."
+  },
   "modelSelector": {
     "custom": "Tùy chỉnh",
     "streaming": "Truyền trực tiếp",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Ngôn ngữ ưa thích",
         "description": "Các ngôn ngữ bạn nói. Handy dùng chúng để đề xuất mô hình.",
-        "searchLabel": "Tìm kiếm ngôn ngữ",
-        "placeholder": "Tìm kiếm ngôn ngữ",
-        "addAnother": "Thêm ngôn ngữ khác",
-        "remove": "Xóa {{language}}",
-        "alreadyAdded_one": "Đã thêm {{languages}} rồi.",
-        "alreadyAdded_other": "Đã thêm {{languages}} rồi.",
         "noMatch": "Không có ngôn ngữ nào khớp với “{{query}}”",
         "weak": "Chưa có mô hình nào nhận dạng tốt {{languages}}."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "Trên máy tính này",
         "fits": "Cho các ngôn ngữ của bạn",
-        "missing": "Thiếu một ngôn ngữ",
         "untested": "Chưa kiểm thử"
       },
-      "allLanguages": "Tất cả",
       "untestedNote": "Chưa được kiểm thử với Handy. Chúng có thể chậm hơn hoặc mắc nhiều lỗi hơn.",
       "untestedHidden_one": "{{count}} mô hình khác chưa được tinh chỉnh cho việc đọc chính tả. Hãy tìm kiếm để thấy nó.",
       "untestedHidden_other": "{{count}} mô hình khác chưa được tinh chỉnh cho việc đọc chính tả. Hãy tìm kiếm để thấy chúng.",
@@ -394,7 +393,6 @@
       "showMore": "Hiển thị thêm {{count}}",
       "showFewer": "Hiển thị ít hơn",
       "download": "Tải xuống và dùng",
-      "downloadingLine": "Đang tải xuống {{percent}}% của {{total}}",
       "downloadingThenUse": "{{percent}}% của {{total}}, rồi tự chuyển sang",
       "loading": "Đang tải…",
       "deleteAsk": "Xóa {{name}}? Việc này giải phóng {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Hủy",
       "deleteModel": "Xóa {{name}}",
       "cancelDownload": "Dừng tải xuống {{name}}",
-      "customLine": "Được thêm từ thư mục mô hình của bạn. Không xếp hạng.",
-      "legacyLine": "Một bản tải xuống cũ. Không xếp hạng.",
       "legend": {
         "open": "Cách xếp hạng mô hình",
-        "accuracy": "Độ chính xác",
         "accuracyNote": "Với mỗi ngôn ngữ của bạn: số từ mô hình nhận sai trong các bản ghi âm kiểm thử của chúng tôi.",
-        "speed": "Tốc độ",
         "speedNote": {
           "accelerated": "Thời gian để gõ ra 30 giây lời nói trên chip đồ họa của laptop kiểm thử của chúng tôi. Máy tính này có thể khác.",
           "cpu": "Thời gian để gõ ra 30 giây lời nói trên bộ xử lý của laptop kiểm thử của chúng tôi. Máy tính này có thể khác."
@@ -897,10 +891,6 @@
     "copy": "Sao chép",
     "clear": "Xóa",
     "noOptionsFound": "Không tìm thấy tùy chọn"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy cần quyền truy cập để gõ văn bản đã chuyển đổi.",
-    "openSettings": "Mở Cài đặt Hệ thống"
   },
   "errors": {
     "loadDirectory": "Lỗi khi tải thư mục: {{error}}",

@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Mów zamiast pisać, w każdej aplikacji",
       "subtitle": "Wybierz języki, w których będziesz dyktować",
-      "searchLabel": "Szukaj języków",
-      "searchPlaceholder": "Szukaj języków",
-      "addAnother": "Dodaj kolejny",
-      "remove": "Usuń: {{language}}",
       "languagesLabel": "Języki",
-      "alreadyAdded_one": "{{languages}} jest już dodany.",
-      "alreadyAdded_other": "{{languages}}: już dodano.",
       "noMatch": "Żaden język nie pasuje do „{{query}}”. Modele Handy obejmują około 100 języków; więcej znajdziesz w ustawieniach.",
       "appLanguage": "Język aplikacji",
       "menusIn": "Menu po: <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Wybierz model mowy",
       "subtitle": "Model mowy zamienia Twoją mowę na tekst, bezpośrednio na tym komputerze",
       "label": "Model mowy",
-      "allLabel": "Modele mowy",
-      "roles": {
-        "recommended": "Polecany",
-        "faster": "Szybszy",
-        "accurate": "Dokładniejszy",
-        "fromAll": "Spośród wszystkich modeli"
-      },
       "lines": {
         "recommended": "Najlepsza równowaga szybkości i dokładności dla Twoich języków",
         "faster": "Szybszy, ale z kilkoma błędami więcej",
@@ -152,79 +139,13 @@
         "faster": "Szybszy, trochę więcej błędów",
         "accurate": "Najmniej błędów, ale wolniejszy"
       },
-      "accuracy": "Dokładność",
-      "speed": "Szybkość",
-      "size": "Rozmiar",
       "model": "Model",
-      "speedWords": {
-        "0": "Bardzo wolno, słowa pojawiają się po długim czekaniu",
-        "1": "Wolno, słowa pojawiają się po chwili czekania",
-        "2": "Umiarkowanie, słowa pojawiają się po krótkim czekaniu",
-        "3": "Szybko, słowa pojawiają się niemal od razu",
-        "4": "Bardzo szybko, słowa pojawiają się od razu"
-      },
-      "speedWordsPreview": {
-        "0": "Bardzo wolno, z podglądem na żywo podczas mówienia",
-        "1": "Wolno, z podglądem na żywo podczas mówienia",
-        "2": "Umiarkowanie, z podglądem na żywo podczas mówienia",
-        "3": "Szybko, z podglądem na żywo podczas mówienia",
-        "4": "Bardzo szybko, z podglądem na żywo podczas mówienia"
-      },
-      "speedUntested": "Szybkość nie została jeszcze zmierzona",
-      "rubric": {
-        "gradeTitle": "Dokładność ({{language}}): {{grade}}",
-        "accuracyTitle": "Dokładność ({{language}})",
-        "overallTitle": "Dokładność w Twoich językach: {{grade}}",
-        "overall": "Dokładność w Twoich językach",
-        "meaning": {
-          "A": "Bardzo mało błędów: Twoje słowa zwykle trafiają na ekran tak, jak je wypowiedziano",
-          "B": "Trochę błędów: od czasu do czasu trzeba poprawić słowo",
-          "C": "Częste błędy: część szczegółów może zginąć",
-          "D": "Dużo błędów: trzeba sprawdzać i poprawiać wpisany tekst",
-          "F": "Często niezrozumiały: duża część Twoich słów może wyjść błędnie"
-        },
-        "unsupported": "Ten model nie rozumie języka: {{language}}, więc nie może go wpisywać",
-        "unrated": "Ten model rozumie język: {{language}}, ale nie zmierzyliśmy jeszcze, jak dobrze",
-        "under": "poniżej {{max}}%",
-        "between": "od {{min}} do {{max}}%",
-        "over": "{{min}}% lub więcej",
-        "speedTitle": "Szybkość: {{speed}}",
-        "speedName": {
-          "0": "Bardzo wolno",
-          "1": "Wolno",
-          "2": "Umiarkowanie",
-          "3": "Szybko",
-          "4": "Bardzo szybko"
-        },
-        "speedMeaning": {
-          "0": "Twoje słowa pojawiają się po długim czekaniu",
-          "1": "Twoje słowa pojawiają się po chwili czekania",
-          "2": "Twoje słowa pojawiają się po krótkim czekaniu",
-          "3": "Twoje słowa pojawiają się niemal od razu",
-          "4": "Twoje słowa pojawiają się od razu"
-        },
-        "speedPreview": "{{meaning}}, z podglądem na żywo podczas mówienia",
-        "untimed": "Nie zmierzyliśmy jeszcze, jak jest szybki",
-        "underSeconds": "poniżej {{max}} s",
-        "betweenSeconds": "od {{min}} do {{max}} s",
-        "overSeconds": "{{min}} s lub więcej"
-      },
-      "tags": {
-        "preview": "Podgląd na żywo",
-        "previewTitle": "Pokazuje Twoje słowa w nakładce Na żywo podczas mówienia, a po zakończeniu wpisuje je",
-        "translate": "Tłumaczy",
-        "translateTitle": "Potrafi zamienić to, co mówisz, na tekst angielski. Włącz to w ustawieniach"
-      },
       "showAll": "Pokaż wszystkie modele ({{count}})",
       "download": "Pobierz ({{size}})",
       "downloadInstead": "Pobierz zamiast tego ({{size}})",
       "pauses": "{{name}} zatrzymuje się na {{percent}}%",
       "resumeLater": "Wybierz go ponownie, aby wznowić od miejsca zatrzymania",
-      "hint": "Pobiera się, gdy kończysz konfigurację",
-      "search": "Szukaj modeli",
-      "missingLanguage": "Brakuje języka",
-      "noMatch": "Nic nie pasuje do „{{query}}”. Spróbuj wpisać język lub rodzinę, np. Whisper albo Parakeet",
-      "noFilterMatch": "Żaden model nie pasuje do tych filtrów"
+      "hint": "Pobiera się, gdy kończysz konfigurację"
     },
     "demo": {
       "title": "Mów w dowolnej aplikacji, jednym skrótem",
@@ -295,6 +216,92 @@
       "done": "Nie działa w innych aplikacjach? <guide>Poradnik konfiguracji dla Linuksa</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Podgląd na żywo",
+      "previewTitle": "Pokazuje Twoje słowa w nakładce Na żywo podczas mówienia, a po zakończeniu wpisuje je",
+      "translate": "Tłumaczy",
+      "translateTitle": "Potrafi zamienić to, co mówisz, na tekst angielski. Włącz to w ustawieniach"
+    },
+    "rubric": {
+      "gradeTitle": "Dokładność ({{language}}): {{grade}}",
+      "accuracyTitle": "Dokładność ({{language}})",
+      "overallTitle": "Dokładność w Twoich językach: {{grade}}",
+      "overall": "Dokładność w Twoich językach",
+      "meaning": {
+        "A": "Bardzo mało błędów: Twoje słowa zwykle trafiają na ekran tak, jak je wypowiedziano",
+        "B": "Trochę błędów: od czasu do czasu trzeba poprawić słowo",
+        "C": "Częste błędy: część szczegółów może zginąć",
+        "D": "Dużo błędów: trzeba sprawdzać i poprawiać wpisany tekst",
+        "F": "Często niezrozumiały: duża część Twoich słów może wyjść błędnie"
+      },
+      "unsupported": "Ten model nie rozumie języka: {{language}}, więc nie może go wpisywać",
+      "unrated": "Ten model rozumie język: {{language}}, ale nie zmierzyliśmy jeszcze, jak dobrze",
+      "under": "poniżej {{max}}%",
+      "between": "od {{min}} do {{max}}%",
+      "over": "{{min}}% lub więcej",
+      "speedTitle": "Szybkość: {{speed}}",
+      "speedName": {
+        "0": "Bardzo wolno",
+        "1": "Wolno",
+        "2": "Umiarkowanie",
+        "3": "Szybko",
+        "4": "Bardzo szybko"
+      },
+      "speedMeaning": {
+        "0": "Twoje słowa pojawiają się po długim czekaniu",
+        "1": "Twoje słowa pojawiają się po chwili czekania",
+        "2": "Twoje słowa pojawiają się po krótkim czekaniu",
+        "3": "Twoje słowa pojawiają się niemal od razu",
+        "4": "Twoje słowa pojawiają się od razu"
+      },
+      "speedPreview": "{{meaning}}, z podglądem na żywo podczas mówienia",
+      "untimed": "Nie zmierzyliśmy jeszcze, jak jest szybki",
+      "underSeconds": "poniżej {{max}} s",
+      "betweenSeconds": "od {{min}} do {{max}} s",
+      "overSeconds": "{{min}} s lub więcej"
+    },
+    "roles": {
+      "recommended": "Polecany",
+      "faster": "Szybszy",
+      "accurate": "Dokładniejszy",
+      "fromAll": "Spośród wszystkich modeli"
+    },
+    "speed": "Szybkość",
+    "size": "Rozmiar",
+    "accuracy": "Dokładność",
+    "search": "Szukaj modeli",
+    "allLabel": "Modele mowy",
+    "noMatch": "Nic nie pasuje do „{{query}}”. Spróbuj wpisać język lub rodzinę, np. Whisper albo Parakeet",
+    "noFilterMatch": "Żaden model nie pasuje do tych filtrów",
+    "speedUntested": "Szybkość nie została jeszcze zmierzona",
+    "speedWords": {
+      "0": "Bardzo wolno, słowa pojawiają się po długim czekaniu",
+      "1": "Wolno, słowa pojawiają się po chwili czekania",
+      "2": "Umiarkowanie, słowa pojawiają się po krótkim czekaniu",
+      "3": "Szybko, słowa pojawiają się niemal od razu",
+      "4": "Bardzo szybko, słowa pojawiają się od razu"
+    },
+    "speedWordsPreview": {
+      "0": "Bardzo wolno, z podglądem na żywo podczas mówienia",
+      "1": "Wolno, z podglądem na żywo podczas mówienia",
+      "2": "Umiarkowanie, z podglądem na żywo podczas mówienia",
+      "3": "Szybko, z podglądem na żywo podczas mówienia",
+      "4": "Bardzo szybko, z podglądem na żywo podczas mówienia"
+    },
+    "missingLanguage": "Brakuje języka",
+    "allLanguages": "Wszystkie",
+    "downloadingLine": "Pobieranie {{percent}}% z {{total}}",
+    "customLine": "Dodany z Twojego folderu modeli. Bez oceny.",
+    "legacyLine": "Starsza wersja pobrania. Bez oceny."
+  },
+  "languagePicker": {
+    "search": "Szukaj języków",
+    "addAnother": "Dodaj kolejny",
+    "remove": "Usuń: {{language}}",
+    "alreadyAdded_one": "{{languages}} jest już dodany.",
+    "alreadyAdded_other": "{{languages}}: już dodano."
+  },
   "modelSelector": {
     "custom": "Własny",
     "streaming": "Streaming",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Preferowane języki",
         "description": "Języki, którymi mówisz. Handy używa ich do polecania modeli.",
-        "searchLabel": "Szukaj języków",
-        "placeholder": "Szukaj języków",
-        "addAnother": "Dodaj kolejny",
-        "remove": "Usuń: {{language}}",
-        "alreadyAdded_one": "{{languages}} jest już dodany.",
-        "alreadyAdded_other": "{{languages}}: już dodano.",
         "noMatch": "Żaden język nie pasuje do „{{query}}”",
         "weak": "Żaden model nie rozpoznaje jeszcze dobrze: {{languages}}."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "Na tym komputerze",
         "fits": "Dla Twoich języków",
-        "missing": "Brakuje języka",
         "untested": "Nieprzetestowane"
       },
-      "allLanguages": "Wszystkie",
       "untestedNote": "Nie testowano z Handy. Mogą działać wolniej lub popełniać więcej błędów.",
       "untestedHidden_one": "{{count}} kolejny model nie jest dostosowany do dyktowania. Użyj wyszukiwania, aby go znaleźć.",
       "untestedHidden_other": "Kolejne modele nie są dostosowane do dyktowania (liczba: {{count}}). Użyj wyszukiwania, aby je znaleźć.",
@@ -394,7 +393,6 @@
       "showMore": "Pokaż jeszcze {{count}}",
       "showFewer": "Pokaż mniej",
       "download": "Pobierz i używaj",
-      "downloadingLine": "Pobieranie {{percent}}% z {{total}}",
       "downloadingThenUse": "{{percent}}% z {{total}}, potem przełączy",
       "loading": "Ładowanie…",
       "deleteAsk": "Usunąć {{name}}? Zwolni to {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Anuluj",
       "deleteModel": "Usuń {{name}}",
       "cancelDownload": "Zatrzymaj pobieranie {{name}}",
-      "customLine": "Dodany z Twojego folderu modeli. Bez oceny.",
-      "legacyLine": "Starsza wersja pobrania. Bez oceny.",
       "legend": {
         "open": "Jak oceniamy modele",
-        "accuracy": "Dokładność",
         "accuracyNote": "Dla każdego z Twoich języków: ile słów model pomylił w naszych nagraniach testowych.",
-        "speed": "Szybkość",
         "speedNote": {
           "accelerated": "Ile trwa wpisanie 30 sekund mowy na układzie graficznym naszego laptopa testowego. Ten komputer może się różnić.",
           "cpu": "Ile trwa wpisanie 30 sekund mowy na procesorze naszego laptopa testowego. Ten komputer może się różnić."
@@ -897,10 +891,6 @@
     "copy": "Kopiuj",
     "clear": "Wyczyść",
     "noOptionsFound": "Nie znaleziono opcji"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy potrzebuje uprawnień dostępności, aby wpisywać transkrybowany tekst.",
-    "openSettings": "Otwórz ustawienia systemowe"
   },
   "errors": {
     "loadDirectory": "Błąd wczytywania katalogu: {{error}}",

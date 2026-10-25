@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Yazmak yerine konuşun, her uygulamada",
       "subtitle": "Konuşacağınız dilleri seçin",
-      "searchLabel": "Dil ara",
-      "searchPlaceholder": "Dil ara",
-      "addAnother": "Başka ekle",
-      "remove": "{{language}} dilini kaldır",
       "languagesLabel": "Diller",
-      "alreadyAdded_one": "{{languages}} zaten ekli.",
-      "alreadyAdded_other": "{{languages}} zaten ekli.",
       "noMatch": "“{{query}}” ile eşleşen dil yok. Handy'nin modelleri yaklaşık 100 dili kapsıyor; daha fazlası ayarlarda.",
       "appLanguage": "Uygulama dili",
       "menusIn": "Menüler <b>{{language}}</b> dilinde",
@@ -135,13 +129,6 @@
       "title": "Bir konuşma modeli seçin",
       "subtitle": "Konuşma modeli, konuşmanızı doğrudan bu bilgisayarda metne dönüştürür",
       "label": "Konuşma modeli",
-      "allLabel": "Konuşma modelleri",
-      "roles": {
-        "recommended": "Önerilen",
-        "faster": "Daha hızlı",
-        "accurate": "Daha doğru",
-        "fromAll": "Tüm modeller arasından"
-      },
       "lines": {
         "recommended": "Dilleriniz için hız ve doğruluğun en iyi dengesi",
         "faster": "Daha çabuk, birkaç hata daha fazla",
@@ -152,79 +139,13 @@
         "faster": "Çabuk, biraz daha fazla hata",
         "accurate": "En az hata, ama yavaş"
       },
-      "accuracy": "Doğruluk",
-      "speed": "Hız",
-      "size": "Boyut",
       "model": "Model",
-      "speedWords": {
-        "0": "Çok yavaş, sözcükler uzun bir beklemeden sonra çıkar",
-        "1": "Yavaş, sözcükler biraz beklemeden sonra çıkar",
-        "2": "Orta, sözcükler kısa bir beklemeden sonra çıkar",
-        "3": "Hızlı, sözcükler neredeyse anında çıkar",
-        "4": "Çok hızlı, sözcükler anında çıkar"
-      },
-      "speedWordsPreview": {
-        "0": "Çok yavaş, siz konuşurken canlı önizleme ile",
-        "1": "Yavaş, siz konuşurken canlı önizleme ile",
-        "2": "Orta, siz konuşurken canlı önizleme ile",
-        "3": "Hızlı, siz konuşurken canlı önizleme ile",
-        "4": "Çok hızlı, siz konuşurken canlı önizleme ile"
-      },
-      "speedUntested": "Hız henüz ölçülmedi",
-      "rubric": {
-        "gradeTitle": "{{language}} doğruluğu: {{grade}}",
-        "accuracyTitle": "{{language}} doğruluğu",
-        "overallTitle": "Dillerinizdeki doğruluk: {{grade}}",
-        "overall": "Dillerinizdeki doğruluk",
-        "meaning": {
-          "A": "Çok az hata: sözleriniz genellikle söylediğiniz gibi çıkar",
-          "B": "Bazı hatalar: arada bir sözcüğü düzeltmeniz gerekebilir",
-          "C": "Sık hatalar: bazı ayrıntılar kaybolabilir",
-          "D": "Çok hata: yazdığı metni kontrol edip düzeltmeniz gerekir",
-          "F": "Çoğu zaman belirsiz: söylediklerinizin büyük kısmı yanlış çıkabilir"
-        },
-        "unsupported": "Bu model {{language}} dilini anlamıyor, bu yüzden yazamaz",
-        "unrated": "Bu model {{language}} dilini anlıyor, ama ne kadar iyi anladığını henüz ölçmedik",
-        "under": "%{{max}} altı",
-        "between": "%{{min}} ile %{{max}} arası",
-        "over": "%{{min}} veya üzeri",
-        "speedTitle": "Hız: {{speed}}",
-        "speedName": {
-          "0": "Çok yavaş",
-          "1": "Yavaş",
-          "2": "Orta",
-          "3": "Hızlı",
-          "4": "Çok hızlı"
-        },
-        "speedMeaning": {
-          "0": "Sözcükleriniz uzun bir beklemeden sonra çıkar",
-          "1": "Sözcükleriniz biraz beklemeden sonra çıkar",
-          "2": "Sözcükleriniz kısa bir beklemeden sonra çıkar",
-          "3": "Sözcükleriniz neredeyse anında çıkar",
-          "4": "Sözcükleriniz anında çıkar"
-        },
-        "speedPreview": "{{meaning}}, siz konuşurken canlı önizleme ile",
-        "untimed": "Ne kadar hızlı olduğunu henüz ölçmedik",
-        "underSeconds": "{{max}} sn altı",
-        "betweenSeconds": "{{min}} ile {{max}} sn arası",
-        "overSeconds": "{{min}} sn veya üzeri"
-      },
-      "tags": {
-        "preview": "Canlı önizleme",
-        "previewTitle": "Siz konuşurken sözcüklerinizi Canlı ekran katmanında gösterir, durduğunuzda yazar",
-        "translate": "Çeviri yapar",
-        "translateTitle": "Söylediklerinizi İngilizce metne çevirebilir. Ayarlardan açın"
-      },
       "showAll": "{{count}} modelin tümünü göster",
       "download": "{{size}} indir",
       "downloadInstead": "Bunun yerine {{size}} indir",
       "pauses": "{{name}} %{{percent}} noktasında duraklıyor",
       "resumeLater": "Tekrar seçtiğinizde kaldığı yerden devam eder",
-      "hint": "Kurulumu bitirirken iner",
-      "search": "Model ara",
-      "missingLanguage": "Eksik bir dil var",
-      "noMatch": "“{{query}}” ile eşleşen bir şey yok. Bir dil veya Whisper ya da Parakeet gibi bir aile deneyin",
-      "noFilterMatch": "Bu filtrelerle eşleşen model yok"
+      "hint": "Kurulumu bitirirken iner"
     },
     "demo": {
       "title": "Tek kısayolla her uygulamada konuşun",
@@ -295,6 +216,92 @@
       "done": "Diğer uygulamalarda çalışmıyor mu? <guide>Linux kurulum rehberi</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Canlı önizleme",
+      "previewTitle": "Siz konuşurken sözcüklerinizi Canlı ekran katmanında gösterir, durduğunuzda yazar",
+      "translate": "Çeviri yapar",
+      "translateTitle": "Söylediklerinizi İngilizce metne çevirebilir. Ayarlardan açın"
+    },
+    "rubric": {
+      "gradeTitle": "{{language}} doğruluğu: {{grade}}",
+      "accuracyTitle": "{{language}} doğruluğu",
+      "overallTitle": "Dillerinizdeki doğruluk: {{grade}}",
+      "overall": "Dillerinizdeki doğruluk",
+      "meaning": {
+        "A": "Çok az hata: sözleriniz genellikle söylediğiniz gibi çıkar",
+        "B": "Bazı hatalar: arada bir sözcüğü düzeltmeniz gerekebilir",
+        "C": "Sık hatalar: bazı ayrıntılar kaybolabilir",
+        "D": "Çok hata: yazdığı metni kontrol edip düzeltmeniz gerekir",
+        "F": "Çoğu zaman belirsiz: söylediklerinizin büyük kısmı yanlış çıkabilir"
+      },
+      "unsupported": "Bu model {{language}} dilini anlamıyor, bu yüzden yazamaz",
+      "unrated": "Bu model {{language}} dilini anlıyor, ama ne kadar iyi anladığını henüz ölçmedik",
+      "under": "%{{max}} altı",
+      "between": "%{{min}} ile %{{max}} arası",
+      "over": "%{{min}} veya üzeri",
+      "speedTitle": "Hız: {{speed}}",
+      "speedName": {
+        "0": "Çok yavaş",
+        "1": "Yavaş",
+        "2": "Orta",
+        "3": "Hızlı",
+        "4": "Çok hızlı"
+      },
+      "speedMeaning": {
+        "0": "Sözcükleriniz uzun bir beklemeden sonra çıkar",
+        "1": "Sözcükleriniz biraz beklemeden sonra çıkar",
+        "2": "Sözcükleriniz kısa bir beklemeden sonra çıkar",
+        "3": "Sözcükleriniz neredeyse anında çıkar",
+        "4": "Sözcükleriniz anında çıkar"
+      },
+      "speedPreview": "{{meaning}}, siz konuşurken canlı önizleme ile",
+      "untimed": "Ne kadar hızlı olduğunu henüz ölçmedik",
+      "underSeconds": "{{max}} sn altı",
+      "betweenSeconds": "{{min}} ile {{max}} sn arası",
+      "overSeconds": "{{min}} sn veya üzeri"
+    },
+    "roles": {
+      "recommended": "Önerilen",
+      "faster": "Daha hızlı",
+      "accurate": "Daha doğru",
+      "fromAll": "Tüm modeller arasından"
+    },
+    "speed": "Hız",
+    "size": "Boyut",
+    "accuracy": "Doğruluk",
+    "search": "Model ara",
+    "allLabel": "Konuşma modelleri",
+    "noMatch": "“{{query}}” ile eşleşen bir şey yok. Bir dil veya Whisper ya da Parakeet gibi bir aile deneyin",
+    "noFilterMatch": "Bu filtrelerle eşleşen model yok",
+    "speedUntested": "Hız henüz ölçülmedi",
+    "speedWords": {
+      "0": "Çok yavaş, sözcükler uzun bir beklemeden sonra çıkar",
+      "1": "Yavaş, sözcükler biraz beklemeden sonra çıkar",
+      "2": "Orta, sözcükler kısa bir beklemeden sonra çıkar",
+      "3": "Hızlı, sözcükler neredeyse anında çıkar",
+      "4": "Çok hızlı, sözcükler anında çıkar"
+    },
+    "speedWordsPreview": {
+      "0": "Çok yavaş, siz konuşurken canlı önizleme ile",
+      "1": "Yavaş, siz konuşurken canlı önizleme ile",
+      "2": "Orta, siz konuşurken canlı önizleme ile",
+      "3": "Hızlı, siz konuşurken canlı önizleme ile",
+      "4": "Çok hızlı, siz konuşurken canlı önizleme ile"
+    },
+    "missingLanguage": "Eksik bir dil var",
+    "allLanguages": "Tümü",
+    "downloadingLine": "{{total}} içinden %{{percent}} indiriliyor",
+    "customLine": "Modeller klasörünüzden eklendi. Derecelendirilmedi.",
+    "legacyLine": "Eski bir indirme. Derecelendirilmedi."
+  },
+  "languagePicker": {
+    "search": "Dil ara",
+    "addAnother": "Başka ekle",
+    "remove": "{{language}} dilini kaldır",
+    "alreadyAdded_one": "{{languages}} zaten ekli.",
+    "alreadyAdded_other": "{{languages}} zaten ekli."
+  },
   "modelSelector": {
     "custom": "Özel",
     "streaming": "Akış",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Tercih Edilen Diller",
         "description": "Konuştuğunuz diller. Handy bunları model önermek için kullanır.",
-        "searchLabel": "Dil ara",
-        "placeholder": "Dil ara",
-        "addAnother": "Başka ekle",
-        "remove": "{{language}} dilini kaldır",
-        "alreadyAdded_one": "{{languages}} zaten ekli.",
-        "alreadyAdded_other": "{{languages}} zaten ekli.",
         "noMatch": "“{{query}}” ile eşleşen dil yok",
         "weak": "Henüz hiçbir model {{languages}} dilini iyi tanımıyor."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "Bu bilgisayarda",
         "fits": "Dilleriniz için",
-        "missing": "Eksik bir dil var",
         "untested": "Test edilmemiş"
       },
-      "allLanguages": "Tümü",
       "untestedNote": "Handy ile test edilmedi. Daha yavaş olabilir veya daha fazla hata yapabilir.",
       "untestedHidden_one": "{{count}} model daha yazdırma için ayarlanmamış. Bulmak için arama yapın.",
       "untestedHidden_other": "{{count}} model daha yazdırma için ayarlanmamış. Bulmak için arama yapın.",
@@ -394,7 +393,6 @@
       "showMore": "{{count}} tane daha göster",
       "showFewer": "Daha az göster",
       "download": "İndir ve kullan",
-      "downloadingLine": "{{total}} içinden %{{percent}} indiriliyor",
       "downloadingThenUse": "{{total}} içinden %{{percent}}, sonra geçilir",
       "loading": "Yükleniyor…",
       "deleteAsk": "{{name}} silinsin mi? {{size}} yer açılır.",
@@ -402,13 +400,9 @@
       "cancel": "İptal",
       "deleteModel": "{{name}} modelini sil",
       "cancelDownload": "{{name}} indirmesini durdur",
-      "customLine": "Modeller klasörünüzden eklendi. Derecelendirilmedi.",
-      "legacyLine": "Eski bir indirme. Derecelendirilmedi.",
       "legend": {
         "open": "Modeller nasıl derecelendirilir",
-        "accuracy": "Doğruluk",
         "accuracyNote": "Dillerinizin her biri için: bir modelin test kayıtlarımızda kaç sözcüğü yanlış anladığı.",
-        "speed": "Hız",
         "speedNote": {
           "accelerated": "30 saniyelik konuşmanın test dizüstü bilgisayarımızın grafik yongasında yazıya dökülmesinin ne kadar sürdüğü. Bu bilgisayarda farklı olabilir.",
           "cpu": "30 saniyelik konuşmanın test dizüstü bilgisayarımızın işlemcisinde yazıya dökülmesinin ne kadar sürdüğü. Bu bilgisayarda farklı olabilir."
@@ -897,10 +891,6 @@
     "copy": "Kopyala",
     "clear": "Temizle",
     "noOptionsFound": "Seçenek bulunamadı"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy, transkribe edilen metni yazabilmek için erişilebilirlik izinlerine ihtiyaç duyar.",
-    "openSettings": "Sistem Ayarlarını Aç"
   },
   "errors": {
     "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}",

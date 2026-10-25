@@ -9,8 +9,8 @@ import {
   type OnboardingStep,
 } from "./onboardingStore";
 import { usePermissions } from "./usePermissions";
-import type { ChineseScriptChoice } from "./data/languages";
-import { isChinese } from "./data/languages";
+import type { ChineseScriptChoice } from "@/lib/utils/languageSuggestions";
+import { isChinese } from "@/lib/utils/languageSuggestions";
 import { Welcome } from "./screens/Welcome";
 import { Permissions } from "./screens/Permissions";
 import { Model } from "./screens/Model";

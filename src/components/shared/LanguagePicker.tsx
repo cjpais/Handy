@@ -1,5 +1,12 @@
-import React from "react";
-import { getLanguage, type Language } from "@/lib/constants/languages";
+import React, { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  getLanguage,
+  languageList,
+  languageName,
+  searchLanguages,
+  type Language,
+} from "@/lib/constants/languages";
 import { cjkSubsetFont } from "@/lib/utils/cjkFont";
 
 /** Spoken-language picker pieces shared by onboarding's Welcome and the Preferred Languages setting. */
@@ -138,4 +145,166 @@ export const languageSearchKeys = (
     return true;
   }
   return false;
+};
+
+/**
+ * The picker's search: what matches, what's left to add, and toggling. With
+ * `keepOne` the last language can't be removed; a `suggestion` leads the list
+ * until something is typed.
+ */
+export const useLanguagePicker = ({
+  languages,
+  onChange,
+  keepOne = false,
+  suggestion = null,
+}: {
+  languages: string[];
+  onChange: (next: string[]) => void;
+  keepOne?: boolean;
+  suggestion?: string | null;
+}) => {
+  const { i18n } = useTranslation();
+  const ui = i18n.language;
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const matches = useMemo(() => {
+    const found = searchLanguages(query, ui);
+    if (!suggestion || query) return found;
+    return [
+      ...found.filter((l) => l.code === suggestion),
+      ...found.filter((l) => l.code !== suggestion),
+    ];
+  }, [query, ui, suggestion]);
+  const available = matches.filter((l) => !languages.includes(l.code));
+  const removable = !keepOne || languages.length > 1;
+
+  const toggle = (code: string) => {
+    const next = languages.includes(code)
+      ? languages.filter((c) => c !== code)
+      : [...languages, code];
+    if (!next.length && keepOne) return;
+    onChange(next);
+    setQuery("");
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    languageSearchKeys(e, {
+      query,
+      first: available[0]?.code,
+      last: removable ? languages[languages.length - 1] : undefined,
+      toggle,
+      clear: () => setQuery(""),
+    });
+
+  return {
+    languages,
+    query,
+    setQuery,
+    inputRef,
+    matches,
+    available,
+    removable,
+    toggle,
+    onKeyDown,
+    nameOf: (code: string) => languageName(code, ui),
+  };
+};
+
+type Picker = ReturnType<typeof useLanguagePicker>;
+
+/** The picked languages as chips, then the search. Clicks around the chips go to the search. */
+export const LanguageSearchField: React.FC<{
+  picker: Picker;
+  className?: string;
+  inputClassName?: string;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  "aria-expanded"?: boolean;
+}> = ({
+  picker,
+  className = "",
+  inputClassName = "",
+  onKeyDown = picker.onKeyDown,
+  "aria-expanded": expanded,
+}) => {
+  const { t } = useTranslation();
+  const { languages, inputRef } = picker;
+  return (
+    // Not a <label>: it would hand clicks to the first chip, which removes it.
+    <div
+      onClick={() => inputRef.current?.focus({ preventScroll: true })}
+      className={`flex min-h-[46px] cursor-text flex-wrap items-center gap-[4px] px-[8px] py-[7px] text-start ${className}`}
+    >
+      {languages.map((code) => (
+        <LanguageChip
+          key={code}
+          code={code}
+          removeLabel={t("languagePicker.remove", {
+            language: picker.nameOf(code),
+          })}
+          onRemove={() => picker.toggle(code)}
+          locked={!picker.removable}
+        />
+      ))}
+      <input
+        ref={inputRef}
+        type="text"
+        autoComplete="off"
+        spellCheck={false}
+        aria-label={t("languagePicker.search")}
+        aria-expanded={expanded}
+        placeholder={
+          languages.length
+            ? t("languagePicker.addAnother")
+            : t("languagePicker.search")
+        }
+        value={picker.query}
+        onChange={(e) => picker.setQuery(e.target.value)}
+        onKeyDown={onKeyDown}
+        className={`h-[30px] flex-1 border-0 bg-transparent px-[8px] text-text outline-none placeholder:text-ink-3 ${inputClassName}`}
+      />
+    </div>
+  );
+};
+
+/** The languages left to add, the first highlighted while it's what Enter adds; when none, why. */
+export const LanguageOptions: React.FC<{
+  picker: Picker;
+  /** Highlight the first even with nothing typed (it's the suggestion). */
+  highlightFirst?: boolean;
+  /** Nothing matches the query. */
+  noMatch: string;
+  emptyClassName?: string;
+}> = ({ picker, highlightFirst = false, noMatch, emptyClassName = "" }) => {
+  const { t, i18n } = useTranslation();
+  const { available, matches, query } = picker;
+  return (
+    <>
+      {available.map((l, i) => (
+        <LanguageOption
+          key={l.code}
+          language={l}
+          name={picker.nameOf(l.code)}
+          highlighted={(!!query || highlightFirst) && i === 0}
+          onPick={() => picker.toggle(l.code)}
+        />
+      ))}
+      {!available.length && (
+        <div
+          className={`col-span-full text-center text-small text-ink-3 ${emptyClassName}`}
+        >
+          {matches.length
+            ? t("languagePicker.alreadyAdded", {
+                count: matches.length,
+                languages: languageList(
+                  matches.map((l) => l.code),
+                  i18n.language,
+                ),
+              })
+            : noMatch}
+        </div>
+      )}
+    </>
+  );
 };

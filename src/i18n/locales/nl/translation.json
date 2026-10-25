@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Praat in plaats van typen, in elke app",
       "subtitle": "Kies de talen waarin je gaat dicteren",
-      "searchLabel": "Talen zoeken",
-      "searchPlaceholder": "Talen zoeken",
-      "addAnother": "Nog een toevoegen",
-      "remove": "{{language}} verwijderen",
       "languagesLabel": "Talen",
-      "alreadyAdded_one": "{{languages}} is al toegevoegd.",
-      "alreadyAdded_other": "{{languages}} zijn al toegevoegd.",
       "noMatch": "Geen taal gevonden voor „{{query}}”. De modellen van Handy dekken ongeveer 100 talen; meer vind je in de instellingen.",
       "appLanguage": "App-taal",
       "menusIn": "Menu’s in het <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Kies een spraakmodel",
       "subtitle": "Het spraakmodel zet je spraak om in tekst, rechtstreeks op deze computer",
       "label": "Spraakmodel",
-      "allLabel": "Spraakmodellen",
-      "roles": {
-        "recommended": "Aanbevolen",
-        "faster": "Sneller",
-        "accurate": "Nauwkeuriger",
-        "fromAll": "Uit alle modellen"
-      },
       "lines": {
         "recommended": "De beste balans tussen snelheid en nauwkeurigheid voor jouw talen",
         "faster": "Sneller, met iets meer fouten",
@@ -152,79 +139,13 @@
         "faster": "Sneller, iets meer fouten",
         "accurate": "Minste fouten, maar langzamer"
       },
-      "accuracy": "Nauwkeurigheid",
-      "speed": "Snelheid",
-      "size": "Grootte",
       "model": "Model",
-      "speedWords": {
-        "0": "Zeer langzaam, woorden verschijnen na lang wachten",
-        "1": "Langzaam, woorden verschijnen na een tijdje wachten",
-        "2": "Gemiddeld, woorden verschijnen na even wachten",
-        "3": "Snel, woorden verschijnen bijna meteen",
-        "4": "Zeer snel, woorden verschijnen meteen"
-      },
-      "speedWordsPreview": {
-        "0": "Zeer langzaam, met een live voorvertoning terwijl je praat",
-        "1": "Langzaam, met een live voorvertoning terwijl je praat",
-        "2": "Gemiddeld, met een live voorvertoning terwijl je praat",
-        "3": "Snel, met een live voorvertoning terwijl je praat",
-        "4": "Zeer snel, met een live voorvertoning terwijl je praat"
-      },
-      "speedUntested": "Snelheid nog niet gemeten",
-      "rubric": {
-        "gradeTitle": "Nauwkeurigheid {{language}}: {{grade}}",
-        "accuracyTitle": "Nauwkeurigheid {{language}}",
-        "overallTitle": "Nauwkeurigheid in jouw talen: {{grade}}",
-        "overall": "Nauwkeurigheid in jouw talen",
-        "meaning": {
-          "A": "Zeer weinig fouten: je woorden komen meestal precies zo uit als je ze zei",
-          "B": "Enkele fouten: af en toe moet je een woord verbeteren",
-          "C": "Regelmatig fouten: sommige details kunnen verloren gaan",
-          "D": "Veel fouten: controleer en corrigeer wat het typt",
-          "F": "Vaak onduidelijk: veel van wat je zegt kan fout uitkomen"
-        },
-        "unsupported": "Dit model verstaat geen {{language}} en kan het dus niet typen",
-        "unrated": "Dit model verstaat {{language}}, maar we hebben nog niet gemeten hoe goed",
-        "under": "onder {{max}}%",
-        "between": "{{min}} tot {{max}}%",
-        "over": "{{min}}% of meer",
-        "speedTitle": "Snelheid: {{speed}}",
-        "speedName": {
-          "0": "Zeer langzaam",
-          "1": "Langzaam",
-          "2": "Gemiddeld",
-          "3": "Snel",
-          "4": "Zeer snel"
-        },
-        "speedMeaning": {
-          "0": "Je woorden verschijnen na lang wachten",
-          "1": "Je woorden verschijnen na een tijdje wachten",
-          "2": "Je woorden verschijnen na even wachten",
-          "3": "Je woorden verschijnen bijna meteen",
-          "4": "Je woorden verschijnen meteen"
-        },
-        "speedPreview": "{{meaning}}, met een live voorvertoning terwijl je praat",
-        "untimed": "We hebben nog niet gemeten hoe snel het is",
-        "underSeconds": "onder {{max}} s",
-        "betweenSeconds": "{{min}} tot {{max}} s",
-        "overSeconds": "{{min}} s of meer"
-      },
-      "tags": {
-        "preview": "Live voorvertoning",
-        "previewTitle": "Toont je woorden in de Live-overlay terwijl je praat en typt ze zodra je stopt",
-        "translate": "Vertaalt",
-        "translateTitle": "Kan wat je zegt omzetten in Engelse tekst. Zet dit aan in de instellingen"
-      },
       "showAll": "Alle {{count}} modellen tonen",
       "download": "{{size}} downloaden",
       "downloadInstead": "In plaats daarvan {{size}} downloaden",
       "pauses": "{{name}} pauzeert bij {{percent}}%",
       "resumeLater": "Kies het opnieuw om verder te gaan waar je was gebleven",
-      "hint": "Wordt gedownload terwijl je de installatie afrondt",
-      "search": "Modellen zoeken",
-      "missingLanguage": "Een taal ontbreekt",
-      "noMatch": "Niets gevonden voor „{{query}}”. Probeer een taal of een familie zoals Whisper of Parakeet",
-      "noFilterMatch": "Geen modellen die bij deze filters passen"
+      "hint": "Wordt gedownload terwijl je de installatie afrondt"
     },
     "demo": {
       "title": "Praat in elke app, met één sneltoets",
@@ -295,6 +216,92 @@
       "done": "Werkt het niet in andere apps? <guide>Linux-installatiegids</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Live voorvertoning",
+      "previewTitle": "Toont je woorden in de Live-overlay terwijl je praat en typt ze zodra je stopt",
+      "translate": "Vertaalt",
+      "translateTitle": "Kan wat je zegt omzetten in Engelse tekst. Zet dit aan in de instellingen"
+    },
+    "rubric": {
+      "gradeTitle": "Nauwkeurigheid {{language}}: {{grade}}",
+      "accuracyTitle": "Nauwkeurigheid {{language}}",
+      "overallTitle": "Nauwkeurigheid in jouw talen: {{grade}}",
+      "overall": "Nauwkeurigheid in jouw talen",
+      "meaning": {
+        "A": "Zeer weinig fouten: je woorden komen meestal precies zo uit als je ze zei",
+        "B": "Enkele fouten: af en toe moet je een woord verbeteren",
+        "C": "Regelmatig fouten: sommige details kunnen verloren gaan",
+        "D": "Veel fouten: controleer en corrigeer wat het typt",
+        "F": "Vaak onduidelijk: veel van wat je zegt kan fout uitkomen"
+      },
+      "unsupported": "Dit model verstaat geen {{language}} en kan het dus niet typen",
+      "unrated": "Dit model verstaat {{language}}, maar we hebben nog niet gemeten hoe goed",
+      "under": "onder {{max}}%",
+      "between": "{{min}} tot {{max}}%",
+      "over": "{{min}}% of meer",
+      "speedTitle": "Snelheid: {{speed}}",
+      "speedName": {
+        "0": "Zeer langzaam",
+        "1": "Langzaam",
+        "2": "Gemiddeld",
+        "3": "Snel",
+        "4": "Zeer snel"
+      },
+      "speedMeaning": {
+        "0": "Je woorden verschijnen na lang wachten",
+        "1": "Je woorden verschijnen na een tijdje wachten",
+        "2": "Je woorden verschijnen na even wachten",
+        "3": "Je woorden verschijnen bijna meteen",
+        "4": "Je woorden verschijnen meteen"
+      },
+      "speedPreview": "{{meaning}}, met een live voorvertoning terwijl je praat",
+      "untimed": "We hebben nog niet gemeten hoe snel het is",
+      "underSeconds": "onder {{max}} s",
+      "betweenSeconds": "{{min}} tot {{max}} s",
+      "overSeconds": "{{min}} s of meer"
+    },
+    "roles": {
+      "recommended": "Aanbevolen",
+      "faster": "Sneller",
+      "accurate": "Nauwkeuriger",
+      "fromAll": "Uit alle modellen"
+    },
+    "speed": "Snelheid",
+    "size": "Grootte",
+    "accuracy": "Nauwkeurigheid",
+    "search": "Modellen zoeken",
+    "allLabel": "Spraakmodellen",
+    "noMatch": "Niets gevonden voor „{{query}}”. Probeer een taal of een familie zoals Whisper of Parakeet",
+    "noFilterMatch": "Geen modellen die bij deze filters passen",
+    "speedUntested": "Snelheid nog niet gemeten",
+    "speedWords": {
+      "0": "Zeer langzaam, woorden verschijnen na lang wachten",
+      "1": "Langzaam, woorden verschijnen na een tijdje wachten",
+      "2": "Gemiddeld, woorden verschijnen na even wachten",
+      "3": "Snel, woorden verschijnen bijna meteen",
+      "4": "Zeer snel, woorden verschijnen meteen"
+    },
+    "speedWordsPreview": {
+      "0": "Zeer langzaam, met een live voorvertoning terwijl je praat",
+      "1": "Langzaam, met een live voorvertoning terwijl je praat",
+      "2": "Gemiddeld, met een live voorvertoning terwijl je praat",
+      "3": "Snel, met een live voorvertoning terwijl je praat",
+      "4": "Zeer snel, met een live voorvertoning terwijl je praat"
+    },
+    "missingLanguage": "Een taal ontbreekt",
+    "allLanguages": "Alle",
+    "downloadingLine": "{{percent}}% van {{total}} gedownload",
+    "customLine": "Toegevoegd vanuit je modellenmap. Niet beoordeeld.",
+    "legacyLine": "Een oudere download. Niet beoordeeld."
+  },
+  "languagePicker": {
+    "search": "Talen zoeken",
+    "addAnother": "Nog een toevoegen",
+    "remove": "{{language}} verwijderen",
+    "alreadyAdded_one": "{{languages}} is al toegevoegd.",
+    "alreadyAdded_other": "{{languages}} zijn al toegevoegd."
+  },
   "modelSelector": {
     "custom": "Aangepast",
     "streaming": "Streaming",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Voorkeurstalen",
         "description": "De talen die je spreekt. Handy gebruikt ze om modellen aan te bevelen.",
-        "searchLabel": "Talen zoeken",
-        "placeholder": "Talen zoeken",
-        "addAnother": "Nog een toevoegen",
-        "remove": "{{language}} verwijderen",
-        "alreadyAdded_one": "{{languages}} is al toegevoegd.",
-        "alreadyAdded_other": "{{languages}} zijn al toegevoegd.",
         "noMatch": "Geen taal gevonden voor „{{query}}”",
         "weak": "Geen enkel model herkent {{languages}} al goed."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "Op deze computer",
         "fits": "Voor jouw talen",
-        "missing": "Een taal ontbreekt",
         "untested": "Niet getest"
       },
-      "allLanguages": "Alle",
       "untestedNote": "Niet getest met Handy. Ze kunnen langzamer zijn of meer fouten maken.",
       "untestedHidden_one": "{{count}} ander model is niet afgestemd op dicteren. Zoek om het te vinden.",
       "untestedHidden_other": "{{count}} andere modellen zijn niet afgestemd op dicteren. Zoek om er een te vinden.",
@@ -394,7 +393,6 @@
       "showMore": "{{count}} meer tonen",
       "showFewer": "Minder tonen",
       "download": "Downloaden en gebruiken",
-      "downloadingLine": "{{percent}}% van {{total}} gedownload",
       "downloadingThenUse": "{{percent}}% van {{total}}, daarna wordt overgeschakeld",
       "loading": "Laden…",
       "deleteAsk": "{{name}} verwijderen? Dit maakt {{size}} vrij.",
@@ -402,13 +400,9 @@
       "cancel": "Annuleren",
       "deleteModel": "{{name}} verwijderen",
       "cancelDownload": "Downloaden van {{name}} stoppen",
-      "customLine": "Toegevoegd vanuit je modellenmap. Niet beoordeeld.",
-      "legacyLine": "Een oudere download. Niet beoordeeld.",
       "legend": {
         "open": "Hoe modellen worden beoordeeld",
-        "accuracy": "Nauwkeurigheid",
         "accuracyNote": "Per taal van jou: hoeveel woorden een model fout had in onze testopnames.",
-        "speed": "Snelheid",
         "speedNote": {
           "accelerated": "Hoe lang het duurt om 30 seconden spraak uit te typen op de grafische chip van onze testlaptop. Deze computer kan afwijken.",
           "cpu": "Hoe lang het duurt om 30 seconden spraak uit te typen op de processor van onze testlaptop. Deze computer kan afwijken."
@@ -897,10 +891,6 @@
     "copy": "Kopiëren",
     "clear": "Wissen",
     "noOptionsFound": "Geen opties gevonden"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy heeft toegankelijkheidsmachtigingen nodig om getranscribeerde tekst te kunnen typen.",
-    "openSettings": "Systeeminstellingen openen"
   },
   "errors": {
     "loadDirectory": "Fout bij laden van map: {{error}}",

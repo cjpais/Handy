@@ -5,7 +5,7 @@ import { ProgressRing } from "@/components/shared/ProgressRing";
 import { BYTES_PER_MB, formatModelSize } from "@/lib/utils/format";
 import { useOnboardingStore } from "./onboardingStore";
 import type { DownloadState, useOnboardingModels } from "./useOnboardingModels";
-import type { CatalogModel } from "./data/models";
+import type { CatalogModel } from "@/lib/models/catalog";
 
 type Downloading = Extract<DownloadState, { state: "downloading" }>;
 

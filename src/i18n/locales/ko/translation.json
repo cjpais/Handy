@@ -92,13 +92,7 @@
     "welcome": {
       "title": "어떤 앱에서든 타자 대신 말로 입력하세요",
       "subtitle": "받아쓰기에 사용할 언어를 선택하세요",
-      "searchLabel": "언어 검색",
-      "searchPlaceholder": "언어 검색",
-      "addAnother": "추가",
-      "remove": "{{language}} 삭제",
       "languagesLabel": "언어",
-      "alreadyAdded_one": "{{languages}}은(는) 이미 추가되었습니다.",
-      "alreadyAdded_other": "{{languages}}은(는) 이미 추가되었습니다.",
       "noMatch": "「{{query}}」와(과) 일치하는 언어가 없습니다. Handy의 모델은 약 100개 언어를 지원하며, 더 많은 언어는 설정에서 볼 수 있습니다.",
       "appLanguage": "앱 언어",
       "menusIn": "메뉴 언어: <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "음성 모델 선택",
       "subtitle": "음성 모델은 이 컴퓨터에서 바로 음성을 텍스트로 바꿔 줍니다",
       "label": "음성 모델",
-      "allLabel": "음성 모델 목록",
-      "roles": {
-        "recommended": "추천",
-        "faster": "더 빠름",
-        "accurate": "더 정확함",
-        "fromAll": "전체 모델에서"
-      },
       "lines": {
         "recommended": "선택한 언어에서 속도와 정확도의 균형이 가장 좋습니다",
         "faster": "더 빠르지만 오류가 조금 더 많습니다",
@@ -152,79 +139,13 @@
         "faster": "더 빠름, 오류 약간 많음",
         "accurate": "오류 최소, 더 느림"
       },
-      "accuracy": "정확도",
-      "speed": "속도",
-      "size": "크기",
       "model": "모델",
-      "speedWords": {
-        "0": "매우 느림, 한참 기다려야 단어가 나타납니다",
-        "1": "느림, 기다려야 단어가 나타납니다",
-        "2": "보통, 잠시 기다리면 단어가 나타납니다",
-        "3": "빠름, 거의 바로 단어가 나타납니다",
-        "4": "매우 빠름, 바로 단어가 나타납니다"
-      },
-      "speedWordsPreview": {
-        "0": "매우 느림, 말하는 동안 실시간 미리보기 제공",
-        "1": "느림, 말하는 동안 실시간 미리보기 제공",
-        "2": "보통, 말하는 동안 실시간 미리보기 제공",
-        "3": "빠름, 말하는 동안 실시간 미리보기 제공",
-        "4": "매우 빠름, 말하는 동안 실시간 미리보기 제공"
-      },
-      "speedUntested": "속도를 아직 측정하지 않았습니다",
-      "rubric": {
-        "gradeTitle": "{{language}} 정확도: {{grade}}",
-        "accuracyTitle": "{{language}} 정확도",
-        "overallTitle": "선택한 언어의 정확도: {{grade}}",
-        "overall": "선택한 언어의 정확도",
-        "meaning": {
-          "A": "오류가 매우 적음: 말한 그대로 입력되는 경우가 대부분입니다",
-          "B": "오류가 약간 있음: 가끔 단어를 고쳐야 할 수 있습니다",
-          "C": "오류가 잦음: 일부 세부 내용이 빠질 수 있습니다",
-          "D": "오류가 많음: 입력된 내용을 확인하고 고쳐야 합니다",
-          "F": "알아듣기 어려운 경우가 많음: 말한 내용 상당수가 틀리게 입력될 수 있습니다"
-        },
-        "unsupported": "이 모델은 {{language}}을(를) 이해하지 못해 입력할 수 없습니다",
-        "unrated": "이 모델은 {{language}}을(를) 이해하지만 얼마나 잘하는지는 아직 측정하지 않았습니다",
-        "under": "{{max}}% 미만",
-        "between": "{{min}}~{{max}}%",
-        "over": "{{min}}% 이상",
-        "speedTitle": "속도: {{speed}}",
-        "speedName": {
-          "0": "매우 느림",
-          "1": "느림",
-          "2": "보통",
-          "3": "빠름",
-          "4": "매우 빠름"
-        },
-        "speedMeaning": {
-          "0": "한참 기다려야 단어가 나타납니다",
-          "1": "기다려야 단어가 나타납니다",
-          "2": "잠시 기다리면 단어가 나타납니다",
-          "3": "거의 바로 단어가 나타납니다",
-          "4": "바로 단어가 나타납니다"
-        },
-        "speedPreview": "{{meaning}}, 말하는 동안 실시간 미리보기 제공",
-        "untimed": "속도를 아직 측정하지 않았습니다",
-        "underSeconds": "{{max}}초 미만",
-        "betweenSeconds": "{{min}}~{{max}}초",
-        "overSeconds": "{{min}}초 이상"
-      },
-      "tags": {
-        "preview": "실시간 미리보기",
-        "previewTitle": "말하는 동안 실시간 오버레이에 단어를 보여 주고, 말을 멈추면 입력합니다",
-        "translate": "번역 지원",
-        "translateTitle": "말한 내용을 영어 텍스트로 바꿀 수 있습니다. 설정에서 켜세요"
-      },
       "showAll": "모델 {{count}}개 모두 보기",
       "download": "{{size}} 다운로드",
       "downloadInstead": "대신 {{size}} 다운로드",
       "pauses": "{{name}}은(는) {{percent}}%에서 일시 중지됩니다",
       "resumeLater": "다시 선택하면 중단된 곳에서 이어받습니다",
-      "hint": "설정을 마치는 동안 다운로드됩니다",
-      "search": "모델 검색",
-      "missingLanguage": "빠진 언어가 있나요?",
-      "noMatch": "「{{query}}」와(과) 일치하는 항목이 없습니다. 언어나 Whisper, Parakeet 같은 계열을 검색해 보세요",
-      "noFilterMatch": "이 필터와 일치하는 모델이 없습니다"
+      "hint": "설정을 마치는 동안 다운로드됩니다"
     },
     "demo": {
       "title": "단축키 하나로 어떤 앱에서든 말하세요",
@@ -295,6 +216,92 @@
       "done": "다른 앱에서 작동하지 않나요? <guide>Linux 설정 가이드</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "실시간 미리보기",
+      "previewTitle": "말하는 동안 실시간 오버레이에 단어를 보여 주고, 말을 멈추면 입력합니다",
+      "translate": "번역 지원",
+      "translateTitle": "말한 내용을 영어 텍스트로 바꿀 수 있습니다. 설정에서 켜세요"
+    },
+    "rubric": {
+      "gradeTitle": "{{language}} 정확도: {{grade}}",
+      "accuracyTitle": "{{language}} 정확도",
+      "overallTitle": "선택한 언어의 정확도: {{grade}}",
+      "overall": "선택한 언어의 정확도",
+      "meaning": {
+        "A": "오류가 매우 적음: 말한 그대로 입력되는 경우가 대부분입니다",
+        "B": "오류가 약간 있음: 가끔 단어를 고쳐야 할 수 있습니다",
+        "C": "오류가 잦음: 일부 세부 내용이 빠질 수 있습니다",
+        "D": "오류가 많음: 입력된 내용을 확인하고 고쳐야 합니다",
+        "F": "알아듣기 어려운 경우가 많음: 말한 내용 상당수가 틀리게 입력될 수 있습니다"
+      },
+      "unsupported": "이 모델은 {{language}}을(를) 이해하지 못해 입력할 수 없습니다",
+      "unrated": "이 모델은 {{language}}을(를) 이해하지만 얼마나 잘하는지는 아직 측정하지 않았습니다",
+      "under": "{{max}}% 미만",
+      "between": "{{min}}~{{max}}%",
+      "over": "{{min}}% 이상",
+      "speedTitle": "속도: {{speed}}",
+      "speedName": {
+        "0": "매우 느림",
+        "1": "느림",
+        "2": "보통",
+        "3": "빠름",
+        "4": "매우 빠름"
+      },
+      "speedMeaning": {
+        "0": "한참 기다려야 단어가 나타납니다",
+        "1": "기다려야 단어가 나타납니다",
+        "2": "잠시 기다리면 단어가 나타납니다",
+        "3": "거의 바로 단어가 나타납니다",
+        "4": "바로 단어가 나타납니다"
+      },
+      "speedPreview": "{{meaning}}, 말하는 동안 실시간 미리보기 제공",
+      "untimed": "속도를 아직 측정하지 않았습니다",
+      "underSeconds": "{{max}}초 미만",
+      "betweenSeconds": "{{min}}~{{max}}초",
+      "overSeconds": "{{min}}초 이상"
+    },
+    "roles": {
+      "recommended": "추천",
+      "faster": "더 빠름",
+      "accurate": "더 정확함",
+      "fromAll": "전체 모델에서"
+    },
+    "speed": "속도",
+    "size": "크기",
+    "accuracy": "정확도",
+    "search": "모델 검색",
+    "allLabel": "음성 모델 목록",
+    "noMatch": "「{{query}}」와(과) 일치하는 항목이 없습니다. 언어나 Whisper, Parakeet 같은 계열을 검색해 보세요",
+    "noFilterMatch": "이 필터와 일치하는 모델이 없습니다",
+    "speedUntested": "속도를 아직 측정하지 않았습니다",
+    "speedWords": {
+      "0": "매우 느림, 한참 기다려야 단어가 나타납니다",
+      "1": "느림, 기다려야 단어가 나타납니다",
+      "2": "보통, 잠시 기다리면 단어가 나타납니다",
+      "3": "빠름, 거의 바로 단어가 나타납니다",
+      "4": "매우 빠름, 바로 단어가 나타납니다"
+    },
+    "speedWordsPreview": {
+      "0": "매우 느림, 말하는 동안 실시간 미리보기 제공",
+      "1": "느림, 말하는 동안 실시간 미리보기 제공",
+      "2": "보통, 말하는 동안 실시간 미리보기 제공",
+      "3": "빠름, 말하는 동안 실시간 미리보기 제공",
+      "4": "매우 빠름, 말하는 동안 실시간 미리보기 제공"
+    },
+    "missingLanguage": "빠진 언어가 있나요?",
+    "allLanguages": "전체",
+    "downloadingLine": "{{total}} 중 {{percent}}% 다운로드 중",
+    "customLine": "모델 폴더에서 추가됨. 등급 없음.",
+    "legacyLine": "이전 다운로드입니다. 등급 없음."
+  },
+  "languagePicker": {
+    "search": "언어 검색",
+    "addAnother": "추가",
+    "remove": "{{language}} 삭제",
+    "alreadyAdded_one": "{{languages}}은(는) 이미 추가되었습니다.",
+    "alreadyAdded_other": "{{languages}}은(는) 이미 추가되었습니다."
+  },
   "modelSelector": {
     "custom": "사용자 정의",
     "streaming": "스트리밍",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "선호 언어",
         "description": "내가 사용하는 언어입니다. Handy가 모델을 추천하는 데 사용합니다.",
-        "searchLabel": "언어 검색",
-        "placeholder": "언어 검색",
-        "addAnother": "추가",
-        "remove": "{{language}} 삭제",
-        "alreadyAdded_one": "{{languages}}은(는) 이미 추가되었습니다.",
-        "alreadyAdded_other": "{{languages}}은(는) 이미 추가되었습니다.",
         "noMatch": "「{{query}}」와(과) 일치하는 언어가 없습니다",
         "weak": "아직 {{languages}}을(를) 잘 인식하는 모델이 없습니다."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "이 컴퓨터에 있는 모델",
         "fits": "선택한 언어용",
-        "missing": "빠진 언어가 있나요?",
         "untested": "테스트되지 않음"
       },
-      "allLanguages": "전체",
       "untestedNote": "Handy에서 테스트하지 않았습니다. 더 느리거나 오류가 더 많을 수 있습니다.",
       "untestedHidden_one": "받아쓰기에 맞춰 조정되지 않은 모델이 {{count}}개 더 있습니다. 검색해서 찾아보세요.",
       "untestedHidden_other": "받아쓰기에 맞춰 조정되지 않은 모델이 {{count}}개 더 있습니다. 검색해서 찾아보세요.",
@@ -394,7 +393,6 @@
       "showMore": "{{count}}개 더 보기",
       "showFewer": "간략히 보기",
       "download": "다운로드 후 사용",
-      "downloadingLine": "{{total}} 중 {{percent}}% 다운로드 중",
       "downloadingThenUse": "{{total}} 중 {{percent}}%, 완료 후 전환됩니다",
       "loading": "로딩 중…",
       "deleteAsk": "{{name}}을(를) 삭제할까요? {{size}}가 확보됩니다.",
@@ -402,13 +400,9 @@
       "cancel": "취소",
       "deleteModel": "{{name}} 삭제",
       "cancelDownload": "{{name}} 다운로드 중지",
-      "customLine": "모델 폴더에서 추가됨. 등급 없음.",
-      "legacyLine": "이전 다운로드입니다. 등급 없음.",
       "legend": {
         "open": "모델 등급 기준",
-        "accuracy": "정확도",
         "accuracyNote": "선택한 언어별로, 테스트 녹음에서 모델이 틀린 단어의 비율입니다.",
-        "speed": "속도",
         "speedNote": {
           "accelerated": "테스트용 노트북의 그래픽 칩에서 30초 분량의 음성을 텍스트로 옮기는 데 걸리는 시간입니다. 이 컴퓨터에서는 다를 수 있습니다.",
           "cpu": "테스트용 노트북의 프로세서에서 30초 분량의 음성을 텍스트로 옮기는 데 걸리는 시간입니다. 이 컴퓨터에서는 다를 수 있습니다."
@@ -897,10 +891,6 @@
     "copy": "복사",
     "clear": "지우기",
     "noOptionsFound": "옵션을 찾을 수 없습니다"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
-    "openSettings": "시스템 설정 열기"
   },
   "errors": {
     "loadDirectory": "디렉토리 로딩 오류: {{error}}",

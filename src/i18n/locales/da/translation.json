@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Tal i stedet for at skrive, i enhver app",
       "subtitle": "Vælg de sprog, du vil diktere på",
-      "searchLabel": "Søg efter sprog",
-      "searchPlaceholder": "Søg efter sprog",
-      "addAnother": "Tilføj et til",
-      "remove": "Fjern {{language}}",
       "languagesLabel": "Sprog",
-      "alreadyAdded_one": "{{languages}} er allerede tilføjet.",
-      "alreadyAdded_other": "{{languages}} er allerede tilføjet.",
       "noMatch": "Intet sprog matcher »{{query}}«. Handys modeller dækker omkring 100 sprog; flere findes i indstillingerne.",
       "appLanguage": "Appens sprog",
       "menusIn": "Menuer på <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Vælg en talemodel",
       "subtitle": "Talemodellen omdanner din tale til tekst, direkte på denne computer",
       "label": "Talemodel",
-      "allLabel": "Talemodeller",
-      "roles": {
-        "recommended": "Anbefalet",
-        "faster": "Hurtigere",
-        "accurate": "Mere nøjagtig",
-        "fromAll": "Fra alle modeller"
-      },
       "lines": {
         "recommended": "Den bedste balance mellem hastighed og nøjagtighed for dine sprog",
         "faster": "Hurtigere, med lidt flere fejl",
@@ -152,79 +139,13 @@
         "faster": "Hurtigere, lidt flere fejl",
         "accurate": "Færrest fejl, men langsommere"
       },
-      "accuracy": "Nøjagtighed",
-      "speed": "Hastighed",
-      "size": "Størrelse",
       "model": "Model",
-      "speedWords": {
-        "0": "Meget langsom, ordene dukker op efter lang ventetid",
-        "1": "Langsom, ordene dukker op efter en ventetid",
-        "2": "Middel, ordene dukker op efter kort ventetid",
-        "3": "Hurtig, ordene dukker op næsten med det samme",
-        "4": "Meget hurtig, ordene dukker op med det samme"
-      },
-      "speedWordsPreview": {
-        "0": "Meget langsom, med live-forhåndsvisning, mens du taler",
-        "1": "Langsom, med live-forhåndsvisning, mens du taler",
-        "2": "Middel, med live-forhåndsvisning, mens du taler",
-        "3": "Hurtig, med live-forhåndsvisning, mens du taler",
-        "4": "Meget hurtig, med live-forhåndsvisning, mens du taler"
-      },
-      "speedUntested": "Hastighed er ikke målt endnu",
-      "rubric": {
-        "gradeTitle": "Nøjagtighed for {{language}}: {{grade}}",
-        "accuracyTitle": "Nøjagtighed for {{language}}",
-        "overallTitle": "Nøjagtighed på dine sprog: {{grade}}",
-        "overall": "Nøjagtighed på dine sprog",
-        "meaning": {
-          "A": "Meget få fejl: dine ord kommer som regel ud, som du sagde dem",
-          "B": "Nogle fejl: regn med at rette et ord hist og her",
-          "C": "Hyppige fejl: nogle detaljer kan gå tabt",
-          "D": "Mange fejl: regn med at tjekke og rette det, der bliver skrevet",
-          "F": "Ofte uklar: meget af det, du siger, kan blive forkert"
-        },
-        "unsupported": "Denne model forstår ikke {{language}}, så den kan ikke skrive det",
-        "unrated": "Denne model forstår {{language}}, men vi har ikke målt, hvor godt endnu",
-        "under": "under {{max}} %",
-        "between": "{{min}} til {{max}} %",
-        "over": "{{min}} % eller mere",
-        "speedTitle": "Hastighed: {{speed}}",
-        "speedName": {
-          "0": "Meget langsom",
-          "1": "Langsom",
-          "2": "Middel",
-          "3": "Hurtig",
-          "4": "Meget hurtig"
-        },
-        "speedMeaning": {
-          "0": "Dine ord dukker op efter lang ventetid",
-          "1": "Dine ord dukker op efter en ventetid",
-          "2": "Dine ord dukker op efter kort ventetid",
-          "3": "Dine ord dukker op næsten med det samme",
-          "4": "Dine ord dukker op med det samme"
-        },
-        "speedPreview": "{{meaning}}, med live-forhåndsvisning, mens du taler",
-        "untimed": "Vi har ikke målt, hvor hurtig den er endnu",
-        "underSeconds": "under {{max}} sek.",
-        "betweenSeconds": "{{min}} til {{max}} sek.",
-        "overSeconds": "{{min}} sek. eller mere"
-      },
-      "tags": {
-        "preview": "Live-forhåndsvisning",
-        "previewTitle": "Viser dine ord i Live-overlayet, mens du taler, og skriver dem, når du stopper",
-        "translate": "Oversætter",
-        "translateTitle": "Kan omdanne det, du siger, til engelsk tekst. Slå det til i indstillingerne"
-      },
       "showAll": "Vis alle {{count}} modeller",
       "download": "Download {{size}}",
       "downloadInstead": "Download {{size}} i stedet",
       "pauses": "{{name}} holder pause ved {{percent}} %",
       "resumeLater": "Vælg den igen for at fortsætte, hvor den slap",
-      "hint": "Downloader, mens du gør opsætningen færdig",
-      "search": "Søg efter modeller",
-      "missingLanguage": "Mangler et sprog",
-      "noMatch": "Intet matcher »{{query}}«. Prøv et sprog eller en familie som Whisper eller Parakeet",
-      "noFilterMatch": "Ingen modeller matcher disse filtre"
+      "hint": "Downloader, mens du gør opsætningen færdig"
     },
     "demo": {
       "title": "Tal i enhver app med én genvej",
@@ -295,6 +216,92 @@
       "done": "Virker det ikke i andre apps? <guide>Linux-opsætningsguide</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Live-forhåndsvisning",
+      "previewTitle": "Viser dine ord i Live-overlayet, mens du taler, og skriver dem, når du stopper",
+      "translate": "Oversætter",
+      "translateTitle": "Kan omdanne det, du siger, til engelsk tekst. Slå det til i indstillingerne"
+    },
+    "rubric": {
+      "gradeTitle": "Nøjagtighed for {{language}}: {{grade}}",
+      "accuracyTitle": "Nøjagtighed for {{language}}",
+      "overallTitle": "Nøjagtighed på dine sprog: {{grade}}",
+      "overall": "Nøjagtighed på dine sprog",
+      "meaning": {
+        "A": "Meget få fejl: dine ord kommer som regel ud, som du sagde dem",
+        "B": "Nogle fejl: regn med at rette et ord hist og her",
+        "C": "Hyppige fejl: nogle detaljer kan gå tabt",
+        "D": "Mange fejl: regn med at tjekke og rette det, der bliver skrevet",
+        "F": "Ofte uklar: meget af det, du siger, kan blive forkert"
+      },
+      "unsupported": "Denne model forstår ikke {{language}}, så den kan ikke skrive det",
+      "unrated": "Denne model forstår {{language}}, men vi har ikke målt, hvor godt endnu",
+      "under": "under {{max}} %",
+      "between": "{{min}} til {{max}} %",
+      "over": "{{min}} % eller mere",
+      "speedTitle": "Hastighed: {{speed}}",
+      "speedName": {
+        "0": "Meget langsom",
+        "1": "Langsom",
+        "2": "Middel",
+        "3": "Hurtig",
+        "4": "Meget hurtig"
+      },
+      "speedMeaning": {
+        "0": "Dine ord dukker op efter lang ventetid",
+        "1": "Dine ord dukker op efter en ventetid",
+        "2": "Dine ord dukker op efter kort ventetid",
+        "3": "Dine ord dukker op næsten med det samme",
+        "4": "Dine ord dukker op med det samme"
+      },
+      "speedPreview": "{{meaning}}, med live-forhåndsvisning, mens du taler",
+      "untimed": "Vi har ikke målt, hvor hurtig den er endnu",
+      "underSeconds": "under {{max}} sek.",
+      "betweenSeconds": "{{min}} til {{max}} sek.",
+      "overSeconds": "{{min}} sek. eller mere"
+    },
+    "roles": {
+      "recommended": "Anbefalet",
+      "faster": "Hurtigere",
+      "accurate": "Mere nøjagtig",
+      "fromAll": "Fra alle modeller"
+    },
+    "speed": "Hastighed",
+    "size": "Størrelse",
+    "accuracy": "Nøjagtighed",
+    "search": "Søg efter modeller",
+    "allLabel": "Talemodeller",
+    "noMatch": "Intet matcher »{{query}}«. Prøv et sprog eller en familie som Whisper eller Parakeet",
+    "noFilterMatch": "Ingen modeller matcher disse filtre",
+    "speedUntested": "Hastighed er ikke målt endnu",
+    "speedWords": {
+      "0": "Meget langsom, ordene dukker op efter lang ventetid",
+      "1": "Langsom, ordene dukker op efter en ventetid",
+      "2": "Middel, ordene dukker op efter kort ventetid",
+      "3": "Hurtig, ordene dukker op næsten med det samme",
+      "4": "Meget hurtig, ordene dukker op med det samme"
+    },
+    "speedWordsPreview": {
+      "0": "Meget langsom, med live-forhåndsvisning, mens du taler",
+      "1": "Langsom, med live-forhåndsvisning, mens du taler",
+      "2": "Middel, med live-forhåndsvisning, mens du taler",
+      "3": "Hurtig, med live-forhåndsvisning, mens du taler",
+      "4": "Meget hurtig, med live-forhåndsvisning, mens du taler"
+    },
+    "missingLanguage": "Mangler et sprog",
+    "allLanguages": "Alle",
+    "downloadingLine": "Downloader {{percent}} % af {{total}}",
+    "customLine": "Tilføjet fra din modelmappe. Ikke bedømt.",
+    "legacyLine": "En ældre download. Ikke bedømt."
+  },
+  "languagePicker": {
+    "search": "Søg efter sprog",
+    "addAnother": "Tilføj et til",
+    "remove": "Fjern {{language}}",
+    "alreadyAdded_one": "{{languages}} er allerede tilføjet.",
+    "alreadyAdded_other": "{{languages}} er allerede tilføjet."
+  },
   "modelSelector": {
     "custom": "Brugerdefineret",
     "streaming": "Streaming",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Foretrukne sprog",
         "description": "De sprog, du taler. Handy bruger dem til at anbefale modeller.",
-        "searchLabel": "Søg efter sprog",
-        "placeholder": "Søg efter sprog",
-        "addAnother": "Tilføj et til",
-        "remove": "Fjern {{language}}",
-        "alreadyAdded_one": "{{languages}} er allerede tilføjet.",
-        "alreadyAdded_other": "{{languages}} er allerede tilføjet.",
         "noMatch": "Intet sprog matcher »{{query}}«",
         "weak": "Ingen model genkender {{languages}} godt endnu."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "På denne computer",
         "fits": "Til dine sprog",
-        "missing": "Mangler et sprog",
         "untested": "Ikke testet"
       },
-      "allLanguages": "Alle",
       "untestedNote": "Ikke testet med Handy. De kan være langsommere eller lave flere fejl.",
       "untestedHidden_one": "{{count}} model mere er ikke tilpasset diktering. Søg for at finde den.",
       "untestedHidden_other": "{{count}} modeller mere er ikke tilpasset diktering. Søg for at finde dem.",
@@ -394,7 +393,6 @@
       "showMore": "Vis {{count}} flere",
       "showFewer": "Vis færre",
       "download": "Download og brug",
-      "downloadingLine": "Downloader {{percent}} % af {{total}}",
       "downloadingThenUse": "{{percent}} % af {{total}}, så skiftes der",
       "loading": "Indlæser…",
       "deleteAsk": "Slet {{name}}? Det frigør {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Annuller",
       "deleteModel": "Slet {{name}}",
       "cancelDownload": "Stop download af {{name}}",
-      "customLine": "Tilføjet fra din modelmappe. Ikke bedømt.",
-      "legacyLine": "En ældre download. Ikke bedømt.",
       "legend": {
         "open": "Sådan bedømmes modeller",
-        "accuracy": "Nøjagtighed",
         "accuracyNote": "For hvert af dine sprog: hvor mange ord en model fik forkert i vores testoptagelser.",
-        "speed": "Hastighed",
         "speedNote": {
           "accelerated": "Hvor lang tid 30 sekunders tale tager at skrive ud på vores testcomputers grafikchip. Denne computer kan afvige.",
           "cpu": "Hvor lang tid 30 sekunders tale tager at skrive ud på vores testcomputers processor. Denne computer kan afvige."
@@ -897,10 +891,6 @@
     "copy": "Kopiér",
     "clear": "Ryd",
     "noOptionsFound": "Ingen muligheder fundet"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy har brug for tilgængelighedstilladelser for at skrive den transskriberede tekst.",
-    "openSettings": "Åbn systemindstillinger"
   },
   "errors": {
     "loadDirectory": "Fejl ved indlæsning af mappe: {{error}}",

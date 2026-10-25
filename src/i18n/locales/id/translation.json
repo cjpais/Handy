@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Bicara, bukan mengetik, di aplikasi apa pun",
       "subtitle": "Pilih bahasa yang akan Anda gunakan untuk mendikte",
-      "searchLabel": "Cari bahasa",
-      "searchPlaceholder": "Cari bahasa",
-      "addAnother": "Tambah lagi",
-      "remove": "Hapus {{language}}",
       "languagesLabel": "Bahasa",
-      "alreadyAdded_one": "{{languages}} sudah ditambahkan.",
-      "alreadyAdded_other": "{{languages}} sudah ditambahkan.",
       "noMatch": "Tidak ada bahasa yang cocok dengan “{{query}}”. Model Handy mencakup sekitar 100 bahasa; sisanya ada di pengaturan.",
       "appLanguage": "Bahasa aplikasi",
       "menusIn": "Menu dalam <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Pilih model ucapan",
       "subtitle": "Model ucapan mengubah ucapan Anda menjadi teks, langsung di komputer ini",
       "label": "Model ucapan",
-      "allLabel": "Model ucapan",
-      "roles": {
-        "recommended": "Direkomendasikan",
-        "faster": "Lebih cepat",
-        "accurate": "Lebih akurat",
-        "fromAll": "Dari semua model"
-      },
       "lines": {
         "recommended": "Keseimbangan terbaik antara kecepatan dan akurasi untuk bahasa Anda",
         "faster": "Lebih cepat, dengan sedikit lebih banyak kesalahan",
@@ -152,79 +139,13 @@
         "faster": "Lebih cepat, sedikit lebih banyak salah",
         "accurate": "Paling sedikit salah, tetapi lebih lambat"
       },
-      "accuracy": "Akurasi",
-      "speed": "Kecepatan",
-      "size": "Ukuran",
       "model": "Model",
-      "speedWords": {
-        "0": "Sangat lambat, kata muncul setelah menunggu lama",
-        "1": "Lambat, kata muncul setelah menunggu",
-        "2": "Sedang, kata muncul setelah menunggu sebentar",
-        "3": "Cepat, kata muncul hampir seketika",
-        "4": "Sangat cepat, kata muncul seketika"
-      },
-      "speedWordsPreview": {
-        "0": "Sangat lambat, dengan pratinjau langsung saat Anda berbicara",
-        "1": "Lambat, dengan pratinjau langsung saat Anda berbicara",
-        "2": "Sedang, dengan pratinjau langsung saat Anda berbicara",
-        "3": "Cepat, dengan pratinjau langsung saat Anda berbicara",
-        "4": "Sangat cepat, dengan pratinjau langsung saat Anda berbicara"
-      },
-      "speedUntested": "Kecepatan belum diukur",
-      "rubric": {
-        "gradeTitle": "Akurasi {{language}}: {{grade}}",
-        "accuracyTitle": "Akurasi {{language}}",
-        "overallTitle": "Akurasi untuk bahasa Anda: {{grade}}",
-        "overall": "Akurasi untuk bahasa Anda",
-        "meaning": {
-          "A": "Sangat sedikit kesalahan: kata-kata Anda biasanya muncul persis seperti yang Anda ucapkan",
-          "B": "Ada beberapa kesalahan: sesekali Anda perlu memperbaiki satu-dua kata",
-          "C": "Sering salah: sebagian detail mungkin hilang",
-          "D": "Banyak kesalahan: periksa dan perbaiki hasil ketikannya",
-          "F": "Sering tidak jelas: banyak ucapan Anda mungkin salah tertulis"
-        },
-        "unsupported": "Model ini tidak memahami {{language}}, jadi tidak bisa mengetiknya",
-        "unrated": "Model ini memahami {{language}}, tetapi kami belum mengukur seberapa baik",
-        "under": "di bawah {{max}}%",
-        "between": "{{min}} hingga {{max}}%",
-        "over": "{{min}}% atau lebih",
-        "speedTitle": "Kecepatan: {{speed}}",
-        "speedName": {
-          "0": "Sangat lambat",
-          "1": "Lambat",
-          "2": "Sedang",
-          "3": "Cepat",
-          "4": "Sangat cepat"
-        },
-        "speedMeaning": {
-          "0": "Kata-kata Anda muncul setelah menunggu lama",
-          "1": "Kata-kata Anda muncul setelah menunggu",
-          "2": "Kata-kata Anda muncul setelah menunggu sebentar",
-          "3": "Kata-kata Anda muncul hampir seketika",
-          "4": "Kata-kata Anda muncul seketika"
-        },
-        "speedPreview": "{{meaning}}, dengan pratinjau langsung saat Anda berbicara",
-        "untimed": "Kami belum mengukur seberapa cepat model ini",
-        "underSeconds": "di bawah {{max}} dtk",
-        "betweenSeconds": "{{min}} hingga {{max}} dtk",
-        "overSeconds": "{{min}} dtk atau lebih"
-      },
-      "tags": {
-        "preview": "Pratinjau langsung",
-        "previewTitle": "Menampilkan kata-kata Anda di overlay Langsung saat Anda berbicara, lalu mengetiknya setelah Anda berhenti",
-        "translate": "Menerjemahkan",
-        "translateTitle": "Bisa mengubah ucapan Anda menjadi teks bahasa Inggris. Aktifkan di pengaturan"
-      },
       "showAll": "Tampilkan semua {{count}} model",
       "download": "Unduh {{size}}",
       "downloadInstead": "Unduh {{size}} saja",
       "pauses": "{{name}} berhenti sejenak di {{percent}}%",
       "resumeLater": "Pilih lagi untuk melanjutkan dari titik terhenti",
-      "hint": "Diunduh selagi Anda menyelesaikan penyiapan",
-      "search": "Cari model",
-      "missingLanguage": "Bahasa tidak ada",
-      "noMatch": "Tidak ada yang cocok dengan “{{query}}”. Coba bahasa, atau keluarga seperti Whisper atau Parakeet",
-      "noFilterMatch": "Tidak ada model yang cocok dengan filter ini"
+      "hint": "Diunduh selagi Anda menyelesaikan penyiapan"
     },
     "demo": {
       "title": "Bicara di aplikasi apa pun, dengan satu pintasan",
@@ -295,6 +216,92 @@
       "done": "Tidak berfungsi di aplikasi lain? <guide>Panduan penyiapan Linux</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Pratinjau langsung",
+      "previewTitle": "Menampilkan kata-kata Anda di overlay Langsung saat Anda berbicara, lalu mengetiknya setelah Anda berhenti",
+      "translate": "Menerjemahkan",
+      "translateTitle": "Bisa mengubah ucapan Anda menjadi teks bahasa Inggris. Aktifkan di pengaturan"
+    },
+    "rubric": {
+      "gradeTitle": "Akurasi {{language}}: {{grade}}",
+      "accuracyTitle": "Akurasi {{language}}",
+      "overallTitle": "Akurasi untuk bahasa Anda: {{grade}}",
+      "overall": "Akurasi untuk bahasa Anda",
+      "meaning": {
+        "A": "Sangat sedikit kesalahan: kata-kata Anda biasanya muncul persis seperti yang Anda ucapkan",
+        "B": "Ada beberapa kesalahan: sesekali Anda perlu memperbaiki satu-dua kata",
+        "C": "Sering salah: sebagian detail mungkin hilang",
+        "D": "Banyak kesalahan: periksa dan perbaiki hasil ketikannya",
+        "F": "Sering tidak jelas: banyak ucapan Anda mungkin salah tertulis"
+      },
+      "unsupported": "Model ini tidak memahami {{language}}, jadi tidak bisa mengetiknya",
+      "unrated": "Model ini memahami {{language}}, tetapi kami belum mengukur seberapa baik",
+      "under": "di bawah {{max}}%",
+      "between": "{{min}} hingga {{max}}%",
+      "over": "{{min}}% atau lebih",
+      "speedTitle": "Kecepatan: {{speed}}",
+      "speedName": {
+        "0": "Sangat lambat",
+        "1": "Lambat",
+        "2": "Sedang",
+        "3": "Cepat",
+        "4": "Sangat cepat"
+      },
+      "speedMeaning": {
+        "0": "Kata-kata Anda muncul setelah menunggu lama",
+        "1": "Kata-kata Anda muncul setelah menunggu",
+        "2": "Kata-kata Anda muncul setelah menunggu sebentar",
+        "3": "Kata-kata Anda muncul hampir seketika",
+        "4": "Kata-kata Anda muncul seketika"
+      },
+      "speedPreview": "{{meaning}}, dengan pratinjau langsung saat Anda berbicara",
+      "untimed": "Kami belum mengukur seberapa cepat model ini",
+      "underSeconds": "di bawah {{max}} dtk",
+      "betweenSeconds": "{{min}} hingga {{max}} dtk",
+      "overSeconds": "{{min}} dtk atau lebih"
+    },
+    "roles": {
+      "recommended": "Direkomendasikan",
+      "faster": "Lebih cepat",
+      "accurate": "Lebih akurat",
+      "fromAll": "Dari semua model"
+    },
+    "speed": "Kecepatan",
+    "size": "Ukuran",
+    "accuracy": "Akurasi",
+    "search": "Cari model",
+    "allLabel": "Model ucapan",
+    "noMatch": "Tidak ada yang cocok dengan “{{query}}”. Coba bahasa, atau keluarga seperti Whisper atau Parakeet",
+    "noFilterMatch": "Tidak ada model yang cocok dengan filter ini",
+    "speedUntested": "Kecepatan belum diukur",
+    "speedWords": {
+      "0": "Sangat lambat, kata muncul setelah menunggu lama",
+      "1": "Lambat, kata muncul setelah menunggu",
+      "2": "Sedang, kata muncul setelah menunggu sebentar",
+      "3": "Cepat, kata muncul hampir seketika",
+      "4": "Sangat cepat, kata muncul seketika"
+    },
+    "speedWordsPreview": {
+      "0": "Sangat lambat, dengan pratinjau langsung saat Anda berbicara",
+      "1": "Lambat, dengan pratinjau langsung saat Anda berbicara",
+      "2": "Sedang, dengan pratinjau langsung saat Anda berbicara",
+      "3": "Cepat, dengan pratinjau langsung saat Anda berbicara",
+      "4": "Sangat cepat, dengan pratinjau langsung saat Anda berbicara"
+    },
+    "missingLanguage": "Bahasa tidak ada",
+    "allLanguages": "Semua",
+    "downloadingLine": "Mengunduh {{percent}}% dari {{total}}",
+    "customLine": "Ditambahkan dari folder model Anda. Tidak dinilai.",
+    "legacyLine": "Unduhan lama. Tidak dinilai."
+  },
+  "languagePicker": {
+    "search": "Cari bahasa",
+    "addAnother": "Tambah lagi",
+    "remove": "Hapus {{language}}",
+    "alreadyAdded_one": "{{languages}} sudah ditambahkan.",
+    "alreadyAdded_other": "{{languages}} sudah ditambahkan."
+  },
   "modelSelector": {
     "custom": "Kustom",
     "streaming": "Streaming",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Bahasa Pilihan",
         "description": "Bahasa yang Anda gunakan. Handy memakainya untuk merekomendasikan model.",
-        "searchLabel": "Cari bahasa",
-        "placeholder": "Cari bahasa",
-        "addAnother": "Tambah lagi",
-        "remove": "Hapus {{language}}",
-        "alreadyAdded_one": "{{languages}} sudah ditambahkan.",
-        "alreadyAdded_other": "{{languages}} sudah ditambahkan.",
         "noMatch": "Tidak ada bahasa yang cocok dengan “{{query}}”",
         "weak": "Belum ada model yang mengenali {{languages}} dengan baik."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "Di komputer ini",
         "fits": "Untuk bahasa Anda",
-        "missing": "Bahasa tidak ada",
         "untested": "Belum diuji"
       },
-      "allLanguages": "Semua",
       "untestedNote": "Belum diuji dengan Handy. Mungkin lebih lambat atau lebih banyak salah.",
       "untestedHidden_one": "{{count}} model lagi tidak disetel untuk dikte. Cari untuk menemukannya.",
       "untestedHidden_other": "{{count}} model lagi tidak disetel untuk dikte. Cari untuk menemukannya.",
@@ -394,7 +393,6 @@
       "showMore": "Tampilkan {{count}} lagi",
       "showFewer": "Tampilkan lebih sedikit",
       "download": "Unduh dan gunakan",
-      "downloadingLine": "Mengunduh {{percent}}% dari {{total}}",
       "downloadingThenUse": "{{percent}}% dari {{total}}, lalu beralih",
       "loading": "Memuat…",
       "deleteAsk": "Hapus {{name}}? Ini membebaskan {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Batal",
       "deleteModel": "Hapus {{name}}",
       "cancelDownload": "Hentikan unduhan {{name}}",
-      "customLine": "Ditambahkan dari folder model Anda. Tidak dinilai.",
-      "legacyLine": "Unduhan lama. Tidak dinilai.",
       "legend": {
         "open": "Cara model dinilai",
-        "accuracy": "Akurasi",
         "accuracyNote": "Untuk setiap bahasa Anda: berapa banyak kata yang salah oleh model dalam rekaman uji kami.",
-        "speed": "Kecepatan",
         "speedNote": {
           "accelerated": "Berapa lama 30 detik ucapan diketik di chip grafis laptop uji kami. Komputer ini mungkin berbeda.",
           "cpu": "Berapa lama 30 detik ucapan diketik di prosesor laptop uji kami. Komputer ini mungkin berbeda."
@@ -897,10 +891,6 @@
     "copy": "Salin",
     "clear": "Bersihkan",
     "noOptionsFound": "Tidak ada opsi yang ditemukan"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy memerlukan izin aksesibilitas untuk mengetik teks hasil transkripsi.",
-    "openSettings": "Buka Pengaturan Sistem"
   },
   "errors": {
     "loadDirectory": "Kesalahan saat memuat direktori: {{error}}",

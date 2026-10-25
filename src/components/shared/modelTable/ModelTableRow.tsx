@@ -1,12 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Languages, Radio as LiveIcon } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { ProgressRing } from "@/components/shared/ProgressRing";
 import { Tag } from "@/components/shared/Tag";
 import { formatModelSize } from "@/lib/utils/format";
 import { useSettingsStore } from "@/stores/settingsStore";
-import type { PickRole } from "@/components/onboarding/data/models";
+import type { PickRole } from "@/lib/models/catalog";
+import { CAPABILITIES, CAPABILITY_KEYS, type Capability } from "./capabilities";
 import { Values, rowGrid, type VtName } from "./columns";
 import { useModelTable, type TableModel } from "./context";
 
@@ -63,21 +63,28 @@ export const ModelTableRow: React.FC<ModelTableRowProps> = ({
   const debug = useSettingsStore((s) => s.settings?.debug_mode ?? false);
   const role = grading.roleOf(entry.model);
   const dim = grading.missing(entry.model).length > 0 && !tail;
-
-  const capability = (key: "preview" | "translate", Icon: typeof LiveIcon) => (
-    <Tooltip
-      title={t(`onboarding.model.tags.${key}`)}
-      text={t(`onboarding.model.tags.${key}Title`)}
-    >
-      <span className="grid size-[18px] place-items-center hover:text-text">
-        <Icon
-          role="img"
-          aria-label={t(`onboarding.model.tags.${key}`)}
-          className="size-[13px]"
-        />
-      </span>
-    </Tooltip>
+  const capabilities = CAPABILITY_KEYS.filter(
+    (c) => entry[CAPABILITIES[c].flag],
   );
+
+  const capability = (key: Capability) => {
+    const { Icon } = CAPABILITIES[key];
+    return (
+      <Tooltip
+        key={key}
+        title={t(`modelTable.tags.${key}`)}
+        text={t(`modelTable.tags.${key}Title`)}
+      >
+        <span className="grid size-[18px] place-items-center hover:text-text">
+          <Icon
+            role="img"
+            aria-label={t(`modelTable.tags.${key}`)}
+            className="size-[13px]"
+          />
+        </span>
+      </Tooltip>
+    );
+  };
 
   const shownMark = download ? (
     <span
@@ -99,16 +106,16 @@ export const ModelTableRow: React.FC<ModelTableRowProps> = ({
         t("onboarding.download.checking")
       ) : (
         <span className="tabular-nums">
-          {t("settings.models.downloadingLine", {
+          {t("modelTable.downloadingLine", {
             percent: Math.round(download.percent),
             total: formatModelSize(entry.sizeMb),
           })}
         </span>
       )
     ) : entry.kind === "custom" ? (
-      t("settings.models.customLine")
+      t("modelTable.customLine")
     ) : entry.kind === "legacy" ? (
-      t("settings.models.legacyLine")
+      t("modelTable.legacyLine")
     ) : (
       entry.description
     ));
@@ -154,18 +161,15 @@ export const ModelTableRow: React.FC<ModelTableRowProps> = ({
           </b>
           {/* The delete question needs the room. */}
           {role && !tail && (
-            <Tag {...vt?.("r")}>
-              {t(`onboarding.model.roles.${ROLE_KEYS[role]}`)}
-            </Tag>
+            <Tag {...vt?.("r")}>{t(`modelTable.roles.${ROLE_KEYS[role]}`)}</Tag>
           )}
           {entry.kind === "custom" && <Tag>{t("modelSelector.custom")}</Tag>}
           {entry.kind === "legacy" && (
             <Tag>{t("onboarding.migration.oldFormat")}</Tag>
           )}
-          {(entry.streaming || entry.translate) && (
+          {capabilities.length > 0 && (
             <span className="inline-flex shrink-0 items-center text-ink-3">
-              {entry.streaming && capability("preview", LiveIcon)}
-              {entry.translate && capability("translate", Languages)}
+              {capabilities.map(capability)}
             </span>
           )}
           {debug && entry.quant && (

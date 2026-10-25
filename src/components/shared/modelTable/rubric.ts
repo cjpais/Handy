@@ -1,14 +1,14 @@
 import { useTranslation } from "react-i18next";
-import { SPEED_CUTOFFS } from "../shared/SpeedBars";
-import type { GradeLetter } from "../shared/GradeChip";
-import { GRADE_CEILINGS } from "./data/models";
+import { SPEED_CUTOFFS } from "@/components/shared/SpeedBars";
+import type { GradeLetter } from "@/components/shared/GradeChip";
+import { GRADE_CEILINGS } from "@/lib/models/catalog";
 
 /** The band one grade or speed-bar count stands for, e.g. "5–10%" or "under 2 s". */
 export const useRubric = () => {
   const { t, i18n } = useTranslation();
   const n = (x: number) =>
     x.toLocaleString(i18n.language, { maximumFractionDigits: 1 });
-  const key = (k: string) => `onboarding.model.rubric.${k}`;
+  const key = (k: string) => `modelTable.rubric.${k}`;
 
   const letters = Object.keys(
     GRADE_CEILINGS,

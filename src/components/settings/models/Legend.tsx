@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { CircleHelp } from "lucide-react";
 import { GradeChip } from "@/components/shared/GradeChip";
 import { SpeedBars } from "@/components/shared/SpeedBars";
-import { useRubric } from "@/components/onboarding/Rubric";
+import { useRubric } from "@/components/shared/modelTable/rubric";
+import { usePressAway } from "@/hooks/usePressAway";
 
 const LETTERS = ["A", "B", "C", "D", "F"] as const;
 
@@ -14,17 +15,12 @@ export const Legend: React.FC<{ tier: "accelerated" | "cpu" }> = ({ tier }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  usePressAway(open, ref, () => setOpen(false));
   useEffect(() => {
     if (!open) return;
-    const away = (e: MouseEvent) =>
-      ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", away);
     document.addEventListener("keydown", esc);
-    return () => {
-      document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", esc);
-    };
+    return () => document.removeEventListener("keydown", esc);
   }, [open]);
 
   return (
@@ -45,9 +41,7 @@ export const Legend: React.FC<{ tier: "accelerated" | "cpu" }> = ({ tier }) => {
           aria-label={t("settings.models.legend.open")}
           className="absolute end-0 top-[28px] z-30 w-[330px] animate-rise rounded-card border border-line-strong bg-background p-[14px] text-start text-small leading-[1.45] shadow-[0_12px_32px_-12px_rgba(0,0,0,0.35)]"
         >
-          <p className="font-semibold text-text">
-            {t("settings.models.legend.accuracy")}
-          </p>
+          <p className="font-semibold text-text">{t("modelTable.accuracy")}</p>
           <p className="mt-[2px] text-ink-2">
             {t("settings.models.legend.accuracyNote")}
           </p>
@@ -62,7 +56,7 @@ export const Legend: React.FC<{ tier: "accelerated" | "cpu" }> = ({ tier }) => {
             ))}
           </ul>
           <p className="mt-[12px] font-semibold text-text">
-            {t("settings.models.legend.speed")}
+            {t("modelTable.speed")}
           </p>
           <p className="mt-[2px] text-ink-2">
             {t(`settings.models.legend.speedNote.${tier}`)}

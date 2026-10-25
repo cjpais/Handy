@@ -1,8 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import {
-  bindingKeys,
-  isOnlyModifiers,
   keycapLabel,
   type OSType,
   spaceDoesNotClick,
@@ -10,7 +8,7 @@ import {
 import { prefersReducedMotion } from "@/lib/utils/motion";
 import { Button } from "../../ui/Button";
 import { TextLink } from "../../ui/TextLink";
-import { Keycaps, KeySlot } from "../../shared/Keycaps";
+import { CapturedKeys, captureHintKey, Keycaps } from "../../shared/Keycaps";
 import { Mascot } from "../../shared/Mascot";
 import TrayIcon from "../../icons/TrayIcon";
 import { DesktopBar } from "../DesktopBar";
@@ -22,7 +20,7 @@ import { useOnboardingStore } from "../onboardingStore";
 import { useTryEngine } from "../useTryEngine";
 import { MicrophoneDropdown } from "../../settings/MicrophoneSelector";
 import { useSettings } from "@/hooks/useSettings";
-import type { CatalogModel } from "../data/models";
+import type { CatalogModel } from "@/lib/models/catalog";
 import "./tryit.css";
 
 type Mood = "point" | "listen" | "cheer" | "oops" | "ready" | "windup";
@@ -339,8 +337,7 @@ export const TryIt: React.FC<TryItProps> = ({
     setTip({ x: keys.left + keys.width / 2 - box.left, y: keys.top - box.top });
   };
   const { capturing, partial } = e.capture;
-  const partialKeys = bindingKeys(partial);
-  const onlyModifiers = isOnlyModifiers(partialKeys);
+  const captureHint = captureHintKey(partial);
   const keysLabel = keycapLabel(e.shortcut, os);
 
   /* ---------- what the glove says ---------- */
@@ -379,25 +376,17 @@ export const TryIt: React.FC<TryItProps> = ({
     if (capturing)
       return {
         shape: "instruction",
-        id: onlyModifiers ? "addKey" : "pressKeys",
+        id: captureHint,
         line: (
           <>
-            {t(
-              onlyModifiers
-                ? "onboarding.demo.addKey"
-                : "onboarding.demo.pressKeys",
-            )}{" "}
-            {partialKeys.length ? (
-              <Keycaps
-                className="try-keys"
-                binding={partial}
-                osType={os}
-                size="line"
-                partial
-              />
-            ) : (
-              <KeySlot size="line" className="try-keys try-slot" />
-            )}
+            {t(captureHint)}{" "}
+            <CapturedKeys
+              partial={partial}
+              osType={os}
+              size="line"
+              className="try-keys"
+              slotClassName="try-slot"
+            />
             <TextLink className="try-cancel" onClick={e.capture.cancel}>
               {t("onboarding.demo.cancel")}
             </TextLink>

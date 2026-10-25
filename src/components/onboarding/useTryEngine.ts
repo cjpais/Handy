@@ -5,7 +5,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useShortcutCapture } from "@/hooks/useShortcutCapture";
 import type { OSType } from "@/lib/utils/keyboard";
 import { useOnboardingStore } from "./onboardingStore";
-import { isTooSlow } from "./data/models";
+import { isTooSlow } from "@/lib/models/catalog";
 
 type Mode = "hold" | "tap";
 type Phase = "idle" | "listening" | "typing";

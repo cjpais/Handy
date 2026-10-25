@@ -92,13 +92,7 @@
     "welcome": {
       "title": "Tala i stället för att skriva, i vilken app som helst",
       "subtitle": "Välj språken du kommer att diktera på",
-      "searchLabel": "Sök språk",
-      "searchPlaceholder": "Sök språk",
-      "addAnother": "Lägg till ett till",
-      "remove": "Ta bort {{language}}",
       "languagesLabel": "Språk",
-      "alreadyAdded_one": "{{languages}} är redan tillagt.",
-      "alreadyAdded_other": "{{languages}} är redan tillagda.",
       "noMatch": "Inget språk matchar ”{{query}}”. Handys modeller täcker cirka 100 språk, fler finns i inställningarna.",
       "appLanguage": "Appspråk",
       "menusIn": "Menyer på <b>{{language}}</b>",
@@ -135,13 +129,6 @@
       "title": "Välj en talmodell",
       "subtitle": "Talmodellen omvandlar ditt tal till text, direkt på den här datorn",
       "label": "Talmodell",
-      "allLabel": "Talmodeller",
-      "roles": {
-        "recommended": "Rekommenderad",
-        "faster": "Snabbare",
-        "accurate": "Mer noggrann",
-        "fromAll": "Bland alla modeller"
-      },
       "lines": {
         "recommended": "Bästa balansen mellan hastighet och noggrannhet för dina språk",
         "faster": "Snabbare, med några fler fel",
@@ -152,79 +139,13 @@
         "faster": "Snabbare, några fler fel",
         "accurate": "Minst fel, men långsammare"
       },
-      "accuracy": "Noggrannhet",
-      "speed": "Hastighet",
-      "size": "Storlek",
       "model": "Modell",
-      "speedWords": {
-        "0": "Mycket långsam, orden dyker upp efter lång väntan",
-        "1": "Långsam, orden dyker upp efter en väntan",
-        "2": "Måttlig, orden dyker upp efter en kort väntan",
-        "3": "Snabb, orden dyker upp nästan direkt",
-        "4": "Mycket snabb, orden dyker upp direkt"
-      },
-      "speedWordsPreview": {
-        "0": "Mycket långsam, med liveförhandsvisning medan du talar",
-        "1": "Långsam, med liveförhandsvisning medan du talar",
-        "2": "Måttlig, med liveförhandsvisning medan du talar",
-        "3": "Snabb, med liveförhandsvisning medan du talar",
-        "4": "Mycket snabb, med liveförhandsvisning medan du talar"
-      },
-      "speedUntested": "Hastigheten har inte mätts ännu",
-      "rubric": {
-        "gradeTitle": "Noggrannhet för {{language}}: {{grade}}",
-        "accuracyTitle": "Noggrannhet för {{language}}",
-        "overallTitle": "Noggrannhet för dina språk: {{grade}}",
-        "overall": "Noggrannhet för dina språk",
-        "meaning": {
-          "A": "Mycket få fel: dina ord blir oftast som du sa dem",
-          "B": "Vissa fel: räkna med att rätta ett ord här och där",
-          "C": "Ofta fel: vissa detaljer kan gå förlorade",
-          "D": "Många fel: räkna med att kontrollera och rätta det som skrivs",
-          "F": "Ofta oklart: mycket av det du säger kan bli fel"
-        },
-        "unsupported": "Den här modellen förstår inte {{language}}, så den kan inte skriva det",
-        "unrated": "Den här modellen förstår {{language}}, men vi har inte mätt hur bra ännu",
-        "under": "under {{max}} %",
-        "between": "{{min}} till {{max}} %",
-        "over": "{{min}} % eller mer",
-        "speedTitle": "Hastighet: {{speed}}",
-        "speedName": {
-          "0": "Mycket långsam",
-          "1": "Långsam",
-          "2": "Måttlig",
-          "3": "Snabb",
-          "4": "Mycket snabb"
-        },
-        "speedMeaning": {
-          "0": "Dina ord dyker upp efter lång väntan",
-          "1": "Dina ord dyker upp efter en väntan",
-          "2": "Dina ord dyker upp efter en kort väntan",
-          "3": "Dina ord dyker upp nästan direkt",
-          "4": "Dina ord dyker upp direkt"
-        },
-        "speedPreview": "{{meaning}}, med liveförhandsvisning medan du talar",
-        "untimed": "Vi har inte mätt hur snabb den är ännu",
-        "underSeconds": "under {{max}} s",
-        "betweenSeconds": "{{min}} till {{max}} s",
-        "overSeconds": "{{min}} s eller mer"
-      },
-      "tags": {
-        "preview": "Liveförhandsvisning",
-        "previewTitle": "Visar dina ord i Live-överlägget medan du talar och skriver dem när du slutar",
-        "translate": "Översätter",
-        "translateTitle": "Kan göra om det du säger till engelsk text. Slå på det i inställningarna"
-      },
       "showAll": "Visa alla {{count}} modeller",
       "download": "Ladda ner {{size}}",
       "downloadInstead": "Ladda ner {{size}} i stället",
       "pauses": "{{name}} pausas vid {{percent}} %",
       "resumeLater": "Välj den igen för att fortsätta där den slutade",
-      "hint": "Laddas ner medan du slutför installationen",
-      "search": "Sök modeller",
-      "missingLanguage": "Saknar ett språk",
-      "noMatch": "Inget matchar ”{{query}}”. Prova ett språk eller en familj som Whisper eller Parakeet",
-      "noFilterMatch": "Inga modeller matchar de här filtren"
+      "hint": "Laddas ner medan du slutför installationen"
     },
     "demo": {
       "title": "Tala i vilken app som helst, med en enda genväg",
@@ -295,6 +216,92 @@
       "done": "Fungerar det inte i andra appar? <guide>Installationsguide för Linux</guide>"
     }
   },
+  "modelTable": {
+    "tags": {
+      "preview": "Liveförhandsvisning",
+      "previewTitle": "Visar dina ord i Live-överlägget medan du talar och skriver dem när du slutar",
+      "translate": "Översätter",
+      "translateTitle": "Kan göra om det du säger till engelsk text. Slå på det i inställningarna"
+    },
+    "rubric": {
+      "gradeTitle": "Noggrannhet för {{language}}: {{grade}}",
+      "accuracyTitle": "Noggrannhet för {{language}}",
+      "overallTitle": "Noggrannhet för dina språk: {{grade}}",
+      "overall": "Noggrannhet för dina språk",
+      "meaning": {
+        "A": "Mycket få fel: dina ord blir oftast som du sa dem",
+        "B": "Vissa fel: räkna med att rätta ett ord här och där",
+        "C": "Ofta fel: vissa detaljer kan gå förlorade",
+        "D": "Många fel: räkna med att kontrollera och rätta det som skrivs",
+        "F": "Ofta oklart: mycket av det du säger kan bli fel"
+      },
+      "unsupported": "Den här modellen förstår inte {{language}}, så den kan inte skriva det",
+      "unrated": "Den här modellen förstår {{language}}, men vi har inte mätt hur bra ännu",
+      "under": "under {{max}} %",
+      "between": "{{min}} till {{max}} %",
+      "over": "{{min}} % eller mer",
+      "speedTitle": "Hastighet: {{speed}}",
+      "speedName": {
+        "0": "Mycket långsam",
+        "1": "Långsam",
+        "2": "Måttlig",
+        "3": "Snabb",
+        "4": "Mycket snabb"
+      },
+      "speedMeaning": {
+        "0": "Dina ord dyker upp efter lång väntan",
+        "1": "Dina ord dyker upp efter en väntan",
+        "2": "Dina ord dyker upp efter en kort väntan",
+        "3": "Dina ord dyker upp nästan direkt",
+        "4": "Dina ord dyker upp direkt"
+      },
+      "speedPreview": "{{meaning}}, med liveförhandsvisning medan du talar",
+      "untimed": "Vi har inte mätt hur snabb den är ännu",
+      "underSeconds": "under {{max}} s",
+      "betweenSeconds": "{{min}} till {{max}} s",
+      "overSeconds": "{{min}} s eller mer"
+    },
+    "roles": {
+      "recommended": "Rekommenderad",
+      "faster": "Snabbare",
+      "accurate": "Mer noggrann",
+      "fromAll": "Bland alla modeller"
+    },
+    "speed": "Hastighet",
+    "size": "Storlek",
+    "accuracy": "Noggrannhet",
+    "search": "Sök modeller",
+    "allLabel": "Talmodeller",
+    "noMatch": "Inget matchar ”{{query}}”. Prova ett språk eller en familj som Whisper eller Parakeet",
+    "noFilterMatch": "Inga modeller matchar de här filtren",
+    "speedUntested": "Hastigheten har inte mätts ännu",
+    "speedWords": {
+      "0": "Mycket långsam, orden dyker upp efter lång väntan",
+      "1": "Långsam, orden dyker upp efter en väntan",
+      "2": "Måttlig, orden dyker upp efter en kort väntan",
+      "3": "Snabb, orden dyker upp nästan direkt",
+      "4": "Mycket snabb, orden dyker upp direkt"
+    },
+    "speedWordsPreview": {
+      "0": "Mycket långsam, med liveförhandsvisning medan du talar",
+      "1": "Långsam, med liveförhandsvisning medan du talar",
+      "2": "Måttlig, med liveförhandsvisning medan du talar",
+      "3": "Snabb, med liveförhandsvisning medan du talar",
+      "4": "Mycket snabb, med liveförhandsvisning medan du talar"
+    },
+    "missingLanguage": "Saknar ett språk",
+    "allLanguages": "Alla",
+    "downloadingLine": "Laddar ner {{percent}} % av {{total}}",
+    "customLine": "Tillagd från din modellmapp. Inte betygsatt.",
+    "legacyLine": "En äldre nedladdning. Inte betygsatt."
+  },
+  "languagePicker": {
+    "search": "Sök språk",
+    "addAnother": "Lägg till ett till",
+    "remove": "Ta bort {{language}}",
+    "alreadyAdded_one": "{{languages}} är redan tillagt.",
+    "alreadyAdded_other": "{{languages}} är redan tillagda."
+  },
   "modelSelector": {
     "custom": "Anpassad",
     "streaming": "Streaming",
@@ -353,12 +360,6 @@
       "preferredLanguages": {
         "title": "Föredragna språk",
         "description": "Språken du talar. Handy använder dem för att rekommendera modeller.",
-        "searchLabel": "Sök språk",
-        "placeholder": "Sök språk",
-        "addAnother": "Lägg till ett till",
-        "remove": "Ta bort {{language}}",
-        "alreadyAdded_one": "{{languages}} är redan tillagt.",
-        "alreadyAdded_other": "{{languages}} är redan tillagda.",
         "noMatch": "Inget språk matchar ”{{query}}”",
         "weak": "Ingen modell känner igen {{languages}} bra ännu."
       },
@@ -383,10 +384,8 @@
       "sections": {
         "yours": "På den här datorn",
         "fits": "För dina språk",
-        "missing": "Saknar ett språk",
         "untested": "Ej testade"
       },
-      "allLanguages": "Alla",
       "untestedNote": "Inte testade med Handy. De kan vara långsammare eller göra fler fel.",
       "untestedHidden_one": "{{count}} modell till är inte anpassad för diktering. Sök för att hitta den.",
       "untestedHidden_other": "{{count}} modeller till är inte anpassade för diktering. Sök för att hitta en.",
@@ -394,7 +393,6 @@
       "showMore": "Visa {{count}} till",
       "showFewer": "Visa färre",
       "download": "Ladda ner och använd",
-      "downloadingLine": "Laddar ner {{percent}} % av {{total}}",
       "downloadingThenUse": "{{percent}} % av {{total}}, sedan byts modell",
       "loading": "Laddar…",
       "deleteAsk": "Ta bort {{name}}? Det frigör {{size}}.",
@@ -402,13 +400,9 @@
       "cancel": "Avbryt",
       "deleteModel": "Ta bort {{name}}",
       "cancelDownload": "Stoppa nedladdningen av {{name}}",
-      "customLine": "Tillagd från din modellmapp. Inte betygsatt.",
-      "legacyLine": "En äldre nedladdning. Inte betygsatt.",
       "legend": {
         "open": "Så betygsätts modellerna",
-        "accuracy": "Noggrannhet",
         "accuracyNote": "För vart och ett av dina språk: hur många ord en modell fick fel i våra testinspelningar.",
-        "speed": "Hastighet",
         "speedNote": {
           "accelerated": "Hur lång tid 30 sekunders tal tar att skriva ut på grafikchippet i vår testdator. Den här datorn kan skilja sig.",
           "cpu": "Hur lång tid 30 sekunders tal tar att skriva ut på processorn i vår testdator. Den här datorn kan skilja sig."
@@ -897,10 +891,6 @@
     "copy": "Kopiera",
     "clear": "Rensa",
     "noOptionsFound": "Inga alternativ hittades"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy behöver behörighet för hjälpmedel för att kunna skriva transkriberad text.",
-    "openSettings": "Öppna systeminställningar"
   },
   "errors": {
     "loadDirectory": "Fel vid laddning av mapp: {{error}}",

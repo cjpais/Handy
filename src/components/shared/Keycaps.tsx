@@ -1,5 +1,11 @@
 import React from "react";
-import { keycapLabel, keycapLabels, type OSType } from "@/lib/utils/keyboard";
+import {
+  bindingKeys,
+  isOnlyModifiers,
+  keycapLabel,
+  keycapLabels,
+  type OSType,
+} from "@/lib/utils/keyboard";
 
 interface KeycapsProps {
   /** The binding to draw, e.g. "option+space". */
@@ -79,3 +85,47 @@ export const KeySlot: React.FC<
     {children}
   </span>
 );
+
+/** The instruction while capturing: modifiers alone still need a key. */
+export const captureHintKey = (partial: string) =>
+  isOnlyModifiers(bindingKeys(partial))
+    ? "onboarding.demo.addKey"
+    : "onboarding.demo.pressKeys";
+
+/** While capturing: the keys pressed so far, dashed, or an empty slot before any. */
+export const CapturedKeys: React.FC<{
+  partial: string;
+  osType: OSType;
+  size?: "sm" | "line";
+  /** On the keys and the slot alike. */
+  className?: string;
+  keysClassName?: string;
+  slotClassName?: string;
+  /** Words in the empty slot, announced. */
+  slotLabel?: string;
+}> = ({
+  partial,
+  osType,
+  size = "sm",
+  className = "",
+  keysClassName = "",
+  slotClassName = "",
+  slotLabel,
+}) =>
+  bindingKeys(partial).length ? (
+    <Keycaps
+      binding={partial}
+      osType={osType}
+      size={size}
+      partial
+      className={`${className} ${keysClassName}`}
+    />
+  ) : (
+    <KeySlot
+      size={size}
+      role={slotLabel ? "status" : undefined}
+      className={`${className} ${slotClassName}`}
+    >
+      {slotLabel}
+    </KeySlot>
+  );

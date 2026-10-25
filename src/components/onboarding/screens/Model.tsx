@@ -1,6 +1,5 @@
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Languages, Radio as LiveIcon } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { GradeChip } from "../../shared/GradeChip";
@@ -15,21 +14,29 @@ import {
   Values,
   useSpeedWords,
 } from "../../shared/modelTable/columns";
-import { makeGrading } from "../../shared/modelTable/grading";
 import type { TableModel } from "../../shared/modelTable/context";
+import { toTableModel } from "../../shared/modelTable/tableModel";
+import {
+  CAPABILITIES,
+  CAPABILITY_KEYS,
+  type Capability,
+} from "../../shared/modelTable/capabilities";
 import {
   ModelTable,
   NO_FILTERS,
   useModelFilters,
   type TableSection,
 } from "../../shared/modelTable/ModelTable";
-import { ModelTableRow } from "../../shared/modelTable/ModelTableRow";
+import {
+  ModelTableRow,
+  ROLE_KEYS as PICK_ROLE_KEYS,
+} from "../../shared/modelTable/ModelTableRow";
 import { formatModelSize } from "@/lib/utils/format";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useDownloadWords } from "../DownloadStatus";
 import { languageName } from "@/lib/constants/languages";
-import type { CatalogModel, ModelRow, PickRole } from "../data/models";
+import type { CatalogModel, ModelRow, PickRole } from "@/lib/models/catalog";
 import type { useOnboardingModels } from "../useOnboardingModels";
 import { moveModels } from "./modelTransitions";
 import "./modelTransitions.css";
@@ -38,9 +45,7 @@ type Models = ReturnType<typeof useOnboardingModels>;
 
 /** A card's words for each pick: the Full card's line and the short ones. */
 const ROLE_KEYS: Record<PickRole | "extra", string> = {
-  pick: "recommended",
-  faster: "faster",
-  accurate: "accurate",
+  ...PICK_ROLE_KEYS,
   extra: "fromAll",
 };
 
@@ -79,18 +84,18 @@ export const Model: React.FC<ModelProps> = ({
   const { t, i18n } = useTranslation();
   const words = useDownloadWords();
   const speedWords = useSpeedWords();
-  const { languages, modelId, extraModelId, downloadId, set } =
-    useOnboardingStore();
+  const { modelId, extraModelId, downloadId, set } = useOnboardingStore();
   const [showAll, setShowAll] = useState(false);
   const { filters, setFilters, matches } = useModelFilters();
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const langs = languages.length ? languages : ["en"];
+  const { picks, groups, offered, grading } = models;
+  const langs = grading.langs;
   const dense = langs.length > 5;
   // Shown regardless of settings: they're capabilities, as on the Models page.
-  const previews = (m: CatalogModel) => m.capabilities.streaming;
-  const translates = (m: CatalogModel) => m.capabilities.translate;
-  const { picks, groups, offered } = models;
+  const has = (m: CatalogModel, c: Capability) =>
+    m.capabilities[CAPABILITIES[c].flag];
+  const previews = (m: CatalogModel) => has(m, "preview");
   const pick = picks.find((p) => p.role === "pick") ?? picks[0];
   const selectedId = modelId ?? downloadId ?? pick?.model.id ?? null;
   const isPick = (id: string | null) =>
@@ -116,41 +121,21 @@ export const Model: React.FC<ModelProps> = ({
   const nameOf = (code: string) => languageName(code, ui);
   const sizeOf = (m: CatalogModel) =>
     formatModelSize(models.infoFor(m)?.size_mb);
-  // Keyed by the codes: langs is a new array every render.
-  const langsKey = langs.join();
-  const grading = useMemo(
-    () => makeGrading(langsKey.split(","), models.tier, picks),
-    [langsKey, models.tier, picks],
-  );
-  /** A model as the table shows it. */
-  const entryFor = (row: ModelRow): TableModel => ({
-    id: row.model.id,
-    name: row.model.name,
-    description: row.model.description,
-    languages: [...row.model.languages],
-    streaming: previews(row.model),
-    translate: translates(row.model),
-    sizeMb: Number(models.infoFor(row.model)?.size_mb ?? 0),
-    quant: row.model.quant ?? null,
-    kind: "curated",
-    model: row.model,
-  });
+  /** The offered models as the table shows them, by catalog id like the picks. */
+  const entriesFor = (rows: ModelRow[]): TableModel[] =>
+    rows.flatMap((row) => {
+      const info = models.infoFor(row.model);
+      return info ? [{ ...toTableModel(info, t), id: row.model.id }] : [];
+    });
 
-  /** Capabilities beyond transcription; icons shared by rows, tags, filters. */
-  const CAPABILITIES = {
-    preview: { Icon: LiveIcon, has: previews },
-    translate: { Icon: Languages, has: translates },
-  } as const;
-  type Capability = keyof typeof CAPABILITIES;
-  const capabilityName = (c: Capability) => t(`onboarding.model.tags.${c}`);
-  const capabilityLine = (c: Capability) =>
-    t(`onboarding.model.tags.${c}Title`);
+  const capabilityName = (c: Capability) => t(`modelTable.tags.${c}`);
+  const capabilityLine = (c: Capability) => t(`modelTable.tags.${c}Title`);
 
   /** A capability's tag on a card: its icon and word. */
   const capabilityTag = (m: CatalogModel, c: Capability) => {
-    const { Icon, has } = CAPABILITIES[c];
+    const { Icon } = CAPABILITIES[c];
     return (
-      has(m) && (
+      has(m, c) && (
         <Tooltip text={capabilityLine(c)}>
           <Tag className="inline-flex items-center gap-[4px]">
             <Icon
@@ -167,7 +152,7 @@ export const Model: React.FC<ModelProps> = ({
 
   /** What a model can do besides transcribe, beside its role. */
   const capabilityTags = (m: CatalogModel) =>
-    (Object.keys(CAPABILITIES) as Capability[]).map((c) => (
+    CAPABILITY_KEYS.map((c) => (
       <Fragment key={c}>{capabilityTag(m, c)}</Fragment>
     ));
 
@@ -299,7 +284,7 @@ export const Model: React.FC<ModelProps> = ({
         <span className="flex min-w-0 items-center gap-[10px] whitespace-nowrap">
           {mark(id, true)}
           <b {...vt(id, "r")} className={`${roleBase} text-[16px] text-text`}>
-            {t(`onboarding.model.roles.${ROLE_KEYS[role]}`)}
+            {t(`modelTable.roles.${ROLE_KEYS[role]}`)}
           </b>
           {capabilityTags(row.model)}
           <span {...vt(id, "s")} className={sizeClass}>
@@ -322,7 +307,7 @@ export const Model: React.FC<ModelProps> = ({
             </span>
           )}
           <span className="mt-[10px] grid grid-cols-[84px_1fr] items-center gap-x-[12px] gap-y-[8px] self-stretch">
-            <span className="text-ink-2">{t("onboarding.model.accuracy")}</span>
+            <span className="text-ink-2">{t("modelTable.accuracy")}</span>
             <span
               className={`grid gap-x-[18px] gap-y-[5px] ${dense ? "grid-cols-[repeat(4,max-content)]" : "grid-cols-[repeat(3,max-content)]"}`}
             >
@@ -345,7 +330,7 @@ export const Model: React.FC<ModelProps> = ({
                 );
               })}
             </span>
-            <span className="text-ink-2">{t("onboarding.model.speed")}</span>
+            <span className="text-ink-2">{t("modelTable.speed")}</span>
             {/* Over the bars and words, not the whole column. */}
             <SpeedTip
               grading={grading}
@@ -376,7 +361,7 @@ export const Model: React.FC<ModelProps> = ({
           grading={grading}
           model={row.model}
           streaming={previews(row.model)}
-          sizeMb={entryFor(row).sizeMb}
+          sizeMb={Number(models.infoFor(row.model)?.size_mb ?? 0)}
           vt={(part) => vt(id, part)}
         />
       </span>
@@ -403,7 +388,7 @@ export const Model: React.FC<ModelProps> = ({
         <span className="flex min-w-0 flex-col items-start">
           <span className="flex min-w-0 max-w-full items-baseline gap-[8px] whitespace-nowrap">
             <b {...vt(id, "r")} className={`${roleBase} text-label text-text`}>
-              {t(`onboarding.model.roles.${ROLE_KEYS[role]}`)}
+              {t(`modelTable.roles.${ROLE_KEYS[role]}`)}
             </b>
             {capabilityTags(row.model)}
           </span>
@@ -448,7 +433,7 @@ export const Model: React.FC<ModelProps> = ({
       >
         {mark(id, false)}
         <b {...vt(id, "r")} className={`${roleBase} text-label text-text`}>
-          {t(`onboarding.model.roles.${ROLE_KEYS[role]}`)}
+          {t(`modelTable.roles.${ROLE_KEYS[role]}`)}
         </b>
         {capabilityTags(row.model)}
         <span
@@ -579,7 +564,7 @@ export const Model: React.FC<ModelProps> = ({
 
   /* ---------------- every model ---------------- */
 
-  const kept = (rows: ModelRow[]) => rows.map(entryFor).filter(matches);
+  const kept = (rows: ModelRow[]) => entriesFor(rows).filter(matches);
   // Picks, then the rest by value; models missing a language last.
   const sections: TableSection[] = [
     {
@@ -589,7 +574,7 @@ export const Model: React.FC<ModelProps> = ({
     },
     {
       key: "partial",
-      label: t("onboarding.model.missingLanguage"),
+      label: t("modelTable.missingLanguage"),
       rows: kept(groups.partial),
     },
   ].filter((s) => s.rows.length);

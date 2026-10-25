@@ -97,7 +97,7 @@ export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
         },
         {
           key: "partial",
-          label: t("settings.models.sections.missing"),
+          label: t("modelTable.missingLanguage"),
           rows: keep(lists.partial),
         },
         {
@@ -130,7 +130,7 @@ export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
         },
         {
           key: "partial",
-          label: t("settings.models.sections.missing"),
+          label: t("modelTable.missingLanguage"),
           rows: lists.partial,
         },
       ];
