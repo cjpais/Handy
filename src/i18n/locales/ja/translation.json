@@ -57,10 +57,242 @@
       "selectModel": "モデルの選択に失敗しました"
     },
     "permissions": {
+      "microphone": {
+        "name": "マイク",
+        "why": "Handy があなたの声を聞くために必要です。音声はこのコンピューター上でテキストに変換され、アップロードされることはありません。"
+      },
+      "accessibility": {
+        "name": "アクセシビリティ",
+        "why": "どのアプリでもショートカットが使え、Handy がカーソル位置にテキストを入力できるようにします。"
+      },
       "errors": {
         "checkFailed": "権限の確認に失敗しました。もう一度お試しください。",
         "requestFailed": "権限のリクエストに失敗しました。もう一度お試しください。"
+      },
+      "titleMac": "許可は2つだけで準備完了です",
+      "titleWindows": "許可は1つだけで準備完了です",
+      "subtitleMac": "macOS では、アプリが音声を聞いたり入力したりする前に許可が求められます。",
+      "subtitleWindows": "Windows では、アプリが音声を聞く前に許可が求められます。",
+      "allow": "許可",
+      "openSettings": "設定を開く",
+      "allowed": "許可済み",
+      "waiting": "待機中",
+      "turnOnMac": "システム設定で Handy をオンにして、ここに戻ってください。",
+      "turnOnWindows": "Windows の設定でマイクへのアクセスをオンにして、ここに戻ってください。",
+      "hintBoth": "続けるには両方を許可してください",
+      "hintMicrophone": "続けるにはマイクを許可してください",
+      "welcomeBack": "おかえりなさい。前回の続きから始めます。",
+      "relaunch": "このあとショートカットが反応しない場合は、<relaunch>Handy を再起動</relaunch>してください。この画面にすぐ戻れます。"
+    },
+    "shell": {
+      "back": "戻る",
+      "continue": "続ける",
+      "progress": "ステップ {{step}} / {{count}}"
+    },
+    "welcome": {
+      "title": "どのアプリでも、入力のかわりに話すだけ",
+      "subtitle": "音声入力で使う言語を選んでください",
+      "searchLabel": "言語を検索",
+      "searchPlaceholder": "言語を検索",
+      "addAnother": "ほかを追加",
+      "remove": "{{language}} を削除",
+      "languagesLabel": "言語",
+      "alreadyAdded_one": "{{languages}} はすでに追加されています。",
+      "alreadyAdded_other": "{{languages}} はすでに追加されています。",
+      "noMatch": "「{{query}}」に一致する言語はありません。Handy のモデルは約100言語に対応しており、ほかの言語は設定から選べます。",
+      "appLanguage": "アプリの言語",
+      "menusIn": "メニューは<b>{{language}}</b>で表示",
+      "chinese": {
+        "question": "{{languages}}を話しますね。Handy にはどの文字で書かせますか?",
+        "label": "中国語の文字",
+        "zh-Hans": "簡体字",
+        "zh-Hant": "台湾",
+        "zh-HK": "香港"
+      },
+      "hint": {
+        "pickOne": "言語を1つ以上選んでください",
+        "weak_one": "{{languages}}: まだこの言語をうまく聞き取れるモデルはありません",
+        "weak_other": "{{languages}}: まだこれらの言語をうまく聞き取れるモデルはありません"
       }
+    },
+    "download": {
+      "checking": "ダウンロードを確認中…",
+      "ready": "{{name}} の準備ができました",
+      "failed": "ダウンロードが停止しました",
+      "downloading": "{{name}} をダウンロード中",
+      "progress": "{{done}} / {{total}}",
+      "progressLeft": "{{done}} / {{total}}、残り {{time}}",
+      "checkingName": "{{name}} を確認中",
+      "checkingDetail": "ダウンロードが完了しているか確認しています",
+      "stopped": "{{name}} のダウンロードが停止しました",
+      "retryDetail": "再試行すると、止まったところから再開します",
+      "retryDownload": "ダウンロードを再試行",
+      "cardProgress": "ダウンロード中 {{percent}}%、{{done}} / {{total}}",
+      "timeLeft": "残り {{time}}",
+      "speedLeft": "{{speed}}、残り {{time}}"
+    },
+    "model": {
+      "title": "音声モデルを選ぶ",
+      "subtitle": "音声モデルが、このコンピューター上であなたの声をテキストに変換します",
+      "label": "音声モデル",
+      "allLabel": "音声モデル一覧",
+      "roles": {
+        "recommended": "おすすめ",
+        "faster": "より高速",
+        "accurate": "より高精度",
+        "fromAll": "すべてのモデルから"
+      },
+      "lines": {
+        "recommended": "選んだ言語で、速度と精度のバランスが最も良いモデル",
+        "faster": "より速いが、間違いはやや増える",
+        "accurate": "間違いが最も少ないが、遅い"
+      },
+      "shorts": {
+        "recommended": "バランス重視",
+        "faster": "速い、間違いはやや増える",
+        "accurate": "間違いが最少、ただし遅い"
+      },
+      "accuracy": "精度",
+      "speed": "速度",
+      "size": "サイズ",
+      "model": "モデル",
+      "speedWords": {
+        "0": "とても遅い。表示まで長く待つ",
+        "1": "遅い。表示まで少し待つ",
+        "2": "普通。表示まで短い待ち時間がある",
+        "3": "速い。ほぼすぐに表示される",
+        "4": "とても速い。すぐに表示される"
+      },
+      "speedWordsPreview": {
+        "0": "とても遅い。話している間はライブプレビューを表示",
+        "1": "遅い。話している間はライブプレビューを表示",
+        "2": "普通。話している間はライブプレビューを表示",
+        "3": "速い。話している間はライブプレビューを表示",
+        "4": "とても速い。話している間はライブプレビューを表示"
+      },
+      "speedUntested": "速度は未測定です",
+      "rubric": {
+        "gradeTitle": "{{language}}の精度: {{grade}}",
+        "accuracyTitle": "{{language}}の精度",
+        "overallTitle": "選んだ言語での精度: {{grade}}",
+        "overall": "選んだ言語での精度",
+        "meaning": {
+          "A": "間違いはごくわずか。話した言葉がほぼそのまま出力されます",
+          "B": "多少の間違いあり。ところどころ修正が必要です",
+          "C": "間違いが多め。細かい部分が失われることがあります",
+          "D": "間違いが多い。入力された内容の確認と修正が必要です",
+          "F": "聞き取れないことが多く、話した内容の多くが間違って出力されることがあります"
+        },
+        "unsupported": "このモデルは{{language}}に対応していないため、入力できません",
+        "unrated": "このモデルは{{language}}に対応していますが、精度はまだ測定されていません",
+        "under": "{{max}}% 未満",
+        "between": "{{min}}〜{{max}}%",
+        "over": "{{min}}% 以上",
+        "speedTitle": "速度: {{speed}}",
+        "speedName": {
+          "0": "とても遅い",
+          "1": "遅い",
+          "2": "普通",
+          "3": "速い",
+          "4": "とても速い"
+        },
+        "speedMeaning": {
+          "0": "言葉が表示されるまで長く待ちます",
+          "1": "言葉が表示されるまで少し待ちます",
+          "2": "言葉が表示されるまで短い待ち時間があります",
+          "3": "言葉がほぼすぐに表示されます",
+          "4": "言葉がすぐに表示されます"
+        },
+        "speedPreview": "{{meaning}}。話している間はライブプレビューを表示",
+        "untimed": "速度はまだ測定されていません",
+        "underSeconds": "{{max}} 秒未満",
+        "betweenSeconds": "{{min}}〜{{max}} 秒",
+        "overSeconds": "{{min}} 秒以上"
+      },
+      "tags": {
+        "preview": "ライブプレビュー",
+        "previewTitle": "話している間、言葉をライブオーバーレイに表示し、話し終えると入力します",
+        "translate": "翻訳対応",
+        "translateTitle": "話した内容を英語のテキストに変換できます。設定でオンにします"
+      },
+      "showAll": "全 {{count}} 個のモデルを表示",
+      "download": "{{size}} をダウンロード",
+      "downloadInstead": "代わりに {{size}} をダウンロード",
+      "pauses": "{{name}} は {{percent}}% で一時停止中",
+      "resumeLater": "もう一度選ぶと、続きからダウンロードします",
+      "hint": "セットアップを進めている間にダウンロードします",
+      "search": "モデルを検索",
+      "missingLanguage": "言語が見つからない場合",
+      "noMatch": "「{{query}}」に一致するものはありません。言語名や、Whisper・Parakeet などのファミリー名で試してください",
+      "noFilterMatch": "この条件に一致するモデルはありません"
+    },
+    "demo": {
+      "title": "ショートカット1つで、どのアプリでも話して入力",
+      "hold": "<0>入力したい場所をクリック。</0> <1>ショートカットを押したまま話す。</1> <2>離すと、言葉が表示されます。</2>",
+      "tap": "<0>入力したい場所をクリック。</0> <1>ショートカットをタップして話す。</1> <2>もう一度タップすると、言葉が表示されます。</2>",
+      "apps": {
+        "messages": "メッセージ",
+        "notes": "メモ"
+      },
+      "chat": "今夜まだ来られる?",
+      "noteTitle": "週末の予定",
+      "screenLabel": "ノートパソコンの画面: アプリをクリックしてショートカットを押して話すと、クリックした場所に言葉が表示されます。",
+      "change": "変更",
+      "yourShortcut": "あなたのショートカット:",
+      "pressKeys": "新しいキーを押してください",
+      "addKey": "続けてキーを追加してください",
+      "cancel": "キャンセル",
+      "tryIt": "実際に試してみる"
+    },
+    "try": {
+      "title": "さっそく試してみよう!",
+      "subtitle": "画面の隅から Handy が案内します",
+      "noteLabel": "メモ",
+      "placeholder": "新規メモ",
+      "hold": "<keys/> を押したまま話してください。",
+      "tapNext": "次は <keys/> を1回タップして、話してください。",
+      "letGo": "話し終えたら <keys/> を離してください。",
+      "tapAgain": "話し終えたら、もう一度 <keys/> をタップしてください。",
+      "watch": "メモを見てみましょう。",
+      "changeKeys": "ショートカットを変更、{{keys}}",
+      "doneHold": "ハイタッチ! 押したまま話す方法はバッチリ。",
+      "doneHoldNext": "次は、手を使わない方法です。",
+      "doneTap": "イェイ! タップして話す方法もバッチリ。",
+      "doneTapNext": "今度は、押したまま話してみましょう。",
+      "giveFive": "できた! ハイタッチ!",
+      "highFive": "ハイタッチ",
+      "slowLine": "このコンピューターでは {{name}} に {{wait}} かかりました。<faster>より高速なモデルを試す</faster>",
+      "nothingTyped": "あれ、何も入力されませんでした。",
+      "nothingTypedSub": "まずメモをクリックしてから、もう一度試してください。",
+      "silent": "何も聞こえませんでした。",
+      "silentSub": "このマイクから音が入ってきません。別のマイクを試してください:",
+      "noWords": "言葉を聞き取れませんでした。",
+      "noWordsSub": "もう一度、文章でしっかり話してみてください。",
+      "finish": "完了",
+      "skip": "スキップ",
+      "seconds": "{{value}}秒"
+    },
+    "done": {
+      "title": "準備完了です",
+      "subMac": "Handy はメニューバーにいます。どのアプリでも <keys/> を押したまま、またはタップして話してください。",
+      "subTray": "Handy はシステムトレイにいます。どのアプリでも <keys/> を押したまま、またはタップして話してください。",
+      "hint": "これらは後から設定で変更できます",
+      "highFiveLabel": "ハイタッチ",
+      "atLogin": "ログイン時に Handy を起動する",
+      "finish": "完了",
+      "panel": {
+        "name": "Handy",
+        "ready": "準備完了",
+        "languages": "言語",
+        "model": "音声モデル",
+        "shortcut": "ショートカット",
+        "changeLanguages": "言語を変更、{{languages}}",
+        "changeModel": "音声モデルを変更、{{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "うまくいかない場合は <guide>Linux セットアップガイド</guide>",
+      "done": "ほかのアプリで動かない場合は <guide>Linux セットアップガイド</guide>"
     }
   },
   "modelSelector": {
@@ -83,20 +315,6 @@
   "settings": {
     "modelSettings": {
       "title": "{{model}} の設定"
-    },
-    "models": {
-      "title": "文字起こしのモデル",
-      "retiredNotice": {
-        "title": "古いモデルは Handy で使用できなくなりました",
-        "description": "コンピューター上で {{size}} を使用しています。",
-        "delete": "モデルを削除",
-        "deleted": "古いモデルを削除しました",
-        "deleteFailed": "一部の古いモデルを削除できませんでした。詳細はログを確認してください。"
-      },
-      "rescan": {
-        "label": "再スキャン",
-        "tooltip": "Handy を使わずに models フォルダーまたは Hugging Face キャッシュに追加されたモデルを再スキャンします"
-      }
     },
     "general": {
       "title": "一般",
@@ -132,6 +350,18 @@
         "noResults": "言語が見つかりません",
         "auto": "自動"
       },
+      "preferredLanguages": {
+        "title": "使用する言語",
+        "description": "あなたが話す言語です。Handy はこれをもとにモデルをおすすめします。",
+        "searchLabel": "言語を検索",
+        "placeholder": "言語を検索",
+        "addAnother": "ほかを追加",
+        "remove": "{{language}} を削除",
+        "alreadyAdded_one": "{{languages}} はすでに追加されています。",
+        "alreadyAdded_other": "{{languages}} はすでに追加されています。",
+        "noMatch": "「{{query}}」に一致する言語はありません",
+        "weak": "{{languages}}をうまく認識できるモデルはまだありません。"
+      },
       "shortcutActivation": {
         "title": "ショートカットの動作",
         "description": "文字起こしのショートカットで録音を開始・停止する方法を選択します。",
@@ -146,6 +376,59 @@
           "toggle": "ショートカットをタップすると録音を開始し、もう一度タップすると停止します"
         }
       }
+    },
+    "models": {
+      "title": "モデル",
+      "changeLanguages": "言語を変更",
+      "sections": {
+        "yours": "このコンピューター上",
+        "fits": "選んだ言語向け",
+        "missing": "言語が見つからない場合",
+        "untested": "未テスト"
+      },
+      "allLanguages": "すべて",
+      "untestedNote": "Handy ではテストされていません。速度が遅かったり、間違いが多かったりする可能性があります。",
+      "untestedHidden_one": "音声入力向けに調整されていないモデルがあと {{count}} 個あります。検索で見つけられます。",
+      "untestedHidden_other": "音声入力向けに調整されていないモデルがあと {{count}} 個あります。検索で見つけられます。",
+      "emptyYours": "モデルはまだありません。下から選ぶとダウンロードされ、Handy が使用します。",
+      "showMore": "さらに {{count}} 個を表示",
+      "showFewer": "表示を減らす",
+      "download": "ダウンロードして使用",
+      "downloadingLine": "{{total}} のうち {{percent}}% をダウンロード中",
+      "downloadingThenUse": "{{total}} のうち {{percent}}%、完了後に切り替え",
+      "loading": "読み込み中…",
+      "deleteAsk": "{{name}} を削除しますか? {{size}} の空き容量が増えます。",
+      "deleteAskActive": "{{name}} を削除しますか? ほかのモデルを選ぶまで、Handy は文字起こしできません。",
+      "cancel": "キャンセル",
+      "deleteModel": "{{name}} を削除",
+      "cancelDownload": "{{name}} のダウンロードを中止",
+      "customLine": "モデルフォルダから追加されました。評価対象外です。",
+      "legacyLine": "以前のダウンロードです。評価対象外です。",
+      "legend": {
+        "open": "モデルの評価方法",
+        "accuracy": "精度",
+        "accuracyNote": "選んだ言語ごとに、テスト用の録音でモデルが間違えた単語の割合です。",
+        "speed": "速度",
+        "speedNote": {
+          "accelerated": "テスト用ノートパソコンのグラフィックチップで、30秒の音声を文字にするまでにかかる時間です。お使いのコンピューターでは異なる場合があります。",
+          "cpu": "テスト用ノートパソコンのプロセッサで、30秒の音声を文字にするまでにかかる時間です。お使いのコンピューターでは異なる場合があります。"
+        },
+        "marks": "? はまだ測定されていません。— はその言語を聞き取れません。"
+      },
+      "retiredNotice": {
+        "title": "古いモデルは Handy で使用できなくなりました",
+        "description": "コンピューター上で {{size}} を使用しています。",
+        "delete": "モデルを削除",
+        "deleted": "古いモデルを削除しました",
+        "deleteFailed": "一部の古いモデルを削除できませんでした。詳細はログを確認してください。"
+      },
+      "rescan": {
+        "label": "再スキャン",
+        "tooltip": "Handy を使わずに models フォルダーまたは Hugging Face キャッシュに追加されたモデルを再スキャンします"
+      }
+    },
+    "languages": {
+      "title": "言語"
     },
     "sound": {
       "title": "サウンド",
@@ -319,10 +602,12 @@
       },
       "chineseScript": {
         "title": "中国語の表記",
-        "description": "北京語と広東語の文字起こしを簡体字または繁体字で出力します。他の言語は変更されません。",
+        "description": "標準中国語と広東語の文字起こしを、簡体字、または台湾・香港で使われる繁体字で出力します。ほかの言語は変更されません。",
         "options": {
           "asTranscribed": "文字起こしのまま",
-          "simplified": "簡体字"
+          "simplified": "簡体字",
+          "traditionalTw": "繁体字 (台湾)",
+          "traditionalHk": "繁体字 (香港)"
         }
       }
     },
@@ -431,6 +716,38 @@
         "description": "Handy の新しいバージョンを自動的にチェック",
         "lockedDescription": "システム設定により無効化されています (HANDY_DISABLE_UPDATER)"
       },
+      "whatsNewPreview": {
+        "title": "新機能をプレビュー",
+        "description": "最新の同梱リリースノートを既読にせずに開く",
+        "button": "プレビュー",
+        "noNotes": "同梱リリースノートが見つかりません",
+        "error": "リリースノートのプレビューに失敗しました"
+      },
+      "onboardingPreview": {
+        "title": "オンボーディングをプレビュー",
+        "description": "権限、モデル、完了状態を変更せずにオンボーディング画面をプレビューします",
+        "exitButton": "プレビューを終了",
+        "choose": "画面を選択",
+        "screens": {
+          "welcome": "ようこそ",
+          "permissions": "権限",
+          "model": "モデル",
+          "demo": "デモ",
+          "try": "お試し",
+          "done": "準備完了"
+        }
+      },
+      "onboardingRun": {
+        "title": "オンボーディングを実行",
+        "description": "オンボーディングを最初から実際に実行します。権限の要求、モデルのダウンロード、選択内容の保存が行われます",
+        "button": "開始"
+      },
+      "modelMigration": {
+        "title": "モデル移行",
+        "description": "旧形式モデルの更新画面を実際に開きます。置き換えモデルのダウンロード、モデルの切り替え、古いファイルの削除が行われます",
+        "button": "開く",
+        "noRetired": "ディスク上に旧形式のモデルはありません"
+      },
       "soundTheme": {
         "label": "サウンドテーマ",
         "description": "録音開始・停止フィードバックのサウンドテーマを選択"
@@ -518,18 +835,6 @@
         "verdictOk": "キーイベントは Handy に正常に届いています。",
         "verdictNoEvents": "イベントを検出できませんでした。テスト中にキーを押しましたか？",
         "failed": "診断に失敗しました: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "新機能をプレビュー",
-        "description": "最新の同梱リリースノートを既読にせずに開く",
-        "button": "プレビュー",
-        "noNotes": "同梱リリースノートが見つかりません",
-        "error": "リリースノートのプレビューに失敗しました"
-      },
-      "onboardingPreview": {
-        "title": "オンボーディングをプレビュー",
-        "description": "権限、モデル、完了状態を変更せずにオンボーディング画面をプレビューします",
-        "exitButton": "プレビューを終了"
       }
     },
     "about": {
@@ -537,6 +842,10 @@
       "version": {
         "title": "バージョン",
         "description": "Handy の現在のバージョン"
+      },
+      "whatsNewUpdates": {
+        "label": "新機能を表示",
+        "description": "Handy のアップデート後にリリースノートを表示"
       },
       "appDataDirectory": {
         "title": "アプリデータディレクトリ",
@@ -559,10 +868,6 @@
           "description": "オンデバイス機械学習推論のための高性能テンソルライブラリ",
           "details": "Handy のローカルの音声からテキストへの文字起こしは transcribe.cpp と ggml を基盤としています。Georgi Gerganov 氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
-      },
-      "whatsNewUpdates": {
-        "label": "新機能を表示",
-        "description": "Handy のアップデート後にリリースノートを表示"
       }
     }
   },
@@ -580,6 +885,9 @@
     "portableUpdateButton": "インストーラーをダウンロード",
     "portableUpdateBrowseMessage": "ポータブル版は自動的に更新できません。GitHub Releases からお使いのシステム向けの最新版をダウンロードし、同じフォルダーにインストールしてください。Data フォルダー(設定、モデル、録音)はそのまま残ります。",
     "portableUpdateBrowseButton": "GitHub Releases を開く"
+  },
+  "whatsNew": {
+    "title": "Handy v{{version}} の新機能"
   },
   "common": {
     "loading": "読み込み中…",
@@ -629,9 +937,6 @@
     "transcribing": "文字起こし中…",
     "processing": "処理中…",
     "loadingModel": "モデルを読み込み中…"
-  },
-  "whatsNew": {
-    "title": "Handy v{{version}} の新機能"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} が1個のショートカットをブロックしている可能性があります",

@@ -57,10 +57,242 @@
       "selectModel": "Gagal memilih model"
     },
     "permissions": {
+      "microphone": {
+        "name": "Mikrofon",
+        "why": "Agar Handy dapat mendengar Anda. Audio diubah menjadi teks di komputer ini dan tidak pernah diunggah."
+      },
+      "accessibility": {
+        "name": "Aksesibilitas",
+        "why": "Agar pintasan Anda berfungsi di semua aplikasi, dan Handy dapat mengetik teks di tempat kursor Anda berada."
+      },
       "errors": {
         "checkFailed": "Gagal memeriksa izin. Silakan coba lagi.",
         "requestFailed": "Gagal meminta izin. Silakan coba lagi."
+      },
+      "titleMac": "Dua izin, lalu selesai",
+      "titleWindows": "Satu izin, lalu selesai",
+      "subtitleMac": "macOS meminta persetujuan sebelum aplikasi apa pun dapat mendengar atau mengetik.",
+      "subtitleWindows": "Windows meminta persetujuan sebelum aplikasi apa pun dapat mendengar.",
+      "allow": "Izinkan",
+      "openSettings": "Buka pengaturan",
+      "allowed": "Diizinkan",
+      "waiting": "Menunggu",
+      "turnOnMac": "Aktifkan Handy di Pengaturan Sistem, lalu kembali ke sini.",
+      "turnOnWindows": "Aktifkan akses mikrofon di Setelan Windows, lalu kembali ke sini.",
+      "hintBoth": "Izinkan keduanya untuk melanjutkan",
+      "hintMicrophone": "Izinkan mikrofon untuk melanjutkan",
+      "welcomeBack": "Selamat datang kembali. Kita lanjutkan dari tadi.",
+      "relaunch": "Pintasan tidak merespons setelah ini? <relaunch>Luncurkan ulang Handy</relaunch> dan Anda akan kembali tepat ke sini."
+    },
+    "shell": {
+      "back": "Kembali",
+      "continue": "Lanjutkan",
+      "progress": "Langkah {{step}} dari {{count}}"
+    },
+    "welcome": {
+      "title": "Bicara, bukan mengetik, di aplikasi apa pun",
+      "subtitle": "Pilih bahasa yang akan Anda gunakan untuk mendikte",
+      "searchLabel": "Cari bahasa",
+      "searchPlaceholder": "Cari bahasa",
+      "addAnother": "Tambah lagi",
+      "remove": "Hapus {{language}}",
+      "languagesLabel": "Bahasa",
+      "alreadyAdded_one": "{{languages}} sudah ditambahkan.",
+      "alreadyAdded_other": "{{languages}} sudah ditambahkan.",
+      "noMatch": "Tidak ada bahasa yang cocok dengan “{{query}}”. Model Handy mencakup sekitar 100 bahasa; sisanya ada di pengaturan.",
+      "appLanguage": "Bahasa aplikasi",
+      "menusIn": "Menu dalam <b>{{language}}</b>",
+      "chinese": {
+        "question": "Anda berbicara {{languages}}. Aksara mana yang harus ditulis Handy?",
+        "label": "Aksara Mandarin",
+        "zh-Hans": "Sederhana",
+        "zh-Hant": "Taiwan",
+        "zh-HK": "Hong Kong"
+      },
+      "hint": {
+        "pickOne": "Pilih setidaknya satu bahasa",
+        "weak_one": "{{languages}}: belum ada model yang mengenalinya dengan baik",
+        "weak_other": "{{languages}}: belum ada model yang mengenalinya dengan baik"
       }
+    },
+    "download": {
+      "checking": "Memeriksa unduhan…",
+      "ready": "{{name}} siap",
+      "failed": "Unduhan terhenti",
+      "downloading": "Mengunduh {{name}}",
+      "progress": "{{done}} dari {{total}}",
+      "progressLeft": "{{done}} dari {{total}}, sisa {{time}}",
+      "checkingName": "Memeriksa {{name}}",
+      "checkingDetail": "Memastikan unduhan sudah lengkap",
+      "stopped": "Unduhan {{name}} terhenti",
+      "retryDetail": "Mencoba lagi akan melanjutkan dari titik terhenti",
+      "retryDownload": "Coba unduh lagi",
+      "cardProgress": "Mengunduh {{percent}}%, {{done}} dari {{total}}",
+      "timeLeft": "sisa {{time}}",
+      "speedLeft": "{{speed}}, sisa {{time}}"
+    },
+    "model": {
+      "title": "Pilih model ucapan",
+      "subtitle": "Model ucapan mengubah ucapan Anda menjadi teks, langsung di komputer ini",
+      "label": "Model ucapan",
+      "allLabel": "Model ucapan",
+      "roles": {
+        "recommended": "Direkomendasikan",
+        "faster": "Lebih cepat",
+        "accurate": "Lebih akurat",
+        "fromAll": "Dari semua model"
+      },
+      "lines": {
+        "recommended": "Keseimbangan terbaik antara kecepatan dan akurasi untuk bahasa Anda",
+        "faster": "Lebih cepat, dengan sedikit lebih banyak kesalahan",
+        "accurate": "Paling sedikit kesalahan, tetapi lebih lambat"
+      },
+      "shorts": {
+        "recommended": "Paling seimbang untuk Anda",
+        "faster": "Lebih cepat, sedikit lebih banyak salah",
+        "accurate": "Paling sedikit salah, tetapi lebih lambat"
+      },
+      "accuracy": "Akurasi",
+      "speed": "Kecepatan",
+      "size": "Ukuran",
+      "model": "Model",
+      "speedWords": {
+        "0": "Sangat lambat, kata muncul setelah menunggu lama",
+        "1": "Lambat, kata muncul setelah menunggu",
+        "2": "Sedang, kata muncul setelah menunggu sebentar",
+        "3": "Cepat, kata muncul hampir seketika",
+        "4": "Sangat cepat, kata muncul seketika"
+      },
+      "speedWordsPreview": {
+        "0": "Sangat lambat, dengan pratinjau langsung saat Anda berbicara",
+        "1": "Lambat, dengan pratinjau langsung saat Anda berbicara",
+        "2": "Sedang, dengan pratinjau langsung saat Anda berbicara",
+        "3": "Cepat, dengan pratinjau langsung saat Anda berbicara",
+        "4": "Sangat cepat, dengan pratinjau langsung saat Anda berbicara"
+      },
+      "speedUntested": "Kecepatan belum diukur",
+      "rubric": {
+        "gradeTitle": "Akurasi {{language}}: {{grade}}",
+        "accuracyTitle": "Akurasi {{language}}",
+        "overallTitle": "Akurasi untuk bahasa Anda: {{grade}}",
+        "overall": "Akurasi untuk bahasa Anda",
+        "meaning": {
+          "A": "Sangat sedikit kesalahan: kata-kata Anda biasanya muncul persis seperti yang Anda ucapkan",
+          "B": "Ada beberapa kesalahan: sesekali Anda perlu memperbaiki satu-dua kata",
+          "C": "Sering salah: sebagian detail mungkin hilang",
+          "D": "Banyak kesalahan: periksa dan perbaiki hasil ketikannya",
+          "F": "Sering tidak jelas: banyak ucapan Anda mungkin salah tertulis"
+        },
+        "unsupported": "Model ini tidak memahami {{language}}, jadi tidak bisa mengetiknya",
+        "unrated": "Model ini memahami {{language}}, tetapi kami belum mengukur seberapa baik",
+        "under": "di bawah {{max}}%",
+        "between": "{{min}} hingga {{max}}%",
+        "over": "{{min}}% atau lebih",
+        "speedTitle": "Kecepatan: {{speed}}",
+        "speedName": {
+          "0": "Sangat lambat",
+          "1": "Lambat",
+          "2": "Sedang",
+          "3": "Cepat",
+          "4": "Sangat cepat"
+        },
+        "speedMeaning": {
+          "0": "Kata-kata Anda muncul setelah menunggu lama",
+          "1": "Kata-kata Anda muncul setelah menunggu",
+          "2": "Kata-kata Anda muncul setelah menunggu sebentar",
+          "3": "Kata-kata Anda muncul hampir seketika",
+          "4": "Kata-kata Anda muncul seketika"
+        },
+        "speedPreview": "{{meaning}}, dengan pratinjau langsung saat Anda berbicara",
+        "untimed": "Kami belum mengukur seberapa cepat model ini",
+        "underSeconds": "di bawah {{max}} dtk",
+        "betweenSeconds": "{{min}} hingga {{max}} dtk",
+        "overSeconds": "{{min}} dtk atau lebih"
+      },
+      "tags": {
+        "preview": "Pratinjau langsung",
+        "previewTitle": "Menampilkan kata-kata Anda di overlay Langsung saat Anda berbicara, lalu mengetiknya setelah Anda berhenti",
+        "translate": "Menerjemahkan",
+        "translateTitle": "Bisa mengubah ucapan Anda menjadi teks bahasa Inggris. Aktifkan di pengaturan"
+      },
+      "showAll": "Tampilkan semua {{count}} model",
+      "download": "Unduh {{size}}",
+      "downloadInstead": "Unduh {{size}} saja",
+      "pauses": "{{name}} berhenti sejenak di {{percent}}%",
+      "resumeLater": "Pilih lagi untuk melanjutkan dari titik terhenti",
+      "hint": "Diunduh selagi Anda menyelesaikan penyiapan",
+      "search": "Cari model",
+      "missingLanguage": "Bahasa tidak ada",
+      "noMatch": "Tidak ada yang cocok dengan “{{query}}”. Coba bahasa, atau keluarga seperti Whisper atau Parakeet",
+      "noFilterMatch": "Tidak ada model yang cocok dengan filter ini"
+    },
+    "demo": {
+      "title": "Bicara di aplikasi apa pun, dengan satu pintasan",
+      "hold": "<0>Klik di tempat Anda ingin mengetik.</0> <1>Tahan pintasan Anda dan bicara.</1> <2>Lepaskan, dan kata-kata Anda muncul.</2>",
+      "tap": "<0>Klik di tempat Anda ingin mengetik.</0> <1>Ketuk pintasan Anda dan bicara.</1> <2>Ketuk lagi, dan kata-kata Anda muncul.</2>",
+      "apps": {
+        "messages": "Pesan",
+        "notes": "Catatan"
+      },
+      "chat": "Kamu jadi datang malam ini?",
+      "noteTitle": "Rencana akhir pekan",
+      "screenLabel": "Sebuah laptop: seseorang mengeklik sebuah aplikasi, menekan pintasan lalu berbicara, dan kata-katanya muncul di tempat yang diklik.",
+      "change": "Ubah",
+      "yourShortcut": "Pintasan Anda adalah",
+      "pressKeys": "Tekan tombol baru",
+      "addKey": "Sekarang tambahkan satu tombol",
+      "cancel": "Batal",
+      "tryIt": "Coba sendiri"
+    },
+    "try": {
+      "title": "Coba sekarang!",
+      "subtitle": "Handy ada di pojok untuk memandu Anda",
+      "noteLabel": "Catatan",
+      "placeholder": "Catatan baru",
+      "hold": "Tahan <keys/> dan bicara.",
+      "tapNext": "Sekarang ketuk <keys/> sekali, lalu bicara.",
+      "letGo": "Lepaskan <keys/> kalau sudah selesai.",
+      "tapAgain": "Ketuk <keys/> lagi kalau sudah selesai.",
+      "watch": "Perhatikan catatannya.",
+      "changeKeys": "Ubah pintasan Anda, {{keys}}",
+      "doneHold": "Tos! Itu cara menahan.",
+      "doneHoldNext": "Selanjutnya, cara tanpa tangan.",
+      "doneTap": "Tos! Itu cara mengetuk.",
+      "doneTapNext": "Sekarang coba tahan tombolnya sambil bicara.",
+      "giveFive": "Berhasil! Tos dong",
+      "highFive": "Tos",
+      "slowLine": "{{name}} butuh {{wait}} di komputer ini. <faster>Coba model yang lebih cepat</faster>",
+      "nothingTyped": "Hmm, tidak ada yang masuk.",
+      "nothingTypedSub": "Klik dulu ke dalam catatan, lalu coba lagi.",
+      "silent": "Saya tidak mendengar apa-apa.",
+      "silentSub": "Tidak ada suara dari mikrofon ini. Coba yang lain:",
+      "noWords": "Saya tidak menangkap kata apa pun.",
+      "noWordsSub": "Coba lagi, dan ucapkan satu kalimat utuh.",
+      "finish": "Selesai",
+      "skip": "Lewati",
+      "seconds": "{{value}} dtk"
+    },
+    "done": {
+      "title": "Semua siap",
+      "subMac": "Handy kini ada di bilah menu Anda. Tahan atau ketuk <keys/> di aplikasi apa pun untuk bicara.",
+      "subTray": "Handy kini ada di baki sistem Anda. Tahan atau ketuk <keys/> di aplikasi apa pun untuk bicara.",
+      "hint": "Anda dapat mengubahnya nanti di Pengaturan",
+      "highFiveLabel": "Tos",
+      "atLogin": "Jalankan Handy saat saya masuk",
+      "finish": "Selesai",
+      "panel": {
+        "name": "Handy",
+        "ready": "Siap",
+        "languages": "Bahasa",
+        "model": "Model ucapan",
+        "shortcut": "Pintasan",
+        "changeLanguages": "Ubah bahasa, {{languages}}",
+        "changeModel": "Ubah model ucapan, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Tidak berfungsi? <guide>Panduan penyiapan Linux</guide>",
+      "done": "Tidak berfungsi di aplikasi lain? <guide>Panduan penyiapan Linux</guide>"
     }
   },
   "modelSelector": {
@@ -118,6 +350,18 @@
         "noResults": "Bahasa tidak ditemukan",
         "auto": "Otomatis"
       },
+      "preferredLanguages": {
+        "title": "Bahasa Pilihan",
+        "description": "Bahasa yang Anda gunakan. Handy memakainya untuk merekomendasikan model.",
+        "searchLabel": "Cari bahasa",
+        "placeholder": "Cari bahasa",
+        "addAnother": "Tambah lagi",
+        "remove": "Hapus {{language}}",
+        "alreadyAdded_one": "{{languages}} sudah ditambahkan.",
+        "alreadyAdded_other": "{{languages}} sudah ditambahkan.",
+        "noMatch": "Tidak ada bahasa yang cocok dengan “{{query}}”",
+        "weak": "Belum ada model yang mengenali {{languages}} dengan baik."
+      },
       "shortcutActivation": {
         "title": "Perilaku Pintasan",
         "description": "Pilih cara pintasan transkripsi memulai dan menghentikan perekaman.",
@@ -134,7 +378,43 @@
       }
     },
     "models": {
-      "title": "Model Transkripsi",
+      "title": "Model",
+      "changeLanguages": "Ubah bahasa",
+      "sections": {
+        "yours": "Di komputer ini",
+        "fits": "Untuk bahasa Anda",
+        "missing": "Bahasa tidak ada",
+        "untested": "Belum diuji"
+      },
+      "allLanguages": "Semua",
+      "untestedNote": "Belum diuji dengan Handy. Mungkin lebih lambat atau lebih banyak salah.",
+      "untestedHidden_one": "{{count}} model lagi tidak disetel untuk dikte. Cari untuk menemukannya.",
+      "untestedHidden_other": "{{count}} model lagi tidak disetel untuk dikte. Cari untuk menemukannya.",
+      "emptyYours": "Belum ada model. Pilih satu di bawah: model diunduh, lalu Handy menggunakannya.",
+      "showMore": "Tampilkan {{count}} lagi",
+      "showFewer": "Tampilkan lebih sedikit",
+      "download": "Unduh dan gunakan",
+      "downloadingLine": "Mengunduh {{percent}}% dari {{total}}",
+      "downloadingThenUse": "{{percent}}% dari {{total}}, lalu beralih",
+      "loading": "Memuat…",
+      "deleteAsk": "Hapus {{name}}? Ini membebaskan {{size}}.",
+      "deleteAskActive": "Hapus {{name}}? Handy tidak dapat mentranskripsi sampai Anda memilih model lain.",
+      "cancel": "Batal",
+      "deleteModel": "Hapus {{name}}",
+      "cancelDownload": "Hentikan unduhan {{name}}",
+      "customLine": "Ditambahkan dari folder model Anda. Tidak dinilai.",
+      "legacyLine": "Unduhan lama. Tidak dinilai.",
+      "legend": {
+        "open": "Cara model dinilai",
+        "accuracy": "Akurasi",
+        "accuracyNote": "Untuk setiap bahasa Anda: berapa banyak kata yang salah oleh model dalam rekaman uji kami.",
+        "speed": "Kecepatan",
+        "speedNote": {
+          "accelerated": "Berapa lama 30 detik ucapan diketik di chip grafis laptop uji kami. Komputer ini mungkin berbeda.",
+          "cpu": "Berapa lama 30 detik ucapan diketik di prosesor laptop uji kami. Komputer ini mungkin berbeda."
+        },
+        "marks": "? belum diukur. — tidak mengenali bahasa itu."
+      },
       "retiredNotice": {
         "title": "Model lama tidak lagi berfungsi dengan Handy",
         "description": "Model tersebut memakan {{size}} di komputer Anda.",
@@ -146,6 +426,9 @@
         "label": "Pindai Ulang",
         "tooltip": "Pindai ulang model yang ditambahkan ke folder model atau cache Hugging Face dari luar Handy"
       }
+    },
+    "languages": {
+      "title": "Bahasa"
     },
     "sound": {
       "title": "Suara",
@@ -319,10 +602,12 @@
       },
       "chineseScript": {
         "title": "Aksara Tionghoa",
-        "description": "Menulis transkripsi Mandarin dan Kanton dengan aksara Sederhana atau Tradisional. Bahasa lain tidak diubah.",
+        "description": "Menulis transkripsi Mandarin dan Kanton dengan aksara Sederhana, atau aksara Tradisional seperti yang ditulis di Taiwan atau Hong Kong. Bahasa lain tidak diubah.",
         "options": {
           "asTranscribed": "Sesuai transkripsi",
-          "simplified": "Sederhana"
+          "simplified": "Sederhana",
+          "traditionalTw": "Tradisional (Taiwan)",
+          "traditionalHk": "Tradisional (Hong Kong)"
         }
       }
     },
@@ -441,7 +726,27 @@
       "onboardingPreview": {
         "title": "Pratinjau Penyiapan Awal",
         "description": "Pratinjau layar penyiapan awal tanpa mengubah izin, model, atau status penyelesaian",
-        "exitButton": "Keluar dari Pratinjau"
+        "exitButton": "Keluar dari Pratinjau",
+        "choose": "Pilih layar",
+        "screens": {
+          "welcome": "Selamat datang",
+          "permissions": "Izin",
+          "model": "Model",
+          "demo": "Demo",
+          "try": "Coba",
+          "done": "Selesai"
+        }
+      },
+      "onboardingRun": {
+        "title": "Jalankan Orientasi",
+        "description": "Jalani orientasi sungguhan dari awal: meminta izin, mengunduh model, dan menyimpan pilihan Anda",
+        "button": "Mulai"
+      },
+      "modelMigration": {
+        "title": "Migrasi Model",
+        "description": "Buka layar pembaruan model format lama secara sungguhan: mengunduh pengganti, beralih model, dan menghapus file lama",
+        "button": "Buka",
+        "noRetired": "Tidak ada model format lama di disk"
       },
       "soundTheme": {
         "label": "Tema Suara",

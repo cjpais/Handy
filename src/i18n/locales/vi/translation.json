@@ -57,10 +57,242 @@
       "selectModel": "Không thể chọn mô hình"
     },
     "permissions": {
+      "microphone": {
+        "name": "Micrô",
+        "why": "Để Handy nghe được bạn. Âm thanh được chuyển thành văn bản ngay trên máy tính này và không bao giờ được tải lên."
+      },
+      "accessibility": {
+        "name": "Trợ năng",
+        "why": "Để phím tắt của bạn hoạt động trong mọi ứng dụng, và Handy có thể gõ văn bản vào nơi con trỏ của bạn đang đứng."
+      },
       "errors": {
         "checkFailed": "Không thể kiểm tra quyền. Vui lòng thử lại.",
         "requestFailed": "Không thể yêu cầu quyền. Vui lòng thử lại."
+      },
+      "titleMac": "Hai quyền, rồi là xong",
+      "titleWindows": "Một quyền, rồi là xong",
+      "subtitleMac": "macOS sẽ hỏi trước khi bất kỳ ứng dụng nào được nghe hoặc gõ.",
+      "subtitleWindows": "Windows sẽ hỏi trước khi bất kỳ ứng dụng nào được nghe.",
+      "allow": "Cho phép",
+      "openSettings": "Mở cài đặt",
+      "allowed": "Đã cho phép",
+      "waiting": "Đang chờ",
+      "turnOnMac": "Bật Handy trong Cài đặt Hệ thống, rồi quay lại đây.",
+      "turnOnWindows": "Bật quyền truy cập micrô trong Cài đặt Windows, rồi quay lại đây.",
+      "hintBoth": "Hãy cho phép cả hai để tiếp tục",
+      "hintMicrophone": "Hãy cho phép micrô để tiếp tục",
+      "welcomeBack": "Chào mừng bạn quay lại. Tiếp tục từ chỗ bạn đã dừng.",
+      "relaunch": "Phím tắt không phản hồi sau bước này? <relaunch>Khởi chạy lại Handy</relaunch> và bạn sẽ quay lại đúng chỗ này."
+    },
+    "shell": {
+      "back": "Quay lại",
+      "continue": "Tiếp tục",
+      "progress": "Bước {{step}} / {{count}}"
+    },
+    "welcome": {
+      "title": "Nói thay vì gõ, trong mọi ứng dụng",
+      "subtitle": "Chọn các ngôn ngữ bạn sẽ dùng để đọc chính tả",
+      "searchLabel": "Tìm kiếm ngôn ngữ",
+      "searchPlaceholder": "Tìm kiếm ngôn ngữ",
+      "addAnother": "Thêm ngôn ngữ khác",
+      "remove": "Xóa {{language}}",
+      "languagesLabel": "Ngôn ngữ",
+      "alreadyAdded_one": "Đã thêm {{languages}} rồi.",
+      "alreadyAdded_other": "Đã thêm {{languages}} rồi.",
+      "noMatch": "Không có ngôn ngữ nào khớp với “{{query}}”. Các mô hình của Handy hỗ trợ khoảng 100 ngôn ngữ; còn nhiều ngôn ngữ khác trong cài đặt.",
+      "appLanguage": "Ngôn ngữ ứng dụng",
+      "menusIn": "Menu bằng <b>{{language}}</b>",
+      "chinese": {
+        "question": "Bạn nói {{languages}}. Handy nên viết bằng chữ nào?",
+        "label": "Chữ Hán",
+        "zh-Hans": "Giản thể",
+        "zh-Hant": "Đài Loan",
+        "zh-HK": "Hồng Kông"
+      },
+      "hint": {
+        "pickOne": "Hãy chọn ít nhất một ngôn ngữ",
+        "weak_one": "{{languages}}: chưa có mô hình nào nghe tốt ngôn ngữ này",
+        "weak_other": "{{languages}}: chưa có mô hình nào nghe tốt các ngôn ngữ này"
       }
+    },
+    "download": {
+      "checking": "Đang kiểm tra bản tải xuống…",
+      "ready": "{{name}} đã sẵn sàng",
+      "failed": "Quá trình tải xuống đã dừng",
+      "downloading": "Đang tải xuống {{name}}",
+      "progress": "{{done}} / {{total}}",
+      "progressLeft": "{{done}} / {{total}}, còn {{time}}",
+      "checkingName": "Đang kiểm tra {{name}}",
+      "checkingDetail": "Đang đảm bảo bản tải xuống đã đầy đủ",
+      "stopped": "{{name}} đã ngừng tải xuống",
+      "retryDetail": "Thử lại sẽ tiếp tục từ chỗ đã dừng",
+      "retryDownload": "Thử tải lại",
+      "cardProgress": "Đang tải xuống {{percent}}%, {{done}} / {{total}}",
+      "timeLeft": "còn {{time}}",
+      "speedLeft": "{{speed}}, còn {{time}}"
+    },
+    "model": {
+      "title": "Chọn mô hình giọng nói",
+      "subtitle": "Mô hình giọng nói biến lời nói của bạn thành văn bản, ngay trên máy tính này",
+      "label": "Mô hình giọng nói",
+      "allLabel": "Các mô hình giọng nói",
+      "roles": {
+        "recommended": "Được đề xuất",
+        "faster": "Nhanh hơn",
+        "accurate": "Chính xác hơn",
+        "fromAll": "Từ tất cả mô hình"
+      },
+      "lines": {
+        "recommended": "Cân bằng tốt nhất giữa tốc độ và độ chính xác cho các ngôn ngữ của bạn",
+        "faster": "Nhanh hơn, nhưng sai nhiều hơn một chút",
+        "accurate": "Ít lỗi nhất, nhưng chậm hơn"
+      },
+      "shorts": {
+        "recommended": "Cân bằng nhất cho bạn",
+        "faster": "Nhanh hơn, sai nhiều hơn chút",
+        "accurate": "Ít lỗi nhất, nhưng chậm hơn"
+      },
+      "accuracy": "Độ chính xác",
+      "speed": "Tốc độ",
+      "size": "Dung lượng",
+      "model": "Mô hình",
+      "speedWords": {
+        "0": "Rất chậm, chữ hiện ra sau một lúc lâu",
+        "1": "Chậm, chữ hiện ra sau một lúc",
+        "2": "Vừa phải, chữ hiện ra sau một lát",
+        "3": "Nhanh, chữ hiện ra gần như ngay lập tức",
+        "4": "Rất nhanh, chữ hiện ra ngay lập tức"
+      },
+      "speedWordsPreview": {
+        "0": "Rất chậm, có xem trước trực tiếp khi bạn nói",
+        "1": "Chậm, có xem trước trực tiếp khi bạn nói",
+        "2": "Vừa phải, có xem trước trực tiếp khi bạn nói",
+        "3": "Nhanh, có xem trước trực tiếp khi bạn nói",
+        "4": "Rất nhanh, có xem trước trực tiếp khi bạn nói"
+      },
+      "speedUntested": "Chưa đo tốc độ",
+      "rubric": {
+        "gradeTitle": "Độ chính xác {{language}}: {{grade}}",
+        "accuracyTitle": "Độ chính xác {{language}}",
+        "overallTitle": "Độ chính xác cho các ngôn ngữ của bạn: {{grade}}",
+        "overall": "Độ chính xác cho các ngôn ngữ của bạn",
+        "meaning": {
+          "A": "Rất ít lỗi: lời bạn nói thường được gõ ra đúng như vậy",
+          "B": "Có một số lỗi: thỉnh thoảng bạn sẽ phải sửa vài từ",
+          "C": "Lỗi khá thường xuyên: một số chi tiết có thể bị mất",
+          "D": "Nhiều lỗi: bạn nên kiểm tra và sửa lại những gì nó gõ",
+          "F": "Thường không rõ ràng: phần lớn lời bạn nói có thể bị sai"
+        },
+        "unsupported": "Mô hình này không hiểu {{language}}, nên không thể gõ ngôn ngữ này",
+        "unrated": "Mô hình này hiểu {{language}}, nhưng chúng tôi chưa đo mức độ tốt đến đâu",
+        "under": "dưới {{max}}%",
+        "between": "{{min}} đến {{max}}%",
+        "over": "{{min}}% trở lên",
+        "speedTitle": "Tốc độ: {{speed}}",
+        "speedName": {
+          "0": "Rất chậm",
+          "1": "Chậm",
+          "2": "Vừa phải",
+          "3": "Nhanh",
+          "4": "Rất nhanh"
+        },
+        "speedMeaning": {
+          "0": "Chữ của bạn hiện ra sau một lúc lâu",
+          "1": "Chữ của bạn hiện ra sau một lúc",
+          "2": "Chữ của bạn hiện ra sau một lát",
+          "3": "Chữ của bạn hiện ra gần như ngay lập tức",
+          "4": "Chữ của bạn hiện ra ngay lập tức"
+        },
+        "speedPreview": "{{meaning}}, có xem trước trực tiếp khi bạn nói",
+        "untimed": "Chúng tôi chưa đo tốc độ của mô hình này",
+        "underSeconds": "dưới {{max}} giây",
+        "betweenSeconds": "{{min}} đến {{max}} giây",
+        "overSeconds": "{{min}} giây trở lên"
+      },
+      "tags": {
+        "preview": "Xem trước trực tiếp",
+        "previewTitle": "Hiển thị lời bạn nói trong lớp phủ Trực tiếp khi bạn nói, rồi gõ ra khi bạn dừng",
+        "translate": "Dịch",
+        "translateTitle": "Có thể chuyển lời bạn nói thành văn bản tiếng Anh. Bật trong cài đặt"
+      },
+      "showAll": "Hiển thị cả {{count}} mô hình",
+      "download": "Tải xuống {{size}}",
+      "downloadInstead": "Tải xuống {{size}} thay thế",
+      "pauses": "{{name}} tạm dừng ở {{percent}}%",
+      "resumeLater": "Chọn lại để tiếp tục từ chỗ đã dừng",
+      "hint": "Tải xuống trong lúc bạn hoàn tất thiết lập",
+      "search": "Tìm kiếm mô hình",
+      "missingLanguage": "Thiếu một ngôn ngữ",
+      "noMatch": "Không có gì khớp với “{{query}}”. Hãy thử một ngôn ngữ, hoặc một dòng mô hình như Whisper hay Parakeet",
+      "noFilterMatch": "Không có mô hình nào khớp với các bộ lọc này"
+    },
+    "demo": {
+      "title": "Nói trong mọi ứng dụng, chỉ với một phím tắt",
+      "hold": "<0>Nhấp vào nơi bạn muốn gõ.</0> <1>Giữ phím tắt và nói.</1> <2>Thả ra, và lời bạn nói sẽ hiện lên.</2>",
+      "tap": "<0>Nhấp vào nơi bạn muốn gõ.</0> <1>Nhấn phím tắt và nói.</1> <2>Nhấn lại, và lời bạn nói sẽ hiện lên.</2>",
+      "apps": {
+        "messages": "Tin nhắn",
+        "notes": "Ghi chú"
+      },
+      "chat": "Tối nay bạn vẫn đến chứ?",
+      "noteTitle": "Kế hoạch cuối tuần",
+      "screenLabel": "Một chiếc laptop: ai đó nhấp vào một ứng dụng, nhấn phím tắt và nói, rồi chữ hiện ra ở nơi họ đã nhấp.",
+      "change": "Thay đổi",
+      "yourShortcut": "Phím tắt của bạn là",
+      "pressKeys": "Nhấn các phím mới",
+      "addKey": "Giờ thêm một phím",
+      "cancel": "Hủy",
+      "tryIt": "Tự thử xem"
+    },
+    "try": {
+      "title": "Thử xem nào!",
+      "subtitle": "Handy ở ngay góc màn hình để hướng dẫn bạn",
+      "noteLabel": "Ghi chú",
+      "placeholder": "Ghi chú mới",
+      "hold": "Giữ <keys/> và nói.",
+      "tapNext": "Giờ nhấn <keys/> một lần, rồi nói.",
+      "letGo": "Thả <keys/> ra khi bạn nói xong.",
+      "tapAgain": "Nhấn <keys/> lần nữa khi bạn nói xong.",
+      "watch": "Nhìn vào ghi chú nhé.",
+      "changeKeys": "Đổi phím tắt của bạn, {{keys}}",
+      "doneHold": "Đập tay nào! Đó là cách giữ phím.",
+      "doneHoldNext": "Tiếp theo, cách rảnh tay.",
+      "doneTap": "Đập tay nào! Đó là cách nhấn phím.",
+      "doneTapNext": "Giờ thử giữ phím trong lúc nói nhé.",
+      "giveFive": "Bạn làm được rồi! Đập tay nào",
+      "highFive": "Đập tay",
+      "slowLine": "{{name}} mất {{wait}} trên máy tính này. <faster>Thử mô hình nhanh hơn</faster>",
+      "nothingTyped": "Ơ, chẳng có gì hiện ra cả.",
+      "nothingTypedSub": "Hãy nhấp vào ghi chú trước, rồi thử lại.",
+      "silent": "Mình không nghe thấy gì cả.",
+      "silentSub": "Micrô này không có âm thanh nào. Thử cái khác nhé:",
+      "noWords": "Mình không bắt được từ nào.",
+      "noWordsSub": "Thử lại nhé, và nói cả một câu.",
+      "finish": "Hoàn tất",
+      "skip": "Bỏ qua",
+      "seconds": "{{value}} giây"
+    },
+    "done": {
+      "title": "Mọi thứ đã sẵn sàng",
+      "subMac": "Handy giờ đã ở trên thanh menu. Giữ hoặc nhấn <keys/> trong bất kỳ ứng dụng nào để nói.",
+      "subTray": "Handy giờ đã ở trong khay hệ thống. Giữ hoặc nhấn <keys/> trong bất kỳ ứng dụng nào để nói.",
+      "hint": "Bạn có thể thay đổi những mục này sau trong Cài đặt",
+      "highFiveLabel": "Đập tay",
+      "atLogin": "Khởi động Handy khi tôi đăng nhập",
+      "finish": "Xong",
+      "panel": {
+        "name": "Handy",
+        "ready": "Sẵn sàng",
+        "languages": "Ngôn ngữ",
+        "model": "Mô hình giọng nói",
+        "shortcut": "Phím tắt",
+        "changeLanguages": "Đổi ngôn ngữ, {{languages}}",
+        "changeModel": "Đổi mô hình giọng nói, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Không hoạt động? <guide>Hướng dẫn thiết lập Linux</guide>",
+      "done": "Không hoạt động trong các ứng dụng khác? <guide>Hướng dẫn thiết lập Linux</guide>"
     }
   },
   "modelSelector": {
@@ -83,20 +315,6 @@
   "settings": {
     "modelSettings": {
       "title": "Cài đặt {{model}}"
-    },
-    "models": {
-      "title": "Mô hình chuyển đổi",
-      "retiredNotice": {
-        "title": "Các mô hình cũ không còn hoạt động với Handy",
-        "description": "Chúng đang chiếm {{size}} trên máy tính của bạn.",
-        "delete": "Xóa mô hình",
-        "deleted": "Đã xóa các mô hình cũ",
-        "deleteFailed": "Không thể xóa một số mô hình cũ. Hãy kiểm tra nhật ký để biết chi tiết."
-      },
-      "rescan": {
-        "label": "Quét lại",
-        "tooltip": "Quét lại các mô hình được thêm vào thư mục mô hình hoặc bộ nhớ đệm Hugging Face bên ngoài Handy"
-      }
     },
     "general": {
       "title": "Chung",
@@ -132,6 +350,18 @@
         "noResults": "Không tìm thấy ngôn ngữ",
         "auto": "Tự động"
       },
+      "preferredLanguages": {
+        "title": "Ngôn ngữ ưa thích",
+        "description": "Các ngôn ngữ bạn nói. Handy dùng chúng để đề xuất mô hình.",
+        "searchLabel": "Tìm kiếm ngôn ngữ",
+        "placeholder": "Tìm kiếm ngôn ngữ",
+        "addAnother": "Thêm ngôn ngữ khác",
+        "remove": "Xóa {{language}}",
+        "alreadyAdded_one": "Đã thêm {{languages}} rồi.",
+        "alreadyAdded_other": "Đã thêm {{languages}} rồi.",
+        "noMatch": "Không có ngôn ngữ nào khớp với “{{query}}”",
+        "weak": "Chưa có mô hình nào nhận dạng tốt {{languages}}."
+      },
       "shortcutActivation": {
         "title": "Hành vi phím tắt",
         "description": "Chọn cách phím tắt chuyển đổi bắt đầu và dừng ghi âm.",
@@ -146,6 +376,59 @@
           "toggle": "Nhấn phím tắt để bắt đầu ghi âm, nhấn lại để dừng"
         }
       }
+    },
+    "models": {
+      "title": "Mô hình",
+      "changeLanguages": "Đổi ngôn ngữ",
+      "sections": {
+        "yours": "Trên máy tính này",
+        "fits": "Cho các ngôn ngữ của bạn",
+        "missing": "Thiếu một ngôn ngữ",
+        "untested": "Chưa kiểm thử"
+      },
+      "allLanguages": "Tất cả",
+      "untestedNote": "Chưa được kiểm thử với Handy. Chúng có thể chậm hơn hoặc mắc nhiều lỗi hơn.",
+      "untestedHidden_one": "{{count}} mô hình khác chưa được tinh chỉnh cho việc đọc chính tả. Hãy tìm kiếm để thấy nó.",
+      "untestedHidden_other": "{{count}} mô hình khác chưa được tinh chỉnh cho việc đọc chính tả. Hãy tìm kiếm để thấy chúng.",
+      "emptyYours": "Chưa có mô hình nào. Hãy chọn một mô hình bên dưới: nó sẽ được tải xuống, rồi Handy sẽ dùng nó.",
+      "showMore": "Hiển thị thêm {{count}}",
+      "showFewer": "Hiển thị ít hơn",
+      "download": "Tải xuống và dùng",
+      "downloadingLine": "Đang tải xuống {{percent}}% của {{total}}",
+      "downloadingThenUse": "{{percent}}% của {{total}}, rồi tự chuyển sang",
+      "loading": "Đang tải…",
+      "deleteAsk": "Xóa {{name}}? Việc này giải phóng {{size}}.",
+      "deleteAskActive": "Xóa {{name}}? Handy không thể chuyển đổi giọng nói cho đến khi bạn chọn mô hình khác.",
+      "cancel": "Hủy",
+      "deleteModel": "Xóa {{name}}",
+      "cancelDownload": "Dừng tải xuống {{name}}",
+      "customLine": "Được thêm từ thư mục mô hình của bạn. Không xếp hạng.",
+      "legacyLine": "Một bản tải xuống cũ. Không xếp hạng.",
+      "legend": {
+        "open": "Cách xếp hạng mô hình",
+        "accuracy": "Độ chính xác",
+        "accuracyNote": "Với mỗi ngôn ngữ của bạn: số từ mô hình nhận sai trong các bản ghi âm kiểm thử của chúng tôi.",
+        "speed": "Tốc độ",
+        "speedNote": {
+          "accelerated": "Thời gian để gõ ra 30 giây lời nói trên chip đồ họa của laptop kiểm thử của chúng tôi. Máy tính này có thể khác.",
+          "cpu": "Thời gian để gõ ra 30 giây lời nói trên bộ xử lý của laptop kiểm thử của chúng tôi. Máy tính này có thể khác."
+        },
+        "marks": "? chưa được đo. — không nghe được ngôn ngữ đó."
+      },
+      "retiredNotice": {
+        "title": "Các mô hình cũ không còn hoạt động với Handy",
+        "description": "Chúng đang chiếm {{size}} trên máy tính của bạn.",
+        "delete": "Xóa mô hình",
+        "deleted": "Đã xóa các mô hình cũ",
+        "deleteFailed": "Không thể xóa một số mô hình cũ. Hãy kiểm tra nhật ký để biết chi tiết."
+      },
+      "rescan": {
+        "label": "Quét lại",
+        "tooltip": "Quét lại các mô hình được thêm vào thư mục mô hình hoặc bộ nhớ đệm Hugging Face bên ngoài Handy"
+      }
+    },
+    "languages": {
+      "title": "Ngôn ngữ"
     },
     "sound": {
       "title": "Âm thanh",
@@ -319,10 +602,12 @@
       },
       "chineseScript": {
         "title": "Chữ Hán giản thể/phồn thể",
-        "description": "Ghi bản chép tiếng Quan Thoại và tiếng Quảng Đông bằng chữ Giản thể hoặc Phồn thể. Các ngôn ngữ khác không bị thay đổi.",
+        "description": "Ghi bản chép tiếng Quan Thoại và tiếng Quảng Đông bằng chữ Giản thể, hoặc chữ Phồn thể như được viết ở Đài Loan hay Hồng Kông. Các ngôn ngữ khác không bị thay đổi.",
         "options": {
           "asTranscribed": "Giữ nguyên bản chép",
-          "simplified": "Giản thể"
+          "simplified": "Giản thể",
+          "traditionalTw": "Phồn thể (Đài Loan)",
+          "traditionalHk": "Phồn thể (Hồng Kông)"
         }
       }
     },
@@ -431,6 +716,38 @@
         "description": "Tự động kiểm tra phiên bản mới của Handy",
         "lockedDescription": "Đã bị vô hiệu hóa bởi cấu hình hệ thống (HANDY_DISABLE_UPDATER)"
       },
+      "whatsNewPreview": {
+        "title": "Xem trước điểm mới",
+        "description": "Mở ghi chú phát hành mới nhất được đóng gói mà không đánh dấu là đã xem",
+        "button": "Xem trước",
+        "noNotes": "Không tìm thấy ghi chú phát hành được đóng gói",
+        "error": "Không thể xem trước ghi chú phát hành"
+      },
+      "onboardingPreview": {
+        "title": "Xem trước thiết lập ban đầu",
+        "description": "Xem trước các màn hình thiết lập mà không thay đổi quyền, mô hình hoặc trạng thái hoàn tất",
+        "exitButton": "Thoát xem trước",
+        "choose": "Chọn một màn hình",
+        "screens": {
+          "welcome": "Chào mừng",
+          "permissions": "Quyền",
+          "model": "Mô hình",
+          "demo": "Demo",
+          "try": "Thử xem",
+          "done": "Hoàn tất"
+        }
+      },
+      "onboardingRun": {
+        "title": "Chạy hướng dẫn làm quen",
+        "description": "Chạy hướng dẫn làm quen thật từ đầu: nó sẽ xin quyền, tải xuống mô hình và lưu lựa chọn của bạn",
+        "button": "Bắt đầu"
+      },
+      "modelMigration": {
+        "title": "Chuyển đổi mô hình",
+        "description": "Mở thật màn hình cập nhật mô hình định dạng cũ: nó sẽ tải xuống bản thay thế, chuyển mô hình và xóa các tệp cũ",
+        "button": "Mở",
+        "noRetired": "Không có mô hình định dạng cũ trên ổ đĩa"
+      },
       "soundTheme": {
         "label": "Chủ đề âm thanh",
         "description": "Chọn chủ đề âm thanh cho phản hồi bắt đầu và kết thúc ghi âm"
@@ -518,18 +835,6 @@
         "verdictOk": "Các sự kiện phím đang đến Handy bình thường.",
         "verdictNoEvents": "Không ghi nhận sự kiện nào — bạn có bấm phím nào trong lúc kiểm tra không?",
         "failed": "Chẩn đoán thất bại: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "Xem trước điểm mới",
-        "description": "Mở ghi chú phát hành mới nhất được đóng gói mà không đánh dấu là đã xem",
-        "button": "Xem trước",
-        "noNotes": "Không tìm thấy ghi chú phát hành được đóng gói",
-        "error": "Không thể xem trước ghi chú phát hành"
-      },
-      "onboardingPreview": {
-        "title": "Xem trước thiết lập ban đầu",
-        "description": "Xem trước các màn hình thiết lập mà không thay đổi quyền, mô hình hoặc trạng thái hoàn tất",
-        "exitButton": "Thoát xem trước"
       }
     },
     "about": {
@@ -537,6 +842,10 @@
       "version": {
         "title": "Phiên bản",
         "description": "Phiên bản hiện tại của Handy"
+      },
+      "whatsNewUpdates": {
+        "label": "Hiển thị điểm mới",
+        "description": "Hiển thị ghi chú phát hành sau khi Handy cập nhật"
       },
       "appDataDirectory": {
         "title": "Thư mục dữ liệu ứng dụng",
@@ -559,10 +868,6 @@
           "description": "Suy luận hiệu suất cao của mô hình nhận dạng giọng nói tự động Whisper của OpenAI",
           "details": "Handy sử dụng ggml để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "Hiển thị điểm mới",
-        "description": "Hiển thị ghi chú phát hành sau khi Handy cập nhật"
       }
     }
   },
@@ -580,6 +885,9 @@
     "portableUpdateButton": "Tải trình cài đặt",
     "portableUpdateBrowseMessage": "Bản cài đặt di động không thể cập nhật tự động. Hãy tải phiên bản mới nhất phù hợp với hệ thống của bạn từ GitHub Releases và cài vào cùng thư mục — thư mục Data/ (cài đặt, mô hình, bản ghi) của bạn được giữ nguyên.",
     "portableUpdateBrowseButton": "Mở GitHub Releases"
+  },
+  "whatsNew": {
+    "title": "Điểm mới trong Handy v{{version}}"
   },
   "common": {
     "loading": "Đang tải...",
@@ -629,9 +937,6 @@
     "transcribing": "Đang chuyển đổi...",
     "processing": "Đang xử lý...",
     "loadingModel": "Đang tải mô hình..."
-  },
-  "whatsNew": {
-    "title": "Điểm mới trong Handy v{{version}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} có thể đang chặn 1 phím tắt",
