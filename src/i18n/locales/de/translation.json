@@ -318,7 +318,7 @@
     "modelUnloaded": "Modell entladen",
     "noModelDownloadRequired": "Kein Modell - Download erforderlich",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Modelle können gewechselt werden, sobald die Datei transkribiert ist."
+    "lockedWhileTranscribing": "Du kannst das Modell wechseln, sobald die Transkription im Verlauf fertig ist."
   },
   "settings": {
     "modelSettings": {

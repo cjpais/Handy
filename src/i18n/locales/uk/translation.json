@@ -318,7 +318,7 @@
     "modelUnloaded": "Модель вивантажена",
     "noModelDownloadRequired": "Немає моделі - потрібно завантажити",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Модель можна буде змінити після розшифрування файлу."
+    "lockedWhileTranscribing": "Модель можна буде змінити, коли завершиться розшифрування в Історії."
   },
   "settings": {
     "modelSettings": {

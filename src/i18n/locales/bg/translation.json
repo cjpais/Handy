@@ -318,7 +318,7 @@
     "modelUnloaded": "Моделът е разтоварен",
     "noModelDownloadRequired": "Няма модел – необходимо е изтегляне",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Моделите могат да се сменят, след като файлът бъде транскрибиран."
+    "lockedWhileTranscribing": "Можете да смените модела, след като транскрибирането в История приключи."
   },
   "settings": {
     "modelSettings": {

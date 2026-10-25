@@ -318,7 +318,7 @@
     "modelUnloaded": "Model alliberat de la memòria",
     "noModelDownloadRequired": "No hi ha cap model: cal baixar-ne un",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Els models es poden canviar quan s'acabi de transcriure el fitxer."
+    "lockedWhileTranscribing": "Podràs canviar de model quan acabi la transcripció a l'Historial."
   },
   "settings": {
     "modelSettings": {

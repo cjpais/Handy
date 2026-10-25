@@ -318,7 +318,7 @@
     "modelUnloaded": "Model Unloaded",
     "noModelDownloadRequired": "No Model - Download Required",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Models can change once the file is done transcribing."
+    "lockedWhileTranscribing": "You can switch models once History finishes transcribing."
   },
   "settings": {
     "modelSettings": {

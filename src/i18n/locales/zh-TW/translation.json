@@ -318,7 +318,7 @@
     "modelUnloaded": "模型已卸載",
     "noModelDownloadRequired": "無模型 - 需要下載",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "檔案轉錄完成後才能更換模型。"
+    "lockedWhileTranscribing": "歷史紀錄中的轉錄完成後才能更換模型。"
   },
   "settings": {
     "modelSettings": {

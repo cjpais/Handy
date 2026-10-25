@@ -318,7 +318,7 @@
     "modelUnloaded": "Modell avlastad",
     "noModelDownloadRequired": "Ingen modell - Nedladdning krävs",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Modeller kan bytas när filen är färdigtranskriberad."
+    "lockedWhileTranscribing": "Du kan byta modell när transkriberingen i Historik är klar."
   },
   "settings": {
     "modelSettings": {

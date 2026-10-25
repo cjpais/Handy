@@ -318,7 +318,7 @@
     "modelUnloaded": "המודל נפרק",
     "noModelDownloadRequired": "אין מודל, נדרשת הורדה",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "ניתן יהיה להחליף מודל לאחר סיום תמלול הקובץ."
+    "lockedWhileTranscribing": "אפשר יהיה להחליף מודל אחרי שהתמלול בהיסטוריה יסתיים."
   },
   "settings": {
     "modelSettings": {

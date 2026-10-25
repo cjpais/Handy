@@ -318,7 +318,7 @@
     "modelUnloaded": "モデルがアンロードされました",
     "noModelDownloadRequired": "モデルなし - ダウンロードが必要",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "ファイルの文字起こしが終わるとモデルを変更できます。"
+    "lockedWhileTranscribing": "履歴の文字起こしが終わるとモデルを変更できます。"
   },
   "settings": {
     "modelSettings": {

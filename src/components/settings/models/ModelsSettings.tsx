@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useModelStore } from "@/stores/modelStore";
-import { useModelsLocked } from "@/stores/transcriptionJobsStore";
 import {
   ModelTable,
   Note,
@@ -51,7 +50,6 @@ export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
 }) => {
   const { t } = useTranslation();
   const loading = useModelStore((s) => s.loading);
-  const modelsLocked = useModelsLocked();
   const { facts, lists } = useModelEntries();
   const { filters, setFilters, searching, matches } = useModelFilters();
   const [more, setMore] = useState(false);
@@ -156,11 +154,6 @@ export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
       <div className="mx-[12px] mb-[16px] flex-none empty:hidden">
         <RetiredModelsNotice />
       </div>
-      {modelsLocked && (
-        <p className="mx-[12px] mb-[16px] flex-none text-xs text-ink-2">
-          {t("modelSelector.lockedWhileTranscribing")}
-        </p>
-      )}
       <ModelTable
         grading={facts}
         filters={filters}

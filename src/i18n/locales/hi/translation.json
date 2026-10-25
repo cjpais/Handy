@@ -318,7 +318,7 @@
     "modelUnloaded": "मॉडल अनलोड किया गया",
     "noModelDownloadRequired": "कोई मॉडल नहीं - डाउनलोड करना ज़रूरी है",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "फ़ाइल का ट्रांसक्रिप्शन पूरा होने के बाद मॉडल बदले जा सकते हैं।"
+    "lockedWhileTranscribing": "इतिहास में ट्रांसक्रिप्शन पूरा होने के बाद आप मॉडल बदल सकते हैं।"
   },
   "settings": {
     "modelSettings": {

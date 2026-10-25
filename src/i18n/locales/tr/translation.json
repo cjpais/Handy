@@ -318,7 +318,7 @@
     "modelUnloaded": "Model Boşaltıldı",
     "noModelDownloadRequired": "Model Yok – İndirme Gerekli",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Dosyanın yazıya dökülmesi bitince model değiştirilebilir."
+    "lockedWhileTranscribing": "Geçmiş'teki yazıya dökme bitince modeli değiştirebilirsiniz."
   },
   "settings": {
     "modelSettings": {

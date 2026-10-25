@@ -318,7 +318,7 @@
     "modelUnloaded": "تم إلغاء تحميل النموذج",
     "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
     "downloadSpeed": "{{speed}} ميجابايت/ث",
-    "lockedWhileTranscribing": "يمكن تغيير النماذج بعد انتهاء نسخ الملف."
+    "lockedWhileTranscribing": "يمكنك تغيير النموذج بعد انتهاء النسخ في السجل."
   },
   "settings": {
     "modelSettings": {

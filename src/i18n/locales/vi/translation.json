@@ -318,7 +318,7 @@
     "modelUnloaded": "Mô Hình Đã Gỡ",
     "noModelDownloadRequired": "Chưa Có Mô Hình - Cần Tải Xuống",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Có thể đổi mô hình sau khi tệp được chép lời xong."
+    "lockedWhileTranscribing": "Bạn có thể đổi mô hình sau khi việc chép lời trong Lịch sử hoàn tất."
   },
   "settings": {
     "modelSettings": {

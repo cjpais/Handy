@@ -318,7 +318,7 @@
     "modelUnloaded": "मोडेल अनलोड गरियो",
     "noModelDownloadRequired": "मोडेल छैन - डाउनलोड आवश्यक",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "फाइलको ट्रान्सक्रिप्सन सकिएपछि मोडेल परिवर्तन गर्न सकिन्छ।"
+    "lockedWhileTranscribing": "हिस्ट्रीमा ट्रान्सक्रिप्सन सकिएपछि तपाईं मोडेल परिवर्तन गर्न सक्नुहुन्छ।"
   },
   "settings": {
     "modelSettings": {

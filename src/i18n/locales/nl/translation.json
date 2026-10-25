@@ -318,7 +318,7 @@
     "modelUnloaded": "Model ontladen",
     "noModelDownloadRequired": "Geen model - Download vereist",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Modellen kunnen worden gewisseld zodra het bestand is getranscribeerd."
+    "lockedWhileTranscribing": "Je kunt van model wisselen zodra het transcriberen in Geschiedenis klaar is."
   },
   "settings": {
     "modelSettings": {

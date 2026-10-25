@@ -318,7 +318,7 @@
     "modelUnloaded": "Model uvolněn",
     "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Modely lze změnit, až bude přepis souboru hotový."
+    "lockedWhileTranscribing": "Model můžete změnit, až se dokončí přepis v Historii."
   },
   "settings": {
     "modelSettings": {

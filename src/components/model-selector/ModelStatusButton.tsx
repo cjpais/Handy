@@ -13,6 +13,8 @@ interface ModelStatusButtonProps {
   status: ModelStatus;
   displayText: string;
   isDropdownOpen: boolean;
+  /** Ready, and transcribing in the background. */
+  busy?: boolean;
   onClick: () => void;
   className?: string;
 }
@@ -21,13 +23,16 @@ const ModelStatusButton: React.FC<ModelStatusButtonProps> = ({
   status,
   displayText,
   isDropdownOpen,
+  busy = false,
   onClick,
   className = "",
 }) => {
   const getStatusColor = (status: ModelStatus): string => {
     switch (status) {
       case "ready":
-        return "bg-moss";
+        return busy
+          ? "bg-moss animate-pulse motion-reduce:animate-none"
+          : "bg-moss";
       case "loading":
         return "bg-warning animate-pulse";
       case "downloading":

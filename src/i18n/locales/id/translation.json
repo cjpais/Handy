@@ -318,7 +318,7 @@
     "modelUnloaded": "Model Dikeluarkan dari Memori",
     "noModelDownloadRequired": "Model Belum Tersedia — Perlu Diunduh",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Model dapat diganti setelah file selesai ditranskripsi."
+    "lockedWhileTranscribing": "Anda bisa mengganti model setelah transkripsi di Riwayat selesai."
   },
   "settings": {
     "modelSettings": {

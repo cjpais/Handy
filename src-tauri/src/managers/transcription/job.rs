@@ -17,10 +17,16 @@ use crate::managers::audio::create_detector;
 /// Tries per chunk when a dictation's cancel interrupts it.
 const MAX_CHUNK_ATTEMPTS: usize = 3;
 
+/// Audio handed to the chunker at a time: the first chunk is transcribed
+/// without scoring the whole file first. Cuts match the whole-file plan (a
+/// rare short blip at a feed boundary can nudge one within its pause).
+const FEED_SAMPLES: usize = 60 * 16_000;
+
 /// What a background transcription asks of whoever runs it.
 pub trait ChunkControl {
-    /// Called before each chunk. Blocks while dictation is using the engine;
-    /// `false` stops the transcription.
+    /// Called before each feed to the chunker and before each chunk is
+    /// decoded. Blocks while dictation is using the engine; `false` stops the
+    /// transcription.
     fn proceed(&self) -> bool;
     /// `done` of `total` samples are transcribed.
     fn progress(&self, done: usize, total: usize);
@@ -53,37 +59,49 @@ impl TranscriptionManager {
         let backend = settings.vad_backend;
         let app_handle = self.app_handle.clone();
         let mut chunker = Chunker::new(Box::new(move || create_detector(backend, &app_handle)));
-        let mut chunks = chunker.push(audio);
-        chunks.extend(chunker.finish());
-        debug!("Transcribing {} chunks in the background", chunks.len());
+        let mut pieces = audio.chunks(FEED_SAMPLES);
 
-        let mut transcripts: Vec<Transcript> = Vec::with_capacity(chunks.len());
+        let mut transcripts: Vec<Transcript> = Vec::new();
         let mut done = 0;
         control.progress(done, total);
-        for chunk in chunks {
-            let len = chunk.len();
-            let mut attempts = 0;
-            let transcript = loop {
-                if !control.proceed() {
-                    return Ok(None);
-                }
-                attempts += 1;
-                // A fresh mark per chunk: a dictation's cancel stops only the
-                // chunk it caught, which is then tried again.
-                let mark = self.engine.cancel_mark();
-                match self.run_batch(mark, chunk.clone(), &setup.run_options, &active_model) {
-                    Ok(transcript) => break transcript,
-                    Err(EngineError::Cancelled) if attempts < MAX_CHUNK_ATTEMPTS => {
-                        warn!("A background chunk was cancelled; trying it again");
-                    }
-                    Err(e) => return Err(engine_error(e)),
-                }
+        loop {
+            // Scoring waits out dictation too, and stops on cancel.
+            if !control.proceed() {
+                return Ok(None);
+            }
+            let (chunks, last) = match pieces.next() {
+                Some(piece) => (chunker.push(piece), false),
+                None => (chunker.finish(), true),
             };
-            transcripts.push(transcript);
-            done += len;
-            control.progress(done, total);
+            for chunk in chunks {
+                let len = chunk.len();
+                let mut attempts = 0;
+                let transcript = loop {
+                    if !control.proceed() {
+                        return Ok(None);
+                    }
+                    attempts += 1;
+                    // A fresh mark per chunk: a dictation's cancel stops only
+                    // the chunk it caught, which is then tried again.
+                    let mark = self.engine.cancel_mark();
+                    match self.run_batch(mark, chunk.clone(), &setup.run_options, &active_model) {
+                        Ok(transcript) => break transcript,
+                        Err(EngineError::Cancelled) if attempts < MAX_CHUNK_ATTEMPTS => {
+                            warn!("A background chunk was cancelled; trying it again");
+                        }
+                        Err(e) => return Err(engine_error(e)),
+                    }
+                };
+                transcripts.push(transcript);
+                done += len;
+                control.progress(done, total);
+            }
+            if last {
+                break;
+            }
         }
 
+        debug!("Transcribed {} chunks in the background", transcripts.len());
         let paragraphs: Vec<String> = transcripts
             .into_iter()
             .map(|t| {

@@ -318,7 +318,7 @@
     "modelUnloaded": "Model frigjort",
     "noModelDownloadRequired": "Ingen model - download påkrævet",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "Modeller kan skiftes, når filen er færdigtransskriberet."
+    "lockedWhileTranscribing": "Du kan skifte model, når transskriberingen i Historik er færdig."
   },
   "settings": {
     "modelSettings": {

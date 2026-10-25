@@ -230,6 +230,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           status={getDisplayStatus()}
           displayText={getModelDisplayText()}
           isDropdownOpen={showModelDropdown}
+          busy={modelsLocked}
           onClick={() => setShowModelDropdown(!showModelDropdown)}
         />
 

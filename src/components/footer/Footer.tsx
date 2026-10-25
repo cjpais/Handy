@@ -3,8 +3,13 @@ import { getVersion } from "@tauri-apps/api/app";
 
 import ModelSelector from "../model-selector";
 import UpdateChecker from "../update-checker";
+import TranscriptionStatus from "./TranscriptionStatus";
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onShowHistory: () => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -26,6 +31,7 @@ const Footer: React.FC = () => {
       <div className="flex justify-between items-center text-xs px-4 pb-3 text-ink-2">
         <div className="flex items-center gap-4">
           <ModelSelector />
+          <TranscriptionStatus onShowHistory={onShowHistory} />
         </div>
 
         {/* Update Status */}

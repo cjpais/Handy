@@ -318,7 +318,7 @@
     "modelUnloaded": "Modello Disattivato",
     "noModelDownloadRequired": "Nessun Modello - Download Richiesto",
     "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "I modelli si potranno cambiare al termine della trascrizione del file."
+    "lockedWhileTranscribing": "Potrai cambiare modello al termine della trascrizione nella Cronologia."
   },
   "settings": {
     "modelSettings": {
