@@ -215,7 +215,8 @@
      snapping while the height eases. */
   transition:
     background-color 220ms ease,
-    border-color 220ms ease;
+    border-color 220ms ease,
+    translate 550ms var(--ease-glide);
 }
 /* A problem: warm, so it never reads as a win. */
 .try-bubble[data-shape="problem"] {
@@ -466,6 +467,19 @@
 }
 [dir="rtl"] .try-glove[data-mood="windup"] .try-pose {
   transform: rotate(-18deg) translate(-6px, -10px) scale(1.08);
+}
+/* The bubble goes with it, so its tail stays at the glove's face, and stays
+   there as it fades with the high five. */
+.try-main:is([data-stage="windup"], [data-stage="five"])
+  .try-glove[data-how="auto"]
+  + .try-bubble {
+  translate: 24px -8px;
+}
+[dir="rtl"]
+  .try-main:is([data-stage="windup"], [data-stage="five"])
+  .try-glove[data-how="auto"]
+  + .try-bubble {
+  translate: -24px -8px;
 }
 /* …and comes at you, bigger, then settles, its slap squashing it. It takes
    off from the slap, so the settle plays on in flight. */
