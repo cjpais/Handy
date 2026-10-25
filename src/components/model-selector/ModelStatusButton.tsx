@@ -27,28 +27,28 @@ const ModelStatusButton: React.FC<ModelStatusButtonProps> = ({
   const getStatusColor = (status: ModelStatus): string => {
     switch (status) {
       case "ready":
-        return "bg-green-400";
+        return "bg-moss";
       case "loading":
-        return "bg-yellow-400 animate-pulse";
+        return "bg-warning animate-pulse";
       case "downloading":
         return "bg-logo-primary animate-pulse";
       case "verifying":
-        return "bg-orange-400 animate-pulse";
+        return "bg-background-ui animate-pulse";
       case "error":
-        return "bg-red-400";
+        return "bg-error";
       case "unloaded":
-        return "bg-mid-gray/60";
+        return "bg-ink-3";
       case "none":
-        return "bg-red-400";
+        return "bg-error";
       default:
-        return "bg-mid-gray/60";
+        return "bg-ink-3";
     }
   };
 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 hover:text-text/80 transition-colors ${className}`}
+      className={`flex items-center gap-2 hover:text-text transition-colors ${className}`}
       title={`Model status: ${displayText}`}
     >
       <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />

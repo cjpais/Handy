@@ -19,12 +19,6 @@
     "about": "Om"
   },
   "onboarding": {
-    "subtitle": "För att komma igång, välj en transkriptionsmodell",
-    "existingModelsTitle": "Kompatibla modeller",
-    "downloadModelsTitle": "Tillgängliga för nedladdning",
-    "showAllModels": "Visa alla {{total}} modeller",
-    "showFewerModels": "Visa färre modeller",
-    "recommended": "Rekommenderat",
     "customModelDescription": "Stöds inte officiellt",
     "migration": {
       "title": "Dina modeller behöver uppdateras",
@@ -35,12 +29,7 @@
       "retry": "Försök igen",
       "chooseAnother": "Välj en annan modell",
       "download": "Ladda ner modeller ({{size}})",
-      "continue": "Fortsätt",
-      "timeRemaining": "{{time}} kvar"
-    },
-    "modelCard": {
-      "accuracy": "noggrannhet",
-      "speed": "hastighet"
+      "continue": "Fortsätt"
     },
     "models": {
       "small": {
@@ -68,31 +57,255 @@
       "selectModel": "Det gick inte att välja modell"
     },
     "permissions": {
-      "title": "Behörigheter krävs",
-      "description": "Handy behöver ett par behörigheter för att fungera korrekt.",
       "microphone": {
-        "title": "Mikrofonåtkomst",
-        "description": "Krävs för att höra din röst för transkription."
+        "name": "Mikrofon",
+        "why": "Så att Handy kan höra dig. Ljudet omvandlas till text på den här datorn och laddas aldrig upp."
       },
       "accessibility": {
-        "title": "Hjälpmedelsåtkomst",
-        "description": "Krävs för att skriva transkriberad text i dina program."
+        "name": "Hjälpmedel",
+        "why": "Så att din genväg fungerar i alla appar och Handy kan skriva texten där markören står."
       },
-      "grant": "Bevilja behörighet",
-      "granted": "Beviljad",
-      "waiting": "Väntar...",
-      "allGranted": "Allt klart!",
       "errors": {
         "checkFailed": "Misslyckades med att kontrollera behörigheter. Försök igen.",
         "requestFailed": "Misslyckades med att begära behörighet. Försök igen."
+      },
+      "titleMac": "Två behörigheter, sedan är du klar",
+      "titleWindows": "En behörighet, sedan är du klar",
+      "subtitleMac": "macOS frågar innan en app får lyssna eller skriva.",
+      "subtitleWindows": "Windows frågar innan en app får lyssna.",
+      "allow": "Tillåt",
+      "openSettings": "Öppna inställningar",
+      "allowed": "Tillåten",
+      "waiting": "Väntar",
+      "turnOnMac": "Slå på Handy i Systeminställningar och kom sedan tillbaka hit.",
+      "turnOnWindows": "Slå på mikrofonåtkomst i Inställningar i Windows och kom sedan tillbaka hit.",
+      "hintBoth": "Tillåt båda för att fortsätta",
+      "hintMicrophone": "Tillåt mikrofonen för att fortsätta",
+      "welcomeBack": "Välkommen tillbaka. Vi fortsätter där du slutade.",
+      "relaunch": "Svarar inte genvägen efter detta? <relaunch>Starta om Handy</relaunch> så hamnar du direkt här igen."
+    },
+    "shell": {
+      "back": "Tillbaka",
+      "continue": "Fortsätt",
+      "progress": "Steg {{step}} av {{count}}"
+    },
+    "welcome": {
+      "title": "Tala i stället för att skriva, i vilken app som helst",
+      "subtitle": "Välj språken du kommer att diktera på",
+      "languagesLabel": "Språk",
+      "noMatch": "Inget språk matchar ”{{query}}”. Handys modeller täcker cirka 100 språk, fler finns i inställningarna.",
+      "appLanguage": "Appspråk",
+      "menusIn": "Menyer på <b>{{language}}</b>",
+      "chinese": {
+        "question": "Du talar {{languages}}. Vilka tecken ska Handy skriva?",
+        "label": "Kinesiska tecken",
+        "zh-Hans": "Förenklad",
+        "zh-Hant": "Taiwan",
+        "zh-HK": "Hongkong"
+      },
+      "hint": {
+        "pickOne": "Välj minst ett språk",
+        "weak_one": "{{languages}}: ingen modell hör det bra ännu",
+        "weak_other": "{{languages}}: ingen modell hör dem bra ännu"
       }
+    },
+    "download": {
+      "checking": "Kontrollerar nedladdningen…",
+      "ready": "{{name}} är klar",
+      "failed": "Nedladdningen stoppades",
+      "downloading": "Laddar ner {{name}}",
+      "progress": "{{done}} av {{total}}",
+      "progressLeft": "{{done}} av {{total}}, {{time}} kvar",
+      "checkingName": "Kontrollerar {{name}}",
+      "checkingDetail": "Säkerställer att nedladdningen är komplett",
+      "stopped": "Nedladdningen av {{name}} stoppades",
+      "retryDetail": "Ett nytt försök fortsätter där det stannade",
+      "retryDownload": "Försök ladda ner igen",
+      "cardProgress": "Laddar ner {{percent}} %, {{done}} av {{total}}",
+      "timeLeft": "{{time}} kvar",
+      "speedLeft": "{{speed}}, {{time}} kvar"
+    },
+    "model": {
+      "title": "Välj en talmodell",
+      "subtitle": "Talmodellen omvandlar ditt tal till text, direkt på den här datorn",
+      "label": "Talmodell",
+      "lines": {
+        "recommended": "Bästa balansen mellan hastighet och noggrannhet för dina språk",
+        "faster": "Snabbare, med några fler fel",
+        "accurate": "Minst fel, men långsammare"
+      },
+      "shorts": {
+        "recommended": "Bäst balans för dig",
+        "faster": "Snabbare, några fler fel",
+        "accurate": "Minst fel, men långsammare"
+      },
+      "model": "Modell",
+      "showAll": "Visa alla {{count}} modeller",
+      "download": "Ladda ner {{size}}",
+      "downloadInstead": "Ladda ner {{size}} i stället",
+      "pauses": "{{name}} pausas vid {{percent}} %",
+      "resumeLater": "Välj den igen för att fortsätta där den slutade",
+      "hint": "Laddas ner medan du slutför installationen"
+    },
+    "demo": {
+      "title": "Tala i vilken app som helst, med en enda genväg",
+      "hold": "<0>Klicka där du vill skriva.</0> <1>Håll in genvägen och tala.</1> <2>Släpp, så dyker orden upp.</2>",
+      "tap": "<0>Klicka där du vill skriva.</0> <1>Tryck på genvägen och tala.</1> <2>Tryck igen, så dyker orden upp.</2>",
+      "apps": {
+        "messages": "Meddelanden",
+        "notes": "Anteckningar"
+      },
+      "chat": "Kommer du fortfarande i kväll?",
+      "noteTitle": "Helgplaner",
+      "screenLabel": "En bärbar dator: någon klickar i en app, trycker på genvägen och talar, och orden dyker upp där hen klickade.",
+      "change": "Ändra",
+      "yourShortcut": "Din genväg är",
+      "pressKeys": "Tryck de nya tangenterna",
+      "addKey": "Lägg nu till en tangent",
+      "cancel": "Avbryt",
+      "tryIt": "Prova själv"
+    },
+    "try": {
+      "title": "Testa nu!",
+      "subtitle": "Handy finns i hörnet och guidar dig",
+      "noteLabel": "Anteckning",
+      "placeholder": "Ny anteckning",
+      "hold": "Håll in <keys/> och tala.",
+      "tapNext": "Tryck nu på <keys/> en gång och tala sedan.",
+      "letGo": "Släpp <keys/> när du är klar.",
+      "tapAgain": "Tryck på <keys/> igen när du är klar.",
+      "watch": "Titta på anteckningen.",
+      "changeKeys": "Ändra din genväg, {{keys}}",
+      "doneHold": "Femman! Så fungerar det att hålla in.",
+      "doneHoldNext": "Nu till det handsfree-sättet.",
+      "doneTap": "Klappa till! Så fungerar det att trycka.",
+      "doneTapNext": "Prova nu att hålla in dem medan du talar.",
+      "giveFive": "Du klarade det! Ge mig en femma",
+      "highFive": "Femman",
+      "slowLine": "{{name}} tog {{wait}} på den här datorn. <faster>Prova en snabbare modell</faster>",
+      "nothingTyped": "Hmm, ingenting dök upp.",
+      "nothingTypedSub": "Klicka i anteckningen först och försök sedan igen.",
+      "silent": "Jag hörde ingenting.",
+      "silentSub": "Inget ljud kom från den här mikrofonen. Prova en annan:",
+      "noWords": "Jag uppfattade inga ord.",
+      "noWordsSub": "Försök igen och säg en hel mening.",
+      "finish": "Slutför",
+      "skip": "Hoppa över",
+      "seconds": "{{value}} s"
+    },
+    "done": {
+      "title": "Nu är allt klart",
+      "subMac": "Handy finns nu i menyraden. Håll in eller tryck på <keys/> i valfri app för att tala.",
+      "subTray": "Handy finns nu i systemfältet. Håll in eller tryck på <keys/> i valfri app för att tala.",
+      "hint": "Du kan ändra detta senare i Inställningar",
+      "highFiveLabel": "Femman",
+      "atLogin": "Starta Handy när jag loggar in",
+      "finish": "Klar",
+      "panel": {
+        "name": "Handy",
+        "ready": "Redo",
+        "languages": "Språk",
+        "model": "Talmodell",
+        "shortcut": "Genväg",
+        "changeLanguages": "Ändra språk, {{languages}}",
+        "changeModel": "Ändra talmodell, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Fungerar det inte? <guide>Installationsguide för Linux</guide>",
+      "done": "Fungerar det inte i andra appar? <guide>Installationsguide för Linux</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Liveförhandsvisning",
+      "previewTitle": "Visar dina ord i Live-överlägget medan du talar och skriver dem när du slutar",
+      "translate": "Översätter",
+      "translateTitle": "Kan göra om det du säger till engelsk text. Slå på det i inställningarna"
+    },
+    "rubric": {
+      "gradeTitle": "Noggrannhet för {{language}}: {{grade}}",
+      "accuracyTitle": "Noggrannhet för {{language}}",
+      "overallTitle": "Noggrannhet för dina språk: {{grade}}",
+      "overall": "Noggrannhet för dina språk",
+      "meaning": {
+        "A": "Mycket få fel: dina ord blir oftast som du sa dem",
+        "B": "Vissa fel: räkna med att rätta ett ord här och där",
+        "C": "Ofta fel: vissa detaljer kan gå förlorade",
+        "D": "Många fel: räkna med att kontrollera och rätta det som skrivs",
+        "F": "Ofta oklart: mycket av det du säger kan bli fel"
+      },
+      "unsupported": "Den här modellen förstår inte {{language}}, så den kan inte skriva det",
+      "unrated": "Den här modellen förstår {{language}}, men vi har inte mätt hur bra ännu",
+      "under": "under {{max}} %",
+      "between": "{{min}} till {{max}} %",
+      "over": "{{min}} % eller mer",
+      "speedTitle": "Hastighet: {{speed}}",
+      "speedName": {
+        "0": "Mycket långsam",
+        "1": "Långsam",
+        "2": "Måttlig",
+        "3": "Snabb",
+        "4": "Mycket snabb"
+      },
+      "speedMeaning": {
+        "0": "Dina ord dyker upp efter lång väntan",
+        "1": "Dina ord dyker upp efter en väntan",
+        "2": "Dina ord dyker upp efter en kort väntan",
+        "3": "Dina ord dyker upp nästan direkt",
+        "4": "Dina ord dyker upp direkt"
+      },
+      "speedPreview": "{{meaning}}, med liveförhandsvisning medan du talar",
+      "untimed": "Vi har inte mätt hur snabb den är ännu",
+      "underSeconds": "under {{max}} s",
+      "betweenSeconds": "{{min}} till {{max}} s",
+      "overSeconds": "{{min}} s eller mer"
+    },
+    "roles": {
+      "recommended": "Rekommenderad",
+      "faster": "Snabbare",
+      "accurate": "Mer noggrann",
+      "fromAll": "Bland alla modeller"
+    },
+    "speed": "Hastighet",
+    "size": "Storlek",
+    "accuracy": "Noggrannhet",
+    "search": "Sök modeller",
+    "allLabel": "Talmodeller",
+    "noMatch": "Inget matchar ”{{query}}”. Prova ett språk eller en familj som Whisper eller Parakeet",
+    "noFilterMatch": "Inga modeller matchar de här filtren",
+    "speedUntested": "Hastigheten har inte mätts ännu",
+    "speedWords": {
+      "0": "Mycket långsam, orden dyker upp efter lång väntan",
+      "1": "Långsam, orden dyker upp efter en väntan",
+      "2": "Måttlig, orden dyker upp efter en kort väntan",
+      "3": "Snabb, orden dyker upp nästan direkt",
+      "4": "Mycket snabb, orden dyker upp direkt"
+    },
+    "speedWordsPreview": {
+      "0": "Mycket långsam, med liveförhandsvisning medan du talar",
+      "1": "Långsam, med liveförhandsvisning medan du talar",
+      "2": "Måttlig, med liveförhandsvisning medan du talar",
+      "3": "Snabb, med liveförhandsvisning medan du talar",
+      "4": "Mycket snabb, med liveförhandsvisning medan du talar"
+    },
+    "missingLanguage": "Saknar ett språk",
+    "allLanguages": "Alla",
+    "downloadingLine": "Laddar ner {{percent}} % av {{total}}",
+    "customLine": "Tillagd från din modellmapp. Inte betygsatt.",
+    "legacyLine": "En äldre nedladdning. Inte betygsatt."
+  },
+  "languagePicker": {
+    "search": "Sök språk",
+    "addAnother": "Lägg till ett till",
+    "remove": "Ta bort {{language}}",
+    "alreadyAdded_one": "{{languages}} är redan tillagt.",
+    "alreadyAdded_other": "{{languages}} är redan tillagda."
   },
   "modelSelector": {
     "custom": "Anpassad",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Byter...",
     "noModelsAvailable": "Inga modeller tillgängliga",
     "verifying": "Verifierar {{modelName}}...",
     "verifyingGeneric": "Verifierar...",
@@ -104,20 +317,7 @@
     "modelError": "Modellfel",
     "modelUnloaded": "Modell avlastad",
     "noModelDownloadRequired": "Ingen modell - Nedladdning krävs",
-    "deleteModel": "Ta bort {{modelName}}",
-    "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Avbryt",
-    "cancelDownload": "Avbryt nedladdning",
-    "capabilities": {
-      "languageSelection": "Stöder flera indataspråk",
-      "singleLanguage": "Stöder endast detta språk",
-      "languageCount": "{{total}} språk",
-      "languageOnly": "Endast {{language}}",
-      "translation": "Kan översätta till engelska",
-      "translate": "Översätt till engelska",
-      "streaming": "Visar transkription i realtid medan du talar"
-    },
-    "legacy": "Äldre"
+    "downloadSpeed": "{{speed}} MB/s"
   },
   "settings": {
     "modelSettings": {
@@ -147,9 +347,7 @@
           }
         },
         "errors": {
-          "restore": "Misslyckades med att återställa ursprungligt kortkommando",
-          "set": "Misslyckades med att ställa in kortkommando: {{error}}",
-          "reset": "Misslyckades med att återställa kortkommando till ursprungsvärdet"
+          "set": "Misslyckades med att ställa in kortkommando: {{error}}"
         }
       },
       "language": {
@@ -158,6 +356,12 @@
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",
         "auto": "Automatiskt"
+      },
+      "preferredLanguages": {
+        "title": "Föredragna språk",
+        "description": "Språken du talar. Handy använder dem för att rekommendera modeller.",
+        "noMatch": "Inget språk matchar ”{{query}}”",
+        "weak": "Ingen modell känner igen {{languages}} bra ännu."
       },
       "shortcutActivation": {
         "title": "Genvägens beteende",
@@ -175,13 +379,36 @@
       }
     },
     "models": {
-      "title": "Transkriptionsmodeller",
-      "description": "Välj en transkriptionsmodell eller ladda ner ytterligare modeller. Olika modeller erbjuder varierande nivåer av noggrannhet och hastighet.",
-      "yourModels": "Nedladdade modeller",
-      "availableModels": "Tillgängliga att ladda ner",
-      "deleteConfirm": "Är du säker på att du vill ta bort {{modelName}}? Du måste ladda ner den igen för att använda den.",
-      "deleteActiveConfirm": "{{modelName}} är din aktiva modell. Om du tar bort den avbryts transkriptioner tills du väljer en ny modell. Är du säker?",
-      "deleteTitle": "Ta bort modell",
+      "title": "Modeller",
+      "changeLanguages": "Ändra språk",
+      "sections": {
+        "yours": "På den här datorn",
+        "fits": "För dina språk",
+        "untested": "Ej testade"
+      },
+      "untestedNote": "Inte testade med Handy. De kan vara långsammare eller göra fler fel.",
+      "untestedHidden_one": "{{count}} modell till är inte anpassad för diktering. Sök för att hitta den.",
+      "untestedHidden_other": "{{count}} modeller till är inte anpassade för diktering. Sök för att hitta en.",
+      "emptyYours": "Inga modeller ännu. Välj en nedan: den laddas ner och sedan använder Handy den.",
+      "showMore": "Visa {{count}} till",
+      "showFewer": "Visa färre",
+      "download": "Ladda ner och använd",
+      "downloadingThenUse": "{{percent}} % av {{total}}, sedan byts modell",
+      "loading": "Laddar…",
+      "deleteAsk": "Ta bort {{name}}? Det frigör {{size}}.",
+      "deleteAskActive": "Ta bort {{name}}? Handy kan inte transkribera förrän du väljer en annan.",
+      "cancel": "Avbryt",
+      "deleteModel": "Ta bort {{name}}",
+      "cancelDownload": "Stoppa nedladdningen av {{name}}",
+      "legend": {
+        "open": "Så betygsätts modellerna",
+        "accuracyNote": "För vart och ett av dina språk: hur många ord en modell fick fel i våra testinspelningar.",
+        "speedNote": {
+          "accelerated": "Hur lång tid 30 sekunders tal tar att skriva ut på grafikchippet i vår testdator. Den här datorn kan skilja sig.",
+          "cpu": "Hur lång tid 30 sekunders tal tar att skriva ut på processorn i vår testdator. Den här datorn kan skilja sig."
+        },
+        "marks": "? har inte mätts ännu. — hör inte det språket."
+      },
       "retiredNotice": {
         "title": "Gamla modeller fungerar inte längre med Handy",
         "description": "De tar upp {{size}} på din dator.",
@@ -189,17 +416,13 @@
         "deleted": "Gamla modeller borttagna",
         "deleteFailed": "Vissa gamla modeller kunde inte tas bort. Se loggen för mer information."
       },
-      "filters": {
-        "allLanguages": "Alla språk",
-        "streaming": "Filtrera modeller som stöder transkription i realtid",
-        "translation": "Filtrera modeller som stöder översättning till engelska"
-      },
-      "noModelsMatch": "Inga modeller matchar detta filter.",
-      "searchPlaceholder": "Sök modeller efter namn…",
       "rescan": {
         "label": "Skanna om",
         "tooltip": "Skanna om efter modeller som lagts till i modellmappen eller Hugging Face-cachen utanför Handy"
       }
+    },
+    "languages": {
+      "title": "Språk"
     },
     "sound": {
       "title": "Ljud",
@@ -373,11 +596,12 @@
       },
       "chineseScript": {
         "title": "Kinesisk skrift",
-        "description": "Skriver mandarin- och kantonesiska transkriptioner med förenklade eller traditionella tecken. Andra språk lämnas oförändrade.",
+        "description": "Skriver mandarin- och kantonesiska transkriptioner med förenklade tecken, eller med traditionella tecken som de skrivs i Taiwan eller Hongkong. Andra språk lämnas oförändrade.",
         "options": {
           "asTranscribed": "Som transkriberat",
           "simplified": "Förenklad",
-          "traditional": "Traditionell"
+          "traditionalTw": "Traditionell (Taiwan)",
+          "traditionalHk": "Traditionell (Hongkong)"
         }
       }
     },
@@ -486,6 +710,38 @@
         "description": "Sök automatiskt efter nya versioner av Handy",
         "lockedDescription": "Inaktiverad av systemkonfiguration (HANDY_DISABLE_UPDATER)"
       },
+      "whatsNewPreview": {
+        "title": "Förhandsvisa nyheter",
+        "description": "Öppna den senaste medföljande versionsinformationen utan att markera den som visad",
+        "button": "Förhandsvisa",
+        "noNotes": "Ingen medföljande versionsinformation hittades",
+        "error": "Det gick inte att förhandsvisa versionsinformationen"
+      },
+      "onboardingPreview": {
+        "title": "Förhandsvisa introduktionen",
+        "description": "Förhandsvisa introduktionsskärmarna utan att ändra behörigheter, modeller eller slutförandestatus",
+        "exitButton": "Avsluta förhandsvisning",
+        "choose": "Välj en skärm",
+        "screens": {
+          "welcome": "Välkommen",
+          "permissions": "Behörigheter",
+          "model": "Modell",
+          "demo": "Demo",
+          "try": "Testa",
+          "done": "Klart"
+        }
+      },
+      "onboardingRun": {
+        "title": "Kör introduktionen",
+        "description": "Gå igenom introduktionen på riktigt från början: den ber om behörigheter, laddar ner modeller och sparar dina val",
+        "button": "Starta"
+      },
+      "modelMigration": {
+        "title": "Modellmigrering",
+        "description": "Öppna uppdateringsskärmen för modeller i gammalt format på riktigt: den laddar ner ersättare, byter modell och tar bort gamla filer",
+        "button": "Öppna",
+        "noRetired": "Inga modeller i gammalt format på disken"
+      },
       "soundTheme": {
         "label": "Ljudtema",
         "description": "Välj ett ljudtema för återkoppling vid start och stopp av inspelning"
@@ -534,11 +790,6 @@
         "description": "Välj tangentbordsgenvägens implementation.",
         "bindingsReset": "Kortkommandona var inkompatibla och återställdes till standardvärden"
       },
-      "paths": {
-        "appData": "Appdata:",
-        "models": "Modeller:",
-        "settings": "Inställningar:"
-      },
       "pasteDelay": {
         "title": "Fördröjning vid klistra in (före)",
         "description": "Fördröjning (i millisekunder) efter att text kopierats, innan tangenttryckningen för att klistra in skickas. Öka om ingenting klistras in."
@@ -578,20 +829,6 @@
         "verdictOk": "Tangenthändelser når Handy som vanligt.",
         "verdictNoEvents": "Inga händelser fångades — tryckte du på några tangenter under testet?",
         "failed": "Diagnostiken misslyckades: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "Förhandsvisa nyheter",
-        "description": "Öppna den senaste medföljande versionsinformationen utan att markera den som visad",
-        "button": "Förhandsvisa",
-        "noNotes": "Ingen medföljande versionsinformation hittades",
-        "error": "Det gick inte att förhandsvisa versionsinformationen"
-      },
-      "onboardingPreview": {
-        "title": "Förhandsvisa introduktionen",
-        "description": "Förhandsvisa introduktionsskärmarna utan att ändra behörigheter, modeller eller slutförandestatus",
-        "permissionsButton": "Behörigheter",
-        "modelsButton": "Modellval",
-        "exitButton": "Avsluta förhandsvisning"
       }
     },
     "about": {
@@ -599,6 +836,10 @@
       "version": {
         "title": "Version",
         "description": "Nuvarande version av Handy"
+      },
+      "whatsNewUpdates": {
+        "label": "Visa nyheter",
+        "description": "Visa versionsinformation efter Handy-uppdateringar"
       },
       "appDataDirectory": {
         "title": "Mapp för appdata",
@@ -621,10 +862,6 @@
           "description": "Högpresterande inferens av OpenAI:s Whisper-modell för automatisk taligenkänning",
           "details": "Handy använder ggml för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "Visa nyheter",
-        "description": "Visa versionsinformation efter Handy-uppdateringar"
       }
     }
   },
@@ -643,19 +880,17 @@
     "portableUpdateBrowseMessage": "Portabla installationer kan inte uppdateras automatiskt. Ladda ner den senaste versionen för ditt system från GitHub Releases och installera den i samma mapp — din Data/-mapp (inställningar, modeller, inspelningar) behålls.",
     "portableUpdateBrowseButton": "Öppna GitHub Releases"
   },
+  "whatsNew": {
+    "title": "Nytt i Handy v{{version}}"
+  },
   "common": {
     "loading": "Laddar...",
     "delete": "Ta bort",
-    "back": "Tillbaka",
     "close": "Stäng",
     "open": "Öppna",
     "copy": "Kopiera",
     "clear": "Rensa",
     "noOptionsFound": "Inga alternativ hittades"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy behöver behörighet för hjälpmedel för att kunna skriva transkriberad text.",
-    "openSettings": "Öppna systeminställningar"
   },
   "errors": {
     "loadDirectory": "Fel vid laddning av mapp: {{error}}",
@@ -666,11 +901,11 @@
       "macos": "Bevilja mikrofonåtkomst i Systeminställningar → Integritet och säkerhet → Mikrofon.",
       "linux": "Bevilja mikrofonåtkomst i systemets ljud- eller integritetsinställningar."
     },
+    "noInputDeviceTitle": "Ingen mikrofon hittades",
+    "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
     "recordingFailed": "Misslyckades med att starta inspelning: {{error}}",
     "modelLoadFailed": "Misslyckades med att ladda modell: {{model}}",
     "modelLoadFailedUnknown": "okänd modell",
-    "noInputDeviceTitle": "Ingen mikrofon hittades",
-    "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
     "pasteFailedTitle": "Det gick inte att klistra in texten",
     "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
     "transcriptionFailedTitle": "Transkriptionen misslyckades"
@@ -692,9 +927,6 @@
     "transcribing": "Transkriberar...",
     "processing": "Bearbetar...",
     "loadingModel": "Laddar modell..."
-  },
-  "whatsNew": {
-    "title": "Nytt i Handy v{{version}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} kanske blockerar 1 kortkommando",

@@ -72,9 +72,8 @@ mod macos {
     /// held. Including Command is important: non-Latin layouts commonly map
     /// Cmd shortcuts to their ANSI equivalents, while standard Dvorak does not.
     ///
-    /// TIS APIs must run on the main thread. Paste itself runs on a worker,
-    /// but its Enigo calls go through `clipboard::with_enigo`, which hops to
-    /// the main thread before reaching this function.
+    /// TIS APIs must run on the main thread; paste reaches this via
+    /// `clipboard::with_enigo`, which hops there.
     fn resolve_command_v_keycode() -> Result<u16, String> {
         // SAFETY: This function is called on the macOS main thread. The returned
         // source follows the Create Rule and is released by InputSource::drop.

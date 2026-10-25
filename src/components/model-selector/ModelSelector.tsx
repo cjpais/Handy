@@ -29,7 +29,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     models,
     currentModel,
     downloadProgress,
-    downloadStats,
     verifyingModels,
     selectModel,
   } = useModelStore();
@@ -239,10 +238,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       </div>
 
       {/* Download Progress Bar for Models */}
-      <DownloadProgressDisplay
-        downloadProgress={downloadProgress}
-        downloadStats={downloadStats}
-      />
+      <DownloadProgressDisplay downloadProgress={downloadProgress} />
     </>
   );
 };

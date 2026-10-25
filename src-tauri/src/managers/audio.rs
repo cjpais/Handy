@@ -486,6 +486,8 @@ pub struct AudioRecordingManager {
     /// retry re-enumerates. The system-default case is never cached — the
     /// recorder resolves the current default itself.
     cached_device: Arc<Mutex<Option<(String, String)>>>,
+    /// The last recording was all-zero samples, not just audio without speech.
+    last_input_silent: Arc<AtomicBool>,
 }
 
 impl AudioRecordingManager {
@@ -526,6 +528,7 @@ impl AudioRecordingManager {
             recording_active: Arc::new(AtomicBool::new(false)),
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
+            last_input_silent: Arc::new(AtomicBool::new(false)),
         };
 
         // Always-on?  Open immediately.
@@ -941,11 +944,14 @@ impl AudioRecordingManager {
                 }
                 let captured = stopped.sink.finish();
                 self.return_vad(captured.vad);
+                self.last_input_silent
+                    .store(captured.input_silent, Ordering::Release);
                 captured.samples
             }
             Err(e) => {
                 // The recording and its detector are lost with the sink.
                 error!("Failed to stop recording: {e}");
+                self.last_input_silent.store(false, Ordering::Release);
                 if e.kind() != ErrorKind::NotRecording {
                     microphone.failed.store(true, Ordering::Release);
                 }
@@ -1168,6 +1174,11 @@ impl AudioRecordingManager {
         self.cancel_generation.load(Ordering::Acquire)
     }
 
+    /// Whether the last stopped recording's device sent only digital silence.
+    pub fn last_input_silent(&self) -> bool {
+        self.last_input_silent.load(Ordering::Acquire)
+    }
+
     pub fn was_cancelled_since(&self, generation: u64) -> bool {
         self.cancel_generation.load(Ordering::Acquire) != generation
     }
@@ -1209,6 +1220,7 @@ impl AudioRecordingManager {
                     Some(microphone) => self.collect_recording(microphone),
                     None => {
                         error!("Recorder not available");
+                        self.last_input_silent.store(false, Ordering::Release);
                         Vec::new()
                     }
                 };

@@ -26,6 +26,9 @@ serde = { version = "1", features = ["derive"] }
 
 [dependencies]
 once_cell = "1"
+# The OS's preferred languages (macOS, Linux; Windows' fallback). Already
+# pulled in by tauri-plugin-os.
+sys-locale = "0.3"
 tauri = { version = "2.11.5", features = [
   "protocol-asset",
   "macos-private-api",
@@ -100,6 +103,7 @@ tauri-plugin-updater = "2.10.1"
 # version wry links against so the COM types are identical.
 webview2-com = "0.38"
 windows = { version = "0.61.3", features = [
+  "System_UserProfile",
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
   "Win32_System_DataExchange",

@@ -1,227 +1,58 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ask } from "@tauri-apps/plugin-dialog";
-import {
-  AudioLines,
-  ChevronDown,
-  Globe,
-  Languages,
-  RefreshCw,
-  Search,
-} from "lucide-react";
-import type { ModelCardStatus } from "@/components/onboarding";
-import { ModelCard } from "@/components/onboarding";
+import { RefreshCw } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useModelStore } from "@/stores/modelStore";
-import RetiredModelsNotice from "./RetiredModelsNotice";
 import {
-  getLanguageLabel,
-  MODEL_CAPABILITY_LANGUAGES,
-  supportsLanguageCode,
-} from "@/lib/constants/languages.ts";
-import type { ModelInfo } from "@/bindings";
+  ModelTable,
+  Note,
+  useModelFilters,
+  type TableSection,
+} from "@/components/shared/modelTable/ModelTable";
+import RetiredModelsNotice from "./RetiredModelsNotice";
+import { ModelRow } from "./ModelRow";
+import { Legend } from "./Legend";
+import { useModelEntries } from "./modelEntries";
 
-// check if model supports a language based on its supported_languages list
-const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
-  return supportsLanguageCode(model.supported_languages, langCode);
+/** Past this many models on disk, the rest fold under "Show N more". */
+const YOURS_LIMIT = 5;
+
+/** Look for model files added outside Handy: quiet, beside its section's name. */
+const Rescan: React.FC = () => {
+  const { t } = useTranslation();
+  const rescanning = useModelStore((s) => s.isRescanning);
+  return (
+    <Tooltip text={t("settings.models.rescan.tooltip")}>
+      <button
+        type="button"
+        onClick={() => useModelStore.getState().rescanLocalModels()}
+        disabled={rescanning}
+        aria-label={t("settings.models.rescan.tooltip")}
+        className="ms-[6px] grid size-[22px] cursor-pointer place-items-center rounded-full text-ink-3 hover:bg-wash hover:text-text disabled:cursor-default focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+      >
+        <RefreshCw
+          className={`size-[12px] ${rescanning ? "animate-spin" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+    </Tooltip>
+  );
 };
 
-// Legacy models are the blob (Url-sourced) .bin downloads, superseded by
-// the catalog GGUFs. They stay runnable when already on disk, but we no longer
-// advertise the download.
-const isLegacyModel = (model: ModelInfo): boolean =>
-  typeof model.source === "object" && "Url" in model.source;
+interface ModelsSettingsProps {
+  /** Where the languages are changed (General). */
+  onChangeLanguages?: () => void;
+}
 
-export const ModelsSettings: React.FC = () => {
+/** The Models page: onboarding's model table, filling the window. */
+export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
+  onChangeLanguages,
+}) => {
   const { t } = useTranslation();
-  const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStreaming, setFilterStreaming] = useState(false);
-  const [filterTranslation, setFilterTranslation] = useState(false);
-  const [languageFilter, setLanguageFilter] = useState("all");
-  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  const [languageSearch, setLanguageSearch] = useState("");
-  const languageDropdownRef = useRef<HTMLDivElement>(null);
-  const languageSearchInputRef = useRef<HTMLInputElement>(null);
-  const {
-    models,
-    currentModel,
-    downloadingModels,
-    downloadProgress,
-    downloadStats,
-    verifyingModels,
-    loading,
-    isRescanning,
-    downloadModel,
-    cancelDownload,
-    selectModel,
-    deleteModel,
-    rescanLocalModels,
-  } = useModelStore();
-
-  // click outside handler for language dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        languageDropdownRef.current &&
-        !languageDropdownRef.current.contains(event.target as Node)
-      ) {
-        setLanguageDropdownOpen(false);
-        setLanguageSearch("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // focus search input when dropdown opens
-  useEffect(() => {
-    if (languageDropdownOpen && languageSearchInputRef.current) {
-      languageSearchInputRef.current.focus();
-    }
-  }, [languageDropdownOpen]);
-
-  // filtered languages for dropdown (exclude "auto")
-  const filteredLanguages = useMemo(() => {
-    return MODEL_CAPABILITY_LANGUAGES.filter((lang) =>
-      lang.label.toLowerCase().includes(languageSearch.toLowerCase()),
-    );
-  }, [languageSearch]);
-
-  // Get selected language label
-  const selectedLanguageLabel = useMemo(() => {
-    if (languageFilter === "all") {
-      return t("settings.models.filters.allLanguages");
-    }
-    return getLanguageLabel(languageFilter) || "";
-  }, [languageFilter, t]);
-
-  const getModelStatus = (modelId: string): ModelCardStatus => {
-    if (modelId in verifyingModels) {
-      return "verifying";
-    }
-    if (modelId in downloadingModels) {
-      return "downloading";
-    }
-    if (switchingModelId === modelId) {
-      return "switching";
-    }
-    const model = models.find((m: ModelInfo) => m.id === modelId);
-    // A stale persisted selection must never make a missing model look Active.
-    // Catalog models without files should offer their recovery action instead.
-    if (!model?.is_downloaded) {
-      return "downloadable";
-    }
-    if (modelId === currentModel) {
-      return "active";
-    }
-    return "available";
-  };
-
-  const getDownloadProgress = (modelId: string): number | undefined => {
-    const progress = downloadProgress[modelId];
-    return progress?.percentage;
-  };
-
-  const getDownloadSpeed = (modelId: string): number | undefined => {
-    const stats = downloadStats[modelId];
-    return stats?.speed;
-  };
-
-  const handleModelSelect = async (modelId: string) => {
-    setSwitchingModelId(modelId);
-    try {
-      await selectModel(modelId);
-    } finally {
-      setSwitchingModelId(null);
-    }
-  };
-
-  const handleModelDownload = async (modelId: string) => {
-    await downloadModel(modelId);
-  };
-
-  const handleModelDelete = async (modelId: string) => {
-    const model = models.find((m: ModelInfo) => m.id === modelId);
-    const modelName = model?.name || modelId;
-    const isActive = modelId === currentModel;
-
-    const confirmed = await ask(
-      isActive
-        ? t("settings.models.deleteActiveConfirm", { modelName })
-        : t("settings.models.deleteConfirm", { modelName }),
-      {
-        title: t("settings.models.deleteTitle"),
-        kind: "warning",
-      },
-    );
-
-    if (confirmed) {
-      try {
-        await deleteModel(modelId);
-      } catch (err) {
-        console.error(`Failed to delete model ${modelId}:`, err);
-      }
-    }
-  };
-
-  const handleModelCancel = async (modelId: string) => {
-    try {
-      await cancelDownload(modelId);
-    } catch (err) {
-      console.error(`Failed to cancel download for ${modelId}:`, err);
-    }
-  };
-
-  // Filter models by search query (name + description), language filter, and toggles
-  const filteredModels = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return models.filter((model: ModelInfo) => {
-      // Hide deprecated legacy (.bin) downloads unless already on disk.
-      if (isLegacyModel(model) && !model.is_downloaded) return false;
-      if (languageFilter !== "all") {
-        if (!modelSupportsLanguage(model, languageFilter)) return false;
-      }
-      if (filterStreaming && !model.supports_streaming) return false;
-      if (filterTranslation && !model.supports_translation) return false;
-
-      if (q) {
-        const haystack = `${model.name} ${model.description}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [models, languageFilter, filterStreaming, filterTranslation, searchQuery]);
-
-  // Split filtered models into downloaded (including custom) and available sections
-  const { downloadedModels, availableModels } = useMemo(() => {
-    const downloaded: ModelInfo[] = [];
-    const available: ModelInfo[] = [];
-
-    for (const model of filteredModels) {
-      if (
-        model.is_custom ||
-        model.is_downloaded ||
-        model.id in downloadingModels
-      ) {
-        downloaded.push(model);
-      } else {
-        available.push(model);
-      }
-    }
-
-    // Sort: active model first, then non-custom, then custom at the bottom
-    downloaded.sort((a, b) => {
-      if (a.id === currentModel) return -1;
-      if (b.id === currentModel) return 1;
-      if (a.is_custom !== b.is_custom) return a.is_custom ? 1 : -1;
-      return 0;
-    });
-
-    return {
-      downloadedModels: downloaded,
-      availableModels: available,
-    };
-  }, [filteredModels, downloadingModels, currentModel]);
+  const loading = useModelStore((s) => s.loading);
+  const { facts, lists } = useModelEntries();
+  const { filters, setFilters, searching, matches } = useModelFilters();
+  const [more, setMore] = useState(false);
 
   if (loading) {
     return (
@@ -233,221 +64,118 @@ export const ModelsSettings: React.FC = () => {
     );
   }
 
+  const keep = (xs: typeof lists.yours) => xs.filter(matches);
+  const moreButton = !searching && lists.yours.length > YOURS_LIMIT && (
+    <button
+      type="button"
+      onClick={() => setMore((m) => !m)}
+      className="ms-[40px] mt-[2px] flex h-[28px] cursor-pointer items-center gap-[8px] rounded-[7px] px-[2px] text-small font-medium text-ink-2 hover:text-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+    >
+      {more
+        ? t("settings.models.showFewer")
+        : t("settings.models.showMore", {
+            count: lists.yours.length - YOURS_LIMIT,
+          })}
+      <span
+        aria-hidden="true"
+        className={`inline-block size-[6px] shrink-0 border-e-[1.5px] border-b-[1.5px] border-current ${more ? "mt-[3px] -rotate-[135deg]" : "-mt-[3px] rotate-45"}`}
+      />
+    </button>
+  );
+
+  const sections: TableSection[] = searching
+    ? [
+        {
+          key: "yours",
+          label: t("settings.models.sections.yours"),
+          rows: keep(lists.yours),
+        },
+        {
+          key: "fits",
+          label: t("settings.models.sections.fits"),
+          rows: keep(lists.fits),
+        },
+        {
+          key: "partial",
+          label: t("modelTable.missingLanguage"),
+          rows: keep(lists.partial),
+        },
+        {
+          key: "untested",
+          label: t("settings.models.sections.untested"),
+          rows: filters.query.trim() ? keep(lists.untested) : [],
+          note: t("settings.models.untestedNote"),
+        },
+      ]
+    : [
+        {
+          key: "yours",
+          label: (
+            <>
+              {t("settings.models.sections.yours")}
+              <Rescan />
+            </>
+          ),
+          rows: more ? lists.yours : lists.yours.slice(0, YOURS_LIMIT),
+          after: lists.yours.length ? (
+            moreButton
+          ) : (
+            <Note>{t("settings.models.emptyYours")}</Note>
+          ),
+        },
+        {
+          key: "fits",
+          label: t("settings.models.sections.fits"),
+          rows: lists.fits,
+        },
+        {
+          key: "partial",
+          label: t("modelTable.missingLanguage"),
+          rows: lists.partial,
+        },
+      ];
+
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-4">
-      <div className="mb-4">
-        <h1 className="text-xl font-semibold mb-2">
-          {t("settings.models.title")}
-        </h1>
-        <p className="text-sm text-text/60">
-          {t("settings.models.description")}
-        </p>
-      </div>
-
-      <RetiredModelsNotice />
-
-      {/* Search bar — filter the catalog by name or description */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 pointer-events-none" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("settings.models.searchPlaceholder")}
-          className="w-full pl-9 pr-3 py-2 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-logo-primary placeholder:text-text/40"
-        />
-      </div>
-
-      <div className="space-y-6">
-        {/* Downloaded Models Section — header always visible so filter stays accessible */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-text/60">
-              {t("settings.models.yourModels")}
-            </h2>
-            <div className="flex items-center gap-2">
-              {/* Rescan local sources for models added outside Handy */}
-              <button
-                type="button"
-                onClick={() => rescanLocalModels()}
-                disabled={isRescanning}
-                title={t("settings.models.rescan.tooltip")}
-                aria-label={t("settings.models.rescan.tooltip")}
-                className="flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw
-                  className={`w-3.5 h-3.5 ${isRescanning ? "animate-spin" : ""}`}
-                />
-              </button>
-
-              {/* Vertical divider separating action from filters */}
-              <div className="h-4 w-px bg-mid-gray/30 mx-0.5" />
-              <button
-                type="button"
-                onClick={() => setFilterStreaming((enabled) => !enabled)}
-                title={t("settings.models.filters.streaming")}
-                aria-label={t("settings.models.filters.streaming")}
-                aria-pressed={filterStreaming}
-                className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
-                  filterStreaming
-                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                    : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                }`}
-              >
-                <AudioLines className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterTranslation((enabled) => !enabled)}
-                title={t("settings.models.filters.translation")}
-                aria-label={t("settings.models.filters.translation")}
-                aria-pressed={filterTranslation}
-                className={`flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
-                  filterTranslation
-                    ? "bg-logo-primary/20 text-logo-primary hover:bg-logo-primary/30"
-                    : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                }`}
-              >
-                <Languages className="w-3.5 h-3.5" />
-              </button>
-              {/* Language filter dropdown */}
-              <div className="relative" ref={languageDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                  className={`flex items-center gap-1.5 h-8 px-3 text-sm font-medium rounded-lg transition-colors ${
-                    languageFilter !== "all"
-                      ? "bg-logo-primary/20 text-logo-primary"
-                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                  }`}
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span className="max-w-[120px] truncate">
-                    {selectedLanguageLabel}
-                  </span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${
-                      languageDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {languageDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                    <div className="p-2 border-b border-mid-gray/40">
-                      <input
-                        ref={languageSearchInputRef}
-                        type="text"
-                        value={languageSearch}
-                        onChange={(e) => setLanguageSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            filteredLanguages.length > 0
-                          ) {
-                            setLanguageFilter(filteredLanguages[0].value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          } else if (e.key === "Escape") {
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }
-                        }}
-                        placeholder={t(
-                          "settings.general.language.searchPlaceholder",
-                        )}
-                        className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLanguageFilter("all");
-                          setLanguageDropdownOpen(false);
-                          setLanguageSearch("");
-                        }}
-                        className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                          languageFilter === "all"
-                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                            : "hover:bg-mid-gray/10"
-                        }`}
-                      >
-                        {t("settings.models.filters.allLanguages")}
-                      </button>
-                      {filteredLanguages.map((lang) => (
-                        <button
-                          key={lang.value}
-                          type="button"
-                          onClick={() => {
-                            setLanguageFilter(lang.value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                            languageFilter === lang.value
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                              : "hover:bg-mid-gray/10"
-                          }`}
-                        >
-                          {lang.label}
-                        </button>
-                      ))}
-                      {filteredLanguages.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-text/50 text-center">
-                          {t("settings.general.language.noResults")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          {downloadedModels.map((model: ModelInfo) => (
-            <ModelCard
-              key={model.id}
-              model={model}
-              status={getModelStatus(model.id)}
-              onSelect={handleModelSelect}
-              onDownload={handleModelDownload}
-              onDelete={handleModelDelete}
-              onCancel={handleModelCancel}
-              downloadProgress={getDownloadProgress(model.id)}
-              downloadSpeed={getDownloadSpeed(model.id)}
-              showRecommended={false}
-            />
-          ))}
-        </div>
-
-        {/* Available Models Section */}
-        {availableModels.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-sm font-medium text-text/60">
-              {t("settings.models.availableModels")}
-            </h2>
-            {availableModels.map((model: ModelInfo) => (
-              <ModelCard
-                key={model.id}
-                model={model}
-                status={getModelStatus(model.id)}
-                onSelect={handleModelSelect}
-                onDownload={handleModelDownload}
-                onDelete={handleModelDelete}
-                onCancel={handleModelCancel}
-                downloadProgress={getDownloadProgress(model.id)}
-                downloadSpeed={getDownloadSpeed(model.id)}
-                showRecommended={true}
-              />
-            ))}
-          </div>
-        )}
-        {filteredModels.length === 0 && (
-          <div className="text-center py-8 text-text/50">
-            {t("settings.models.noModelsMatch")}
-          </div>
+    <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+      {/* The title, and across from it where to change the languages the
+          grades are for. */}
+      <div className="mb-[16px] flex flex-none items-center justify-between gap-[12px] px-[12px]">
+        <h1 className="text-xl font-semibold">{t("settings.models.title")}</h1>
+        {onChangeLanguages && (
+          <button
+            type="button"
+            onClick={onChangeLanguages}
+            className="shrink-0 cursor-pointer text-sm text-text underline decoration-line-strong underline-offset-[3px] hover:decoration-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+          >
+            {t("settings.models.changeLanguages")}
+          </button>
         )}
       </div>
+      <div className="mx-[12px] mb-[16px] flex-none empty:hidden">
+        <RetiredModelsNotice />
+      </div>
+      <ModelTable
+        grading={facts}
+        filters={filters}
+        setFilters={setFilters}
+        // "Yours" always shows at rest; a search hides empty sections.
+        sections={sections.filter(
+          (s) => s.rows.length || (s.key === "yours" && !searching),
+        )}
+        renderRow={(e) => <ModelRow key={e.id} entry={e} />}
+        actionsHead={<Legend tier={facts.tier} />}
+        footer={
+          !searching &&
+          lists.untested.length > 0 && (
+            <Note>
+              {t("settings.models.untestedHidden", {
+                count: lists.untested.length,
+              })}
+            </Note>
+          )
+        }
+        thinEdge
+      />
     </div>
   );
 };
