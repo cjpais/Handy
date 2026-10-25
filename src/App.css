@@ -77,6 +77,8 @@
   --animate-burst: burst 420ms var(--ease-glide);
   /* Something new rises into place */
   --animate-rise: rise 260ms var(--ease-glide);
+  /* A menu drops open from its button */
+  --animate-drop: drop 160ms var(--ease-glide);
   /* A word swapped in place (the Models page's pinned section name) */
   --animate-fade: fade 180ms ease-out;
   /* A shortcut being captured: the empty slot's dashed edge breathes */
@@ -144,6 +146,13 @@
     from {
       opacity: 0;
       translate: 0 6px;
+    }
+  }
+  @keyframes drop {
+    from {
+      opacity: 0;
+      translate: 0 -4px;
+      scale: 0.97;
     }
   }
   /* Via a variable: Tailwind can't polyfill color-mix inside a keyframe. */

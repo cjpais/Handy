@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Trans, useTranslation } from "react-i18next";
-import { ChevronDown, Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../ui/Button";
 import { Radio } from "../../ui/Radio";
 import { Mascot } from "../../shared/Mascot";
@@ -11,11 +10,12 @@ import {
 } from "../../shared/LanguagePicker";
 import HandyTextLogo from "../../icons/HandyTextLogo";
 import { OnboardingShell, ScreenHeader } from "../OnboardingShell";
+import { AppLanguageMenu } from "../AppLanguageMenu";
 import { useOnboardingStore } from "../onboardingStore";
 import { CHINESE_SCRIPTS, isChinese } from "../data/languages";
 import { CURATED_ASR, isWeakLanguage } from "../data/models";
 import { modelMatchesLanguage } from "@handy-computer/models";
-import { SUPPORTED_LANGUAGES, getSupportedLanguage } from "@/i18n";
+import { getSupportedLanguage } from "@/i18n";
 import {
   languageList,
   languageName,
@@ -92,9 +92,6 @@ export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
 
   // What the menus are in right now (a preview never writes the setting).
   const uiLanguage = getSupportedLanguage(ui) || "en";
-  const uiLanguageName =
-    SUPPORTED_LANGUAGES.find((l) => l.code === uiLanguage)?.nativeName ??
-    uiLanguage;
   const changeUiLanguage = (code: string) => {
     i18n.changeLanguage(code);
     if (!preview) updateSetting("app_language", code);
@@ -103,35 +100,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
   return (
     <OnboardingShell
       progress={progress}
-      pill={
-        // App language: a native <select> laid invisibly over the label.
-        <label
-          title={t("onboarding.welcome.appLanguage")}
-          className="relative -me-[8px] flex shrink-0 cursor-pointer items-center gap-[6px] rounded-lg px-[8px] py-[4px] text-small text-ink-2 transition-colors hover:bg-wash hover:text-text has-[select:focus-visible]:bg-wash has-[select:focus-visible]:text-text"
-        >
-          <Globe size={16} aria-hidden="true" />
-          <span>
-            <Trans
-              i18nKey="onboarding.welcome.menusIn"
-              values={{ language: uiLanguageName }}
-              components={{ b: <b className="font-semibold text-text" /> }}
-            />
-          </span>
-          <ChevronDown size={14} aria-hidden="true" />
-          <select
-            aria-label={t("onboarding.welcome.appLanguage")}
-            value={uiLanguage}
-            onChange={(e) => changeUiLanguage(e.target.value)}
-            className="absolute inset-0 cursor-pointer opacity-0"
-          >
-            {SUPPORTED_LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code} lang={l.code}>
-                {l.nativeName}
-              </option>
-            ))}
-          </select>
-        </label>
-      }
+      pill={<AppLanguageMenu value={uiLanguage} onChange={changeUiLanguage} />}
       hint={hint}
       hintTone={weak.length ? "warning" : "quiet"}
       primary={
@@ -192,7 +161,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ progress, onContinue }) => {
           <div
             role="group"
             aria-label={t("onboarding.welcome.languagesLabel")}
-            className="grid min-h-0 flex-1 grid-cols-3 content-start gap-[2px] overflow-y-auto p-[6px] pb-[14px] text-start [scrollbar-width:thin] [mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
+            className="grid min-h-0 flex-1 grid-cols-3 content-start gap-[2px] overflow-y-auto p-[6px] pb-[14px] text-start [mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_calc(100%-6px))]"
           >
             {available.map((l, i) => (
               <LanguageOption

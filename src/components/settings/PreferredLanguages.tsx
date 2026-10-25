@@ -161,7 +161,7 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
               }}
               role="group"
               aria-label={t("settings.general.preferredLanguages.searchLabel")}
-              className={`grid max-h-[214px] grid-cols-[repeat(auto-fill,minmax(150px,1fr))] content-start gap-[2px] overflow-y-auto border-t border-line p-[6px] [scrollbar-width:thin] ${
+              className={`grid max-h-[214px] grid-cols-[repeat(auto-fill,minmax(150px,1fr))] content-start gap-[2px] overflow-y-auto border-t border-line p-[6px] ${
                 overflows
                   ? "pb-[14px] [mask-image:linear-gradient(to_bottom,black_calc(100%-36px),transparent_calc(100%-4px))]"
                   : ""
