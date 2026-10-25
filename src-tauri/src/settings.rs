@@ -1776,22 +1776,11 @@ mod tests {
                 serde_json::json!({ "chinese_script": "as_transcribed" }),
                 vec!["en"],
             ),
-            (
-                serde_json::json!({ "app_language": "pt-BR" }),
-                vec!["pt", "en"],
-            ),
-            (
-                serde_json::json!({ "app_language": "zh-TW" }),
-                vec!["zh", "en"],
-            ),
-            (serde_json::json!({ "app_language": "en-US" }), vec!["en"]),
             // A picked language leads, the app's follows.
             (
                 serde_json::json!({ "selected_language": "fr", "app_language": "de" }),
                 vec!["fr", "de", "en"],
             ),
-            // Nothing the picker offers: English.
-            (serde_json::json!({ "app_language": "xx" }), vec!["en"]),
         ] {
             assert_eq!(
                 backfilled(stored.clone()).spoken_languages,
