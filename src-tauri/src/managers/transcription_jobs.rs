@@ -1,14 +1,13 @@
-//! Background transcriptions: a file brought into History, or a History
-//! entry transcribed again. They queue and run one at a time on their own
-//! thread, in chunks, stepping aside for dictation between chunks. Their
-//! progress lives here, in memory; the entry itself only gets its text once
-//! the transcription is done.
+//! Background transcriptions (a file brought into History, or an entry
+//! transcribed again), run one at a time in chunks that yield to dictation.
+//! Progress lives here in memory; the entry gets its text only when done.
 
 use anyhow::{anyhow, Result};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::VecDeque;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
@@ -20,7 +19,7 @@ use tauri_specta::Event;
 use crate::actions::process_transcription_output;
 use crate::audio_toolkit::{decode_audio_file, probe_audio_file, read_wav_samples, save_wav_file};
 use crate::managers::history::{HistoryEntry, HistoryManager};
-use crate::managers::transcription::{ChunkControl, TranscriptionManager};
+use crate::managers::transcription::{panic_payload_message, ChunkControl, TranscriptionManager};
 
 /// A recording longer than this (one chunk) is transcribed again in the
 /// background; a shorter one directly.
@@ -230,7 +229,10 @@ impl TranscriptionJobManager {
             let entry_id = job.entry_id;
             self.emit(entry_id, TranscriptionJobStatus::Running { percent: 0 });
 
-            let result = self.run_job(job, &cancelled);
+            // A panic fails only this job; the rest of the loop still has to
+            // run, or the model would stay held and the queue stuck.
+            let result = catch_unwind(AssertUnwindSafe(|| self.run_job(job, &cancelled)))
+                .unwrap_or_else(|payload| Err(crashed(payload.as_ref())));
 
             let idle = {
                 let mut jobs = self.lock();
@@ -240,7 +242,10 @@ impl TranscriptionJobManager {
             };
             let tm = self.app.state::<Arc<TranscriptionManager>>();
             if idle {
-                tm.maybe_unload_immediately("background transcription");
+                // A dictation under way unloads the model itself when it ends.
+                if !crate::tray::dictation_in_progress(&self.app) {
+                    tm.maybe_unload_immediately("background transcription");
+                }
                 crate::tray::update_tray_menu(&self.app);
             }
             let status = match result {
@@ -323,7 +328,10 @@ impl TranscriptionJobManager {
         recording: &Path,
         cancelled: &AtomicBool,
     ) -> Result<Option<Vec<f32>>> {
-        let samples = decode_audio_file(source)?;
+        // A malformed file may panic the decoder; that fails the copy like
+        // any unreadable file, which removes the entry.
+        let samples = catch_unwind(AssertUnwindSafe(|| decode_audio_file(source)))
+            .unwrap_or_else(|payload| Err(crashed(payload.as_ref())))?;
         if cancelled.load(Ordering::Acquire) {
             return Ok(None);
         }
@@ -335,6 +343,10 @@ impl TranscriptionJobManager {
         }
         Ok(Some(samples))
     }
+}
+
+fn crashed(payload: &(dyn std::any::Any + Send)) -> anyhow::Error {
+    anyhow!("Transcription crashed: {}", panic_payload_message(payload))
 }
 
 struct Control<'a> {

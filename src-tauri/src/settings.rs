@@ -535,9 +535,7 @@ pub struct AppSettings {
     pub vad_backend: VadBackend,
     /// Decode long audio in chunks cut at pauses, for models whose accuracy
     /// degrades on long audio. Independent of `vad_enabled`, which only
-    /// decides whether silence is dropped from recordings. Background jobs
-    /// (files, long history entries transcribed again) chunk regardless; see
-    /// `policy::job_decode`.
+    /// decides whether silence is dropped from recordings.
     #[serde(default = "default_long_form_chunking")]
     pub long_form_chunking: bool,
     /// Which recording overlay to show: None / Minimal / Live. Streaming mode is

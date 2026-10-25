@@ -38,7 +38,7 @@ pub use job::ChunkControl;
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
-fn panic_payload_message(payload: &(dyn std::any::Any + Send)) -> String {
+pub(crate) fn panic_payload_message(payload: &(dyn std::any::Any + Send)) -> String {
     if let Some(message) = payload.downcast_ref::<&str>() {
         (*message).to_string()
     } else if let Some(message) = payload.downcast_ref::<String>() {

@@ -5,7 +5,7 @@
 use anyhow::{anyhow, Context, Result};
 use log::{debug, warn};
 use rubato::audioadapter_buffers::direct::InterleavedSlice;
-use rubato::{Fft, FixedSync, Resampler};
+use rubato::{Fft, FixedSync, Indexing, Resampler};
 use std::fs::File;
 use std::path::Path;
 use symphonia::core::audio::SampleBuffer;
@@ -26,6 +26,8 @@ struct AudioTrack {
     format: Box<dyn FormatReader>,
     decoder: Box<dyn Decoder>,
     track_id: u32,
+    /// The track's length in frames, if the file gives it.
+    frames: Option<u64>,
 }
 
 fn open(path: &Path) -> Result<AudioTrack> {
@@ -50,6 +52,7 @@ fn open(path: &Path) -> Result<AudioTrack> {
         .find(|t| t.codec_params.codec != CODEC_TYPE_NULL)
         .ok_or_else(|| anyhow!("The file has no audio track"))?;
     let track_id = track.id;
+    let frames = track.codec_params.n_frames;
     let decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .map_err(|e| anyhow!("The file's audio format is not supported: {}", e))?;
@@ -57,6 +60,7 @@ fn open(path: &Path) -> Result<AudioTrack> {
         format,
         decoder,
         track_id,
+        frames,
     })
 }
 
@@ -73,10 +77,11 @@ pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
         mut format,
         mut decoder,
         track_id,
+        frames,
     } = open(path)?;
 
-    let mut mono: Vec<f32> = Vec::new();
-    let mut sample_rate: Option<u32> = None;
+    // Built on the first packet, which gives the sample rate.
+    let mut resampled: Option<Resampled> = None;
     let mut buffer: Option<SampleBuffer<f32>> = None;
 
     loop {
@@ -102,54 +107,169 @@ pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
         };
         let spec = *decoded.spec();
         let channels = spec.channels.count().max(1);
-        match sample_rate {
-            None => sample_rate = Some(spec.rate),
-            Some(rate) if rate != spec.rate => {
+        let resampled = match &mut resampled {
+            None => resampled.insert(Resampled::new(spec.rate, frames)?),
+            Some(r) if r.rate != spec.rate => {
                 return Err(anyhow!("The file's sample rate changes partway through"));
             }
-            Some(_) => {}
-        }
-        let frames = decoded.capacity() as u64;
+            Some(r) => r,
+        };
+        let packet_frames = decoded.capacity() as u64;
         if buffer
             .as_ref()
             .is_none_or(|b| b.capacity() < decoded.capacity() * channels)
         {
-            buffer = Some(SampleBuffer::new(frames, spec));
+            buffer = Some(SampleBuffer::new(packet_frames, spec));
         }
         let buffer = buffer.as_mut().expect("buffer was just sized");
         buffer.copy_interleaved_ref(decoded);
-        mono.extend(
+        resampled.push(
             buffer
                 .samples()
                 .chunks_exact(channels)
                 .map(|frame| frame.iter().sum::<f32>() / channels as f32),
-        );
+        )?;
     }
 
-    let rate = sample_rate.ok_or_else(|| anyhow!("The file has no audio"))?;
+    let resampled = resampled.ok_or_else(|| anyhow!("The file has no audio"))?;
     debug!(
         "Decoded {:.1}s of audio at {} Hz from {}",
-        mono.len() as f64 / rate as f64,
-        rate,
+        resampled.input_len as f64 / resampled.rate as f64,
+        resampled.rate,
         path.display()
     );
-    resample_to_16k(mono, rate as usize)
+    resampled.finish()
 }
 
-fn resample_to_16k(mono: Vec<f32>, rate: usize) -> Result<Vec<f32>> {
-    let target = WHISPER_SAMPLE_RATE as usize;
-    if rate == target || mono.is_empty() {
-        return Ok(mono);
+/// Mono audio at the file's rate in, 16 kHz out, one resampler step at a
+/// time, so the file's audio is never held whole at its own rate.
+struct Resampled {
+    rate: u32,
+    /// Input frames taken in so far.
+    input_len: usize,
+    /// `None` when the file is already at 16 kHz.
+    stage: Option<Stage>,
+    output: Vec<f32>,
+}
+
+struct Stage {
+    resampler: Fft<f32>,
+    /// Input not yet resampled: less than one step, plus the latest packet.
+    pending: Vec<f32>,
+    /// One step's output.
+    scratch: Vec<f32>,
+    /// Output frames of the resampler's delay still to drop.
+    delay_left: usize,
+}
+
+impl Resampled {
+    /// `frames`, the track's length at its own rate if the file gives it,
+    /// sizes the output up front.
+    fn new(rate: u32, frames: Option<u64>) -> Result<Self> {
+        let target = WHISPER_SAMPLE_RATE as usize;
+        let stage = if rate as usize == target {
+            None
+        } else {
+            let resampler = Fft::<f32>::new(
+                rate as usize,
+                target,
+                RESAMPLER_CHUNK_FRAMES,
+                1,
+                FixedSync::Input,
+            )
+            .map_err(|e| anyhow!("Failed to set up resampling from {} Hz: {}", rate, e))?;
+            Some(Stage {
+                pending: Vec::with_capacity(2 * resampler.input_frames_max()),
+                scratch: vec![0.0; resampler.output_frames_max()],
+                delay_left: resampler.output_delay(),
+                resampler,
+            })
+        };
+        let mut resampled = Self {
+            rate,
+            input_len: 0,
+            stage,
+            output: Vec::new(),
+        };
+        if let Some(frames) = frames {
+            // A damaged header may claim any length; then the output just
+            // grows as it goes.
+            let _ = resampled
+                .output
+                .try_reserve(resampled.expected_len(frames as usize));
+        }
+        Ok(resampled)
     }
-    let mut resampler = Fft::<f32>::new(rate, target, RESAMPLER_CHUNK_FRAMES, 1, FixedSync::Input)
-        .map_err(|e| anyhow!("Failed to set up resampling from {} Hz: {}", rate, e))?;
-    let frames = mono.len();
-    let input = InterleavedSlice::new(&mono[..], 1, frames)
-        .map_err(|e| anyhow!("Failed to resample: {}", e))?;
-    let output = resampler
-        .process_all(&input, frames, None)
-        .map_err(|e| anyhow!("Failed to resample: {}", e))?;
-    Ok(output.take_data())
+
+    /// The 16 kHz length of `input_len` frames at the file's rate.
+    fn expected_len(&self, input_len: usize) -> usize {
+        match &self.stage {
+            Some(stage) => (stage.resampler.resample_ratio() * input_len as f64).ceil() as usize,
+            None => input_len,
+        }
+    }
+
+    fn push(&mut self, samples: impl Iterator<Item = f32>) -> Result<()> {
+        let Some(stage) = self.stage.as_mut() else {
+            let before = self.output.len();
+            self.output.extend(samples);
+            self.input_len += self.output.len() - before;
+            return Ok(());
+        };
+        let before = stage.pending.len();
+        stage.pending.extend(samples);
+        self.input_len += stage.pending.len() - before;
+        let mut taken = 0;
+        while stage.pending.len() - taken >= stage.resampler.input_frames_next() {
+            taken += stage.step(taken, None, &mut self.output)?;
+        }
+        stage.pending.drain(..taken);
+        Ok(())
+    }
+
+    fn finish(mut self) -> Result<Vec<f32>> {
+        let expected = self.expected_len(self.input_len);
+        let Some(mut stage) = self.stage.take() else {
+            return Ok(self.output);
+        };
+        let left = stage.pending.len();
+        if left > 0 {
+            stage.step(0, Some(left), &mut self.output)?;
+        }
+        // The resampler holds back its delay's worth; silence pushes it out.
+        while self.output.len() < expected {
+            stage.step(0, Some(0), &mut self.output)?;
+        }
+        self.output.truncate(expected);
+        Ok(self.output)
+    }
+}
+
+impl Stage {
+    /// Resamples one step of `pending` from `offset` (or only `partial` of
+    /// it, padded with silence) into `output`. Returns the frames it took.
+    fn step(
+        &mut self,
+        offset: usize,
+        partial: Option<usize>,
+        output: &mut Vec<f32>,
+    ) -> Result<usize> {
+        let input = InterleavedSlice::new(&self.pending[..], 1, self.pending.len())
+            .map_err(|e| anyhow!("Failed to resample: {}", e))?;
+        let scratch_len = self.scratch.len();
+        let mut out = InterleavedSlice::new_mut(&mut self.scratch[..], 1, scratch_len)
+            .map_err(|e| anyhow!("Failed to resample: {}", e))?;
+        let mut indexing = Indexing::new().input_offset(offset);
+        indexing.partial_len = partial;
+        let (taken, produced) = self
+            .resampler
+            .process_into_buffer(&input, &mut out, Some(&indexing))
+            .map_err(|e| anyhow!("Failed to resample: {}", e))?;
+        let dropped = self.delay_left.min(produced);
+        self.delay_left -= dropped;
+        output.extend_from_slice(&self.scratch[dropped..produced]);
+        Ok(taken)
+    }
 }
 
 #[cfg(test)]
@@ -190,6 +310,42 @@ mod tests {
         let peak = samples.iter().fold(0.0f32, |m, s| m.max(s.abs()));
         assert!((0.4..0.6).contains(&peak), "peak {}", peak);
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    fn resample_in_packets(mono: &[f32], rate: u32, packet: usize) -> Vec<f32> {
+        let mut resampled = Resampled::new(rate, None).unwrap();
+        for chunk in mono.chunks(packet) {
+            resampled.push(chunk.iter().copied()).unwrap();
+        }
+        resampled.finish().unwrap()
+    }
+
+    fn tone(rate: u32, frames: usize) -> Vec<f32> {
+        (0..frames)
+            .map(|i| (i as f32 / rate as f32 * 440.0 * std::f32::consts::TAU).sin() * 0.5)
+            .collect()
+    }
+
+    #[test]
+    fn resampling_keeps_length_and_timing_whatever_the_packet_size() {
+        for rate in [16_000, 44_100, 48_000] {
+            for frames in [500, rate as usize + 337] {
+                let mono = tone(rate, frames);
+                let whole = resample_in_packets(&mono, rate, frames);
+                let expected_len = (frames as f64 * 16_000.0 / rate as f64).ceil() as usize;
+                assert_eq!(whole.len(), expected_len, "{} Hz, {} frames", rate, frames);
+                for packet in [333, 4096] {
+                    assert_eq!(resample_in_packets(&mono, rate, packet), whole);
+                }
+                // Delay trimmed: within half a sample of the tone at 16 kHz (one sample is ~0.09).
+                let reference = tone(16_000, whole.len());
+                let interior = 100..whole.len().saturating_sub(100);
+                let max_error = interior
+                    .map(|i| (whole[i] - reference[i]).abs())
+                    .fold(0.0f32, f32::max);
+                assert!(max_error < 0.04, "{} Hz: error {}", rate, max_error);
+            }
+        }
     }
 
     #[test]

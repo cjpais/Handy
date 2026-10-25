@@ -1,13 +1,12 @@
 //! A long transcription in the background (a file, or a history entry
-//! transcribed again), decoded as [`job_decode`] decides: in chunks, so it can
-//! report progress and step aside for dictation between them.
+//! transcribed again): always chunked, whatever the model or `long_form_chunking`,
+//! since chunks are the unit of progress, of yielding to dictation, and of retry.
 
 use anyhow::{anyhow, Result};
 use log::{debug, info, warn};
 use std::time::Instant;
 use transcribe_cpp::Transcript;
 
-use super::policy::{job_decode, BatchDecode};
 use super::{
     effective_language_for_model, engine_error, post_process_transcription_text, real_time_factor,
     run_setup, TranscriptionManager,
@@ -67,18 +66,11 @@ impl TranscriptionManager {
             effective_language_for_model(&settings, self.model_manager.as_ref(), &active_model);
         let setup = run_setup(&info, &settings, &validated_language);
 
-        let chunks = match job_decode() {
-            BatchDecode::Chunked => {
-                let backend = settings.vad_backend;
-                let app_handle = self.app_handle.clone();
-                let mut chunker =
-                    Chunker::new(Box::new(move || create_detector(backend, &app_handle)));
-                let mut chunks = chunker.push(audio);
-                chunks.extend(chunker.finish());
-                chunks
-            }
-            BatchDecode::Whole => vec![audio],
-        };
+        let backend = settings.vad_backend;
+        let app_handle = self.app_handle.clone();
+        let mut chunker = Chunker::new(Box::new(move || create_detector(backend, &app_handle)));
+        let mut chunks = chunker.push(audio);
+        chunks.extend(chunker.finish());
         debug!("Transcribing {} chunks in the background", chunks.len());
 
         let mut transcripts: Vec<Transcript> = Vec::with_capacity(chunks.len());

@@ -149,11 +149,8 @@ impl HistoryManager {
             other => other?,
         }
 
-        // Added outside MIGRATIONS on purpose: a new migration raises
-        // user_version, and released builds before the tolerance above refuse
-        // to open a database that is "too far ahead". An extra nullable column
-        // is invisible to them, so these columns keep the database openable
-        // by every version.
+        // Not a migration: a higher user_version makes released builds refuse
+        // the database, while an extra nullable column is invisible to them.
         let has_source_name: bool = conn.query_row(
             "SELECT COUNT(*) > 0 FROM pragma_table_info('transcription_history') WHERE name = 'source_name'",
             [],
