@@ -954,12 +954,6 @@ async transcribeFile(path: string) : Promise<Result<HistoryEntry, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-/**
- * Every background transcription not yet finished.
- */
-async getTranscriptionJobs() : Promise<TranscriptionJob[]> {
-    return await TAURI_INVOKE("get_transcription_jobs");
-},
 async updateHistoryLimit(limit: number) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("update_history_limit", { limit }) };

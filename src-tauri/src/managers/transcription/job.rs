@@ -1,19 +1,18 @@
 //! Background transcription, always chunked: chunks are the unit of
 //! progress, of yielding to dictation, and of retry.
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use log::{debug, info, warn};
 use std::time::Instant;
 use transcribe_cpp::Transcript;
 
 use super::{
-    effective_language_for_model, engine_error, post_process_transcription_text, real_time_factor,
-    run_setup, TranscriptionManager,
+    engine_error, post_process_transcription_text, real_time_factor, BatchContext,
+    TranscriptionManager,
 };
 use crate::audio_toolkit::chunking::Chunker;
 use crate::engine_supervisor::EngineError;
 use crate::managers::audio::create_detector;
-use crate::settings::get_settings;
 
 /// Tries per chunk when a dictation's cancel interrupts it.
 const MAX_CHUNK_ATTEMPTS: usize = 3;
@@ -43,26 +42,13 @@ impl TranscriptionManager {
 
         self.touch_activity();
         self.initiate_model_load();
-        {
-            let mut is_loading = self.is_loading.lock().unwrap();
-            while *is_loading {
-                is_loading = self.loading_condvar.wait(is_loading).unwrap();
-            }
-        }
-        let info = self
-            .engine
-            .loaded()
-            .ok_or_else(|| anyhow!("Model is not loaded for transcription."))?;
-
-        // The settings of the moment the transcription starts hold for all
-        // of it; the model can't change until it ends.
-        let settings = get_settings(&self.app_handle);
-        let active_model = self
-            .get_current_model()
-            .unwrap_or_else(|| settings.selected_model.clone());
-        let validated_language =
-            effective_language_for_model(&settings, self.model_manager.as_ref(), &active_model);
-        let setup = run_setup(&info, &settings, &validated_language);
+        // Read once: the model can't change until the job ends.
+        let BatchContext {
+            settings,
+            active_model,
+            setup,
+            ..
+        } = self.batch_context()?;
 
         let backend = settings.vad_backend;
         let app_handle = self.app_handle.clone();

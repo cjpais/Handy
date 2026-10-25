@@ -993,28 +993,25 @@ impl TranscriptionManager {
         // A cancel from here on (during the model-load wait or chunk planning
         // included) stops every run of this transcription.
         let mark = self.engine.cancel_mark();
-
-        // Update last activity timestamp
         self.touch_activity();
+        let batch = self.batch_context()?;
+        self.transcribe_cpp(mark, batch, audio)
+    }
 
-        // Check if model is loaded, if not try to load it
+    /// Waits out any model load, then reads what a batch transcription runs
+    /// with: the loaded model, the settings, and the language resolved for it.
+    fn batch_context(&self) -> Result<BatchContext> {
         {
-            // If the model is loading, wait for it to complete.
             let mut is_loading = self.is_loading.lock().unwrap();
             while *is_loading {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }
-
-            if !self.is_model_loaded() {
-                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
-            }
         }
+        let Some(info) = self.engine.loaded() else {
+            return Err(anyhow::anyhow!("Model is not loaded for transcription."));
+        };
 
-        // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
-
-        // Validate selected language against the model's supported languages.
-        // If the language isn't supported, fall back to "auto" to prevent errors.
         // Validate against the model that's actually loaded (which can differ
         // from settings.selected_model when a caller loaded a specific model —
         // e.g. the --transcribe-file path's --model), not the persisted
@@ -1034,37 +1031,29 @@ impl TranscriptionManager {
                 settings.selected_language, validated_language, active_model
             );
         }
-
-        let Some(info) = self.engine.loaded() else {
-            return Err(anyhow::anyhow!(
-                "Model failed to load after auto-load attempt. Please check your model settings."
-            ));
-        };
-        self.transcribe_cpp(
-            mark,
+        let setup = run_setup(&info, &settings, &validated_language);
+        Ok(BatchContext {
             info,
-            audio,
-            &settings,
-            &validated_language,
-            &active_model,
-        )
+            settings,
+            active_model,
+            setup,
+        })
     }
 
-    /// transcribe-cpp: the model runs in the engine's worker process, which
-    /// recovers from crashes and hangs itself. Long audio is decoded in
-    /// chunks cut at pauses, unless the model handles it in one run.
     fn transcribe_cpp(
         &self,
         mark: CancelMark,
-        info: LoadedInfo,
+        batch: BatchContext,
         audio: Vec<f32>,
-        settings: &AppSettings,
-        validated_language: &str,
-        active_model: &str,
     ) -> Result<RunOutcome> {
-        let setup = run_setup(&info, settings, validated_language);
+        let BatchContext {
+            info,
+            settings,
+            active_model,
+            setup,
+        } = batch;
         let whole = |pcm: Vec<f32>| {
-            self.run_batch(mark, pcm, &setup.run_options, active_model)
+            self.run_batch(mark, pcm, &setup.run_options, &active_model)
                 .map_err(engine_error)
         };
         // `mark` covers every chunk, so a cancel between two stops the rest.
@@ -1075,7 +1064,7 @@ impl TranscriptionManager {
                 mark,
                 setup.run_options.clone(),
                 audio,
-                active_model,
+                &active_model,
                 settings.vad_backend,
             )
             .map_err(engine_error)?,
@@ -1108,6 +1097,14 @@ impl TranscriptionManager {
                 }
             })
     }
+}
+
+/// What a batch transcription runs with, read once before its first run.
+struct BatchContext {
+    info: LoadedInfo,
+    settings: AppSettings,
+    active_model: String,
+    setup: RunSetup,
 }
 
 /// What one transcription decoded (live or in batch), with how its runs were

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 import i18n from "@/i18n";
-import { commands, events, type TranscriptionJobStatus } from "@/bindings";
+import { events, type TranscriptionJobStatus } from "@/bindings";
 
 export type ActiveJobStatus = Extract<
   TranscriptionJobStatus,
@@ -25,12 +25,8 @@ export const useTranscriptionJobsStore = create<TranscriptionJobsStore>()(
       if (get().initialized) return;
       set({ initialized: true });
 
-      // The list fetched below may predate events already received, so it
-      // never overrides them (a finished job would come back for good).
-      const reported = new Set<number>();
       await events.transcriptionJob.listen(({ payload }) => {
         const { entry_id: entryId, status } = payload;
-        reported.add(entryId);
         set((state) => {
           const jobs = { ...state.jobs };
           if (status.state === "queued" || status.state === "running") {
@@ -44,18 +40,6 @@ export const useTranscriptionJobsStore = create<TranscriptionJobsStore>()(
           console.error(`Transcription of entry ${entryId} failed:`, status);
           toast.error(i18n.t("settings.history.transcribeFailed"));
         }
-      });
-
-      const jobs = await commands.getTranscriptionJobs();
-      set((state) => {
-        const merged = { ...state.jobs };
-        for (const job of jobs) {
-          if (reported.has(job.entry_id)) continue;
-          if (job.status.state === "queued" || job.status.state === "running") {
-            merged[job.entry_id] = job.status;
-          }
-        }
-        return { jobs: merged };
       });
     },
   }),

@@ -3,7 +3,7 @@ use crate::audio_toolkit::chunking::MAX_CHUNK_SAMPLES;
 use crate::managers::{
     history::{HistoryEntry, HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
-    transcription_jobs::{TranscriptionJob, TranscriptionJobManager},
+    transcription_jobs::TranscriptionJobManager,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -135,15 +135,6 @@ pub async fn transcribe_file(
         .await
         .map_err(|e| format!("Failed to read the file: {}", e))?
         .map_err(|e| e.to_string())
-}
-
-/// Every background transcription not yet finished.
-#[tauri::command]
-#[specta::specta]
-pub fn get_transcription_jobs(
-    jobs: State<'_, Arc<TranscriptionJobManager>>,
-) -> Vec<TranscriptionJob> {
-    jobs.list()
 }
 
 #[tauri::command]

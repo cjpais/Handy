@@ -5,6 +5,7 @@ use anyhow::{anyhow, Result};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::cell::Cell;
 use std::collections::VecDeque;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
@@ -48,7 +49,6 @@ pub struct TranscriptionJob {
 
 struct Running {
     entry_id: i64,
-    percent: u8,
     cancelled: Arc<AtomicBool>,
 }
 
@@ -177,20 +177,6 @@ impl TranscriptionJobManager {
         self.sync_job_active(&jobs);
     }
 
-    /// Every job not yet finished, running first.
-    pub fn list(&self) -> Vec<TranscriptionJob> {
-        let jobs = self.lock();
-        let running = jobs.running.iter().map(|r| TranscriptionJob {
-            entry_id: r.entry_id,
-            status: TranscriptionJobStatus::Running { percent: r.percent },
-        });
-        let queued = jobs.queue.iter().map(|&entry_id| TranscriptionJob {
-            entry_id,
-            status: TranscriptionJobStatus::Queued,
-        });
-        running.chain(queued).collect()
-    }
-
     /// Keeps the model held for as long as any job is queued or running.
     fn sync_job_active(&self, jobs: &Jobs) {
         self.app
@@ -220,7 +206,6 @@ impl TranscriptionJobManager {
                 let cancelled = Arc::new(AtomicBool::new(false));
                 jobs.running = Some(Running {
                     entry_id,
-                    percent: 0,
                     cancelled: Arc::clone(&cancelled),
                 });
                 (entry_id, cancelled)
@@ -274,6 +259,7 @@ impl TranscriptionJobManager {
             manager: self,
             entry_id: entry.id,
             cancelled,
+            percent: Cell::new(0),
         };
         let Some(text) = tm.transcribe_in_chunks(samples, &control)? else {
             return Ok(());
@@ -317,6 +303,8 @@ struct Control<'a> {
     manager: &'a TranscriptionJobManager,
     entry_id: i64,
     cancelled: &'a AtomicBool,
+    /// The last percent reported; the job starts at 0.
+    percent: Cell<u8>,
 }
 
 impl ChunkControl for Control<'_> {
@@ -336,17 +324,8 @@ impl ChunkControl for Control<'_> {
 
     fn progress(&self, done: usize, total: usize) {
         let percent = (done * 100 / total.max(1)).min(100) as u8;
-        {
-            let mut jobs = self.manager.lock();
-            match jobs.running.as_mut() {
-                Some(running) if running.entry_id == self.entry_id => {
-                    if running.percent == percent && done != 0 {
-                        return;
-                    }
-                    running.percent = percent;
-                }
-                _ => return,
-            }
+        if self.percent.replace(percent) == percent {
+            return;
         }
         self.manager
             .emit(self.entry_id, TranscriptionJobStatus::Running { percent });

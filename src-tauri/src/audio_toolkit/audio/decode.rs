@@ -8,9 +8,9 @@ use rubato::{Fft, FixedSync, Indexing, Resampler};
 use std::fs::File;
 use std::path::Path;
 use symphonia::core::audio::SampleBuffer;
-use symphonia::core::codecs::{Decoder, DecoderOptions, CODEC_TYPE_NULL};
+use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
 use symphonia::core::errors::Error as SymphoniaError;
-use symphonia::core::formats::{FormatOptions, FormatReader};
+use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
@@ -20,58 +20,33 @@ use crate::audio_toolkit::constants::WHISPER_SAMPLE_RATE;
 /// Frames the resampler takes per step.
 const RESAMPLER_CHUNK_FRAMES: usize = 1024;
 
-/// An open file's first audio track, ready to decode.
-struct AudioTrack {
-    format: Box<dyn FormatReader>,
-    decoder: Box<dyn Decoder>,
-    track_id: u32,
-    /// The track's length in frames, if the file gives it.
-    frames: Option<u64>,
-}
-
-fn open(path: &Path) -> Result<AudioTrack> {
+/// The whole of `path`'s first audio track, downmixed to mono and resampled
+/// to 16 kHz.
+pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
     let file = File::open(path).with_context(|| format!("Failed to open {}", path.display()))?;
     let source = MediaSourceStream::new(Box::new(file), Default::default());
     let mut hint = Hint::new();
     if let Some(extension) = path.extension().and_then(|e| e.to_str()) {
         hint.with_extension(extension);
     }
-    let probed = symphonia::default::get_probe()
+    let mut format = symphonia::default::get_probe()
         .format(
             &hint,
             source,
             &FormatOptions::default(),
             &MetadataOptions::default(),
         )
-        .map_err(|e| anyhow!("Not a supported audio or video file: {}", e))?;
-    let format = probed.format;
+        .map_err(|e| anyhow!("Not a supported audio or video file: {}", e))?
+        .format;
     let track = format
         .tracks()
         .iter()
         .find(|t| t.codec_params.codec != CODEC_TYPE_NULL)
         .ok_or_else(|| anyhow!("The file has no audio track"))?;
     let track_id = track.id;
-    let frames = track.codec_params.n_frames;
-    let decoder = symphonia::default::get_codecs()
+    let mut decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .map_err(|e| anyhow!("The file's audio format is not supported: {}", e))?;
-    Ok(AudioTrack {
-        format,
-        decoder,
-        track_id,
-        frames,
-    })
-}
-
-/// The whole of `path`'s first audio track, downmixed to mono and resampled
-/// to 16 kHz.
-pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
-    let AudioTrack {
-        mut format,
-        mut decoder,
-        track_id,
-        frames,
-    } = open(path)?;
 
     // Built on the first packet, which gives the sample rate.
     let mut resampled: Option<Resampled> = None;
@@ -101,7 +76,7 @@ pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
         let spec = *decoded.spec();
         let channels = spec.channels.count().max(1);
         let resampled = match &mut resampled {
-            None => resampled.insert(Resampled::new(spec.rate, frames)?),
+            None => resampled.insert(Resampled::new(spec.rate)?),
             Some(r) if r.rate != spec.rate => {
                 return Err(anyhow!("The file's sample rate changes partway through"));
             }
@@ -156,9 +131,7 @@ struct Stage {
 }
 
 impl Resampled {
-    /// `frames`, the track's length at its own rate if the file gives it,
-    /// sizes the output up front.
-    fn new(rate: u32, frames: Option<u64>) -> Result<Self> {
+    fn new(rate: u32) -> Result<Self> {
         let target = WHISPER_SAMPLE_RATE as usize;
         let stage = if rate as usize == target {
             None
@@ -178,20 +151,12 @@ impl Resampled {
                 resampler,
             })
         };
-        let mut resampled = Self {
+        Ok(Self {
             rate,
             input_len: 0,
             stage,
             output: Vec::new(),
-        };
-        if let Some(frames) = frames {
-            // A damaged header may claim any length; then the output just
-            // grows as it goes.
-            let _ = resampled
-                .output
-                .try_reserve(resampled.expected_len(frames as usize));
-        }
-        Ok(resampled)
+        })
     }
 
     /// The 16 kHz length of `input_len` frames at the file's rate.
@@ -296,7 +261,7 @@ mod tests {
     }
 
     fn resample_in_packets(mono: &[f32], rate: u32, packet: usize) -> Vec<f32> {
-        let mut resampled = Resampled::new(rate, None).unwrap();
+        let mut resampled = Resampled::new(rate).unwrap();
         for chunk in mono.chunks(packet) {
             resampled.push(chunk.iter().copied()).unwrap();
         }
