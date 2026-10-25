@@ -45,6 +45,7 @@ pub const KNOWN_ARCHES: &[&str] = &[
     "granite_nar",
     "granite_speech_nar",
     "funasr_nano",
+    "granite5_ctc",
     "medasr",
     "moss",
     "sortformer",

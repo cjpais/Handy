@@ -57,7 +57,8 @@ pub fn init() {
 /// Portable releases before v0.9.6 downloaded models to this location (or to
 /// hf-hub's default cache when it is `None`). Keeping it lets the model manager
 /// recognize those downloads after an upgrade without copying multi-gigabyte
-/// files or modifying a cache shared with other applications.
+/// files. New downloads never go here, but deleting a model removes its copies
+/// here too, even though the cache may be shared with other applications.
 pub fn previous_hf_home() -> Option<&'static PathBuf> {
     PREVIOUS_HF_HOME.get().and_then(|path| path.as_ref())
 }
