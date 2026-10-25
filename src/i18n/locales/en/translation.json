@@ -470,9 +470,14 @@
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
       },
       "acceleration": {
+        "currentlyUsing": "Currently using: {{device}}",
+        "pendingSwitch": "Pending switch to {{device}}",
+        "currentlyUsingFallback": "Currently using: {{device}} (fallback)",
+        "unavailableDevice": "{{device}} (unavailable)",
+        "preferredGpu": "Preferred GPU",
         "transcribe": {
           "title": "Hardware Acceleration",
-          "description": "Choose the hardware used for transcription. Auto uses the GPU when available and falls back to the CPU."
+          "description": "Auto chooses an available GPU. Selecting a GPU uses only that GPU, with CPU fallback when unavailable."
         },
         "gpuDevice": {
           "auto": "Auto"
@@ -893,6 +898,7 @@
     "noOptionsFound": "No options found"
   },
   "errors": {
+    "backupCpu": "your computer's CPU",
     "loadDirectory": "Error loading directory: {{error}}",
     "micPermissionDeniedTitle": "Microphone Access Denied",
     "micPermissionDenied": {
@@ -926,7 +932,8 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing...",
-    "loadingModel": "Loading model..."
+    "loadingModel": "Loading model...",
+    "recovering": "Recovering transcription..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

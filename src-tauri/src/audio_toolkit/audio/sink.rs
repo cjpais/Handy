@@ -63,6 +63,23 @@ impl CaptureVad {
 
 /// Receives spectrum levels for the recording overlay.
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
+/// Deliver meter updates outside the recorder's delivery thread. A stalled UI
+/// must not stop the capture sink from retaining audio. One pending update is
+/// enough for a visualizer; drop newer updates while the consumer is blocked.
+pub fn nonblocking_level_callback(callback: LevelCallback) -> std::io::Result<LevelCallback> {
+    let (tx, rx) = mpsc::sync_channel(1);
+    std::thread::Builder::new()
+        .name("recording-meter".into())
+        .spawn(move || {
+            while let Ok(levels) = rx.recv() {
+                callback(levels);
+            }
+        })?;
+    Ok(Arc::new(move |levels| {
+        let _ = tx.try_send(levels);
+    }))
+}
+
 /// Receives each 16 kHz mono frame that passes the recording's VAD policy, in
 /// order. Used to feed live streaming transcription as audio arrives.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;

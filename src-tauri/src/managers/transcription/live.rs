@@ -5,13 +5,15 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 use log::{debug, error, info};
+use tauri_specta::Event;
 use transcribe_cpp::StreamOptions;
 
 use super::chunked::ChunkedDecode;
 use super::policy::LiveDecode;
 use super::{
     effective_language_for_model, emit_stream_text, join_chunks, lock_perf, run_setup,
-    PreviewScript, RunOutcome, RunSetup, StreamFinalizeReply, StreamPerf, TranscriptionManager,
+    PreviewScript, RunOutcome, RunSetup, StreamFinalizeReply, StreamPerf, StreamPhase,
+    StreamPhaseEvent, StreamWorkKind, TranscriptionManager,
 };
 use crate::audio_toolkit::OutputLanguageEvidence;
 use crate::engine_supervisor::{EngineError, LoadedInfo, StreamHandle, StreamProgress};
@@ -173,10 +175,23 @@ impl<'a> StreamSession<'a> {
         // result, and the caller falls back to batch transcription.
         // StreamOptions::default() uses CommitPolicy::Auto and lets the
         // family pick its own streaming strategy (no family-specific ext).
-        let stream = match tm.engine.start_stream(
+        let recovery_app = tm.app_handle.clone();
+        let stream = match tm.engine.start_stream_with_failure_handler(
             setup.run_options.clone(),
             StreamOptions::default(),
             on_progress,
+            move || {
+                // The audio recorder keeps the full clip for batch recovery
+                // after stop; make the unavailable live preview explicit now.
+                // Decoder state died with its worker. Replaying into a new live
+                // decoder would need duplicate-text and repeated-failure handling;
+                // defer full-clip decoding until stop while capture continues.
+                let _ = StreamPhaseEvent {
+                    phase: StreamPhase::Working,
+                    kind: Some(StreamWorkKind::Recovering),
+                }
+                .emit(&recovery_app);
+            },
         ) {
             Ok(stream) => stream,
             Err(e) => {

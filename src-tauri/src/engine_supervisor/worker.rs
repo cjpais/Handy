@@ -109,7 +109,7 @@ pub fn run() -> i32 {
                         session = Some(loaded);
                         Response::Loaded(info)
                     }
-                    Err(e) => Response::Error(e),
+                    Err(error) => native_error(error),
                 }
             }
             Request::Run { options } => match session.as_mut() {
@@ -117,7 +117,7 @@ pub fn run() -> i32 {
                     inject_fault("run", info.on_gpu);
                     match session.run(&pcm, &options) {
                         Ok(transcript) => Response::Transcript(transcript),
-                        Err(e) => Response::Error(e.to_string()),
+                        Err(e) => native_error(e),
                     }
                 }
                 None => not_loaded(),
@@ -136,7 +136,7 @@ pub fn run() -> i32 {
                         crate::memory::trim_freed_memory();
                         continue;
                     }
-                    Err(e) => Response::Error(e.to_string()),
+                    Err(e) => native_error(e),
                 },
                 None => not_loaded(),
             },
@@ -205,7 +205,7 @@ fn serve_stream(
                             .then(|| stream.text());
                         (Response::Fed { update, text }, false)
                     }
-                    Err(e) => (Response::Error(e.to_string()), false),
+                    Err(e) => (native_error(e), false),
                 }
             }
             Request::Finalize { want_language } => {
@@ -228,7 +228,7 @@ fn serve_stream(
                         )
                     }
                     // Finalize ends the stream even when it fails.
-                    Err(e) => (Response::Error(e.to_string()), true),
+                    Err(e) => (native_error(e), true),
                 }
             }
             Request::StreamReset => {
@@ -248,6 +248,16 @@ fn serve_stream(
     Ok(())
 }
 
+/// Preserve native error categories across IPC. Backend errors invalidate the
+/// context; allocation errors need a device-presence check before recovery.
+fn native_error(error: transcribe_cpp::Error) -> Response {
+    match error {
+        transcribe_cpp::Error::Backend(_) => Response::BackendError(error.to_string()),
+        transcribe_cpp::Error::OutOfMemory(_) => Response::AllocationError(error.to_string()),
+        _ => Response::Error(error.to_string()),
+    }
+}
+
 fn not_loaded() -> Response {
     Response::Error("no model loaded".to_string())
 }
@@ -256,7 +266,7 @@ fn load(
     path: &Path,
     backend: Backend,
     selector: DeviceSelector,
-) -> Result<(Session, LoadedInfo), String> {
+) -> transcribe_cpp::Result<(Session, LoadedInfo)> {
     let device = match selector {
         DeviceSelector::Auto => None,
         DeviceSelector::Key(key) => {
@@ -264,37 +274,53 @@ fn load(
                 let info = DeviceInfo::from_device(d);
                 info.is_gpu() && info.key == key
             });
-            if found.is_none() {
-                warn!(
-                    "Stored transcribe GPU device '{}' is no longer available; using automatic device selection",
-                    key
-                );
-            }
-            found
+            let Some(device) = found else {
+                warn!("Selected GPU '{}' is unavailable; using CPU", key);
+                return load(path, Backend::Cpu, DeviceSelector::Auto);
+            };
+            Some(device)
         }
+        DeviceSelector::RecoveryKey(key) => Some(
+            transcribe_cpp::devices()
+                .into_iter()
+                .find(|device| {
+                    let info = DeviceInfo::from_device(device);
+                    info.is_gpu() && info.key == key
+                })
+                .ok_or_else(|| {
+                    transcribe_cpp::Error::Backend(format!(
+                        "Recovery GPU is no longer available: {key}"
+                    ))
+                })?,
+        ),
         DeviceSelector::Index(index) => {
             let device = transcribe_cpp::devices()
                 .into_iter()
                 .find(|d| d.index == Some(index))
                 .ok_or_else(|| {
-                    format!("No compute device with index {index} (see --list-devices)")
+                    transcribe_cpp::Error::InvalidArgument(format!(
+                        "No compute device with index {index} (see --list-devices)"
+                    ))
                 })?;
             if matches!(device.device_type, DeviceType::Accel | DeviceType::Unknown) {
-                return Err(format!(
+                return Err(transcribe_cpp::Error::InvalidArgument(format!(
                     "Device index {index} ({}) cannot host a model",
                     device.kind
-                ));
+                )));
             }
             Some(device)
         }
     };
 
     inject_fault("load", backend != Backend::Cpu);
-    let model = Model::load_with(path, &ModelOptions { backend, device })
-        .map_err(|e| format!("Failed to load model: {e}"))?;
-    let session = model
-        .session()
-        .map_err(|e| format!("Failed to create session: {e}"))?;
+    if backend != Backend::Cpu {
+        let key = device
+            .as_ref()
+            .map(|device| DeviceInfo::from_device(device).key);
+        inject_load_error(key.as_deref())?;
+    }
+    let model = Model::load_with(path, &ModelOptions { backend, device })?;
+    let session = model.session()?;
     let bound = model.device().ok().map(|d| DeviceInfo::from_device(&d));
     let backend_name = model.backend();
     let info = LoadedInfo {
@@ -309,14 +335,42 @@ fn load(
             .as_ref()
             .map(|d| d.label().to_string())
             .unwrap_or_else(|| "unknown".to_string()),
-        capabilities: model
-            .capabilities()
-            .map_err(|e| format!("Failed to read model capabilities: {e}"))?,
+        device_key: bound.as_ref().map(|d| d.key.clone()),
+        capabilities: model.capabilities()?,
         supports_initial_prompt: model.supports(Feature::InitialPrompt),
         supports_long_form: model.supports(Feature::LongForm),
         supports_vocabulary: model.supports(Feature::Vocabulary),
     };
     Ok((session, info))
+}
+
+/// Debug-only typed model-load failures, keyed by stable device identity.
+/// This exercises mixed failures (e.g. one backend error followed by OOM).
+#[cfg(debug_assertions)]
+fn inject_load_error(key: Option<&str>) -> transcribe_cpp::Result<()> {
+    let Some(kind) = std::env::var("HANDY_WORKER_LOAD_ERRORS")
+        .ok()
+        .and_then(|value| {
+            serde_json::from_str::<std::collections::HashMap<String, String>>(&value).ok()
+        })
+        .and_then(|rules| key.and_then(|key| rules.get(key).cloned()))
+    else {
+        return Ok(());
+    };
+    match kind.as_str() {
+        "backend" => Err(transcribe_cpp::Error::Backend(
+            "injected device load failure".into(),
+        )),
+        "allocation" => Err(transcribe_cpp::Error::OutOfMemory(
+            "injected GPU memory exhaustion".into(),
+        )),
+        _ => Ok(()),
+    }
+}
+
+#[cfg(not(debug_assertions))]
+fn inject_load_error(_key: Option<&str>) -> transcribe_cpp::Result<()> {
+    Ok(())
 }
 
 /// Debug-build fault injection for exercising crash/hang recovery:
@@ -475,5 +529,43 @@ fn take_stdout_for_protocol() -> io::Result<File> {
             return Err(io::Error::last_os_error());
         }
         Ok(File::from_raw_handle(handle as _))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn backend_errors_remain_distinct_across_the_worker_protocol() {
+        let response = native_error(transcribe_cpp::Error::Backend("device lost".into()));
+        let frame = super::super::protocol::encode_message(&response, None).unwrap();
+        let (decoded, _) = read_message::<Response>(&mut frame.as_slice())
+            .unwrap()
+            .unwrap();
+        assert!(
+            matches!(decoded, Response::BackendError(message) if message.contains("device lost"))
+        );
+    }
+
+    #[test]
+    fn allocation_errors_remain_distinct_from_backend_errors() {
+        assert!(matches!(
+            native_error(transcribe_cpp::Error::OutOfMemory(
+                "allocation failed".into()
+            )),
+            Response::AllocationError(_)
+        ));
+    }
+
+    #[test]
+    fn request_errors_do_not_invalidate_the_backend() {
+        for error in [
+            transcribe_cpp::Error::InvalidArgument("device lost".into()),
+            transcribe_cpp::Error::Unsupported("device lost".into()),
+            transcribe_cpp::Error::ModelLoad("device lost".into()),
+        ] {
+            assert!(matches!(native_error(error), Response::Error(_)));
+        }
     }
 }
