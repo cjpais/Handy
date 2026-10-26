@@ -1,3 +1,6 @@
+/** Bytes in a megabyte (MiB), as model sizes and download speeds count them. */
+export const BYTES_PER_MB = 1024 * 1024;
+
 export const formatModelSize = (sizeMb: number | null | undefined): string => {
   if (!sizeMb || !Number.isFinite(sizeMb) || sizeMb <= 0) {
     return "Unknown size";

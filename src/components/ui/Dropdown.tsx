@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 export interface DropdownOption {
   value: string;
-  label: string;
+  label: React.ReactNode;
   description?: string;
   disabled?: boolean;
 }
@@ -17,6 +17,10 @@ interface DropdownProps {
   placeholder?: string;
   disabled?: boolean;
   onOpen?: () => void;
+  /** Where the menu opens: below the button (default), or above it. */
+  placement?: "below" | "above";
+  /** Highlight colour for hover and selection. */
+  tone?: "brand" | "neutral";
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -28,6 +32,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
   placeholder = "Select an option...",
   disabled = false,
   onOpen,
+  placement = "below",
+  tone = "brand",
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +51,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const hover =
+    tone === "neutral" ? "hover:bg-wash" : "hover:bg-logo-primary/10";
+  const selected = tone === "neutral" ? "bg-line" : "bg-logo-primary/20";
 
   const selectedOption = options.find(
     (option) => option.value === selectedValue,
@@ -65,13 +75,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         type="button"
-        className={`px-2 py-[5px] text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
+        className={`px-2 py-[5px] text-sm font-semibold bg-wash border border-line-strong rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
           disabled
             ? "opacity-50 cursor-not-allowed"
-            : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
+            : `${hover} cursor-pointer ${tone === "neutral" ? "hover:border-ink-3" : "hover:border-logo-primary"}`
         }`}
         onClick={handleToggle}
         disabled={disabled}
+        aria-expanded={isOpen}
       >
         <span className="truncate">{selectedOption?.label || placeholder}</span>
         <svg
@@ -90,12 +101,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </button>
       {isOpen && !disabled && (
         <div
-          className={`absolute top-full mt-1 bg-background border border-mid-gray/80 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
+          className={`absolute ${placement === "above" ? "bottom-full mb-1" : "top-full mt-1"} bg-background border border-line-strong rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
             menuClassName ?? "left-0 right-0"
           }`}
         >
           {options.length === 0 ? (
-            <div className="px-2 py-1 text-sm text-mid-gray">
+            <div className="px-2 py-1 text-sm text-ink-3">
               {t("common.noOptionsFound")}
             </div>
           ) : (
@@ -103,10 +114,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
               <button
                 key={option.value}
                 type="button"
-                className={`w-full text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
+                className={`w-full text-sm text-start ${hover} transition-colors duration-150 ${
                   option.description ? "px-3 py-2" : "px-2 py-1"
                 } ${
-                  selectedValue === option.value ? "bg-logo-primary/20" : ""
+                  selectedValue === option.value ? selected : ""
                 } ${option.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={() => handleSelect(option.value)}
                 disabled={option.disabled}
@@ -121,7 +132,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   {option.label}
                 </span>
                 {option.description && (
-                  <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-mid-gray">
+                  <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-ink-3">
                     {option.description}
                   </span>
                 )}

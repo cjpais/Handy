@@ -90,6 +90,7 @@ pub async fn delete_model(
     // If deleting the active model, unload it and clear the setting
     let settings = get_settings(&app_handle);
     if settings.selected_model == model_id {
+        transcription_manager.ensure_model_unlocked()?;
         // Waits for the worker to exit (behind any transcription in progress)
         // before the file is deleted, so keep it off the async workers.
         let tm = Arc::clone(&transcription_manager);
@@ -119,6 +120,7 @@ pub async fn delete_model(
 pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String> {
     let model_manager = app.state::<Arc<ModelManager>>();
     let transcription_manager = app.state::<Arc<TranscriptionManager>>();
+    transcription_manager.ensure_model_unlocked()?;
 
     // Atomically claim the loading slot — prevents concurrent model loads
     // from tray double-clicks or overlapping commands. The guard resets the
@@ -139,13 +141,11 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let settings = get_settings(app);
     let unload_timeout = settings.model_unload_timeout;
     let old_model = settings.selected_model.clone();
-    let old_onboarding_completed = settings.onboarding_completed;
 
     // Persist the new selection early so the frontend sees the correct model
     // when it reacts to events emitted by load_model.
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
-    settings.onboarding_completed = true;
 
     write_settings(app, settings);
 
@@ -174,7 +174,6 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     if let Err(e) = transcription_manager.load_model(model_id) {
         let mut settings = get_settings(app);
         settings.selected_model = old_model;
-        settings.onboarding_completed = old_onboarding_completed;
         write_settings(app, settings);
         return Err(e.to_string());
     }
