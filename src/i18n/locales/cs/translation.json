@@ -356,7 +356,14 @@
         "description": "Vyberte jazyk rozpoznávání řeči. Auto jazyk určí automaticky, zatímco výběr konkrétního jazyka může zlepšit přesnost.",
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",
-        "auto": "Automaticky"
+        "auto": "Automaticky",
+        "autoUnavailable": {
+          "oneLanguage": "S tímto modelem funguje jen jeden z vašich jazyků",
+          "undetectable": "Není k dispozici pro {{languages}}",
+          "noMatch": "Žádný z vašich jazyků s tímto modelem nefunguje"
+        },
+        "detectorMissing": "Používá se {{language}}, dokud se nestáhne detektor jazyka.",
+        "detectorDownload": "Stáhnout"
       },
       "preferredLanguages": {
         "title": "Preferované jazyky",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Dělení dlouhého zvuku",
         "description": "Před přepisem rozdělí dlouhé nahrávky v pauzách, což obvykle zlepšuje kvalitu přepisu. Přepisované soubory a dlouhé opakované přepisy se rozdělují vždy."
+      },
+      "languageDetection": {
+        "title": "Rozpoznání jazyka",
+        "description": "Jak režim Automaticky vybírá jazyk. Modely, které ho samy nerozpoznají, vždy používají detektor Handy omezený na vaše jazyky. Volba Vždy ho používá pro všechny modely kromě streamovacích.",
+        "options": {
+          "whenNeeded": "Podle potřeby",
+          "always": "Vždy"
+        },
+        "detectorMissing": "Detektor jazyka není stažený."
       },
       "vadBackend": {
         "title": "Backend detekce hlasu",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
+      },
+      "languageDetectionWindow": {
+        "title": "Zvuk pro rozpoznání jazyka",
+        "description": "Kolik sekund řeči detektor jazyka slyší. Delší je přesnější, ale pomalejší."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostika klávesnice",

@@ -356,7 +356,14 @@
         "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",
-        "auto": "Automatiskt"
+        "auto": "Automatiskt",
+        "autoUnavailable": {
+          "oneLanguage": "Bara ett av dina språk fungerar med den här modellen",
+          "undetectable": "Inte tillgängligt med {{languages}}",
+          "noMatch": "Inget av dina språk fungerar med den här modellen"
+        },
+        "detectorMissing": "Använder {{language}} tills språkidentifieringen har laddats ned.",
+        "detectorDownload": "Ladda ned"
       },
       "preferredLanguages": {
         "title": "Föredragna språk",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Dela upp långt ljud",
         "description": "Delar upp långa inspelningar vid pauser före transkribering, vilket oftast förbättrar transkriberingen. Transkriberade filer och långa omtranskriberingar delas alltid upp."
+      },
+      "languageDetection": {
+        "title": "Språkidentifiering",
+        "description": "Hur Automatiskt väljer språk. Modeller som inte själva kan identifiera det använder alltid Handys språkidentifiering, begränsad till dina språk. Alltid använder den för alla modeller utom streamingmodeller.",
+        "options": {
+          "whenNeeded": "Vid behov",
+          "always": "Alltid"
+        },
+        "detectorMissing": "Språkidentifieringen har inte laddats ned."
       },
       "vadBackend": {
         "title": "Backend för röstdetektering",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
+      },
+      "languageDetectionWindow": {
+        "title": "Ljud för språkidentifiering",
+        "description": "Sekunder tal som språkidentifieringen hör. Längre är noggrannare men långsammare."
       },
       "keyboardDiagnostic": {
         "title": "Tangentbordsdiagnostik",

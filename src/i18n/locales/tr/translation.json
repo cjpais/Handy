@@ -356,7 +356,14 @@
         "description": "Konuşma tanıma dilini seçin. 'Otomatik' seçeneği dili kendisi belirler, ancak belirli bir dil seçmek o dildeki doğruluğu artırabilir.",
         "searchPlaceholder": "Dil ara...",
         "noResults": "Dil bulunamadı",
-        "auto": "Otomatik"
+        "auto": "Otomatik",
+        "autoUnavailable": {
+          "oneLanguage": "Dillerinizden yalnızca biri bu modelle çalışıyor",
+          "undetectable": "{{languages}} ile kullanılamaz",
+          "noMatch": "Dillerinizden hiçbiri bu modelle çalışmıyor"
+        },
+        "detectorMissing": "Dil algılayıcı indirilene kadar {{language}} kullanılıyor.",
+        "detectorDownload": "İndir"
       },
       "preferredLanguages": {
         "title": "Tercih Edilen Diller",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Uzun Sesi Bölme",
         "description": "Uzun kayıtları yazıya dökmeden önce duraklamalardan böler; bu genellikle yazıya dökme performansını artırır. Yazıya dökülen dosyalar ve uzun yeniden transkripsiyonlar her zaman bölünür."
+      },
+      "languageDetection": {
+        "title": "Dil Algılama",
+        "description": "Otomatik modun dili nasıl seçtiği. Dili kendisi algılayamayan modeller, dillerinizle sınırlı olarak her zaman Handy'nin dil algılayıcısını kullanır. Her zaman, akış modelleri dışındaki tüm modellerde onu kullanır.",
+        "options": {
+          "whenNeeded": "Gerektiğinde",
+          "always": "Her zaman"
+        },
+        "detectorMissing": "Dil algılayıcı indirilmedi."
       },
       "vadBackend": {
         "title": "Ses Etkinliği Arka Ucu",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Ekstra Kayıt Tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
+      },
+      "languageDetectionWindow": {
+        "title": "Dil Algılama Sesi",
+        "description": "Dil algılayıcının duyduğu konuşma saniyesi. Daha uzun daha doğru ama daha yavaştır."
       },
       "keyboardDiagnostic": {
         "title": "Klavye Tanılaması",

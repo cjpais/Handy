@@ -356,7 +356,14 @@
         "description": "Sélectionnez la langue pour la reconnaissance vocale. Auto déterminera automatiquement la langue, tandis que sélectionner une langue spécifique peut améliorer la précision pour cette langue.",
         "searchPlaceholder": "Rechercher des langues...",
         "noResults": "Aucune langue trouvée",
-        "auto": "Automatique"
+        "auto": "Automatique",
+        "autoUnavailable": {
+          "oneLanguage": "Une seule de vos langues fonctionne avec ce modèle",
+          "undetectable": "Indisponible avec {{languages}}",
+          "noMatch": "Aucune de vos langues ne fonctionne avec ce modèle"
+        },
+        "detectorMissing": "{{language}} est utilisé jusqu'au téléchargement du détecteur de langue.",
+        "detectorDownload": "Télécharger"
       },
       "preferredLanguages": {
         "title": "Langues préférées",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Découpage des longs enregistrements",
         "description": "Découpe les longs enregistrements aux pauses avant la transcription, ce qui améliore généralement la qualité de la transcription. Les fichiers transcrits et les longues re-transcriptions sont toujours découpés."
+      },
+      "languageDetection": {
+        "title": "Détection de la langue",
+        "description": "Comment le mode Auto choisit la langue. Les modèles qui ne peuvent pas la détecter eux-mêmes utilisent toujours le détecteur de Handy, limité à vos langues. Toujours l'utilise pour tous les modèles sauf ceux en streaming.",
+        "options": {
+          "whenNeeded": "Si nécessaire",
+          "always": "Toujours"
+        },
+        "detectorMissing": "Le détecteur de langue n'est pas téléchargé."
       },
       "vadBackend": {
         "title": "Backend de détection vocale",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio de détection de la langue",
+        "description": "Secondes de parole entendues par le détecteur de langue. Plus long est plus précis mais plus lent."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostic du clavier",

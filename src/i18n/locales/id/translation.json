@@ -356,7 +356,14 @@
         "description": "Pilih bahasa untuk pengenalan ucapan. Opsi Otomatis akan mendeteksi bahasa, sedangkan memilih bahasa tertentu dapat meningkatkan akurasi untuk bahasa tersebut.",
         "searchPlaceholder": "Cari bahasa...",
         "noResults": "Bahasa tidak ditemukan",
-        "auto": "Otomatis"
+        "auto": "Otomatis",
+        "autoUnavailable": {
+          "oneLanguage": "Hanya satu bahasa Anda yang berfungsi dengan model ini",
+          "undetectable": "Tidak tersedia untuk {{languages}}",
+          "noMatch": "Tidak ada bahasa Anda yang berfungsi dengan model ini"
+        },
+        "detectorMissing": "Menggunakan {{language}} sampai pendeteksi bahasa selesai diunduh.",
+        "detectorDownload": "Unduh"
       },
       "preferredLanguages": {
         "title": "Bahasa Pilihan",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Pemisahan Audio Panjang",
         "description": "Memisahkan rekaman panjang pada jeda sebelum ditranskripsi, yang biasanya meningkatkan kinerja transkripsi. File yang ditranskripsi dan transkripsi ulang yang panjang selalu dipisahkan."
+      },
+      "languageDetection": {
+        "title": "Deteksi Bahasa",
+        "description": "Cara mode Otomatis memilih bahasa. Model yang tidak bisa mendeteksinya sendiri selalu memakai pendeteksi bahasa Handy, terbatas pada bahasa Anda. Selalu memakainya untuk semua model kecuali model streaming.",
+        "options": {
+          "whenNeeded": "Saat diperlukan",
+          "always": "Selalu"
+        },
+        "detectorMissing": "Pendeteksi bahasa belum diunduh."
       },
       "vadBackend": {
         "title": "Backend Deteksi Aktivitas Suara",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Buffer Perekaman Tambahan",
         "description": "Waktu tambahan (dalam milidetik) untuk terus merekam setelah Anda melepas tombol agar audio di bagian akhir tetap tertangkap. 0 = tanpa buffer tambahan."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio Deteksi Bahasa",
+        "description": "Detik ucapan yang didengar pendeteksi bahasa. Lebih lama lebih akurat tetapi lebih lambat."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostik Keyboard",

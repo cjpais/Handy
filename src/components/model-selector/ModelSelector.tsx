@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import { useModelStore } from "../../stores/modelStore";
+import { LANGUAGE_DETECTOR_ID } from "../../hooks/useLanguageDetector";
 import {
   areModelsLocked,
   useModelsLocked,
@@ -104,6 +105,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       "model-download-complete",
       (event) => {
         const modelId = event.payload;
+        // The language detector downloads like a model but isn't one.
+        if (modelId === LANGUAGE_DETECTOR_ID) return;
         setTimeout(async () => {
           try {
             const isRecording = await commands.isRecording();

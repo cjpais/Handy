@@ -23,8 +23,9 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ChineseScript, ClipboardHandling, KeyboardImplementation,
-    LLMPrompt, OverlayPosition, OverlayStyle, PasteMethod, ShortcutActivation, ShortcutBinding,
-    SoundTheme, Theme, TypingTool, VadBackend, APPLE_INTELLIGENCE_PROVIDER_ID,
+    LLMPrompt, LanguageDetectionMode, OverlayPosition, OverlayStyle, PasteMethod,
+    ShortcutActivation, ShortcutBinding, SoundTheme, Theme, TypingTool, VadBackend,
+    APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -906,6 +907,28 @@ pub fn change_word_correction_threshold_setting(
 ) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.word_correction_threshold = threshold;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_language_detection_setting(
+    app: AppHandle,
+    mode: LanguageDetectionMode,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.language_detection = mode;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_language_detection_window_setting(app: AppHandle, secs: u32) -> Result<(), String> {
+    let (min, max) = settings::LANGUAGE_DETECTION_WINDOW_SECS.into_inner();
+    let mut settings = settings::get_settings(&app);
+    settings.language_detection_window_secs = secs.clamp(min, max);
     settings::write_settings(&app, settings);
     Ok(())
 }

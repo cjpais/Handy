@@ -356,7 +356,14 @@
         "description": "Vælg sproget til talegenkendelse. Auto tyder automatisk sproget, mens valg af et specifikt sprog kan forbedre nøjagtigheden for det pågældende sprog.",
         "searchPlaceholder": "Søg efter sprog...",
         "noResults": "Ingen sprog fundet",
-        "auto": "Automatisk"
+        "auto": "Automatisk",
+        "autoUnavailable": {
+          "oneLanguage": "Kun ét af dine sprog virker med denne model",
+          "undetectable": "Ikke tilgængelig med {{languages}}",
+          "noMatch": "Ingen af dine sprog virker med denne model"
+        },
+        "detectorMissing": "Bruger {{language}}, indtil sprogregistreringen er downloadet.",
+        "detectorDownload": "Download"
       },
       "preferredLanguages": {
         "title": "Foretrukne sprog",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Opdeling af lang lyd",
         "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen. Transskriberede filer og lange gentransskriberinger deles altid."
+      },
+      "languageDetection": {
+        "title": "Sprogregistrering",
+        "description": "Hvordan Automatisk vælger sproget. Modeller, der ikke selv kan registrere det, bruger altid Handys sprogregistrering, begrænset til dine sprog. Altid bruger den til alle modeller undtagen streamingmodeller.",
+        "options": {
+          "whenNeeded": "Når det er nødvendigt",
+          "always": "Altid"
+        },
+        "detectorMissing": "Sprogregistreringen er ikke downloadet."
       },
       "vadBackend": {
         "title": "Stemmedetektions-backend",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Ekstra optagelsesbuffer",
         "description": "Ekstra tid (i millisekunder) til at fortsætte optagelsen, efter du slipper tasten, for at fange efterfølgende lyd. 0 = ingen ekstra buffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Lyd til sprogregistrering",
+        "description": "Sekunder tale, som sprogregistreringen hører. Længere er mere præcist, men langsommere."
       },
       "keyboardDiagnostic": {
         "title": "Tastaturdiagnostik",

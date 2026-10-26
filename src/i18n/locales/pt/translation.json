@@ -356,7 +356,14 @@
         "description": "Selecione o idioma para reconhecimento de fala. Auto detectará automaticamente o idioma, enquanto selecionar um idioma específico pode melhorar a precisão para esse idioma.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "Nenhum idioma encontrado",
-        "auto": "Automático"
+        "auto": "Automático",
+        "autoUnavailable": {
+          "oneLanguage": "Apenas um dos seus idiomas funciona com este modelo",
+          "undetectable": "Indisponível com {{languages}}",
+          "noMatch": "Nenhum dos seus idiomas funciona com este modelo"
+        },
+        "detectorMissing": "Usando {{language}} até o detector de idioma ser baixado.",
+        "detectorDownload": "Baixar"
       },
       "preferredLanguages": {
         "title": "Idiomas preferidos",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Divisão de áudio longo",
         "description": "Divide gravações longas nas pausas antes da transcrição, o que normalmente melhora o desempenho da transcrição. Arquivos transcritos e re-transcrições longas são sempre divididos."
+      },
+      "languageDetection": {
+        "title": "Detecção de idioma",
+        "description": "Como o modo Automático escolhe o idioma. Modelos que não conseguem detectá-lo sozinhos sempre usam o detector do Handy, limitado aos seus idiomas. Sempre o usa em todos os modelos, exceto os de streaming.",
+        "options": {
+          "whenNeeded": "Quando necessário",
+          "always": "Sempre"
+        },
+        "detectorMissing": "O detector de idioma não foi baixado."
       },
       "vadBackend": {
         "title": "Backend de detecção de voz",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Buffer de gravação extra",
         "description": "Tempo extra (em milissegundos) para continuar gravando após soltar a tecla, para capturar áudio restante. 0 = sem buffer extra."
+      },
+      "languageDetectionWindow": {
+        "title": "Áudio de detecção de idioma",
+        "description": "Segundos de fala que o detector de idioma ouve. Mais longo é mais preciso, porém mais lento."
       },
       "keyboardDiagnostic": {
         "title": "Diagnóstico do teclado",

@@ -356,7 +356,14 @@
         "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
-        "auto": "Automatico"
+        "auto": "Automatico",
+        "autoUnavailable": {
+          "oneLanguage": "Solo una delle tue lingue funziona con questo modello",
+          "undetectable": "Non disponibile con {{languages}}",
+          "noMatch": "Nessuna delle tue lingue funziona con questo modello"
+        },
+        "detectorMissing": "Viene usato {{language}} finché il rilevatore di lingua non viene scaricato.",
+        "detectorDownload": "Scarica"
       },
       "preferredLanguages": {
         "title": "Lingue preferite",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Suddivisione dell'audio lungo",
         "description": "Suddivide le registrazioni lunghe in corrispondenza delle pause prima della trascrizione, il che di solito migliora le prestazioni della trascrizione. I file trascritti e le ri-trascrizioni lunghe vengono sempre suddivisi."
+      },
+      "languageDetection": {
+        "title": "Rilevamento della lingua",
+        "description": "Come la modalità Automatica sceglie la lingua. I modelli che non sanno rilevarla da soli usano sempre il rilevatore di Handy, limitato alle tue lingue. Sempre lo usa per tutti i modelli tranne quelli in streaming.",
+        "options": {
+          "whenNeeded": "Quando serve",
+          "always": "Sempre"
+        },
+        "detectorMissing": "Il rilevatore di lingua non è stato scaricato."
       },
       "vadBackend": {
         "title": "Backend di rilevamento vocale",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",
         "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio per il rilevamento della lingua",
+        "description": "Secondi di parlato ascoltati dal rilevatore di lingua. Più lungo è più preciso ma più lento."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostica tastiera",

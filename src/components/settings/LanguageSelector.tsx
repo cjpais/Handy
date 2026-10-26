@@ -1,49 +1,37 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { listen } from "@tauri-apps/api/event";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
+import { useLanguageDetector } from "../../hooks/useLanguageDetector";
 import { languageIdentity } from "@handy-computer/models";
 import {
+  commands,
+  type AutoUnavailableReason,
+  type LanguageStatus,
+} from "@/bindings";
+import {
   LANGUAGES,
+  languageList,
   languageName,
   languagesOf,
   searchLanguages,
-  supportsLanguage,
 } from "../../lib/constants/languages";
 
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  /** The model whose language status is shown. */
+  modelId: string;
   supportedLanguages?: string[];
-  // Whether the model can auto-detect language. Gates the "Auto" option:
-  // must-pick models (no detection) omit it and force a concrete choice.
-  supportsLanguageDetection?: boolean;
 }
-
-// Mirrors `effective_language` in src-tauri/src/managers/model.rs, but returns
-// the picker's language identity (`jv`), not the model's concrete code (`jw`).
-const effectiveLanguage = (
-  intent: string,
-  preferred: string[],
-  supported: string[],
-  supportsDetection: boolean,
-): string => {
-  const wanted = languageIdentity(intent);
-  if (supported.length === 0) return wanted;
-  if (wanted !== "auto" && supportsLanguage(supported, wanted)) return wanted;
-  if (supportsDetection) return "auto";
-  if (preferred.length === 1 && supportsLanguage(supported, preferred[0]))
-    return languageIdentity(preferred[0]);
-  if (supportsLanguage(supported, "en")) return "en";
-  return languageIdentity(supported[0]);
-};
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
+  modelId,
   supportedLanguages,
-  supportsLanguageDetection = true,
 }) => {
   const { t, i18n } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
@@ -52,15 +40,36 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // The persisted *intent* (auto | code). What's actually used/shown is the
-  // effective value resolved against the current model's capabilities.
+  // The persisted *intent* (auto | code). What's shown is what transcription
+  // will actually use, which the backend resolves from the same policy.
   const intent = getSetting("selected_language") || "auto";
-  const selectedLanguage = effectiveLanguage(
-    intent,
-    getSetting("spoken_languages") ?? [],
-    supportedLanguages ?? [],
-    supportsLanguageDetection,
-  );
+  const spoken = getSetting("spoken_languages");
+  const detectionMode = getSetting("language_detection");
+  const spokenKey = spoken?.join(",");
+  const [status, setStatus] = useState<LanguageStatus | null>(null);
+  const detector = useLanguageDetector();
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () =>
+      commands.getLanguageStatus(modelId).then((next) => {
+        if (!cancelled) setStatus(next);
+      });
+    refresh();
+    // The language detector arriving changes what Auto does.
+    const unlisten = listen("model-download-complete", refresh);
+    return () => {
+      cancelled = true;
+      unlisten.then((stop) => stop());
+    };
+  }, [modelId, intent, spokenKey, detectionMode]);
+
+  const selectedLanguage =
+    status === null
+      ? languageIdentity(intent)
+      : status.kind === "auto" || status.kind === "detector_missing"
+        ? "auto"
+        : languageIdentity(status.language);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -85,10 +94,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   }, [isOpen]);
 
-  // The current model's own languages; every language before one is loaded.
-  const hasModelLanguages = !!supportedLanguages?.length;
   // The languages they speak lead, in the order they added them.
-  const spoken = getSetting("spoken_languages");
   const availableLanguages = useMemo(() => {
     const all = supportedLanguages?.length
       ? languagesOf(supportedLanguages)
@@ -106,25 +112,47 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const ui = i18n.language;
   const autoLabel = t("settings.general.language.auto");
+  const autoUnavailableNote = (reason: AutoUnavailableReason): string => {
+    switch (reason.kind) {
+      case "one_language":
+        return t("settings.general.language.autoUnavailable.oneLanguage");
+      case "undetectable":
+        return t("settings.general.language.autoUnavailable.undetectable", {
+          languages: languageList(reason.languages.map(languageIdentity), ui),
+        });
+      case "no_match":
+        return t("settings.general.language.autoUnavailable.noMatch");
+    }
+  };
+  // Auto is always listed; when it can't work here it stays visible, muted,
+  // with the reason, so it's clear why it isn't in use.
+  const autoNote =
+    status?.kind === "auto_unavailable"
+      ? autoUnavailableNote(status.reason)
+      : undefined;
   const filteredLanguages = useMemo(() => {
-    const showAuto =
-      (!hasModelLanguages || supportsLanguageDetection) &&
-      autoLabel.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    const showAuto = autoLabel
+      .toLowerCase()
+      .includes(searchQuery.trim().toLowerCase());
     return [
-      ...(showAuto ? [{ value: "auto", label: autoLabel }] : []),
+      ...(showAuto
+        ? [
+            {
+              value: "auto",
+              label: autoLabel,
+              disabled: autoNote !== undefined,
+              note: autoNote,
+            },
+          ]
+        : []),
       ...searchLanguages(searchQuery, ui, availableLanguages).map((l) => ({
         value: l.code,
         label: languageName(l.code, ui),
+        disabled: false,
+        note: undefined,
       })),
     ];
-  }, [
-    searchQuery,
-    ui,
-    autoLabel,
-    availableLanguages,
-    hasModelLanguages,
-    supportsLanguageDetection,
-  ]);
+  }, [searchQuery, ui, autoLabel, autoNote, availableLanguages]);
 
   const selectedLanguageName =
     selectedLanguage === "auto"
@@ -151,9 +179,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" && filteredLanguages.length > 0) {
-      // Select first filtered language on Enter
-      handleLanguageSelect(filteredLanguages[0].value);
+    const first = filteredLanguages.find((language) => !language.disabled);
+    if (event.key === "Enter" && first) {
+      // Select first selectable filtered language on Enter
+      handleLanguageSelect(first.value);
     } else if (event.key === "Escape") {
       setIsOpen(false);
       setSearchQuery("");
@@ -222,16 +251,22 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                     <button
                       key={language.value}
                       type="button"
-                      className={`w-full px-2 py-1 text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
-                        selectedLanguage === language.value
-                          ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                          : ""
+                      disabled={language.disabled}
+                      className={`w-full px-2 py-1 text-sm text-start transition-colors duration-150 ${
+                        language.disabled
+                          ? "cursor-default text-ink-3"
+                          : selectedLanguage === language.value
+                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                            : "hover:bg-logo-primary/10"
                       }`}
                       onClick={() => handleLanguageSelect(language.value)}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="truncate">{language.label}</span>
-                      </div>
+                      <span className="block truncate">{language.label}</span>
+                      {language.note && (
+                        <span className="block text-xs leading-snug whitespace-normal">
+                          {language.note}
+                        </span>
+                      )}
                     </button>
                   ))
                 )}
@@ -244,6 +279,29 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           disabled={isUpdating("selected_language")}
         />
       </div>
+      {status?.kind === "detector_missing" && (
+        // Zero width with a full minimum: as wide as the picker, never wider.
+        <p className="mt-[4px] mb-0 w-0 min-w-full text-small text-ink-3">
+          {t("settings.general.language.detectorMissing", {
+            language: languageName(languageIdentity(status.fallback), ui),
+          })}{" "}
+          {detector.downloading ? (
+            <span className="tabular-nums whitespace-nowrap">
+              {t("modelSelector.downloading", {
+                percentage: detector.percent,
+              })}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={detector.download}
+              className="cursor-pointer text-text underline decoration-line-strong underline-offset-[3px] hover:decoration-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+            >
+              {t("settings.general.language.detectorDownload")}
+            </button>
+          )}
+        </p>
+      )}
       {isUpdating("selected_language") && (
         <div className="absolute inset-0 bg-wash rounded flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-logo-primary border-t-transparent rounded-full animate-spin"></div>

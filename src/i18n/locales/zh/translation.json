@@ -356,7 +356,14 @@
         "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
         "searchPlaceholder": "搜索语言...",
         "noResults": "未找到语言",
-        "auto": "自动"
+        "auto": "自动",
+        "autoUnavailable": {
+          "oneLanguage": "你的语言中只有一种适用于此模型",
+          "undetectable": "不支持{{languages}}",
+          "noMatch": "你的语言都不适用于此模型"
+        },
+        "detectorMissing": "在下载语言检测器之前使用{{language}}。",
+        "detectorDownload": "下载"
       },
       "preferredLanguages": {
         "title": "常用语言",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "长音频分段",
         "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。转录文件与较长的重新转录始终会分段。"
+      },
+      "languageDetection": {
+        "title": "语言检测",
+        "description": "自动模式如何选择语言。无法自行检测语言的模型始终使用 Handy 的语言检测器，并限定在你的语言范围内。选择“始终”时，除流式模型外的所有模型都会使用它。",
+        "options": {
+          "whenNeeded": "需要时",
+          "always": "始终"
+        },
+        "detectorMissing": "语言检测器尚未下载。"
       },
       "vadBackend": {
         "title": "语音活动检测后端",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
+      },
+      "languageDetectionWindow": {
+        "title": "语言检测音频",
+        "description": "语言检测器聆听的语音秒数。越长越准确，但越慢。"
       },
       "keyboardDiagnostic": {
         "title": "键盘诊断",

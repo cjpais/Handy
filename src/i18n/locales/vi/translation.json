@@ -356,7 +356,14 @@
         "description": "Chọn ngôn ngữ để nhận dạng giọng nói. Tự động sẽ tự động xác định ngôn ngữ, trong khi chọn một ngôn ngữ cụ thể có thể cải thiện độ chính xác cho ngôn ngữ đó.",
         "searchPlaceholder": "Tìm kiếm ngôn ngữ...",
         "noResults": "Không tìm thấy ngôn ngữ",
-        "auto": "Tự động"
+        "auto": "Tự động",
+        "autoUnavailable": {
+          "oneLanguage": "Chỉ một trong các ngôn ngữ của bạn hoạt động với mô hình này",
+          "undetectable": "Không khả dụng với {{languages}}",
+          "noMatch": "Không ngôn ngữ nào của bạn hoạt động với mô hình này"
+        },
+        "detectorMissing": "Đang dùng {{language}} cho đến khi tải xong trình nhận diện ngôn ngữ.",
+        "detectorDownload": "Tải xuống"
       },
       "preferredLanguages": {
         "title": "Ngôn ngữ ưa thích",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "Chia nhỏ âm thanh dài",
         "description": "Chia các bản ghi dài tại các khoảng ngắt trước khi chuyển thành văn bản, điều này thường cải thiện hiệu quả chuyển văn bản. Tệp được chép lời và các lần phiên âm lại dài luôn được chia nhỏ."
+      },
+      "languageDetection": {
+        "title": "Nhận diện ngôn ngữ",
+        "description": "Cách chế độ Tự động chọn ngôn ngữ. Các mô hình không tự nhận diện được luôn dùng trình nhận diện ngôn ngữ của Handy, giới hạn trong các ngôn ngữ của bạn. Luôn luôn dùng nó cho mọi mô hình trừ mô hình phát trực tuyến.",
+        "options": {
+          "whenNeeded": "Khi cần",
+          "always": "Luôn luôn"
+        },
+        "detectorMissing": "Trình nhận diện ngôn ngữ chưa được tải xuống."
       },
       "vadBackend": {
         "title": "Bộ phát hiện giọng nói",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "Bộ đệm ghi âm thêm",
         "description": "Thời gian thêm (tính bằng mili giây) để tiếp tục ghi âm sau khi nhả phím, để thu âm thanh cuối. 0 = không có bộ đệm thêm."
+      },
+      "languageDetectionWindow": {
+        "title": "Âm thanh nhận diện ngôn ngữ",
+        "description": "Số giây giọng nói mà trình nhận diện ngôn ngữ nghe. Dài hơn thì chính xác hơn nhưng chậm hơn."
       },
       "keyboardDiagnostic": {
         "title": "Chẩn đoán bàn phím",

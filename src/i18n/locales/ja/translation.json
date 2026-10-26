@@ -356,7 +356,14 @@
         "description": "音声認識の言語を選択してください。自動を選択すると言語を自動的に判定します。特定の言語を選択すると、その言語の精度が向上する場合があります。",
         "searchPlaceholder": "言語を検索…",
         "noResults": "言語が見つかりません",
-        "auto": "自動"
+        "auto": "自動",
+        "autoUnavailable": {
+          "oneLanguage": "このモデルで使えるのはあなたの言語のうち1つだけです",
+          "undetectable": "{{languages}}では利用できません",
+          "noMatch": "あなたの言語はどれもこのモデルで使えません"
+        },
+        "detectorMissing": "言語検出がダウンロードされるまで{{language}}を使用します。",
+        "detectorDownload": "ダウンロード"
       },
       "preferredLanguages": {
         "title": "使用する言語",
@@ -582,6 +589,15 @@
       "longFormChunking": {
         "title": "長い音声の分割",
         "description": "文字起こしの前に長い録音を無音部分で分割します。通常、文字起こしの精度が向上します。ファイルの文字起こしと長い再文字起こしは常に分割されます。"
+      },
+      "languageDetection": {
+        "title": "言語検出",
+        "description": "自動で言語を選ぶ方法です。自分で言語を検出できないモデルは、常にHandyの言語検出をあなたの言語に限定して使います。「常に」を選ぶと、ストリーミングモデル以外のすべてのモデルで使います。",
+        "options": {
+          "whenNeeded": "必要なとき",
+          "always": "常に"
+        },
+        "detectorMissing": "言語検出がダウンロードされていません。"
       },
       "vadBackend": {
         "title": "音声区間検出バックエンド",
@@ -822,6 +838,10 @@
       "recordingBuffer": {
         "title": "追加録音バッファ",
         "description": "キーを離した後に録音を続ける追加時間(ミリ秒)。末尾の音声を捕捉するため。0 = 追加バッファなし。"
+      },
+      "languageDetectionWindow": {
+        "title": "言語検出の音声",
+        "description": "言語検出が聞く音声の秒数です。長いほど正確ですが遅くなります。"
       },
       "keyboardDiagnostic": {
         "title": "キーボード診断",
