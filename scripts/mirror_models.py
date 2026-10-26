@@ -79,6 +79,15 @@ def make_s3():
                         aws_access_key_id=key, aws_secret_access_key=secret), bucket
 
 
+def offered_models(catalog):
+    """Mirror every root-level ASR default Handy can download.
+    Matches catalog::CatalogModel::is_offered (the models directory is flat)."""
+    for m in catalog["models"]:
+        default = m["files"].get(m["quant"])
+        if m["role"] == "asr" and default and "/" not in default["filename"]:
+            yield m
+
+
 def head_meta(s3, bucket, key):
     """Object's user metadata, or None if the key doesn't exist."""
     try:
@@ -126,7 +135,7 @@ def download_verified(repo_id, revision, f, tmpdir):
             path = hf_hub_download(repo_id, f["filename"], revision=revision,
                                    cache_dir=scratch)
             if (sha256_file(path) == f["sha256"]
-                    and os.path.getsize(path) == f["size_bytes"]):
+                    and os.path.getsize(path) == f["size"]):
                 return path, scratch
             last_err = "verification failed"
         except Exception as e:
@@ -168,7 +177,7 @@ def verify_bucket(s3, bucket, jobs):
         h, t0 = hashlib.sha256(), time.monotonic()
         for chunk in iter(lambda: body.read(CHUNK), b""):
             h.update(chunk)
-        rate = f["size_bytes"] / max(time.monotonic() - t0, 1e-9) / 1e6
+        rate = f["size"] / max(time.monotonic() - t0, 1e-9) / 1e6
         if h.hexdigest() == f["sha256"]:
             say(f"ok       {key}  ({rate:.0f} MB/s)")
         else:
@@ -183,7 +192,7 @@ def main():
         os.path.dirname(__file__), "..", "src-tauri", "src", "catalog", "catalog.json"))
     ap.add_argument("--execute", action="store_true", help="perform the plan (default: dry run)")
     ap.add_argument("--verify", action="store_true", help="stream-hash every mirrored object against the catalog")
-    ap.add_argument("--only", help="restrict to models whose id contains this substring")
+    ap.add_argument("--only", help="restrict to models whose repository contains this substring")
     ap.add_argument("--all-quants", action="store_true",
                     help="mirror every quant instead of just each model's default")
     ap.add_argument("--tmpdir", default=None,
@@ -191,19 +200,20 @@ def main():
     args = ap.parse_args()
 
     catalog = json.load(open(args.catalog))
-    jobs = []  # (model, file entry, object key) for every file this run covers
-    for m in catalog["models"]:
-        if args.only and args.only not in m["id"]:
+    jobs = []  # (repo id, revision, file entry, object key) for every file this run covers
+    for m in offered_models(catalog):
+        repo = m["repository"]
+        if args.only and args.only not in repo:
             continue
-        for f in m["files"]:
-            if args.all_quants or f["quant"] == m["default_quant"]:
-                jobs.append((m, f, f'{m["id"]}/{m["revision"]}/{f["filename"]}'))
+        for quant, f in m["files"].items():
+            if args.all_quants or quant == m["quant"]:
+                jobs.append((repo, m["revision"], f, f'{repo}/{m["revision"]}/{f["filename"]}'))
 
     s3, bucket = make_s3()
     if args.verify:
         if s3 is None:
             sys.exit("--verify requires R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET")
-        bad = verify_bucket(s3, bucket, [(key, f) for _, f, key in jobs])
+        bad = verify_bucket(s3, bucket, [(key, f) for _, _, f, key in jobs])
         print(f"verified {len(jobs)} object(s), {bad} problem(s)")
         sys.exit(1 if bad else 0)
     if args.execute and s3 is None:
@@ -220,8 +230,8 @@ def main():
 
     tally = {"skip": 0, "copy": 0, "upload": 0, "mismatch": 0}
     upload_bytes = 0
-    for m, f, key in jobs:
-        gb = f["size_bytes"] / 1e9
+    for repo, revision, f, key in jobs:
+        gb = f["size"] / 1e9
         copy_src = None
         if s3 is not None:
             meta = head_meta(s3, bucket, key)
@@ -238,13 +248,13 @@ def main():
                 else:
                     tally["skip"] += 1
                 continue
-            copy_src = find_copy_source(s3, bucket, m["id"], f["filename"], f["sha256"])
+            copy_src = find_copy_source(s3, bucket, repo, f["filename"], f["sha256"])
 
         if not args.execute:
             action = "copy" if copy_src else "upload"
             say(f"DRY {action:6} {key}  ({gb:.2f} GB" + (f", from {copy_src}" if copy_src else "") + ")")
             tally[action] += 1
-            upload_bytes += 0 if copy_src else f["size_bytes"]
+            upload_bytes += 0 if copy_src else f["size"]
             continue
 
         if copy_src:
@@ -262,11 +272,11 @@ def main():
         # exist, then download the next file while the previous one uploads.
         drain(1)
         say(f"↓ {key}  ({gb:.2f} GB)")
-        path, scratch = download_verified(m["id"], m["revision"], f, args.tmpdir)
+        path, scratch = download_verified(repo, revision, f, args.tmpdir)
         in_flight.append(uploader.submit(upload_one, s3, bucket, key, path, scratch,
-                                         f["sha256"], f["size_bytes"]))
+                                         f["sha256"], f["size"]))
         tally["upload"] += 1
-        upload_bytes += f["size_bytes"]
+        upload_bytes += f["size"]
 
     drain(0)
     uploader.shutdown()

@@ -31,7 +31,7 @@ fi
 mkdir -p "$DEST"
 
 # Copy the shared lib + every ggml lib/module. `-L` dereferences any SONAME
-# symlinks so the package gets real files (mirrors the onnxruntime deb step).
+# symlinks so the package gets real files.
 # `|| true` guards an unmatched glob; the verification below is the real gate.
 cp -vL "$SRC"/libtranscribe.so* "$DEST"/ 2>/dev/null || true
 cp -vL "$SRC"/libggml*.so*      "$DEST"/ 2>/dev/null || true

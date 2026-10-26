@@ -1,0 +1,119 @@
+/* Demo ↔ Try it (screenTransitions.ts). Names exist only while html has
+   data-sflow; the pseudo-elements live off <html>, so this is plain CSS. */
+html[data-sflow] .demo-screen,
+html[data-sflow] .try-screen {
+  view-transition-name: sf-screen;
+}
+html[data-sflow] .demo-app,
+html[data-sflow] .try-notes {
+  view-transition-name: sf-window;
+}
+html[data-sflow] .demo-laptop {
+  view-transition-name: sf-laptop;
+}
+html[data-sflow] .try-guide {
+  view-transition-name: sf-guide;
+}
+html[data-sflow] [data-onboarding] h1 {
+  view-transition-name: sf-title;
+}
+html[data-sflow] [data-onboarding] h1 + p {
+  view-transition-name: sf-sub;
+}
+
+/* Groups stack in first-seen order, so going back the laptop (only in the
+   new snapshot) would otherwise cover the screen. */
+html[data-sflow]::view-transition-group(sf-screen),
+html[data-sflow]::view-transition-group(sf-window),
+html[data-sflow]::view-transition-group(sf-title),
+html[data-sflow]::view-transition-group(sf-sub),
+html[data-sflow]::view-transition-group(sf-guide) {
+  z-index: 1;
+}
+
+html[data-sflow]::view-transition-group(*) {
+  animation-duration: 0.56s;
+  animation-timing-function: var(--ease-glide);
+}
+
+/* Crossfade early so the blurry scaled-up old bitmap is gone before it's big. */
+html[data-sflow]::view-transition-old(*) {
+  animation: sf-fade-out 0.24s ease both;
+}
+html[data-sflow]::view-transition-new(*) {
+  animation: sf-fade-in 0.24s ease both;
+}
+
+/* The windows differ in aspect, so cover from the top instead of squashing. */
+html[data-sflow]::view-transition-old(sf-screen),
+html[data-sflow]::view-transition-new(sf-screen) {
+  height: 100%;
+}
+html[data-sflow]::view-transition-old(sf-window),
+html[data-sflow]::view-transition-new(sf-window) {
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+}
+
+/* Different text on each side: slide at natural size instead of scaling. */
+html[data-sflow]::view-transition-old(sf-title),
+html[data-sflow]::view-transition-new(sf-title),
+html[data-sflow]::view-transition-old(sf-sub),
+html[data-sflow]::view-transition-new(sf-sub) {
+  width: auto;
+  height: auto;
+  left: 50%;
+  translate: -50% 0;
+}
+
+html[data-sflow="in"]::view-transition-old(sf-laptop) {
+  transform-origin: var(--sf-ox) var(--sf-oy);
+  animation:
+    sf-push 0.56s var(--ease-glide) both,
+    sf-fade-out 0.3s ease both;
+}
+html[data-sflow="out"]::view-transition-new(sf-laptop) {
+  transform-origin: var(--sf-ox) var(--sf-oy);
+  animation:
+    sf-pull 0.56s var(--ease-glide) both,
+    sf-fade-in 0.3s ease 0.16s both;
+}
+
+html[data-sflow="in"]::view-transition-new(sf-guide) {
+  animation: sf-rise 0.34s var(--ease-glide) 0.38s both;
+}
+html[data-sflow="out"]::view-transition-old(sf-guide) {
+  animation: sf-fade-out 0.14s ease both;
+}
+/* Don't wave until the glove is visible. */
+html[data-sflow="in"] .try-glove .animate-wave {
+  animation-play-state: paused;
+}
+
+@keyframes sf-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sf-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sf-push {
+  to {
+    transform: translate(var(--sf-x), var(--sf-y)) scale(var(--sf-s));
+  }
+}
+@keyframes sf-pull {
+  from {
+    transform: translate(var(--sf-x), var(--sf-y)) scale(var(--sf-s));
+  }
+}
+@keyframes sf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}

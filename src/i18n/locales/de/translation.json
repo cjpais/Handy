@@ -19,16 +19,17 @@
     "about": "Info"
   },
   "onboarding": {
-    "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
-    "existingModelsTitle": "Kompatible Modelle",
-    "downloadModelsTitle": "Verfügbar zum Download",
-    "showAllModels": "Alle {{total}} Modelle anzeigen",
-    "showFewerModels": "Weniger Modelle anzeigen",
-    "recommended": "Empfohlen",
     "customModelDescription": "Nicht offiziell unterstützt",
-    "modelCard": {
-      "accuracy": "Genauigkeit",
-      "speed": "Geschwindigkeit"
+    "migration": {
+      "title": "Deine Modelle brauchen ein Update",
+      "description": "Handy verwendet jetzt eine neuere Art von Modellen. Lade die neue Version herunter, um weiter zu transkribieren. Alte Versionen werden entfernt.",
+      "replaces": "Ersetzt {{name}}",
+      "oldFormat": "Altes Format",
+      "failed": "Download fehlgeschlagen",
+      "retry": "Erneut versuchen",
+      "chooseAnother": "Anderes Modell wählen",
+      "download": "Modelle herunterladen ({{size}})",
+      "continue": "Weiter"
     },
     "models": {
       "small": {
@@ -47,90 +48,267 @@
         "name": "Whisper Large",
         "description": "Gute Genauigkeit, aber langsam."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Nur Englisch. Das beste Modell für englischsprachige Nutzer."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Schnell und genau"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Sehr schnell, nur Englisch. Verarbeitet Akzente gut."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultraschnell, nur Englisch"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Schnell, nur Englisch. Gute Balance zwischen Geschwindigkeit und Genauigkeit."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Nur Englisch. Hohe Qualität."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimiert für taiwanesisches Mandarin. Unterstützung für Code-Switching."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Sehr schnell. Chinesisch, Englisch, Japanisch, Koreanisch, Kantonesisch."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russische Spracherkennung. Schnell und präzise."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Sehr schnell. Englisch, Deutsch, Spanisch, Französisch. Unterstützt Übersetzung."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Genaue mehrsprachige Erkennung. 25 europäische Sprachen. Unterstützt Übersetzung."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Ein großes, langsameres, aber sehr genaues mehrsprachiges Modell."
       }
     },
     "errors": {
       "selectModel": "Modellauswahl fehlgeschlagen"
     },
     "permissions": {
-      "title": "Berechtigungen erforderlich",
-      "description": "Handy benötigt einige Berechtigungen, um richtig zu funktionieren.",
       "microphone": {
-        "title": "Mikrofonzugriff",
-        "description": "Erforderlich, um deine Stimme für die Transkription zu hören."
+        "name": "Mikrofon",
+        "why": "Damit Handy dich hören kann. Audio wird auf diesem Computer in Text umgewandelt und nie hochgeladen."
       },
       "accessibility": {
-        "title": "Bedienungshilfen-Zugriff",
-        "description": "Erforderlich, um transkribierten Text in deine Anwendungen einzugeben."
+        "name": "Bedienungshilfen",
+        "why": "Damit dein Tastenkürzel in jeder App funktioniert und Handy den Text dort eintippen kann, wo dein Cursor steht."
       },
-      "grant": "Berechtigung erteilen",
-      "granted": "Erteilt",
-      "waiting": "Warten...",
-      "allGranted": "Alles bereit!",
       "errors": {
         "checkFailed": "Berechtigungsprüfung fehlgeschlagen. Bitte erneut versuchen.",
         "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."
+      },
+      "titleMac": "Zwei Berechtigungen, dann bist du startklar",
+      "titleWindows": "Eine Berechtigung, dann bist du startklar",
+      "subtitleMac": "macOS fragt nach, bevor eine App zuhören oder tippen darf.",
+      "subtitleWindows": "Windows fragt nach, bevor eine App zuhören darf.",
+      "allow": "Erlauben",
+      "openSettings": "Einstellungen öffnen",
+      "allowed": "Erlaubt",
+      "waiting": "Warten",
+      "turnOnMac": "Aktiviere Handy in den Systemeinstellungen und komm dann hierher zurück.",
+      "turnOnWindows": "Aktiviere den Mikrofonzugriff in den Windows-Einstellungen und komm dann hierher zurück.",
+      "hintBoth": "Erlaube beides, um fortzufahren",
+      "hintMicrophone": "Erlaube das Mikrofon, um fortzufahren",
+      "welcomeBack": "Willkommen zurück. Es geht dort weiter, wo du aufgehört hast.",
+      "relaunch": "Tastenkürzel reagiert danach nicht? <relaunch>Handy neu starten</relaunch> und du landest direkt wieder hier."
+    },
+    "shell": {
+      "back": "Zurück",
+      "continue": "Weiter",
+      "progress": "Schritt {{step}} von {{count}}"
+    },
+    "welcome": {
+      "title": "Sprechen statt tippen, in jeder App",
+      "subtitle": "Wähle die Sprachen, in denen du diktierst",
+      "languagesLabel": "Sprachen",
+      "noMatch": "Keine Sprache passt zu „{{query}}“. Die Modelle von Handy decken etwa 100 Sprachen ab; weitere findest du in den Einstellungen.",
+      "appLanguage": "App-Sprache",
+      "menusIn": "Menüs auf <b>{{language}}</b>",
+      "chinese": {
+        "question": "Du sprichst {{languages}}. Welche Schriftzeichen soll Handy schreiben?",
+        "label": "Chinesische Schriftzeichen",
+        "zh-Hans": "Vereinfacht",
+        "zh-Hant": "Taiwan",
+        "zh-HK": "Hongkong"
+      },
+      "hint": {
+        "pickOne": "Wähle mindestens eine Sprache",
+        "weak_one": "{{languages}}: Noch kein Modell versteht sie gut",
+        "weak_other": "{{languages}}: Noch kein Modell versteht sie gut"
       }
+    },
+    "download": {
+      "checking": "Download wird geprüft…",
+      "ready": "{{name}} ist bereit",
+      "failed": "Download angehalten",
+      "downloading": "{{name}} wird heruntergeladen",
+      "progress": "{{done}} von {{total}}",
+      "progressLeft": "{{done}} von {{total}}, noch {{time}}",
+      "checkingName": "{{name}} wird geprüft",
+      "checkingDetail": "Es wird sichergestellt, dass der Download vollständig ist",
+      "stopped": "Download von {{name}} angehalten",
+      "retryDetail": "Beim erneuten Versuch geht es dort weiter, wo es aufgehört hat",
+      "retryDownload": "Download wiederholen",
+      "cardProgress": "Lädt herunter: {{percent}} %, {{done}} von {{total}}",
+      "timeLeft": "noch {{time}}",
+      "speedLeft": "{{speed}}, noch {{time}}"
+    },
+    "model": {
+      "title": "Sprachmodell wählen",
+      "subtitle": "Das Sprachmodell wandelt deine Sprache direkt auf diesem Computer in Text um",
+      "label": "Sprachmodell",
+      "lines": {
+        "recommended": "Die beste Balance aus Geschwindigkeit und Genauigkeit für deine Sprachen",
+        "faster": "Schneller, mit ein paar mehr Fehlern",
+        "accurate": "Die wenigsten Fehler, aber langsamer"
+      },
+      "shorts": {
+        "recommended": "Beste Balance für dich",
+        "faster": "Schneller, etwas mehr Fehler",
+        "accurate": "Wenigste Fehler, aber langsamer"
+      },
+      "model": "Modell",
+      "showAll": "Alle {{count}} Modelle anzeigen",
+      "download": "{{size}} herunterladen",
+      "downloadInstead": "Stattdessen {{size}} herunterladen",
+      "pauses": "{{name}} pausiert bei {{percent}} %",
+      "resumeLater": "Wähle es erneut, um dort weiterzumachen, wo es aufgehört hat",
+      "hint": "Wird heruntergeladen, während du die Einrichtung abschließt"
+    },
+    "demo": {
+      "title": "Sprich in jeder App, mit einem Tastenkürzel",
+      "hold": "<0>Klicke dorthin, wo du tippen würdest.</0> <1>Halte dein Tastenkürzel gedrückt und sprich.</1> <2>Lass los, und deine Worte erscheinen.</2>",
+      "tap": "<0>Klicke dorthin, wo du tippen würdest.</0> <1>Tippe auf dein Tastenkürzel und sprich.</1> <2>Tippe erneut, und deine Worte erscheinen.</2>",
+      "apps": {
+        "messages": "Nachrichten",
+        "notes": "Notizen"
+      },
+      "chat": "Kommst du heute Abend noch?",
+      "noteTitle": "Pläne fürs Wochenende",
+      "screenLabel": "Ein Laptop: Jemand klickt in eine App, drückt das Tastenkürzel und spricht, und die Worte erscheinen dort, wo geklickt wurde.",
+      "change": "Ändern",
+      "yourShortcut": "Dein Tastenkürzel ist",
+      "pressKeys": "Drücke die neuen Tasten",
+      "addKey": "Füge jetzt eine Taste hinzu",
+      "cancel": "Abbrechen",
+      "tryIt": "Probier es selbst aus"
+    },
+    "try": {
+      "title": "Probier es aus!",
+      "subtitle": "Handy ist in der Ecke und führt dich durch",
+      "noteLabel": "Notiz",
+      "placeholder": "Neue Notiz",
+      "hold": "Halte <keys/> gedrückt und sprich.",
+      "tapNext": "Tippe jetzt einmal auf <keys/> und sprich dann.",
+      "letGo": "Lass <keys/> los, wenn du fertig bist.",
+      "tapAgain": "Tippe erneut auf <keys/>, wenn du fertig bist.",
+      "watch": "Schau auf die Notiz.",
+      "changeKeys": "Tastenkürzel ändern, {{keys}}",
+      "doneHold": "Abklatschen! Das war Halten.",
+      "doneHoldNext": "Als Nächstes: freihändig.",
+      "doneTap": "Hoch die Hände! Das war Tippen.",
+      "doneTapNext": "Probier jetzt, sie beim Sprechen gedrückt zu halten.",
+      "giveFive": "Geschafft! Gib mir fünf",
+      "highFive": "High Five",
+      "slowLine": "{{name}} hat auf diesem Computer {{wait}} gebraucht. <faster>Probier ein schnelleres Modell</faster>",
+      "nothingTyped": "Hmm, nichts angekommen.",
+      "nothingTypedSub": "Klicke zuerst in die Notiz und versuche es dann erneut.",
+      "silent": "Ich habe nichts gehört.",
+      "silentSub": "Von diesem Mikrofon kam kein Ton. Probier ein anderes:",
+      "noWords": "Ich habe keine Worte verstanden.",
+      "noWordsSub": "Versuche es noch einmal und sag einen ganzen Satz.",
+      "finish": "Fertig",
+      "skip": "Überspringen",
+      "seconds": "{{value}} s"
+    },
+    "done": {
+      "title": "Alles bereit",
+      "subMac": "Handy ist jetzt in deiner Menüleiste. Halte <keys/> gedrückt oder tippe darauf, um in jeder App zu sprechen.",
+      "subTray": "Handy ist jetzt in deinem Infobereich. Halte <keys/> gedrückt oder tippe darauf, um in jeder App zu sprechen.",
+      "hint": "Du kannst das später in den Einstellungen ändern",
+      "highFiveLabel": "High Five",
+      "atLogin": "Handy beim Anmelden starten",
+      "finish": "Fertig",
+      "panel": {
+        "name": "Handy",
+        "ready": "Bereit",
+        "languages": "Sprachen",
+        "model": "Sprachmodell",
+        "shortcut": "Tastenkürzel",
+        "changeLanguages": "Sprachen ändern, {{languages}}",
+        "changeModel": "Sprachmodell ändern, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Funktioniert nicht? <guide>Linux-Einrichtungsanleitung</guide>",
+      "done": "Funktioniert in anderen Apps nicht? <guide>Linux-Einrichtungsanleitung</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Live-Vorschau",
+      "previewTitle": "Zeigt deine Worte im Live-Overlay, während du sprichst, und tippt sie, sobald du aufhörst",
+      "translate": "Übersetzt",
+      "translateTitle": "Kann das Gesagte in englischen Text umwandeln. In den Einstellungen aktivieren"
+    },
+    "rubric": {
+      "gradeTitle": "Genauigkeit für {{language}}: {{grade}}",
+      "accuracyTitle": "Genauigkeit für {{language}}",
+      "overallTitle": "Genauigkeit in deinen Sprachen: {{grade}}",
+      "overall": "Genauigkeit in deinen Sprachen",
+      "meaning": {
+        "A": "Sehr wenige Fehler: Deine Worte kommen meist so heraus, wie du sie gesagt hast",
+        "B": "Einige Fehler: Rechne damit, hier und da ein Wort zu korrigieren",
+        "C": "Häufige Fehler: Manche Details können verloren gehen",
+        "D": "Viele Fehler: Du solltest den getippten Text prüfen und korrigieren",
+        "F": "Oft unklar: Vieles von dem, was du sagst, kann falsch ankommen"
+      },
+      "unsupported": "Dieses Modell versteht {{language}} nicht und kann es daher nicht tippen",
+      "unrated": "Dieses Modell versteht {{language}}, aber wir haben noch nicht gemessen, wie gut",
+      "under": "unter {{max}} %",
+      "between": "{{min}} bis {{max}} %",
+      "over": "{{min}} % oder mehr",
+      "speedTitle": "Geschwindigkeit: {{speed}}",
+      "speedName": {
+        "0": "Sehr langsam",
+        "1": "Langsam",
+        "2": "Mittel",
+        "3": "Schnell",
+        "4": "Sehr schnell"
+      },
+      "speedMeaning": {
+        "0": "Deine Worte erscheinen nach langer Wartezeit",
+        "1": "Deine Worte erscheinen nach einer Wartezeit",
+        "2": "Deine Worte erscheinen nach kurzer Wartezeit",
+        "3": "Deine Worte erscheinen fast sofort",
+        "4": "Deine Worte erscheinen sofort"
+      },
+      "speedPreview": "{{meaning}}, mit Live-Vorschau während du sprichst",
+      "untimed": "Wir haben noch nicht gemessen, wie schnell es ist",
+      "underSeconds": "unter {{max}} s",
+      "betweenSeconds": "{{min}} bis {{max}} s",
+      "overSeconds": "{{min}} s oder mehr"
+    },
+    "roles": {
+      "recommended": "Empfohlen",
+      "faster": "Schneller",
+      "accurate": "Genauer",
+      "fromAll": "Aus allen Modellen"
+    },
+    "speed": "Geschwindigkeit",
+    "size": "Größe",
+    "accuracy": "Genauigkeit",
+    "search": "Modelle suchen",
+    "allLabel": "Sprachmodelle",
+    "noMatch": "Nichts passt zu „{{query}}“. Versuche es mit einer Sprache oder einer Familie wie Whisper oder Parakeet",
+    "noFilterMatch": "Keine Modelle passen zu diesen Filtern",
+    "speedUntested": "Geschwindigkeit noch nicht gemessen",
+    "speedWords": {
+      "0": "Sehr langsam, Wörter erscheinen nach langer Wartezeit",
+      "1": "Langsam, Wörter erscheinen nach einer Wartezeit",
+      "2": "Mittel, Wörter erscheinen nach kurzer Wartezeit",
+      "3": "Schnell, Wörter erscheinen fast sofort",
+      "4": "Sehr schnell, Wörter erscheinen sofort"
+    },
+    "speedWordsPreview": {
+      "0": "Sehr langsam, mit Live-Vorschau während du sprichst",
+      "1": "Langsam, mit Live-Vorschau während du sprichst",
+      "2": "Mittel, mit Live-Vorschau während du sprichst",
+      "3": "Schnell, mit Live-Vorschau während du sprichst",
+      "4": "Sehr schnell, mit Live-Vorschau während du sprichst"
+    },
+    "missingLanguage": "Eine Sprache fehlt",
+    "allLanguages": "Alle",
+    "downloadingLine": "Lädt herunter: {{percent}} % von {{total}}",
+    "customLine": "Aus deinem Modellordner hinzugefügt. Nicht bewertet.",
+    "legacyLine": "Ein älterer Download. Nicht bewertet."
+  },
+  "languagePicker": {
+    "search": "Sprachen suchen",
+    "addAnother": "Weitere hinzufügen",
+    "remove": "{{language}} entfernen",
+    "alreadyAdded_one": "{{languages}} ist bereits hinzugefügt.",
+    "alreadyAdded_other": "{{languages}} sind bereits hinzugefügt."
   },
   "modelSelector": {
     "custom": "Benutzerdefiniert",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",
     "verifying": "Überprüfung von {{modelName}}...",
     "verifyingGeneric": "Überprüfung...",
-    "extracting": "Entpacke {{modelName}}...",
-    "extractingMultiple": "Entpacke {{count}} Modelle...",
-    "extractingGeneric": "Wird entpackt...",
     "downloading": "Herunterladen {{percentage}}%",
     "downloadingMultiple": "Lade {{count}} Modelle herunter...",
     "modelReady": "Modell bereit",
@@ -139,44 +317,12 @@
     "modelError": "Modellfehler",
     "modelUnloaded": "Modell entladen",
     "noModelDownloadRequired": "Kein Modell - Download erforderlich",
-    "deleteModel": "{{modelName}} löschen",
     "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Unterstützt mehrere Eingabesprachen",
-      "languageCount": "{{total}} Sprachen",
-      "translation": "Kann ins Englische übersetzen",
-      "translate": "Ins Englische übersetzen",
-      "singleLanguage": "Unterstützt nur diese Sprache",
-      "languageOnly": "Nur {{language}}",
-      "streaming": "Zeigt die Transkription live während des Sprechens an"
-    },
-    "cancel": "Abbrechen",
-    "cancelDownload": "Download abbrechen",
-    "legacy": "Veraltet"
+    "lockedWhileTranscribing": "Du kannst das Modell wechseln, sobald die Transkription im Verlauf fertig ist."
   },
   "settings": {
     "modelSettings": {
       "title": "{{model}}-Einstellungen"
-    },
-    "models": {
-      "title": "Transkriptionsmodelle",
-      "description": "Wähle ein Transkriptionsmodell aus oder lade zusätzliche Modelle herunter. Verschiedene Modelle bieten unterschiedliche Genauigkeits- und Geschwindigkeitsstufen.",
-      "deleteConfirm": "Bist du sicher, dass du {{modelName}} löschen möchtest? Du musst es erneut herunterladen, um es zu verwenden.",
-      "deleteActiveConfirm": "{{modelName}} ist dein aktives Modell. Das Löschen stoppt Transkriptionen, bis du ein neues Modell auswählst. Bist du sicher?",
-      "deleteTitle": "Modell löschen",
-      "filters": {
-        "allLanguages": "Alle Sprachen",
-        "streaming": "Modelle filtern, die Live-Transkription unterstützen",
-        "translation": "Modelle filtern, die Übersetzungen ins Englische unterstützen"
-      },
-      "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
-      "yourModels": "Heruntergeladene Modelle",
-      "availableModels": "Zum Download verfügbar",
-      "searchPlaceholder": "Modelle nach Namen suchen…",
-      "rescan": {
-        "label": "Neu scannen",
-        "tooltip": "Erneut nach Modellen scannen, die außerhalb von Handy zum Modellordner oder Hugging-Face-Cache hinzugefügt wurden"
-      }
     },
     "general": {
       "title": "Allgemein",
@@ -202,9 +348,7 @@
           }
         },
         "errors": {
-          "restore": "Ursprüngliches Tastenkürzel konnte nicht wiederhergestellt werden",
-          "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}",
-          "reset": "Tastenkürzel konnte nicht auf Originalwert zurückgesetzt werden"
+          "set": "Tastenkürzel konnte nicht gesetzt werden: {{error}}"
         }
       },
       "language": {
@@ -213,6 +357,12 @@
         "searchPlaceholder": "Sprachen suchen...",
         "noResults": "Keine Sprachen gefunden",
         "auto": "Automatisch"
+      },
+      "preferredLanguages": {
+        "title": "Bevorzugte Sprachen",
+        "description": "Die Sprachen, die du sprichst. Handy nutzt sie, um Modelle zu empfehlen.",
+        "noMatch": "Keine Sprache passt zu „{{query}}“",
+        "weak": "Noch kein Modell erkennt {{languages}} gut."
       },
       "shortcutActivation": {
         "title": "Verhalten der Tastenkombination",
@@ -228,6 +378,52 @@
           "toggle": "Tastenkombination antippen, um die Aufnahme zu starten, erneut antippen zum Stoppen"
         }
       }
+    },
+    "models": {
+      "title": "Modelle",
+      "changeLanguages": "Sprachen ändern",
+      "sections": {
+        "yours": "Auf diesem Computer",
+        "fits": "Für deine Sprachen",
+        "untested": "Ungetestet"
+      },
+      "untestedNote": "Nicht mit Handy getestet. Sie könnten langsamer sein oder mehr Fehler machen.",
+      "untestedHidden_one": "{{count}} weiteres Modell ist nicht für Diktat optimiert. Suche danach, um es zu finden.",
+      "untestedHidden_other": "{{count}} weitere Modelle sind nicht für Diktat optimiert. Suche danach, um eines zu finden.",
+      "emptyYours": "Noch keine Modelle. Wähle unten eines aus: Es wird heruntergeladen, dann nutzt Handy es.",
+      "showMore": "{{count}} weitere anzeigen",
+      "showFewer": "Weniger anzeigen",
+      "download": "Herunterladen und verwenden",
+      "downloadingThenUse": "{{percent}} % von {{total}}, dann wird gewechselt",
+      "loading": "Wird geladen…",
+      "deleteAsk": "{{name}} löschen? Das gibt {{size}} frei.",
+      "deleteAskActive": "{{name}} löschen? Handy kann erst wieder transkribieren, wenn du ein anderes wählst.",
+      "cancel": "Abbrechen",
+      "deleteModel": "{{name}} löschen",
+      "cancelDownload": "Download von {{name}} abbrechen",
+      "legend": {
+        "open": "So werden Modelle bewertet",
+        "accuracyNote": "Für jede deiner Sprachen: wie viele Wörter ein Modell in unseren Testaufnahmen falsch hatte.",
+        "speedNote": {
+          "accelerated": "Wie lange es dauert, 30 Sekunden Sprache auf dem Grafikchip unseres Test-Laptops zu tippen. Dieser Computer kann abweichen.",
+          "cpu": "Wie lange es dauert, 30 Sekunden Sprache auf dem Prozessor unseres Test-Laptops zu tippen. Dieser Computer kann abweichen."
+        },
+        "marks": "? wurde noch nicht gemessen. — versteht diese Sprache nicht."
+      },
+      "retiredNotice": {
+        "title": "Alte Modelle funktionieren nicht mehr mit Handy",
+        "description": "Sie belegen {{size}} auf deinem Computer.",
+        "delete": "Modelle löschen",
+        "deleted": "Alte Modelle gelöscht",
+        "deleteFailed": "Einige alte Modelle konnten nicht gelöscht werden. Details findest du im Protokoll."
+      },
+      "rescan": {
+        "label": "Neu scannen",
+        "tooltip": "Erneut nach Modellen scannen, die außerhalb von Handy zum Modellordner oder Hugging-Face-Cache hinzugefügt wurden"
+      }
+    },
+    "languages": {
+      "title": "Sprachen"
     },
     "sound": {
       "title": "Ton",
@@ -276,12 +472,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Whisper-Beschleunigung",
-          "description": "Hardwarebeschleunigung für Whisper-Modelle. Automatisch nutzt GPU falls verfügbar (Metal auf macOS, Vulkan auf Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX-Beschleunigung",
-          "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
+          "title": "Hardwarebeschleunigung",
+          "description": "Wähle die Hardware für die Transkription. „Automatisch“ nutzt die GPU, wenn verfügbar, und weicht sonst auf die CPU aus."
         },
         "gpuDevice": {
           "auto": "Automatisch"
@@ -387,6 +579,10 @@
         "title": "Sprachaktivitätserkennung (VAD)",
         "description": "Filtert Stille aus Aufnahmen. Streamingfähige Modelle verwenden ein längeres VAD-Ende; das Deaktivieren von VAD nimmt Rohaudio auf."
       },
+      "longFormChunking": {
+        "title": "Lange Aufnahmen aufteilen",
+        "description": "Teilt lange Aufnahmen vor der Transkription an Sprechpausen auf, was die Transkription in der Regel verbessert. Transkribierte Dateien und lange erneute Transkriptionen werden immer aufgeteilt."
+      },
       "vadBackend": {
         "title": "VAD-Backend",
         "description": "Wählt den Detektor zum Herausfiltern von Stille. Earshot ist experimentell; wechseln Sie zurück zu Silero, wenn Sprache abgeschnitten oder Rauschen beibehalten wird.",
@@ -401,11 +597,12 @@
       },
       "chineseScript": {
         "title": "Chinesische Schrift",
-        "description": "Schreibt Transkriptionen auf Mandarin und Kantonesisch in vereinfachten oder traditionellen Schriftzeichen. Andere Sprachen bleiben unverändert.",
+        "description": "Schreibt Transkriptionen auf Mandarin und Kantonesisch in vereinfachten Schriftzeichen oder in traditionellen Schriftzeichen, wie sie in Taiwan oder Hongkong geschrieben werden. Andere Sprachen bleiben unverändert.",
         "options": {
           "asTranscribed": "Wie transkribiert",
           "simplified": "Vereinfacht",
-          "traditional": "Traditionell"
+          "traditionalTw": "Traditionell (Taiwan)",
+          "traditionalHk": "Traditionell (Hongkong)"
         }
       }
     },
@@ -414,10 +611,18 @@
         "title": "Tastenkürzel"
       },
       "api": {
-        "title": "API (OpenAI-kompatibel)",
+        "title": "API",
         "provider": {
           "title": "Anbieter",
-          "description": "Wähle einen OpenAI-kompatiblen Anbieter."
+          "description": "Wähle einen OpenAI- oder Anthropic-kompatiblen Anbieter."
+        },
+        "apiFormat": {
+          "title": "API-Format",
+          "description": "Anfrageformat, das von deinem benutzerdefinierten Endpunkt erwartet wird.",
+          "options": {
+            "openai": "OpenAI-kompatibel (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence ist auf diesem Gerät nicht verfügbar. Erfordert einen Apple Silicon Mac mit macOS Tahoe (26.0) oder neuer und aktiviertem Apple Intelligence in den Systemeinstellungen."
@@ -425,7 +630,8 @@
         "baseUrl": {
           "title": "Basis-URL",
           "description": "API-Basis-URL für den ausgewählten Anbieter. Nur der benutzerdefinierte Anbieter kann bearbeitet werden.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-Schlüssel",
@@ -475,9 +681,21 @@
       "delete": "Eintrag löschen",
       "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
       "retranscribe": "Erneut transkribieren",
-      "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "cancelTranscription": "Transkription abbrechen",
       "transcribing": "Transkribiere...",
-      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren.",
+      "notTranscribed": "Nicht transkribiert. Du kannst es über das Wiederholen-Symbol transkribieren.",
+      "transcribeFile": "Datei transkribieren",
+      "mediaFiles": "Audio und Video",
+      "fileUnsupported": "Audio aus {{name}} konnte nicht gelesen werden.",
+      "readingFile": "{{name}} wird gelesen...",
+      "transcribeFailed": "Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "waiting": "Wartet auf Transkription",
+      "transcribingPercent": "Transkribiere, {{percent}} %",
+      "showMore": "Mehr anzeigen",
+      "showLess": "Weniger anzeigen",
+      "dropTitle": "Zum Transkribieren ablegen",
+      "dropDescription": "Es erscheint im Verlauf."
     },
     "debug": {
       "title": "Debug",
@@ -504,6 +722,38 @@
         "label": "Nach Updates suchen",
         "description": "Automatisch nach neuen Versionen von Handy suchen",
         "lockedDescription": "Durch Systemkonfiguration deaktiviert (HANDY_DISABLE_UPDATER)"
+      },
+      "whatsNewPreview": {
+        "title": "Vorschau der Neuerungen",
+        "description": "Die neuesten gebündelten Versionshinweise öffnen, ohne sie als gesehen zu markieren",
+        "button": "Vorschau",
+        "noNotes": "Keine gebündelten Versionshinweise gefunden",
+        "error": "Versionshinweise konnten nicht angezeigt werden"
+      },
+      "onboardingPreview": {
+        "title": "Ersteinrichtung ansehen",
+        "description": "Vorschau der Einrichtungsbildschirme, ohne Berechtigungen, Modelle oder den Abschlussstatus zu ändern",
+        "exitButton": "Vorschau beenden",
+        "choose": "Bildschirm auswählen",
+        "screens": {
+          "welcome": "Willkommen",
+          "permissions": "Berechtigungen",
+          "model": "Modell",
+          "demo": "Demo",
+          "try": "Ausprobieren",
+          "done": "Alles bereit"
+        }
+      },
+      "onboardingRun": {
+        "title": "Onboarding ausführen",
+        "description": "Das Onboarding echt von Anfang an durchlaufen: Es fragt Berechtigungen an, lädt Modelle herunter und speichert deine Auswahl",
+        "button": "Starten"
+      },
+      "modelMigration": {
+        "title": "Modellmigration",
+        "description": "Den Update-Bildschirm für Modelle im alten Format echt öffnen: Er lädt Ersatzmodelle herunter, wechselt Modelle und löscht alte Dateien",
+        "button": "Öffnen",
+        "noRetired": "Keine Modelle im alten Format auf dem Datenträger"
       },
       "soundTheme": {
         "label": "Sound-Thema",
@@ -553,11 +803,6 @@
         "description": "Wähle das Backend für Tastaturkürzel.",
         "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
       },
-      "paths": {
-        "appData": "App-Daten:",
-        "models": "Modelle:",
-        "settings": "Einstellungen:"
-      },
       "pasteDelay": {
         "title": "Einfügeverzögerung (vorher)",
         "description": "Verzögerung (in Millisekunden) nach dem Kopieren des Textes, bevor der Einfüge-Tastendruck gesendet wird. Erhöhe den Wert, wenn nichts eingefügt wird."
@@ -597,20 +842,6 @@
         "verdictOk": "Tastenereignisse erreichen Handy normal.",
         "verdictNoEvents": "Keine Ereignisse erfasst — hast du während des Tests Tasten gedrückt?",
         "failed": "Diagnose fehlgeschlagen: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "Vorschau der Neuerungen",
-        "description": "Die neuesten gebündelten Versionshinweise öffnen, ohne sie als gesehen zu markieren",
-        "button": "Vorschau",
-        "noNotes": "Keine gebündelten Versionshinweise gefunden",
-        "error": "Versionshinweise konnten nicht angezeigt werden"
-      },
-      "onboardingPreview": {
-        "title": "Ersteinrichtung ansehen",
-        "description": "Vorschau der Einrichtungsbildschirme, ohne Berechtigungen, Modelle oder den Abschlussstatus zu ändern",
-        "permissionsButton": "Berechtigungen",
-        "modelsButton": "Modellauswahl",
-        "exitButton": "Vorschau beenden"
       }
     },
     "about": {
@@ -618,6 +849,10 @@
       "version": {
         "title": "Version",
         "description": "Aktuelle Version von Handy"
+      },
+      "whatsNewUpdates": {
+        "label": "Neuerungen anzeigen",
+        "description": "Versionshinweise nach Handy-Updates anzeigen"
       },
       "appDataDirectory": {
         "title": "App-Datenverzeichnis",
@@ -640,10 +875,6 @@
           "description": "Hochleistungs-Inferenz des Whisper-Spracherkennungsmodells von OpenAI",
           "details": "Handy verwendet ggml für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "Neuerungen anzeigen",
-        "description": "Versionshinweise nach Handy-Updates anzeigen"
       }
     }
   },
@@ -662,6 +893,9 @@
     "portableUpdateBrowseMessage": "Portable Installationen können nicht automatisch aktualisiert werden. Lade die neueste Version für dein System von GitHub Releases herunter und installiere sie in denselben Ordner — dein Data/-Ordner (Einstellungen, Modelle, Aufnahmen) bleibt erhalten.",
     "portableUpdateBrowseButton": "GitHub Releases öffnen"
   },
+  "whatsNew": {
+    "title": "Neu in Handy v{{version}}"
+  },
   "common": {
     "resetSetting": "{{setting}} auf den Standardwert zurücksetzen",
     "loading": "Wird geladen...",
@@ -671,10 +905,6 @@
     "copy": "Kopieren",
     "clear": "Leeren",
     "noOptionsFound": "Keine Optionen gefunden"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy benötigt Bedienungshilfen-Berechtigungen, um transkribierten Text einzugeben.",
-    "openSettings": "Systemeinstellungen öffnen"
   },
   "errors": {
     "loadDirectory": "Fehler beim Laden des Verzeichnisses: {{error}}",
@@ -711,9 +941,6 @@
     "transcribing": "Transkribiere...",
     "processing": "Verarbeite...",
     "loadingModel": "Modell wird geladen..."
-  },
-  "whatsNew": {
-    "title": "Neu in Handy v{{version}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blockiert möglicherweise 1 Tastenkürzel",
