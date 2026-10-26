@@ -12,6 +12,7 @@ mod commands;
 pub mod engine_supervisor;
 mod helpers;
 mod input;
+mod language_detection;
 mod llm_client;
 mod managers;
 mod memory;
@@ -768,6 +769,7 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::set_selected_channel,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
+            commands::transcription::get_language_status,
             commands::transcription::unload_model_manually,
             commands::history::get_history_entries,
             commands::history::toggle_history_entry_saved,

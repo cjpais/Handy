@@ -286,7 +286,10 @@ pub fn effective_language(
 }
 
 /// The model's own code for `language`, if it hears it.
-fn supported_code<'a>(language: &str, supported_languages: &'a [String]) -> Option<&'a String> {
+pub(crate) fn supported_code<'a>(
+    language: &str,
+    supported_languages: &'a [String],
+) -> Option<&'a String> {
     // Exact base first, then aliases: with both `no` and `nb` listed, `nb` must pick `nb`.
     supported_languages
         .iter()
@@ -2360,6 +2363,16 @@ impl ModelManager {
             return Err(anyhow::anyhow!("Model file is incomplete: {}", model_id));
         }
         Ok(model_path)
+    }
+
+    /// The spoken-language detector's file, when it is fully on disk: in the
+    /// HF cache, or in the models dir (mirror fallback / manual drop-in).
+    pub fn language_detector_path(&self) -> Option<PathBuf> {
+        let detector = crate::catalog::LANGUAGE_DETECTOR.as_ref()?;
+        hf_cached_path(&detector.repo_id, &detector.revision, &detector.filename).or_else(|| {
+            let local = self.models_dir.join(&detector.filename);
+            local.is_file().then_some(local)
+        })
     }
 
     pub fn cancel_download(&self, model_id: &str) -> Result<()> {

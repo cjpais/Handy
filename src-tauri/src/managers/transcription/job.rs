@@ -54,7 +54,7 @@ impl TranscriptionManager {
             active_model,
             setup,
             ..
-        } = self.batch_context()?;
+        } = self.batch_context(&audio)?;
 
         let backend = settings.vad_backend;
         let app_handle = self.app_handle.clone();

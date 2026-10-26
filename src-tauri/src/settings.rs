@@ -343,6 +343,18 @@ pub enum VadBackend {
     Earshot,
 }
 
+/// When Handy's spoken-language detector picks the language for Auto.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum LanguageDetectionMode {
+    /// Only for models that can't detect the language themselves.
+    #[default]
+    WhenNeeded,
+    /// For every model except streaming ones, restricted to the languages
+    /// the person speaks.
+    Always,
+}
+
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
 pub(crate) struct SecretMap(HashMap<String, String>);
@@ -538,6 +550,12 @@ pub struct AppSettings {
     /// decides whether silence is dropped from recordings.
     #[serde(default = "default_long_form_chunking")]
     pub long_form_chunking: bool,
+    #[serde(default)]
+    pub language_detection: LanguageDetectionMode,
+    /// Seconds of speech the language detector hears (debug). Read through
+    /// [`AppSettings::language_detection_window_samples`], which clamps it.
+    #[serde(default = "default_language_detection_window_secs")]
+    pub language_detection_window_secs: u32,
     /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
     /// not gated on this — that follows model capability. Migrated from the old
     /// `overlay_position` (position `none` → style `None`).
@@ -612,6 +630,10 @@ fn default_vad_enabled() -> bool {
 
 fn default_long_form_chunking() -> bool {
     true
+}
+
+fn default_language_detection_window_secs() -> u32 {
+    5
 }
 
 fn default_filler_word_removal_enabled() -> bool {
@@ -1033,6 +1055,8 @@ pub fn get_default_settings() -> AppSettings {
         vad_enabled: default_vad_enabled(),
         vad_backend: VadBackend::default(),
         long_form_chunking: default_long_form_chunking(),
+        language_detection: LanguageDetectionMode::default(),
+        language_detection_window_secs: default_language_detection_window_secs(),
         overlay_style: default_overlay_style(),
     }
 }
@@ -1043,7 +1067,17 @@ impl Default for AppSettings {
     }
 }
 
+/// The language detector's window bounds: below 2 s it guesses, and it only
+/// scores the first 30 s of what it's given.
+pub const LANGUAGE_DETECTION_WINDOW_SECS: std::ops::RangeInclusive<u32> = 2..=30;
+
 impl AppSettings {
+    /// Samples (16 kHz) of speech the language detector hears.
+    pub fn language_detection_window_samples(&self) -> usize {
+        let (min, max) = LANGUAGE_DETECTION_WINDOW_SECS.into_inner();
+        self.language_detection_window_secs.clamp(min, max) as usize * 16_000
+    }
+
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
         self.post_process_providers
             .iter()

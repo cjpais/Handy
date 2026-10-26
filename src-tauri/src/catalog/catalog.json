@@ -1834,7 +1834,7 @@
         "zh"
       ],
       "capabilities": {"streaming": false, "translate": false, "languageDetection": false, "timestamps": false},
-      "quant": "Q8_0",
+      "quant": "F16",
       "role": "langid",
       "curated": false,
       "minEngine": "0.4.0",
