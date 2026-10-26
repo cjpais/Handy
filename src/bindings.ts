@@ -1181,7 +1181,15 @@ export type HistoryEntry = { id: number; file_name: string; timestamp: number; s
  * The name of the file this entry was transcribed from; `None` for a
  * dictation.
  */
-source_name: string | null }
+source_name: string | null; 
+/**
+ * The language it was transcribed in, when known.
+ */
+language: string | null; 
+/**
+ * How that language was chosen; `None` before it was recorded.
+ */
+language_source: LanguageSource | null }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
  * Result of changing keyboard implementation
@@ -1211,6 +1219,28 @@ export type LanguageDetectionMode =
  * the person speaks.
  */
 "always"
+/**
+ * How a transcription's language was chosen.
+ */
+export type LanguageSource = 
+/**
+ * The person picked it, or it is the only language of theirs the model
+ * supports.
+ */
+"selected" | 
+/**
+ * The model decides: its own detection, or its only language.
+ */
+"model" | 
+/**
+ * Handy's detector picked it.
+ */
+"detected" | 
+/**
+ * Handy had to pick without detecting (too little speech, detection
+ * failed or unavailable, or Auto can't work for these languages).
+ */
+"fallback"
 /**
  * What the language picker shows: the language a transcription will run in,
  * or Auto when it's decided per transcription. Derived from [`plan`], so it

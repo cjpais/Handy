@@ -925,12 +925,12 @@ impl TranscriptionManager {
     /// Transcribe a whole clip in batch: a re-transcribed history entry, or
     /// a file from the CLI.
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
-        self.complete(Instant::now(), audio, None)
+        Ok(self.complete(Instant::now(), audio, None)?.text)
     }
 
     /// Transcribe a finished recording: what its live decode produced, or a
     /// batch run of the whole recording when there is no live result.
-    pub fn transcribe_recording(&self, samples: Vec<f32>) -> Result<String> {
+    pub fn transcribe_recording(&self, samples: Vec<f32>) -> Result<Transcription> {
         let started = Instant::now();
         let live = self.finalize_live(samples.len())?;
         self.complete(started, samples, live)
@@ -943,7 +943,7 @@ impl TranscriptionManager {
         started: Instant,
         audio: Vec<f32>,
         live: Option<RunOutcome>,
-    ) -> Result<String> {
+    ) -> Result<Transcription> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -956,7 +956,10 @@ impl TranscriptionManager {
         if audio.is_empty() {
             debug!("Empty audio vector");
             self.maybe_unload_immediately("empty audio");
-            return Ok(String::new());
+            return Ok(Transcription {
+                text: String::new(),
+                language: None,
+            });
         }
 
         let outcome = match live {
@@ -964,6 +967,9 @@ impl TranscriptionManager {
             None => self.decode_batch(audio)?,
         };
         let settings = get_settings(&self.app_handle);
+        let language = outcome
+            .setup
+            .spoken_language(outcome.model_detected_language.as_deref());
         let final_result = finish_text(outcome, &settings);
 
         let translation_note = if settings.translate_to_english {
@@ -993,7 +999,10 @@ impl TranscriptionManager {
 
         self.maybe_unload_immediately("transcription");
 
-        Ok(final_result)
+        Ok(Transcription {
+            text: final_result,
+            language: Some(language),
+        })
     }
 
     /// Decode a whole clip with the loaded model, loading it first if a load
@@ -1170,6 +1179,14 @@ struct BatchContext {
 
 /// What one transcription decoded (live or in batch), with how its runs were
 /// set up, which post-processing needs to know.
+/// A finished transcription.
+pub struct Transcription {
+    pub text: String,
+    /// The language it ran in and how that was chosen; `None` when there was
+    /// no audio to run.
+    pub language: Option<LanguageDecision>,
+}
+
 struct RunOutcome {
     setup: RunSetup,
     text: String,
@@ -1212,6 +1229,18 @@ impl RunSetup {
     /// Custom words went to the model as vocabulary; skip fuzzy correction.
     fn custom_words_prompted(&self) -> bool {
         !self.run_options.vocabulary.is_empty()
+    }
+
+    /// The language the runs were in. When the model decided, the language
+    /// it reported (if any).
+    fn spoken_language(&self, model_detected_language: Option<&str>) -> LanguageDecision {
+        let mut decision = self.language.clone();
+        if decision.language.is_none() {
+            decision.language = model_detected_language
+                .filter(|language| !language.is_empty() && *language != "auto")
+                .map(str::to_string);
+        }
+        decision
     }
 
     /// What the output language is known to be, given the model's own
@@ -1309,11 +1338,7 @@ fn engine_error(e: EngineError) -> anyhow::Error {
 /// language hint was passed). Chunks that disagree leave it unknown. A single
 /// transcript passes through untouched.
 fn join_chunks(transcripts: Vec<Transcript>) -> (String, Option<String>) {
-    let mut detected = transcripts.iter().map(|t| t.language.clone());
-    let language = detected
-        .next()
-        .flatten()
-        .filter(|first| detected.all(|language| language.as_ref() == Some(first)));
+    let language = agreed_language(&transcripts);
     let text = match <[Transcript; 1]>::try_from(transcripts) {
         Ok([one]) => one.text,
         Err(many) => {
@@ -1321,6 +1346,15 @@ fn join_chunks(transcripts: Vec<Transcript>) -> (String, Option<String>) {
         }
     };
     (text, language)
+}
+
+/// The language every chunk's model reported, if they all agree.
+fn agreed_language(transcripts: &[Transcript]) -> Option<String> {
+    let mut detected = transcripts.iter().map(|t| t.language.clone());
+    detected
+        .next()
+        .flatten()
+        .filter(|first| detected.all(|language| language.as_ref() == Some(first)))
 }
 
 fn emit_stream_text(app_handle: &AppHandle, committed: &str, tentative: &str) {

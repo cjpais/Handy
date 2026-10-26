@@ -7,6 +7,8 @@ pub mod policy;
 pub mod speech;
 
 use log::{info, warn};
+use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::time::Duration;
 
 pub use detector::LanguageDetector;
@@ -71,7 +73,8 @@ const MIN_SPEECH_SAMPLES: usize = 16_000 / 2;
 const UNSURE_RATIO: f32 = 1.5;
 
 /// How a transcription's language was chosen.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum LanguageSource {
     /// The person picked it, or it is the only language of theirs the model
     /// supports.
@@ -83,6 +86,26 @@ pub enum LanguageSource {
     /// Handy had to pick without detecting (too little speech, detection
     /// failed or unavailable, or Auto can't work for these languages).
     Fallback,
+}
+
+impl LanguageSource {
+    /// How it is stored in history.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Selected => "selected",
+            Self::Model => "model",
+            Self::Detected => "detected",
+            Self::Fallback => "fallback",
+        }
+    }
+
+    /// Reads [`as_str`](Self::as_str); `None` for anything else (a newer
+    /// Handy's value).
+    pub fn parse(value: &str) -> Option<Self> {
+        [Self::Selected, Self::Model, Self::Detected, Self::Fallback]
+            .into_iter()
+            .find(|source| source.as_str() == value)
+    }
 }
 
 /// The language one transcription runs in.
