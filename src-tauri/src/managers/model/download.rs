@@ -9,6 +9,7 @@ use futures_util::StreamExt;
 use hf_hub::api::tokio::CancellationToken;
 use log::{info, warn};
 use sha2::{Digest, Sha256};
+use std::collections::VecDeque;
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -24,6 +25,57 @@ const HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 /// resume) and HF attempts are cancelled by a watchdog — either way the retry
 /// loop and mirror fallback take over instead of hanging forever.
 pub(super) const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Throttle for progress events while bytes are flowing.
+pub(super) const PROGRESS_THROTTLE: Duration = Duration::from_millis(100);
+
+/// Re-emit interval with no bytes arriving, so the rate decays instead of freezing.
+pub(super) const PROGRESS_TICK: Duration = Duration::from_secs(1);
+
+/// Rate window: smooths hf-hub's bursty parallel chunks, still shows a slowdown.
+const RATE_WINDOW: Duration = Duration::from_secs(5);
+
+/// No rate until bytes have flowed this long; shorter samples are burst noise.
+const RATE_MIN_SPAN: Duration = Duration::from_secs(1);
+
+/// Transfer rate over a trailing window, excluding resumed bytes and timed from
+/// the first byte received (so connecting doesn't drag it down).
+pub(super) struct RateMeter {
+    start_bytes: u64,
+    /// `(when, cumulative bytes)`; the front is the window's anchor. Empty
+    /// until the first sample past `start_bytes`.
+    samples: VecDeque<(Instant, u64)>,
+}
+
+impl RateMeter {
+    pub(super) fn new(start_bytes: u64) -> Self {
+        Self {
+            start_bytes,
+            samples: VecDeque::new(),
+        }
+    }
+
+    /// Records the cumulative byte count at `now` and returns the rate in
+    /// bytes/sec, or `None` until bytes have flowed for [`RATE_MIN_SPAN`].
+    pub(super) fn sample(&mut self, bytes: u64, now: Instant) -> Option<f64> {
+        if self.samples.is_empty() && bytes <= self.start_bytes {
+            return None;
+        }
+        self.samples.push_back((now, bytes));
+        // Keep one sample at or before the window start as the anchor.
+        while self.samples.len() > 2
+            && now.saturating_duration_since(self.samples[1].0) >= RATE_WINDOW
+        {
+            self.samples.pop_front();
+        }
+        let (anchor_at, anchor_bytes) = self.samples[0];
+        let span = now.saturating_duration_since(anchor_at);
+        if span < RATE_MIN_SPAN {
+            return None;
+        }
+        Some(bytes.saturating_sub(anchor_bytes) as f64 / span.as_secs_f64())
+    }
+}
 
 /// Start offset of a `Content-Range: bytes <start>-<end>/<total>` header.
 fn content_range_start(value: &str) -> Option<u64> {
@@ -302,7 +354,7 @@ impl ModelManager {
             std::fs::File::create(partial_path)?
         };
 
-        let emit_progress = |downloaded: u64| {
+        let emit_progress = |downloaded: u64, bytes_per_sec: Option<f64>| {
             emit(HttpDownloadEvent::Progress(&DownloadProgress {
                 model_id: model_id.to_string(),
                 downloaded,
@@ -312,17 +364,25 @@ impl ModelManager {
                 } else {
                     0.0
                 },
+                bytes_per_sec,
             }));
         };
-        emit_progress(downloaded);
+        // Seeded at the resume offset (after any 200-restart reset above), so
+        // only bytes from this response count toward the rate.
+        let mut rate = RateMeter::new(downloaded);
+        emit_progress(downloaded, None);
 
-        // Throttle progress events to max 10/sec (100ms intervals)
         let mut last_emit = Instant::now();
-        let throttle = Duration::from_millis(100);
+        // A deadline rather than a per-poll timeout: the tick arm below
+        // restarts the select every second, which must not reset the clock.
+        let mut stall_deadline = tokio::time::Instant::now() + DOWNLOAD_STALL_TIMEOUT;
+        let mut tick =
+            tokio::time::interval_at(tokio::time::Instant::now() + PROGRESS_TICK, PROGRESS_TICK);
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         let mut stream = response.bytes_stream();
         loop {
             let chunk = tokio::select! {
-                c = tokio::time::timeout(DOWNLOAD_STALL_TIMEOUT, stream.next()) => match c {
+                c = tokio::time::timeout_at(stall_deadline, stream.next()) => match c {
                     // Stalled mid-body: keep the partial for resume.
                     Err(_) => return Err(anyhow::anyhow!(
                         "transfer stalled: no data for {}s",
@@ -335,7 +395,16 @@ impl ModelManager {
                     // Keep the partial for resume; caller handles state cleanup.
                     return Ok(HttpDownloadOutcome::Cancelled);
                 }
+                _ = tick.tick() => {
+                    if last_emit.elapsed() >= PROGRESS_TICK {
+                        let now = Instant::now();
+                        emit_progress(downloaded, rate.sample(downloaded, now));
+                        last_emit = now;
+                    }
+                    continue;
+                }
             };
+            stall_deadline = tokio::time::Instant::now() + DOWNLOAD_STALL_TIMEOUT;
             // An untrusted server must not be able to fill the disk: cut the
             // transfer at the first byte past the known total instead of
             // trusting it to eventually close the stream. Everything written
@@ -352,14 +421,15 @@ impl ModelManager {
             }
             file.write_all(&chunk)?;
             downloaded += chunk.len() as u64;
-            if last_emit.elapsed() >= throttle {
-                emit_progress(downloaded);
-                last_emit = Instant::now();
+            if last_emit.elapsed() >= PROGRESS_THROTTLE {
+                let now = Instant::now();
+                emit_progress(downloaded, rate.sample(downloaded, now));
+                last_emit = now;
             }
         }
         file.flush()?;
         drop(file);
-        emit_progress(downloaded);
+        emit_progress(downloaded, rate.sample(downloaded, Instant::now()));
 
         if let Some(expected) = known_total {
             let actual = partial_path.metadata()?.len();

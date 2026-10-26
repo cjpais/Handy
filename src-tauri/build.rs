@@ -19,22 +19,52 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib/Handy:$ORIGIN/../lib");
     }
 
+    // CPAL (handy-recorder's and rodio's) links two CoreAudio functions that
+    // only exist on macOS 14.2+. Weak-link the framework so Handy still
+    // launches on older macOS (minimumSystemVersion is 10.15).
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        println!("cargo:rustc-link-arg=-Wl,-weak_framework,CoreAudio");
+        link_clang_rt_osx();
+    }
+
     // Stage transcribe-cpp's shared runtime libraries (and the dlopen'd ggml
     // backend modules) for the installer. Self-gates on the shared /
     // dynamic-backends posture used by Linux and Windows; it's a no-op for the
     // static macOS `metal` build, where there is nothing to ship.
     stage_transcribe_runtime_libs();
 
-    // When ORT is dynamically linked (Windows CI sets ORT_LIB_LOCATION +
-    // ORT_PREFER_DYNAMIC_LINK to a baseline ONNX Runtime), ship its onnxruntime.dll
-    // next to Handy.exe so the app loads our baseline build instead of statically
-    // embedding pyke's /arch:AVX2 one (which crashes at startup on pre-Haswell CPUs).
-    stage_onnxruntime_dll();
-
     // Must run after transcribe staging because that helper recreates transcribe-libs/.
     stage_vc_runtime_dlls();
 
     tauri_build::build()
+}
+
+/// Link clang's compiler runtime, which provides `__isPlatformVersionAtLeast`.
+///
+/// ggml-metal guards newer Metal APIs with `@available`. When the deployment
+/// target is older than the SDK (CI builds for macOS 11.0), clang lowers those
+/// checks to calls into `libclang_rt.osx.a`, which rustc does not link
+/// (`-nodefaultlibs`). ort-sys used to add it for its own static ONNX Runtime;
+/// without ORT, Handy has to. Local builds targeting the host macOS fold the
+/// checks away, which is why only CI hit the undefined symbol.
+fn link_clang_rt_osx() {
+    let output = std::process::Command::new("clang")
+        .arg("--print-resource-dir")
+        .output()
+        .expect("run `clang --print-resource-dir` to locate libclang_rt.osx.a");
+    assert!(
+        output.status.success(),
+        "`clang --print-resource-dir` failed; cannot locate libclang_rt.osx.a"
+    );
+    let resource_dir = String::from_utf8(output.stdout).expect("clang resource dir is UTF-8");
+    let darwin_dir = std::path::Path::new(resource_dir.trim()).join("lib/darwin");
+    assert!(
+        darwin_dir.join("libclang_rt.osx.a").exists(),
+        "libclang_rt.osx.a not found in {}",
+        darwin_dir.display()
+    );
+    println!("cargo:rustc-link-search=native={}", darwin_dir.display());
+    println!("cargo:rustc-link-lib=static=clang_rt.osx");
 }
 
 /// Stage the MSVC runtime DLLs into `transcribe-libs/` for app-local deployment.
@@ -100,50 +130,6 @@ fn stage_vc_runtime_dlls() {
         "cargo:warning=Staged {} VC++ runtime DLL(s) for app-local deployment",
         copied.len()
     );
-}
-
-/// Copy the dynamically-linked ONNX Runtime `onnxruntime.dll` into the
-/// `transcribe-libs/` staging dir so `tauri.windows.conf.json` bundles it beside
-/// `Handy.exe` (Windows resolves DLLs from the executable's directory).
-///
-/// No-op unless `ORT_PREFER_DYNAMIC_LINK` + `ORT_LIB_LOCATION` are set for a Windows
-/// target — i.e. the CI dynamic-link path. A plain static build (no env) skips this
-/// and keeps the embedded ORT, and non-Windows targets bundle their ORT elsewhere
-/// (see build.yml frameworks/deb.files steps), so they are ignored here.
-fn stage_onnxruntime_dll() {
-    use std::path::PathBuf;
-
-    println!("cargo:rerun-if-env-changed=ORT_LIB_LOCATION");
-    println!("cargo:rerun-if-env-changed=ORT_PREFER_DYNAMIC_LINK");
-
-    if std::env::var_os("ORT_PREFER_DYNAMIC_LINK").is_none() {
-        return;
-    }
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
-        return;
-    }
-    let Some(lib_location) = std::env::var_os("ORT_LIB_LOCATION") else {
-        return;
-    };
-
-    let src = PathBuf::from(&lib_location).join("onnxruntime.dll");
-    if !src.exists() {
-        panic!(
-            "ORT_PREFER_DYNAMIC_LINK is set but {} does not exist; a dynamic ORT \
-             build must supply onnxruntime.dll to bundle",
-            src.display()
-        );
-    }
-
-    // transcribe-libs/ is already created by stage_transcribe_runtime_libs() on the
-    // Windows x86_64 dynamic-backends build and bundled by tauri.windows.conf.json;
-    // create it defensively so this is self-contained.
-    let dest_dir =
-        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("transcribe-libs");
-    std::fs::create_dir_all(&dest_dir).expect("create transcribe-libs staging dir");
-    std::fs::copy(&src, dest_dir.join("onnxruntime.dll"))
-        .unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
-    println!("cargo:warning=Staged onnxruntime.dll for Windows bundling");
 }
 
 /// Stage transcribe-cpp's shared runtime libraries into `transcribe-libs/` so the
