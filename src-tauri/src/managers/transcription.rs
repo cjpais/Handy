@@ -1177,8 +1177,6 @@ struct BatchContext {
     setup: RunSetup,
 }
 
-/// What one transcription decoded (live or in batch), with how its runs were
-/// set up, which post-processing needs to know.
 /// A finished transcription.
 pub struct Transcription {
     pub text: String,
@@ -1187,6 +1185,8 @@ pub struct Transcription {
     pub language: Option<LanguageDecision>,
 }
 
+/// What one transcription decoded (live or in batch), with how its runs were
+/// set up, which post-processing needs to know.
 struct RunOutcome {
     setup: RunSetup,
     text: String,
@@ -1300,6 +1300,15 @@ fn run_setup(info: &LoadedInfo, settings: &AppSettings, language: LanguageDecisi
             );
         }
     }
+    // The model wasn't told a language, so record what it reports instead.
+    let language = if applied_language_hint.is_none() && language.language.is_some() {
+        LanguageDecision {
+            language: None,
+            source: LanguageSource::Model,
+        }
+    } else {
+        language
+    };
 
     let run_options = RunOptions {
         task: run_plan.task,

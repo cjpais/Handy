@@ -17,8 +17,9 @@ use crate::audio_toolkit::cpu_engine::init_cpu_backends;
 pub struct LanguageDetector {
     // `LangIdSession` is Send but not Sync.
     loaded: Mutex<Option<Loaded>>,
-    /// An unload arrived mid-run; the run drops the model when it ends.
-    unload_after_run: AtomicBool,
+    /// An unload is pending: it found a run holding the model, so that run
+    /// drops it once it lets go of the lock.
+    unload_requested: AtomicBool,
 }
 
 struct Loaded {
@@ -58,6 +59,16 @@ impl LanguageDetector {
     /// Rank `allowed` (the detector's labels) for 16 kHz mono `speech`,
     /// loading the model at `path` first if it isn't loaded.
     pub fn identify(&self, path: &Path, speech: &[f32], allowed: &[String]) -> Result<Identified> {
+        let result = self.run(path, speech, allowed);
+        // Checked only after the lock is released: an unload that found it
+        // held posted its request first, so it can't be missed here.
+        if self.unload_requested.load(Ordering::SeqCst) {
+            self.unload();
+        }
+        result
+    }
+
+    fn run(&self, path: &Path, speech: &[f32], allowed: &[String]) -> Result<Identified> {
         let mut guard = self.loaded.lock().unwrap_or_else(PoisonError::into_inner);
         if guard.as_ref().is_some_and(|l| l.path != path) {
             *guard = None;
@@ -72,12 +83,7 @@ impl LanguageDetector {
             &LangIdOptions {
                 allowed: Some(allowed.to_vec()),
             },
-        );
-        if self.unload_after_run.swap(false, Ordering::AcqRel) {
-            *guard = None;
-            debug!("Language detector unloaded");
-        }
-        let result = result?;
+        )?;
         Ok(Identified {
             candidates: result
                 .candidates
@@ -92,14 +98,15 @@ impl LanguageDetector {
     /// Never waits: an unload that lands mid-run is done by the run when it
     /// ends, so a model unload never blocks its caller (e.g. the event loop).
     pub fn unload(&self) {
+        // Posted before trying the lock, so a run that releases it in between
+        // still sees the request.
+        self.unload_requested.store(true, Ordering::SeqCst);
         let mut loaded = match self.loaded.try_lock() {
             Ok(loaded) => loaded,
             Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
-            Err(TryLockError::WouldBlock) => {
-                self.unload_after_run.store(true, Ordering::Release);
-                return;
-            }
+            Err(TryLockError::WouldBlock) => return,
         };
+        self.unload_requested.store(false, Ordering::SeqCst);
         if loaded.take().is_some() {
             debug!("Language detector unloaded");
         }

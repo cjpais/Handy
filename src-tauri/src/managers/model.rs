@@ -1873,14 +1873,20 @@ impl ModelManager {
                 offset: 0,
                 total: Some(detector.size_bytes + model_bytes),
             };
-            if !self
-                .fetch_language_detector(progress, &cancel_token)
-                .await?
-            {
-                info!("HF download cancelled for: {}", model_id);
-                return Ok(());
+            match self.fetch_language_detector(progress, &cancel_token).await {
+                Ok(true) => offset = detector.size_bytes,
+                Ok(false) => {
+                    info!("HF download cancelled for: {}", model_id);
+                    return Ok(());
+                }
+                // The model works without it: Auto falls back to the first
+                // preferred language and the language picker offers the
+                // download, so it doesn't cost them the model.
+                Err(e) => warn!(
+                    "Language detector download failed; continuing with {}: {:#}",
+                    model_id, e
+                ),
             }
-            offset = detector.size_bytes;
         }
 
         if !model_present {
