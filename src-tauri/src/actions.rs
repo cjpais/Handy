@@ -1,6 +1,8 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
-use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_feedback::{
+    play_feedback_sound, play_feedback_sound_blocking, play_recording_tone_while, SoundType,
+};
 use crate::audio_toolkit::VadPolicy;
 use crate::managers::audio::{recording_error_type, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
@@ -585,6 +587,14 @@ impl ShortcutAction for TranscribeAction {
                     if rm_clone.is_recording_readiness_current(generation) {
                         rm_clone.apply_mute();
                     }
+
+                    // Stop and cancel bump the readiness generation before
+                    // anything else, so the tone ends as soon as either is
+                    // requested. Returns immediately when the tone is disabled.
+                    play_recording_tone_while(&app_clone, || {
+                        rm_clone.is_recording_readiness_current(generation)
+                            && rm_clone.is_recording()
+                    });
                 });
             }
             Err(e) => {

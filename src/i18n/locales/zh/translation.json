@@ -452,6 +452,18 @@
       "volume": {
         "title": "音量",
         "description": "调整音频反馈的音量"
+      },
+      "recordingTone": {
+        "label": "录音提示音",
+        "description": "录音期间持续播放轻柔的提示音，让你随时知道 Handy 正在聆听。开启“录制时静音”时听不到。"
+      },
+      "recordingToneVolume": {
+        "title": "录音提示音音量",
+        "description": "调整录音提示音的音量"
+      },
+      "recordingToneFrequency": {
+        "title": "录音提示音音高",
+        "description": "录音提示音的音高，从 C 大调音阶的音中选择。使用扬声器而不是耳机时，麦克风可能会收录提示音。"
       }
     },
     "advanced": {

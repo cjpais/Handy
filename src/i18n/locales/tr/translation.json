@@ -452,6 +452,18 @@
       "volume": {
         "title": "Ses Seviyesi",
         "description": "Sesli geri bildirimlerin ses seviyesini ayarlayın"
+      },
+      "recordingTone": {
+        "label": "Kayıt tonu",
+        "description": "Kayıt sırasında sessiz ve sürekli bir ton çalarak Handy'nin dinlediğini her zaman bilmenizi sağlar. “Kayıt Sırasında Sessize Al” açıkken duyulmaz."
+      },
+      "recordingToneVolume": {
+        "title": "Kayıt tonu ses düzeyi",
+        "description": "Kayıt tonunun ses düzeyini ayarlayın"
+      },
+      "recordingToneFrequency": {
+        "title": "Kayıt tonu perdesi",
+        "description": "Kayıt tonunun perdesi, Do majör dizisinin notalarından seçilir. Kulaklık yerine hoparlör kullanırsanız mikrofon tonu algılayabilir."
       }
     },
     "advanced": {

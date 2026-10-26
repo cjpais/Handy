@@ -452,6 +452,18 @@
       "volume": {
         "title": "音量",
         "description": "調整聲音回饋的音量"
+      },
+      "recordingTone": {
+        "label": "錄音提示音",
+        "description": "錄音期間持續播放輕柔的提示音，讓你隨時知道 Handy 正在聆聽。開啟「錄製時靜音」時聽不到。"
+      },
+      "recordingToneVolume": {
+        "title": "錄音提示音音量",
+        "description": "調整錄音提示音的音量"
+      },
+      "recordingToneFrequency": {
+        "title": "錄音提示音音高",
+        "description": "錄音提示音的音高，從 C 大調音階的音中選擇。使用喇叭而不是耳機時，麥克風可能會收錄提示音。"
       }
     },
     "advanced": {

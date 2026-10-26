@@ -403,6 +403,14 @@ pub struct AppSettings {
     pub audio_feedback_volume: f32,
     #[serde(default = "default_sound_theme")]
     pub sound_theme: SoundTheme,
+    /// Plays a quiet continuous tone while recording, so it is always clear
+    /// whether Handy is listening.
+    #[serde(default)]
+    pub recording_tone: bool,
+    #[serde(default = "default_recording_tone_volume")]
+    pub recording_tone_volume: f32,
+    #[serde(default = "default_recording_tone_frequency")]
+    pub recording_tone_frequency: f32,
     #[serde(default = "default_start_hidden")]
     pub start_hidden: bool,
     #[serde(default = "default_autostart_enabled")]
@@ -665,6 +673,16 @@ fn default_audio_feedback_volume() -> f32 {
 
 fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
+}
+
+fn default_recording_tone_volume() -> f32 {
+    0.2
+}
+
+/// Middle C: low enough to sit in the background, high enough for laptop
+/// speakers to reproduce.
+fn default_recording_tone_frequency() -> f32 {
+    261.63
 }
 
 fn default_theme() -> Theme {
@@ -977,6 +995,9 @@ pub fn get_default_settings() -> AppSettings {
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
+        recording_tone: false,
+        recording_tone_volume: default_recording_tone_volume(),
+        recording_tone_frequency: default_recording_tone_frequency(),
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),

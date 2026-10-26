@@ -11,6 +11,9 @@ import { AudioFeedback } from "../AudioFeedback";
 import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
+import { RecordingTone } from "../RecordingTone";
+import { RecordingToneVolume } from "../RecordingToneVolume";
+import { RecordingToneFrequency } from "../RecordingToneFrequency";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 import { PreferredLanguages } from "../PreferredLanguages";
 import { ChineseScriptSetting } from "../ChineseScript";
@@ -20,6 +23,7 @@ export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { audioFeedbackEnabled, getSetting } = useSettings();
   const isLinux = type() === "linux";
+  const recordingToneEnabled = getSetting("recording_tone") ?? false;
   // Only for Chinese speakers, or anyone who already picked a script.
   const speaksChinese =
     (getSetting("spoken_languages") ?? []).some(isChinese) ||
@@ -47,9 +51,12 @@ export const GeneralSettings: React.FC = () => {
         <OutputDeviceSelector
           descriptionMode="tooltip"
           grouped={true}
-          disabled={!audioFeedbackEnabled}
+          disabled={!audioFeedbackEnabled && !recordingToneEnabled}
         />
         <VolumeSlider disabled={!audioFeedbackEnabled} />
+        <RecordingTone descriptionMode="tooltip" grouped={true} />
+        <RecordingToneVolume disabled={!recordingToneEnabled} />
+        <RecordingToneFrequency disabled={!recordingToneEnabled} />
       </SettingsGroup>
     </div>
   );

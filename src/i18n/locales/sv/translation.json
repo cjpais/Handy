@@ -452,6 +452,18 @@
       "volume": {
         "title": "Volym",
         "description": "Justera volymen för ljudåterkopplingsljud"
+      },
+      "recordingTone": {
+        "label": "Inspelningston",
+        "description": "Spelar en svag, kontinuerlig ton under inspelning så att du alltid vet att Handy lyssnar. Den hörs inte när ”Ljudlös under inspelning” är på."
+      },
+      "recordingToneVolume": {
+        "title": "Volym för inspelningston",
+        "description": "Justera volymen för inspelningstonen"
+      },
+      "recordingToneFrequency": {
+        "title": "Tonhöjd för inspelningston",
+        "description": "Tonhöjden för inspelningstonen, vald bland tonerna i C-durskalan. Om du använder högtalare i stället för hörlurar kan mikrofonen fånga upp tonen."
       }
     },
     "advanced": {

@@ -452,6 +452,18 @@
       "volume": {
         "title": "Lautstärke",
         "description": "Lautstärke der Audio-Feedback-Töne anpassen"
+      },
+      "recordingTone": {
+        "label": "Aufnahmeton",
+        "description": "Spielt während der Aufnahme einen leisen, durchgehenden Ton ab, damit du immer weißt, dass Handy zuhört. Bei aktiviertem „Während Aufnahme stummschalten“ ist er nicht hörbar."
+      },
+      "recordingToneVolume": {
+        "title": "Lautstärke des Aufnahmetons",
+        "description": "Lautstärke des Aufnahmetons anpassen"
+      },
+      "recordingToneFrequency": {
+        "title": "Tonhöhe des Aufnahmetons",
+        "description": "Tonhöhe des Aufnahmetons, gewählt aus den Tönen der C-Dur-Tonleiter. Wenn du Lautsprecher statt Kopfhörer verwendest, kann das Mikrofon den Ton aufnehmen."
       }
     },
     "advanced": {

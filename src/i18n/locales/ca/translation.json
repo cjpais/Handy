@@ -452,6 +452,18 @@
       "volume": {
         "title": "Volum",
         "description": "Ajusta el volum dels avisos sonors"
+      },
+      "recordingTone": {
+        "label": "To d'enregistrament",
+        "description": "Reprodueix un to suau i continu mentre s'enregistra perquè sàpigues sempre que Handy escolta. No se sent quan «Silencia durant l'enregistrament» està activat."
+      },
+      "recordingToneVolume": {
+        "title": "Volum del to d'enregistrament",
+        "description": "Ajusta el volum del to d'enregistrament"
+      },
+      "recordingToneFrequency": {
+        "title": "Altura del to d'enregistrament",
+        "description": "Altura del to d'enregistrament, triada entre les notes de l'escala de do major. Si fas servir altaveus en lloc d'auriculars, el micròfon pot captar el to."
       }
     },
     "advanced": {

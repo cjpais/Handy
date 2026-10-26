@@ -452,6 +452,18 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "recordingTone": {
+        "label": "Recording Tone",
+        "description": "Play a quiet, continuous tone while recording so you always know Handy is listening. It is silent while “Mute While Recording” is on."
+      },
+      "recordingToneVolume": {
+        "title": "Recording Tone Volume",
+        "description": "Adjust the volume of the recording tone"
+      },
+      "recordingToneFrequency": {
+        "title": "Recording Tone Pitch",
+        "description": "Pitch of the recording tone, chosen from the notes of the C major scale. If you use speakers instead of headphones, the microphone may pick up the tone."
       }
     },
     "advanced": {

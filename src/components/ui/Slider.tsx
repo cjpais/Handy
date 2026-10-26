@@ -49,7 +49,7 @@ export const Slider: React.FC<SliderProps> = ({
       disabled={disabled}
     >
       <div className="w-full">
-        <div className="flex items-center space-x-1 h-6">
+        <div className="flex items-center space-x-1 min-h-6">
           <input
             type="range"
             aria-label={label}
@@ -67,7 +67,7 @@ export const Slider: React.FC<SliderProps> = ({
             }}
           />
           {showValue && (
-            <span className="text-sm font-medium text-text w-12 text-end">
+            <span className="text-sm leading-tight font-medium text-text w-12 text-end whitespace-pre-line">
               {formatValue(value)}
             </span>
           )}

@@ -452,6 +452,18 @@
       "volume": {
         "title": "Volume",
         "description": "Ajuster le volume du signal sonore"
+      },
+      "recordingTone": {
+        "label": "Tonalité d'enregistrement",
+        "description": "Joue une tonalité discrète et continue pendant l'enregistrement pour savoir à tout moment que Handy écoute. Elle est inaudible lorsque « Muet pendant l'enregistrement » est activé."
+      },
+      "recordingToneVolume": {
+        "title": "Volume de la tonalité d'enregistrement",
+        "description": "Régler le volume de la tonalité d'enregistrement"
+      },
+      "recordingToneFrequency": {
+        "title": "Hauteur de la tonalité d'enregistrement",
+        "description": "Hauteur de la tonalité d'enregistrement, choisie parmi les notes de la gamme de do majeur. Si vous utilisez des haut-parleurs plutôt qu'un casque, le micro peut capter la tonalité."
       }
     },
     "advanced": {

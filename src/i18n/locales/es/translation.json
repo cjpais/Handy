@@ -452,6 +452,18 @@
       "volume": {
         "title": "Volumen",
         "description": "Ajusta el volumen de los sonidos de retroalimentación de audio"
+      },
+      "recordingTone": {
+        "label": "Tono de grabación",
+        "description": "Reproduce un tono suave y continuo mientras grabas para que siempre sepas que Handy está escuchando. No se oye cuando «Silenciar durante la grabación» está activado."
+      },
+      "recordingToneVolume": {
+        "title": "Volumen del tono de grabación",
+        "description": "Ajusta el volumen del tono de grabación"
+      },
+      "recordingToneFrequency": {
+        "title": "Altura del tono de grabación",
+        "description": "Altura del tono de grabación, elegida entre las notas de la escala de do mayor. Si usas altavoces en lugar de auriculares, el micrófono puede captar el tono."
       }
     },
     "advanced": {

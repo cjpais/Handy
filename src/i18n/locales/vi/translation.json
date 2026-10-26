@@ -452,6 +452,18 @@
       "volume": {
         "title": "Âm lượng",
         "description": "Điều chỉnh âm lượng của âm thanh phản hồi"
+      },
+      "recordingTone": {
+        "label": "Âm báo ghi âm",
+        "description": "Phát một âm nhỏ và liên tục trong khi ghi âm để bạn luôn biết Handy đang lắng nghe. Âm sẽ không nghe thấy khi bật “Tắt tiếng khi ghi âm”."
+      },
+      "recordingToneVolume": {
+        "title": "Âm lượng âm báo ghi âm",
+        "description": "Điều chỉnh âm lượng âm báo ghi âm"
+      },
+      "recordingToneFrequency": {
+        "title": "Cao độ âm báo ghi âm",
+        "description": "Cao độ của âm báo ghi âm, chọn từ các nốt của âm giai Đô trưởng. Nếu bạn dùng loa thay vì tai nghe, micrô có thể thu lại âm báo."
       }
     },
     "advanced": {

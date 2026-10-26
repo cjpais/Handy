@@ -452,6 +452,18 @@
       "volume": {
         "title": "볼륨",
         "description": "오디오 피드백 사운드의 볼륨 조절"
+      },
+      "recordingTone": {
+        "label": "녹음 중 신호음",
+        "description": "녹음하는 동안 작은 신호음을 계속 재생하여 Handy가 듣고 있는지 항상 알 수 있게 합니다. ‘녹음 중 음소거’가 켜져 있으면 들리지 않습니다."
+      },
+      "recordingToneVolume": {
+        "title": "녹음 중 신호음 볼륨",
+        "description": "녹음 중 신호음의 볼륨 조절"
+      },
+      "recordingToneFrequency": {
+        "title": "녹음 중 신호음 높이",
+        "description": "녹음 중 신호음의 높이를 다장조 음계의 음 중에서 고릅니다. 헤드폰 대신 스피커를 쓰면 신호음이 마이크에 들어갈 수 있습니다."
       }
     },
     "advanced": {

@@ -615,6 +615,36 @@ pub fn change_audio_feedback_volume_setting(app: AppHandle, volume: f32) -> Resu
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_recording_tone_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.recording_tone = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_recording_tone_volume_setting(app: AppHandle, volume: f32) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.recording_tone_volume = volume;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_recording_tone_frequency_setting(
+    app: AppHandle,
+    frequency: f32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.recording_tone_frequency = frequency;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match theme.as_str() {

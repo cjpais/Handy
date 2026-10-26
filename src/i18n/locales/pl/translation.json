@@ -452,6 +452,18 @@
       "volume": {
         "title": "Głośność",
         "description": "Dostosuj głośność dźwięków informacyjnych"
+      },
+      "recordingTone": {
+        "label": "Ton nagrywania",
+        "description": "Odtwarza cichy, ciągły ton podczas nagrywania, dzięki czemu zawsze wiesz, że Handy słucha. Nie jest słyszalny, gdy włączona jest opcja „Wycisz podczas nagrywania”."
+      },
+      "recordingToneVolume": {
+        "title": "Głośność tonu nagrywania",
+        "description": "Dostosuj głośność tonu nagrywania"
+      },
+      "recordingToneFrequency": {
+        "title": "Wysokość tonu nagrywania",
+        "description": "Wysokość tonu nagrywania, wybierana spośród dźwięków gamy C-dur. Jeśli używasz głośników zamiast słuchawek, mikrofon może wychwycić ton."
       }
     },
     "advanced": {

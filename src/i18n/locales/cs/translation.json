@@ -452,6 +452,18 @@
       "volume": {
         "title": "Hlasitost",
         "description": "Upravte hlasitost zvukové odezvy"
+      },
+      "recordingTone": {
+        "label": "Tón při nahrávání",
+        "description": "Během nahrávání přehrává tichý nepřetržitý tón, abyste vždy věděli, že Handy poslouchá. Při zapnutí „Ztlumit při nahrávání“ není slyšet."
+      },
+      "recordingToneVolume": {
+        "title": "Hlasitost tónu při nahrávání",
+        "description": "Upravit hlasitost tónu při nahrávání"
+      },
+      "recordingToneFrequency": {
+        "title": "Výška tónu při nahrávání",
+        "description": "Výška tónu při nahrávání, vybraná z tónů stupnice C dur. Pokud místo sluchátek používáte reproduktory, může tón zachytit mikrofon."
       }
     },
     "advanced": {

@@ -452,6 +452,18 @@
       "volume": {
         "title": "Volume",
         "description": "Pas het volume van de geluidsfeedback aan"
+      },
+      "recordingTone": {
+        "label": "Opnametoon",
+        "description": "Speelt tijdens het opnemen een zachte, doorlopende toon af, zodat je altijd weet dat Handy luistert. Hij is niet hoorbaar wanneer ‘Dempen tijdens opname’ aan staat."
+      },
+      "recordingToneVolume": {
+        "title": "Volume opnametoon",
+        "description": "Pas het volume van de opnametoon aan"
+      },
+      "recordingToneFrequency": {
+        "title": "Toonhoogte opnametoon",
+        "description": "Toonhoogte van de opnametoon, gekozen uit de noten van de C-majeurtoonladder. Als je luidsprekers gebruikt in plaats van een koptelefoon, kan de microfoon de toon oppikken."
       }
     },
     "advanced": {

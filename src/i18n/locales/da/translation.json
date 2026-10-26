@@ -452,6 +452,18 @@
       "volume": {
         "title": "Lydstyrke",
         "description": "Juster lydstyrken for lydfeedback"
+      },
+      "recordingTone": {
+        "label": "Optagetone",
+        "description": "Afspil en svag, vedvarende tone under optagelse, så du altid ved, at Handy lytter. Den er lydløs, når “Mute under optagelse” er slået til."
+      },
+      "recordingToneVolume": {
+        "title": "Lydstyrke for optagetone",
+        "description": "Juster lydstyrken for optagetonen"
+      },
+      "recordingToneFrequency": {
+        "title": "Tonehøjde for optagetone",
+        "description": "Tonehøjden for optagetonen, valgt blandt tonerne i C-dur-skalaen. Hvis du bruger højttalere i stedet for hovedtelefoner, kan mikrofonen opfange tonen."
       }
     },
     "advanced": {

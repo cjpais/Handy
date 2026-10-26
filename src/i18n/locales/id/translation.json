@@ -452,6 +452,18 @@
       "volume": {
         "title": "Volume",
         "description": "Sesuaikan volume suara umpan balik audio"
+      },
+      "recordingTone": {
+        "label": "Nada perekaman",
+        "description": "Putar nada pelan yang terus-menerus selama merekam agar Anda selalu tahu Handy sedang mendengarkan. Nada tidak terdengar saat “Bisukan Saat Merekam” aktif."
+      },
+      "recordingToneVolume": {
+        "title": "Volume nada perekaman",
+        "description": "Sesuaikan volume nada perekaman"
+      },
+      "recordingToneFrequency": {
+        "title": "Tinggi nada perekaman",
+        "description": "Tinggi nada perekaman, dipilih dari nada-nada tangga nada C mayor. Jika Anda memakai speaker alih-alih headphone, mikrofon bisa menangkap nada tersebut."
       }
     },
     "advanced": {

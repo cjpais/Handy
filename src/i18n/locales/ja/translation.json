@@ -452,6 +452,18 @@
       "volume": {
         "title": "音量",
         "description": "オーディオフィードバックの音量を調整"
+      },
+      "recordingTone": {
+        "label": "録音中の連続音",
+        "description": "録音中は小さな音を鳴らし続け、録音中かどうかを常に分かるようにします。「録音中にミュート」がオンのときは聞こえません。"
+      },
+      "recordingToneVolume": {
+        "title": "録音中の連続音の音量",
+        "description": "録音中の連続音の音量を調整"
+      },
+      "recordingToneFrequency": {
+        "title": "録音中の連続音の高さ",
+        "description": "録音中の連続音の高さを、ドレミ（ハ長調の音階）の音から選びます。ヘッドホンではなくスピーカーで鳴らすと、マイクに入ることがあります。"
       }
     },
     "advanced": {
