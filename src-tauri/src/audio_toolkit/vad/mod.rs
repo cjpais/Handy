@@ -55,6 +55,25 @@ pub trait VoiceActivityDetector: Send + Sync {
     fn reset(&mut self) {}
 }
 
+/// A detector's own speech probabilities, before any threshold or smoothing:
+/// what long-form chunking cuts at.
+pub trait SpeechScorer: VoiceActivityDetector {
+    /// One probability per frame of `frames`, which must be whole frames.
+    /// Scoring carries on from the frames scored before, so a clip scored in
+    /// pieces gets the same probabilities as scored in one go.
+    fn score(&mut self, frames: &[f32]) -> Result<Vec<f32>>;
+}
+
+fn check_whole_frames(frames: &[f32], frame_samples: usize) -> Result<()> {
+    if !frames.len().is_multiple_of(frame_samples) {
+        anyhow::bail!(
+            "expected whole {frame_samples}-sample frames, got {} samples",
+            frames.len()
+        );
+    }
+    Ok(())
+}
+
 /// End-of-recording snapshot of a smoothing detector's state. Voiced frames
 /// in the withheld tail suggest — but don't prove — a final word cut off at
 /// the stop; a clean report doesn't rule VAD loss out either (soft trailing
@@ -85,10 +104,10 @@ mod tests {
 
     #[test]
     fn duration_profiles_preserve_silero_timings() {
-        assert_eq!(frames_for_duration_ms(VAD_PREFILL_MS, 480), 15);
-        assert_eq!(frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, 480), 15);
-        assert_eq!(frames_for_duration_ms(VAD_STREAMING_HANGOVER_MS, 480), 55);
-        assert_eq!(frames_for_duration_ms(VAD_ONSET_MS, 480), 2);
+        assert_eq!(frames_for_duration_ms(VAD_PREFILL_MS, 512), 15);
+        assert_eq!(frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, 512), 15);
+        assert_eq!(frames_for_duration_ms(VAD_STREAMING_HANGOVER_MS, 512), 52);
+        assert_eq!(frames_for_duration_ms(VAD_ONSET_MS, 512), 2);
     }
 
     #[test]

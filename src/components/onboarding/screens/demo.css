@@ -1,0 +1,358 @@
+/* Demo's drawing (Demo.tsx): the recording pill is a copy of the overlay's
+   compact pill (src/overlay/RecordingOverlay.css), at full size. */
+.demo-pill {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 172px;
+  border-radius: 24px;
+  background: var(--color-background);
+  box-shadow: var(--demo-pill-shadow);
+  color: var(--color-text);
+  font-size: 12px;
+  overflow: hidden;
+  transition:
+    width 460ms var(--ease-glide),
+    border-radius 460ms var(--ease-glide),
+    opacity 220ms ease,
+    transform 360ms var(--ease-glide);
+}
+.demo-pill[data-state="hidden"] {
+  opacity: 0;
+  transform: translateY(10px) scale(0.94);
+}
+.demo-pill[data-state="work"] {
+  width: 216px;
+}
+.demo-pill-layer {
+  position: absolute;
+  inset: 0;
+  padding: 0 10px;
+  display: grid;
+  grid-template-columns: minmax(22px, 1fr) auto minmax(22px, 1fr);
+  align-items: center;
+  transition: opacity 180ms ease;
+}
+.demo-pill-layer.is-work,
+.demo-pill[data-state="work"] .demo-pill-layer.is-rec {
+  opacity: 0;
+}
+.demo-pill[data-state="work"] .demo-pill-layer.is-work {
+  opacity: 1;
+}
+.demo-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-logo-primary);
+  animation: demo-pill-pulse 1.9s infinite;
+}
+@keyframes demo-pill-pulse {
+  0% {
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--color-background-ui) 22%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.demo-pill-spin {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--color-line);
+  border-top-color: var(--color-logo-primary);
+  animation: demo-spin 0.7s linear infinite;
+}
+@keyframes demo-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* the text caret in the drawn app: only once the field is clicked */
+.demo-caret {
+  animation: demo-caret 1.05s steps(1) infinite;
+}
+@keyframes demo-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* the moment the words arrive: in at once, with a brief moss wash */
+.demo-landed {
+  border-radius: 3px;
+  animation: demo-land 1600ms var(--ease-glide) both;
+}
+@keyframes demo-land {
+  0% {
+    opacity: 0;
+    background: color-mix(in srgb, var(--color-moss) 30%, transparent);
+  }
+  12% {
+    opacity: 1;
+  }
+  35% {
+    background: color-mix(in srgb, var(--color-moss) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* ---------- the sentence: the phrase that's happening is lit ---------- */
+/* Weight by stroke, not font-weight: a real bold is wider and would shift
+   the line under the reader. */
+.demo-phrase {
+  -webkit-text-stroke: 0.55px transparent;
+  transition:
+    color 220ms ease,
+    -webkit-text-stroke-color 220ms ease;
+}
+.demo-phrase.is-on {
+  color: var(--color-text);
+  -webkit-text-stroke-color: currentColor;
+}
+/* the other way's sentence arriving */
+.demo-swap {
+  animation: demo-swap 280ms var(--ease-glide);
+}
+@keyframes demo-swap {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+
+/* ---------- the laptop: nearly all screen, from the front ---------- */
+.demo-laptop {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+.demo-lid {
+  position: relative;
+  padding: 11px 11px 14px;
+  border-radius: 20px 20px 7.5px 7.5px;
+  background: var(--color-demo-lid);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.demo-cam {
+  position: absolute;
+  top: 4.5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.25);
+}
+.demo-screen {
+  position: relative;
+  width: 412px;
+  height: 245px;
+  border-radius: 7.5px;
+  overflow: hidden;
+  background: var(--demo-wallpaper);
+}
+/* while you change the shortcut, the screen steps back */
+.demo-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--color-background);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+.demo-screen.is-dimmed::after {
+  opacity: 0.55;
+}
+/* the app: Messages for hold (a reply), Notes for tap (something longer) */
+.demo-app {
+  position: absolute;
+  top: 35px;
+  left: 50%;
+  width: 320px;
+  margin-left: -160px;
+  border-radius: 11px;
+  overflow: hidden;
+  text-align: start;
+  background: var(--color-demo-window);
+  box-shadow:
+    0 0 0 0.5px var(--color-line),
+    0 10px 30px rgb(40 20 50 / 0.16);
+}
+.demo-screen:has(.is-task) .demo-app {
+  top: 20px;
+}
+.demo-app-body {
+  min-height: 107.5px;
+  padding: 5px 12.5px 12.5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--color-text);
+}
+.demo-app[data-mode="tap"] .demo-app-body {
+  justify-content: flex-start;
+  gap: 5px;
+}
+.demo-them {
+  align-self: flex-start;
+  max-width: 78%;
+  margin: 0;
+  padding: 7.5px 12.5px;
+  border-radius: 16px;
+  background: var(--color-line);
+}
+.demo-note-title {
+  margin: 2.5px 2.5px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.demo-field {
+  min-height: 35px;
+  padding: 7.5px 12.5px;
+  border-radius: 17.5px;
+  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  transition: box-shadow 200ms ease;
+}
+.demo-app[data-mode="tap"] .demo-field {
+  padding: 2.5px;
+  box-shadow: none;
+  font-size: 15.5px;
+}
+/* the caret, and the reply box's focus ring, only once it's clicked */
+.demo-app:not([data-focused]) .demo-caret {
+  visibility: hidden;
+}
+.demo-app[data-mode="hold"][data-focused] .demo-field {
+  box-shadow: inset 0 0 0 1.5px var(--color-plum-pick);
+}
+/* the pointer: it clicks into the app before the shortcut is pressed */
+.demo-pointer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: 14px;
+  height: 20px;
+  margin: -1px 0 0 -1px; /* the arrow's tip sits on the point */
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.25));
+}
+.demo-pointer svg {
+  display: block;
+}
+/* Off to the side it jumps into place; to the field it glides. */
+.demo-pointer[data-p="rest"] {
+  transition: opacity 300ms ease;
+}
+.demo-pointer[data-p="field"] {
+  transition:
+    transform 850ms var(--ease-glide),
+    opacity 200ms ease;
+}
+.demo-pointer[data-p="gone"] {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+/* Linux: it stays on the field, so it jumps when the app changes. */
+.demo-pointer[data-settled] {
+  transition: none;
+}
+.demo-click {
+  position: absolute;
+  top: -7.5px;
+  left: -7.5px;
+  width: 17.5px;
+  height: 17.5px;
+  border-radius: 50%;
+  border: 2px solid var(--color-logo-primary);
+  animation: demo-click 520ms var(--ease-glide) both;
+}
+@keyframes demo-click {
+  from {
+    opacity: 1;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+/* The pill where the overlay sits, at the real overlay's size. */
+.demo-pill-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 17.5px;
+  z-index: 3;
+  transform: translateX(-50%) scale(0.9);
+  transform-origin: bottom center;
+}
+.demo-screen:has(.is-task) .demo-pill-wrap {
+  bottom: 34px;
+}
+/* The shortcut, bottom left like a screencast; under the pill if a long one
+   reaches it. */
+.demo-keys {
+  position: absolute;
+  left: 9px;
+  bottom: 15px;
+  z-index: 2;
+}
+.demo-screen:has(.is-task) .demo-keys {
+  bottom: 35px;
+}
+.demo-base {
+  position: relative;
+  width: 455px;
+  height: 14px;
+  margin-top: -1px;
+  border-radius: 2px 2px 12.5px 12.5px / 2px 2px 10px 10px;
+  background: linear-gradient(
+    var(--color-demo-alu-hi),
+    var(--color-demo-alu-lo)
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+.demo-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 70px;
+  height: 5px;
+  margin-left: -35px;
+  border-radius: 0 0 6px 6px;
+  background: #000;
+  opacity: 0.12;
+}
+.demo-floor {
+  position: relative;
+  z-index: -1;
+  width: 525px;
+  height: 22.5px;
+  margin-top: -12.5px;
+  background: radial-gradient(closest-side, var(--color-line), transparent);
+}
+
+/* Infinite loops would strobe under the global 1ms rule: stop them. */
+@media (prefers-reduced-motion: reduce) {
+  .demo-pill-dot,
+  .demo-pill-spin,
+  .demo-caret,
+  .demo-landed,
+  .demo-swap,
+  .demo-click {
+    animation: none !important;
+  }
+}
