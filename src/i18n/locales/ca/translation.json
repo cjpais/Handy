@@ -470,6 +470,10 @@
         "label": "Mantén el micròfon obert entre transcripcions",
         "description": "Manté el flux d'àudio del micròfon obert durant 30 segons després d'aturar l'enregistrament per reduir la latència entre transcripcions consecutives. Mentre és actiu, pot reduir la qualitat de l'àudio Bluetooth."
       },
+      "airpodsMode": {
+        "label": "Mode AirPods",
+        "description": "Canvia automàticament els AirPods al Mac per a la transcripció quan un iPhone està reproduint àudio. Sense això, les gravacions poden quedar en silenci."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Acceleració per maquinari",
