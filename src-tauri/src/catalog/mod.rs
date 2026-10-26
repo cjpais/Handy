@@ -349,6 +349,7 @@ pub struct LanguageDetectorFile {
     pub revision: String,
     pub filename: String,
     pub size_bytes: u64,
+    sha256: String,
     /// The detector's own codes (`iw`, `jw`, `tl`, `no` included).
     pub labels: Vec<String>,
 }
@@ -365,6 +366,7 @@ pub static LANGUAGE_DETECTOR: Lazy<Option<LanguageDetectorFile>> = Lazy::new(|| 
         revision: model.revision.clone(),
         filename: file.filename.clone(),
         size_bytes: file.size,
+        sha256: file.sha256.clone(),
         labels: model.languages.clone(),
     })
 });
@@ -396,18 +398,47 @@ pub fn mirror_fallbacks(model_id: &str) -> Vec<MirrorFile> {
     else {
         return Vec::new();
     };
+    mirror_files(
+        &m.repository,
+        &m.revision,
+        &file.filename,
+        &file.sha256,
+        file.size,
+    )
+}
+
+/// Ordered mirror URLs for the language detector's file.
+pub fn language_detector_mirrors() -> Vec<MirrorFile> {
+    LANGUAGE_DETECTOR.as_ref().map_or_else(Vec::new, |d| {
+        mirror_files(
+            &d.repo_id,
+            &d.revision,
+            &d.filename,
+            &d.sha256,
+            d.size_bytes,
+        )
+    })
+}
+
+fn mirror_files(
+    repository: &str,
+    revision: &str,
+    filename: &str,
+    sha256: &str,
+    size_bytes: u64,
+) -> Vec<MirrorFile> {
     MIRRORS
         .iter()
         .map(|base| MirrorFile {
             url: format!(
                 "{}/{}/{}/{}",
                 base.trim_end_matches('/'),
-                m.repository,
-                m.revision,
-                file.filename
+                repository,
+                revision,
+                filename
             ),
-            sha256: file.sha256.clone(),
-            size_bytes: file.size,
+            sha256: sha256.to_string(),
+            size_bytes,
         })
         .collect()
 }

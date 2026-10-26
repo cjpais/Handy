@@ -741,6 +741,8 @@ pub fn run(cli_args: CliArgs) {
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
+            commands::models::download_language_detector,
+            commands::models::is_language_detector_downloaded,
             commands::models::delete_model,
             commands::models::get_retired_models,
             commands::models::delete_retired_model,
