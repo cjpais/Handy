@@ -916,6 +916,7 @@
     "title": "Handy v{{version}} yenilikleri"
   },
   "common": {
+    "playbackPosition": "Oynatma konumu",
     "loading": "Yükleniyor...",
     "delete": "Sil",
     "close": "Kapat",

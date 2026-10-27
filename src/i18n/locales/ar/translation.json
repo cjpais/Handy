@@ -916,6 +916,7 @@
     "title": "الجديد في Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "موضع التشغيل",
     "loading": "جاري التحميل...",
     "delete": "حذف",
     "close": "إغلاق",

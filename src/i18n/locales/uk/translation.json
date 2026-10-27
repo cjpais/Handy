@@ -916,6 +916,7 @@
     "title": "Нове в Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Позиція відтворення",
     "loading": "Завантаження...",
     "delete": "Видалити",
     "close": "Закрити",

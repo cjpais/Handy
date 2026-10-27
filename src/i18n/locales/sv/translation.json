@@ -916,6 +916,7 @@
     "title": "Nytt i Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Uppspelningsposition",
     "loading": "Laddar...",
     "delete": "Ta bort",
     "close": "Stäng",

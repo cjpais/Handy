@@ -916,6 +916,7 @@
     "title": "Neu in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Wiedergabeposition",
     "loading": "Wird geladen...",
     "delete": "Löschen",
     "close": "Schließen",

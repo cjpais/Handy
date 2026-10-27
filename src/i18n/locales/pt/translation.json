@@ -916,6 +916,7 @@
     "title": "Novidades no Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Posição de reprodução",
     "loading": "Carregando...",
     "delete": "Excluir",
     "close": "Fechar",

@@ -916,6 +916,7 @@
     "title": "Handy v{{version}} 新功能"
   },
   "common": {
+    "playbackPosition": "播放位置",
     "loading": "載入中...",
     "delete": "刪除",
     "close": "關閉",

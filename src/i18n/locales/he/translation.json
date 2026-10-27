@@ -916,6 +916,7 @@
     "title": "חדש ב-Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "מיקום ההשמעה",
     "loading": "טוען...",
     "delete": "מחק",
     "close": "סגור",
