@@ -38,6 +38,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,10 +72,23 @@ export const Dropdown: React.FC<DropdownProps> = ({
     setIsOpen(!isOpen);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape" || !isOpen || disabled) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div
+      className={`relative ${className}`}
+      ref={dropdownRef}
+      onKeyDown={handleKeyDown}
+    >
       <button
         type="button"
+        ref={triggerRef}
         className={`px-2 py-[5px] text-sm font-semibold bg-wash border border-line-strong rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
           disabled
             ? "opacity-50 cursor-not-allowed"
