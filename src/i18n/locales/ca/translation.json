@@ -356,7 +356,16 @@
         "description": "Seleccioneu la llengua per al reconeixement de la parla. L'opció automàtica detecta la llengua, mentre que seleccionar-ne una d'específica pot millorar-ne la precisió.",
         "searchPlaceholder": "Cerca llengües...",
         "noResults": "No s'ha trobat cap llengua",
-        "auto": "Automàtica"
+        "auto": "Automàtica",
+        "autoUnavailable": {
+          "title": "Automàtica està desactivada",
+          "oneLanguage": "Només una de les teves llengües funciona amb aquest model",
+          "undetectable": "No disponible amb {{languages}}",
+          "noMatch": "Cap de les teves llengües funciona amb aquest model"
+        },
+        "detectorMissingTitle": "Automàtica necessita una baixada a part",
+        "detectorMissing": "Aquest model no pot saber en quin idioma parles. Automàtica necessita un petit detector d'idioma per esbrinar-ho",
+        "stopDetectorDownload": "Atura la baixada del detector d'idioma"
       },
       "preferredLanguages": {
         "title": "Llengües preferides",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Divisió d'àudio llarg",
         "description": "Divideix els enregistraments llargs a les pauses abans de transcriure'ls, cosa que normalment millora el rendiment de la transcripció. Els fitxers transcrits i les retranscripcions llargues sempre es divideixen."
+      },
+      "languageDetection": {
+        "title": "Limita Automàtica als meus idiomes",
+        "description": "Automàtica només tria entre els teus idiomes preferits, amb un petit detector d'idioma. Activa-ho si Automàtica tria sovint un idioma que no parles",
+        "downloadHint": "Activar-ho baixa un petit detector d'idioma",
+        "downloadingHint": "S'està baixant el detector d'idioma. Desactiva-ho per cancel·lar"
       },
       "vadBackend": {
         "title": "Motor de detecció d'activitat de veu",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Marge addicional d'enregistrament",
         "description": "Temps addicional (en mil·lisegons) durant el qual es continua enregistrant després de deixar anar la tecla per capturar l'àudio final. 0 = sense marge addicional."
+      },
+      "languageDetectionWindow": {
+        "title": "Àudio de detecció d'idioma",
+        "description": "Segons de veu que escolta el detector d'idioma. Més llarg és més precís però més lent."
       },
       "keyboardDiagnostic": {
         "title": "Diagnòstic del teclat",

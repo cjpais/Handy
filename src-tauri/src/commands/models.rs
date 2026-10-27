@@ -1,4 +1,4 @@
-use crate::managers::model::{ModelInfo, ModelManager, RetiredModel};
+use crate::managers::model::{ModelInfo, ModelManager, RetiredModel, LANGUAGE_DETECTOR_ID};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use log::error;
@@ -58,6 +58,36 @@ pub async fn download_model(
         );
     }
 
+    result
+}
+
+/// Whether the language detector is on disk.
+#[tauri::command]
+#[specta::specta]
+pub fn is_language_detector_downloaded(model_manager: State<'_, Arc<ModelManager>>) -> bool {
+    model_manager.language_detector_path().is_some()
+}
+
+/// Download the language detector on its own. Progress, completion,
+/// cancellation and failure use the model download events under
+/// `LANGUAGE_DETECTOR_ID`.
+#[tauri::command]
+#[specta::specta]
+pub async fn download_language_detector(
+    app_handle: AppHandle,
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<(), String> {
+    let result = model_manager
+        .download_language_detector()
+        .await
+        .map_err(|e| e.to_string());
+    if let Err(ref error) = result {
+        error!("Language detector download failed: {}", error);
+        let _ = app_handle.emit(
+            "model-download-failed",
+            serde_json::json!({ "model_id": LANGUAGE_DETECTOR_ID, "error": error }),
+        );
+    }
     result
 }
 

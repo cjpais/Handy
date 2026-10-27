@@ -9,6 +9,7 @@ import type {
   TranscribeAcceleratorSetting,
   ShortcutActivation,
   VadBackend,
+  LanguageDetectionMode,
 } from "@/bindings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
@@ -203,6 +204,10 @@ const settingUpdaters: {
     commands.changeTranscribeGpuDevice(value as string | null),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  language_detection: (value) =>
+    commands.changeLanguageDetectionSetting(value as LanguageDetectionMode),
+  language_detection_window_secs: (value) =>
+    commands.changeLanguageDetectionWindowSetting(value as number),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

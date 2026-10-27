@@ -16,6 +16,8 @@ interface TooltipProps {
   children: React.ReactElement<{ "aria-describedby"?: string }>;
   /** Where it goes when there's room; it flips when there isn't. */
   placement?: "above" | "below";
+  /** Pressing shows it at once, for an element that only explains; otherwise a press hides it. */
+  showOnPress?: boolean;
   className?: string;
 }
 
@@ -33,6 +35,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   text,
   children,
   placement = "above",
+  showOnPress = false,
   className = "",
 }) => {
   const id = useId();
@@ -107,7 +110,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       className={`inline-grid ${className}`}
       onPointerEnter={(e) => e.pointerType === "mouse" && show()}
       onPointerLeave={hide}
-      onPointerDown={hide}
+      onPointerDown={() => (showOnPress ? show(true) : hide())}
       onFocus={(e) => e.target.matches(":focus-visible") && show(true)}
       onBlur={hide}
     >

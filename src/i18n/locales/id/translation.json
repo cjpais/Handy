@@ -356,7 +356,16 @@
         "description": "Pilih bahasa untuk pengenalan ucapan. Opsi Otomatis akan mendeteksi bahasa, sedangkan memilih bahasa tertentu dapat meningkatkan akurasi untuk bahasa tersebut.",
         "searchPlaceholder": "Cari bahasa...",
         "noResults": "Bahasa tidak ditemukan",
-        "auto": "Otomatis"
+        "auto": "Otomatis",
+        "autoUnavailable": {
+          "title": "Otomatis dinonaktifkan",
+          "oneLanguage": "Hanya satu bahasa Anda yang berfungsi dengan model ini",
+          "undetectable": "Tidak tersedia untuk {{languages}}",
+          "noMatch": "Tidak ada bahasa Anda yang berfungsi dengan model ini"
+        },
+        "detectorMissingTitle": "Otomatis memerlukan unduhan terpisah",
+        "detectorMissing": "Model ini tidak dapat mengenali bahasa yang Anda ucapkan. Otomatis memerlukan pendeteksi bahasa kecil untuk mengenalinya",
+        "stopDetectorDownload": "Hentikan unduhan pendeteksi bahasa"
       },
       "preferredLanguages": {
         "title": "Bahasa Pilihan",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Pemisahan Audio Panjang",
         "description": "Memisahkan rekaman panjang pada jeda sebelum ditranskripsi, yang biasanya meningkatkan kinerja transkripsi. File yang ditranskripsi dan transkripsi ulang yang panjang selalu dipisahkan."
+      },
+      "languageDetection": {
+        "title": "Batasi Otomatis ke bahasa saya",
+        "description": "Otomatis hanya memilih dari bahasa pilihan Anda, menggunakan pendeteksi bahasa kecil. Aktifkan jika Otomatis terus memilih bahasa yang tidak Anda gunakan",
+        "downloadHint": "Mengaktifkan ini akan mengunduh pendeteksi bahasa kecil",
+        "downloadingHint": "Mengunduh pendeteksi bahasa. Nonaktifkan untuk membatalkan"
       },
       "vadBackend": {
         "title": "Backend Deteksi Aktivitas Suara",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Buffer Perekaman Tambahan",
         "description": "Waktu tambahan (dalam milidetik) untuk terus merekam setelah Anda melepas tombol agar audio di bagian akhir tetap tertangkap. 0 = tanpa buffer tambahan."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio Deteksi Bahasa",
+        "description": "Detik ucapan yang didengar pendeteksi bahasa. Lebih lama lebih akurat tetapi lebih lambat."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostik Keyboard",

@@ -356,7 +356,16 @@
         "description": "음성 인식 언어를 선택하세요. 자동은 언어를 자동으로 감지하며, 특정 언어를 선택하면 해당 언어의 정확도가 향상될 수 있습니다.",
         "searchPlaceholder": "언어 검색...",
         "noResults": "언어를 찾을 수 없습니다",
-        "auto": "자동"
+        "auto": "자동",
+        "autoUnavailable": {
+          "title": "자동이 꺼져 있습니다",
+          "oneLanguage": "이 모델에서는 사용자 언어 중 하나만 사용할 수 있습니다",
+          "undetectable": "{{languages}}에서는 사용할 수 없습니다",
+          "noMatch": "이 모델에서 사용할 수 있는 언어가 없습니다"
+        },
+        "detectorMissingTitle": "자동을 사용하려면 별도 다운로드가 필요합니다",
+        "detectorMissing": "이 모델은 어떤 언어로 말하는지 구별할 수 없습니다. 자동은 작은 언어 감지기로 언어를 알아냅니다",
+        "stopDetectorDownload": "언어 감지기 다운로드 중지"
       },
       "preferredLanguages": {
         "title": "선호 언어",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "긴 오디오 분할",
         "description": "전사하기 전에 긴 녹음을 쉬는 구간에서 나눕니다. 일반적으로 전사 성능이 향상됩니다. 파일 전사와 긴 재전사는 항상 나누어 처리됩니다."
+      },
+      "languageDetection": {
+        "title": "자동을 내 언어로 제한",
+        "description": "자동이 작은 언어 감지기를 사용해 선호 언어 중에서만 고릅니다. 자동이 사용하지 않는 언어를 계속 고르면 켜세요",
+        "downloadHint": "켜면 작은 언어 감지기를 다운로드합니다",
+        "downloadingHint": "언어 감지기를 다운로드하는 중입니다. 취소하려면 끄세요"
       },
       "vadBackend": {
         "title": "음성 활동 감지 백엔드",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "추가 녹음 버퍼",
         "description": "키를 놓은 후 추가로 녹음을 계속하는 시간(밀리초). 후행 오디오를 캡처하기 위함. 0 = 추가 버퍼 없음."
+      },
+      "languageDetectionWindow": {
+        "title": "언어 감지 오디오",
+        "description": "언어 감지기가 듣는 음성의 초 단위 길이입니다. 길수록 정확하지만 느립니다."
       },
       "keyboardDiagnostic": {
         "title": "키보드 진단",

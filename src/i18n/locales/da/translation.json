@@ -356,7 +356,16 @@
         "description": "Vælg sproget til talegenkendelse. Auto tyder automatisk sproget, mens valg af et specifikt sprog kan forbedre nøjagtigheden for det pågældende sprog.",
         "searchPlaceholder": "Søg efter sprog...",
         "noResults": "Ingen sprog fundet",
-        "auto": "Automatisk"
+        "auto": "Automatisk",
+        "autoUnavailable": {
+          "title": "Automatisk er slået fra",
+          "oneLanguage": "Kun ét af dine sprog virker med denne model",
+          "undetectable": "Ikke tilgængelig med {{languages}}",
+          "noMatch": "Ingen af dine sprog virker med denne model"
+        },
+        "detectorMissingTitle": "Automatisk kræver en separat download",
+        "detectorMissing": "Denne model kan ikke afgøre, hvilket sprog du taler. Automatisk har brug for en lille sprogregistrering til at finde ud af det",
+        "stopDetectorDownload": "Stop download af sprogregistreringen"
       },
       "preferredLanguages": {
         "title": "Foretrukne sprog",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Opdeling af lang lyd",
         "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen. Transskriberede filer og lange gentransskriberinger deles altid."
+      },
+      "languageDetection": {
+        "title": "Begræns Automatisk til mine sprog",
+        "description": "Automatisk vælger kun blandt dine foretrukne sprog ved hjælp af en lille sprogregistrering. Slå det til, hvis Automatisk bliver ved med at vælge et sprog, du ikke taler",
+        "downloadHint": "Når du slår det til, downloades en lille sprogregistrering",
+        "downloadingHint": "Sprogregistreringen downloades. Slå det fra for at annullere"
       },
       "vadBackend": {
         "title": "Stemmedetektions-backend",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Ekstra optagelsesbuffer",
         "description": "Ekstra tid (i millisekunder) til at fortsætte optagelsen, efter du slipper tasten, for at fange efterfølgende lyd. 0 = ingen ekstra buffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Lyd til sprogregistrering",
+        "description": "Sekunder tale, som sprogregistreringen hører. Længere er mere præcist, men langsommere."
       },
       "keyboardDiagnostic": {
         "title": "Tastaturdiagnostik",

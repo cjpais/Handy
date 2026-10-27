@@ -1,11 +1,12 @@
 use anyhow::Result;
 use std::path::Path;
-use std::sync::{Mutex, OnceLock, PoisonError};
+use std::sync::{Mutex, PoisonError};
 
-use transcribe_cpp::{Backend, BackendMask, Model, ModelOptions, VadSession, VadSessionOptions};
+use transcribe_cpp::{Backend, Model, ModelOptions, VadSession, VadSessionOptions};
 
 use super::{check_whole_frames, SpeechScorer, VadFrame, VoiceActivityDetector};
 use crate::audio_toolkit::constants;
+use crate::audio_toolkit::cpu_engine::init_cpu_backends;
 
 pub struct SileroVad {
     // `VadSession` is Send but not Sync; the trait requires both. Only ever
@@ -13,21 +14,6 @@ pub struct SileroVad {
     session: Mutex<VadSession>,
     frame_samples: usize,
     threshold: f32,
-}
-
-/// Register transcribe.cpp's CPU backends once per process. The allowed mask
-/// is fixed at first registration, so it must never include a GPU here.
-fn init_cpu_backends() -> Result<()> {
-    static INIT: OnceLock<Result<(), String>> = OnceLock::new();
-    INIT.get_or_init(|| {
-        // Route native/ggml diagnostics into Handy's log; must precede any
-        // native call.
-        transcribe_cpp::init_logging();
-        transcribe_cpp::init_backends_with(None::<&Path>, BackendMask::CPU)
-            .map_err(|e| e.to_string())
-    })
-    .clone()
-    .map_err(|e| anyhow::anyhow!("Failed to initialize transcribe.cpp CPU backend: {e}"))
 }
 
 impl SileroVad {
