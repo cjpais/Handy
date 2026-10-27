@@ -479,6 +479,10 @@
         "label": "Biarkan Mikrofon Tetap Aktif di Antara Transkripsi",
         "description": "Membiarkan aliran mikrofon tetap terbuka selama 30 detik setelah perekaman berhenti untuk mengurangi latensi pada transkripsi beruntun. Dapat menurunkan kualitas audio Bluetooth saat aktif."
       },
+      "airpodsMode": {
+        "label": "Mode AirPods",
+        "description": "Secara otomatis mengalihkan AirPods ke Mac untuk transkripsi saat iPhone sedang memutar audio. Tanpa ini, rekaman bisa jadi senyap."
+      },
       "acceleration": {
         "transcribe": {
           "title": "Akselerasi perangkat keras",
