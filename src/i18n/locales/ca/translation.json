@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Automàtica necessita una baixada a part",
         "detectorMissing": "Aquest model no pot saber en quin idioma parles. Automàtica necessita un petit detector d'idioma per esbrinar-ho",
-        "detectorDownload": "Baixa"
+        "stopDetectorDownload": "Atura la baixada del detector d'idioma"
       },
       "preferredLanguages": {
         "title": "Llengües preferides",
@@ -593,13 +593,10 @@
         "description": "Divideix els enregistraments llargs a les pauses abans de transcriure'ls, cosa que normalment millora el rendiment de la transcripció. Els fitxers transcrits i les retranscripcions llargues sempre es divideixen."
       },
       "languageDetection": {
-        "title": "Detecció d'idioma",
-        "description": "Com tria l'idioma el mode Automàtic. Els models que no el poden detectar per si mateixos sempre fan servir el detector de Handy, limitat a les teves llengües. «Sempre» el fa servir per a tots els models excepte els de transmissió.",
-        "options": {
-          "whenNeeded": "Quan calgui",
-          "always": "Sempre"
-        },
-        "detectorMissing": "El detector d'idioma no està baixat."
+        "title": "Limita Automàtica als meus idiomes",
+        "description": "Automàtica només tria entre els teus idiomes preferits, amb un petit detector d'idioma. Activa-ho si Automàtica tria sovint un idioma que no parles",
+        "downloadHint": "Activar-ho baixa un petit detector d'idioma",
+        "downloadingHint": "S'està baixant el detector d'idioma. Desactiva-ho per cancel·lar"
       },
       "vadBackend": {
         "title": "Motor de detecció d'activitat de veu",

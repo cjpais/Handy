@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "自动模式需要单独下载",
         "detectorMissing": "此模型无法分辨你说的是哪种语言。自动模式需要一个小型语言检测器来判断",
-        "detectorDownload": "下载"
+        "stopDetectorDownload": "停止下载语言检测器"
       },
       "preferredLanguages": {
         "title": "常用语言",
@@ -593,13 +593,10 @@
         "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。转录文件与较长的重新转录始终会分段。"
       },
       "languageDetection": {
-        "title": "语言检测",
-        "description": "自动模式如何选择语言。无法自行检测语言的模型始终使用 Handy 的语言检测器，并限定在你的语言范围内。选择“始终”时，除流式模型外的所有模型都会使用它。",
-        "options": {
-          "whenNeeded": "需要时",
-          "always": "始终"
-        },
-        "detectorMissing": "语言检测器尚未下载。"
+        "title": "将自动模式限制为我的语言",
+        "description": "自动模式会借助一个小型语言检测器，只从你的首选语言中选择。如果自动模式总是选中你不说的语言，请打开此项",
+        "downloadHint": "打开后会下载一个小型语言检测器",
+        "downloadingHint": "正在下载语言检测器。关闭此项即可取消"
       },
       "vadBackend": {
         "title": "语音活动检测后端",

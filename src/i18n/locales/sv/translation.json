@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Automatiskt kräver en separat nedladdning",
         "detectorMissing": "Den här modellen kan inte avgöra vilket språk du talar. Automatiskt behöver en liten språkidentifiering som tar reda på det",
-        "detectorDownload": "Ladda ned"
+        "stopDetectorDownload": "Stoppa nedladdningen av språkidentifieringen"
       },
       "preferredLanguages": {
         "title": "Föredragna språk",
@@ -593,13 +593,10 @@
         "description": "Delar upp långa inspelningar vid pauser före transkribering, vilket oftast förbättrar transkriberingen. Transkriberade filer och långa omtranskriberingar delas alltid upp."
       },
       "languageDetection": {
-        "title": "Språkidentifiering",
-        "description": "Hur Automatiskt väljer språk. Modeller som inte själva kan identifiera det använder alltid Handys språkidentifiering, begränsad till dina språk. Alltid använder den för alla modeller utom streamingmodeller.",
-        "options": {
-          "whenNeeded": "Vid behov",
-          "always": "Alltid"
-        },
-        "detectorMissing": "Språkidentifieringen har inte laddats ned."
+        "title": "Begränsa Automatiskt till mina språk",
+        "description": "Automatiskt väljer bara bland dina föredragna språk med hjälp av en liten språkidentifiering. Slå på det om Automatiskt fortsätter att välja ett språk du inte talar",
+        "downloadHint": "När du slår på det laddas en liten språkidentifiering ned",
+        "downloadingHint": "Språkidentifieringen laddas ned. Stäng av för att avbryta"
       },
       "vadBackend": {
         "title": "Backend för röstdetektering",

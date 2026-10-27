@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Tự động cần tải xuống riêng",
         "detectorMissing": "Mô hình này không nhận biết được bạn đang nói ngôn ngữ nào. Tự động cần một trình nhận diện ngôn ngữ nhỏ để xác định",
-        "detectorDownload": "Tải xuống"
+        "stopDetectorDownload": "Dừng tải xuống trình nhận diện ngôn ngữ"
       },
       "preferredLanguages": {
         "title": "Ngôn ngữ ưa thích",
@@ -593,13 +593,10 @@
         "description": "Chia các bản ghi dài tại các khoảng ngắt trước khi chuyển thành văn bản, điều này thường cải thiện hiệu quả chuyển văn bản. Tệp được chép lời và các lần phiên âm lại dài luôn được chia nhỏ."
       },
       "languageDetection": {
-        "title": "Nhận diện ngôn ngữ",
-        "description": "Cách chế độ Tự động chọn ngôn ngữ. Các mô hình không tự nhận diện được luôn dùng trình nhận diện ngôn ngữ của Handy, giới hạn trong các ngôn ngữ của bạn. Luôn luôn dùng nó cho mọi mô hình trừ mô hình phát trực tuyến.",
-        "options": {
-          "whenNeeded": "Khi cần",
-          "always": "Luôn luôn"
-        },
-        "detectorMissing": "Trình nhận diện ngôn ngữ chưa được tải xuống."
+        "title": "Giới hạn Tự động trong ngôn ngữ của tôi",
+        "description": "Tự động chỉ chọn trong các ngôn ngữ ưu tiên của bạn, nhờ một trình nhận diện ngôn ngữ nhỏ. Bật lên nếu Tự động cứ chọn một ngôn ngữ bạn không nói",
+        "downloadHint": "Bật lên sẽ tải xuống một trình nhận diện ngôn ngữ nhỏ",
+        "downloadingHint": "Đang tải xuống trình nhận diện ngôn ngữ. Tắt để hủy"
       },
       "vadBackend": {
         "title": "Bộ phát hiện giọng nói",

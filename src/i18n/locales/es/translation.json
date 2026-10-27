@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Automático necesita una descarga aparte",
         "detectorMissing": "Este modelo no puede saber qué idioma hablas. Automático necesita un pequeño detector de idioma para averiguarlo",
-        "detectorDownload": "Descargar"
+        "stopDetectorDownload": "Detener la descarga del detector de idioma"
       },
       "preferredLanguages": {
         "title": "Idiomas preferidos",
@@ -593,13 +593,10 @@
         "description": "Divide las grabaciones largas en las pausas antes de transcribirlas, lo que normalmente mejora el rendimiento de la transcripción. Los archivos transcritos y las re-transcripciones largas siempre se dividen."
       },
       "languageDetection": {
-        "title": "Detección de idioma",
-        "description": "Cómo elige el idioma el modo Automático. Los modelos que no pueden detectarlo por sí mismos siempre usan el detector de Handy, limitado a tus idiomas. Siempre lo usa en todos los modelos excepto los de streaming.",
-        "options": {
-          "whenNeeded": "Cuando sea necesario",
-          "always": "Siempre"
-        },
-        "detectorMissing": "El detector de idioma no está descargado."
+        "title": "Limitar Automático a mis idiomas",
+        "description": "Automático solo elige entre tus idiomas preferidos, usando un pequeño detector de idioma. Actívalo si Automático sigue eligiendo un idioma que no hablas",
+        "downloadHint": "Al activarlo se descarga un pequeño detector de idioma",
+        "downloadingHint": "Descargando el detector de idioma. Desactívalo para cancelar"
       },
       "vadBackend": {
         "title": "Backend de detección de voz",

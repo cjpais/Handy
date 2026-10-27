@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Auto needs a separate download",
         "detectorMissing": "This model can't tell which language you're speaking. Auto needs a small language detector to figure it out",
-        "detectorDownload": "Download"
+        "stopDetectorDownload": "Stop downloading the language detector"
       },
       "preferredLanguages": {
         "title": "Preferred Languages",
@@ -593,13 +593,10 @@
         "description": "Splits long recordings at pauses before transcribing, which typically improves transcription performance. Transcribed files and long re-transcriptions are always split."
       },
       "languageDetection": {
-        "title": "Language Detection",
-        "description": "How Auto picks the language. Models that can't detect it themselves always use Handy's detector, limited to your languages. Always uses it for every model except streaming ones.",
-        "options": {
-          "whenNeeded": "When needed",
-          "always": "Always"
-        },
-        "detectorMissing": "The language detector isn't downloaded."
+        "title": "Limit Auto to My Languages",
+        "description": "Auto only picks from your preferred languages, using a small language detector. Turn this on if Auto keeps choosing a language you don't speak",
+        "downloadHint": "Turning this on downloads a small language detector",
+        "downloadingHint": "Downloading the language detector. Turn this off to cancel"
       },
       "vadBackend": {
         "title": "Voice Activity Backend",

@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Automatisch braucht einen separaten Download",
         "detectorMissing": "Dieses Modell erkennt nicht, welche Sprache du sprichst. Automatisch braucht eine kleine Spracherkennung, die das herausfindet",
-        "detectorDownload": "Herunterladen"
+        "stopDetectorDownload": "Download der Spracherkennung stoppen"
       },
       "preferredLanguages": {
         "title": "Bevorzugte Sprachen",
@@ -593,13 +593,10 @@
         "description": "Teilt lange Aufnahmen vor der Transkription an Sprechpausen auf, was die Transkription in der Regel verbessert. Transkribierte Dateien und lange erneute Transkriptionen werden immer aufgeteilt."
       },
       "languageDetection": {
-        "title": "Spracherkennung",
-        "description": "Wie Automatisch die Sprache wählt. Modelle, die sie nicht selbst erkennen, nutzen immer Handys Spracherkennung, beschränkt auf deine Sprachen. Immer nutzt sie für alle Modelle außer Streaming-Modellen.",
-        "options": {
-          "whenNeeded": "Bei Bedarf",
-          "always": "Immer"
-        },
-        "detectorMissing": "Die Spracherkennung ist nicht heruntergeladen."
+        "title": "Automatisch auf meine Sprachen beschränken",
+        "description": "Automatisch wählt nur aus deinen bevorzugten Sprachen, mithilfe einer kleinen Spracherkennung. Schalte das ein, wenn Automatisch immer wieder eine Sprache wählt, die du nicht sprichst",
+        "downloadHint": "Beim Einschalten wird eine kleine Spracherkennung heruntergeladen",
+        "downloadingHint": "Die Spracherkennung wird heruntergeladen. Zum Abbrechen ausschalten"
       },
       "vadBackend": {
         "title": "VAD-Backend",

@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Otomatis memerlukan unduhan terpisah",
         "detectorMissing": "Model ini tidak dapat mengenali bahasa yang Anda ucapkan. Otomatis memerlukan pendeteksi bahasa kecil untuk mengenalinya",
-        "detectorDownload": "Unduh"
+        "stopDetectorDownload": "Hentikan unduhan pendeteksi bahasa"
       },
       "preferredLanguages": {
         "title": "Bahasa Pilihan",
@@ -593,13 +593,10 @@
         "description": "Memisahkan rekaman panjang pada jeda sebelum ditranskripsi, yang biasanya meningkatkan kinerja transkripsi. File yang ditranskripsi dan transkripsi ulang yang panjang selalu dipisahkan."
       },
       "languageDetection": {
-        "title": "Deteksi Bahasa",
-        "description": "Cara mode Otomatis memilih bahasa. Model yang tidak bisa mendeteksinya sendiri selalu memakai pendeteksi bahasa Handy, terbatas pada bahasa Anda. Selalu memakainya untuk semua model kecuali model streaming.",
-        "options": {
-          "whenNeeded": "Saat diperlukan",
-          "always": "Selalu"
-        },
-        "detectorMissing": "Pendeteksi bahasa belum diunduh."
+        "title": "Batasi Otomatis ke bahasa saya",
+        "description": "Otomatis hanya memilih dari bahasa pilihan Anda, menggunakan pendeteksi bahasa kecil. Aktifkan jika Otomatis terus memilih bahasa yang tidak Anda gunakan",
+        "downloadHint": "Mengaktifkan ini akan mengunduh pendeteksi bahasa kecil",
+        "downloadingHint": "Mengunduh pendeteksi bahasa. Nonaktifkan untuk membatalkan"
       },
       "vadBackend": {
         "title": "Backend Deteksi Aktivitas Suara",

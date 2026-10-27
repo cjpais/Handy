@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "자동을 사용하려면 별도 다운로드가 필요합니다",
         "detectorMissing": "이 모델은 어떤 언어로 말하는지 구별할 수 없습니다. 자동은 작은 언어 감지기로 언어를 알아냅니다",
-        "detectorDownload": "다운로드"
+        "stopDetectorDownload": "언어 감지기 다운로드 중지"
       },
       "preferredLanguages": {
         "title": "선호 언어",
@@ -593,13 +593,10 @@
         "description": "전사하기 전에 긴 녹음을 쉬는 구간에서 나눕니다. 일반적으로 전사 성능이 향상됩니다. 파일 전사와 긴 재전사는 항상 나누어 처리됩니다."
       },
       "languageDetection": {
-        "title": "언어 감지",
-        "description": "자동이 언어를 고르는 방식입니다. 스스로 언어를 감지할 수 없는 모델은 항상 사용자 언어로 제한된 Handy의 언어 감지기를 사용합니다. '항상'은 스트리밍 모델을 제외한 모든 모델에 사용합니다.",
-        "options": {
-          "whenNeeded": "필요할 때",
-          "always": "항상"
-        },
-        "detectorMissing": "언어 감지기가 다운로드되지 않았습니다."
+        "title": "자동을 내 언어로 제한",
+        "description": "자동이 작은 언어 감지기를 사용해 선호 언어 중에서만 고릅니다. 자동이 사용하지 않는 언어를 계속 고르면 켜세요",
+        "downloadHint": "켜면 작은 언어 감지기를 다운로드합니다",
+        "downloadingHint": "언어 감지기를 다운로드하는 중입니다. 취소하려면 끄세요"
       },
       "vadBackend": {
         "title": "음성 활동 감지 백엔드",

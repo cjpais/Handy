@@ -1,16 +1,17 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
-import type { LanguageDetectionMode } from "@/bindings";
 import { useSettings } from "@/hooks/useSettings";
 import { useLanguageDetector } from "@/hooks/useLanguageDetector";
-import { Dropdown, type DropdownOption } from "@/components/ui/Dropdown";
 import { SettingContainer } from "@/components/ui/SettingContainer";
+import { Switch } from "@/components/ui/Switch";
+import { LanguageDetectorDownload } from "./LanguageDetectorDownload";
 
 interface LanguageDetectionProps {
   descriptionMode?: "tooltip" | "inline";
   grouped?: boolean;
 }
 
+/** Use the language detector for every model, so Auto only picks from their languages. */
 export const LanguageDetection: React.FC<LanguageDetectionProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
@@ -19,66 +20,49 @@ export const LanguageDetection: React.FC<LanguageDetectionProps> = ({
   const { getSetting, updateSetting, isUpdating } = useSettings();
   const mode = getSetting("language_detection") ?? "when_needed";
   const detector = useLanguageDetector();
+  const missing = detector.downloaded === false;
+  // Without the detector nothing is limited, so it shows off unless the
+  // detector is on its way.
+  const checked = mode === "always" && (!missing || detector.downloading);
+  const label = t("settings.advanced.languageDetection.title");
 
-  const options = useMemo<DropdownOption[]>(
-    () => [
-      {
-        value: "when_needed",
-        label: t("settings.advanced.languageDetection.options.whenNeeded"),
-      },
-      {
-        value: "always",
-        label: t("settings.advanced.languageDetection.options.always"),
-      },
-    ],
-    [t],
-  );
-
-  const handleSelect = async (value: string) => {
-    await updateSetting("language_detection", value as LanguageDetectionMode);
-    // Choosing Always is the consent to fetch the detector it needs.
-    if (value === "always" && detector.downloaded === false) {
+  const handleChange = async (on: boolean) => {
+    // Turning it off mid-download is how it's stopped.
+    if (!on && detector.downloading) {
+      detector.cancel();
+    }
+    await updateSetting("language_detection", on ? "always" : "when_needed");
+    // Turning it on is the consent to fetch the detector it needs.
+    if (on && missing) {
       await detector.download();
     }
   };
 
   return (
     <SettingContainer
-      title={t("settings.advanced.languageDetection.title")}
+      title={label}
       description={t("settings.advanced.languageDetection.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
-      layout="horizontal"
     >
-      <div className="flex flex-col items-end">
-        <Dropdown
-          options={options}
-          selectedValue={mode}
-          onSelect={handleSelect}
-          disabled={isUpdating("language_detection")}
-        />
-        {mode === "always" && detector.downloaded === false && (
-          <p className="mt-[4px] mb-0 max-w-[240px] text-end text-small text-ink-3">
-            {detector.downloading ? (
-              <span className="tabular-nums whitespace-nowrap">
-                {t("modelSelector.downloading", {
-                  percentage: detector.percent,
-                })}
-              </span>
-            ) : (
-              <>
-                {t("settings.advanced.languageDetection.detectorMissing")}{" "}
-                <button
-                  type="button"
-                  onClick={detector.download}
-                  className="cursor-pointer text-text underline decoration-line-strong underline-offset-[3px] hover:decoration-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
-                >
-                  {t("settings.general.language.detectorDownload")}
-                </button>
-              </>
+      <div className="flex items-center gap-3">
+        {missing && (
+          <LanguageDetectorDownload
+            downloading={detector.downloading}
+            percent={detector.percent}
+            hint={t(
+              detector.downloading
+                ? "settings.advanced.languageDetection.downloadingHint"
+                : "settings.advanced.languageDetection.downloadHint",
             )}
-          </p>
+          />
         )}
+        <Switch
+          checked={checked}
+          onChange={handleChange}
+          disabled={isUpdating("language_detection")}
+          ariaLabel={label}
+        />
       </div>
     </SettingContainer>
   );

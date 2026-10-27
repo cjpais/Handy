@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "自動模式需要另外下載",
         "detectorMissing": "此模型無法分辨你說的是哪種語言。自動模式需要一個小型語言偵測器來判斷",
-        "detectorDownload": "下載"
+        "stopDetectorDownload": "停止下載語言偵測器"
       },
       "preferredLanguages": {
         "title": "偏好語言",
@@ -593,13 +593,10 @@
         "description": "在轉錄前依停頓處將長錄音分段，通常可以提升轉錄效果。轉錄檔案與較長的重新轉錄一律會分段。"
       },
       "languageDetection": {
-        "title": "語言偵測",
-        "description": "自動模式如何選擇語言。無法自行偵測語言的模型一律使用 Handy 的語言偵測器，並限定在你的語言範圍內。選擇「一律」時，除串流模型外的所有模型都會使用它。",
-        "options": {
-          "whenNeeded": "需要時",
-          "always": "一律"
-        },
-        "detectorMissing": "語言偵測器尚未下載。"
+        "title": "將自動模式限制為我的語言",
+        "description": "自動模式會藉助一個小型語言偵測器，只從你的偏好語言中選擇。如果自動模式總是選到你不說的語言，請開啟此項",
+        "downloadHint": "開啟後會下載一個小型語言偵測器",
+        "downloadingHint": "正在下載語言偵測器。關閉此項即可取消"
       },
       "vadBackend": {
         "title": "語音活動偵測後端",

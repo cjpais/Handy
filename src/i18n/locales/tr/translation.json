@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Otomatik için ayrı bir indirme gerekiyor",
         "detectorMissing": "Bu model hangi dili konuştuğunuzu anlayamıyor. Otomatik'in bunu anlamak için küçük bir dil algılayıcıya ihtiyacı var",
-        "detectorDownload": "İndir"
+        "stopDetectorDownload": "Dil algılayıcının indirilmesini durdur"
       },
       "preferredLanguages": {
         "title": "Tercih Edilen Diller",
@@ -593,13 +593,10 @@
         "description": "Uzun kayıtları yazıya dökmeden önce duraklamalardan böler; bu genellikle yazıya dökme performansını artırır. Yazıya dökülen dosyalar ve uzun yeniden transkripsiyonlar her zaman bölünür."
       },
       "languageDetection": {
-        "title": "Dil Algılama",
-        "description": "Otomatik modun dili nasıl seçtiği. Dili kendisi algılayamayan modeller, dillerinizle sınırlı olarak her zaman Handy'nin dil algılayıcısını kullanır. Her zaman, akış modelleri dışındaki tüm modellerde onu kullanır.",
-        "options": {
-          "whenNeeded": "Gerektiğinde",
-          "always": "Her zaman"
-        },
-        "detectorMissing": "Dil algılayıcı indirilmedi."
+        "title": "Otomatik'i dillerimle sınırla",
+        "description": "Otomatik, küçük bir dil algılayıcı kullanarak yalnızca tercih ettiğiniz diller arasından seçer. Otomatik konuşmadığınız bir dili seçip duruyorsa bunu açın",
+        "downloadHint": "Bunu açmak küçük bir dil algılayıcı indirir",
+        "downloadingHint": "Dil algılayıcı indiriliyor. İptal etmek için kapatın"
       },
       "vadBackend": {
         "title": "Ses Etkinliği Arka Ucu",

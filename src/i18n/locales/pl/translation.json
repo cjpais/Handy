@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Tryb automatyczny wymaga osobnego pobrania",
         "detectorMissing": "Ten model nie rozpozna, w jakim języku mówisz. Tryb automatyczny potrzebuje małego detektora języka, żeby to ustalić",
-        "detectorDownload": "Pobierz"
+        "stopDetectorDownload": "Zatrzymaj pobieranie detektora języka"
       },
       "preferredLanguages": {
         "title": "Preferowane języki",
@@ -593,13 +593,10 @@
         "description": "Dzieli długie nagrania w miejscach pauz przed transkrypcją, co zwykle poprawia jakość transkrypcji. Transkrybowane pliki i długie ponowne transkrypcje są zawsze dzielone."
       },
       "languageDetection": {
-        "title": "Wykrywanie języka",
-        "description": "Jak tryb Automatyczny wybiera język. Modele, które nie potrafią go same wykryć, zawsze używają detektora Handy ograniczonego do twoich języków. Zawsze używa go we wszystkich modelach oprócz strumieniowych.",
-        "options": {
-          "whenNeeded": "Gdy potrzeba",
-          "always": "Zawsze"
-        },
-        "detectorMissing": "Detektor języka nie został pobrany."
+        "title": "Ogranicz tryb automatyczny do moich języków",
+        "description": "Tryb automatyczny wybiera tylko spośród preferowanych języków, korzystając z małego detektora języka. Włącz to, jeśli tryb automatyczny wciąż wybiera język, którym nie mówisz",
+        "downloadHint": "Włączenie pobiera mały detektor języka",
+        "downloadingHint": "Pobieranie detektora języka. Wyłącz, aby anulować"
       },
       "vadBackend": {
         "title": "Backend wykrywania głosu",

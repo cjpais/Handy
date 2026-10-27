@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Automatisch heeft een aparte download nodig",
         "detectorMissing": "Dit model kan niet bepalen welke taal je spreekt. Automatisch heeft een kleine taaldetector nodig om dat uit te zoeken",
-        "detectorDownload": "Downloaden"
+        "stopDetectorDownload": "Downloaden van de taaldetector stoppen"
       },
       "preferredLanguages": {
         "title": "Voorkeurstalen",
@@ -593,13 +593,10 @@
         "description": "Splitst lange opnames bij pauzes op voordat ze worden getranscribeerd, wat de transcriptie doorgaans verbetert. Getranscribeerde bestanden en lange hertranscripties worden altijd opgesplitst."
       },
       "languageDetection": {
-        "title": "Taaldetectie",
-        "description": "Hoe Automatisch de taal kiest. Modellen die die niet zelf kunnen detecteren, gebruiken altijd de taaldetector van Handy, beperkt tot jouw talen. Altijd gebruikt hem voor alle modellen behalve streamingmodellen.",
-        "options": {
-          "whenNeeded": "Indien nodig",
-          "always": "Altijd"
-        },
-        "detectorMissing": "De taaldetector is niet gedownload."
+        "title": "Automatisch beperken tot mijn talen",
+        "description": "Automatisch kiest alleen uit je voorkeurstalen, met een kleine taaldetector. Zet dit aan als Automatisch steeds een taal kiest die je niet spreekt",
+        "downloadHint": "Aanzetten downloadt een kleine taaldetector",
+        "downloadingHint": "De taaldetector wordt gedownload. Zet dit uit om te annuleren"
       },
       "vadBackend": {
         "title": "VAD-backend",

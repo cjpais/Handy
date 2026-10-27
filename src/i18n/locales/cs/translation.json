@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Automaticky vyžaduje samostatné stažení",
         "detectorMissing": "Tento model nepozná, jakým jazykem mluvíte. Režim Automaticky potřebuje malý detektor jazyka, který to zjistí",
-        "detectorDownload": "Stáhnout"
+        "stopDetectorDownload": "Zastavit stahování detektoru jazyka"
       },
       "preferredLanguages": {
         "title": "Preferované jazyky",
@@ -593,13 +593,10 @@
         "description": "Před přepisem rozdělí dlouhé nahrávky v pauzách, což obvykle zlepšuje kvalitu přepisu. Přepisované soubory a dlouhé opakované přepisy se rozdělují vždy."
       },
       "languageDetection": {
-        "title": "Rozpoznání jazyka",
-        "description": "Jak režim Automaticky vybírá jazyk. Modely, které ho samy nerozpoznají, vždy používají detektor Handy omezený na vaše jazyky. Volba Vždy ho používá pro všechny modely kromě streamovacích.",
-        "options": {
-          "whenNeeded": "Podle potřeby",
-          "always": "Vždy"
-        },
-        "detectorMissing": "Detektor jazyka není stažený."
+        "title": "Omezit Automaticky na mé jazyky",
+        "description": "Automaticky vybírá jen z vašich preferovaných jazyků pomocí malého detektoru jazyka. Zapněte to, pokud Automaticky stále volí jazyk, kterým nemluvíte",
+        "downloadHint": "Zapnutím se stáhne malý detektor jazyka",
+        "downloadingHint": "Stahuje se detektor jazyka. Vypnutím stahování zrušíte"
       },
       "vadBackend": {
         "title": "Backend detekce hlasu",

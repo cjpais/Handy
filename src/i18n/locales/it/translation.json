@@ -365,7 +365,7 @@
         },
         "detectorMissingTitle": "Automatico richiede un download separato",
         "detectorMissing": "Questo modello non riesce a capire quale lingua stai parlando. Automatico ha bisogno di un piccolo rilevatore di lingua per capirlo",
-        "detectorDownload": "Scarica"
+        "stopDetectorDownload": "Interrompi il download del rilevatore di lingua"
       },
       "preferredLanguages": {
         "title": "Lingue preferite",
@@ -593,13 +593,10 @@
         "description": "Suddivide le registrazioni lunghe in corrispondenza delle pause prima della trascrizione, il che di solito migliora le prestazioni della trascrizione. I file trascritti e le ri-trascrizioni lunghe vengono sempre suddivisi."
       },
       "languageDetection": {
-        "title": "Rilevamento della lingua",
-        "description": "Come la modalità Automatica sceglie la lingua. I modelli che non sanno rilevarla da soli usano sempre il rilevatore di Handy, limitato alle tue lingue. Sempre lo usa per tutti i modelli tranne quelli in streaming.",
-        "options": {
-          "whenNeeded": "Quando serve",
-          "always": "Sempre"
-        },
-        "detectorMissing": "Il rilevatore di lingua non è stato scaricato."
+        "title": "Limita Automatico alle mie lingue",
+        "description": "Automatico sceglie solo tra le tue lingue preferite, usando un piccolo rilevatore di lingua. Attivalo se Automatico continua a scegliere una lingua che non parli",
+        "downloadHint": "Attivandolo si scarica un piccolo rilevatore di lingua",
+        "downloadingHint": "Download del rilevatore di lingua in corso. Disattiva per annullare"
       },
       "vadBackend": {
         "title": "Backend di rilevamento vocale",

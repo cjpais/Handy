@@ -5,16 +5,10 @@ import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { InfoTooltip } from "../ui/InfoTooltip";
 import { Tooltip } from "../ui/Tooltip";
-import { ProgressRing } from "../shared/ProgressRing";
-import { DownloadMark } from "../shared/DownloadMark";
-import { BYTES_PER_MB, formatModelSize } from "../../lib/utils/format";
+import { LanguageDetectorDownload } from "./LanguageDetectorDownload";
 import { useSettings } from "../../hooks/useSettings";
 import { useLanguageDetector } from "../../hooks/useLanguageDetector";
-import {
-  LANGUAGE_DETECTION_MODEL,
-  languageIdentity,
-  modelFile,
-} from "@handy-computer/models";
+import { languageIdentity } from "@handy-computer/models";
 import {
   commands,
   type AutoUnavailableReason,
@@ -27,11 +21,6 @@ import {
   languagesOf,
   searchLanguages,
 } from "../../lib/constants/languages";
-
-// What choosing Auto downloads: the detector file the backend fetches.
-const DETECTOR_SIZE = formatModelSize(
-  modelFile(LANGUAGE_DETECTION_MODEL).size / BYTES_PER_MB,
-);
 
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
@@ -275,19 +264,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                           className="flex items-center justify-between gap-2 px-2 py-1 text-sm text-ink-3"
                         >
                           <span className="truncate">{language.label}</span>
-                          <span
-                            role="status"
-                            aria-label={t("modelSelector.downloading", {
-                              percentage: detector.percent,
-                            })}
-                            className="flex items-center gap-1.5 text-xs tabular-nums whitespace-nowrap"
-                          >
-                            <ProgressRing
-                              size={14}
-                              value={detector.percent / 100}
-                            />
-                            {detector.percent}%
-                          </span>
+                          <LanguageDetectorDownload
+                            downloading
+                            percent={detector.percent}
+                            onCancel={detector.cancel}
+                          />
                         </div>
                       ) : (
                         // Like a model not downloaded yet: choosing it downloads it.
@@ -305,10 +286,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                             className="group flex w-full items-center justify-between gap-2 px-2 py-1 text-sm text-ink-3 transition-colors duration-150 hover:bg-logo-primary/10 hover:text-text"
                           >
                             <span className="truncate">{language.label}</span>
-                            <span className="flex items-center gap-1.5 text-xs whitespace-nowrap text-ink-3">
-                              {DETECTOR_SIZE}
-                              <DownloadMark accent />
-                            </span>
+                            <LanguageDetectorDownload
+                              downloading={false}
+                              percent={0}
+                            />
                           </button>
                         </Tooltip>
                       )
