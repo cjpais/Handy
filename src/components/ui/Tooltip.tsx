@@ -64,6 +64,20 @@ export const Tooltip: React.FC<TooltipProps> = ({
     setPlace(null);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (
+      event.key !== "Escape" ||
+      !open ||
+      event.defaultPrevented ||
+      event.nativeEvent.isComposing ||
+      event.nativeEvent.keyCode === 229
+    )
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    hide();
+  };
+
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   // Anything scrolling moves the element out from under its tooltip.
@@ -113,6 +127,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       onPointerDown={() => (showOnPress ? show(true) : hide())}
       onFocus={(e) => e.target.matches(":focus-visible") && show(true)}
       onBlur={hide}
+      onKeyDown={handleKeyDown}
     >
       {React.cloneElement(children, {
         "aria-describedby": open ? id : undefined,
