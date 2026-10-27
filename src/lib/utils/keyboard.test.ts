@@ -11,6 +11,9 @@ const compoundKeys = [
   ["PageUp", "pageup", "Page Up"],
   ["PageDown", "pagedown", "Page Down"],
   ["PrintScreen", "printscreen", "Print Screen"],
+  ["Numpad0", "numpad0", "Numpad 0"],
+  ["NumpadAdd", "numpadadd", "Numpad +"],
+  ["NumpadEnter", "numpadenter", "Numpad Enter"],
 ] as const;
 
 for (const [code, stored, displayed] of compoundKeys) {
