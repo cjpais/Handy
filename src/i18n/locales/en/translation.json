@@ -534,7 +534,7 @@
       },
       "typingTool": {
         "title": "Typing Tool",
-        "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
+        "description": "Choose which Linux tool inserts text or sends the paste shortcut. Auto detects the best available tool for your system.",
         "options": {
           "auto": "Auto (Recommended)"
         }
