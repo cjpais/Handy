@@ -916,6 +916,7 @@
     "title": "Handy v{{version}} yenilikleri"
   },
   "common": {
+    "resetSetting": "{{setting}} ayarını varsayılan değere sıfırla",
     "loading": "Yükleniyor...",
     "delete": "Sil",
     "close": "Kapat",

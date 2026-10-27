@@ -916,6 +916,7 @@
     "title": "Nytt i Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Återställ {{setting}} till standardvärdet",
     "loading": "Laddar...",
     "delete": "Ta bort",
     "close": "Stäng",

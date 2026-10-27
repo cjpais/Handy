@@ -916,6 +916,7 @@
     "title": "Nouveautés de Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Rétablir la valeur par défaut de {{setting}}",
     "loading": "Chargement...",
     "delete": "Supprimer",
     "close": "Fermer",

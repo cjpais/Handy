@@ -916,6 +916,7 @@
     "title": "Novinky v Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Obnovit výchozí hodnotu: {{setting}}",
     "loading": "Načítání...",
     "delete": "Smazat",
     "close": "Zavřít",

@@ -83,6 +83,9 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
         <div className="flex items-center space-x-1">
           <MicrophoneDropdown />
           <ResetButton
+            ariaLabel={t("common.resetSetting", {
+              setting: t("settings.sound.microphone.title"),
+            })}
             onClick={handleReset}
             disabled={isUpdating("selected_microphone") || isLoading}
           />

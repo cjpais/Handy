@@ -916,6 +916,7 @@
     "title": "Nuevo en Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Restablecer {{setting}} al valor predeterminado",
     "loading": "Cargando...",
     "delete": "Eliminar",
     "close": "Cerrar",
