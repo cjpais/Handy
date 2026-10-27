@@ -110,14 +110,45 @@ fn remember_rejection(key: String) {
 }
 
 #[derive(Debug, Serialize)]
+struct ProviderRouting {
+    require_parameters: bool,
+}
+
+#[derive(Debug, Serialize)]
 struct ChatCompletionRequest {
     model: String,
     messages: Vec<ChatMessage>,
     stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<ResponseFormat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider: Option<ProviderRouting>,
     #[serde(flatten)]
     reasoning: ReasoningParams,
+}
+
+impl ChatCompletionRequest {
+    fn new(
+        provider: &PostProcessProvider,
+        model: &str,
+        messages: Vec<ChatMessage>,
+        response_format: Option<ResponseFormat>,
+        reasoning: ReasoningParams,
+    ) -> Self {
+        let provider_routing = (provider.id == "openrouter" && response_format.is_some())
+            .then_some(ProviderRouting {
+                require_parameters: true,
+            });
+
+        Self {
+            model: model.to_string(),
+            messages,
+            stream: false,
+            response_format,
+            provider: provider_routing,
+            reasoning,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -426,13 +457,8 @@ pub async fn send_chat_completion_with_schema(
         ReasoningParams::default()
     };
 
-    let mut request_body = ChatCompletionRequest {
-        model: model.to_string(),
-        messages,
-        stream: false,
-        response_format,
-        reasoning,
-    };
+    let mut request_body =
+        ChatCompletionRequest::new(provider, model, messages, response_format, reasoning);
 
     let mut response = client
         .post(&url)
@@ -705,6 +731,7 @@ mod tests {
             }],
             stream: false,
             response_format: None,
+            provider: None,
             reasoning,
         };
         serde_json::to_value(&request).unwrap()
@@ -726,6 +753,70 @@ mod tests {
         });
 
         format!("http://{address}")
+    }
+
+    fn routing_request(id: &str, has_schema: bool) -> ChatCompletionRequest {
+        ChatCompletionRequest::new(
+            &provider(id, "https://example.com/v1"),
+            "test-model",
+            vec![ChatMessage {
+                role: "user".to_string(),
+                content: "raw text".to_string(),
+            }],
+            has_schema.then(|| ResponseFormat {
+                format_type: "json_schema".to_string(),
+                json_schema: JsonSchema {
+                    name: "transcription_output".to_string(),
+                    strict: true,
+                    schema: serde_json::json!({"type": "object"}),
+                },
+            }),
+            ReasoningParams::default(),
+        )
+    }
+
+    #[test]
+    fn routing_requires_parameter_support_only_for_openrouter_schemas() {
+        for (id, has_schema) in [
+            ("openrouter", true),
+            ("openrouter", false),
+            ("custom", true),
+            ("openai", true),
+        ] {
+            let json = serde_json::to_value(routing_request(id, has_schema)).unwrap();
+            if id == "openrouter" && has_schema {
+                assert_eq!(
+                    json["provider"],
+                    serde_json::json!({"require_parameters": true})
+                );
+            } else {
+                assert!(json.get("provider").is_none());
+            }
+            assert_eq!(json.get("response_format").is_some(), has_schema);
+            if has_schema {
+                assert_eq!(json["response_format"]["type"], "json_schema");
+                assert_eq!(json["response_format"]["json_schema"]["strict"], true);
+            }
+        }
+    }
+
+    #[test]
+    fn routing_survives_clearing_rejected_reasoning_fields() {
+        let mut request = routing_request("openrouter", true);
+        request.reasoning =
+            reasoning_disable_params(&provider("openrouter", "https://example.com/v1"));
+        let before = serde_json::to_value(&request).unwrap();
+        assert!(before.get("reasoning").is_some());
+
+        request.reasoning = ReasoningParams::default();
+        let after = serde_json::to_value(&request).unwrap();
+        assert!(after.get("reasoning").is_none());
+        assert_eq!(
+            after["provider"],
+            serde_json::json!({"require_parameters": true})
+        );
+        assert_eq!(after["provider"], before["provider"]);
+        assert_eq!(after["response_format"], before["response_format"]);
     }
 
     #[test]
