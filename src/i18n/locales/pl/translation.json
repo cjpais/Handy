@@ -363,7 +363,8 @@
           "undetectable": "Niedostępne dla {{languages}}",
           "noMatch": "Żaden z twoich języków nie działa z tym modelem"
         },
-        "detectorMissing": "Używany jest {{language}}, dopóki detektor języka nie zostanie pobrany.",
+        "detectorMissingTitle": "Tryb automatyczny wymaga osobnego pobrania",
+        "detectorMissing": "Ten model nie rozpozna, w jakim języku mówisz. Tryb automatyczny potrzebuje małego detektora języka, żeby to ustalić",
         "detectorDownload": "Pobierz"
       },
       "preferredLanguages": {

@@ -363,7 +363,8 @@
           "undetectable": "غير متاح مع {{languages}}",
           "noMatch": "لا تعمل أي من لغاتك مع هذا النموذج"
         },
-        "detectorMissing": "يتم استخدام {{language}} حتى يتم تنزيل أداة اكتشاف اللغة.",
+        "detectorMissingTitle": "يحتاج الوضع التلقائي إلى تنزيل منفصل",
+        "detectorMissing": "لا يستطيع هذا النموذج معرفة اللغة التي تتحدث بها. يحتاج الوضع التلقائي إلى أداة صغيرة لاكتشاف اللغة لمعرفتها",
         "detectorDownload": "تنزيل"
       },
       "preferredLanguages": {

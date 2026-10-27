@@ -363,7 +363,8 @@
           "undetectable": "Niet beschikbaar met {{languages}}",
           "noMatch": "Geen van je talen werkt met dit model"
         },
-        "detectorMissing": "{{language}} wordt gebruikt totdat de taaldetector is gedownload.",
+        "detectorMissingTitle": "Automatisch heeft een aparte download nodig",
+        "detectorMissing": "Dit model kan niet bepalen welke taal je spreekt. Automatisch heeft een kleine taaldetector nodig om dat uit te zoeken",
         "detectorDownload": "Downloaden"
       },
       "preferredLanguages": {

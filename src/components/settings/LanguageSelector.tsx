@@ -4,9 +4,17 @@ import { listen } from "@tauri-apps/api/event";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { InfoTooltip } from "../ui/InfoTooltip";
+import { Tooltip } from "../ui/Tooltip";
+import { ProgressRing } from "../shared/ProgressRing";
+import { DownloadMark } from "../shared/DownloadMark";
+import { BYTES_PER_MB, formatModelSize } from "../../lib/utils/format";
 import { useSettings } from "../../hooks/useSettings";
 import { useLanguageDetector } from "../../hooks/useLanguageDetector";
-import { languageIdentity } from "@handy-computer/models";
+import {
+  LANGUAGE_DETECTION_MODEL,
+  languageIdentity,
+  modelFile,
+} from "@handy-computer/models";
 import {
   commands,
   type AutoUnavailableReason,
@@ -19,6 +27,11 @@ import {
   languagesOf,
   searchLanguages,
 } from "../../lib/constants/languages";
+
+// What choosing Auto downloads: the detector file the backend fetches.
+const DETECTOR_SIZE = formatModelSize(
+  modelFile(LANGUAGE_DETECTION_MODEL).size / BYTES_PER_MB,
+);
 
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
@@ -68,9 +81,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const selectedLanguage =
     status === null
       ? languageIdentity(intent)
-      : status.kind === "auto" || status.kind === "detector_missing"
+      : status.kind === "auto"
         ? "auto"
-        : languageIdentity(status.language);
+        : status.kind === "detector_missing"
+          ? languageIdentity(status.fallback)
+          : languageIdentity(status.language);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -126,11 +141,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   };
   // Auto is always listed; when it can't work here it stays visible, muted,
-  // with the reason in a tooltip, so it's clear why it isn't in use.
+  // with the reason in a tooltip, so it's clear why it isn't in use. Without
+  // the detector it's offered as a download instead.
   const autoNote =
     status?.kind === "auto_unavailable"
       ? autoUnavailableNote(status.reason)
-      : undefined;
+      : status?.kind === "detector_missing"
+        ? t("settings.general.language.detectorMissing")
+        : undefined;
   const filteredLanguages = useMemo(() => {
     const showAuto = autoLabel
       .toLowerCase()
@@ -249,7 +267,52 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                   </div>
                 ) : (
                   filteredLanguages.map((language) =>
-                    language.disabled ? (
+                    language.value === "auto" &&
+                    status?.kind === "detector_missing" ? (
+                      detector.downloading ? (
+                        <div
+                          key={language.value}
+                          className="flex items-center justify-between gap-2 px-2 py-1 text-sm text-ink-3"
+                        >
+                          <span className="truncate">{language.label}</span>
+                          <span
+                            role="status"
+                            aria-label={t("modelSelector.downloading", {
+                              percentage: detector.percent,
+                            })}
+                            className="flex items-center gap-1.5 text-xs tabular-nums whitespace-nowrap"
+                          >
+                            <ProgressRing
+                              size={14}
+                              value={detector.percent / 100}
+                            />
+                            {detector.percent}%
+                          </span>
+                        </div>
+                      ) : (
+                        // Like a model not downloaded yet: choosing it downloads it.
+                        <Tooltip
+                          key={language.value}
+                          title={t(
+                            "settings.general.language.detectorMissingTitle",
+                          )}
+                          text={language.note}
+                          className="w-full"
+                        >
+                          <button
+                            type="button"
+                            onClick={detector.download}
+                            className="group flex w-full items-center justify-between gap-2 px-2 py-1 text-sm text-ink-3 transition-colors duration-150 hover:bg-logo-primary/10 hover:text-text"
+                          >
+                            <span className="truncate">{language.label}</span>
+                            <span className="flex items-center gap-1.5 text-xs whitespace-nowrap text-ink-3">
+                              {DETECTOR_SIZE}
+                              <DownloadMark accent />
+                            </span>
+                          </button>
+                        </Tooltip>
+                      )
+                    ) : language.disabled ? (
                       <div
                         key={language.value}
                         className="flex items-center justify-between gap-2 px-2 py-1 text-sm text-ink-3"
@@ -289,29 +352,6 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           disabled={isUpdating("selected_language")}
         />
       </div>
-      {status?.kind === "detector_missing" && (
-        // Zero width with a full minimum: as wide as the picker, never wider.
-        <p className="mt-[4px] mb-0 w-0 min-w-full text-small text-ink-3">
-          {t("settings.general.language.detectorMissing", {
-            language: languageName(languageIdentity(status.fallback), ui),
-          })}{" "}
-          {detector.downloading ? (
-            <span className="tabular-nums whitespace-nowrap">
-              {t("modelSelector.downloading", {
-                percentage: detector.percent,
-              })}
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={detector.download}
-              className="cursor-pointer text-text underline decoration-line-strong underline-offset-[3px] hover:decoration-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
-            >
-              {t("settings.general.language.detectorDownload")}
-            </button>
-          )}
-        </p>
-      )}
       {isUpdating("selected_language") && (
         <div className="absolute inset-0 bg-wash rounded flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-logo-primary border-t-transparent rounded-full animate-spin"></div>

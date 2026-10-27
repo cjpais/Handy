@@ -363,7 +363,8 @@
           "undetectable": "Ikke tilgængelig med {{languages}}",
           "noMatch": "Ingen af dine sprog virker med denne model"
         },
-        "detectorMissing": "Bruger {{language}}, indtil sprogregistreringen er downloadet.",
+        "detectorMissingTitle": "Automatisk kræver en separat download",
+        "detectorMissing": "Denne model kan ikke afgøre, hvilket sprog du taler. Automatisk har brug for en lille sprogregistrering til at finde ud af det",
         "detectorDownload": "Download"
       },
       "preferredLanguages": {

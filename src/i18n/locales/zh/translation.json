@@ -363,7 +363,8 @@
           "undetectable": "不支持{{languages}}",
           "noMatch": "你的语言都不适用于此模型"
         },
-        "detectorMissing": "在下载语言检测器之前使用{{language}}。",
+        "detectorMissingTitle": "自动模式需要单独下载",
+        "detectorMissing": "此模型无法分辨你说的是哪种语言。自动模式需要一个小型语言检测器来判断",
         "detectorDownload": "下载"
       },
       "preferredLanguages": {

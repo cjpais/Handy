@@ -363,7 +363,8 @@
           "undetectable": "Tidak tersedia untuk {{languages}}",
           "noMatch": "Tidak ada bahasa Anda yang berfungsi dengan model ini"
         },
-        "detectorMissing": "Menggunakan {{language}} sampai pendeteksi bahasa selesai diunduh.",
+        "detectorMissingTitle": "Otomatis memerlukan unduhan terpisah",
+        "detectorMissing": "Model ini tidak dapat mengenali bahasa yang Anda ucapkan. Otomatis memerlukan pendeteksi bahasa kecil untuk mengenalinya",
         "detectorDownload": "Unduh"
       },
       "preferredLanguages": {

@@ -363,7 +363,8 @@
           "undetectable": "Indisponível com {{languages}}",
           "noMatch": "Nenhum dos seus idiomas funciona com este modelo"
         },
-        "detectorMissing": "Usando {{language}} até o detector de idioma ser baixado.",
+        "detectorMissingTitle": "Automático precisa de um download separado",
+        "detectorMissing": "Este modelo não consegue identificar o idioma que você está falando. O Automático precisa de um pequeno detector de idioma para descobrir",
         "detectorDownload": "Baixar"
       },
       "preferredLanguages": {

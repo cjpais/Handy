@@ -363,7 +363,8 @@
           "undetectable": "Not available with {{languages}}",
           "noMatch": "None of your languages work with this model"
         },
-        "detectorMissing": "Using {{language}} until the language detector is downloaded.",
+        "detectorMissingTitle": "Auto needs a separate download",
+        "detectorMissing": "This model can't tell which language you're speaking. Auto needs a small language detector to figure it out",
         "detectorDownload": "Download"
       },
       "preferredLanguages": {

@@ -363,7 +363,8 @@
           "undetectable": "Inte tillgängligt med {{languages}}",
           "noMatch": "Inget av dina språk fungerar med den här modellen"
         },
-        "detectorMissing": "Använder {{language}} tills språkidentifieringen har laddats ned.",
+        "detectorMissingTitle": "Automatiskt kräver en separat nedladdning",
+        "detectorMissing": "Den här modellen kan inte avgöra vilket språk du talar. Automatiskt behöver en liten språkidentifiering som tar reda på det",
         "detectorDownload": "Ladda ned"
       },
       "preferredLanguages": {

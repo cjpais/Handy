@@ -363,7 +363,8 @@
           "undetectable": "לא זמין עם {{languages}}",
           "noMatch": "אף אחת מהשפות שלך לא עובדת עם המודל הזה"
         },
-        "detectorMissing": "נעשה שימוש ב{{language}} עד שגלאי השפה יורד.",
+        "detectorMissingTitle": "אוטומטי דורש הורדה נפרדת",
+        "detectorMissing": "המודל הזה לא יכול לזהות באיזו שפה מדברים. אוטומטי צריך גלאי שפה קטן כדי לזהות אותה",
         "detectorDownload": "הורדה"
       },
       "preferredLanguages": {

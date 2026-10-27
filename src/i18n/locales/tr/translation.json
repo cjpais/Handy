@@ -363,7 +363,8 @@
           "undetectable": "{{languages}} ile kullanılamaz",
           "noMatch": "Dillerinizden hiçbiri bu modelle çalışmıyor"
         },
-        "detectorMissing": "Dil algılayıcı indirilene kadar {{language}} kullanılıyor.",
+        "detectorMissingTitle": "Otomatik için ayrı bir indirme gerekiyor",
+        "detectorMissing": "Bu model hangi dili konuştuğunuzu anlayamıyor. Otomatik'in bunu anlamak için küçük bir dil algılayıcıya ihtiyacı var",
         "detectorDownload": "İndir"
       },
       "preferredLanguages": {

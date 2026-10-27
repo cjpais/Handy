@@ -363,7 +363,8 @@
           "undetectable": "Není k dispozici pro {{languages}}",
           "noMatch": "Žádný z vašich jazyků s tímto modelem nefunguje"
         },
-        "detectorMissing": "Používá se {{language}}, dokud se nestáhne detektor jazyka.",
+        "detectorMissingTitle": "Automaticky vyžaduje samostatné stažení",
+        "detectorMissing": "Tento model nepozná, jakým jazykem mluvíte. Režim Automaticky potřebuje malý detektor jazyka, který to zjistí",
         "detectorDownload": "Stáhnout"
       },
       "preferredLanguages": {

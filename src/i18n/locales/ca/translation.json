@@ -363,7 +363,8 @@
           "undetectable": "No disponible amb {{languages}}",
           "noMatch": "Cap de les teves llengües funciona amb aquest model"
         },
-        "detectorMissing": "S'utilitza {{language}} fins que es baixi el detector d'idioma.",
+        "detectorMissingTitle": "Automàtica necessita una baixada a part",
+        "detectorMissing": "Aquest model no pot saber en quin idioma parles. Automàtica necessita un petit detector d'idioma per esbrinar-ho",
         "detectorDownload": "Baixa"
       },
       "preferredLanguages": {

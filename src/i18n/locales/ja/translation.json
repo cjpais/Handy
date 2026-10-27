@@ -363,7 +363,8 @@
           "undetectable": "{{languages}}では利用できません",
           "noMatch": "あなたの言語はどれもこのモデルで使えません"
         },
-        "detectorMissing": "言語検出がダウンロードされるまで{{language}}を使用します。",
+        "detectorMissingTitle": "自動には別のダウンロードが必要です",
+        "detectorMissing": "このモデルは話している言語を判別できません。自動では小さな言語検出を使って判別します",
         "detectorDownload": "ダウンロード"
       },
       "preferredLanguages": {

@@ -363,7 +363,8 @@
           "undetectable": "Không khả dụng với {{languages}}",
           "noMatch": "Không ngôn ngữ nào của bạn hoạt động với mô hình này"
         },
-        "detectorMissing": "Đang dùng {{language}} cho đến khi tải xong trình nhận diện ngôn ngữ.",
+        "detectorMissingTitle": "Tự động cần tải xuống riêng",
+        "detectorMissing": "Mô hình này không nhận biết được bạn đang nói ngôn ngữ nào. Tự động cần một trình nhận diện ngôn ngữ nhỏ để xác định",
         "detectorDownload": "Tải xuống"
       },
       "preferredLanguages": {
