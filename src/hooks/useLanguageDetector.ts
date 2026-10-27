@@ -38,9 +38,12 @@ export const useLanguageDetector = () => {
 
   const download = useCallback(async () => {
     setStarting(true);
-    // Failure toasts from the model store's download-failed listener.
-    await commands.downloadLanguageDetector();
-    setStarting(false);
+    try {
+      // Failure toasts from the model store's download-failed listener.
+      await commands.downloadLanguageDetector();
+    } finally {
+      setStarting(false);
+    }
     await refresh();
   }, [refresh]);
 

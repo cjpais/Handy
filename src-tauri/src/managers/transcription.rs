@@ -1069,7 +1069,8 @@ impl TranscriptionManager {
         plan: &Plan,
         audio: &[f32],
     ) -> RunSetup {
-        let speech = if plan.detects() {
+        // Without the detector, decide falls back anyway: skip the VAD pass.
+        let speech = if plan.detects() && self.model_manager.language_detector_path().is_some() {
             self.detection_speech(settings, audio)
         } else {
             Vec::new()

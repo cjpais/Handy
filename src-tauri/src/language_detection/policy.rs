@@ -185,14 +185,22 @@ pub fn plan(
                     detects: false,
                     ..*model
                 };
-                if let AutoLanguage::Detect { languages, allowed } =
-                    auto_language(&unrestricted, preferred, labels)
-                {
-                    return Plan::Detect {
-                        languages,
-                        allowed,
-                        fallback: DetectFallback::Native,
-                    };
+                match auto_language(&unrestricted, preferred, labels) {
+                    AutoLanguage::Detect { languages, allowed } => {
+                        return Plan::Detect {
+                            languages,
+                            allowed,
+                            fallback: DetectFallback::Native,
+                        };
+                    }
+                    // Limited to one language, Auto is that language.
+                    AutoLanguage::Single(language) => {
+                        return Plan::Fixed {
+                            language,
+                            source: LanguageSource::Selected,
+                        };
+                    }
+                    _ => {}
                 }
             }
             Plan::Native
@@ -381,8 +389,14 @@ mod tests {
         let always = detect("en de", "en de", Native);
         assert_eq!(plan_on(&whisper, "auto", "en de", WhenNeeded), Plan::Native);
         assert_eq!(plan_on(&whisper, "auto", "en de", Always), always);
+        assert_eq!(plan_on(&whisper, "auto", "en", WhenNeeded), Plan::Native);
+        assert_eq!(
+            plan_on(&whisper, "auto", "en ja", Always),
+            fixed("en", Selected)
+        );
         let streaming = model(&languages, true, true);
         assert_eq!(plan_on(&streaming, "auto", "en de", Always), Plan::Native);
+        assert_eq!(plan_on(&streaming, "auto", "en", Always), Plan::Native);
     }
 
     #[test]
