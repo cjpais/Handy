@@ -16,7 +16,8 @@
     "postProcessing": "Efterbehandling",
     "history": "Historik",
     "debug": "Fejlfinding",
-    "about": "Om"
+    "about": "Om",
+    "close": "Luk"
   },
   "onboarding": {
     "customModelDescription": "Ikke officielt understøttet",

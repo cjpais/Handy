@@ -16,7 +16,8 @@
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "close": "Close"
   },
   "onboarding": {
     "customModelDescription": "Not officially supported",

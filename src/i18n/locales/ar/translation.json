@@ -16,7 +16,8 @@
     "postProcessing": "معالجة لاحقة",
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
-    "about": "حول"
+    "about": "حول",
+    "close": "إغلاق"
   },
   "onboarding": {
     "customModelDescription": "غير مدعوم رسميًا",

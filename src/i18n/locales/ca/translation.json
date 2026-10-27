@@ -16,7 +16,8 @@
     "postProcessing": "Postprocessament",
     "history": "Historial",
     "debug": "Depuració",
-    "about": "Quant a"
+    "about": "Quant a",
+    "close": "Tanca"
   },
   "onboarding": {
     "customModelDescription": "Sense suport oficial",

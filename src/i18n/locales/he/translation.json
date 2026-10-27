@@ -16,7 +16,8 @@
     "postProcessing": "עיבוד משלים",
     "history": "היסטוריה",
     "debug": "ניפוי שגיאות",
-    "about": "אודות"
+    "about": "אודות",
+    "close": "סגור"
   },
   "onboarding": {
     "customModelDescription": "לא נתמך באופן רשמי",

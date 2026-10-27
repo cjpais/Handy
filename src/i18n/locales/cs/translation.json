@@ -16,7 +16,8 @@
     "postProcessing": "Následné zpracování",
     "history": "Historie",
     "debug": "Ladění",
-    "about": "O aplikaci"
+    "about": "O aplikaci",
+    "close": "Zavřít"
   },
   "onboarding": {
     "customModelDescription": "Oficiálně nepodporováno",

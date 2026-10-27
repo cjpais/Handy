@@ -16,7 +16,8 @@
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "close": "Đóng"
   },
   "onboarding": {
     "customModelDescription": "Không được hỗ trợ chính thức",
