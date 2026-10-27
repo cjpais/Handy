@@ -358,6 +358,7 @@
         "noResults": "No se encontraron idiomas",
         "auto": "Automático",
         "autoUnavailable": {
+          "title": "Automático está desactivado",
           "oneLanguage": "Solo uno de tus idiomas funciona con este modelo",
           "undetectable": "No disponible con {{languages}}",
           "noMatch": "Ninguno de tus idiomas funciona con este modelo"

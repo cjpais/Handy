@@ -358,6 +358,7 @@
         "noResults": "Không tìm thấy ngôn ngữ",
         "auto": "Tự động",
         "autoUnavailable": {
+          "title": "Tự động đã tắt",
           "oneLanguage": "Chỉ một trong các ngôn ngữ của bạn hoạt động với mô hình này",
           "undetectable": "Không khả dụng với {{languages}}",
           "noMatch": "Không ngôn ngữ nào của bạn hoạt động với mô hình này"

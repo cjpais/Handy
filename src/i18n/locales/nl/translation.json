@@ -358,6 +358,7 @@
         "noResults": "Geen talen gevonden",
         "auto": "Automatisch",
         "autoUnavailable": {
+          "title": "Automatisch is uitgeschakeld",
           "oneLanguage": "Maar één van je talen werkt met dit model",
           "undetectable": "Niet beschikbaar met {{languages}}",
           "noMatch": "Geen van je talen werkt met dit model"

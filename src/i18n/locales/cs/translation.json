@@ -358,6 +358,7 @@
         "noResults": "Žádné jazyky nenalezeny",
         "auto": "Automaticky",
         "autoUnavailable": {
+          "title": "Automaticky je vypnuto",
           "oneLanguage": "S tímto modelem funguje jen jeden z vašich jazyků",
           "undetectable": "Není k dispozici pro {{languages}}",
           "noMatch": "Žádný z vašich jazyků s tímto modelem nefunguje"

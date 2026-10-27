@@ -358,6 +358,7 @@
         "noResults": "לא נמצאו שפות",
         "auto": "אוטומטי",
         "autoUnavailable": {
+          "title": "אוטומטי מושבת",
           "oneLanguage": "רק אחת מהשפות שלך עובדת עם המודל הזה",
           "undetectable": "לא זמין עם {{languages}}",
           "noMatch": "אף אחת מהשפות שלך לא עובדת עם המודל הזה"

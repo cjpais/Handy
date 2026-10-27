@@ -358,6 +358,7 @@
         "noResults": "Inga språk hittades",
         "auto": "Automatiskt",
         "autoUnavailable": {
+          "title": "Automatiskt är avstängt",
           "oneLanguage": "Bara ett av dina språk fungerar med den här modellen",
           "undetectable": "Inte tillgängligt med {{languages}}",
           "noMatch": "Inget av dina språk fungerar med den här modellen"

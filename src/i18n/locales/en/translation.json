@@ -358,6 +358,7 @@
         "noResults": "No languages found",
         "auto": "Auto",
         "autoUnavailable": {
+          "title": "Auto is disabled",
           "oneLanguage": "Only one of your languages works with this model",
           "undetectable": "Not available with {{languages}}",
           "noMatch": "None of your languages work with this model"

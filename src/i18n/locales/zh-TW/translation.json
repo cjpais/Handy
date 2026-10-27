@@ -358,6 +358,7 @@
         "noResults": "未找到語言",
         "auto": "自動",
         "autoUnavailable": {
+          "title": "自動已停用",
           "oneLanguage": "你的語言中只有一種適用於此模型",
           "undetectable": "不支援{{languages}}",
           "noMatch": "你的語言都不適用於此模型"

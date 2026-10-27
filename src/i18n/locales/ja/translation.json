@@ -358,6 +358,7 @@
         "noResults": "言語が見つかりません",
         "auto": "自動",
         "autoUnavailable": {
+          "title": "自動は無効です",
           "oneLanguage": "このモデルで使えるのはあなたの言語のうち1つだけです",
           "undetectable": "{{languages}}では利用できません",
           "noMatch": "あなたの言語はどれもこのモデルで使えません"

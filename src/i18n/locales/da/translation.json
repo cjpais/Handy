@@ -358,6 +358,7 @@
         "noResults": "Ingen sprog fundet",
         "auto": "Automatisk",
         "autoUnavailable": {
+          "title": "Automatisk er slået fra",
           "oneLanguage": "Kun ét af dine sprog virker med denne model",
           "undetectable": "Ikke tilgængelig med {{languages}}",
           "noMatch": "Ingen af dine sprog virker med denne model"

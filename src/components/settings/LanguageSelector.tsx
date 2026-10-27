@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
+import { InfoTooltip } from "../ui/InfoTooltip";
 import { useSettings } from "../../hooks/useSettings";
 import { useLanguageDetector } from "../../hooks/useLanguageDetector";
 import { languageIdentity } from "@handy-computer/models";
@@ -125,7 +126,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   };
   // Auto is always listed; when it can't work here it stays visible, muted,
-  // with the reason, so it's clear why it isn't in use.
+  // with the reason in a tooltip, so it's clear why it isn't in use.
   const autoNote =
     status?.kind === "auto_unavailable"
       ? autoUnavailableNote(status.reason)
@@ -247,28 +248,37 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                     {t("settings.general.language.noResults")}
                   </div>
                 ) : (
-                  filteredLanguages.map((language) => (
-                    <button
-                      key={language.value}
-                      type="button"
-                      disabled={language.disabled}
-                      className={`w-full px-2 py-1 text-sm text-start transition-colors duration-150 ${
-                        language.disabled
-                          ? "cursor-default text-ink-3"
-                          : selectedLanguage === language.value
+                  filteredLanguages.map((language) =>
+                    language.disabled ? (
+                      <div
+                        key={language.value}
+                        className="flex items-center justify-between gap-2 px-2 py-1 text-sm text-ink-3"
+                      >
+                        <span className="truncate">{language.label}</span>
+                        {language.note && (
+                          <InfoTooltip
+                            title={t(
+                              "settings.general.language.autoUnavailable.title",
+                            )}
+                            text={language.note}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        key={language.value}
+                        type="button"
+                        className={`w-full px-2 py-1 text-sm text-start transition-colors duration-150 ${
+                          selectedLanguage === language.value
                             ? "bg-logo-primary/20 text-logo-primary font-semibold"
                             : "hover:bg-logo-primary/10"
-                      }`}
-                      onClick={() => handleLanguageSelect(language.value)}
-                    >
-                      <span className="block truncate">{language.label}</span>
-                      {language.note && (
-                        <span className="block text-xs leading-snug whitespace-normal">
-                          {language.note}
-                        </span>
-                      )}
-                    </button>
-                  ))
+                        }`}
+                        onClick={() => handleLanguageSelect(language.value)}
+                      >
+                        <span className="block truncate">{language.label}</span>
+                      </button>
+                    ),
+                  )
                 )}
               </div>
             </div>

@@ -358,6 +358,7 @@
         "noResults": "Bahasa tidak ditemukan",
         "auto": "Otomatis",
         "autoUnavailable": {
+          "title": "Otomatis dinonaktifkan",
           "oneLanguage": "Hanya satu bahasa Anda yang berfungsi dengan model ini",
           "undetectable": "Tidak tersedia untuk {{languages}}",
           "noMatch": "Tidak ada bahasa Anda yang berfungsi dengan model ini"

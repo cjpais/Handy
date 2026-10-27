@@ -358,6 +358,7 @@
         "noResults": "No s'ha trobat cap llengua",
         "auto": "Automàtica",
         "autoUnavailable": {
+          "title": "Automàtica està desactivada",
           "oneLanguage": "Només una de les teves llengües funciona amb aquest model",
           "undetectable": "No disponible amb {{languages}}",
           "noMatch": "Cap de les teves llengües funciona amb aquest model"
