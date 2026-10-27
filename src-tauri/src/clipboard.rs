@@ -70,6 +70,246 @@ fn finish_clipboard_paste(
     paste_result
 }
 
+/// Bounds on reading the clipboard, see `read_with_limits`.
+#[cfg(target_os = "linux")]
+struct ReadLimits {
+    /// Longest wait for the next chunk of data.
+    stall_timeout: Duration,
+    /// Longest the whole read may take.
+    total_timeout: Duration,
+    /// Most data read before giving up.
+    max_bytes: usize,
+}
+
+/// Limits for saving clipboard text before a paste; past them the paste goes
+/// ahead without saving it. Apps hand text over almost at once, so a frozen
+/// owner costs at most a second.
+#[cfg(target_os = "linux")]
+const TEXT_SAVE_LIMITS: ReadLimits = ReadLimits {
+    stall_timeout: Duration::from_secs(1),
+    total_timeout: Duration::from_secs(10),
+    max_bytes: 256 * 1024 * 1024,
+};
+
+/// Limits for saving a clipboard image before a paste. The stall timeout
+/// leaves room for a large screenshot, since Qt apps encode an image in full
+/// before sending its first byte (about 1 s for 7680x2160).
+#[cfg(target_os = "linux")]
+const IMAGE_SAVE_LIMITS: ReadLimits = ReadLimits {
+    stall_timeout: Duration::from_secs(3),
+    ..TEXT_SAVE_LIMITS
+};
+
+/// The clipboard contents saved before a paste, put back once it is done.
+enum SavedClipboard {
+    Text(String),
+    Image(tauri::image::Image<'static>),
+    #[cfg(target_os = "linux")]
+    Png(Vec<u8>),
+    Empty,
+    /// The contents could not be saved, so the transcript stays on the
+    /// clipboard instead of clearing what the user had.
+    #[cfg(target_os = "linux")]
+    Unreadable,
+}
+
+fn save_clipboard(app_handle: &AppHandle) -> SavedClipboard {
+    #[cfg(target_os = "linux")]
+    if is_wayland() {
+        if let Some(saved_clipboard) = save_clipboard_via_data_control() {
+            return saved_clipboard;
+        }
+    }
+
+    let clipboard = app_handle.clipboard();
+    if let Some(text) = clipboard.read_text().ok().filter(|t| !t.is_empty()) {
+        return SavedClipboard::Text(text);
+    }
+    // Only probe for an image when there is no text to restore. Text is by far the
+    // common case, and reading an image decodes the full bitmap, so this keeps the
+    // text path exactly as cheap as it was before.
+    match clipboard.read_image() {
+        Ok(image) => SavedClipboard::Image(image.to_owned()),
+        Err(_) => SavedClipboard::Empty,
+    }
+}
+
+/// Outcome of reading the clipboard as one MIME type.
+#[cfg(target_os = "linux")]
+enum ClipboardRead {
+    Contents(Vec<u8>),
+    /// The clipboard is empty or holds nothing of that type.
+    NotOffered,
+    /// The compositor lacks the data-control protocol.
+    Unavailable,
+    /// The owning app did not hand its contents over within the limits.
+    Failed(String),
+}
+
+/// Saves the clipboard through wl-clipboard-rs, the library the clipboard
+/// plugin reads with on Wayland, but within `TEXT_SAVE_LIMITS` and
+/// `IMAGE_SAVE_LIMITS`.
+///
+/// A Wayland clipboard read waits for the owning app to send its contents, and
+/// a frozen owner never does. Through the plugin that read blocks forever and
+/// keeps holding the plugin's lock, which stalls every later clipboard call.
+/// Returns `None` when the compositor lacks data-control, leaving the save to
+/// the plugin, which then falls back to X11.
+#[cfg(target_os = "linux")]
+fn save_clipboard_via_data_control() -> Option<SavedClipboard> {
+    use wl_clipboard_rs::paste::MimeType;
+
+    let mut text_is_not_utf8 = false;
+    match read_clipboard_via_data_control(MimeType::Text, &TEXT_SAVE_LIMITS) {
+        ClipboardRead::Contents(bytes) if !bytes.is_empty() => match String::from_utf8(bytes) {
+            Ok(text) => return Some(SavedClipboard::Text(text)),
+            Err(_) => text_is_not_utf8 = true,
+        },
+        ClipboardRead::Contents(_) | ClipboardRead::NotOffered => {}
+        ClipboardRead::Unavailable => return None,
+        ClipboardRead::Failed(error) => return Some(clipboard_not_saved(&error)),
+    }
+
+    // Same order as the plugin path: an image only when there is no usable text.
+    match read_clipboard_via_data_control(MimeType::Specific("image/png"), &IMAGE_SAVE_LIMITS) {
+        ClipboardRead::Contents(png) if !png.is_empty() => Some(SavedClipboard::Png(png)),
+        ClipboardRead::Contents(_) | ClipboardRead::NotOffered if text_is_not_utf8 => {
+            Some(clipboard_not_saved("its text is not UTF-8"))
+        }
+        ClipboardRead::Contents(_) | ClipboardRead::NotOffered => Some(SavedClipboard::Empty),
+        ClipboardRead::Unavailable => None,
+        ClipboardRead::Failed(error) => Some(clipboard_not_saved(&error)),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn clipboard_not_saved(reason: &str) -> SavedClipboard {
+    log::warn!("Pasting without saving the clipboard: {}", reason);
+    SavedClipboard::Unreadable
+}
+
+#[cfg(target_os = "linux")]
+fn read_clipboard_via_data_control(
+    mime_type: wl_clipboard_rs::paste::MimeType,
+    limits: &ReadLimits,
+) -> ClipboardRead {
+    use wl_clipboard_rs::paste::{get_contents, ClipboardType, Error, Seat};
+
+    // Only talks to the compositor; the wait for the owning app happens when
+    // reading the returned pipe.
+    match get_contents(ClipboardType::Regular, Seat::Unspecified, mime_type) {
+        Ok((pipe, _)) => match read_with_limits(pipe, limits) {
+            Ok(contents) => ClipboardRead::Contents(contents),
+            Err(error) => ClipboardRead::Failed(error),
+        },
+        Err(Error::NoSeats | Error::ClipboardEmpty | Error::NoMimeType) => {
+            ClipboardRead::NotOffered
+        }
+        // Only these may fall back: without data-control the plugin reads
+        // through X11, which has its own stall timeout, but its Wayland read
+        // has none.
+        Err(error @ (Error::MissingProtocol { .. } | Error::WaylandConnection(_))) => {
+            info!("Saving the clipboard through the plugin instead: {}", error);
+            ClipboardRead::Unavailable
+        }
+        Err(error) => ClipboardRead::Failed(error.to_string()),
+    }
+}
+
+/// Reads `source` until its writer closes it, giving up when it sends nothing
+/// for `limits.stall_timeout` or exceeds the other limits. Dropping the source
+/// afterwards closes it, which releases the writer.
+#[cfg(target_os = "linux")]
+fn read_with_limits(
+    mut source: impl std::io::Read + std::os::fd::AsFd,
+    limits: &ReadLimits,
+) -> Result<Vec<u8>, String> {
+    use std::io::ErrorKind;
+    use std::os::fd::AsRawFd;
+    use std::time::Instant;
+
+    let deadline = Instant::now() + limits.total_timeout;
+    let mut contents = Vec::new();
+    let mut chunk = [0u8; 64 * 1024];
+    loop {
+        let time_left = deadline.saturating_duration_since(Instant::now());
+        if time_left.is_zero() {
+            return Err(format!(
+                "reading it took longer than {:?}",
+                limits.total_timeout
+            ));
+        }
+
+        let mut poll_fd = libc::pollfd {
+            fd: source.as_fd().as_raw_fd(),
+            events: libc::POLLIN,
+            revents: 0,
+        };
+        let wait = limits.stall_timeout.min(time_left);
+        // Rounded up to 1 ms so a sub-millisecond wait doesn't spin.
+        let wait_ms = libc::c_int::try_from(wait.as_millis().max(1)).unwrap_or(libc::c_int::MAX);
+        let ready = unsafe { libc::poll(&mut poll_fd, 1, wait_ms) };
+        if ready < 0 {
+            let error = std::io::Error::last_os_error();
+            if error.kind() == ErrorKind::Interrupted {
+                continue;
+            }
+            return Err(format!("waiting for its data failed: {}", error));
+        }
+        if ready == 0 {
+            if wait < limits.stall_timeout {
+                // The total deadline passed, which the loop's start reports.
+                continue;
+            }
+            return Err(format!(
+                "its owner sent no data for {:?}",
+                limits.stall_timeout
+            ));
+        }
+
+        // The source is readable or closed, so this read returns without blocking.
+        match source.read(&mut chunk) {
+            Ok(0) => return Ok(contents),
+            Ok(read) => {
+                contents.extend_from_slice(&chunk[..read]);
+                if contents.len() > limits.max_bytes {
+                    return Err(format!("it holds more than {} bytes", limits.max_bytes));
+                }
+            }
+            Err(error) if error.kind() == ErrorKind::Interrupted => {}
+            Err(error) => return Err(format!("reading it failed: {}", error)),
+        }
+    }
+}
+
+fn restore_clipboard(app_handle: &AppHandle, saved_clipboard: SavedClipboard) {
+    let clipboard = app_handle.clipboard();
+    match saved_clipboard {
+        SavedClipboard::Text(text) => {
+            let _ = write_text_to_clipboard(app_handle, &text);
+        }
+        SavedClipboard::Image(image) => {
+            info!("Restoring image to clipboard");
+            let _ = clipboard.write_image(&image);
+        }
+        #[cfg(target_os = "linux")]
+        SavedClipboard::Png(png) => {
+            use wl_clipboard_rs::copy::{MimeType, Options, Source};
+            info!("Restoring image to clipboard");
+            let _ = Options::new().copy(
+                Source::Bytes(png.into_boxed_slice()),
+                MimeType::Specific("image/png".to_string()),
+            );
+        }
+        SavedClipboard::Empty => {
+            // Nothing was there to begin with — don't leave the transcription behind.
+            let _ = clipboard.clear();
+        }
+        #[cfg(target_os = "linux")]
+        SavedClipboard::Unreadable => {}
+    }
+}
+
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
     text: &str,
@@ -78,16 +318,7 @@ fn paste_via_clipboard(
     paste_delay_ms: u64,
     paste_delay_after_ms: u64,
 ) -> Result<(), String> {
-    let clipboard = app_handle.clipboard();
-    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
-    // Only probe for an image when there is no text to restore. Text is by far the
-    // common case, and reading an image decodes the full bitmap, so this keeps the
-    // text path exactly as cheap as it was before.
-    let saved_image = if saved_text.is_none() {
-        clipboard.read_image().ok().map(|image| image.to_owned())
-    } else {
-        None
-    };
+    let saved_clipboard = save_clipboard(app_handle);
 
     // Write text to clipboard first
     write_text_to_clipboard(app_handle, text)?;
@@ -122,18 +353,7 @@ fn paste_via_clipboard(
 
     finish_clipboard_paste(paste_result, paste_delay_after_ms, || {
         // Restore original clipboard content even when key injection failed.
-        // Text takes priority so this path stays identical to the previous behavior;
-        // an image is only restored when the clipboard held no text at all, which is
-        // the case that used to silently wipe screenshots.
-        if let Some(clipboard_content) = saved_text {
-            let _ = write_text_to_clipboard(app_handle, &clipboard_content);
-        } else if let Some(image) = saved_image {
-            info!("Restoring image to clipboard");
-            let _ = clipboard.write_image(&image);
-        } else {
-            // Nothing was there to begin with — don't leave the transcription behind.
-            let _ = clipboard.clear();
-        }
+        restore_clipboard(app_handle, saved_clipboard);
     })
 }
 
@@ -1007,6 +1227,107 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
 
         assert_eq!(result.unwrap_err(), "input failed");
         assert!(restored.get());
+    }
+
+    #[cfg(target_os = "linux")]
+    fn test_limits(stall_timeout: Duration, total_timeout: Duration) -> ReadLimits {
+        ReadLimits {
+            stall_timeout,
+            total_timeout,
+            max_bytes: 1024 * 1024,
+        }
+    }
+
+    /// Runs `write` against the writing end of a socket pair on its own
+    /// thread, standing in for the app that owns the clipboard.
+    #[cfg(target_os = "linux")]
+    fn clipboard_owner(
+        write: impl FnOnce(std::os::unix::net::UnixStream) + Send + 'static,
+    ) -> std::os::unix::net::UnixStream {
+        let (reader, writer) = std::os::unix::net::UnixStream::pair().expect("create socket pair");
+        std::thread::spawn(move || write(writer));
+        reader
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn read_with_limits_reads_until_the_owner_closes() {
+        let reader = clipboard_owner(|mut writer| {
+            use std::io::Write;
+            let _ = writer.write_all(&[7u8; 300_000]);
+        });
+
+        let limits = test_limits(Duration::from_secs(5), Duration::from_secs(10));
+        let contents = read_with_limits(reader, &limits).unwrap();
+
+        assert_eq!(contents.len(), 300_000);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn read_with_limits_gives_up_on_an_owner_that_sends_nothing() {
+        let reader = clipboard_owner(|writer| {
+            std::thread::sleep(Duration::from_secs(30));
+            drop(writer);
+        });
+        let started = std::time::Instant::now();
+
+        let limits = test_limits(Duration::from_millis(200), Duration::from_secs(10));
+        let result = read_with_limits(reader, &limits);
+
+        assert!(result.unwrap_err().contains("no data"));
+        assert!(started.elapsed() < Duration::from_secs(5));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn read_with_limits_waits_while_data_keeps_arriving() {
+        // Six 0.15 s gaps outlast the 0.5 s stall timeout only in total.
+        let reader = clipboard_owner(|mut writer| {
+            use std::io::Write;
+            for byte in b"abcdef" {
+                std::thread::sleep(Duration::from_millis(150));
+                let _ = writer.write_all(&[*byte]);
+            }
+        });
+
+        let limits = test_limits(Duration::from_millis(500), Duration::from_secs(10));
+        let contents = read_with_limits(reader, &limits).unwrap();
+
+        assert_eq!(contents, b"abcdef");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn read_with_limits_stops_data_that_never_ends() {
+        let reader = clipboard_owner(|mut writer| {
+            use std::io::Write;
+            while writer.write_all(b"x").is_ok() {
+                std::thread::sleep(Duration::from_millis(50));
+            }
+        });
+        let started = std::time::Instant::now();
+
+        let limits = test_limits(Duration::from_secs(1), Duration::from_millis(300));
+        let result = read_with_limits(reader, &limits);
+
+        assert!(result.unwrap_err().contains("longer than"));
+        assert!(started.elapsed() < Duration::from_secs(5));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn read_with_limits_stops_a_flood_at_the_size_limit() {
+        let reader = clipboard_owner(|mut writer| {
+            use std::io::Write;
+            let chunk = [0u8; 64 * 1024];
+            while writer.write_all(&chunk).is_ok() {}
+        });
+
+        let limits = test_limits(Duration::from_secs(5), Duration::from_secs(10));
+        let result = read_with_limits(reader, &limits);
+
+        assert!(result.unwrap_err().contains("more than"));
     }
 
     #[cfg(unix)]
