@@ -143,10 +143,11 @@ impl Plan {
     }
 
     /// The language, given the transcription's `speech` (VAD'd, at most the
-    /// detection window). `identify` runs the detector over `allowed`.
+    /// detection window), or `None` if the detector isn't on disk. `identify`
+    /// runs the detector over `allowed`.
     pub fn decide(
         &self,
-        speech: &[f32],
+        speech: Option<&[f32]>,
         identify: impl FnOnce(&[f32], &[String]) -> Result<Identified, IdentifyError>,
     ) -> LanguageDecision {
         let (languages, allowed, fallback) = match self {
@@ -179,6 +180,10 @@ impl Plan {
         let transcribing_as = match &fallback_decision.language {
             Some(language) => format!("transcribing as {language}, the first preferred language"),
             None => "using the model's own detection".to_string(),
+        };
+        let Some(speech) = speech else {
+            info!("Language detection: the detector isn't downloaded; {transcribing_as}");
+            return fallback_decision;
         };
         let seconds = speech.len() as f32 / 16_000.0;
 
@@ -268,7 +273,7 @@ mod tests {
 
     #[test]
     fn detects_in_the_models_own_code() {
-        let decision = detect(DetectFallback::FirstLanguage).decide(&SPEECH, |_, allowed| {
+        let decision = detect(DetectFallback::FirstLanguage).decide(Some(&SPEECH), |_, allowed| {
             assert_eq!(allowed, codes(&["iw", "en"]));
             ranked(&[("iw", 0.9), ("en", 0.1)])
         });
@@ -285,13 +290,17 @@ mod tests {
         };
         let short = &SPEECH[..MIN_SPEECH_SAMPLES - 1];
         assert_eq!(
-            first.decide(short, |_, _| panic!("too little speech to run")),
+            first.decide(Some(short), |_, _| panic!("too little speech to run")),
             fallback(Some("he"))
         );
-        let missing = first.decide(&SPEECH, |_, _| Err(IdentifyError::Missing));
+        assert_eq!(
+            first.decide(None, |_, _| panic!("no detector to run")),
+            fallback(Some("he"))
+        );
+        let missing = first.decide(Some(&SPEECH), |_, _| Err(IdentifyError::Missing));
         assert_eq!(missing, fallback(Some("he")));
         // Always mode falls back to the model's own detection.
-        let failed = detect(DetectFallback::Native).decide(&SPEECH, |_, _| {
+        let failed = detect(DetectFallback::Native).decide(Some(&SPEECH), |_, _| {
             Err(IdentifyError::Failed(anyhow::anyhow!("boom")))
         });
         assert_eq!(failed, fallback(None));

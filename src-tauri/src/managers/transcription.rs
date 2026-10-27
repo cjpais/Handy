@@ -1069,13 +1069,15 @@ impl TranscriptionManager {
         plan: &Plan,
         audio: &[f32],
     ) -> RunSetup {
-        // Without the detector, decide falls back anyway: skip the VAD pass.
-        let speech = if plan.detects() && self.model_manager.language_detector_path().is_some() {
-            self.detection_speech(settings, audio)
+        // No VAD pass when the detector isn't there to use the speech.
+        let speech = if !plan.detects() {
+            Some(Vec::new())
+        } else if self.model_manager.language_detector_path().is_some() {
+            Some(self.detection_speech(settings, audio))
         } else {
-            Vec::new()
+            None
         };
-        let language = plan.decide(&speech, |speech, allowed| {
+        let language = plan.decide(speech.as_deref(), |speech, allowed| {
             let path = self
                 .model_manager
                 .language_detector_path()
