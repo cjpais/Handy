@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { isComposingKeyEvent } from "@/lib/utils/keyboard";
 import {
   getLanguage,
   languageList,
@@ -129,7 +130,7 @@ export const languageSearchKeys = (
     clear: () => void;
   },
 ): boolean => {
-  if (e.nativeEvent.isComposing) return false;
+  if (isComposingKeyEvent(e.nativeEvent)) return false;
   if (e.key === "Enter" && query) {
     e.preventDefault();
     if (first) toggle(first);

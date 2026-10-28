@@ -7,6 +7,7 @@ import { InfoTooltip } from "../ui/InfoTooltip";
 import { Tooltip } from "../ui/Tooltip";
 import { LanguageDetectorDownload } from "./LanguageDetectorDownload";
 import { useSettings } from "../../hooks/useSettings";
+import { isComposingKeyEvent } from "../../lib/utils/keyboard";
 import { useLanguageDetector } from "../../hooks/useLanguageDetector";
 import { languageIdentity } from "@handy-computer/models";
 import {
@@ -187,6 +188,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isComposingKeyEvent(event.nativeEvent)) return;
     const first = filteredLanguages.find((language) => !language.disabled);
     if (event.key === "Enter" && first) {
       // Select first selectable filtered language on Enter

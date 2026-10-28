@@ -6,6 +6,11 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 export type OSType = "macos" | "windows" | "linux" | "unknown";
 
+/** IME boundary keydowns can have isComposing=false while keyCode is still 229. */
+export const isComposingKeyEvent = (
+  event: Pick<KeyboardEvent, "isComposing" | "keyCode">,
+): boolean => event.isComposing || event.keyCode === 229;
+
 const keepSpace = (e: ReactKeyboardEvent<HTMLElement>) => {
   if (e.key === " ") e.preventDefault();
 };

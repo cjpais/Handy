@@ -9,6 +9,7 @@ import {
 import { suggestedLanguages } from "@/lib/utils/languageSuggestions";
 import { isWeakLanguage } from "@/lib/models/catalog";
 import { useSettings } from "../../hooks/useSettings";
+import { isComposingKeyEvent } from "@/lib/utils/keyboard";
 import { languageList } from "../../lib/constants/languages";
 
 interface PreferredLanguagesProps {
@@ -59,6 +60,7 @@ export const PreferredLanguages: React.FC<PreferredLanguagesProps> = ({
   }, [available.length, open]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isComposingKeyEvent(e.nativeEvent)) return;
     if (!picker.onKeyDown(e) && e.key === "Escape") inputRef.current?.blur();
   };
 

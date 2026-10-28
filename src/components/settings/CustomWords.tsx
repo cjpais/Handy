@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useSettings } from "../../hooks/useSettings";
+import { isComposingKeyEvent } from "../../lib/utils/keyboard";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingContainer } from "../ui/SettingContainer";
@@ -48,6 +49,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
+      if (isComposingKeyEvent(e.nativeEvent)) return;
       if (e.key === "Enter") {
         e.preventDefault();
         handleAddWord();

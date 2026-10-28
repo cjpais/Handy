@@ -14,6 +14,7 @@ import { CAPABILITIES, CAPABILITY_KEYS, type Capability } from "./capabilities";
 import { CODE_CLASS, Codes, rowGrid } from "./columns";
 import { ModelTableContext, type TableModel } from "./context";
 import type { Grading } from "@/lib/models/grading";
+import { isComposingKeyEvent } from "@/lib/utils/keyboard";
 import { ScrollThumb } from "./ScrollThumb";
 
 /** The search, and per capability whether only models with it are kept. */
@@ -126,6 +127,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
   query.current = filters.query;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isComposingKeyEvent(e)) return;
       if (e.key === "Escape") {
         if (query.current) {
           e.preventDefault();
@@ -286,6 +288,7 @@ export const ModelTable: React.FC<ModelTableProps> = ({
                   if (listRef.current) listRef.current.scrollTop = 0;
                 }}
                 onKeyDown={(e) => {
+                  if (isComposingKeyEvent(e.nativeEvent)) return;
                   const d =
                     e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
                   if (d) {
