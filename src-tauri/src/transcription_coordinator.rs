@@ -168,6 +168,11 @@ struct InputEvent {
     /// They fire on every edge by design and must never be debounced —
     /// dropping one desyncs toggle parity and wedges recording on.
     external: bool,
+    /// When the edge actually happened. The coordinator thread can be busy
+    /// starting the microphone (slow on the first press after startup), so a
+    /// release may be handled long after the key went up; measuring holds to
+    /// handling time turns a quick tap into a long hold (#2089).
+    at: Instant,
 }
 
 impl InputEvent {
@@ -279,6 +284,13 @@ impl CoordinatorState {
     /// A recording is running and outlives its key (a tap, or toggle mode).
     fn is_recording_locked(&self) -> bool {
         matches!(self.stage, Stage::Recording(_)) && self.hold.as_ref().is_some_and(|h| h.locked)
+    }
+
+    /// An input as it reaches the coordinator thread: measured at the moment
+    /// the edge happened, not when it is handled (see [`InputEvent::at`]).
+    fn on_event(&mut self, input: InputEvent) -> Option<Effect> {
+        let at = input.at;
+        self.on_input(input, at)
     }
 
     fn on_input(&mut self, input: InputEvent, now: Instant) -> Option<Effect> {
@@ -606,7 +618,7 @@ impl TranscriptionCoordinator {
                     let was_locked = state.is_recording_locked();
                     match cmd {
                         Command::Input(input) => {
-                            if let Some(effect) = state.on_input(input, Instant::now()) {
+                            if let Some(effect) = state.on_event(input) {
                                 run_effect(&app, &mut state, effect);
                             }
                         }
@@ -692,6 +704,7 @@ impl TranscriptionCoordinator {
                 mode,
                 hold_threshold,
                 external,
+                at: Instant::now(),
             }))
             .is_err()
         {
@@ -952,6 +965,7 @@ mod tests {
             mode: ShortcutActivation::PushToTalk,
             hold_threshold: Duration::ZERO,
             external: false,
+            at: Instant::now(),
         }
     }
 
@@ -1090,6 +1104,7 @@ mod tests {
                     mode: ShortcutActivation::Toggle,
                     hold_threshold: Duration::ZERO,
                     external: true,
+                    at,
                 },
                 at,
             )
@@ -1152,6 +1167,7 @@ mod tests {
             mode: ShortcutActivation::Toggle,
             hold_threshold: Duration::ZERO,
             external,
+            at: Instant::now(),
         }
     }
 
@@ -1277,11 +1293,37 @@ mod tests {
             mode,
             hold_threshold: HOLD_THRESHOLD,
             external: false,
+            at: Instant::now(),
         }
     }
 
     fn ms(n: u64) -> Duration {
         Duration::from_millis(n)
+    }
+
+    /// #2089: the first press after startup spends ~430 ms opening the
+    /// microphone, so the release is handled late. A quick tap must still be
+    /// a tap: the hold is measured to when the key went up, not to when the
+    /// coordinator got around to the release.
+    #[test]
+    fn tap_handled_after_a_slow_start_still_locks_on() {
+        let mut state = CoordinatorState::new();
+        let press = input(ShortcutActivation::HoldOrToggle, true);
+        let pressed_at = press.at;
+        assert!(matches!(state.on_event(press), Some(Effect::Start { .. })));
+
+        // The key goes up 100 ms after the press...
+        let mut release = input(ShortcutActivation::HoldOrToggle, false);
+        release.at = pressed_at + ms(100);
+        // ...but the thread is busy starting the microphone for longer than
+        // the hold threshold before it reads the release.
+        std::thread::sleep(HOLD_THRESHOLD + ms(130));
+        assert!(state.on_event(release).is_none());
+        assert!(
+            state.on_grace_expired().is_none(),
+            "a 100 ms tap must not stop the recording"
+        );
+        assert!(state.is_recording_locked(), "the tap locks recording on");
     }
 
     /// Hold-or-toggle: a key held past the threshold is push-to-talk — the
