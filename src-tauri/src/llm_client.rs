@@ -215,13 +215,39 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     Ok(headers)
 }
 
+/// HTTP client with provider-specific headers. The headers are set per
+/// request, so every instance can share one connection pool and consecutive
+/// requests reuse an open connection instead of a new TCP + TLS handshake.
+struct ProviderClient {
+    client: reqwest::Client,
+    headers: HeaderMap,
+}
+
+impl ProviderClient {
+    fn post(&self, url: &str) -> reqwest::RequestBuilder {
+        self.client.post(url).headers(self.headers.clone())
+    }
+
+    fn get(&self, url: &str) -> reqwest::RequestBuilder {
+        self.client.get(url).headers(self.headers.clone())
+    }
+}
+
 /// Create an HTTP client with provider-specific headers
-fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwest::Client, String> {
+fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<ProviderClient, String> {
+    static SHARED: OnceLock<reqwest::Client> = OnceLock::new();
+
     let headers = build_headers(provider, api_key)?;
-    reqwest::Client::builder()
-        .default_headers(headers)
-        .build()
-        .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))
+    let client = match SHARED.get() {
+        Some(client) => client.clone(),
+        None => {
+            let client = reqwest::Client::builder()
+                .build()
+                .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))?;
+            SHARED.get_or_init(|| client).clone()
+        }
+    };
+    Ok(ProviderClient { client, headers })
 }
 
 /// Format a bounded error source chain.
