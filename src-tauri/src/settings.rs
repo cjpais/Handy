@@ -246,11 +246,10 @@ impl Default for KeyboardImplementation {
 
 impl Default for PasteMethod {
     fn default() -> Self {
-        // Default to CtrlV for macOS and Windows, Direct for Linux
-        #[cfg(target_os = "linux")]
-        return PasteMethod::Direct;
-        #[cfg(not(target_os = "linux"))]
-        return PasteMethod::CtrlV;
+        // Type the transcript as keystrokes on every platform. Clipboard paste
+        // is refused by pages that block paste events, and typing is the only
+        // output path this build is built around.
+        PasteMethod::Direct
     }
 }
 

@@ -19,7 +19,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
     const osType = useOsType();
 
     const selectedMethod = (getSetting("paste_method") ||
-      "ctrl_v") as PasteMethod;
+      "direct") as PasteMethod;
 
     const getPasteMethodOptions = (osType: string) => {
       const mod = osType === "macos" ? "Cmd" : "Ctrl";
@@ -33,15 +33,13 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
         },
       ];
 
-      // Direct input is not offered on macOS, but keep an existing/manual
-      // selection visible so the UI accurately represents the saved setting.
-      if (osType !== "macos" || selectedMethod === "direct") {
-        options.push({
-          value: "direct",
-          label: t("settings.advanced.pasteMethod.options.direct"),
-          disabled: osType === "macos",
-        });
-      }
+      // Direct input types the transcript as keystrokes. It is offered on every
+      // platform because it is the only output that works in fields which
+      // refuse clipboard pastes.
+      options.push({
+        value: "direct",
+        label: t("settings.advanced.pasteMethod.options.direct"),
+      });
 
       options.push({
         value: "none",
