@@ -263,12 +263,144 @@ pub fn send_paste_shift_insert(enigo: &mut Enigo, hold_ms: u64) -> Result<(), St
     Ok(())
 }
 
-/// Pastes text directly using the enigo text method.
-/// This tries to use system input methods if possible, otherwise simulates keystrokes one by one.
-pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
-    enigo
-        .text(text)
-        .map_err(|e| format!("Failed to send text directly: {}", e))?;
+/// Gap between characters when typing a transcript, in milliseconds. Fast for a
+/// person, but far enough from instant that every character is its own event.
+pub const TYPING_KEY_DELAY_MS: u64 = 12;
+
+/// Spreads the gap around `base_ms` so the rhythm is uneven, the way a real
+/// keyboard is. Deterministic, so it needs no random number generator.
+fn jittered_delay_ms(base_ms: u64, index: usize) -> u64 {
+    if base_ms == 0 {
+        return 0;
+    }
+
+    // Vary by up to 40% either side of the base.
+    let spread = (base_ms * 2 / 5).clamp(1, base_ms);
+    let scrambled = (index as u64).wrapping_mul(2_654_435_761) >> 13;
+    base_ms - spread + scrambled % (2 * spread + 1)
+}
+
+/// Types `text` one character at a time, each character its own key event.
+///
+/// `Enigo::text` is deliberately not used. On macOS it posts one event per
+/// 20-character chunk and on Windows a single `SendInput` for the whole string,
+/// so the text lands in bursts rather than as typing. Fields that reject pasted
+/// content watch how text arrives, so each character is sent separately with an
+/// uneven gap between them.
+///
+/// This sleeps for roughly `key_delay_ms` per character, so callers must run it
+/// off the main thread.
+pub fn type_text_as_keystrokes(
+    enigo: &mut Enigo,
+    text: &str,
+    key_delay_ms: u64,
+) -> Result<(), String> {
+    let mut typed = 0_usize;
+
+    for character in text.chars() {
+        // The CR of a CRLF pair would otherwise submit the field a second time.
+        if character == '\r' {
+            continue;
+        }
+
+        if typed > 0 {
+            let delay = jittered_delay_ms(key_delay_ms, typed);
+            if delay > 0 {
+                std::thread::sleep(std::time::Duration::from_millis(delay));
+            }
+        }
+
+        let key = match character {
+            '\n' => Key::Return,
+            '\t' => Key::Tab,
+            other => Key::Unicode(other),
+        };
+
+        enigo
+            .key(key, enigo::Direction::Click)
+            .map_err(|e| format!("Failed to type {:?}: {}", character, e))?;
+
+        typed += 1;
+    }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn jitter_stays_within_its_spread() {
+        for base in [0_u64, 1, 2, 5, 12, 40, 250] {
+            for index in 0..512_usize {
+                let delay = jittered_delay_ms(base, index);
+
+                if base == 0 {
+                    assert_eq!(delay, 0);
+                    continue;
+                }
+
+                let spread = (base * 2 / 5).clamp(1, base);
+                assert!(
+                    delay >= base - spread && delay <= base + spread,
+                    "base {base} index {index} produced {delay}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn jitter_does_not_produce_a_constant_rhythm() {
+        let delays: Vec<u64> = (0..16).map(|i| jittered_delay_ms(12, i)).collect();
+
+        assert!(
+            delays.windows(2).any(|pair| pair[0] != pair[1]),
+            "typing rhythm should vary, got {delays:?}"
+        );
+    }
+
+    #[test]
+    fn a_transcript_takes_human_time_to_type() {
+        // Measured on the bulk path this replaces: 52 characters were inserted
+        // in 353 microseconds, which no person could produce. The same text
+        // must now land in human territory.
+        let characters = 52_usize;
+        let total: u64 = (1..characters)
+            .map(|i| jittered_delay_ms(TYPING_KEY_DELAY_MS, i))
+            .sum();
+
+        assert!(
+            (300..=900).contains(&total),
+            "{characters} characters should take 0.3-0.9s to type, got {total}ms"
+        );
+    }
+
+    /// Manual probe. Types into whatever window holds focus, so it is ignored by
+    /// default. Focus a text field, then run:
+    ///
+    /// `PROBE_DELAY_SECS=8 cargo test --lib typing_probe -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn typing_probe() {
+        let delay_secs = std::env::var("PROBE_DELAY_SECS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(8_u64);
+        let text = std::env::var("PROBE_TEXT")
+            .unwrap_or_else(|_| "The quick brown fox jumps over the lazy dog.".to_string());
+
+        eprintln!("focus a text field; typing in {delay_secs}s");
+        std::thread::sleep(std::time::Duration::from_secs(delay_secs));
+
+        let mut enigo = Enigo::new(&Settings::default()).expect("could not create Enigo");
+        let started = std::time::Instant::now();
+        type_text_as_keystrokes(&mut enigo, &text, TYPING_KEY_DELAY_MS).expect("typing failed");
+
+        eprintln!(
+            "typed {} chars in {:?}",
+            text.chars().count(),
+            started.elapsed()
+        );
+    }
 }

@@ -741,10 +741,19 @@ fn paste_direct(
         info!("Falling back to enigo for direct text input");
     }
 
-    let text = text.to_string();
-    with_enigo(app_handle, move |enigo| {
-        input::paste_text_direct(enigo, &text)
-    })
+    // Typing paces itself with a sleep per character, so it must not run on the
+    // main thread the way the clipboard paths do: that would freeze the window
+    // for as long as the transcript takes to type. It needs no TIS lookup
+    // either, so the shared Enigo is driven straight from this worker thread.
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    let mut enigo = enigo_state
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+
+    input::type_text_as_keystrokes(&mut enigo, text, input::TYPING_KEY_DELAY_MS)
 }
 
 pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
