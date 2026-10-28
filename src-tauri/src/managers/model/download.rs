@@ -3,7 +3,7 @@
 //! Both legacy URL models and Hugging Face mirror fallbacks use this module;
 //! source-specific orchestration and finalization remain in the parent module.
 
-use super::{DownloadProgress, ModelManager};
+use super::{DownloadProgress, ModelManager, ProgressTarget};
 use anyhow::Result;
 use futures_util::StreamExt;
 use hf_hub::api::tokio::CancellationToken;
@@ -175,7 +175,7 @@ impl ModelManager {
     /// bus — the production entry point.
     pub(super) async fn download_http_resumable(
         &self,
-        model_id: &str,
+        target: &ProgressTarget,
         url: &str,
         partial_path: &Path,
         expected_size: Option<u64>,
@@ -183,9 +183,9 @@ impl ModelManager {
         cancel_token: &CancellationToken,
     ) -> Result<HttpDownloadOutcome> {
         let app_handle = self.app_handle.clone();
-        let id = model_id.to_string();
+        let id = target.model_id.clone();
         Self::download_http_resumable_with_events(
-            model_id,
+            &target.model_id,
             url,
             partial_path,
             expected_size,
@@ -193,9 +193,14 @@ impl ModelManager {
             cancel_token,
             &move |event| {
                 let _ = match event {
-                    HttpDownloadEvent::Progress(progress) => {
-                        app_handle.emit("model-download-progress", progress)
-                    }
+                    HttpDownloadEvent::Progress(progress) => app_handle.emit(
+                        "model-download-progress",
+                        target.progress(
+                            progress.downloaded,
+                            progress.total,
+                            progress.bytes_per_sec,
+                        ),
+                    ),
                     HttpDownloadEvent::VerificationStarted => {
                         app_handle.emit("model-verification-started", &id)
                     }

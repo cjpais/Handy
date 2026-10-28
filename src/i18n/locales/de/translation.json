@@ -356,7 +356,16 @@
         "description": "Wähle die Sprache für die Spracherkennung. Auto erkennt die Sprache automatisch, die Auswahl einer bestimmten Sprache kann die Genauigkeit verbessern.",
         "searchPlaceholder": "Sprachen suchen...",
         "noResults": "Keine Sprachen gefunden",
-        "auto": "Automatisch"
+        "auto": "Automatisch",
+        "autoUnavailable": {
+          "title": "Automatisch ist deaktiviert",
+          "oneLanguage": "Nur eine deiner Sprachen funktioniert mit diesem Modell",
+          "undetectable": "Nicht verfügbar mit {{languages}}",
+          "noMatch": "Keine deiner Sprachen funktioniert mit diesem Modell"
+        },
+        "detectorMissingTitle": "Automatisch braucht einen separaten Download",
+        "detectorMissing": "Dieses Modell erkennt nicht, welche Sprache du sprichst. Automatisch braucht eine kleine Spracherkennung, die das herausfindet",
+        "stopDetectorDownload": "Download der Spracherkennung stoppen"
       },
       "preferredLanguages": {
         "title": "Bevorzugte Sprachen",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Lange Aufnahmen aufteilen",
         "description": "Teilt lange Aufnahmen vor der Transkription an Sprechpausen auf, was die Transkription in der Regel verbessert. Transkribierte Dateien und lange erneute Transkriptionen werden immer aufgeteilt."
+      },
+      "languageDetection": {
+        "title": "Automatisch auf meine Sprachen beschränken",
+        "description": "Automatisch wählt nur aus deinen bevorzugten Sprachen, mithilfe einer kleinen Spracherkennung. Schalte das ein, wenn Automatisch immer wieder eine Sprache wählt, die du nicht sprichst",
+        "downloadHint": "Beim Einschalten wird eine kleine Spracherkennung heruntergeladen",
+        "downloadingHint": "Die Spracherkennung wird heruntergeladen. Zum Abbrechen ausschalten"
       },
       "vadBackend": {
         "title": "VAD-Backend",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio für Spracherkennung",
+        "description": "Sekunden Sprache, die die Spracherkennung hört. Länger ist genauer, aber langsamer."
       },
       "keyboardDiagnostic": {
         "title": "Tastatur-Diagnose",

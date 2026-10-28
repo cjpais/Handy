@@ -356,7 +356,16 @@
         "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
         "searchPlaceholder": "搜索语言...",
         "noResults": "未找到语言",
-        "auto": "自动"
+        "auto": "自动",
+        "autoUnavailable": {
+          "title": "自动已停用",
+          "oneLanguage": "你的语言中只有一种适用于此模型",
+          "undetectable": "不支持{{languages}}",
+          "noMatch": "你的语言都不适用于此模型"
+        },
+        "detectorMissingTitle": "自动模式需要单独下载",
+        "detectorMissing": "此模型无法分辨你说的是哪种语言。自动模式需要一个小型语言检测器来判断",
+        "stopDetectorDownload": "停止下载语言检测器"
       },
       "preferredLanguages": {
         "title": "常用语言",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "长音频分段",
         "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。转录文件与较长的重新转录始终会分段。"
+      },
+      "languageDetection": {
+        "title": "将自动模式限制为我的语言",
+        "description": "自动模式会借助一个小型语言检测器，只从你的首选语言中选择。如果自动模式总是选中你不说的语言，请打开此项",
+        "downloadHint": "打开后会下载一个小型语言检测器",
+        "downloadingHint": "正在下载语言检测器。关闭此项即可取消"
       },
       "vadBackend": {
         "title": "语音活动检测后端",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "额外录音缓冲",
         "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
+      },
+      "languageDetectionWindow": {
+        "title": "语言检测音频",
+        "description": "语言检测器聆听的语音秒数。越长越准确，但越慢。"
       },
       "keyboardDiagnostic": {
         "title": "键盘诊断",

@@ -163,3 +163,60 @@ fn hf_idle_tick_never_reemits_an_exceeded_budget() {
     assert!(state.exceeded_total);
     assert!(state.on_tick(now + Duration::from_secs(4)).is_none());
 }
+
+#[tokio::test]
+async fn hf_combined_progress_does_not_expand_a_files_byte_budget() {
+    use crate::managers::model::ProgressTarget;
+
+    // The detector fills the first part of a model's bar; the main model
+    // continues after it. Neither may borrow the other file's byte budget.
+    for (target, file_size) in [
+        (
+            ProgressTarget {
+                model_id: "model".into(),
+                offset: 0,
+                total: Some(145),
+            },
+            45,
+        ),
+        (
+            ProgressTarget {
+                model_id: "model".into(),
+                offset: 45,
+                total: None,
+            },
+            100,
+        ),
+    ] {
+        let parent = CancellationToken::new();
+        let attempt = parent.child_token();
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let captured = events.clone();
+        let mut progress = HfDownloadProgress::new(attempt.clone(), move |bytes, total, rate| {
+            captured
+                .lock()
+                .unwrap()
+                .push(target.progress(bytes, total, rate));
+        });
+        progress.init(file_size, "file.gguf").await;
+        progress.update(0).await;
+        progress.update(file_size).await;
+        let last = events.lock().unwrap().last().unwrap().clone();
+        assert_eq!(last.model_id, "model");
+        assert_eq!(last.total, 145);
+        assert_eq!(last.downloaded, if file_size == 45 { 45 } else { 145 });
+        assert!(!attempt.is_cancelled());
+
+        let count = events.lock().unwrap().len();
+        progress.update(1).await;
+        progress.tick();
+        progress.finish().await;
+        assert_eq!(
+            progress.exceeded_total(),
+            Some((file_size as u64, file_size as u64 + 1))
+        );
+        assert!(attempt.is_cancelled());
+        assert!(!parent.is_cancelled(), "the mirror must remain usable");
+        assert_eq!(events.lock().unwrap().len(), count);
+    }
+}

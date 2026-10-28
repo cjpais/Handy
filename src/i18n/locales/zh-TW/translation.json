@@ -356,7 +356,16 @@
         "description": "選擇語音辨識的語言。選擇自動將自動判定語言，選擇特定語言可以提高該語言的準確度",
         "searchPlaceholder": "搜尋語言...",
         "noResults": "未找到語言",
-        "auto": "自動"
+        "auto": "自動",
+        "autoUnavailable": {
+          "title": "自動已停用",
+          "oneLanguage": "你的語言中只有一種適用於此模型",
+          "undetectable": "不支援{{languages}}",
+          "noMatch": "你的語言都不適用於此模型"
+        },
+        "detectorMissingTitle": "自動模式需要另外下載",
+        "detectorMissing": "此模型無法分辨你說的是哪種語言。自動模式需要一個小型語言偵測器來判斷",
+        "stopDetectorDownload": "停止下載語言偵測器"
       },
       "preferredLanguages": {
         "title": "偏好語言",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "長音訊分段",
         "description": "在轉錄前依停頓處將長錄音分段，通常可以提升轉錄效果。轉錄檔案與較長的重新轉錄一律會分段。"
+      },
+      "languageDetection": {
+        "title": "將自動模式限制為我的語言",
+        "description": "自動模式會藉助一個小型語言偵測器，只從你的偏好語言中選擇。如果自動模式總是選到你不說的語言，請開啟此項",
+        "downloadHint": "開啟後會下載一個小型語言偵測器",
+        "downloadingHint": "正在下載語言偵測器。關閉此項即可取消"
       },
       "vadBackend": {
         "title": "語音活動偵測後端",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "額外錄音緩衝",
         "description": "放開按鍵後繼續錄音的額外時間（毫秒），以捕捉尾音。0 = 無額外緩衝。"
+      },
+      "languageDetectionWindow": {
+        "title": "語言偵測音訊",
+        "description": "語言偵測器聆聽的語音秒數。越長越準確，但越慢。"
       },
       "keyboardDiagnostic": {
         "title": "鍵盤診斷",

@@ -19,7 +19,9 @@ use tauri_specta::Event;
 use crate::actions::process_transcription_output;
 use crate::audio_toolkit::{decode_audio_file, read_wav_samples, save_wav_file};
 use crate::managers::history::{HistoryEntry, HistoryManager};
-use crate::managers::transcription::{panic_payload_message, ChunkControl, TranscriptionManager};
+use crate::managers::transcription::{
+    panic_payload_message, ChunkControl, Transcription, TranscriptionManager,
+};
 
 /// How often a waiting chunk checks whether dictation has finished.
 const DICTATION_POLL: Duration = Duration::from_millis(200);
@@ -294,7 +296,8 @@ impl TranscriptionJobManager {
             cancelled,
             percent: Cell::new(0),
         };
-        let Some(text) = tm.transcribe_in_chunks(samples, &control)? else {
+        let Some(Transcription { text, language }) = tm.transcribe_in_chunks(samples, &control)?
+        else {
             return Ok(());
         };
         if text.is_empty() {
@@ -318,6 +321,7 @@ impl TranscriptionJobManager {
             text,
             processed.post_processed_text,
             processed.post_process_prompt,
+            language,
         )?;
         Ok(())
     }

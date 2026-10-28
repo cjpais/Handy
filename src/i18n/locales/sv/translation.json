@@ -356,7 +356,16 @@
         "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",
-        "auto": "Automatiskt"
+        "auto": "Automatiskt",
+        "autoUnavailable": {
+          "title": "Automatiskt är avstängt",
+          "oneLanguage": "Bara ett av dina språk fungerar med den här modellen",
+          "undetectable": "Inte tillgängligt med {{languages}}",
+          "noMatch": "Inget av dina språk fungerar med den här modellen"
+        },
+        "detectorMissingTitle": "Automatiskt kräver en separat nedladdning",
+        "detectorMissing": "Den här modellen kan inte avgöra vilket språk du talar. Automatiskt behöver en liten språkidentifiering som tar reda på det",
+        "stopDetectorDownload": "Stoppa nedladdningen av språkidentifieringen"
       },
       "preferredLanguages": {
         "title": "Föredragna språk",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Dela upp långt ljud",
         "description": "Delar upp långa inspelningar vid pauser före transkribering, vilket oftast förbättrar transkriberingen. Transkriberade filer och långa omtranskriberingar delas alltid upp."
+      },
+      "languageDetection": {
+        "title": "Begränsa Automatiskt till mina språk",
+        "description": "Automatiskt väljer bara bland dina föredragna språk med hjälp av en liten språkidentifiering. Slå på det om Automatiskt fortsätter att välja ett språk du inte talar",
+        "downloadHint": "När du slår på det laddas en liten språkidentifiering ned",
+        "downloadingHint": "Språkidentifieringen laddas ned. Stäng av för att avbryta"
       },
       "vadBackend": {
         "title": "Backend för röstdetektering",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
+      },
+      "languageDetectionWindow": {
+        "title": "Ljud för språkidentifiering",
+        "description": "Sekunder tal som språkidentifieringen hör. Längre är noggrannare men långsammare."
       },
       "keyboardDiagnostic": {
         "title": "Tangentbordsdiagnostik",

@@ -356,7 +356,16 @@
         "description": "Selecteer de taal voor spraakherkenning. 'Automatisch' detecteert de taal vanzelf, terwijl het kiezen van een specifieke taal de nauwkeurigheid voor die taal kan verbeteren.",
         "searchPlaceholder": "Talen zoeken...",
         "noResults": "Geen talen gevonden",
-        "auto": "Automatisch"
+        "auto": "Automatisch",
+        "autoUnavailable": {
+          "title": "Automatisch is uitgeschakeld",
+          "oneLanguage": "Maar één van je talen werkt met dit model",
+          "undetectable": "Niet beschikbaar met {{languages}}",
+          "noMatch": "Geen van je talen werkt met dit model"
+        },
+        "detectorMissingTitle": "Automatisch heeft een aparte download nodig",
+        "detectorMissing": "Dit model kan niet bepalen welke taal je spreekt. Automatisch heeft een kleine taaldetector nodig om dat uit te zoeken",
+        "stopDetectorDownload": "Downloaden van de taaldetector stoppen"
       },
       "preferredLanguages": {
         "title": "Voorkeurstalen",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Lange audio opsplitsen",
         "description": "Splitst lange opnames bij pauzes op voordat ze worden getranscribeerd, wat de transcriptie doorgaans verbetert. Getranscribeerde bestanden en lange hertranscripties worden altijd opgesplitst."
+      },
+      "languageDetection": {
+        "title": "Automatisch beperken tot mijn talen",
+        "description": "Automatisch kiest alleen uit je voorkeurstalen, met een kleine taaldetector. Zet dit aan als Automatisch steeds een taal kiest die je niet spreekt",
+        "downloadHint": "Aanzetten downloadt een kleine taaldetector",
+        "downloadingHint": "De taaldetector wordt gedownload. Zet dit uit om te annuleren"
       },
       "vadBackend": {
         "title": "VAD-backend",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Extra opnamebuffer",
         "description": "Extra tijd (in milliseconden) om te blijven opnemen nadat je de toets loslaat, om naloopaudio op te vangen. 0 = geen extra buffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio voor taaldetectie",
+        "description": "Seconden spraak die de taaldetector hoort. Langer is nauwkeuriger maar trager."
       },
       "keyboardDiagnostic": {
         "title": "Toetsenborddiagnose",

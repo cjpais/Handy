@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, Loader2, Lock, Trash2, X } from "lucide-react";
+import { Loader2, Lock, Trash2, X } from "lucide-react";
+import { DownloadMark } from "@/components/shared/DownloadMark";
 import { Radio } from "@/components/ui/Radio";
 import { Button } from "@/components/ui/Button";
 import { ModelTableRow } from "@/components/shared/modelTable/ModelTableRow";
@@ -62,14 +63,7 @@ export const ModelRow: React.FC<{ entry: Entry }> = ({ entry }) => {
           />
         );
       case "remote":
-        return (
-          <span
-            aria-hidden="true"
-            className="grid size-[18px] place-items-center rounded-full border-[1.5px] border-dashed border-line-strong text-ink-3 transition-colors group-hover:border-solid group-hover:border-text group-hover:text-text"
-          >
-            <ArrowDown className="size-[11px]" strokeWidth={2.75} />
-          </span>
-        );
+        return <DownloadMark />;
       default:
         return null;
     }

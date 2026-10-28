@@ -697,6 +697,8 @@ mod tests {
             post_process_prompt: None,
             post_process_requested: false,
             source_name: None,
+            language: None,
+            language_source: None,
         }
     }
 

@@ -356,7 +356,16 @@
         "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
-        "auto": "Automatico"
+        "auto": "Automatico",
+        "autoUnavailable": {
+          "title": "Automatico è disattivato",
+          "oneLanguage": "Solo una delle tue lingue funziona con questo modello",
+          "undetectable": "Non disponibile con {{languages}}",
+          "noMatch": "Nessuna delle tue lingue funziona con questo modello"
+        },
+        "detectorMissingTitle": "Automatico richiede un download separato",
+        "detectorMissing": "Questo modello non riesce a capire quale lingua stai parlando. Automatico ha bisogno di un piccolo rilevatore di lingua per capirlo",
+        "stopDetectorDownload": "Interrompi il download del rilevatore di lingua"
       },
       "preferredLanguages": {
         "title": "Lingue preferite",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Suddivisione dell'audio lungo",
         "description": "Suddivide le registrazioni lunghe in corrispondenza delle pause prima della trascrizione, il che di solito migliora le prestazioni della trascrizione. I file trascritti e le ri-trascrizioni lunghe vengono sempre suddivisi."
+      },
+      "languageDetection": {
+        "title": "Limita Automatico alle mie lingue",
+        "description": "Automatico sceglie solo tra le tue lingue preferite, usando un piccolo rilevatore di lingua. Attivalo se Automatico continua a scegliere una lingua che non parli",
+        "downloadHint": "Attivandolo si scarica un piccolo rilevatore di lingua",
+        "downloadingHint": "Download del rilevatore di lingua in corso. Disattiva per annullare"
       },
       "vadBackend": {
         "title": "Backend di rilevamento vocale",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",
         "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio per il rilevamento della lingua",
+        "description": "Secondi di parlato ascoltati dal rilevatore di lingua. Più lungo è più preciso ma più lento."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostica tastiera",

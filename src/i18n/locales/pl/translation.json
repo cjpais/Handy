@@ -356,7 +356,16 @@
         "description": "Wybierz język rozpoznawania mowy. Opcja Auto automatycznie określi język, a wybór konkretnego języka może poprawić dokładność.",
         "searchPlaceholder": "Szukaj języka...",
         "noResults": "Nie znaleziono języków",
-        "auto": "Automatycznie"
+        "auto": "Automatycznie",
+        "autoUnavailable": {
+          "title": "Automatycznie jest wyłączone",
+          "oneLanguage": "Z tym modelem działa tylko jeden z twoich języków",
+          "undetectable": "Niedostępne dla {{languages}}",
+          "noMatch": "Żaden z twoich języków nie działa z tym modelem"
+        },
+        "detectorMissingTitle": "Tryb automatyczny wymaga osobnego pobrania",
+        "detectorMissing": "Ten model nie rozpozna, w jakim języku mówisz. Tryb automatyczny potrzebuje małego detektora języka, żeby to ustalić",
+        "stopDetectorDownload": "Zatrzymaj pobieranie detektora języka"
       },
       "preferredLanguages": {
         "title": "Preferowane języki",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Dzielenie długich nagrań",
         "description": "Dzieli długie nagrania w miejscach pauz przed transkrypcją, co zwykle poprawia jakość transkrypcji. Transkrybowane pliki i długie ponowne transkrypcje są zawsze dzielone."
+      },
+      "languageDetection": {
+        "title": "Ogranicz tryb automatyczny do moich języków",
+        "description": "Tryb automatyczny wybiera tylko spośród preferowanych języków, korzystając z małego detektora języka. Włącz to, jeśli tryb automatyczny wciąż wybiera język, którym nie mówisz",
+        "downloadHint": "Włączenie pobiera mały detektor języka",
+        "downloadingHint": "Pobieranie detektora języka. Wyłącz, aby anulować"
       },
       "vadBackend": {
         "title": "Backend wykrywania głosu",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Dodatkowy bufor nagrywania",
         "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."
+      },
+      "languageDetectionWindow": {
+        "title": "Dźwięk do wykrywania języka",
+        "description": "Ile sekund mowy słyszy detektor języka. Dłużej znaczy dokładniej, ale wolniej."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostyka klawiatury",
